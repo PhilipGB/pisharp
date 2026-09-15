@@ -49,6 +49,31 @@ public sealed class TurnMessagingTests
     }
 
     [Fact]
+    public async Task Coordinator_DeliversSteeringBeforeFollowUp()
+    {
+        var queue = new TurnMessageQueue();
+        var coordinator = new LiveTurnCoordinator(queue);
+        var executions = new List<string>();
+
+        var result = await coordinator.RunAsync(
+            "initial",
+            (prompt, _) =>
+            {
+                executions.Add(prompt);
+                if (prompt == "initial")
+                {
+                    queue.EnqueueFollowUp("follow-up");
+                    queue.EnqueueSteering("steer");
+                }
+
+                return Task.FromResult(new TurnExecutionResult(prompt));
+            });
+
+        Assert.Equal(["initial", "steer", "follow-up"], executions);
+        Assert.Equal(["initial", "steer", "follow-up"], result.DeliveredPrompts);
+    }
+
+    [Fact]
     public async Task Coordinator_AbortPreservesQueuedFollowUps()
     {
         var queue = new TurnMessageQueue();

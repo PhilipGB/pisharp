@@ -64,11 +64,14 @@ internal static class AgentFactory
             openAiOptions.Endpoint = new Uri(options.Endpoint, UriKind.Absolute);
         }
 
-        IChatClient chatClient = new ChatClient(
-                options.Model,
-                new ApiKeyCredential(options.ApiKey),
-                openAiOptions)
-            .AsIChatClient();
+        var turnQueue = new TurnMessageQueue();
+        IChatClient chatClient = new SteeringChatClient(
+            new ChatClient(
+                    options.Model,
+                    new ApiKeyCredential(options.ApiKey),
+                    openAiOptions)
+                .AsIChatClient(),
+            turnQueue);
 
 #pragma warning disable MAAI001 // Harness token-limit options are currently marked evaluation-only by MAF.
         var agent = chatClient.AsHarnessAgent(new HarnessAgentOptions
@@ -94,6 +97,6 @@ internal static class AgentFactory
         });
 #pragma warning restore MAAI001
 
-        return new AgentBootstrap(agent, projectContext.Files);
+        return new AgentBootstrap(agent, projectContext.Files, turnQueue);
     }
 }

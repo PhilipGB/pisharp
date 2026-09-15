@@ -207,6 +207,14 @@ public sealed class LiveTurnCoordinator
                     break;
                 }
 
+                var steering = Queue.DrainSteering();
+                if (steering.Count > 0)
+                {
+                    prompts = steering.Select(message => message.Text).ToList();
+                    delivered.AddRange(prompts);
+                    continue;
+                }
+
                 var followUps = Queue.DrainFollowUp();
                 prompts = followUps.Select(message => message.Text).ToList();
                 delivered.AddRange(prompts);
