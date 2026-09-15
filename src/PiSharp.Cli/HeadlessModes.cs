@@ -21,9 +21,9 @@ internal static class HeadlessModes
         IChatOutput output = options.OutputMode == OutputMode.Json
             ? new JsonChatOutput(writer)
             : new SilentChatOutput();
-        if (options.OutputMode == OutputMode.Json)
+        if (options.OutputMode == OutputMode.Json && sessions.Document is not null)
         {
-            writer.Write(new { type = "session_start", sessionId = sessions.Document?.Header.SessionId });
+            writer.Write(sessions.Document.Header);
         }
 
         var result = await AgentTurnRunner.RunAsync(
@@ -35,16 +35,7 @@ internal static class HeadlessModes
             output,
             cancellationToken);
         await sessions.PersistTurnAsync(prompt, result.AssistantText, cancellationToken);
-        if (options.OutputMode == OutputMode.Json)
-        {
-            writer.Write(new
-            {
-                type = "turn_end",
-                assistantText = result.AssistantText,
-                cancelled = result.Cancelled,
-            });
-        }
-        else
+        if (options.OutputMode != OutputMode.Json)
         {
             Console.WriteLine(result.AssistantText);
         }
@@ -235,7 +226,6 @@ internal static class HeadlessModes
                 new JsonChatOutput(writer),
                 cancellationToken);
             await sessions.PersistTurnAsync(prompt, result.AssistantText, cancellationToken);
-            writer.Write(new { type = "turn_end", assistantText = result.AssistantText, cancelled = result.Cancelled });
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {

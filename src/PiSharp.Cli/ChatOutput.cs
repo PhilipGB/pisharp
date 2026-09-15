@@ -124,10 +124,26 @@ internal sealed class JsonChatOutput : IChatOutput
         _writer = writer;
     }
 
-    public void AgentStarted() => _writer.Write(new { type = "agent_start" });
+    public void AgentStarted()
+    {
+        _writer.Write(new { type = "agent_start" });
+        _writer.Write(new { type = "turn_start" });
+    }
 
-    public void AgentFinished(string assistantText, bool cancelled) =>
+    public void AgentFinished(string assistantText, bool cancelled)
+    {
+        _writer.Write(new
+        {
+            type = "turn_end",
+            message = new
+            {
+                role = "assistant",
+                content = new[] { new { type = "text", text = assistantText } },
+            },
+            toolResults = Array.Empty<object>(),
+        });
         _writer.Write(new { type = "agent_end", cancelled });
+    }
 
     public void AssistantMessageStarted() =>
         _writer.Write(new { type = "message_start", message = new { role = "assistant", content = Array.Empty<object>() } });

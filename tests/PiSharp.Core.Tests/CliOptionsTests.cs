@@ -60,7 +60,7 @@ public sealed class CliOptionsTests
         chatOutput.AgentFinished("hello", cancelled: false);
 
         var events = output.ToString().Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
-        Assert.Equal(["agent_start", "message_start", "message_update", "message_end", "agent_end"],
+        Assert.Equal(["agent_start", "turn_start", "message_start", "message_update", "message_end", "turn_end", "agent_end"],
             events.Select(line => System.Text.Json.JsonDocument.Parse(line).RootElement.GetProperty("type").GetString()));
     }
 }
