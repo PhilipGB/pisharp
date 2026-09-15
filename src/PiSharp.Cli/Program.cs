@@ -527,6 +527,8 @@ static void PrintHelp()
           --prompt-template <path>    Load a prompt template file/directory (repeatable)
           --mode <text|json|rpc>      Select text, JSON event, or JSON-RPC output
           --print, -p                 Run one prompt and exit
+          --read-only                 Expose only read/search tools
+          --no-tools, -nt              Disable built-in tools
           --no-extensions, -ne        Disable default extension discovery
           --no-skills, -ns            Disable default skill discovery
           --no-prompt-templates, -np  Disable default prompt discovery

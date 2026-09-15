@@ -17,6 +17,8 @@ public sealed class CliOptionsTests
             "--prompt-template", "prompts/review.md",
             "--mode", "rpc",
             "--print",
+            "--read-only",
+            "--no-tools",
             "--no-extensions",
             "--no-skills",
             "--no-prompt-templates",
@@ -30,6 +32,8 @@ public sealed class CliOptionsTests
         Assert.True(options.NoPromptTemplates);
         Assert.Equal(OutputMode.Rpc, options.OutputMode);
         Assert.True(options.PrintMode);
+        Assert.True(options.ReadOnly);
+        Assert.True(options.NoTools);
     }
 
     [Fact]

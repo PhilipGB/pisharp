@@ -29,7 +29,9 @@ internal sealed record CliOptions(
     bool NoSkills,
     bool NoPromptTemplates,
     OutputMode OutputMode,
-    bool PrintMode)
+    bool PrintMode,
+    bool ReadOnly,
+    bool NoTools)
 {
     public static CliOptions Parse(string[] args)
     {
@@ -57,6 +59,8 @@ internal sealed record CliOptions(
         var noPromptTemplates = false;
         var outputMode = OutputMode.Text;
         var printMode = false;
+        var readOnly = false;
+        var noTools = false;
 
         for (var i = 0; i < args.Length; i++)
         {
@@ -115,6 +119,12 @@ internal sealed record CliOptions(
                     break;
                 case "--print" or "-p":
                     printMode = true;
+                    break;
+                case "--read-only":
+                    readOnly = true;
+                    break;
+                case "--no-tools" or "-nt":
+                    noTools = true;
                     break;
                 case "--no-extensions" or "-ne":
                     noExtensions = true;
@@ -190,7 +200,9 @@ internal sealed record CliOptions(
             noSkills,
             noPromptTemplates,
             outputMode,
-            printMode);
+            printMode,
+            readOnly,
+            noTools);
     }
 
     private static OutputMode ParseOutputMode(string value) => value.ToLowerInvariant() switch

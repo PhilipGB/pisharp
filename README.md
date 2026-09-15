@@ -182,6 +182,8 @@ pisharp [options] [prompt...]
 --prompt-template <path>    load a prompt template file/directory (repeatable)
 --mode <text|json|rpc>      select text, JSON event, or JSON-RPC output
 --print, -p                 run one prompt and exit
+--read-only                 expose only read/search tools
+--no-tools, -nt             disable built-in tools
 --no-extensions, -ne        disable default extension discovery
 --no-skills, -ns            disable default skill discovery
 --no-prompt-templates, -np  disable default prompt discovery

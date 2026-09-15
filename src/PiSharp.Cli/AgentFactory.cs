@@ -27,30 +27,33 @@ internal static class AgentFactory
         Func<string, string, int, CancellationToken, Task<string>> find = tools.FindAsync;
         Func<string, string, string?, bool, bool, int, int, CancellationToken, Task<string>> grep = tools.GrepAsync;
 
-        AITool[] aiTools =
-        [
-            AIFunctionFactory.Create(read, "read",
-                "Read a UTF-8 text file from the workspace. Returns line-numbered text. Use offset and limit for large files.",
-                serializerOptions),
-            AIFunctionFactory.Create(write, "write",
-                "Write an entire UTF-8 text file in the workspace. Creates parent directories and replaces existing content.",
-                serializerOptions),
-            AIFunctionFactory.Create(edit, "edit",
-                "Edit one file using exact or conservative fuzzy text replacements. Every oldText must uniquely match the original file and edits must not overlap. Returns a diff.",
-                serializerOptions),
-            AIFunctionFactory.Create(bash, "bash",
-                "Run a shell command from the workspace root. Use for builds, tests, git, search, and repository operations.",
-                serializerOptions),
-            AIFunctionFactory.Create(ls, "ls",
-                "List directory contents alphabetically, including dotfiles. Directories have a trailing slash.",
-                serializerOptions),
-            AIFunctionFactory.Create(find, "find",
-                "Find workspace files by glob pattern, such as '*.cs' or '**/*.json'.",
-                serializerOptions),
-            AIFunctionFactory.Create(grep, "grep",
-                "Search workspace file contents using a regular expression or literal pattern.",
-                serializerOptions),
-        ];
+        var readTool = AIFunctionFactory.Create(read, "read",
+            "Read a UTF-8 text file from the workspace. Returns line-numbered text. Use offset and limit for large files.",
+            serializerOptions);
+        var writeTool = AIFunctionFactory.Create(write, "write",
+            "Write an entire UTF-8 text file in the workspace. Creates parent directories and replaces existing content.",
+            serializerOptions);
+        var editTool = AIFunctionFactory.Create(edit, "edit",
+            "Edit one file using exact or conservative fuzzy text replacements. Every oldText must uniquely match the original file and edits must not overlap. Returns a diff.",
+            serializerOptions);
+        var bashTool = AIFunctionFactory.Create(bash, "bash",
+            "Run a shell command from the workspace root. Use for builds, tests, git, search, and repository operations.",
+            serializerOptions);
+        var lsTool = AIFunctionFactory.Create(ls, "ls",
+            "List directory contents alphabetically, including dotfiles. Directories have a trailing slash.",
+            serializerOptions);
+        var findTool = AIFunctionFactory.Create(find, "find",
+            "Find workspace files by glob pattern, such as '*.cs' or '**/*.json'.",
+            serializerOptions);
+        var grepTool = AIFunctionFactory.Create(grep, "grep",
+            "Search workspace file contents using a regular expression or literal pattern.",
+            serializerOptions);
+
+        AITool[] aiTools = options.NoTools
+            ? []
+            : options.ReadOnly
+                ? [readTool, lsTool, findTool, grepTool]
+                : [readTool, writeTool, editTool, bashTool, lsTool, findTool, grepTool];
 
         var projectContext = await new AgentsFileLoader().LoadWithSourcesAsync(
             options.WorkingDirectory,
