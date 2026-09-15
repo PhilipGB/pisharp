@@ -170,6 +170,37 @@ public sealed class ProjectTrustTests
     }
 
     [Fact]
+    public void InteractiveTrustAndDenyChoicesPersistDecisions()
+    {
+        using var temporary = TempDirectory.Create();
+        var project = Path.Combine(temporary.Path, "project");
+        Directory.CreateDirectory(Path.Combine(project, ".pi", "extensions"));
+        var store = new ProjectTrustStore(Path.Combine(temporary.Path, "trust"));
+        var resolver = new ProjectTrustResolver();
+
+        var trusted = resolver.Resolve(
+            project,
+            store,
+            null,
+            DefaultProjectTrust.Ask,
+            ProjectTrustMode.Interactive,
+            options => options.Single(option => option.Label == "Trust"));
+        Assert.True(trusted.Trusted);
+        Assert.True(store.Get(project));
+
+        store.Set(project, null);
+        var denied = resolver.Resolve(
+            project,
+            store,
+            null,
+            DefaultProjectTrust.Ask,
+            ProjectTrustMode.Interactive,
+            options => options.Single(option => option.Label == "Do not trust"));
+        Assert.False(denied.Trusted);
+        Assert.False(store.Get(project));
+    }
+
+    [Fact]
     public void ParentTrustOptionStoresParentAndRemovesChildDecision()
     {
         using var temporary = TempDirectory.Create();
