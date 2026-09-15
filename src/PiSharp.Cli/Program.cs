@@ -277,6 +277,7 @@ static async Task<LiveTurnResult> RunTurnAsync(
 {
     var expandInput = CreateInputExpander(skills, promptTemplates, extensionHost);
     var context = new PiSharpExtensionContext(workspaceRoot, liveTurns.Queue, cancellationToken, Console.WriteLine);
+    output.AgentStarted();
     await extensionHost.PublishAsync(PiSharpExtensionEvent.BeforeTurn, context);
     var result = await liveTurns.RunAsync(
         prompt,
@@ -285,6 +286,7 @@ static async Task<LiveTurnResult> RunTurnAsync(
     await extensionHost.PublishAsync(
         result.Cancelled ? PiSharpExtensionEvent.TurnCancelled : PiSharpExtensionEvent.AfterTurn,
         context);
+    output.AgentFinished(result.AssistantText, result.Cancelled);
     return result;
 }
 
@@ -304,6 +306,7 @@ static async Task<TurnExecutionResult> RunSingleTurnAsync(
     CancellationToken cancellationToken)
 {
     var response = new StringBuilder();
+    output.AssistantMessageStarted();
     var toolNames = new Dictionary<string, string>(StringComparer.Ordinal);
     var toolArguments = new Dictionary<string, string>(StringComparer.Ordinal);
     try
@@ -318,13 +321,17 @@ static async Task<TurnExecutionResult> RunSingleTurnAsync(
             }
         }
 
+        var assistantText = response.ToString();
+        output.AssistantMessageFinished(assistantText);
         output.WriteLine();
-        return new TurnExecutionResult(response.ToString());
+        return new TurnExecutionResult(assistantText);
     }
     catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
     {
+        var assistantText = response.ToString();
+        output.AssistantMessageFinished(assistantText);
         output.WriteLine();
-        return new TurnExecutionResult(response.ToString(), Cancelled: true);
+        return new TurnExecutionResult(assistantText, Cancelled: true);
     }
 }
 
@@ -345,19 +352,19 @@ static void RenderToolContents(
                 {
                     if (!string.Equals(previousArguments, arguments, StringComparison.Ordinal))
                     {
-                        output.ToolUpdated(call.Name, arguments);
+                        output.ToolUpdated(call.CallId, call.Name, arguments);
                         toolArguments[call.CallId] = arguments;
                     }
                 }
                 else
                 {
                     toolArguments[call.CallId] = arguments;
-                    output.ToolStarted(call.Name, arguments);
+                    output.ToolStarted(call.CallId, call.Name, arguments);
                 }
                 break;
             case FunctionResultContent result:
                 var name = toolNames.TryGetValue(result.CallId, out var knownName) ? knownName : result.CallId;
-                output.ToolFinished(name, result.Exception?.Message, FormatValue(result.Result));
+                output.ToolFinished(result.CallId, name, result.Exception?.Message, FormatValue(result.Result));
                 break;
         }
     }

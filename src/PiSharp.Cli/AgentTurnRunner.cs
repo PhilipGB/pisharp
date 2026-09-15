@@ -20,6 +20,7 @@ internal static class AgentTurnRunner
         var expandInput = CreateInputExpander(bootstrap, bootstrap.ExtensionHost);
         Action<string>? notify = output is TerminalChatOutput ? Console.WriteLine : null;
         var context = new PiSharpExtensionContext(workspaceRoot, liveTurns.Queue, cancellationToken, notify);
+        output.AgentStarted();
         await bootstrap.ExtensionHost.PublishAsync(PiSharpExtensionEvent.BeforeTurn, context);
         var result = await liveTurns.RunAsync(
             prompt,
@@ -32,6 +33,7 @@ internal static class AgentTurnRunner
             cancellationToken);
         var eventType = result.Cancelled ? PiSharpExtensionEvent.TurnCancelled : PiSharpExtensionEvent.AfterTurn;
         await bootstrap.ExtensionHost.PublishAsync(eventType, context);
+        output.AgentFinished(result.AssistantText, result.Cancelled);
         return result;
     }
 
@@ -50,6 +52,7 @@ internal static class AgentTurnRunner
         CancellationToken cancellationToken)
     {
         var response = new StringBuilder();
+        output.AssistantMessageStarted();
         var toolNames = new Dictionary<string, string>(StringComparer.Ordinal);
         var toolArguments = new Dictionary<string, string>(StringComparer.Ordinal);
         try
@@ -64,13 +67,17 @@ internal static class AgentTurnRunner
                 }
             }
 
+            var assistantText = response.ToString();
+            output.AssistantMessageFinished(assistantText);
             output.WriteLine();
-            return new TurnExecutionResult(response.ToString());
+            return new TurnExecutionResult(assistantText);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
+            var assistantText = response.ToString();
+            output.AssistantMessageFinished(assistantText);
             output.WriteLine();
-            return new TurnExecutionResult(response.ToString(), Cancelled: true);
+            return new TurnExecutionResult(assistantText, Cancelled: true);
         }
     }
 
@@ -89,7 +96,7 @@ internal static class AgentTurnRunner
                     break;
                 case FunctionResultContent result:
                     var name = toolNames.TryGetValue(result.CallId, out var knownName) ? knownName : result.CallId;
-                    output.ToolFinished(name, result.Exception?.Message, FormatValue(result.Result));
+                    output.ToolFinished(result.CallId, name, result.Exception?.Message, FormatValue(result.Result));
                     break;
             }
         }
@@ -107,14 +114,14 @@ internal static class AgentTurnRunner
         {
             if (!string.Equals(previousArguments, arguments, StringComparison.Ordinal))
             {
-                output.ToolUpdated(call.Name, arguments);
+                output.ToolUpdated(call.CallId, call.Name, arguments);
                 toolArguments[call.CallId] = arguments;
             }
             return;
         }
 
         toolArguments[call.CallId] = arguments;
-        output.ToolStarted(call.Name, arguments);
+        output.ToolStarted(call.CallId, call.Name, arguments);
     }
 
     private static string FormatJson(object? value)

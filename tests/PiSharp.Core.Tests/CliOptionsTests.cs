@@ -42,4 +42,21 @@ public sealed class CliOptionsTests
         Assert.Equal("inspect", command.Message);
         Assert.Equal("steer", command.StreamingBehavior);
     }
+
+    [Fact]
+    public void EmitsPiShapedJsonLifecycleEvents()
+    {
+        using var output = new StringWriter();
+        var chatOutput = new JsonChatOutput(new JsonLineWriter(output));
+
+        chatOutput.AgentStarted();
+        chatOutput.AssistantMessageStarted();
+        chatOutput.WriteText("hello");
+        chatOutput.AssistantMessageFinished("hello");
+        chatOutput.AgentFinished("hello", cancelled: false);
+
+        var events = output.ToString().Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
+        Assert.Equal(["agent_start", "message_start", "message_update", "message_end", "agent_end"],
+            events.Select(line => System.Text.Json.JsonDocument.Parse(line).RootElement.GetProperty("type").GetString()));
+    }
 }
