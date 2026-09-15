@@ -51,6 +51,7 @@ try
             options.WorkingDirectory,
             shutdown.Token);
         await sessions.PersistTurnAsync(options.Prompt, result.AssistantText, shutdown.Token);
+        await PublishShutdownAsync(bootstrap.ExtensionHost, options.WorkingDirectory, bootstrap.TurnQueue);
         return result.Cancelled ? 130 : 0;
     }
 
@@ -77,6 +78,7 @@ try
         liveTurns,
         promptReader,
         shutdown.Token);
+    await PublishShutdownAsync(bootstrap.ExtensionHost, options.WorkingDirectory, bootstrap.TurnQueue);
 
     return 0;
 }
@@ -90,6 +92,14 @@ catch (Exception exception)
     Console.Error.WriteLine(exception.Message);
     return 1;
 }
+
+static Task PublishShutdownAsync(
+    PiSharpExtensionHost extensionHost,
+    string workspaceRoot,
+    TurnMessageQueue turnQueue) =>
+    extensionHost.PublishAsync(
+        PiSharpExtensionEvent.Shutdown,
+        new PiSharpExtensionContext(workspaceRoot, turnQueue, CancellationToken.None, Console.WriteLine));
 
 static async Task RunInteractiveAsync(
     AIAgent agent,
