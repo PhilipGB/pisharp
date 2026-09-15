@@ -51,23 +51,21 @@ try
 
     if (options.Prompt is not null || options.FilePaths.Count > 0)
     {
-        var prompt = await FileArgumentLoader.BuildPromptAsync(
+        var promptInput = await FileArgumentLoader.LoadAsync(
             options.Prompt,
             options.FilePaths,
             options.WorkingDirectory,
             shutdown.Token);
-        var result = await RunTurnAsync(
-            bootstrap.Agent,
-            sessions.Session,
+        var result = await AgentTurnRunner.RunAsync(
+            bootstrap,
+            sessions,
             liveTurns,
-            prompt,
-            bootstrap.Skills,
-            bootstrap.PromptTemplates,
-            bootstrap.ExtensionHost,
+            promptInput.Text,
             options.WorkingDirectory,
             new TerminalChatOutput(),
-            shutdown.Token);
-        await sessions.PersistTurnAsync(prompt, result.AssistantText, shutdown.Token);
+            shutdown.Token,
+            promptInput.Images);
+        await sessions.PersistTurnAsync(promptInput.Text, result.AssistantText, shutdown.Token);
         await PublishShutdownAsync(bootstrap.ExtensionHost, options.WorkingDirectory, bootstrap.TurnQueue);
         return result.Cancelled ? 130 : 0;
     }

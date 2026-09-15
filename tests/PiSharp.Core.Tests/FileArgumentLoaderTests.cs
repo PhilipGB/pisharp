@@ -23,6 +23,22 @@ public sealed class FileArgumentLoaderTests
     }
 
     [Fact]
+    public async Task LoadsImageArgumentsAsBinaryContent()
+    {
+        using var temp = TempDirectory.Create();
+        await File.WriteAllBytesAsync(Path.Combine(temp.Path, "diagram.png"), [137, 80, 78, 71]);
+
+        var prompt = await FileArgumentLoader.LoadAsync(
+            "Describe it",
+            ["diagram.png"],
+            temp.Path,
+            CancellationToken.None);
+
+        Assert.Single(prompt.Images);
+        Assert.Contains("diagram.png", prompt.Text, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task RejectsMissingFileArguments()
     {
         using var temp = TempDirectory.Create();

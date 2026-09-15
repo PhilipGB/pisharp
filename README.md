@@ -40,7 +40,7 @@ Implemented and smoke-tested against llama.cpp:
 - trusted .NET extension commands, input transforms, and lifecycle hooks
 - initial JSON event and JSON-RPC headless modes
 - read-only and no-tools execution policies
-- `@file` text attachments for one-shot and print prompts
+- `@file` text and image attachments for one-shot and print prompts
 
 Remaining parity work:
 
@@ -49,7 +49,7 @@ Remaining parity work:
 - project trust
 - full Pi-compatible JSON/RPC event schemas and command coverage
 - retry policy and provider failover
-- image input
+- image input in interactive/RPC prompts and image resizing/validation
 - shell approval/sandbox policy and command-level permission prompts
 - remote/npm/git package installation and package filtering
 - loading TypeScript/JavaScript extensions (PiSharp currently loads trusted .NET DLLs)

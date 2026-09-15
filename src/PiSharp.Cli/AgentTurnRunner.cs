@@ -15,21 +15,29 @@ internal static class AgentTurnRunner
         string prompt,
         string workspaceRoot,
         IChatOutput output,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        IReadOnlyList<AIContent>? initialContents = null)
     {
         var expandInput = CreateInputExpander(bootstrap, bootstrap.ExtensionHost);
         Action<string>? notify = output is TerminalChatOutput ? Console.WriteLine : null;
         var context = new PiSharpExtensionContext(workspaceRoot, liveTurns.Queue, cancellationToken, notify);
         output.AgentStarted();
+        var initial = true;
         await bootstrap.ExtensionHost.PublishAsync(PiSharpExtensionEvent.BeforeTurn, context);
         var result = await liveTurns.RunAsync(
             prompt,
-            (message, token) => RunSingleAsync(
-                bootstrap.Agent,
-                sessions.Session,
-                expandInput(message),
-                output,
-                token),
+            (message, token) =>
+            {
+                var contents = initial ? initialContents : null;
+                initial = false;
+                return RunSingleAsync(
+                    bootstrap.Agent,
+                    sessions.Session,
+                    expandInput(message),
+                    output,
+                    token,
+                    contents);
+            },
             cancellationToken);
         var eventType = result.Cancelled ? PiSharpExtensionEvent.TurnCancelled : PiSharpExtensionEvent.AfterTurn;
         await bootstrap.ExtensionHost.PublishAsync(eventType, context);
@@ -49,7 +57,8 @@ internal static class AgentTurnRunner
         AgentSession session,
         string prompt,
         IChatOutput output,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        IReadOnlyList<AIContent>? contents)
     {
         var response = new StringBuilder();
         output.AssistantMessageStarted();
@@ -57,7 +66,13 @@ internal static class AgentTurnRunner
         var toolArguments = new Dictionary<string, string>(StringComparer.Ordinal);
         try
         {
-            await foreach (var update in agent.RunStreamingAsync(prompt, session, cancellationToken: cancellationToken))
+            var updates = contents is null
+                ? agent.RunStreamingAsync(prompt, session, cancellationToken: cancellationToken)
+                : agent.RunStreamingAsync(
+                    [new ChatMessage(ChatRole.User, [new TextContent(prompt), .. contents])],
+                    session,
+                    cancellationToken: cancellationToken);
+            await foreach (var update in updates)
             {
                 RenderToolContents(update, toolNames, toolArguments, output);
                 if ((update.Role is null || update.Role == ChatRole.Assistant) && !string.IsNullOrEmpty(update.Text))

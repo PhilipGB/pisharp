@@ -11,12 +11,12 @@ internal static class HeadlessModes
         CliOptions options,
         CancellationToken cancellationToken)
     {
-        var prompt = await ResolvePromptAsync(
+        var promptInput = await ResolvePromptAsync(
             options.Prompt,
             options.FilePaths,
             options.WorkingDirectory,
             cancellationToken);
-        if (string.IsNullOrWhiteSpace(prompt))
+        if (string.IsNullOrWhiteSpace(promptInput.Text))
         {
             throw new ArgumentException("A prompt is required in print or JSON mode.");
         }
@@ -34,11 +34,12 @@ internal static class HeadlessModes
             bootstrap,
             sessions,
             liveTurns,
-            prompt,
+            promptInput.Text,
             options.WorkingDirectory,
             output,
-            cancellationToken);
-        await sessions.PersistTurnAsync(prompt, result.AssistantText, cancellationToken);
+            cancellationToken,
+            promptInput.Images);
+        await sessions.PersistTurnAsync(promptInput.Text, result.AssistantText, cancellationToken);
         if (options.OutputMode != OutputMode.Json)
         {
             Console.WriteLine(result.AssistantText);
@@ -307,7 +308,7 @@ internal static class HeadlessModes
     private static void WriteError(JsonLineWriter writer, RpcCommandEnvelope command, string message) =>
         writer.Write(new { id = command.Id, type = "response", command = command.Type, success = false, error = message });
 
-    private static async Task<string> ResolvePromptAsync(
+    private static async Task<FilePrompt> ResolvePromptAsync(
         string? prompt,
         IReadOnlyList<string> filePaths,
         string workspaceRoot,
@@ -315,9 +316,9 @@ internal static class HeadlessModes
     {
         if (filePaths.Count > 0)
         {
-            return await FileArgumentLoader.BuildPromptAsync(prompt, filePaths, workspaceRoot, cancellationToken);
+            return await FileArgumentLoader.LoadAsync(prompt, filePaths, workspaceRoot, cancellationToken);
         }
-        return prompt ?? await Console.In.ReadToEndAsync(cancellationToken);
+        return new FilePrompt(prompt ?? await Console.In.ReadToEndAsync(cancellationToken), []);
     }
 
     private static Task PublishShutdownAsync(
