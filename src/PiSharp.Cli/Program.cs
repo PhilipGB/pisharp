@@ -43,7 +43,8 @@ try
         return await HeadlessModes.RunRpcModeAsync(bootstrap, sessions, liveTurns, options, shutdown.Token);
     }
 
-    if (options.OutputMode == OutputMode.Json || options.PrintMode)
+    if (options.OutputMode == OutputMode.Json || options.PrintMode ||
+        (options.Prompt is null && Console.IsInputRedirected))
     {
         return await HeadlessModes.RunPrintModeAsync(bootstrap, sessions, liveTurns, options, shutdown.Token);
     }
