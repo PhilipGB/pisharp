@@ -9,10 +9,19 @@ public sealed class CodingTools
     private const int MaxReadCharacters = 200_000;
     private readonly WorkspacePathPolicy _paths;
     private readonly EditEngine _editEngine = new();
+    private readonly HashSet<string> _readOnlyRoots;
 
     public CodingTools(string workspaceRoot)
     {
         _paths = new WorkspacePathPolicy(workspaceRoot);
+        _readOnlyRoots = new HashSet<string>(
+            OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
+    }
+
+    /// <summary>Allows the read tool to inspect a trusted read-only resource directory.</summary>
+    public void AddReadOnlyRoot(string path)
+    {
+        _readOnlyRoots.Add(Path.GetFullPath(path));
     }
 
     public string WorkspaceRoot => _paths.Root;
@@ -33,7 +42,7 @@ public sealed class CodingTools
             throw new ArgumentOutOfRangeException(nameof(limit), "limit must be between 1 and 5000.");
         }
 
-        var absolutePath = _paths.Resolve(path);
+        var absolutePath = _paths.ResolveRead(path, _readOnlyRoots);
         if (!File.Exists(absolutePath))
         {
             throw new FileNotFoundException($"File not found: {path}", absolutePath);

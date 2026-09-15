@@ -28,21 +28,30 @@ Implemented and smoke-tested against llama.cpp:
 - `-r` / `--resume`
 - `--session <id|path>`
 - `/session`, `/tree`, `/goto`, `/fork`, `/clone`, `/new`, `/resume`
-- unit tests for file/path/context/session/terminal-input behaviour
+- unit tests for file/path/context/session/terminal-input/resource behaviour
+- thread-safe steering and follow-up queues with abort preservation
+- streamed tool start/update/end rendering
+- conservative fuzzy edit matching, human-readable diffs, and unified patches
+- bounded deterministic tool-output truncation
+- prompt history with draft-preserving previous/next navigation
+- Agent Skills discovery and `/skill:name` expansion
+- markdown prompt templates with Pi-compatible argument substitution
+- local `package.json` Pi resource manifests
+- trusted .NET extension commands, input transforms, and lifecycle hooks
 
-Still to implement:
+Remaining parity work:
 
 - Pi-equivalent full-screen tree picker and richer TUI/editor/keybindings
-- queued steering/follow-up messages while a turn is running
-- streamed tool-call rendering and diffs
-- fuzzy edit matching and unified patches
 - provider login/OAuth and dynamic model catalogue
-- skills/templates/packages/extensions
 - project trust
 - JSON/RPC modes
 - retry policy and provider failover
 - image input
 - shell approval/sandbox policy
+- remote/npm/git package installation and package filtering
+- loading TypeScript/JavaScript extensions (PiSharp currently loads trusted .NET DLLs)
+- extension UI primitives, custom tools, themes, and provider registration
+- full resource reload and live settings management
 
 ## Requirements
 
@@ -84,7 +93,7 @@ An API key is not required for a local endpoint; PiSharp supplies `unused` if no
 
 On an interactive terminal PiSharp enables bracketed-paste mode. A multi-line paste is collected and submitted to the agent as a **single prompt**, instead of each pasted line becoming an independent turn. Slash commands are recognized only when the submitted input is a single line, so pasted transcripts beginning with `/` are not accidentally executed as PiSharp commands.
 
-This is deliberately a focused fix rather than the final Pi-style editor. Rich multi-line editing, history, keybindings, queued steering, and full-screen terminal UI remain future work.
+This is deliberately a focused fix rather than the final Pi-style editor. Rich multi-line editing, keybindings, and full-screen terminal UI remain future work. While a turn is active, ordinary input is queued as steering; `/follow-up <text>` queues input for after the current run.
 
 ## Context files
 
@@ -151,9 +160,11 @@ Interactive commands:
 /new
 /resume
 /context
+/steer <text>
+/follow-up <text>
 ```
 
-`/goto` changes the active point without deleting later turns. The next prompt branches from that turn.
+`/goto` changes the active point without deleting later turns. The next prompt branches from that turn. Prompt templates are loaded from `~/.pi/agent/prompts` and `.pi/prompts`; invoke one as `/name args`. Skills are loaded from `~/.pi/agent/skills` and `.pi/skills`; invoke one explicitly as `/skill:name args`.
 
 ## CLI
 
@@ -203,16 +214,19 @@ PiSharp.Cli
           +-- CodingTools
           +-- SessionStore
           +-- SessionDocument
+          +-- SkillCatalog / PromptTemplateCatalog / PiPackageCatalog
+          +-- PiSharpExtensionHost
 ```
 
-The design rule remains: Microsoft Agent Framework owns generic model/tool runtime mechanics where its semantics match Pi; PiSharp owns coding-agent product semantics, persistence, navigation and policy.
+The design rule remains: Microsoft Agent Framework owns generic model/tool runtime mechanics where its semantics match Pi; PiSharp owns coding-agent product semantics, persistence, navigation, resource discovery and policy.
 
-## Next milestone
+## Resource loading
 
-The next slice is live-turn behaviour:
+PiSharp reads default resources without network access:
 
-1. steering queue: messages entered while tools are running are injected before the next model turn;
-2. follow-up queue: messages held until the current agent task would otherwise finish;
-3. streamed tool start/update/end events in the terminal;
-4. abort semantics that preserve queued user input;
-5. tests around ordering and cancellation.
+- skills: `~/.pi/agent/skills` and `<workspace>/.pi/skills`;
+- prompt templates: `~/.pi/agent/prompts` and `<workspace>/.pi/prompts`;
+- packages: local package directories under `~/.pi/agent/packages` and `<workspace>/.pi/packages`, using the `pi` fields in `package.json`;
+- extensions: trusted `.dll` files under `~/.pi/agent/extensions` and `<workspace>/.pi/extensions`.
+
+Package resources are lower precedence than user and project resources. Extension assemblies execute with the CLI process's permissions, so only load code from sources you trust.

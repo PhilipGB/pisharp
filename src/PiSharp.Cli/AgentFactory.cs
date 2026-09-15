@@ -44,6 +44,30 @@ internal static class AgentFactory
             options.WorkingDirectory,
             contextRoot: options.ContextRoot,
             cancellationToken: cancellationToken);
+        var packageResult = new PiPackageCatalog().Discover(options.WorkingDirectory);
+        var extensionHost = new PiSharpExtensionHost();
+        var homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        extensionHost.LoadFromPaths(
+        [
+            Path.Combine(homeDirectory, ".pi", "agent", "extensions"),
+            Path.Combine(options.WorkingDirectory, ".pi", "extensions"),
+            .. packageResult.ExtensionPaths,
+        ]);
+        var skillResult = new SkillCatalog().Discover(options.WorkingDirectory, additionalPaths: packageResult.SkillPaths);
+        foreach (var skill in skillResult.Skills)
+        {
+            tools.AddReadOnlyRoot(skill.BaseDirectory);
+        }
+        var promptTemplates = new PromptTemplateCatalog().Discover(
+            options.WorkingDirectory,
+            explicitPaths: packageResult.PromptPaths);
+        var expandInput = (string text) => PromptTemplateCatalog.Expand(
+            SkillCatalog.ExpandCommand(extensionHost.TransformInput(text), skillResult.Skills),
+            promptTemplates);
+        var skillPrompt = SkillCatalog.FormatForPrompt(skillResult.Skills);
+        var resourceDiagnostics = packageResult.Diagnostics.Count +
+                                   skillResult.Diagnostics.Count +
+                                   extensionHost.Diagnostics.Count;
 
         var instructions = $$"""
             You are PiSharp, a terminal coding agent operating in this repository:
@@ -56,6 +80,9 @@ internal static class AgentFactory
             Keep user-facing responses concise and report concrete changes and verification results.
 
             {{projectContext.Content}}
+
+            {{skillPrompt}}
+            {{(resourceDiagnostics > 0 ? $"\nResource diagnostics: {resourceDiagnostics} warning(s) were found while loading local resources." : string.Empty)}}
             """;
 
         var openAiOptions = new OpenAIClientOptions();
@@ -71,7 +98,8 @@ internal static class AgentFactory
                     new ApiKeyCredential(options.ApiKey),
                     openAiOptions)
                 .AsIChatClient(),
-            turnQueue);
+            turnQueue,
+            expandInput);
 
 #pragma warning disable MAAI001 // Harness token-limit options are currently marked evaluation-only by MAF.
         var agent = chatClient.AsHarnessAgent(new HarnessAgentOptions
@@ -97,6 +125,12 @@ internal static class AgentFactory
         });
 #pragma warning restore MAAI001
 
-        return new AgentBootstrap(agent, projectContext.Files, turnQueue);
+        return new AgentBootstrap(
+            agent,
+            projectContext.Files,
+            skillResult.Skills,
+            promptTemplates,
+            extensionHost,
+            turnQueue);
     }
 }

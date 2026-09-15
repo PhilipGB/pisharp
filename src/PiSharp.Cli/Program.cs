@@ -40,7 +40,16 @@ try
 
     if (options.Prompt is not null)
     {
-        var result = await RunTurnAsync(bootstrap.Agent, sessions.Session, liveTurns, options.Prompt, shutdown.Token);
+        var result = await RunTurnAsync(
+            bootstrap.Agent,
+            sessions.Session,
+            liveTurns,
+            options.Prompt,
+            bootstrap.Skills,
+            bootstrap.PromptTemplates,
+            bootstrap.ExtensionHost,
+            options.WorkingDirectory,
+            shutdown.Token);
         await sessions.PersistTurnAsync(options.Prompt, result.AssistantText, shutdown.Token);
         return result.Cancelled ? 130 : 0;
     }
@@ -61,6 +70,10 @@ try
         bootstrap.Agent,
         sessions,
         bootstrap.ContextFiles,
+        bootstrap.Skills,
+        bootstrap.PromptTemplates,
+        bootstrap.ExtensionHost,
+        options.WorkingDirectory,
         liveTurns,
         promptReader,
         shutdown.Token);
@@ -82,6 +95,10 @@ static async Task RunInteractiveAsync(
     AIAgent agent,
     SessionController sessions,
     IReadOnlyList<string> contextFiles,
+    IReadOnlyList<SkillDefinition> skills,
+    IReadOnlyList<PromptTemplate> promptTemplates,
+    PiSharpExtensionHost extensionHost,
+    string workspaceRoot,
     LiveTurnCoordinator liveTurns,
     TerminalPromptReader promptReader,
     CancellationToken cancellationToken)
@@ -109,13 +126,36 @@ static async Task RunInteractiveAsync(
         }
 
         if (!input.Contains('\n') && input.StartsWith("/", StringComparison.Ordinal) &&
-            await HandleCommandAsync(input, sessions, contextFiles, cancellationToken))
+            await HandleCommandAsync(
+                input,
+                sessions,
+                contextFiles,
+                extensionHost,
+                workspaceRoot,
+                liveTurns.Queue,
+                cancellationToken))
         {
             continue;
         }
 
-        var activeTurn = RunTurnAsync(agent, sessions.Session, liveTurns, input, cancellationToken);
-        var activeInput = await DrainActiveInputAsync(activeTurn, liveTurns, pendingInput, promptReader, cancellationToken);
+        var activeTurn = RunTurnAsync(
+            agent,
+            sessions.Session,
+            liveTurns,
+            input,
+            skills,
+            promptTemplates,
+            extensionHost,
+            workspaceRoot,
+            cancellationToken);
+        var expandInput = CreateInputExpander(skills, promptTemplates, extensionHost);
+        var activeInput = await DrainActiveInputAsync(
+            activeTurn,
+            liveTurns,
+            pendingInput,
+            promptReader,
+            expandInput,
+            cancellationToken);
         pendingInput = activeInput.PendingInput;
         var result = await activeTurn;
         await sessions.PersistTurnAsync(input, result.AssistantText, cancellationToken);
@@ -131,6 +171,7 @@ static async Task<(bool ShouldExit, Task<string?>? PendingInput)> DrainActiveInp
     LiveTurnCoordinator liveTurns,
     Task<string?>? pendingInput,
     TerminalPromptReader promptReader,
+    Func<string, string> expandInput,
     CancellationToken cancellationToken)
 {
     while (!activeTurn.IsCompleted && !cancellationToken.IsCancellationRequested)
@@ -162,13 +203,13 @@ static async Task<(bool ShouldExit, Task<string?>? PendingInput)> DrainActiveInp
             continue;
         }
 
-        QueueActiveInput(input, liveTurns);
+        QueueActiveInput(input, liveTurns, expandInput);
     }
 
     return (false, pendingInput);
 }
 
-static void QueueActiveInput(string input, LiveTurnCoordinator liveTurns)
+static void QueueActiveInput(string input, LiveTurnCoordinator liveTurns, Func<string, string> expandInput)
 {
     const string SteeringPrefix = "/steer ";
     const string FollowUpPrefix = "/follow-up ";
@@ -176,14 +217,14 @@ static void QueueActiveInput(string input, LiveTurnCoordinator liveTurns)
 
     if (input.StartsWith(FollowUpPrefix, StringComparison.OrdinalIgnoreCase))
     {
-        liveTurns.Queue.EnqueueFollowUp(input[FollowUpPrefix.Length..]);
+        liveTurns.Queue.EnqueueFollowUp(expandInput(input[FollowUpPrefix.Length..]));
         Console.WriteLine("[queued follow-up]");
         return;
     }
 
     if (input.StartsWith(FollowUpAlias, StringComparison.OrdinalIgnoreCase))
     {
-        liveTurns.Queue.EnqueueFollowUp(input[FollowUpAlias.Length..]);
+        liveTurns.Queue.EnqueueFollowUp(expandInput(input[FollowUpAlias.Length..]));
         Console.WriteLine("[queued follow-up]");
         return;
     }
@@ -191,7 +232,7 @@ static void QueueActiveInput(string input, LiveTurnCoordinator liveTurns)
     var steering = input.StartsWith(SteeringPrefix, StringComparison.OrdinalIgnoreCase)
         ? input[SteeringPrefix.Length..]
         : input;
-    liveTurns.Queue.EnqueueSteering(steering);
+    liveTurns.Queue.EnqueueSteering(expandInput(steering));
     Console.WriteLine("[queued steering message]");
 }
 
@@ -203,13 +244,32 @@ static async Task<LiveTurnResult> RunTurnAsync(
     AgentSession session,
     LiveTurnCoordinator liveTurns,
     string prompt,
+    IReadOnlyList<SkillDefinition> skills,
+    IReadOnlyList<PromptTemplate> promptTemplates,
+    PiSharpExtensionHost extensionHost,
+    string workspaceRoot,
     CancellationToken cancellationToken)
 {
-    return await liveTurns.RunAsync(
+    var expandInput = CreateInputExpander(skills, promptTemplates, extensionHost);
+    var context = new PiSharpExtensionContext(workspaceRoot, liveTurns.Queue, cancellationToken, Console.WriteLine);
+    await extensionHost.PublishAsync(PiSharpExtensionEvent.BeforeTurn, context);
+    var result = await liveTurns.RunAsync(
         prompt,
-        (message, token) => RunSingleTurnAsync(agent, session, message, token),
+        (message, token) => RunSingleTurnAsync(agent, session, expandInput(message), token),
         cancellationToken);
+    await extensionHost.PublishAsync(
+        result.Cancelled ? PiSharpExtensionEvent.TurnCancelled : PiSharpExtensionEvent.AfterTurn,
+        context);
+    return result;
 }
+
+static Func<string, string> CreateInputExpander(
+    IReadOnlyList<SkillDefinition> skills,
+    IReadOnlyList<PromptTemplate> promptTemplates,
+    PiSharpExtensionHost extensionHost) =>
+    text => PromptTemplateCatalog.Expand(
+        SkillCatalog.ExpandCommand(extensionHost.TransformInput(text), skills),
+        promptTemplates);
 
 static async Task<TurnExecutionResult> RunSingleTurnAsync(
     AIAgent agent,
@@ -315,6 +375,9 @@ static async Task<bool> HandleCommandAsync(
     string input,
     SessionController sessions,
     IReadOnlyList<string> contextFiles,
+    PiSharpExtensionHost extensionHost,
+    string workspaceRoot,
+    TurnMessageQueue turnQueue,
     CancellationToken cancellationToken)
 {
     var parts = input.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
@@ -378,7 +441,14 @@ static async Task<bool> HandleCommandAsync(
             }
             return true;
         default:
-            return false;
+            var extensionResult = await extensionHost.ExecuteCommandAsync(
+                input,
+                new PiSharpExtensionContext(workspaceRoot, turnQueue, cancellationToken, Console.WriteLine));
+            if (extensionResult.Message is not null)
+            {
+                Console.WriteLine(extensionResult.Message);
+            }
+            return extensionResult.Handled;
     }
 }
 
@@ -394,6 +464,8 @@ static void PrintInteractiveHelp()
           /new                     Start a new persistent session
           /resume                  Pick and resume a saved session
           /context                 List loaded AGENTS.md/CLAUDE.md files
+          /steer <text>            Queue input before the next model call
+          /follow-up <text>       Queue input after the active run
           /exit, /quit             Exit
 
         While a turn is running, normal input steers the next model call.

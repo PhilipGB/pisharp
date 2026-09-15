@@ -32,6 +32,22 @@ public sealed class CodingToolsTests
     }
 
     [Fact]
+    public async Task ReadAsync_AllowsConfiguredReadOnlyResourceRoot()
+    {
+        using var temp = TempDirectory.Create();
+        using var resource = TempDirectory.Create();
+        var file = Path.Combine(resource.Path, "SKILL.md");
+        await File.WriteAllTextAsync(file, "skill body");
+        var tools = new CodingTools(temp.Path);
+        tools.AddReadOnlyRoot(resource.Path);
+
+        var result = await tools.ReadAsync(file);
+
+        Assert.Contains("skill body", result, StringComparison.Ordinal);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => tools.WriteAsync(file, "changed"));
+    }
+
+    [Fact]
     public async Task WriteAndReadAsync_RoundTrip()
     {
         using var temp = TempDirectory.Create();

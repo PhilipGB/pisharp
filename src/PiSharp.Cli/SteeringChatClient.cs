@@ -11,11 +11,16 @@ namespace PiSharp.Cli;
 internal sealed class SteeringChatClient : DelegatingChatClient
 {
     private readonly TurnMessageQueue _queue;
+    private readonly Func<string, string> _expandMessage;
 
-    public SteeringChatClient(IChatClient innerClient, TurnMessageQueue queue)
+    public SteeringChatClient(
+        IChatClient innerClient,
+        TurnMessageQueue queue,
+        Func<string, string>? expandMessage = null)
         : base(innerClient)
     {
         _queue = queue;
+        _expandMessage = expandMessage ?? (message => message);
     }
 
     public override Task<ChatResponse> GetResponseAsync(
@@ -43,7 +48,8 @@ internal sealed class SteeringChatClient : DelegatingChatClient
         }
 
         var enriched = messages.ToList();
-        enriched.AddRange(pending.Select(message => new ChatMessage(ChatRole.User, message.Text)));
+        enriched.AddRange(pending.Select(message =>
+            new ChatMessage(ChatRole.User, _expandMessage(message.Text))));
         return enriched;
     }
 }
