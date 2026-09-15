@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="src/PiSharp.Core/PiSharp.Core.csproj" />
+  <Project Path="src/PiSharp.Cli/PiSharp.Cli.csproj" />
+  <Project Path="tests/PiSharp.Core.Tests/PiSharp.Core.Tests.csproj" />
+</Solution>
