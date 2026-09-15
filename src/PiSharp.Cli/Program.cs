@@ -49,20 +49,25 @@ try
         return await HeadlessModes.RunPrintModeAsync(bootstrap, sessions, liveTurns, options, shutdown.Token);
     }
 
-    if (options.Prompt is not null)
+    if (options.Prompt is not null || options.FilePaths.Count > 0)
     {
+        var prompt = await FileArgumentLoader.BuildPromptAsync(
+            options.Prompt,
+            options.FilePaths,
+            options.WorkingDirectory,
+            shutdown.Token);
         var result = await RunTurnAsync(
             bootstrap.Agent,
             sessions.Session,
             liveTurns,
-            options.Prompt,
+            prompt,
             bootstrap.Skills,
             bootstrap.PromptTemplates,
             bootstrap.ExtensionHost,
             options.WorkingDirectory,
             new TerminalChatOutput(),
             shutdown.Token);
-        await sessions.PersistTurnAsync(options.Prompt, result.AssistantText, shutdown.Token);
+        await sessions.PersistTurnAsync(prompt, result.AssistantText, shutdown.Token);
         await PublishShutdownAsync(bootstrap.ExtensionHost, options.WorkingDirectory, bootstrap.TurnQueue);
         return result.Cancelled ? 130 : 0;
     }
@@ -514,7 +519,7 @@ static void PrintHelp()
         PiSharp - experimental C# port of Pi's coding-agent concepts using Microsoft Agent Framework
 
         Usage:
-          pisharp [options] [prompt...]
+          pisharp [options] [@files...] [prompt...]
 
         Options:
           --model <name>              Model name (or PISHARP_MODEL)

@@ -15,6 +15,7 @@ internal sealed record CliOptions(
     int ContextTokens,
     int MaxOutputTokens,
     string? Prompt,
+    IReadOnlyList<string> FilePaths,
     bool ShowHelp,
     bool ContinueSession,
     bool ResumeSession,
@@ -44,6 +45,7 @@ internal sealed record CliOptions(
         var contextTokens = ParsePositiveInt(Environment.GetEnvironmentVariable("PISHARP_CONTEXT_TOKENS"), 128_000);
         var maxOutputTokens = ParsePositiveInt(Environment.GetEnvironmentVariable("PISHARP_MAX_OUTPUT_TOKENS"), 16_384);
         var promptParts = new List<string>();
+        var filePaths = new List<string>();
         var showHelp = false;
         var continueSession = false;
         var resumeSession = false;
@@ -136,7 +138,7 @@ internal sealed record CliOptions(
                     noPromptTemplates = true;
                     break;
                 case "--":
-                    promptParts.AddRange(args[(i + 1)..]);
+                    AddPositionalArguments(args[(i + 1)..], promptParts, filePaths);
                     i = args.Length;
                     break;
                 default:
@@ -144,9 +146,14 @@ internal sealed record CliOptions(
                     {
                         throw new ArgumentException($"Unknown option: {args[i]}");
                     }
-                    promptParts.Add(args[i]);
+                    AddPositionalArguments([args[i]], promptParts, filePaths);
                     break;
             }
+        }
+
+        if (outputMode == OutputMode.Rpc && filePaths.Count > 0)
+        {
+            throw new ArgumentException("@file arguments are not supported in RPC mode.");
         }
 
         if (!showHelp && string.IsNullOrWhiteSpace(model))
@@ -186,6 +193,7 @@ internal sealed record CliOptions(
             contextTokens,
             maxOutputTokens,
             promptParts.Count == 0 ? null : string.Join(' ', promptParts),
+            filePaths,
             showHelp,
             continueSession,
             resumeSession,
@@ -203,6 +211,24 @@ internal sealed record CliOptions(
             printMode,
             readOnly,
             noTools);
+    }
+
+    private static void AddPositionalArguments(
+        IEnumerable<string> arguments,
+        ICollection<string> promptParts,
+        ICollection<string> filePaths)
+    {
+        foreach (var argument in arguments)
+        {
+            if (argument.StartsWith('@') && argument.Length > 1)
+            {
+                filePaths.Add(argument[1..]);
+            }
+            else
+            {
+                promptParts.Add(argument);
+            }
+        }
     }
 
     private static OutputMode ParseOutputMode(string value) => value.ToLowerInvariant() switch

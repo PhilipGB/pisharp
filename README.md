@@ -40,6 +40,7 @@ Implemented and smoke-tested against llama.cpp:
 - trusted .NET extension commands, input transforms, and lifecycle hooks
 - initial JSON event and JSON-RPC headless modes
 - read-only and no-tools execution policies
+- `@file` text attachments for one-shot and print prompts
 
 Remaining parity work:
 
@@ -172,7 +173,7 @@ Interactive commands:
 ## CLI
 
 ```text
-pisharp [options] [prompt...]
+pisharp [options] [@files...] [prompt...]
 
 --model <name>              model name (or PISHARP_MODEL)
 --endpoint <url>            OpenAI-compatible API base URL

@@ -15,7 +15,8 @@ public sealed class CliOptionsTests
             "-e", "extensions/two.dll",
             "--skill", "skills/review",
             "--prompt-template", "prompts/review.md",
-            "--mode", "rpc",
+            "@README.md",
+            "--mode", "json",
             "--print",
             "--read-only",
             "--no-tools",
@@ -27,10 +28,11 @@ public sealed class CliOptionsTests
         Assert.Equal(["extensions/one.dll", "extensions/two.dll"], options.ExtensionPaths);
         Assert.Equal(["skills/review"], options.SkillPaths);
         Assert.Equal(["prompts/review.md"], options.PromptTemplatePaths);
+        Assert.Equal(["README.md"], options.FilePaths);
         Assert.True(options.NoExtensions);
         Assert.True(options.NoSkills);
         Assert.True(options.NoPromptTemplates);
-        Assert.Equal(OutputMode.Rpc, options.OutputMode);
+        Assert.Equal(OutputMode.Json, options.OutputMode);
         Assert.True(options.PrintMode);
         Assert.True(options.ReadOnly);
         Assert.True(options.NoTools);

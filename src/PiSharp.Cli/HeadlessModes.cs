@@ -11,7 +11,11 @@ internal static class HeadlessModes
         CliOptions options,
         CancellationToken cancellationToken)
     {
-        var prompt = await ResolvePromptAsync(options.Prompt, cancellationToken);
+        var prompt = await ResolvePromptAsync(
+            options.Prompt,
+            options.FilePaths,
+            options.WorkingDirectory,
+            cancellationToken);
         if (string.IsNullOrWhiteSpace(prompt))
         {
             throw new ArgumentException("A prompt is required in print or JSON mode.");
@@ -303,8 +307,18 @@ internal static class HeadlessModes
     private static void WriteError(JsonLineWriter writer, RpcCommandEnvelope command, string message) =>
         writer.Write(new { id = command.Id, type = "response", command = command.Type, success = false, error = message });
 
-    private static async Task<string> ResolvePromptAsync(string? prompt, CancellationToken cancellationToken) =>
-        prompt ?? await Console.In.ReadToEndAsync(cancellationToken);
+    private static async Task<string> ResolvePromptAsync(
+        string? prompt,
+        IReadOnlyList<string> filePaths,
+        string workspaceRoot,
+        CancellationToken cancellationToken)
+    {
+        if (filePaths.Count > 0)
+        {
+            return await FileArgumentLoader.BuildPromptAsync(prompt, filePaths, workspaceRoot, cancellationToken);
+        }
+        return prompt ?? await Console.In.ReadToEndAsync(cancellationToken);
+    }
 
     private static Task PublishShutdownAsync(
         AgentBootstrap bootstrap,
