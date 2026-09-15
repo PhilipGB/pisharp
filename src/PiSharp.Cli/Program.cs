@@ -1,3 +1,4 @@
+using System.Text.Json;
 using PiSharp.Core;
 using PiSharp.Cli;
 
@@ -277,6 +278,18 @@ static async Task<bool> HandleCommandAsync(
         case "/session":
             Console.WriteLine(sessions.FormatSessionInfo());
             return true;
+        case "/name":
+            if (string.IsNullOrWhiteSpace(argument))
+            {
+                Console.WriteLine("Usage: /name <session-name>");
+                return true;
+            }
+            await sessions.SetNameAsync(argument, cancellationToken);
+            Console.WriteLine(sessions.FormatSessionInfo());
+            return true;
+        case "/stats":
+            Console.WriteLine(JsonSerializer.Serialize(sessions.GetStatistics()));
+            return true;
         case "/tree":
             Console.WriteLine(sessions.FormatTree());
             return true;
@@ -342,6 +355,8 @@ static void PrintInteractiveHelp()
     Console.WriteLine("""
         Commands:
           /session                 Show current session metadata
+          /name <text>             Set the session display name
+          /stats                   Show session message/tool statistics
           /tree                    Show the turn tree (* marks active turn)
           /goto <turn-id|root>     Move the active point; next prompt creates a branch
           /fork [turn-id]          Copy an active path into a new session
@@ -389,6 +404,7 @@ static void PrintHelp()
           -c, --continue              Continue the most recently modified session for this workspace
           -r, --resume                Interactively select a saved workspace session
           --session <id|path>         Resume a session by id prefix or JSONL path
+          --name <text>               Set the session display name
           --session-dir <path>        Override ~/.pisharp/sessions storage root
           --no-session                Do not persist session state
           -h, --help                  Show help

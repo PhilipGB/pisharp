@@ -69,8 +69,10 @@ PiSharp.
 | Continue/resume | Partial | `session-manager.ts`, `session-manager` CLI | `--continue`, `--resume`, `--session` | CLI/session tests |
 | Fork/clone | Partial | `agent-session-runtime.ts` | `SessionStore.ForkAsync`, `/fork`, `/clone` | Session tests |
 | Stable current leaf | Partial | `SessionManager.getLeafId()` | Active turn tracking | Existing tree tests |
-| Session display name | Missing | `SessionInfoEntry`, `/name` | Not implemented | Planned Phase 1/7 |
-| Statistics and usage | Missing | `agent-session.ts`, `agent-session-stats.test.ts` | Basic turn count only | Planned Phase 1 |
+| Session display name | Partial | `SessionInfoEntry`, `/name` | `--name`, `/name`, RPC `set_session_name` for v3 sessions | `CliOptionsTests`; session controller integration pending |
+
+| Statistics and usage | Partial | `agent-session.ts`, `agent-session-stats.test.ts` | Durable message/tool counts and `/stats`/RPC stats; token/cost totals pending | `PiSessionStoreTests` |
+
 | Labels/bookmarks | Missing | `LabelEntry`, tree UI | Not implemented | Planned Phase 1/6 |
 | Delete/import/export | Partial | `session-export.ts`, CLI commands | Persistence exists; no complete command surface | Planned Phase 1/7 |
 | v1 migration | Missing | `migrations.ts` | Not implemented | Planned Phase 1 |

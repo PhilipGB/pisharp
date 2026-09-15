@@ -46,6 +46,9 @@ public sealed class PiSessionStoreTests
         Assert.Equal("hello", turn.UserMessage);
         Assert.Equal("world", turn.AssistantMessage);
         Assert.Equal(1, turn.AgentState.GetProperty("messages")[0].GetInt32());
+        var statistics = loaded.GetStatistics();
+        Assert.Equal(1, statistics.UserMessages);
+        Assert.Equal(1, statistics.AssistantMessages);
     }
 
     [Fact]

@@ -11,6 +11,7 @@ public sealed class CliOptionsTests
         [
             "--model", "test-model",
             "--endpoint", "http://localhost:8000/v1",
+            "--name", "parity session",
             "--extension", "extensions/one.dll",
             "-e", "extensions/two.dll",
             "--skill", "skills/review",
@@ -26,6 +27,7 @@ public sealed class CliOptionsTests
             "--no-prompt-templates",
         ]);
 
+        Assert.Equal("parity session", options.SessionName);
         Assert.Equal(["extensions/one.dll", "extensions/two.dll"], options.ExtensionPaths);
         Assert.Equal(["skills/review"], options.SkillPaths);
         Assert.Equal(["prompts/review.md"], options.PromptTemplatePaths);

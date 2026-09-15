@@ -195,7 +195,8 @@ internal sealed record RpcCommandEnvelope(
     string Type,
     string? Message,
     string? StreamingBehavior,
-    string? Mode);
+    string? Mode,
+    string? Name);
 
 internal static class RpcProtocol
 {
@@ -215,7 +216,8 @@ internal static class RpcProtocol
             type.GetString()!,
             GetString(root, "message"),
             GetString(root, "streamingBehavior"),
-            GetString(root, "mode"));
+            GetString(root, "mode"),
+            GetString(root, "name"));
     }
 
     public static string? GetString(JsonElement root, string propertyName) =>

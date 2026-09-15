@@ -133,11 +133,23 @@ internal static class HeadlessModes
             case "get_state":
                 WriteState(writer, command, sessions, liveTurns);
                 return activeTurn;
+            case "get_session_stats":
+                WriteSuccess(writer, command, "get_session_stats", sessions.GetStatistics());
+                return activeTurn;
             case "get_tree":
                 WriteSuccess(writer, command, "get_tree", new { tree = sessions.FormatTree() });
                 return activeTurn;
             case "get_last_assistant_text":
                 WriteSuccess(writer, command, "get_last_assistant_text", new { text = sessions.Document?.LatestTurn?.AssistantMessage });
+                return activeTurn;
+            case "set_session_name":
+                if (string.IsNullOrWhiteSpace(command.Name))
+                {
+                    WriteError(writer, command, "set_session_name requires a non-empty name.");
+                    return activeTurn;
+                }
+                await sessions.SetNameAsync(command.Name, cancellationToken);
+                WriteSuccess(writer, command, "set_session_name");
                 return activeTurn;
             case "get_commands":
                 WriteCommands(writer, command, bootstrap);

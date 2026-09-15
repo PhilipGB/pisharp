@@ -85,7 +85,12 @@ internal sealed class SessionController
             ? await agent.CreateSessionAsync(cancellationToken)
             : await agent.DeserializeSessionAsync(active.AgentState, JsonOptions, cancellationToken);
 
-        return new SessionController(agent, options.Model, store, document, session, active?.Id);
+        var controller = new SessionController(agent, options.Model, store, document, session, active?.Id);
+        if (!string.IsNullOrWhiteSpace(options.SessionName) && controller.IsPersistent)
+        {
+            await controller.SetNameAsync(options.SessionName, cancellationToken);
+        }
+        return controller;
     }
 
     public async Task PersistTurnAsync(
@@ -233,6 +238,26 @@ internal sealed class SessionController
         return true;
     }
 
+    public SessionStatistics GetStatistics() => Document?.GetStatistics() ??
+        new SessionStatistics(string.Empty, null, string.Empty, 0, 0, 0, 0, 0);
+
+    public async Task SetNameAsync(string name, CancellationToken cancellationToken)
+    {
+        EnsurePersistent();
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+        if (!Document!.IsPiV3)
+        {
+            throw new InvalidOperationException("Session naming requires a Pi v3 session.");
+        }
+
+        var entry = new SessionInfoEntry(
+            Guid.NewGuid().ToString("N"),
+            ActiveTurnId,
+            DateTimeOffset.UtcNow,
+            name.Trim());
+        await _store!.AppendEntriesAsync(Document, [entry], cancellationToken);
+    }
+
     public string FormatSessionInfo()
     {
         if (Document is null)
@@ -240,7 +265,8 @@ internal sealed class SessionController
             return "Session: ephemeral (--no-session)";
         }
 
-        return $"Session: {Document.Header.SessionId} | turns: {Document.Turns.Count} | active: {Short(ActiveTurnId) ?? "root"}\n{Document.FilePath}";
+        var name = string.IsNullOrWhiteSpace(Document.Name) ? string.Empty : $" | name: {Document.Name}";
+        return $"Session: {Document.Header.SessionId}{name} | turns: {Document.Turns.Count} | active: {Short(ActiveTurnId) ?? "root"}\n{Document.FilePath}";
     }
 
     public string FormatTree()

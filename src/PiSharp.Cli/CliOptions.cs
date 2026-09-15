@@ -20,6 +20,7 @@ internal sealed record CliOptions(
     bool ContinueSession,
     bool ResumeSession,
     string? SessionSelector,
+    string? SessionName,
     string? SessionDirectory,
     bool NoSession,
     string? ContextRoot,
@@ -51,6 +52,7 @@ internal sealed record CliOptions(
         var continueSession = false;
         var resumeSession = false;
         string? sessionSelector = null;
+        string? sessionName = null;
         string? sessionDirectory = Environment.GetEnvironmentVariable("PISHARP_SESSION_DIR");
         var noSession = false;
         string? contextRoot = null;
@@ -99,6 +101,9 @@ internal sealed record CliOptions(
                     break;
                 case "--session":
                     sessionSelector = RequireValue(args, ref i, "--session");
+                    break;
+                case "--name":
+                    sessionName = RequireValue(args, ref i, "--name");
                     break;
                 case "--session-dir":
                     sessionDirectory = RequireValue(args, ref i, "--session-dir");
@@ -203,6 +208,7 @@ internal sealed record CliOptions(
             continueSession,
             resumeSession,
             sessionSelector,
+            sessionName,
             sessionDirectory,
             noSession,
             contextRoot,

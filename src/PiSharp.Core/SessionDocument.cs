@@ -38,7 +38,45 @@ public sealed class SessionDocument
 
     public IReadOnlyList<SessionEntry> Entries => _entries;
 
+    public string? Name => IsPiV3
+        ? _entries.OfType<SessionInfoEntry>().LastOrDefault()?.Name
+        : null;
+
     public SessionTurn? LatestTurn => Turns.Count == 0 ? null : Turns[^1];
+
+    public SessionStatistics GetStatistics()
+    {
+        if (!IsPiV3)
+        {
+            var messageCount = _turns.Count * 2;
+            return new SessionStatistics(
+                Header.SessionId,
+                null,
+                FilePath,
+                _turns.Count,
+                _turns.Count,
+                0,
+                0,
+                messageCount);
+        }
+
+        var messages = _entries.OfType<MessageEntry>().ToArray();
+        var users = messages.Count(entry => RoleIs(entry, "user"));
+        var assistants = messages.Count(entry => RoleIs(entry, "assistant"));
+        var toolResults = messages.Count(entry => RoleIs(entry, "toolResult"));
+        var toolCalls = messages
+            .Where(entry => RoleIs(entry, "assistant"))
+            .Sum(entry => CountContentType(entry.Message, "toolCall"));
+        return new SessionStatistics(
+            Header.SessionId,
+            Name,
+            FilePath,
+            users,
+            assistants,
+            toolCalls,
+            toolResults,
+            messages.Length);
+    }
 
     public void Add(SessionTurn turn)
     {
@@ -214,6 +252,19 @@ public sealed class SessionDocument
         entry.Message.ValueKind == JsonValueKind.Object &&
         entry.Message.TryGetProperty("role", out var roleValue) &&
         string.Equals(roleValue.GetString(), role, StringComparison.Ordinal);
+
+    private static int CountContentType(JsonElement message, string type)
+    {
+        if (!message.TryGetProperty("content", out var content) || content.ValueKind != JsonValueKind.Array)
+        {
+            return 0;
+        }
+
+        return content.EnumerateArray().Count(item =>
+            item.ValueKind == JsonValueKind.Object &&
+            item.TryGetProperty("type", out var typeValue) &&
+            string.Equals(typeValue.GetString(), type, StringComparison.Ordinal));
+    }
 
     private static string ExtractText(JsonElement message)
     {

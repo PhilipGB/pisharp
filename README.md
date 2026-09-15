@@ -29,7 +29,8 @@ Implemented and smoke-tested against llama.cpp:
 - `-c` / `--continue`
 - `-r` / `--resume`
 - `--session <id|path>`
-- `/session`, `/tree`, `/goto`, `/fork`, `/clone`, `/new`, `/resume`
+- `--name <text>`
+- `/session`, `/name`, `/stats`, `/tree`, `/goto`, `/fork`, `/clone`, `/new`, `/resume`
 - unit tests for file/path/context/session/terminal-input/resource behaviour
 - thread-safe steering and follow-up queues with abort preservation
 - streamed tool start/update/end rendering

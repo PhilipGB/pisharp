@@ -163,6 +163,17 @@ public sealed record SessionHeader(
         new(header.Type, header.Version, header.Id, header.Cwd, string.Empty, header.Timestamp);
 }
 
+/// <summary>Durable message and tool counts for a session.</summary>
+public sealed record SessionStatistics(
+    string SessionId,
+    string? SessionName,
+    string SessionFile,
+    int UserMessages,
+    int AssistantMessages,
+    int ToolCalls,
+    int ToolResults,
+    int TotalMessages);
+
 public sealed record SessionTurn(
     string Type,
     string Id,
