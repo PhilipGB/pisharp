@@ -57,18 +57,18 @@ PiSharp.
 
 | Capability | Status | Pi reference | PiSharp implementation | Conformance coverage |
 |---|---|---|---|---|
-| JSONL session header | Partial | `packages/coding-agent/src/core/session-manager.ts` (`CURRENT_SESSION_VERSION = 3`) | New sessions write `PiSessionHeader` v3; legacy v1 remains readable | `SessionStoreTests`, `PiSessionStoreTests`; v3 fixture |
+| JSONL session header | Equivalent | `packages/coding-agent/src/core/session-manager.ts` (`CURRENT_SESSION_VERSION = 3`) | New sessions write Pi v3 headers; legacy v1 remains readable; Pi forks persist the source session path in `parentSession` | `SessionStoreTests`, `PiSessionStoreTests`; v3 fixture |
 
-| Typed message entries | Partial | `SessionEntry` in `session-manager.ts` | Typed v3 entries are persisted; MAF state remains a `custom` cache bridge | `PiSessionStoreTests`; provider metadata still incomplete |
+| Typed message entries | Partial | `SessionEntry` in `session-manager.ts` | PiSharp owns typed JSONL entries and tree algorithms; MAF state is a secondary `pisharp.agent-state` cache bridge; provider metadata/usage remains incomplete | `PiSessionStoreTests`; v3 fixture |
 
-| Durable user/assistant/tool records | Partial | `session-manager.ts`, `messages.ts` | User, assistant, tool-result entries are persisted when streamed records are available | `PiSessionStoreTests`; full assistant metadata remains |
+| Durable user/assistant/tool records | Equivalent | `session-manager.ts`, `messages.ts` | User prompts, steering/follow-up messages, completed assistant messages, tool calls/results, and cache entries are appended in chronological parent-linked order; partial assistant deltas are not emitted | `PiSessionStoreTests`; v3 fixture |
 
-| Parent-linked session tree | Partial | `session-manager.ts` | Turn tree and checkout in `SessionDocument` | `SessionDocumentTests` |
-| Session ancestry / `parentSession` | Partial | `SessionHeader.parentSession` | Pi v3 forks persist parent session id | `PiSessionStoreTests`; import/migration remains |
+| Parent-linked session tree | Equivalent | `session-manager.ts` | `SessionDocument` validates typed parent chains, exposes the active root-to-leaf path, and resolves a turn's leaf before fork/checkout | `SessionDocumentTests`, `PiSessionStoreTests` |
+| Session ancestry / `parentSession` | Equivalent | `SessionHeader.parentSession` | Pi v3 forks persist the source session file path; legacy v1 remains readable without rewriting | `PiSessionStoreTests`; import/migration remains |
 
 | Continue/resume | Partial | `session-manager.ts`, `session-manager` CLI | `--continue`, `--resume`, `--session` | CLI/session tests |
 | Fork/clone | Partial | `agent-session-runtime.ts` | `SessionStore.ForkAsync`, `/fork`, `/clone` | Session tests |
-| Stable current leaf | Partial | `SessionManager.getLeafId()` | Active turn tracking | Existing tree tests |
+| Stable current leaf | Equivalent | `SessionManager.getLeafId()` | `SessionController.ActiveEntryId` advances through every typed entry, including steering/follow-up messages, tool results, metadata, and the MAF cache | `PiSessionStoreTests`; runtime integration path |
 | Session display name | Partial | `SessionInfoEntry`, `/name` | `--name`, `/name`, RPC `set_session_name` for v3 sessions | `CliOptionsTests`; session controller integration pending |
 
 | Statistics and usage | Partial | `agent-session.ts`, `agent-session-stats.test.ts` | Durable message/tool counts and `/stats`/RPC stats; token/cost totals pending | `PiSessionStoreTests` |

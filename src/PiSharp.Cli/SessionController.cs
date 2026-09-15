@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 using Microsoft.Agents.AI;
+using Microsoft.Extensions.AI;
 using PiSharp.Core;
 
 namespace PiSharp.Cli;
@@ -15,6 +16,7 @@ internal sealed class SessionController
     private readonly AIAgent _agent;
     private readonly SessionStore? _store;
     private readonly string _model;
+    private readonly PiSessionChatHistoryProvider _sessionHistory;
 
     private SessionController(
         AIAgent agent,
@@ -22,7 +24,9 @@ internal sealed class SessionController
         SessionStore? store,
         SessionDocument? document,
         AgentSession session,
-        string? activeTurnId)
+        string? activeTurnId,
+        string? activeEntryId,
+        PiSessionChatHistoryProvider sessionHistory)
     {
         _agent = agent;
         _model = model;
@@ -30,6 +34,9 @@ internal sealed class SessionController
         Document = document;
         Session = session;
         ActiveTurnId = activeTurnId;
+        ActiveEntryId = activeEntryId;
+        _sessionHistory = sessionHistory;
+        _sessionHistory.SetActiveDocument(document, activeEntryId);
     }
 
     public AgentSession Session { get; private set; }
@@ -38,13 +45,16 @@ internal sealed class SessionController
 
     public string? ActiveTurnId { get; private set; }
 
+    public string? ActiveEntryId { get; private set; }
+
     public bool IsPersistent => _store is not null;
 
     public static async Task<SessionController> CreateAsync(
-        AIAgent agent,
+        AgentBootstrap bootstrap,
         CliOptions options,
         CancellationToken cancellationToken)
     {
+        var agent = bootstrap.Agent;
         if (options.NoSession)
         {
             return new SessionController(
@@ -53,7 +63,9 @@ internal sealed class SessionController
                 null,
                 null,
                 await agent.CreateSessionAsync(cancellationToken),
-                null);
+                null,
+                null,
+                bootstrap.SessionHistory);
         }
 
         var store = new SessionStore(options.WorkingDirectory, options.SessionDirectory);
@@ -81,11 +93,17 @@ internal sealed class SessionController
 
         EnsureWorkspaceMatches(document, options.WorkingDirectory);
         var active = document.LatestTurn;
-        var session = active is null
-            ? await agent.CreateSessionAsync(cancellationToken)
-            : await agent.DeserializeSessionAsync(active.AgentState, JsonOptions, cancellationToken);
+        var session = await RestoreSessionAsync(agent, active, cancellationToken);
 
-        var controller = new SessionController(agent, options.Model, store, document, session, active?.Id);
+        var controller = new SessionController(
+            agent,
+            options.Model,
+            store,
+            document,
+            session,
+            active?.Id,
+            document.IsPiV3 ? document.LatestEntryId : active?.Id,
+            bootstrap.SessionHistory);
         if (!string.IsNullOrWhiteSpace(options.SessionName) && controller.IsPersistent)
         {
             await controller.SetNameAsync(options.SessionName, cancellationToken);
@@ -104,16 +122,89 @@ internal sealed class SessionController
             return;
         }
 
-        var state = await _agent.SerializeSessionAsync(Session, JsonOptions, cancellationToken);
         if (Document.IsPiV3)
         {
-            await PersistPiTurnAsync(userMessage, assistantMessage, state, toolExecutions ?? [], cancellationToken);
             return;
         }
 
+        var state = await _agent.SerializeSessionAsync(Session, JsonOptions, cancellationToken);
         var turn = SessionTurn.Create(ActiveTurnId, userMessage, assistantMessage, state);
         await _store.AppendTurnAsync(Document, turn, cancellationToken);
         ActiveTurnId = turn.Id;
+        ActiveEntryId = turn.Id;
+        _sessionHistory.SetActiveDocument(Document, ActiveEntryId);
+    }
+
+    public async Task PersistUserMessageAsync(
+        string message,
+        IReadOnlyList<AIContent>? contents,
+        CancellationToken cancellationToken)
+    {
+        EnsurePersistent();
+        if (!Document!.IsPiV3)
+        {
+            return;
+        }
+
+        var entry = new MessageEntry(
+            Guid.NewGuid().ToString("N"),
+            ActiveEntryId,
+            DateTimeOffset.UtcNow,
+            CreateUserMessage(message, contents));
+        await _store!.AppendEntriesAsync(Document, [entry], cancellationToken);
+        ActiveEntryId = entry.Id;
+        _sessionHistory.SetActiveDocument(Document, ActiveEntryId);
+    }
+
+    public async Task PersistAssistantMessagesAsync(
+        IReadOnlyList<JsonElement> messages,
+        CancellationToken cancellationToken)
+    {
+        EnsurePersistent();
+        if (!Document!.IsPiV3 || messages.Count == 0)
+        {
+            return;
+        }
+
+        var entries = new List<SessionEntry>(messages.Count);
+        var parentId = ActiveEntryId;
+        foreach (var message in messages)
+        {
+            var entry = new MessageEntry(
+                Guid.NewGuid().ToString("N"),
+                parentId,
+                GetMessageTimestamp(message) ?? DateTimeOffset.UtcNow,
+                message.Clone());
+            entries.Add(entry);
+            parentId = entry.Id;
+            if (IsRole(message, "assistant"))
+            {
+                ActiveTurnId = entry.Id;
+            }
+        }
+        await _store!.AppendEntriesAsync(Document, entries, cancellationToken);
+        ActiveEntryId = parentId;
+        _sessionHistory.SetActiveDocument(Document, ActiveEntryId);
+    }
+
+    public async Task PersistAgentStateCacheAsync(CancellationToken cancellationToken)
+    {
+        EnsurePersistent();
+        if (!Document!.IsPiV3 || ActiveEntryId is null)
+        {
+            return;
+        }
+
+        var state = await _agent.SerializeSessionAsync(Session, JsonOptions, cancellationToken);
+        var cache = new CustomEntry(
+            Guid.NewGuid().ToString("N"),
+            ActiveEntryId,
+            DateTimeOffset.UtcNow,
+            SessionEntryTypes.AgentStateCache,
+            state.Clone());
+        await _store!.AppendEntriesAsync(Document, [cache], cancellationToken);
+        ActiveEntryId = cache.Id;
+        _sessionHistory.SetActiveDocument(Document, ActiveEntryId);
     }
 
     public async Task CheckoutAsync(string turnSelector, CancellationToken cancellationToken)
@@ -123,12 +214,16 @@ internal sealed class SessionController
         {
             Session = await _agent.CreateSessionAsync(cancellationToken);
             ActiveTurnId = null;
+            ActiveEntryId = null;
+            _sessionHistory.SetActiveDocument(Document, ActiveEntryId);
             return;
         }
 
         var turn = Document!.ResolveTurn(turnSelector);
-        Session = await _agent.DeserializeSessionAsync(turn.AgentState, JsonOptions, cancellationToken);
+        Session = await RestoreSessionAsync(_agent, turn, cancellationToken);
         ActiveTurnId = turn.Id;
+        ActiveEntryId = Document.IsPiV3 ? Document.GetTurnLeafEntryId(turn.Id) : turn.Id;
+        _sessionHistory.SetActiveDocument(Document, ActiveEntryId);
     }
 
     public async Task NewAsync(CancellationToken cancellationToken)
@@ -137,89 +232,66 @@ internal sealed class SessionController
         Document = await _store!.CreatePiAsync(cancellationToken);
         Session = await _agent.CreateSessionAsync(cancellationToken);
         ActiveTurnId = null;
+        ActiveEntryId = null;
+        _sessionHistory.SetActiveDocument(Document, ActiveEntryId);
     }
 
     public async Task ForkAsync(string? turnSelector, CancellationToken cancellationToken)
     {
         EnsurePersistent();
         var selectedId = turnSelector is null
-            ? ActiveTurnId
+            ? ActiveEntryId
             : Document!.ResolveTurn(turnSelector).Id;
 
         Document = Document!.IsPiV3
             ? await _store!.ForkPiAsync(Document, selectedId, cancellationToken)
             : await _store!.ForkAsync(Document, selectedId, _model, cancellationToken);
         ActiveTurnId = Document.LatestTurn?.Id;
-        Session = ActiveTurnId is null
-            ? await _agent.CreateSessionAsync(cancellationToken)
-            : await _agent.DeserializeSessionAsync(Document.LatestTurn!.AgentState, JsonOptions, cancellationToken);
+        ActiveEntryId = Document.IsPiV3 ? Document.LatestEntryId : ActiveTurnId;
+        _sessionHistory.SetActiveDocument(Document, ActiveEntryId);
+        Session = await RestoreSessionAsync(_agent, Document.LatestTurn, cancellationToken);
     }
 
-    private async Task PersistPiTurnAsync(
-        string userMessage,
-        string assistantMessage,
-        JsonElement state,
-        IReadOnlyList<ToolExecutionRecord> toolExecutions,
-        CancellationToken cancellationToken)
+    private static JsonElement CreateUserMessage(string message, IReadOnlyList<AIContent>? contents)
     {
-        var userId = Guid.NewGuid().ToString("N");
-        var assistantId = Guid.NewGuid().ToString("N");
-        var timestamp = DateTimeOffset.UtcNow;
-        var user = new MessageEntry(
-            userId,
-            ActiveTurnId,
-            timestamp,
-            JsonSerializer.SerializeToElement(new { role = "user", content = userMessage }, JsonOptions));
-        var assistantContent = new List<object>();
-        if (!string.IsNullOrEmpty(assistantMessage))
-        {
-            assistantContent.Add(new { type = "text", text = assistantMessage });
-        }
-        assistantContent.AddRange(toolExecutions.Select(tool => new
-        {
-            type = "toolCall",
-            id = tool.CallId,
-            name = tool.Name,
-            arguments = tool.Arguments,
-        }));
-        var assistant = new MessageEntry(
-            assistantId,
-            userId,
-            timestamp,
-            JsonSerializer.SerializeToElement(
-                new { role = "assistant", content = assistantContent },
-                JsonOptions));
-        var entries = new List<SessionEntry> { user, assistant };
-        var parentId = assistantId;
-        foreach (var tool in toolExecutions)
-        {
-            var resultText = tool.Result?.ToString() ?? string.Empty;
-            var toolResult = new MessageEntry(
-                Guid.NewGuid().ToString("N"),
-                parentId,
-                timestamp,
-                JsonSerializer.SerializeToElement(
-                    new
-                    {
-                        role = "toolResult",
-                        toolCallId = tool.CallId,
-                        toolName = tool.Name,
-                        content = new[] { new { type = "text", text = resultText } },
-                        isError = tool.IsError,
-                    },
-                    JsonOptions));
-            entries.Add(toolResult);
-            parentId = toolResult.Id;
-        }
-        entries.Add(new CustomEntry(
-            Guid.NewGuid().ToString("N"),
-            assistantId,
-            timestamp,
-            SessionEntryTypes.AgentStateCache,
-            state.Clone()));
-        await _store!.AppendEntriesAsync(Document!, entries, cancellationToken);
-        ActiveTurnId = assistantId;
+        var imageContents = contents?.OfType<DataContent>()
+            .Select(content => (object)new
+            {
+                type = "image",
+                data = content.Base64Data.ToString(),
+                mimeType = content.MediaType,
+            })
+            .ToArray() ?? [];
+        object contentValue = imageContents.Length == 0
+            ? message
+            : new object[] { new { type = "text", text = message } }
+                .Concat(imageContents)
+                .ToArray();
+        return JsonSerializer.SerializeToElement(
+            new
+            {
+                role = "user",
+                content = contentValue,
+                timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+            },
+            JsonOptions);
     }
+
+    private static DateTimeOffset? GetMessageTimestamp(JsonElement message)
+    {
+        if (!message.TryGetProperty("timestamp", out var timestamp) ||
+            timestamp.ValueKind != JsonValueKind.Number ||
+            !timestamp.TryGetInt64(out var milliseconds))
+        {
+            return null;
+        }
+        return DateTimeOffset.FromUnixTimeMilliseconds(milliseconds);
+    }
+
+    private static bool IsRole(JsonElement message, string role) =>
+        message.ValueKind == JsonValueKind.Object &&
+        message.TryGetProperty("role", out var roleValue) &&
+        string.Equals(roleValue.GetString(), role, StringComparison.Ordinal);
 
     public async Task<bool> ResumeInteractiveAsync(CancellationToken cancellationToken)
     {
@@ -232,10 +304,23 @@ internal sealed class SessionController
 
         Document = selected;
         ActiveTurnId = selected.LatestTurn?.Id;
-        Session = ActiveTurnId is null
-            ? await _agent.CreateSessionAsync(cancellationToken)
-            : await _agent.DeserializeSessionAsync(selected.LatestTurn!.AgentState, JsonOptions, cancellationToken);
+        ActiveEntryId = selected.IsPiV3 ? selected.LatestEntryId : ActiveTurnId;
+        _sessionHistory.SetActiveDocument(Document, ActiveEntryId);
+        Session = await RestoreSessionAsync(_agent, selected.LatestTurn, cancellationToken);
         return true;
+    }
+
+    private static async Task<AgentSession> RestoreSessionAsync(
+        AIAgent agent,
+        SessionTurn? turn,
+        CancellationToken cancellationToken)
+    {
+        if (turn is null || turn.AgentState.ValueKind != JsonValueKind.Object ||
+            !turn.AgentState.EnumerateObject().Any())
+        {
+            return await agent.CreateSessionAsync(cancellationToken);
+        }
+        return await agent.DeserializeSessionAsync(turn.AgentState, JsonOptions, cancellationToken);
     }
 
     public SessionStatistics GetStatistics() => Document?.GetStatistics() ??
@@ -252,10 +337,12 @@ internal sealed class SessionController
 
         var entry = new SessionInfoEntry(
             Guid.NewGuid().ToString("N"),
-            ActiveTurnId,
+            ActiveEntryId,
             DateTimeOffset.UtcNow,
             name.Trim());
         await _store!.AppendEntriesAsync(Document, [entry], cancellationToken);
+        ActiveEntryId = entry.Id;
+        _sessionHistory.SetActiveDocument(Document, ActiveEntryId);
     }
 
     public string FormatSessionInfo()
@@ -266,7 +353,7 @@ internal sealed class SessionController
         }
 
         var name = string.IsNullOrWhiteSpace(Document.Name) ? string.Empty : $" | name: {Document.Name}";
-        return $"Session: {Document.Header.SessionId}{name} | turns: {Document.Turns.Count} | active: {Short(ActiveTurnId) ?? "root"}\n{Document.FilePath}";
+        return $"Session: {Document.Header.SessionId}{name} | turns: {Document.Turns.Count} | active: {Short(ActiveEntryId) ?? "root"}\n{Document.FilePath}";
     }
 
     public string FormatTree()

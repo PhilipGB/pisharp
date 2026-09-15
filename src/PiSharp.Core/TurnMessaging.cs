@@ -49,6 +49,7 @@ public sealed class TurnMessageQueue
     private readonly object _sync = new();
     private readonly Queue<QueuedUserMessage> _steering = new();
     private readonly Queue<QueuedUserMessage> _followUp = new();
+    private readonly List<Func<QueuedUserMessage, CancellationToken, Task>> _deliveryHandlers = [];
     private long _nextSequence;
 
     /// <summary>Gets or sets how steering messages are drained.</summary>
@@ -65,6 +66,17 @@ public sealed class TurnMessageQueue
 
     /// <summary>Queues a message using the requested delivery semantics.</summary>
     public QueuedUserMessage Enqueue(QueuedMessageKind kind, string text) => Enqueue(text, kind);
+
+    /// <summary>Registers an asynchronous observer for messages delivered into model context.</summary>
+    public IDisposable RegisterDeliveryHandler(Func<QueuedUserMessage, CancellationToken, Task> handler)
+    {
+        ArgumentNullException.ThrowIfNull(handler);
+        lock (_sync)
+        {
+            _deliveryHandlers.Add(handler);
+        }
+        return new DeliveryRegistration(this, handler);
+    }
 
     /// <summary>Gets a stable snapshot of all pending messages.</summary>
     public TurnQueueSnapshot Snapshot()
@@ -130,8 +142,41 @@ public sealed class TurnMessageQueue
         }
     }
 
+    /// <summary>Notifies observers after queued messages enter model context.</summary>
+    public async Task NotifyDeliveredAsync(
+        IReadOnlyList<QueuedUserMessage> messages,
+        CancellationToken cancellationToken)
+    {
+        Func<QueuedUserMessage, CancellationToken, Task>[] handlers;
+        lock (_sync)
+        {
+            handlers = _deliveryHandlers.ToArray();
+        }
+
+        foreach (var message in messages)
+        {
+            foreach (var handler in handlers)
+            {
+                await handler(message, cancellationToken);
+            }
+        }
+    }
+
+    private void UnregisterDeliveryHandler(Func<QueuedUserMessage, CancellationToken, Task> handler)
+    {
+        lock (_sync)
+        {
+            _deliveryHandlers.Remove(handler);
+        }
+    }
+
     private Queue<QueuedUserMessage> GetQueue(QueuedMessageKind kind) =>
         kind == QueuedMessageKind.Steering ? _steering : _followUp;
+
+    private sealed class DeliveryRegistration(TurnMessageQueue queue, Func<QueuedUserMessage, CancellationToken, Task> handler) : IDisposable
+    {
+        public void Dispose() => queue.UnregisterDeliveryHandler(handler);
+    }
 }
 
 /// <summary>A durable summary of one tool call and its result.</summary>
@@ -146,7 +191,8 @@ public sealed record ToolExecutionRecord(
 public sealed record TurnExecutionResult(
     string AssistantText,
     bool Cancelled = false,
-    IReadOnlyList<ToolExecutionRecord>? ToolExecutions = null)
+    IReadOnlyList<ToolExecutionRecord>? ToolExecutions = null,
+    IReadOnlyList<JsonElement>? DurableMessages = null)
 {
     /// <summary>Gets tool records without requiring nullable checks at call sites.</summary>
     public IReadOnlyList<ToolExecutionRecord> ToolRecords => ToolExecutions ?? [];

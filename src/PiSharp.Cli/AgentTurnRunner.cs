@@ -23,23 +23,40 @@ internal static class AgentTurnRunner
         var context = new PiSharpExtensionContext(workspaceRoot, liveTurns.Queue, cancellationToken, notify);
         output.AgentStarted();
         var initial = true;
+        using var deliveryRegistration = sessions.IsPersistent && sessions.Document?.IsPiV3 == true
+            ? liveTurns.Queue.RegisterDeliveryHandler(
+                (message, token) => sessions.PersistUserMessageAsync(message.Text, null, token))
+            : null;
         await bootstrap.ExtensionHost.PublishAsync(PiSharpExtensionEvent.BeforeTurn, context);
         var result = await liveTurns.RunAsync(
             prompt,
-            (message, token) =>
+            async (message, token) =>
             {
                 var contents = initial ? initialContents : null;
                 initial = false;
-                return RunSingleAsync(
+                var expandedMessage = expandInput(message);
+                if (sessions.IsPersistent && sessions.Document?.IsPiV3 == true)
+                {
+                    await sessions.PersistUserMessageAsync(expandedMessage, contents, token);
+                }
+                var execution = await RunSingleAsync(
                     bootstrap.Agent,
                     sessions.Session,
-                    expandInput(message),
+                    expandedMessage,
                     output,
                     token,
                     contents,
-                    bootstrap.RetryPolicy);
+                    bootstrap.RetryPolicy,
+                    sessions.Document?.IsPiV3 == true
+                        ? messageSnapshot => sessions.PersistAssistantMessagesAsync([messageSnapshot], token)
+                        : null);
+                return execution;
             },
             cancellationToken);
+        if (sessions.IsPersistent && sessions.Document?.IsPiV3 == true)
+        {
+            await sessions.PersistAgentStateCacheAsync(cancellationToken);
+        }
         var eventType = result.Cancelled ? PiSharpExtensionEvent.TurnCancelled : PiSharpExtensionEvent.AfterTurn;
         await bootstrap.ExtensionHost.PublishAsync(eventType, context);
         output.AgentFinished(result.AssistantText, result.Cancelled);
@@ -60,13 +77,15 @@ internal static class AgentTurnRunner
         IChatOutput output,
         CancellationToken cancellationToken,
         IReadOnlyList<AIContent>? contents,
-        RetryPolicyOptions retryPolicy)
+        RetryPolicyOptions retryPolicy,
+        Func<JsonElement, Task>? persistMessage)
     {
         var response = new StringBuilder();
         output.AssistantMessageStarted();
         var toolNames = new Dictionary<string, string>(StringComparer.Ordinal);
         var toolArguments = new Dictionary<string, string>(StringComparer.Ordinal);
         var toolRecords = new Dictionary<string, ToolExecutionRecord>(StringComparer.Ordinal);
+        var assembler = new DurableMessageAssembler(persistMessage, toolNames);
         var retryNumber = 0;
         while (true)
         {
@@ -81,6 +100,7 @@ internal static class AgentTurnRunner
                 await foreach (var update in updates)
                 {
                     RenderToolContents(update, toolNames, toolArguments, toolRecords, output);
+                    await assembler.ProcessAsync(update, cancellationToken);
                     if ((update.Role is null || update.Role == ChatRole.Assistant) && !string.IsNullOrEmpty(update.Text))
                     {
                         output.WriteText(update.Text);
@@ -88,10 +108,14 @@ internal static class AgentTurnRunner
                     }
                 }
 
+                await assembler.CompleteAsync(cancellationToken);
                 var assistantText = response.ToString();
                 output.AssistantMessageFinished(assistantText);
                 output.WriteLine();
-                return new TurnExecutionResult(assistantText, ToolExecutions: toolRecords.Values.ToArray());
+                return new TurnExecutionResult(
+                    assistantText,
+                    ToolExecutions: toolRecords.Values.ToArray(),
+                    DurableMessages: assembler.Messages);
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
@@ -101,13 +125,15 @@ internal static class AgentTurnRunner
                 return new TurnExecutionResult(
                     assistantText,
                     Cancelled: true,
-                    ToolExecutions: toolRecords.Values.ToArray());
+                    ToolExecutions: toolRecords.Values.ToArray(),
+                    DurableMessages: assembler.Messages);
             }
             catch (Exception exception) when (
                 retryPolicy.Enabled &&
                 retryNumber < retryPolicy.MaxRetries &&
                 response.Length == 0 &&
                 toolNames.Count == 0 &&
+                !assembler.HasActivity &&
                 RetryPolicy.IsTransient(exception, cancellationToken))
             {
                 retryNumber++;
@@ -225,5 +251,196 @@ internal static class AgentTurnRunner
         return text.Length <= MaxToolPreviewCharacters
             ? text
             : $"{text[..MaxToolPreviewCharacters]}… [tool output truncated]";
+    }
+
+    private sealed class DurableMessageAssembler(
+        Func<JsonElement, Task>? persistMessage,
+        IReadOnlyDictionary<string, string> toolNames)
+    {
+        private readonly List<JsonElement> _messages = [];
+        private readonly List<JsonElement> _content = [];
+        private readonly Dictionary<string, int> _toolCallIndexes = new(StringComparer.Ordinal);
+        private readonly IReadOnlyDictionary<string, string> _toolNames = toolNames;
+        private string? _messageId;
+        private string? _responseId;
+        private string? _modelId;
+        private ChatFinishReason? _finishReason;
+        private DateTimeOffset? _createdAt;
+
+        public IReadOnlyList<JsonElement> Messages => _messages;
+
+        public bool HasActivity { get; private set; }
+
+        public async Task ProcessAsync(AgentResponseUpdate update, CancellationToken cancellationToken)
+        {
+            if (_messageId is not null && update.MessageId is not null &&
+                !string.Equals(_messageId, update.MessageId, StringComparison.Ordinal))
+            {
+                await CompleteAsync(cancellationToken);
+            }
+
+            CaptureMetadata(update);
+            var results = update.Contents.OfType<FunctionResultContent>().ToArray();
+            if (results.Length > 0)
+            {
+                foreach (var content in update.Contents.Where(IsAssistantContent))
+                {
+                    HasActivity = true;
+                    AppendContent(content);
+                }
+                await CompleteAsync(cancellationToken);
+                foreach (var result in results)
+                {
+                    await AddToolResultAsync(result, update.CreatedAt ?? DateTimeOffset.UtcNow, cancellationToken);
+                }
+                return;
+            }
+
+            if (!update.Contents.Any(IsAssistantContent))
+            {
+                return;
+            }
+
+            foreach (var content in update.Contents.Where(IsAssistantContent))
+            {
+                HasActivity = true;
+                AppendContent(content);
+            }
+        }
+
+        public async Task CompleteAsync(CancellationToken cancellationToken)
+        {
+            if (_content.Count == 0)
+            {
+                ResetCurrent();
+                return;
+            }
+
+            var message = new Dictionary<string, object?>
+            {
+                ["role"] = "assistant",
+                ["content"] = _content.ToArray(),
+                ["timestamp"] = (_createdAt ?? DateTimeOffset.UtcNow).ToUnixTimeMilliseconds(),
+            };
+            AddIfPresent(message, "responseId", _responseId);
+            AddIfPresent(message, "model", _modelId);
+            AddIfPresent(message, "stopReason", _finishReason?.ToString()?.ToLowerInvariant());
+            await AddMessageAsync(JsonSerializer.SerializeToElement(message), cancellationToken);
+            ResetCurrent();
+        }
+
+        private void ResetCurrent()
+        {
+            _content.Clear();
+            _toolCallIndexes.Clear();
+            _messageId = null;
+            _responseId = null;
+            _modelId = null;
+            _finishReason = null;
+            _createdAt = null;
+        }
+
+        private void CaptureMetadata(AgentResponseUpdate update)
+        {
+            _messageId ??= update.MessageId;
+            _responseId = update.ResponseId ?? _responseId;
+            _modelId = GetModelId(update) ?? _modelId;
+            _finishReason = update.FinishReason ?? _finishReason;
+            _createdAt ??= update.CreatedAt;
+        }
+
+        private void AppendContent(AIContent content)
+        {
+            switch (content)
+            {
+                case TextContent text:
+                    AppendTextContent("text", "text", text.Text);
+                    break;
+                case TextReasoningContent reasoning:
+                    AppendTextContent("thinking", "thinking", reasoning.Text);
+                    break;
+                case FunctionCallContent call when !call.InformationalOnly:
+                    var callContent = JsonSerializer.SerializeToElement(new
+                    {
+                        type = "toolCall",
+                        id = call.CallId,
+                        name = call.Name,
+                        arguments = call.Arguments,
+                    });
+                    if (_toolCallIndexes.TryGetValue(call.CallId, out var index))
+                    {
+                        _content[index] = callContent;
+                    }
+                    else
+                    {
+                        _toolCallIndexes[call.CallId] = _content.Count;
+                        _content.Add(callContent);
+                    }
+                    break;
+            }
+        }
+
+        private void AppendTextContent(string type, string propertyName, string text)
+        {
+            if (_content.Count > 0 && _content[^1].ValueKind == JsonValueKind.Object &&
+                _content[^1].TryGetProperty("type", out var typeValue) &&
+                string.Equals(typeValue.GetString(), type, StringComparison.Ordinal))
+            {
+                var previous = _content[^1].GetProperty(propertyName).GetString() ?? string.Empty;
+                _content[^1] = JsonSerializer.SerializeToElement(new Dictionary<string, object?>
+                {
+                    ["type"] = type,
+                    [propertyName] = previous + text,
+                });
+                return;
+            }
+
+            _content.Add(JsonSerializer.SerializeToElement(new Dictionary<string, object?>
+            {
+                ["type"] = type,
+                [propertyName] = text,
+            }));
+        }
+
+        private async Task AddToolResultAsync(
+            FunctionResultContent result,
+            DateTimeOffset timestamp,
+            CancellationToken cancellationToken)
+        {
+            var message = JsonSerializer.SerializeToElement(new
+            {
+                role = "toolResult",
+                toolCallId = result.CallId,
+                toolName = _toolNames.GetValueOrDefault(result.CallId) ?? result.CallId,
+                content = new[] { new { type = "text", text = FormatValue(result.Result) } },
+                isError = result.Exception is not null,
+                timestamp = timestamp.ToUnixTimeMilliseconds(),
+            });
+            await AddMessageAsync(message, cancellationToken);
+        }
+
+        private async Task AddMessageAsync(JsonElement message, CancellationToken cancellationToken)
+        {
+            var snapshot = message.Clone();
+            _messages.Add(snapshot);
+            if (persistMessage is not null)
+            {
+                await persistMessage(snapshot);
+            }
+        }
+
+        private static bool IsAssistantContent(AIContent content) =>
+            content is TextContent or TextReasoningContent or FunctionCallContent;
+
+        private static string? GetModelId(AgentResponseUpdate update) =>
+            update.RawRepresentation is ChatResponseUpdate response ? response.ModelId : null;
+
+        private static void AddIfPresent(IDictionary<string, object?> target, string key, string? value)
+        {
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                target[key] = value;
+            }
+        }
     }
 }

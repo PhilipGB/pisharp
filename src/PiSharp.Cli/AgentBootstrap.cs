@@ -10,4 +10,5 @@ internal sealed record AgentBootstrap(
     IReadOnlyList<PromptTemplate> PromptTemplates,
     PiSharpExtensionHost ExtensionHost,
     RetryPolicyOptions RetryPolicy,
-    TurnMessageQueue TurnQueue);
+    TurnMessageQueue TurnQueue,
+    PiSessionChatHistoryProvider SessionHistory);

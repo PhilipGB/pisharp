@@ -38,6 +38,9 @@ public sealed class SessionDocument
 
     public IReadOnlyList<SessionEntry> Entries => _entries;
 
+    /// <summary>Gets the durable leaf represented by the final entry in the file.</summary>
+    public string? LatestEntryId => _entries.Count == 0 ? null : _entries[^1].Id;
+
     public string? Name => IsPiV3
         ? _entries.OfType<SessionInfoEntry>().LastOrDefault()?.Name
         : null;
@@ -167,7 +170,29 @@ public sealed class SessionDocument
         return path;
     }
 
-    internal IReadOnlyList<SessionEntry> GetActiveEntryPath(string? entryId)
+    /// <summary>Gets the chronological leaf belonging to a projected assistant turn.</summary>
+    public string? GetTurnLeafEntryId(string turnId)
+    {
+        var byParent = _entries
+            .Where(entry => entry.ParentId is not null)
+            .GroupBy(entry => entry.ParentId!, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(group => group.Key, group => group.ToArray(), StringComparer.OrdinalIgnoreCase);
+        var currentId = turnId;
+        while (byParent.TryGetValue(currentId, out var children))
+        {
+            var child = children.FirstOrDefault(entry =>
+                entry is not MessageEntry message || !RoleIs(message, "user"));
+            if (child is null)
+            {
+                break;
+            }
+            currentId = child.Id;
+        }
+        return currentId;
+    }
+
+    /// <summary>Returns the root-to-leaf path for a Pi v3 entry.</summary>
+    public IReadOnlyList<SessionEntry> GetActiveEntryPath(string? entryId)
     {
         if (entryId is null)
         {
@@ -202,10 +227,16 @@ public sealed class SessionDocument
     private IReadOnlyList<SessionTurn> ProjectTurns()
     {
         var byId = _entries.ToDictionary(entry => entry.Id, StringComparer.OrdinalIgnoreCase);
-        var states = _entries
-            .OfType<CustomEntry>()
-            .Where(entry => entry.CustomType == SessionEntryTypes.AgentStateCache && entry.ParentId is not null)
-            .ToDictionary(entry => entry.ParentId!, entry => entry.Data ?? EmptyObject(), StringComparer.OrdinalIgnoreCase);
+        var states = new Dictionary<string, JsonElement>(StringComparer.OrdinalIgnoreCase);
+        foreach (var cache in _entries.OfType<CustomEntry>()
+                     .Where(entry => entry.CustomType == SessionEntryTypes.AgentStateCache))
+        {
+            var owner = FindAncestor(cache, byId, entry => entry is MessageEntry message && RoleIs(message, "assistant"));
+            if (owner is not null)
+            {
+                states[owner.Id] = cache.Data ?? EmptyObject();
+            }
+        }
         var turns = new List<SessionTurn>();
         foreach (var assistant in _entries.OfType<MessageEntry>().Where(entry => RoleIs(entry, "assistant")))
         {

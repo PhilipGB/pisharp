@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using Microsoft.Extensions.AI;
 using PiSharp.Core;
 
@@ -23,23 +24,37 @@ internal sealed class SteeringChatClient : DelegatingChatClient
         _expandMessage = expandMessage ?? (message => message);
     }
 
-    public override Task<ChatResponse> GetResponseAsync(
+    public override async Task<ChatResponse> GetResponseAsync(
         IEnumerable<ChatMessage> messages,
         ChatOptions? options = null,
         CancellationToken cancellationToken = default)
     {
-        return base.GetResponseAsync(InjectSteering(messages), options, cancellationToken);
+        var enriched = await InjectSteeringAsync(messages, cancellationToken);
+        return await base.GetResponseAsync(enriched, options, cancellationToken);
     }
 
     public override IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(
         IEnumerable<ChatMessage> messages,
         ChatOptions? options = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default) =>
+        StreamAsync(messages, options, cancellationToken);
+
+    private async IAsyncEnumerable<ChatResponseUpdate> StreamAsync(
+        IEnumerable<ChatMessage> messages,
+        ChatOptions? options,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        return base.GetStreamingResponseAsync(InjectSteering(messages), options, cancellationToken);
+        var enriched = await InjectSteeringAsync(messages, cancellationToken);
+        await foreach (var update in base.GetStreamingResponseAsync(enriched, options, cancellationToken)
+                           .WithCancellation(cancellationToken))
+        {
+            yield return update;
+        }
     }
 
-    private IReadOnlyList<ChatMessage> InjectSteering(IEnumerable<ChatMessage> messages)
+    private async Task<IReadOnlyList<ChatMessage>> InjectSteeringAsync(
+        IEnumerable<ChatMessage> messages,
+        CancellationToken cancellationToken)
     {
         var pending = _queue.DrainSteering();
         if (pending.Count == 0)
@@ -47,6 +62,7 @@ internal sealed class SteeringChatClient : DelegatingChatClient
             return messages as IReadOnlyList<ChatMessage> ?? messages.ToArray();
         }
 
+        await _queue.NotifyDeliveredAsync(pending, cancellationToken);
         var enriched = messages.ToList();
         enriched.AddRange(pending.Select(message =>
             new ChatMessage(ChatRole.User, _expandMessage(message.Text))));

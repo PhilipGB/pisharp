@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 
 namespace PiSharp.Core;
@@ -9,6 +10,7 @@ public sealed class SessionStore
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
     {
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
         TypeInfoResolver = new DefaultJsonTypeInfoResolver(),
         WriteIndented = false,
     };
@@ -197,32 +199,22 @@ public sealed class SessionStore
             throw new InvalidOperationException("Pi v3 forking requires a Pi v3 source session.");
         }
 
-        var fork = await CreatePiAsync(cancellationToken, source.PiHeader!.Id);
-        var path = source.GetActiveEntryPath(entryId);
+        var fork = await CreatePiAsync(cancellationToken, source.FilePath);
+        var selectedEntryId = source.Entries
+            .OfType<MessageEntry>()
+            .FirstOrDefault(entry => string.Equals(entry.Id, entryId, StringComparison.OrdinalIgnoreCase) &&
+                                     entry.Message.ValueKind == JsonValueKind.Object &&
+                                     entry.Message.TryGetProperty("role", out var role) &&
+                                     string.Equals(role.GetString(), "assistant", StringComparison.Ordinal)) is not null
+            ? source.GetTurnLeafEntryId(entryId!)
+            : entryId;
+        var path = source.GetActiveEntryPath(selectedEntryId);
         if (path.Count > 0)
         {
-            var pathIds = path.Select(entry => entry.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
-            var assistantIds = path
-                .OfType<MessageEntry>()
-                .Where(IsAssistantMessage)
-                .Select(entry => entry.Id)
-                .ToHashSet(StringComparer.OrdinalIgnoreCase);
-            var entries = source.Entries
-                .Where(entry => pathIds.Contains(entry.Id) ||
-                                (entry.ParentId is not null &&
-                                 ((pathIds.Contains(entry.ParentId) &&
-                                   entry.Type is SessionEntryTypes.Custom or SessionEntryTypes.Label) ||
-                                  (assistantIds.Contains(entry.ParentId) && entry.Type == SessionEntryTypes.Message))))
-                .ToArray();
-            await AppendEntriesAsync(fork, entries, cancellationToken);
+            await AppendEntriesAsync(fork, path, cancellationToken);
         }
         return fork;
     }
-
-    private static bool IsAssistantMessage(MessageEntry entry) =>
-        entry.Message.ValueKind == JsonValueKind.Object &&
-        entry.Message.TryGetProperty("role", out var role) &&
-        string.Equals(role.GetString(), "assistant", StringComparison.Ordinal);
 
     private static SessionEntry DeserializeEntry(string line, int lineNumber, string path)
     {

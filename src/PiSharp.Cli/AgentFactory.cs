@@ -120,6 +120,7 @@ internal static class AgentFactory
         }
 
         var turnQueue = new TurnMessageQueue();
+        var sessionHistory = new PiSessionChatHistoryProvider();
         IChatClient chatClient = new SteeringChatClient(
             new ChatClient(
                     options.Model,
@@ -132,6 +133,7 @@ internal static class AgentFactory
 #pragma warning disable MAAI001 // Harness token-limit options are currently marked evaluation-only by MAF.
         var agent = chatClient.AsHarnessAgent(new HarnessAgentOptions
         {
+            ChatHistoryProvider = sessionHistory,
             Name = "pisharp",
             HarnessInstructions = "Operate as an autonomous coding harness. Continue using tools until the requested task is complete or you are blocked.",
             ChatOptions = new ChatOptions
@@ -160,7 +162,8 @@ internal static class AgentFactory
             promptTemplates,
             extensionHost,
             options.AutoRetry ? RetryPolicyOptions.Default : RetryPolicyOptions.Disabled,
-            turnQueue);
+            turnQueue,
+            sessionHistory);
     }
 
     private static string ResolveWorkspacePath(string workspaceRoot, string path) =>

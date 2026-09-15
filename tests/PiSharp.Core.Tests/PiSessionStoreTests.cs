@@ -52,6 +52,100 @@ public sealed class PiSessionStoreTests
     }
 
     [Fact]
+    public async Task PiV3ChronologyTracksToolResultsCacheAndActiveLeaf()
+    {
+        using var temp = TempDirectory.Create();
+        var workspace = Directory.CreateDirectory(Path.Combine(temp.Path, "repo")).FullName;
+        var store = new SessionStore(workspace, Path.Combine(temp.Path, "sessions"));
+        var document = await store.CreatePiAsync();
+        var user = UserMessage("user", null, "inspect");
+        var toolCall = AssistantMessage("assistant-tool", user.Id, new[]
+        {
+            new { type = "toolCall", id = "call-1", name = "read", arguments = (object)new { path = "README.md" } },
+        });
+        var toolResult = new MessageEntry(
+            "tool-result",
+            toolCall.Id,
+            DateTimeOffset.UtcNow,
+            JsonSerializer.SerializeToElement(new
+            {
+                role = "toolResult",
+                toolCallId = "call-1",
+                toolName = "read",
+                content = new[] { new { type = "text", text = "ok" } },
+                isError = false,
+            }));
+        var final = AssistantMessage("assistant-final", toolResult.Id, new[]
+        {
+            new { type = "text", text = "done" },
+        });
+        var cache = new CustomEntry(
+            "cache",
+            final.Id,
+            DateTimeOffset.UtcNow,
+            SessionEntryTypes.AgentStateCache,
+            JsonSerializer.SerializeToElement(new { restored = true }));
+        var nextUser = UserMessage("next-user", cache.Id, "continue");
+        await store.AppendEntriesAsync(document, [user, toolCall, toolResult, final, cache, nextUser]);
+
+        var loaded = await store.LoadAsync(document.FilePath);
+
+        Assert.Equal(nextUser.Id, loaded.LatestEntryId);
+        Assert.Equal(new[] { user.Id, toolCall.Id, toolResult.Id, final.Id, cache.Id, nextUser.Id },
+            loaded.GetActiveEntryPath(loaded.LatestEntryId).Select(entry => entry.Id));
+        Assert.Equal(cache.Id, loaded.GetTurnLeafEntryId(final.Id));
+        Assert.Equal(2, loaded.Turns.Count);
+        Assert.True(loaded.LatestTurn!.AgentState.GetProperty("restored").GetBoolean());
+        Assert.Equal(1, loaded.GetStatistics().ToolCalls);
+    }
+
+    [Fact]
+    public async Task PiV3WriterOmitsOptionalNullAndFalseFields()
+    {
+        using var temp = TempDirectory.Create();
+        var workspace = Directory.CreateDirectory(Path.Combine(temp.Path, "repo")).FullName;
+        var store = new SessionStore(workspace, Path.Combine(temp.Path, "sessions"));
+        var document = await store.CreatePiAsync();
+        var compaction = new CompactionEntry(
+            "compact",
+            null,
+            DateTimeOffset.UtcNow,
+            "summary",
+            "first",
+            10);
+        await store.AppendEntriesAsync(document, [compaction]);
+
+        var lines = await File.ReadAllLinesAsync(document.FilePath);
+
+        Assert.DoesNotContain("parentSession", lines[0]);
+        Assert.DoesNotContain("details", lines[1]);
+        Assert.DoesNotContain("usage", lines[1]);
+        Assert.DoesNotContain("fromHook", lines[1]);
+    }
+
+    [Fact]
+    public async Task PiV3ReaderRetainsLegacyStandaloneBashEntries()
+    {
+        using var temp = TempDirectory.Create();
+        var workspace = Directory.CreateDirectory(Path.Combine(temp.Path, "repo")).FullName;
+        var sessions = Path.Combine(temp.Path, "sessions");
+        var store = new SessionStore(workspace, sessions);
+        var path = Path.Combine(sessions, "legacy.jsonl");
+        Directory.CreateDirectory(sessions);
+        var header = PiSessionHeader.Create(workspace);
+        var bash = new BashExecutionEntry("bash", null, DateTimeOffset.UtcNow, "pwd", "/workspace", 0, false);
+        var jsonOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+        await File.WriteAllLinesAsync(path, [
+            JsonSerializer.Serialize(header, jsonOptions),
+            JsonSerializer.Serialize(bash, jsonOptions),
+        ]);
+
+        var loaded = await store.LoadAsync(path);
+
+        Assert.IsType<BashExecutionEntry>(Assert.Single(loaded.Entries));
+    }
+
+    [Fact]
     public async Task PiV3ForkPreservesSelectedPathAndStateCache()
     {
         using var temp = TempDirectory.Create();
@@ -67,6 +161,14 @@ public sealed class PiSessionStoreTests
         var fork = await store.ForkPiAsync(source, assistant.Id);
 
         Assert.Equal(new[] { "user", "assistant", "state" }, fork.Entries.Select(entry => entry.Id));
-        Assert.Equal(source.PiHeader!.Id, fork.PiHeader!.ParentSession);
+        Assert.Equal(source.FilePath, fork.PiHeader!.ParentSession);
     }
+
+    private static MessageEntry UserMessage(string id, string? parentId, string content) =>
+        new(id, parentId, DateTimeOffset.UtcNow,
+            JsonSerializer.SerializeToElement(new { role = "user", content }));
+
+    private static MessageEntry AssistantMessage(string id, string? parentId, object[] content) =>
+        new(id, parentId, DateTimeOffset.UtcNow,
+            JsonSerializer.SerializeToElement(new { role = "assistant", content }));
 }

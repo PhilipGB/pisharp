@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace PiSharp.Core;
 
@@ -44,7 +45,7 @@ public abstract record SessionEntry(
     string? ParentId,
     DateTimeOffset Timestamp);
 
-/// <summary>A durable user, assistant, or tool-result message.</summary>
+/// <summary>A durable Pi message, including user, assistant, tool-result, and bash-execution roles.</summary>
 public sealed record MessageEntry(
     string Id,
     string? ParentId,
@@ -52,7 +53,7 @@ public sealed record MessageEntry(
     JsonElement Message)
     : SessionEntry(SessionEntryTypes.Message, Id, ParentId, Timestamp);
 
-/// <summary>A manually executed shell command and its result.</summary>
+/// <summary>Legacy PiSharp-only bash entry retained for backward-compatible reads.</summary>
 public sealed record BashExecutionEntry(
     string Id,
     string? ParentId,
@@ -90,7 +91,7 @@ public sealed record CompactionEntry(
     long TokensBefore,
     JsonElement? Details = null,
     JsonElement? Usage = null,
-    bool FromHook = false)
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)] bool FromHook = false)
     : SessionEntry(SessionEntryTypes.Compaction, Id, ParentId, Timestamp);
 
 /// <summary>A summary of work abandoned while changing branches.</summary>
@@ -102,7 +103,7 @@ public sealed record BranchSummaryEntry(
     string Summary,
     JsonElement? Details = null,
     JsonElement? Usage = null,
-    bool FromHook = false)
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)] bool FromHook = false)
     : SessionEntry(SessionEntryTypes.BranchSummary, Id, ParentId, Timestamp);
 
 /// <summary>Extension-owned state that is not sent to the model.</summary>

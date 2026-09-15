@@ -33,7 +33,7 @@ try
 
     var bootstrap = await AgentFactory.CreateAsync(options, shutdown.Token);
     liveTurns = new LiveTurnCoordinator(bootstrap.TurnQueue);
-    var sessions = await SessionController.CreateAsync(bootstrap.Agent, options, shutdown.Token);
+    var sessions = await SessionController.CreateAsync(bootstrap, options, shutdown.Token);
 
     if (options.OutputMode == OutputMode.Rpc)
     {
