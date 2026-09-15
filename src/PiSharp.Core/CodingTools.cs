@@ -7,8 +7,8 @@ namespace PiSharp.Core;
 public sealed class CodingTools
 {
     private const int MaxReadCharacters = 200_000;
-    private const int MaxCommandOutputCharacters = 100_000;
     private readonly WorkspacePathPolicy _paths;
+    private readonly EditEngine _editEngine = new();
 
     public CodingTools(string workspaceRoot)
     {
@@ -85,6 +85,16 @@ public sealed class CodingTools
         [Description("Exact replacements to apply against the original file contents.")] IReadOnlyList<EditOperation> edits,
         CancellationToken cancellationToken = default)
     {
+        await EditWithDetailsAsync(path, edits, cancellationToken);
+        return $"Successfully replaced {edits.Count} block(s) in {path}.";
+    }
+
+    /// <summary>Applies edits and returns the diff and unified patch used by terminal renderers.</summary>
+    public async Task<EditResult> EditWithDetailsAsync(
+        string path,
+        IReadOnlyList<EditOperation> edits,
+        CancellationToken cancellationToken = default)
+    {
         ArgumentNullException.ThrowIfNull(edits);
         if (edits.Count == 0)
         {
@@ -98,53 +108,24 @@ public sealed class CodingTools
         }
 
         var content = await File.ReadAllTextAsync(absolutePath, cancellationToken);
-        var matched = new List<(int Index, int Length, string NewText)>();
+        var result = _editEngine.Apply(path, content, edits);
+        await File.WriteAllTextAsync(absolutePath, result.UpdatedContent, new UTF8Encoding(false), cancellationToken);
+        return result;
+    }
 
-        foreach (var edit in edits)
-        {
-            if (string.IsNullOrEmpty(edit.OldText))
-            {
-                throw new InvalidOperationException("oldText must not be empty.");
-            }
-
-            var first = content.IndexOf(edit.OldText, StringComparison.Ordinal);
-            if (first < 0)
-            {
-                throw new InvalidOperationException("oldText was not found in the file.");
-            }
-
-            var second = content.IndexOf(edit.OldText, first + edit.OldText.Length, StringComparison.Ordinal);
-            if (second >= 0)
-            {
-                throw new InvalidOperationException("oldText is not unique. Include more surrounding context.");
-            }
-
-            matched.Add((first, edit.OldText.Length, edit.NewText));
-        }
-
-        var ordered = matched.OrderBy(x => x.Index).ToArray();
-        for (var i = 1; i < ordered.Length; i++)
-        {
-            var previousEnd = ordered[i - 1].Index + ordered[i - 1].Length;
-            if (ordered[i].Index < previousEnd)
-            {
-                throw new InvalidOperationException("Edits overlap. Merge overlapping edits into a single replacement.");
-            }
-        }
-
-        var updated = content;
-        foreach (var edit in matched.OrderByDescending(x => x.Index))
-        {
-            updated = updated[..edit.Index] + edit.NewText + updated[(edit.Index + edit.Length)..];
-        }
-
-        if (updated == content)
-        {
-            throw new InvalidOperationException("No changes made; replacement content is identical.");
-        }
-
-        await File.WriteAllTextAsync(absolutePath, updated, new UTF8Encoding(false), cancellationToken);
-        return $"Successfully replaced {edits.Count} block(s) in {path}.";
+    /// <summary>Applies an edit and returns only the metadata needed by an AI tool renderer.</summary>
+    public async Task<EditToolResult> EditForAgentAsync(
+        string path,
+        IReadOnlyList<EditOperation> edits,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await EditWithDetailsAsync(path, edits, cancellationToken);
+        return new EditToolResult(
+            $"Successfully replaced {edits.Count} block(s) in {path}.",
+            result.Diff,
+            result.Patch,
+            result.FirstChangedLine,
+            result.UsedFuzzyMatch);
     }
 
     [Description("Run a shell command in the workspace and return stdout, stderr, and the exit code. Use for builds, tests, git, search, and other repository operations.")]
@@ -239,14 +220,14 @@ public sealed class CodingTools
 
     private static void AppendTruncated(StringBuilder builder, string value)
     {
-        if (value.Length <= MaxCommandOutputCharacters)
+        var result = OutputTruncator.Tail(value);
+        builder.Append(result.Content);
+        if (!result.Truncated)
         {
-            builder.Append(value);
             return;
         }
 
-        builder.Append(value.AsSpan(0, MaxCommandOutputCharacters));
         builder.AppendLine();
-        builder.Append("[output truncated]");
+        builder.Append($"[output truncated: showing {result.OutputLines} of {result.TotalLines} lines]");
     }
 }

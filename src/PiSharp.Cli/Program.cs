@@ -219,11 +219,12 @@ static async Task<TurnExecutionResult> RunSingleTurnAsync(
 {
     var response = new StringBuilder();
     var toolNames = new Dictionary<string, string>(StringComparer.Ordinal);
+    var toolArguments = new Dictionary<string, string>(StringComparer.Ordinal);
     try
     {
         await foreach (var update in agent.RunStreamingAsync(prompt, session, cancellationToken: cancellationToken))
         {
-            RenderToolContents(update, toolNames);
+            RenderToolContents(update, toolNames, toolArguments);
             if ((update.Role is null || update.Role == ChatRole.Assistant) && !string.IsNullOrEmpty(update.Text))
             {
                 Console.Write(update.Text);
@@ -243,15 +244,29 @@ static async Task<TurnExecutionResult> RunSingleTurnAsync(
 
 static void RenderToolContents(
     AgentResponseUpdate update,
-    IDictionary<string, string> toolNames)
+    IDictionary<string, string> toolNames,
+    IDictionary<string, string> toolArguments)
 {
     foreach (var content in update.Contents)
     {
         switch (content)
         {
             case FunctionCallContent call when !call.InformationalOnly:
+                var arguments = FormatJson(call.Arguments);
                 toolNames[call.CallId] = call.Name;
-                Console.WriteLine($"\n[tool:start] {call.Name} {FormatJson(call.Arguments)}");
+                if (toolArguments.TryGetValue(call.CallId, out var previousArguments))
+                {
+                    if (!string.Equals(previousArguments, arguments, StringComparison.Ordinal))
+                    {
+                        Console.WriteLine($"\n[tool:update] {call.Name} {arguments}");
+                        toolArguments[call.CallId] = arguments;
+                    }
+                }
+                else
+                {
+                    toolArguments[call.CallId] = arguments;
+                    Console.WriteLine($"\n[tool:start] {call.Name} {arguments}");
+                }
                 break;
             case FunctionResultContent result:
                 var name = toolNames.TryGetValue(result.CallId, out var knownName) ? knownName : result.CallId;
@@ -285,6 +300,9 @@ static string FormatValue(object? value)
     {
         null => "(no result)",
         string stringValue => stringValue,
+        EditToolResult edit => $"{edit.Message}\n{edit.Diff}",
+        JsonElement element when element.ValueKind == JsonValueKind.Object &&
+            element.TryGetProperty("diff", out var diff) => diff.GetString() ?? element.ToString(),
         _ => FormatJson(value),
     };
     const int MaxToolPreviewCharacters = 4_000;

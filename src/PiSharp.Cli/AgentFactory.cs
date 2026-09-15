@@ -21,7 +21,7 @@ internal static class AgentFactory
 
         Func<string, int, int, CancellationToken, Task<string>> read = tools.ReadAsync;
         Func<string, string, CancellationToken, Task<string>> write = tools.WriteAsync;
-        Func<string, IReadOnlyList<EditOperation>, CancellationToken, Task<string>> edit = tools.EditAsync;
+        Func<string, IReadOnlyList<EditOperation>, CancellationToken, Task<EditToolResult>> edit = tools.EditForAgentAsync;
         Func<string, int, CancellationToken, Task<string>> bash = tools.BashAsync;
 
         AITool[] aiTools =
@@ -33,7 +33,7 @@ internal static class AgentFactory
                 "Write an entire UTF-8 text file in the workspace. Creates parent directories and replaces existing content.",
                 serializerOptions),
             AIFunctionFactory.Create(edit, "edit",
-                "Edit one file using exact text replacements. Every oldText must uniquely match the original file and edits must not overlap.",
+                "Edit one file using exact or conservative fuzzy text replacements. Every oldText must uniquely match the original file and edits must not overlap. Returns a diff.",
                 serializerOptions),
             AIFunctionFactory.Create(bash, "bash",
                 "Run a shell command from the workspace root. Use for builds, tests, git, search, and repository operations.",
