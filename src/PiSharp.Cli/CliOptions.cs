@@ -14,7 +14,13 @@ internal sealed record CliOptions(
     string? SessionSelector,
     string? SessionDirectory,
     bool NoSession,
-    string? ContextRoot)
+    string? ContextRoot,
+    IReadOnlyList<string> ExtensionPaths,
+    IReadOnlyList<string> SkillPaths,
+    IReadOnlyList<string> PromptTemplatePaths,
+    bool NoExtensions,
+    bool NoSkills,
+    bool NoPromptTemplates)
 {
     public static CliOptions Parse(string[] args)
     {
@@ -34,6 +40,12 @@ internal sealed record CliOptions(
         string? sessionDirectory = Environment.GetEnvironmentVariable("PISHARP_SESSION_DIR");
         var noSession = false;
         string? contextRoot = null;
+        var extensionPaths = new List<string>();
+        var skillPaths = new List<string>();
+        var promptTemplatePaths = new List<string>();
+        var noExtensions = false;
+        var noSkills = false;
+        var noPromptTemplates = false;
 
         for (var i = 0; i < args.Length; i++)
         {
@@ -77,6 +89,24 @@ internal sealed record CliOptions(
                     break;
                 case "--context-root":
                     contextRoot = RequireValue(args, ref i, "--context-root");
+                    break;
+                case "--extension" or "-e":
+                    extensionPaths.Add(RequireValue(args, ref i, "--extension"));
+                    break;
+                case "--skill":
+                    skillPaths.Add(RequireValue(args, ref i, "--skill"));
+                    break;
+                case "--prompt-template":
+                    promptTemplatePaths.Add(RequireValue(args, ref i, "--prompt-template"));
+                    break;
+                case "--no-extensions" or "-ne":
+                    noExtensions = true;
+                    break;
+                case "--no-skills" or "-ns":
+                    noSkills = true;
+                    break;
+                case "--no-prompt-templates" or "-np":
+                    noPromptTemplates = true;
                     break;
                 case "--":
                     promptParts.AddRange(args[(i + 1)..]);
@@ -135,7 +165,13 @@ internal sealed record CliOptions(
             sessionSelector,
             sessionDirectory,
             noSession,
-            contextRoot);
+            contextRoot,
+            extensionPaths,
+            skillPaths,
+            promptTemplatePaths,
+            noExtensions,
+            noSkills,
+            noPromptTemplates);
     }
 
     private static string RequireValue(string[] args, ref int index, string option)

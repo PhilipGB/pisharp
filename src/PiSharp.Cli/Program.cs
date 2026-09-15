@@ -498,6 +498,12 @@ static void PrintHelp()
           --api-key <key>             API key; defaults to PISHARP_API_KEY then OPENAI_API_KEY
           --cwd <path>                Workspace root; defaults to current directory
           --context-root <path>       Stop parent AGENTS.md/CLAUDE.md discovery at this directory
+          --extension, -e <path>      Load a trusted .NET extension DLL/directory (repeatable)
+          --skill <path>              Load a skill file/directory (repeatable)
+          --prompt-template <path>    Load a prompt template file/directory (repeatable)
+          --no-extensions, -ne        Disable default extension discovery
+          --no-skills, -ns            Disable default skill discovery
+          --no-prompt-templates, -np  Disable default prompt discovery
           --context-tokens <n>        Context window used by Harness compaction (default 128000)
           --max-output-tokens <n>     Maximum output tokens (default 16384)
           -c, --continue              Continue the most recently modified session for this workspace

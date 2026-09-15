@@ -176,6 +176,12 @@ pisharp [options] [prompt...]
 --api-key <key>             API key
 --cwd <path>                repository/workspace root
 --context-root <path>       stop parent context discovery at this directory
+--extension, -e <path>      load a trusted .NET extension DLL/directory (repeatable)
+--skill <path>              load a skill file/directory (repeatable)
+--prompt-template <path>    load a prompt template file/directory (repeatable)
+--no-extensions, -ne        disable default extension discovery
+--no-skills, -ns            disable default skill discovery
+--no-prompt-templates, -np  disable default prompt discovery
 --context-tokens <n>        context window used by Harness compaction
 --max-output-tokens <n>     maximum model output tokens
 -c, --continue              continue most recent workspace session

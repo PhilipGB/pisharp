@@ -33,14 +33,18 @@ public sealed class SkillCatalog
     public SkillDiscoveryResult Discover(
         string workspaceRoot,
         string? homeDirectory = null,
-        IEnumerable<string>? additionalPaths = null)
+        IEnumerable<string>? additionalPaths = null,
+        bool includeDefaults = true)
     {
         var root = Path.GetFullPath(workspaceRoot);
         var home = homeDirectory ?? Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         var skills = new Dictionary<string, SkillDefinition>(StringComparer.Ordinal);
         var diagnostics = new List<SkillDiagnostic>();
-        AddDirectory(Path.Combine(home, ".pi", "agent", "skills"), skills, diagnostics);
-        AddDirectory(Path.Combine(root, ".pi", "skills"), skills, diagnostics);
+        if (includeDefaults)
+        {
+            AddDirectory(Path.Combine(home, ".pi", "agent", "skills"), skills, diagnostics);
+            AddDirectory(Path.Combine(root, ".pi", "skills"), skills, diagnostics);
+        }
         foreach (var path in additionalPaths ?? [])
         {
             var resolvedPath = Path.IsPathRooted(path) ? path : Path.Combine(root, path);

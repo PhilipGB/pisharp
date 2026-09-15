@@ -47,20 +47,33 @@ internal static class AgentFactory
         var packageResult = new PiPackageCatalog().Discover(options.WorkingDirectory);
         var extensionHost = new PiSharpExtensionHost();
         var homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-        extensionHost.LoadFromPaths(
-        [
-            Path.Combine(homeDirectory, ".pi", "agent", "extensions"),
-            Path.Combine(options.WorkingDirectory, ".pi", "extensions"),
-            .. packageResult.ExtensionPaths,
-        ]);
-        var skillResult = new SkillCatalog().Discover(options.WorkingDirectory, additionalPaths: packageResult.SkillPaths);
+        IReadOnlyList<string> extensionPaths = options.NoExtensions
+            ? []
+            :
+            [
+                Path.Combine(homeDirectory, ".pi", "agent", "extensions"),
+                Path.Combine(options.WorkingDirectory, ".pi", "extensions"),
+                .. packageResult.ExtensionPaths,
+            ];
+        extensionPaths = extensionPaths
+            .Concat(options.ExtensionPaths.Select(path => ResolveWorkspacePath(options.WorkingDirectory, path)))
+            .ToArray();
+        extensionHost.LoadFromPaths(extensionPaths);
+        var skillPaths = options.SkillPaths.Concat(options.NoSkills ? [] : packageResult.SkillPaths);
+        var skillResult = new SkillCatalog().Discover(
+            options.WorkingDirectory,
+            additionalPaths: skillPaths,
+            includeDefaults: !options.NoSkills);
         foreach (var skill in skillResult.Skills)
         {
             tools.AddReadOnlyRoot(skill.BaseDirectory);
         }
+        var promptPaths = options.PromptTemplatePaths.Concat(
+            options.NoPromptTemplates ? [] : packageResult.PromptPaths);
         var promptTemplates = new PromptTemplateCatalog().Discover(
             options.WorkingDirectory,
-            explicitPaths: packageResult.PromptPaths);
+            explicitPaths: promptPaths,
+            includeDefaults: !options.NoPromptTemplates);
         var expandInput = (string text) => PromptTemplateCatalog.Expand(
             SkillCatalog.ExpandCommand(extensionHost.TransformInput(text), skillResult.Skills),
             promptTemplates);
@@ -133,4 +146,7 @@ internal static class AgentFactory
             extensionHost,
             turnQueue);
     }
+
+    private static string ResolveWorkspacePath(string workspaceRoot, string path) =>
+        Path.IsPathRooted(path) ? path : Path.Combine(workspaceRoot, path);
 }

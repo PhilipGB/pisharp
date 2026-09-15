@@ -22,15 +22,18 @@ public sealed class PromptTemplateCatalog
     public IReadOnlyList<PromptTemplate> Discover(
         string workspaceRoot,
         string? homeDirectory = null,
-        IEnumerable<string>? explicitPaths = null)
+        IEnumerable<string>? explicitPaths = null,
+        bool includeDefaults = true)
     {
         var root = Path.GetFullPath(workspaceRoot);
         var home = homeDirectory ?? Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-        var directories = new List<string>
-        {
-            Path.Combine(home, ".pi", "agent", TemplateDirectoryName),
-            Path.Combine(root, ".pi", TemplateDirectoryName),
-        };
+        var directories = includeDefaults
+            ? new List<string>
+            {
+                Path.Combine(home, ".pi", "agent", TemplateDirectoryName),
+                Path.Combine(root, ".pi", TemplateDirectoryName),
+            }
+            : [];
         directories.AddRange((explicitPaths ?? [])
             .Select(path => Path.IsPathRooted(path) ? path : Path.Combine(root, path)));
         return directories.SelectMany(LoadPath).ToArray();
