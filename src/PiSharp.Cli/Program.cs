@@ -38,6 +38,16 @@ try
     liveTurns = new LiveTurnCoordinator(bootstrap.TurnQueue);
     var sessions = await SessionController.CreateAsync(bootstrap.Agent, options, shutdown.Token);
 
+    if (options.OutputMode == OutputMode.Rpc)
+    {
+        return await HeadlessModes.RunRpcModeAsync(bootstrap, sessions, liveTurns, options, shutdown.Token);
+    }
+
+    if (options.OutputMode == OutputMode.Json || options.PrintMode)
+    {
+        return await HeadlessModes.RunPrintModeAsync(bootstrap, sessions, liveTurns, options, shutdown.Token);
+    }
+
     if (options.Prompt is not null)
     {
         var result = await RunTurnAsync(
@@ -49,6 +59,7 @@ try
             bootstrap.PromptTemplates,
             bootstrap.ExtensionHost,
             options.WorkingDirectory,
+            new TerminalChatOutput(),
             shutdown.Token);
         await sessions.PersistTurnAsync(options.Prompt, result.AssistantText, shutdown.Token);
         await PublishShutdownAsync(bootstrap.ExtensionHost, options.WorkingDirectory, bootstrap.TurnQueue);
@@ -76,6 +87,7 @@ try
         bootstrap.ExtensionHost,
         options.WorkingDirectory,
         liveTurns,
+        new TerminalChatOutput(),
         promptReader,
         shutdown.Token);
     await PublishShutdownAsync(bootstrap.ExtensionHost, options.WorkingDirectory, bootstrap.TurnQueue);
@@ -110,6 +122,7 @@ static async Task RunInteractiveAsync(
     PiSharpExtensionHost extensionHost,
     string workspaceRoot,
     LiveTurnCoordinator liveTurns,
+    IChatOutput output,
     TerminalPromptReader promptReader,
     CancellationToken cancellationToken)
 {
@@ -157,6 +170,7 @@ static async Task RunInteractiveAsync(
             promptTemplates,
             extensionHost,
             workspaceRoot,
+            output,
             cancellationToken);
         var expandInput = CreateInputExpander(skills, promptTemplates, extensionHost);
         var activeInput = await DrainActiveInputAsync(
@@ -258,6 +272,7 @@ static async Task<LiveTurnResult> RunTurnAsync(
     IReadOnlyList<PromptTemplate> promptTemplates,
     PiSharpExtensionHost extensionHost,
     string workspaceRoot,
+    IChatOutput output,
     CancellationToken cancellationToken)
 {
     var expandInput = CreateInputExpander(skills, promptTemplates, extensionHost);
@@ -265,7 +280,7 @@ static async Task<LiveTurnResult> RunTurnAsync(
     await extensionHost.PublishAsync(PiSharpExtensionEvent.BeforeTurn, context);
     var result = await liveTurns.RunAsync(
         prompt,
-        (message, token) => RunSingleTurnAsync(agent, session, expandInput(message), token),
+        (message, token) => RunSingleTurnAsync(agent, session, expandInput(message), output, token),
         cancellationToken);
     await extensionHost.PublishAsync(
         result.Cancelled ? PiSharpExtensionEvent.TurnCancelled : PiSharpExtensionEvent.AfterTurn,
@@ -285,6 +300,7 @@ static async Task<TurnExecutionResult> RunSingleTurnAsync(
     AIAgent agent,
     AgentSession session,
     string prompt,
+    IChatOutput output,
     CancellationToken cancellationToken)
 {
     var response = new StringBuilder();
@@ -294,20 +310,20 @@ static async Task<TurnExecutionResult> RunSingleTurnAsync(
     {
         await foreach (var update in agent.RunStreamingAsync(prompt, session, cancellationToken: cancellationToken))
         {
-            RenderToolContents(update, toolNames, toolArguments);
+            RenderToolContents(update, toolNames, toolArguments, output);
             if ((update.Role is null || update.Role == ChatRole.Assistant) && !string.IsNullOrEmpty(update.Text))
             {
-                Console.Write(update.Text);
+                output.WriteText(update.Text);
                 response.Append(update.Text);
             }
         }
 
-        Console.WriteLine();
+        output.WriteLine();
         return new TurnExecutionResult(response.ToString());
     }
     catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
     {
-        Console.WriteLine();
+        output.WriteLine();
         return new TurnExecutionResult(response.ToString(), Cancelled: true);
     }
 }
@@ -315,7 +331,8 @@ static async Task<TurnExecutionResult> RunSingleTurnAsync(
 static void RenderToolContents(
     AgentResponseUpdate update,
     IDictionary<string, string> toolNames,
-    IDictionary<string, string> toolArguments)
+    IDictionary<string, string> toolArguments,
+    IChatOutput output)
 {
     foreach (var content in update.Contents)
     {
@@ -328,20 +345,19 @@ static void RenderToolContents(
                 {
                     if (!string.Equals(previousArguments, arguments, StringComparison.Ordinal))
                     {
-                        Console.WriteLine($"\n[tool:update] {call.Name} {arguments}");
+                        output.ToolUpdated(call.Name, arguments);
                         toolArguments[call.CallId] = arguments;
                     }
                 }
                 else
                 {
                     toolArguments[call.CallId] = arguments;
-                    Console.WriteLine($"\n[tool:start] {call.Name} {arguments}");
+                    output.ToolStarted(call.Name, arguments);
                 }
                 break;
             case FunctionResultContent result:
                 var name = toolNames.TryGetValue(result.CallId, out var knownName) ? knownName : result.CallId;
-                var error = result.Exception is null ? string.Empty : $" error={result.Exception.Message}";
-                Console.WriteLine($"\n[tool:end] {name}{error}: {FormatValue(result.Result)}");
+                output.ToolFinished(name, result.Exception?.Message, FormatValue(result.Result));
                 break;
         }
     }
@@ -501,6 +517,8 @@ static void PrintHelp()
           --extension, -e <path>      Load a trusted .NET extension DLL/directory (repeatable)
           --skill <path>              Load a skill file/directory (repeatable)
           --prompt-template <path>    Load a prompt template file/directory (repeatable)
+          --mode <text|json|rpc>      Select text, JSON event, or JSON-RPC output
+          --print, -p                 Run one prompt and exit
           --no-extensions, -ne        Disable default extension discovery
           --no-skills, -ns            Disable default skill discovery
           --no-prompt-templates, -np  Disable default prompt discovery

@@ -15,6 +15,8 @@ public sealed class CliOptionsTests
             "-e", "extensions/two.dll",
             "--skill", "skills/review",
             "--prompt-template", "prompts/review.md",
+            "--mode", "rpc",
+            "--print",
             "--no-extensions",
             "--no-skills",
             "--no-prompt-templates",
@@ -26,5 +28,18 @@ public sealed class CliOptionsTests
         Assert.True(options.NoExtensions);
         Assert.True(options.NoSkills);
         Assert.True(options.NoPromptTemplates);
+        Assert.Equal(OutputMode.Rpc, options.OutputMode);
+        Assert.True(options.PrintMode);
+    }
+
+    [Fact]
+    public void ParsesRpcCommandEnvelopeWithoutLosingCorrelationFields()
+    {
+        var command = RpcProtocol.Parse("{\"id\":\"42\",\"type\":\"prompt\",\"message\":\"inspect\",\"streamingBehavior\":\"steer\"}");
+
+        Assert.Equal("42", command.Id);
+        Assert.Equal("prompt", command.Type);
+        Assert.Equal("inspect", command.Message);
+        Assert.Equal("steer", command.StreamingBehavior);
     }
 }

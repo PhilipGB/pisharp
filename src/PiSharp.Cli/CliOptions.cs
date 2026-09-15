@@ -1,5 +1,12 @@
 namespace PiSharp.Cli;
 
+internal enum OutputMode
+{
+    Text,
+    Json,
+    Rpc,
+}
+
 internal sealed record CliOptions(
     string WorkingDirectory,
     string Model,
@@ -20,7 +27,9 @@ internal sealed record CliOptions(
     IReadOnlyList<string> PromptTemplatePaths,
     bool NoExtensions,
     bool NoSkills,
-    bool NoPromptTemplates)
+    bool NoPromptTemplates,
+    OutputMode OutputMode,
+    bool PrintMode)
 {
     public static CliOptions Parse(string[] args)
     {
@@ -46,6 +55,8 @@ internal sealed record CliOptions(
         var noExtensions = false;
         var noSkills = false;
         var noPromptTemplates = false;
+        var outputMode = OutputMode.Text;
+        var printMode = false;
 
         for (var i = 0; i < args.Length; i++)
         {
@@ -98,6 +109,12 @@ internal sealed record CliOptions(
                     break;
                 case "--prompt-template":
                     promptTemplatePaths.Add(RequireValue(args, ref i, "--prompt-template"));
+                    break;
+                case "--mode":
+                    outputMode = ParseOutputMode(RequireValue(args, ref i, "--mode"));
+                    break;
+                case "--print" or "-p":
+                    printMode = true;
                     break;
                 case "--no-extensions" or "-ne":
                     noExtensions = true;
@@ -171,8 +188,18 @@ internal sealed record CliOptions(
             promptTemplatePaths,
             noExtensions,
             noSkills,
-            noPromptTemplates);
+            noPromptTemplates,
+            outputMode,
+            printMode);
     }
+
+    private static OutputMode ParseOutputMode(string value) => value.ToLowerInvariant() switch
+    {
+        "text" => OutputMode.Text,
+        "json" => OutputMode.Json,
+        "rpc" => OutputMode.Rpc,
+        _ => throw new ArgumentException($"Unknown output mode '{value}'. Use text, json, or rpc."),
+    };
 
     private static string RequireValue(string[] args, ref int index, string option)
     {

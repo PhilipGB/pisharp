@@ -44,7 +44,7 @@ Remaining parity work:
 - Pi-equivalent full-screen tree picker and richer TUI/editor/keybindings
 - provider login/OAuth and dynamic model catalogue
 - project trust
-- JSON/RPC modes
+- full Pi-compatible JSON/RPC event schemas and command coverage
 - retry policy and provider failover
 - image input
 - shell approval/sandbox policy
@@ -52,6 +52,7 @@ Remaining parity work:
 - loading TypeScript/JavaScript extensions (PiSharp currently loads trusted .NET DLLs)
 - extension UI primitives, custom tools, themes, and provider registration
 - full resource reload and live settings management
+- exact JSON/RPC protocol parity (current headless modes provide a compatible initial subset)
 
 ## Requirements
 
@@ -179,6 +180,8 @@ pisharp [options] [prompt...]
 --extension, -e <path>      load a trusted .NET extension DLL/directory (repeatable)
 --skill <path>              load a skill file/directory (repeatable)
 --prompt-template <path>    load a prompt template file/directory (repeatable)
+--mode <text|json|rpc>      select text, JSON event, or JSON-RPC output
+--print, -p                 run one prompt and exit
 --no-extensions, -ne        disable default extension discovery
 --no-skills, -ns            disable default skill discovery
 --no-prompt-templates, -np  disable default prompt discovery

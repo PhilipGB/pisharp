@@ -61,6 +61,9 @@ public sealed class TurnMessageQueue
     /// <summary>Queues a message for delivery after the current run finishes.</summary>
     public QueuedUserMessage EnqueueFollowUp(string text) => Enqueue(text, QueuedMessageKind.FollowUp);
 
+    /// <summary>Queues a message using the requested delivery semantics.</summary>
+    public QueuedUserMessage Enqueue(QueuedMessageKind kind, string text) => Enqueue(text, kind);
+
     /// <summary>Gets a stable snapshot of all pending messages.</summary>
     public TurnQueueSnapshot Snapshot()
     {
