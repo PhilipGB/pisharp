@@ -19,6 +19,7 @@ Implemented and smoke-tested against llama.cpp:
 - optional `--context-root` to stop parent context discovery at an explicit boundary
 - `/context` source reporting
 - streaming terminal output
+- bracketed multi-line paste handling: one terminal paste is submitted as one prompt
 - one-shot and interactive modes
 - durable append-only JSONL sessions
 - stable turn IDs and `parentId` tree semantics
@@ -27,7 +28,7 @@ Implemented and smoke-tested against llama.cpp:
 - `-r` / `--resume`
 - `--session <id|path>`
 - `/session`, `/tree`, `/goto`, `/fork`, `/clone`, `/new`, `/resume`
-- unit tests for file/path/context/session behaviour
+- unit tests for file/path/context/session/terminal-input behaviour
 
 Still to implement:
 
@@ -78,6 +79,12 @@ dotnet run --project src/PiSharp.Cli
 ```
 
 An API key is not required for a local endpoint; PiSharp supplies `unused` if none is configured.
+
+### Terminal input
+
+On an interactive terminal PiSharp enables bracketed-paste mode. A multi-line paste is collected and submitted to the agent as a **single prompt**, instead of each pasted line becoming an independent turn. Slash commands are recognized only when the submitted input is a single line, so pasted transcripts beginning with `/` are not accidentally executed as PiSharp commands.
+
+This is deliberately a focused fix rather than the final Pi-style editor. Rich multi-line editing, history, keybindings, queued steering, and full-screen terminal UI remain future work.
 
 ## Context files
 
@@ -173,6 +180,8 @@ pisharp [options] [prompt...]
 ```text
 PiSharp.Cli
    |
+   +-- TerminalPromptReader
+   |
    +-- OpenAI-compatible IChatClient
    |
    +-- Microsoft Agent Framework HarnessAgent
@@ -207,4 +216,3 @@ The next slice is live-turn behaviour:
 3. streamed tool start/update/end events in the terminal;
 4. abort semantics that preserve queued user input;
 5. tests around ordering and cancellation.
-# pisharp

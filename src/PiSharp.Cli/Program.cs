@@ -44,10 +44,15 @@ try
     }
     Console.WriteLine("Type /help for commands. Ctrl+C cancels the process.");
 
+    using var promptReader = new TerminalPromptReader(
+        Console.In,
+        Console.Out,
+        enableBracketedPaste: !Console.IsInputRedirected && !Console.IsOutputRedirected);
+
     while (!shutdown.IsCancellationRequested)
     {
-        Console.Write("\n> ");
-        var input = Console.ReadLine();
+        Console.WriteLine();
+        var input = promptReader.ReadPrompt();
         if (input is null || input.Equals("/exit", StringComparison.OrdinalIgnoreCase) || input.Equals("/quit", StringComparison.OrdinalIgnoreCase))
         {
             break;
@@ -58,7 +63,7 @@ try
             continue;
         }
 
-        if (input.StartsWith("/", StringComparison.Ordinal))
+        if (!input.Contains('\n') && input.StartsWith("/", StringComparison.Ordinal))
         {
             if (await HandleCommandAsync(input, sessions, bootstrap.ContextFiles, shutdown.Token))
             {
@@ -191,6 +196,9 @@ static void PrintInteractiveHelp()
           /resume                  Pick and resume a saved session
           /context                 List loaded AGENTS.md/CLAUDE.md files
           /exit, /quit             Exit
+
+        Multi-line terminal pastes are submitted as one prompt when the terminal supports bracketed paste.
+        Slash commands are recognized only for single-line input.
         """);
 }
 
