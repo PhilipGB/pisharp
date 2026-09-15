@@ -130,6 +130,7 @@ public sealed class PiSharpExtensionHost
 {
     private readonly PiSharpExtensionRegistry _registry = new();
     private readonly List<IPiSharpExtension> _extensions = [];
+    private readonly List<string> _loadedPaths = [];
     private readonly List<ExtensionDiagnostic> _diagnostics = [];
 
     /// <summary>Gets registered extension commands.</summary>
@@ -137,6 +138,9 @@ public sealed class PiSharpExtensionHost
 
     /// <summary>Gets diagnostics accumulated while loading and invoking extensions.</summary>
     public IReadOnlyList<ExtensionDiagnostic> Diagnostics => _diagnostics;
+
+    /// <summary>Gets assembly paths that were actually loaded into the process.</summary>
+    public IReadOnlyList<string> LoadedPaths => _loadedPaths;
 
     /// <summary>Registers an in-process extension instance.</summary>
     public void Register(IPiSharpExtension extension)
@@ -243,6 +247,7 @@ public sealed class PiSharpExtensionHost
             var assembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(Path.GetFullPath(path));
             var types = assembly.GetTypes()
                 .Where(type => typeof(IPiSharpExtension).IsAssignableFrom(type) && !type.IsAbstract && !type.IsInterface);
+            var loadedAny = false;
             foreach (var type in types)
             {
                 if (Activator.CreateInstance(type) is not IPiSharpExtension extension)
@@ -251,6 +256,11 @@ public sealed class PiSharpExtensionHost
                 }
                 Register(extension);
                 loaded.Add(extension.Name);
+                loadedAny = true;
+            }
+            if (loadedAny)
+            {
+                _loadedPaths.Add(Path.GetFullPath(path));
             }
         }
         catch (ReflectionTypeLoadException exception)

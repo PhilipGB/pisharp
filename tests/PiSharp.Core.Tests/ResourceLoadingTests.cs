@@ -32,6 +32,32 @@ public sealed class ResourceLoadingTests
     }
 
     [Fact]
+    public void ProjectSkillsAndPromptsAreExcludedWhenProjectIsUntrusted()
+    {
+        using var workspace = new TemporaryDirectory();
+        var home = Path.Combine(workspace.Path, "home");
+        var project = Path.Combine(workspace.Path, "project");
+        WriteSkill(Path.Combine(home, ".agents", "skills", "global"), "global", "Global skill");
+        WriteSkill(Path.Combine(project, ".agents", "skills", "project"), "project", "Project skill");
+        Directory.CreateDirectory(Path.Combine(project, ".pi", "prompts"));
+        File.WriteAllText(Path.Combine(project, ".pi", "prompts", "project.md"), "Project prompt");
+        Directory.CreateDirectory(Path.Combine(home, ".pi", "agent", "prompts"));
+        File.WriteAllText(Path.Combine(home, ".pi", "agent", "prompts", "global.md"), "Global prompt");
+
+        var untrustedSkills = new SkillCatalog().Discover(project, home, includeProjectDefaults: false);
+        var trustedSkills = new SkillCatalog().Discover(project, home, includeProjectDefaults: true);
+        var untrustedPrompts = new PromptTemplateCatalog().Discover(project, home, includeProjectDefaults: false);
+        var trustedPrompts = new PromptTemplateCatalog().Discover(project, home, includeProjectDefaults: true);
+
+        Assert.Contains(untrustedSkills.Skills, skill => skill.Name == "global");
+        Assert.DoesNotContain(untrustedSkills.Skills, skill => skill.Name == "project");
+        Assert.Contains(trustedSkills.Skills, skill => skill.Name == "project");
+        Assert.Contains(untrustedPrompts, prompt => prompt.Name == "global");
+        Assert.DoesNotContain(untrustedPrompts, prompt => prompt.Name == "project");
+        Assert.Contains(trustedPrompts, prompt => prompt.Name == "project");
+    }
+
+    [Fact]
     public void ReportsInvalidSkillMetadataAndStillLoadsSkill()
     {
         using var workspace = new TemporaryDirectory();
@@ -91,6 +117,14 @@ public sealed class ResourceLoadingTests
         Assert.Equal("Review changes", template.Description);
         Assert.Equal("[path]", template.ArgumentHint);
         Assert.Equal("Review file", PromptTemplateCatalog.Expand("/review file", templates));
+    }
+
+    private static void WriteSkill(string directory, string name, string body)
+    {
+        Directory.CreateDirectory(directory);
+        File.WriteAllText(
+            Path.Combine(directory, "SKILL.md"),
+            $"---\nname: {name}\ndescription: {body}\n---\n{body}");
     }
 
     private sealed class TemporaryDirectory : IDisposable

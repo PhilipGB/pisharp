@@ -2,6 +2,15 @@ using System.Text.Json;
 
 namespace PiSharp.Core;
 
+/// <summary>Whether a package came from the trusted user scope or the current project.</summary>
+public enum PiPackageScope
+{
+    /// <summary>User-level package resources.</summary>
+    User,
+    /// <summary>Project-local package resources requiring project trust.</summary>
+    Project,
+}
+
 /// <summary>Resource paths declared by a local Pi package manifest.</summary>
 public sealed record PiPackageManifest(
     IReadOnlyList<string> Extensions,
@@ -12,7 +21,8 @@ public sealed record PiPackageManifest(
 public sealed record PiPackageDefinition(
     string Name,
     string RootPath,
-    PiPackageManifest Manifest);
+    PiPackageManifest Manifest,
+    PiPackageScope Scope = PiPackageScope.Project);
 
 /// <summary>Results from local package manifest discovery.</summary>
 public sealed record PiPackageDiscoveryResult(
@@ -22,14 +32,37 @@ public sealed record PiPackageDiscoveryResult(
     /// <summary>Gets all package-relative extension directories or files.</summary>
     public IReadOnlyList<string> ExtensionPaths => ResolvePaths(package => package.Manifest.Extensions);
 
+    /// <summary>Gets user-scope package extensions only.</summary>
+    public IReadOnlyList<string> UserExtensionPaths => ResolvePaths(package => package.Manifest.Extensions, PiPackageScope.User);
+
+    /// <summary>Gets project-scope package extensions only.</summary>
+    public IReadOnlyList<string> ProjectExtensionPaths => ResolvePaths(package => package.Manifest.Extensions, PiPackageScope.Project);
+
     /// <summary>Gets all package-relative skill directories or files.</summary>
     public IReadOnlyList<string> SkillPaths => ResolvePaths(package => package.Manifest.Skills);
+
+    /// <summary>Gets user-scope package skills only.</summary>
+    public IReadOnlyList<string> UserSkillPaths => ResolvePaths(package => package.Manifest.Skills, PiPackageScope.User);
+
+    /// <summary>Gets project-scope package skills only.</summary>
+    public IReadOnlyList<string> ProjectSkillPaths => ResolvePaths(package => package.Manifest.Skills, PiPackageScope.Project);
 
     /// <summary>Gets all package-relative prompt directories or files.</summary>
     public IReadOnlyList<string> PromptPaths => ResolvePaths(package => package.Manifest.Prompts);
 
-    private IReadOnlyList<string> ResolvePaths(Func<PiPackageDefinition, IReadOnlyList<string>> selector) =>
-        Packages.SelectMany(package => selector(package).Select(path => Path.GetFullPath(Path.Combine(package.RootPath, path)))).ToArray();
+    /// <summary>Gets user-scope package prompts only.</summary>
+    public IReadOnlyList<string> UserPromptPaths => ResolvePaths(package => package.Manifest.Prompts, PiPackageScope.User);
+
+    /// <summary>Gets project-scope package prompts only.</summary>
+    public IReadOnlyList<string> ProjectPromptPaths => ResolvePaths(package => package.Manifest.Prompts, PiPackageScope.Project);
+
+    private IReadOnlyList<string> ResolvePaths(
+        Func<PiPackageDefinition, IReadOnlyList<string>> selector,
+        PiPackageScope? scope = null) =>
+        Packages
+            .Where(package => scope is null || package.Scope == scope)
+            .SelectMany(package => selector(package).Select(path => Path.GetFullPath(Path.Combine(package.RootPath, path))))
+            .ToArray();
 }
 
 /// <summary>
@@ -43,7 +76,9 @@ public sealed class PiPackageCatalog
     public PiPackageDiscoveryResult Discover(string workspaceRoot, string? homeDirectory = null)
     {
         var root = Path.GetFullPath(workspaceRoot);
-        var home = homeDirectory ?? Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        var home = Path.GetFullPath(homeDirectory ??
+            Environment.GetEnvironmentVariable("HOME") ??
+            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
         var packageRoots = new[]
         {
             Path.Combine(home, ".pi", "agent", "packages"),
@@ -51,16 +86,15 @@ public sealed class PiPackageCatalog
         };
         var packages = new List<PiPackageDefinition>();
         var diagnostics = new List<SkillDiagnostic>();
-        foreach (var packageRoot in packageRoots)
-        {
-            AddPackages(packageRoot, packages, diagnostics);
-        }
+        AddPackages(packageRoots[0], PiPackageScope.User, packages, diagnostics);
+        AddPackages(packageRoots[1], PiPackageScope.Project, packages, diagnostics);
 
         return new PiPackageDiscoveryResult(packages, diagnostics);
     }
 
     private static void AddPackages(
         string packageRoot,
+        PiPackageScope scope,
         ICollection<PiPackageDefinition> packages,
         ICollection<SkillDiagnostic> diagnostics)
     {
@@ -93,7 +127,7 @@ public sealed class PiPackageCatalog
                 continue;
             }
 
-            var package = ReadPackage(manifestPath, diagnostics);
+            var package = ReadPackage(manifestPath, scope, diagnostics);
             if (package is not null)
             {
                 packages.Add(package);
@@ -101,7 +135,10 @@ public sealed class PiPackageCatalog
         }
     }
 
-    private static PiPackageDefinition? ReadPackage(string manifestPath, ICollection<SkillDiagnostic> diagnostics)
+    private static PiPackageDefinition? ReadPackage(
+        string manifestPath,
+        PiPackageScope scope,
+        ICollection<SkillDiagnostic> diagnostics)
     {
         try
         {
@@ -120,7 +157,7 @@ public sealed class PiPackageCatalog
                        nameValue.ValueKind == JsonValueKind.String
                 ? nameValue.GetString() ?? Path.GetFileName(Path.GetDirectoryName(manifestPath))
                 : Path.GetFileName(Path.GetDirectoryName(manifestPath));
-            return new PiPackageDefinition(name!, Path.GetDirectoryName(manifestPath)!, manifest);
+            return new PiPackageDefinition(name!, Path.GetDirectoryName(manifestPath)!, manifest, scope);
         }
         catch (JsonException exception)
         {

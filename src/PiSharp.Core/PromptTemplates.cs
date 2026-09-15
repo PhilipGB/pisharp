@@ -23,17 +23,22 @@ public sealed class PromptTemplateCatalog
         string workspaceRoot,
         string? homeDirectory = null,
         IEnumerable<string>? explicitPaths = null,
-        bool includeDefaults = true)
+        bool includeDefaults = true,
+        bool includeProjectDefaults = true)
     {
         var root = Path.GetFullPath(workspaceRoot);
-        var home = homeDirectory ?? Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        var home = homeDirectory ?? Environment.GetEnvironmentVariable("HOME") ??
+            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         var directories = includeDefaults
             ? new List<string>
             {
                 Path.Combine(home, ".pi", "agent", TemplateDirectoryName),
-                Path.Combine(root, ".pi", TemplateDirectoryName),
             }
             : [];
+        if (includeDefaults && includeProjectDefaults)
+        {
+            directories.Add(Path.Combine(root, ".pi", TemplateDirectoryName));
+        }
         directories.AddRange((explicitPaths ?? [])
             .Select(path => Path.IsPathRooted(path) ? path : Path.Combine(root, path)));
         return directories.SelectMany(LoadPath).ToArray();

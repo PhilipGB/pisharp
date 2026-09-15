@@ -34,16 +34,23 @@ public sealed class SkillCatalog
         string workspaceRoot,
         string? homeDirectory = null,
         IEnumerable<string>? additionalPaths = null,
-        bool includeDefaults = true)
+        bool includeDefaults = true,
+        bool includeProjectDefaults = true)
     {
         var root = Path.GetFullPath(workspaceRoot);
-        var home = homeDirectory ?? Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        var home = homeDirectory ?? Environment.GetEnvironmentVariable("HOME") ??
+            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         var skills = new Dictionary<string, SkillDefinition>(StringComparer.Ordinal);
         var diagnostics = new List<SkillDiagnostic>();
         if (includeDefaults)
         {
             AddDirectory(Path.Combine(home, ".pi", "agent", "skills"), skills, diagnostics);
-            AddDirectory(Path.Combine(root, ".pi", "skills"), skills, diagnostics);
+            AddDirectory(Path.Combine(home, ".agents", "skills"), skills, diagnostics);
+            if (includeProjectDefaults)
+            {
+                AddDirectory(Path.Combine(root, ".pi", "skills"), skills, diagnostics);
+                AddAncestorAgentSkills(root, home, skills, diagnostics);
+            }
         }
         foreach (var path in additionalPaths ?? [])
         {
@@ -112,6 +119,33 @@ public sealed class SkillCatalog
         catch (UnauthorizedAccessException)
         {
             return text;
+        }
+    }
+
+    private static void AddAncestorAgentSkills(
+        string root,
+        string home,
+        IDictionary<string, SkillDefinition> skills,
+        ICollection<SkillDiagnostic> diagnostics)
+    {
+        var globalPath = Path.GetFullPath(Path.Combine(home, ".agents", "skills"));
+        var current = Path.GetFullPath(root);
+        while (true)
+        {
+            var candidate = Path.GetFullPath(Path.Combine(current, ".agents", "skills"));
+            if (!string.Equals(candidate, globalPath, OperatingSystem.IsWindows()
+                    ? StringComparison.OrdinalIgnoreCase
+                    : StringComparison.Ordinal))
+            {
+                AddDirectory(candidate, skills, diagnostics);
+            }
+
+            var parent = Directory.GetParent(current)?.FullName;
+            if (parent is null)
+            {
+                return;
+            }
+            current = parent;
         }
     }
 

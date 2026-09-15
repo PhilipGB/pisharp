@@ -11,7 +11,11 @@ namespace PiSharp.Cli;
 
 internal static class AgentFactory
 {
-    public static async Task<AgentBootstrap> CreateAsync(CliOptions options, CancellationToken cancellationToken)
+    public static async Task<AgentBootstrap> CreateAsync(
+        CliOptions options,
+        bool projectTrusted,
+        CancellationToken cancellationToken,
+        string? homeDirectoryOverride = null)
     {
         var tools = new CodingTools(options.WorkingDirectory);
         var serializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web)
@@ -59,40 +63,41 @@ internal static class AgentFactory
             options.WorkingDirectory,
             contextRoot: options.ContextRoot,
             cancellationToken: cancellationToken);
-        var packageResult = new PiPackageCatalog().Discover(options.WorkingDirectory);
+        var homeDirectory = ProjectTrustPath.GetHomeDirectory(homeDirectoryOverride);
+        var packageResult = new PiPackageCatalog().Discover(options.WorkingDirectory, homeDirectory);
         var extensionHost = new PiSharpExtensionHost();
-        var homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-        IReadOnlyList<string> extensionPaths = options.NoExtensions
-            ? []
-            :
-            [
-                Path.Combine(homeDirectory, ".pi", "agent", "extensions"),
-                Path.Combine(options.WorkingDirectory, ".pi", "extensions"),
-                .. packageResult.ExtensionPaths,
-            ];
-        extensionPaths = extensionPaths
-            .Concat(options.ExtensionPaths.Select(path => ResolveWorkspacePath(options.WorkingDirectory, path)))
-            .ToArray();
+        var extensionPaths = BuildExtensionPaths(options, packageResult, homeDirectory, projectTrusted);
         extensionHost.LoadFromPaths(extensionPaths);
-        var skillPaths = options.SkillPaths.Concat(options.NoSkills ? [] : packageResult.SkillPaths);
+        var packageSkillPaths = options.NoSkills
+            ? []
+            : packageResult.UserSkillPaths.Concat(projectTrusted ? packageResult.ProjectSkillPaths : []).ToArray();
+        var skillPaths = options.SkillPaths.Concat(packageSkillPaths);
         var skillResult = new SkillCatalog().Discover(
             options.WorkingDirectory,
-            additionalPaths: skillPaths,
-            includeDefaults: !options.NoSkills);
+            homeDirectory,
+            skillPaths,
+            includeDefaults: !options.NoSkills,
+            includeProjectDefaults: projectTrusted);
         foreach (var skill in skillResult.Skills)
         {
             tools.AddReadOnlyRoot(skill.BaseDirectory);
         }
-        var promptPaths = options.PromptTemplatePaths.Concat(
-            options.NoPromptTemplates ? [] : packageResult.PromptPaths);
+        var packagePromptPaths = options.NoPromptTemplates
+            ? []
+            : packageResult.UserPromptPaths.Concat(projectTrusted ? packageResult.ProjectPromptPaths : []).ToArray();
+        var promptPaths = options.PromptTemplatePaths.Concat(packagePromptPaths);
         var promptTemplates = new PromptTemplateCatalog().Discover(
             options.WorkingDirectory,
-            explicitPaths: promptPaths,
-            includeDefaults: !options.NoPromptTemplates);
+            homeDirectory,
+            promptPaths,
+            includeDefaults: !options.NoPromptTemplates,
+            includeProjectDefaults: projectTrusted);
         var expandInput = (string text) => PromptTemplateCatalog.Expand(
             SkillCatalog.ExpandCommand(extensionHost.TransformInput(text), skillResult.Skills),
             promptTemplates);
         var skillPrompt = SkillCatalog.FormatForPrompt(skillResult.Skills);
+        var systemPrompt = ReadSystemPrompt(options.WorkingDirectory, homeDirectory, projectTrusted);
+        var appendSystemPrompt = ReadAppendSystemPrompt(options.WorkingDirectory, homeDirectory, projectTrusted);
         var resourceDiagnostics = packageResult.Diagnostics.Count +
                                    skillResult.Diagnostics.Count +
                                    extensionHost.Diagnostics.Count;
@@ -106,6 +111,10 @@ internal static class AgentFactory
             Use bash to build and test changes after modifying code when practical.
             Do not claim a build or test passed unless you actually ran it and observed success.
             Keep user-facing responses concise and report concrete changes and verification results.
+
+            {{systemPrompt}}
+
+            {{appendSystemPrompt}}
 
             {{projectContext.Content}}
 
@@ -166,6 +175,57 @@ internal static class AgentFactory
             sessionHistory);
     }
 
+    private static IReadOnlyList<string> BuildExtensionPaths(
+        CliOptions options,
+        PiPackageDiscoveryResult packageResult,
+        string homeDirectory,
+        bool projectTrusted)
+    {
+        var paths = new List<string>();
+        if (!options.NoExtensions)
+        {
+            paths.Add(Path.Combine(homeDirectory, ".pi", "agent", "extensions"));
+            paths.AddRange(packageResult.UserExtensionPaths);
+            if (projectTrusted)
+            {
+                paths.Add(Path.Combine(options.WorkingDirectory, ".pi", "extensions"));
+                paths.AddRange(packageResult.ProjectExtensionPaths);
+            }
+        }
+        paths.AddRange(options.ExtensionPaths.Select(path => ResolveWorkspacePath(options.WorkingDirectory, path)));
+        return paths;
+    }
+
     private static string ResolveWorkspacePath(string workspaceRoot, string path) =>
         Path.IsPathRooted(path) ? path : Path.Combine(workspaceRoot, path);
+
+    private static string ReadSystemPrompt(string workspaceRoot, string homeDirectory, bool projectTrusted) =>
+        ReadFirstExisting(
+            projectTrusted ? Path.Combine(workspaceRoot, ".pi", "SYSTEM.md") : null,
+            Path.Combine(homeDirectory, ".pi", "agent", "SYSTEM.md"));
+
+    private static string ReadAppendSystemPrompt(string workspaceRoot, string homeDirectory, bool projectTrusted) =>
+        ReadFirstExisting(
+            projectTrusted ? Path.Combine(workspaceRoot, ".pi", "APPEND_SYSTEM.md") : null,
+            Path.Combine(homeDirectory, ".pi", "agent", "APPEND_SYSTEM.md"));
+
+    private static string ReadFirstExisting(params string?[] paths)
+    {
+        foreach (var path in paths)
+        {
+            if (path is null || !File.Exists(path))
+            {
+                continue;
+            }
+            try
+            {
+                return File.ReadAllText(path);
+            }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+            {
+                return $"Resource warning: unable to read '{path}': {exception.Message}";
+            }
+        }
+        return string.Empty;
+    }
 }
