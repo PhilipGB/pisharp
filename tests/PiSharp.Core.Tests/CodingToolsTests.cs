@@ -48,6 +48,28 @@ public sealed class CodingToolsTests
     }
 
     [Fact]
+    public async Task SearchToolsProvideDeterministicWorkspaceResults()
+    {
+        using var temp = TempDirectory.Create();
+        Directory.CreateDirectory(Path.Combine(temp.Path, "src"));
+        await File.WriteAllTextAsync(Path.Combine(temp.Path, "root.cs"), "alpha\nneedle\nomega\n");
+        await File.WriteAllTextAsync(Path.Combine(temp.Path, "src", "nested.cs"), "needle nested\n");
+        await File.WriteAllTextAsync(Path.Combine(temp.Path, ".hidden"), "hidden\n");
+        var tools = new CodingTools(temp.Path);
+
+        var listing = await tools.LsAsync();
+        var files = await tools.FindAsync("**/*.cs");
+        var matches = await tools.GrepAsync("needle", context: 1);
+
+        Assert.Contains("src/", listing, StringComparison.Ordinal);
+        Assert.Contains(".hidden", listing, StringComparison.Ordinal);
+        Assert.Equal("root.cs\nsrc/nested.cs", files.ReplaceLineEndings("\n"));
+        Assert.Contains("root.cs:2: needle", matches, StringComparison.Ordinal);
+        Assert.Contains("root.cs-1- alpha", matches, StringComparison.Ordinal);
+        Assert.Contains("src/nested.cs:1: needle nested", matches, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task WriteAndReadAsync_RoundTrip()
     {
         using var temp = TempDirectory.Create();

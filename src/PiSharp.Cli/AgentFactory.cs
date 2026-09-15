@@ -23,6 +23,9 @@ internal static class AgentFactory
         Func<string, string, CancellationToken, Task<string>> write = tools.WriteAsync;
         Func<string, IReadOnlyList<EditOperation>, CancellationToken, Task<EditToolResult>> edit = tools.EditForAgentAsync;
         Func<string, int, CancellationToken, Task<string>> bash = tools.BashAsync;
+        Func<string, int, CancellationToken, Task<string>> ls = tools.LsAsync;
+        Func<string, string, int, CancellationToken, Task<string>> find = tools.FindAsync;
+        Func<string, string, string?, bool, bool, int, int, CancellationToken, Task<string>> grep = tools.GrepAsync;
 
         AITool[] aiTools =
         [
@@ -37,6 +40,15 @@ internal static class AgentFactory
                 serializerOptions),
             AIFunctionFactory.Create(bash, "bash",
                 "Run a shell command from the workspace root. Use for builds, tests, git, search, and repository operations.",
+                serializerOptions),
+            AIFunctionFactory.Create(ls, "ls",
+                "List directory contents alphabetically, including dotfiles. Directories have a trailing slash.",
+                serializerOptions),
+            AIFunctionFactory.Create(find, "find",
+                "Find workspace files by glob pattern, such as '*.cs' or '**/*.json'.",
+                serializerOptions),
+            AIFunctionFactory.Create(grep, "grep",
+                "Search workspace file contents using a regular expression or literal pattern.",
                 serializerOptions),
         ];
 

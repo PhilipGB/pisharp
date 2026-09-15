@@ -11,7 +11,7 @@ Implemented and smoke-tested against llama.cpp:
 - Microsoft Agent Framework `HarnessAgent` runtime
 - OpenAI and OpenAI-compatible endpoints, including llama.cpp
 - MAF context compaction using configured context/output limits
-- `read`, `write`, `edit`, and `bash` tools
+- `read`, `write`, `edit`, `bash`, `ls`, `find`, and `grep` tools
 - Pi-style unique exact-match edit replacements
 - workspace path traversal protection for file tools
 - global and hierarchical `AGENTS.md` loading
@@ -47,7 +47,7 @@ Remaining parity work:
 - full Pi-compatible JSON/RPC event schemas and command coverage
 - retry policy and provider failover
 - image input
-- shell approval/sandbox policy
+- shell approval/sandbox policy and command-level permission prompts
 - remote/npm/git package installation and package filtering
 - loading TypeScript/JavaScript extensions (PiSharp currently loads trusted .NET DLLs)
 - extension UI primitives, custom tools, themes, and provider registration
