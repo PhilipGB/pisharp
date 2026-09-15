@@ -36,7 +36,8 @@ internal static class AgentTurnRunner
                     expandInput(message),
                     output,
                     token,
-                    contents);
+                    contents,
+                    bootstrap.RetryPolicy);
             },
             cancellationToken);
         var eventType = result.Cancelled ? PiSharpExtensionEvent.TurnCancelled : PiSharpExtensionEvent.AfterTurn;
@@ -58,13 +59,17 @@ internal static class AgentTurnRunner
         string prompt,
         IChatOutput output,
         CancellationToken cancellationToken,
-        IReadOnlyList<AIContent>? contents)
+        IReadOnlyList<AIContent>? contents,
+        RetryPolicyOptions retryPolicy)
     {
         var response = new StringBuilder();
         output.AssistantMessageStarted();
         var toolNames = new Dictionary<string, string>(StringComparer.Ordinal);
         var toolArguments = new Dictionary<string, string>(StringComparer.Ordinal);
-        try
+        var retryNumber = 0;
+        while (true)
+        {
+            try
         {
             var updates = contents is null
                 ? agent.RunStreamingAsync(prompt, session, cancellationToken: cancellationToken)
@@ -93,6 +98,17 @@ internal static class AgentTurnRunner
             output.AssistantMessageFinished(assistantText);
             output.WriteLine();
             return new TurnExecutionResult(assistantText, Cancelled: true);
+        }
+        catch (Exception exception) when (
+            retryPolicy.Enabled &&
+            retryNumber < retryPolicy.MaxRetries &&
+            response.Length == 0 &&
+            toolNames.Count == 0 &&
+            RetryPolicy.IsTransient(exception, cancellationToken))
+        {
+            retryNumber++;
+            await Task.Delay(RetryPolicy.GetDelay(retryNumber, retryPolicy), cancellationToken);
+        }
         }
     }
 

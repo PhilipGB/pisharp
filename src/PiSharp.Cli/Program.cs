@@ -92,6 +92,7 @@ try
         options.WorkingDirectory,
         liveTurns,
         new TerminalChatOutput(),
+        bootstrap.RetryPolicy,
         promptReader,
         shutdown.Token);
     await PublishShutdownAsync(bootstrap.ExtensionHost, options.WorkingDirectory, bootstrap.TurnQueue);
@@ -127,6 +128,7 @@ static async Task RunInteractiveAsync(
     string workspaceRoot,
     LiveTurnCoordinator liveTurns,
     IChatOutput output,
+    RetryPolicyOptions retryPolicy,
     TerminalPromptReader promptReader,
     CancellationToken cancellationToken)
 {
@@ -175,6 +177,7 @@ static async Task RunInteractiveAsync(
             extensionHost,
             workspaceRoot,
             output,
+            retryPolicy,
             cancellationToken);
         var expandInput = CreateInputExpander(skills, promptTemplates, extensionHost);
         var activeInput = await DrainActiveInputAsync(
@@ -277,6 +280,7 @@ static async Task<LiveTurnResult> RunTurnAsync(
     PiSharpExtensionHost extensionHost,
     string workspaceRoot,
     IChatOutput output,
+    RetryPolicyOptions retryPolicy,
     CancellationToken cancellationToken)
 {
     var expandInput = CreateInputExpander(skills, promptTemplates, extensionHost);
@@ -285,7 +289,7 @@ static async Task<LiveTurnResult> RunTurnAsync(
     await extensionHost.PublishAsync(PiSharpExtensionEvent.BeforeTurn, context);
     var result = await liveTurns.RunAsync(
         prompt,
-        (message, token) => RunSingleTurnAsync(agent, session, expandInput(message), output, token),
+        (message, token) => RunSingleTurnAsync(agent, session, expandInput(message), output, token, retryPolicy),
         cancellationToken);
     await extensionHost.PublishAsync(
         result.Cancelled ? PiSharpExtensionEvent.TurnCancelled : PiSharpExtensionEvent.AfterTurn,
@@ -307,15 +311,19 @@ static async Task<TurnExecutionResult> RunSingleTurnAsync(
     AgentSession session,
     string prompt,
     IChatOutput output,
-    CancellationToken cancellationToken)
+    CancellationToken cancellationToken,
+    RetryPolicyOptions retryPolicy)
 {
     var response = new StringBuilder();
     output.AssistantMessageStarted();
     var toolNames = new Dictionary<string, string>(StringComparer.Ordinal);
     var toolArguments = new Dictionary<string, string>(StringComparer.Ordinal);
-    try
+    var retryNumber = 0;
+    while (true)
     {
-        await foreach (var update in agent.RunStreamingAsync(prompt, session, cancellationToken: cancellationToken))
+        try
+        {
+            await foreach (var update in agent.RunStreamingAsync(prompt, session, cancellationToken: cancellationToken))
         {
             RenderToolContents(update, toolNames, toolArguments, output);
             if ((update.Role is null || update.Role == ChatRole.Assistant) && !string.IsNullOrEmpty(update.Text))
@@ -336,6 +344,17 @@ static async Task<TurnExecutionResult> RunSingleTurnAsync(
         output.AssistantMessageFinished(assistantText);
         output.WriteLine();
         return new TurnExecutionResult(assistantText, Cancelled: true);
+        }
+        catch (Exception exception) when (
+            retryPolicy.Enabled &&
+            retryNumber < retryPolicy.MaxRetries &&
+            response.Length == 0 &&
+            toolNames.Count == 0 &&
+            RetryPolicy.IsTransient(exception, cancellationToken))
+        {
+            retryNumber++;
+            await Task.Delay(RetryPolicy.GetDelay(retryNumber, retryPolicy), cancellationToken);
+        }
     }
 }
 
@@ -532,6 +551,7 @@ static void PrintHelp()
           --print, -p                 Run one prompt and exit
           --read-only                 Expose only read/search tools
           --no-tools, -nt              Disable built-in tools
+          --no-auto-retry              Disable transient provider retries
           --no-extensions, -ne        Disable default extension discovery
           --no-skills, -ns            Disable default skill discovery
           --no-prompt-templates, -np  Disable default prompt discovery

@@ -40,6 +40,7 @@ Implemented and smoke-tested against llama.cpp:
 - trusted .NET extension commands, input transforms, and lifecycle hooks
 - initial JSON event and JSON-RPC headless modes
 - read-only and no-tools execution policies
+- bounded transient-provider retries with exponential backoff
 - `@file` text and image attachments for one-shot and print prompts
 
 Remaining parity work:
@@ -48,7 +49,7 @@ Remaining parity work:
 - provider login/OAuth and dynamic model catalogue
 - project trust
 - full Pi-compatible JSON/RPC event schemas and command coverage
-- retry policy and provider failover
+- provider failover and model fallback
 - image input in interactive/RPC prompts and image resizing/validation
 - shell approval/sandbox policy and command-level permission prompts
 - remote/npm/git package installation and package filtering
@@ -187,6 +188,7 @@ pisharp [options] [@files...] [prompt...]
 --print, -p                 run one prompt and exit
 --read-only                 expose only read/search tools
 --no-tools, -nt             disable built-in tools
+--no-auto-retry             disable transient provider retries
 --no-extensions, -ne        disable default extension discovery
 --no-skills, -ns            disable default skill discovery
 --no-prompt-templates, -np  disable default prompt discovery

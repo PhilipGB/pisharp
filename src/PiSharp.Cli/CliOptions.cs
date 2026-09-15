@@ -32,7 +32,8 @@ internal sealed record CliOptions(
     OutputMode OutputMode,
     bool PrintMode,
     bool ReadOnly,
-    bool NoTools)
+    bool NoTools,
+    bool AutoRetry)
 {
     public static CliOptions Parse(string[] args)
     {
@@ -63,6 +64,7 @@ internal sealed record CliOptions(
         var printMode = false;
         var readOnly = false;
         var noTools = false;
+        var autoRetry = true;
 
         for (var i = 0; i < args.Length; i++)
         {
@@ -127,6 +129,9 @@ internal sealed record CliOptions(
                     break;
                 case "--no-tools" or "-nt":
                     noTools = true;
+                    break;
+                case "--no-auto-retry":
+                    autoRetry = false;
                     break;
                 case "--no-extensions" or "-ne":
                     noExtensions = true;
@@ -210,7 +215,8 @@ internal sealed record CliOptions(
             outputMode,
             printMode,
             readOnly,
-            noTools);
+            noTools,
+            autoRetry);
     }
 
     private static void AddPositionalArguments(

@@ -159,6 +159,7 @@ internal static class AgentFactory
             skillResult.Skills,
             promptTemplates,
             extensionHost,
+            options.AutoRetry ? RetryPolicyOptions.Default : RetryPolicyOptions.Disabled,
             turnQueue);
     }
 

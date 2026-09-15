@@ -20,6 +20,7 @@ public sealed class CliOptionsTests
             "--print",
             "--read-only",
             "--no-tools",
+            "--no-auto-retry",
             "--no-extensions",
             "--no-skills",
             "--no-prompt-templates",
@@ -36,6 +37,7 @@ public sealed class CliOptionsTests
         Assert.True(options.PrintMode);
         Assert.True(options.ReadOnly);
         Assert.True(options.NoTools);
+        Assert.False(options.AutoRetry);
     }
 
     [Fact]

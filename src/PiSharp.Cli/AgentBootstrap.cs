@@ -9,4 +9,5 @@ internal sealed record AgentBootstrap(
     IReadOnlyList<SkillDefinition> Skills,
     IReadOnlyList<PromptTemplate> PromptTemplates,
     PiSharpExtensionHost ExtensionHost,
+    RetryPolicyOptions RetryPolicy,
     TurnMessageQueue TurnQueue);
