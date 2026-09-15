@@ -1,7 +1,3 @@
-using System.Text;
-using System.Text.Json;
-using Microsoft.Agents.AI;
-using Microsoft.Extensions.AI;
 using PiSharp.Core;
 using PiSharp.Cli;
 
@@ -83,16 +79,11 @@ try
         Console.Out,
         enableBracketedPaste: !Console.IsInputRedirected && !Console.IsOutputRedirected);
     await RunInteractiveAsync(
-        bootstrap.Agent,
+        bootstrap,
         sessions,
-        bootstrap.ContextFiles,
-        bootstrap.Skills,
-        bootstrap.PromptTemplates,
-        bootstrap.ExtensionHost,
         options.WorkingDirectory,
         liveTurns,
         new TerminalChatOutput(),
-        bootstrap.RetryPolicy,
         promptReader,
         shutdown.Token);
     await PublishShutdownAsync(bootstrap.ExtensionHost, options.WorkingDirectory, bootstrap.TurnQueue);
@@ -119,16 +110,11 @@ static Task PublishShutdownAsync(
         new PiSharpExtensionContext(workspaceRoot, turnQueue, CancellationToken.None, Console.WriteLine));
 
 static async Task RunInteractiveAsync(
-    AIAgent agent,
+    AgentBootstrap bootstrap,
     SessionController sessions,
-    IReadOnlyList<string> contextFiles,
-    IReadOnlyList<SkillDefinition> skills,
-    IReadOnlyList<PromptTemplate> promptTemplates,
-    PiSharpExtensionHost extensionHost,
     string workspaceRoot,
     LiveTurnCoordinator liveTurns,
     IChatOutput output,
-    RetryPolicyOptions retryPolicy,
     TerminalPromptReader promptReader,
     CancellationToken cancellationToken)
 {
@@ -158,8 +144,8 @@ static async Task RunInteractiveAsync(
             await HandleCommandAsync(
                 input,
                 sessions,
-                contextFiles,
-                extensionHost,
+                bootstrap.ContextFiles,
+                bootstrap.ExtensionHost,
                 workspaceRoot,
                 liveTurns.Queue,
                 cancellationToken))
@@ -167,19 +153,15 @@ static async Task RunInteractiveAsync(
             continue;
         }
 
-        var activeTurn = RunTurnAsync(
-            agent,
-            sessions.Session,
+        var activeTurn = AgentTurnRunner.RunAsync(
+            bootstrap,
+            sessions,
             liveTurns,
             input,
-            skills,
-            promptTemplates,
-            extensionHost,
             workspaceRoot,
             output,
-            retryPolicy,
             cancellationToken);
-        var expandInput = CreateInputExpander(skills, promptTemplates, extensionHost);
+        var expandInput = AgentTurnRunner.CreateInputExpander(bootstrap, bootstrap.ExtensionHost);
         var activeInput = await DrainActiveInputAsync(
             activeTurn,
             liveTurns,
@@ -269,163 +251,6 @@ static void QueueActiveInput(string input, LiveTurnCoordinator liveTurns, Func<s
 
 static Task<string?> ReadInputAsync(TerminalPromptReader promptReader, CancellationToken cancellationToken) =>
     Task.Run(() => promptReader.ReadPrompt(), cancellationToken);
-
-static async Task<LiveTurnResult> RunTurnAsync(
-    AIAgent agent,
-    AgentSession session,
-    LiveTurnCoordinator liveTurns,
-    string prompt,
-    IReadOnlyList<SkillDefinition> skills,
-    IReadOnlyList<PromptTemplate> promptTemplates,
-    PiSharpExtensionHost extensionHost,
-    string workspaceRoot,
-    IChatOutput output,
-    RetryPolicyOptions retryPolicy,
-    CancellationToken cancellationToken)
-{
-    var expandInput = CreateInputExpander(skills, promptTemplates, extensionHost);
-    var context = new PiSharpExtensionContext(workspaceRoot, liveTurns.Queue, cancellationToken, Console.WriteLine);
-    output.AgentStarted();
-    await extensionHost.PublishAsync(PiSharpExtensionEvent.BeforeTurn, context);
-    var result = await liveTurns.RunAsync(
-        prompt,
-        (message, token) => RunSingleTurnAsync(agent, session, expandInput(message), output, token, retryPolicy),
-        cancellationToken);
-    await extensionHost.PublishAsync(
-        result.Cancelled ? PiSharpExtensionEvent.TurnCancelled : PiSharpExtensionEvent.AfterTurn,
-        context);
-    output.AgentFinished(result.AssistantText, result.Cancelled);
-    return result;
-}
-
-static Func<string, string> CreateInputExpander(
-    IReadOnlyList<SkillDefinition> skills,
-    IReadOnlyList<PromptTemplate> promptTemplates,
-    PiSharpExtensionHost extensionHost) =>
-    text => PromptTemplateCatalog.Expand(
-        SkillCatalog.ExpandCommand(extensionHost.TransformInput(text), skills),
-        promptTemplates);
-
-static async Task<TurnExecutionResult> RunSingleTurnAsync(
-    AIAgent agent,
-    AgentSession session,
-    string prompt,
-    IChatOutput output,
-    CancellationToken cancellationToken,
-    RetryPolicyOptions retryPolicy)
-{
-    var response = new StringBuilder();
-    output.AssistantMessageStarted();
-    var toolNames = new Dictionary<string, string>(StringComparer.Ordinal);
-    var toolArguments = new Dictionary<string, string>(StringComparer.Ordinal);
-    var retryNumber = 0;
-    while (true)
-    {
-        try
-        {
-            await foreach (var update in agent.RunStreamingAsync(prompt, session, cancellationToken: cancellationToken))
-        {
-            RenderToolContents(update, toolNames, toolArguments, output);
-            if ((update.Role is null || update.Role == ChatRole.Assistant) && !string.IsNullOrEmpty(update.Text))
-            {
-                output.WriteText(update.Text);
-                response.Append(update.Text);
-            }
-        }
-
-        var assistantText = response.ToString();
-        output.AssistantMessageFinished(assistantText);
-        output.WriteLine();
-        return new TurnExecutionResult(assistantText);
-    }
-    catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-    {
-        var assistantText = response.ToString();
-        output.AssistantMessageFinished(assistantText);
-        output.WriteLine();
-        return new TurnExecutionResult(assistantText, Cancelled: true);
-        }
-        catch (Exception exception) when (
-            retryPolicy.Enabled &&
-            retryNumber < retryPolicy.MaxRetries &&
-            response.Length == 0 &&
-            toolNames.Count == 0 &&
-            RetryPolicy.IsTransient(exception, cancellationToken))
-        {
-            retryNumber++;
-            await Task.Delay(RetryPolicy.GetDelay(retryNumber, retryPolicy), cancellationToken);
-        }
-    }
-}
-
-static void RenderToolContents(
-    AgentResponseUpdate update,
-    IDictionary<string, string> toolNames,
-    IDictionary<string, string> toolArguments,
-    IChatOutput output)
-{
-    foreach (var content in update.Contents)
-    {
-        switch (content)
-        {
-            case FunctionCallContent call when !call.InformationalOnly:
-                var arguments = FormatJson(call.Arguments);
-                toolNames[call.CallId] = call.Name;
-                if (toolArguments.TryGetValue(call.CallId, out var previousArguments))
-                {
-                    if (!string.Equals(previousArguments, arguments, StringComparison.Ordinal))
-                    {
-                        output.ToolUpdated(call.CallId, call.Name, arguments);
-                        toolArguments[call.CallId] = arguments;
-                    }
-                }
-                else
-                {
-                    toolArguments[call.CallId] = arguments;
-                    output.ToolStarted(call.CallId, call.Name, arguments);
-                }
-                break;
-            case FunctionResultContent result:
-                var name = toolNames.TryGetValue(result.CallId, out var knownName) ? knownName : result.CallId;
-                output.ToolFinished(result.CallId, name, result.Exception?.Message, FormatValue(result.Result));
-                break;
-        }
-    }
-}
-
-static string FormatJson(object? value)
-{
-    if (value is null)
-    {
-        return "{}";
-    }
-
-    try
-    {
-        return JsonSerializer.Serialize(value);
-    }
-    catch (JsonException)
-    {
-        return value.ToString() ?? "{}";
-    }
-}
-
-static string FormatValue(object? value)
-{
-    var text = value switch
-    {
-        null => "(no result)",
-        string stringValue => stringValue,
-        EditToolResult edit => $"{edit.Message}\n{edit.Diff}",
-        JsonElement element when element.ValueKind == JsonValueKind.Object &&
-            element.TryGetProperty("diff", out var diff) => diff.GetString() ?? element.ToString(),
-        _ => FormatJson(value),
-    };
-    const int MaxToolPreviewCharacters = 4_000;
-    return text.Length <= MaxToolPreviewCharacters
-        ? text
-        : $"{text[..MaxToolPreviewCharacters]}… [tool output truncated]";
-}
 
 static async Task<bool> HandleCommandAsync(
     string input,

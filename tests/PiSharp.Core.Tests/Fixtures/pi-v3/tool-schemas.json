@@ -1,0 +1,15 @@
+{
+  "referenceRevision": "d7296c063b7971a7298769cfff1a167a9a16f8ed",
+  "defaultTools": ["read", "bash", "edit", "write"],
+  "allTools": ["read", "bash", "powershell", "edit", "write", "grep", "find", "ls"],
+  "tools": {
+    "read": {"required": ["path"], "optional": ["offset", "limit"]},
+    "bash": {"required": ["command"], "optional": []},
+    "edit": {"required": ["path", "oldText", "newText"], "optional": []},
+    "write": {"required": ["path", "content"], "optional": []},
+    "grep": {"required": ["pattern"], "optional": ["path", "glob", "ignoreCase", "literal", "context"]},
+    "find": {"required": ["pattern"], "optional": ["path", "limit"]},
+    "ls": {"required": ["path"], "optional": []},
+    "powershell": {"required": ["command"], "optional": []}
+  }
+}

@@ -2,7 +2,7 @@
 
 Experimental C#/.NET port of the core ideas behind [`earendil-works/pi`'s coding agent](https://github.com/earendil-works/pi/tree/main/packages/coding-agent), built on Microsoft Agent Framework.
 
-This is an incremental port, not a line-for-line translation.
+This is an incremental port, not a line-for-line translation. See [`docs/PARITY.md`](docs/PARITY.md) for the pinned upstream parity matrix and conformance plan.
 
 ## Current milestone
 

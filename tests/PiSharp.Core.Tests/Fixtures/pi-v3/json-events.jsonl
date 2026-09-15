@@ -1,0 +1,16 @@
+{"type":"session_start","reason":"startup"}
+{"type":"agent_start"}
+{"type":"turn_start"}
+{"type":"message_start","message":{"role":"assistant","content":[],"api":"openai-completions","provider":"openai","model":"gpt-4.1","usage":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0,"totalTokens":0,"cost":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0,"total":0}},"stopReason":"stop","timestamp":1736942402000}}
+{"type":"message_update","usage":{"input":12,"output":2,"cacheRead":0,"cacheWrite":0,"totalTokens":14,"cost":{"input":0.0001,"output":0,"cacheRead":0,"cacheWrite":0,"total":0.0001},"assistantMessageEvent":{"type":"text_delta","contentIndex":0,"delta":"I inspected"}}}
+{"type":"message_end","message":{"role":"assistant","content":[{"type":"text","text":"I inspected"}],"api":"openai-completions","provider":"openai","model":"gpt-4.1","usage":{"input":12,"output":2,"cacheRead":0,"cacheWrite":0,"totalTokens":14,"cost":{"input":0.0001,"output":0,"cacheRead":0,"cacheWrite":0,"total":0.0001}},"stopReason":"stop","timestamp":1736942402000}}
+{"type":"tool_execution_start","toolCallId":"call_1","toolName":"read","args":{"path":"README.md"}}
+{"type":"tool_execution_update","toolCallId":"call_1","toolName":"read","partialResult":{"content":[{"type":"text","text":"1: README.md"}]}}
+{"type":"tool_execution_end","toolCallId":"call_1","toolName":"read","result":{"content":[{"type":"text","text":"1: README.md"}],"isError":false}}
+{"type":"auto_retry_start","attempt":1,"maxAttempts":2,"delayMs":250,"errorMessage":"service unavailable"}
+{"type":"auto_retry_end","success":true,"attempt":1}
+{"type":"compaction_start","reason":"threshold"}
+{"type":"compaction_end","reason":"threshold","aborted":false,"willRetry":true,"result":{"summary":"Earlier work summary","firstKeptEntryId":"entry-2","tokensBefore":12000}}
+{"type":"turn_end","message":{"role":"assistant","content":[]}}
+{"type":"agent_end","messages":[],"willRetry":false}
+{"type":"agent_settled"}

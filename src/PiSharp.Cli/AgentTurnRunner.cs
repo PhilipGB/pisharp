@@ -70,45 +70,45 @@ internal static class AgentTurnRunner
         while (true)
         {
             try
-        {
-            var updates = contents is null
-                ? agent.RunStreamingAsync(prompt, session, cancellationToken: cancellationToken)
-                : agent.RunStreamingAsync(
-                    [new ChatMessage(ChatRole.User, [new TextContent(prompt), .. contents])],
-                    session,
-                    cancellationToken: cancellationToken);
-            await foreach (var update in updates)
             {
-                RenderToolContents(update, toolNames, toolArguments, output);
-                if ((update.Role is null || update.Role == ChatRole.Assistant) && !string.IsNullOrEmpty(update.Text))
+                var updates = contents is null
+                    ? agent.RunStreamingAsync(prompt, session, cancellationToken: cancellationToken)
+                    : agent.RunStreamingAsync(
+                        [new ChatMessage(ChatRole.User, [new TextContent(prompt), .. contents])],
+                        session,
+                        cancellationToken: cancellationToken);
+                await foreach (var update in updates)
                 {
-                    output.WriteText(update.Text);
-                    response.Append(update.Text);
+                    RenderToolContents(update, toolNames, toolArguments, output);
+                    if ((update.Role is null || update.Role == ChatRole.Assistant) && !string.IsNullOrEmpty(update.Text))
+                    {
+                        output.WriteText(update.Text);
+                        response.Append(update.Text);
+                    }
                 }
-            }
 
-            var assistantText = response.ToString();
-            output.AssistantMessageFinished(assistantText);
-            output.WriteLine();
-            return new TurnExecutionResult(assistantText);
-        }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-        {
-            var assistantText = response.ToString();
-            output.AssistantMessageFinished(assistantText);
-            output.WriteLine();
-            return new TurnExecutionResult(assistantText, Cancelled: true);
-        }
-        catch (Exception exception) when (
-            retryPolicy.Enabled &&
-            retryNumber < retryPolicy.MaxRetries &&
-            response.Length == 0 &&
-            toolNames.Count == 0 &&
-            RetryPolicy.IsTransient(exception, cancellationToken))
-        {
-            retryNumber++;
-            await Task.Delay(RetryPolicy.GetDelay(retryNumber, retryPolicy), cancellationToken);
-        }
+                var assistantText = response.ToString();
+                output.AssistantMessageFinished(assistantText);
+                output.WriteLine();
+                return new TurnExecutionResult(assistantText);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                var assistantText = response.ToString();
+                output.AssistantMessageFinished(assistantText);
+                output.WriteLine();
+                return new TurnExecutionResult(assistantText, Cancelled: true);
+            }
+            catch (Exception exception) when (
+                retryPolicy.Enabled &&
+                retryNumber < retryPolicy.MaxRetries &&
+                response.Length == 0 &&
+                toolNames.Count == 0 &&
+                RetryPolicy.IsTransient(exception, cancellationToken))
+            {
+                retryNumber++;
+                await Task.Delay(RetryPolicy.GetDelay(retryNumber, retryPolicy), cancellationToken);
+            }
         }
     }
 

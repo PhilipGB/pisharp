@@ -1,0 +1,14 @@
+{"id":"1","type":"prompt","message":"Inspect the project","streamingBehavior":"steer"}
+{"id":"2","type":"steer","message":"Focus on the failing test"}
+{"id":"3","type":"follow_up","message":"Then summarize the fix"}
+{"id":"4","type":"get_state"}
+{"id":"5","type":"get_available_models"}
+{"id":"6","type":"set_thinking_level","level":"medium"}
+{"id":"7","type":"compact","customInstructions":"Keep API changes explicit"}
+{"id":"8","type":"set_auto_retry","enabled":true}
+{"id":"9","type":"bash","command":"git status --short","excludeFromContext":true}
+{"id":"10","type":"get_session_stats"}
+{"id":"11","type":"get_entries","since":"entry-2"}
+{"id":"12","type":"get_tree"}
+{"id":"13","type":"set_session_name","name":"Parity work"}
+{"id":"14","type":"shutdown"}

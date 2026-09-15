@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <None Update="Fixtures/**/*" CopyToOutputDirectory="PreserveNewest" />
     <ProjectReference Include="../../src/PiSharp.Core/PiSharp.Core.csproj" />
     <ProjectReference Include="../../src/PiSharp.Cli/PiSharp.Cli.csproj" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
