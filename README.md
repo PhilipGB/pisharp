@@ -207,3 +207,4 @@ The next slice is live-turn behaviour:
 3. streamed tool start/update/end events in the terminal;
 4. abort semantics that preserve queued user input;
 5. tests around ordering and cancellation.
+# pisharp
