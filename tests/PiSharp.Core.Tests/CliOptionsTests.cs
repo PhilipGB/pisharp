@@ -43,6 +43,18 @@ public sealed class CliOptionsTests
     }
 
     [Fact]
+    public void ParsesProjectTrustOverridesAndRejectsConflicts()
+    {
+        var approved = CliOptions.Parse(["--model", "test-model", "--approve"]);
+        Assert.True(approved.ProjectTrustOverride);
+
+        var denied = CliOptions.Parse(["--model", "test-model", "-na"]);
+        Assert.False(denied.ProjectTrustOverride);
+
+        Assert.Throws<ArgumentException>(() => CliOptions.Parse(["--model", "test-model", "--approve", "--no-approve"]));
+    }
+
+    [Fact]
     public void ParsesRpcCommandEnvelopeWithoutLosingCorrelationFields()
     {
         var command = RpcProtocol.Parse("{\"id\":\"42\",\"type\":\"prompt\",\"message\":\"inspect\",\"streamingBehavior\":\"steer\"}");

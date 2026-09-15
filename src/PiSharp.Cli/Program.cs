@@ -31,7 +31,21 @@ try
         shutdown.Cancel();
     };
 
-    var bootstrap = await AgentFactory.CreateAsync(options, shutdown.Token);
+    var trustStore = new ProjectTrustStore(ProjectTrustPath.GetDefaultTrustDirectory());
+    var trustSettings = GlobalProjectTrustSettings.ReadDefaultProjectTrust(ProjectTrustPath.GetGlobalPiSettingsPath());
+    if (trustSettings.Warning is not null)
+    {
+        Console.Error.WriteLine($"Warning: {trustSettings.Warning}");
+    }
+
+    var trustResolution = new ProjectTrustResolver().Resolve(
+        options.WorkingDirectory,
+        trustStore,
+        options.ProjectTrustOverride,
+        trustSettings.Value,
+        IsInteractiveStartup(options) ? ProjectTrustMode.Interactive : ProjectTrustMode.NonInteractive,
+        IsInteractiveStartup(options) ? SelectProjectTrustOption : null);
+    var bootstrap = await AgentFactory.CreateAsync(options, trustResolution.Trusted, shutdown.Token);
     liveTurns = new LiveTurnCoordinator(bootstrap.TurnQueue);
     var sessions = await SessionController.CreateAsync(bootstrap, options, shutdown.Token);
 
@@ -72,6 +86,10 @@ try
     }
 
     Console.WriteLine($"PiSharp  |  {options.Model}  |  {options.WorkingDirectory}");
+    if (trustResolution.TrustRequired && !trustResolution.Trusted)
+    {
+        Console.WriteLine("This project is not trusted. Project resources are ignored; use /trust and restart PiSharp.");
+    }
     Console.WriteLine(sessions.FormatSessionInfo());
     if (bootstrap.ContextFiles.Count > 0)
     {
@@ -90,6 +108,7 @@ try
         liveTurns,
         new TerminalChatOutput(),
         promptReader,
+        trustStore,
         shutdown.Token);
     await PublishShutdownAsync(bootstrap.ExtensionHost, options.WorkingDirectory, bootstrap.TurnQueue);
 
@@ -121,6 +140,7 @@ static async Task RunInteractiveAsync(
     LiveTurnCoordinator liveTurns,
     IChatOutput output,
     TerminalPromptReader promptReader,
+    ProjectTrustStore trustStore,
     CancellationToken cancellationToken)
 {
     Task<string?>? pendingInput = null;
@@ -153,6 +173,7 @@ static async Task RunInteractiveAsync(
                 bootstrap.ExtensionHost,
                 workspaceRoot,
                 liveTurns.Queue,
+                trustStore,
                 cancellationToken))
         {
             continue;
@@ -264,6 +285,7 @@ static async Task<bool> HandleCommandAsync(
     PiSharpExtensionHost extensionHost,
     string workspaceRoot,
     TurnMessageQueue turnQueue,
+    ProjectTrustStore trustStore,
     CancellationToken cancellationToken)
 {
     var parts = input.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
@@ -324,6 +346,9 @@ static async Task<bool> HandleCommandAsync(
                 Console.WriteLine(sessions.FormatSessionInfo());
             }
             return true;
+        case "/trust":
+            await SaveInteractiveTrustDecisionAsync(workspaceRoot, trustStore);
+            return true;
         case "/context":
             if (contextFiles.Count == 0)
             {
@@ -350,6 +375,45 @@ static async Task<bool> HandleCommandAsync(
     }
 }
 
+static bool IsInteractiveStartup(CliOptions options) =>
+    options.OutputMode == OutputMode.Text &&
+    !options.PrintMode &&
+    options.Prompt is null &&
+    options.FilePaths.Count == 0 &&
+    !Console.IsInputRedirected &&
+    !Console.IsOutputRedirected;
+
+static ProjectTrustOption? SelectProjectTrustOption(IReadOnlyList<ProjectTrustOption> options)
+{
+    Console.WriteLine("Trust project folder?");
+    Console.WriteLine("This allows PiSharp to load project settings and resources and execute project extensions.");
+    for (var index = 0; index < options.Count; index++)
+    {
+        Console.WriteLine($"  {index + 1}. {options[index].Label}");
+    }
+
+    Console.Write($"Select an option [1-{options.Count}]: ");
+    var input = Console.ReadLine();
+    return int.TryParse(input, out var selected) && selected >= 1 && selected <= options.Count
+        ? options[selected - 1]
+        : null;
+}
+
+static Task SaveInteractiveTrustDecisionAsync(string workspaceRoot, ProjectTrustStore trustStore)
+{
+    var options = ProjectTrustResolver.GetOptions(workspaceRoot, includeSessionOnly: false);
+    var selected = SelectProjectTrustOption(options);
+    if (selected is null)
+    {
+        Console.WriteLine("No trust decision saved.");
+        return Task.CompletedTask;
+    }
+
+    trustStore.SetMany(selected.Updates);
+    Console.WriteLine("Trust decision saved. Restart PiSharp for project resources to be reloaded.");
+    return Task.CompletedTask;
+}
+
 static void PrintInteractiveHelp()
 {
     Console.WriteLine("""
@@ -364,6 +428,7 @@ static void PrintInteractiveHelp()
           /new                     Start a new persistent session
           /resume                  Pick and resume a saved session
           /context                 List loaded AGENTS.md/CLAUDE.md files
+          /trust                   Save project trust for the next startup
           /steer <text>            Queue input before the next model call
           /follow-up <text>       Queue input after the active run
           /exit, /quit             Exit
@@ -399,6 +464,8 @@ static void PrintHelp()
           --no-extensions, -ne        Disable default extension discovery
           --no-skills, -ns            Disable default skill discovery
           --no-prompt-templates, -np  Disable default prompt discovery
+          --approve, -a                Trust project-local resources for this run
+          --no-approve, -na            Ignore project-local resources for this run
           --context-tokens <n>        Context window used by Harness compaction (default 128000)
           --max-output-tokens <n>     Maximum output tokens (default 16384)
           -c, --continue              Continue the most recently modified session for this workspace

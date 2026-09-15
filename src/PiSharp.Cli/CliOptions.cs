@@ -30,6 +30,7 @@ internal sealed record CliOptions(
     bool NoExtensions,
     bool NoSkills,
     bool NoPromptTemplates,
+    bool? ProjectTrustOverride,
     OutputMode OutputMode,
     bool PrintMode,
     bool ReadOnly,
@@ -62,6 +63,7 @@ internal sealed record CliOptions(
         var noExtensions = false;
         var noSkills = false;
         var noPromptTemplates = false;
+        bool? projectTrustOverride = null;
         var outputMode = OutputMode.Text;
         var printMode = false;
         var readOnly = false;
@@ -147,6 +149,12 @@ internal sealed record CliOptions(
                 case "--no-prompt-templates" or "-np":
                     noPromptTemplates = true;
                     break;
+                case "--approve" or "-a":
+                    SetProjectTrustOverride(ref projectTrustOverride, true);
+                    break;
+                case "--no-approve" or "-na":
+                    SetProjectTrustOverride(ref projectTrustOverride, false);
+                    break;
                 case "--":
                     AddPositionalArguments(args[(i + 1)..], promptParts, filePaths);
                     i = args.Length;
@@ -218,6 +226,7 @@ internal sealed record CliOptions(
             noExtensions,
             noSkills,
             noPromptTemplates,
+            projectTrustOverride,
             outputMode,
             printMode,
             readOnly,
@@ -241,6 +250,15 @@ internal sealed record CliOptions(
                 promptParts.Add(argument);
             }
         }
+    }
+
+    private static void SetProjectTrustOverride(ref bool? current, bool value)
+    {
+        if (current is bool existing && existing != value)
+        {
+            throw new ArgumentException("--approve and --no-approve are mutually exclusive.");
+        }
+        current = value;
     }
 
     private static OutputMode ParseOutputMode(string value) => value.ToLowerInvariant() switch

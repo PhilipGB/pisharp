@@ -111,8 +111,8 @@ PiSharp.
 
 | Capability | Status | Pi reference | PiSharp implementation | Conformance coverage |
 |---|---|---|---|---|
-| Global settings file | Missing | `core/settings-manager.ts`, `config.ts` | Not implemented | Planned Phase 3 |
-| Project settings file | Missing | `core/settings-manager.ts` | Not implemented | Planned Phase 3 |
+| Global settings file | Partial | `core/settings-manager.ts`, `config.ts` | Narrow bootstrap reader for global `defaultProjectTrust`; full settings remain pending | `ProjectTrustTests` |
+| Project settings file | Missing | `core/settings-manager.ts` | Not implemented; project settings are ignored until trust is resolved | Planned Phase 3 |
 | Recursive project/global merge | Missing | `settings-manager.ts` | Not implemented | Planned Phase 3 |
 | Runtime settings reload | Missing | `/reload`, settings manager | Not implemented | Planned Phase 3 |
 | `/settings` and config command | Missing | `slash-commands.ts`, CLI config | Not implemented | Planned Phase 3/7 |
@@ -123,18 +123,21 @@ PiSharp.
 
 | Capability | Status | Pi reference | PiSharp implementation | Conformance coverage |
 |---|---|---|---|---|
-| Global trust decisions | Missing | `core/trust-manager.ts`, `project-trust.ts` | Not implemented | Planned Phase 3 |
-| Parent-folder inheritance | Missing | `project-trust.ts` | Not implemented | Planned Phase 3 |
-| Interactive trust prompt | Missing | `cli/project-trust.ts` | Not implemented | Planned Phase 3 |
-| `--approve` / `--no-approve` | Missing | `cli/args.ts` | Not implemented | Planned Phase 3 |
-| Block untrusted project executables | Partial | `core/trust-manager.ts` | Project extensions load when discovered; trusted DLL warning only | Security gap; Phase 3 required |
+| Global trust decisions | Equivalent | `core/trust-manager.ts`, `project-trust.ts` | PiSharp-owned `~/.pisharp/trust.json`; deliberately separate from Pi's TypeScript trust file because extensions are .NET DLLs | `ProjectTrustTests` |
+| Parent-folder inheritance | Equivalent | `project-trust.ts` | Nearest canonical ancestor decision wins; child removal restores inheritance | `ProjectTrustTests` |
+| Interactive trust prompt | Equivalent | `cli/project-trust.ts` | Line-based Trust, Trust parent, session-only, and deny choices before resource startup | `ProjectTrustTests`; manual UI path |
+| `--approve` / `--no-approve` | Equivalent | `cli/args.ts` | `-a`/`-na` mutually exclusive per-invocation overrides | `CliOptionsTests`, `ProjectTrustTests` |
+| Non-interactive ask behaviour | Equivalent | `project-trust.ts`, `main.ts` | Print, JSON, and RPC modes fail closed without prompting | `ProjectTrustTests`; startup path |
+| Block untrusted project executables | Equivalent | `core/trust-manager.ts`, `resource-loader.ts` | Trust is resolved before `AgentFactory`; project DLLs and project package extensions are never passed to the loader while untrusted | `ExtensionsAndPackagesTests` |
+| Project instruction/resource gating | Equivalent | `resource-loader.ts` | Project `.pi` settings/extensions/skills/prompts/themes/system files/packages and ancestor `.agents/skills` are gated; ordinary AGENTS/CLAUDE context is not | `ProjectTrustTests`, `ResourceLoadingTests` |
+| Extension `project_trust` hook | Intentional difference | `extensions/runner.ts` | Existing PiSharp extension API has no trust event; trusted global extensions are not loaded for a trust hook in this slice | Phase 5 parity gap |
 
 ## Resources
 
 | Capability | Status | Pi reference | PiSharp implementation | Conformance coverage |
 |---|---|---|---|---|
 | AGENTS/CLAUDE context loading | Partial | `core/resource-loader.ts` | `AgentsFileLoader` | `AgentsFileLoaderTests` |
-| User/project skill discovery | Partial | `core/skills.ts` | `SkillCatalog` | `ResourceLoadingTests`, `skills.test.ts` reference |
+| User/project skill discovery | Equivalent | `core/skills.ts` | `SkillCatalog` loads trusted project `.pi`/ancestor `.agents` skills and trusted global `.pi`/`.agents` skills | `ResourceLoadingTests`, `ProjectTrustTests` |
 | Skill validation and prompt block | Equivalent | `core/skills.ts` | `Skills.cs` | `ResourceLoadingTests` |
 | Prompt template discovery | Partial | `core/prompt-templates.ts` | `PromptTemplateCatalog` | `PromptTemplates` tests |
 | Prompt argument expansion | Equivalent | `core/prompt-templates.ts` | `PromptTemplates.cs` | Prompt template tests |
@@ -160,8 +163,8 @@ PiSharp.
 
 | Capability | Status | Pi reference | PiSharp implementation | Conformance coverage |
 |---|---|---|---|---|
-| Local `package.json` manifest | Partial | `core/pi-manifest.ts` | `PiPackageCatalog` | `ExtensionsAndPackagesTests`, package fixture |
-| User/project resource precedence | Partial | `core/package-manager.ts`, resource loader | Deterministic local discovery | Resource tests |
+| Local `package.json` manifest | Partial | `core/pi-manifest.ts` | `PiPackageCatalog` records user/project package origin; project contributions are suppressed while untrusted | `ExtensionsAndPackagesTests`, package fixture |
+| User/project resource precedence | Equivalent | `core/package-manager.ts`, resource loader | Deterministic local discovery with explicit user/project package origin metadata and trust filtering | `ExtensionsAndPackagesTests`, `ResourceLoadingTests` |
 | npm package source | Missing | `core/package-manager.ts` | Not implemented | Planned Phase 5 |
 | Git/local/temporary sources | Missing | `core/package-manager.ts`, CLI package manager | Not implemented | Planned Phase 5 |
 | Install/remove/list/update | Missing | `package-manager-cli.ts` | Not implemented | Planned Phase 5/11 |
@@ -249,7 +252,7 @@ PiSharp.
 | Resource flags | Partial | `cli/args.ts` | Extension/skill/prompt/no-* flags | `CliOptionsTests` |
 | Session flags | Partial | `cli/args.ts` | Continue/resume/session/no-session | Session tests |
 | Model/provider/auth flags | Partial | `cli/args.ts` | Raw model/endpoint/API key | Planned Phase 4 |
-| Trust flags | Missing | `cli/args.ts`, project trust | Not implemented | Planned Phase 3 |
+| Trust flags | Equivalent | `cli/args.ts`, project trust | `--approve`/`-a` and `--no-approve`/`-na` | `CliOptionsTests`, `ProjectTrustTests` |
 | Package/update/setup commands | Missing | package-manager CLI/setup/update | Not implemented | Planned Phase 5/11 |
 | Version/changelog/offline/proxy | Missing | utilities/CLI | Not implemented | Planned Phase 11 |
 

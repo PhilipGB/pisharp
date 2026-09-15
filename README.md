@@ -45,12 +45,12 @@ Implemented and smoke-tested against llama.cpp:
 - read-only and no-tools execution policies
 - bounded transient-provider retries with exponential backoff
 - `@file` text and image attachments for one-shot and print prompts
+- PiSharp-owned project trust decisions with inherited paths and fail-closed headless startup
 
 Remaining parity work:
 
 - Pi-equivalent full-screen tree picker and richer TUI/editor/keybindings
 - provider login/OAuth and dynamic model catalogue
-- project trust
 - full Pi-compatible JSON/RPC event schemas and command coverage
 - provider failover and model fallback
 - image input in interactive/RPC prompts and image resizing/validation
@@ -195,6 +195,8 @@ pisharp [options] [@files...] [prompt...]
 --no-extensions, -ne        disable default extension discovery
 --no-skills, -ns            disable default skill discovery
 --no-prompt-templates, -np  disable default prompt discovery
+--approve, -a              trust project-local resources for this run
+--no-approve, -na          ignore project-local resources for this run
 --context-tokens <n>        context window used by Harness compaction
 --max-output-tokens <n>     maximum model output tokens
 -c, --continue              continue most recent workspace session
@@ -229,6 +231,7 @@ PiSharp.Cli
    +-- PiSharp.Core
           |
           +-- AgentsFileLoader
+          +-- ProjectTrustStore / ProjectTrustResolver
           +-- WorkspacePathPolicy
           +-- CodingTools
           +-- SessionStore
@@ -243,9 +246,15 @@ The design rule remains: Microsoft Agent Framework owns generic model/tool runti
 
 PiSharp reads default resources without network access:
 
-- skills: `~/.pi/agent/skills` and `<workspace>/.pi/skills`;
-- prompt templates: `~/.pi/agent/prompts` and `<workspace>/.pi/prompts`;
+- skills: `~/.pi/agent/skills`, `~/.agents/skills`, and trusted `<workspace>/.pi/skills`/ancestor `.agents/skills`;
+- prompt templates: `~/.pi/agent/prompts` and trusted `<workspace>/.pi/prompts`;
 - packages: local package directories under `~/.pi/agent/packages` and `<workspace>/.pi/packages`, using the `pi` fields in `package.json`;
-- extensions: trusted `.dll` files under `~/.pi/agent/extensions` and `<workspace>/.pi/extensions`.
+- extensions: trusted `.dll` files under `~/.pi/agent/extensions` and trusted `<workspace>/.pi/extensions`.
 
-Package resources are lower precedence than user and project resources. Extension assemblies execute with the CLI process's permissions, so only load code from sources you trust.
+Project `.pi` resources, project `.agents/skills`, and project package contributions are discovered only after the project trust decision. User/global resources remain available while a project is untrusted. `AGENTS.md` and `CLAUDE.md` context traversal is intentionally not trust-gated. Package resources are lower precedence than user and project resources. Extension assemblies execute with the CLI process's permissions, so only load code from sources you trust.
+
+### Project trust
+
+PiSharp resolves project trust before `AgentFactory` discovers or loads project extensions and other instruction-bearing resources. Decisions are stored in `~/.pisharp/trust.json`, intentionally separate from Pi's TypeScript `trust.json` because PiSharp executes .NET assemblies. Decisions inherit from parent directories; a nearer decision overrides an ancestor.
+
+Interactive startup offers trust, trust-parent, session-only, and deny choices. `--approve`/`-a` and `--no-approve`/`-na` override saved decisions for one invocation. Print, JSON, and RPC modes never prompt: `defaultProjectTrust` is read from the global `~/.pi/agent/settings.json`, and `ask` fails closed. `/trust` saves a decision for a future restart; it does not load newly enabled project resources into the current process.
