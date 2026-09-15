@@ -39,7 +39,11 @@ internal static class HeadlessModes
             output,
             cancellationToken,
             promptInput.Images);
-        await sessions.PersistTurnAsync(promptInput.Text, result.AssistantText, cancellationToken);
+        await sessions.PersistTurnAsync(
+            promptInput.Text,
+            result.AssistantText,
+            cancellationToken,
+            result.ToolRecords);
         if (options.OutputMode != OutputMode.Json)
         {
             Console.WriteLine(result.AssistantText);
@@ -230,7 +234,7 @@ internal static class HeadlessModes
                 workspaceRoot,
                 new JsonChatOutput(writer),
                 cancellationToken);
-            await sessions.PersistTurnAsync(prompt, result.AssistantText, cancellationToken);
+            await sessions.PersistTurnAsync(prompt, result.AssistantText, cancellationToken, result.ToolRecords);
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {

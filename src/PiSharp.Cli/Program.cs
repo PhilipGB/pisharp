@@ -61,7 +61,11 @@ try
             new TerminalChatOutput(),
             shutdown.Token,
             promptInput.Images);
-        await sessions.PersistTurnAsync(promptInput.Text, result.AssistantText, shutdown.Token);
+        await sessions.PersistTurnAsync(
+            promptInput.Text,
+            result.AssistantText,
+            shutdown.Token,
+            result.ToolRecords);
         await PublishShutdownAsync(bootstrap.ExtensionHost, options.WorkingDirectory, bootstrap.TurnQueue);
         return result.Cancelled ? 130 : 0;
     }
@@ -171,7 +175,7 @@ static async Task RunInteractiveAsync(
             cancellationToken);
         pendingInput = activeInput.PendingInput;
         var result = await activeTurn;
-        await sessions.PersistTurnAsync(input, result.AssistantText, cancellationToken);
+        await sessions.PersistTurnAsync(input, result.AssistantText, cancellationToken, result.ToolRecords);
         if (activeInput.ShouldExit)
         {
             return;

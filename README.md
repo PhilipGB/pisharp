@@ -21,9 +21,11 @@ Implemented and smoke-tested against llama.cpp:
 - streaming terminal output
 - bracketed multi-line paste handling: one terminal paste is submitted as one prompt
 - one-shot and interactive modes
-- durable append-only JSONL sessions
+- durable append-only JSONL sessions with Pi v3 typed entries
 - stable turn IDs and `parentId` tree semantics
+- semantic user/assistant/tool-result records with MAF state as a cache bridge
 - MAF `AgentSession` serialization/restoration inside durable turns
+- legacy PiSharp v1 session reads
 - `-c` / `--continue`
 - `-r` / `--resume`
 - `--session <id|path>`

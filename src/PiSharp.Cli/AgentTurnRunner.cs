@@ -66,6 +66,7 @@ internal static class AgentTurnRunner
         output.AssistantMessageStarted();
         var toolNames = new Dictionary<string, string>(StringComparer.Ordinal);
         var toolArguments = new Dictionary<string, string>(StringComparer.Ordinal);
+        var toolRecords = new Dictionary<string, ToolExecutionRecord>(StringComparer.Ordinal);
         var retryNumber = 0;
         while (true)
         {
@@ -79,7 +80,7 @@ internal static class AgentTurnRunner
                         cancellationToken: cancellationToken);
                 await foreach (var update in updates)
                 {
-                    RenderToolContents(update, toolNames, toolArguments, output);
+                    RenderToolContents(update, toolNames, toolArguments, toolRecords, output);
                     if ((update.Role is null || update.Role == ChatRole.Assistant) && !string.IsNullOrEmpty(update.Text))
                     {
                         output.WriteText(update.Text);
@@ -90,14 +91,17 @@ internal static class AgentTurnRunner
                 var assistantText = response.ToString();
                 output.AssistantMessageFinished(assistantText);
                 output.WriteLine();
-                return new TurnExecutionResult(assistantText);
+                return new TurnExecutionResult(assistantText, ToolExecutions: toolRecords.Values.ToArray());
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
                 var assistantText = response.ToString();
                 output.AssistantMessageFinished(assistantText);
                 output.WriteLine();
-                return new TurnExecutionResult(assistantText, Cancelled: true);
+                return new TurnExecutionResult(
+                    assistantText,
+                    Cancelled: true,
+                    ToolExecutions: toolRecords.Values.ToArray());
             }
             catch (Exception exception) when (
                 retryPolicy.Enabled &&
@@ -116,6 +120,7 @@ internal static class AgentTurnRunner
         AgentResponseUpdate update,
         IDictionary<string, string> toolNames,
         IDictionary<string, string> toolArguments,
+        IDictionary<string, ToolExecutionRecord> toolRecords,
         IChatOutput output)
     {
         foreach (var content in update.Contents)
@@ -123,10 +128,19 @@ internal static class AgentTurnRunner
             switch (content)
             {
                 case FunctionCallContent call when !call.InformationalOnly:
-                    RenderToolCall(call, toolNames, toolArguments, output);
+                    RenderToolCall(call, toolNames, toolArguments, toolRecords, output);
                     break;
                 case FunctionResultContent result:
                     var name = toolNames.TryGetValue(result.CallId, out var knownName) ? knownName : result.CallId;
+                    var resultElement = ToJsonElement(result.Result);
+                    toolRecords[result.CallId] = toolRecords.TryGetValue(result.CallId, out var record)
+                        ? record with { Result = resultElement, IsError = result.Exception is not null }
+                        : new ToolExecutionRecord(
+                            result.CallId,
+                            name,
+                            EmptyObject(),
+                            resultElement,
+                            result.Exception is not null);
                     output.ToolFinished(result.CallId, name, result.Exception?.Message, FormatValue(result.Result));
                     break;
             }
@@ -137,10 +151,15 @@ internal static class AgentTurnRunner
         FunctionCallContent call,
         IDictionary<string, string> toolNames,
         IDictionary<string, string> toolArguments,
+        IDictionary<string, ToolExecutionRecord> toolRecords,
         IChatOutput output)
     {
         var arguments = FormatJson(call.Arguments);
+        var argumentsElement = ToJsonElement(call.Arguments);
         toolNames[call.CallId] = call.Name;
+        toolRecords[call.CallId] = toolRecords.TryGetValue(call.CallId, out var existingRecord)
+            ? existingRecord with { Name = call.Name, Arguments = argumentsElement }
+            : new ToolExecutionRecord(call.CallId, call.Name, argumentsElement, null, false);
         if (toolArguments.TryGetValue(call.CallId, out var previousArguments))
         {
             if (!string.Equals(previousArguments, arguments, StringComparison.Ordinal))
@@ -170,6 +189,25 @@ internal static class AgentTurnRunner
         {
             return value.ToString() ?? "{}";
         }
+    }
+
+    private static JsonElement ToJsonElement(object? value)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(FormatJson(value));
+            return document.RootElement.Clone();
+        }
+        catch (JsonException)
+        {
+            return EmptyObject();
+        }
+    }
+
+    private static JsonElement EmptyObject()
+    {
+        using var document = JsonDocument.Parse("{}");
+        return document.RootElement.Clone();
     }
 
     private static string FormatValue(object? value)

@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 namespace PiSharp.Core;
 
 /// <summary>Describes when a queued user message should be delivered.</summary>
@@ -132,14 +134,34 @@ public sealed class TurnMessageQueue
         kind == QueuedMessageKind.Steering ? _steering : _followUp;
 }
 
+/// <summary>A durable summary of one tool call and its result.</summary>
+public sealed record ToolExecutionRecord(
+    string CallId,
+    string Name,
+    JsonElement Arguments,
+    JsonElement? Result,
+    bool IsError);
+
 /// <summary>Result returned by one model-backed prompt execution.</summary>
-public sealed record TurnExecutionResult(string AssistantText, bool Cancelled = false);
+public sealed record TurnExecutionResult(
+    string AssistantText,
+    bool Cancelled = false,
+    IReadOnlyList<ToolExecutionRecord>? ToolExecutions = null)
+{
+    /// <summary>Gets tool records without requiring nullable checks at call sites.</summary>
+    public IReadOnlyList<ToolExecutionRecord> ToolRecords => ToolExecutions ?? [];
+}
 
 /// <summary>Aggregated result for an initial prompt and any follow-up prompts it drained.</summary>
 public sealed record LiveTurnResult(
     string AssistantText,
     IReadOnlyList<string> DeliveredPrompts,
-    bool Cancelled);
+    bool Cancelled,
+    IReadOnlyList<ToolExecutionRecord>? ToolExecutions = null)
+{
+    /// <summary>Gets tool records without requiring nullable checks at call sites.</summary>
+    public IReadOnlyList<ToolExecutionRecord> ToolRecords => ToolExecutions ?? [];
+}
 
 /// <summary>
 /// Coordinates one active outer agent run. Steering is injected by the model
@@ -188,6 +210,7 @@ public sealed class LiveTurnCoordinator
 
         var delivered = new List<string> { initialPrompt };
         var assistantText = new List<string>();
+        var toolExecutions = new List<ToolExecutionRecord>();
         var cancelled = false;
         var prompts = new List<string> { initialPrompt };
         try
@@ -198,6 +221,7 @@ public sealed class LiveTurnCoordinator
                 {
                     var result = await executeAsync(prompt, linkedCancellation.Token);
                     assistantText.Add(result.AssistantText);
+                    toolExecutions.AddRange(result.ToolRecords);
                     if (result.Cancelled || linkedCancellation.IsCancellationRequested)
                     {
                         cancelled = true;
@@ -232,7 +256,7 @@ public sealed class LiveTurnCoordinator
             EndRun(linkedCancellation);
         }
 
-        return new LiveTurnResult(string.Concat(assistantText), delivered, cancelled);
+        return new LiveTurnResult(string.Concat(assistantText), delivered, cancelled, toolExecutions);
     }
 
     /// <summary>Requests cancellation of the active execution without clearing queued input.</summary>

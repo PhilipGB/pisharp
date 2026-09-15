@@ -38,6 +38,18 @@ public sealed class SessionStore
         return new SessionDocument(path, header);
     }
 
+    public async Task<SessionDocument> CreatePiAsync(
+        CancellationToken cancellationToken = default,
+        string? parentSession = null)
+    {
+        Directory.CreateDirectory(_workspaceDirectory);
+        var header = PiSessionHeader.Create(_workspaceRoot, parentSession);
+        var fileName = $"{header.Timestamp:yyyyMMddTHHmmssfffZ}_{header.Id}.jsonl";
+        var path = Path.Combine(_workspaceDirectory, fileName);
+        await File.WriteAllTextAsync(path, JsonSerializer.Serialize(header, JsonOptions) + Environment.NewLine, cancellationToken);
+        return new SessionDocument(path, header, []);
+    }
+
     public async Task AppendTurnAsync(SessionDocument document, SessionTurn turn, CancellationToken cancellationToken = default)
     {
         document.Add(turn);
@@ -45,6 +57,17 @@ public sealed class SessionStore
             document.FilePath,
             JsonSerializer.Serialize(turn, JsonOptions) + Environment.NewLine,
             cancellationToken);
+    }
+
+    public async Task AppendEntriesAsync(
+        SessionDocument document,
+        IEnumerable<SessionEntry> entries,
+        CancellationToken cancellationToken = default)
+    {
+        var pending = entries.ToArray();
+        document.AddEntries(pending);
+        var lines = pending.Select(entry => JsonSerializer.Serialize(entry, entry.GetType(), JsonOptions));
+        await File.AppendAllTextAsync(document.FilePath, string.Join(Environment.NewLine, lines) + Environment.NewLine, cancellationToken);
     }
 
     public async Task<SessionDocument> LoadAsync(string path, CancellationToken cancellationToken = default)
@@ -56,9 +79,27 @@ public sealed class SessionStore
             throw new InvalidDataException($"Session file is empty: {path}");
         }
 
-        var header = JsonSerializer.Deserialize<SessionHeader>(lines[0], JsonOptions)
+        using var first = JsonDocument.Parse(lines[0]);
+        var root = first.RootElement;
+        if (root.TryGetProperty("version", out var version) && version.GetInt32() >= 3 &&
+            root.TryGetProperty("id", out _))
+        {
+            var header = JsonSerializer.Deserialize<PiSessionHeader>(lines[0], JsonOptions)
+                ?? throw new InvalidDataException($"Invalid Pi session header: {path}");
+            var entries = new List<SessionEntry>();
+            for (var i = 1; i < lines.Length; i++)
+            {
+                if (!string.IsNullOrWhiteSpace(lines[i]))
+                {
+                    entries.Add(DeserializeEntry(lines[i], i + 1, path));
+                }
+            }
+            return new SessionDocument(path, header, entries);
+        }
+
+        var legacyHeader = JsonSerializer.Deserialize<SessionHeader>(lines[0], JsonOptions)
             ?? throw new InvalidDataException($"Invalid session header: {path}");
-        if (!string.Equals(header.Type, "session", StringComparison.Ordinal) || header.Version != 1)
+        if (!string.Equals(legacyHeader.Type, "session", StringComparison.Ordinal) || legacyHeader.Version != 1)
         {
             throw new InvalidDataException($"Unsupported session format in {path}.");
         }
@@ -81,7 +122,7 @@ public sealed class SessionStore
             turns.Add(turn);
         }
 
-        return new SessionDocument(path, header, turns);
+        return new SessionDocument(path, legacyHeader, turns);
     }
 
     public async Task<IReadOnlyList<SessionDocument>> ListAsync(CancellationToken cancellationToken = default)
@@ -144,6 +185,68 @@ public sealed class SessionStore
         }
 
         return fork;
+    }
+
+    public async Task<SessionDocument> ForkPiAsync(
+        SessionDocument source,
+        string? entryId,
+        CancellationToken cancellationToken = default)
+    {
+        if (!source.IsPiV3)
+        {
+            throw new InvalidOperationException("Pi v3 forking requires a Pi v3 source session.");
+        }
+
+        var fork = await CreatePiAsync(cancellationToken, source.PiHeader!.Id);
+        var path = source.GetActiveEntryPath(entryId);
+        if (path.Count > 0)
+        {
+            var pathIds = path.Select(entry => entry.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var assistantIds = path
+                .OfType<MessageEntry>()
+                .Where(IsAssistantMessage)
+                .Select(entry => entry.Id)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var entries = source.Entries
+                .Where(entry => pathIds.Contains(entry.Id) ||
+                                (entry.ParentId is not null &&
+                                 ((pathIds.Contains(entry.ParentId) &&
+                                   entry.Type is SessionEntryTypes.Custom or SessionEntryTypes.Label) ||
+                                  (assistantIds.Contains(entry.ParentId) && entry.Type == SessionEntryTypes.Message))))
+                .ToArray();
+            await AppendEntriesAsync(fork, entries, cancellationToken);
+        }
+        return fork;
+    }
+
+    private static bool IsAssistantMessage(MessageEntry entry) =>
+        entry.Message.ValueKind == JsonValueKind.Object &&
+        entry.Message.TryGetProperty("role", out var role) &&
+        string.Equals(role.GetString(), "assistant", StringComparison.Ordinal);
+
+    private static SessionEntry DeserializeEntry(string line, int lineNumber, string path)
+    {
+        using var document = JsonDocument.Parse(line);
+        if (!document.RootElement.TryGetProperty("type", out var typeValue))
+        {
+            throw new InvalidDataException($"Session entry at line {lineNumber} has no type: {path}");
+        }
+
+        var type = typeValue.GetString();
+        return type switch
+        {
+            SessionEntryTypes.Message => JsonSerializer.Deserialize<MessageEntry>(line, JsonOptions)!,
+            SessionEntryTypes.BashExecution => JsonSerializer.Deserialize<BashExecutionEntry>(line, JsonOptions)!,
+            SessionEntryTypes.ModelChange => JsonSerializer.Deserialize<ModelChangeEntry>(line, JsonOptions)!,
+            SessionEntryTypes.ThinkingLevelChange => JsonSerializer.Deserialize<ThinkingLevelChangeEntry>(line, JsonOptions)!,
+            SessionEntryTypes.Compaction => JsonSerializer.Deserialize<CompactionEntry>(line, JsonOptions)!,
+            SessionEntryTypes.BranchSummary => JsonSerializer.Deserialize<BranchSummaryEntry>(line, JsonOptions)!,
+            SessionEntryTypes.Custom => JsonSerializer.Deserialize<CustomEntry>(line, JsonOptions)!,
+            SessionEntryTypes.CustomMessage => JsonSerializer.Deserialize<CustomMessageEntry>(line, JsonOptions)!,
+            SessionEntryTypes.Label => JsonSerializer.Deserialize<LabelEntry>(line, JsonOptions)!,
+            SessionEntryTypes.SessionInfo => JsonSerializer.Deserialize<SessionInfoEntry>(line, JsonOptions)!,
+            _ => throw new InvalidDataException($"Unsupported session entry type '{type}' at line {lineNumber} in {path}."),
+        };
     }
 
     private static string GetWorkspaceKey(string workspaceRoot)
