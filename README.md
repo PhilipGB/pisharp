@@ -38,6 +38,8 @@ Implemented and smoke-tested against llama.cpp:
 - markdown prompt templates with Pi-compatible argument substitution
 - local `package.json` Pi resource manifests
 - trusted .NET extension commands, input transforms, and lifecycle hooks
+- initial JSON event and JSON-RPC headless modes
+- read-only and no-tools execution policies
 
 Remaining parity work:
 
