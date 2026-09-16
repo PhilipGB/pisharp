@@ -142,6 +142,29 @@ internal static class HeadlessModes
             case "get_last_assistant_text":
                 WriteSuccess(writer, command, "get_last_assistant_text", new { text = sessions.Document?.LatestTurn?.AssistantMessage });
                 return activeTurn;
+            case "compact":
+                await sessions.CompactAsync(
+                    command.CustomInstructions ?? command.Message,
+                    CompactionReason.Manual,
+                    new JsonChatOutput(writer),
+                    cancellationToken);
+                WriteSuccess(writer, command, "compact");
+                return activeTurn;
+            case "navigate_tree":
+            case "goto":
+                if (string.IsNullOrWhiteSpace(command.TargetId))
+                {
+                    WriteError(writer, command, "navigate_tree requires targetId.");
+                    return activeTurn;
+                }
+                await sessions.NavigateAsync(
+                    command.TargetId,
+                    command.Summarize,
+                    command.CustomInstructions,
+                    new JsonChatOutput(writer),
+                    cancellationToken);
+                WriteSuccess(writer, command, command.Type);
+                return activeTurn;
             case "set_session_name":
                 if (string.IsNullOrWhiteSpace(command.Name))
                 {

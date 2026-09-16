@@ -81,13 +81,13 @@ PiSharp.
 
 | Capability | Status | Pi reference | PiSharp implementation | Conformance coverage |
 |---|---|---|---|---|
-| Proactive threshold compaction | Partial | `core/compaction/compaction.ts`, `agent-session.ts` | Delegated to MAF Harness | No Pi semantic parity |
-| Context overflow recovery | Missing | `agent-session.ts` | No Pi-owned recovery | Planned Phase 2 |
-| `/compact` and custom instructions | Missing | `compaction/index.ts`, RPC `compact` | Not implemented | Planned Phase 2 |
-| Reserve/recent token budgets | Missing | `core/defaults.ts`, compaction files | Not implemented | Planned Phase 2 |
-| Turn-aware cut points | Missing | `compaction/utils.ts` | Not implemented | Planned Phase 2 |
-| Persistent `CompactionEntry` | Missing | `SessionEntry` compaction type | Not represented | Planned Phase 1/2 |
-| Branch summaries | Missing | `compaction/branch-summarization.ts` | Not implemented | Planned Phase 2 |
+| Proactive threshold compaction | Partial | `core/compaction/compaction.ts`, `agent-session.ts` | PiSharp estimates the active typed path before/after turns and persists summaries; settings are currently fixed defaults | `CompactionTests`; runtime integration pending |
+| Context overflow recovery | Partial | `agent-session.ts` | Detects common provider overflow messages, compacts once, and retries without Harness compaction | Runtime integration pending |
+| `/compact` and custom instructions | Partial | `compaction/index.ts`, RPC `compact` | Interactive `/compact` and RPC `compact` call the Pi-owned summarizer and emit lifecycle events | Runtime integration pending |
+| Reserve/recent token budgets | Equivalent | `core/defaults.ts`, compaction files | `CompactionSettings` has deterministic reserve/recent defaults and CLI context-window threshold | `CompactionTests` |
+| Turn-aware cut points | Equivalent | `compaction/utils.ts` | Core cut-point planning avoids tool results and supports split-turn prefix summaries | `CompactionTests` |
+| Persistent `CompactionEntry` | Equivalent | `SessionEntry` compaction type | Compaction summaries, first-kept IDs, token estimates, details, and usage are appended to Pi v3 JSONL | `PiSessionStoreTests`, `CompactionTests` |
+| Branch summaries | Partial | `compaction/branch-summarization.ts` | `/goto --summarize` and RPC tree navigation collect abandoned paths and append `BranchSummaryEntry` | `CompactionTests`; runtime integration pending |
 | Compaction extension hooks | Missing | `extensions/types.ts` | Not implemented | Planned Phase 2 |
 
 ## Models/providers/auth
@@ -202,7 +202,7 @@ PiSharp.
 | Agent/turn/message lifecycle | Partial | `modes/json-event.ts`, `agent-session.ts` | Basic `JsonChatOutput` events | Existing headless tests are limited |
 | Delta-only updates | Missing | `modes/json-event.ts` | Current output is not proven wire-compatible | Planned Phase 8 |
 | Thinking/usage/tool deltas | Missing | `json-event.ts` | Not complete | Planned Phase 8 |
-| Queue/compaction/retry events | Missing | `agent-session.ts` event union | Not complete | Planned Phase 8 |
+| Queue/compaction/retry events | Partial | `agent-session.ts` event union | JSON lifecycle events cover queue/tool/turn flow and Pi-native compaction start/end; retry schema remains partial | Existing fixtures; compaction runtime pending |
 | Error/cancellation contract | Partial | JSON event mode | Basic error paths | Planned golden tests |
 
 ## RPC
@@ -214,7 +214,7 @@ PiSharp.
 | Queue modes/clear queue | Partial | `rpc-types.ts` | Implemented | Existing queue tests |
 | Session/tree/last assistant commands | Partial | `rpc-types.ts` | Basic forms | Manual only |
 | Model/thinking controls | Missing | `rpc-types.ts` | Not implemented | Planned Phase 8 |
-| Compaction/auto-compaction | Missing | `rpc-types.ts` | Not implemented | Planned Phase 8 |
+| Compaction/auto-compaction | Partial | `rpc-types.ts` | RPC `compact` and tree navigation are implemented; automatic compaction is owned by the shared turn runner | Runtime integration pending |
 | Retry controls/abort retry | Partial | `rpc-types.ts` | CLI retry only | Planned Phase 4/8 |
 | Bash/abort-bash | Missing | `rpc-types.ts` | Not implemented as RPC commands | Planned Phase 8 |
 | Stats/export/switch/fork/clone/entries/messages | Missing/Partial | `rpc-types.ts` | Small subset only | Planned Phase 1/7/8 |

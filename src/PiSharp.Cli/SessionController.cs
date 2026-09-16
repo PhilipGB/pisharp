@@ -6,6 +6,8 @@ using PiSharp.Core;
 
 namespace PiSharp.Cli;
 
+internal sealed record BranchNavigationResult(bool Changed, bool SummaryAdded);
+
 internal sealed class SessionController
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
@@ -17,6 +19,9 @@ internal sealed class SessionController
     private readonly SessionStore? _store;
     private readonly string _model;
     private readonly PiSessionChatHistoryProvider _sessionHistory;
+    private readonly PiSummarizer _summarizer;
+    private readonly int _contextTokens;
+    private readonly CompactionSettings _compactionSettings;
 
     private SessionController(
         AIAgent agent,
@@ -26,7 +31,10 @@ internal sealed class SessionController
         AgentSession session,
         string? activeTurnId,
         string? activeEntryId,
-        PiSessionChatHistoryProvider sessionHistory)
+        PiSessionChatHistoryProvider sessionHistory,
+        PiSummarizer summarizer,
+        int contextTokens,
+        CompactionSettings compactionSettings)
     {
         _agent = agent;
         _model = model;
@@ -36,6 +44,9 @@ internal sealed class SessionController
         ActiveTurnId = activeTurnId;
         ActiveEntryId = activeEntryId;
         _sessionHistory = sessionHistory;
+        _summarizer = summarizer;
+        _contextTokens = contextTokens;
+        _compactionSettings = compactionSettings;
         _sessionHistory.SetActiveDocument(document, activeEntryId);
     }
 
@@ -65,7 +76,10 @@ internal sealed class SessionController
                 await agent.CreateSessionAsync(cancellationToken),
                 null,
                 null,
-                bootstrap.SessionHistory);
+                bootstrap.SessionHistory,
+                new PiSummarizer(bootstrap.SummaryClient, bootstrap.RetryPolicy, options.MaxOutputTokens),
+                options.ContextTokens,
+                new CompactionSettings());
         }
 
         var store = new SessionStore(options.WorkingDirectory, options.SessionDirectory);
@@ -92,7 +106,7 @@ internal sealed class SessionController
         }
 
         EnsureWorkspaceMatches(document, options.WorkingDirectory);
-        var active = document.LatestTurn;
+        var active = document.GetLatestTurnOnPath(document.LatestEntryId);
         var session = await RestoreSessionAsync(agent, active, cancellationToken);
 
         var controller = new SessionController(
@@ -103,7 +117,10 @@ internal sealed class SessionController
             session,
             active?.Id,
             document.IsPiV3 ? document.LatestEntryId : active?.Id,
-            bootstrap.SessionHistory);
+            bootstrap.SessionHistory,
+            new PiSummarizer(bootstrap.SummaryClient, bootstrap.RetryPolicy, options.MaxOutputTokens),
+            options.ContextTokens,
+            new CompactionSettings());
         if (!string.IsNullOrWhiteSpace(options.SessionName) && controller.IsPersistent)
         {
             await controller.SetNameAsync(options.SessionName, cancellationToken);
@@ -177,7 +194,7 @@ internal sealed class SessionController
                 message.Clone());
             entries.Add(entry);
             parentId = entry.Id;
-            if (IsRole(message, "assistant"))
+            if (IsMessageRole(message, "assistant"))
             {
                 ActiveTurnId = entry.Id;
             }
@@ -207,6 +224,156 @@ internal sealed class SessionController
         _sessionHistory.SetActiveDocument(Document, ActiveEntryId);
     }
 
+    public async Task<bool> TryAutoCompactAsync(
+        IChatOutput output,
+        CompactionReason reason,
+        CancellationToken cancellationToken)
+    {
+        if (!IsPersistent || Document is null || !Document.IsPiV3 || ActiveEntryId is null)
+        {
+            return false;
+        }
+
+        var path = Document.GetActiveEntryPath(ActiveEntryId);
+        var context = PiCompactionPlanner.BuildContextEntries(path);
+        var estimate = PiCompactionPlanner.EstimateContextTokens(context);
+        if (!PiCompactionPlanner.ShouldCompact(estimate.Tokens, _contextTokens, _compactionSettings))
+        {
+            return false;
+        }
+
+        try
+        {
+            await CompactAsync(null, reason, output, cancellationToken);
+            return true;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            return false;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
+
+    public async Task<PiSummaryResult> CompactAsync(
+        string? customInstructions,
+        CompactionReason reason,
+        IChatOutput output,
+        CancellationToken cancellationToken)
+    {
+        EnsurePersistent();
+        if (!Document!.IsPiV3 || ActiveEntryId is null)
+        {
+            throw new InvalidOperationException("Pi-native compaction requires a Pi v3 session with history.");
+        }
+
+        var path = Document.GetActiveEntryPath(ActiveEntryId);
+        var plan = PiCompactionPlanner.PrepareCompaction(path, _compactionSettings)
+            ?? throw new InvalidOperationException("Nothing to compact (session is already compacted or too small).");
+        var reasonText = reason.ToString().ToLowerInvariant();
+        output.CompactionStarted(reasonText);
+        try
+        {
+            var result = await _summarizer.GenerateCompactionAsync(plan, customInstructions, cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
+            var entry = new CompactionEntry(
+                Guid.NewGuid().ToString("N"),
+                ActiveEntryId,
+                DateTimeOffset.UtcNow,
+                result.Summary,
+                result.FirstKeptEntryId,
+                result.TokensBefore,
+                result.Details,
+                result.Usage);
+            await _store!.AppendEntriesAsync(Document, [entry], cancellationToken);
+            ActiveEntryId = entry.Id;
+            _sessionHistory.SetActiveDocument(Document, ActiveEntryId);
+            var after = PiCompactionPlanner.EstimateContextTokens(Document.GetActiveContextEntries(ActiveEntryId)).Tokens;
+            output.CompactionFinished(reasonText, result.TokensBefore, after, false, null);
+            return result;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            output.CompactionFinished(reasonText, 0, 0, true, null);
+            throw;
+        }
+        catch (Exception exception)
+        {
+            output.CompactionFinished(reasonText, 0, 0, false, exception.Message);
+            throw;
+        }
+    }
+
+    public async Task<BranchNavigationResult> NavigateAsync(
+        string selector,
+        bool summarize,
+        string? customInstructions,
+        IChatOutput output,
+        CancellationToken cancellationToken)
+    {
+        EnsurePersistent();
+        if (!Document!.IsPiV3)
+        {
+            throw new InvalidOperationException("Branch navigation requires a Pi v3 session.");
+        }
+
+        var target = selector.Equals("root", StringComparison.OrdinalIgnoreCase)
+            ? null
+            : Document.ResolveEntry(selector);
+        var targetId = target?.Id;
+        var navigationTargetId = target is MessageEntry assistantTarget && IsMessageRole(assistantTarget.Message, "assistant")
+            ? Document.GetTurnLeafEntryId(target.Id)
+            : targetId;
+        var oldLeaf = ActiveEntryId;
+        if (string.Equals(oldLeaf, navigationTargetId, StringComparison.OrdinalIgnoreCase))
+        {
+            return new BranchNavigationResult(false, false);
+        }
+
+        var summaryPlan = navigationTargetId is null
+            ? new BranchSummaryPlan([], null, 0, new CompactionFileOperations([], []))
+            : PiCompactionPlanner.CollectBranchSummary(
+                Document,
+                oldLeaf,
+                navigationTargetId,
+                Math.Max(0, _contextTokens - _compactionSettings.ReserveTokens));
+        var summary = summarize && summaryPlan.Entries.Count > 0
+            ? await _summarizer.GenerateBranchSummaryAsync(summaryPlan, customInstructions, cancellationToken)
+            : (Summary: (string?)null, Usage: (JsonElement?)null, Details: (JsonElement?)null);
+        var newLeaf = target switch
+        {
+            MessageEntry message when IsMessageRole(message.Message, "user") => message.ParentId,
+            CustomMessageEntry custom => custom.ParentId,
+            null => null,
+            _ => navigationTargetId,
+        };
+
+        if (summary.Summary is not null)
+        {
+            var entry = new BranchSummaryEntry(
+                Guid.NewGuid().ToString("N"),
+                newLeaf,
+                DateTimeOffset.UtcNow,
+                oldLeaf ?? "root",
+                summary.Summary,
+                summary.Details,
+                summary.Usage);
+            await _store!.AppendEntriesAsync(Document, [entry], cancellationToken);
+            ActiveEntryId = entry.Id;
+        }
+        else
+        {
+            ActiveEntryId = newLeaf;
+        }
+
+        ActiveTurnId = Document.GetLatestTurnOnPath(ActiveEntryId)?.Id;
+        Session = await RestoreSessionAsync(_agent, Document.GetLatestTurnOnPath(ActiveEntryId), cancellationToken);
+        _sessionHistory.SetActiveDocument(Document, ActiveEntryId);
+        return new BranchNavigationResult(true, summary.Summary is not null);
+    }
+
     public async Task CheckoutAsync(string turnSelector, CancellationToken cancellationToken)
     {
         EnsurePersistent();
@@ -220,9 +387,9 @@ internal sealed class SessionController
         }
 
         var turn = Document!.ResolveTurn(turnSelector);
-        Session = await RestoreSessionAsync(_agent, turn, cancellationToken);
-        ActiveTurnId = turn.Id;
         ActiveEntryId = Document.IsPiV3 ? Document.GetTurnLeafEntryId(turn.Id) : turn.Id;
+        Session = await RestoreSessionAsync(_agent, Document.GetLatestTurnOnPath(ActiveEntryId), cancellationToken);
+        ActiveTurnId = Document.GetLatestTurnOnPath(ActiveEntryId)?.Id;
         _sessionHistory.SetActiveDocument(Document, ActiveEntryId);
     }
 
@@ -246,10 +413,10 @@ internal sealed class SessionController
         Document = Document!.IsPiV3
             ? await _store!.ForkPiAsync(Document, selectedId, cancellationToken)
             : await _store!.ForkAsync(Document, selectedId, _model, cancellationToken);
-        ActiveTurnId = Document.LatestTurn?.Id;
-        ActiveEntryId = Document.IsPiV3 ? Document.LatestEntryId : ActiveTurnId;
+        ActiveEntryId = Document.IsPiV3 ? Document.LatestEntryId : Document.LatestTurn?.Id;
+        ActiveTurnId = Document.GetLatestTurnOnPath(ActiveEntryId)?.Id;
         _sessionHistory.SetActiveDocument(Document, ActiveEntryId);
-        Session = await RestoreSessionAsync(_agent, Document.LatestTurn, cancellationToken);
+        Session = await RestoreSessionAsync(_agent, Document.GetLatestTurnOnPath(ActiveEntryId), cancellationToken);
     }
 
     private static JsonElement CreateUserMessage(string message, IReadOnlyList<AIContent>? contents)
@@ -288,7 +455,7 @@ internal sealed class SessionController
         return DateTimeOffset.FromUnixTimeMilliseconds(milliseconds);
     }
 
-    private static bool IsRole(JsonElement message, string role) =>
+    private static bool IsMessageRole(JsonElement message, string role) =>
         message.ValueKind == JsonValueKind.Object &&
         message.TryGetProperty("role", out var roleValue) &&
         string.Equals(roleValue.GetString(), role, StringComparison.Ordinal);
@@ -303,10 +470,10 @@ internal sealed class SessionController
         }
 
         Document = selected;
-        ActiveTurnId = selected.LatestTurn?.Id;
-        ActiveEntryId = selected.IsPiV3 ? selected.LatestEntryId : ActiveTurnId;
+        ActiveEntryId = selected.IsPiV3 ? selected.LatestEntryId : selected.LatestTurn?.Id;
+        ActiveTurnId = selected.GetLatestTurnOnPath(ActiveEntryId)?.Id;
         _sessionHistory.SetActiveDocument(Document, ActiveEntryId);
-        Session = await RestoreSessionAsync(_agent, selected.LatestTurn, cancellationToken);
+        Session = await RestoreSessionAsync(_agent, selected.GetLatestTurnOnPath(ActiveEntryId), cancellationToken);
         return true;
     }
 

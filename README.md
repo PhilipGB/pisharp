@@ -10,7 +10,7 @@ Implemented and smoke-tested against llama.cpp:
 
 - Microsoft Agent Framework `HarnessAgent` runtime
 - OpenAI and OpenAI-compatible endpoints, including llama.cpp
-- MAF context compaction using configured context/output limits
+- Pi-native compaction with deterministic token estimates, turn-aware cut points, persisted summaries, and overflow recovery; Harness compaction is disabled
 - `read`, `write`, `edit`, `bash`, `ls`, `find`, and `grep` tools
 - Pi-style unique exact-match edit replacements
 - workspace path traversal protection for file tools
@@ -30,7 +30,7 @@ Implemented and smoke-tested against llama.cpp:
 - `-r` / `--resume`
 - `--session <id|path>`
 - `--name <text>`
-- `/session`, `/name`, `/stats`, `/tree`, `/goto`, `/fork`, `/clone`, `/new`, `/resume`
+- `/session`, `/name`, `/stats`, `/tree`, `/goto`, `/compact`, `/fork`, `/clone`, `/new`, `/resume`
 - unit tests for file/path/context/session/terminal-input/resource behaviour
 - thread-safe steering and follow-up queues with abort preservation
 - streamed tool start/update/end rendering
@@ -162,7 +162,8 @@ Interactive commands:
 ```text
 /session
 /tree
-/goto <turn-id|root>
+/goto <entry-id|root> [--summarize]
+/compact [instructions]
 /fork [turn-id]
 /clone
 /new
@@ -197,7 +198,7 @@ pisharp [options] [@files...] [prompt...]
 --no-prompt-templates, -np  disable default prompt discovery
 --approve, -a              trust project-local resources for this run
 --no-approve, -na          ignore project-local resources for this run
---context-tokens <n>        context window used by Harness compaction
+--context-tokens <n>        model context window used by Pi-native compaction
 --max-output-tokens <n>     maximum model output tokens
 -c, --continue              continue most recent workspace session
 -r, --resume                select a saved workspace session
@@ -220,12 +221,12 @@ PiSharp.Cli
    |      |
    |      +-- function invocation loop
    |      +-- AgentSession
-   |      +-- compaction
+   |      +-- Pi-native compaction/summarisation
    |
    +-- SessionController
    |      |
    |      +-- MAF serialize / deserialize
-   |      +-- branch selection
+   |      +-- branch selection and summaries
    |      +-- resume / fork / clone
    |
    +-- PiSharp.Core

@@ -47,6 +47,42 @@ public sealed class SessionDocument
 
     public SessionTurn? LatestTurn => Turns.Count == 0 ? null : Turns[^1];
 
+    /// <summary>Resolves any Pi v3 entry by an exact id or an unambiguous prefix.</summary>
+    public SessionEntry ResolveEntry(string idOrPrefix)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(idOrPrefix);
+        var matches = _entries
+            .Where(entry => entry.Id.StartsWith(idOrPrefix, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        return matches.Count switch
+        {
+            0 => throw new KeyNotFoundException($"No session entry matches '{idOrPrefix}'."),
+            1 => matches[0],
+            _ => throw new InvalidOperationException($"Entry id prefix '{idOrPrefix}' is ambiguous."),
+        };
+    }
+
+    /// <summary>Returns the last projected turn on the selected Pi v3 path.</summary>
+    public SessionTurn? GetLatestTurnOnPath(string? entryId)
+    {
+        if (!IsPiV3)
+        {
+            var legacyPath = GetActivePath(entryId);
+            return legacyPath.Count == 0 ? null : legacyPath[^1];
+        }
+
+        var path = GetActiveEntryPath(entryId);
+        var pathIds = path.Select(entry => entry.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var projected = ProjectTurns().Where(turn => pathIds.Contains(turn.Id)).ToArray();
+        return projected.Length == 0 ? null : projected[^1];
+    }
+
+    /// <summary>Returns context-visible entries with the latest compaction boundary applied.</summary>
+    public IReadOnlyList<SessionEntry> GetActiveContextEntries(string? entryId) =>
+        IsPiV3
+            ? PiCompactionPlanner.BuildContextEntries(GetActiveEntryPath(entryId))
+            : [];
+
     public SessionStatistics GetStatistics()
     {
         if (!IsPiV3)

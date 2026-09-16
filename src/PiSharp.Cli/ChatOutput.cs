@@ -21,6 +21,12 @@ internal interface IChatOutput
     void ToolFinished(string callId, string name, string? error, string result);
 
     void WriteLine();
+
+    void CompactionStarted(string reason);
+
+    void CompactionFinished(string reason, int tokensBefore, int tokensAfter, bool aborted, string? error);
+
+    void CompactionFailed(string reason, string error, bool aborted);
 }
 
 internal sealed class SilentChatOutput : IChatOutput
@@ -60,6 +66,18 @@ internal sealed class SilentChatOutput : IChatOutput
     public void WriteLine()
     {
     }
+
+    public void CompactionStarted(string reason)
+    {
+    }
+
+    public void CompactionFinished(string reason, int tokensBefore, int tokensAfter, bool aborted, string? error)
+    {
+    }
+
+    public void CompactionFailed(string reason, string error, bool aborted)
+    {
+    }
 }
 
 internal sealed class TerminalChatOutput : IChatOutput
@@ -92,6 +110,14 @@ internal sealed class TerminalChatOutput : IChatOutput
         Console.WriteLine($"\n[tool:end] {name}{(error is null ? string.Empty : $" error={error}")}: {result}");
 
     public void WriteLine() => Console.WriteLine();
+
+    public void CompactionStarted(string reason) => Console.WriteLine($"\n[compaction:start] {reason}");
+
+    public void CompactionFinished(string reason, int tokensBefore, int tokensAfter, bool aborted, string? error) =>
+        Console.WriteLine($"[compaction:end] {reason} before={tokensBefore} after={tokensAfter}{(aborted ? " aborted" : string.Empty)}{(error is null ? string.Empty : $" error={error}")}");
+
+    public void CompactionFailed(string reason, string error, bool aborted) =>
+        Console.WriteLine($"[compaction:error] {reason}: {error}");
 }
 
 internal sealed class JsonLineWriter
@@ -176,6 +202,22 @@ internal sealed class JsonChatOutput : IChatOutput
     {
     }
 
+    public void CompactionStarted(string reason) =>
+        _writer.Write(new { type = "compaction_start", reason });
+
+    public void CompactionFinished(string reason, int tokensBefore, int tokensAfter, bool aborted, string? error) =>
+        _writer.Write(new
+        {
+            type = "compaction_end",
+            reason,
+            aborted,
+            result = error is null ? new { tokensBefore, estimatedTokensAfter = tokensAfter } : null,
+            errorMessage = error,
+        });
+
+    public void CompactionFailed(string reason, string error, bool aborted) =>
+        _writer.Write(new { type = "compaction_end", reason, aborted, errorMessage = error });
+
     private static object ParseJson(string value)
     {
         try
@@ -196,7 +238,10 @@ internal sealed record RpcCommandEnvelope(
     string? Message,
     string? StreamingBehavior,
     string? Mode,
-    string? Name);
+    string? Name,
+    string? TargetId = null,
+    bool Summarize = false,
+    string? CustomInstructions = null);
 
 internal static class RpcProtocol
 {
@@ -217,8 +262,14 @@ internal static class RpcProtocol
             GetString(root, "message"),
             GetString(root, "streamingBehavior"),
             GetString(root, "mode"),
-            GetString(root, "name"));
+            GetString(root, "name"),
+            GetString(root, "targetId"),
+            GetBoolean(root, "summarize"),
+            GetString(root, "customInstructions"));
     }
+
+    private static bool GetBoolean(JsonElement root, string propertyName) =>
+        root.TryGetProperty(propertyName, out var value) && value.ValueKind == JsonValueKind.True;
 
     public static string? GetString(JsonElement root, string propertyName) =>
         root.TryGetProperty(propertyName, out var value) && value.ValueKind == JsonValueKind.String

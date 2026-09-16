@@ -169,6 +169,8 @@ static async Task RunInteractiveAsync(
             await HandleCommandAsync(
                 input,
                 sessions,
+                bootstrap,
+                output,
                 bootstrap.ContextFiles,
                 bootstrap.ExtensionHost,
                 workspaceRoot,
@@ -281,6 +283,8 @@ static Task<string?> ReadInputAsync(TerminalPromptReader promptReader, Cancellat
 static async Task<bool> HandleCommandAsync(
     string input,
     SessionController sessions,
+    AgentBootstrap bootstrap,
+    IChatOutput output,
     IReadOnlyList<string> contextFiles,
     PiSharpExtensionHost extensionHost,
     string workspaceRoot,
@@ -318,11 +322,18 @@ static async Task<bool> HandleCommandAsync(
         case "/goto":
             if (string.IsNullOrWhiteSpace(argument))
             {
-                Console.WriteLine("Usage: /goto <turn-id|root>");
+                Console.WriteLine("Usage: /goto <entry-id|root> [--summarize]");
                 return true;
             }
-            await sessions.CheckoutAsync(argument, cancellationToken);
-            Console.WriteLine($"Checked out {argument}. The next prompt will branch from this point.");
+            var navigationParts = argument.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            var summarizeBranch = navigationParts.Any(part => part.Equals("--summarize", StringComparison.OrdinalIgnoreCase));
+            var targetSelector = navigationParts.FirstOrDefault(part => !part.StartsWith("--", StringComparison.Ordinal)) ?? "root";
+            await sessions.NavigateAsync(targetSelector, summarizeBranch, null, output, cancellationToken);
+            Console.WriteLine($"Checked out {targetSelector}. The next prompt will branch from this point.");
+            return true;
+        case "/compact":
+            await sessions.CompactAsync(argument, CompactionReason.Manual, output, cancellationToken);
+            Console.WriteLine("Compaction complete.");
             return true;
         case "/fork":
             await sessions.ForkAsync(argument, cancellationToken);
@@ -422,7 +433,8 @@ static void PrintInteractiveHelp()
           /name <text>             Set the session display name
           /stats                   Show session message/tool statistics
           /tree                    Show the turn tree (* marks active turn)
-          /goto <turn-id|root>     Move the active point; next prompt creates a branch
+          /goto <entry-id|root> [--summarize]  Move point and optionally summarize abandoned work
+          /compact [instructions]  Summarize old context and persist a compaction boundary
           /fork [turn-id]          Copy an active path into a new session
           /clone                   Clone the current active branch into a new session
           /new                     Start a new persistent session

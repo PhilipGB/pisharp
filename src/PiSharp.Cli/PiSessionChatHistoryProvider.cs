@@ -107,7 +107,7 @@ internal static class PiSessionDocumentMessages
         string? activeEntryId)
     {
         var path = document.GetActiveEntryPath(activeEntryId);
-        return path
+        return PiCompactionPlanner.BuildContextEntries(path)
             .Select(ToChatMessage)
             .Where(message => message is not null)
             .Cast<ChatMessage>()
@@ -125,8 +125,8 @@ internal static class PiSessionDocumentMessages
             exitCode = bash.ExitCode,
         }))),
         CustomMessageEntry custom => new ChatMessage(ChatRole.User, ReadContent(custom.Content)),
-        CompactionEntry compaction => new ChatMessage(ChatRole.User, $"The conversation history before this point was compacted into the following summary:\n\n{compaction.Summary}"),
-        BranchSummaryEntry branch => new ChatMessage(ChatRole.User, $"The following is a summary of a branch that this conversation came back from:\n\n{branch.Summary}"),
+        CompactionEntry compaction => new ChatMessage(ChatRole.User, $"The conversation history before this point was compacted into the following summary:\n\n<summary>\n{compaction.Summary}\n</summary>"),
+        BranchSummaryEntry branch => new ChatMessage(ChatRole.User, $"The following is a summary of a branch that this conversation came back from:\n\n<summary>\n{branch.Summary}\n</summary>"),
         _ => null,
     };
 

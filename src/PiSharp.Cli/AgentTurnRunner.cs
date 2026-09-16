@@ -38,19 +38,41 @@ internal static class AgentTurnRunner
                 if (sessions.IsPersistent && sessions.Document?.IsPiV3 == true)
                 {
                     await sessions.PersistUserMessageAsync(expandedMessage, contents, token);
+                    await sessions.TryAutoCompactAsync(output, CompactionReason.Threshold, token);
                 }
-                var execution = await RunSingleAsync(
-                    bootstrap.Agent,
-                    sessions.Session,
-                    expandedMessage,
-                    output,
-                    token,
-                    contents,
-                    bootstrap.RetryPolicy,
-                    sessions.Document?.IsPiV3 == true
-                        ? messageSnapshot => sessions.PersistAssistantMessagesAsync([messageSnapshot], token)
-                        : null);
-                return execution;
+
+                var overflowRecoveryAttempted = false;
+                while (true)
+                {
+                    try
+                    {
+                        var execution = await RunSingleAsync(
+                            bootstrap.Agent,
+                            sessions.Session,
+                            expandedMessage,
+                            output,
+                            token,
+                            contents,
+                            bootstrap.RetryPolicy,
+                            sessions.Document?.IsPiV3 == true
+                                ? messageSnapshot => sessions.PersistAssistantMessagesAsync([messageSnapshot], token)
+                                : null);
+                        if (sessions.IsPersistent && sessions.Document?.IsPiV3 == true && !execution.Cancelled)
+                        {
+                            await sessions.TryAutoCompactAsync(output, CompactionReason.Threshold, token);
+                        }
+                        return execution;
+                    }
+                    catch (Exception exception) when (!overflowRecoveryAttempted && IsContextOverflow(exception))
+                    {
+                        overflowRecoveryAttempted = true;
+                        if (!sessions.IsPersistent || sessions.Document?.IsPiV3 != true ||
+                            !await sessions.TryAutoCompactAsync(output, CompactionReason.Overflow, token))
+                        {
+                            throw;
+                        }
+                    }
+                }
             },
             cancellationToken);
         if (sessions.IsPersistent && sessions.Document?.IsPiV3 == true)
@@ -69,6 +91,16 @@ internal static class AgentTurnRunner
         text => PromptTemplateCatalog.Expand(
             SkillCatalog.ExpandCommand(extensionHost.TransformInput(text), bootstrap.Skills),
             bootstrap.PromptTemplates);
+
+    private static bool IsContextOverflow(Exception exception)
+    {
+        var message = exception.ToString();
+        return message.Contains("context length", StringComparison.OrdinalIgnoreCase) ||
+               message.Contains("context window", StringComparison.OrdinalIgnoreCase) ||
+               message.Contains("too many tokens", StringComparison.OrdinalIgnoreCase) ||
+               message.Contains("prompt is too long", StringComparison.OrdinalIgnoreCase) ||
+               message.Contains("maximum context", StringComparison.OrdinalIgnoreCase);
+    }
 
     private static async Task<TurnExecutionResult> RunSingleAsync(
         AIAgent agent,

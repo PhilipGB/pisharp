@@ -130,14 +130,12 @@ internal static class AgentFactory
 
         var turnQueue = new TurnMessageQueue();
         var sessionHistory = new PiSessionChatHistoryProvider();
-        IChatClient chatClient = new SteeringChatClient(
-            new ChatClient(
-                    options.Model,
-                    new ApiKeyCredential(options.ApiKey),
-                    openAiOptions)
-                .AsIChatClient(),
-            turnQueue,
-            expandInput);
+        var modelClient = new ChatClient(
+                options.Model,
+                new ApiKeyCredential(options.ApiKey),
+                openAiOptions)
+            .AsIChatClient();
+        IChatClient chatClient = new SteeringChatClient(modelClient, turnQueue, expandInput);
 
 #pragma warning disable MAAI001 // Harness token-limit options are currently marked evaluation-only by MAF.
         var agent = chatClient.AsHarnessAgent(new HarnessAgentOptions
@@ -150,11 +148,13 @@ internal static class AgentFactory
                 Instructions = instructions,
                 Tools = aiTools,
             },
+            // PiSharp owns context accounting, summaries, cut points, persistence, and
+            // overflow recovery. Harness must not silently reduce or rewrite the transcript.
+            DisableCompaction = true,
             MaxContextWindowTokens = options.ContextTokens,
             MaxOutputTokens = options.MaxOutputTokens,
 
-            // Pi's core is deliberately small. Keep Harness features that support the loop
-            // and compaction, but avoid silently changing Pi's product semantics here.
+            // Pi's core is deliberately small. Keep only the generic function loop from Harness.
             DisableTodoProvider = true,
             DisableAgentModeProvider = true,
             DisableFileMemory = true,
@@ -166,6 +166,7 @@ internal static class AgentFactory
 
         return new AgentBootstrap(
             agent,
+            modelClient,
             projectContext.Files,
             skillResult.Skills,
             promptTemplates,
