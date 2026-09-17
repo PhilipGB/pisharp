@@ -30,7 +30,8 @@ Implemented and smoke-tested against llama.cpp:
 - `-r` / `--resume`
 - `--session <id|path>`
 - `--name <text>`
-- `/session`, `/name`, `/label`, `/stats`, `/tree`, `/goto`, `/compact`, `/fork`, `/clone`, `/new`, `/resume`
+- `/session`, `/name`, `/label`, `/stats`, `/tree`, `/goto`, `/compact`, `/fork`, `/clone`, `/new`, `/resume`, `/settings`, `/reload`
+- Pi-compatible settings system: global `~/.pi/agent/settings.json` plus trusted-project `.pi/settings.json`, deep merge with project precedence, legacy-format migrations, malformed-file diagnostics, `defaultProjectTrust`, settings-backed compaction budgets (with per-model overrides), retry budgets, session directory, and keybinding configuration
 - unit tests for file/path/context/session/terminal-input/resource behaviour
 - thread-safe steering and follow-up queues with abort preservation
 - streamed tool start/update/end rendering
@@ -49,8 +50,9 @@ Implemented and smoke-tested against llama.cpp:
 
 Remaining parity work (tracked per capability in [`docs/PARITY.md`](docs/PARITY.md)):
 
-- Pi-compatible settings system: global plus trusted-project `settings.json`, keybindings, `/settings`, `/reload`, settings-backed compaction/retry/tool/resource values
-- provider/model registry with provider login and credential storage, thinking levels, model cycling and scoped models
+- provider/model registry with provider login and credential storage, `defaultModel`/`defaultProvider` selection, thinking levels, model cycling and scoped models
+- consuming the remaining settings values: queue modes (`steeringMode`/`followUpMode`), `defaultTools`, resource paths, terminal/image/TUI options (the values are already parsed and exposed by the settings manager)
+- settings-backed keybindings in the terminal UI
 - full session product surface: interactive picker, delete, import, JSONL/HTML export, statistics with usage/cost totals, v1 migration
 - tool parity: Pi's exact default tool selection, schemas, partial tool output, serialized file mutations, PowerShell on Windows
 - resource/package/extension lifecycle: npm/git/local package sources, install/remove/list/update, full Pi extension API surface, themes
@@ -113,6 +115,34 @@ By default PiSharp follows Pi's behaviour and searches from the filesystem root 
 
 It also loads `~/.pi/agent/AGENTS.md` when present.
 
+## Settings
+
+PiSharp reads the same two-scope configuration as Pi:
+
+```text
+~/.pi/agent/settings.json   global settings (override with PI_CODING_AGENT_DIR)
+<workspace>/.pi/settings.json  project settings (read only while the project is trusted)
+```
+
+Project values win per key; nested objects merge recursively while arrays and scalars are replaced. Legacy Pi formats are migrated on load (`queueMode` → `steeringMode`, `websockets` → `transport`, the object-form `skills` → array, `retry.maxDelayMs` → `retry.provider.maxRetryDelayMs`). A malformed settings file never aborts startup: the scope falls back to defaults and a warning is printed.
+
+Values the runtime already consumes from settings:
+
+- `defaultProjectTrust` — global-only default for the project trust decision (invalid values fall back to `ask`)
+- `compaction.*` — reserve/keep-recent budgets, enable flag, and per-model `modelOverrides` keyed by `provider/modelId`
+- `retry.*` — retry enable flag, attempt count, backoff delays (still overridable by `--no-auto-retry`)
+- `sessionDir` — session storage root (CLI `--session-dir` and `PI_CODING_AGENT_SESSION_DIR` take precedence)
+
+`~/.pi/agent/keybindings.json` is also loaded, migrated, and re-read by `/reload`; the terminal UI will consume it when it lands.
+
+In interactive mode:
+
+```text
+/settings                  show file locations and effective values
+/settings <key> <value>    set a global value ("unset" clears it back to the Pi default)
+/reload                    re-read settings and keybindings
+```
+
 This means an unrelated context file in a parent folder is intentionally visible. To constrain discovery to the repository itself:
 
 ```bash
@@ -135,7 +165,7 @@ Sessions are stored under:
 ~/.pisharp/sessions/<workspace-key>/
 ```
 
-Override the root with `--session-dir` or `PISHARP_SESSION_DIR`.
+Override the root with `--session-dir`, `PI_CODING_AGENT_SESSION_DIR`, or the `sessionDir` setting (in that order of precedence). The default location moves to Pi's `~/.pi/agent/sessions/<encoded-cwd>/` layout when the session product surface lands.
 
 Each session is append-only JSONL in the Pi v3 session format. The first line is the session header (version 3, session id, timestamp, cwd, and — for forks — the source session path in `parentSession`). Every durable event is then appended as its own typed entry linked through a stable `id`/`parentId` chain:
 
@@ -196,7 +226,7 @@ pisharp [options] [@files...] [prompt...]
 --print, -p                 run one prompt and exit
 --read-only                 expose only read/search tools
 --no-tools, -nt             disable built-in tools
---no-auto-retry             disable transient provider retries
+--no-auto-retry             disable transient provider retries (settings still define the budget)
 --no-extensions, -ne        disable default extension discovery
 --no-skills, -ns            disable default skill discovery
 --no-prompt-templates, -np  disable default prompt discovery
@@ -207,7 +237,7 @@ pisharp [options] [@files...] [prompt...]
 -c, --continue              continue most recent workspace session
 -r, --resume                select a saved workspace session
 --session <id|path>         resume a specific session
---session-dir <path>        override session storage root
+--session-dir <path>        override session storage root (also PI_CODING_AGENT_SESSION_DIR / sessionDir setting)
 --no-session                disable persistence
 -h, --help                  help
 ```

@@ -117,18 +117,23 @@ PiSharp.
 
 | Capability | Status | Pi reference | PiSharp implementation | Conformance coverage |
 |---|---|---|---|---|
-| Global settings file | Partial | `core/settings-manager.ts`, `config.ts` | Narrow bootstrap reader for global `defaultProjectTrust`; full settings remain pending | `ProjectTrustTests` |
-| Project settings file (trusted only) | Missing | `core/settings-manager.ts` | Not implemented; project settings are ignored until trust is resolved | Planned Phase 1 |
-| Global/project deep merge (one project scope at cwd, no ancestor walk) | Missing | `settings-manager.ts` | Not implemented | Planned Phase 1 |
-| Settings migrations (`queueMode`→`steeringMode`, `websockets`→`transport`, skills object→array, `retry.maxDelayMs`) | Missing | `settings-manager.ts` `migrateSettings` | Not implemented | Planned Phase 1 |
-| Malformed-settings diagnostics (warning + scope fallback, no crash) | Missing | `settings-manager.ts`, `settings-diagnostics.ts` | Global reader warns and falls back to `ask`; full diagnostics pending | Planned Phase 1 |
-| External-edit preservation on write (modified-field tracking) | Missing | `settings-manager.ts` `save` | Not implemented | Planned Phase 1 |
-| Project settings write scope and trust gating | Missing | `settings-manager.ts` project scope | Not implemented | Planned Phase 1 |
-| Runtime settings reload (`/reload`) | Missing | `/reload`, settings manager | Not implemented | Planned Phase 1 |
-| `/settings` and `pi config` commands | Missing | `settings-selector.ts`, `cli/config-selector.ts` | Not implemented | Planned Phase 1/7 |
-| Keybindings file and legacy-name migration | Missing | `core/keybindings.ts` | Not implemented | Planned Phase 1 (TUI wiring Phase 7) |
-| Model/thinking/compaction/retry settings | Missing | `settings-manager.ts` | CLI flags only for some values | Planned Phase 1/2 |
-| Shell/image/tool/theme/terminal settings | Missing | settings schema and config tests | Not implemented | Planned Phase 1/2/6 |
+| Global settings file | Equivalent | `core/settings-manager.ts`, `config.ts` | `SettingsManager` + `FileSettingsStorage` over `~/.pi/agent/settings.json` (agent dir override via `PI_CODING_AGENT_DIR`), typed `PiSettings` model mirroring the Pi `Settings` interface | `SettingsManagerTests`; `Fixtures/pi-v3/settings/*` |
+| Project settings file (trusted only) | Equivalent | `settings-manager.ts` | Project scope loads only while the project is trusted; `SetProjectTrustedAsync` loads the file on trust gain and drops the scope on untrust | `SettingsManagerTests` |
+| Global/project deep merge (one project scope at cwd, no ancestor walk) | Equivalent | `settings-manager.ts` | Objects merge recursively per key; arrays, scalars, and nulls replace; untrusted project scope is empty | `SettingsManagerTests`, merge fixtures |
+| Settings migrations (`queueMode`→`steeringMode`, `websockets`→`transport`, skills object→array, `retry.maxDelayMs`) | Equivalent | `settings-manager.ts` `migrateSettings` | All four migrations run on load and never overwrite already-present current values | `SettingsManagerTests`, `settings-legacy.json` fixture |
+| Malformed-settings diagnostics (warning + scope fallback, no crash) | Equivalent | `settings-manager.ts`, `settings-diagnostics.ts` | Per-scope diagnostics with path and scope, drained by the CLI as startup warnings; a failed reload keeps previous values and reports the diagnostic | `SettingsManagerTests` |
+| External-edit preservation on write (modified-field tracking) | Equivalent | `settings-manager.ts` `save` | Modified-field (and nested-key) tracking: save re-merges the current file, in-memory changes win, unknown fields survive; scopes with load errors are never rewritten | `SettingsManagerTests` |
+| Project settings write scope and trust gating | Equivalent | `settings-manager.ts` project scope | Project setters persist to the project file only and throw while untrusted; global setters persist to the global file only | `SettingsManagerTests` |
+| `defaultProjectTrust` consumption | Equivalent | `settings-manager.ts`, `main.ts` | CLI trust resolution reads `GetDefaultProjectTrust()` from the global scope (invalid values fall back to `ask`); global-scope-only like Pi | `SettingsManagerTests`, `ProjectTrustTests` |
+| Session directory resolution | Equivalent | `main.ts`, `session-manager.ts` | CLI `--session-dir` > `PI_CODING_AGENT_SESSION_DIR` > `sessionDir` setting; PiSharp also expands `~` where Pi's `expandTildePath` is a no-op stub (intentional improvement); the default storage root still uses the legacy `~/.pisharp/sessions` layout until the Phase 5 session surface moves it to `~/.pi/agent/sessions/<encoded-cwd>/` | `SettingsWiringTests` |
+| Compaction settings (enabled, reserve, keep-recent, per-model overrides) | Equivalent | `settings-manager.ts` | Session controller resolves the budget from settings with Pi defaults (16384/20000) and per-model `modelOverrides` keyed by `provider/modelId`; invalid values warn and fall back to defaults | `SettingsManagerTests`, `SettingsWiringTests` |
+| Retry settings | Equivalent | `settings-manager.ts` | Agent retry policy is built from `retry.*` with Pi defaults (enabled, 3, 2000ms, 60000ms); `--no-auto-retry` still disables for the run; provider-level retry values exposed for Phase 2 | `SettingsManagerTests`, `SettingsWiringTests` |
+| Queue modes (`steeringMode`/`followUpMode`) | Partial | `settings-manager.ts`, `agent-session.ts` | Parsed, validated, and defaulted like Pi (`one-at-a-time`); the turn queue still uses fixed steering/follow-up semantics until Phase 3 | `SettingsManagerTests` |
+| Model/thinking/default settings | Partial | `settings-manager.ts` | Typed accessors for `defaultModel`, `defaultProvider`, `defaultThinkingLevel`, and per-model thinking levels with Pi validation; model selection consumes them in Phase 2 | `SettingsManagerTests` |
+| Shell/image/tool/theme/terminal settings | Partial | settings schema and config tests | Typed accessors with Pi defaults (`shellPath`, `shellCommandPrefix`, `npmCommand`, `defaultTools`, `enabledModels`, `images.*`, `terminal.*`, `markdown.*`, TUI options, `httpIdleTimeoutMs` including `"disabled"`); consumers land with their respective phases | `SettingsManagerTests` |
+| Keybindings file and legacy-name migration | Equivalent | `core/keybindings.ts` | `KeybindingsManager` loads `~/.pi/agent/keybindings.json`, migrates all legacy flat names (current names win), tolerates malformed files, and carries the full TUI + application default tables including the win32/WSL/darwin-conditional keys; consumed by the terminal UI in Phase 7 | `KeybindingsTests` |
+| `/settings` command | Partial | `settings-selector.ts` (TUI menu), `cli/config-selector.ts` | Line-based `/settings` prints paths + effective values and `/settings <key> <value>` sets global values ("unset" clears); Pi's full TUI menu and `pi config` CLI remain Phase 7 | `SettingsCommands` (CLI code path) |
+| Runtime reload (`/reload`) | Partial | `/reload` | `/reload` re-reads settings and keybindings and re-renders diagnostics; extensions/skills/prompts/themes are still startup-loaded (Pi re-registers those in the TUI runtime, Phase 7/9) | CLI code path |
 
 ## Trust
 
@@ -297,11 +302,13 @@ PiSharp.
 | Offline/proxy/version checks | Missing | config and utilities | Not implemented | Planned Phase 14 |
 | Cross-platform installation docs | Partial | Pi package/docs | Basic README only | CI added in Phase 0 |
 
-## Phase 0 conformance fixtures
+## Conformance fixtures
 
 Fixtures are intentionally small, deterministic contract samples:
 
 - `tests/PiSharp.Core.Tests/Fixtures/pi-v3/pi-session.jsonl` — Pi v3 header and typed message entries.
+- `tests/PiSharp.Core.Tests/Fixtures/pi-v3/settings/global-settings.json`, `project-settings.json` — two-scope settings merge with per-model compaction overrides and package sources.
+- `tests/PiSharp.Core.Tests/Fixtures/pi-v3/settings/settings-legacy.json` — legacy settings shapes that must migrate to the current format.
 - `tests/PiSharp.Core.Tests/Fixtures/pi-v3/json-events.jsonl` — lifecycle, message delta, tool, retry, and compaction event shapes.
 - `tests/PiSharp.Core.Tests/Fixtures/pi-v3/rpc-requests.jsonl` — representative current RPC commands.
 - `tests/PiSharp.Core.Tests/Fixtures/pi-v3/tool-schemas.json` — Pi's normal coding-tool names and schema anchors.
@@ -310,8 +317,10 @@ Fixtures are intentionally small, deterministic contract samples:
 - `tests/PiSharp.Core.Tests/Fixtures/pi-v3/package.json` — `pi` package manifest contract.
 
 The fixtures are compatibility inputs, not claims that the current implementation
-already consumes every shape. Phase 1 and Phase 10 will turn them into executable
-golden comparisons as the corresponding application-owned models are introduced.
+already consumes every shape. Phase 10 and later will turn the remaining protocol
+fixtures into executable golden comparisons as the corresponding application-owned
+models are introduced; the settings fixtures are already exercised by
+`SettingsManagerTests`.
 
 ## Update rule
 
