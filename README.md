@@ -10,7 +10,7 @@ Implemented and smoke-tested against llama.cpp:
 
 - Microsoft Agent Framework `HarnessAgent` runtime
 - OpenAI and OpenAI-compatible endpoints, including llama.cpp
-- Pi-native compaction with deterministic token estimates, turn-aware cut points, persisted summaries, and overflow recovery; Harness compaction is disabled
+- Pi-native compaction owned by PiSharp end to end: deterministic token estimates, turn-aware cut points, pre-prompt compaction at provider-request boundaries, forced provider-overflow recovery that retries only the failed request (never the prompt or already-run tools), persisted summaries, and branch summaries; Harness compaction is disabled
 - `read`, `write`, `edit`, `bash`, `ls`, `find`, and `grep` tools
 - Pi-style unique exact-match edit replacements
 - workspace path traversal protection for file tools

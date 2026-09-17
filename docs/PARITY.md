@@ -81,13 +81,14 @@ PiSharp.
 
 | Capability | Status | Pi reference | PiSharp implementation | Conformance coverage |
 |---|---|---|---|---|
-| Proactive threshold compaction | Partial | `core/compaction/compaction.ts`, `agent-session.ts` | PiSharp estimates the active typed path before/after turns and persists summaries; settings are currently fixed defaults | `CompactionTests`; runtime integration pending |
-| Context overflow recovery | Partial | `agent-session.ts` | Detects common provider overflow messages, compacts once, and retries without Harness compaction | Runtime integration pending |
-| `/compact` and custom instructions | Partial | `compaction/index.ts`, RPC `compact` | Interactive `/compact` and RPC `compact` call the Pi-owned summarizer; incremental checkpoints switch to Pi's update-preserve prompt and append read/modified file sections | `PiSummarizerTests`; runtime integration pending |
+| Proactive threshold compaction | Equivalent | `core/compaction/compaction.ts`, `agent-session.ts` | PiSharp compacts the authoritative typed session before persisting the new prompt (Pi's prepareNextTurn order), rechecks at every provider request via the `CompactionChatClient` seam, and rechecks after runs; effective request history is rebuilt from the typed context after each compaction. Settings are currently fixed defaults | `CompactionTests`, `CompactionRuntimeTests` |
+| Context overflow recovery | Equivalent | `agent-session.ts` | Provider overflow responses (Pi's overflow pattern set, with rate-limit exclusions) force exactly one compaction and retry only the failed provider request — never the prompt or already-executed tools. Streaming recovers only before any content is produced; a second overflow surfaces instead of looping. Harness compaction stays disabled | `ContextOverflowPolicyTests`, `CompactionChatClientTests`, `CompactionRuntimeTests` |
+| `/compact` and custom instructions | Equivalent | `compaction/index.ts`, RPC `compact` | Interactive `/compact` and RPC `compact` abort and drain the active turn (Pi semantics), then compact exclusively; incremental checkpoints reuse the previous summary exactly once, switch to Pi's update-preserve prompt, and append read/modified file sections | `PiSummarizerTests`, `SessionOperationTests`, `CompactionRuntimeTests` |
 | Reserve/recent token budgets | Equivalent | `core/defaults.ts`, compaction files | `CompactionSettings` has deterministic reserve/recent defaults and CLI context-window threshold | `CompactionTests` |
 | Turn-aware cut points | Equivalent | `compaction/utils.ts` | Core cut-point planning avoids tool results and supports split-turn prefix summaries | `CompactionTests` |
 | Persistent `CompactionEntry` | Equivalent | `SessionEntry` compaction type | Compaction summaries, first-kept IDs, token estimates, details, and usage are appended to Pi v3 JSONL | `PiSessionStoreTests`, `CompactionTests` |
-| Branch summaries | Partial | `compaction/branch-summarization.ts` | `/goto --summarize` and RPC tree navigation collect abandoned paths, budget the newest entries, and append `BranchSummaryEntry`; branch prompt/file ops covered | `CompactionTests`, `PiSummarizerTests`; runtime integration pending |
+| Branch summaries | Equivalent | `compaction/branch-summarization.ts` | Navigation collects the abandoned path (raw tool results excluded, newest-backwards budget with the 0.9 important-summary rule, cumulative file ops only from Pi-generated summaries), summarizes before any mutation so cancellation leaves no partial entry, and attaches `BranchSummaryEntry` at the navigation destination. Destination context and the MAF runtime session are rebuilt so the abandoned branch never leaks | `CompactionTests`, `PiSummarizerTests`, `SessionOperationTests` |
+| Operation coordination and restart safety | Equivalent | `agent-session.ts` | Turns, manual compaction, and tree navigation are mutually exclusive with deterministic conflict errors surfaced identically by interactive, print, and RPC hosts. A cached MAF `AgentState` is restored only when no compaction/branch boundary post-dates it on the active path; compaction and navigation always create fresh MAF sessions | `SessionOperationTests`, `CompactionRuntimeTests` |
 | Compaction extension hooks | Missing | `extensions/types.ts` | Not implemented | Planned Phase 2 |
 
 ## Models/providers/auth
@@ -202,7 +203,7 @@ PiSharp.
 | Agent/turn/message lifecycle | Partial | `modes/json-event.ts`, `agent-session.ts` | Basic `JsonChatOutput` events | Existing headless tests are limited |
 | Delta-only updates | Missing | `modes/json-event.ts` | Current output is not proven wire-compatible | Planned Phase 8 |
 | Thinking/usage/tool deltas | Missing | `json-event.ts` | Not complete | Planned Phase 8 |
-| Queue/compaction/retry events | Partial | `agent-session.ts` event union | JSON lifecycle events cover queue/tool/turn flow and Pi-native compaction start/end; retry schema remains partial | Existing fixtures; compaction runtime pending |
+| Queue/compaction/retry events | Partial | `agent-session.ts` event union | JSON lifecycle events cover queue/tool/turn flow and Pi-native compaction start/end (reliably emitted around the durable write); retry schema remains partial | Existing fixtures; `CompactionRuntimeTests` |
 | Error/cancellation contract | Partial | JSON event mode | Basic error paths | Planned golden tests |
 
 ## RPC
@@ -214,7 +215,7 @@ PiSharp.
 | Queue modes/clear queue | Partial | `rpc-types.ts` | Implemented | Existing queue tests |
 | Session/tree/last assistant commands | Partial | `rpc-types.ts` | Basic forms | Manual only |
 | Model/thinking controls | Missing | `rpc-types.ts` | Not implemented | Planned Phase 8 |
-| Compaction/auto-compaction | Partial | `rpc-types.ts` | RPC `compact` and tree navigation are implemented; automatic compaction is owned by the shared turn runner | Runtime integration pending |
+| Compaction/auto-compaction | Partial | `rpc-types.ts` | RPC `compact` and tree navigation are implemented and prompts are rejected deterministically while compaction/navigation runs; automatic compaction is owned by the per-provider-request seam, not the turn runner | `CompactionRuntimeTests`, `SessionOperationTests` |
 | Retry controls/abort retry | Partial | `rpc-types.ts` | CLI retry only | Planned Phase 4/8 |
 | Bash/abort-bash | Missing | `rpc-types.ts` | Not implemented as RPC commands | Planned Phase 8 |
 | Stats/export/switch/fork/clone/entries/messages | Missing/Partial | `rpc-types.ts` | Small subset only | Planned Phase 1/7/8 |
