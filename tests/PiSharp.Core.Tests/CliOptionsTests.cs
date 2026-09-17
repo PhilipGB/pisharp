@@ -45,13 +45,15 @@ public sealed class CliOptionsTests
     [Fact]
     public void ParsesProjectTrustOverridesAndRejectsConflicts()
     {
-        var approved = CliOptions.Parse(["--model", "test-model", "--approve"]);
+        // An explicit --api-key keeps this parse-only test independent of the process
+        // environment; the trust-override behavior under test does not depend on credentials.
+        var approved = CliOptions.Parse(["--model", "test-model", "--api-key", "test-key", "--approve"]);
         Assert.True(approved.ProjectTrustOverride);
 
-        var denied = CliOptions.Parse(["--model", "test-model", "-na"]);
+        var denied = CliOptions.Parse(["--model", "test-model", "--api-key", "test-key", "-na"]);
         Assert.False(denied.ProjectTrustOverride);
 
-        Assert.Throws<ArgumentException>(() => CliOptions.Parse(["--model", "test-model", "--approve", "--no-approve"]));
+        Assert.Throws<ArgumentException>(() => CliOptions.Parse(["--model", "test-model", "--api-key", "test-key", "--approve", "--no-approve"]));
     }
 
     [Fact]
