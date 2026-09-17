@@ -83,11 +83,11 @@ PiSharp.
 |---|---|---|---|---|
 | Proactive threshold compaction | Partial | `core/compaction/compaction.ts`, `agent-session.ts` | PiSharp estimates the active typed path before/after turns and persists summaries; settings are currently fixed defaults | `CompactionTests`; runtime integration pending |
 | Context overflow recovery | Partial | `agent-session.ts` | Detects common provider overflow messages, compacts once, and retries without Harness compaction | Runtime integration pending |
-| `/compact` and custom instructions | Partial | `compaction/index.ts`, RPC `compact` | Interactive `/compact` and RPC `compact` call the Pi-owned summarizer and emit lifecycle events | Runtime integration pending |
+| `/compact` and custom instructions | Partial | `compaction/index.ts`, RPC `compact` | Interactive `/compact` and RPC `compact` call the Pi-owned summarizer; incremental checkpoints switch to Pi's update-preserve prompt and append read/modified file sections | `PiSummarizerTests`; runtime integration pending |
 | Reserve/recent token budgets | Equivalent | `core/defaults.ts`, compaction files | `CompactionSettings` has deterministic reserve/recent defaults and CLI context-window threshold | `CompactionTests` |
 | Turn-aware cut points | Equivalent | `compaction/utils.ts` | Core cut-point planning avoids tool results and supports split-turn prefix summaries | `CompactionTests` |
 | Persistent `CompactionEntry` | Equivalent | `SessionEntry` compaction type | Compaction summaries, first-kept IDs, token estimates, details, and usage are appended to Pi v3 JSONL | `PiSessionStoreTests`, `CompactionTests` |
-| Branch summaries | Partial | `compaction/branch-summarization.ts` | `/goto --summarize` and RPC tree navigation collect abandoned paths and append `BranchSummaryEntry` | `CompactionTests`; runtime integration pending |
+| Branch summaries | Partial | `compaction/branch-summarization.ts` | `/goto --summarize` and RPC tree navigation collect abandoned paths, budget the newest entries, and append `BranchSummaryEntry`; branch prompt/file ops covered | `CompactionTests`, `PiSummarizerTests`; runtime integration pending |
 | Compaction extension hooks | Missing | `extensions/types.ts` | Not implemented | Planned Phase 2 |
 
 ## Models/providers/auth

@@ -188,7 +188,10 @@ internal sealed class PiSummarizer
         string defaultPrompt,
         CancellationToken cancellationToken)
     {
-        var prompt = BuildConversationPrompt(entries, customInstructions, defaultPrompt, replaceInstructions: false, previousSummary);
+        // Pi switches to "update" instructions when a previous checkpoint exists so the
+        // model preserves existing goals/decisions instead of starting a brand-new summary.
+        var effectivePrompt = string.IsNullOrWhiteSpace(previousSummary) ? defaultPrompt : UpdatePrompt;
+        var prompt = BuildConversationPrompt(entries, customInstructions, effectivePrompt, replaceInstructions: false, previousSummary);
         var maxTokens = Math.Min(
             Math.Max(1, (int)(reserveTokens * SummaryOutputFraction)),
             _maxOutputTokens);
