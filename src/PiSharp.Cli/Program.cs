@@ -512,7 +512,7 @@ static void PrintHelp()
           --no-prompt-templates, -np  Disable default prompt discovery
           --approve, -a                Trust project-local resources for this run
           --no-approve, -na            Ignore project-local resources for this run
-          --context-tokens <n>        Context window used by Harness compaction (default 128000)
+          --context-tokens <n>        Context window used by Pi-native compaction (default 128000)
           --max-output-tokens <n>     Maximum output tokens (default 16384)
           -c, --continue              Continue the most recently modified session for this workspace
           -r, --resume                Interactively select a saved workspace session
