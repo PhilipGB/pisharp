@@ -47,19 +47,19 @@ Implemented and smoke-tested against llama.cpp:
 - `@file` text and image attachments for one-shot and print prompts
 - PiSharp-owned project trust decisions with inherited paths and fail-closed headless startup
 
-Remaining parity work:
+Remaining parity work (tracked per capability in [`docs/PARITY.md`](docs/PARITY.md)):
 
-- Pi-equivalent full-screen tree picker and richer TUI/editor/keybindings
-- provider login/OAuth and dynamic model catalogue
-- full Pi-compatible JSON/RPC event schemas and command coverage
-- provider failover and model fallback
-- image input in interactive/RPC prompts and image resizing/validation
-- shell approval/sandbox policy and command-level permission prompts
-- remote/npm/git package installation and package filtering
-- loading TypeScript/JavaScript extensions (PiSharp currently loads trusted .NET DLLs)
-- extension UI primitives, custom tools, themes, and provider registration
-- full resource reload and live settings management
-- exact JSON/RPC protocol parity (current headless modes provide a compatible initial subset)
+- Pi-compatible settings system: global plus trusted-project `settings.json`, keybindings, `/settings`, `/reload`, settings-backed compaction/retry/tool/resource values
+- provider/model registry with provider login and credential storage, thinking levels, model cycling and scoped models
+- full session product surface: interactive picker, delete, import, JSONL/HTML export, statistics with usage/cost totals, v1 migration
+- tool parity: Pi's exact default tool selection, schemas, partial tool output, serialized file mutations, PowerShell on Windows
+- resource/package/extension lifecycle: npm/git/local package sources, install/remove/list/update, full Pi extension API surface, themes
+- Pi-equivalent terminal UI: multiline editor, selectors, tree picker, status footer, configurable keybindings
+- interactive shell commands (`!command`, `!!command`) and interactive image input
+- exact JSON event and RPC protocol parity plus a typed .NET RPC client
+- an embeddable .NET SDK exposing the runtime
+
+Pi does not have arbitrary provider failover, per-command shell approval, or sandboxing, so none of those are planned as "parity".
 
 ## Requirements
 
@@ -137,16 +137,18 @@ Sessions are stored under:
 
 Override the root with `--session-dir` or `PISHARP_SESSION_DIR`.
 
-Each session is append-only JSONL. The first record is application-owned session metadata. Each completed turn records:
+Each session is append-only JSONL in the Pi v3 session format. The first line is the session header (version 3, session id, timestamp, cwd, and — for forks — the source session path in `parentSession`). Every durable event is then appended as its own typed entry linked through a stable `id`/`parentId` chain:
 
-- stable turn ID
-- parent turn ID
-- timestamp
-- user message
-- assistant text
-- opaque serialized MAF `AgentSession` state
+- `message` entries — each user prompt, each steering/follow-up message, each completed assistant message, and each tool call/result record
+- `compaction` entries — the persisted summary, first kept entry, token estimate, details and usage
+- `branch_summary` entries — summaries of abandoned work created when navigating the tree
+- `label` entries — user bookmarks on arbitrary entries
+- `session_info` entries — session display name changes
+- `pisharp.agent-state` entries — serialized MAF `AgentSession` state
 
-The MAF state is an implementation detail. PiSharp's IDs, parent relationships and branch semantics remain application-owned.
+The typed Pi transcript is authoritative; serialized MAF `AgentSession` state is only an implementation cache. PiSharp rebuilds the effective context from the typed entries after the latest compaction or branch boundary and restores a cached MAF session only when no boundary post-dates it; compaction and navigation always start a fresh MAF session. Session ids, parent links, and branch semantics are application-owned.
+
+Legacy PiSharp v1 turn-based sessions remain readable so existing workspaces keep working; they are not rewritten.
 
 Useful startup options:
 
@@ -213,37 +215,33 @@ pisharp [options] [@files...] [prompt...]
 ## Architecture
 
 ```text
-PiSharp.Cli
+PiSharp runtime (hosts: interactive, print, JSON, RPC)
    |
-   +-- TerminalPromptReader
-   |
-   +-- OpenAI-compatible IChatClient
-   |
-   +-- Microsoft Agent Framework HarnessAgent
+   +-- application-owned session/tree/history
    |      |
-   |      +-- function invocation loop
-   |      +-- AgentSession
-   |      +-- Pi-native compaction/summarisation
+   |      +-- SessionController / SessionStore / SessionDocument
+   |      +-- typed Pi v3 JSONL entries (user, assistant, tool, compaction,
+   |      |   branch summary, label, name); MAF state as a secondary cache
    |
-   +-- SessionController
+   +-- compaction / branch-summary authority (PiSharp-owned)
+   |
+   +-- IChatClient middleware
    |      |
-   |      +-- MAF serialize / deserialize
-   |      +-- branch selection and summaries
-   |      +-- resume / fork / clone
+   |      +-- provider-boundary compaction (CompactionChatClient)
+   |      +-- steering injection (SteeringChatClient)
+   |      +-- provider client (OpenAI-compatible IChatClient)
    |
-   +-- PiSharp.Core
+   +-- MAF HarnessAgent
           |
-          +-- AgentsFileLoader
-          +-- ProjectTrustStore / ProjectTrustResolver
-          +-- WorkspacePathPolicy
-          +-- CodingTools
-          +-- SessionStore
-          +-- SessionDocument
-          +-- SkillCatalog / PromptTemplateCatalog / PiPackageCatalog
-          +-- PiSharpExtensionHost
+          +-- generic tool invocation loop (Harness compaction disabled)
+
+PiSharp.Core: deterministic algorithms (session trees, edit engine, compaction
+planner, path policy, truncation, trust, prompt history) without MAF/ASP.NET
+dependencies; resources (AGENTS context, skills, prompts, packages, trusted
+.NET extensions) are discovered and trust-filtered before the agent starts.
 ```
 
-The design rule remains: Microsoft Agent Framework owns generic model/tool runtime mechanics where its semantics match Pi; PiSharp owns coding-agent product semantics, persistence, navigation, resource discovery and policy.
+The design rule remains: Microsoft Agent Framework owns generic model/tool runtime mechanics where its semantics match Pi; PiSharp owns coding-agent product semantics, persistence, navigation, resource discovery and policy. Harness never performs PiSharp compaction — it runs the tool loop against whatever history the middleware hands it.
 
 ## Resource loading
 
