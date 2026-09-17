@@ -43,12 +43,8 @@ internal sealed class PiSessionChatHistoryProvider : ChatHistoryProvider
             : document.IsPiV3
                 ? document.GetActiveEntryMessages(activeEntryId)
                 : document.GetLegacyMessages(activeEntryId);
-        var request = context.RequestMessages.ToArray();
-        if (request.Length > 0 && history.Count > 0 && SameMessage(history[^1], request[^1]))
-        {
-            history = history.Take(history.Count - 1).ToArray();
-        }
-        return ValueTask.FromResult<IEnumerable<ChatMessage>>(history);
+        return ValueTask.FromResult<IEnumerable<ChatMessage>>(
+            PiSessionRequestComposer.Compose(history, context.RequestMessages));
     }
 
     protected override ValueTask StoreChatHistoryAsync(
@@ -79,6 +75,54 @@ internal sealed class PiSessionChatHistoryProvider : ChatHistoryProvider
                 ? history.ToArray()
                 : [];
         }
+    }
+}
+
+/// <summary>
+/// Composes the messages for one provider request from a loaded history and the in-flight
+/// request messages. When the request repeats the history's final entry (PiSharp persists every
+/// message before it can appear in a request) the duplicated tail is collapsed so the provider
+/// sees each message exactly once.
+/// </summary>
+internal static class PiSessionRequestComposer
+{
+    public static IReadOnlyList<ChatMessage> Compose(
+        IReadOnlyList<ChatMessage> history,
+        IEnumerable<ChatMessage> requestMessages)
+    {
+        var request = requestMessages as IReadOnlyList<ChatMessage> ?? requestMessages.ToArray();
+        if (request.Count > 0 && history.Count > 0 && SameMessage(history[^1], request[^1]))
+        {
+            history = history.Take(history.Count - 1).ToArray();
+        }
+        return request.Count == 0 ? history : history.Concat(request).ToArray();
+    }
+
+    /// <summary>
+    /// Splits a provider request into its loaded-history prefix (messages MAF attributed to the
+    /// chat history provider) and the in-flight request messages. When MAF did not attribute
+    /// any message (e.g. the wrapper is driven directly), the whole request is in-flight.
+    /// </summary>
+    public static (IReadOnlyList<ChatMessage> History, IReadOnlyList<ChatMessage> Request) Split(IReadOnlyList<ChatMessage> request)
+    {
+        var hasAttribution = request.Any(message =>
+            message.GetAgentRequestMessageSourceType() != AgentRequestMessageSourceType.External);
+        if (!hasAttribution)
+        {
+            return ([], request);
+        }
+
+        var history = new List<ChatMessage>();
+        var requestMessages = new List<ChatMessage>();
+        foreach (var message in request)
+        {
+            var target = message.GetAgentRequestMessageSourceType() == AgentRequestMessageSourceType.ChatHistory
+                ? history
+                : requestMessages;
+            target.Add(message);
+        }
+
+        return (history.ToArray(), requestMessages.ToArray());
     }
 
     private static bool SameMessage(ChatMessage left, ChatMessage right) =>

@@ -28,53 +28,60 @@ internal static class AgentTurnRunner
                 (message, token) => sessions.PersistUserMessageAsync(message.Text, null, token))
             : null;
         await bootstrap.ExtensionHost.PublishAsync(PiSharpExtensionEvent.BeforeTurn, context);
-        var result = await liveTurns.RunAsync(
-            prompt,
-            async (message, token) =>
-            {
-                var contents = initial ? initialContents : null;
-                initial = false;
-                var expandedMessage = expandInput(message);
-                if (sessions.IsPersistent && sessions.Document?.IsPiV3 == true)
-                {
-                    await sessions.PersistUserMessageAsync(expandedMessage, contents, token);
-                    await sessions.TryAutoCompactAsync(output, CompactionReason.Threshold, token);
-                }
 
-                var overflowRecoveryAttempted = false;
-                while (true)
+        // The whole outer turn (initial prompt plus any drained follow-ups) is one session
+        // operation: prompts submitted while it runs are rejected deterministically instead of
+        // interleaving with the turn's persistence.
+        sessions.EnterTurn();
+        LiveTurnResult result;
+        try
+        {
+            result = await liveTurns.RunAsync(
+                prompt,
+                async (message, token) =>
                 {
-                    try
+                    var contents = initial ? initialContents : null;
+                    initial = false;
+                    var expandedMessage = expandInput(message);
+                    if (sessions.IsPersistent && sessions.Document?.IsPiV3 == true)
                     {
-                        var execution = await RunSingleAsync(
-                            bootstrap.Agent,
-                            sessions.Session,
-                            expandedMessage,
-                            output,
-                            token,
-                            contents,
-                            bootstrap.RetryPolicy,
-                            sessions.Document?.IsPiV3 == true
-                                ? messageSnapshot => sessions.PersistAssistantMessagesAsync([messageSnapshot], token)
-                                : null);
-                        if (sessions.IsPersistent && sessions.Document?.IsPiV3 == true && !execution.Cancelled)
-                        {
-                            await sessions.TryAutoCompactAsync(output, CompactionReason.Threshold, token);
-                        }
-                        return execution;
+                        // Pi order: compact the existing history BEFORE persisting the new
+                        // prompt, so the compaction boundary lands in front of the prompt that
+                        // triggered it (and is never summarized together with it).
+                        await sessions.TryAutoCompactAsync(output, CompactionReason.Threshold, token);
+                        await sessions.PersistUserMessageAsync(expandedMessage, contents, token);
                     }
-                    catch (Exception exception) when (!overflowRecoveryAttempted && IsContextOverflow(exception))
+
+                    // Provider-request-level compaction and overflow recovery happen inside
+                    // CompactionChatClient, per model request — there is deliberately no
+                    // whole-turn replay loop here: on overflow only the failed provider
+                    // request is retried, never the prompt or already-executed tools.
+                    var execution = await RunSingleAsync(
+                        bootstrap.Agent,
+                        sessions.Session,
+                        expandedMessage,
+                        output,
+                        token,
+                        contents,
+                        bootstrap.RetryPolicy,
+                        sessions.Document?.IsPiV3 == true
+                            ? messageSnapshot => sessions.PersistAssistantMessagesAsync([messageSnapshot], token)
+                            : null);
+                    if (sessions.IsPersistent && sessions.Document?.IsPiV3 == true && !execution.Cancelled)
                     {
-                        overflowRecoveryAttempted = true;
-                        if (!sessions.IsPersistent || sessions.Document?.IsPiV3 != true ||
-                            !await sessions.TryAutoCompactAsync(output, CompactionReason.Overflow, token))
-                        {
-                            throw;
-                        }
+                        // Post-run check: the response's provider usage may have exceeded the
+                        // window even when the char-based estimate was below the threshold.
+                        await sessions.TryAutoCompactAsync(output, CompactionReason.Threshold, token);
                     }
-                }
-            },
-            cancellationToken);
+                    return execution;
+                },
+                cancellationToken);
+        }
+        finally
+        {
+            sessions.ExitTurn();
+        }
+
         if (sessions.IsPersistent && sessions.Document?.IsPiV3 == true)
         {
             await sessions.PersistAgentStateCacheAsync(cancellationToken);
@@ -91,16 +98,6 @@ internal static class AgentTurnRunner
         text => PromptTemplateCatalog.Expand(
             SkillCatalog.ExpandCommand(extensionHost.TransformInput(text), bootstrap.Skills),
             bootstrap.PromptTemplates);
-
-    private static bool IsContextOverflow(Exception exception)
-    {
-        var message = exception.ToString();
-        return message.Contains("context length", StringComparison.OrdinalIgnoreCase) ||
-               message.Contains("context window", StringComparison.OrdinalIgnoreCase) ||
-               message.Contains("too many tokens", StringComparison.OrdinalIgnoreCase) ||
-               message.Contains("prompt is too long", StringComparison.OrdinalIgnoreCase) ||
-               message.Contains("maximum context", StringComparison.OrdinalIgnoreCase);
-    }
 
     private static async Task<TurnExecutionResult> RunSingleAsync(
         AIAgent agent,

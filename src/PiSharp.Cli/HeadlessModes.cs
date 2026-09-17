@@ -25,6 +25,7 @@ internal static class HeadlessModes
         IChatOutput output = options.OutputMode == OutputMode.Json
             ? new JsonChatOutput(writer)
             : new SilentChatOutput();
+        sessions.EventOutput = output;
         if (options.OutputMode == OutputMode.Json && sessions.Document is not null)
         {
             writer.Write(sessions.Document.Header);
@@ -61,6 +62,7 @@ internal static class HeadlessModes
         CancellationToken cancellationToken)
     {
         var writer = new JsonLineWriter(Console.Out);
+        sessions.EventOutput = new JsonChatOutput(writer);
         Task? activeTurn = null;
         var shouldExit = false;
         while (!shouldExit)
@@ -218,6 +220,18 @@ internal static class HeadlessModes
         if (string.IsNullOrWhiteSpace(command.Message))
         {
             WriteError(writer, command, "prompt requires a non-empty message.");
+            return activeTurn;
+        }
+        // Pi rejects prompts while compaction (or navigation) is running instead of queueing
+        // them: the in-flight operation is mutating the session the prompt would target.
+        if (sessions.IsCompacting)
+        {
+            WriteError(writer, command, "Cannot submit a prompt while compaction is in progress. Wait for compaction to finish and retry.");
+            return activeTurn;
+        }
+        if (sessions.IsNavigating)
+        {
+            WriteError(writer, command, "Cannot submit a prompt while session navigation is in progress. Wait for navigation to finish and retry.");
             return activeTurn;
         }
         if (activeTurn is not null && !activeTurn.IsCompleted)

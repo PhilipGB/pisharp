@@ -48,6 +48,8 @@ try
     var bootstrap = await AgentFactory.CreateAsync(options, trustResolution.Trusted, shutdown.Token);
     liveTurns = new LiveTurnCoordinator(bootstrap.TurnQueue);
     var sessions = await SessionController.CreateAsync(bootstrap, options, shutdown.Token);
+    // Manual compaction aborts the active turn before compacting (Pi semantics).
+    sessions.AbortActiveTurn = liveTurns.Abort;
 
     if (options.OutputMode == OutputMode.Rpc)
     {
@@ -67,13 +69,15 @@ try
             options.FilePaths,
             options.WorkingDirectory,
             shutdown.Token);
+        var singlePromptOutput = new TerminalChatOutput();
+        sessions.EventOutput = singlePromptOutput;
         var result = await AgentTurnRunner.RunAsync(
             bootstrap,
             sessions,
             liveTurns,
             promptInput.Text,
             options.WorkingDirectory,
-            new TerminalChatOutput(),
+            singlePromptOutput,
             shutdown.Token,
             promptInput.Images);
         await sessions.PersistTurnAsync(
@@ -101,12 +105,14 @@ try
         Console.In,
         Console.Out,
         enableBracketedPaste: !Console.IsInputRedirected && !Console.IsOutputRedirected);
+    var interactiveOutput = new TerminalChatOutput();
+    sessions.EventOutput = interactiveOutput;
     await RunInteractiveAsync(
         bootstrap,
         sessions,
         options.WorkingDirectory,
         liveTurns,
-        new TerminalChatOutput(),
+        interactiveOutput,
         promptReader,
         trustStore,
         shutdown.Token);
@@ -198,7 +204,16 @@ static async Task RunInteractiveAsync(
             expandInput,
             cancellationToken);
         pendingInput = activeInput.PendingInput;
-        var result = await activeTurn;
+        LiveTurnResult result;
+        try
+        {
+            result = await activeTurn;
+        }
+        catch (SessionOperationConflictException exception)
+        {
+            Console.Error.WriteLine(exception.Message);
+            continue;
+        }
         await sessions.PersistTurnAsync(input, result.AssistantText, cancellationToken, result.ToolRecords);
         if (activeInput.ShouldExit)
         {

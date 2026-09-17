@@ -136,9 +136,15 @@ internal sealed class PiSummarizer
             summary.Usage);
     }
 
+    /// <summary>
+    /// Generates a branch summary. When <paramref name="replaceInstructions"/> is true the
+    /// caller-supplied instructions replace the default branch prompt (Pi parity: the
+    /// /tree-summary navigation API accepts an optional replacement instruction set).
+    /// </summary>
     public async Task<(string Summary, JsonElement? Usage, JsonElement Details)> GenerateBranchSummaryAsync(
         BranchSummaryPlan plan,
         string? customInstructions,
+        bool replaceInstructions,
         CancellationToken cancellationToken)
     {
         if (plan.Entries.Count == 0)
@@ -150,7 +156,7 @@ internal sealed class PiSummarizer
             plan.Entries,
             customInstructions,
             BranchPrompt,
-            replaceInstructions: false);
+            replaceInstructions);
         var response = await CompleteAsync(prompt, MaximumBranchSummaryTokens, cancellationToken);
         var summary = BranchPreamble + response.Text + PiCompactionPlanner.FormatFileOperations(plan.FileOperations);
         return (summary, CreateUsage(response.Usage), CreateFileDetails(plan.FileOperations));

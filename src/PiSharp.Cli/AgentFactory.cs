@@ -135,7 +135,15 @@ internal static class AgentFactory
                 new ApiKeyCredential(options.ApiKey),
                 openAiOptions)
             .AsIChatClient();
-        IChatClient chatClient = new SteeringChatClient(modelClient, turnQueue, expandInput);
+        // Compaction seam: every model request the Harness function loop issues passes through
+        // CompactionChatClient, which lets PiSharp compact the authoritative session (threshold
+        // before the request, forced after a provider overflow) and rebuild the outgoing
+        // history from the typed context. SteeringChatClient stays inside the wrapper so the
+        // threshold check runs before steering injection, matching Pi's prepareNextTurn order.
+        var compactionTarget = new CompactionTarget();
+        IChatClient chatClient = new CompactionChatClient(
+            new SteeringChatClient(modelClient, turnQueue, expandInput),
+            () => compactionTarget.Current);
 
 #pragma warning disable MAAI001 // Harness token-limit options are currently marked evaluation-only by MAF.
         var agent = chatClient.AsHarnessAgent(new HarnessAgentOptions
@@ -173,7 +181,8 @@ internal static class AgentFactory
             extensionHost,
             options.AutoRetry ? RetryPolicyOptions.Default : RetryPolicyOptions.Disabled,
             turnQueue,
-            sessionHistory);
+            sessionHistory,
+            compactionTarget);
     }
 
     private static IReadOnlyList<string> BuildExtensionPaths(

@@ -13,4 +13,5 @@ internal sealed record AgentBootstrap(
     PiSharpExtensionHost ExtensionHost,
     RetryPolicyOptions RetryPolicy,
     TurnMessageQueue TurnQueue,
-    PiSessionChatHistoryProvider SessionHistory);
+    PiSessionChatHistoryProvider SessionHistory,
+    CompactionTarget Compaction);

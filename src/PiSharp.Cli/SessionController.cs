@@ -8,8 +8,22 @@ namespace PiSharp.Cli;
 
 internal sealed record BranchNavigationResult(bool Changed, bool SummaryAdded);
 
-internal sealed class SessionController
+/// <summary>
+/// Raised when a session-mutating operation conflicts with the operation that is already
+/// running. The message is deterministic so interactive, print, and RPC hosts all surface the
+/// same Pi-like conflict semantics.
+/// </summary>
+internal sealed class SessionOperationConflictException(string message) : InvalidOperationException(message);
+
+internal sealed class SessionController : IProviderRequestCompactor
 {
+    private const string OperationTurn = "turn";
+    private const string OperationCompaction = "compaction";
+    private const string OperationNavigation = "navigation";
+
+    /// <summary>Bounded wait used when manual compaction aborts an active turn (Pi semantics).</summary>
+    private static readonly TimeSpan TurnDrainTimeout = TimeSpan.FromSeconds(10);
+
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
     {
         TypeInfoResolver = new DefaultJsonTypeInfoResolver(),
@@ -22,6 +36,10 @@ internal sealed class SessionController
     private readonly PiSummarizer _summarizer;
     private readonly int _contextTokens;
     private readonly CompactionSettings _compactionSettings;
+    private readonly object _operationSync = new();
+    private string? _activeOperation;
+
+    private IChatOutput _eventOutput = new SilentChatOutput();
 
     private SessionController(
         AIAgent agent,
@@ -48,6 +66,178 @@ internal sealed class SessionController
         _contextTokens = contextTokens;
         _compactionSettings = compactionSettings;
         _sessionHistory.SetActiveDocument(document, activeEntryId);
+    }
+
+    /// <summary>Gets or sets how the active turn aborts (wired by the host to the turn coordinator).</summary>
+    public Action? AbortActiveTurn { get; set; }
+
+    /// <summary>
+    /// Gets or sets the output sink for compaction events raised outside an explicit caller
+    /// (per-provider-request and post-run automatic compaction).
+    /// </summary>
+    public IChatOutput EventOutput
+    {
+        get => _eventOutput;
+        set => _eventOutput = value ?? new SilentChatOutput();
+    }
+
+    /// <summary>Gets the operation currently mutating the session, if any.</summary>
+    public string? ActiveOperation
+    {
+        get
+        {
+            lock (_operationSync)
+            {
+                return _activeOperation;
+            }
+        }
+    }
+
+    private int _turnCount;
+
+    /// <summary>Gets whether an agent turn is currently mutating the session.</summary>
+    public bool IsTurnActive
+    {
+        get
+        {
+            lock (_operationSync)
+            {
+                return _turnCount > 0;
+            }
+        }
+    }
+
+    /// <summary>Gets whether a compaction or branch summary is currently running.</summary>
+    public bool IsCompacting => ActiveOperation is OperationCompaction;
+
+    /// <summary>Gets whether a session-tree operation (navigation, fork, new) is running.</summary>
+    public bool IsNavigating => ActiveOperation is OperationNavigation;
+
+    /// <summary>
+    /// Marks the start of an agent turn. Fails deterministically when a compaction or session
+    /// navigation is already in progress (Pi rejects prompts while compaction runs).
+    /// </summary>
+    public void EnterTurn()
+    {
+        lock (_operationSync)
+        {
+            if (_turnCount > 0)
+            {
+                throw new SessionOperationConflictException("An agent turn is already running.");
+            }
+
+            if (_activeOperation is OperationCompaction)
+            {
+                throw new SessionOperationConflictException(
+                    "Cannot submit a prompt while compaction is in progress. Wait for compaction to finish and retry.");
+            }
+
+            if (_activeOperation is OperationNavigation)
+            {
+                throw new SessionOperationConflictException(
+                    "Cannot submit a prompt while session navigation is in progress. Wait for navigation to finish and retry.");
+            }
+
+            _turnCount++;
+            _activeOperation = OperationTurn;
+        }
+    }
+
+    /// <summary>Marks the end of the agent turn started by <see cref="EnterTurn"/>.</summary>
+    public void ExitTurn()
+    {
+        lock (_operationSync)
+        {
+            if (_turnCount == 0)
+            {
+                return;
+            }
+
+            if (--_turnCount == 0)
+            {
+                _activeOperation = null;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Runs a session-mutating operation exclusively. Compaction and navigation never run
+    /// concurrently with a turn or with each other; conflicts surface as deterministic errors
+    /// rather than queued work.
+    /// </summary>
+    public async Task<T> RunExclusiveAsync<T>(
+        string operation,
+        Func<CancellationToken, Task<T>> action,
+        CancellationToken cancellationToken)
+    {
+        AcquireOperation(operation);
+        try
+        {
+            return await action(cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            ReleaseOperation(operation);
+        }
+    }
+
+    private void AcquireOperation(string operation)
+    {
+        lock (_operationSync)
+        {
+            if (_turnCount > 0)
+            {
+                throw new SessionOperationConflictException(
+                    operation == OperationNavigation
+                        ? "Wait for the current response to finish before navigating the session tree."
+                        : "Wait for the current response to finish before mutating the session.");
+            }
+
+            if (_activeOperation is not null)
+            {
+                throw new SessionOperationConflictException(
+                    "Wait for the current compaction or tree navigation to finish before continuing.");
+            }
+
+            _activeOperation = operation;
+        }
+    }
+
+    private void ReleaseOperation(string operation)
+    {
+        lock (_operationSync)
+        {
+            if (string.Equals(_activeOperation, operation, StringComparison.Ordinal))
+            {
+                _activeOperation = null;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Aborts the active turn and waits for it to settle, mirroring Pi's manual compaction,
+    /// which aborts the current agent operation before compacting.
+    /// </summary>
+    public async Task WaitForTurnDrainAsync(CancellationToken cancellationToken)
+    {
+        if (!IsTurnActive)
+        {
+            return;
+        }
+
+        AbortActiveTurn?.Invoke();
+        var deadline = DateTimeOffset.UtcNow + TurnDrainTimeout;
+        while (IsTurnActive && DateTimeOffset.UtcNow < deadline)
+        {
+            await Task.Delay(25, CancellationToken.None).ConfigureAwait(false);
+            cancellationToken.ThrowIfCancellationRequested();
+        }
+
+        if (IsTurnActive)
+        {
+            throw new SessionOperationConflictException(
+                "The active turn did not stop in time; abort it and retry the operation.");
+        }
     }
 
     public AgentSession Session { get; private set; }
@@ -107,7 +297,8 @@ internal sealed class SessionController
 
         EnsureWorkspaceMatches(document, options.WorkingDirectory);
         var active = document.GetLatestTurnOnPath(document.LatestEntryId);
-        var session = await RestoreSessionAsync(agent, active, cancellationToken);
+        var activeEntryId = document.IsPiV3 ? document.LatestEntryId : active?.Id;
+        var session = await RestoreInitialSessionAsync(agent, document, active, activeEntryId, cancellationToken);
 
         var controller = new SessionController(
             agent,
@@ -116,16 +307,44 @@ internal sealed class SessionController
             document,
             session,
             active?.Id,
-            document.IsPiV3 ? document.LatestEntryId : active?.Id,
+            activeEntryId,
             bootstrap.SessionHistory,
             new PiSummarizer(bootstrap.SummaryClient, bootstrap.RetryPolicy, options.MaxOutputTokens),
             options.ContextTokens,
             new CompactionSettings());
+
+        // Register this controller as the compaction authority for every model request that
+        // the Harness agent issues. Ephemeral sessions keep no compaction authority at all.
+        bootstrap.Compaction.Current = controller;
+
         if (!string.IsNullOrWhiteSpace(options.SessionName) && controller.IsPersistent)
         {
             await controller.SetNameAsync(options.SessionName, cancellationToken);
         }
         return controller;
+    }
+
+    private static async Task<AgentSession> RestoreInitialSessionAsync(
+        AIAgent agent,
+        SessionDocument document,
+        SessionTurn? turn,
+        string? entryId,
+        CancellationToken cancellationToken)
+    {
+        if (turn is null || turn.AgentState.ValueKind != JsonValueKind.Object ||
+            !turn.AgentState.EnumerateObject().Any())
+        {
+            return await agent.CreateSessionAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        // A cached state written before a newer compaction/branch boundary still contains the
+        // discarded pre-compaction history. Treat it as stale and start fresh.
+        if (document.IsPiV3 && document.HasBoundaryAfterStateCache(entryId))
+        {
+            return await agent.CreateSessionAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        return await agent.DeserializeSessionAsync(turn.AgentState, JsonOptions, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task PersistTurnAsync(
@@ -224,6 +443,11 @@ internal sealed class SessionController
         _sessionHistory.SetActiveDocument(Document, ActiveEntryId);
     }
 
+    /// <summary>
+    /// Automatic compaction entry point (pre-prompt, post-run, and per-provider-request checks).
+    /// The threshold trigger requires <see cref="PiCompactionPlanner.ShouldCompact"/>; the
+    /// overflow trigger is authoritative and skips that check. Failures never kill the turn.
+    /// </summary>
     public async Task<bool> TryAutoCompactAsync(
         IChatOutput output,
         CompactionReason reason,
@@ -234,18 +458,23 @@ internal sealed class SessionController
             return false;
         }
 
-        var path = Document.GetActiveEntryPath(ActiveEntryId);
-        var context = PiCompactionPlanner.BuildContextEntries(path);
-        var estimate = PiCompactionPlanner.EstimateContextTokens(context);
-        if (!PiCompactionPlanner.ShouldCompact(estimate.Tokens, _contextTokens, _compactionSettings))
+        var estimate = PiCompactionPlanner.EstimateContextTokens(Document.GetActiveContextEntries(ActiveEntryId));
+        if (reason == CompactionReason.Threshold &&
+            !PiCompactionPlanner.ShouldCompact(estimate.Tokens, _contextTokens, _compactionSettings))
         {
             return false;
         }
 
+        // A successful response whose provider usage already exceeds the window is an overflow
+        // even when the char-based estimate looks smaller.
+        var effectiveReason = reason == CompactionReason.Threshold && estimate.UsageTokens > _contextTokens
+            ? CompactionReason.Overflow
+            : reason;
+
         try
         {
-            await CompactAsync(null, reason, output, cancellationToken);
-            return true;
+            return (await CompactCoreAsync(null, effectiveReason, output, cancellationToken).ConfigureAwait(false))
+                is not null;
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -253,11 +482,45 @@ internal sealed class SessionController
         }
         catch (Exception)
         {
+            // Automatic compaction must not fail the turn; CompactCore already emitted the
+            // compaction_end(error) event.
             return false;
         }
     }
 
+    /// <summary>
+    /// Manual compaction entry point used by /compact, RPC compact, and extensions. It first
+    /// aborts and drains any active turn (Pi semantics: manual compaction never races the agent),
+    /// then runs exclusively so a second compaction or navigation cannot interleave.
+    /// </summary>
     public async Task<PiSummaryResult> CompactAsync(
+        string? customInstructions,
+        CompactionReason reason,
+        IChatOutput output,
+        CancellationToken cancellationToken)
+    {
+        EnsurePersistent();
+        if (reason != CompactionReason.Manual)
+        {
+            return await CompactCoreAsync(customInstructions, reason, output, cancellationToken).ConfigureAwait(false)
+                ?? throw new InvalidOperationException("Nothing to compact (session is already compacted or too small).");
+        }
+
+        await WaitForTurnDrainAsync(cancellationToken).ConfigureAwait(false);
+        return await RunExclusiveAsync(
+                OperationCompaction,
+                token => CompactCoreAsync(customInstructions, reason, output, token),
+                cancellationToken)
+            .ConfigureAwait(false)
+            ?? throw new InvalidOperationException("Nothing to compact (session is already compacted or too small.");
+    }
+
+    /// <summary>
+    /// The shared compaction core: plan, summarize, persist the durable entry, rebuild runtime
+    /// state, and only then emit the success event. Returns null when automatic/overflow
+    /// compaction finds nothing meaningful to compact.
+    /// </summary>
+    private async Task<PiSummaryResult?> CompactCoreAsync(
         string? customInstructions,
         CompactionReason reason,
         IChatOutput output,
@@ -270,14 +533,35 @@ internal sealed class SessionController
         }
 
         var path = Document.GetActiveEntryPath(ActiveEntryId);
-        var plan = PiCompactionPlanner.PrepareCompaction(path, _compactionSettings)
-            ?? throw new InvalidOperationException("Nothing to compact (session is already compacted or too small).");
+        var plan = PiCompactionPlanner.PrepareCompaction(path, _compactionSettings);
+        if (plan is null)
+        {
+            if (reason == CompactionReason.Manual)
+            {
+                // Pi distinguishes the two manual-compaction conflicts.
+                var lastEntry = path.Count == 0 ? null : path[^1];
+                throw new InvalidOperationException(
+                    lastEntry is CompactionEntry ? "Already compacted." : "Nothing to compact (session too small).");
+            }
+
+            // Genuinely nothing to compact (e.g. a single oversized prompt with no older
+            // history). The caller surfaces the original error or proceeds without compaction.
+            return null;
+        }
+
         var reasonText = reason.ToString().ToLowerInvariant();
         output.CompactionStarted(reasonText);
         try
         {
-            var result = await _summarizer.GenerateCompactionAsync(plan, customInstructions, cancellationToken);
+            // The summarizer runs on the raw model client, so this request can never trigger
+            // another round of session compaction.
+            var result = await _summarizer.GenerateCompactionAsync(plan, customInstructions, cancellationToken)
+                .ConfigureAwait(false);
             cancellationToken.ThrowIfCancellationRequested();
+
+            // Durable persistence completes before any success signal. The entry is appended at
+            // the active leaf: after already-persisted tool results and before the next
+            // assistant response, matching Pi's append-at-leaf ordering.
             var entry = new CompactionEntry(
                 Guid.NewGuid().ToString("N"),
                 ActiveEntryId,
@@ -287,15 +571,22 @@ internal sealed class SessionController
                 result.TokensBefore,
                 result.Details,
                 result.Usage);
-            await _store!.AppendEntriesAsync(Document, [entry], cancellationToken);
+            await _store!.AppendEntriesAsync(Document, [entry], cancellationToken).ConfigureAwait(false);
             ActiveEntryId = entry.Id;
             _sessionHistory.SetActiveDocument(Document, ActiveEntryId);
-            var after = PiCompactionPlanner.EstimateContextTokens(Document.GetActiveContextEntries(ActiveEntryId)).Tokens;
+
+            // Invalidate the in-memory MAF runtime state: it may still describe the discarded
+            // pre-compaction context. The typed session is the sole history authority.
+            Session = await _agent.CreateSessionAsync(cancellationToken).ConfigureAwait(false);
+
+            var after = PiCompactionPlanner.EstimateContextTokens(
+                Document.GetActiveContextEntries(ActiveEntryId)).Tokens;
             output.CompactionFinished(reasonText, result.TokensBefore, after, false, null);
             return result;
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
+            // No entry was persisted and the active leaf is unchanged; report the abort.
             output.CompactionFinished(reasonText, 0, 0, true, null);
             throw;
         }
@@ -306,7 +597,76 @@ internal sealed class SessionController
         }
     }
 
-    public async Task<BranchNavigationResult> NavigateAsync(
+    public async Task<bool> EnsureContextFitsAsync(CompactionReason trigger, CancellationToken cancellationToken)
+    {
+        if (!IsPersistent || Document?.IsPiV3 != true || ActiveEntryId is null)
+        {
+            return false;
+        }
+
+        // An overflow trigger is authoritative (e.g. a successful response whose usage already
+        // exceeded the window); the threshold trigger keeps Pi's ShouldCompact gate.
+        if (trigger == CompactionReason.Overflow)
+        {
+            return await ForceCompactAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        var estimate = PiCompactionPlanner.EstimateContextTokens(Document.GetActiveContextEntries(ActiveEntryId));
+        if (!PiCompactionPlanner.ShouldCompact(estimate.Tokens, _contextTokens, _compactionSettings))
+        {
+            return false;
+        }
+
+        try
+        {
+            return (await CompactCoreAsync(
+                null, CompactionReason.Threshold, _eventOutput, cancellationToken).ConfigureAwait(false)) is not null;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception)
+        {
+            // A failed automatic compaction must not fail the provider request; the next
+            // request (or the provider's overflow response) re-evaluates the decision.
+            return false;
+        }
+    }
+
+    public async Task<bool> ForceCompactAsync(CancellationToken cancellationToken)
+    {
+        if (!IsPersistent || Document?.IsPiV3 != true || ActiveEntryId is null)
+        {
+            return false;
+        }
+
+        try
+        {
+            return (await CompactCoreAsync(
+                null, CompactionReason.Overflow, _eventOutput, cancellationToken).ConfigureAwait(false)) is not null;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
+
+    public IReadOnlyList<ChatMessage> GetEffectiveHistory() =>
+        Document is { IsPiV3: true } && ActiveEntryId is not null
+            ? PiSessionDocumentMessages.GetActiveEntryMessages(Document, ActiveEntryId)
+            : [];
+
+    /// <summary>
+    /// Navigates the active branch, optionally summarizing the abandoned path. Runs
+    /// exclusively: a navigation never races a turn, compaction, or another navigation, and a
+    /// cancelled summarization leaves the original branch selected with no partial entry.
+    /// </summary>
+    public Task<BranchNavigationResult> NavigateAsync(
         string selector,
         bool summarize,
         string? customInstructions,
@@ -319,12 +679,49 @@ internal sealed class SessionController
             throw new InvalidOperationException("Branch navigation requires a Pi v3 session.");
         }
 
+        return RunExclusiveAsync(OperationNavigation, token => NavigateCoreAsync(selector, summarize, customInstructions, token), cancellationToken);
+    }
+
+    public Task<BranchNavigationResult> NavigateAsync(
+        string selector,
+        bool summarize,
+        string? customInstructions,
+        bool replaceInstructions,
+        IChatOutput output,
+        CancellationToken cancellationToken)
+    {
+        EnsurePersistent();
+        if (!Document!.IsPiV3)
+        {
+            throw new InvalidOperationException("Branch navigation requires a Pi v3 session.");
+        }
+
+        return RunExclusiveAsync(OperationNavigation, token => NavigateCoreAsync(selector, summarize, customInstructions, replaceInstructions, token), cancellationToken);
+    }
+
+    private async Task<BranchNavigationResult> NavigateCoreAsync(
+        string selector,
+        bool summarize,
+        string? customInstructions,
+        CancellationToken cancellationToken)
+    {
+        return await NavigateCoreAsync(selector, summarize, customInstructions, replaceInstructions: false, cancellationToken);
+    }
+
+    private async Task<BranchNavigationResult> NavigateCoreAsync(
+        string selector,
+        bool summarize,
+        string? customInstructions,
+        bool replaceInstructions,
+        CancellationToken cancellationToken)
+    {
+        var document = Document!;
         var target = selector.Equals("root", StringComparison.OrdinalIgnoreCase)
             ? null
-            : Document.ResolveEntry(selector);
+            : document.ResolveEntry(selector);
         var targetId = target?.Id;
         var navigationTargetId = target is MessageEntry assistantTarget && IsMessageRole(assistantTarget.Message, "assistant")
-            ? Document.GetTurnLeafEntryId(target.Id)
+            ? document.GetTurnLeafEntryId(target.Id)
             : targetId;
         var oldLeaf = ActiveEntryId;
         if (string.Equals(oldLeaf, navigationTargetId, StringComparison.OrdinalIgnoreCase))
@@ -335,12 +732,14 @@ internal sealed class SessionController
         var summaryPlan = navigationTargetId is null
             ? new BranchSummaryPlan([], null, 0, new CompactionFileOperations([], []))
             : PiCompactionPlanner.CollectBranchSummary(
-                Document,
+                document,
                 oldLeaf,
                 navigationTargetId,
                 Math.Max(0, _contextTokens - _compactionSettings.ReserveTokens));
+        // The summarization runs before any navigation mutation, so a cancellation or failure
+        // cannot leave a half-applied branch summary.
         var summary = summarize && summaryPlan.Entries.Count > 0
-            ? await _summarizer.GenerateBranchSummaryAsync(summaryPlan, customInstructions, cancellationToken)
+            ? await _summarizer.GenerateBranchSummaryAsync(summaryPlan, customInstructions, replaceInstructions, cancellationToken)
             : (Summary: (string?)null, Usage: (JsonElement?)null, Details: (JsonElement?)null);
         var newLeaf = target switch
         {
@@ -352,6 +751,7 @@ internal sealed class SessionController
 
         if (summary.Summary is not null)
         {
+            // The summary is attached at the navigation target (destination), not the old branch.
             var entry = new BranchSummaryEntry(
                 Guid.NewGuid().ToString("N"),
                 newLeaf,
@@ -360,7 +760,7 @@ internal sealed class SessionController
                 summary.Summary,
                 summary.Details,
                 summary.Usage);
-            await _store!.AppendEntriesAsync(Document, [entry], cancellationToken);
+            await _store!.AppendEntriesAsync(document, [entry], cancellationToken);
             ActiveEntryId = entry.Id;
         }
         else
@@ -368,55 +768,57 @@ internal sealed class SessionController
             ActiveEntryId = newLeaf;
         }
 
-        ActiveTurnId = Document.GetLatestTurnOnPath(ActiveEntryId)?.Id;
-        Session = await RestoreSessionAsync(_agent, Document.GetLatestTurnOnPath(ActiveEntryId), cancellationToken);
+        ActiveTurnId = document.GetLatestTurnOnPath(ActiveEntryId)?.Id;
+        // The previous MAF session may still carry messages from the abandoned branch; rebuild
+        // from the typed context, which is the only history authority.
+        Session = await _agent.CreateSessionAsync(cancellationToken);
         _sessionHistory.SetActiveDocument(Document, ActiveEntryId);
         return new BranchNavigationResult(true, summary.Summary is not null);
     }
 
-    public async Task CheckoutAsync(string turnSelector, CancellationToken cancellationToken)
+    public Task NewAsync(CancellationToken cancellationToken)
     {
         EnsurePersistent();
-        if (turnSelector.Equals("root", StringComparison.OrdinalIgnoreCase))
-        {
-            Session = await _agent.CreateSessionAsync(cancellationToken);
-            ActiveTurnId = null;
-            ActiveEntryId = null;
-            _sessionHistory.SetActiveDocument(Document, ActiveEntryId);
-            return;
-        }
-
-        var turn = Document!.ResolveTurn(turnSelector);
-        ActiveEntryId = Document.IsPiV3 ? Document.GetTurnLeafEntryId(turn.Id) : turn.Id;
-        Session = await RestoreSessionAsync(_agent, Document.GetLatestTurnOnPath(ActiveEntryId), cancellationToken);
-        ActiveTurnId = Document.GetLatestTurnOnPath(ActiveEntryId)?.Id;
-        _sessionHistory.SetActiveDocument(Document, ActiveEntryId);
+        return RunExclusiveAsync(
+            OperationNavigation,
+            async token =>
+            {
+                Document = await _store!.CreatePiAsync(token).ConfigureAwait(false);
+                Session = await _agent.CreateSessionAsync(token).ConfigureAwait(false);
+                ActiveTurnId = null;
+                ActiveEntryId = null;
+                _sessionHistory.SetActiveDocument(Document, ActiveEntryId);
+                return true;
+            },
+            cancellationToken);
     }
 
-    public async Task NewAsync(CancellationToken cancellationToken)
+    public Task ForkAsync(string? turnSelector, CancellationToken cancellationToken)
     {
         EnsurePersistent();
-        Document = await _store!.CreatePiAsync(cancellationToken);
-        Session = await _agent.CreateSessionAsync(cancellationToken);
-        ActiveTurnId = null;
-        ActiveEntryId = null;
-        _sessionHistory.SetActiveDocument(Document, ActiveEntryId);
+        return RunExclusiveAsync(
+            OperationNavigation,
+            async token =>
+            {
+                await ForkCoreAsync(turnSelector, token).ConfigureAwait(false);
+                return true;
+            },
+            cancellationToken);
     }
 
-    public async Task ForkAsync(string? turnSelector, CancellationToken cancellationToken)
+    private async Task ForkCoreAsync(string? turnSelector, CancellationToken cancellationToken)
     {
-        EnsurePersistent();
         var selectedId = turnSelector is null
             ? ActiveEntryId
             : Document!.ResolveTurn(turnSelector).Id;
 
         Document = Document!.IsPiV3
-            ? await _store!.ForkPiAsync(Document, selectedId, cancellationToken)
-            : await _store!.ForkAsync(Document, selectedId, _model, cancellationToken);
+            ? await _store!.ForkPiAsync(Document, selectedId, cancellationToken).ConfigureAwait(false)
+            : await _store!.ForkAsync(Document, selectedId, _model, cancellationToken).ConfigureAwait(false);
         ActiveEntryId = Document.IsPiV3 ? Document.LatestEntryId : Document.LatestTurn?.Id;
         ActiveTurnId = Document.GetLatestTurnOnPath(ActiveEntryId)?.Id;
         _sessionHistory.SetActiveDocument(Document, ActiveEntryId);
-        Session = await RestoreSessionAsync(_agent, Document.GetLatestTurnOnPath(ActiveEntryId), cancellationToken);
+        Session = await RestoreSessionAsync(Document.GetLatestTurnOnPath(ActiveEntryId), cancellationToken).ConfigureAwait(false);
     }
 
     private static JsonElement CreateUserMessage(string message, IReadOnlyList<AIContent>? contents)
@@ -460,10 +862,15 @@ internal sealed class SessionController
         message.TryGetProperty("role", out var roleValue) &&
         string.Equals(roleValue.GetString(), role, StringComparison.Ordinal);
 
-    public async Task<bool> ResumeInteractiveAsync(CancellationToken cancellationToken)
+    public Task<bool> ResumeInteractiveAsync(CancellationToken cancellationToken)
     {
         EnsurePersistent();
-        var selected = await PickSessionAsync(_store!, cancellationToken);
+        return RunExclusiveAsync(OperationNavigation, token => ResumeCoreAsync(token), cancellationToken);
+    }
+
+    private async Task<bool> ResumeCoreAsync(CancellationToken cancellationToken)
+    {
+        var selected = await PickSessionAsync(_store!, cancellationToken).ConfigureAwait(false);
         if (selected is null)
         {
             return false;
@@ -473,21 +880,31 @@ internal sealed class SessionController
         ActiveEntryId = selected.IsPiV3 ? selected.LatestEntryId : selected.LatestTurn?.Id;
         ActiveTurnId = selected.GetLatestTurnOnPath(ActiveEntryId)?.Id;
         _sessionHistory.SetActiveDocument(Document, ActiveEntryId);
-        Session = await RestoreSessionAsync(_agent, selected.GetLatestTurnOnPath(ActiveEntryId), cancellationToken);
+        Session = await RestoreSessionAsync(selected.GetLatestTurnOnPath(ActiveEntryId), cancellationToken).ConfigureAwait(false);
         return true;
     }
 
-    private static async Task<AgentSession> RestoreSessionAsync(
-        AIAgent agent,
-        SessionTurn? turn,
-        CancellationToken cancellationToken)
+    /// <summary>
+    /// Restores the MAF runtime session. A cached MAF state is only restored when no compaction
+    /// or branch-summary boundary post-dates it on the active path; otherwise the cache is known
+    /// to describe discarded effective context and a fresh session is created instead.
+    /// </summary>
+    private async Task<AgentSession> RestoreSessionAsync(SessionTurn? turn, CancellationToken cancellationToken)
     {
         if (turn is null || turn.AgentState.ValueKind != JsonValueKind.Object ||
             !turn.AgentState.EnumerateObject().Any())
         {
-            return await agent.CreateSessionAsync(cancellationToken);
+            return await _agent.CreateSessionAsync(cancellationToken).ConfigureAwait(false);
         }
-        return await agent.DeserializeSessionAsync(turn.AgentState, JsonOptions, cancellationToken);
+
+        if (Document is { IsPiV3: true } && Document.HasBoundaryAfterStateCache(ActiveEntryId))
+        {
+            // Stale cache: it was written before a compaction/branch boundary and may contain
+            // pre-compaction history. Never restore it; the typed session is authoritative.
+            return await _agent.CreateSessionAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        return await _agent.DeserializeSessionAsync(turn.AgentState, JsonOptions, cancellationToken).ConfigureAwait(false);
     }
 
     public SessionStatistics GetStatistics() => Document?.GetStatistics() ??
