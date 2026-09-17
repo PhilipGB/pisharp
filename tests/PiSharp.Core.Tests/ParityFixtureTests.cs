@@ -5,7 +5,7 @@ namespace PiSharp.Core.Tests;
 
 public sealed class ParityFixtureTests
 {
-    private static string FixtureRoot => Path.Combine(AppContext.BaseDirectory, "Fixtures", "pi-v3");
+    internal static string FixtureRoot => Path.Combine(AppContext.BaseDirectory, "Fixtures", "pi-v3");
 
     [Fact]
     public void SessionFixtureUsesPiV3TypedEntryShapes()

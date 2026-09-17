@@ -1,0 +1,9 @@
+{
+  "compaction": {
+    "keepRecentTokens": 30000
+  },
+  "defaultTools": [
+    "read",
+    "bash"
+  ]
+}

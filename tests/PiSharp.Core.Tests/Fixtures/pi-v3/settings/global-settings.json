@@ -1,0 +1,19 @@
+{
+  "theme": "dark",
+  "defaultModel": "qwen3-27b",
+  "compaction": {
+    "reserveTokens": 16384,
+    "modelOverrides": {
+      "local/long-context": {
+        "keepRecentTokens": 40000
+      }
+    }
+  },
+  "retry": {
+    "maxRetries": 2,
+    "baseDelayMs": 500
+  },
+  "packages": [
+    "npm:pi-example"
+  ]
+}

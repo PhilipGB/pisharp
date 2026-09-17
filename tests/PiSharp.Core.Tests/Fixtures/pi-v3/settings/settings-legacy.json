@@ -1,0 +1,16 @@
+{
+  "queueMode": "all",
+  "websockets": true,
+  "skills": {
+    "enableSkillCommands": false,
+    "customDirectories": [
+      "./skills-extra"
+    ]
+  },
+  "retry": {
+    "maxDelayMs": 12345,
+    "provider": {
+      "timeoutMs": 30000
+    }
+  }
+}
