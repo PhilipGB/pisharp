@@ -80,6 +80,48 @@ public sealed class SessionDocumentTests
         Assert.Throws<ArgumentException>(() => document.GetLabel(""));
     }
 
+    [Fact]
+    public void HasBoundaryAfterStateCacheDetectsStaleAgentStateCache()
+    {
+        using var temp = TempDirectory.Create();
+        var header = PiSessionHeader.Create(temp.Path);
+
+        var cacheBeforeBoundary = new SessionDocument(
+            Path.Combine(temp.Path, "session.jsonl"),
+            header,
+            new SessionEntry[]
+            {
+                Message("m1", "one"),
+                Cache("cache-1", "m1"),
+                new CompactionEntry("compact", "cache-1", DateTimeOffset.UtcNow, "summary", "m1", 10),
+            });
+        // The cache predates the compaction boundary: restoring it would resurrect the
+        // discarded pre-compaction history.
+        Assert.True(cacheBeforeBoundary.HasBoundaryAfterStateCache("compact"));
+
+        var cacheAfterBoundary = new SessionDocument(
+            Path.Combine(temp.Path, "session.jsonl"),
+            header,
+            new SessionEntry[]
+            {
+                Message("m1", "one"),
+                new CompactionEntry("compact", "m1", DateTimeOffset.UtcNow, "summary", "m1", 10),
+                Cache("cache-2", "compact"),
+            });
+        // The cache post-dates the boundary: it describes the current effective context.
+        Assert.False(cacheAfterBoundary.HasBoundaryAfterStateCache("cache-2"));
+
+        var noBoundary = new SessionDocument(
+            Path.Combine(temp.Path, "session.jsonl"),
+            header,
+            new SessionEntry[] { Message("m1", "one"), Cache("cache-3", "m1") });
+        Assert.False(noBoundary.HasBoundaryAfterStateCache("cache-3"));
+    }
+
+    private static CustomEntry Cache(string id, string parentId) =>
+        new(id, parentId, DateTimeOffset.UtcNow, SessionEntryTypes.AgentStateCache,
+            JsonSerializer.SerializeToElement(new { }));
+
     private static MessageEntry Message(string id, string text) => new(
         id,
         null,
