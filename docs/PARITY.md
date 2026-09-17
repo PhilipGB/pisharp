@@ -69,7 +69,7 @@ PiSharp.
 | Continue/resume | Partial | `session-manager.ts`, `session-manager` CLI | `--continue`, `--resume`, `--session` | CLI/session tests |
 | Fork/clone | Partial | `agent-session-runtime.ts` | `SessionStore.ForkAsync`, `/fork`, `/clone` | Session tests |
 | Stable current leaf | Equivalent | `SessionManager.getLeafId()` | `SessionController.ActiveEntryId` advances through every typed entry, including steering/follow-up messages, tool results, metadata, and the MAF cache | `PiSessionStoreTests`; runtime integration path |
-| Session display name | Partial | `SessionInfoEntry`, `/name` | `--name`, `/name`, RPC `set_session_name` for v3 sessions | `CliOptionsTests`; session controller integration pending |
+| Session display name | Equivalent | `SessionInfoEntry`, `/name` | `--name`, `/name [text]` (shows current name with no arg), RPC `set_session_name` for v3 sessions | `CliOptionsTests` |
 
 | Statistics and usage | Partial | `agent-session.ts`, `agent-session-stats.test.ts` | Durable message/tool counts and `/stats`/RPC stats; token/cost totals pending | `PiSessionStoreTests` |
 

@@ -161,6 +161,7 @@ Interactive commands:
 
 ```text
 /session
+/name [text]
 /label <entry-id> [text]
 /tree
 /goto <entry-id|root> [--summarize]
@@ -174,7 +175,7 @@ Interactive commands:
 /follow-up <text>
 ```
 
-`/label <entry-id> [text]` bookmarks an entry (omit the text to clear it); labels render in `/tree` as `[label]`. `/goto` changes the active point without deleting later turns. The next prompt branches from that turn. Prompt templates are loaded from `~/.pi/agent/prompts` and `.pi/prompts`; invoke one as `/name args`. Skills are loaded from `~/.pi/agent/skills` and `.pi/skills`; invoke one explicitly as `/skill:name args`.
+`/name [text]` shows or sets the session display name. `/label <entry-id> [text]` bookmarks an entry (omit the text to clear it); labels render in `/tree` as `[label]`. `/goto` changes the active point without deleting later turns. The next prompt branches from that turn. Prompt templates are loaded from `~/.pi/agent/prompts` and `.pi/prompts`; invoke one as `/name args`. Skills are loaded from `~/.pi/agent/skills` and `.pi/skills`; invoke one explicitly as `/skill:name args`.
 
 ## CLI
 

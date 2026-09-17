@@ -307,7 +307,10 @@ static async Task<bool> HandleCommandAsync(
         case "/name":
             if (string.IsNullOrWhiteSpace(argument))
             {
-                Console.WriteLine("Usage: /name <session-name>");
+                var currentName = sessions.Document?.Name;
+                Console.WriteLine(string.IsNullOrWhiteSpace(currentName)
+                    ? "Usage: /name <session-name>"
+                    : $"Session name: {currentName}");
                 return true;
             }
             await sessions.SetNameAsync(argument, cancellationToken);
@@ -445,7 +448,7 @@ static void PrintInteractiveHelp()
     Console.WriteLine("""
         Commands:
           /session                 Show current session metadata
-          /name <text>             Set the session display name
+          /name [text]             Show or set the session display name
           /label <entry-id> [text] Set or clear a bookmark label on an entry
           /stats                   Show session message/tool statistics
           /tree                    Show the turn tree (* marks active turn, [text] shows its label)
