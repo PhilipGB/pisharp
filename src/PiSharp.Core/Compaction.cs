@@ -172,16 +172,19 @@ public static class PiCompactionPlanner
         var historyEnd = cutPoint.IsSplitTurn
             ? cutPoint.TurnStartIndex
             : cutPoint.FirstKeptEntryIndex;
+        // A previous CompactionEntry is summary metadata, not conversation content. It must not be
+        // serialized into the new conversation text; the previous summary travels only through
+        // the <previous-summary> section and the update-prompt instructions.
         var messages = path
             .Skip(boundaryStart)
             .Take(Math.Max(0, historyEnd - boundaryStart))
-            .Where(IsContextProducing)
+            .Where(entry => entry is not CompactionEntry && IsContextProducing(entry))
             .ToArray();
         var turnPrefix = cutPoint.IsSplitTurn
             ? path
                 .Skip(cutPoint.TurnStartIndex)
                 .Take(cutPoint.FirstKeptEntryIndex - cutPoint.TurnStartIndex)
-                .Where(IsContextProducing)
+                .Where(entry => entry is not CompactionEntry && IsContextProducing(entry))
                 .ToArray()
             : [];
 
@@ -190,7 +193,7 @@ public static class PiCompactionPlanner
             return null;
         }
 
-        var operations = CollectFileOperations(messages.Concat(turnPrefix), path, previousIndex, includeAllEntries: false);
+        var operations = CollectFileOperations(messages.Concat(turnPrefix), path, previousIndex);
         return new CompactionPlan(
             firstKept.Id,
             messages,
@@ -255,7 +258,11 @@ public static class PiCompactionPlanner
         return -1;
     }
 
-    /// <summary>Collects the abandoned path between two tree positions.</summary>
+    /// <summary>
+    /// Collects the abandoned path between two tree positions and prepares it for branch
+    /// summarization. Entries are gathered from the old leaf back to the common ancestor
+    /// (exclusive), without stopping at compaction boundaries.
+    /// </summary>
     public static BranchSummaryPlan CollectBranchSummary(
         SessionDocument document,
         string? oldLeafId,
@@ -287,9 +294,60 @@ public static class PiCompactionPlanner
         }
         collected.Reverse();
 
-        var selected = SelectNewestEntries(collected, tokenBudget);
-        var operations = CollectFileOperations(selected, collected, -1, includeAllEntries: true);
-        return new BranchSummaryPlan(selected, commonId, selected.Sum(EstimateEntryTokens), operations);
+        return PrepareBranchEntries(collected, commonId, tokenBudget);
+    }
+
+    /// <summary>
+    /// Selects the most recent useful branch history within a token budget, matching Pi's
+    /// prepareBranchEntries: ordinary tool results are excluded, file operations are carried from
+    /// every pi-generated nested branch summary, and compaction/branch-summary entries near the
+    /// budget boundary are kept when the accumulated total is below 90% of the budget.
+    /// </summary>
+    public static BranchSummaryPlan PrepareBranchEntries(
+        IReadOnlyList<SessionEntry> entries,
+        string? commonAncestorId = null,
+        int tokenBudget = 0)
+    {
+        var reads = new HashSet<string>(StringComparer.Ordinal);
+        var modified = new HashSet<string>(StringComparer.Ordinal);
+
+        // Pi trusts only pi-generated branch summary details (fromHook is false) for cumulative file tracking.
+        foreach (var entry in entries.OfType<BranchSummaryEntry>().Where(entry => !entry.FromHook))
+        {
+            AddDetails(entry.Details, reads, modified);
+        }
+
+        var selected = new List<SessionEntry>();
+        var total = 0;
+        for (var index = entries.Count - 1; index >= 0; index--)
+        {
+            var entry = entries[index];
+            if (!IsBranchSummarySource(entry))
+            {
+                continue;
+            }
+
+            // Extract tool-call file operations before the budget check so the entry that breaks the
+            // walk still contributes, matching Pi's walk order.
+            ExtractFileOperations(entry, reads, modified);
+            var tokens = EstimateEntryTokens(entry);
+            if (tokenBudget > 0 && total + tokens > tokenBudget)
+            {
+                // Summary entries are important context: fit them when there is still headroom.
+                if (entry is CompactionEntry or BranchSummaryEntry && total < tokenBudget * 0.9)
+                {
+                    selected.Insert(0, entry);
+                    total += tokens;
+                }
+
+                break;
+            }
+
+            selected.Insert(0, entry);
+            total += tokens;
+        }
+
+        return new BranchSummaryPlan(selected, commonAncestorId, total, ComputeFileOperations(reads, modified));
     }
 
     /// <summary>Estimates the durable content size of an entry.</summary>
@@ -320,49 +378,32 @@ public static class PiCompactionPlanner
         return string.Join("\n\n", parts);
     }
 
-    private static IReadOnlyList<SessionEntry> SelectNewestEntries(IReadOnlyList<SessionEntry> entries, int tokenBudget)
-    {
-        if (tokenBudget <= 0)
-        {
-            return entries.ToArray();
-        }
-
-        var selected = new List<SessionEntry>();
-        var total = 0;
-        for (var index = entries.Count - 1; index >= 0; index--)
-        {
-            var tokens = EstimateEntryTokens(entries[index]);
-            if (total + tokens > tokenBudget && selected.Count > 0)
-            {
-                break;
-            }
-            selected.Insert(0, entries[index]);
-            total += tokens;
-        }
-        return selected;
-    }
-
     private static CompactionFileOperations CollectFileOperations(
         IEnumerable<SessionEntry> selected,
-        IEnumerable<SessionEntry> allEntries,
-        int previousCompactionIndex,
-        bool includeAllEntries)
+        IReadOnlyList<SessionEntry> path,
+        int previousCompactionIndex)
     {
         var reads = new HashSet<string>(StringComparer.Ordinal);
         var modified = new HashSet<string>(StringComparer.Ordinal);
-        var source = allEntries.ToArray();
-        if (previousCompactionIndex >= 0 && previousCompactionIndex < source.Length &&
-            source[previousCompactionIndex] is CompactionEntry previous && !previous.FromHook)
+
+        // Carry file operations from the previous pi-generated compaction so incremental
+        // checkpoints keep cumulative read/modified tracking.
+        if (previousCompactionIndex >= 0 && previousCompactionIndex < path.Count &&
+            path[previousCompactionIndex] is CompactionEntry previous && !previous.FromHook)
         {
             AddDetails(previous.Details, reads, modified);
         }
 
-        var entriesToInspect = includeAllEntries ? selected.Concat(source) : selected;
-        foreach (var entry in entriesToInspect)
+        foreach (var entry in selected)
         {
             ExtractFileOperations(entry, reads, modified);
         }
 
+        return ComputeFileOperations(reads, modified);
+    }
+
+    private static CompactionFileOperations ComputeFileOperations(ISet<string> reads, ISet<string> modified)
+    {
         var readOnly = reads.Where(path => !modified.Contains(path)).OrderBy(path => path, StringComparer.Ordinal).ToArray();
         var changed = modified.OrderBy(path => path, StringComparer.Ordinal).ToArray();
         return new CompactionFileOperations(readOnly, changed);
@@ -433,14 +474,22 @@ public static class PiCompactionPlanner
     {
         for (var index = entries.Count - 1; index >= 0; index--)
         {
-            if (entries[index] is MessageEntry { Message: var message } &&
-                IsRole(message, "assistant") && message.TryGetProperty("usage", out _))
+            if (entries[index] is not MessageEntry { Message: var message } || !IsRole(message, "assistant"))
             {
-                var usage = GetUsageTokens(entries[index]);
-                if (usage > 0)
-                {
-                    return index;
-                }
+                continue;
+            }
+
+            // Aborted and error responses carry no usable context accounting; all-zero usage is
+            // likewise ignored so the estimate anchors to the most recent valid response.
+            var stopReason = message.TryGetProperty("stopReason", out var stop) ? stop.GetString() : null;
+            if (stopReason is "aborted" or "error")
+            {
+                continue;
+            }
+
+            if (GetUsageTokens(entries[index]) > 0)
+            {
+                return index;
             }
         }
         return -1;
@@ -466,10 +515,11 @@ public static class PiCompactionPlanner
         return entry switch
         {
             MessageEntry message => EstimateJsonMessage(message.Message),
-            CustomMessageEntry custom => EstimateCharacters(ReadContentText(custom.Content)),
-            CompactionEntry compaction => EstimateCharacters(compaction.Summary),
-            BranchSummaryEntry branch => EstimateCharacters(branch.Summary),
-            BashExecutionEntry bash => EstimateCharacters(bash.Command) + EstimateCharacters(bash.Output),
+            CustomMessageEntry custom => EstimateCharactersFromLength(ContentChars(custom.Content)),
+            CompactionEntry compaction => EstimateCharactersFromLength(compaction.Summary.Length),
+            BranchSummaryEntry branch => EstimateCharactersFromLength(branch.Summary.Length),
+            // Canonical Pi bashExecution accounting: command + output.
+            BashExecutionEntry bash => EstimateCharactersFromLength(bash.Command.Length + bash.Output.Length),
             _ => 0,
         };
     }
@@ -480,29 +530,114 @@ public static class PiCompactionPlanner
         {
             return 0;
         }
-        var role = roleValue.GetString();
-        if (role == "assistant")
+
+        var chars = roleValue.GetString() switch
         {
-            if (!message.TryGetProperty("content", out var content) || content.ValueKind != JsonValueKind.Array)
-            {
-                return 0;
-            }
-            return content.EnumerateArray().Sum(block => block.TryGetProperty("type", out var type) switch
-            {
-                true when type.GetString() is "text" => EstimateCharacters(ReadString(block, "text")),
-                true when type.GetString() is "thinking" => EstimateCharacters(ReadString(block, "thinking")),
-                true when type.GetString() is "toolCall" => EstimateCharacters(ReadString(block, "name")) +
-                    EstimateCharacters(block.TryGetProperty("arguments", out var args) ? args.ToString() : string.Empty),
-                _ => 0,
-            });
-        }
-        return message.TryGetProperty("content", out var value)
-            ? EstimateCharacters(ReadContentText(value))
-            : 0;
+            "user" or "custom" or "toolResult" => TextAndImageContentChars(message),
+            "assistant" => AssistantMessageChars(message),
+            "bashExecution" => BashExecutionMessageChars(message),
+            _ => 0,
+        };
+        return EstimateCharactersFromLength(chars);
     }
 
-    private static int EstimateCharacters(string text) =>
-        (int)Math.Ceiling(text.Length / (double)CharactersPerEstimatedToken);
+    private static int TextAndImageContentChars(JsonElement message) =>
+        message.TryGetProperty("content", out var content)
+            ? ContentChars(content)
+            : ContentChars(message);
+
+    private static int ContentChars(JsonElement content)
+    {
+        if (content.ValueKind == JsonValueKind.String)
+        {
+            return content.GetString()?.Length ?? 0;
+        }
+
+        if (content.ValueKind != JsonValueKind.Array)
+        {
+            return 0;
+        }
+
+        var chars = 0;
+        foreach (var block in content.EnumerateArray())
+        {
+            if (block.ValueKind != JsonValueKind.Object ||
+                !block.TryGetProperty("type", out var type) || type.ValueKind != JsonValueKind.String)
+            {
+                continue;
+            }
+
+            var blockType = type.GetString();
+            if (blockType == "text" && block.TryGetProperty("text", out var text) && text.ValueKind == JsonValueKind.String)
+            {
+                chars += text.GetString()?.Length ?? 0;
+            }
+            else if (blockType == "image")
+            {
+                // Pi approximates every image as a fixed number of characters before the chars/4 heuristic.
+                chars += EstimatedImageCharacters;
+            }
+        }
+        return chars;
+    }
+
+    private static int AssistantMessageChars(JsonElement message)
+    {
+        if (!message.TryGetProperty("content", out var content) || content.ValueKind != JsonValueKind.Array)
+        {
+            return 0;
+        }
+
+        var chars = 0;
+        foreach (var block in content.EnumerateArray())
+        {
+            if (block.ValueKind != JsonValueKind.Object ||
+                !block.TryGetProperty("type", out var type) || type.ValueKind != JsonValueKind.String)
+            {
+                continue;
+            }
+
+            var blockType = type.GetString();
+            if (blockType == "text")
+            {
+                chars += ReadString(block, "text").Length;
+            }
+            else if (blockType == "thinking")
+            {
+                chars += ReadString(block, "thinking").Length;
+            }
+            else if (blockType == "toolCall")
+            {
+                // Tool calls count as name + serialized arguments.
+                chars += ReadString(block, "name").Length;
+                if (block.TryGetProperty("arguments", out var args) &&
+                    args.ValueKind is JsonValueKind.Object or JsonValueKind.Array)
+                {
+                    chars += args.GetRawText().Length;
+                }
+            }
+        }
+        return chars;
+    }
+
+    private static int BashExecutionMessageChars(JsonElement message)
+    {
+        var chars = 0;
+        if (message.TryGetProperty("command", out var command) && command.ValueKind == JsonValueKind.String)
+        {
+            chars += command.GetString()?.Length ?? 0;
+        }
+        if (message.TryGetProperty("output", out var output) && output.ValueKind == JsonValueKind.String)
+        {
+            chars += output.GetString()?.Length ?? 0;
+        }
+
+        // Persisted PiSharp bash messages may carry only the rendered content text.
+        return chars > 0 ? chars : TextAndImageContentChars(message);
+    }
+
+    private static int EstimateCharactersFromLength(int length) =>
+        (int)Math.Ceiling(length / (double)CharactersPerEstimatedToken);
 
     private static bool IsContextProducing(SessionEntry entry) =>
         entry switch
@@ -524,6 +659,17 @@ public static class PiCompactionPlanner
             _ => false,
         };
 
+    private static bool IsBranchSummarySource(SessionEntry entry) =>
+        entry switch
+        {
+            // Ordinary tool results are never fed into branch summarization; their context lives
+            // in the assistant tool call.
+            MessageEntry message => IsRole(message.Message, "user") || IsRole(message.Message, "assistant") ||
+                                     IsRole(message.Message, "bashExecution") || IsRole(message.Message, "custom"),
+            CustomMessageEntry or CompactionEntry or BranchSummaryEntry => true,
+            _ => false,
+        };
+
     private static bool IsTurnStart(SessionEntry entry) =>
         entry switch
         {
@@ -542,8 +688,9 @@ public static class PiCompactionPlanner
         {
             MessageEntry message => SerializeMessage(message.Message),
             CustomMessageEntry custom => $"[User]: {ReadContentText(custom.Content)}",
-            CompactionEntry compaction => $"[User]: The conversation history before this point was compacted into the following summary:\n\n{compaction.Summary}",
-            BranchSummaryEntry branch => $"[User]: The following is a summary of a branch that this conversation came back from:\n\n{branch.Summary}",
+            // Exact Pi summarization prefixes so incremental checkpoints see the same shape.
+            CompactionEntry compaction => $"[User]: The conversation history before this point was compacted into the following summary:\n\n<summary>\n{compaction.Summary}\n</summary>",
+            BranchSummaryEntry branch => $"[User]: The following is a summary of a branch that this conversation came back from:\n\n<summary>\n{branch.Summary}\n</summary>",
             BashExecutionEntry bash => $"[User]: Ran `{bash.Command}`\n{(string.IsNullOrEmpty(bash.Output) ? "(no output)" : bash.Output)}",
             _ => string.Empty,
         };
@@ -569,25 +716,55 @@ public static class PiCompactionPlanner
         {
             return string.Empty;
         }
-        var sections = new List<string>();
+
+        // Pi serializes one section per block kind: thinking, text, and a single
+        // "[Assistant tool calls]" line with every call separated by "; ".
+        var thinkingParts = new List<string>();
+        var textParts = new List<string>();
+        var toolCalls = new List<string>();
         foreach (var block in content.EnumerateArray())
         {
             var type = block.TryGetProperty("type", out var typeValue) ? typeValue.GetString() : null;
             if (type == "thinking")
             {
-                sections.Add($"[Assistant thinking]: {ReadString(block, "thinking")}");
+                thinkingParts.Add(ReadString(block, "thinking"));
             }
             else if (type == "text")
             {
-                sections.Add($"[Assistant]: {ReadString(block, "text")}");
+                textParts.Add(ReadString(block, "text"));
             }
             else if (type == "toolCall")
             {
-                var arguments = block.TryGetProperty("arguments", out var args) ? args.ToString() : "{}";
-                sections.Add($"[Assistant tool calls]: {ReadString(block, "name")}({arguments})");
+                toolCalls.Add($"{ReadString(block, "name")}({FormatToolCallArguments(block)})");
             }
         }
+
+        var sections = new List<string>();
+        if (thinkingParts.Count > 0)
+        {
+            sections.Add($"[Assistant thinking]: {string.Join("\n", thinkingParts)}");
+        }
+        if (textParts.Count > 0)
+        {
+            sections.Add($"[Assistant]: {string.Join(string.Empty, textParts)}");
+        }
+        if (toolCalls.Count > 0)
+        {
+            sections.Add($"[Assistant tool calls]: {string.Join("; ", toolCalls)}");
+        }
         return string.Join("\n", sections);
+    }
+
+    private static string FormatToolCallArguments(JsonElement block)
+    {
+        if (!block.TryGetProperty("arguments", out var args) || args.ValueKind != JsonValueKind.Object)
+        {
+            return string.Empty;
+        }
+
+        return string.Join(
+            ", ",
+            args.EnumerateObject().Select(property => $"{property.Name}={property.Value.GetRawText()}"));
     }
 
     private static string ReadContentText(JsonElement content)

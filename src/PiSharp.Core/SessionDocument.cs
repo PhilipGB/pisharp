@@ -103,6 +103,36 @@ public sealed class SessionDocument
             ? PiCompactionPlanner.BuildContextEntries(GetActiveEntryPath(entryId))
             : [];
 
+    /// <summary>
+    /// Returns whether the active path contains a compaction or branch-summary boundary that
+    /// post-dates the newest MAF agent-state cache entry. A cache written before such a boundary
+    /// may still describe the discarded pre-compaction context and must not be restored.
+    /// </summary>
+    public bool HasBoundaryAfterStateCache(string? entryId)
+    {
+        if (!IsPiV3 || entryId is null)
+        {
+            return false;
+        }
+
+        var path = GetActiveEntryPath(entryId);
+        var boundaryIndex = -1;
+        var cacheIndex = -1;
+        for (var index = 0; index < path.Count; index++)
+        {
+            if (path[index] is CompactionEntry or BranchSummaryEntry)
+            {
+                boundaryIndex = index;
+            }
+            else if (path[index] is CustomEntry { CustomType: SessionEntryTypes.AgentStateCache })
+            {
+                cacheIndex = index;
+            }
+        }
+
+        return boundaryIndex > cacheIndex;
+    }
+
     public SessionStatistics GetStatistics()
     {
         if (!IsPiV3)
