@@ -22,16 +22,16 @@ PiSharp.
 
 | Capability | Status | Pi reference | PiSharp implementation | Conformance coverage |
 |---|---|---|---|---|
-| Agent prompt/tool loop | Partial | `packages/agent/src/agent-loop.ts`, `packages/coding-agent/src/core/agent-session.ts` | `src/PiSharp.Cli/AgentTurnRunner.cs`, MAF Harness | Existing turn/queue tests; MAF semantics still differ |
+| Agent prompt/tool loop | Partial | `packages/agent/src/agent-loop.ts`, `packages/coding-agent/src/core/agent-session.ts` | `src/PiSharp.Cli/AgentTurnRunner.cs`, MAF Harness | Existing turn/queue tests; steering/follow-up/compaction ordering is PiSharp-owned, but Pi's event surface (message/turn lifecycle, retry events) is not fully covered |
 | One canonical runtime path | Equivalent | `packages/coding-agent/src/core/agent-session.ts` | `AgentTurnRunner.RunAsync` used by interactive, print, JSON, and RPC hosts | Build/test path; no black-box golden test yet |
 | Steering queue | Equivalent | `packages/agent/src/agent-loop.ts` | `src/PiSharp.Core/TurnMessaging.cs` | `TurnMessagingTests` |
 | Follow-up queue | Equivalent | `packages/agent/src/agent-loop.ts` | `src/PiSharp.Core/TurnMessaging.cs` | `TurnMessagingTests` |
 | Queue drain modes | Partial | `packages/agent/src/types.ts` | `TurnMessageQueue` | Unit coverage; event protocol differs |
 | Abort and queued-input preservation | Partial | `packages/coding-agent/test/agent-session-concurrent.test.ts` | `LiveTurnCoordinator`, CLI host | Existing concurrency coverage; no timing differential fixture |
 | Runtime event bus | Partial | `packages/coding-agent/src/core/event-bus.ts` | Extension lifecycle events only | `ExtensionsAndPackagesTests` |
-| Usage/cost accounting | Missing | `packages/coding-agent/src/core/usage-totals.ts` | Not persisted or surfaced | Planned Phase 1/4 |
-| Diagnostics and timings | Missing | `packages/coding-agent/src/core/diagnostics.ts`, `timings.ts` | Not exposed | Planned |
-| Runtime provider abstraction | Missing | `packages/coding-agent/src/core/model-runtime.ts` | Direct OpenAI-compatible client in `AgentFactory` | Planned Phase 4 |
+| Usage/cost accounting | Missing | `packages/coding-agent/src/core/usage-totals.ts` | Not persisted or surfaced | Planned Phase 13 |
+| Diagnostics and timings | Missing | `packages/coding-agent/src/core/diagnostics.ts`, `timings.ts` | Not exposed | Planned Phase 13 |
+| Runtime provider abstraction | Missing | `packages/coding-agent/src/core/model-runtime.ts` | Direct OpenAI-compatible client in `AgentFactory` | Planned Phase 2 |
 
 ## Tools
 
@@ -44,13 +44,13 @@ PiSharp.
 | `grep` | Partial | `packages/coding-agent/src/core/tools/grep.ts` | `CodingTools.GrepAsync` | Existing tool tests |
 | `find` | Partial | `packages/coding-agent/src/core/tools/find.ts` | `CodingTools.FindAsync` | Existing tool tests |
 | `ls` | Partial | `packages/coding-agent/src/core/tools/ls.ts` | `CodingTools.LsAsync` | Existing tool tests |
-| PowerShell tool | Missing | `packages/coding-agent/src/core/tools/powershell.ts` | Not implemented | Planned Phase 10 |
-| Default tool set (`read`, `bash`, `edit`, `write`) | Partial | `packages/coding-agent/src/core/tools/index.ts` | Includes optional search tools by default | Planned correction in Phase 10 |
+| PowerShell tool | Missing | `packages/coding-agent/src/core/tools/powershell.ts` | Not implemented | Planned Phase 4 |
+| Default tool set (`read`, `bash`, `edit`, `write`) | Partial | `packages/coding-agent/src/core/tools/index.ts` | Includes optional search tools by default | Planned correction in Phase 4 |
 | Read-only tool selection | Equivalent | `packages/coding-agent/src/core/tools/index.ts` | `--read-only` policy | `CliOptionsTests` |
 | Tool path containment | Equivalent | `packages/coding-agent/src/core/tools/path-utils.ts` | `WorkspacePathPolicy` | `WorkspacePathPolicyTests` |
 | Tool output truncation | Partial | `packages/coding-agent/src/core/tools/truncate.ts` | `OutputTruncator` | `OutputTruncatorTests`; limits differ |
-| File mutation serialization | Missing | `packages/coding-agent/src/core/tools/file-mutation-queue.ts` | No shared mutation queue | Planned Phase 10 |
-| Genuine partial tool results | Missing | `packages/coding-agent/src/core/agent-session.ts` | Tool call/result events only | Planned Phase 8/10 |
+| File mutation serialization | Missing | `packages/coding-agent/src/core/tools/file-mutation-queue.ts` | No shared mutation queue | Planned Phase 4 |
+| Genuine partial tool results | Missing | `packages/coding-agent/src/core/agent-session.ts` | Tool call/result events only | Planned Phase 4 |
 | Tool renderer parity | Partial | `packages/coding-agent/src/core/tools/render-utils.ts` | `IChatOutput` renderers | Text output only |
 
 ## Sessions
@@ -74,8 +74,9 @@ PiSharp.
 | Statistics and usage | Partial | `agent-session.ts`, `agent-session-stats.test.ts` | Durable message/tool counts and `/stats`/RPC stats; token/cost totals pending | `PiSessionStoreTests` |
 
 | Labels/bookmarks | Partial | `LabelEntry`, `appendLabelChange`, tree selector | `/label <entry-id> [text]` and RPC `set_label` persist a Pi v3 `LabelEntry`; `SessionDocument.GetLabel` resolves latest-wins/blank-clears; `/tree` renders `[label]`; the interactive TUI tree selector remains a TUI gap | `SessionDocumentTests`, `PiSessionStoreTests`, `CliOptionsTests` |
-| Delete/import/export | Partial | `session-export.ts`, CLI commands | Persistence exists; no complete command surface | Planned Phase 1/7 |
-| v1 migration | Missing | `migrations.ts` | Not implemented | Planned Phase 1 |
+| Session deletion | Missing | interactive session selector (`app.session.delete`) | Not implemented | Planned Phase 3 |
+| Usage/cost totals in stats and picker | Missing | `agent-session-stats.test.ts`, `usage-totals.ts` | Durable counts only | Planned Phase 13 |
+| v1 migration | Missing | `migrations.ts` | Not implemented | Planned Phase 3 |
 
 ## Compaction
 
@@ -84,42 +85,50 @@ PiSharp.
 | Proactive threshold compaction | Equivalent | `core/compaction/compaction.ts`, `agent-session.ts` | PiSharp compacts the authoritative typed session before persisting the new prompt (Pi's prepareNextTurn order), rechecks at every provider request via the `CompactionChatClient` seam, and rechecks after runs; effective request history is rebuilt from the typed context after each compaction. Settings are currently fixed defaults | `CompactionTests`, `CompactionRuntimeTests` |
 | Context overflow recovery | Equivalent | `agent-session.ts` | Provider overflow responses (Pi's overflow pattern set, with rate-limit exclusions) force exactly one compaction and retry only the failed provider request — never the prompt or already-executed tools. Streaming recovers only before any content is produced; a second overflow surfaces instead of looping. Harness compaction stays disabled | `ContextOverflowPolicyTests`, `CompactionChatClientTests`, `CompactionRuntimeTests` |
 | `/compact` and custom instructions | Equivalent | `compaction/index.ts`, RPC `compact` | Interactive `/compact` and RPC `compact` abort and drain the active turn (Pi semantics), then compact exclusively; incremental checkpoints reuse the previous summary exactly once, switch to Pi's update-preserve prompt, and append read/modified file sections | `PiSummarizerTests`, `SessionOperationTests`, `CompactionRuntimeTests` |
-| Reserve/recent token budgets | Equivalent | `core/defaults.ts`, compaction files | `CompactionSettings` has deterministic reserve/recent defaults and CLI context-window threshold | `CompactionTests` |
+| Reserve/recent token budgets | Equivalent | `core/defaults.ts`, compaction files | `CompactionSettings` has deterministic reserve/recent defaults and CLI context-window threshold; settings-backed values land in Phase 1 | `CompactionTests` |
+| Per-model compaction overrides | Missing | `settings-manager.ts` `compaction.modelOverrides` | Not implemented | Planned Phase 1 |
 | Turn-aware cut points | Equivalent | `compaction/utils.ts` | Core cut-point planning avoids tool results and supports split-turn prefix summaries | `CompactionTests` |
 | Persistent `CompactionEntry` | Equivalent | `SessionEntry` compaction type | Compaction summaries, first-kept IDs, token estimates, details, and usage are appended to Pi v3 JSONL | `PiSessionStoreTests`, `CompactionTests` |
 | Branch summaries | Equivalent | `compaction/branch-summarization.ts` | Navigation collects the abandoned path (raw tool results excluded, newest-backwards budget with the 0.9 important-summary rule, cumulative file ops only from Pi-generated summaries), summarizes before any mutation so cancellation leaves no partial entry, and attaches `BranchSummaryEntry` at the navigation destination. Destination context and the MAF runtime session are rebuilt so the abandoned branch never leaks | `CompactionTests`, `PiSummarizerTests`, `SessionOperationTests` |
 | Operation coordination and restart safety | Equivalent | `agent-session.ts` | Turns, manual compaction, and tree navigation are mutually exclusive with deterministic conflict errors surfaced identically by interactive, print, and RPC hosts. A cached MAF `AgentState` is restored only when no compaction/branch boundary post-dates it on the active path; compaction and navigation always create fresh MAF sessions | `SessionOperationTests`, `CompactionRuntimeTests` |
 | Live provider smoke test | Equivalent | `agent-session.ts`, `compaction.ts` | Verified end to end against a llama.cpp router (Qwen3.8-27B-GGUF, 240k ctx) on 2026-09-17: six continued print-mode runs in one Pi v3 session; live threshold compaction fired twice with model-generated summaries (durable `CompactionEntry` with usage/details), the second summary reused the first, a fresh MAF state cache was written after the boundary, and the post-compaction turn recalled content that existed only in the generated summary | Live run 2026-09-17 (smoke, not a fixture) |
-| Compaction extension hooks | Missing | `extensions/types.ts` | Not implemented | Planned Phase 2 |
+| Compaction extension hooks | Missing | `extensions/types.ts` | Not implemented | Planned Phase 5 |
 
 ## Models/providers/auth
 
 | Capability | Status | Pi reference | PiSharp implementation | Conformance coverage |
 |---|---|---|---|---|
 | OpenAI-compatible endpoint | Equivalent | `core/model-runtime.ts`, provider adapters | `OpenAI.ChatClient` in `AgentFactory` | Manual/local endpoint only |
-| Provider/model registry | Missing | `model-registry.ts`, `models-store.ts` | Raw model string and endpoint | Planned Phase 4 |
-| Model capabilities | Missing | `core/model-config.ts`, provider model definitions | Not represented | Planned Phase 4 |
-| Runtime model switching | Missing | `agent-session.ts`, `/model` | Not implemented | Planned Phase 4/7 |
-| Model catalogue refresh/cache | Missing | `remote-catalog-provider.ts` | Not implemented | Planned Phase 4 |
+| Provider/model registry | Missing | `model-registry.ts`, `models-store.ts` | Raw model string and endpoint | Planned Phase 2 |
+| Model capabilities | Missing | `core/model-config.ts`, provider model definitions | Not represented | Planned Phase 2 |
+| Runtime model switching (`/model`, persisted `model_change` entries) | Missing | `agent-session.ts`, `session-manager.ts` | Entry type exists; no runtime control | Planned Phase 2 |
+| Model cycling and scoped models (`--models`, `enabledModels`, `/scoped-models`) | Missing | `agent-session.ts` `cycleModel`, settings | Not implemented | Planned Phase 2 |
+| Default provider/model settings | Missing | `settings-manager.ts` `defaultProvider`/`defaultModel` | CLI/env-var only | Planned Phase 1/2 |
+| Model catalogue refresh/cache | Missing | `remote-catalog-provider.ts` | Not implemented | Planned Phase 2 |
 | API-key/environment credentials | Partial | `auth-storage.ts`, `auth-check.ts` | Environment/CLI API key | No persisted credential fixture |
-| OAuth/subscription login | Missing | `auth-command.ts`, `auth-storage.ts` | Not implemented | Planned Phase 4 |
-| `/login` and `/logout` | Missing | `cli/auth-command.ts` | Not implemented | Planned Phase 4/7 |
-| Thinking-level controls | Missing | `agent-session.ts`, `/thinking` | Not implemented | Planned Phase 4 |
-| llama.cpp integration | Missing | `extensions/llama/*` | Not implemented | Planned Phase 4 |
+| OAuth/subscription login | Missing | `cli/auth-command.ts`, `auth-storage.ts` | Not implemented | Planned Phase 2 |
+| `/login` and `/logout` | Missing | `cli/auth-command.ts` | Not implemented | Planned Phase 2/7 |
+| Thinking-level controls and persistence | Missing | `agent-session.ts`, `/thinking`, `thinking_level_change` entry | Entry type exists; no runtime control | Planned Phase 2 |
+| llama.cpp integration (`/llama`, provider registration, server discovery) | Missing | `extensions/llama/*` | Not implemented (local llama.cpp still works as a plain OpenAI-compatible endpoint) | Planned Phase 2 |
 | Retry controls/events | Partial | `agent-session.ts` retry events | `RetryPolicy`, `--no-auto-retry` | `RetryPolicyTests`; lifecycle/schema gap remains |
-| Retry-After and timeout settings | Missing | `pi-ai` retry/provider code | Fixed local backoff only | Planned Phase 4 |
+| Retry-After and timeout settings | Missing | `pi-ai` retry/provider code | Fixed local backoff only | Planned Phase 2 |
 
 ## Settings
 
 | Capability | Status | Pi reference | PiSharp implementation | Conformance coverage |
 |---|---|---|---|---|
 | Global settings file | Partial | `core/settings-manager.ts`, `config.ts` | Narrow bootstrap reader for global `defaultProjectTrust`; full settings remain pending | `ProjectTrustTests` |
-| Project settings file | Missing | `core/settings-manager.ts` | Not implemented; project settings are ignored until trust is resolved | Planned Phase 3 |
-| Recursive project/global merge | Missing | `settings-manager.ts` | Not implemented | Planned Phase 3 |
-| Runtime settings reload | Missing | `/reload`, settings manager | Not implemented | Planned Phase 3 |
-| `/settings` and config command | Missing | `slash-commands.ts`, CLI config | Not implemented | Planned Phase 3/7 |
-| Model/thinking/compaction/retry settings | Missing | `settings-manager.ts` | CLI flags only for some values | Planned Phase 3/4 |
-| Shell/image/tool/theme/keybinding settings | Missing | settings schema and config tests | Not implemented | Planned Phase 3/6/10 |
+| Project settings file (trusted only) | Missing | `core/settings-manager.ts` | Not implemented; project settings are ignored until trust is resolved | Planned Phase 1 |
+| Global/project deep merge (one project scope at cwd, no ancestor walk) | Missing | `settings-manager.ts` | Not implemented | Planned Phase 1 |
+| Settings migrations (`queueMode`→`steeringMode`, `websockets`→`transport`, skills object→array, `retry.maxDelayMs`) | Missing | `settings-manager.ts` `migrateSettings` | Not implemented | Planned Phase 1 |
+| Malformed-settings diagnostics (warning + scope fallback, no crash) | Missing | `settings-manager.ts`, `settings-diagnostics.ts` | Global reader warns and falls back to `ask`; full diagnostics pending | Planned Phase 1 |
+| External-edit preservation on write (modified-field tracking) | Missing | `settings-manager.ts` `save` | Not implemented | Planned Phase 1 |
+| Project settings write scope and trust gating | Missing | `settings-manager.ts` project scope | Not implemented | Planned Phase 1 |
+| Runtime settings reload (`/reload`) | Missing | `/reload`, settings manager | Not implemented | Planned Phase 1 |
+| `/settings` and `pi config` commands | Missing | `settings-selector.ts`, `cli/config-selector.ts` | Not implemented | Planned Phase 1/7 |
+| Keybindings file and legacy-name migration | Missing | `core/keybindings.ts` | Not implemented | Planned Phase 1 (TUI wiring Phase 7) |
+| Model/thinking/compaction/retry settings | Missing | `settings-manager.ts` | CLI flags only for some values | Planned Phase 1/2 |
+| Shell/image/tool/theme/terminal settings | Missing | settings schema and config tests | Not implemented | Planned Phase 1/2/6 |
 
 ## Trust
 
@@ -143,7 +152,7 @@ PiSharp.
 | Skill validation and prompt block | Equivalent | `core/skills.ts` | `Skills.cs` | `ResourceLoadingTests` |
 | Prompt template discovery | Partial | `core/prompt-templates.ts` | `PromptTemplateCatalog` | `PromptTemplates` tests |
 | Prompt argument expansion | Equivalent | `core/prompt-templates.ts` | `PromptTemplates.cs` | Prompt template tests |
-| Reload/watch resources | Missing | `core/resource-loader.ts`, `/reload` | Startup-only loading | Planned Phase 3/5 |
+| Reload/watch resources | Missing | `core/resource-loader.ts`, `/reload` | Startup-only loading | Planned Phase 1/5 |
 | Source metadata/diagnostics | Partial | `core/diagnostics.ts`, `source-info.ts` | Resource diagnostics are strings | Existing resource tests |
 
 ## Extensions
@@ -156,8 +165,9 @@ PiSharp.
 | Lifecycle hooks | Partial | extension event types | Before/after/cancel/shutdown | Extension tests |
 | Custom tools | Missing | extension tool registration | Not exposed | Planned Phase 5 |
 | Dynamic tools/providers/models | Missing | extension runner/types | Not exposed | Planned Phase 5 |
-| Session/custom entries | Missing | extension types/session manager | Not exposed | Planned Phase 1/5 |
-| Compaction/branch hooks | Missing | extension types | Not exposed | Planned Phase 2/5 |
+| Session/custom entries | Missing | extension types/session manager | Entry types exist in the session model; not exposed to extensions | Planned Phase 5 |
+| Compaction/branch hooks | Missing | extension types | Not exposed | Planned Phase 5 |
+| `user_bash` event | Missing | `extensions/runner.ts` | Not implemented | Planned Phase 5/8 |
 | Custom renderers/status/widgets/editor UI | Missing | extension UI context | Not exposed | Planned Phase 5/6/8 |
 | TypeScript extension host | Intentional difference | `core/extensions/loader.ts` | C# only currently | Node JSON-RPC bridge decision pending |
 
@@ -169,7 +179,7 @@ PiSharp.
 | User/project resource precedence | Equivalent | `core/package-manager.ts`, resource loader | Deterministic local discovery with explicit user/project package origin metadata and trust filtering | `ExtensionsAndPackagesTests`, `ResourceLoadingTests` |
 | npm package source | Missing | `core/package-manager.ts` | Not implemented | Planned Phase 5 |
 | Git/local/temporary sources | Missing | `core/package-manager.ts`, CLI package manager | Not implemented | Planned Phase 5 |
-| Install/remove/list/update | Missing | `package-manager-cli.ts` | Not implemented | Planned Phase 5/11 |
+| Install/remove/list/update | Missing | `package-manager-cli.ts` | Not implemented | Planned Phase 5 |
 | Dependencies/identity/deduplication | Missing | `package-manager.ts` | Not implemented | Planned Phase 5 |
 | Resource filters/globs/exclusions | Missing | `package-manager.ts`, resource loader | Manifest arrays only | Planned Phase 5 |
 | Theme package resources | Missing | `pi-manifest.ts`, theme loader | Not implemented | Planned Phase 5/6 |
@@ -178,23 +188,23 @@ PiSharp.
 
 | Capability | Status | Pi reference | PiSharp implementation | Conformance coverage |
 |---|---|---|---|---|
-| JSON theme loading | Missing | `modes/interactive/theme/*` | Not implemented | Planned Phase 5/6 |
-| Runtime theme selection | Missing | interactive commands | Not implemented | Planned Phase 6/7 |
+| JSON theme loading | Missing | `modes/interactive/theme/*` | Not implemented | Planned Phase 6 |
+| Runtime theme selection | Missing | interactive commands | Not implemented | Planned Phase 6 |
 | Theme package discovery | Missing | package/resource loader | Not implemented | Planned Phase 5 |
 
 ## Terminal UI
 
 | Capability | Status | Pi reference | PiSharp implementation | Conformance coverage |
 |---|---|---|---|---|
-| Multiline editor | Missing | `packages/tui/src/components/editor.ts`, interactive mode | `TerminalPromptReader` is line-oriented | Planned Phase 6 |
+| Multiline editor | Missing | `packages/tui/src/components/editor.ts`, interactive mode | `TerminalPromptReader` is line-oriented | Planned Phase 7 |
 | History navigation | Partial | `packages/tui/src/components/editor.ts` | `PromptHistory`, terminal reader | Existing history tests |
-| Slash/@/filesystem completion | Missing | interactive editor and autocomplete | Not implemented | Planned Phase 6 |
-| External editor/clipboard/drag-drop | Missing | interactive utilities | Not implemented | Planned Phase 6/10 |
-| Queue keybindings | Partial | interactive mode/keybindings | Text commands and Ctrl+C | Planned Phase 6 |
-| Thinking/tool/diff/markdown transcript | Partial | `tui-renderer.ts` | Basic terminal output | Planned Phase 6 |
-| Footer/status/usage | Missing | `footer-data-provider.ts` | Not implemented | Planned Phase 6 |
-| Selectors/tree/folding/search | Missing | interactive mode/tree selector | Text `/tree`/`/goto` only | Planned Phase 6 |
-| Configurable keybindings | Missing | `core/keybindings.ts` | Not implemented | Planned Phase 6 |
+| Slash/@/filesystem completion | Missing | interactive editor and autocomplete | Not implemented | Planned Phase 7 |
+| External editor/clipboard/drag-drop | Missing | interactive utilities | Not implemented | Planned Phase 7/9 |
+| Queue keybindings | Partial | interactive mode/keybindings | Text commands and Ctrl+C | Planned Phase 7 |
+| Thinking/tool/diff/markdown transcript | Partial | `tui-renderer.ts` | Basic terminal output | Planned Phase 7 |
+| Footer/status/usage | Missing | `footer-data-provider.ts` | Not implemented | Planned Phase 7/13 |
+| Selectors/tree/folding/search | Missing | interactive mode/tree selector | Text `/tree`/`/goto` only | Planned Phase 7 |
+| Configurable keybindings (TUI wiring) | Missing | `core/keybindings.ts` | Not implemented (settings side in Phase 1) | Planned Phase 7 |
 
 ## JSON mode
 
@@ -202,10 +212,10 @@ PiSharp.
 |---|---|---|---|---|
 | JSONL session header | Partial | `modes/json-event.ts`, `print-mode.ts` | Header plus custom output events | Fixture: `pi-json-events.jsonl` |
 | Agent/turn/message lifecycle | Partial | `modes/json-event.ts`, `agent-session.ts` | Basic `JsonChatOutput` events | Existing headless tests are limited |
-| Delta-only updates | Missing | `modes/json-event.ts` | Current output is not proven wire-compatible | Planned Phase 8 |
-| Thinking/usage/tool deltas | Missing | `json-event.ts` | Not complete | Planned Phase 8 |
+| Delta-only updates | Missing | `modes/json-event.ts` | Current output is not proven wire-compatible | Planned Phase 10 |
+| Thinking/usage/tool deltas | Missing | `json-event.ts` | Not complete | Planned Phase 10 |
 | Queue/compaction/retry events | Partial | `agent-session.ts` event union | JSON lifecycle events cover queue/tool/turn flow and Pi-native compaction start/end (reliably emitted around the durable write); retry schema remains partial | Existing fixtures; `CompactionRuntimeTests` |
-| Error/cancellation contract | Partial | JSON event mode | Basic error paths | Planned golden tests |
+| Error/cancellation contract | Partial | JSON event mode | Basic error paths | Planned golden tests (Phase 10) |
 
 ## RPC
 
@@ -215,35 +225,35 @@ PiSharp.
 | Prompt/steer/follow-up/abort | Partial | `rpc-types.ts` | Implemented basic forms | Queue tests; no golden wire test |
 | Queue modes/clear queue | Partial | `rpc-types.ts` | Implemented | Existing queue tests |
 | Session/tree/last assistant commands | Partial | `rpc-types.ts` | Basic forms | Manual only |
-| Model/thinking controls | Missing | `rpc-types.ts` | Not implemented | Planned Phase 8 |
+| Model/thinking controls | Missing | `rpc-types.ts` | Not implemented | Planned Phase 2/11 |
 | Compaction/auto-compaction | Partial | `rpc-types.ts` | RPC `compact` and tree navigation are implemented and prompts are rejected deterministically while compaction/navigation runs; automatic compaction is owned by the per-provider-request seam, not the turn runner | `CompactionRuntimeTests`, `SessionOperationTests` |
-| Retry controls/abort retry | Partial | `rpc-types.ts` | CLI retry only | Planned Phase 4/8 |
-| Bash/abort-bash | Missing | `rpc-types.ts` | Not implemented as RPC commands | Planned Phase 8 |
-| Stats/export/switch/fork/clone/entries/messages | Missing/Partial | `rpc-types.ts` | Small subset only | Planned Phase 1/7/8 |
-| Extension UI requests/responses | Missing | `rpc-types.ts` | Not implemented | Planned Phase 5/8 |
-| Typed .NET RPC client | Missing | `modes/rpc/rpc-client.ts` | Not implemented | Planned Phase 8 |
+| Retry controls/abort retry | Partial | `rpc-types.ts` | CLI retry only | Planned Phase 2/11 |
+| Bash/abort-bash | Missing | `rpc-types.ts` | Not implemented as RPC commands | Planned Phase 8/11 |
+| Stats/export/switch/fork/clone/entries/messages | Missing/Partial | `rpc-types.ts` | Small subset only | Planned Phase 3/11 |
+| Extension UI requests/responses | Missing | `rpc-types.ts` | Not implemented | Planned Phase 5/11 |
+| Typed .NET RPC client | Missing | `modes/rpc/rpc-client.ts` | Not implemented | Planned Phase 11 |
 
 ## SDK
 
 | Capability | Status | Pi reference | PiSharp implementation | Conformance coverage |
 |---|---|---|---|---|
-| Embeddable public runtime | Missing | `core/sdk.ts`, `src/client/index.ts` | CLI/internal types only | Planned Phase 9 |
-| In-memory session | Missing | SDK/client runtime | Not implemented | Planned Phase 9 |
+| Embeddable public runtime | Missing | `core/sdk.ts`, `src/client/index.ts` | CLI/internal types only | Planned Phase 12 |
+| In-memory session | Missing | SDK/client runtime | Not implemented | Planned Phase 12 |
 | File-backed session factory | Partial | session store internals | Internal `SessionController`/`SessionStore` | Existing session tests |
-| Prompt/steer/follow-up/abort API | Partial | SDK APIs | Internal coordinator only | Planned SDK tests |
-| Event subscriptions | Missing | SDK event APIs | Extension events only | Planned Phase 9 |
-| Model/tree/compaction/session replacement | Missing | SDK/runtime APIs | Not public | Planned Phase 9 |
+| Prompt/steer/follow-up/abort API | Partial | SDK APIs | Internal coordinator only | Planned Phase 12 |
+| Event subscriptions | Missing | SDK event APIs | Extension events only | Planned Phase 12 |
+| Model/tree/compaction/session replacement | Missing | SDK/runtime APIs | Not public | Planned Phase 12 |
 
 ## Images
 
 | Capability | Status | Pi reference | PiSharp implementation | Conformance coverage |
 |---|---|---|---|---|
 | One-shot image file attachments | Partial | `cli/file-processor.ts`, image utilities | `FileArgumentLoader` + MAF `DataContent` | `FileArgumentLoaderTests` |
-| Interactive image input | Missing | interactive editor/clipboard | Not implemented | Planned Phase 6/10 |
-| RPC image prompts | Missing | `rpc-types.ts` | RPC rejects `@file` and has no image payload | Planned Phase 8/10 |
+| Interactive image input | Missing | interactive editor/clipboard | Not implemented | Planned Phase 7/9 |
+| RPC image prompts | Missing | `rpc-types.ts` | RPC rejects `@file` and has no image payload | Planned Phase 9/11 |
 | MIME/content validation | Partial | `utils/mime.ts`, image processing | Extension mapping and 20 MB cap | Unit coverage only |
-| Resize/block-images/capability checks | Missing | `utils/image-resize.ts`, config | Not implemented | Planned Phase 10 |
-| Clipboard/drag-drop/terminal image rendering | Missing | image utilities/TUI | Not implemented | Planned Phase 6/10 |
+| Resize/block-images/capability checks | Missing | `utils/image-resize.ts`, config | Not implemented | Planned Phase 9 |
+| Clipboard/drag-drop/terminal image rendering | Missing | image utilities/TUI | Not implemented | Planned Phase 7/9 |
 
 ## CLI
 
@@ -253,28 +263,38 @@ PiSharp.
 | `@file` arguments | Partial | `cli/file-processor.ts` | Text and image files | File tests; path semantics differ |
 | Resource flags | Partial | `cli/args.ts` | Extension/skill/prompt/no-* flags | `CliOptionsTests` |
 | Session flags | Partial | `cli/args.ts` | Continue/resume/session/no-session | Session tests |
-| Model/provider/auth flags | Partial | `cli/args.ts` | Raw model/endpoint/API key | Planned Phase 4 |
+| Model/provider/auth flags | Partial | `cli/args.ts` | Raw model/endpoint/API key | Planned Phase 2 |
 | Trust flags | Equivalent | `cli/args.ts`, project trust | `--approve`/`-a` and `--no-approve`/`-na` | `CliOptionsTests`, `ProjectTrustTests` |
-| Package/update/setup commands | Missing | package-manager CLI/setup/update | Not implemented | Planned Phase 5/11 |
-| Version/changelog/offline/proxy | Missing | utilities/CLI | Not implemented | Planned Phase 11 |
+| `auth` CLI (`print-api-key`, `print-bearer-token`, `check`) | Missing | `cli/auth-command.ts` | Not implemented | Planned Phase 2 |
+| `pi config` resource configuration command | Missing | `cli/config-selector.ts` | Not implemented | Planned Phase 1/7 |
+| Package/update/setup commands | Missing | package-manager CLI/setup/update | Not implemented | Planned Phase 5/14 |
+| Version/changelog/offline/proxy | Missing | utilities/CLI | Not implemented | Planned Phase 14 |
+
+## Shell UX
+
+| Capability | Status | Pi reference | PiSharp implementation | Conformance coverage |
+|---|---|---|---|---|
+| Interactive `!command` (runs locally, output enters model context) | Missing | `modes/interactive/interactive-mode.ts` `handleBashCommand` | Not implemented | Planned Phase 8 |
+| `!!command` (output excluded from model context) | Missing | `interactive-mode.ts` | Not implemented | Planned Phase 8 |
+| Bash cancellation (Esc) and single-bash-at-a-time | Missing | `core/bash-executor.ts` | Ctrl+C aborts the turn only | Planned Phase 8 |
 
 ## Export/import/share
 
 | Capability | Status | Pi reference | PiSharp implementation | Conformance coverage |
 |---|---|---|---|---|
-| JSONL export | Partial | `core/session-export.ts` | Session files are JSONL but no export command | Planned Phase 1/7 |
-| HTML export | Missing | `core/export-html/*` | Not implemented | Planned Phase 7 |
-| Import | Missing | session manager/migrations | Not implemented | Planned Phase 1/7 |
-| Share/GitHub gist | Missing | `modes/interactive/session-share.ts` | Not implemented | Planned Phase 7 |
+| JSONL export | Partial | `core/session-export.ts` | Session files are JSONL but no export command | Planned Phase 3 |
+| HTML export | Missing | `core/export-html/*` | Not implemented | Planned Phase 3 |
+| Import | Missing | session manager/migrations | Not implemented | Planned Phase 3 |
+| Share/GitHub gist | Missing | `modes/interactive/session-share.ts` | Not implemented | Planned Phase 3 |
 
 ## Distribution/update behaviour
 
 | Capability | Status | Pi reference | PiSharp implementation | Conformance coverage |
 |---|---|---|---|---|
-| First-run setup | Missing | `cli/setup.ts` | Not implemented | Planned Phase 11 |
-| Self-update | Missing | `utils/windows-self-update.ts`, CLI | Not implemented | Planned Phase 11 |
-| Package/model catalogue update | Missing | package manager/catalog provider | Not implemented | Planned Phase 11 |
-| Offline/proxy/version checks | Missing | config and utilities | Not implemented | Planned Phase 11 |
+| First-run setup | Missing | `cli/setup.ts` | Not implemented | Planned Phase 14 |
+| Self-update | Missing | `utils/windows-self-update.ts`, CLI | Not implemented | Planned Phase 14 |
+| Package/model catalogue update | Missing | package manager/catalog provider | Not implemented | Planned Phase 14 |
+| Offline/proxy/version checks | Missing | config and utilities | Not implemented | Planned Phase 14 |
 | Cross-platform installation docs | Partial | Pi package/docs | Basic README only | CI added in Phase 0 |
 
 ## Phase 0 conformance fixtures
@@ -290,7 +310,7 @@ Fixtures are intentionally small, deterministic contract samples:
 - `tests/PiSharp.Core.Tests/Fixtures/pi-v3/package.json` — `pi` package manifest contract.
 
 The fixtures are compatibility inputs, not claims that the current implementation
-already consumes every shape. Phase 1 and Phase 8 will turn them into executable
+already consumes every shape. Phase 1 and Phase 10 will turn them into executable
 golden comparisons as the corresponding application-owned models are introduced.
 
 ## Update rule
