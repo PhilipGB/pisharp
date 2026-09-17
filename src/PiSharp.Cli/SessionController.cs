@@ -512,6 +512,46 @@ internal sealed class SessionController
         _sessionHistory.SetActiveDocument(Document, ActiveEntryId);
     }
 
+    /// <summary>
+    /// Sets or clears a label on a session entry. A null/blank label clears the bookmark.
+    /// The change is persisted as a Pi v3 <see cref="LabelEntry"/> appended to the active leaf.
+    /// </summary>
+    public async Task<string?> SetLabelAsync(
+        string entrySelector,
+        string? label,
+        CancellationToken cancellationToken)
+    {
+        EnsurePersistent();
+        if (!Document!.IsPiV3)
+        {
+            throw new InvalidOperationException("Labels require a Pi v3 session.");
+        }
+
+        var target = Document.ResolveEntry(entrySelector);
+        var normalized = string.IsNullOrWhiteSpace(label) ? null : label.Trim();
+        var entry = new LabelEntry(
+            Guid.NewGuid().ToString("N"),
+            ActiveEntryId,
+            DateTimeOffset.UtcNow,
+            target.Id,
+            normalized);
+        await _store!.AppendEntriesAsync(Document, [entry], cancellationToken);
+        ActiveEntryId = entry.Id;
+        _sessionHistory.SetActiveDocument(Document, ActiveEntryId);
+        return Document.GetLabel(target.Id);
+    }
+
+    /// <summary>Returns the current label for the entry matched by an id or unambiguous prefix.</summary>
+    public string? GetLabel(string entrySelector)
+    {
+        if (Document is null)
+        {
+            return null;
+        }
+
+        return Document.GetLabel(Document.ResolveEntry(entrySelector).Id);
+    }
+
     public string FormatSessionInfo()
     {
         if (Document is null)
@@ -567,7 +607,9 @@ internal sealed class SessionController
                 summary = summary[..67] + "...";
             }
 
-            lines.Add($"{prefix}{connector}{marker} {Short(node.Id)}  {summary}");
+            var label = Document?.GetLabel(node.Id);
+            var labelPrefix = string.IsNullOrWhiteSpace(label) ? string.Empty : $"[{label}] ";
+            lines.Add($"{prefix}{connector}{marker} {Short(node.Id)}  {labelPrefix}{summary}");
             var childPrefix = isRoot ? string.Empty : prefix + (last ? "   " : "│  ");
             AppendChildren(node.Id, childPrefix, false, children, lines);
         }

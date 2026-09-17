@@ -30,7 +30,7 @@ Implemented and smoke-tested against llama.cpp:
 - `-r` / `--resume`
 - `--session <id|path>`
 - `--name <text>`
-- `/session`, `/name`, `/stats`, `/tree`, `/goto`, `/compact`, `/fork`, `/clone`, `/new`, `/resume`
+- `/session`, `/name`, `/label`, `/stats`, `/tree`, `/goto`, `/compact`, `/fork`, `/clone`, `/new`, `/resume`
 - unit tests for file/path/context/session/terminal-input/resource behaviour
 - thread-safe steering and follow-up queues with abort preservation
 - streamed tool start/update/end rendering
@@ -161,6 +161,7 @@ Interactive commands:
 
 ```text
 /session
+/label <entry-id> [text]
 /tree
 /goto <entry-id|root> [--summarize]
 /compact [instructions]
@@ -173,7 +174,7 @@ Interactive commands:
 /follow-up <text>
 ```
 
-`/goto` changes the active point without deleting later turns. The next prompt branches from that turn. Prompt templates are loaded from `~/.pi/agent/prompts` and `.pi/prompts`; invoke one as `/name args`. Skills are loaded from `~/.pi/agent/skills` and `.pi/skills`; invoke one explicitly as `/skill:name args`.
+`/label <entry-id> [text]` bookmarks an entry (omit the text to clear it); labels render in `/tree` as `[label]`. `/goto` changes the active point without deleting later turns. The next prompt branches from that turn. Prompt templates are loaded from `~/.pi/agent/prompts` and `.pi/prompts`; invoke one as `/name args`. Skills are loaded from `~/.pi/agent/skills` and `.pi/skills`; invoke one explicitly as `/skill:name args`.
 
 ## CLI
 

@@ -73,7 +73,7 @@ PiSharp.
 
 | Statistics and usage | Partial | `agent-session.ts`, `agent-session-stats.test.ts` | Durable message/tool counts and `/stats`/RPC stats; token/cost totals pending | `PiSessionStoreTests` |
 
-| Labels/bookmarks | Missing | `LabelEntry`, tree UI | Not implemented | Planned Phase 1/6 |
+| Labels/bookmarks | Partial | `LabelEntry`, `appendLabelChange`, tree selector | `/label <entry-id> [text]` and RPC `set_label` persist a Pi v3 `LabelEntry`; `SessionDocument.GetLabel` resolves latest-wins/blank-clears; `/tree` renders `[label]`; the interactive TUI tree selector remains a TUI gap | `SessionDocumentTests`, `PiSessionStoreTests`, `CliOptionsTests` |
 | Delete/import/export | Partial | `session-export.ts`, CLI commands | Persistence exists; no complete command surface | Planned Phase 1/7 |
 | v1 migration | Missing | `migrations.ts` | Not implemented | Planned Phase 1 |
 

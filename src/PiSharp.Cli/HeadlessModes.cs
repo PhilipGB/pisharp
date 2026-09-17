@@ -174,6 +174,15 @@ internal static class HeadlessModes
                 await sessions.SetNameAsync(command.Name, cancellationToken);
                 WriteSuccess(writer, command, "set_session_name");
                 return activeTurn;
+            case "set_label":
+                if (string.IsNullOrWhiteSpace(command.TargetId))
+                {
+                    WriteError(writer, command, "set_label requires targetId.");
+                    return activeTurn;
+                }
+                var setLabel = await sessions.SetLabelAsync(command.TargetId, command.Label, cancellationToken);
+                WriteSuccess(writer, command, "set_label", new { targetId = command.TargetId, label = setLabel });
+                return activeTurn;
             case "get_commands":
                 WriteCommands(writer, command, bootstrap);
                 return activeTurn;

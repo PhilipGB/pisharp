@@ -68,6 +68,20 @@ public sealed class CliOptionsTests
     }
 
     [Fact]
+    public void ParsesRpcSetLabelEnvelopeTargetAndLabel()
+    {
+        var command = RpcProtocol.Parse("{\"id\":\"7\",\"type\":\"set_label\",\"targetId\":\"abc\",\"label\":\"note\"}");
+
+        Assert.Equal("7", command.Id);
+        Assert.Equal("set_label", command.Type);
+        Assert.Equal("abc", command.TargetId);
+        Assert.Equal("note", command.Label);
+
+        var cleared = RpcProtocol.Parse("{\"type\":\"set_label\",\"targetId\":\"abc\"}");
+        Assert.Null(cleared.Label);
+    }
+
+    [Fact]
     public void EmitsPiShapedJsonLifecycleEvents()
     {
         using var output = new StringWriter();

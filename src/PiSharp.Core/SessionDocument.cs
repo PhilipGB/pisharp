@@ -47,6 +47,26 @@ public sealed class SessionDocument
 
     public SessionTurn? LatestTurn => Turns.Count == 0 ? null : Turns[^1];
 
+    /// <summary>
+    /// Returns the effective label for an entry, applying label changes in file order so the
+    /// most recent change wins. A blank label clears a previous one and yields null.
+    /// </summary>
+    public string? GetLabel(string entryId)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(entryId);
+        string? label = null;
+        foreach (var entry in _entries)
+        {
+            if (entry is LabelEntry change &&
+                string.Equals(change.TargetId, entryId, StringComparison.OrdinalIgnoreCase))
+            {
+                label = string.IsNullOrWhiteSpace(change.Label) ? null : change.Label;
+            }
+        }
+
+        return label;
+    }
+
     /// <summary>Resolves any Pi v3 entry by an exact id or an unambiguous prefix.</summary>
     public SessionEntry ResolveEntry(string idOrPrefix)
     {

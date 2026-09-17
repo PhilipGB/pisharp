@@ -313,6 +313,21 @@ static async Task<bool> HandleCommandAsync(
             await sessions.SetNameAsync(argument, cancellationToken);
             Console.WriteLine(sessions.FormatSessionInfo());
             return true;
+        case "/label":
+            var labelTarget = argument?.Trim();
+            if (string.IsNullOrWhiteSpace(labelTarget))
+            {
+                Console.WriteLine("Usage: /label <entry-id> [text]   (omit text to clear the label)");
+                return true;
+            }
+            var labelSeparator = labelTarget.IndexOf(' ');
+            var labelSelector = labelSeparator < 0 ? labelTarget : labelTarget[..labelSeparator].Trim();
+            var labelText = labelSeparator < 0 ? null : labelTarget[(labelSeparator + 1)..].Trim();
+            var labelValue = await sessions.SetLabelAsync(labelSelector, labelText, cancellationToken);
+            Console.WriteLine(labelValue is null
+                ? $"Cleared label on {labelSelector}."
+                : $"Labeled {labelSelector}: {labelValue}");
+            return true;
         case "/stats":
             Console.WriteLine(JsonSerializer.Serialize(sessions.GetStatistics()));
             return true;
@@ -431,8 +446,9 @@ static void PrintInteractiveHelp()
         Commands:
           /session                 Show current session metadata
           /name <text>             Set the session display name
+          /label <entry-id> [text] Set or clear a bookmark label on an entry
           /stats                   Show session message/tool statistics
-          /tree                    Show the turn tree (* marks active turn)
+          /tree                    Show the turn tree (* marks active turn, [text] shows its label)
           /goto <entry-id|root> [--summarize]  Move point and optionally summarize abandoned work
           /compact [instructions]  Summarize old context and persist a compaction boundary
           /fork [turn-id]          Copy an active path into a new session

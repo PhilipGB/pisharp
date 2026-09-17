@@ -124,6 +124,31 @@ public sealed class PiSessionStoreTests
     }
 
     [Fact]
+    public async Task PiV3LabelEntriesRoundTripAndClear()
+    {
+        using var temp = TempDirectory.Create();
+        var workspace = Directory.CreateDirectory(Path.Combine(temp.Path, "repo")).FullName;
+        var store = new SessionStore(workspace, Path.Combine(temp.Path, "sessions"));
+        var document = await store.CreatePiAsync();
+        var user = new MessageEntry("user", null, DateTimeOffset.UtcNow, JsonSerializer.SerializeToElement(new { role = "user", content = "hi" }));
+        var set = new LabelEntry("set", "user", DateTimeOffset.UtcNow, "user", "bookmark");
+        await store.AppendEntriesAsync(document, [user, set]);
+
+        var withLabel = await store.LoadAsync(document.FilePath);
+        Assert.Equal("bookmark", withLabel.GetLabel("user"));
+
+        var clear = new LabelEntry("clear", "set", DateTimeOffset.UtcNow, "user", null);
+        await store.AppendEntriesAsync(withLabel, [clear]);
+
+        var cleared = await store.LoadAsync(document.FilePath);
+        Assert.Null(cleared.GetLabel("user"));
+        var clearedLine = (await File.ReadAllLinesAsync(document.FilePath)).Last();
+        Assert.Contains("\"targetId\":\"user\"", clearedLine);
+        // The cleared label omits the label property (WhenWritingNull); "type":"label" must not trip this.
+        Assert.DoesNotContain("\"label\":", clearedLine);
+    }
+
+    [Fact]
     public async Task PiV3ReaderRetainsLegacyStandaloneBashEntries()
     {
         using var temp = TempDirectory.Create();

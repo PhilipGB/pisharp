@@ -241,7 +241,8 @@ internal sealed record RpcCommandEnvelope(
     string? Name,
     string? TargetId = null,
     bool Summarize = false,
-    string? CustomInstructions = null);
+    string? CustomInstructions = null,
+    string? Label = null);
 
 internal static class RpcProtocol
 {
@@ -265,7 +266,8 @@ internal static class RpcProtocol
             GetString(root, "name"),
             GetString(root, "targetId"),
             GetBoolean(root, "summarize"),
-            GetString(root, "customInstructions"));
+            GetString(root, "customInstructions"),
+            GetString(root, "label"));
     }
 
     private static bool GetBoolean(JsonElement root, string propertyName) =>
