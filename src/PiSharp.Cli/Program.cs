@@ -1,5 +1,6 @@
 using System.Text.Json;
 using PiSharp.Core;
+using PiSharp.Core.Settings;
 using PiSharp.Cli;
 
 try
@@ -32,22 +33,26 @@ try
     };
 
     var trustStore = new ProjectTrustStore(ProjectTrustPath.GetDefaultTrustDirectory());
-    var trustSettings = GlobalProjectTrustSettings.ReadDefaultProjectTrust(ProjectTrustPath.GetGlobalPiSettingsPath());
-    if (trustSettings.Warning is not null)
+    // Global settings load before trust resolution: defaultProjectTrust is a global-scope
+    // value. Project settings are picked up once the trust decision is known.
+    var settings = await SettingsManager.CreateAsync(options.WorkingDirectory, projectTrusted: false);
+    foreach (var diagnostic in settings.DrainDiagnostics())
     {
-        Console.Error.WriteLine($"Warning: {trustSettings.Warning}");
+        Console.Error.WriteLine($"Warning: {diagnostic.RenderMessage()}");
     }
 
     var trustResolution = new ProjectTrustResolver().Resolve(
         options.WorkingDirectory,
         trustStore,
         options.ProjectTrustOverride,
-        trustSettings.Value,
+        settings.GetDefaultProjectTrust(),
         IsInteractiveStartup(options) ? ProjectTrustMode.Interactive : ProjectTrustMode.NonInteractive,
         IsInteractiveStartup(options) ? SelectProjectTrustOption : null);
-    var bootstrap = await AgentFactory.CreateAsync(options, trustResolution.Trusted, shutdown.Token);
+    await settings.SetProjectTrustedAsync(trustResolution.Trusted);
+    var keybindings = await KeybindingsManager.CreateAsync();
+    var bootstrap = await AgentFactory.CreateAsync(options, trustResolution.Trusted, shutdown.Token, settings: settings);
     liveTurns = new LiveTurnCoordinator(bootstrap.TurnQueue);
-    var sessions = await SessionController.CreateAsync(bootstrap, options, shutdown.Token);
+    var sessions = await SessionController.CreateAsync(bootstrap, options, shutdown.Token, settings);
     // Manual compaction aborts the active turn before compacting (Pi semantics).
     sessions.AbortActiveTurn = liveTurns.Abort;
 
@@ -115,6 +120,8 @@ try
         interactiveOutput,
         promptReader,
         trustStore,
+        settings,
+        keybindings,
         shutdown.Token);
     await PublishShutdownAsync(bootstrap.ExtensionHost, options.WorkingDirectory, bootstrap.TurnQueue);
 
@@ -147,6 +154,8 @@ static async Task RunInteractiveAsync(
     IChatOutput output,
     TerminalPromptReader promptReader,
     ProjectTrustStore trustStore,
+    SettingsManager settings,
+    KeybindingsManager keybindings,
     CancellationToken cancellationToken)
 {
     Task<string?>? pendingInput = null;
@@ -182,6 +191,8 @@ static async Task RunInteractiveAsync(
                 workspaceRoot,
                 liveTurns.Queue,
                 trustStore,
+                settings,
+                keybindings,
                 cancellationToken))
         {
             continue;
@@ -305,6 +316,8 @@ static async Task<bool> HandleCommandAsync(
     string workspaceRoot,
     TurnMessageQueue turnQueue,
     ProjectTrustStore trustStore,
+    SettingsManager settings,
+    KeybindingsManager keybindings,
     CancellationToken cancellationToken)
 {
     var parts = input.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
@@ -315,6 +328,30 @@ static async Task<bool> HandleCommandAsync(
     {
         case "/help":
             PrintInteractiveHelp();
+            return true;
+        case "/settings":
+            if (argument is null)
+            {
+                SettingsCommands.PrintStatus(settings);
+                return true;
+            }
+            try
+            {
+                Console.WriteLine(await SettingsCommands.ApplyArgumentAsync(settings, argument));
+            }
+            catch (FormatException exception)
+            {
+                Console.Error.WriteLine(exception.Message);
+            }
+            return true;
+        case "/reload":
+            await settings.ReloadAsync(cancellationToken);
+            await keybindings.ReloadAsync(cancellationToken);
+            foreach (var diagnostic in settings.DrainDiagnostics())
+            {
+                Console.Error.WriteLine($"Warning: {diagnostic.RenderMessage()}");
+            }
+            Console.WriteLine("Reloaded settings and keybindings.");
             return true;
         case "/session":
             Console.WriteLine(sessions.FormatSessionInfo());
@@ -475,6 +512,8 @@ static void PrintInteractiveHelp()
           /resume                  Pick and resume a saved session
           /context                 List loaded AGENTS.md/CLAUDE.md files
           /trust                   Save project trust for the next startup
+          /settings [key value]    Show settings status or set a global setting ("unset" clears)
+          /reload                  Reload settings and keybindings
           /steer <text>            Queue input before the next model call
           /follow-up <text>       Queue input after the active run
           /exit, /quit             Exit
@@ -518,7 +557,7 @@ static void PrintHelp()
           -r, --resume                Interactively select a saved workspace session
           --session <id|path>         Resume a session by id prefix or JSONL path
           --name <text>               Set the session display name
-          --session-dir <path>        Override ~/.pisharp/sessions storage root
+          --session-dir <path>        Override session storage root (PI_CODING_AGENT_SESSION_DIR / sessionDir setting)
           --no-session                Do not persist session state
           -h, --help                  Show help
 

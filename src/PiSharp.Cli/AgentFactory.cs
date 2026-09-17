@@ -6,6 +6,7 @@ using Microsoft.Extensions.AI;
 using OpenAI;
 using OpenAI.Chat;
 using PiSharp.Core;
+using PiSharp.Core.Settings;
 
 namespace PiSharp.Cli;
 
@@ -15,8 +16,12 @@ internal static class AgentFactory
         CliOptions options,
         bool projectTrusted,
         CancellationToken cancellationToken,
-        string? homeDirectoryOverride = null)
+        string? homeDirectoryOverride = null,
+        SettingsManager? settings = null)
     {
+        // Tests without a settings manager get the Pi defaults (empty global scope).
+        var resolvedSettings = settings ??
+            await SettingsManager.CreateFromStorageAsync(new InMemorySettingsStorage(), cancellationToken: cancellationToken);
         var tools = new CodingTools(options.WorkingDirectory);
         var serializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web)
         {
@@ -172,6 +177,10 @@ internal static class AgentFactory
         });
 #pragma warning restore MAAI001
 
+        // Retry budget comes from the settings system (Pi defaults when unset);
+        // --no-auto-retry still disables it for this run.
+        var retryPolicy = options.AutoRetry ? resolvedSettings.GetRetryPolicy() : RetryPolicyOptions.Disabled;
+
         return new AgentBootstrap(
             agent,
             modelClient,
@@ -179,7 +188,7 @@ internal static class AgentFactory
             skillResult.Skills,
             promptTemplates,
             extensionHost,
-            options.AutoRetry ? RetryPolicyOptions.Default : RetryPolicyOptions.Disabled,
+            retryPolicy,
             turnQueue,
             sessionHistory,
             compactionTarget);

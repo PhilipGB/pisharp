@@ -3,6 +3,7 @@ using System.Text.Json.Serialization.Metadata;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using PiSharp.Core;
+using PiSharp.Core.Settings;
 
 namespace PiSharp.Cli;
 
@@ -37,6 +38,12 @@ internal sealed class SessionController : IProviderRequestCompactor
     private readonly int _contextTokens;
     private readonly CompactionSettings _compactionSettings;
     private readonly object _operationSync = new();
+
+    /// <summary>Gets the settings-resolved compaction budget for this session.</summary>
+    public CompactionSettings CompactionSettings => _compactionSettings;
+
+    /// <summary>Gets the persistent session storage directory (null for ephemeral sessions).</summary>
+    public string? StoreDirectory => _store?.WorkspaceDirectory;
     private string? _activeOperation;
 
     private IChatOutput _eventOutput = new SilentChatOutput();
@@ -253,8 +260,13 @@ internal sealed class SessionController : IProviderRequestCompactor
     public static async Task<SessionController> CreateAsync(
         AgentBootstrap bootstrap,
         CliOptions options,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        SettingsManager? settings = null)
     {
+        // Tests without a settings manager get the Pi defaults (empty global scope).
+        var resolvedSettings = settings ??
+            await SettingsManager.CreateFromStorageAsync(new InMemorySettingsStorage(), cancellationToken: cancellationToken);
+        var compactionSettings = ResolveCompactionSettings(resolvedSettings, options.Model);
         var agent = bootstrap.Agent;
         if (options.NoSession)
         {
@@ -269,10 +281,12 @@ internal sealed class SessionController : IProviderRequestCompactor
                 bootstrap.SessionHistory,
                 new PiSummarizer(bootstrap.SummaryClient, bootstrap.RetryPolicy, options.MaxOutputTokens),
                 options.ContextTokens,
-                new CompactionSettings());
+                compactionSettings);
         }
 
-        var store = new SessionStore(options.WorkingDirectory, options.SessionDirectory);
+        var store = new SessionStore(
+            options.WorkingDirectory,
+            SettingsPaths.ResolveSessionDir(options.SessionDirectory, resolvedSettings.GetSessionDir()));
         SessionDocument? document = null;
 
         if (options.SessionSelector is not null)
@@ -311,7 +325,7 @@ internal sealed class SessionController : IProviderRequestCompactor
             bootstrap.SessionHistory,
             new PiSummarizer(bootstrap.SummaryClient, bootstrap.RetryPolicy, options.MaxOutputTokens),
             options.ContextTokens,
-            new CompactionSettings());
+            compactionSettings);
 
         // Register this controller as the compaction authority for every model request that
         // the Harness agent issues. Ephemeral sessions keep no compaction authority at all.
@@ -322,6 +336,27 @@ internal sealed class SessionController : IProviderRequestCompactor
             await controller.SetNameAsync(options.SessionName, cancellationToken);
         }
         return controller;
+    }
+
+    /// <summary>
+    /// Resolves the compaction budget for the session model, including Pi's per-model
+    /// overrides keyed by "provider/modelId". Invalid configured values fall back to the
+    /// Pi defaults with a warning so a config typo never blocks a session.
+    /// </summary>
+    private static CompactionSettings ResolveCompactionSettings(SettingsManager settings, string model)
+    {
+        var slash = model.IndexOf('/');
+        var provider = slash > 0 ? model[..slash] : null;
+        var modelId = slash > 0 ? model[(slash + 1)..] : model;
+        try
+        {
+            return settings.ResolveCompactionSettings(provider, modelId);
+        }
+        catch (FormatException exception)
+        {
+            Console.Error.WriteLine($"Warning: {exception.Message} Using default compaction settings.");
+            return new CompactionSettings();
+        }
     }
 
     private static async Task<AgentSession> RestoreInitialSessionAsync(

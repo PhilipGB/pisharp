@@ -1,3 +1,5 @@
+using PiSharp.Core.Settings;
+
 namespace PiSharp.Cli;
 
 internal enum OutputMode
@@ -54,7 +56,8 @@ internal sealed record CliOptions(
         var resumeSession = false;
         string? sessionSelector = null;
         string? sessionName = null;
-        string? sessionDirectory = Environment.GetEnvironmentVariable("PISHARP_SESSION_DIR");
+        // Pi's session storage override env var (PI_CODING_AGENT_SESSION_DIR).
+        string? sessionDirectory = Environment.GetEnvironmentVariable(SettingsPaths.SessionDirEnvironmentVariable);
         var noSession = false;
         string? contextRoot = null;
         var extensionPaths = new List<string>();
