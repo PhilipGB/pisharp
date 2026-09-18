@@ -163,6 +163,13 @@ public sealed class ProjectTrustStore
     private readonly string _trustPath;
     private readonly string _lockPath;
 
+    /// <summary>
+    /// Serializes this store instance's access within the process: the exclusive lock file
+    /// (below) still guards against concurrent processes, and in-process callers never
+    /// burn its retry budget fighting each other for the file handle.
+    /// </summary>
+    private readonly SemaphoreSlim _processLock = new(1, 1);
+
     /// <summary>Creates a store beneath an application-owned directory.</summary>
     public ProjectTrustStore(string applicationDirectory)
     {
@@ -248,9 +255,17 @@ public sealed class ProjectTrustStore
     {
         var directory = Path.GetDirectoryName(_trustPath)!;
         Directory.CreateDirectory(directory);
-        using var lockStream = AcquireLock();
-        var data = ReadTrustFile();
-        return action(data);
+        _processLock.Wait();
+        try
+        {
+            using var lockStream = AcquireLock();
+            var data = ReadTrustFile();
+            return action(data);
+        }
+        finally
+        {
+            _processLock.Release();
+        }
     }
 
     private FileStream AcquireLock()

@@ -32,17 +32,20 @@ public sealed class LlamaCancelTests
         var target = catalog.Single(model => model.Id == "target");
         using var shutdown = new CancellationTokenSource();
 
-        var operation = LlamaCommands.LoadModelAsync(console, runtime, client, catalog, target, shutdown.Token);
-        await UntilAsync(() => router.LoadCalls.Contains("target")); // load in flight
-        Assert.True(LlamaCommands.TryCancelActiveOperation()); // first Ctrl+C
-        await operation; // returns to the menu, no throw
+        await QuietAsync(async () =>
+        {
+            var operation = LlamaCommands.LoadModelAsync(console, runtime, client, catalog, target, shutdown.Token);
+            await UntilAsync(() => router.LoadCalls.Contains("target")); // load in flight
+            Assert.True(LlamaCommands.TryCancelActiveOperation()); // first Ctrl+C
+            await operation; // returns to the menu, no throw
 
-        // The replaced model was unloaded up front and restored after the cancel (the
-        // restore must run on a fresh token — the operation token is already cancelled).
-        Assert.Contains("replaced", router.UnloadCalls);
-        Assert.Equal(["target", "replaced"], router.LoadCalls);
-        // The in-flight load was stopped on the server (pinned cancel callback).
-        Assert.Contains("target", router.UnloadCalls);
+            // The replaced model was unloaded up front and restored after the cancel (the
+            // restore must run on a fresh token — the operation token is already cancelled).
+            Assert.Contains("replaced", router.UnloadCalls);
+            Assert.Equal(["target", "replaced"], router.LoadCalls);
+            // The in-flight load was stopped on the server (pinned cancel callback).
+            Assert.Contains("target", router.UnloadCalls);
+        });
     }
 
     [Fact]
@@ -60,14 +63,17 @@ public sealed class LlamaCancelTests
         var target = catalog.Single(model => model.Id == "target");
         using var shutdown = new CancellationTokenSource();
 
-        var operation = LlamaCommands.LoadModelAsync(console, runtime, client, catalog, target, shutdown.Token);
-        await UntilAsync(() => router.LoadCalls.Contains("target"));
-        shutdown.Cancel(); // app shutdown (second Ctrl+C), not the operation
+        await QuietAsync(async () =>
+        {
+            var operation = LlamaCommands.LoadModelAsync(console, runtime, client, catalog, target, shutdown.Token);
+            await UntilAsync(() => router.LoadCalls.Contains("target"));
+            shutdown.Cancel(); // app shutdown (second Ctrl+C), not the operation
 
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await operation);
-        // No server-side stop and no restore: the process is going away.
-        Assert.DoesNotContain("target", router.UnloadCalls);
-        Assert.DoesNotContain("replaced", router.LoadCalls);
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await operation);
+            // No server-side stop and no restore: the process is going away.
+            Assert.DoesNotContain("target", router.UnloadCalls);
+            Assert.DoesNotContain("replaced", router.LoadCalls);
+        });
     }
 
     [Fact]
@@ -79,14 +85,17 @@ public sealed class LlamaCancelTests
         var client = new LlamaClient(router.BaseUrl);
         using var shutdown = new CancellationTokenSource();
 
-        var operation = LlamaCommands.DownloadModelCoreAsync(runtime, client, "repo:Q4_K_M", shutdown.Token);
-        await UntilAsync(() => router.DownloadCalls.Contains("repo:Q4_K_M"));
-        Assert.True(LlamaCommands.TryCancelActiveOperation()); // first Ctrl+C
-        await operation; // back to the menu, no throw
+        await QuietAsync(async () =>
+        {
+            var operation = LlamaCommands.DownloadModelCoreAsync(runtime, client, "repo:Q4_K_M", shutdown.Token);
+            await UntilAsync(() => router.DownloadCalls.Contains("repo:Q4_K_M"));
+            Assert.True(LlamaCommands.TryCancelActiveOperation()); // first Ctrl+C
+            await operation; // back to the menu, no throw
 
-        // Pinned downloadModel cancel: stop the server-side download; nothing restored.
-        Assert.Equal(["repo:Q4_K_M"], router.UnloadCalls);
-        Assert.Empty(router.LoadCalls);
+            // Pinned downloadModel cancel: stop the server-side download; nothing restored.
+            Assert.Equal(["repo:Q4_K_M"], router.UnloadCalls);
+            Assert.Empty(router.LoadCalls);
+        });
     }
 
     [Fact]
@@ -100,11 +109,34 @@ public sealed class LlamaCancelTests
         var client = new LlamaClient(router.BaseUrl);
         using var shutdown = new CancellationTokenSource();
 
-        var operation = LlamaCommands.DownloadModelCoreAsync(runtime, client, "repo:Q4_K_M", shutdown.Token);
-        await UntilAsync(() => router.DownloadCalls.Contains("repo:Q4_K_M"));
-        Assert.True(LlamaCommands.TryCancelActiveOperation()); // first press
-        Assert.False(LlamaCommands.TryCancelActiveOperation()); // second press would exit the app
-        await operation;
+        await QuietAsync(async () =>
+        {
+            var operation = LlamaCommands.DownloadModelCoreAsync(runtime, client, "repo:Q4_K_M", shutdown.Token);
+            await UntilAsync(() => router.DownloadCalls.Contains("repo:Q4_K_M"));
+            Assert.True(LlamaCommands.TryCancelActiveOperation()); // first press
+            Assert.False(LlamaCommands.TryCancelActiveOperation()); // second press would exit the app
+            await operation;
+        });
+    }
+
+    /// <summary>
+    /// Runs the scenario with the process Console suppressed: LlamaCommands writes its
+    /// status lines to the real Console, and a parallel test that redirects Console.Out
+    /// (e.g. AuthCommandTests' capture) would otherwise observe those lines in its output.
+    /// </summary>
+    private static async Task QuietAsync(Func<Task> scenario)
+    {
+        var previousOut = Console.Out;
+        using var sink = new StringWriter();
+        Console.SetOut(sink);
+        try
+        {
+            await scenario();
+        }
+        finally
+        {
+            Console.SetOut(previousOut);
+        }
     }
 
     /// <summary>Polls until the condition holds (or times out), without blocking a thread.</summary>
