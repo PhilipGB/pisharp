@@ -155,6 +155,16 @@ internal static class ModelStartup
             warnings.Add("Model availability refresh timed out; continuing with the current snapshot.");
         }
 
+        // Selection boundary (item 3): scopes resolve against executable models only; when
+        // the authenticated catalogue also holds inexecutable models, say so.
+        var excludedCount = available.Count(model => !ModelExecutionSupport.CanExecute(model));
+        if (excludedCount > 0)
+        {
+            warnings.Add(
+                $"{excludedCount} authenticated model(s) were excluded from model selection: this build can only execute models on API '{string.Join("', '", ModelExecutionSupport.SupportedApis)}'.");
+            available = available.Where(ModelExecutionSupport.CanExecute).ToArray();
+        }
+
         var scope = ModelResolver.ResolveModelScopeFromModels(options.Models, available);
         foreach (var diagnostic in scope.Diagnostics)
         {

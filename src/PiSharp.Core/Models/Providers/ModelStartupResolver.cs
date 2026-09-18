@@ -48,6 +48,30 @@ public static class ModelStartupResolver
     private const string NoModelsAvailableMessage =
         "No models available. Set an API key, use /login, or add models to models.json.";
 
+    /// <summary>
+    /// The "no model" fallback message, noting (item 3) when the authenticated catalogue
+    /// holds models this build cannot execute, so "no models" is not mistaken for "no auth".
+    /// </summary>
+    private static string NoExecutableModelsMessage(ModelRuntime runtime)
+    {
+        var excluded = runtime.GetAvailableSnapshot()
+            .Where(model => !ModelExecutionSupport.CanExecute(model))
+            .ToArray();
+        if (excluded.Length == 0)
+        {
+            return NoModelsAvailableMessage;
+        }
+
+        var apis = excluded
+            .Select(model => model.Api)
+            .Distinct(StringComparer.Ordinal)
+            .OrderBy(api => api, StringComparer.Ordinal)
+            .ToArray();
+        return $"No executable models available: {excluded.Length} authenticated model(s) use provider API(s) " +
+               $"this build cannot execute ({string.Join(", ", apis)}; supported APIs: {string.Join(", ", ModelExecutionSupport.SupportedApis)}). " +
+               "Set an executable model with /model, /login, or models.json.";
+    }
+
     /// <summary>Resolves the startup model and thinking level (see type documentation).</summary>
     public static ModelStartupResult Resolve(
         ModelStartupInput input,
@@ -145,8 +169,8 @@ public static class ModelStartupResolver
             if (model is null)
             {
                 fallbackMessage = fallbackMessage is null
-                    ? NoModelsAvailableMessage
-                    : $"{fallbackMessage} {NoModelsAvailableMessage}";
+                    ? NoExecutableModelsMessage(runtime)
+                    : $"{fallbackMessage} {NoExecutableModelsMessage(runtime)}";
             }
             else if (fallbackMessage is not null)
             {

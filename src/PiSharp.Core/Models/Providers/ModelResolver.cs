@@ -379,6 +379,27 @@ public static class ModelResolver
         string? cliThinking,
         ModelRuntime modelRuntime)
     {
+        var result = ResolveCliModelCore(cliProvider, cliModel, cliThinking, modelRuntime);
+
+        // Selection boundary (item 3): an explicit CLI model on a wire API this build cannot
+        // execute fails with a diagnostic instead of being silently selected and failing at
+        // request time.
+        if (result.Model is { } model && !ModelExecutionSupport.CanExecute(model))
+        {
+            return new ResolveCliModelResult(
+                null, null, null,
+                $"Model \"{model.Reference}\" cannot be executed by this build: {ModelExecutionSupport.InexecutableReason(model)}.");
+        }
+
+        return result;
+    }
+
+    private static ResolveCliModelResult ResolveCliModelCore(
+        string? cliProvider,
+        string? cliModel,
+        string? cliThinking,
+        ModelRuntime modelRuntime)
+    {
         if (cliModel is null)
         {
             return new ResolveCliModelResult(null, null, null, null);
@@ -627,8 +648,13 @@ public static class ModelResolver
             }
         }
 
-        // 4. First available model, preferring known-provider defaults.
-        var availableModels = modelRuntime.GetAvailableSnapshot().ToArray();
+        // 4. First available model, preferring known-provider defaults. Only models this
+        // build can execute are candidates (selection boundary, item 3); when the
+        // authenticated catalogue holds only inexecutable models the caller's fallback
+        // message reports the exclusion (ModelStartupResolver).
+        var availableModels = modelRuntime.GetAvailableSnapshot()
+            .Where(ModelExecutionSupport.CanExecute)
+            .ToArray();
         if (availableModels.Length > 0)
         {
             foreach (var (provider, defaultId) in DefaultModelPerProvider)
@@ -662,14 +688,19 @@ public static class ModelResolver
         var restoredModel = modelRuntime.GetModel(savedProvider, savedModelId);
         var hasConfiguredAuth = restoredModel is not null
             && modelRuntime.HasConfiguredAuth(restoredModel.Provider);
+        var executable = restoredModel is not null && ModelExecutionSupport.CanExecute(restoredModel);
 
-        if (restoredModel is not null && hasConfiguredAuth)
+        if (restoredModel is not null && hasConfiguredAuth && executable)
         {
             emit?.Invoke($"Restored model: {savedProvider}/{savedModelId}");
             return (restoredModel, null);
         }
 
-        var reason = restoredModel is null ? "model no longer exists" : "no auth configured";
+        var reason = restoredModel is null
+            ? "model no longer exists"
+            : !executable
+                ? ModelExecutionSupport.InexecutableReason(restoredModel)!
+                : "no auth configured";
         emit?.Invoke($"Warning: Could not restore model {savedProvider}/{savedModelId} ({reason}).");
 
         if (currentModel is not null)
@@ -680,7 +711,10 @@ public static class ModelResolver
                 $"Could not restore model {savedProvider}/{savedModelId} ({reason}). Using {currentModel.Provider}/{currentModel.Id}.");
         }
 
-        var availableModels = modelRuntime.GetAvailableSnapshot().ToArray();
+        // The fallback is the first executable available model (item 3).
+        var availableModels = modelRuntime.GetAvailableSnapshot()
+            .Where(ModelExecutionSupport.CanExecute)
+            .ToArray();
         if (availableModels.Length > 0)
         {
             ModelInfo? fallbackModel = null;

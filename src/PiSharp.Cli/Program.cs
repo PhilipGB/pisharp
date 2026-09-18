@@ -683,13 +683,16 @@ static async Task<ModelInfo?> FindModelForCommandAsync(
 
 /// <summary>
 /// Lists the selectable models (scoped when a scope is active, otherwise the authenticated
-/// snapshot) with the current model marked.
+/// snapshot) with the current model marked. Only models this build can execute are listed
+/// (selection boundary, item 3); excluded models are counted in the footer.
 /// </summary>
 static void PrintModelList(ModelSessionState modelState, ModelRuntime runtime)
 {
-    var candidates = modelState.ScopedModels.Count > 0
+    var fullCandidates = modelState.ScopedModels.Count > 0
         ? modelState.ScopedModels.Select(scoped => scoped.Model).ToList()
         : runtime.GetAvailableSnapshot().ToList();
+    var candidates = fullCandidates.Where(ModelExecutionSupport.CanExecute).ToList();
+    var excludedCount = fullCandidates.Count - candidates.Count;
 
     var current = modelState.Model;
     var currentLevel = modelState.ThinkingLevel ?? "off";
@@ -698,7 +701,9 @@ static void PrintModelList(ModelSessionState modelState, ModelRuntime runtime)
         : "No model selected.");
     if (candidates.Count == 0)
     {
-        Console.WriteLine("No models available. Set an API key or use /login.");
+        Console.WriteLine(excludedCount > 0
+            ? $"No executable models available: this build can only execute models on API '{string.Join("', '", ModelExecutionSupport.SupportedApis)}'."
+            : "No models available. Set an API key or use /login.");
         return;
     }
 
@@ -713,6 +718,12 @@ static void PrintModelList(ModelSessionState modelState, ModelRuntime runtime)
             var thinking = model.Reasoning ? "  thinking" : string.Empty;
             Console.WriteLine($"    {model.Id}{thinking}{marker}");
         }
+    }
+
+    if (excludedCount > 0)
+    {
+        Console.WriteLine(
+            $"  ({excludedCount} authenticated model(s) hidden: provider APIs this build cannot execute.");
     }
 }
 

@@ -129,6 +129,14 @@ public sealed class ModelSessionState
         ModelMutationOptions options,
         CancellationToken cancellationToken = default)
     {
+        // Selection boundary (item 3): a model on a wire API this build cannot execute is
+        // rejected before any state change or session entry, wherever the set originated
+        // (/model, post-login selection, startup, or programmatic use).
+        if (!ModelExecutionSupport.CanExecute(model))
+        {
+            throw new ModelNotExecutableException(model);
+        }
+
         if (await _runtime.CheckAuthAsync(model.Provider, cancellationToken) is null)
         {
             throw new InvalidOperationException($"No API key for {model.Provider}/{model.Id}");
@@ -171,8 +179,11 @@ public sealed class ModelSessionState
 
     private ModelCycleResult? CycleScopedModel(string direction, ModelMutationOptions options)
     {
+        // Only models that are both available and executable by this build cycle (item 3).
         var availableIds = new HashSet<(string, string)>(
-            _runtime.GetAvailableSnapshot().Select(model => (model.Provider, model.Id)));
+            _runtime.GetAvailableSnapshot()
+                .Where(ModelExecutionSupport.CanExecute)
+                .Select(model => (model.Provider, model.Id)));
         var scopedModels = _scopedModels
             .Where(scoped => availableIds.Contains((scoped.Model.Provider, scoped.Model.Id)))
             .ToList();
@@ -196,8 +207,11 @@ public sealed class ModelSessionState
 
     private ModelCycleResult? CycleAvailableModel(string direction, ModelMutationOptions options)
     {
-        var availableModels = _runtime.GetAvailableSnapshot();
-        if (availableModels.Count <= 1)
+        // Cycling walks only the executable subset of the available snapshot (item 3).
+        var availableModels = _runtime.GetAvailableSnapshot()
+            .Where(ModelExecutionSupport.CanExecute)
+            .ToArray();
+        if (availableModels.Length <= 1)
         {
             return null;
         }
@@ -209,8 +223,8 @@ public sealed class ModelSessionState
         }
 
         var nextIndex = direction == "backward"
-            ? (currentIndex - 1 + availableModels.Count) % availableModels.Count
-            : (currentIndex + 1) % availableModels.Count;
+            ? (currentIndex - 1 + availableModels.Length) % availableModels.Length
+            : (currentIndex + 1) % availableModels.Length;
         var nextModel = availableModels[nextIndex];
         return ApplyCycleTarget(nextModel, GetThinkingLevelForModelSwitch(nextModel), options, isScoped: false);
     }

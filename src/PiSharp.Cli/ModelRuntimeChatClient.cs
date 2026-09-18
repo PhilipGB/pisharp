@@ -23,12 +23,6 @@ namespace PiSharp.Cli;
 /// </summary>
 internal sealed class ModelRuntimeChatClient : IChatClient, IDisposable
 {
-    /// <summary>The only provider API PiSharp can execute (pinned: only this API is supported).</summary>
-    private static readonly HashSet<string> SupportedApis = new(StringComparer.Ordinal)
-    {
-        "openai-completions",
-    };
-
     private readonly ModelRuntime _runtime;
     private readonly Func<CurrentModelSelection?> _currentSelection;
     private readonly Func<long> _idleTimeoutMs;
@@ -177,7 +171,10 @@ internal sealed class ModelRuntimeChatClient : IChatClient, IDisposable
             throw new InvalidOperationException("No model is selected. Set one with /model or --model.");
         }
 
-        if (!SupportedApis.Contains(model.Api))
+        // Defense in depth: the selection boundary (ModelExecutionSupport.CanExecute) should
+        // have rejected an inexecutable model before it reached the runtime; this guard keeps
+        // the bridge safe for programmatic use that bypasses the selection surfaces.
+        if (!ModelExecutionSupport.CanExecute(model))
         {
             throw new UnsupportedCapabilityException(model.Provider, model.Api);
         }

@@ -228,8 +228,10 @@ internal static class LoginCommands
             return new PostLoginSelection(actionLabel, authPath, null, null);
         }
 
+        // Selection boundary (item 3): only executable models are selectable post-login.
         var providerModels = runtime.GetAvailableSnapshot()
             .Where(model => model.Provider == option.Id)
+            .Where(ModelExecutionSupport.CanExecute)
             .ToList();
         if (option.Id == BuiltinProviders.LlamaCppProviderId)
         {
@@ -254,9 +256,17 @@ internal static class LoginCommands
 
         if (providerModels.Count == 0)
         {
+            var apis = runtime.GetAvailableSnapshot()
+                .Where(model => model.Provider == option.Id)
+                .Select(model => model.Api)
+                .Distinct(StringComparer.Ordinal)
+                .OrderBy(api => api, StringComparer.Ordinal)
+                .ToArray();
             return new PostLoginSelection(
                 actionLabel, authPath, null,
-                $"{actionLabel}, but no models are available for that provider. Use /model to select a model.");
+                apis.Length > 0
+                    ? $"{actionLabel}, but none of that provider's models can be executed by this build (provider APIs {string.Join(", ", apis)}; supported APIs: {string.Join(", ", ModelExecutionSupport.SupportedApis)}). Use a provider with an executable model."
+                    : $"{actionLabel}, but no models are available for that provider. Use /model to select a model.");
         }
 
         var selected = providerModels.FirstOrDefault(model => model.Id == defaultModelId);
@@ -264,7 +274,7 @@ internal static class LoginCommands
         {
             return new PostLoginSelection(
                 actionLabel, authPath, null,
-                $"{actionLabel}, but its default model \"{defaultModelId}\" is not available. Use /model to select a model.");
+                $"{actionLabel}, but its default model \"{defaultModelId}\" is not available or executable in this build. Use /model to select a model.");
         }
 
         return new PostLoginSelection(actionLabel, authPath, selected, null);
