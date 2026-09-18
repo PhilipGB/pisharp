@@ -8,6 +8,7 @@ using PiSharp.Core.Models.Auth;
 using PiSharp.Core.Models.Providers;
 using PiSharp.Core.Settings;
 
+
 namespace PiSharp.Core.Tests;
 
 /// <summary>
@@ -132,6 +133,107 @@ public sealed class ModelRuntimeBridgeTests
 
         var (headers, _) = recorder.Last();
         Assert.False(headers.ContainsKey("Authorization"));
+    }
+
+    /// <summary>
+    /// Item 7: a non-Bearer Authorization header from the resolved auth (e.g. "Token
+    /// &lt;secret&gt;") cannot be expressed as an SDK apiKey credential and must be sent
+    /// verbatim — the previous code dropped it, leaving the request unauthenticated.
+    /// </summary>
+    [Fact]
+    public async Task NonBearerAuthorizationHeaderIsSentVerbatim()
+    {
+        var (runtime, state, _) = await CreateRuntimeWithFixedAuthAsync(
+            null,
+            new Dictionary<string, string> { ["Authorization"] = "Token raw-secret" });
+        using var recorder = new RecordingHandler();
+        using var bridge = new ModelRuntimeChatClient(runtime, () => state.Current, () => 0, recorder);
+
+        await bridge.GetResponseAsync([new ChatMessage(ChatRole.User, "hi")]);
+
+        Assert.Equal("Token raw-secret", recorder.Last().Headers["Authorization"]);
+    }
+
+    /// <summary>
+    /// Item 7: the pinned merge order (the Node SDK's defaultHeaders override the
+    /// auth-header) — an explicit Authorization header from the credential wins over the
+    /// stored apiKey on the wire.
+    /// </summary>
+    [Fact]
+    public async Task ExplicitAuthorizationHeaderWinsOverApiKey()
+    {
+        var (runtime, state, _) = await CreateRuntimeWithFixedAuthAsync(
+            "stored-key",
+            new Dictionary<string, string> { ["Authorization"] = "Bearer header-token" });
+        using var recorder = new RecordingHandler();
+        using var bridge = new ModelRuntimeChatClient(runtime, () => state.Current, () => 0, recorder);
+
+        await bridge.GetResponseAsync([new ChatMessage(ChatRole.User, "hi")]);
+
+        Assert.Equal("Bearer header-token", recorder.Last().Headers["Authorization"]);
+    }
+
+    /// <summary>A runtime with one raw openai-completions model whose auth is fixed by the test.</summary>
+    private static async Task<(ModelRuntime Runtime, ModelSessionState State, ModelInfo Model)> CreateRuntimeWithFixedAuthAsync(
+        string? apiKey,
+        IReadOnlyDictionary<string, string>? headers)
+    {
+        var runtime = await ModelRuntime.CreateAsync(new CreateModelRuntimeOptions
+        {
+            Credentials = new InMemoryCredentialStore(),
+            Builtins = [],
+            ModelsStore = new InMemoryModelsStore(),
+            ModelsPath = null,
+            NetworkEnabled = false,
+            RefreshOnCreate = false,
+        });
+        var model = new ModelInfo
+        {
+            Id = "raw",
+            Name = "Raw",
+            Api = "openai-completions",
+            Provider = "raw",
+            BaseUrl = "http://localhost:9/v1",
+            Input = ["text"],
+            Cost = new ModelCost { Input = 0, Output = 0, CacheRead = 0, CacheWrite = 0 },
+            ContextWindow = 8_000,
+            MaxTokens = 1_000,
+        };
+        runtime.RegisterProvider(new ProviderSpec
+        {
+            Id = "raw",
+            Name = "Raw",
+            BaseUrl = "http://localhost:9/v1",
+            Auth = new ProviderAuth(new FixedAuth(apiKey, headers) { Name = "fixed" }),
+            GetModels = () => new[] { model },
+            DefaultApi = "openai-completions",
+        });
+        var settings = await SettingsManager.CreateFromStorageAsync(new InMemorySettingsStorage());
+        var state = new ModelSessionState(runtime, settings);
+        state.ApplySelection(new CurrentModelSelection(model, "off", null, null));
+        return (runtime, state, model);
+    }
+
+    /// <summary>Test auth: returns the given apiKey/headers verbatim (pinned AuthResult shape).</summary>
+    private sealed class FixedAuth : ApiKeyAuth
+    {
+        private readonly string? _apiKey;
+        private readonly IReadOnlyDictionary<string, string>? _headers;
+
+        public FixedAuth(string? apiKey, IReadOnlyDictionary<string, string>? headers)
+        {
+            _apiKey = apiKey;
+            _headers = headers;
+        }
+
+        public override Task<AuthResult?> ResolveAsync(ApiKeyAuthInput input)
+        {
+            return Task.FromResult<AuthResult?>(new AuthResult
+            {
+                Auth = new ModelAuth { ApiKey = _apiKey, Headers = _headers },
+                Source = "fixed",
+            });
+        }
     }
 
     [Fact]

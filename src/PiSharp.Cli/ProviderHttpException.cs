@@ -91,13 +91,7 @@ internal sealed class ProviderErrorCaptureHandler : DelegatingHandler
         {
             if (response.Content is not null)
             {
-                var bytes = await response.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false);
-                if (bytes.Length > MaxBodyCaptureBytes)
-                {
-                    bytes = bytes[..MaxBodyCaptureBytes];
-                }
-
-                body = System.Text.Encoding.UTF8.GetString(bytes);
+                body = await ReadBoundedBodyAsync(response.Content, cancellationToken).ConfigureAwait(false);
             }
         }
         catch
@@ -110,5 +104,26 @@ internal sealed class ProviderErrorCaptureHandler : DelegatingHandler
         }
 
         throw new ProviderHttpException((int)response.StatusCode, headers, body);
+    }
+
+    /// <summary>
+    /// Reads at most <see cref="MaxBodyCaptureBytes"/> from the error body stream. Reading
+    /// byte-by-byte into a fixed buffer (instead of ReadAsByteArrayAsync, which
+    /// materializes the ENTIRE body first and truncates afterwards) bounds memory to the
+    /// capture size no matter how large the server's error response is.
+    /// </summary>
+    private static async Task<string> ReadBoundedBodyAsync(HttpContent content, CancellationToken cancellationToken)
+    {
+        await using var stream = await content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+        var buffer = new byte[MaxBodyCaptureBytes];
+        var total = 0;
+        int read;
+        while (total < MaxBodyCaptureBytes &&
+               (read = await stream.ReadAsync(buffer.AsMemory(total, MaxBodyCaptureBytes - total), cancellationToken).ConfigureAwait(false)) > 0)
+        {
+            total += read;
+        }
+
+        return System.Text.Encoding.UTF8.GetString(buffer, 0, total);
     }
 }

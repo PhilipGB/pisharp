@@ -205,18 +205,36 @@ internal sealed class ModelRuntimeChatClient : IChatClient, IDisposable
             }
         }
 
-        // Pinned resolveAuthHeaders: a header-credential Authorization value becomes the
-        // bearer for the SDK; any other credential comes through as the API key. An empty
-        // key (keyless local server) means no auth at all.
+        // Pinned getClientApiKey + the Node SDK's header merge order (defaultHeaders
+        // override the auth-header): an explicit Authorization header from the resolved
+        // auth is sent verbatim and wins over any apiKey; otherwise the apiKey becomes
+        // "Authorization: Bearer <key>". An empty key (keyless local server) means no
+        // auth at all.
         var apiKey = string.IsNullOrEmpty(auth?.Auth.ApiKey) ? null : auth!.Auth.ApiKey;
-        string? bearerToken = null;
-        if (headers.TryGetValue("Authorization", out var bearer) &&
-            bearer.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+        string? sdkApiKey;
+        string? verbatimAuthorization = null;
+        if (headers.TryGetValue("Authorization", out var authHeader))
         {
-            bearerToken = bearer["Bearer ".Length..];
+            if (authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+            {
+                // "Authorization: Bearer <token>" from the SDK credential is byte-identical
+                // to sending the header verbatim, so the token doubles as the key.
+                sdkApiKey = authHeader["Bearer ".Length..];
+            }
+            else
+            {
+                // Non-Bearer schemes (Token, a raw secret, ...) cannot be expressed as an
+                // SDK credential; the pipeline runs keyless and the header goes out as-is.
+                sdkApiKey = null;
+                verbatimAuthorization = authHeader;
+            }
+        }
+        else
+        {
+            sdkApiKey = apiKey;
         }
 
-        var client = await GetClientAsync(model, endpointUri, apiKey ?? bearerToken, headers).ConfigureAwait(false);
+        var client = await GetClientAsync(model, endpointUri, sdkApiKey, headers, verbatimAuthorization).ConfigureAwait(false);
         var adjusted = CopyOptions(options);
 
         // Dynamic per-request model binding: overrides whatever the SDK client was built with.
@@ -256,7 +274,8 @@ internal sealed class ModelRuntimeChatClient : IChatClient, IDisposable
         ModelInfo model,
         Uri endpoint,
         string? apiKey,
-        IReadOnlyDictionary<string, string> headers)
+        IReadOnlyDictionary<string, string> headers,
+        string? verbatimAuthorization)
     {
         var fingerprint = FingerprintHeaders(headers);
         lock (_gate)
@@ -285,10 +304,16 @@ internal sealed class ModelRuntimeChatClient : IChatClient, IDisposable
         {
             if (name.Equals("Authorization", StringComparison.OrdinalIgnoreCase))
             {
-                continue; // credential is passed as apiKey/bearer, not a static header
+                // Handled above: as the SDK credential (Bearer) or a verbatim static header.
+                continue;
             }
 
             clientOptions.AddPolicy(new StaticHeaderPolicy(name, value), PipelinePosition.PerCall);
+        }
+
+        if (verbatimAuthorization is not null)
+        {
+            clientOptions.AddPolicy(new StaticHeaderPolicy("Authorization", verbatimAuthorization), PipelinePosition.PerCall);
         }
 
         // The model bound at construction is a placeholder: every request sets
