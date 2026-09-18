@@ -46,26 +46,37 @@ internal sealed record CliOptions(
     bool NoTools,
     bool AutoRetry)
 {
-    public static CliOptions Parse(string[] args)
+    public static CliOptions Parse(string[] args) => ParseCore(args, mapEnvironment: true);
+
+    /// <summary>
+    /// Parses without the compatibility env-var mapping. Used by the auth subcommand, where
+    /// PISHARP_MODEL/PISHARP_API_KEY must not leak into --provider/--model validation
+    /// (pinned parseArgs reads only the subcommand's own flags).
+    /// </summary>
+    public static CliOptions ParseWithoutEnvironment(string[] args) => ParseCore(args, mapEnvironment: false);
+
+    private static CliOptions ParseCore(string[] args, bool mapEnvironment)
     {
         var cwd = Directory.GetCurrentDirectory();
         // Compatibility env vars map into the model runtime resolution (PISHARP_MODEL is a
         // --model alias, PISHARP_ENDPOINT the local-endpoint workflow, the key env vars feed
         // the provider ambient auth). Model/key are no longer required up front: the runtime
         // resolves auth per provider (pinned Pi behavior).
-        var model = Environment.GetEnvironmentVariable("PISHARP_MODEL");
-        var endpoint = Environment.GetEnvironmentVariable("PISHARP_ENDPOINT");
-        var apiKey = Environment.GetEnvironmentVariable("PISHARP_API_KEY")
-            ?? Environment.GetEnvironmentVariable("OPENAI_API_KEY");
-        var provider = Environment.GetEnvironmentVariable("PISHARP_PROVIDER");
+        var model = mapEnvironment ? Environment.GetEnvironmentVariable("PISHARP_MODEL") : null;
+        var endpoint = mapEnvironment ? Environment.GetEnvironmentVariable("PISHARP_ENDPOINT") : null;
+        var apiKey = mapEnvironment
+            ? Environment.GetEnvironmentVariable("PISHARP_API_KEY")
+                ?? Environment.GetEnvironmentVariable("OPENAI_API_KEY")
+            : null;
+        var provider = mapEnvironment ? Environment.GetEnvironmentVariable("PISHARP_PROVIDER") : null;
         var modelPatterns = new List<string>();
-        var thinking = Environment.GetEnvironmentVariable("PISHARP_THINKING");
+        var thinking = mapEnvironment ? Environment.GetEnvironmentVariable("PISHARP_THINKING") : null;
         var listModels = false;
-        var offline = Environment.GetEnvironmentVariable("PI_OFFLINE") is "1" or "true" or "yes";
+        var offline = mapEnvironment && Environment.GetEnvironmentVariable("PI_OFFLINE") is "1" or "true" or "yes";
         // Explicit user intent (flag or env var) overrides model metadata; the bare defaults
         // let the model's own context window / max output win (pinned behavior).
-        var contextTokensEnv = Environment.GetEnvironmentVariable("PISHARP_CONTEXT_TOKENS");
-        var maxOutputTokensEnv = Environment.GetEnvironmentVariable("PISHARP_MAX_OUTPUT_TOKENS");
+        var contextTokensEnv = mapEnvironment ? Environment.GetEnvironmentVariable("PISHARP_CONTEXT_TOKENS") : null;
+        var maxOutputTokensEnv = mapEnvironment ? Environment.GetEnvironmentVariable("PISHARP_MAX_OUTPUT_TOKENS") : null;
         var contextTokens = ParsePositiveInt(contextTokensEnv, 128_000);
         var maxOutputTokens = ParsePositiveInt(maxOutputTokensEnv, 16_384);
         var contextTokensExplicit = contextTokensEnv is not null;

@@ -31,7 +31,7 @@ PiSharp.
 | Runtime event bus | Partial | `packages/coding-agent/src/core/event-bus.ts` | Extension lifecycle events only | `ExtensionsAndPackagesTests` |
 | Usage/cost accounting | Missing | `packages/coding-agent/src/core/usage-totals.ts` | Not persisted or surfaced | Planned Phase 13 |
 | Diagnostics and timings | Missing | `packages/coding-agent/src/core/diagnostics.ts`, `timings.ts` | Not exposed | Planned Phase 13 |
-| Runtime provider abstraction | Missing | `packages/coding-agent/src/core/model-runtime.ts` | Direct OpenAI-compatible client in `AgentFactory` | Planned Phase 2 |
+| Runtime provider abstraction | Equivalent | `packages/coding-agent/src/core/model-runtime.ts` | `ModelRuntime` (providers, availability, credentials, login/logout, error state) + `ModelSessionState` (current model/thinking, scope, session overrides) feeding the `IChatClient` bridge, steering client, and summarizer | `ModelRuntimeBridgeTests`, `ModelSwitchingTests` |
 
 ## Tools
 
@@ -98,18 +98,26 @@ PiSharp.
 
 | Capability | Status | Pi reference | PiSharp implementation | Conformance coverage |
 |---|---|---|---|---|
-| OpenAI-compatible endpoint | Equivalent | `core/model-runtime.ts`, provider adapters | `OpenAI.ChatClient` in `AgentFactory` | Manual/local endpoint only |
-| Provider/model registry | Missing | `model-registry.ts`, `models-store.ts` | Raw model string and endpoint | Planned Phase 2 |
-| Model capabilities | Missing | `core/model-config.ts`, provider model definitions | Not represented | Planned Phase 2 |
-| Runtime model switching (`/model`, persisted `model_change` entries) | Missing | `agent-session.ts`, `session-manager.ts` | Entry type exists; no runtime control | Planned Phase 2 |
-| Model cycling and scoped models (`--models`, `enabledModels`, `/scoped-models`) | Missing | `agent-session.ts` `cycleModel`, settings | Not implemented | Planned Phase 2 |
-| Default provider/model settings | Missing | `settings-manager.ts` `defaultProvider`/`defaultModel` | CLI/env-var only | Planned Phase 1/2 |
-| Model catalogue refresh/cache | Missing | `remote-catalog-provider.ts` | Not implemented | Planned Phase 2 |
-| API-key/environment credentials | Partial | `auth-storage.ts`, `auth-check.ts` | Environment/CLI API key | No persisted credential fixture |
-| OAuth/subscription login | Missing | `cli/auth-command.ts`, `auth-storage.ts` | Not implemented | Planned Phase 2 |
-| `/login` and `/logout` | Missing | `cli/auth-command.ts` | Not implemented | Planned Phase 2/7 |
-| Thinking-level controls and persistence | Missing | `agent-session.ts`, `/thinking`, `thinking_level_change` entry | Entry type exists; no runtime control | Planned Phase 2 |
-| llama.cpp integration (`/llama`, provider registration, server discovery) | Missing | `extensions/llama/*` | Not implemented (local llama.cpp still works as a plain OpenAI-compatible endpoint) | Planned Phase 2 |
+| OpenAI-compatible endpoint | Equivalent | `core/model-runtime.ts`, provider adapters | Provider-neutral `ModelRuntimeChatClient` bridge: one cached `OpenAI.ChatClient` per (endpoint, key, headers) with the model id, max output, and thinking raw representation applied per request; `AgentFactory` no longer owns model/provider/auth selection | `ModelRuntimeBridgeTests`, live local-endpoint smoke |
+| Provider/model registry | Equivalent | `model-registry.ts`, `models-store.ts` | `ModelRuntime` + `ModelsCatalog` over built-in providers, `models.json` file providers, and the remote catalog; startup resolution is the single deterministic `ModelStartupResolver` (CLI `--model` > `--provider` default > global default > first available, with the pinned no-model and error semantics) | `ModelStartupResolverTests`, `ModelsProviderTests` |
+| Model capabilities | Equivalent | `core/model-config.ts`, provider model definitions | `ModelInfo` (context window, max tokens, reasoning/thinking levels, cost) flows from the registry into the runtime, session state, and per-request options; thinking is applied via the OpenAI `reasoning_effort` raw representation | `ModelSessionStateTests`, `ModelRuntimeBridgeTests` |
+| Runtime model switching (`/model`, persisted `model_change` entries) | Equivalent | `agent-session.ts`, `session-manager.ts` | Live `/model [provider/model]` with exact-reference matching (pinned `findExactModelReferenceMatch` precedence), `/model next|prev` cycling, `--persist`, availability check with the pinned `No API key for {provider}/{model}` error, and `model_change` (+ conditional `thinking_level_change`) entries appended after every switch; scoped models take precedence in cycling/listing | `ModelSwitchingTests`, `ModelSessionStateTests`, live smoke |
+| Model cycling and scoped models (`--models`, `enabledModels`, `/scoped-models`) | Partial | `agent-session.ts` `cycleModel`, settings | `--models` scope via `SetScopedModelsAsync` (invalid refs warn, as pinned), cycling and `/model` listing prefer the scope; `enabledModels` from settings and the `/scoped-models` command are not ported | `ModelSwitchingTests` |
+| Default provider/model settings | Equivalent | `settings-manager.ts` `defaultProvider`/`defaultModel` | `SettingsManager` is the single authority: `--model`/`--provider` resolve through it, `/model --persist` and `/thinking --persist` (and post-login selection) write the global defaults, and session overrides (`--model`, `--thinking`) layer on top | `ModelStartupResolverTests`, `ModelSwitchingTests`, `SettingsWiringTests` |
+| Model catalogue refresh/cache | Equivalent | `remote-catalog-provider.ts`, `models-store.ts` | File-backed models store with remote catalog refresh on startup (background, network-gated by `--offline`), 15 s startup cap with snapshot fallback, and `/model` on-cache-miss refresh | `ModelsProviderTests`, live smoke |
+| API-key/environment credentials | Equivalent | `auth-storage.ts`, `auth-check.ts` | `EnvApiKeyAuth` (pinned precedence: stored > env > bearer env) plus `FileCredentialStore` (auth.json under the agent dir) and runtime overrides (`--api-key` without `--endpoint`, `/login`); availability re-checks after every credential change | `AuthCommandTests`, `LoginCommandTests`, `ModelsProviderTests` |
+| OAuth/subscription login | Partial | `cli/auth-command.ts`, `auth-storage.ts` | OAuth providers are declared (Anthropic, Google, OpenAI Codex, …) and `/login`/`pisharp auth check` surface their state; the interactive OAuth handshake runs through `ConsoleAuthInteraction` (auth-URL/device-code/secret steps), but no live IdP round-trip is exercised in tests | `LoginCommandTests` (state machine only) |
+| `/login` and `/logout` | Equivalent | `cli/auth-command.ts` | Interactive `/login [provider]` (per-method provider list, single-match auto-start, numbered multi-match selection, post-login default-model selection with pinned guidance errors) and `/logout [provider]` (removes stored credentials only; env vars and models.json unchanged) | `LoginCommandTests`, live pty smoke |
+| Thinking-level controls and persistence | Equivalent | `agent-session.ts`, `/thinking`, `thinking_level_change` entry | Live `/thinking [level|next]` with pinned clamping to supported levels, `--persist`, `thinking_level_change` entries only when the effective level changes (parented under the `model_change` entry on switches), and per-model thinking defaults | `ModelSwitchingTests`, `ModelSessionStateTests`, live smoke |
+| llama.cpp integration (`/llama`, provider registration, server discovery) | Partial | `extensions/llama/*` | The llama.cpp provider is registered in the runtime with the pinned `LocalServerApiKeyAuth` (local key, no auth required for requests), and `--model llama.cpp/<id> --endpoint <url>` works end to end; the `/llama` extension (server management UI) is not ported | Local-endpoint smoke |
+
+Intentional differences in this area:
+
+- **Agent directory**: the model/auth subsystem (auth.json, models.json) uses `PISHARP_AGENT_DIR`, falling back to `~/.pisharp`, per the port contract; the Phase 1 settings subsystem keeps the pinned `PI_CODING_AGENT_DIR`/`~/.pi/agent` paths. With neither variable set the two subsystems live in different trees.
+- **Login surface**: `/login` runs the pinned provider/method selection and credential flows in a plain text console (`ConsoleAuthInteraction`); secrets are echoed (the pinned TUI masks them), and multi-match selection is a numbered list instead of the TUI dialog.
+- **Interactive commands are between-turns only**: `/model`, `/thinking`, `/login`, and `/logout` execute between turns; typed during a streaming turn they queue as steering input, matching the PiSharp turn model rather than the pinned live-in-turn command handling.
+- **Model banner**: the one-line startup banner shows the resolved model at launch; `/model`/`/thinking` report the new state inline rather than re-rendering a pinned-style live TUI footer.
+
 | Retry controls/events | Partial | `agent-session.ts` retry events | `RetryPolicy`, `--no-auto-retry` | `RetryPolicyTests`; lifecycle/schema gap remains |
 | Retry-After and timeout settings | Missing | `pi-ai` retry/provider code | Fixed local backoff only | Planned Phase 2 |
 
@@ -268,9 +276,9 @@ PiSharp.
 | `@file` arguments | Partial | `cli/file-processor.ts` | Text and image files | File tests; path semantics differ |
 | Resource flags | Partial | `cli/args.ts` | Extension/skill/prompt/no-* flags | `CliOptionsTests` |
 | Session flags | Partial | `cli/args.ts` | Continue/resume/session/no-session | Session tests |
-| Model/provider/auth flags | Partial | `cli/args.ts` | Raw model/endpoint/API key | Planned Phase 2 |
+| Model/provider/auth flags | Equivalent | `cli/args.ts` | `--model`, `--provider`, `--models`, `--thinking`, `--context-tokens`, `--max-output-tokens`, `--api-key` (runtime override when no endpoint), `--list-models`, `--offline`; compat env vars PISHARP_MODEL/ENDPOINT/API_KEY/PROVIDER/THINKING/PI_OFFLINE mapped into the same resolver | `CliOptionsTests`, `ModelStartupResolverTests` |
 | Trust flags | Equivalent | `cli/args.ts`, project trust | `--approve`/`-a` and `--no-approve`/`-na` | `CliOptionsTests`, `ProjectTrustTests` |
-| `auth` CLI (`print-api-key`, `print-bearer-token`, `check`) | Missing | `cli/auth-command.ts` | Not implemented | Planned Phase 2 |
+| `auth` CLI (`print-api-key`, `print-bearer-token`, `check`) | Equivalent | `cli/auth-command.ts` | `pisharp auth check [--provider --model --json --credentials --no-refresh]`, `print-api-key`, `print-bearer-token [--min-expiry]` with pinned exit codes (0/1/2), field order, and error messages; auth flags are parsed without inheriting compat env vars | `AuthCommandTests`, live smoke |
 | `pi config` resource configuration command | Missing | `cli/config-selector.ts` | Not implemented | Planned Phase 1/7 |
 | Package/update/setup commands | Missing | package-manager CLI/setup/update | Not implemented | Planned Phase 5/14 |
 | Version/changelog/offline/proxy | Missing | utilities/CLI | Not implemented | Planned Phase 14 |

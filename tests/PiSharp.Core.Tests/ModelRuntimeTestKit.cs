@@ -34,6 +34,7 @@ internal static class ModelRuntimeTestKit
         var settings = await SettingsManager.CreateFromStorageAsync(new InMemorySettingsStorage());
         var runtime = await ModelRuntime.CreateAsync(new CreateModelRuntimeOptions
         {
+            Credentials = new InMemoryCredentialStore(),
             Builtins = [],
             ModelsStore = new InMemoryModelsStore(),
             ModelsPath = null,

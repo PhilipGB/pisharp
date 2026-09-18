@@ -7,6 +7,13 @@ using PiSharp.Cli;
 
 try
 {
+    // Pinned main.ts: the "auth" subcommand is handled before normal option parsing and
+    // never starts a session.
+    if (args.Length > 0 && args[0] == "auth")
+    {
+        return await RunAuthCommandAsync(args);
+    }
+
     var options = CliOptions.Parse(args);
     if (options.ShowHelp)
     {
@@ -426,6 +433,13 @@ static async Task<bool> HandleCommandAsync(
         case "/thinking":
             await HandleThinkingCommandAsync(argument, sessions, cancellationToken);
             return true;
+        case "/login":
+            await LoginCommands.HandleLoginAsync(
+                argument, sessions, new LoginCommands.ConsoleAuthInteraction(cancellationToken), cancellationToken);
+            return true;
+        case "/logout":
+            await LoginCommands.HandleLogoutAsync(argument, sessions, cancellationToken);
+            return true;
         case "/stats":
             Console.WriteLine(JsonSerializer.Serialize(sessions.GetStatistics()));
             return true;
@@ -497,6 +511,59 @@ static async Task<bool> HandleCommandAsync(
             }
             return extensionResult.Handled;
     }
+}
+
+/// <summary>
+/// Runs the "auth" subcommand before any session exists (pinned runAuthCommand).
+/// </summary>
+static async Task<int> RunAuthCommandAsync(string[] args)
+{
+    if (AuthCommands.IsHelp(args))
+    {
+        AuthCommands.PrintHelp();
+        return 0;
+    }
+
+    AuthCommand command;
+    try
+    {
+        command = AuthCommands.Parse(args);
+    }
+    catch (AuthCommandError error)
+    {
+        Console.Error.WriteLine($"Error: {error.Message}");
+        return 1;
+    }
+    catch (Exception)
+    {
+        Console.Error.WriteLine("Error: Failed to parse auth command");
+        return 1;
+    }
+
+    CliOptions options;
+    try
+    {
+        options = CliOptions.ParseWithoutEnvironment(command.Args);
+    }
+    catch (ArgumentException error)
+    {
+        // Pinned reports unknown auth options with the command name and usage.
+        const string UnknownPrefix = "Unknown option:";
+        if (error.Message.StartsWith(UnknownPrefix, StringComparison.Ordinal))
+        {
+            var option = error.Message[UnknownPrefix.Length..].Trim().TrimStart('-');
+            Console.Error.WriteLine($"Unknown option --{option} for \"{AuthCommands.GetCommandName(command.Kind)}\".");
+            Console.Error.WriteLine($"Use \"pisharp --help\" or \"{AuthCommands.GetCommandUsage(command.Kind)}\".");
+        }
+        else
+        {
+            Console.Error.WriteLine($"Error: {error.Message}");
+        }
+
+        return 1;
+    }
+
+    return await AuthCommands.RunAsync(command, options, CancellationToken.None);
 }
 
 /// <summary>
@@ -751,6 +818,8 @@ static void PrintInteractiveHelp()
           /session                 Show current session metadata
           /model [ref|next|prev]   List models, select one, or cycle (--persist saves the default)
           /thinking [level|next]   List thinking levels, set one, or cycle (--persist saves the default)
+          /login [provider]        Store credentials for a provider
+          /logout [provider]       Remove a stored credential (env vars and models.json are unchanged)
           /name [text]             Show or set the session display name
           /label <entry-id> [text] Set or clear a bookmark label on an entry
           /stats                   Show session message/tool statistics
@@ -782,6 +851,11 @@ static void PrintHelp()
 
         Usage:
           pisharp [options] [@files...] [prompt...]
+
+        Subcommands:
+          pisharp auth check --provider <p> [--model <m>] [--json] [--credentials] [--no-refresh]
+          pisharp auth print-api-key --provider <p> [--model <m>]
+          pisharp auth print-bearer-token --provider <p> [--model <m>] [--min-expiry <duration>]
 
         Options:
           --model <name>              Model name (or PISHARP_MODEL), e.g. openai/gpt-5.5

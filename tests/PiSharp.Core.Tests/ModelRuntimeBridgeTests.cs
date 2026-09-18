@@ -86,6 +86,7 @@ public sealed class ModelRuntimeBridgeTests
         // issue the request without an Authorization header (pinned keyless endpoints).
         var runtime = await ModelRuntime.CreateAsync(new CreateModelRuntimeOptions
         {
+            Credentials = new InMemoryCredentialStore(),
             Builtins = [],
             ModelsStore = new InMemoryModelsStore(),
             ModelsPath = null,

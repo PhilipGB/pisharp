@@ -20,8 +20,23 @@ public abstract class ApiKeyAuth
     /// <summary>Display name, e.g. "Anthropic API key".</summary>
     public required string Name { get; init; }
 
-    /// <summary>Interactive setup; null means ambient-only (no login prompt).</summary>
-    public Func<IAuthInteraction, Task<ApiKeyCredential>>? Login { get; init; }
+    private Func<IAuthInteraction, Task<ApiKeyCredential>>? _explicitLogin;
+
+    /// <summary>
+    /// Interactive setup; falls back to <see cref="CreateDefaultLogin"/> when no explicit
+    /// flow is set. Null means ambient-only (no login prompt).
+    /// </summary>
+    public Func<IAuthInteraction, Task<ApiKeyCredential>>? Login
+    {
+        get => _explicitLogin ?? CreateDefaultLogin();
+        init => _explicitLogin = value;
+    }
+
+    /// <summary>
+    /// The default login flow a provider derives from its declared prompt message (pinned
+    /// envApiKeyAuth includes a login that prompts for the key). Null means ambient-only.
+    /// </summary>
+    protected virtual Func<IAuthInteraction, Task<ApiKeyCredential>>? CreateDefaultLogin() => null;
 
     /// <summary>
     /// Optional side-effect-free availability check. Null means availability is checked
@@ -70,6 +85,12 @@ public sealed class EnvApiKeyAuth : ApiKeyAuth
 
     /// <summary>Message for the login prompt; null means ambient-only.</summary>
     public string? LoginMessage { get; init; }
+
+    /// <summary>Standard enter-the-key login (pinned envApiKeyAuth login).</summary>
+    protected override Func<IAuthInteraction, Task<ApiKeyCredential>>? CreateDefaultLogin() =>
+        LoginMessage is { Length: > 0 } message
+            ? interaction => PromptForKeyAsync(interaction, message)
+            : null;
 
     public override Task<AuthResult?> ResolveAsync(ApiKeyAuthInput input)
     {
