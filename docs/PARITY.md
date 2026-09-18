@@ -29,7 +29,7 @@ PiSharp.
 | Queue drain modes | Partial | `packages/agent/src/types.ts` | `TurnMessageQueue` | Unit coverage; event protocol differs |
 | Abort and queued-input preservation | Partial | `packages/coding-agent/test/agent-session-concurrent.test.ts` | `LiveTurnCoordinator`, CLI host | Existing concurrency coverage; no timing differential fixture |
 | Runtime event bus | Partial | `packages/coding-agent/src/core/event-bus.ts` | Extension lifecycle events only | `ExtensionsAndPackagesTests` |
-| Usage/cost accounting | Missing | `packages/coding-agent/src/core/usage-totals.ts` | Not persisted or surfaced | Planned Phase 13 |
+| Usage/cost accounting | Partial | `packages/coding-agent/src/core/usage-totals.ts` | Per-response usage and tier-aware cost are persisted in every durable assistant entry (see Models/providers/auth); session-wide totals (footer/stats) are not surfaced yet | Per-entry: `UsageCostEntryTests`; totals: Planned Phase 13 |
 | Diagnostics and timings | Missing | `packages/coding-agent/src/core/diagnostics.ts`, `timings.ts` | Not exposed | Planned Phase 13 |
 | Runtime provider abstraction | Equivalent | `packages/coding-agent/src/core/model-runtime.ts` | `ModelRuntime` (providers, availability, credentials, login/logout, error state) + `ModelSessionState` (current model/thinking, scope, session overrides) feeding the `IChatClient` bridge, steering client, and summarizer | `ModelRuntimeBridgeTests`, `ModelSwitchingTests` |
 
@@ -59,7 +59,7 @@ PiSharp.
 |---|---|---|---|---|
 | JSONL session header | Equivalent | `packages/coding-agent/src/core/session-manager.ts` (`CURRENT_SESSION_VERSION = 3`) | New sessions write Pi v3 headers; legacy v1 remains readable; Pi forks persist the source session path in `parentSession` | `SessionStoreTests`, `PiSessionStoreTests`; v3 fixture |
 
-| Typed message entries | Partial | `SessionEntry` in `session-manager.ts` | PiSharp owns typed JSONL entries and tree algorithms; MAF state is a secondary `pisharp.agent-state` cache bridge; provider metadata/usage remains incomplete | `PiSessionStoreTests`; v3 fixture |
+| Typed message entries | Partial | `SessionEntry` in `session-manager.ts` | PiSharp owns typed JSONL entries and tree algorithms; MAF state is a secondary `pisharp.agent-state` cache bridge; assistant entries carry the pinned api/provider/model/responseModel/usage+cost metadata | `PiSessionStoreTests`; v3 fixture |
 
 | Durable user/assistant/tool records | Equivalent | `session-manager.ts`, `messages.ts` | User prompts, steering/follow-up messages, completed assistant messages, tool calls/results, and cache entries are appended in chronological parent-linked order; partial assistant deltas are not emitted | `PiSessionStoreTests`; v3 fixture |
 
@@ -109,6 +109,7 @@ PiSharp.
 | OAuth/subscription login | Partial | `cli/auth-command.ts`, `auth-storage.ts` | OAuth providers are declared (Anthropic, Google, OpenAI Codex, …) and `/login`/`pisharp auth check` surface their state; the interactive OAuth handshake runs through `ConsoleAuthInteraction` (auth-URL/device-code/secret steps), but no live IdP round-trip is exercised in tests | `LoginCommandTests` (state machine only) |
 | `/login` and `/logout` | Equivalent | `cli/auth-command.ts` | Interactive `/login [provider]` (per-method provider list, single-match auto-start, numbered multi-match selection, post-login default-model selection with pinned guidance errors) and `/logout [provider]` (removes stored credentials only; env vars and models.json unchanged) | `LoginCommandTests`, live pty smoke |
 | Thinking-level controls and persistence | Equivalent | `agent-session.ts`, `/thinking`, `thinking_level_change` entry | Live `/thinking [level|next]` with pinned clamping to supported levels, `--persist`, `thinking_level_change` entries only when the effective level changes (parented under the `model_change` entry on switches), and per-model thinking defaults | `ModelSwitchingTests`, `ModelSessionStateTests`, live smoke |
+| Assistant usage/cost metadata | Equivalent | pi-ai `Usage`/`calculateCost`, openai-completions `parseChunkUsage`, `AssistantMessage` | The streaming `UsageContent` from the OpenAI adapter is mapped with pinned `parseChunkUsage` semantics (`ModelUsage.FromOpenAiCounts`: cached/write tokens carved out of the prompt total, totalTokens recomputed, never the provider total); the durable assistant entry records `api`/`provider`/`model` (requested model authoritative, `responseModel` when the provider reports a different one) plus `usage` with tier-aware `cost` from the model catalogue rates (`ModelCostCalculator`, 2x long cache-write rule); `cacheWrite1h`/`reasoning` omitted when absent | `UsageCostEntryTests`, live stub smoke |
 | llama.cpp integration (`/llama`, provider registration, server discovery) | Partial | `extensions/llama/*` | The llama.cpp provider is registered in the runtime with the pinned `LocalServerApiKeyAuth` (local key, no auth required for requests), and `--model llama.cpp/<id> --endpoint <url>` works end to end; the `/llama` extension (server management UI) is not ported | Local-endpoint smoke |
 
 Intentional differences in this area:

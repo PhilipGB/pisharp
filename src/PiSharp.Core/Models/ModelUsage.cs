@@ -7,31 +7,56 @@ namespace PiSharp.Core.Models;
 public sealed record ModelUsage
 {
     /// <summary>Non-cache input tokens.</summary>
-    public int Input { get; init; }
+    public long Input { get; init; }
 
     /// <summary>Output tokens (includes reasoning tokens when the provider splits them).</summary>
-    public int Output { get; init; }
+    public long Output { get; init; }
 
     /// <summary>Prompt-cache read tokens.</summary>
-    public int CacheRead { get; init; }
+    public long CacheRead { get; init; }
 
     /// <summary>Prompt-cache write tokens.</summary>
-    public int CacheWrite { get; init; }
+    public long CacheWrite { get; init; }
 
     /// <summary>Subset of <see cref="CacheWrite"/> written with 1h retention (Anthropic only).</summary>
-    public int? CacheWrite1h { get; init; }
+    public long? CacheWrite1h { get; init; }
 
     /// <summary>Reasoning/thinking tokens when the provider reports them (subset of output).</summary>
-    public int? Reasoning { get; init; }
+    public long? Reasoning { get; init; }
 
-    /// <summary>Total tokens reported by the provider (input + output + cache).</summary>
-    public int TotalTokens { get; init; }
+    /// <summary>Total tokens for the response (input + output + cache).</summary>
+    public long TotalTokens { get; init; }
 
     /// <summary>Cost breakdown in USD.</summary>
     public ModelUsageCost Cost { get; init; } = new();
 
     /// <summary>Zeroed usage (used when a provider reports nothing).</summary>
     public static ModelUsage Empty { get; } = new();
+
+    /// <summary>
+    /// Maps raw openai-completions counts to pinned Usage semantics (pinned parseChunkUsage):
+    /// cached and cache-write counts are carved out of the prompt total (clamped at zero),
+    /// and totalTokens is recomputed as input + output + cacheRead + cacheWrite rather than
+    /// trusting the provider-reported total.
+    /// </summary>
+    public static ModelUsage FromOpenAiCounts(
+        long promptTokens,
+        long cacheReadTokens,
+        long cacheWriteTokens,
+        long outputTokens,
+        long? reasoningTokens)
+    {
+        var input = Math.Max(0, promptTokens - cacheReadTokens - cacheWriteTokens);
+        return new ModelUsage
+        {
+            Input = input,
+            Output = outputTokens,
+            CacheRead = cacheReadTokens,
+            CacheWrite = cacheWriteTokens,
+            Reasoning = reasoningTokens,
+            TotalTokens = input + outputTokens + cacheReadTokens + cacheWriteTokens,
+        };
+    }
 }
 
 /// <summary>USD cost breakdown for a provider response.</summary>

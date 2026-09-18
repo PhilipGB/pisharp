@@ -3,6 +3,7 @@ using System.Text.Json;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using PiSharp.Core;
+using PiSharp.Core.Models;
 
 namespace PiSharp.Cli;
 
@@ -66,7 +67,10 @@ internal static class AgentTurnRunner
                         bootstrap.RetryPolicy,
                         sessions.Document?.IsPiV3 == true
                             ? messageSnapshot => sessions.PersistAssistantMessagesAsync([messageSnapshot], token)
-                            : null);
+                            : null,
+                        // The requested model is fixed for the whole assistant attempt: /model
+                        // only switches between turns, so usage/cost can be attributed to one model.
+                        bootstrap.ModelState.Current?.Model);
                     if (sessions.IsPersistent && sessions.Document?.IsPiV3 == true && !execution.Cancelled)
                     {
                         // Post-run check: the response's provider usage may have exceeded the
@@ -107,14 +111,15 @@ internal static class AgentTurnRunner
         CancellationToken cancellationToken,
         IReadOnlyList<AIContent>? contents,
         RetryPolicyOptions retryPolicy,
-        Func<JsonElement, Task>? persistMessage)
+        Func<JsonElement, Task>? persistMessage,
+        ModelInfo? requestedModel)
     {
         var response = new StringBuilder();
         output.AssistantMessageStarted();
         var toolNames = new Dictionary<string, string>(StringComparer.Ordinal);
         var toolArguments = new Dictionary<string, string>(StringComparer.Ordinal);
         var toolRecords = new Dictionary<string, ToolExecutionRecord>(StringComparer.Ordinal);
-        var assembler = new DurableMessageAssembler(persistMessage, toolNames);
+        var assembler = new DurableMessageAssembler(persistMessage, toolNames, requestedModel);
         var retryNumber = 0;
         while (true)
         {
@@ -284,17 +289,20 @@ internal static class AgentTurnRunner
 
     private sealed class DurableMessageAssembler(
         Func<JsonElement, Task>? persistMessage,
-        IReadOnlyDictionary<string, string> toolNames)
+        IReadOnlyDictionary<string, string> toolNames,
+        ModelInfo? requestedModel)
     {
         private readonly List<JsonElement> _messages = [];
         private readonly List<JsonElement> _content = [];
         private readonly Dictionary<string, int> _toolCallIndexes = new(StringComparer.Ordinal);
         private readonly IReadOnlyDictionary<string, string> _toolNames = toolNames;
+        private readonly ModelInfo? _requestedModel = requestedModel;
         private string? _messageId;
         private string? _responseId;
         private string? _modelId;
         private ChatFinishReason? _finishReason;
         private DateTimeOffset? _createdAt;
+        private UsageDetails? _usage;
 
         public IReadOnlyList<JsonElement> Messages => _messages;
 
@@ -352,10 +360,105 @@ internal static class AgentTurnRunner
                 ["timestamp"] = (_createdAt ?? DateTimeOffset.UtcNow).ToUnixTimeMilliseconds(),
             };
             AddIfPresent(message, "responseId", _responseId);
-            AddIfPresent(message, "model", _modelId);
+            AddModelMetadata(message);
             AddIfPresent(message, "stopReason", _finishReason?.ToString()?.ToLowerInvariant());
+            if (_usage is { } usage)
+            {
+                message["usage"] = CreateUsageElement(usage);
+            }
             await AddMessageAsync(JsonSerializer.SerializeToElement(message), cancellationToken);
             ResetCurrent();
+        }
+
+        /// <summary>
+        /// Pinned assistant entry shape: the requested model is authoritative, and the
+        /// provider-reported model is kept separately (responseModel) only when it differs.
+        /// Without a requested model (non-persistent test agents) the reported model is kept.
+        /// </summary>
+        private void AddModelMetadata(IDictionary<string, object?> message)
+        {
+            if (_requestedModel is not { } requested)
+            {
+                AddIfPresent(message, "model", _modelId);
+                return;
+            }
+
+            message["api"] = requested.Api;
+            message["provider"] = requested.Provider;
+            message["model"] = requested.Id;
+            if (_modelId is { Length: > 0 } concrete &&
+                !string.Equals(concrete, requested.Id, StringComparison.Ordinal))
+            {
+                message["responseModel"] = concrete;
+            }
+        }
+
+        /// <summary>
+        /// Serializes usage in the pinned Usage shape (input/output/cacheRead/cacheWrite/
+        /// cacheWrite1h?/reasoning?/totalTokens/cost), with costs computed from the requested
+        /// model's catalogue rates when one is known.
+        /// </summary>
+        private JsonElement CreateUsageElement(UsageDetails details)
+        {
+            var mapped = ModelUsage.FromOpenAiCounts(
+                details.InputTokenCount ?? 0,
+                details.CachedInputTokenCount ?? 0,
+                CacheWriteCount(details),
+                details.OutputTokenCount ?? 0,
+                details.ReasoningTokenCount);
+            if (_requestedModel is { } model)
+            {
+                mapped = ModelCostCalculator.WithCost(mapped, model);
+            }
+
+            // Pinned Usage shape: cacheWrite1h and reasoning are optional and omitted when
+            // absent; field order mirrors the pinned Usage record.
+            var usage = new Dictionary<string, object?>
+            {
+                ["input"] = mapped.Input,
+                ["output"] = mapped.Output,
+                ["cacheRead"] = mapped.CacheRead,
+                ["cacheWrite"] = mapped.CacheWrite,
+            };
+            if (mapped.CacheWrite1h is { } cacheWrite1h)
+            {
+                usage["cacheWrite1h"] = cacheWrite1h;
+            }
+            if (mapped.Reasoning is { } reasoning)
+            {
+                usage["reasoning"] = reasoning;
+            }
+            usage["totalTokens"] = mapped.TotalTokens;
+            usage["cost"] = new Dictionary<string, object?>
+            {
+                ["input"] = mapped.Cost.Input,
+                ["output"] = mapped.Cost.Output,
+                ["cacheRead"] = mapped.Cost.CacheRead,
+                ["cacheWrite"] = mapped.Cost.CacheWrite,
+                ["total"] = mapped.Cost.Total,
+            };
+            return JsonSerializer.SerializeToElement(usage);
+        }
+
+        /// <summary>
+        /// Cache-write tokens when the adapter exposes them. The OpenAI adapter does not map
+        /// prompt_tokens_details.cache_write_tokens today, so this stays zero for built-in
+        /// providers (only OpenRouter-style gateways emit that field).
+        /// </summary>
+        private static long CacheWriteCount(UsageDetails details)
+        {
+            if (details.AdditionalCounts is not { } counts)
+            {
+                return 0;
+            }
+            foreach (var (key, value) in counts)
+            {
+                if (string.Equals(key, "cache_write_tokens", StringComparison.OrdinalIgnoreCase))
+                {
+                    return value;
+                }
+            }
+            return 0;
         }
 
         private void ResetCurrent()
@@ -367,6 +470,7 @@ internal static class AgentTurnRunner
             _modelId = null;
             _finishReason = null;
             _createdAt = null;
+            _usage = null;
         }
 
         private void CaptureMetadata(AgentResponseUpdate update)
@@ -376,6 +480,9 @@ internal static class AgentTurnRunner
             _modelId = GetModelId(update) ?? _modelId;
             _finishReason = update.FinishReason ?? _finishReason;
             _createdAt ??= update.CreatedAt;
+            // The OpenAI adapter surfaces token usage as a UsageContent item (usually on the
+            // final update); the last one wins if a provider repeats it.
+            _usage = update.Contents.OfType<UsageContent>().LastOrDefault()?.Details ?? _usage;
         }
 
         private void AppendContent(AIContent content)
