@@ -273,7 +273,7 @@ public static class ProviderComposer
             Name = config?.Name ?? base_?.Name ?? providerId,
             BaseUrl = config?.BaseUrl ?? base_?.BaseUrl,
             Headers = base_?.Headers,
-            Auth = new ProviderAuth { ApiKey = apiKey, OAuth = oauth },
+            Auth = new ProviderAuth(apiKey, oauth),
             GetModels = getModels,
             RefreshModelsAsync = base_?.RefreshModelsAsync,
             FilterModels = base_?.FilterModels,

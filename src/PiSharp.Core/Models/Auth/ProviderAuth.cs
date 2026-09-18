@@ -157,19 +157,25 @@ public abstract class OAuthAuth
 /// <summary>
 /// Provider auth: at least one of ApiKey/OAuth. Every provider has auth semantics —
 /// even ambient-only and keyless local providers provide ApiKey auth whose resolution
-/// reports whether the provider is configured (pinned pi-ai: ProviderAuth).
+/// reports whether the provider is configured (pinned pi-ai: ProviderAuth). The
+/// invariant is enforced in the constructor: a parameterless constructor with
+/// object-initializer assignment would validate before the initializers run, which is
+/// why the methods are constructor parameters rather than init properties.
 /// </summary>
 public sealed class ProviderAuth
 {
-    public ApiKeyAuth? ApiKey { get; init; }
-    public OAuthAuth? OAuth { get; init; }
+    public ApiKeyAuth? ApiKey { get; }
+    public OAuthAuth? OAuth { get; }
 
-    /// <summary>Creates a provider auth; at least one method must be present.</summary>
-    public ProviderAuth()
+    /// <summary>Creates a provider auth; at least one of apiKey/oauth must be present.</summary>
+    public ProviderAuth(ApiKeyAuth? apiKey, OAuthAuth? oauth = null)
     {
-        if (ApiKey is null && OAuth is null)
+        if (apiKey is null && oauth is null)
         {
-            throw new ArgumentException("A provider must declare at least one of ApiKey/OAuth auth.", nameof(ApiKey));
+            throw new ArgumentException("A provider must declare at least one of ApiKey/OAuth auth.", nameof(apiKey));
         }
+
+        ApiKey = apiKey;
+        OAuth = oauth;
     }
 }

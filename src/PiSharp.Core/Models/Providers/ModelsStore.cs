@@ -236,7 +236,10 @@ internal static class CrossProcessFileLock
             cancellationToken.ThrowIfCancellationRequested();
             try
             {
-                var stream = new FileStream(lockPath, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+                // OpenOrCreate: FileMode.Open throws FileNotFoundException when the lock
+                // file does not exist yet (first write), which the retry loop would
+                // mistake for contention until the deadline.
+                var stream = new FileStream(lockPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
                 return new LockRelease(lockPath, stream);
             }
             catch (IOException)

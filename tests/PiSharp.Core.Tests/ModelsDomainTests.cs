@@ -28,10 +28,25 @@ public class ModelsDomainTests
     }
 
     [Fact]
-    public void SupportedLevels_Reasoning_DefaultSet()
+    public void SupportedLevels_Reasoning_NoMap_BaseLevelsPlusOff()
     {
+        // Pinned Pi (models.ts getSupportedThinkingLevels): for a reasoning model
+        // every canonical level stays, EXCEPT xhigh/max, which require an explicit
+        // non-null thinkingLevelMap entry to be advertised at all:
+        //   if (level === "xhigh" || level === "max") return mapped !== undefined;
         var levels = ThinkingLevelSupport.GetSupportedLevels(Model("m", true));
-        Assert.Equal(new[] { "minimal", "low", "medium", "high" }, levels);
+        Assert.Equal(new[] { "off", "minimal", "low", "medium", "high" }, levels);
+    }
+
+    [Fact]
+    public void SupportedLevels_Reasoning_FullMap_AdvertisesXhighAndMax()
+    {
+        var model = Model("m", true, new Dictionary<string, string?>
+        {
+            ["xhigh"] = "xhigh",
+            ["max"] = "max",
+        });
+        Assert.Equal(ThinkingLevel.All, ThinkingLevelSupport.GetSupportedLevels(model));
     }
 
     [Fact]
@@ -53,13 +68,35 @@ public class ModelsDomainTests
     }
 
     [Fact]
-    public void Clamp_PicksNearestSupported()
+    public void Clamp_UpwardFirstThenDownward()
     {
-        var model = Model("m", true, new Dictionary<string, string?> { ["high"] = null, ["medium"] = "med" });
-        // high unsupported -> nearest lower is medium
-        Assert.Equal("medium", ThinkingLevelSupport.Clamp(model, "high"));
-        // minimal unsupported (only off/minimal? no: off+low+medium supported) -> low
-        Assert.Equal("low", ThinkingLevelSupport.Clamp(model, "minimal"));
+        // Pinned Pi (clampThinkingLevel): return the requested level when supported;
+        // otherwise scan UPWARD from the requested index through the canonical order,
+        // then downward. This is not nearest-distance semantics.
+
+        // requested minimal, minimal removed -> scan up -> low
+        var minimalGone = Model("m", true, new Dictionary<string, string?> { ["minimal"] = null });
+        Assert.Equal("low", ThinkingLevelSupport.Clamp(minimalGone, "minimal"));
+
+        // requested high, only low available -> scan up (none), then down -> low
+        var onlyLow = Model("m", true, new Dictionary<string, string?>
+        {
+            ["off"] = null,
+            ["minimal"] = null,
+            ["medium"] = null,
+            ["high"] = null,
+        });
+        Assert.Equal("low", ThinkingLevelSupport.Clamp(onlyLow, "high"));
+
+        // requested xhigh, only max mapped -> scan up -> max
+        var onlyMax = Model("m", true, new Dictionary<string, string?> { ["max"] = "max" });
+        Assert.Equal("max", ThinkingLevelSupport.Clamp(onlyMax, "xhigh"));
+
+        // requested level already supported -> unchanged
+        Assert.Equal("medium", ThinkingLevelSupport.Clamp(Model("m", true), "medium"));
+
+        // non-reasoning model -> only off is available
+        Assert.Equal("off", ThinkingLevelSupport.Clamp(Model("m", false), "high"));
     }
 
     [Fact]
@@ -166,10 +203,67 @@ public class ModelsDomainTests
     }
 
     [Fact]
-    public void ConfigValue_Command_FailureIsUncached()
+    public void ConfigValue_Command_CachedPathExecutesOnce()
     {
+        // Cross-platform: the command body after '!' runs through the platform shell
+        // (sh -c on Unix, cmd /C on Windows); 'echo a >> "path"' works in both.
+        using var temp = TempDirectory.Create();
+        var countPath = Path.Combine(temp.Path, "count");
         ConfigValue.ClearCache();
-        Assert.Null(ConfigValue.Resolve("!exit 3", null));
+        // Append to the file (execution marker) and echo to stdout (the value).
+        var command = BuildMarkerEchoCommand(countPath);
+        Assert.Equal("a", ConfigValue.Resolve(command, null));
+        // Pinned Pi caches command results (including the value) for process lifetime:
+        // the second resolve must not re-execute.
+        Assert.Equal("a", ConfigValue.Resolve(command, null));
+        Assert.Single(File.ReadAllLines(countPath));
+    }
+
+    [Fact]
+    public void ConfigValue_Command_UncachedPathExecutesEachTime()
+    {
+        using var temp = TempDirectory.Create();
+        var countPath = Path.Combine(temp.Path, "count");
+        ConfigValue.ClearCache();
+        var command = BuildMarkerEchoCommand(countPath);
+        Assert.Equal("a", ConfigValue.ResolveUncached(command, null));
+        Assert.Equal("a", ConfigValue.ResolveUncached(command, null));
+        Assert.Equal(2, File.ReadAllLines(countPath).Length);
+    }
+
+    [Fact]
+    public void ConfigValue_Command_FailureIsNullAndCached()
+    {
+        using var temp = TempDirectory.Create();
+        var countPath = Path.Combine(temp.Path, "count");
+        ConfigValue.ClearCache();
+        // ';' separates in sh, '&' in cmd; the marker append runs before the failure.
+        var separator = OperatingSystem.IsWindows() ? "&" : ";";
+        var command = $"!echo a >> \"{countPath}\" {separator} exit 3";
+        // Non-zero exit -> null (pinned Pi: status !== 0 -> undefined).
+        Assert.Null(ConfigValue.Resolve(command, null));
+        // Pinned Pi caches failures too: the second resolve must not re-execute.
+        Assert.Null(ConfigValue.Resolve(command, null));
+        Assert.Single(File.ReadAllLines(countPath));
+    }
+
+    [Fact]
+    public void ConfigValue_Command_BlankStdoutIsNull()
+    {
+        // Cross-platform no-op with empty stdout (sh: true, cmd: exit 0).
+        ConfigValue.ClearCache();
+        var command = OperatingSystem.IsWindows() ? "!exit 0" : "!true";
+        Assert.Null(ConfigValue.Resolve(command, null));
+    }
+
+    /// <summary>
+    /// Cross-platform "append marker line, then echo the value" command:
+    /// 'echo a &gt;&gt; "path"; echo a' (sh) / 'echo a &gt;&gt; "path" &amp; echo a' (cmd).
+    /// </summary>
+    private static string BuildMarkerEchoCommand(string countPath)
+    {
+        var separator = OperatingSystem.IsWindows() ? "&" : ";";
+        return $"!echo a >> \"{countPath}\" {separator} echo a";
     }
 
     [Fact]

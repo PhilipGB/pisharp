@@ -25,10 +25,10 @@ public class ModelsProviderTests
         Id = id,
         Name = id,
         BaseUrl = "http://localhost",
-        Auth = new ProviderAuth
-        {
-            ApiKey = new EnvApiKeyAuth { Name = "k", EnvironmentVariableNames = [id.ToUpperInvariant() + "_KEY"] },
-        },
+        // Pinned Pi: every provider declares auth; the default double is a minimal
+        // ambient api-key strategy whose behavior tests can replace.
+        Auth = new ProviderAuth(
+            new EnvApiKeyAuth { Name = "k", EnvironmentVariableNames = [id.ToUpperInvariant() + "_KEY"] }),
         GetModels = () => models,
         DefaultApi = "openai-completions",
     };
@@ -93,14 +93,54 @@ public class ModelsProviderTests
     }
 
     [Fact]
-    public async Task Composer_StructuralErrors_Throw()
+    public async Task Composer_BaseUrlOnly_ComposesAmbientApiKeyAuth()
     {
-        var noAuth = await ConfigFromJsonAsync("""
+        // Pinned Pi (provider-composer.ts composeApiKeyAuth): a provider with models/
+        // baseUrl but no explicit key is NOT auth-less. It receives a fabricated
+        // api-key auth whose resolution reports unconfigured until a key is stored or
+        // entered via the login prompt.
+        var config = await ConfigFromJsonAsync("""
         { "providers": { "p": { "baseUrl": "http://x" } } }
         """);
-        Assert.Throws<InvalidOperationException>(() => ProviderComposer.ComposeModelProvider("p", null, noAuth))
-            .Message.Should_Contain("no authentication method configured");
+        var provider = ProviderComposer.ComposeModelProvider("p", null, config);
+        Assert.NotNull(provider.Auth.ApiKey);
+        Assert.Null(provider.Auth.OAuth);
+        Assert.NotNull(provider.Auth.ApiKey!.Login);
 
+        var check = await provider.Auth.ApiKey.Check!(new ApiKeyAuthInput
+        {
+            Context = AmbientContext(),
+            CancellationToken = CancellationToken.None,
+        });
+        Assert.Null(check);
+    }
+
+    [Fact]
+    public async Task Composer_OAuthOnly_Base_NoFabricatedApiKey()
+    {
+        // Pinned Pi: "OAuth-only providers get no fabricated API-key login method."
+        var base_ = new ProviderSpec
+        {
+            Id = "p",
+            Name = "P",
+            BaseUrl = "http://p",
+            Auth = new ProviderAuth(null, new StubOAuth { Name = "p oauth" }),
+            GetModels = () => [Model("p", "m1")],
+            DefaultApi = "openai-completions",
+        };
+        var config = await ConfigFromJsonAsync("""
+        { "providers": { "p": { "baseUrl": "http://overlay" } } }
+        """);
+        var provider = ProviderComposer.ComposeModelProvider("p", base_, config);
+        Assert.Null(provider.Auth.ApiKey);
+        Assert.NotNull(provider.Auth.OAuth);
+    }
+
+    [Fact]
+    public async Task Composer_StructuralErrors_Throw()
+    {
+        // A model with no resolvable api (model level, provider level, or base) is a
+        // structural error surfaced eagerly at composition (pinned Pi: modelFromJson).
         var noModelApi = await ConfigFromJsonAsync("""
         {
           "providers": {
@@ -116,8 +156,10 @@ public class ModelsProviderTests
     }
 
     [Fact]
-    public async Task Composer_AuthHeader_AddsAuthorization()
+    public async Task Composer_AuthHeader_AddsAuthorizationToResolvedAuth()
     {
+        // Pinned Pi: authHeader is applied to the resolved request auth (withConfiguredAuth),
+        // not to the provider's static headers.
         var config = await ConfigFromJsonAsync("""
         {
           "providers": {
@@ -131,8 +173,39 @@ public class ModelsProviderTests
         }
         """);
         var provider = ProviderComposer.ComposeModelProvider("p", null, config);
-        var headers = provider.Headers ?? throw new Xunit.Sdk.XunitException("no headers");
-        Assert.Contains(headers, kv => kv.Key == "Authorization");
+        Assert.Null(provider.Headers);
+
+        var result = await provider.Auth.ApiKey!.ResolveAsync(new ApiKeyAuthInput
+        {
+            Context = AmbientContext(),
+            CancellationToken = CancellationToken.None,
+        });
+        Assert.NotNull(result);
+        Assert.Equal("sk-1", result!.Auth.ApiKey);
+        Assert.Equal("Bearer sk-1", result.Auth.Headers!["Authorization"]);
+    }
+
+    private static AuthContext AmbientContext() => new()
+    {
+        Env = _ => Task.FromResult<string?>(null),
+        FileExists = _ => Task.FromResult(false),
+    };
+
+    private sealed class StubOAuth : OAuthAuth
+    {
+        public StubOAuth()
+        {
+            Name = "stub";
+        }
+
+        public override Task<OAuthCredential> LoginAsync(IAuthInteraction interaction)
+            => throw new NotSupportedException();
+
+        public override Task<OAuthCredential> RefreshAsync(OAuthCredential credential, CancellationToken cancellationToken)
+            => Task.FromResult(credential);
+
+        public override Task<ModelAuth> ToAuthAsync(OAuthCredential credential)
+            => Task.FromResult(new ModelAuth { ApiKey = credential.Access });
     }
 
     // ── ModelsStoreJson / FileModelsStore ────────────────────────────────

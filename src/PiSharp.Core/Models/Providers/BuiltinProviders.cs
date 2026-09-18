@@ -60,7 +60,7 @@ public static class BuiltinProviders
             Id = LlamaCppProviderId,
             Name = "llama.cpp",
             BaseUrl = endpoint,
-            Auth = new ProviderAuth { ApiKey = new LocalServerApiKeyAuth { Name = "llama.cpp (local)" } },
+            Auth = new ProviderAuth(new LocalServerApiKeyAuth { Name = "llama.cpp (local)" }),
             GetModels = () => [model],
             DefaultApi = ModelApi.OpenAiCompletions,
         };
@@ -71,15 +71,12 @@ public static class BuiltinProviders
         Id = "openai",
         Name = "OpenAI",
         BaseUrl = "https://api.openai.com/v1",
-        Auth = new ProviderAuth
+        Auth = new ProviderAuth(new EnvApiKeyAuth
         {
-            ApiKey = new EnvApiKeyAuth
-            {
-                Name = "OpenAI API key",
-                EnvironmentVariableNames = ["OPENAI_API_KEY"],
-                LoginMessage = "Enter OpenAI API key",
-            },
-        },
+            Name = "OpenAI API key",
+            EnvironmentVariableNames = ["OPENAI_API_KEY"],
+            LoginMessage = "Enter OpenAI API key",
+        }),
         GetModels = () =>
         [
             Model(
@@ -99,17 +96,15 @@ public static class BuiltinProviders
         Id = "anthropic",
         Name = "Anthropic",
         BaseUrl = "https://api.anthropic.com",
-        Auth = new ProviderAuth
-        {
-            ApiKey = new EnvApiKeyAuth
+        Auth = new ProviderAuth(
+            new EnvApiKeyAuth
             {
                 Name = "Anthropic API key",
                 EnvironmentVariableNames = ["ANTHROPIC_OAUTH_TOKEN", "ANTHROPIC_API_KEY"],
                 BearerTokenEnvironmentVariable = "ANTHROPIC_AUTH_TOKEN",
                 LoginMessage = "Enter Anthropic API key",
             },
-            OAuth = new AnthropicOAuth { Name = "Anthropic (Claude Pro/Max)", IsSubscription = true },
-        },
+            new AnthropicOAuth { Name = "Anthropic (Claude Pro/Max)", IsSubscription = true }),
         GetModels = () =>
         [
             Model(
@@ -129,16 +124,14 @@ public static class BuiltinProviders
         Id = "openrouter",
         Name = "OpenRouter",
         BaseUrl = "https://openrouter.ai/api/v1",
-        Auth = new ProviderAuth
-        {
-            ApiKey = new EnvApiKeyAuth
+        Auth = new ProviderAuth(
+            new EnvApiKeyAuth
             {
                 Name = "OpenRouter API key",
                 EnvironmentVariableNames = ["OPENROUTER_API_KEY"],
                 LoginMessage = "Enter OpenRouter API key",
             },
-            OAuth = new OpenRouterOAuth { Name = "OpenRouter" },
-        },
+            new OpenRouterOAuth { Name = "OpenRouter" }),
         GetModels = () =>
         [
             Model(
@@ -159,15 +152,12 @@ public static class BuiltinProviders
         Id = "google",
         Name = "Google",
         BaseUrl = "https://generativelanguage.googleapis.com/v1beta",
-        Auth = new ProviderAuth
+        Auth = new ProviderAuth(new EnvApiKeyAuth
         {
-            ApiKey = new EnvApiKeyAuth
-            {
-                Name = "Google API key",
-                EnvironmentVariableNames = ["GEMINI_API_KEY"],
-                LoginMessage = "Enter Google API key",
-            },
-        },
+            Name = "Google API key",
+            EnvironmentVariableNames = ["GEMINI_API_KEY"],
+            LoginMessage = "Enter Google API key",
+        }),
         GetModels = () =>
         [
             Model(

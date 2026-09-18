@@ -96,13 +96,44 @@ public static class DeviceCodePoller
         }
 
         var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        using var timer = new System.Threading.Timer(
-            _ => tcs.TrySetResult(),
-            null,
-            ms,
-            Timeout.Infinite);
-        using var registration = signal.Register(
-            () => tcs.TrySetException(new InvalidOperationException(cancelMessage)));
+        // The timer must outlive this method: a using-scoped Timer is disposed the
+        // moment the method returns, before its due time, so the sleep could never
+        // complete. Whichever side (timer or cancellation) completes the TCS disposes
+        // the timer; the continuation releases the registration and is a no-op for
+        // the already-disposed timer (Timer.Dispose is idempotent).
+        System.Threading.Timer? timer = null;
+        timer = new System.Threading.Timer(_ =>
+        {
+            if (tcs.TrySetResult())
+            {
+                timer?.Dispose();
+            }
+        }, null, ms, Timeout.Infinite);
+
+        CancellationTokenRegistration registration = default;
+        if (signal.CanBeCanceled)
+        {
+            registration = signal.Register(
+                () =>
+                {
+                    if (tcs.TrySetException(new InvalidOperationException(cancelMessage)))
+                    {
+                        timer?.Dispose();
+                    }
+                },
+                useSynchronizationContext: false);
+        }
+
+        tcs.Task.ContinueWith(
+            _ =>
+            {
+                registration.Dispose();
+                timer?.Dispose();
+            },
+            CancellationToken.None,
+            TaskContinuationOptions.ExecuteSynchronously,
+            TaskScheduler.Default);
+
         return tcs.Task;
     }
 }

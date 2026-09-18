@@ -62,23 +62,35 @@ public class ModelsRuntimeTests
     private static async Task<ModelRuntime> CreateRuntimeAsync(
         InMemoryCredentialStore store, string? modelsJson = null)
     {
+        // The temp directory must outlive ModelRuntime.CreateAsync: a block-scoped
+        // "using var" inside the if below used to delete the fixture before the
+        // runtime even read it ("Failed to load models.json: Could not find a part
+        // of the path"). Hoist it to method scope and dispose in a finally.
+        var temp = modelsJson is null ? null : TempDirectory.Create();
         string? modelsPath = null;
         if (modelsJson is not null)
         {
-            using var temp = TempDirectory.Create();
-            modelsPath = Path.Combine(temp.Path, "models.json");
+            modelsPath = Path.Combine(temp!.Path, "models.json");
             File.WriteAllText(modelsPath, modelsJson);
+            Assert.True(File.Exists(modelsPath));
         }
 
-        return await ModelRuntime.CreateAsync(new CreateModelRuntimeOptions
+        try
         {
-            Credentials = store,
-            ModelsPath = modelsPath,
-            ModelsStore = new InMemoryModelsStore(),
-            Builtins = [],
-            NetworkEnabled = false,
-            RefreshOnCreate = true,
-        });
+            return await ModelRuntime.CreateAsync(new CreateModelRuntimeOptions
+            {
+                Credentials = store,
+                ModelsPath = modelsPath,
+                ModelsStore = new InMemoryModelsStore(),
+                Builtins = [],
+                NetworkEnabled = false,
+                RefreshOnCreate = true,
+            });
+        }
+        finally
+        {
+            temp?.Dispose();
+        }
     }
 
     [Fact]
@@ -90,7 +102,7 @@ public class ModelsRuntimeTests
             Id = "local",
             Name = "Local",
             BaseUrl = "http://localhost",
-            Auth = new ProviderAuth { ApiKey = new PromptingAuth("LOCAL_KEY_XYZ") { Name = "LOCAL_KEY_XYZ key" } },
+            Auth = new ProviderAuth(new PromptingAuth("LOCAL_KEY_XYZ") { Name = "LOCAL_KEY_XYZ key" }),
             GetModels = () => new[] { Model("local", "local-1") },
             DefaultApi = "openai-completions",
         });
@@ -133,7 +145,7 @@ public class ModelsRuntimeTests
             Id = "p",
             Name = "P",
             BaseUrl = "http://p",
-            Auth = new ProviderAuth { ApiKey = new PromptingAuth("P_KEY_XYZ") { Name = "P_KEY_XYZ key" } },
+            Auth = new ProviderAuth(new PromptingAuth("P_KEY_XYZ") { Name = "P_KEY_XYZ key" }),
             GetModels = () => new[] { Model("p", "m") },
             DefaultApi = "openai-completions",
         });
@@ -160,14 +172,11 @@ public class ModelsRuntimeTests
             Id = "p",
             Name = "P",
             BaseUrl = "http://p",
-            Auth = new ProviderAuth
+            Auth = new ProviderAuth(new PromptingAuth("P_KEY_XYZ")
             {
-                ApiKey = new PromptingAuth("P_KEY_XYZ")
-                {
-                    Name = "P_KEY_XYZ key",
-                    Login = interaction => Task.FromResult(new ApiKeyCredential("stored-login")),
-                },
-            },
+                Name = "P_KEY_XYZ key",
+                Login = interaction => Task.FromResult(new ApiKeyCredential("stored-login")),
+            }),
             GetModels = () => new[] { Model("p", "m") },
             DefaultApi = "openai-completions",
         });
@@ -193,7 +202,7 @@ public class ModelsRuntimeTests
             Id = "p",
             Name = "P",
             BaseUrl = "http://p",
-            Auth = new ProviderAuth { ApiKey = new PromptingAuth("P_KEY_XYZ") { Name = "P_KEY_XYZ key" } },
+            Auth = new ProviderAuth(new PromptingAuth("P_KEY_XYZ") { Name = "P_KEY_XYZ key" }),
             GetModels = () => new[] { Model("p", "m") },
             DefaultApi = "openai-completions",
         });
@@ -210,7 +219,7 @@ public class ModelsRuntimeTests
             Id = "a",
             Name = "A",
             BaseUrl = "http://a",
-            Auth = new ProviderAuth { ApiKey = new PromptingAuth("A_KEY_XYZ") { Name = "A_KEY_XYZ key" } },
+            Auth = new ProviderAuth(new PromptingAuth("A_KEY_XYZ") { Name = "A_KEY_XYZ key" }),
             GetModels = () => new[] { Model("a", "m") },
             DefaultApi = "openai-completions",
         });
@@ -219,7 +228,7 @@ public class ModelsRuntimeTests
             Id = "b",
             Name = "B",
             BaseUrl = "http://b",
-            Auth = new ProviderAuth { ApiKey = new PromptingAuth("B_KEY_XYZ") { Name = "B_KEY_XYZ key" } },
+            Auth = new ProviderAuth(new PromptingAuth("B_KEY_XYZ") { Name = "B_KEY_XYZ key" }),
             GetModels = () => new[] { Model("b", "m") },
             DefaultApi = "openai-completions",
         });
@@ -245,7 +254,7 @@ public class ModelsRuntimeTests
             Id = "p",
             Name = "P",
             BaseUrl = "http://p",
-            Auth = new ProviderAuth { ApiKey = new PromptingAuth("P_KEY_XYZ") { Name = "P_KEY_XYZ key" } },
+            Auth = new ProviderAuth(new PromptingAuth("P_KEY_XYZ") { Name = "P_KEY_XYZ key" }),
             GetModels = () => new[] { model },
             DefaultApi = "openai-completions",
         });
@@ -254,6 +263,65 @@ public class ModelsRuntimeTests
         var auth = await runtime.GetAuthAsync(model);
         Assert.Equal("key", auth!.Auth.ApiKey);
         Assert.Equal("1", auth.Auth.Headers!["X-Extra"]);
+    }
+
+    [Fact]
+    public async Task Runtime_AuthPrecedence_Runtime_Stored_Configured_Env()
+    {
+        // Pinned Pi resolution order (auth/resolve.ts resolveProviderAuth +
+        // provider-composer.ts composeApiKeyAuth): runtime override (credential
+        // overlay) > stored credential > models.json configured key > ambient env.
+        const string envName = "PISHARP_PRECEDENCE_ENV_XYZ";
+        var previousEnv = Environment.GetEnvironmentVariable(envName);
+        Environment.SetEnvironmentVariable(envName, "env-1");
+        try
+        {
+            var store = new InMemoryCredentialStore();
+            await store.ModifyAsync("full", _ => Task.FromResult<Credential?>(new ApiKeyCredential("stored-1")));
+            using var temp = TempDirectory.Create();
+            var modelsPath = Path.Combine(temp.Path, "models.json");
+            File.WriteAllText(modelsPath, """
+            { "providers": { "full": { "baseUrl": "http://full:1", "apiKey": "sk-cfg", "models": [ { "id": "m", "api": "openai-completions" } ] } } }
+            """);
+            var runtime = await ModelRuntime.CreateAsync(new CreateModelRuntimeOptions
+            {
+                Credentials = store,
+                ModelsPath = modelsPath,
+                ModelsStore = new InMemoryModelsStore(),
+                Builtins = [],
+                NetworkEnabled = false,
+                RefreshOnCreate = true,
+            });
+
+            await runtime.SetRuntimeApiKeyAsync("full", "runtime-1");
+            Assert.Equal("runtime-1", (await runtime.GetAuthAsync("full"))!.Auth.ApiKey);
+            Assert.Equal("runtime", runtime.GetProviderAuthStatus("full").Source);
+
+            await runtime.RemoveRuntimeApiKeyAsync("full");
+            Assert.Equal("stored-1", (await runtime.GetAuthAsync("full"))!.Auth.ApiKey);
+            Assert.Equal("stored", runtime.GetProviderAuthStatus("full").Source);
+
+            await runtime.LogoutAsync("full");
+            Assert.Equal("sk-cfg", (await runtime.GetAuthAsync("full"))!.Auth.ApiKey);
+            Assert.Equal("models_json_key", runtime.GetProviderAuthStatus("full").Source);
+
+            // Ambient fallback: a provider with no stored/configured key resolves
+            // from the environment through its api-key auth strategy.
+            runtime.RegisterProvider(new ProviderSpec
+            {
+                Id = "ambient",
+                Name = "A",
+                BaseUrl = "http://a",
+                Auth = new ProviderAuth(new EnvApiKeyAuth { Name = "a", EnvironmentVariableNames = [envName] }),
+                GetModels = () => [Model("ambient", "m")],
+                DefaultApi = "openai-completions",
+            });
+            Assert.Equal("env-1", (await runtime.GetAuthAsync("ambient"))!.Auth.ApiKey);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(envName, previousEnv);
+        }
     }
 
     [Fact]
@@ -271,8 +339,10 @@ public class ModelsRuntimeTests
     {
         using var temp = TempDirectory.Create();
         var path = Path.Combine(temp.Path, "models.json");
+        // baseUrl is required: pinned Pi's modelFromJson throws for custom models
+        // without a resolvable baseUrl, and such a provider would not compose.
         File.WriteAllText(path, """
-        { "providers": { "one": { "apiKey": "sk-1", "models": [ { "id": "m1", "api": "openai-completions" } ] } } }
+        { "providers": { "one": { "baseUrl": "http://one:1", "apiKey": "sk-1", "models": [ { "id": "m1", "api": "openai-completions" } ] } } }
         """);
         var store = new InMemoryCredentialStore();
         var runtime = await ModelRuntime.CreateAsync(new CreateModelRuntimeOptions
@@ -287,7 +357,7 @@ public class ModelsRuntimeTests
         Assert.NotNull(runtime.GetModel("one", "m1"));
 
         File.WriteAllText(path, """
-        { "providers": { "two": { "apiKey": "sk-2", "models": [ { "id": "m2", "api": "openai-completions" } ] } } }
+        { "providers": { "two": { "baseUrl": "http://two:1", "apiKey": "sk-2", "models": [ { "id": "m2", "api": "openai-completions" } ] } } }
         """);
         await runtime.RefreshAsync();
         Assert.NotNull(runtime.GetModel("two", "m2"));

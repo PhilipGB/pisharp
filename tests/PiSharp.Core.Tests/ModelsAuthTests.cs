@@ -1,3 +1,4 @@
+using PiSharp.Core.Models;
 using PiSharp.Core.Models.Auth;
 using PiSharp.Core.Models.OAuth;
 
@@ -106,11 +107,22 @@ public class ModelsAuthTests
         public FakeProvider(string id, ApiKeyAuth apiKey, OAuthAuth? oauth = null)
         {
             Id = id;
-            Auth = new ProviderAuth { ApiKey = apiKey, OAuth = oauth };
+            // The invariant is Pi's: every provider declares at least one auth method,
+            // so test providers always carry a real (overridable) ApiKey strategy.
+            Auth = new ProviderAuth(apiKey, oauth);
         }
 
         public string Id { get; }
         public ProviderAuth Auth { get; }
+    }
+
+    [Fact]
+    public void ProviderAuth_WithoutApiKeyAndOAuth_IsRejected()
+    {
+        // Pinned Pi (packages/ai/src/models.ts): Provider.auth is required and must
+        // contain at least one of apiKey/oauth, including keyless local providers.
+        var ex = Assert.Throws<ArgumentException>(() => new ProviderAuth(null, null));
+        Assert.Contains("at least one of ApiKey/OAuth", ex.Message);
     }
 
     [Fact]
@@ -125,7 +137,11 @@ public class ModelsAuthTests
             new AuthResolutionOverrides { ApiKey = "override" },
             CancellationToken.None);
         Assert.Equal("override", result!.Auth.ApiKey);
-        Assert.Equal("explicit", result.Source);
+        // Pinned Pi (auth/resolve.ts): the override is resolved through the provider's
+        // own apiKey.resolve as a credential, so the reported source is what that
+        // implementation reports ("stored credential" for envApiKeyAuth), not a
+        // special "explicit" label.
+        Assert.Equal("stored credential", result.Source);
     }
 
     [Fact]
@@ -150,7 +166,9 @@ public class ModelsAuthTests
         var result = await CredentialResolver.ResolveProviderAuthAsync(
             provider, store, TestContext(env), null, CancellationToken.None);
         Assert.Equal("env-key", result!.Auth.ApiKey);
-        Assert.Equal("environment", result.Source);
+        // Pinned Pi (auth/helpers.ts envApiKeyAuth): the resolved source is the env
+        // variable name itself; "environment" is an AuthStatus label, a different type.
+        Assert.Equal("TEST_KEY_XYZ", result.Source);
     }
 
     [Fact]
@@ -172,6 +190,28 @@ public class ModelsAuthTests
         Assert.Equal("fresh-access", result!.Auth.ApiKey);
         var updated = Assert.IsType<OAuthCredential>(await store.ReadAsync("p"));
         Assert.Equal("fresh-refresh", updated.Refresh);
+    }
+
+    [Fact]
+    public async Task Resolve_StoredOAuth_RefreshFailure_PreservesStoredCredential()
+    {
+        var store = new InMemoryCredentialStore();
+        var past = (long)(DateTime.UtcNow.AddHours(-1) - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalMilliseconds;
+        await store.ModifyAsync("p", _ => Task.FromResult<Credential?>(new OAuthCredential
+        {
+            Access = "old-access",
+            Refresh = "old-refresh",
+            Expires = past,
+        }));
+        var provider = new FakeProvider("p",
+            new EnvApiKeyAuth { Name = "k", EnvironmentVariableNames = ["TEST_MISSING_XYZ"] },
+            new FailingRefreshOAuth { Name = "fake" });
+        // Pinned Pi: a failed refresh surfaces as an error and leaves the stored
+        // credential untouched (the modify callback throws before the write).
+        await Assert.ThrowsAsync<ModelsException>(() => CredentialResolver.ResolveProviderAuthAsync(
+            provider, store, TestContext(null), null, CancellationToken.None));
+        var stored = Assert.IsType<OAuthCredential>(await store.ReadAsync("p"));
+        Assert.Equal("old-refresh", stored.Refresh);
     }
 
     [Fact]
@@ -218,6 +258,23 @@ public class ModelsAuthTests
             => Task.FromResult(new ModelAuth { ApiKey = credential.Access });
     }
 
+    private sealed class FailingRefreshOAuth : OAuthAuth
+    {
+        public FailingRefreshOAuth()
+        {
+            Name = "fake";
+        }
+
+        public override Task<OAuthCredential> LoginAsync(IAuthInteraction interaction)
+            => throw new NotSupportedException();
+
+        public override Task<OAuthCredential> RefreshAsync(OAuthCredential credential, CancellationToken cancellationToken)
+            => throw new InvalidOperationException("refresh endpoint down");
+
+        public override Task<ModelAuth> ToAuthAsync(OAuthCredential credential)
+            => Task.FromResult(new ModelAuth { ApiKey = credential.Access });
+    }
+
     // ── OAuth primitives ─────────────────────────────────────────────────
 
     [Fact]
@@ -252,18 +309,24 @@ public class ModelsAuthTests
     {
         var sw = System.Diagnostics.Stopwatch.StartNew();
         var polls = 0;
-        await Assert.ThrowsAsync<InvalidOperationException>(() => DeviceCodePoller.PollAsync<int>(
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => DeviceCodePoller.PollAsync<int>(
             async () =>
             {
                 polls++;
                 await Task.Delay(1);
                 return new DeviceCodePollResult.SlowDown(null);
             },
-            1, 3, false, CancellationToken.None));
+            1, 8, false, CancellationToken.None));
         sw.Stop();
-        // 1s initial + slow_down (+5s) capped by 3s deadline => at least one interval passed
-        Assert.True(polls >= 2);
-        Assert.Contains("slow_down", (await Task.Run(() => "slow_down")));
+        // Pinned Pi (pollOAuthDeviceCodeFlow): the post-slow_down interval is 1s + 5s = 6s,
+        // so an 8s deadline yields polls at t=0 and t~6s. (Without the increase there
+        // would be ~8.) The final capped sleep wakes a sub-millisecond margin before
+        // the deadline because remaining is truncated to int milliseconds, so a third
+        // boundary poll is possible; the 3s deadline in the previous version made even
+        // the second poll a coin flip, in Pi and here alike.
+        Assert.InRange(polls, 2, 3);
+        Assert.True(sw.ElapsedMilliseconds >= 7_900, $"expected ~8s, was {sw.ElapsedMilliseconds}ms");
+        Assert.Contains("slow_down", ex.Message);
     }
 
     [Fact]

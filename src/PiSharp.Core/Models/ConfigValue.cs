@@ -322,35 +322,48 @@ public static class ConfigValue
         var command = commandConfig[1..];
         try
         {
-            var (fileName, args) = OperatingSystem.IsWindows()
-                ? ("cmd", $"/C {command}")
-                : ("sh", $"-c {command}");
-            using var process = Process.Start(new ProcessStartInfo
+            // ArgumentList keeps the whole command one argument: passing it via the
+            // split Arguments string would truncate "-c <command>" at the first space
+            // (e.g. "sh -c echo hi" ran "echo" with no arguments). Pinned Pi runs
+            // spawnSync(shell, [...args, command], { shell: false }), i.e. the command
+            // is a single argv entry. Stderr is not redirected (Pi: stdio ignore).
+            string[] arguments;
+            string fileName;
+            if (OperatingSystem.IsWindows())
+            {
+                // Full path: cmd.exe lives in System32, and PATH lookup is not
+                // guaranteed for bare executable names.
+                fileName = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "cmd.exe");
+                arguments = ["/C", command];
+            }
+            else
+            {
+                fileName = "/bin/sh";
+                arguments = ["-c", command];
+            }
+
+            var startInfo = new ProcessStartInfo
             {
                 FileName = fileName,
-                Arguments = args,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
                 UseShellExecute = false,
                 CreateNoWindow = true,
-            });
+                RedirectStandardOutput = true,
+            };
+            foreach (var argument in arguments)
+            {
+                startInfo.ArgumentList.Add(argument);
+            }
+
+            using var process = Process.Start(startInfo);
             if (process is null)
             {
                 return null;
             }
 
-            var output = process.StandardOutput.ReadToEnd();
+            var stdout = process.StandardOutput.ReadToEndAsync();
             if (!process.WaitForExit(CommandTimeoutMs))
             {
-                try
-                {
-                    process.Kill(entireProcessTree: true);
-                }
-                catch
-                {
-                    // Best effort.
-                }
-
+                TryKillProcessTree(process);
                 return null;
             }
 
@@ -359,12 +372,25 @@ public static class ConfigValue
                 return null;
             }
 
-            var value = output.Trim();
+            var value = stdout.GetAwaiter().GetResult().Trim();
             return value.Length > 0 ? value : null;
         }
         catch
         {
+            // Pinned Pi: execution failures (ENOENT, spawn errors) resolve to undefined.
             return null;
+        }
+    }
+
+    private static void TryKillProcessTree(Process process)
+    {
+        try
+        {
+            process.Kill(entireProcessTree: true);
+        }
+        catch
+        {
+            // Best effort: the timeout already bounded the wait.
         }
     }
 }

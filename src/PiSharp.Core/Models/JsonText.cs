@@ -17,7 +17,7 @@ public static class JsonText
 
     // Pattern 2: " (?: \\. | [^"\\] )* " | , ( \s* [}\]] )
     private static readonly Regex StringOrTrailingComma =
-        new(@"""(?:\\.|[^""\\])*""|,(\s*[}\\]])", RegexOptions.Compiled);
+        new(@"""(?:\\.|[^""\\])*""|,(\s*[}\]])", RegexOptions.Compiled);
 
     /// <summary>Removes a leading UTF-8 BOM if present (pinned Pi: stripBom).</summary>
     public static string StripBom(string content)
