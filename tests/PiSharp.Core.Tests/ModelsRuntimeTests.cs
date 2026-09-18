@@ -371,4 +371,117 @@ public class ModelsRuntimeTests
         // No builtins were registered; the catalog starts empty.
         Assert.Empty(runtime.GetProviders());
     }
+
+    // ── Item 8: the register/unregister refresh is observable ────────────
+
+    /// <summary>
+    /// Item 8: RegisterProvider's fire-and-forget refresh must be observable — the caller
+    /// can await the catalog settling instead of racing it, and a clean refresh leaves no
+    /// error behind. The awaited task is proven to be the real refresh (not a pre-completed
+    /// one) because the rebuild re-invokes the provider's model list.
+    /// </summary>
+    [Fact]
+    public async Task RegisterProvider_BackgroundRefreshIsTrackedAndCompletes()
+    {
+        var runtime = await CreateRuntimeAsync(new InMemoryCredentialStore());
+        var model = Model("late", "late-model");
+        var getModelsCalls = 0;
+
+        runtime.RegisterProvider(new ProviderSpec
+        {
+            Id = "late",
+            Name = "Late",
+            BaseUrl = "http://late:1",
+            Auth = new ProviderAuth(new EnvApiKeyAuth { Name = "k", EnvironmentVariableNames = ["LATE_KEY"] }),
+            GetModels = () =>
+            {
+                getModelsCalls++;
+                return new[] { model };
+            },
+            DefaultApi = "openai-completions",
+        });
+
+        var callsAfterRegistration = getModelsCalls; // the synchronous snapshot already read it
+        var pending = runtime.PendingRefresh;
+        Assert.NotNull(pending);
+        await AwaitRefreshAsync(runtime);
+
+        // The awaited refresh rebuilt the provider list (the sync snapshot is the only
+        // earlier read), proving PendingRefresh was the real refresh, not a stale task.
+        Assert.True(getModelsCalls > callsAfterRegistration);
+        Assert.Null(runtime.LastRefreshError);
+        Assert.NotNull(runtime.GetModel("late", "late-model"));
+    }
+
+    /// <summary>
+    /// Item 8: UnregisterProvider's refresh is tracked the same way, and awaiting it is
+    /// enough to know the provider is gone from the catalog.
+    /// </summary>
+    [Fact]
+    public async Task UnregisterProvider_BackgroundRefreshIsTrackedAndCompletes()
+    {
+        var runtime = await CreateRuntimeAsync(new InMemoryCredentialStore());
+        var model = Model("early", "early-model");
+        runtime.RegisterProvider(RegisterSpec("early", model));
+        await AwaitRefreshAsync(runtime);
+        Assert.NotNull(runtime.GetModel("early", "early-model"));
+
+        runtime.UnregisterProvider("early");
+        Assert.NotNull(runtime.PendingRefresh);
+        await AwaitRefreshAsync(runtime);
+
+        Assert.Null(runtime.LastRefreshError);
+        Assert.Null(runtime.GetModel("early", "early-model"));
+    }
+
+    /// <summary>
+    /// Item 8: rapid register/unregister replaces the tracked refresh each time; both
+    /// refreshes (serialized by the runtime gate) settle, and the last one wins.
+    /// </summary>
+    [Fact]
+    public async Task RapidRegisterUnregister_EachBackgroundRefreshIsObservable()
+    {
+        var runtime = await CreateRuntimeAsync(new InMemoryCredentialStore());
+        var model = Model("rapid", "rapid-model");
+
+        runtime.RegisterProvider(RegisterSpec("rapid", model));
+        var first = runtime.PendingRefresh;
+        runtime.UnregisterProvider("rapid");
+        var second = runtime.PendingRefresh;
+
+        Assert.NotNull(first);
+        Assert.NotNull(second);
+        Assert.NotSame(first, second);
+
+        foreach (var task in new[] { first!, second! })
+        {
+            await task; // rethrows if either refresh faulted
+        }
+
+        Assert.Null(runtime.LastRefreshError);
+        Assert.Null(runtime.GetModel("rapid", "rapid-model"));
+    }
+
+    private static ProviderSpec RegisterSpec(string provider, ModelInfo model) => new()
+    {
+        Id = provider,
+        Name = provider,
+        BaseUrl = $"http://{provider}:1",
+        Auth = new ProviderAuth(new EnvApiKeyAuth { Name = "k", EnvironmentVariableNames = [$"{provider.ToUpperInvariant()}_KEY"] }),
+        GetModels = () => new[] { model },
+        DefaultApi = "openai-completions",
+    };
+
+    /// <summary>Awaits the runtime's tracked background refresh, failing loudly on timeout.</summary>
+    private static async Task AwaitRefreshAsync(ModelRuntime runtime, int timeoutMs = 5_000)
+    {
+        var pending = runtime.PendingRefresh ?? throw new InvalidOperationException("no pending refresh to await");
+        var settled = await Task.WhenAny(pending, Task.Delay(timeoutMs));
+        if (!ReferenceEquals(settled, pending))
+        {
+            throw new TimeoutException("background refresh did not settle within the timeout");
+        }
+
+        await pending; // rethrows if the refresh faulted
+    }
 }

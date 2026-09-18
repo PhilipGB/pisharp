@@ -115,13 +115,19 @@ public sealed class ModelRuntime
 
     /// <summary>
     /// Serializes runtime refreshes (intentional difference, see docs/PARITY.md): the
-    /// fire-and-forget full refresh fired by Register/UnregisterProvider (pinned
+    /// background full refresh fired by Register/UnregisterProvider (pinned
     /// `void this.refresh(...)`) must not rebuild while a caller's refresh is in flight —
     /// the rebuild supersedes (cancels) the in-flight provider refresh and its live phase
     /// is silently discarded. The pinned code shares this latent race; serialization
     /// removes it.
     /// </summary>
     private readonly SemaphoreSlim _refreshGate = new(1, 1);
+
+    /// <summary>The in-flight background refresh (register/unregister); null when idle.</summary>
+    private Task? _pendingRefresh;
+
+    /// <summary>The error from the last background refresh; null when it completed cleanly.</summary>
+    private volatile Exception? _lastRefreshError;
 
     private ModelRuntime(
         RuntimeCredentialStore credentials,
@@ -917,6 +923,21 @@ public sealed class ModelRuntime
     // ── Provider registration (PiSharp-native; pinned uses extensions) ───
 
     /// <summary>
+    /// The background refresh most recently started by Register/UnregisterProvider (it
+    /// may already have completed), or null when no registration has started one. Awaiting
+    /// it lets a caller know the catalog has settled after a registration change (the
+    /// pinned `void this.refresh(...)` gives no such signal).
+    /// </summary>
+    public Task? PendingRefresh => _pendingRefresh;
+
+    /// <summary>
+    /// The error from the last background refresh, or null when it completed cleanly.
+    /// The background refresh is observed here so a failure is never left dangling while
+    /// remaining queryable.
+    /// </summary>
+    public Exception? LastRefreshError => _lastRefreshError;
+
+    /// <summary>
     /// Registers a native provider spec (PiSharp replacement for the pinned
     /// extension/native provider registration; see docs/PARITY.md).
     /// </summary>
@@ -930,7 +951,7 @@ public sealed class ModelRuntime
         _registeredProviders[provider.Id] = provider;
         RecomposeProvider(provider.Id);
         UpdateModelSnapshot();
-        _ = RefreshAsync(new ModelsRefreshOptions { AllowNetwork = false });
+        StartBackgroundRefresh();
     }
 
     /// <summary>Removes a registered provider.</summary>
@@ -939,7 +960,32 @@ public sealed class ModelRuntime
         _registeredProviders.Remove(providerId);
         RecomposeProvider(providerId);
         UpdateModelSnapshot();
-        _ = RefreshAsync(new ModelsRefreshOptions { AllowNetwork = false });
+        StartBackgroundRefresh();
+    }
+
+    /// <summary>
+    /// Starts the fire-and-forget full refresh a registration change requires (pinned
+    /// `void this.refresh({ allowNetwork: false })`), tracking it so callers can await
+    /// completion (<see cref="PendingRefresh"/>) and failures stay observable
+    /// (<see cref="LastRefreshError"/>) instead of vanishing into `_ =`.
+    /// </summary>
+    private void StartBackgroundRefresh()
+    {
+        var refresh = RefreshAsync(new ModelsRefreshOptions { AllowNetwork = false });
+        _pendingRefresh = refresh;
+        _ = refresh.ContinueWith(
+            completed =>
+            {
+                if (completed.IsCanceled || completed.Exception is null)
+                {
+                    _lastRefreshError = completed.IsCanceled ? _lastRefreshError : null;
+                    return;
+                }
+
+                // Reading Exception marks the faulted task observed.
+                _lastRefreshError = completed.Exception;
+            },
+            CancellationToken.None);
     }
 
     // ── Compatibility request config ─────────────────────────────────────
