@@ -96,7 +96,7 @@ internal static class LoginCommands
 
         var selected = options.Count == 1
             ? options[0]
-            : await PickOptionAsync(options, "Select a login option (blank to cancel): ");
+            : await PickOptionAsync(interaction.Console, options, "Select a login option (blank to cancel): ", cancellationToken);
         if (selected is null)
         {
             return;
@@ -150,7 +150,7 @@ internal static class LoginCommands
 
         var selected = options.Count == 1
             ? options[0]
-            : await PickOptionAsync(options, "Select a stored credential to remove (blank to cancel): ");
+            : await PickOptionAsync(sessions.ConsoleIO, options, "Select a stored credential to remove (blank to cancel): ", cancellationToken);
         if (selected is null)
         {
             return;
@@ -312,8 +312,12 @@ internal static class LoginCommands
         }
     }
 
-    /// <summary>Shows a numbered list and reads a 1-based selection (blank cancels).</summary>
-    private static async Task<LoginOption?> PickOptionAsync(IReadOnlyList<LoginOption> options, string prompt)
+    /// <summary>Shows a numbered list and reads a 1-based selection (blank or Esc cancels).</summary>
+    private static Task<LoginOption?> PickOptionAsync(
+        IConsoleIO console,
+        IReadOnlyList<LoginOption> options,
+        string prompt,
+        CancellationToken cancellationToken)
     {
         Console.WriteLine("Login options:");
         for (var i = 0; i < options.Count; i++)
@@ -323,75 +327,97 @@ internal static class LoginCommands
             Console.WriteLine($"  {i + 1,2}. {option.Name} ({option.Id}) — {option.AuthType}{status}");
         }
 
-        Console.Write(prompt);
-        var input = await Task.Run(() => Console.ReadLine(), CancellationToken.None);
-        if (string.IsNullOrWhiteSpace(input))
+        string input;
+        try
         {
-            return null;
+            input = ConsoleKeyInput.ReadLine(console, prompt, cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (OperationCanceledException)
+        {
+            // Esc (or EOF) cancels the selection.
+            return Task.FromResult<LoginOption?>(null);
         }
 
-        return int.TryParse(input, out var selected) && selected >= 1 && selected <= options.Count
+        if (string.IsNullOrWhiteSpace(input))
+        {
+            return Task.FromResult<LoginOption?>(null);
+        }
+
+        var result = int.TryParse(input, out var selected) && selected >= 1 && selected <= options.Count
             ? options[selected - 1]
             : throw new ArgumentException("Invalid selection.");
+        return Task.FromResult<LoginOption?>(result);
     }
 
     /// <summary>
-    /// Console-backed login interaction (pinned AuthInteraction): prompts print to stdout,
-    /// secrets are read from the console line (echoing is a documented text-CLI difference
-    /// from the pinned TUI's masked input).
+    /// Console-backed login interaction (pinned AuthInteraction): prompts print to stdout
+    /// and are read through the <see cref="IConsoleIO"/> seam — secrets are masked
+    /// (per-key '*', the secret itself is never echoed), Esc cancels the prompt, and the
+    /// token is observed between keys (no orphaned blocking read).
     /// </summary>
     internal sealed class ConsoleAuthInteraction : IAuthInteraction
     {
         private readonly CancellationToken _signal;
 
-        public ConsoleAuthInteraction(CancellationToken signal) => _signal = signal;
+        /// <summary>The console seam this interaction reads through.</summary>
+        public IConsoleIO Console { get; }
+
+        public ConsoleAuthInteraction(IConsoleIO console, CancellationToken signal)
+        {
+            Console = console;
+            _signal = signal;
+        }
 
         /// <inheritdoc />
         public CancellationToken Signal => _signal;
 
         /// <inheritdoc />
-        public async Task<string> PromptAsync(AuthPromptStep prompt, CancellationToken cancellationToken = default)
+        public Task<string> PromptAsync(AuthPromptStep prompt, CancellationToken cancellationToken = default)
         {
             using var linked = CancellationTokenSource.CreateLinkedTokenSource(
                 _signal, cancellationToken, prompt.PromptCancellationToken);
             switch (prompt)
             {
                 case TextPromptStep text:
-                    return await PromptCoreAsync(text.Message, linked.Token);
+                    return Task.FromResult(PromptCoreAsync(text.Message, linked.Token, mask: false));
                 case SecretPromptStep secret:
-                    return await PromptCoreAsync(
-                        $"{secret.Message} (input is echoed in this text interface)", linked.Token);
+                    return Task.FromResult(PromptCoreAsync(secret.Message, linked.Token, mask: true));
                 case ManualCodePromptStep code:
-                    return await PromptCoreAsync(code.Message, linked.Token);
+                    return Task.FromResult(PromptCoreAsync(code.Message, linked.Token, mask: false));
                 case SelectPromptStep select:
-                    Console.WriteLine(select.Message);
-                    for (var i = 0; i < select.Options.Count; i++)
-                    {
-                        var option = select.Options[i];
-                        var description = option.Description is not null ? $" — {option.Description}" : string.Empty;
-                        Console.WriteLine($"  {i + 1,2}. {option.Label}{description}");
-                    }
-
-                    var input = await PromptCoreAsync($"Select an option [1-{select.Options.Count}]: ", linked.Token);
-                    return int.TryParse(input, out var selected) && selected >= 1 && selected <= select.Options.Count
-                        ? select.Options[selected - 1].Id
-                        : throw new ArgumentException("Invalid selection.");
+                    return Task.FromResult(PromptSelectAsync(select, linked.Token));
                 default:
-                    return await PromptCoreAsync(prompt.ToString() ?? string.Empty, linked.Token);
+                    return Task.FromResult(PromptCoreAsync(prompt.ToString() ?? string.Empty, linked.Token, mask: false));
             }
         }
 
-        private static async Task<string> PromptCoreAsync(string message, CancellationToken cancellationToken)
+        private string PromptSelectAsync(SelectPromptStep select, CancellationToken token)
         {
-            Console.Write(message);
-            var input = await Task.Run(() => Console.ReadLine(), cancellationToken);
-            if (input is null)
+            Console.WriteLine(select.Message);
+            for (var i = 0; i < select.Options.Count; i++)
             {
-                throw new OperationCanceledException("Prompt closed.");
+                var option = select.Options[i];
+                var description = option.Description is not null ? $" — {option.Description}" : string.Empty;
+                Console.WriteLine($"  {i + 1,2}. {option.Label}{description}");
             }
 
-            return input.Trim();
+            var input = PromptCoreAsync($"Select an option [1-{select.Options.Count}]: ", token, mask: false);
+            return int.TryParse(input, out var selected) && selected >= 1 && selected <= select.Options.Count
+                ? select.Options[selected - 1].Id
+                : throw new ArgumentException("Invalid selection.");
         }
+
+        private string PromptCoreAsync(string message, CancellationToken cancellationToken, bool mask) =>
+            // Key-driven on the calling thread: cancellable (Esc / token) and, for secrets,
+            // masked. No Task.Run: a token cannot cancel a blocked console read, so the
+            // previous Task.Run(() => Console.ReadLine(), token) pattern orphaned the thread
+            // (item 4); the key loop itself observes the token and always terminates.
+            ConsoleKeyInput.ReadLine(
+                Console, message, cancellationToken, new ConsoleKeyInput.Options { Mask = mask });
 
         /// <inheritdoc />
         public void Notify(AuthEvent evt)

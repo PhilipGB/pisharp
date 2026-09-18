@@ -5,6 +5,11 @@ using PiSharp.Core.Models.Providers;
 using PiSharp.Core.Settings;
 using PiSharp.Cli;
 
+// Console seam for every interactive prompt (item 4): key-driven, cancellable, maskable.
+// Declared before the try so the top-level local functions (REPL, /login, /llama) can
+// capture it.
+var console = new SystemConsoleIO();
+
 try
 {
     // Pinned main.ts: the "auth" subcommand is handled before normal option parsing and
@@ -56,7 +61,9 @@ try
         options.ProjectTrustOverride,
         settings.GetDefaultProjectTrust(),
         IsInteractiveStartup(options) ? ProjectTrustMode.Interactive : ProjectTrustMode.NonInteractive,
-        IsInteractiveStartup(options) ? SelectProjectTrustOption : null);
+        IsInteractiveStartup(options)
+            ? optionsList => SelectProjectTrustOption(console, optionsList, shutdown.Token)
+            : null);
     await settings.SetProjectTrustedAsync(trustResolution.Trusted);
     var keybindings = await KeybindingsManager.CreateAsync();
 
@@ -83,7 +90,7 @@ try
     var bootstrap = await AgentFactory.CreateAsync(
         options, trustResolution.Trusted, shutdown.Token, startup.Runtime, startup.ModelState, settings: settings);
     liveTurns = new LiveTurnCoordinator(bootstrap.TurnQueue);
-    var sessions = await SessionController.CreateAsync(bootstrap, options, shutdown.Token, settings);
+    var sessions = await SessionController.CreateAsync(bootstrap, options, shutdown.Token, settings, console);
     // Manual compaction aborts the active turn before compacting (Pi semantics).
     sessions.AbortActiveTurn = liveTurns.Abort;
 
@@ -148,12 +155,15 @@ try
     {
         Console.WriteLine($"Context files: {bootstrap.ContextFiles.Count} (use /context to list)");
     }
-    Console.WriteLine("Type /help for commands. Ctrl+C aborts the active turn; press it again to exit.");
+    Console.WriteLine("Type /help for commands. Ctrl+C aborts the active turn, or exits when idle.");
 
-    using var promptReader = new TerminalPromptReader(
-        Console.In,
-        Console.Out,
-        enableBracketedPaste: !Console.IsInputRedirected && !Console.IsOutputRedirected);
+    // Key mode (interactive TTY): cancellable prompt — Esc clears the draft, Ctrl+C exits
+    // (item 4). A blocking line read cannot be interrupted on Unix, so interactive input
+    // must be key-driven. Redirected stdin keeps the original line-oriented reader.
+    var terminalInteractive = !Console.IsInputRedirected && !Console.IsOutputRedirected;
+    using var promptReader = terminalInteractive
+        ? new TerminalPromptReader(console, enableBracketedPaste: true)
+        : new TerminalPromptReader(Console.In, Console.Out, enableBracketedPaste: false);
     var interactiveOutput = new TerminalChatOutput();
     sessions.EventOutput = interactiveOutput;
     await RunInteractiveAsync(
@@ -166,6 +176,7 @@ try
         trustStore,
         settings,
         keybindings,
+        console,
         shutdown.Token);
     await PublishShutdownAsync(bootstrap.ExtensionHost, options.WorkingDirectory, bootstrap.TurnQueue);
 
@@ -200,6 +211,7 @@ static async Task RunInteractiveAsync(
     ProjectTrustStore trustStore,
     SettingsManager settings,
     KeybindingsManager keybindings,
+    IConsoleIO console,
     CancellationToken cancellationToken)
 {
     Task<string?>? pendingInput = null;
@@ -237,6 +249,7 @@ static async Task RunInteractiveAsync(
                 trustStore,
                 settings,
                 keybindings,
+                console,
                 cancellationToken))
         {
             continue;
@@ -348,7 +361,9 @@ static void QueueActiveInput(string input, LiveTurnCoordinator liveTurns, Func<s
 }
 
 static Task<string?> ReadInputAsync(TerminalPromptReader promptReader, CancellationToken cancellationToken) =>
-    Task.Run(() => promptReader.ReadPrompt(), cancellationToken);
+    // The token is observed inside the key loop (not via Task.Run's scheduling token, which
+    // cannot cancel a blocked console read); the task always completes, so nothing is orphaned.
+    Task.Run(() => promptReader.ReadPrompt("> ", cancellationToken), CancellationToken.None);
 
 static async Task<bool> HandleCommandAsync(
     string input,
@@ -362,6 +377,7 @@ static async Task<bool> HandleCommandAsync(
     ProjectTrustStore trustStore,
     SettingsManager settings,
     KeybindingsManager keybindings,
+    IConsoleIO console,
     CancellationToken cancellationToken)
 {
     var parts = input.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
@@ -435,13 +451,13 @@ static async Task<bool> HandleCommandAsync(
             return true;
         case "/login":
             await LoginCommands.HandleLoginAsync(
-                argument, sessions, new LoginCommands.ConsoleAuthInteraction(cancellationToken), cancellationToken);
+                argument, sessions, new LoginCommands.ConsoleAuthInteraction(console, cancellationToken), cancellationToken);
             return true;
         case "/logout":
             await LoginCommands.HandleLogoutAsync(argument, sessions, cancellationToken);
             return true;
         case "/llama":
-            await LlamaCommands.HandleLlamaAsync(sessions, cancellationToken);
+            await LlamaCommands.HandleLlamaAsync(sessions, console, cancellationToken);
             return true;
         case "/stats":
             Console.WriteLine(JsonSerializer.Serialize(sessions.GetStatistics()));
@@ -488,7 +504,7 @@ static async Task<bool> HandleCommandAsync(
             }
             return true;
         case "/trust":
-            await SaveInteractiveTrustDecisionAsync(workspaceRoot, trustStore);
+            await SaveInteractiveTrustDecisionAsync(console, workspaceRoot, trustStore);
             return true;
         case "/context":
             if (contextFiles.Count == 0)
@@ -794,7 +810,10 @@ static bool IsInteractiveStartup(CliOptions options) =>
     !Console.IsInputRedirected &&
     !Console.IsOutputRedirected;
 
-static ProjectTrustOption? SelectProjectTrustOption(IReadOnlyList<ProjectTrustOption> options)
+static ProjectTrustOption? SelectProjectTrustOption(
+    IConsoleIO console,
+    IReadOnlyList<ProjectTrustOption> options,
+    CancellationToken cancellationToken)
 {
     Console.WriteLine("Trust project folder?");
     Console.WriteLine("This allows PiSharp to load project settings and resources and execute project extensions.");
@@ -803,17 +822,26 @@ static ProjectTrustOption? SelectProjectTrustOption(IReadOnlyList<ProjectTrustOp
         Console.WriteLine($"  {index + 1}. {options[index].Label}");
     }
 
-    Console.Write($"Select an option [1-{options.Count}]: ");
-    var input = Console.ReadLine();
+    string input;
+    try
+    {
+        input = ConsoleKeyInput.ReadLine(console, $"Select an option [1-{options.Count}]: ", cancellationToken);
+    }
+    catch (OperationCanceledException)
+    {
+        // Esc (or EOF) cancels the trust selection.
+        return null;
+    }
+
     return int.TryParse(input, out var selected) && selected >= 1 && selected <= options.Count
         ? options[selected - 1]
         : null;
 }
 
-static Task SaveInteractiveTrustDecisionAsync(string workspaceRoot, ProjectTrustStore trustStore)
+static Task SaveInteractiveTrustDecisionAsync(IConsoleIO console, string workspaceRoot, ProjectTrustStore trustStore)
 {
     var options = ProjectTrustResolver.GetOptions(workspaceRoot, includeSessionOnly: false);
-    var selected = SelectProjectTrustOption(options);
+    var selected = SelectProjectTrustOption(console, options, CancellationToken.None);
     if (selected is null)
     {
         Console.WriteLine("No trust decision saved.");

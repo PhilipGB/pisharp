@@ -23,7 +23,10 @@ internal static class LlamaCommands
     /// /llama. Resolves the configured server (stored credential env URL or LLAMA_BASE_URL
     /// via the provider auth) and runs the manage loop until the user closes it.
     /// </summary>
-    public static async Task HandleLlamaAsync(SessionController sessions, CancellationToken cancellationToken)
+    public static async Task HandleLlamaAsync(
+        SessionController sessions,
+        IConsoleIO console,
+        CancellationToken cancellationToken)
     {
         var runtime = sessions.ModelRuntime;
         var configured = await runtime.GetAuthAsync(BuiltinProviders.LlamaCppProviderId, cancellationToken: cancellationToken);
@@ -48,7 +51,7 @@ internal static class LlamaCommands
                 return;
             }
 
-            var action = await ShowModelsAsync(client.ServerUrl, catalog, cancellationToken);
+            var action = await ShowModelsAsync(console, client.ServerUrl, catalog, cancellationToken);
             if (action is CloseAction)
             {
                 return;
@@ -63,17 +66,17 @@ internal static class LlamaCommands
             {
                 if (action is DownloadAction)
                 {
-                    await DownloadModelAsync(runtime, client, cancellationToken);
+                    await DownloadModelAsync(console, runtime, client, cancellationToken);
                 }
                 else if (action is ModelAction { Model: var model })
                 {
                     if (IsModelLoaded(model))
                     {
-                        await UnloadModelAsync(runtime, client, model, cancellationToken);
+                        await UnloadModelAsync(console, runtime, client, model, cancellationToken);
                     }
                     else if (model.Status.Value == LlamaModelStatusValues.Unloaded)
                     {
-                        await LoadModelAsync(runtime, client, catalog, model, cancellationToken);
+                        await LoadModelAsync(console, runtime, client, catalog, model, cancellationToken);
                     }
                     else
                     {
@@ -101,6 +104,7 @@ internal static class LlamaCommands
 
     /// <summary>Numbered model list plus download/close (pinned showModels, text variant).</summary>
     private static async Task<ManagerAction> ShowModelsAsync(
+        IConsoleIO console,
         string serverUrl,
         IReadOnlyList<LlamaModelInfo> catalog,
         CancellationToken cancellationToken)
@@ -116,7 +120,17 @@ internal static class LlamaCommands
         var optionsCount = catalog.Count + 2;
         Console.WriteLine($"  {catalog.Count + 1,2}. Download model from Hugging Face");
         Console.WriteLine($"  {catalog.Count + 2,2}. Close");
-        var input = await PromptAsync($"Select an action [1-{optionsCount} or d]: ", cancellationToken);
+        string input;
+        try
+        {
+            input = Prompt(console, $"Select an action [1-{optionsCount} or d]: ", cancellationToken);
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            // Esc at the manager menu closes it (blank does the same).
+            return new CloseAction();
+        }
+
         if (string.IsNullOrWhiteSpace(input) ||
             string.Equals(input, "c", StringComparison.OrdinalIgnoreCase))
         {
@@ -148,12 +162,13 @@ internal static class LlamaCommands
 
     /// <summary>Pinned unloadModel: confirm, unload until settled, sync, report.</summary>
     private static async Task UnloadModelAsync(
+        IConsoleIO console,
         ModelRuntime runtime,
         LlamaClient client,
         LlamaModelInfo model,
         CancellationToken cancellationToken)
     {
-        if (!await ConfirmAsync("Unload model?", model.Id, cancellationToken))
+        if (!Confirm(console, "Unload model?", model.Id, cancellationToken))
         {
             return;
         }
@@ -168,6 +183,7 @@ internal static class LlamaCommands
     /// progress; restore the replaced models on cancel or failure.
     /// </summary>
     private static async Task LoadModelAsync(
+        IConsoleIO console,
         ModelRuntime runtime,
         LlamaClient client,
         IReadOnlyList<LlamaModelInfo> catalog,
@@ -178,7 +194,8 @@ internal static class LlamaCommands
         var replace = false;
         if (loaded.Length > 0)
         {
-            var choice = await SelectAsync(
+            var choice = Select(
+                console,
                 $"{loaded.Length} model{(loaded.Length == 1 ? " is" : "s are")} loaded",
                 ["Unload all and load", "Keep loaded and load", "Cancel"],
                 cancellationToken);
@@ -255,12 +272,13 @@ internal static class LlamaCommands
     /// download with progress, catalog sync.
     /// </summary>
     private static async Task DownloadModelAsync(
+        IConsoleIO console,
         ModelRuntime runtime,
         LlamaClient client,
         CancellationToken cancellationToken)
     {
         var huggingFace = new HuggingFaceClient(await HuggingFaceClient.FindHuggingFaceToken());
-        var query = await PromptAsync("Search Hugging Face (GGUF): ", cancellationToken);
+        var query = Prompt(console, "Search Hugging Face (GGUF): ", cancellationToken);
         if (string.IsNullOrWhiteSpace(query))
         {
             return;
@@ -278,7 +296,7 @@ internal static class LlamaCommands
             Console.WriteLine($"  {i + 1,2}. {results[i].Id}  ({results[i].Downloads} downloads)");
         }
 
-        var selection = await PromptAsync("Select a model (blank to cancel): ", cancellationToken);
+        var selection = Prompt(console, "Select a model (blank to cancel): ", cancellationToken);
         if (!int.TryParse(selection, out var index) || index < 1 || index > results.Count)
         {
             return;
@@ -290,7 +308,8 @@ internal static class LlamaCommands
         if (details.Gated is not null)
         {
             var approval = details.Gated == "manual" ? "Manual approval is required" : "Accept the access terms";
-            var choice = await SelectAsync(
+            var choice = Select(
+                console,
                 $"Hugging Face access required\n{details.Id}\n\n{approval} at:\nhttps://huggingface.co/{details.Id}\n\nThe llama.cpp server needs HF_TOKEN with access.",
                 ["Continue", "Back"],
                 cancellationToken);
@@ -306,7 +325,7 @@ internal static class LlamaCommands
             var labels = details.Quantizations
                 .Select(entry => QuantizationLabel(entry))
                 .ToArray();
-            var choice = await SelectAsync($"Select quantization\n{details.Id}", labels, cancellationToken);
+            var choice = Select(console, $"Select quantization\n{details.Id}", labels, cancellationToken);
             if (choice is null)
             {
                 return;
@@ -455,25 +474,18 @@ internal static class LlamaCommands
             : (value[..colon], value[(colon + 1)..]);
     }
 
-    private static async Task<string> PromptAsync(string message, CancellationToken cancellationToken)
-    {
-        Console.Write(message);
-        var input = await Task.Run(() => Console.ReadLine(), cancellationToken);
-        if (input is null)
-        {
-            throw new OperationCanceledException("Prompt closed.");
-        }
+    /// <summary>Single-line prompt, key-driven (Esc / token cancellable) through the seam (item 4).</summary>
+    private static string Prompt(IConsoleIO console, string message, CancellationToken cancellationToken) =>
+        ConsoleKeyInput.ReadLine(console, message, cancellationToken);
 
-        return input.Trim();
-    }
-
-    private static async Task<bool> ConfirmAsync(string title, string message, CancellationToken cancellationToken)
+    private static bool Confirm(IConsoleIO console, string title, string message, CancellationToken cancellationToken)
     {
-        var input = await PromptAsync($"{title} {message} (y/N): ", cancellationToken);
+        var input = Prompt(console, $"{title} {message} (y/N): ", cancellationToken);
         return input.Length > 0 && (input[0] == 'y' || input[0] == 'Y');
     }
 
-    private static async Task<string?> SelectAsync(
+    private static string? Select(
+        IConsoleIO console,
         string title,
         IReadOnlyList<string> options,
         CancellationToken cancellationToken)
@@ -484,7 +496,7 @@ internal static class LlamaCommands
             Console.WriteLine($"  {i + 1,2}. {options[i]}");
         }
 
-        var input = await PromptAsync($"Select an option (blank to cancel): ", cancellationToken);
+        var input = Prompt(console, "Select an option (blank to cancel): ", cancellationToken);
         return int.TryParse(input, out var selected) && selected >= 1 && selected <= options.Count
             ? options[selected - 1]
             : null;

@@ -43,6 +43,7 @@ internal sealed class SessionController : IProviderRequestCompactor
     private readonly ModelSessionState _modelState;
     private readonly Func<int> _contextTokens;
     private readonly Func<CompactionSettings> _compactionSettings;
+    private readonly IConsoleIO _console;
     private readonly object _operationSync = new();
 
     /// <summary>
@@ -73,7 +74,8 @@ internal sealed class SessionController : IProviderRequestCompactor
         PiSummarizer summarizer,
         ModelSessionState modelState,
         Func<int> contextTokens,
-        Func<CompactionSettings> compactionSettings)
+        Func<CompactionSettings> compactionSettings,
+        IConsoleIO? console = null)
     {
         _bootstrap = bootstrap;
         _options = options;
@@ -90,8 +92,12 @@ internal sealed class SessionController : IProviderRequestCompactor
         _modelState = modelState;
         _contextTokens = contextTokens;
         _compactionSettings = compactionSettings;
+        _console = console ?? new SystemConsoleIO();
         _sessionHistory.SetActiveDocument(document, activeEntryId);
     }
+
+    /// <summary>Console seam used by interactive prompts (session picker).</summary>
+    public IConsoleIO ConsoleIO => _console;
 
     /// <summary>Gets the live model/thinking state shared with the provider bridge.</summary>
     public ModelSessionState ModelState => _modelState;
@@ -423,7 +429,8 @@ internal sealed class SessionController : IProviderRequestCompactor
         AgentBootstrap bootstrap,
         CliOptions options,
         CancellationToken cancellationToken,
-        SettingsManager? settings = null)
+        SettingsManager? settings = null,
+        IConsoleIO? console = null)
     {
         // Tests without a settings manager get the Pi defaults (empty global scope).
         var resolvedSettings = settings ??
@@ -458,7 +465,8 @@ internal sealed class SessionController : IProviderRequestCompactor
                 summarizer,
                 bootstrap.ModelState,
                 () => bootstrap.ModelState.Current?.EffectiveContextWindow ?? 128_000,
-                compactionSettings);
+                compactionSettings,
+                console);
         }
 
         var store = new SessionStore(
@@ -477,7 +485,7 @@ internal sealed class SessionController : IProviderRequestCompactor
         }
         else if (options.ResumeSession)
         {
-            document = await PickSessionAsync(store, cancellationToken)
+            document = await PickSessionAsync(store, console ?? new SystemConsoleIO(), cancellationToken)
                 ?? throw new OperationCanceledException("Session selection cancelled.");
         }
 
@@ -510,7 +518,8 @@ internal sealed class SessionController : IProviderRequestCompactor
             summarizer,
             bootstrap.ModelState,
             () => bootstrap.ModelState.Current?.EffectiveContextWindow ?? 128_000,
-            compactionSettings);
+            compactionSettings,
+            console);
 
         // Register this controller as the compaction authority for every model request that
         // the Harness agent issues. Ephemeral sessions keep no compaction authority at all.
@@ -1213,7 +1222,7 @@ internal sealed class SessionController : IProviderRequestCompactor
 
     private async Task<bool> ResumeCoreAsync(CancellationToken cancellationToken)
     {
-        var selected = await PickSessionAsync(_store!, cancellationToken).ConfigureAwait(false);
+        var selected = await PickSessionAsync(_store!, _console, cancellationToken).ConfigureAwait(false);
         if (selected is null)
         {
             return false;
@@ -1383,6 +1392,7 @@ internal sealed class SessionController : IProviderRequestCompactor
 
     private static async Task<SessionDocument?> PickSessionAsync(
         SessionStore store,
+        IConsoleIO console,
         CancellationToken cancellationToken)
     {
         var sessions = await store.ListAsync(cancellationToken);
@@ -1406,19 +1416,29 @@ internal sealed class SessionController : IProviderRequestCompactor
             Console.WriteLine($"  {i + 1,2}. {session.Header.SessionId[..8]}  {session.Turns.Count,3} turns  {summary}");
         }
 
-        Console.Write("Select session (blank to cancel): ");
-        var input = Console.ReadLine();
+        string input;
+        try
+        {
+            input = ConsoleKeyInput.ReadLine(console, "Select session (blank to cancel): ", cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (OperationCanceledException)
+        {
+            // Esc (or EOF) cancels the selection; callers treat null as "no session".
+            return null;
+        }
+
         if (string.IsNullOrWhiteSpace(input))
         {
             return null;
         }
 
-        if (!int.TryParse(input, out var selected) || selected < 1 || selected > sessions.Count)
-        {
-            throw new ArgumentException("Invalid session selection.");
-        }
-
-        return sessions[selected - 1];
+        return !int.TryParse(input, out var selected) || selected < 1 || selected > sessions.Count
+            ? throw new ArgumentException("Invalid session selection.")
+            : sessions[selected - 1];
     }
 
     private static void EnsureWorkspaceMatches(SessionDocument document, string workspace)
