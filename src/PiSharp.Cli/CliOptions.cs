@@ -122,7 +122,16 @@ internal sealed record CliOptions(
                     provider = RequireValue(args, ref i, "--provider");
                     break;
                 case "--models":
-                    modelPatterns.Add(RequireValue(args, ref i, "--models"));
+                    // Pinned split: comma-separated patterns, trimmed, empties dropped.
+                    foreach (var pattern in RequireValue(args, ref i, "--models")
+                        .Split(',')
+                        .Select(part => part.Trim()))
+                    {
+                        if (pattern.Length > 0)
+                        {
+                            modelPatterns.Add(pattern);
+                        }
+                    }
                     break;
                 case "--thinking":
                     thinking = RequireValue(args, ref i, "--thinking");

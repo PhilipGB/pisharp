@@ -44,13 +44,16 @@ Implemented and smoke-tested against llama.cpp:
 - trusted .NET extension commands, input transforms, and lifecycle hooks
 - initial JSON event and JSON-RPC headless modes
 - read-only and no-tools execution policies
-- bounded transient-provider retries with exponential backoff
+- provider/model runtime: full pinned built-in provider set plus `models.json` file providers and the remote catalog, deterministic startup model resolution, live `/model` (exact reference, cycling, scope) and `/thinking` with persisted `model_change`/`thinking_level_change` entries, dynamic context-window and max-output tracking of the current model
+- provider credentials: `auth.json` storage, `/login`/`/logout`, `pisharp auth check|print-api-key|print-bearer-token` with pinned exit codes, runtime API-key overrides, offline model-catalog cache
+- pinned retry semantics: provider-layer retries (Retry-After, backoff, streaming before-content-only) with a turn-level classifier (billing/quota errors never retried), turn restarts composing fresh provider budgets, and HTTP idle timeout
+- per-response usage and tier-aware cost persisted in every durable assistant entry
 - `@file` text and image attachments for one-shot and print prompts
 - PiSharp-owned project trust decisions with inherited paths and fail-closed headless startup
 
 Remaining parity work (tracked per capability in [`docs/PARITY.md`](docs/PARITY.md)):
 
-- provider/model registry with provider login and credential storage, `defaultModel`/`defaultProvider` selection, thinking levels, model cycling and scoped models
+- provider/model gaps: live OAuth round-trips, the `/llama` server-management extension, `enabledModels`/`/scoped-models`, the account-scoped `radius` gateway, and provider-specific credential paths (AWS profiles, GCP ADC, Cloudflare account ids)
 - consuming the remaining settings values: queue modes (`steeringMode`/`followUpMode`), `defaultTools`, resource paths, terminal/image/TUI options (the values are already parsed and exposed by the settings manager)
 - settings-backed keybindings in the terminal UI
 - full session product surface: interactive picker, delete, import, JSONL/HTML export, statistics with usage/cost totals, v1 migration
@@ -169,9 +172,10 @@ Override the root with `--session-dir`, `PI_CODING_AGENT_SESSION_DIR`, or the `s
 
 Each session is append-only JSONL in the Pi v3 session format. The first line is the session header (version 3, session id, timestamp, cwd, and — for forks — the source session path in `parentSession`). Every durable event is then appended as its own typed entry linked through a stable `id`/`parentId` chain:
 
-- `message` entries — each user prompt, each steering/follow-up message, each completed assistant message, and each tool call/result record
+- `message` entries — each user prompt, each steering/follow-up message, each completed assistant message (with api/provider/model identity, `responseModel` when the provider reports a different one, stop reason, and usage with tier-aware cost), and each tool call/result record
 - `compaction` entries — the persisted summary, first kept entry, token estimate, details and usage
 - `branch_summary` entries — summaries of abandoned work created when navigating the tree
+- `model_change` / `thinking_level_change` entries — model and thinking-level switches (appended at startup and by `/model`, `/thinking`, and post-login selection)
 - `label` entries — user bookmarks on arbitrary entries
 - `session_info` entries — session display name changes
 - `pisharp.agent-state` entries — serialized MAF `AgentSession` state
@@ -205,6 +209,10 @@ Interactive commands:
 /context
 /steer <text>
 /follow-up <text>
+/model [provider/model|next|prev] [--persist]
+/thinking [level|next] [--persist]
+/login [provider]
+/logout [provider]
 ```
 
 `/name [text]` shows or sets the session display name. `/label <entry-id> [text]` bookmarks an entry (omit the text to clear it); labels render in `/tree` as `[label]`. `/goto` changes the active point without deleting later turns. The next prompt branches from that turn. Prompt templates are loaded from `~/.pi/agent/prompts` and `.pi/prompts`; invoke one as `/name args`. Skills are loaded from `~/.pi/agent/skills` and `.pi/skills`; invoke one explicitly as `/skill:name args`.
@@ -213,10 +221,16 @@ Interactive commands:
 
 ```text
 pisharp [options] [@files...] [prompt...]
+pisharp auth <check|print-api-key|print-bearer-token> [options]
 
---model <name>              model name (or PISHARP_MODEL)
---endpoint <url>            OpenAI-compatible API base URL
---api-key <key>             API key
+--model <name>              model name (or PISHARP_MODEL), e.g. openai/gpt-4o or local/my-model with --endpoint
+--provider <id>             provider id (or PISHARP_PROVIDER) with the model's default model
+--endpoint <url>            OpenAI-compatible API base URL (or PISHARP_ENDPOINT)
+--api-key <key>             API key (or PISHARP_API_KEY / OPENAI_API_KEY)
+--models <refs>             comma-separated provider/model scope for cycling and /model listing
+--thinking <level>          thinking level: off, minimal, low, medium, high, xhigh, max (or PISHARP_THINKING)
+--list-models               list available models (optionally --list-models <provider>) and exit
+--offline                   no network for model catalogue refresh
 --cwd <path>                repository/workspace root
 --context-root <path>       stop parent context discovery at this directory
 --extension, -e <path>      load a trusted .NET extension DLL/directory (repeatable)
@@ -255,11 +269,15 @@ PiSharp runtime (hosts: interactive, print, JSON, RPC)
    |
    +-- compaction / branch-summary authority (PiSharp-owned)
    |
+   +-- model runtime (ModelRuntime: providers, credentials, startup resolution)
+   |      +-- ModelSessionState (current model/thinking, scope, session overrides)
+   |
    +-- IChatClient middleware
    |      |
    |      +-- provider-boundary compaction (CompactionChatClient)
    |      +-- steering injection (SteeringChatClient)
-   |      +-- provider client (OpenAI-compatible IChatClient)
+   |      +-- provider client (ModelRuntimeChatClient bridge: retry, idle timeout,
+   |      |   per-request model/max-output/thinking, usage capture)
    |
    +-- MAF HarnessAgent
           |

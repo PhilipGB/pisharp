@@ -5,6 +5,18 @@ namespace PiSharp.Core.Tests;
 public sealed class CliOptionsTests
 {
     [Fact]
+    public void ParsesCommaSeparatedModelPatternsWithTrimming()
+    {
+        var options = CliOptions.Parse(
+        [
+            "--models", " demo/alpha , demo/beta ,,openai/gpt-4o ",
+            "--models", "demo/gamma",
+        ]);
+
+        Assert.Equal(["demo/alpha", "demo/beta", "openai/gpt-4o", "demo/gamma"], options.Models);
+    }
+
+    [Fact]
     public void ParsesRepeatableResourcePathsAndDisableFlags()
     {
         var options = CliOptions.Parse(
