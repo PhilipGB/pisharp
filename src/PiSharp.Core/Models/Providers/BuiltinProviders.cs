@@ -51,6 +51,7 @@ public static class BuiltinProviders
         Groq(),
         HuggingFace(),
         KimiCoding(),
+        CreateLlamaCppProvider(),
         MiniMax(),
         MiniMaxCn(),
         Mistral(),
@@ -351,6 +352,286 @@ public static class BuiltinProviders
         "zai-coding-cn", "Z.AI Coding CN", "https://open.bigmodel.cn/api/coding/paas/v4",
         "Z.AI Coding CN API key", ["ZAI_CODING_CN_API_KEY"],
         ModelApi.OpenAiCompletions);
+
+    /// <summary>
+    /// Creates the dynamic llama.cpp provider (pinned createLlamaProvider). The model
+    /// list is empty until a refresh syncs the router catalog: models appear when a
+    /// stored credential (or /login) records the server URL, or the /llama command
+    /// forces a refresh. Requests keyless unless LLAMA_API_KEY or a stored key says so.
+    /// </summary>
+    public static ProviderSpec CreateLlamaCppProvider()
+    {
+        var models = new List<ModelInfo>();
+        var gate = new object();
+
+        return new ProviderSpec
+        {
+            Id = LlamaCppProviderId,
+            Name = "llama.cpp",
+            BaseUrl = LlamaUrls.InferenceUrl(LlamaUrls.DefaultServerUrl),
+            Auth = new ProviderAuth(new LlamaServerApiKeyAuth
+            {
+                Name = "llama.cpp server",
+                Check = async input =>
+                {
+                    var serverUrl = await LlamaServerApiKeyAuth.ResolveServerUrlAsync(input);
+                    return serverUrl is null
+                        ? null
+                        : new AuthCheck(
+                            input.Credential is not null ? "stored credential" : LlamaUrls.BaseUrlEnvironmentVariable,
+                            "api_key");
+                },
+            }),
+            GetModels = () =>
+            {
+                lock (gate)
+                {
+                    return models.ToArray();
+                }
+            },
+            DefaultApi = ModelApi.OpenAiCompletions,
+            RefreshModelsAsync = async context =>
+            {
+                // Offline/cache-only phase: restore the last synced catalog (pinned
+                // refreshModels stored restore).
+                var restored = context.Stored is { } stored
+                    ? stored.Models
+                        .Where(model => model.Provider == LlamaCppProviderId && model.Api == ModelApi.OpenAiCompletions)
+                        .ToArray()
+                    : Array.Empty<ModelInfo>();
+                if (!await context.Publish(new ModelsPublication
+                {
+                    Update = () =>
+                    {
+                        lock (gate)
+                        {
+                            models = restored.ToList();
+                        }
+                    },
+                }))
+                {
+                    return;
+                }
+
+                // Pinned refreshes live when the refresh credential resolves a server URL:
+                // either the stored credential's env or an ambient LLAMA_BASE_URL (the
+                // catalog synthesizes { key, env } from the ambient auth resolve).
+                if (!context.AllowNetwork || context.CancellationToken.IsCancellationRequested)
+                {
+                    return;
+                }
+
+                if (context.Credential is not ApiKeyCredential apiCredential)
+                {
+                    return;
+                }
+
+                if (apiCredential.Env is not { } credentialEnv ||
+                    !credentialEnv.TryGetValue(LlamaUrls.BaseUrlEnvironmentVariable, out var serverUrl))
+                {
+                    return;
+                }
+
+                var client = new LlamaClient(serverUrl, apiCredential.Key);
+                var catalog = await client.ListAsync(cancellationToken: context.CancellationToken);
+                if (context.CancellationToken.IsCancellationRequested)
+                {
+                    return;
+                }
+
+                var routerAutoload = await RouterAutoloadEnabledAsync(client, catalog, context.CancellationToken);
+                var refreshed = catalog
+                    .Where(model => LlamaModelIsSelectable(model, routerAutoload))
+                    .Select(model => LlamaToPiModel(model, serverUrl))
+                    .ToArray();
+                await context.Publish(new ModelsPublication
+                {
+                    Persist = new ModelsStoreEntry
+                    {
+                        Models = refreshed,
+                        CheckedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                        LastModified = 0,
+                    },
+                    Update = () =>
+                    {
+                        lock (gate)
+                        {
+                            models = refreshed.ToList();
+                        }
+                    },
+                });
+            },
+        };
+    }
+
+    private static async Task<bool> RouterAutoloadEnabledAsync(
+        LlamaClient client,
+        IReadOnlyList<LlamaModelInfo> catalog,
+        CancellationToken cancellationToken)
+    {
+        if (catalog.All(model =>
+                !(model.Status.Value == LlamaModelStatusValues.Unloaded &&
+                  string.Equals(model.Source, "preset", StringComparison.Ordinal))))
+        {
+            return false;
+        }
+
+        try
+        {
+            return await client.GetModelsAutoloadAsync(cancellationToken);
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Pinned modelIsSelectable: loaded and sleeping models are selectable (sleeping
+    /// wake on request); unloaded presets are routable only when the router autoloads
+    /// them on first use.
+    /// </summary>
+    internal static bool LlamaModelIsSelectable(LlamaModelInfo model, bool routerAutoload)
+    {
+        if (model.Status.Value is LlamaModelStatusValues.Loaded or LlamaModelStatusValues.Sleeping)
+        {
+            return true;
+        }
+
+        return routerAutoload &&
+               model.Status.Value == LlamaModelStatusValues.Unloaded &&
+               !model.Status.Failed &&
+               string.Equals(model.Source, "preset", StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// Pinned toPiModel: context window from the GGUF metadata (fallback 128k), max
+    /// output pinned to the context window, image modality when the architecture says so,
+    /// zero cost, no reasoning.
+    /// </summary>
+    internal static ModelInfo LlamaToPiModel(LlamaModelInfo model, string serverUrl)
+    {
+        var reportedContext = model.Meta?.NCtx ?? model.Meta?.NCtxTrain;
+        var contextWindow = reportedContext is > 0 ? reportedContext.Value : 128_000;
+        var imageInput = model.Architecture?.InputModalities
+            ?.Any(modality => string.Equals(modality, "image", StringComparison.OrdinalIgnoreCase)) == true;
+        return new ModelInfo
+        {
+            Id = model.Id,
+            Name = model.Id,
+            Api = ModelApi.OpenAiCompletions,
+            Provider = LlamaCppProviderId,
+            BaseUrl = LlamaUrls.InferenceUrl(serverUrl),
+            Reasoning = false,
+            Input = imageInput ? ["text", "image"] : ["text"],
+            Cost = new ModelCost { Input = 0, Output = 0, CacheRead = 0, CacheWrite = 0 },
+            ContextWindow = contextWindow,
+            MaxTokens = contextWindow,
+        };
+    }
+
+    /// <summary>
+    /// api-key auth for the llama.cpp router (pinned createLlamaProvider auth): the server
+    /// URL comes from the stored credential's env or the LLAMA_BASE_URL variable, and the
+    /// key falls back to LLAMA_API_KEY then the keyless "local" default.
+    /// </summary>
+    public sealed class LlamaServerApiKeyAuth : ApiKeyAuth
+    {
+        protected override Func<IAuthInteraction, Task<ApiKeyCredential>>? CreateDefaultLogin() =>
+            interaction => LoginAsync(interaction);
+
+        /// <summary>
+        /// Pinned llama login: prompt for the server URL (placeholder from LLAMA_BASE_URL or
+        /// the default), an optional API key, verify the router answers, and persist the URL
+        /// in the credential's env.
+        /// </summary>
+        public static async Task<ApiKeyCredential> LoginAsync(IAuthInteraction interaction)
+        {
+            interaction.Signal.ThrowIfCancellationRequested();
+            var placeholder = Environment.GetEnvironmentVariable(LlamaUrls.BaseUrlEnvironmentVariable);
+            var enteredUrl = await interaction.PromptAsync(
+                new TextPromptStep("llama.cpp server URL", string.IsNullOrWhiteSpace(placeholder) ? LlamaUrls.DefaultServerUrl : placeholder),
+                interaction.Signal);
+            var serverUrl = LlamaUrls.Normalize(
+                string.IsNullOrWhiteSpace(enteredUrl) ? (placeholder ?? LlamaUrls.DefaultServerUrl) : enteredUrl);
+
+            interaction.Signal.ThrowIfCancellationRequested();
+            var apiKey = (await interaction.PromptAsync(
+                new SecretPromptStep("API key (optional)"), interaction.Signal)).Trim();
+
+            // Pinned verifies the server before persisting; a dead server aborts the login.
+            var client = new LlamaClient(serverUrl, apiKey.Length > 0 ? apiKey : null);
+            await client.ListAsync(cancellationToken: interaction.Signal);
+
+            return new ApiKeyCredential(
+                apiKey.Length > 0 ? apiKey : null,
+                new Dictionary<string, string>(StringComparer.Ordinal)
+                {
+                    [LlamaUrls.BaseUrlEnvironmentVariable] = serverUrl,
+                });
+        }
+
+        public override async Task<AuthResult?> ResolveAsync(ApiKeyAuthInput input)
+        {
+            var serverUrl = await ResolveServerUrlAsync(input);
+            if (serverUrl is null)
+            {
+                return null;
+            }
+
+            var apiKey = input.Credential?.Key;
+            if (string.IsNullOrEmpty(apiKey))
+            {
+                apiKey = await input.Context.Env(LlamaUrls.ApiKeyEnvironmentVariable);
+            }
+
+            // Pinned resolve carries the provider env (credential env plus the normalized
+            // server URL) so refresh-credential reconstruction keeps the server address.
+            var resolvedEnv = new Dictionary<string, string>(StringComparer.Ordinal);
+            if (input.Credential?.Env is { } credentialEnv)
+            {
+                foreach (var pair in credentialEnv)
+                {
+                    resolvedEnv[pair.Key] = pair.Value;
+                }
+            }
+
+            resolvedEnv[LlamaUrls.BaseUrlEnvironmentVariable] = serverUrl;
+
+            return new AuthResult
+            {
+                Auth = new ModelAuth
+                {
+                    ApiKey = string.IsNullOrEmpty(apiKey) ? "local" : apiKey,
+                    BaseUrl = LlamaUrls.InferenceUrl(serverUrl),
+                },
+                Env = resolvedEnv,
+                Source = input.Credential is not null ? "stored credential" : LlamaUrls.BaseUrlEnvironmentVariable,
+            };
+        }
+
+        internal static async Task<string?> ResolveServerUrlAsync(ApiKeyAuthInput input)
+        {
+            var fromCredential = input.Credential?.Env is { } env
+                && env.TryGetValue(LlamaUrls.BaseUrlEnvironmentVariable, out var value)
+                && !string.IsNullOrWhiteSpace(value)
+                ? LlamaUrls.Normalize(value)
+                : null;
+            if (fromCredential is not null)
+            {
+                return fromCredential;
+            }
+
+            var fromEnvironment = await input.Context.Env(LlamaUrls.BaseUrlEnvironmentVariable);
+            input.CancellationToken.ThrowIfCancellationRequested();
+            if (string.IsNullOrWhiteSpace(fromEnvironment))
+            {
+                return null;
+            }
+
+            return LlamaUrls.Normalize(fromEnvironment);
+        }
+    }
 
     /// <summary>
     /// Creates the keyless local-server provider used by the PISHARP_ENDPOINT

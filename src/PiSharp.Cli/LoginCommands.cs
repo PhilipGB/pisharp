@@ -233,14 +233,15 @@ internal static class LoginCommands
             .ToList();
         if (option.Id == BuiltinProviders.LlamaCppProviderId)
         {
-            // Pinned defers to the /llama extension, which PiSharp does not port; the local
-            // workflow is --model + --endpoint instead.
+            // Pinned defers to the /llama extension for server management; the post-login
+            // selection still follows the default-model rules, and the llama.cpp provider
+            // has no default (its catalog is the live server state).
             return new PostLoginSelection(
                 actionLabel,
                 authPath,
                 null,
                 providerModels.Count == 0
-                    ? $"{actionLabel}. No llama.cpp models are loaded. Start a server and use --model + --endpoint, then /model to select it."
+                    ? $"{actionLabel}. No llama.cpp models are loaded. Use /llama to load or download a model, then /model to select it."
                     : $"{actionLabel}. Use /model to select a loaded llama.cpp model.");
         }
 

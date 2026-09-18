@@ -104,7 +104,7 @@ public sealed class FileModelsStore : IModelsStore
                 UpdateReadStateLocked(data, revision);
                 return _readStateData;
             }
-            catch (FileNotFoundException)
+            catch (Exception fileError) when (fileError is FileNotFoundException or DirectoryNotFoundException)
             {
                 UpdateReadStateLocked(new Dictionary<string, ModelsStoreEntry>(StringComparer.Ordinal), revision);
                 return _readStateData;
@@ -118,7 +118,7 @@ public sealed class FileModelsStore : IModelsStore
         {
             return ParseStore(JsonText.ReadFileText(_path));
         }
-        catch (FileNotFoundException)
+        catch (Exception fileError) when (fileError is FileNotFoundException or DirectoryNotFoundException)
         {
             return new Dictionary<string, ModelsStoreEntry>(StringComparer.Ordinal);
         }

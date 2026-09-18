@@ -125,7 +125,7 @@ public sealed class FileCredentialStore : ICredentialStore
                 UpdateReadStateLocked(data, revision);
                 return _readStateCredentials;
             }
-            catch (FileNotFoundException)
+            catch (Exception fileError) when (fileError is FileNotFoundException or DirectoryNotFoundException)
             {
                 UpdateReadStateLocked(new Dictionary<string, Credential>(), revision);
                 return _readStateCredentials;
@@ -141,7 +141,7 @@ public sealed class FileCredentialStore : ICredentialStore
             var content = JsonText.ReadFileText(_authPath);
             return CredentialJson.Deserialize(content);
         }
-        catch (FileNotFoundException)
+        catch (Exception fileError) when (fileError is FileNotFoundException or DirectoryNotFoundException)
         {
             return new Dictionary<string, Credential>();
         }

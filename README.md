@@ -44,7 +44,7 @@ Implemented and smoke-tested against llama.cpp:
 - trusted .NET extension commands, input transforms, and lifecycle hooks
 - initial JSON event and JSON-RPC headless modes
 - read-only and no-tools execution policies
-- provider/model runtime: full pinned built-in provider set plus `models.json` file providers and the remote catalog, deterministic startup model resolution, live `/model` (exact reference, cycling, scope) and `/thinking` with persisted `model_change`/`thinking_level_change` entries, dynamic context-window and max-output tracking of the current model
+- provider/model runtime: full pinned built-in provider set (including the dynamic `llama.cpp` router provider with `/llama` load/unload/Hugging Face download) plus `models.json` file providers and the remote catalog, deterministic startup model resolution, live `/model` (exact reference, cycling, scope) and `/thinking` with persisted `model_change`/`thinking_level_change` entries, dynamic context-window and max-output tracking of the current model
 - provider credentials: `auth.json` storage, `/login`/`/logout`, `pisharp auth check|print-api-key|print-bearer-token` with pinned exit codes, runtime API-key overrides, offline model-catalog cache
 - pinned retry semantics: provider-layer retries (Retry-After, backoff, streaming before-content-only) with a turn-level classifier (billing/quota errors never retried), turn restarts composing fresh provider budgets, and HTTP idle timeout
 - per-response usage and tier-aware cost persisted in every durable assistant entry
@@ -53,7 +53,7 @@ Implemented and smoke-tested against llama.cpp:
 
 Remaining parity work (tracked per capability in [`docs/PARITY.md`](docs/PARITY.md)):
 
-- provider/model gaps: live OAuth round-trips, the `/llama` server-management extension, `enabledModels`/`/scoped-models`, the account-scoped `radius` gateway, and provider-specific credential paths (AWS profiles, GCP ADC, Cloudflare account ids)
+- provider/model gaps: live OAuth round-trips, `enabledModels`/`/scoped-models`, the account-scoped `radius` gateway, and provider-specific credential paths (AWS profiles, GCP ADC, Cloudflare account ids)
 - consuming the remaining settings values: queue modes (`steeringMode`/`followUpMode`), `defaultTools`, resource paths, terminal/image/TUI options (the values are already parsed and exposed by the settings manager)
 - settings-backed keybindings in the terminal UI
 - full session product surface: interactive picker, delete, import, JSONL/HTML export, statistics with usage/cost totals, v1 migration
@@ -101,6 +101,8 @@ dotnet run --project src/PiSharp.Cli
 ```
 
 An API key is not required for a local endpoint; PiSharp supplies `unused` if none is configured.
+
+The `llama.cpp` provider also supports the router management flow: point `LLAMA_BASE_URL` (or `/login llama.cpp`) at a `llama-server` with the router enabled (`--models`, `--autoload`), then use `/llama` to list, load, unload, or download models (Hugging Face `owner/repo[:quant]`) and `/model` to switch to a loaded one. Without configuration the provider assumes `http://127.0.0.1:8080`.
 
 ### Terminal input
 
@@ -197,7 +199,7 @@ Interactive commands:
 
 ```text
 /session
-/name [text]
+/llama
 /label <entry-id> [text]
 /tree
 /goto <entry-id|root> [--summarize]

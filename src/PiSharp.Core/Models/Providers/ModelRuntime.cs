@@ -113,6 +113,16 @@ public sealed class ModelRuntime
     private string? _availabilityError;
     private readonly Dictionary<string, Task> _credentialOperations = new(StringComparer.Ordinal);
 
+    /// <summary>
+    /// Serializes runtime refreshes (intentional difference, see docs/PARITY.md): the
+    /// fire-and-forget full refresh fired by Register/UnregisterProvider (pinned
+    /// `void this.refresh(...)`) must not rebuild while a caller's refresh is in flight —
+    /// the rebuild supersedes (cancels) the in-flight provider refresh and its live phase
+    /// is silently discarded. The pinned code shares this latent race; serialization
+    /// removes it.
+    /// </summary>
+    private readonly SemaphoreSlim _refreshGate = new(1, 1);
+
     private ModelRuntime(
         RuntimeCredentialStore credentials,
         ModelConfig config,
@@ -150,7 +160,11 @@ public sealed class ModelRuntime
                 : new InMemoryModelsStore());
         var builtins = options.Builtins
             ?? BuiltinProviders.CreateBuiltins().Select(builtin =>
-                RemoteCatalogProvider.WithRemoteCatalog(builtin, options.CatalogBaseUrl))
+                // The llama.cpp provider syncs its catalog from the local router itself
+                // (pinned registers it outside the pi.dev overlay), so skip the overlay.
+                builtin.Id == BuiltinProviders.LlamaCppProviderId
+                    ? builtin
+                    : RemoteCatalogProvider.WithRemoteCatalog(builtin, options.CatalogBaseUrl))
             .ToList();
         var networkEnabled = options.NetworkEnabled
             ?? Environment.GetEnvironmentVariable("PI_OFFLINE") is not ("1" or "true" or "yes");
@@ -826,6 +840,19 @@ public sealed class ModelRuntime
     public async Task<ModelsRefreshResult> RefreshAsync(ModelsRefreshOptions? options = null)
     {
         options ??= new ModelsRefreshOptions();
+        await _refreshGate.WaitAsync(options.CancellationToken);
+        try
+        {
+            return await RefreshCoreAsync(options);
+        }
+        finally
+        {
+            _refreshGate.Release();
+        }
+    }
+
+    private async Task<ModelsRefreshResult> RefreshCoreAsync(ModelsRefreshOptions options)
+    {
         _config = await ModelConfig.LoadAsync(_modelsPath);
         if (options.Providers is not null)
         {

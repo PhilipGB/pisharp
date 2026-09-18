@@ -440,6 +440,9 @@ static async Task<bool> HandleCommandAsync(
         case "/logout":
             await LoginCommands.HandleLogoutAsync(argument, sessions, cancellationToken);
             return true;
+        case "/llama":
+            await LlamaCommands.HandleLlamaAsync(sessions, cancellationToken);
+            return true;
         case "/stats":
             Console.WriteLine(JsonSerializer.Serialize(sessions.GetStatistics()));
             return true;
@@ -820,6 +823,7 @@ static void PrintInteractiveHelp()
           /thinking [level|next]   List thinking levels, set one, or cycle (--persist saves the default)
           /login [provider]        Store credentials for a provider
           /logout [provider]       Remove a stored credential (env vars and models.json are unchanged)
+          /llama                   Manage the llama.cpp router (load/unload/download models)
           /name [text]             Show or set the session display name
           /label <entry-id> [text] Set or clear a bookmark label on an entry
           /stats                   Show session message/tool statistics

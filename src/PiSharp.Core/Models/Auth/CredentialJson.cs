@@ -38,6 +38,17 @@ public static class CredentialJson
                 obj["key"] = api.Key;
             }
 
+            if (api.Env is { Count: > 0 })
+            {
+                var env = new JsonObject();
+                foreach (var (name, value) in api.Env)
+                {
+                    env[name] = value;
+                }
+
+                obj["env"] = env;
+            }
+
             return obj;
         }
 
@@ -121,7 +132,20 @@ public static class CredentialJson
             var key = element.TryGetProperty("key", out var keyElement) && keyElement.ValueKind == JsonValueKind.String
                 ? keyElement.GetString()
                 : null;
-            return new ApiKeyCredential(key);
+
+            var env = new Dictionary<string, string>(StringComparer.Ordinal);
+            if (element.TryGetProperty("env", out var envElement) && envElement.ValueKind == JsonValueKind.Object)
+            {
+                foreach (var property in envElement.EnumerateObject())
+                {
+                    if (property.Value.ValueKind == JsonValueKind.String)
+                    {
+                        env[property.Name] = property.Value.GetString()!;
+                    }
+                }
+            }
+
+            return new ApiKeyCredential(key, env.Count > 0 ? env : null);
         }
 
         if (type.GetString() == "oauth")

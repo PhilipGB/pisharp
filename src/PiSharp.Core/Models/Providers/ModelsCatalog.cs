@@ -488,7 +488,9 @@ public sealed class ModelsCatalog
                 return null;
             }
 
-            return new ApiKeyCredential(result.Auth.ApiKey);
+            // Pinned reconstructs { key, env: result.env } so credential-scoped env
+            // (e.g. the llama.cpp server URL) survives the round trip.
+            return new ApiKeyCredential(result.Auth.ApiKey, result.Env);
         }
         catch (OperationCanceledException)
         {

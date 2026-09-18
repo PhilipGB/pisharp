@@ -12,9 +12,10 @@ public abstract record Credential
 
 /// <summary>
 /// Stored api-key credential (pinned pi-ai: ApiKeyCredential). Key optional for
-/// ambient-only providers.
+/// ambient-only providers. Env holds provider-scoped config values persisted next to the
+/// key (pinned: Cloudflare account/gateway ids, the llama.cpp server URL).
 /// </summary>
-public sealed record ApiKeyCredential(string? Key = null) : Credential
+public sealed record ApiKeyCredential(string? Key = null, IReadOnlyDictionary<string, string>? Env = null) : Credential
 {
     public override string Type => "api_key";
 }
@@ -59,6 +60,13 @@ public sealed record ModelAuth
 public sealed record AuthResult
 {
     public required ModelAuth Auth { get; init; }
+
+    /// <summary>
+    /// Provider-scoped environment/config values resolved from the credential and ambient
+    /// context (pinned AuthResult.env); carried into refresh-credential reconstruction.
+    /// </summary>
+    public IReadOnlyDictionary<string, string>? Env { get; init; }
+
     public string? Source { get; init; }
 }
 
