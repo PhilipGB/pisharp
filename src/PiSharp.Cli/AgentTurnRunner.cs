@@ -163,7 +163,7 @@ internal static class AgentTurnRunner
                 response.Length == 0 &&
                 toolNames.Count == 0 &&
                 !assembler.HasActivity &&
-                RetryPolicy.IsTransient(exception, cancellationToken))
+                RetryPolicy.IsRetryableTurnFailure(exception, cancellationToken))
             {
                 retryNumber++;
                 await Task.Delay(RetryPolicy.GetDelay(retryNumber, retryPolicy), cancellationToken);

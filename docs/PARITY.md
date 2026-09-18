@@ -118,8 +118,8 @@ Intentional differences in this area:
 - **Interactive commands are between-turns only**: `/model`, `/thinking`, `/login`, and `/logout` execute between turns; typed during a streaming turn they queue as steering input, matching the PiSharp turn model rather than the pinned live-in-turn command handling.
 - **Model banner**: the one-line startup banner shows the resolved model at launch; `/model`/`/thinking` report the new state inline rather than re-rendering a pinned-style live TUI footer.
 
-| Retry controls/events | Partial | `agent-session.ts` retry events | `RetryPolicy`, `--no-auto-retry` | `RetryPolicyTests`; lifecycle/schema gap remains |
-| Retry-After and timeout settings | Missing | `pi-ai` retry/provider code | Fixed local backoff only | Planned Phase 2 |
+| Retry controls/events | Partial | `agent-session.ts` retry events | `RetryPolicy` (pinned isRetryableAssistantError message patterns + structural transient classification over the exception chain), `--no-auto-retry` | `RetryPolicyTests`, `RetryAlignmentTests`; retry lifecycle events remain partial |
+| Retry-After and timeout settings | Equivalent | `pi-ai` retry/provider code | `ProviderRetryClient` ports pinned retryProviderRequest (x-should-retry override, 408/409/429/&ge;500 + transport failures, Retry-After s/date and retry-after-ms, 0.5*2^n s capped at 8s with 25% jitter reduction, server-delay cap with pinned error message, interruptible backoff, before-content-only streaming rule); provider budget from `retry.provider` (default off, 60 s delay cap); turn restarts compose a fresh provider budget per attempt; context overflow is never provider-retried (compaction owns it); HTTP idle timeout from `httpIdleTimeoutMs` (300 s default, 0/"disabled" off) with per-chunk reset in the bridge | `ProviderRetryClientTests`, `RetryAlignmentTests`, `ModelRuntimeBridgeTests` |
 
 ## Settings
 
