@@ -1,5 +1,7 @@
 using System.Text.Json;
 using PiSharp.Core;
+using PiSharp.Core.Models;
+using PiSharp.Core.Models.Providers;
 using PiSharp.Core.Settings;
 using PiSharp.Cli;
 
@@ -418,6 +420,12 @@ static async Task<bool> HandleCommandAsync(
                 ? $"Cleared label on {labelSelector}."
                 : $"Labeled {labelSelector}: {labelValue}");
             return true;
+        case "/model":
+            await HandleModelCommandAsync(argument, sessions, bootstrap, cancellationToken);
+            return true;
+        case "/thinking":
+            await HandleThinkingCommandAsync(argument, sessions, cancellationToken);
+            return true;
         case "/stats":
             Console.WriteLine(JsonSerializer.Serialize(sessions.GetStatistics()));
             return true;
@@ -491,6 +499,212 @@ static async Task<bool> HandleCommandAsync(
     }
 }
 
+/// <summary>
+/// /model (pinned handleModelCommand): no argument lists the selectable models; an exact
+/// reference selects it (refreshing remote catalogs first when the cache misses, pinned
+/// findExactModelMatch); next/prev cycle (scoped models first, pinned cycleModel). The
+/// trailing --persist flag mirrors the selector's save-as-default action.
+/// </summary>
+static async Task HandleModelCommandAsync(
+    string? argument,
+    SessionController sessions,
+    AgentBootstrap bootstrap,
+    CancellationToken cancellationToken)
+{
+    var modelState = bootstrap.ModelState;
+    if (argument is null)
+    {
+        PrintModelList(modelState, bootstrap.ModelRuntime);
+        return;
+    }
+
+    var parts = argument.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+    var persist = parts.Any(part => part.Equals("--persist", StringComparison.OrdinalIgnoreCase));
+    var term = parts.FirstOrDefault(part => !part.Equals("--persist", StringComparison.OrdinalIgnoreCase));
+    if (term is null)
+    {
+        PrintModelList(modelState, bootstrap.ModelRuntime);
+        return;
+    }
+
+    if (term.Equals("next", StringComparison.OrdinalIgnoreCase) ||
+        term.Equals("forward", StringComparison.OrdinalIgnoreCase) ||
+        term.Equals("prev", StringComparison.OrdinalIgnoreCase) ||
+        term.Equals("previous", StringComparison.OrdinalIgnoreCase) ||
+        term.Equals("back", StringComparison.OrdinalIgnoreCase) ||
+        term.Equals("backward", StringComparison.OrdinalIgnoreCase))
+    {
+        var direction = term.Equals("next", StringComparison.OrdinalIgnoreCase) ||
+            term.Equals("forward", StringComparison.OrdinalIgnoreCase) ? "forward" : "backward";
+        var cycled = await sessions.CycleModelAsync(direction, new ModelMutationOptions(persist), cancellationToken);
+        Console.WriteLine(cycled is null
+            ? "Only one model is available to cycle."
+            : $"Model: {cycled.Model.Id}");
+        return;
+    }
+
+    var model = await FindModelForCommandAsync(term, modelState, bootstrap.ModelRuntime, cancellationToken);
+    if (model is null)
+    {
+        Console.Error.WriteLine($"Unknown model \"{term}\".");
+        PrintModelList(modelState, bootstrap.ModelRuntime);
+        return;
+    }
+
+    try
+    {
+        await sessions.SetModelAsync(model, new ModelMutationOptions(persist), cancellationToken);
+        Console.WriteLine(persist ? $"Default model: {model.Reference}" : $"Model: {model.Id}");
+    }
+    catch (InvalidOperationException exception)
+    {
+        Console.Error.WriteLine(exception.Message);
+    }
+}
+
+/// <summary>
+/// Resolves a /model argument exactly (pinned findExactModelReferenceMatch) against the
+/// scoped models when a scope is active, otherwise the available snapshot; on a cache miss
+/// without a scope, refreshes the remote catalogs once with the pinned 15s cap and retries
+/// before giving up.
+/// </summary>
+static async Task<ModelInfo?> FindModelForCommandAsync(
+    string term,
+    ModelSessionState modelState,
+    ModelRuntime runtime,
+    CancellationToken cancellationToken)
+{
+    var candidates = modelState.ScopedModels.Count > 0
+        ? modelState.ScopedModels.Select(scoped => scoped.Model).ToList()
+        : runtime.GetAvailableSnapshot().ToList();
+    var match = ModelResolver.FindExactModelReferenceMatch(term, candidates);
+    if (match is not null || modelState.ScopedModels.Count > 0)
+    {
+        return match;
+    }
+
+    Console.WriteLine("Refreshing model catalogs\u2026");
+    try
+    {
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        cts.CancelAfter(TimeSpan.FromSeconds(15));
+        var result = await runtime.RefreshAsync(new ModelsRefreshOptions { CancellationToken = cts.Token });
+        if (result.Aborted)
+        {
+            Console.Error.WriteLine("Warning: model refresh timed out; searching cached models.");
+        }
+        else if (result.Errors.Count > 0)
+        {
+            Console.Error.WriteLine(
+                $"Warning: could not refresh {string.Join(", ", result.Errors.Keys)}; searching cached models.");
+        }
+    }
+    catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+    {
+        Console.Error.WriteLine("Warning: model refresh timed out; searching cached models.");
+    }
+    catch (Exception exception)
+    {
+        Console.Error.WriteLine($"Warning: could not refresh model catalogs: {exception.Message}");
+    }
+
+    return ModelResolver.FindExactModelReferenceMatch(term, runtime.GetAvailableSnapshot());
+}
+
+/// <summary>
+/// Lists the selectable models (scoped when a scope is active, otherwise the authenticated
+/// snapshot) with the current model marked.
+/// </summary>
+static void PrintModelList(ModelSessionState modelState, ModelRuntime runtime)
+{
+    var candidates = modelState.ScopedModels.Count > 0
+        ? modelState.ScopedModels.Select(scoped => scoped.Model).ToList()
+        : runtime.GetAvailableSnapshot().ToList();
+
+    var current = modelState.Model;
+    var currentLevel = modelState.ThinkingLevel ?? "off";
+    Console.WriteLine(current is { } selected
+        ? $"Current model: {selected.Reference}  (thinking: {currentLevel})"
+        : "No model selected.");
+    if (candidates.Count == 0)
+    {
+        Console.WriteLine("No models available. Set an API key or use /login.");
+        return;
+    }
+
+    foreach (var provider in candidates.Select(model => model.Provider).Distinct().OrderBy(p => p, StringComparer.Ordinal))
+    {
+        Console.WriteLine($"  {provider}:");
+        foreach (var model in candidates.Where(m => m.Provider == provider).OrderBy(m => m.Id, StringComparer.Ordinal))
+        {
+            var marker = current is not null && string.Equals(model.Reference, current.Reference, StringComparison.Ordinal)
+                ? "  [current]"
+                : string.Empty;
+            var thinking = model.Reasoning ? "  thinking" : string.Empty;
+            Console.WriteLine($"    {model.Id}{thinking}{marker}");
+        }
+    }
+}
+
+/// <summary>
+/// /thinking (pinned handleThinkingCommand): no argument lists the selectable levels; an
+/// exact level name selects it (clamped by setThinkingLevel); next cycles through the
+/// current model's levels. The trailing --persist flag mirrors the selector's save-as-default
+/// action.
+/// </summary>
+static async Task HandleThinkingCommandAsync(
+    string? argument,
+    SessionController sessions,
+    CancellationToken cancellationToken)
+{
+    var modelState = sessions.ModelState;
+    if (argument is null)
+    {
+        PrintThinkingLevels(modelState);
+        return;
+    }
+
+    var parts = argument.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+    var persist = parts.Any(part => part.Equals("--persist", StringComparison.OrdinalIgnoreCase));
+    var term = parts.FirstOrDefault(part => !part.Equals("--persist", StringComparison.OrdinalIgnoreCase));
+    if (term is null)
+    {
+        PrintThinkingLevels(modelState);
+        return;
+    }
+
+    if (term.Equals("next", StringComparison.OrdinalIgnoreCase))
+    {
+        var level = await sessions.CycleThinkingLevelAsync(new ModelMutationOptions(persist), cancellationToken);
+        Console.WriteLine(level is null
+            ? "Current model does not support thinking."
+            : $"Thinking level: {level}");
+        return;
+    }
+
+    var available = modelState.GetAvailableThinkingLevels();
+    var match = available.FirstOrDefault(level => string.Equals(level, term, StringComparison.OrdinalIgnoreCase));
+    if (match is null)
+    {
+        Console.Error.WriteLine(
+            $"Unknown thinking level \"{term}\". Available levels: {string.Join(", ", available)}.");
+        return;
+    }
+
+    var result = await sessions.SetThinkingLevelAsync(match, new ModelMutationOptions(persist), cancellationToken);
+    Console.WriteLine(persist ? $"Default thinking level: {match}" : $"Thinking level: {result.Effective}");
+}
+
+/// <summary>Shows the current thinking level and the levels selectable for the model.</summary>
+static void PrintThinkingLevels(ModelSessionState modelState)
+{
+    var level = modelState.ThinkingLevel ?? "off";
+    Console.WriteLine(modelState.Model is null
+        ? "No model selected; thinking levels default to the selectable options."
+        : $"Thinking level: {level}");
+    Console.WriteLine($"Available levels: {string.Join(", ", modelState.GetAvailableThinkingLevels())}");
+}
+
 static bool IsInteractiveStartup(CliOptions options) =>
     options.OutputMode == OutputMode.Text &&
     !options.PrintMode &&
@@ -535,6 +749,8 @@ static void PrintInteractiveHelp()
     Console.WriteLine("""
         Commands:
           /session                 Show current session metadata
+          /model [ref|next|prev]   List models, select one, or cycle (--persist saves the default)
+          /thinking [level|next]   List thinking levels, set one, or cycle (--persist saves the default)
           /name [text]             Show or set the session display name
           /label <entry-id> [text] Set or clear a bookmark label on an entry
           /stats                   Show session message/tool statistics
@@ -568,9 +784,13 @@ static void PrintHelp()
           pisharp [options] [@files...] [prompt...]
 
         Options:
-          --model <name>              Model name (or PISHARP_MODEL)
+          --model <name>              Model name (or PISHARP_MODEL), e.g. openai/gpt-5.5
+          --models <pattern>          Model scope pattern for /model cycling (repeatable)
+          --thinking <level>          Initial thinking level (or PISHARP_THINKING)
           --endpoint <url>            OpenAI-compatible base URL, e.g. http://localhost:8000/v1
           --api-key <key>             API key; defaults to PISHARP_API_KEY then OPENAI_API_KEY
+          --offline                   Do not refresh remote model catalogs at startup
+          --list-models               Print the model catalogue and exit
           --cwd <path>                Workspace root; defaults to current directory
           --context-root <path>       Stop parent AGENTS.md/CLAUDE.md discovery at this directory
           --extension, -e <path>      Load a trusted .NET extension DLL/directory (repeatable)
@@ -598,6 +818,7 @@ static void PrintHelp()
 
         Examples:
           PISHARP_MODEL=gpt-5.4 pisharp "fix the failing tests"
+          pisharp --list-models
           pisharp --model Qwen3.8-27B --endpoint http://192.168.0.97:8000/v1 "inspect this repo"
           pisharp --context-root . --model Qwen3.8-27B --endpoint http://localhost:8000/v1
           pisharp --continue

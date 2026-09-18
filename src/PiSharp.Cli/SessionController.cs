@@ -37,7 +37,7 @@ internal sealed class SessionController : IProviderRequestCompactor
     private readonly SettingsManager _settings;
     private readonly AIAgent _agent;
     private readonly SessionStore? _store;
-    private readonly string _model;
+    private string _model;
     private readonly PiSessionChatHistoryProvider _sessionHistory;
     private readonly PiSummarizer _summarizer;
     private readonly ModelSessionState _modelState;
@@ -96,8 +96,149 @@ internal sealed class SessionController : IProviderRequestCompactor
     /// <summary>Gets the live model/thinking state shared with the provider bridge.</summary>
     public ModelSessionState ModelState => _modelState;
 
+    /// <summary>Gets the settings manager backing this session (defaults, thinking levels).</summary>
+    public SettingsManager Settings => _settings;
+
+    /// <summary>Gets the model runtime shared by this session (catalog, auth, availability).</summary>
+    public ModelRuntime ModelRuntime => _bootstrap.ModelRuntime;
+
     /// <summary>Gets or sets how the active turn aborts (wired by the host to the turn coordinator).</summary>
     public Action? AbortActiveTurn { get; set; }
+
+    /// <summary>
+    /// Sets the session model (pinned AgentSession.setModel plus the session transcript
+    /// append). Throws InvalidOperationException with the pinned "No API key for
+    /// provider/model" message when the target provider has no auth. Appends a model_change
+    /// entry, and a thinking_level_change entry when the applied level changed, to
+    /// persistent sessions only.
+    /// </summary>
+    public async Task<SetModelResult> SetModelAsync(
+        ModelInfo model,
+        ModelMutationOptions options,
+        CancellationToken cancellationToken = default)
+    {
+        var previousThinking = _modelState.ThinkingLevel;
+        var result = await _modelState.SetModelAsync(model, options, cancellationToken).ConfigureAwait(false);
+        _model = result.Model.Reference;
+        await AppendModelChangeEntriesAsync(
+            result.Model.Provider,
+            result.Model.Id,
+            previousThinking,
+            result.ThinkingLevel,
+            cancellationToken).ConfigureAwait(false);
+        return result;
+    }
+
+    /// <summary>
+    /// Sets the thinking level (pinned AgentSession.setThinkingLevel). Clamps to the current
+    /// model's capabilities; appends a thinking_level_change entry to persistent sessions
+    /// only when the effective level actually changed.
+    /// </summary>
+    public async Task<SetThinkingResult> SetThinkingLevelAsync(
+        string level,
+        ModelMutationOptions options,
+        CancellationToken cancellationToken = default)
+    {
+        var result = _modelState.SetThinkingLevel(level, options);
+        if (result.Changed)
+        {
+            await AppendThinkingLevelEntryAsync(result.Effective, cancellationToken).ConfigureAwait(false);
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Cycles to the next/previous model (pinned AgentSession.cycleModel, exposed here as a
+    /// command because the text CLI has no cycle keybinding). Returns null when there is at
+    /// most one candidate. Appends a model_change entry, and a thinking entry when the
+    /// applied level changed, to persistent sessions.
+    /// </summary>
+    public async Task<ModelCycleResult?> CycleModelAsync(
+        string direction,
+        ModelMutationOptions options,
+        CancellationToken cancellationToken = default)
+    {
+        var previousThinking = _modelState.ThinkingLevel;
+        var result = _modelState.CycleModel(direction, options);
+        if (result is null)
+        {
+            return null;
+        }
+
+        _model = result.Model.Reference;
+        await AppendModelChangeEntriesAsync(
+            result.Model.Provider,
+            result.Model.Id,
+            previousThinking,
+            result.ThinkingLevel,
+            cancellationToken).ConfigureAwait(false);
+        return result;
+    }
+
+    /// <summary>
+    /// Cycles to the next thinking level (pinned AgentSession.cycleThinkingLevel). Returns
+    /// null when the current model does not support thinking; appends a thinking_level_change
+    /// entry to persistent sessions when the level changed.
+    /// </summary>
+    public async Task<string?> CycleThinkingLevelAsync(
+        ModelMutationOptions options,
+        CancellationToken cancellationToken = default)
+    {
+        var previous = _modelState.ThinkingLevel;
+        var level = _modelState.CycleThinkingLevel(options);
+        if (level is not null && !string.Equals(level, previous, StringComparison.Ordinal))
+        {
+            await AppendThinkingLevelEntryAsync(level, cancellationToken).ConfigureAwait(false);
+        }
+
+        return level;
+    }
+
+    /// <summary>
+    /// Appends the durable entries for a model switch (pinned sessionManager.appendModelChange
+    /// plus the thinking entry from setThinkingLevel). Ephemeral and pre-V3 sessions keep no
+    /// model history.
+    /// </summary>
+    private async Task AppendModelChangeEntriesAsync(
+        string provider,
+        string modelId,
+        string? previousThinking,
+        string? newThinking,
+        CancellationToken cancellationToken)
+    {
+        if (_store is null || Document is not { IsPiV3: true })
+        {
+            return;
+        }
+
+        var entries = new List<SessionEntry>
+        {
+            new ModelChangeEntry(
+                Guid.NewGuid().ToString("N"), ActiveEntryId, DateTimeOffset.UtcNow, provider, modelId),
+        };
+        if (newThinking is not null && !string.Equals(newThinking, previousThinking, StringComparison.Ordinal))
+        {
+            entries.Add(new ThinkingLevelChangeEntry(
+                Guid.NewGuid().ToString("N"), entries[^1].Id, DateTimeOffset.UtcNow, newThinking));
+        }
+
+        ActiveEntryId = entries[^1].Id;
+        await _store.AppendEntriesAsync(Document, entries, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task AppendThinkingLevelEntryAsync(string level, CancellationToken cancellationToken)
+    {
+        if (_store is null || Document is not { IsPiV3: true })
+        {
+            return;
+        }
+
+        var entry = new ThinkingLevelChangeEntry(
+            Guid.NewGuid().ToString("N"), ActiveEntryId, DateTimeOffset.UtcNow, level);
+        ActiveEntryId = entry.Id;
+        await _store.AppendEntriesAsync(Document, [entry], cancellationToken).ConfigureAwait(false);
+    }
 
     /// <summary>
     /// Gets or sets the output sink for compaction events raised outside an explicit caller
