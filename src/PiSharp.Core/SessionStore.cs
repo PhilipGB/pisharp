@@ -54,11 +54,15 @@ public sealed class SessionStore
 
     public async Task AppendTurnAsync(SessionDocument document, SessionTurn turn, CancellationToken cancellationToken = default)
     {
-        document.Add(turn);
+        // Durable commit ordering: validate before writing, commit the session file,
+        // and only then advance the in-memory graph. A failed commit must not leave
+        // the session state ahead of the session file.
+        document.ValidateTurn(turn);
         await File.AppendAllTextAsync(
             document.FilePath,
             JsonSerializer.Serialize(turn, JsonOptions) + Environment.NewLine,
             cancellationToken);
+        document.Add(turn);
     }
 
     public async Task AppendEntriesAsync(
@@ -67,9 +71,13 @@ public sealed class SessionStore
         CancellationToken cancellationToken = default)
     {
         var pending = entries.ToArray();
-        document.AddEntries(pending);
+
+        // Durable commit ordering: validate the whole batch before writing, commit the
+        // session file, and only then advance the in-memory graph.
+        document.ValidateEntries(pending);
         var lines = pending.Select(entry => JsonSerializer.Serialize(entry, entry.GetType(), JsonOptions));
         await File.AppendAllTextAsync(document.FilePath, string.Join(Environment.NewLine, lines) + Environment.NewLine, cancellationToken);
+        document.AddEntries(pending);
     }
 
     public async Task<SessionDocument> LoadAsync(string path, CancellationToken cancellationToken = default)

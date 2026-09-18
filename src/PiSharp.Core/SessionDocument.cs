@@ -167,7 +167,12 @@ public sealed class SessionDocument
             messages.Length);
     }
 
-    public void Add(SessionTurn turn)
+    /// <summary>
+    /// Validates a turn without mutating the document: it throws on a duplicate id or a
+    /// missing parent, and lets <see cref="SessionStore.AppendTurnAsync"/> commit the
+    /// session file before the in-memory graph advances (durable commit ordering).
+    /// </summary>
+    public void ValidateTurn(SessionTurn turn)
     {
         EnsureLegacy();
         if (_turns.Any(existing => existing.Id == turn.Id))
@@ -179,29 +184,48 @@ public sealed class SessionDocument
         {
             throw new InvalidDataException($"Parent turn does not exist: {turn.ParentId}");
         }
+    }
 
+    public void Add(SessionTurn turn)
+    {
+        ValidateTurn(turn);
         _turns.Add(turn);
     }
 
-    internal void AddEntries(IEnumerable<SessionEntry> entries)
+    /// <summary>
+    /// Validates a batch without mutating the document: it throws on a duplicate id or a
+    /// missing parent (a later entry may reference an earlier one in the same batch), and
+    /// lets <see cref="SessionStore.AppendEntriesAsync"/> commit the session file before
+    /// the in-memory graph advances (durable commit ordering).
+    /// </summary>
+    internal void ValidateEntries(IEnumerable<SessionEntry> entries)
     {
         if (!IsPiV3)
         {
             throw new InvalidOperationException("Typed entries can only be added to a Pi v3 session.");
         }
 
+        // Ids are matched case-insensitively, consistent with the loader and ResolveTurn.
+        var known = new HashSet<string>(_entries.Select(entry => entry.Id), StringComparer.OrdinalIgnoreCase);
         foreach (var entry in entries)
         {
-            if (_entries.Any(existing => existing.Id == entry.Id))
+            if (!known.Add(entry.Id))
             {
                 throw new InvalidDataException($"Duplicate session entry id: {entry.Id}");
             }
 
-            if (entry.ParentId is not null && _entries.All(existing => existing.Id != entry.ParentId))
+            if (entry.ParentId is not null && !known.Contains(entry.ParentId))
             {
                 throw new InvalidDataException($"Parent session entry does not exist: {entry.ParentId}");
             }
+        }
+    }
 
+    internal void AddEntries(IEnumerable<SessionEntry> entries)
+    {
+        ValidateEntries(entries);
+        foreach (var entry in entries)
+        {
             _entries.Add(entry);
         }
     }

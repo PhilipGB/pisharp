@@ -189,6 +189,47 @@ public sealed class PiSessionStoreTests
         Assert.Equal(source.FilePath, fork.PiHeader!.ParentSession);
     }
 
+    [Fact]
+    public async Task AppendEntries_FailedCommitDoesNotAdvanceTheInMemoryGraph()
+    {
+        using var temp = TempDirectory.Create();
+        var workspace = Directory.CreateDirectory(Path.Combine(temp.Path, "repo")).FullName;
+        var store = new SessionStore(workspace, Path.Combine(temp.Path, "sessions"));
+        var header = PiSessionHeader.Create(workspace);
+        // The parent directory does not exist, so the durable commit (the file append)
+        // fails. The in-memory graph must stay exactly where it was.
+        var document = new SessionDocument(
+            Path.Combine(temp.Path, "missing-dir", "session.jsonl"),
+            header,
+            []);
+
+        var user = UserMessage("user", null, "hello");
+        var assistant = AssistantMessage("assistant", user.Id, [new { type = "text", text = "world" }]);
+
+        await Assert.ThrowsAsync<DirectoryNotFoundException>(() =>
+            store.AppendEntriesAsync(document, [user, assistant]));
+
+        Assert.Empty(document.Entries);
+        Assert.Empty(document.Turns);
+    }
+
+    [Fact]
+    public async Task AppendTurn_FailedCommitDoesNotAdvanceTheInMemoryGraph()
+    {
+        using var temp = TempDirectory.Create();
+        var workspace = Directory.CreateDirectory(Path.Combine(temp.Path, "repo")).FullName;
+        var store = new SessionStore(workspace, Path.Combine(temp.Path, "sessions"));
+        var header = SessionHeader.Create(temp.Path, "model");
+        var document = new SessionDocument(Path.Combine(temp.Path, "missing-dir", "session.jsonl"), header);
+        using var json = JsonDocument.Parse("{\"state\":true}");
+        var root = SessionTurn.Create(null, "first", "assistant", json.RootElement);
+
+        await Assert.ThrowsAsync<DirectoryNotFoundException>(() =>
+            store.AppendTurnAsync(document, root));
+
+        Assert.Empty(document.Turns);
+    }
+
     private static MessageEntry UserMessage(string id, string? parentId, string content) =>
         new(id, parentId, DateTimeOffset.UtcNow,
             JsonSerializer.SerializeToElement(new { role = "user", content }));
