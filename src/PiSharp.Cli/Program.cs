@@ -43,6 +43,14 @@ try
             return;
         }
 
+        // First Ctrl+C during an active /llama load or download stops just the operation
+        // (the pinned TUI Esc: server-side stop + restore, back to the menu); a second
+        // press exits the app.
+        if (LlamaCommands.TryCancelActiveOperation())
+        {
+            return;
+        }
+
         shutdown.Cancel();
     };
 
@@ -155,7 +163,7 @@ try
     {
         Console.WriteLine($"Context files: {bootstrap.ContextFiles.Count} (use /context to list)");
     }
-    Console.WriteLine("Type /help for commands. Ctrl+C aborts the active turn, or exits when idle.");
+    Console.WriteLine("Type /help for commands. Ctrl+C aborts the active turn or /llama operation, or exits when idle.");
 
     // Key mode (interactive TTY): cancellable prompt — Esc clears the draft, Ctrl+C exits
     // (item 4). A blocking line read cannot be interrupted on Unix, so interactive input

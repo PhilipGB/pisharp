@@ -102,7 +102,7 @@ dotnet run --project src/PiSharp.Cli
 
 An API key is not required for a local endpoint; PiSharp supplies `unused` if none is configured.
 
-The `llama.cpp` provider also supports the router management flow: point `LLAMA_BASE_URL` (or `/login llama.cpp`) at a `llama-server` with the router enabled (`--models`, `--autoload`), then use `/llama` to list, load, unload, or download models (Hugging Face `owner/repo[:quant]`) and `/model` to switch to a loaded one. Without configuration the provider assumes `http://127.0.0.1:8080`.
+The `llama.cpp` provider also supports the router management flow: point `LLAMA_BASE_URL` (or `/login llama.cpp`) at a `llama-server` with the router enabled (`--models`, `--autoload`), then use `/llama` to list, load, unload, or download models (Hugging Face `owner/repo[:quant]`) and `/model` to switch to a loaded one. The server URL comes from the login-stored credential or the ambient `LLAMA_BASE_URL`; when neither is set the provider has no server (its models are unavailable) — `http://127.0.0.1:8080` is only the login prompt's fallback. Ctrl+C during a `/llama` load or download stops just that operation (the server-side stop plus restore of any replaced models) and returns to the menu; a second Ctrl+C exits.
 
 ### Terminal input
 

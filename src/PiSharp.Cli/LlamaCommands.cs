@@ -11,13 +11,73 @@ namespace PiSharp.Cli;
 /// router — lists models with lifecycle status, loads/unloads models, and downloads
 /// GGUF files from Hugging Face. The pinned TUI is replaced by numbered prompts and
 /// line-oriented progress (documented difference); server operations and catalog sync
-/// follow the pinned flows.
+/// follow the pinned flows. The first Ctrl+C during a load or download stops just that
+/// operation (server-side stop, restore of replaced models, back to the menu) — the
+/// pinned TUI Esc; a second Ctrl+C exits the app.
 /// </summary>
 internal static class LlamaCommands
 {
     private const int CatalogSyncTimeoutMs = 15_000;
 
+    /// <summary>The in-flight load/download operation's token source; null when idle.</summary>
+    private static volatile CancellationTokenSource? _activeOperation;
+
     private sealed record ModelOption(LlamaModelInfo Model, string Label);
+
+    /// <summary>
+    /// Cancels the active load/download operation — the first Ctrl+C while it runs
+    /// (the pinned TUI Esc). Returns false when no operation is active or it was already
+    /// cancelled (the caller then exits the app on the second press).
+    /// </summary>
+    internal static bool TryCancelActiveOperation()
+    {
+        var operation = _activeOperation;
+        if (operation is null || operation.IsCancellationRequested)
+        {
+            return false;
+        }
+
+        try
+        {
+            operation.Cancel();
+        }
+        catch (ObjectDisposedException)
+        {
+            // The operation just finished; treat it as not cancellable so the app exits.
+            return false;
+        }
+
+        return true;
+    }
+
+    private static void SetActiveOperation(CancellationTokenSource operation) => _activeOperation = operation;
+
+    private static void ClearActiveOperation(CancellationTokenSource operation)
+    {
+        // Clear only if still the active one (a later operation replaced it).
+        if (ReferenceEquals(_activeOperation, operation))
+        {
+            _activeOperation = null;
+        }
+    }
+
+    /// <summary>Prints each distinct progress line once (pinned updates in place; text prints).</summary>
+    private sealed class LineProgressPrinter(Func<LlamaProgress, string> line)
+    {
+        private string _last = string.Empty;
+
+        public void Report(LlamaProgress progress)
+        {
+            var text = line(progress);
+            if (string.Equals(text, _last, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            _last = text;
+            Console.WriteLine(text);
+        }
+    }
 
     /// <summary>
     /// /llama. Resolves the configured server (stored credential env URL or LLAMA_BASE_URL
@@ -180,9 +240,11 @@ internal static class LlamaCommands
 
     /// <summary>
     /// Pinned loadModel: when other models are loaded, choose replace vs keep; load with
-    /// progress; restore the replaced models on cancel or failure.
+    /// progress; a cancelled load (first Ctrl+C) stops the load on the server, restores
+    /// the replaced models with a fresh token, and returns to the menu; a failed load
+    /// also restores the replaced models and rethrows.
     /// </summary>
-    private static async Task LoadModelAsync(
+    internal static async Task LoadModelAsync(
         IConsoleIO console,
         ModelRuntime runtime,
         LlamaClient client,
@@ -215,20 +277,14 @@ internal static class LlamaCommands
             }
         }
 
+        // The operation token is what Ctrl+C cancels (TryCancelActiveOperation); the
+        // caller token is the app shutdown, which exits the whole process.
+        using var operationCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        SetActiveOperation(operationCts);
+        var progress = new LineProgressPrinter(entry => entry.Message);
         try
         {
-            var lastProgress = string.Empty;
-            await client.LoadAndWaitAsync(
-                target.Id,
-                progress =>
-                {
-                    if (!string.Equals(progress.Message, lastProgress, StringComparison.Ordinal))
-                    {
-                        lastProgress = progress.Message;
-                        Console.WriteLine(progress.Message);
-                    }
-                },
-                cancellationToken);
+            await client.LoadAndWaitAsync(target.Id, progress.Report, operationCts.Token);
             await SyncCatalogAsync(runtime, client, cancellationToken);
             var refreshed = await client.ListAsync(cancellationToken: cancellationToken);
             var loadedModel = refreshed.FirstOrDefault(model => model.Id == target.Id);
@@ -237,13 +293,27 @@ internal static class LlamaCommands
                     ? $"Loaded {target.Id}"
                     : $"Load started for {target.Id}");
         }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            // Pinned runWithProgress cancel: stop the load on the server, restore the
+            // replaced models with a fresh token, and back to the menu.
+            await StopServerSideModelAsync(client, target.Id);
+            if (replace)
+            {
+                await RestoreLoadedAsync(client, loaded);
+            }
+
+            Console.WriteLine("Load cancelled.");
+        }
         catch
         {
-            if (replace)
+            // A hard load failure also restores the replaced models (pinned) — but not
+            // during app shutdown, where the process is going away anyway.
+            if (replace && !cancellationToken.IsCancellationRequested)
             {
                 try
                 {
-                    await RestoreLoadedAsync(client, loaded, cancellationToken);
+                    await RestoreLoadedAsync(client, loaded);
                 }
                 catch
                 {
@@ -253,17 +323,40 @@ internal static class LlamaCommands
 
             throw;
         }
+        finally
+        {
+            ClearActiveOperation(operationCts);
+        }
     }
 
-    private static async Task RestoreLoadedAsync(
-        LlamaClient client,
-        IReadOnlyList<LlamaModelInfo> loaded,
-        CancellationToken cancellationToken)
+    /// <summary>
+    /// Stops the model on the server (pinned runWithProgress cancel callback,
+    /// <c>client.unload(model)</c>). Best-effort: a dead server or an already-stopped
+    /// load must not mask the cancellation outcome.
+    /// </summary>
+    private static async Task StopServerSideModelAsync(LlamaClient client, string model)
+    {
+        try
+        {
+            await client.UnloadAsync(model, CancellationToken.None);
+        }
+        catch (Exception error) when (error is not OperationCanceledException)
+        {
+            // The cancellation outcome (restore + back to the menu) is unaffected.
+        }
+    }
+
+    /// <summary>
+    /// Restores the models a replaced load displaced. Runs with a fresh token (pinned
+    /// restoreLoaded passes no signal): the cancelled operation token must not cancel
+    /// the recovery loads.
+    /// </summary>
+    private static async Task RestoreLoadedAsync(LlamaClient client, IReadOnlyList<LlamaModelInfo> loaded)
     {
         Console.WriteLine("Restoring previously loaded models");
         foreach (var model in loaded)
         {
-            await client.LoadAndWaitAsync(model.Id, cancellationToken: cancellationToken);
+            await client.LoadAndWaitAsync(model.Id);
         }
     }
 
@@ -277,18 +370,36 @@ internal static class LlamaCommands
         LlamaClient client,
         CancellationToken cancellationToken)
     {
+        var modelId = await DiscoverHuggingFaceModelAsync(console, cancellationToken);
+        if (modelId is null)
+        {
+            return;
+        }
+
+        await DownloadModelCoreAsync(runtime, client, modelId, cancellationToken);
+    }
+
+    /// <summary>
+    /// Pinned downloadModel discovery: HF search, result selection, gated-model notice,
+    /// quantization selection. Returns the resolved model id, or null when the user
+    /// cancels any step.
+    /// </summary>
+    private static async Task<string?> DiscoverHuggingFaceModelAsync(
+        IConsoleIO console,
+        CancellationToken cancellationToken)
+    {
         var huggingFace = new HuggingFaceClient(await HuggingFaceClient.FindHuggingFaceToken());
         var query = Prompt(console, "Search Hugging Face (GGUF): ", cancellationToken);
         if (string.IsNullOrWhiteSpace(query))
         {
-            return;
+            return null;
         }
 
         var results = await huggingFace.SearchAsync(query, cancellationToken);
         if (results.Count == 0)
         {
             Console.WriteLine("No models found.");
-            return;
+            return null;
         }
 
         for (var i = 0; i < results.Count; i++)
@@ -299,10 +410,20 @@ internal static class LlamaCommands
         var selection = Prompt(console, "Select a model (blank to cancel): ", cancellationToken);
         if (!int.TryParse(selection, out var index) || index < 1 || index > results.Count)
         {
-            return;
+            return null;
         }
 
-        var parsed = ParseHuggingFaceModel(results[index - 1].Id);
+        return await ResolveQuantizedModelIdAsync(console, huggingFace, results[index - 1].Id, cancellationToken);
+    }
+
+    /// <summary>Pinned downloadModel details step: gated notice plus quantization selection.</summary>
+    private static async Task<string?> ResolveQuantizedModelIdAsync(
+        IConsoleIO console,
+        HuggingFaceClient huggingFace,
+        string repositoryId,
+        CancellationToken cancellationToken)
+    {
+        var parsed = ParseHuggingFaceModel(repositoryId);
         Console.WriteLine($"Loading model details ({parsed.Repository})");
         var details = await huggingFace.DetailsAsync(parsed.Repository, cancellationToken);
         if (details.Gated is not null)
@@ -315,7 +436,7 @@ internal static class LlamaCommands
                 cancellationToken);
             if (choice != "Continue")
             {
-                return;
+                return null;
             }
         }
 
@@ -328,36 +449,47 @@ internal static class LlamaCommands
             var choice = Select(console, $"Select quantization\n{details.Id}", labels, cancellationToken);
             if (choice is null)
             {
-                return;
+                return null;
             }
 
             quantization = details.Quantizations[Array.IndexOf(labels, choice)].Name;
         }
 
-        var modelId = string.IsNullOrEmpty(quantization) ? details.Id : $"{details.Id}:{quantization}";
-        var lastProgress = string.Empty;
+        return string.IsNullOrEmpty(quantization) ? details.Id : $"{details.Id}:{quantization}";
+    }
+
+    /// <summary>
+    /// Downloads a resolved Hugging Face model with progress. The first Ctrl+C stops the
+    /// download on the server (pinned cancel callback) and returns to the menu; a second
+    /// Ctrl+C exits the app.
+    /// </summary>
+    internal static async Task DownloadModelCoreAsync(
+        ModelRuntime runtime,
+        LlamaClient client,
+        string modelId,
+        CancellationToken cancellationToken)
+    {
+        using var operationCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        SetActiveOperation(operationCts);
+        var progress = new LineProgressPrinter(entry =>
+            entry.Detail is null ? entry.Message : $"{entry.Message}… {entry.Detail}");
         try
         {
-            await client.DownloadAndWaitAsync(
-                modelId,
-                progress =>
-                {
-                    var line = progress.Detail is null ? progress.Message : $"{progress.Message}… {progress.Detail}";
-                    if (!string.Equals(line, lastProgress, StringComparison.Ordinal))
-                    {
-                        lastProgress = line;
-                        Console.WriteLine(line);
-                    }
-                },
-                cancellationToken);
+            await client.DownloadAndWaitAsync(modelId, progress.Report, operationCts.Token);
+            await SyncCatalogAsync(runtime, client, cancellationToken);
+            Console.WriteLine($"Downloaded {modelId}");
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
-            throw;
+            // Pinned downloadModel cancel: stop the server-side download. Nothing to
+            // restore — the download displaced no loaded models.
+            await StopServerSideModelAsync(client, modelId);
+            Console.WriteLine("Download cancelled.");
         }
-
-        await SyncCatalogAsync(runtime, client, cancellationToken);
-        Console.WriteLine($"Downloaded {modelId}");
+        finally
+        {
+            ClearActiveOperation(operationCts);
+        }
     }
 
     /// <summary>
