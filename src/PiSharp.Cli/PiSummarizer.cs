@@ -104,9 +104,9 @@ internal sealed class PiSummarizer
 
     private readonly IChatClient _client;
     private readonly RetryPolicyOptions _retryPolicy;
-    private readonly int _maxOutputTokens;
+    private readonly Func<int> _maxOutputTokens;
 
-    public PiSummarizer(IChatClient client, RetryPolicyOptions retryPolicy, int maxOutputTokens)
+    public PiSummarizer(IChatClient client, RetryPolicyOptions retryPolicy, Func<int> maxOutputTokens)
     {
         _client = client;
         _retryPolicy = retryPolicy;
@@ -198,9 +198,12 @@ internal sealed class PiSummarizer
         // model preserves existing goals/decisions instead of starting a brand-new summary.
         var effectivePrompt = string.IsNullOrWhiteSpace(previousSummary) ? defaultPrompt : UpdatePrompt;
         var prompt = BuildConversationPrompt(entries, customInstructions, effectivePrompt, replaceInstructions: false, previousSummary);
-        var maxTokens = Math.Min(
-            Math.Max(1, (int)(reserveTokens * SummaryOutputFraction)),
-            _maxOutputTokens);
+        // Pinned: the summary is capped at 80% of the reserve budget and at the current
+        // model's max output (dynamic after /model).
+        var modelMaxOutput = _maxOutputTokens();
+        var maxTokens = modelMaxOutput > 0
+            ? Math.Min(Math.Max(1, (int)(reserveTokens * SummaryOutputFraction)), modelMaxOutput)
+            : Math.Max(1, (int)(reserveTokens * SummaryOutputFraction));
         var response = await CompleteAsync(prompt, maxTokens, cancellationToken);
         return (response.Text, CreateUsage(response.Usage));
     }

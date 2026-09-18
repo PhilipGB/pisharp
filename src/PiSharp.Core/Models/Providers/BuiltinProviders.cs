@@ -212,6 +212,17 @@ public sealed class LocalServerApiKeyAuth : ApiKeyAuth
     public override Task<AuthResult?> ResolveAsync(ApiKeyAuthInput input)
     {
         input.CancellationToken.ThrowIfCancellationRequested();
+        // Local endpoints need no auth, but a supplied key (--api-key runtime override or a
+        // stored credential) wins over the keyless default (pinned local-server behavior).
+        if (input.Credential is ApiKeyCredential { Key: { Length: > 0 } key })
+        {
+            return Task.FromResult<AuthResult?>(new AuthResult
+            {
+                Auth = new ModelAuth { ApiKey = key },
+                Source = "llama.cpp (local)",
+            });
+        }
+
         return Task.FromResult<AuthResult?>(new AuthResult
         {
             Auth = new ModelAuth { ApiKey = string.Empty },

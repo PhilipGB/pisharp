@@ -50,11 +50,42 @@ try
         IsInteractiveStartup(options) ? SelectProjectTrustOption : null);
     await settings.SetProjectTrustedAsync(trustResolution.Trusted);
     var keybindings = await KeybindingsManager.CreateAsync();
-    var bootstrap = await AgentFactory.CreateAsync(options, trustResolution.Trusted, shutdown.Token, settings: settings);
+
+    // Model runtime + startup resolution (pinned main.ts): built-in providers, models.json,
+    // auth.json, the local endpoint provider, scoped models, and the CLI model/thinking.
+    var startup = await ModelStartup.CreateAsync(options, settings, shutdown.Token);
+    foreach (var warning in startup.Warnings)
+    {
+        Console.Error.WriteLine($"Warning: {warning}");
+    }
+
+    if (options.ListModels)
+    {
+        ModelCatalogPrinter.Print(startup.Runtime);
+        return 0;
+    }
+
+    if (startup.Error is not null)
+    {
+        Console.Error.WriteLine($"Error: {startup.Error}");
+        return 1;
+    }
+
+    var bootstrap = await AgentFactory.CreateAsync(
+        options, trustResolution.Trusted, shutdown.Token, startup.Runtime, startup.ModelState, settings: settings);
     liveTurns = new LiveTurnCoordinator(bootstrap.TurnQueue);
     var sessions = await SessionController.CreateAsync(bootstrap, options, shutdown.Token, settings);
     // Manual compaction aborts the active turn before compacting (Pi semantics).
     sessions.AbortActiveTurn = liveTurns.Abort;
+
+    // Pinned main.ts: non-interactive modes require a resolvable model at startup; interactive
+    // mode continues and reports "No model selected" at the prompt. The no-models message
+    // itself was already reported by the startup resolution above.
+    if (bootstrap.ModelState.Model is null &&
+        (options.OutputMode != OutputMode.Text || options.PrintMode || options.Prompt is not null))
+    {
+        return 1;
+    }
 
     if (options.OutputMode == OutputMode.Rpc)
     {
@@ -94,7 +125,11 @@ try
         return result.Cancelled ? 130 : 0;
     }
 
-    Console.WriteLine($"PiSharp  |  {options.Model}  |  {options.WorkingDirectory}");
+    Console.WriteLine($"PiSharp  |  {sessions.ModelState.Model?.Reference ?? "no model"}  |  {options.WorkingDirectory}");
+    if (sessions.ModelState.Model is null)
+    {
+        Console.WriteLine("No model selected. Set an API key, use /login, or select a model with /model.");
+    }
     if (trustResolution.TrustRequired && !trustResolution.Trusted)
     {
         Console.WriteLine("This project is not trusted. Project resources are ignored; use /trust and restart PiSharp.");

@@ -165,6 +165,68 @@ public sealed record SessionHeader(
 }
 
 /// <summary>Durable message and tool counts for a session.</summary>
+/// <summary>
+/// Model/thinking settings derived from a session's active entry path (pinned
+/// session-manager.ts getSessionContextSettings): the last model_change entry wins, but
+/// assistant messages also record the model that produced them, so a session without
+/// explicit model changes still restores from its assistant history. The last
+/// thinking_level_change entry wins for thinking.
+/// </summary>
+public sealed record SessionContextSettings(
+    (string Provider, string ModelId)? Model,
+    string? ThinkingLevel,
+    bool HasThinkingEntry)
+{
+    /// <summary>Projects the model/thinking state from an active entry path.</summary>
+    public static SessionContextSettings FromPath(IReadOnlyList<SessionEntry> path)
+    {
+        (string, string)? model = null;
+        string? thinking = null;
+        var hasThinkingEntry = false;
+
+        foreach (var entry in path)
+        {
+            switch (entry)
+            {
+                case ThinkingLevelChangeEntry thinkingChange:
+                    thinking = thinkingChange.ThinkingLevel;
+                    hasThinkingEntry = true;
+                    break;
+
+                case ModelChangeEntry modelChange:
+                    model = (modelChange.Provider, modelChange.ModelId);
+                    break;
+
+                case MessageEntry message
+                    when IsAssistantWithModel(message.Message, out var provider, out var modelId):
+                    model = (provider, modelId);
+                    break;
+            }
+        }
+
+        return new SessionContextSettings(
+            model is { } m ? (m.Item1, m.Item2) : null,
+            thinking,
+            hasThinkingEntry);
+    }
+
+    private static bool IsAssistantWithModel(JsonElement message, out string provider, out string modelId)
+    {
+        provider = string.Empty;
+        modelId = string.Empty;
+        return message.ValueKind == JsonValueKind.Object
+            && message.TryGetProperty("role", out var role)
+            && string.Equals(role.GetString(), "assistant", StringComparison.Ordinal)
+            && message.TryGetProperty("provider", out var providerElement)
+            && providerElement.ValueKind == JsonValueKind.String
+            && message.TryGetProperty("model", out var modelElement)
+            && modelElement.ValueKind == JsonValueKind.String
+            && (provider = providerElement.GetString()!) is { Length: > 0 }
+            && (modelId = modelElement.GetString()!) is { Length: > 0 };
+    }
+}
+
+/// <summary>Durable message and tool counts for a session.</summary>
 public sealed record SessionStatistics(
     string SessionId,
     string? SessionName,

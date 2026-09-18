@@ -102,6 +102,13 @@ public sealed class ModelRuntime
     };
     private int _availabilityRefreshSeq;
     private int _availabilityErrorSeq;
+
+    /// <summary>
+    /// Bounded retries for a provider availability pass invalidated by a concurrent full
+    /// refresh; the invalidation is finite (one bump per in-flight full refresh), so the
+    /// pass converges in one or two attempts in practice.
+    /// </summary>
+    private const int MaxProviderAvailabilityRetries = 5;
     private readonly Dictionary<string, int> _providerAvailabilitySeq = new(StringComparer.Ordinal);
     private string? _availabilityError;
     private readonly Dictionary<string, Task> _credentialOperations = new(StringComparer.Ordinal);
@@ -367,111 +374,127 @@ public sealed class ModelRuntime
 
     private async Task RefreshProviderAvailabilityAsync(string providerId, CancellationToken signal)
     {
-        // Invalidate any full availability pass that started before this credential change.
-        Interlocked.Increment(ref _availabilityRefreshSeq);
-        int providerSeq;
-        lock (_gate)
-        {
-            providerSeq = (_providerAvailabilitySeq.TryGetValue(providerId, out var current) ? current : 0) + 1;
-            _providerAvailabilitySeq[providerId] = providerSeq;
-        }
-
         var errorSeq = Interlocked.Increment(ref _availabilityErrorSeq);
-        try
+        for (var attempt = 1; ; attempt++)
         {
-            var availableTask = _models.GetAvailableAsync(providerId, signal);
-            var authTask = _models.CheckAuthAsync(providerId, signal);
-            var credentialTask = _credentials.ReadAsync(providerId, signal);
-            var available = await availableTask;
-            var auth = await authTask;
-            var credential = await credentialTask;
-            signal.ThrowIfCancellationRequested();
-
-            bool stillCurrent;
+            // Invalidate any full availability pass that started before this credential change.
+            Interlocked.Increment(ref _availabilityRefreshSeq);
+            int providerSeq;
             lock (_gate)
             {
-                stillCurrent = _providerAvailabilitySeq.TryGetValue(providerId, out var seq) && seq == providerSeq;
+                providerSeq = (_providerAvailabilitySeq.TryGetValue(providerId, out var current) ? current : 0) + 1;
+                _providerAvailabilitySeq[providerId] = providerSeq;
             }
 
-            if (!stillCurrent)
+            try
             {
+                var availableTask = _models.GetAvailableAsync(providerId, signal);
+                var authTask = _models.CheckAuthAsync(providerId, signal);
+                var credentialTask = _credentials.ReadAsync(providerId, signal);
+                var available = await availableTask;
+                var auth = await authTask;
+                var credential = await credentialTask;
+                signal.ThrowIfCancellationRequested();
+
+                bool stillCurrent;
+                lock (_gate)
+                {
+                    stillCurrent = _providerAvailabilitySeq.TryGetValue(providerId, out var seq) && seq == providerSeq;
+                }
+
+                if (!stillCurrent)
+                {
+                    // A concurrent fire-and-forget full refresh (e.g. from RegisterProvider)
+                    // invalidated this pass. Its commit is not visible to the caller of the
+                    // awaited credential operation, so re-run with a fresh generation until our
+                    // commit lands; after the bound, the in-flight full refresh owns the
+                    // snapshot and will publish the latest state.
+                    if (attempt < MaxProviderAvailabilityRetries)
+                    {
+                        continue;
+                    }
+
+                    return;
+                }
+
+
+                var configuredProviders = new HashSet<string>(_snapshot.ConfiguredProviders, StringComparer.Ordinal);
+                var storedProviders = new HashSet<string>(_snapshot.StoredProviders, StringComparer.Ordinal);
+                var authByProvider = new Dictionary<string, AuthCheck?>(_snapshot.Auth, StringComparer.Ordinal);
+                if (auth is not null)
+                {
+                    configuredProviders.Add(providerId);
+                    authByProvider[providerId] = auth;
+                }
+                else
+                {
+                    configuredProviders.Remove(providerId);
+                    authByProvider.Remove(providerId);
+                }
+
+                if (credential is not null)
+                {
+                    storedProviders.Add(providerId);
+                }
+                else
+                {
+                    storedProviders.Remove(providerId);
+                }
+
+                var all = _models.GetModels().ToArray();
+                var availableById = new Dictionary<string, ModelInfo>(StringComparer.Ordinal);
+                foreach (var model in _snapshot.Available.Where(m => m.Provider != providerId))
+                {
+                    availableById[$"{model.Provider}\0{model.Id}"] = model;
+                }
+
+                foreach (var model in available)
+                {
+                    availableById[$"{model.Provider}\0{model.Id}"] = model;
+                }
+
+                var newAvailable = new List<ModelInfo>();
+                foreach (var model in all)
+                {
+                    if (availableById.TryGetValue($"{model.Provider}\0{model.Id}", out var availableEntry))
+                    {
+                        newAvailable.Add(availableEntry);
+                    }
+                }
+
+                _snapshot = new Snapshot
+                {
+                    All = all,
+                    Available = newAvailable,
+                    ConfiguredProviders = configuredProviders,
+                    StoredProviders = storedProviders,
+                    Auth = authByProvider,
+                };
+
+                if (Interlocked.CompareExchange(ref _availabilityErrorSeq, errorSeq, errorSeq) == errorSeq)
+                {
+                    _availabilityError = null;
+                }
+
                 return;
             }
-
-            var configuredProviders = new HashSet<string>(_snapshot.ConfiguredProviders, StringComparer.Ordinal);
-            var storedProviders = new HashSet<string>(_snapshot.StoredProviders, StringComparer.Ordinal);
-            var authByProvider = new Dictionary<string, AuthCheck?>(_snapshot.Auth, StringComparer.Ordinal);
-            if (auth is not null)
+            catch (Exception exception)
             {
-                configuredProviders.Add(providerId);
-                authByProvider[providerId] = auth;
-            }
-            else
-            {
-                configuredProviders.Remove(providerId);
-                authByProvider.Remove(providerId);
-            }
-
-            if (credential is not null)
-            {
-                storedProviders.Add(providerId);
-            }
-            else
-            {
-                storedProviders.Remove(providerId);
-            }
-
-            var all = _models.GetModels().ToArray();
-            var availableById = new Dictionary<string, ModelInfo>(StringComparer.Ordinal);
-            foreach (var model in _snapshot.Available.Where(m => m.Provider != providerId))
-            {
-                availableById[$"{model.Provider}\0{model.Id}"] = model;
-            }
-
-            foreach (var model in available)
-            {
-                availableById[$"{model.Provider}\0{model.Id}"] = model;
-            }
-
-            var newAvailable = new List<ModelInfo>();
-            foreach (var model in all)
-            {
-                if (availableById.TryGetValue($"{model.Provider}\0{model.Id}", out var availableEntry))
+                bool current;
+                lock (_gate)
                 {
-                    newAvailable.Add(availableEntry);
+                    current = _providerAvailabilitySeq.TryGetValue(providerId, out var seq) && seq == providerSeq;
                 }
-            }
 
-            _snapshot = new Snapshot
-            {
-                All = all,
-                Available = newAvailable,
-                ConfiguredProviders = configuredProviders,
-                StoredProviders = storedProviders,
-                Auth = authByProvider,
-            };
+                if (current &&
+                    Interlocked.CompareExchange(ref _availabilityErrorSeq, errorSeq, errorSeq) == errorSeq &&
+                    !signal.IsCancellationRequested)
+                {
+                    _availabilityError = exception.Message;
+                }
 
-            if (Interlocked.CompareExchange(ref _availabilityErrorSeq, errorSeq, errorSeq) == errorSeq)
-            {
-                _availabilityError = null;
+                throw;
             }
-        }
-        catch (Exception exception)
-        {
-            bool current;
-            lock (_gate)
-            {
-                current = _providerAvailabilitySeq.TryGetValue(providerId, out var seq) && seq == providerSeq;
-            }
-
-            if (current &&
-                Interlocked.CompareExchange(ref _availabilityErrorSeq, errorSeq, errorSeq) == errorSeq &&
-                !signal.IsCancellationRequested)
-            {
-                _availabilityError = exception is OperationCanceledException ? exception.Message : exception.Message;
-            }
-
-            throw;
         }
     }
 

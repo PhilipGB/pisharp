@@ -11,11 +11,18 @@ internal enum OutputMode
 
 internal sealed record CliOptions(
     string WorkingDirectory,
-    string Model,
+    string? Model,
     string? Endpoint,
-    string ApiKey,
+    string? ApiKey,
+    string? Provider,
+    IReadOnlyList<string> Models,
+    string? Thinking,
+    bool ListModels,
+    bool Offline,
     int ContextTokens,
     int MaxOutputTokens,
+    bool ContextTokensExplicit,
+    bool MaxOutputTokensExplicit,
     string? Prompt,
     IReadOnlyList<string> FilePaths,
     bool ShowHelp,
@@ -42,13 +49,27 @@ internal sealed record CliOptions(
     public static CliOptions Parse(string[] args)
     {
         var cwd = Directory.GetCurrentDirectory();
-        var model = Environment.GetEnvironmentVariable("PISHARP_MODEL") ?? string.Empty;
+        // Compatibility env vars map into the model runtime resolution (PISHARP_MODEL is a
+        // --model alias, PISHARP_ENDPOINT the local-endpoint workflow, the key env vars feed
+        // the provider ambient auth). Model/key are no longer required up front: the runtime
+        // resolves auth per provider (pinned Pi behavior).
+        var model = Environment.GetEnvironmentVariable("PISHARP_MODEL");
         var endpoint = Environment.GetEnvironmentVariable("PISHARP_ENDPOINT");
         var apiKey = Environment.GetEnvironmentVariable("PISHARP_API_KEY")
-            ?? Environment.GetEnvironmentVariable("OPENAI_API_KEY")
-            ?? string.Empty;
-        var contextTokens = ParsePositiveInt(Environment.GetEnvironmentVariable("PISHARP_CONTEXT_TOKENS"), 128_000);
-        var maxOutputTokens = ParsePositiveInt(Environment.GetEnvironmentVariable("PISHARP_MAX_OUTPUT_TOKENS"), 16_384);
+            ?? Environment.GetEnvironmentVariable("OPENAI_API_KEY");
+        var provider = Environment.GetEnvironmentVariable("PISHARP_PROVIDER");
+        var modelPatterns = new List<string>();
+        var thinking = Environment.GetEnvironmentVariable("PISHARP_THINKING");
+        var listModels = false;
+        var offline = Environment.GetEnvironmentVariable("PI_OFFLINE") is "1" or "true" or "yes";
+        // Explicit user intent (flag or env var) overrides model metadata; the bare defaults
+        // let the model's own context window / max output win (pinned behavior).
+        var contextTokensEnv = Environment.GetEnvironmentVariable("PISHARP_CONTEXT_TOKENS");
+        var maxOutputTokensEnv = Environment.GetEnvironmentVariable("PISHARP_MAX_OUTPUT_TOKENS");
+        var contextTokens = ParsePositiveInt(contextTokensEnv, 128_000);
+        var maxOutputTokens = ParsePositiveInt(maxOutputTokensEnv, 16_384);
+        var contextTokensExplicit = contextTokensEnv is not null;
+        var maxOutputTokensExplicit = maxOutputTokensEnv is not null;
         var promptParts = new List<string>();
         var filePaths = new List<string>();
         var showHelp = false;
@@ -86,6 +107,21 @@ internal sealed record CliOptions(
                 case "--model":
                     model = RequireValue(args, ref i, "--model");
                     break;
+                case "--provider":
+                    provider = RequireValue(args, ref i, "--provider");
+                    break;
+                case "--models":
+                    modelPatterns.Add(RequireValue(args, ref i, "--models"));
+                    break;
+                case "--thinking":
+                    thinking = RequireValue(args, ref i, "--thinking");
+                    break;
+                case "--list-models":
+                    listModels = true;
+                    break;
+                case "--offline":
+                    offline = true;
+                    break;
                 case "--endpoint":
                     endpoint = RequireValue(args, ref i, "--endpoint");
                     break;
@@ -94,9 +130,11 @@ internal sealed record CliOptions(
                     break;
                 case "--context-tokens":
                     contextTokens = ParsePositiveInt(RequireValue(args, ref i, "--context-tokens"), contextTokens);
+                    contextTokensExplicit = true;
                     break;
                 case "--max-output-tokens":
                     maxOutputTokens = ParsePositiveInt(RequireValue(args, ref i, "--max-output-tokens"), maxOutputTokens);
+                    maxOutputTokensExplicit = true;
                     break;
                 case "-c" or "--continue":
                     continueSession = true;
@@ -177,23 +215,6 @@ internal sealed record CliOptions(
             throw new ArgumentException("@file arguments are not supported in RPC mode.");
         }
 
-        if (!showHelp && string.IsNullOrWhiteSpace(model))
-        {
-            throw new ArgumentException("A model is required. Set PISHARP_MODEL or pass --model <name>.");
-        }
-
-        if (string.IsNullOrWhiteSpace(apiKey))
-        {
-            if (!string.IsNullOrWhiteSpace(endpoint))
-            {
-                apiKey = "unused";
-            }
-            else if (!showHelp)
-            {
-                throw new ArgumentException("An API key is required. Set PISHARP_API_KEY/OPENAI_API_KEY or pass --api-key.");
-            }
-        }
-
         var sessionModes = (continueSession ? 1 : 0) + (resumeSession ? 1 : 0) + (sessionSelector is null ? 0 : 1) + (noSession ? 1 : 0);
         if (sessionModes > 1)
         {
@@ -211,8 +232,15 @@ internal sealed record CliOptions(
             model,
             endpoint,
             apiKey,
+            provider,
+            modelPatterns,
+            thinking,
+            listModels,
+            offline,
             contextTokens,
             maxOutputTokens,
+            contextTokensExplicit,
+            maxOutputTokensExplicit,
             promptParts.Count == 0 ? null : string.Join(' ', promptParts),
             filePaths,
             showHelp,

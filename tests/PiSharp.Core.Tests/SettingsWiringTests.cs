@@ -13,11 +13,18 @@ public class SettingsWiringTests
 {
     private static CliOptions Options(string workspace, bool noSession = true) => new(
         WorkingDirectory: workspace,
-        Model: "local/test-model",
+        Model: ModelRuntimeTestKit.Reference,
         Endpoint: null,
-        ApiKey: "test",
+        ApiKey: null,
+        Provider: null,
+        Models: [],
+        Thinking: null,
+        ListModels: false,
+        Offline: false,
         ContextTokens: 128_000,
         MaxOutputTokens: 1024,
+        ContextTokensExplicit: false,
+        MaxOutputTokensExplicit: false,
         Prompt: null,
         FilePaths: [],
         ShowHelp: false,
@@ -49,10 +56,13 @@ public class SettingsWiringTests
     {
         using var temp = TempDirectory.Create();
         var settings = await Settings("""{"retry":{"enabled":false,"maxRetries":1,"baseDelayMs":777,"maxAgentDelayMs":999}}""");
+        var (runtime, state, _) = await ModelRuntimeTestKit.CreateAsync();
         var bootstrap = await AgentFactory.CreateAsync(
             Options(temp.Path),
             projectTrusted: true,
             CancellationToken.None,
+            runtime,
+            state,
             temp.Path,
             settings);
 
@@ -69,10 +79,13 @@ public class SettingsWiringTests
         using var temp = TempDirectory.Create();
         var settings = await Settings("""{"retry":{"maxRetries":5}}""");
         var options = Options(temp.Path) with { AutoRetry = false };
+        var (runtime, state, _) = await ModelRuntimeTestKit.CreateAsync();
         var bootstrap = await AgentFactory.CreateAsync(
             options,
             projectTrusted: true,
             CancellationToken.None,
+            runtime,
+            state,
             temp.Path,
             settings);
 
@@ -84,10 +97,13 @@ public class SettingsWiringTests
     {
         using var temp = TempDirectory.Create();
         var settings = await Settings("""{"compaction":{"enabled":false,"reserveTokens":8000,"keepRecentTokens":12345}}""");
+        var (runtime, state, _) = await ModelRuntimeTestKit.CreateAsync();
         var bootstrap = await AgentFactory.CreateAsync(
             Options(temp.Path),
             projectTrusted: true,
             CancellationToken.None,
+            runtime,
+            state,
             temp.Path,
             settings);
         var sessions = await SessionController.CreateAsync(
@@ -108,10 +124,13 @@ public class SettingsWiringTests
         // Model "local/test-model" resolves to provider "local", modelId "test-model".
         var settings = await Settings(
             """{"compaction":{"modelOverrides":{"local/test-model":{"reserveTokens":777,"keepRecentTokens":888}}}}""");
+        var (runtime, state, _) = await ModelRuntimeTestKit.CreateAsync();
         var bootstrap = await AgentFactory.CreateAsync(
             Options(temp.Path),
             projectTrusted: true,
             CancellationToken.None,
+            runtime,
+            state,
             temp.Path,
             settings);
         var sessions = await SessionController.CreateAsync(
@@ -133,10 +152,13 @@ public class SettingsWiringTests
         var target = Path.Combine(temp.Path, "custom-sessions");
         var settings = await Settings(
             $"{{\"sessionDir\":{System.Text.Json.JsonSerializer.Serialize(target)}}}");
+        var (runtime, state, _) = await ModelRuntimeTestKit.CreateAsync();
         var bootstrap = await AgentFactory.CreateAsync(
             Options(temp.Path, noSession: false),
             projectTrusted: true,
             CancellationToken.None,
+            runtime,
+            state,
             temp.Path,
             settings);
         var sessions = await SessionController.CreateAsync(
@@ -156,10 +178,13 @@ public class SettingsWiringTests
     {
         using var temp = TempDirectory.Create();
         var settings = await Settings("""{"compaction":{"reserveTokens":-1}}""");
+        var (runtime, state, _) = await ModelRuntimeTestKit.CreateAsync();
         var bootstrap = await AgentFactory.CreateAsync(
             Options(temp.Path),
             projectTrusted: true,
             CancellationToken.None,
+            runtime,
+            state,
             temp.Path,
             settings);
         var sessions = await SessionController.CreateAsync(

@@ -1,6 +1,7 @@
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using PiSharp.Core;
+using PiSharp.Core.Models.Providers;
 
 namespace PiSharp.Cli;
 
@@ -14,4 +15,6 @@ internal sealed record AgentBootstrap(
     RetryPolicyOptions RetryPolicy,
     TurnMessageQueue TurnQueue,
     PiSessionChatHistoryProvider SessionHistory,
-    CompactionTarget Compaction);
+    CompactionTarget Compaction,
+    PiSharp.Core.Models.Providers.ModelRuntime ModelRuntime,
+    ModelSessionState ModelState);

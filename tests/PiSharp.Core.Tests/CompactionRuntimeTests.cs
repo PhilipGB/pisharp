@@ -242,6 +242,7 @@ public sealed class CompactionRuntimeTests
         });
 #pragma warning restore MAAI001
 
+        var (runtime, state, _) = await ModelRuntimeTestKit.CreateAsync();
         var bootstrap = new AgentBootstrap(
             Agent: agent,
             SummaryClient: summarizer,
@@ -252,15 +253,24 @@ public sealed class CompactionRuntimeTests
             RetryPolicy: RetryPolicyOptions.Disabled,
             TurnQueue: turnQueue,
             SessionHistory: sessionHistory,
-            Compaction: compactionTarget);
+            Compaction: compactionTarget,
+            ModelRuntime: runtime,
+            ModelState: state);
 
         var options = new CliOptions(
             WorkingDirectory: workspace,
-            Model: "test-model",
+            Model: ModelRuntimeTestKit.Reference,
             Endpoint: null,
-            ApiKey: "test",
+            ApiKey: null,
+            Provider: null,
+            Models: [],
+            Thinking: null,
+            ListModels: false,
+            Offline: false,
             ContextTokens: contextTokens,
             MaxOutputTokens: 1024,
+            ContextTokensExplicit: true,
+            MaxOutputTokensExplicit: false,
             Prompt: null,
             FilePaths: [],
             ShowHelp: false,

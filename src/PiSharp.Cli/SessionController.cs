@@ -3,6 +3,8 @@ using System.Text.Json.Serialization.Metadata;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using PiSharp.Core;
+using PiSharp.Core.Models;
+using PiSharp.Core.Models.Providers;
 using PiSharp.Core.Settings;
 
 namespace PiSharp.Cli;
@@ -30,17 +32,25 @@ internal sealed class SessionController : IProviderRequestCompactor
         TypeInfoResolver = new DefaultJsonTypeInfoResolver(),
     };
 
+    private readonly AgentBootstrap _bootstrap;
+    private readonly CliOptions _options;
+    private readonly SettingsManager _settings;
     private readonly AIAgent _agent;
     private readonly SessionStore? _store;
     private readonly string _model;
     private readonly PiSessionChatHistoryProvider _sessionHistory;
     private readonly PiSummarizer _summarizer;
-    private readonly int _contextTokens;
-    private readonly CompactionSettings _compactionSettings;
+    private readonly ModelSessionState _modelState;
+    private readonly Func<int> _contextTokens;
+    private readonly Func<CompactionSettings> _compactionSettings;
     private readonly object _operationSync = new();
 
-    /// <summary>Gets the settings-resolved compaction budget for this session.</summary>
-    public CompactionSettings CompactionSettings => _compactionSettings;
+    /// <summary>
+    /// Gets the compaction budget for the current model (settings, including per-model
+    /// overrides, re-resolved on each access so /model changes apply immediately — pinned
+    /// getCompactionSettings(model) is evaluated per decision).
+    /// </summary>
+    public CompactionSettings CompactionSettings => _compactionSettings();
 
     /// <summary>Gets the persistent session storage directory (null for ephemeral sessions).</summary>
     public string? StoreDirectory => _store?.WorkspaceDirectory;
@@ -49,6 +59,9 @@ internal sealed class SessionController : IProviderRequestCompactor
     private IChatOutput _eventOutput = new SilentChatOutput();
 
     private SessionController(
+        AgentBootstrap bootstrap,
+        CliOptions options,
+        SettingsManager settings,
         AIAgent agent,
         string model,
         SessionStore? store,
@@ -58,9 +71,13 @@ internal sealed class SessionController : IProviderRequestCompactor
         string? activeEntryId,
         PiSessionChatHistoryProvider sessionHistory,
         PiSummarizer summarizer,
-        int contextTokens,
-        CompactionSettings compactionSettings)
+        ModelSessionState modelState,
+        Func<int> contextTokens,
+        Func<CompactionSettings> compactionSettings)
     {
+        _bootstrap = bootstrap;
+        _options = options;
+        _settings = settings;
         _agent = agent;
         _model = model;
         _store = store;
@@ -70,10 +87,14 @@ internal sealed class SessionController : IProviderRequestCompactor
         ActiveEntryId = activeEntryId;
         _sessionHistory = sessionHistory;
         _summarizer = summarizer;
+        _modelState = modelState;
         _contextTokens = contextTokens;
         _compactionSettings = compactionSettings;
         _sessionHistory.SetActiveDocument(document, activeEntryId);
     }
+
+    /// <summary>Gets the live model/thinking state shared with the provider bridge.</summary>
+    public ModelSessionState ModelState => _modelState;
 
     /// <summary>Gets or sets how the active turn aborts (wired by the host to the turn coordinator).</summary>
     public Action? AbortActiveTurn { get; set; }
@@ -266,21 +287,36 @@ internal sealed class SessionController : IProviderRequestCompactor
         // Tests without a settings manager get the Pi defaults (empty global scope).
         var resolvedSettings = settings ??
             await SettingsManager.CreateFromStorageAsync(new InMemorySettingsStorage(), cancellationToken: cancellationToken);
-        var compactionSettings = ResolveCompactionSettings(resolvedSettings, options.Model);
         var agent = bootstrap.Agent;
+        Func<CompactionSettings> compactionSettings = () => ResolveCompactionSettings(
+            resolvedSettings,
+            bootstrap.ModelState.Model);
+        var summarizer = new PiSummarizer(
+            bootstrap.SummaryClient,
+            bootstrap.RetryPolicy,
+            () => bootstrap.ModelState.Current?.EffectiveMaxOutput ?? 0);
+
         if (options.NoSession)
         {
+            // Ephemeral session: resolve the startup model with no document (CLI > scoped >
+            // settings default > first available); nothing is persisted.
+            await ResolveStartupModelAsync(bootstrap, options, resolvedSettings, null, null, null, cancellationToken);
+
             return new SessionController(
+                bootstrap,
+                options,
+                resolvedSettings,
                 agent,
-                options.Model,
+                ModelDisplayName(bootstrap.ModelState, options.Model),
                 null,
                 null,
                 await agent.CreateSessionAsync(cancellationToken),
                 null,
                 null,
                 bootstrap.SessionHistory,
-                new PiSummarizer(bootstrap.SummaryClient, bootstrap.RetryPolicy, options.MaxOutputTokens),
-                options.ContextTokens,
+                summarizer,
+                bootstrap.ModelState,
+                () => bootstrap.ModelState.Current?.EffectiveContextWindow ?? 128_000,
                 compactionSettings);
         }
 
@@ -312,19 +348,27 @@ internal sealed class SessionController : IProviderRequestCompactor
         EnsureWorkspaceMatches(document, options.WorkingDirectory);
         var active = document.GetLatestTurnOnPath(document.LatestEntryId);
         var activeEntryId = document.IsPiV3 ? document.LatestEntryId : active?.Id;
+        // Initial model/thinking entries are appended before the MAF session is restored so
+        // the active leaf used for the state-cache boundary check already includes them.
+        activeEntryId = await ResolveStartupModelAsync(
+            bootstrap, options, resolvedSettings, store, document, activeEntryId, cancellationToken) ?? activeEntryId;
         var session = await RestoreInitialSessionAsync(agent, document, active, activeEntryId, cancellationToken);
 
         var controller = new SessionController(
+            bootstrap,
+            options,
+            resolvedSettings,
             agent,
-            options.Model,
+            ModelDisplayName(bootstrap.ModelState, options.Model),
             store,
             document,
             session,
             active?.Id,
             activeEntryId,
             bootstrap.SessionHistory,
-            new PiSummarizer(bootstrap.SummaryClient, bootstrap.RetryPolicy, options.MaxOutputTokens),
-            options.ContextTokens,
+            summarizer,
+            bootstrap.ModelState,
+            () => bootstrap.ModelState.Current?.EffectiveContextWindow ?? 128_000,
             compactionSettings);
 
         // Register this controller as the compaction authority for every model request that
@@ -339,24 +383,138 @@ internal sealed class SessionController : IProviderRequestCompactor
     }
 
     /// <summary>
-    /// Resolves the compaction budget for the session model, including Pi's per-model
-    /// overrides keyed by "provider/modelId". Invalid configured values fall back to the
-    /// Pi defaults with a warning so a config typo never blocks a session.
+    /// Resolves the compaction budget for a model, including Pi's per-model overrides keyed
+    /// by provider/modelId. Invalid configured values fall back to the Pi defaults with a
+    /// warning so a config typo never blocks a session.
     /// </summary>
-    private static CompactionSettings ResolveCompactionSettings(SettingsManager settings, string model)
+    private static CompactionSettings ResolveCompactionSettings(
+        SettingsManager settings,
+        PiSharp.Core.Models.ModelInfo? model)
     {
-        var slash = model.IndexOf('/');
-        var provider = slash > 0 ? model[..slash] : null;
-        var modelId = slash > 0 ? model[(slash + 1)..] : model;
         try
         {
-            return settings.ResolveCompactionSettings(provider, modelId);
+            return settings.ResolveCompactionSettings(model?.Provider, model?.Id);
         }
         catch (FormatException exception)
         {
             Console.Error.WriteLine($"Warning: {exception.Message} Using default compaction settings.");
             return new CompactionSettings();
         }
+    }
+
+    /// <summary>Displays the current model reference for banners and diagnostics.</summary>
+    private static string ModelDisplayName(ModelSessionState modelState, string? fallback) =>
+        modelState.Model?.Reference ?? fallback ?? "no model";
+
+    /// <summary>
+    /// Resolves and applies the startup model selection for a session document (pinned
+    /// sdk.ts createAgentSession). <paramref name="activeEntryId"/> is null for ephemeral
+    /// (no-document) sessions. Persists the initial model_change/thinking_level_change
+    /// entries the same way pinned does (new sessions record both; existing sessions record
+    /// a thinking level only when none is present) and returns the updated active entry.
+    /// An unresolvable explicit --model aborts startup (pinned reportDiagnostics + exit).
+    /// </summary>
+    private static async Task<string?> ResolveStartupModelAsync(
+        AgentBootstrap bootstrap,
+        CliOptions options,
+        SettingsManager settings,
+        SessionStore? store,
+        SessionDocument? document,
+        string? activeEntryId,
+        CancellationToken cancellationToken)
+    {
+        var modelState = bootstrap.ModelState;
+        var path = document is { IsPiV3: true } && activeEntryId is not null
+            ? document.GetActiveEntryPath(activeEntryId)
+            : [];
+        var context = SessionContextSettings.FromPath(path);
+        var hasExistingSession = path.Any(entry =>
+            entry is MessageEntry or CustomMessageEntry or CompactionEntry);
+
+        var startup = ModelStartupResolver.Resolve(new ModelStartupInput(
+            options.Provider,
+            options.Model,
+            options.Thinking,
+            modelState.ScopedModels,
+            hasExistingSession,
+            context.Model,
+            context.ThinkingLevel,
+            context.HasThinkingEntry),
+            settings,
+            bootstrap.ModelRuntime);
+
+        foreach (var warning in startup.Warnings)
+        {
+            Console.Error.WriteLine($"Warning: {warning}");
+        }
+
+        if (startup.Error is not null)
+        {
+            throw new InvalidOperationException(startup.Error);
+        }
+
+        if (startup.ModelFallbackMessage is not null)
+        {
+            Console.Error.WriteLine(startup.ModelFallbackMessage);
+        }
+
+        // Sync the explicit CLI/env limit overrides onto the live state so the effective
+        // limits (compaction threshold, summarizer cap) follow them after every /model.
+        modelState.SetSessionOverrides(
+            options.ContextTokensExplicit ? (int?)options.ContextTokens : null,
+            options.MaxOutputTokensExplicit ? (int?)options.MaxOutputTokens : null);
+        modelState.ApplySelection(startup.Model is { } model
+            ? new CurrentModelSelection(model, startup.ThinkingLevel, null, null)
+            : null);
+
+        // --api-key without --endpoint: non-persistent runtime override for the resolved
+        // model's provider (pinned setRuntimeApiKey). With --endpoint the key was already
+        // applied to the llama.cpp provider at runtime construction.
+        if (startup.Model is { } keyedModel &&
+            !string.IsNullOrWhiteSpace(options.ApiKey) &&
+            string.IsNullOrWhiteSpace(options.Endpoint))
+        {
+            await bootstrap.ModelRuntime.SetRuntimeApiKeyAsync(
+                keyedModel.Provider, options.ApiKey, cancellationToken);
+        }
+
+        if (store is null || document is not { IsPiV3: true })
+        {
+            return activeEntryId;
+        }
+
+        // Pinned sdk.ts: new sessions record the initial model and thinking for restore on
+        // resume; existing sessions only gain a thinking entry when they have none.
+        var entries = new List<SessionEntry>();
+        if (!hasExistingSession)
+        {
+            if (startup.Model is { } initialModel)
+            {
+                entries.Add(new ModelChangeEntry(
+                    Guid.NewGuid().ToString("N"), null, DateTimeOffset.UtcNow,
+                    initialModel.Provider, initialModel.Id));
+            }
+
+            entries.Add(new ThinkingLevelChangeEntry(
+                Guid.NewGuid().ToString("N"),
+                entries.Count > 0 ? entries[^1].Id : activeEntryId,
+                DateTimeOffset.UtcNow,
+                startup.ThinkingLevel));
+        }
+        else if (!context.HasThinkingEntry)
+        {
+            entries.Add(new ThinkingLevelChangeEntry(
+                Guid.NewGuid().ToString("N"), activeEntryId, DateTimeOffset.UtcNow,
+                startup.ThinkingLevel));
+        }
+
+        if (entries.Count == 0)
+        {
+            return activeEntryId;
+        }
+
+        await store.AppendEntriesAsync(document, entries, cancellationToken);
+        return entries[^1].Id;
     }
 
     private static async Task<AgentSession> RestoreInitialSessionAsync(
@@ -495,14 +653,14 @@ internal sealed class SessionController : IProviderRequestCompactor
 
         var estimate = PiCompactionPlanner.EstimateContextTokens(Document.GetActiveContextEntries(ActiveEntryId));
         if (reason == CompactionReason.Threshold &&
-            !PiCompactionPlanner.ShouldCompact(estimate.Tokens, _contextTokens, _compactionSettings))
+            !PiCompactionPlanner.ShouldCompact(estimate.Tokens, _contextTokens(), _compactionSettings()))
         {
             return false;
         }
 
         // A successful response whose provider usage already exceeds the window is an overflow
         // even when the char-based estimate looks smaller.
-        var effectiveReason = reason == CompactionReason.Threshold && estimate.UsageTokens > _contextTokens
+        var effectiveReason = reason == CompactionReason.Threshold && estimate.UsageTokens > _contextTokens()
             ? CompactionReason.Overflow
             : reason;
 
@@ -568,7 +726,7 @@ internal sealed class SessionController : IProviderRequestCompactor
         }
 
         var path = Document.GetActiveEntryPath(ActiveEntryId);
-        var plan = PiCompactionPlanner.PrepareCompaction(path, _compactionSettings);
+        var plan = PiCompactionPlanner.PrepareCompaction(path, _compactionSettings());
         if (plan is null)
         {
             if (reason == CompactionReason.Manual)
@@ -647,7 +805,7 @@ internal sealed class SessionController : IProviderRequestCompactor
         }
 
         var estimate = PiCompactionPlanner.EstimateContextTokens(Document.GetActiveContextEntries(ActiveEntryId));
-        if (!PiCompactionPlanner.ShouldCompact(estimate.Tokens, _contextTokens, _compactionSettings))
+        if (!PiCompactionPlanner.ShouldCompact(estimate.Tokens, _contextTokens(), _compactionSettings()))
         {
             return false;
         }
@@ -770,7 +928,7 @@ internal sealed class SessionController : IProviderRequestCompactor
                 document,
                 oldLeaf,
                 navigationTargetId,
-                Math.Max(0, _contextTokens - _compactionSettings.ReserveTokens));
+                Math.Max(0, _contextTokens() - _compactionSettings().ReserveTokens));
         // The summarization runs before any navigation mutation, so a cancellation or failure
         // cannot leave a half-applied branch summary.
         var summary = summarize && summaryPlan.Entries.Count > 0
@@ -819,9 +977,13 @@ internal sealed class SessionController : IProviderRequestCompactor
             async token =>
             {
                 Document = await _store!.CreatePiAsync(token).ConfigureAwait(false);
+                // /new re-runs the startup model resolution for the fresh session (pinned
+                // runtimeHost.newSession): CLI model, then scoped models (new session), then
+                // settings default / first available.
+                ActiveEntryId = await ResolveStartupModelAsync(
+                    _bootstrap, _options, _settings, _store, Document, null, token).ConfigureAwait(false);
                 Session = await _agent.CreateSessionAsync(token).ConfigureAwait(false);
                 ActiveTurnId = null;
-                ActiveEntryId = null;
                 _sessionHistory.SetActiveDocument(Document, ActiveEntryId);
                 return true;
             },
@@ -851,6 +1013,11 @@ internal sealed class SessionController : IProviderRequestCompactor
             ? await _store!.ForkPiAsync(Document, selectedId, cancellationToken).ConfigureAwait(false)
             : await _store!.ForkAsync(Document, selectedId, _model, cancellationToken).ConfigureAwait(false);
         ActiveEntryId = Document.IsPiV3 ? Document.LatestEntryId : Document.LatestTurn?.Id;
+        // The forked document carries the same entry history; re-resolving reproduces the
+        // model/thinking recorded on it (including model changes made before the fork point).
+        ActiveEntryId = await ResolveStartupModelAsync(
+            _bootstrap, _options, _settings, _store, Document, ActiveEntryId, cancellationToken)
+            ?? ActiveEntryId;
         ActiveTurnId = Document.GetLatestTurnOnPath(ActiveEntryId)?.Id;
         _sessionHistory.SetActiveDocument(Document, ActiveEntryId);
         Session = await RestoreSessionAsync(Document.GetLatestTurnOnPath(ActiveEntryId), cancellationToken).ConfigureAwait(false);
@@ -913,9 +1080,15 @@ internal sealed class SessionController : IProviderRequestCompactor
 
         Document = selected;
         ActiveEntryId = selected.IsPiV3 ? selected.LatestEntryId : selected.LatestTurn?.Id;
-        ActiveTurnId = selected.GetLatestTurnOnPath(ActiveEntryId)?.Id;
+        // /resume restores the model and thinking recorded on the resumed session (pinned
+        // resume flow): the saved model_change / assistant metadata and last
+        // thinking_level_change win over the previous session's runtime model.
+        ActiveEntryId = await ResolveStartupModelAsync(
+            _bootstrap, _options, _settings, _store, Document, ActiveEntryId, cancellationToken)
+            ?? ActiveEntryId;
+        ActiveTurnId = Document.GetLatestTurnOnPath(ActiveEntryId)?.Id;
         _sessionHistory.SetActiveDocument(Document, ActiveEntryId);
-        Session = await RestoreSessionAsync(selected.GetLatestTurnOnPath(ActiveEntryId), cancellationToken).ConfigureAwait(false);
+        Session = await RestoreSessionAsync(Document.GetLatestTurnOnPath(ActiveEntryId), cancellationToken).ConfigureAwait(false);
         return true;
     }
 

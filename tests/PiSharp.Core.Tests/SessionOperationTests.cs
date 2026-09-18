@@ -297,6 +297,7 @@ public sealed class SessionOperationTests
             },
         ]);
 
+        var (runtime, state, _) = await ModelRuntimeTestKit.CreateAsync();
         var bootstrap = new AgentBootstrap(
             Agent: agent,
             SummaryClient: summarizer,
@@ -307,15 +308,24 @@ public sealed class SessionOperationTests
             RetryPolicy: RetryPolicyOptions.Disabled,
             TurnQueue: new TurnMessageQueue(),
             SessionHistory: sessionHistory,
-            Compaction: compactionTarget);
+            Compaction: compactionTarget,
+            ModelRuntime: runtime,
+            ModelState: state);
 
         var options = new CliOptions(
             WorkingDirectory: workspace,
-            Model: "test-model",
+            Model: ModelRuntimeTestKit.Reference,
             Endpoint: null,
-            ApiKey: "test",
+            ApiKey: null,
+            Provider: null,
+            Models: [],
+            Thinking: null,
+            ListModels: false,
+            Offline: false,
             ContextTokens: 128_000,
             MaxOutputTokens: 1024,
+            ContextTokensExplicit: false,
+            MaxOutputTokensExplicit: false,
             Prompt: null,
             FilePaths: [],
             ShowHelp: false,

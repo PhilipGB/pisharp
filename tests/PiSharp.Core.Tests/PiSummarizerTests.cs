@@ -12,7 +12,7 @@ public sealed class PiSummarizerTests
     public async Task CompactionUsesCreatePromptWithoutPreviousSummary()
     {
         var client = new CapturingChatClient();
-        var summarizer = new PiSummarizer(client, RetryPolicyOptions.Disabled, 2048);
+        var summarizer = new PiSummarizer(client, RetryPolicyOptions.Disabled, () => 2048);
 
         await summarizer.GenerateCompactionAsync(Plan(previousSummary: null), null, CancellationToken.None);
 
@@ -25,7 +25,7 @@ public sealed class PiSummarizerTests
     public async Task CompactionUsesUpdatePromptWithPreviousSummary()
     {
         var client = new CapturingChatClient();
-        var summarizer = new PiSummarizer(client, RetryPolicyOptions.Disabled, 2048);
+        var summarizer = new PiSummarizer(client, RetryPolicyOptions.Disabled, () => 2048);
 
         await summarizer.GenerateCompactionAsync(Plan(previousSummary: "## Goal\nprevious work"), null, CancellationToken.None);
 
@@ -38,7 +38,7 @@ public sealed class PiSummarizerTests
     public async Task CompactionAppendsFileOperationSectionsAndDetails()
     {
         var client = new CapturingChatClient();
-        var summarizer = new PiSummarizer(client, RetryPolicyOptions.Disabled, 2048);
+        var summarizer = new PiSummarizer(client, RetryPolicyOptions.Disabled, () => 2048);
         var plan = new CompactionPlan(
             "keep-1",
             [Message("a", "one")],

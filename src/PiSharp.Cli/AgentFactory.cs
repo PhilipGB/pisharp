@@ -1,11 +1,9 @@
-using System.ClientModel;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
-using OpenAI;
-using OpenAI.Chat;
 using PiSharp.Core;
+using PiSharp.Core.Models.Providers;
 using PiSharp.Core.Settings;
 
 namespace PiSharp.Cli;
@@ -16,6 +14,8 @@ internal static class AgentFactory
         CliOptions options,
         bool projectTrusted,
         CancellationToken cancellationToken,
+        ModelRuntime modelRuntime,
+        ModelSessionState modelState,
         string? homeDirectoryOverride = null,
         SettingsManager? settings = null)
     {
@@ -127,19 +127,17 @@ internal static class AgentFactory
             {{(resourceDiagnostics > 0 ? $"\nResource diagnostics: {resourceDiagnostics} warning(s) were found while loading local resources." : string.Empty)}}
             """;
 
-        var openAiOptions = new OpenAIClientOptions();
-        if (!string.IsNullOrWhiteSpace(options.Endpoint))
-        {
-            openAiOptions.Endpoint = new Uri(options.Endpoint, UriKind.Absolute);
-        }
-
         var turnQueue = new TurnMessageQueue();
         var sessionHistory = new PiSessionChatHistoryProvider();
-        var modelClient = new ChatClient(
-                options.Model,
-                new ApiKeyCredential(options.ApiKey),
-                openAiOptions)
-            .AsIChatClient();
+        // The provider-neutral bridge resolves the session's current model and its request
+        // auth through the model runtime on every call, so /model and /thinking take effect
+        // on the next provider request without rebuilding any client (pinned AgentSession
+        // state semantics). ProviderRetryClient mirrors the pinned SDK retry policy with an
+        // interruptible backoff; the bridge's SDK runs with its own retry disabled.
+        var bridge = new ModelRuntimeChatClient(
+            modelRuntime,
+            () => modelState.Current,
+            () => resolvedSettings.GetHttpIdleTimeoutMs());
         // Compaction seam: every model request the Harness function loop issues passes through
         // CompactionChatClient, which lets PiSharp compact the authoritative session (threshold
         // before the request, forced after a provider overflow) and rebuild the outgoing
@@ -147,10 +145,10 @@ internal static class AgentFactory
         // threshold check runs before steering injection, matching Pi's prepareNextTurn order.
         var compactionTarget = new CompactionTarget();
         IChatClient chatClient = new CompactionChatClient(
-            new SteeringChatClient(modelClient, turnQueue, expandInput),
+            new SteeringChatClient(new ProviderRetryClient(bridge, resolvedSettings), turnQueue, expandInput),
             () => compactionTarget.Current);
 
-#pragma warning disable MAAI001 // Harness token-limit options are currently marked evaluation-only by MAF.
+#pragma warning disable MAAI001 // Harness options are marked evaluation-only by MAF; PiSharp pins them to the documented no-op behavior.
         var agent = chatClient.AsHarnessAgent(new HarnessAgentOptions
         {
             ChatHistoryProvider = sessionHistory,
@@ -163,9 +161,9 @@ internal static class AgentFactory
             },
             // PiSharp owns context accounting, summaries, cut points, persistence, and
             // overflow recovery. Harness must not silently reduce or rewrite the transcript.
+            // Token limits (context window, max output) are applied per request by the bridge
+            // from the current model selection, so they stay dynamic after /model.
             DisableCompaction = true,
-            MaxContextWindowTokens = options.ContextTokens,
-            MaxOutputTokens = options.MaxOutputTokens,
 
             // Pi's core is deliberately small. Keep only the generic function loop from Harness.
             DisableTodoProvider = true,
@@ -181,9 +179,13 @@ internal static class AgentFactory
         // --no-auto-retry still disables it for this run.
         var retryPolicy = options.AutoRetry ? resolvedSettings.GetRetryPolicy() : RetryPolicyOptions.Disabled;
 
+        // The summarizer shares the bridge (same cached provider clients) but bypasses the
+        // compaction wrapper, so a compaction request can never trigger another compaction.
+        var summaryClient = new ProviderRetryClient(bridge, resolvedSettings);
+
         return new AgentBootstrap(
             agent,
-            modelClient,
+            summaryClient,
             projectContext.Files,
             skillResult.Skills,
             promptTemplates,
@@ -191,7 +193,9 @@ internal static class AgentFactory
             retryPolicy,
             turnQueue,
             sessionHistory,
-            compactionTarget);
+            compactionTarget,
+            modelRuntime,
+            modelState);
     }
 
     private static IReadOnlyList<string> BuildExtensionPaths(

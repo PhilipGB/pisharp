@@ -38,6 +38,8 @@ public sealed class ModelSessionState
 {
     private readonly ModelRuntime _runtime;
     private readonly SettingsManager _settings;
+    private int? _contextWindowOverride;
+    private int? _maxOutputOverride;
     private CurrentModelSelection? _current;
     private IReadOnlyList<ScopedModel> _scopedModels = [];
 
@@ -45,16 +47,45 @@ public sealed class ModelSessionState
         ModelRuntime runtime,
         SettingsManager settings,
         CurrentModelSelection? current = null,
-        IReadOnlyList<ScopedModel>? scopedModels = null)
+        IReadOnlyList<ScopedModel>? scopedModels = null,
+        int? contextWindowOverride = null,
+        int? maxOutputOverride = null)
     {
         _runtime = runtime;
         _settings = settings;
-        _current = current;
+        _contextWindowOverride = contextWindowOverride;
+        _maxOutputOverride = maxOutputOverride;
+        _current = WithSessionOverrides(current);
         if (scopedModels is not null)
         {
             _scopedModels = scopedModels;
         }
     }
+
+    /// <summary>
+    /// Sets the session-wide overrides (CLI --context-tokens / --max-output-tokens or their
+    /// env vars). Called once at startup before the model is applied; re-applies them to the
+    /// current selection so the effective limits stay consistent.
+    /// </summary>
+    public void SetSessionOverrides(int? contextWindow, int? maxOutput)
+    {
+        _contextWindowOverride = contextWindow;
+        _maxOutputOverride = maxOutput;
+        _current = WithSessionOverrides(_current);
+    }
+
+    /// <summary>
+    /// Applies the session-level overrides to a selection (the overrides are session-wide in
+    /// PiSharp; pinned Pi always follows the model metadata).
+    /// </summary>
+    private CurrentModelSelection? WithSessionOverrides(CurrentModelSelection? selection) =>
+        selection is null
+            ? null
+            : new CurrentModelSelection(
+                selection.Model,
+                selection.ThinkingLevel,
+                _contextWindowOverride ?? selection.ContextWindowOverride,
+                _maxOutputOverride ?? selection.MaxOutputOverride);
 
     /// <summary>The current selection (model + thinking level + session overrides).</summary>
     public CurrentModelSelection? Current => _current;
@@ -72,7 +103,8 @@ public sealed class ModelSessionState
     public bool SupportsThinking => _current?.SupportsThinking == true;
 
     /// <summary>Replaces the current selection wholesale (startup restore, /new, /resume).</summary>
-    public void ApplySelection(CurrentModelSelection? selection) => _current = selection;
+    public void ApplySelection(CurrentModelSelection? selection) =>
+        _current = WithSessionOverrides(selection);
 
     /// <summary>Sets the scoped model list used by cycling.</summary>
     public void SetScopedModels(IReadOnlyList<ScopedModel> models) => _scopedModels = models;
@@ -192,8 +224,8 @@ public sealed class ModelSessionState
         _current = new CurrentModelSelection(
             nextModel,
             _current?.ThinkingLevel ?? PiSharp.Core.Models.ThinkingLevel.Default,
-            _current?.ContextWindowOverride,
-            _current?.MaxOutputOverride);
+            _contextWindowOverride ?? _current?.ContextWindowOverride,
+            _maxOutputOverride ?? _current?.MaxOutputOverride);
         if (options.Persist)
         {
             _settings.SetDefaultModelAndProvider(nextModel.Provider, nextModel.Id);
@@ -224,7 +256,8 @@ public sealed class ModelSessionState
         var previousLevel = _current?.ThinkingLevel;
         var changed = !string.Equals(effectiveLevel, previousLevel, StringComparison.Ordinal);
         _current = _current?.WithThinking(effectiveLevel)
-                  ?? new CurrentModelSelection(null, effectiveLevel, null, null);
+                  ?? new CurrentModelSelection(
+                        null, effectiveLevel, _contextWindowOverride, _maxOutputOverride);
 
         if (options.Persist)
         {

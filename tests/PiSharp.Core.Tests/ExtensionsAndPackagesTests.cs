@@ -45,7 +45,9 @@ public sealed class ExtensionsAndPackagesTests
             "--no-session",
         ]);
 
-        var untrusted = await AgentFactory.CreateAsync(options, projectTrusted: false, CancellationToken.None, home);
+        var (runtime, state, _) = await ModelRuntimeTestKit.CreateAsync();
+        var untrusted = await AgentFactory.CreateAsync(
+            options, projectTrusted: false, CancellationToken.None, runtime, state, home);
         Assert.True(
             untrusted.ExtensionHost.LoadedPaths.Any(path => path == Path.GetFullPath(globalExtension)),
             $"Loaded: {string.Join(",", untrusted.ExtensionHost.LoadedPaths)} Diagnostics: {string.Join(";", untrusted.ExtensionHost.Diagnostics.Select(diagnostic => diagnostic.Message))}");
@@ -62,10 +64,13 @@ public sealed class ExtensionsAndPackagesTests
             "--cwd", trustedWorkspace.Path,
             "--no-session",
         ]);
+        var (runtime2, state2, _) = await ModelRuntimeTestKit.CreateAsync();
         var trusted = await AgentFactory.CreateAsync(
             trustedOptions,
             projectTrusted: true,
             CancellationToken.None,
+            runtime2,
+            state2,
             Path.Combine(trustedWorkspace.Path, "home"));
         Assert.Contains(trusted.ExtensionHost.LoadedPaths, path => path == Path.GetFullPath(trustedProjectExtension));
 
@@ -83,10 +88,13 @@ public sealed class ExtensionsAndPackagesTests
             "--cwd", packageWorkspace.Path,
             "--no-session",
         ]);
+        var (runtime3, state3, _) = await ModelRuntimeTestKit.CreateAsync();
         var untrustedPackage = await AgentFactory.CreateAsync(
             packageOptions,
             projectTrusted: false,
             CancellationToken.None,
+            runtime3,
+            state3,
             Path.Combine(packageWorkspace.Path, "home"));
         Assert.DoesNotContain(untrustedPackage.ExtensionHost.LoadedPaths, path => path == Path.GetFullPath(packageExtension));
 
@@ -97,10 +105,13 @@ public sealed class ExtensionsAndPackagesTests
             "--no-session",
             "--extension", packageExtension,
         ]);
+        var (runtime4, state4, _) = await ModelRuntimeTestKit.CreateAsync();
         var explicitlyAuthorized = await AgentFactory.CreateAsync(
             explicitOptions,
             projectTrusted: false,
             CancellationToken.None,
+            runtime4,
+            state4,
             Path.Combine(packageWorkspace.Path, "home"));
         Assert.Contains(explicitlyAuthorized.ExtensionHost.LoadedPaths, path => path == Path.GetFullPath(packageExtension));
     }
