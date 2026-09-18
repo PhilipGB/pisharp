@@ -159,10 +159,16 @@ public sealed class ModelsCatalog
 
     private (int Generation, CancellationTokenSource Controller) BeginProviderRefresh(string providerId)
     {
-        var generation = SupersedeProviderRefresh(providerId);
-        var controller = new CancellationTokenSource();
-        _refreshControllers[providerId] = controller;
-        return (generation, controller);
+        // SupersedeProviderRefresh and the controller table are shared with the
+        // locked registration paths (DeleteProvider/ClearProviders); hold the same
+        // gate or the dictionary state corrupts under a concurrent rebuild.
+        lock (_gate)
+        {
+            var generation = SupersedeProviderRefresh(providerId);
+            var controller = new CancellationTokenSource();
+            _refreshControllers[providerId] = controller;
+            return (generation, controller);
+        }
     }
 
     private Task<bool> PublishProviderModels(

@@ -4,27 +4,353 @@ using PiSharp.Core.Models.OAuth;
 namespace PiSharp.Core.Models.Providers;
 
 /// <summary>
-/// Built-in provider catalogue (pinned Pi: packages/ai/providers/all.ts).
+/// Built-in provider catalogue (pinned Pi: packages/ai/providers/all.ts). The full
+/// pinned built-in provider set is registered with exact id/name/baseUrl/env/auth/api
+/// metadata.
 ///
-/// Intentional difference from pinned Pi: the pinned generated model data
-/// (providers/data/*.json) is produced at npm build time and not committed to the
-/// source repository, so PiSharp ships a reduced, deterministic built-in catalogue.
-/// The pi.dev remote-catalog overlay (RemoteCatalogProvider) and models.json custom
-/// providers fill in the full model list at runtime, exactly as in pinned Pi.
+/// Intentional differences from pinned Pi:
+/// - The pinned generated model data (providers/data/*.json) is produced at npm build
+///   time and not committed to the source repository, so static model lists ship the
+///   curated models plus each provider's pinned default model with conservative
+///   baseline metadata (zero cost). The pi.dev remote-catalog overlay
+///   (RemoteCatalogProvider) and models.json custom providers fill in the full model
+///   list at runtime, exactly as in pinned Pi.
+/// - radius is not registered: its gateway/baseUrl and models are account-scoped and
+///   only discoverable after OAuth, which the static built-in layer cannot express.
+/// - Special credential paths (AWS profile/chain for bedrock, ADC/service-account for
+///   vertex, Cloudflare account/gateway ids, per-credential copilot model filtering)
+///   are not portable to this runtime; the env-based paths are registered instead.
+/// - The request bridge (Phase 2) serves openai-completions endpoints; built-in
+///   models on other APIs are catalogued and selectable but throw
+///   UnsupportedCapability at request time until those transports land.
 /// </summary>
 public static class BuiltinProviders
 {
     /// <summary>Provider id for the OpenAI-compatible local server (llama.cpp) workflow.</summary>
     public const string LlamaCppProviderId = "llama.cpp";
 
-    /// <summary>Creates the built-in provider set in pinned catalogue order.</summary>
+    /// <summary>
+    /// Creates the built-in provider set in pinned catalogue order (pinned
+    /// builtinProviders(), minus radius which needs an account-scoped gateway config).
+    /// </summary>
     public static IReadOnlyList<ProviderSpec> CreateBuiltins() =>
     [
-        OpenAi(),
+        AmazonBedrock(),
+        AntLing(),
         Anthropic(),
-        OpenRouter(),
+        AzureOpenAiResponses(),
+        Baseten(),
+        Cerebras(),
+        CloudflareAIGateway(),
+        CloudflareWorkersAI(),
+        DeepSeek(),
+        Fireworks(),
+        GitHubCopilot(),
         Google(),
+        GoogleVertex(),
+        Groq(),
+        HuggingFace(),
+        KimiCoding(),
+        MiniMax(),
+        MiniMaxCn(),
+        Mistral(),
+        MoonshotAi(),
+        MoonshotAiCn(),
+        Nvidia(),
+        OpenAi(),
+        OpenAiCodex(),
+        OpenCode(),
+        OpenCodeGo(),
+        OpenRouter(),
+        QwenTokenPlan(),
+        QwenTokenPlanCn(),
+        QwenTokenPlanIndividual(),
+        Together(),
+        VercelAiGateway(),
+        Xai(),
+        Xiaomi(),
+        XiaomiTokenPlanAms(),
+        XiaomiTokenPlanCn(),
+        XiaomiTokenPlanSgp(),
+        Zai(),
+        ZaiCodingCn(),
     ];
+
+    /// <summary>
+    /// Conservative offline baseline for synthesized default models: the pinned generated
+    /// catalog carries the real metadata, but it is build-time data not present in the
+    /// source repository; the pi.dev remote-catalog overlay replaces these at runtime.
+    /// </summary>
+    private const int BaselineContextWindow = 128_000;
+    private const int BaselineMaxTokens = 32_768;
+
+    /// <summary>
+    /// Standard env-key built-in provider (pinned envApiKeyAuth + openAICompletionsApi
+    /// pattern): exact pinned id/name/baseUrl/env/api metadata plus the pinned default
+    /// model as the offline baseline.
+    /// </summary>
+    private static ProviderSpec SimpleProvider(
+        string id,
+        string name,
+        string? baseUrl,
+        string apiKeyName,
+        string[] envNames,
+        string api,
+        OAuthAuth? oauth = null,
+        string? modelBaseUrl = null)
+    {
+        return new ProviderSpec
+        {
+            Id = id,
+            Name = name,
+            BaseUrl = baseUrl,
+            Auth = new ProviderAuth(
+                new EnvApiKeyAuth
+                {
+                    Name = apiKeyName,
+                    EnvironmentVariableNames = envNames,
+                    LoginMessage = $"Enter {apiKeyName}",
+                },
+                oauth),
+            GetModels = () => [DefaultModelModel(id, modelBaseUrl ?? baseUrl ?? FallbackBaseUrl(id), api)],
+            DefaultApi = api,
+        };
+    }
+
+    /// <summary>
+    /// Canonical endpoint for providers whose pinned models carry per-model base URLs
+    /// (the generated data is not in the repository); cloudflare keeps the pinned
+    /// env-template URLs verbatim.
+    /// </summary>
+    private static string FallbackBaseUrl(string providerId) => providerId switch
+    {
+        "amazon-bedrock" => "https://bedrock-runtime.us-east-1.amazonaws.com",
+        "azure-openai-responses" => "https://openai.azure.com",
+        "cloudflare-ai-gateway" => "https://gateway.ai.cloudflare.com/v1/{CLOUDFLARE_ACCOUNT_ID}/{CLOUDFLARE_GATEWAY_ID}/compat",
+        "cloudflare-workers-ai" => "https://api.cloudflare.com/client/v4/accounts/{CLOUDFLARE_ACCOUNT_ID}/ai/v1",
+        "google-vertex" => "https://aiplatform.googleapis.com",
+        "opencode" => "https://opencode.ai/zen/v1",
+        "opencode-go" => "https://opencode.ai/zen/v1",
+        _ => throw new InvalidOperationException($"No fallback base URL for provider {providerId}"),
+    };
+
+    private static ModelInfo DefaultModelModel(string providerId, string baseUrl, string api) => new()
+    {
+        Id = ModelResolver.DefaultModelPerProvider[providerId],
+        Name = ModelResolver.DefaultModelPerProvider[providerId],
+        Api = api,
+        Provider = providerId,
+        BaseUrl = baseUrl,
+        Reasoning = false,
+        Input = ["text"],
+        Cost = new ModelCost { Input = 0, Output = 0, CacheRead = 0, CacheWrite = 0 },
+        ContextWindow = BaselineContextWindow,
+        MaxTokens = BaselineMaxTokens,
+    };
+
+    private static ProviderSpec AmazonBedrock() => SimpleProvider(
+        "amazon-bedrock", "Amazon Bedrock", null,
+        "AWS bearer token", ["AWS_BEARER_TOKEN_BEDROCK"],
+        ModelApi.BedrockConverseStream);
+
+    private static ProviderSpec AntLing() => SimpleProvider(
+        "ant-ling", "Ant Ling", "https://api.ant-ling.com/v1",
+        "Ant Ling API key", ["ANT_LING_API_KEY"],
+        ModelApi.OpenAiCompletions);
+
+    private static ProviderSpec AzureOpenAiResponses() => SimpleProvider(
+        "azure-openai-responses", "Azure OpenAI", null,
+        "Azure OpenAI API key", ["AZURE_OPENAI_API_KEY"],
+        ModelApi.AzureOpenAiResponses);
+
+    private static ProviderSpec Baseten() => SimpleProvider(
+        "baseten", "Baseten", "https://inference.baseten.co/v1",
+        "Baseten API key", ["BASETEN_API_KEY"],
+        ModelApi.OpenAiCompletions);
+
+    private static ProviderSpec Cerebras() => SimpleProvider(
+        "cerebras", "Cerebras", "https://api.cerebras.ai/v1",
+        "Cerebras API key", ["CEREBRAS_API_KEY"],
+        ModelApi.OpenAiCompletions);
+
+    private static ProviderSpec CloudflareAIGateway() => SimpleProvider(
+        "cloudflare-ai-gateway", "Cloudflare AI Gateway", null,
+        "Cloudflare AI Gateway API key", ["CLOUDFLARE_API_KEY"],
+        ModelApi.OpenAiCompletions);
+
+    private static ProviderSpec CloudflareWorkersAI() => SimpleProvider(
+        "cloudflare-workers-ai", "Cloudflare Workers AI", null,
+        "Cloudflare Workers AI API key", ["CLOUDFLARE_API_KEY"],
+        ModelApi.OpenAiCompletions);
+
+    private static ProviderSpec DeepSeek() => SimpleProvider(
+        "deepseek", "DeepSeek", "https://api.deepseek.com",
+        "DeepSeek API key", ["DEEPSEEK_API_KEY"],
+        ModelApi.OpenAiCompletions);
+
+    private static ProviderSpec Fireworks() => SimpleProvider(
+        "fireworks", "Fireworks", "https://api.fireworks.ai/inference",
+        "Fireworks API key", ["FIREWORKS_API_KEY"],
+        ModelApi.OpenAiCompletions);
+
+    private static ProviderSpec GitHubCopilot() => SimpleProvider(
+        "github-copilot", "GitHub Copilot", "https://api.individual.githubcopilot.com",
+        "GitHub Copilot token", ["COPILOT_GITHUB_TOKEN"],
+        ModelApi.OpenAiCompletions,
+        oauth: new GitHubCopilotOAuth { Name = "GitHub Copilot", IsSubscription = true });
+
+    private static ProviderSpec GoogleVertex() => SimpleProvider(
+        "google-vertex", "Google Vertex", null,
+        "Google Cloud API key", ["GOOGLE_CLOUD_API_KEY"],
+        ModelApi.GoogleVertex);
+
+    private static ProviderSpec Groq() => SimpleProvider(
+        "groq", "Groq", "https://api.groq.com/openai/v1",
+        "Groq API key", ["GROQ_API_KEY"],
+        ModelApi.OpenAiCompletions);
+
+    private static ProviderSpec HuggingFace() => SimpleProvider(
+        "huggingface", "Hugging Face", "https://router.huggingface.co/v1",
+        "Hugging Face token", ["HF_TOKEN"],
+        ModelApi.OpenAiCompletions);
+
+    private static ProviderSpec KimiCoding() => SimpleProvider(
+        "kimi-coding", "Kimi For Coding", "https://api.kimi.com/coding",
+        "Kimi API key", ["KIMI_API_KEY"],
+        ModelApi.AnthropicMessages,
+        oauth: new KimiCodingOAuth
+        {
+            Name = "Kimi Code (subscription)",
+            IsSubscription = true,
+            LoginLabel = "Sign in with Kimi Code",
+        });
+
+    private static ProviderSpec MiniMax() => SimpleProvider(
+        "minimax", "MiniMax", "https://api.minimax.io/anthropic",
+        "MiniMax API key", ["MINIMAX_API_KEY"],
+        ModelApi.AnthropicMessages);
+
+    private static ProviderSpec MiniMaxCn() => SimpleProvider(
+        "minimax-cn", "MiniMax CN", "https://api.minimaxi.com/anthropic",
+        "MiniMax CN API key", ["MINIMAX_CN_API_KEY"],
+        ModelApi.AnthropicMessages);
+
+    private static ProviderSpec Mistral() => SimpleProvider(
+        "mistral", "Mistral", "https://api.mistral.ai",
+        "Mistral API key", ["MISTRAL_API_KEY"],
+        ModelApi.MistralConversations);
+
+    private static ProviderSpec MoonshotAi() => SimpleProvider(
+        "moonshotai", "Moonshot AI", "https://api.moonshot.ai/v1",
+        "Moonshot AI API key", ["MOONSHOT_API_KEY"],
+        ModelApi.OpenAiCompletions);
+
+    private static ProviderSpec MoonshotAiCn() => SimpleProvider(
+        "moonshotai-cn", "Moonshot AI CN", "https://api.moonshot.cn/v1",
+        "Moonshot AI API key", ["MOONSHOT_API_KEY"],
+        ModelApi.OpenAiCompletions);
+
+    private static ProviderSpec Nvidia() => SimpleProvider(
+        "nvidia", "NVIDIA", "https://integrate.api.nvidia.com/v1",
+        "NVIDIA API key", ["NVIDIA_API_KEY"],
+        ModelApi.OpenAiCompletions);
+
+    private static ProviderSpec OpenAiCodex() => new()
+    {
+        Id = "openai-codex",
+        Name = "OpenAI Codex",
+        BaseUrl = "https://chatgpt.com/backend-api",
+        // Pinned openai-codex is OAuth-only; no API-key method is fabricated.
+        Auth = new ProviderAuth(null, new OpenAiCodexOAuth
+        {
+            Name = "OpenAI (ChatGPT Plus/Pro)",
+            IsSubscription = true,
+        }),
+        GetModels = () => [DefaultModelModel("openai-codex", "https://chatgpt.com/backend-api", ModelApi.OpenAiCodexResponses)],
+        DefaultApi = ModelApi.OpenAiCodexResponses,
+    };
+
+    private static ProviderSpec OpenCode() => SimpleProvider(
+        "opencode", "OpenCode Zen", null,
+        "OpenCode API key", ["OPENCODE_API_KEY"],
+        ModelApi.OpenAiCompletions);
+
+    private static ProviderSpec OpenCodeGo() => SimpleProvider(
+        "opencode-go", "OpenCode Go", null,
+        "OpenCode API key", ["OPENCODE_API_KEY"],
+        ModelApi.OpenAiCompletions);
+
+    private static ProviderSpec QwenTokenPlan() => SimpleProvider(
+        "qwen-token-plan", "Qwen Token Plan",
+        "https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1",
+        "Qwen Token Plan API key", ["QWEN_TOKEN_PLAN_API_KEY"],
+        ModelApi.OpenAiCompletions);
+
+    private static ProviderSpec QwenTokenPlanCn() => SimpleProvider(
+        "qwen-token-plan-cn", "Qwen Token Plan CN",
+        "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1",
+        "Qwen Token Plan CN API key", ["QWEN_TOKEN_PLAN_CN_API_KEY"],
+        ModelApi.OpenAiCompletions);
+
+    private static ProviderSpec QwenTokenPlanIndividual() => SimpleProvider(
+        "qwen-token-plan-individual", "Qwen Token Plan Individual",
+        "https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1",
+        "Qwen Token Plan Individual API key", ["QWEN_TOKEN_PLAN_API_KEY"],
+        ModelApi.OpenAiCompletions);
+
+    private static ProviderSpec Together() => SimpleProvider(
+        "together", "Together", "https://api.together.ai/v1",
+        "Together API key", ["TOGETHER_API_KEY"],
+        ModelApi.OpenAiCompletions);
+
+    private static ProviderSpec VercelAiGateway() => SimpleProvider(
+        "vercel-ai-gateway", "Vercel AI Gateway", "https://ai-gateway.vercel.sh",
+        "Vercel AI Gateway API key", ["AI_GATEWAY_API_KEY"],
+        ModelApi.AnthropicMessages);
+
+    private static ProviderSpec Xai() => SimpleProvider(
+        "xai", "xAI", "https://api.x.ai/v1",
+        "xAI API key", ["XAI_API_KEY"],
+        ModelApi.OpenAiResponses,
+        oauth: new XaiOAuth
+        {
+            Name = "xAI (Grok/X subscription)",
+            IsSubscription = true,
+            LoginLabel = "Sign in with SuperGrok or X Premium",
+        });
+
+    private static ProviderSpec Xiaomi() => SimpleProvider(
+        "xiaomi", "Xiaomi", "https://api.xiaomimimo.com/v1",
+        "Xiaomi API key", ["XIAOMI_API_KEY"],
+        ModelApi.OpenAiCompletions);
+
+    private static ProviderSpec XiaomiTokenPlanAms() => SimpleProvider(
+        "xiaomi-token-plan-ams", "Xiaomi Token Plan AMS",
+        "https://token-plan-ams.xiaomimimo.com/v1",
+        "Xiaomi Token Plan AMS API key", ["XIAOMI_TOKEN_PLAN_AMS_API_KEY"],
+        ModelApi.OpenAiCompletions);
+
+    private static ProviderSpec XiaomiTokenPlanCn() => SimpleProvider(
+        "xiaomi-token-plan-cn", "Xiaomi Token Plan CN",
+        "https://token-plan-cn.xiaomimimo.com/v1",
+        "Xiaomi Token Plan CN API key", ["XIAOMI_TOKEN_PLAN_CN_API_KEY"],
+        ModelApi.OpenAiCompletions);
+
+    private static ProviderSpec XiaomiTokenPlanSgp() => SimpleProvider(
+        "xiaomi-token-plan-sgp", "Xiaomi Token Plan SGP",
+        "https://token-plan-sgp.xiaomimimo.com/v1",
+        "Xiaomi Token Plan SGP API key", ["XIAOMI_TOKEN_PLAN_SGP_API_KEY"],
+        ModelApi.OpenAiCompletions);
+
+    private static ProviderSpec Zai() => SimpleProvider(
+        "zai", "Z.AI", "https://api.z.ai/api/coding/paas/v4",
+        "Z.AI API key", ["ZAI_API_KEY"],
+        ModelApi.OpenAiCompletions);
+
+    private static ProviderSpec ZaiCodingCn() => SimpleProvider(
+        "zai-coding-cn", "Z.AI Coding CN", "https://open.bigmodel.cn/api/coding/paas/v4",
+        "Z.AI Coding CN API key", ["ZAI_CODING_CN_API_KEY"],
+        ModelApi.OpenAiCompletions);
 
     /// <summary>
     /// Creates the keyless local-server provider used by the PISHARP_ENDPOINT
@@ -80,6 +406,10 @@ public static class BuiltinProviders
         GetModels = () =>
         [
             Model(
+                "openai", "gpt-5.5", "GPT-5.5", ModelApi.OpenAiCompletions,
+                reasoning: false, contextWindow: BaselineContextWindow, maxTokens: BaselineMaxTokens,
+                input: 0, output: 0, cacheRead: 0, cacheWrite: 0),
+            Model(
                 "openai", "gpt-4o", "GPT-4o", ModelApi.OpenAiCompletions,
                 reasoning: false, contextWindow: 128_000, maxTokens: 16_384,
                 input: 2.5, output: 10, cacheRead: 1.25, cacheWrite: 0),
@@ -107,6 +437,10 @@ public static class BuiltinProviders
             new AnthropicOAuth { Name = "Anthropic (Claude Pro/Max)", IsSubscription = true }),
         GetModels = () =>
         [
+            Model(
+                "anthropic", "claude-opus-4-8", "Claude Opus 4.8", ModelApi.AnthropicMessages,
+                reasoning: true, contextWindow: BaselineContextWindow, maxTokens: BaselineMaxTokens,
+                input: 0, output: 0, cacheRead: 0, cacheWrite: 0),
             Model(
                 "anthropic", "claude-sonnet-4-5", "Claude Sonnet 4.5", ModelApi.AnthropicMessages,
                 reasoning: true, contextWindow: 200_000, maxTokens: 64_000,
@@ -160,6 +494,11 @@ public static class BuiltinProviders
         }),
         GetModels = () =>
         [
+            Model(
+                "google", "gemini-3.1-pro-preview", "Gemini 3.1 Pro Preview", ModelApi.GoogleGenerativeAi,
+                reasoning: true, contextWindow: BaselineContextWindow, maxTokens: BaselineMaxTokens,
+                input: 0, output: 0, cacheRead: 0, cacheWrite: 0,
+                headers: new Dictionary<string, string> { ["x-goog-api-key"] = "{key}" }),
             Model(
                 "google", "gemini-2.5-pro", "Gemini 2.5 Pro", ModelApi.GoogleGenerativeAi,
                 reasoning: true, contextWindow: 1_048_576, maxTokens: 65_536,
