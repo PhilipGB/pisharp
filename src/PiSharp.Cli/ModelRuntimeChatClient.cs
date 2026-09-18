@@ -93,15 +93,23 @@ internal sealed class ModelRuntimeChatClient : IChatClient, IDisposable
         }
 
         // Non-streaming idle timeout: no response within the window. Pinned only applies
-        // header/body idle timing to streams; this is the non-streaming equivalent.
-        var request = client.GetResponseAsync(messages, adjusted, cancellationToken);
-        var timeout = Task.Delay(TimeSpan.FromMilliseconds(timeoutMs), CancellationToken.None);
-        if (await Task.WhenAny(request, timeout).ConfigureAwait(false) == timeout)
+        // header/body idle timing to streams; this is the non-streaming equivalent. The guard
+        // cancels the in-flight operation on timeout (a WhenAny race would abandon it) and
+        // surfaces it as a status-less HttpRequestException (structurally transient at the
+        // turn level), distinct from a caller cancellation (OperationCanceledException).
+        var guard = new IdleTimeoutCancellationTokenSource(TimeSpan.FromMilliseconds(timeoutMs), cancellationToken);
+        try
+        {
+            return await client.GetResponseAsync(messages, adjusted, guard.Token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
             throw new HttpRequestException($"The provider sent no response within {timeoutMs / 1000}s.");
         }
-
-        return await request.ConfigureAwait(false);
+        finally
+        {
+            await guard.DisposeAsync().ConfigureAwait(false);
+        }
     }
 
     public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(
@@ -111,41 +119,50 @@ internal sealed class ModelRuntimeChatClient : IChatClient, IDisposable
     {
         var (client, adjusted) = await PrepareAsync(options, cancellationToken).ConfigureAwait(false);
         var timeoutMs = _idleTimeoutMs();
-        var enumerator = client.GetStreamingResponseAsync(messages, adjusted, cancellationToken).GetAsyncEnumerator();
+        var guard = timeoutMs > 0
+            ? new IdleTimeoutCancellationTokenSource(TimeSpan.FromMilliseconds(timeoutMs), cancellationToken)
+            : null;
+        var token = guard?.Token ?? cancellationToken;
+        var enumerator = client.GetStreamingResponseAsync(messages, adjusted, token).GetAsyncEnumerator();
         try
         {
             while (true)
             {
-                var moveNext = enumerator.MoveNextAsync().AsTask();
-                if (timeoutMs <= 0)
+                bool moved;
+                try
                 {
-                    if (!await moveNext.ConfigureAwait(false))
-                    {
-                        break;
-                    }
+                    moved = await enumerator.MoveNextAsync().ConfigureAwait(false);
                 }
-                else
+                catch (OperationCanceledException) when (guard is not null && !cancellationToken.IsCancellationRequested)
                 {
-                    var timeout = Task.Delay(TimeSpan.FromMilliseconds(timeoutMs), CancellationToken.None);
-                    if (await Task.WhenAny(moveNext, timeout).ConfigureAwait(false) == timeout)
-                    {
-                        // Pinned httpIdleTimeoutMs: header/body idle timeout. Each received
-                        // chunk resets the clock because the next MoveNext starts a new one.
-                        throw new HttpRequestException(
-                            $"The provider stopped sending data after {timeoutMs / 1000}s of inactivity.");
-                    }
-
-                    if (!await moveNext.ConfigureAwait(false))
-                    {
-                        break;
-                    }
+                    // The guard's idle window elapsed (the caller did not cancel): the
+                    // in-flight operation has been cancelled by the guard. Surface it as a
+                    // status-less HttpRequestException (structurally transient at the turn
+                    // level), distinct from a caller cancellation.
+                    throw new HttpRequestException(
+                        $"The provider stopped sending data after {timeoutMs / 1000}s of inactivity.");
                 }
 
+                if (!moved)
+                {
+                    break;
+                }
+
+                // Pinned httpIdleTimeoutMs: header/body idle timeout. Each received chunk
+                // resets the clock; the next MoveNext then starts a fresh window.
+                guard?.Reset();
                 yield return enumerator.Current;
             }
         }
         finally
         {
+            // Cancel/observe the guard (aborting any in-flight operation) before disposing the
+            // enumerator so the underlying HTTP operation unwinds promptly and is observed.
+            if (guard is not null)
+            {
+                await guard.DisposeAsync().ConfigureAwait(false);
+            }
+
             await enumerator.DisposeAsync().ConfigureAwait(false);
         }
     }

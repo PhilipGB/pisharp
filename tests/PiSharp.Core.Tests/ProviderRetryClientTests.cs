@@ -148,6 +148,74 @@ public sealed class ProviderRetryClientTests
         Assert.Equal("first", string.Join(string.Empty, texts));
     }
 
+    /// <summary>
+    /// Item 1 regression: a perpetually-retryable streaming failure must be bounded by the
+    /// budget — maxRetries = N means at most N + 1 total downstream requests, then the last
+    /// error surfaces. Before the fix the streaming path never checked the budget and looped
+    /// forever (retriesRemaining drove negative).
+    /// </summary>
+    [Fact]
+    public async Task StreamingRetryBudgetBoundsTotalRequests()
+    {
+        var settings = await Settings("""{"retry":{"provider":{"maxRetries":2,"maxRetryDelayMs":60000}}}""");
+        Func<IAsyncEnumerable<ChatResponseUpdate>> fail = () => throw new ProviderHttpException(
+            429, new Dictionary<string, string> { ["retry-after-ms"] = "10" }, "slow down");
+        var stub = new ScriptedStreamingChatClient(fail, fail, fail);
+
+        var client = new ProviderRetryClient(stub, settings);
+        var error = await Assert.ThrowsAsync<ProviderHttpException>(
+            async () =>
+            {
+                await foreach (var _ in client.GetStreamingResponseAsync([new ChatMessage(ChatRole.User, "hi")]))
+                {
+                }
+            });
+
+        Assert.Equal(429, error.Status);
+        Assert.Equal(3, stub.CallCount);
+    }
+
+    /// <summary>The (N+1)th attempt still runs: a success on the final budgeted attempt is returned.</summary>
+    [Fact]
+    public async Task StreamingSucceedsOnFinalBudgetAttempt()
+    {
+        var settings = await Settings("""{"retry":{"provider":{"maxRetries":2,"maxRetryDelayMs":60000}}}""");
+        Func<IAsyncEnumerable<ChatResponseUpdate>> fail = () => throw new ProviderHttpException(
+            429, new Dictionary<string, string> { ["retry-after-ms"] = "10" }, "slow down");
+        var stub = new ScriptedStreamingChatClient(fail, fail, () => CreateChunks("ok"));
+
+        var client = new ProviderRetryClient(stub, settings);
+        var texts = new List<string>();
+        await foreach (var update in client.GetStreamingResponseAsync([new ChatMessage(ChatRole.User, "hi")]))
+        {
+            texts.Add(update.Text ?? string.Empty);
+        }
+
+        Assert.Equal("ok", string.Join(string.Empty, texts));
+        Assert.Equal(3, stub.CallCount);
+    }
+
+    /// <summary>With maxRetries = 0 (the default) exactly one request is made, no retry.</summary>
+    [Fact]
+    public async Task StreamingWithZeroRetriesMakesExactlyOneRequest()
+    {
+        var settings = await Settings("{}");
+        var stub = new ScriptedStreamingChatClient(
+            () => throw new ProviderHttpException(429, new Dictionary<string, string>(), "slow down"),
+            () => CreateChunks("ok"));
+
+        var client = new ProviderRetryClient(stub, settings);
+        await Assert.ThrowsAsync<ProviderHttpException>(
+            async () =>
+            {
+                await foreach (var _ in client.GetStreamingResponseAsync([new ChatMessage(ChatRole.User, "hi")]))
+                {
+                }
+            });
+
+        Assert.Equal(1, stub.CallCount);
+    }
+
     private static Task<ChatResponse> Ok() =>
         Task.FromResult(new ChatResponse(
             new ChatMessage(ChatRole.Assistant, new AIContent[] { new TextContent("ok") })));

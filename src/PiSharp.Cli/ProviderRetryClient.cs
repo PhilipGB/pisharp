@@ -17,6 +17,8 @@ namespace PiSharp.Cli;
 /// fail immediately. Without a server delay: exponential 0.5*2^n seconds capped at 8s, with
 /// up to 25% jitter reduction. Retries happen only before any response content is observed;
 /// a failure after the first streamed update surfaces to the turn/compaction layer instead.
+/// The retry budget is exact for both paths: <c>maxRetries = N</c> means at most <c>N + 1</c>
+/// total downstream requests (pinned retryAssistantResponse attempt bound).
 /// </summary>
 internal sealed class ProviderRetryClient : DelegatingChatClient
 {
@@ -92,7 +94,7 @@ internal sealed class ProviderRetryClient : DelegatingChatClient
             }
             catch (Exception error)
             {
-                pendingDelay = ClassifyForRetry(error, maxRetries - retriesRemaining, maxRetryDelayMs, cancellationToken, yieldedAny);
+                pendingDelay = ClassifyForRetry(error, retriesRemaining, maxRetries, maxRetryDelayMs, cancellationToken, yieldedAny);
                 if (pendingDelay is null)
                 {
                     throw;
@@ -122,7 +124,7 @@ internal sealed class ProviderRetryClient : DelegatingChatClient
                     }
                     catch (Exception error)
                     {
-                        var delay = ClassifyForRetry(error, maxRetries - retriesRemaining, maxRetryDelayMs, cancellationToken, yieldedAny);
+                        var delay = ClassifyForRetry(error, retriesRemaining, maxRetries, maxRetryDelayMs, cancellationToken, yieldedAny);
                         if (delay is null)
                         {
                             throw;
@@ -159,24 +161,27 @@ internal sealed class ProviderRetryClient : DelegatingChatClient
 
     /// <summary>
     /// Classifies a streaming failure for retry. Returns null when the error must be thrown
-    /// (cancellation, failure after the first chunk, non-retryable error, or exhausted
-    /// budget); otherwise the backoff before the next attempt.
+    /// (cancellation, failure after the first chunk, non-retryable error, or an exhausted
+    /// budget); otherwise the backoff before the next attempt. The budget is enforced here
+    /// (not only at the call sites) so <c>maxRetries = N</c> means at most <c>N + 1</c> total
+    /// downstream requests — the same bound the pinned outer streaming retry loop applies.
     /// </summary>
     private TimeSpan? ClassifyForRetry(
         Exception error,
-        int retryIndex,
+        int retriesRemaining,
+        int maxRetries,
         long maxRetryDelayMs,
         CancellationToken cancellationToken,
         bool yieldedAny)
     {
-        if (cancellationToken.IsCancellationRequested || yieldedAny)
+        if (cancellationToken.IsCancellationRequested || yieldedAny || retriesRemaining <= 0)
         {
-            // Cancellation is terminal, and a failure after content left the retry layer:
-            // the turn/compaction layer owns recovery from that point.
+            // Cancellation is terminal; a failure after content left the retry layer is owned
+            // by the turn/compaction layer; and an exhausted budget surfaces the last error.
             return null;
         }
 
-        return GetRetryDelayMs(error, retryIndex, maxRetryDelayMs);
+        return GetRetryDelayMs(error, maxRetries - retriesRemaining, maxRetryDelayMs);
     }
 
     private (int MaxRetries, long MaxRetryDelayMs) ResolvePolicy()

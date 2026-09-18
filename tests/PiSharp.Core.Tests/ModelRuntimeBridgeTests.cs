@@ -184,6 +184,55 @@ public sealed class ModelRuntimeBridgeTests
         Assert.Contains("No model is selected", error.Message);
     }
 
+    /// <summary>
+    /// Item 2: the non-streaming idle timeout must cancel the actual in-flight provider
+    /// request (a WhenAny race would abandon it running and unobserved) and surface a
+    /// status-less HttpRequestException (structurally transient) rather than an OCE.
+    /// </summary>
+    [Fact]
+    public async Task NonStreamingIdleTimeoutCancelsTheInFlightRequest()
+    {
+        var (runtime, state, _) = await ModelRuntimeTestKit.CreateAsync();
+        using var hanging = new HangingRequestHandler();
+        using var bridge = new ModelRuntimeChatClient(runtime, () => state.Current, () => 50, hanging);
+        await SetModelAsync(runtime, state, ModelRuntimeTestKit.Reference);
+
+        var error = await Assert.ThrowsAsync<HttpRequestException>(
+            () => bridge.GetResponseAsync([new ChatMessage(ChatRole.User, "hi")]));
+        Assert.Contains("no response within", error.Message);
+        Assert.True(hanging.CancelObserved, "the in-flight request must be cancelled, not abandoned");
+    }
+
+    /// <summary>
+    /// Item 2: the streaming idle timeout must fire when the provider stops sending data
+    /// (no chunk resets the window), cancel the in-flight read, and surface a status-less
+    /// HttpRequestException. A leading chunk that is followed by silence still times out.
+    /// </summary>
+    [Fact]
+    public async Task StreamingIdleTimeoutCancelsTheInFlightRead()
+    {
+        var (runtime, state, _) = await ModelRuntimeTestKit.CreateAsync();
+        using var hanging = new HangingRequestHandler();
+        using var bridge = new ModelRuntimeChatClient(runtime, () => state.Current, () => 60, hanging);
+        await SetModelAsync(runtime, state, ModelRuntimeTestKit.Reference);
+
+        var texts = new List<string>();
+        var error = await Assert.ThrowsAsync<HttpRequestException>(
+            async () =>
+            {
+                await foreach (var update in bridge.GetStreamingResponseAsync([new ChatMessage(ChatRole.User, "hi")]))
+                {
+                    texts.Add(update.Text ?? string.Empty);
+                }
+            });
+
+        // The streaming idle timeout surfaces the pinned "stopped sending data" message and the
+        // in-flight request (blocked in SendAsync) was actually cancelled by the guard token.
+        Assert.Contains("stopped sending data", error.Message);
+        Assert.Empty(texts); // no chunk was ever received
+        Assert.True(hanging.CancelObserved, "the in-flight request must be cancelled, not abandoned");
+    }
+
     /// <summary>Resolves a model reference through the runtime and sets it on the state.</summary>
     private static async Task SetModelAsync(ModelRuntime runtime, ModelSessionState state, string reference)
     {
@@ -224,4 +273,29 @@ public sealed class ModelRuntimeBridgeTests
 
         private static string Completion(string model) => CompletionTemplate.Replace("__MODEL__", model);
     }
+
+    /// <summary>
+    /// A transport that never answers: it blocks in SendAsync until the (idle-timeout) token
+    /// cancels it, recording that the in-flight request was actually cancelled.
+    /// </summary>
+    private sealed class HangingRequestHandler : HttpMessageHandler
+    {
+        public volatile bool CancelObserved;
+
+        protected override async Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            try
+            {
+                await Task.Delay(Timeout.Infinite, cancellationToken);
+                throw new InvalidOperationException("expected the request to be cancelled");
+            }
+            catch (OperationCanceledException)
+            {
+                CancelObserved = true;
+                throw;
+            }
+        }
+    }
+
 }
