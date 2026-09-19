@@ -59,6 +59,16 @@ public sealed class SessionStore
     /// <summary>True when a session directory override (CLI/env/settings) is in effect.</summary>
     public bool UsesExplicitSessionDir => _usesExplicitSessionDir;
 
+    /// <summary>
+    /// The directories this store's own scope covers: the explicit session directory alone
+    /// when an override is in effect, or the canonical directory plus the legacy
+    /// compatibility directory for the normal default layout. An explicit directory must
+    /// never reach into <c>~/.pisharp</c>.
+    /// </summary>
+    private string[] ScopedDirectories => _usesExplicitSessionDir
+        ? [_workspaceDirectory]
+        : [_workspaceDirectory, _legacyWorkspaceDirectory];
+
     /// <summary>Gets the workspace (project) directory this store's sessions belong to.</summary>
     public string WorkspaceRoot => _workspaceRoot;
 
@@ -321,17 +331,16 @@ public sealed class SessionStore
     }
 
     /// <summary>
-    /// Lists session metadata (never full documents) for the workspace: the canonical or
-    /// explicit session directory plus the legacy <c>~/.pisharp/sessions</c> workspace key
-    /// directory, so pre-Phase-3 sessions stay discoverable. Malformed or unreadable files
-    /// are skipped; the result is sorted newest-modified first (ties by path).
+    /// Lists session metadata (never full documents) for the workspace: the canonical
+    /// session directory plus the legacy <c>~/.pisharp/sessions</c> workspace key directory
+    /// (so pre-Phase-3 sessions stay discoverable) — or the explicit session directory
+    /// alone when an override is in effect. Malformed or unreadable files are skipped; the
+    /// result is sorted newest-modified first (ties by path).
     /// </summary>
     public async Task<IReadOnlyList<PiSessionInfo>> ListInfosAsync(CancellationToken cancellationToken = default)
     {
-        // The workspace's canonical (or explicit) directory plus the legacy compatibility
-        // directory, so pre-Phase-3 sessions stay discoverable next to the new layout.
         return await ListInfosFromDirectoriesAsync(
-            [_workspaceDirectory, _legacyWorkspaceDirectory],
+            ScopedDirectories,
             _workspaceRoot,
             filterCwd: _usesExplicitSessionDir,
             cancellationToken);
@@ -522,7 +531,9 @@ public sealed class SessionStore
     public async Task<SessionDocument?> ContinueAsync(CancellationToken cancellationToken = default)
     {
         var candidates = new List<(string Path, DateTimeOffset Mtime)>();
-        foreach (var directory in new[] { _workspaceDirectory, _legacyWorkspaceDirectory })
+        // An explicit session directory is the whole discovery scope as well; the legacy
+        // compatibility directory belongs to the normal default layout only.
+        foreach (var directory in ScopedDirectories)
         {
             if (!Directory.Exists(directory))
             {
@@ -627,9 +638,11 @@ public sealed class SessionStore
             return new SessionResolution(path, null);
         }
 
+        // Pinned resolveSessionPath: exact id first, then the first case-sensitive prefix
+        // match (JavaScript startsWith is case-sensitive) in normal listing order.
         var infos = await ListInfosAsync(cancellationToken);
         var match = infos.FirstOrDefault(info => string.Equals(info.Id, selector, StringComparison.Ordinal))
-            ?? infos.FirstOrDefault(info => info.Id.StartsWith(selector, StringComparison.OrdinalIgnoreCase));
+            ?? infos.FirstOrDefault(info => info.Id.StartsWith(selector, StringComparison.Ordinal));
         if (match is not null)
         {
             return new SessionResolution(match.Path, null);
@@ -640,7 +653,7 @@ public sealed class SessionStore
         // it into the current directory instead of opening it directly.
         var all = await ListAllInfosAsync(cancellationToken);
         var global = all.FirstOrDefault(info => string.Equals(info.Id, selector, StringComparison.Ordinal))
-            ?? all.FirstOrDefault(info => info.Id.StartsWith(selector, StringComparison.OrdinalIgnoreCase));
+            ?? all.FirstOrDefault(info => info.Id.StartsWith(selector, StringComparison.Ordinal));
         return global is null ? null : new SessionResolution(global.Path, global.Cwd);
     }
 

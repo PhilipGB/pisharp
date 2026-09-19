@@ -130,6 +130,30 @@ public sealed class SessionPickerTests
     }
 
     [Fact]
+    public async Task PickerNamedFilterAppliesToTheQuerylessThreadedTree()
+    {
+        // Exactly two sessions: A gets a name, B stays unnamed. The default view is
+        // threaded with an empty query — the named-only filter must still apply there.
+        var (store, temp) = await CreateStoreAsync("a", "alpha", "b", "beta");
+        using var _ = temp;
+        await store.RenameSessionAsync(
+            Path.Combine(store.WorkspaceDirectory, "a.jsonl"), "Named", CancellationToken.None);
+
+        var console = new FakeConsoleIO();
+        console.EnqueueText("named\n"); // switch to named-only (sort stays threaded)
+        console.EnqueueText("1\n");     // select the only visible row
+        var selected = await SessionPicker.PickAsync(store, console, null, CancellationToken.None);
+
+        Assert.NotNull(selected);
+        Assert.Equal("a", selected!.Id);
+        // The final render (threaded, empty query, named-only) lists only the named
+        // session (by its quoted name); the unnamed session's row must be absent.
+        var finalRender = console.Output.Split("Sessions:")[^1];
+        Assert.Contains("\"Named\"", finalRender);
+        Assert.DoesNotContain("beta", finalRender);
+    }
+
+    [Fact]
     public async Task PickerNamedFilterHidesUnnamedSessions()
     {
         var (store, temp) = await CreateStoreAsync("s1", "alpha");
@@ -149,6 +173,42 @@ public sealed class SessionPickerTests
         await SessionPicker.PickAsync(
             await CreateUnrenamedStoreAsync(), unnamedView, null, CancellationToken.None);
         Assert.Contains("No saved sessions", unnamedView.Output);
+    }
+
+    [Fact]
+    public async Task PickerRendersAnOldSessionWithoutAUsableCwd()
+    {
+        var temp = TempDirectory.Create();
+        using var _ = temp;
+        var workspace = Directory.CreateDirectory(Path.Combine(temp.Path, "repo")).FullName;
+        var store = new SessionStore(workspace, Path.Combine(temp.Path, "sessions"));
+        Directory.CreateDirectory(store.WorkspaceDirectory);
+
+        // Old/versionless session metadata with no usable cwd: the header omits the
+        // property entirely, so the reader reports an empty cwd.
+        var time = new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        var path = Path.Combine(store.WorkspaceDirectory, "nocwd.jsonl");
+        await File.WriteAllLinesAsync(path, [
+            $"{{\"type\":\"session\",\"id\":\"nocwd123\",\"timestamp\":\"{time:yyyy-MM-ddTHH:mm:ss.fffZ}\"}}",
+            JsonSerializer.Serialize(new MessageEntry("u", null, time,
+                JsonSerializer.SerializeToElement(new { role = "user", content = "old prompt" })), Json),
+            JsonSerializer.Serialize(new MessageEntry("a", "u", time.AddMilliseconds(500),
+                JsonSerializer.SerializeToElement(new { role = "assistant", content = "old answer" })), Json),
+        ]);
+        File.SetLastWriteTimeUtc(path, time.UtcDateTime);
+
+        var console = new FakeConsoleIO();
+        console.EnqueueText("1\n"); // the session must remain selectable
+        var selected = await SessionPicker.PickAsync(store, console, null, CancellationToken.None);
+
+        Assert.NotNull(selected);
+        Assert.Equal("nocwd123", selected!.Id);
+        Assert.Equal(string.Empty, selected.Cwd);
+        // The rendered row carries the id and no fake cwd after the title.
+        var render = console.Output.Split("Sessions:")[1];
+        var row = render.Split('\n').First(line => line.Contains("nocwd123"));
+        Assert.EndsWith("old prompt", row.TrimEnd());
+        Assert.DoesNotContain(Environment.CurrentDirectory, render);
     }
 
     // --- fixtures -------------------------------------------------------------

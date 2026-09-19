@@ -134,16 +134,23 @@ internal static class SessionPicker
         SessionSortMode sortMode,
         SessionNameFilter nameFilter)
     {
+        // Pinned filterSessions: the name filter applies before the view is chosen, so
+        // the query-less threaded tree is built from the already name-filtered sessions.
+        var filteredByName = nameFilter == SessionNameFilter.Named
+            ? sessions.Where(SessionSearch.HasSessionName).ToList()
+            : sessions;
+
         var trimmed = query.Trim();
         if (trimmed.Length == 0 && sortMode == SessionSortMode.Threaded)
         {
             // Pinned threaded view without a search: the parentSessionPath tree.
-            return SessionSearch.BuildThreadedTree(sessions)
+            return SessionSearch.BuildThreadedTree(filteredByName)
                 .Select(node => (node.Session, node.Depth, node.IsLast))
                 .ToList();
         }
 
-        return SessionSearch.FilterAndSort(sessions, query, sortMode, nameFilter)
+        // The name filter is already applied, so the flat search/sort pass reuses it as-is.
+        return SessionSearch.FilterAndSort(filteredByName, query, sortMode, SessionNameFilter.All)
             .Select(info => (info, 0, true))
             .ToList();
     }
@@ -169,10 +176,15 @@ internal static class SessionPicker
             var title = !string.IsNullOrWhiteSpace(info.Name)
                 ? $"\"{info.Name}\""
                 : Truncate(info.FirstMessage, PreviewLength);
-            var cwd = string.Equals(Path.GetFullPath(info.Cwd), workspace,
-                OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal)
+            // Old session metadata may carry an empty/whitespace cwd: never pass it to
+            // Path.GetFullPath (it would resolve to the process cwd and display a fake
+            // working directory) and never render a placeholder — the session stays selectable.
+            var cwd = string.IsNullOrWhiteSpace(info.Cwd)
                 ? string.Empty
-                : $"  {info.Cwd}";
+                : string.Equals(Path.GetFullPath(info.Cwd), workspace,
+                    OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal)
+                    ? string.Empty
+                    : $"  {info.Cwd}";
             console.WriteLine(
                 $"{indent}{i + 1,3}. {info.Id[..Math.Min(8, info.Id.Length)]}  {info.Modified:yyyy-MM-dd}  {info.MessageCount,3} msgs  {title}{cwd}{marker}");
         }

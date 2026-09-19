@@ -336,4 +336,88 @@ public sealed class PiSessionStoreTests
     private static MessageEntry AssistantMessage(string id, string? parentId, object[] content) =>
         new(id, parentId, DateTimeOffset.UtcNow,
             JsonSerializer.SerializeToElement(new { role = "assistant", content }));
+
+    [Fact]
+    public async Task ContinueWithAnExplicitSessionDirIgnoresTheLegacyDirectory()
+    {
+        using var temp = TempDirectory.Create();
+        var workspace = Directory.CreateDirectory(Path.Combine(temp.Path, "repo")).FullName;
+        var store = new SessionStore(workspace, Path.Combine(temp.Path, "custom"));
+
+        var aTime = new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        var aPath = Path.Combine(store.WorkspaceDirectory, "a.jsonl");
+        await WritePiSessionFileAsync(aPath, "aaaaaaaaaaaa", workspace, aTime);
+
+        // A newer session in the legacy ~/.pisharp/sessions directory for the same
+        // workspace: the explicit scope must not see it.
+        var bTime = aTime.AddMinutes(5);
+        var bPath = Path.Combine(store.LegacyWorkspaceDirectory, "b.jsonl");
+        Directory.CreateDirectory(store.LegacyWorkspaceDirectory);
+        await WritePiSessionFileAsync(bPath, "bbbbbbbbbbbb", workspace, bTime);
+
+        var continued = await store.ContinueAsync(CancellationToken.None);
+
+        Assert.NotNull(continued);
+        Assert.Equal(aPath, continued!.FilePath);
+    }
+
+    [Fact]
+    public async Task ResolveWithAnExplicitSessionDirCannotSeeTheLegacyDirectory()
+    {
+        using var temp = TempDirectory.Create();
+        var workspace = Directory.CreateDirectory(Path.Combine(temp.Path, "repo")).FullName;
+        var store = new SessionStore(workspace, Path.Combine(temp.Path, "custom"));
+
+        // The session exists only in the legacy directory.
+        var bPath = Path.Combine(store.LegacyWorkspaceDirectory, "b.jsonl");
+        Directory.CreateDirectory(store.LegacyWorkspaceDirectory);
+        await WritePiSessionFileAsync(
+            bPath, "cafe0123abcd", workspace, new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero));
+
+        // Neither the full id nor an id prefix may resolve from the explicit scope.
+        Assert.Null(await store.ResolveAsync("cafe0123abcd", CancellationToken.None));
+        Assert.Null(await store.ResolveAsync("cafe", CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task ResolveIdPrefixesAreCaseSensitive()
+    {
+        using var temp = TempDirectory.Create();
+        var workspace = Directory.CreateDirectory(Path.Combine(temp.Path, "repo")).FullName;
+        var store = new SessionStore(workspace, Path.Combine(temp.Path, "sessions"));
+
+        // An id whose letters make case matter (pinned startsWith is case-sensitive).
+        const string id = "AbCd1234EfGh5678";
+        var path = Path.Combine(store.WorkspaceDirectory, $"{id}.jsonl");
+        await WritePiSessionFileAsync(path, id, workspace, new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero));
+
+        // The exact id (correct case) resolves.
+        Assert.Equal(path, (await store.ResolveAsync(id, CancellationToken.None))!.Path);
+        // A correct-case prefix resolves.
+        Assert.Equal(path, (await store.ResolveAsync("AbCd", CancellationToken.None))!.Path);
+        // Wrong-case prefixes do not resolve (local or global scope).
+        Assert.Null(await store.ResolveAsync("abcd", CancellationToken.None));
+        Assert.Null(await store.ResolveAsync("ABCD", CancellationToken.None));
+    }
+
+    /// <summary>
+    /// Writes a minimal materialized Pi v3 session file (header + user/assistant messages)
+    /// with a fixed id, cwd, and entry timestamps.
+    /// </summary>
+    private static async Task WritePiSessionFileAsync(string path, string id, string cwd, DateTimeOffset time)
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        var options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+        var header = new PiSessionHeader("session", 3, id, time, Path.GetFullPath(cwd));
+        var user = new MessageEntry("u", null, time,
+            JsonSerializer.SerializeToElement(new { role = "user", content = "prompt" }));
+        var assistant = new MessageEntry("a", "u", time.AddMilliseconds(500),
+            JsonSerializer.SerializeToElement(new { role = "assistant", content = "answer" }));
+        await File.WriteAllLinesAsync(path, [
+            JsonSerializer.Serialize(header, options),
+            JsonSerializer.Serialize(user, options),
+            JsonSerializer.Serialize(assistant, options),
+        ]);
+        File.SetLastWriteTimeUtc(path, time.UtcDateTime);
+    }
 }
