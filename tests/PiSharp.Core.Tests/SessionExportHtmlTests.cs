@@ -147,7 +147,7 @@ public sealed class SessionShareTests
         var file = Path.Combine(temp.Path, "session.html");
         await File.WriteAllTextAsync(file, "<!doctype html>");
         // Real gh prints the gist url on its own final line.
-        SessionShare.Launcher = async (path, _) =>
+        SessionShare.Launcher = async (path, _, _) =>
         {
             Assert.Equal(file, path);
             await Task.CompletedTask;
@@ -171,7 +171,7 @@ public sealed class SessionShareTests
         using var temp = TempDirectory.Create();
         var file = Path.Combine(temp.Path, "session.html");
         await File.WriteAllTextAsync(file, "<!doctype html>");
-        SessionShare.Launcher = async (_, _) =>
+        SessionShare.Launcher = async (_, _, _) =>
         {
             await Task.CompletedTask;
             return (1, string.Empty, "authentication required");
@@ -195,5 +195,54 @@ public sealed class SessionShareTests
         using var temp = TempDirectory.Create();
         await Assert.ThrowsAsync<FileNotFoundException>(
             () => SessionShare.ShareFileAsync(Path.Combine(temp.Path, "missing.html"), CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task ShareCreatesANonPublicGist()
+    {
+        using var temp = TempDirectory.Create();
+        var file = Path.Combine(temp.Path, "session.html");
+        await File.WriteAllTextAsync(file, "<!doctype html>");
+        IReadOnlyList<string>? captured = null;
+        SessionShare.Launcher = async (path, args, _) =>
+        {
+            Assert.Equal(file, path);
+            captured = args;
+            await Task.CompletedTask;
+            return (0, "https://gist.github.com/u/abc123\n", null);
+        };
+
+        try
+        {
+            await SessionShare.ShareFileAsync(file, CancellationToken.None);
+
+            // Pinned parity: the gist is private (--public=false), never --public.
+            Assert.NotNull(captured);
+            Assert.Contains("--public=false", captured!);
+            Assert.DoesNotContain("--public", captured!);
+        }
+        finally
+        {
+            SessionShare.Launcher = null;
+        }
+    }
+
+    [Fact]
+    public async Task TheRealProcessLauncherStartsAndCapturesTheOutput()
+    {
+        // The test host runs on the .NET muxer; launching it is a deterministic, offline
+        // way to exercise the real launcher without requiring gh or network access.
+        var host = Environment.ProcessPath
+            ?? throw new InvalidOperationException("test host process path is unavailable");
+
+        var (exitCode, stdOut, _) = await SessionShare.RunProcessAsync(host, ["--version"], CancellationToken.None);
+        Assert.Equal(0, exitCode);
+        Assert.False(string.IsNullOrWhiteSpace(stdOut));
+
+        // A failing invocation still yields a captured stderr and its exit code.
+        var (failedExit, _, stdErr) =
+            await SessionShare.RunProcessAsync(host, ["not-a-real-pisharp-command"], CancellationToken.None);
+        Assert.NotEqual(0, failedExit);
+        Assert.False(string.IsNullOrWhiteSpace(stdErr));
     }
 }
