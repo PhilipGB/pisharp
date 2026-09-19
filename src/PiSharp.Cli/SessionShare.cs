@@ -55,13 +55,20 @@ internal static class SessionShare
                 StartInfo = new ProcessStartInfo
                 {
                     FileName = "gh",
-                    Arguments = $"gist create \"{filePath}\" --public -d \"PiSharp session\"",
+                    // ArgumentList passes each element verbatim (no quoting layer), so paths
+                    // containing quote characters cannot alter the argument boundaries.
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                     UseShellExecute = false,
                 },
             };
 
+            process.StartInfo.ArgumentList.Add("gist");
+            process.StartInfo.ArgumentList.Add("create");
+            process.StartInfo.ArgumentList.Add(filePath);
+            process.StartInfo.ArgumentList.Add("--public");
+            process.StartInfo.ArgumentList.Add("-d");
+            process.StartInfo.ArgumentList.Add("PiSharp session");
             var stdOutTask = process.StandardOutput.ReadToEndAsync();
             var stdErrTask = process.StandardError.ReadToEndAsync();
             if (!process.Start())
