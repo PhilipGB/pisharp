@@ -167,10 +167,23 @@ public class SettingsWiringTests
             CancellationToken.None,
             settings);
 
+        // Pinned: an explicit session directory is the flat session directory itself
+        // (no workspace-key subdirectory underneath it).
         var root = Path.GetFullPath(target);
-        Assert.StartsWith(root + Path.DirectorySeparatorChar, sessions.StoreDirectory);
-        // A fresh session file was created under the configured root.
-        Assert.Single(Directory.GetFiles(root, "*.jsonl", SearchOption.AllDirectories));
+        Assert.Equal(root, sessions.StoreDirectory);
+        // Pinned lazy-flush contract: a fresh session has no file until its first
+        // assistant message, so the configured directory stays empty at startup.
+        Assert.Empty(Directory.GetFiles(root, "*.jsonl"));
+
+        await sessions.PersistUserMessageAsync("first prompt", null, CancellationToken.None);
+        await sessions.PersistAssistantMessagesAsync(
+            [System.Text.Json.JsonSerializer.SerializeToElement(new
+            {
+                role = "assistant",
+                content = new object[] { new { type = "text", text = "first answer" }, },
+            })], CancellationToken.None);
+        // The first assistant response materializes the session file under the root.
+        Assert.Single(Directory.GetFiles(root, "*.jsonl"));
     }
 
     [Fact]

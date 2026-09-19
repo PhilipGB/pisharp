@@ -13,6 +13,7 @@ public sealed class SessionDocument
         Header = header;
         _turns = turns?.ToList() ?? [];
         _entries = [];
+        IsFileFlushed = File.Exists(FilePath);
         ValidateTurns();
     }
 
@@ -23,10 +24,23 @@ public sealed class SessionDocument
         Header = SessionHeader.FromPi(header);
         _entries = entries.ToList();
         _turns = [];
+        // Pinned lazy-flush contract: a freshly created session has no file until its first
+        // assistant message; a loaded (or pre-existing) file is already materialized.
+        IsFileFlushed = File.Exists(FilePath);
         ValidateEntries();
     }
 
     public string FilePath { get; }
+
+    /// <summary>
+    /// True once the session file has been materialized on disk (pinned <c>flushed</c>).
+    /// While false, pre-assistant entries stay in memory only and the file appears with the
+    /// first assistant message (or never, for sessions that get no response).
+    /// </summary>
+    internal bool IsFileFlushed { get; private set; }
+
+    /// <summary>Marks the session file as materialized after the first full write.</summary>
+    internal void MarkFlushed() => IsFileFlushed = true;
 
     public SessionHeader Header { get; }
 

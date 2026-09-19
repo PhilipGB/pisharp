@@ -106,9 +106,12 @@ public sealed class PiSessionStoreTests
         var workspace = Directory.CreateDirectory(Path.Combine(temp.Path, "repo")).FullName;
         var store = new SessionStore(workspace, Path.Combine(temp.Path, "sessions"));
         var document = await store.CreatePiAsync();
+        // The pinned lazy-flush contract materializes the file with the first assistant
+        // message; the compaction entry follows as a plain append.
+        await store.AppendEntriesAsync(document, [UserMessage("user", null, "hello"), AssistantMessage("assistant", "user", [new { type = "text", text = "world" }])]);
         var compaction = new CompactionEntry(
             "compact",
-            null,
+            "assistant",
             DateTimeOffset.UtcNow,
             "summary",
             "first",
@@ -131,8 +134,9 @@ public sealed class PiSessionStoreTests
         var store = new SessionStore(workspace, Path.Combine(temp.Path, "sessions"));
         var document = await store.CreatePiAsync();
         var user = new MessageEntry("user", null, DateTimeOffset.UtcNow, JsonSerializer.SerializeToElement(new { role = "user", content = "hi" }));
-        var set = new LabelEntry("set", "user", DateTimeOffset.UtcNow, "user", "bookmark");
-        await store.AppendEntriesAsync(document, [user, set]);
+        var assistant = new MessageEntry("assistant", "user", DateTimeOffset.UtcNow, JsonSerializer.SerializeToElement(new { role = "assistant", content = "there" }));
+        var set = new LabelEntry("set", "assistant", DateTimeOffset.UtcNow, "user", "bookmark");
+        await store.AppendEntriesAsync(document, [user, assistant, set]);
 
         var withLabel = await store.LoadAsync(document.FilePath);
         Assert.Equal("bookmark", withLabel.GetLabel("user"));
@@ -228,6 +232,69 @@ public sealed class PiSessionStoreTests
             store.AppendTurnAsync(document, root));
 
         Assert.Empty(document.Turns);
+    }
+
+    [Fact]
+    public async Task PiV3SessionFileIsDeferredUntilTheFirstAssistantMessage()
+    {
+        using var temp = TempDirectory.Create();
+        var workspace = Directory.CreateDirectory(Path.Combine(temp.Path, "repo")).FullName;
+        var store = new SessionStore(workspace, Path.Combine(temp.Path, "sessions"));
+        var document = await store.CreatePiAsync();
+
+        // Pinned lazy-flush contract: creation, model/thinking entries, and user prompts
+        // never materialize the file on disk.
+        Assert.False(File.Exists(document.FilePath));
+        var modelChange = new ModelChangeEntry("model", null, DateTimeOffset.UtcNow, "openai", "gpt-test");
+        await store.AppendEntriesAsync(document, [modelChange]);
+        var user = UserMessage("user", "model", "hello");
+        await store.AppendEntriesAsync(document, [user]);
+        Assert.False(File.Exists(document.FilePath));
+
+        // The first assistant message writes the whole session in one materialization.
+        var assistant = AssistantMessage("assistant", "user", [new { type = "text", text = "world" }]);
+        await store.AppendEntriesAsync(document, [assistant]);
+        Assert.True(File.Exists(document.FilePath));
+
+        var lines = await File.ReadAllLinesAsync(document.FilePath);
+        Assert.Equal(4, lines.Length);
+        Assert.Contains("\"type\":\"session\"", lines[0]);
+        Assert.Contains("\"type\":\"model_change\"", lines[1]);
+
+        // Subsequent entries are plain appends.
+        var next = UserMessage("next", "assistant", "again");
+        await store.AppendEntriesAsync(document, [next]);
+        Assert.Equal(5, (await File.ReadAllLinesAsync(document.FilePath)).Length);
+    }
+
+    [Fact]
+    public async Task PiV3SessionWithoutAnAssistantResponseNeverAppearsInListings()
+    {
+        using var temp = TempDirectory.Create();
+        var workspace = Directory.CreateDirectory(Path.Combine(temp.Path, "repo")).FullName;
+        var store = new SessionStore(workspace, Path.Combine(temp.Path, "sessions"));
+        var document = await store.CreatePiAsync();
+        await store.AppendEntriesAsync(document, [UserMessage("user", null, "never answered")]);
+
+        Assert.Empty(await store.ListInfosAsync());
+        Assert.Null(await store.ContinueAsync());
+    }
+
+    [Fact]
+    public async Task PiV3ExplicitPathIsPreservedForAMissingSessionFile()
+    {
+        using var temp = TempDirectory.Create();
+        var workspace = Directory.CreateDirectory(Path.Combine(temp.Path, "repo")).FullName;
+        var store = new SessionStore(workspace, Path.Combine(temp.Path, "sessions"));
+        var explicitPath = Path.Combine(temp.Path, "elsewhere", "chosen.jsonl");
+
+        var document = await store.CreatePiAtAsync(explicitPath);
+
+        Assert.Equal(Path.GetFullPath(explicitPath), document.FilePath);
+        Assert.False(File.Exists(document.FilePath));
+        await store.AppendEntriesAsync(document, [UserMessage("user", null, "hi"),
+            AssistantMessage("assistant", "user", [new { type = "text", text = "yo" }])]);
+        Assert.True(File.Exists(document.FilePath));
     }
 
     private static MessageEntry UserMessage(string id, string? parentId, string content) =>

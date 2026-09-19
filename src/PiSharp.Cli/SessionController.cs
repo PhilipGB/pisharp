@@ -476,12 +476,19 @@ internal sealed class SessionController : IProviderRequestCompactor
 
         if (options.SessionSelector is not null)
         {
-            document = await store.ResolveAsync(options.SessionSelector, cancellationToken);
+            // Pinned resolveSessionPath: a path-like selector opens (or, when the file does
+            // not exist yet, creates a new session at) that path; otherwise the current
+            // project's sessions are matched by exact id, then id prefix.
+            var resolution = await store.ResolveAsync(options.SessionSelector, cancellationToken)
+                ?? throw new FileNotFoundException($"No session found matching '{options.SessionSelector}'.");
+            document = File.Exists(resolution.Path)
+                ? await store.LoadAsync(resolution.Path, cancellationToken)
+                : await store.CreatePiAtAsync(resolution.Path, cancellationToken);
         }
         else if (options.ContinueSession)
         {
-            document = await store.ContinueAsync(cancellationToken)
-                ?? throw new FileNotFoundException("No previous PiSharp session exists for this workspace.");
+            // Pinned continueRecent: no previous session simply starts a fresh one.
+            document = await store.ContinueAsync(cancellationToken);
         }
         else if (options.ResumeSession)
         {
@@ -1277,11 +1284,13 @@ internal sealed class SessionController : IProviderRequestCompactor
             throw new InvalidOperationException("Session naming requires a Pi v3 session.");
         }
 
+        // Pinned appendSessionInfo sanitization: line breaks collapse to spaces, then trim.
+        var sanitized = SanitizeName(name);
         var entry = new SessionInfoEntry(
             Guid.NewGuid().ToString("N"),
             ActiveEntryId,
             DateTimeOffset.UtcNow,
-            name.Trim());
+            sanitized);
         await _store!.AppendEntriesAsync(Document, [entry], cancellationToken);
         ActiveEntryId = entry.Id;
         _sessionHistory.SetActiveDocument(Document, ActiveEntryId);
@@ -1314,6 +1323,16 @@ internal sealed class SessionController : IProviderRequestCompactor
         ActiveEntryId = entry.Id;
         _sessionHistory.SetActiveDocument(Document, ActiveEntryId);
         return Document.GetLabel(target.Id);
+    }
+
+    /// <summary>Pinned session-name sanitization: collapse every line break to a space, then trim.</summary>
+    internal static string SanitizeName(string name)
+    {
+        var collapsed = name
+            .Replace("\r\n", " ")
+            .Replace('\r', ' ')
+            .Replace('\n', ' ');
+        return collapsed.Trim();
     }
 
     /// <summary>Returns the current label for the entry matched by an id or unambiguous prefix.</summary>
