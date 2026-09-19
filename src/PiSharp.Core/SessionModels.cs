@@ -247,7 +247,10 @@ public sealed record SessionContextSettings(
     }
 }
 
-/// <summary>Durable message and tool counts for a session.</summary>
+/// <summary>
+/// Durable message/tool counts plus session-wide token and cost totals (pinned
+/// SessionStats). Usage aggregates over every entry, including compacted history.
+/// </summary>
 public sealed record SessionStatistics(
     string SessionId,
     string? SessionName,
@@ -256,7 +259,13 @@ public sealed record SessionStatistics(
     int AssistantMessages,
     int ToolCalls,
     int ToolResults,
-    int TotalMessages);
+    int TotalMessages,
+    long InputTokens = 0,
+    long OutputTokens = 0,
+    long CacheReadTokens = 0,
+    long CacheWriteTokens = 0,
+    long TotalTokens = 0,
+    double Cost = 0);
 
 public sealed record SessionTurn(
     string Type,

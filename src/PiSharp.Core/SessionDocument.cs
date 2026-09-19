@@ -170,6 +170,9 @@ public sealed class SessionDocument
         var toolCalls = messages
             .Where(entry => RoleIs(entry, "assistant"))
             .Sum(entry => CountContentType(entry.Message, "toolCall"));
+        // Pinned getSessionStats: usage aggregates over ALL entries (compacted history
+        // included), so the totals reflect what was actually billed across the session.
+        var usage = SessionUsage.Aggregate(_entries);
         return new SessionStatistics(
             Header.SessionId,
             Name,
@@ -178,7 +181,13 @@ public sealed class SessionDocument
             assistants,
             toolCalls,
             toolResults,
-            messages.Length);
+            messages.Length,
+            usage.Input,
+            usage.Output,
+            usage.CacheRead,
+            usage.CacheWrite,
+            usage.TotalTokens,
+            usage.Cost);
     }
 
     /// <summary>

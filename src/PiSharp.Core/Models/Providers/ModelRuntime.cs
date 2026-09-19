@@ -71,7 +71,7 @@ public sealed class CreateModelRuntimeOptions
 /// availability snapshot, credential operations (login/logout/runtime keys), and auth
 /// resolution with configured model headers. Streaming adapters live in PiSharp.Cli.
 /// </summary>
-public sealed class ModelRuntime
+public sealed class ModelRuntime : SessionUsage.ICacheRateSource
 {
     private sealed class Snapshot
     {
@@ -531,6 +531,13 @@ public sealed class ModelRuntime
 
     /// <summary>A single model by provider and id.</summary>
     public ModelInfo? GetModel(string providerId, string modelId) => _models.GetModel(providerId, modelId);
+
+    /// <summary>
+    /// Pinned ModelPriceSource for cache-waste analysis: the catalogue cache-read rate
+    /// ($/million tokens) for a model; 0 when the model is unknown (pinned `?? 0`).
+    /// </summary>
+    public double GetCacheReadRate(string provider, string model) =>
+        _models.GetModel(provider, model)?.Cost.CacheRead ?? 0.0;
 
     /// <summary>Whether the provider's auth is currently configured (no network).</summary>
     public Task<AuthCheck?> CheckAuthAsync(string providerId, CancellationToken cancellationToken = default)

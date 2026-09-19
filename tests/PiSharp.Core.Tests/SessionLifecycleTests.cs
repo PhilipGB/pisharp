@@ -309,7 +309,8 @@ public sealed class SessionLifecycleTests
         public static string Captured { get; set; } = string.Empty;
     }
 
-    private sealed class Harness
+    /// <summary>Full-controller harness shared with the other session lifecycle test classes.</summary>
+    internal sealed class Harness
     {
         public static async Task<(SessionController Controller, CliOptions Options)> CreateControllerAsync(
             TempDirectory temp,

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 using Microsoft.Agents.AI;
@@ -55,6 +56,9 @@ internal sealed class SessionController : IProviderRequestCompactor
 
     /// <summary>Gets the persistent session storage directory (null for ephemeral sessions).</summary>
     public string? StoreDirectory => _store?.WorkspaceDirectory;
+
+    /// <summary>The underlying session store (null in --no-session mode); test seam for direct entry appends.</summary>
+    public SessionStore? Store => _store;
     private string? _activeOperation;
 
     private IChatOutput _eventOutput = new SilentChatOutput();
@@ -1590,6 +1594,87 @@ internal sealed class SessionController : IProviderRequestCompactor
         var name = string.IsNullOrWhiteSpace(Document.Name) ? string.Empty : $" | name: {Document.Name}";
         return $"Session: {Document.Header.SessionId}{name} | turns: {Document.Turns.Count} | active: {Short(ActiveEntryId) ?? "root"}\n{Document.FilePath}";
     }
+
+    /// <summary>
+    /// Pinned /session output: session info, message counts, token totals (with the
+    /// provider-independent cached/uncached prompt split), and the cost section with the
+    /// per-provider/model breakdown and the cache re-billed (cache-waste) line. Usage
+    /// aggregates over every entry, including compacted history.
+    /// </summary>
+    public string FormatSessionStats()
+    {
+        if (Document is null)
+        {
+            return "Session: ephemeral (--no-session)";
+        }
+
+        var statistics = Document.GetStatistics();
+        var lines = new List<string> { "Session Info", string.Empty };
+        if (!string.IsNullOrWhiteSpace(Document.Name))
+        {
+            lines.Add($"Name: {Document.Name}");
+        }
+
+        lines.Add($"File: {statistics.SessionFile}");
+        lines.Add($"ID: {statistics.SessionId}");
+        lines.Add($"Active: {Short(ActiveEntryId) ?? "root"} ({Document.Turns.Count} turns)");
+        lines.Add(string.Empty);
+
+        // Messages
+        lines.Add("Messages");
+        lines.Add($"Total: {statistics.TotalMessages}");
+        lines.Add($"User: {statistics.UserMessages}");
+        lines.Add($"Assistant: {statistics.AssistantMessages}");
+        lines.Add($"Tools: {statistics.ToolCalls} calls, {statistics.ToolResults} results");
+        lines.Add(string.Empty);
+
+        // Tokens: "Input" is the full prompt volume; with cache activity it splits into
+        // cached vs uncached (the only provider-independent split).
+        lines.Add("Tokens");
+        lines.Add($"Input: {FormatCount(statistics.InputTokens + statistics.CacheReadTokens + statistics.CacheWriteTokens)}");
+        if (statistics.InputTokens + statistics.CacheReadTokens + statistics.CacheWriteTokens > 0 &&
+            (statistics.CacheReadTokens > 0 || statistics.CacheWriteTokens > 0))
+        {
+            var prompt = statistics.InputTokens + statistics.CacheReadTokens + statistics.CacheWriteTokens;
+            var hitRate = (statistics.CacheReadTokens / (double)prompt) * 100;
+            lines.Add($"  Cached: {FormatCount(statistics.CacheReadTokens)} ({hitRate:0.0}%)");
+            var written = statistics.CacheWriteTokens > 0
+                ? $" ({FormatCount(statistics.CacheWriteTokens)} written to cache)"
+                : string.Empty;
+            lines.Add($"  Uncached: {FormatCount(statistics.InputTokens + statistics.CacheWriteTokens)}{written}");
+        }
+
+        lines.Add($"Output: {FormatCount(statistics.OutputTokens)}");
+        lines.Add($"Total: {FormatCount(statistics.TotalTokens)}");
+
+        var breakdown = SessionUsage.CostBreakdown(Document.Entries);
+        var cacheWaste = SessionUsage.ComputeCacheWaste(Document.Entries, ModelRuntime);
+        if (statistics.Cost > 0 || cacheWaste.MissedTokens > 0)
+        {
+            lines.Add(string.Empty);
+            lines.Add("Cost");
+            lines.Add($"Total: ${statistics.Cost:0.000}");
+            if (breakdown.Count > 1)
+            {
+                foreach (var row in breakdown)
+                {
+                    lines.Add($"  {row.Key}: ${row.Cost:0.000} ({row.FormatTokens()} tokens)");
+                }
+            }
+
+            if (cacheWaste.MissedTokens > 0)
+            {
+                var detail = $"{FormatCount(cacheWaste.MissedTokens)} tokens, {cacheWaste.MissLabel}";
+                lines.Add(cacheWaste.MissedCost >= 0.0001
+                    ? $"Cache Re-billed: ${cacheWaste.MissedCost:0.000} ({detail})"
+                    : $"Cache Re-billed: {detail}");
+            }
+        }
+
+        return string.Join(Environment.NewLine, lines);
+    }
+
+    private static string FormatCount(long value) => value.ToString("N0", CultureInfo.InvariantCulture);
 
     public string FormatTree()
     {
