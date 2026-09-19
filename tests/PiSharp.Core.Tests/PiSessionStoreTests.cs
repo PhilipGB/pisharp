@@ -342,14 +342,19 @@ public sealed class PiSessionStoreTests
     {
         using var temp = TempDirectory.Create();
         var workspace = Directory.CreateDirectory(Path.Combine(temp.Path, "repo")).FullName;
-        var store = new SessionStore(workspace, Path.Combine(temp.Path, "custom"));
+        // The legacy compatibility root is pinned inside the temp tree so the test never
+        // touches the real ~/.pisharp profile.
+        var store = new SessionStore(
+            workspace,
+            Path.Combine(temp.Path, "custom"),
+            legacySessionsRoot: Path.Combine(temp.Path, "legacy"));
 
         var aTime = new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero);
         var aPath = Path.Combine(store.WorkspaceDirectory, "a.jsonl");
         await WritePiSessionFileAsync(aPath, "aaaaaaaaaaaa", workspace, aTime);
 
-        // A newer session in the legacy ~/.pisharp/sessions directory for the same
-        // workspace: the explicit scope must not see it.
+        // A newer session in the legacy sessions directory for the same workspace:
+        // the explicit scope must not see it.
         var bTime = aTime.AddMinutes(5);
         var bPath = Path.Combine(store.LegacyWorkspaceDirectory, "b.jsonl");
         Directory.CreateDirectory(store.LegacyWorkspaceDirectory);
@@ -366,9 +371,12 @@ public sealed class PiSessionStoreTests
     {
         using var temp = TempDirectory.Create();
         var workspace = Directory.CreateDirectory(Path.Combine(temp.Path, "repo")).FullName;
-        var store = new SessionStore(workspace, Path.Combine(temp.Path, "custom"));
+        var store = new SessionStore(
+            workspace,
+            Path.Combine(temp.Path, "custom"),
+            legacySessionsRoot: Path.Combine(temp.Path, "legacy"));
 
-        // The session exists only in the legacy directory.
+        // The session exists only in the (temp-pinned) legacy directory.
         var bPath = Path.Combine(store.LegacyWorkspaceDirectory, "b.jsonl");
         Directory.CreateDirectory(store.LegacyWorkspaceDirectory);
         await WritePiSessionFileAsync(

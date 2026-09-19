@@ -29,7 +29,7 @@ Implemented and smoke-tested against llama.cpp:
 - `-c` / `--continue`, `-r` / `--resume` (picker), `--session <id|path>` (with cross-project fork prompt), `--session-id <id>`, `--fork <id|path>`, `--name <text>`
 - Pi's canonical session directory (`~/.pi/agent/sessions/<encoded-cwd>/`), streaming metadata listing, and all-project picker with search/sort/named-only/rename/delete
 - Pi v1/v2 → v3 session migration on load (atomic rewrite); legacy PiSharp v1 stays readable
-- `/session` usage/cost statistics (token totals, cached/uncached prompt split, per-model cost breakdown, cache-waste line), `/import`, `/export` (JSONL + HTML), `/share` (public gh gist)
+- `/session` usage/cost statistics (token totals, cached/uncached prompt split, per-model cost breakdown, cache-waste line), `/import`, `/export` (JSONL + HTML), `/share` (non-public gh gist)
 - `/session`, `/name`, `/label`, `/stats`, `/tree`, `/goto`, `/compact`, `/fork`, `/clone`, `/new`, `/resume`, `/settings`, `/reload`
 - Pi-compatible settings system: global `~/.pi/agent/settings.json` plus trusted-project `.pi/settings.json`, deep merge with project precedence, legacy-format migrations, malformed-file diagnostics, `defaultProjectTrust`, settings-backed compaction budgets (with per-model overrides), retry budgets, session directory, and keybinding configuration
 - unit tests for file/path/context/session/terminal-input/resource behaviour

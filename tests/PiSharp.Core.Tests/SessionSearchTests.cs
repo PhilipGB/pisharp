@@ -264,21 +264,22 @@ public sealed class SessionSearchTests
     }
 
     [Fact]
-    public async Task DeleteSessionCancelledDuringTrashPropagatesAndKeepsTheFile()
+    public async Task DeleteSessionCancellationDoesNotFallBackToPermanentDelete()
     {
         using var temp = TempDirectory.Create();
         var store = new SessionStore(temp.Path);
         var path = Path.Combine(temp.Path, "session.jsonl");
         await File.WriteAllTextAsync(path, "data");
 
-        // The trash step is cancelled through the caller's token mid-flight.
+        // Simulates an in-flight trash operation: the launcher waits on the caller's
+        // token and is cancelled through it mid-step (TaskCanceledException is an
+        // OperationCanceledException).
         var cts = new CancellationTokenSource();
-        cts.Cancel();
         var permanentDeleteCalls = 0;
-        store.TrashLauncher = (_, token) =>
+        store.TrashLauncher = async (_, token) =>
         {
-            token.ThrowIfCancellationRequested();
-            return Task.FromResult<(int, string?)>((0, null));
+            await Task.Delay(Timeout.Infinite, token);
+            return (0, null);
         };
         store.DeleteFileOverride = _ =>
         {
@@ -286,10 +287,16 @@ public sealed class SessionSearchTests
             return true;
         };
 
-        await Assert.ThrowsAsync<OperationCanceledException>(
-            () => store.DeleteSessionAsync(path, cts.Token));
+        // The synchronous portion of DeleteSessionAsync reaches the launcher's pending
+        // wait before Cancel() runs, so the cancellation lands mid-step, not before.
+        var delete = store.DeleteSessionAsync(path, cts.Token);
+        cts.Cancel();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => delete);
 
+        // The contract: cancellation propagates and the permanent unlink never runs.
         Assert.Equal(0, permanentDeleteCalls);
+        // The fake launcher never deletes the fixture, so it is still on disk — a
+        // property of this fixture, not a production guarantee about real trash.
         Assert.True(File.Exists(path));
     }
 }

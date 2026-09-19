@@ -29,7 +29,17 @@ public sealed class SessionStore
     private readonly string _legacyWorkspaceDirectory;
     private readonly bool _usesExplicitSessionDir;
 
-    public SessionStore(string workspaceRoot, string? sessionsRoot = null, string? agentDirectory = null)
+    /// <summary>
+    /// Creates a store for the given workspace. <c>sessionsRoot</c> overrides the session
+    /// directory, <c>agentDirectory</c> overrides Pi's agent directory, and
+    /// <c>legacySessionsRoot</c> pins the legacy compatibility root (production keeps
+    /// <c>~/.pisharp/sessions</c>; tests pass a temporary tree so no real profile is touched).
+    /// </summary>
+    public SessionStore(
+        string workspaceRoot,
+        string? sessionsRoot = null,
+        string? agentDirectory = null,
+        string? legacySessionsRoot = null)
     {
         _workspaceRoot = Path.GetFullPath(workspaceRoot);
         _canonicalDirectory = SessionDirectory.GetDefaultSessionDirPath(_workspaceRoot, agentDirectory);
@@ -37,11 +47,11 @@ public sealed class SessionStore
         _workspaceDirectory = _usesExplicitSessionDir
             ? Path.GetFullPath(sessionsRoot!)
             : _canonicalDirectory;
-        _legacyWorkspaceDirectory = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-            ".pisharp",
-            "sessions",
-            GetWorkspaceKey(_workspaceRoot));
+
+        var legacyRoot = legacySessionsRoot is null
+            ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".pisharp", "sessions")
+            : Path.GetFullPath(legacySessionsRoot);
+        _legacyWorkspaceDirectory = Path.Combine(legacyRoot, GetWorkspaceKey(_workspaceRoot));
     }
 
     /// <summary>Gets the directory new sessions are written to (explicit override or Pi's canonical layout).</summary>
@@ -407,7 +417,8 @@ public sealed class SessionStore
     /// Pinned deleteSessionFile: tries the <c>trash</c> CLI first (adding <c>--</c> for
     /// leading-dash paths), treats a zero exit code or a disappeared file as success, and
     /// otherwise falls back to a permanent unlink. A cancellation of the supplied token
-    /// propagates instead of falling through to the unlink — the session file must survive.
+    /// propagates and never falls through to the permanent unlink (the external trash
+    /// process itself is not terminated — only the .NET wait is cancelled).
     /// </summary>
     public async Task<SessionDeleteResult> DeleteSessionAsync(string path, CancellationToken cancellationToken = default)
     {
@@ -419,7 +430,7 @@ public sealed class SessionStore
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            // Caller cancellation during the trash step: propagating keeps the file intact.
+            // Caller cancellation: propagate; it must never trigger the permanent unlink.
             throw;
         }
         catch (Exception)
@@ -433,7 +444,7 @@ public sealed class SessionStore
             return new SessionDeleteResult(true, "trash", null);
         }
 
-        // Cancellation between the trash attempt and the fallback: the file must survive.
+        // Cancellation between the trash attempt and the fallback must not trigger the unlink.
         cancellationToken.ThrowIfCancellationRequested();
 
         try

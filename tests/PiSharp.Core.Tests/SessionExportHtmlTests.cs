@@ -230,18 +230,18 @@ public sealed class SessionShareTests
     [Fact]
     public async Task TheRealProcessLauncherStartsAndCapturesTheOutput()
     {
-        // The test host runs on the .NET muxer; launching it is a deterministic, offline
-        // way to exercise the real launcher without requiring gh or network access.
-        var host = Environment.ProcessPath
-            ?? throw new InvalidOperationException("test host process path is unavailable");
-
-        var (exitCode, stdOut, _) = await SessionShare.RunProcessAsync(host, ["--version"], CancellationToken.None);
+        // "dotnet" is on the PATH of the test environment on Linux, macOS, and Windows
+        // (it is the muxer family that runs the tests); invoking it is a deterministic,
+        // offline way to exercise the real launcher without requiring gh or network.
+        var (exitCode, stdOut, _) =
+            await SessionShare.RunProcessAsync("dotnet", ["--version"], CancellationToken.None);
         Assert.Equal(0, exitCode);
         Assert.False(string.IsNullOrWhiteSpace(stdOut));
 
-        // A failing invocation still yields a captured stderr and its exit code.
+        // An unknown dotnet command fails at the host level: a non-zero exit code with
+        // an error message on stderr, without any shell involvement.
         var (failedExit, _, stdErr) =
-            await SessionShare.RunProcessAsync(host, ["not-a-real-pisharp-command"], CancellationToken.None);
+            await SessionShare.RunProcessAsync("dotnet", ["not-a-real-pisharp-command"], CancellationToken.None);
         Assert.NotEqual(0, failedExit);
         Assert.False(string.IsNullOrWhiteSpace(stdErr));
     }
