@@ -193,25 +193,34 @@ public sealed class SessionStore
             throw new InvalidDataException($"Session file is empty: {path}");
         }
 
-        using var first = JsonDocument.Parse(lines[0]);
-        var root = first.RootElement;
-        if (root.TryGetProperty("version", out var version) && version.GetInt32() >= 3 &&
-            root.TryGetProperty("id", out _))
+        var contentLines = lines.Where(line => !string.IsNullOrWhiteSpace(line)).ToArray();
+
+        // Pinned _loadEntries: a Pi session file below the current version is migrated in
+        // memory and the file is rewritten immediately, so the next load is already v3.
+        var activeLines = contentLines;
+        if (IsPiSessionHeader(contentLines[0]))
         {
-            var header = JsonSerializer.Deserialize<PiSessionHeader>(lines[0], JsonOptions)
+            var migrated = SessionMigration.MigrateSessionLines(contentLines);
+            if (migrated is not null)
+            {
+                await RewriteSessionFileAsync(path, migrated, cancellationToken);
+                activeLines = migrated;
+            }
+        }
+
+        if (IsPiSessionHeader(activeLines[0]))
+        {
+            var header = JsonSerializer.Deserialize<PiSessionHeader>(activeLines[0], JsonOptions)
                 ?? throw new InvalidDataException($"Invalid Pi session header: {path}");
             var entries = new List<SessionEntry>();
-            for (var i = 1; i < lines.Length; i++)
+            for (var i = 1; i < activeLines.Length; i++)
             {
-                if (!string.IsNullOrWhiteSpace(lines[i]))
-                {
-                    entries.Add(DeserializeEntry(lines[i], i + 1, path));
-                }
+                entries.Add(DeserializeEntry(activeLines[i], i + 1, path));
             }
             return new SessionDocument(path, header, entries);
         }
 
-        var legacyHeader = JsonSerializer.Deserialize<SessionHeader>(lines[0], JsonOptions)
+        var legacyHeader = JsonSerializer.Deserialize<SessionHeader>(activeLines[0], JsonOptions)
             ?? throw new InvalidDataException($"Invalid session header: {path}");
         if (!string.Equals(legacyHeader.Type, "session", StringComparison.Ordinal) || legacyHeader.Version != 1)
         {
@@ -219,14 +228,9 @@ public sealed class SessionStore
         }
 
         var turns = new List<SessionTurn>();
-        for (var i = 1; i < lines.Length; i++)
+        for (var i = 1; i < activeLines.Length; i++)
         {
-            if (string.IsNullOrWhiteSpace(lines[i]))
-            {
-                continue;
-            }
-
-            var turn = JsonSerializer.Deserialize<SessionTurn>(lines[i], JsonOptions)
+            var turn = JsonSerializer.Deserialize<SessionTurn>(activeLines[i], JsonOptions)
                 ?? throw new InvalidDataException($"Invalid session entry at line {i + 1} in {path}.");
             if (!string.Equals(turn.Type, "turn", StringComparison.Ordinal))
             {
@@ -237,6 +241,43 @@ public sealed class SessionStore
         }
 
         return new SessionDocument(path, legacyHeader, turns);
+    }
+
+    /// <summary>
+    /// True when the first line is a Pi session header (type <c>session</c> with a non-empty
+    /// <c>id</c>), as opposed to a legacy PiSharp v1 header (which carries <c>sessionId</c>).
+    /// </summary>
+    private static bool IsPiSessionHeader(string line)
+    {
+        using var document = JsonDocument.Parse(line);
+        var root = document.RootElement;
+        return root.TryGetProperty("type", out var type) &&
+               string.Equals(type.GetString(), "session", StringComparison.Ordinal) &&
+               root.TryGetProperty("id", out var id) &&
+               id.ValueKind == JsonValueKind.String &&
+               id.GetString() is { Length: > 0 };
+    }
+
+    /// <summary>
+    /// Full crash-safe rewrite of a migrated session file (pinned <c>_rewriteFile</c> truncates
+    /// in place; the temp+rename replacement produces identical content without a torn file
+    /// on failure).
+    /// </summary>
+    private static async Task RewriteSessionFileAsync(string path, string[] lines, CancellationToken cancellationToken)
+    {
+        var tempPath = $"{path}.migrate-{Guid.NewGuid():N}.tmp";
+        try
+        {
+            await File.WriteAllLinesAsync(tempPath, lines, cancellationToken);
+            File.Move(tempPath, path, overwrite: true);
+        }
+        finally
+        {
+            if (File.Exists(tempPath))
+            {
+                File.Delete(tempPath);
+            }
+        }
     }
 
     /// <summary>
