@@ -133,9 +133,7 @@ public sealed class SkillCatalog
         while (true)
         {
             var candidate = Path.GetFullPath(Path.Combine(current, ".agents", "skills"));
-            if (!string.Equals(candidate, globalPath, OperatingSystem.IsWindows()
-                    ? StringComparison.OrdinalIgnoreCase
-                    : StringComparison.Ordinal))
+            if (!string.Equals(candidate, globalPath, StringComparison.Ordinal))
             {
                 AddDirectory(candidate, skills, diagnostics);
             }

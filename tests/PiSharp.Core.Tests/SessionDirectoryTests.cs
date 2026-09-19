@@ -1,6 +1,4 @@
 using System.Text.Json;
-using System.Text.Json.Serialization;
-using PiSharp.Core;
 
 namespace PiSharp.Core.Tests;
 
@@ -22,16 +20,6 @@ public sealed class SessionDirectoryTests
     public void EncodeCwdMatchesThePinnedEncodingForUnixPaths(string cwd, string expected)
     {
         Assert.Equal(expected, SessionDirectory.EncodeCwd(Path.GetFullPath(cwd)));
-    }
-
-    [Theory]
-    [InlineData(@"C:\Users\me", "--C--Users-me--")]
-    [InlineData(@"C:\", "--C----")]
-    [InlineData(@"D:\work\proj", "--D--work-proj--")]
-    public void EncodeCwdMatchesThePinnedEncodingForWindowsPaths(string cwd, string expected)
-    {
-        // Pure string manipulation: testable on every platform without a Windows host.
-        Assert.Equal(expected, SessionDirectory.EncodeCwd(cwd));
     }
 
     [Fact]

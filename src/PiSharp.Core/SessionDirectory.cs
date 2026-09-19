@@ -14,9 +14,8 @@ public static class SessionDirectory
 {
     /// <summary>
     /// Encodes a resolved working directory into Pi's session directory name. Pure string
-    /// manipulation (no path API) so Windows-style paths are testable on every platform:
-    /// <c>/home/user/proj</c> → <c>--home-user-proj--</c>, <c>C:\Users\me</c> →
-    /// <c>--C--Users-me--</c>, <c>/</c> → <c>----</c>.
+    /// manipulation (no path API) mirroring the pinned algorithm:
+    /// <c>/home/user/proj</c> → <c>--home-user-proj--</c>, <c>/</c> → <c>----</c>.
     /// </summary>
     public static string EncodeCwd(string resolvedCwd)
     {

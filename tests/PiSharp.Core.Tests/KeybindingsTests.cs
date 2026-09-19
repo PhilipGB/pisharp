@@ -1,28 +1,18 @@
-using System.Text.Json;
 using PiSharp.Core.Settings;
 
 namespace PiSharp.Core.Tests;
 
 /// <summary>
 /// Conformance tests for Pi keybinding resolution: user file loading, legacy name
-/// migration, malformed-file tolerance, and platform-conditional defaults from the
-/// pinned keybindings.ts tables.
+/// migration, malformed-file tolerance, and the Linux default tables from the
+/// pinned keybindings.ts.
 /// </summary>
 public class KeybindingsTests
 {
-    private static readonly KeybindingsManager.PlatformInfo UnixPlatform =
-        new(IsWindows: false, IsDarwin: false, IsLinux: true, WslDistroName: null, WslInterop: null);
-
-    private static readonly KeybindingsManager.PlatformInfo WindowsPlatform =
-        new(IsWindows: true, IsDarwin: false, IsLinux: false, WslDistroName: null, WslInterop: null);
-
-    private static readonly KeybindingsManager.PlatformInfo DarwinPlatform =
-        new(IsWindows: false, IsDarwin: true, IsLinux: false, WslDistroName: null, WslInterop: null);
-
     [Fact]
-    public void UnixDefaultsMatchPiTables()
+    public void LinuxDefaultsMatchPiTables()
     {
-        var manager = KeybindingsManager.Create(platform: UnixPlatform);
+        var manager = KeybindingsManager.Create();
 
         Assert.Equal(["escape"], manager.GetKeys("app.interrupt"));
         Assert.Equal(["alt+enter"], manager.GetKeys("app.message.followUp"));
@@ -32,45 +22,12 @@ public class KeybindingsTests
         Assert.Equal(["shift+ctrl+p"], manager.GetKeys("app.model.cycleBackward"));
         Assert.Equal(["ctrl+-"], manager.GetKeys("tui.editor.undo"));
         Assert.Equal(["ctrl+shift+up", "ctrl+up"], manager.GetKeys("tui.altScreen.previousPrompt"));
-        Assert.Equal(["ctrl+left", "alt+left"], manager.GetKeys("app.tree.foldOrUp"));
-        Assert.Equal(["enter"], manager.GetKeys("tui.input.submit"));
-    }
-
-    [Fact]
-    public void WindowsDefaultsUseWindowsKeySet()
-    {
-        var manager = KeybindingsManager.Create(platform: WindowsPlatform);
-
-        Assert.Equal(["ctrl+q"], manager.GetKeys("app.message.followUp"));
-        Assert.Equal(["alt+q"], manager.GetKeys("app.message.dequeue"));
-        Assert.Equal(["alt+p"], manager.GetKeys("app.model.cycleBackward"));
-        Assert.Equal(["ctrl+z"], manager.GetKeys("tui.editor.undo"));
-        Assert.Equal(["ctrl+up"], manager.GetKeys("tui.altScreen.previousPrompt"));
-        Assert.Equal([], manager.GetKeys("app.suspend"));
-    }
-
-    [Fact]
-    public void WslOnLinuxUsesWindowsKeySetExceptSuspend()
-    {
-        // Pi: win32 or linux with WSL_DISTRO_NAME/WSL_INTEROP selects the Windows set,
-        // but app.suspend and tui.editor.undo branch on win32 only.
-        var wsl = new KeybindingsManager.PlatformInfo(
-            IsWindows: false, IsDarwin: false, IsLinux: true, WslDistroName: "Ubuntu", WslInterop: null);
-        var manager = KeybindingsManager.Create(platform: wsl);
-
-        Assert.Equal(["ctrl+q"], manager.GetKeys("app.message.followUp"));
-        Assert.Equal(["alt+q"], manager.GetKeys("app.message.dequeue"));
-        Assert.Equal(["alt+z"], manager.GetKeys("tui.editor.undo"));
+        Assert.Equal(["ctrl+shift+down", "ctrl+down"], manager.GetKeys("tui.altScreen.nextPrompt"));
+        Assert.Equal(["ctrl+shift+f"], manager.GetKeys("tui.altScreen.search"));
         Assert.Equal(["ctrl+z"], manager.GetKeys("app.suspend"));
-    }
-
-    [Fact]
-    public void DarwinTreeKeysPreferAltArrows()
-    {
-        var manager = KeybindingsManager.Create(platform: DarwinPlatform);
-
-        Assert.Equal(["alt+left", "ctrl+left"], manager.GetKeys("app.tree.foldOrUp"));
-        Assert.Equal(["alt+right", "ctrl+right"], manager.GetKeys("app.tree.unfoldOrDown"));
+        Assert.Equal(["ctrl+left", "alt+left"], manager.GetKeys("app.tree.foldOrUp"));
+        Assert.Equal(["ctrl+right", "alt+right"], manager.GetKeys("app.tree.unfoldOrDown"));
+        Assert.Equal(["enter"], manager.GetKeys("tui.input.submit"));
     }
 
     [Fact]
@@ -80,8 +37,7 @@ public class KeybindingsTests
             new Dictionary<string, KeybindingValue>
             {
                 ["app.message.followUp"] = KeybindingValue.Of("ctrl+enter"),
-            },
-            platform: UnixPlatform);
+            });
 
         Assert.Equal(["ctrl+enter"], manager.GetKeys("app.message.followUp"));
         Assert.Equal(["escape"], manager.GetKeys("app.interrupt"));
@@ -124,9 +80,7 @@ public class KeybindingsTests
         var path = Path.Combine(temp.Path, "keybindings.json");
         File.WriteAllText(path, "{ not json");
 
-        var manager = KeybindingsManager.Create(
-            await LoadFromFile(path),
-            platform: UnixPlatform);
+        var manager = KeybindingsManager.Create(await LoadFromFile(path));
 
         Assert.Equal(["escape"], manager.GetKeys("app.interrupt"));
     }
@@ -160,8 +114,7 @@ public class KeybindingsTests
                 ["zeta.custom"] = KeybindingValue.Of("f2"),
                 ["alpha.custom"] = KeybindingValue.Of("f3"),
                 ["app.interrupt"] = KeybindingValue.Of("f9"),
-            },
-            platform: UnixPlatform);
+            });
 
         var effective = manager.GetEffectiveConfig();
         Assert.Equal("f9", effective["app.interrupt"].Primary);

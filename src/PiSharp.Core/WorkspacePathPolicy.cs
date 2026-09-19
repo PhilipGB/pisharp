@@ -2,14 +2,9 @@ namespace PiSharp.Core;
 
 public sealed class WorkspacePathPolicy
 {
-    private readonly StringComparison _comparison;
-
     public WorkspacePathPolicy(string workspaceRoot)
     {
         Root = Path.GetFullPath(workspaceRoot);
-        _comparison = OperatingSystem.IsWindows()
-            ? StringComparison.OrdinalIgnoreCase
-            : StringComparison.Ordinal;
     }
 
     public string Root { get; }
@@ -50,6 +45,6 @@ public sealed class WorkspacePathPolicy
         var rootWithSeparator = resolvedRoot.EndsWith(Path.DirectorySeparatorChar)
             ? resolvedRoot
             : resolvedRoot + Path.DirectorySeparatorChar;
-        return candidate.Equals(resolvedRoot, _comparison) || candidate.StartsWith(rootWithSeparator, _comparison);
+        return candidate.Equals(resolvedRoot, StringComparison.Ordinal) || candidate.StartsWith(rootWithSeparator, StringComparison.Ordinal);
     }
 }

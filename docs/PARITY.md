@@ -5,6 +5,12 @@ This matrix tracks observable compatibility with Pi `main` at revision
 feature marketing in `README.md`: a capability is not considered complete until
 its behaviour has a conformance test or an explicit intentional-difference note.
 
+PiSharp currently targets Linux only. Parity status in this document refers to
+upstream Pi behaviour on Linux unless a capability is explicitly
+platform-neutral. Windows, macOS, WSL-specific, PowerShell-specific, and
+Windows self-update behaviour are not parity requirements. All planned phases
+apply to the Linux runtime only.
+
 Status values:
 
 - **Exact** — the public shape and observable behaviour are intended to match.
@@ -44,7 +50,7 @@ PiSharp.
 | `grep` | Partial | `packages/coding-agent/src/core/tools/grep.ts` | `CodingTools.GrepAsync` | Existing tool tests |
 | `find` | Partial | `packages/coding-agent/src/core/tools/find.ts` | `CodingTools.FindAsync` | Existing tool tests |
 | `ls` | Partial | `packages/coding-agent/src/core/tools/ls.ts` | `CodingTools.LsAsync` | Existing tool tests |
-| PowerShell tool | Missing | `packages/coding-agent/src/core/tools/powershell.ts` | Not implemented | Planned Phase 4 |
+| PowerShell tool | Out of scope | `packages/coding-agent/src/core/tools/powershell.ts` | Windows-only upstream capability; PiSharp targets Linux | — |
 | Default tool set (`read`, `bash`, `edit`, `write`) | Partial | `packages/coding-agent/src/core/tools/index.ts` | Includes optional search tools by default | Planned correction in Phase 4 |
 | Read-only tool selection | Equivalent | `packages/coding-agent/src/core/tools/index.ts` | `--read-only` policy | `CliOptionsTests` |
 | Tool path containment | Equivalent | `packages/coding-agent/src/core/tools/path-utils.ts` | `WorkspacePathPolicy` | `WorkspacePathPolicyTests` |
@@ -145,7 +151,7 @@ Intentional differences in this area:
 | Queue modes (`steeringMode`/`followUpMode`) | Partial | `settings-manager.ts`, `agent-session.ts` | Parsed, validated, and defaulted like Pi (`one-at-a-time`); the turn queue still uses fixed steering/follow-up semantics until Phase 3 | `SettingsManagerTests` |
 | Model/thinking/default settings | Equivalent | `settings-manager.ts` | `defaultModel`/`defaultProvider`/`defaultThinkingLevel` and per-model thinking levels are consumed by the startup resolver and `/model --persist`/`/thinking --persist`; Pi validation applies | `SettingsManagerTests`, `ModelStartupResolverTests`, `ModelSwitchingTests` |
 | Shell/image/tool/theme/terminal settings | Partial | settings schema and config tests | Typed accessors with Pi defaults (`shellPath`, `shellCommandPrefix`, `npmCommand`, `defaultTools`, `enabledModels`, `images.*`, `terminal.*`, `markdown.*`, TUI options, `httpIdleTimeoutMs` including `"disabled"`); consumers land with their respective phases | `SettingsManagerTests` |
-| Keybindings file and legacy-name migration | Equivalent | `core/keybindings.ts` | `KeybindingsManager` loads `~/.pi/agent/keybindings.json`, migrates all legacy flat names (current names win), tolerates malformed files, and carries the full TUI + application default tables including the win32/WSL/darwin-conditional keys; consumed by the terminal UI in Phase 7 | `KeybindingsTests` |
+| Keybindings file and legacy-name migration | Equivalent | `core/keybindings.ts` | `KeybindingsManager` loads `~/.pi/agent/keybindings.json`, migrates all legacy flat names (current names win), tolerates malformed files, and carries the full TUI + application default tables with the Linux key sets; consumed by the terminal UI in Phase 7 | `KeybindingsTests` |
 | `/settings` command | Partial | `settings-selector.ts` (TUI menu), `cli/config-selector.ts` | Line-based `/settings` prints paths + effective values and `/settings <key> <value>` sets global values ("unset" clears); Pi's full TUI menu and `pi config` CLI remain Phase 7 | `SettingsCommands` (CLI code path) |
 | Runtime reload (`/reload`) | Partial | `/reload` | `/reload` re-reads settings and keybindings and re-renders diagnostics; extensions/skills/prompts/themes are still startup-loaded (Pi re-registers those in the TUI runtime, Phase 7/9) | CLI code path |
 
@@ -311,10 +317,10 @@ Intentional differences in this area:
 | Capability | Status | Pi reference | PiSharp implementation | Conformance coverage |
 |---|---|---|---|---|
 | First-run setup | Missing | `cli/setup.ts` | Not implemented | Planned Phase 14 |
-| Self-update | Missing | `utils/windows-self-update.ts`, CLI | Not implemented | Planned Phase 14 |
+| Self-update | Out of scope | `utils/windows-self-update.ts`, CLI | Windows-only; PiSharp targets Linux | — |
 | Package/model catalogue update | Missing | package manager/catalog provider | Not implemented | Planned Phase 14 |
 | Offline/proxy/version checks | Missing | config and utilities | Not implemented | Planned Phase 14 |
-| Cross-platform installation docs | Partial | Pi package/docs | Basic README only | CI added in Phase 0 |
+| Linux installation docs | Partial | Pi package/docs | Basic README only | Future Linux packaging/docs work |
 
 ## Conformance fixtures
 

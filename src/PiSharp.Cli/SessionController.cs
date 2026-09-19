@@ -1446,8 +1446,7 @@ internal sealed class SessionController : IProviderRequestCompactor
 
         var expected = Path.TrimEndingDirectorySeparator(Path.GetFullPath(startupCwd));
         var actual = Path.TrimEndingDirectorySeparator(Path.GetFullPath(sessionCwd));
-        var comparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
-        if (string.Equals(expected, actual, comparison))
+        if (string.Equals(expected, actual, StringComparison.Ordinal))
         {
             return;
         }
@@ -1736,11 +1735,10 @@ internal sealed class SessionController : IProviderRequestCompactor
             return false;
         }
 
-        var comparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
         return !string.Equals(
             Path.TrimEndingDirectorySeparator(Path.GetFullPath(resolution.ForeignCwd)),
             Path.TrimEndingDirectorySeparator(Path.GetFullPath(workingDirectory)),
-            comparison);
+            StringComparison.Ordinal);
     }
 
     /// <summary>

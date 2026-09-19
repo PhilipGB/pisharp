@@ -181,8 +181,7 @@ internal static class SessionPicker
             // working directory) and never render a placeholder — the session stays selectable.
             var cwd = string.IsNullOrWhiteSpace(info.Cwd)
                 ? string.Empty
-                : string.Equals(Path.GetFullPath(info.Cwd), workspace,
-                    OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal)
+                : string.Equals(Path.GetFullPath(info.Cwd), workspace, StringComparison.Ordinal)
                     ? string.Empty
                     : $"  {info.Cwd}";
             console.WriteLine(
@@ -257,8 +256,7 @@ internal static class SessionPicker
 
         var info = rows[index - 1].Info;
         var active = activePath is null ? null : Path.GetFullPath(activePath);
-        if (active is not null && string.Equals(Path.GetFullPath(info.Path), active,
-            OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))
+        if (active is not null && string.Equals(Path.GetFullPath(info.Path), active, StringComparison.Ordinal))
         {
             // Pinned guard: the picker refuses to delete the session currently in use.
             console.WriteLine("Cannot delete the currently active session");

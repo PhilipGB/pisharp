@@ -27,9 +27,9 @@ public sealed class KeybindingValue
 public sealed record KeybindingDefinition(IReadOnlyList<string> DefaultKeys, string Description);
 
 /// <summary>
-/// Resolves effective keybindings: Pi's built-in defaults (TUI + application bindings from
-/// the pinned keybindings.ts tables, including the platform-conditional values) overridden
-/// by the user's ~/.pi/agent/keybindings.json, with Pi's legacy keybinding-name migration.
+/// Resolves effective keybindings: Pi's built-in Linux defaults (TUI + application
+/// bindings from the pinned keybindings.ts tables) overridden by the user's
+/// ~/.pi/agent/keybindings.json, with Pi's legacy keybinding-name migration.
 /// </summary>
 public sealed class KeybindingsManager
 {
@@ -68,10 +68,9 @@ public sealed class KeybindingsManager
     /// <summary>Creates a manager over an in-memory configuration (tests, SDK hosts).</summary>
     public static KeybindingsManager Create(
         IReadOnlyDictionary<string, KeybindingValue>? userBindings = null,
-        string? configPath = null,
-        PlatformInfo? platform = null)
+        string? configPath = null)
     {
-        var defaults = GetDefaultDefinitions(platform ?? PlatformInfo.Capture());
+        var defaults = GetDefaultDefinitions();
         var ordered = BuildOrder(defaults, userBindings?.Keys ?? []);
         return new KeybindingsManager(
             defaults,
@@ -288,34 +287,12 @@ public sealed class KeybindingsManager
         return ordered;
     }
 
-    // ------------------------------------------------------------------
-    // Platform capture for deterministic tests
-    // ------------------------------------------------------------------
-
-    /// <summary>Captures the platform facts Pi's keybinding tables branch on.</summary>
-    public sealed record PlatformInfo(bool IsWindows, bool IsDarwin, bool IsLinux, string? WslDistroName, string? WslInterop)
-    {
-        /// <summary>Captures the current platform.</summary>
-        public static PlatformInfo Capture() => new(
-            OperatingSystem.IsWindows(),
-            OperatingSystem.IsMacOS(),
-            OperatingSystem.IsLinux(),
-            Environment.GetEnvironmentVariable("WSL_DISTRO_NAME"),
-            Environment.GetEnvironmentVariable("WSL_INTEROP"));
-
-        /// <summary>Whether Pi uses the Windows keybinding set on this platform.</summary>
-        public bool UseWindowsKeybindings =>
-            IsWindows ||
-            (IsLinux && (!string.IsNullOrEmpty(WslDistroName) || !string.IsNullOrEmpty(WslInterop)));
-    }
-
     /// <summary>
     /// Builds Pi's full default keybinding table (TUI editor/input/select/alt-screen plus
-    /// the application bindings) for a platform, mirroring pinned keybindings.ts.
+    /// the application bindings) for Linux, mirroring pinned keybindings.ts.
     /// </summary>
-    public static IReadOnlyDictionary<string, KeybindingDefinition> GetDefaultDefinitions(PlatformInfo platform)
+    public static IReadOnlyDictionary<string, KeybindingDefinition> GetDefaultDefinitions()
     {
-        var windowsKeys = platform.UseWindowsKeybindings;
         var definitions = new Dictionary<string, KeybindingDefinition>();
 
         void Add(string name, string[] keys, string description) =>
@@ -344,7 +321,7 @@ public sealed class KeybindingsManager
         Add("tui.editor.deleteToLineEnd", ["ctrl+k"], "Delete to line end");
         Add("tui.editor.yank", ["ctrl+y"], "Yank");
         Add("tui.editor.yankPop", ["alt+y"], "Yank pop");
-        Add("tui.editor.undo", [platform.IsWindows ? "ctrl+z" : windowsKeys ? "alt+z" : "ctrl+-"], "Undo");
+        Add("tui.editor.undo", ["ctrl+-"], "Undo");
         Add("tui.input.newLine", ["shift+enter", "ctrl+j"], "Insert newline");
         Add("tui.input.submit", ["enter"], "Submit input");
         Add("tui.input.tab", ["tab"], "Tab / autocomplete");
@@ -361,9 +338,9 @@ public sealed class KeybindingsManager
         Add("tui.altScreen.halfPageDown", [], "Scroll viewport down half a page");
         Add("tui.altScreen.lineUp", [], "Scroll viewport up one line");
         Add("tui.altScreen.lineDown", [], "Scroll viewport down one line");
-        Add("tui.altScreen.previousPrompt", windowsKeys ? ["ctrl+up"] : ["ctrl+shift+up", "ctrl+up"], "Jump to previous semantic prompt");
-        Add("tui.altScreen.nextPrompt", windowsKeys ? ["ctrl+down"] : ["ctrl+shift+down", "ctrl+down"], "Jump to next semantic prompt");
-        Add("tui.altScreen.search", windowsKeys ? ["ctrl+f"] : ["ctrl+shift+f"], "Search the primary scroll view");
+        Add("tui.altScreen.previousPrompt", ["ctrl+shift+up", "ctrl+up"], "Jump to previous semantic prompt");
+        Add("tui.altScreen.nextPrompt", ["ctrl+shift+down", "ctrl+down"], "Jump to next semantic prompt");
+        Add("tui.altScreen.search", ["ctrl+shift+f"], "Search the primary scroll view");
         Add("tui.altScreen.searchNext", ["enter", "ctrl+g"], "Select the next search match");
         Add("tui.altScreen.searchPrevious", ["shift+enter", "ctrl+shift+g"], "Select the previous search match");
         Add("tui.altScreen.searchClose", ["escape"], "Close transcript search");
@@ -374,26 +351,26 @@ public sealed class KeybindingsManager
         Add("app.interrupt", ["escape"], "Cancel or abort");
         Add("app.clear", ["ctrl+c"], "Clear editor");
         Add("app.exit", ["ctrl+d"], "Exit when editor is empty");
-        Add("app.suspend", platform.IsWindows ? [] : ["ctrl+z"], "Suspend to background");
+        Add("app.suspend", ["ctrl+z"], "Suspend to background");
         Add("app.thinking.cycle", ["shift+tab"], "Cycle thinking level");
         Add("app.thinking.save", ["ctrl+s"], "Save thinking level");
         Add("app.model.cycleForward", ["ctrl+p"], "Cycle to next model");
-        Add("app.model.cycleBackward", [windowsKeys ? "alt+p" : "shift+ctrl+p"], "Cycle to previous model");
+        Add("app.model.cycleBackward", ["shift+ctrl+p"], "Cycle to previous model");
         Add("app.model.select", ["ctrl+l"], "Open model selector");
         Add("app.tools.expand", ["ctrl+o"], "Toggle tool output");
         Add("app.thinking.toggle", ["ctrl+t"], "Toggle thinking blocks");
         Add("app.session.toggleNamedFilter", ["ctrl+n"], "Toggle named session filter");
         Add("app.editor.external", ["ctrl+g"], "Open external editor");
         Add("app.message.copy", ["ctrl+x"], "Copy message to clipboard");
-        Add("app.message.followUp", [windowsKeys ? "ctrl+q" : "alt+enter"], "Queue follow-up message");
-        Add("app.message.dequeue", [windowsKeys ? "alt+q" : "alt+up"], "Restore queued messages");
-        Add("app.clipboard.pasteImage", [windowsKeys ? "alt+v" : "ctrl+v"], "Paste image from clipboard (text fallback)");
+        Add("app.message.followUp", ["alt+enter"], "Queue follow-up message");
+        Add("app.message.dequeue", ["alt+up"], "Restore queued messages");
+        Add("app.clipboard.pasteImage", ["ctrl+v"], "Paste image from clipboard (text fallback)");
         Add("app.session.new", [], "Start a new session");
         Add("app.session.tree", [], "Open session tree");
         Add("app.session.fork", [], "Fork current session");
         Add("app.session.resume", [], "Resume a session");
-        Add("app.tree.foldOrUp", platform.IsDarwin ? ["alt+left", "ctrl+left"] : ["ctrl+left", "alt+left"], "Fold tree branch or move up");
-        Add("app.tree.unfoldOrDown", platform.IsDarwin ? ["alt+right", "ctrl+right"] : ["ctrl+right", "alt+right"], "Unfold tree branch or move down");
+        Add("app.tree.foldOrUp", ["ctrl+left", "alt+left"], "Fold tree branch or move up");
+        Add("app.tree.unfoldOrDown", ["ctrl+right", "alt+right"], "Unfold tree branch or move down");
         Add("app.tree.editLabel", ["shift+l"], "Edit tree label");
         Add("app.tree.toggleLabelTimestamp", ["shift+t"], "Toggle tree label timestamps");
         Add("app.session.togglePath", ["ctrl+p"], "Toggle session path display");

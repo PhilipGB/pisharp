@@ -22,8 +22,7 @@ public sealed class CodingTools
     public CodingTools(string workspaceRoot)
     {
         _paths = new WorkspacePathPolicy(workspaceRoot);
-        _readOnlyRoots = new HashSet<string>(
-            OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
+        _readOnlyRoots = new HashSet<string>(StringComparer.Ordinal);
     }
 
     /// <summary>Allows the read tool to inspect a trusted read-only resource directory.</summary>
@@ -244,7 +243,7 @@ public sealed class CodingTools
 
         var startInfo = new ProcessStartInfo
         {
-            FileName = OperatingSystem.IsWindows() ? "powershell.exe" : "/bin/bash",
+            FileName = "/bin/bash",
             WorkingDirectory = WorkspaceRoot,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
@@ -252,17 +251,8 @@ public sealed class CodingTools
             CreateNoWindow = true,
         };
 
-        if (OperatingSystem.IsWindows())
-        {
-            startInfo.ArgumentList.Add("-NoProfile");
-            startInfo.ArgumentList.Add("-Command");
-            startInfo.ArgumentList.Add(command);
-        }
-        else
-        {
-            startInfo.ArgumentList.Add("-lc");
-            startInfo.ArgumentList.Add(command);
-        }
+        startInfo.ArgumentList.Add("-lc");
+        startInfo.ArgumentList.Add(command);
 
         using var process = new Process { StartInfo = startInfo };
         process.Start();

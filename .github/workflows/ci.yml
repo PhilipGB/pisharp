@@ -9,15 +9,8 @@ permissions:
 
 jobs:
   build-and-test:
-    name: ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os:
-          - ubuntu-latest
-          - windows-latest
-          - macos-latest
+    name: ubuntu-latest
+    runs-on: ubuntu-latest
 
     steps:
       - name: Check out source

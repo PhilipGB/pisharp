@@ -4,6 +4,13 @@ Experimental C#/.NET port of the core ideas behind [`earendil-works/pi`'s coding
 
 This is an incremental port, not a line-for-line translation. See [`docs/PARITY.md`](docs/PARITY.md) for the pinned upstream parity matrix and conformance plan.
 
+## Supported platform
+
+Linux is the supported runtime platform. Windows and macOS are not currently
+supported targets. Pi parity work is evaluated against upstream Pi's behaviour
+on Linux; Windows-, macOS-, WSL-, and PowerShell-specific behaviour is out of
+scope.
+
 ## Current milestone
 
 Implemented and smoke-tested against llama.cpp:
@@ -56,7 +63,7 @@ Remaining parity work (tracked per capability in [`docs/PARITY.md`](docs/PARITY.
 - provider/model gaps: live OAuth round-trips, `enabledModels`/`/scoped-models`, the account-scoped `radius` gateway, and provider-specific credential paths (AWS profiles, GCP ADC, Cloudflare account ids)
 - consuming the remaining settings values: queue modes (`steeringMode`/`followUpMode`), `defaultTools`, resource paths, terminal/image/TUI options (the values are already parsed and exposed by the settings manager)
 - settings-backed keybindings in the terminal UI
-- tool parity: Pi's exact default tool selection, schemas, partial tool output, serialized file mutations, PowerShell on Windows
+- tool parity: Pi's exact default tool selection, schemas, partial tool output, serialized file mutations
 - resource/package/extension lifecycle: npm/git/local package sources, install/remove/list/update, full Pi extension API surface, themes
 - Pi-equivalent terminal UI: multiline editor, selectors, tree picker, status footer, configurable keybindings
 - interactive shell commands (`!command`, `!!command`) and interactive image input

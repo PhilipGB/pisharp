@@ -479,7 +479,7 @@ public sealed partial class SettingsManager
             return environmentEditor;
         }
 
-        return OperatingSystem.IsWindows() ? "notepad" : "nano";
+        return "nano";
     }
 
     /// <summary>Gets the custom shell path with ~ expanded.</summary>

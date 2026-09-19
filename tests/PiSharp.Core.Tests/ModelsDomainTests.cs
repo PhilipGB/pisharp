@@ -205,8 +205,7 @@ public class ModelsDomainTests
     [Fact]
     public void ConfigValue_Command_CachedPathExecutesOnce()
     {
-        // Cross-platform: the command body after '!' runs through the platform shell
-        // (sh -c on Unix, cmd /C on Windows); 'echo a >> "path"' works in both.
+        // The command body after '!' runs through /bin/sh -c; 'echo a >> "path"' works in sh.
         using var temp = TempDirectory.Create();
         var countPath = Path.Combine(temp.Path, "count");
         ConfigValue.ClearCache();
@@ -237,8 +236,8 @@ public class ModelsDomainTests
         using var temp = TempDirectory.Create();
         var countPath = Path.Combine(temp.Path, "count");
         ConfigValue.ClearCache();
-        // ';' separates in sh, '&' in cmd; the marker append runs before the failure.
-        var separator = OperatingSystem.IsWindows() ? "&" : ";";
+        // ';' separates sh commands; the marker append runs before the failure.
+        const string separator = ";";
         var command = $"!echo a >> \"{countPath}\" {separator} exit 3";
         // Non-zero exit -> null (pinned Pi: status !== 0 -> undefined).
         Assert.Null(ConfigValue.Resolve(command, null));
@@ -250,19 +249,18 @@ public class ModelsDomainTests
     [Fact]
     public void ConfigValue_Command_BlankStdoutIsNull()
     {
-        // Cross-platform no-op with empty stdout (sh: true, cmd: exit 0).
+        // sh no-op with empty stdout.
         ConfigValue.ClearCache();
-        var command = OperatingSystem.IsWindows() ? "!exit 0" : "!true";
+        var command = "!true";
         Assert.Null(ConfigValue.Resolve(command, null));
     }
 
     /// <summary>
-    /// Cross-platform "append marker line, then echo the value" command:
-    /// 'echo a &gt;&gt; "path"; echo a' (sh) / 'echo a &gt;&gt; "path" &amp; echo a' (cmd).
+    /// "Append marker line, then echo the value" command: 'echo a &gt;&gt; "path"; echo a' (sh).
     /// </summary>
     private static string BuildMarkerEchoCommand(string countPath)
     {
-        var separator = OperatingSystem.IsWindows() ? "&" : ";";
+        const string separator = ";";
         return $"!echo a >> \"{countPath}\" {separator} echo a";
     }
 

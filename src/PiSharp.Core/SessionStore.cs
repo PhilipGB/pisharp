@@ -525,8 +525,7 @@ public sealed class SessionStore
 
                 if (resolvedCwd is not null &&
                     (info.Cwd.Length == 0 ||
-                     !string.Equals(Path.GetFullPath(info.Cwd), resolvedCwd,
-                         OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal)))
+                     !string.Equals(Path.GetFullPath(info.Cwd), resolvedCwd, StringComparison.Ordinal)))
                 {
                     continue;
                 }
@@ -571,8 +570,7 @@ public sealed class SessionStore
 
                 if (_usesExplicitSessionDir &&
                     (string.IsNullOrEmpty(header.Cwd) ||
-                     !string.Equals(Path.GetFullPath(header.Cwd), _workspaceRoot,
-                         OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal)))
+                     !string.Equals(Path.GetFullPath(header.Cwd), _workspaceRoot, StringComparison.Ordinal)))
                 {
                     continue;
                 }

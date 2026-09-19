@@ -327,20 +327,8 @@ public static class ConfigValue
             // (e.g. "sh -c echo hi" ran "echo" with no arguments). Pinned Pi runs
             // spawnSync(shell, [...args, command], { shell: false }), i.e. the command
             // is a single argv entry. Stderr is not redirected (Pi: stdio ignore).
-            string[] arguments;
-            string fileName;
-            if (OperatingSystem.IsWindows())
-            {
-                // Full path: cmd.exe lives in System32, and PATH lookup is not
-                // guaranteed for bare executable names.
-                fileName = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "cmd.exe");
-                arguments = ["/C", command];
-            }
-            else
-            {
-                fileName = "/bin/sh";
-                arguments = ["-c", command];
-            }
+            string fileName = "/bin/sh";
+            string[] arguments = ["-c", command];
 
             var startInfo = new ProcessStartInfo
             {

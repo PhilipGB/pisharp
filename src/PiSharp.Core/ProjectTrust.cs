@@ -593,9 +593,8 @@ public static class ProjectTrustPath
     public static string GetGlobalPiSettingsPath(string? homeDirectory = null) =>
         Path.Combine(GetHomeDirectory(homeDirectory), ".pi", "agent", "settings.json");
 
-    internal static StringComparer Comparer => OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
+    // Linux is the only supported platform: case-sensitive path semantics.
+    internal static readonly StringComparer Comparer = StringComparer.Ordinal;
 
-    internal static StringComparison Comparison => OperatingSystem.IsWindows()
-        ? StringComparison.OrdinalIgnoreCase
-        : StringComparison.Ordinal;
+    internal static readonly StringComparison Comparison = StringComparison.Ordinal;
 }
