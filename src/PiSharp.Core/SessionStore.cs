@@ -708,6 +708,52 @@ public sealed class SessionStore
         return fork;
     }
 
+    /// <summary>
+    /// Pinned exportSessionToJsonl: writes the active branch as a stand-alone JSONL file —
+    /// a fresh header (same id, new timestamp, no parentSession) and the branch entries
+    /// re-chained sequentially (first parentId null). The default file name is
+    /// <c>session-&lt;timestamp&gt;.jsonl</c> in the working directory (the pinned ISO
+    /// timestamp with ':' and '.' replaced by '-'). The source session is never modified.
+    /// Works from memory, so an unflushed session exports its in-memory entries.
+    /// </summary>
+    public async Task<string> ExportJsonlAsync(
+        SessionDocument document,
+        string? outputPath = null,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        if (!document.IsPiV3)
+        {
+            throw new InvalidOperationException("JSONL export requires a Pi v3 session.");
+        }
+
+        var header = document.PiHeader!;
+        var timestamp = DateTimeOffset.UtcNow;
+        // Pinned new Date().toISOString() carries a 'Z' suffix (not an offset), so render
+        // the UTC time, then swap ':' and '.' for '-'.
+        var filePath = Path.GetFullPath(
+            outputPath ?? $"session-{timestamp.UtcDateTime.ToString("o").Replace(':', '-').Replace('.', '-')}.jsonl",
+            _workspaceRoot);
+        var directory = Path.GetDirectoryName(filePath);
+        if (!string.IsNullOrEmpty(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
+
+        // Pinned write: LF-joined lines with a trailing newline, sequential parent chain.
+        var lines = new List<string> { JsonSerializer.Serialize(
+            new PiSessionHeader("session", 3, header.Id, timestamp, header.Cwd), JsonOptions) };
+        string? parentId = null;
+        foreach (var entry in document.GetActiveEntryPath(document.LatestEntryId))
+        {
+            lines.Add(JsonSerializer.Serialize(entry with { ParentId = parentId }, entry.GetType(), JsonOptions));
+            parentId = entry.Id;
+        }
+
+        await File.WriteAllTextAsync(filePath, string.Join("\n", lines) + "\n", cancellationToken);
+        return filePath;
+    }
+
     private static SessionEntry DeserializeEntry(string line, int lineNumber, string path)
     {
         using var document = JsonDocument.Parse(line);
