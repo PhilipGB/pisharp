@@ -64,19 +64,20 @@ PiSharp.
 | Durable user/assistant/tool records | Equivalent | `session-manager.ts`, `messages.ts` | User prompts, steering/follow-up messages, completed assistant messages, tool calls/results, and cache entries are appended in chronological parent-linked order; partial assistant deltas are not emitted | `PiSessionStoreTests`; v3 fixture |
 
 | Parent-linked session tree | Equivalent | `session-manager.ts` | `SessionDocument` validates typed parent chains, exposes the active root-to-leaf path, and resolves a turn's leaf before fork/checkout; appends are durable-ordered — the whole batch validates before the file commit and the in-memory graph advances only after it, so a failed commit never leaves the document ahead of its session file (the pinned `_appendEntry` pushes memory before `_persist`, safe there because ids/parents are generated structurally valid) | `SessionDocumentTests`, `PiSessionStoreTests` |
-| Session ancestry / `parentSession` | Equivalent | `SessionHeader.parentSession` | Pi v3 forks persist the source session file path; legacy v1 remains readable without rewriting | `PiSessionStoreTests`; import/migration remains |
+| Session ancestry / `parentSession` | Equivalent | `SessionHeader.parentSession` | Pi v3 forks persist the source session file path; legacy v1 remains readable without rewriting; imports and v1/v2 migrations keep the chain intact | `PiSessionStoreTests`, `SessionMigrationTests`, `SessionLifecycleTests` |
 
-| Continue/resume | Partial | `session-manager.ts`, `session-manager` CLI | `--continue`, `--resume`, `--session` | CLI/session tests |
-| Fork/clone | Partial | `agent-session-runtime.ts` | `SessionStore.ForkAsync`, `/fork`, `/clone` | Session tests |
+| Session directory and metadata listing | Equivalent | `session-manager.ts` (`getSessionsDir`, `parseSessionEntries`) | Pi's canonical `~/.pi/agent/sessions/<encoded-cwd>/` layout with `EncodeCwd` parity (including trailing-separator normalization), legacy `~/.pisharp/sessions` kept readable, streaming best-effort metadata reads (`SessionInfoReader`), all-project listing for the picker, and explicit `--session-dir` as a flat directory | `SessionDirectoryTests`, `SessionInfoReaderTests`, `PiSessionStoreTests` |
+| Continue/resume | Equivalent | `session-manager.ts`, `session-manager` CLI | `--continue` (most recently modified), `--resume` (picker), `--session <id|path>` (path heuristic, local exact/prefix, global fallback with cross-project fork prompt), `--session-id` (validated, open-or-create), `--fork`; a stored cwd that no longer exists prompts to continue in the current directory | `SessionLifecycleTests`, `SessionPickerTests`, `CliOptionsTests` |
+| Session picker | Equivalent | `modes/interactive/components/session-selector*.ts` | Threaded tree by default, `re:` regex, quoted phrases, fuzzy matching (exact pinned scoring), modified/relevance sorting, named-only filter, rename, and delete from the picker | `SessionSearchTests`, `SessionPickerTests` |
+| Fork/clone | Equivalent | `agent-session-runtime.ts` | Unsaved-session guard (first assistant message required), entry-level `/fork <user-entry>` (forks before the message), `/clone` (forks at the active leaf), `--fork` CLI (unconditional cross-project fork), legacy turn-level forking preserved | `SessionLifecycleTests`, `PiSessionStoreTests` |
 | Stable current leaf | Equivalent | `SessionManager.getLeafId()` | `SessionController.ActiveEntryId` advances through every typed entry, including steering/follow-up messages, tool results, metadata, and the MAF cache | `PiSessionStoreTests`; runtime integration path |
 | Session display name | Equivalent | `SessionInfoEntry`, `/name` | `--name`, `/name [text]` (shows current name with no arg), RPC `set_session_name` for v3 sessions | `CliOptionsTests` |
 
-| Statistics and usage | Partial | `agent-session.ts`, `agent-session-stats.test.ts` | Durable message/tool counts and `/stats`/RPC stats; token/cost totals pending | `PiSessionStoreTests` |
+| Statistics and usage | Equivalent | `agent-session.ts`, `agent-session-stats.test.ts`, `usage-totals.ts` | Durable message/tool counts plus token/cost totals over every entry (assistant, tool results, compaction and branch summaries); `/session` renders the pinned block including the cached/uncached prompt split, per-provider/model cost breakdown (responseModel precedence, Tools/summaries group), and the cache-waste (Cache Re-billed) line with the 1024-token noise floor and compaction reset | `SessionUsageTests`, `PiSessionStoreTests` |
 
 | Labels/bookmarks | Partial | `LabelEntry`, `appendLabelChange`, tree selector | `/label <entry-id> [text]` and RPC `set_label` persist a Pi v3 `LabelEntry`; `SessionDocument.GetLabel` resolves latest-wins/blank-clears; `/tree` renders `[label]`; the interactive TUI tree selector remains a TUI gap | `SessionDocumentTests`, `PiSessionStoreTests`, `CliOptionsTests` |
-| Session deletion | Missing | interactive session selector (`app.session.delete`) | Not implemented | Planned Phase 3 |
-| Usage/cost totals in stats and picker | Missing | `agent-session-stats.test.ts`, `usage-totals.ts` | Durable counts only | Planned Phase 13 |
-| v1 migration | Missing | `migrations.ts` | Not implemented | Planned Phase 3 |
+| Session deletion | Equivalent | interactive session selector (`app.session.delete`) | Picker delete with confirmation refuses the active session, prefers the system trash (`gio trash`/`trash`/`trash-put`/`trashcli`), and falls back to unlink with a combined error when no trash is available | `SessionSearchTests` (delete), `SessionPickerTests` |
+| v1/v2 migration | Equivalent | `migrations.ts` | Pi v1/v2 session files migrate to v3 on load (fresh 8-hex ids with collision checks, linear parent chains, `firstKeptEntryIndex` → `firstKeptEntryId`, `hookMessage` → `custom`), rewritten atomically via temp+rename; legacy PiSharp v1 (its own `sessionId` header) and malformed lines are left untouched | `SessionMigrationTests` |
 
 ## Compaction
 
@@ -300,10 +301,10 @@ Intentional differences in this area:
 
 | Capability | Status | Pi reference | PiSharp implementation | Conformance coverage |
 |---|---|---|---|---|
-| JSONL export | Partial | `core/session-export.ts` | Session files are JSONL but no export command | Planned Phase 3 |
-| HTML export | Missing | `core/export-html/*` | Not implemented | Planned Phase 3 |
-| Import | Missing | session manager/migrations | Not implemented | Planned Phase 3 |
-| Share/GitHub gist | Missing | `modes/interactive/session-share.ts` | Not implemented | Planned Phase 3 |
+| JSONL export | Equivalent | `core/session-export.ts` | `/export <path.jsonl>` (default `session-<timestamp>.jsonl` in the cwd) writes the active branch with a fresh same-id header (new timestamp, no `parentSession`) and sequentially re-chained parent ids; works on unflushed sessions from memory; the source session is never modified | `SessionExportTests` |
+| HTML export | Equivalent (documented rendering difference) | `core/export-html/*` | `/export <path.html>` (default `pisharp-session-<basename>.html`) renders the active branch as a self-contained deterministic page — all content HTML-escaped, entries labelled by type/role with usage lines. Pi renders the pinned themed page with custom tool renderers in the TUI; PiSharp renders a static plain page (no theme, no client-side tool rendering) | `SessionExportHtmlTests` |
+| Import | Equivalent | session manager/migrations | `/import <path.jsonl>` (quoted paths keep spaces) confirms, copies into the session directory with `-1`/`-2` name de-duplication, loads (migrating if needed), and prompts when the stored cwd is missing; an import that is already inside the session directory opens in place | `SessionLifecycleTests` |
+| Share/GitHub gist | Equivalent (documented transport difference) | `modes/interactive/session-share.ts` | `/share [path.html]` exports to a temp file when needed and publishes a public gist via the gh CLI (`gh gist create`, injectable launcher). Pi shares through the Radius gateway with a private-gist fallback and a presentation JSONL (`pi.share` custom entry); PiSharp has no Radius gateway and gists the self-contained HTML export instead | `SessionExportHtmlTests` (share seam) |
 
 ## Distribution/update behaviour
 

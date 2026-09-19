@@ -26,10 +26,10 @@ Implemented and smoke-tested against llama.cpp:
 - semantic user/assistant/tool-result records with MAF state as a cache bridge
 - MAF `AgentSession` serialization/restoration inside durable turns
 - legacy PiSharp v1 session reads
-- `-c` / `--continue`
-- `-r` / `--resume`
-- `--session <id|path>`
-- `--name <text>`
+- `-c` / `--continue`, `-r` / `--resume` (picker), `--session <id|path>` (with cross-project fork prompt), `--session-id <id>`, `--fork <id|path>`, `--name <text>`
+- Pi's canonical session directory (`~/.pi/agent/sessions/<encoded-cwd>/`), streaming metadata listing, and all-project picker with search/sort/named-only/rename/delete
+- Pi v1/v2 → v3 session migration on load (atomic rewrite); legacy PiSharp v1 stays readable
+- `/session` usage/cost statistics (token totals, cached/uncached prompt split, per-model cost breakdown, cache-waste line), `/import`, `/export` (JSONL + HTML), `/share` (public gh gist)
 - `/session`, `/name`, `/label`, `/stats`, `/tree`, `/goto`, `/compact`, `/fork`, `/clone`, `/new`, `/resume`, `/settings`, `/reload`
 - Pi-compatible settings system: global `~/.pi/agent/settings.json` plus trusted-project `.pi/settings.json`, deep merge with project precedence, legacy-format migrations, malformed-file diagnostics, `defaultProjectTrust`, settings-backed compaction budgets (with per-model overrides), retry budgets, session directory, and keybinding configuration
 - unit tests for file/path/context/session/terminal-input/resource behaviour
@@ -56,7 +56,6 @@ Remaining parity work (tracked per capability in [`docs/PARITY.md`](docs/PARITY.
 - provider/model gaps: live OAuth round-trips, `enabledModels`/`/scoped-models`, the account-scoped `radius` gateway, and provider-specific credential paths (AWS profiles, GCP ADC, Cloudflare account ids)
 - consuming the remaining settings values: queue modes (`steeringMode`/`followUpMode`), `defaultTools`, resource paths, terminal/image/TUI options (the values are already parsed and exposed by the settings manager)
 - settings-backed keybindings in the terminal UI
-- full session product surface: interactive picker, delete, import, JSONL/HTML export, statistics with usage/cost totals, v1 migration
 - tool parity: Pi's exact default tool selection, schemas, partial tool output, serialized file mutations, PowerShell on Windows
 - resource/package/extension lifecycle: npm/git/local package sources, install/remove/list/update, full Pi extension API surface, themes
 - Pi-equivalent terminal UI: multiline editor, selectors, tree picker, status footer, configurable keybindings
@@ -164,13 +163,13 @@ to see exactly which files were loaded.
 
 ## Sessions
 
-Sessions are stored under:
+Sessions are stored under Pi's canonical layout:
 
 ```text
-~/.pisharp/sessions/<workspace-key>/
+~/.pi/agent/sessions/<encoded-cwd>/
 ```
 
-Override the root with `--session-dir`, `PI_CODING_AGENT_SESSION_DIR`, or the `sessionDir` setting (in that order of precedence). The default location moves to Pi's `~/.pi/agent/sessions/<encoded-cwd>/` layout when the session product surface lands.
+where `<encoded-cwd>` is the working directory with every path separator replaced by `-` (Pi's `EncodeCwd`, including its trailing-separator normalization). Override the root with `--session-dir`, `PI_CODING_AGENT_SESSION_DIR`, or the `sessionDir` setting (in that order of precedence); an explicit session directory stores sessions flat, directly under it. Legacy `~/.pisharp/sessions/<workspace-key>/` files remain readable and show up in listings and `--continue`.
 
 Each session is append-only JSONL in the Pi v3 session format. The first line is the session header (version 3, session id, timestamp, cwd, and — for forks — the source session path in `parentSession`). Every durable event is then appended as its own typed entry linked through a stable `id`/`parentId` chain:
 
@@ -184,14 +183,18 @@ Each session is append-only JSONL in the Pi v3 session format. The first line is
 
 The typed Pi transcript is authoritative; serialized MAF `AgentSession` state is only an implementation cache. PiSharp rebuilds the effective context from the typed entries after the latest compaction or branch boundary and restores a cached MAF session only when no boundary post-dates it; compaction and navigation always start a fresh MAF session. Session ids, parent links, and branch semantics are application-owned.
 
-Legacy PiSharp v1 turn-based sessions remain readable so existing workspaces keep working; they are not rewritten.
+Pi v1/v2 session files migrate to v3 automatically on load (fresh entry ids, rebuilt parent chains, `hookMessage` → `custom`), rewritten atomically via a temp file plus rename. Legacy PiSharp v1 turn-based sessions remain readable so existing workspaces keep working; they are not rewritten.
+
+`--resume` and `/resume` open the session picker: a threaded tree of all project sessions by default, with `re:` regex search, quoted phrases, fuzzy matching, modified/relevance sorting, a named-only filter, rename, and delete (system trash first, unlink fallback; the active session can never be deleted). Continuing a session whose stored working directory no longer exists asks whether to continue in the current directory; `--session` resolving to another project's session asks whether to fork it into the current directory instead.
 
 Useful startup options:
 
 ```bash
 pisharp --continue
 pisharp --resume
-pisharp --session <id-prefix>
+pisharp --session <id-prefix|path.jsonl>
+pisharp --session-id <id>
+pisharp --fork <id|path.jsonl>
 pisharp --no-session
 ```
 
@@ -204,10 +207,13 @@ Interactive commands:
 /tree
 /goto <entry-id|root> [--summarize]
 /compact [instructions]
-/fork [turn-id]
+/fork [entry-id]
 /clone
 /new
 /resume
+/import <path.jsonl>
+/export [path.jsonl|path.html]
+/share [path.html]
 /context
 /steer <text>
 /follow-up <text>
@@ -251,7 +257,9 @@ pisharp auth <check|print-api-key|print-bearer-token> [options]
 --context-tokens <n>        model context window used by Pi-native compaction
 --max-output-tokens <n>     maximum model output tokens
 -c, --continue              continue most recent workspace session
--r, --resume                select a saved workspace session
+-r, --resume                select a saved session (picker: search, sort, rename, delete)
+--session-id <id>           use an exact project session id, creating it if missing
+--fork <id|path>            fork a session into a new one (source is never modified)
 --session <id|path>         resume a specific session
 --session-dir <path>        override session storage root (also PI_CODING_AGENT_SESSION_DIR / sessionDir setting)
 --no-session                disable persistence
