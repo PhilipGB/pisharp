@@ -262,4 +262,34 @@ public sealed class SessionSearchTests
         Assert.Contains("boom", result.Error);
         Assert.DoesNotContain("second line", result.Error);
     }
+
+    [Fact]
+    public async Task DeleteSessionCancelledDuringTrashPropagatesAndKeepsTheFile()
+    {
+        using var temp = TempDirectory.Create();
+        var store = new SessionStore(temp.Path);
+        var path = Path.Combine(temp.Path, "session.jsonl");
+        await File.WriteAllTextAsync(path, "data");
+
+        // The trash step is cancelled through the caller's token mid-flight.
+        var cts = new CancellationTokenSource();
+        cts.Cancel();
+        var permanentDeleteCalls = 0;
+        store.TrashLauncher = (_, token) =>
+        {
+            token.ThrowIfCancellationRequested();
+            return Task.FromResult<(int, string?)>((0, null));
+        };
+        store.DeleteFileOverride = _ =>
+        {
+            permanentDeleteCalls++;
+            return true;
+        };
+
+        await Assert.ThrowsAsync<OperationCanceledException>(
+            () => store.DeleteSessionAsync(path, cts.Token));
+
+        Assert.Equal(0, permanentDeleteCalls);
+        Assert.True(File.Exists(path));
+    }
 }

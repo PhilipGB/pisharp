@@ -406,7 +406,8 @@ public sealed class SessionStore
     /// <summary>
     /// Pinned deleteSessionFile: tries the <c>trash</c> CLI first (adding <c>--</c> for
     /// leading-dash paths), treats a zero exit code or a disappeared file as success, and
-    /// otherwise falls back to a permanent unlink.
+    /// otherwise falls back to a permanent unlink. A cancellation of the supplied token
+    /// propagates instead of falling through to the unlink — the session file must survive.
     /// </summary>
     public async Task<SessionDeleteResult> DeleteSessionAsync(string path, CancellationToken cancellationToken = default)
     {
@@ -415,6 +416,11 @@ public sealed class SessionStore
         try
         {
             (trashExitCode, trashError) = await (TrashLauncher ?? LaunchTrashAsync)(path, cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // Caller cancellation during the trash step: propagating keeps the file intact.
+            throw;
         }
         catch (Exception)
         {
@@ -426,6 +432,9 @@ public sealed class SessionStore
         {
             return new SessionDeleteResult(true, "trash", null);
         }
+
+        // Cancellation between the trash attempt and the fallback: the file must survive.
+        cancellationToken.ThrowIfCancellationRequested();
 
         try
         {
