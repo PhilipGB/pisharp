@@ -77,9 +77,20 @@ public sealed class SessionDirectoryTests
         using var temp = TempDirectory.Create();
         var workspace = Directory.CreateDirectory(Path.Combine(temp.Path, "repo")).FullName;
         var agentDir = Path.Combine(temp.Path, "agent");
-        var store = new SessionStore(workspace, sessionsRoot: null, agentDirectory: agentDir);
+        var legacyRoot = Path.Combine(temp.Path, "legacy");
+        var store = new SessionStore(
+            workspace,
+            sessionsRoot: null,
+            agentDirectory: agentDir,
+            legacySessionsRoot: legacyRoot);
 
-        // A pre-Phase-3 session living under ~/.pisharp/sessions/<key>/ for this workspace.
+        // The legacy compatibility directory must stay inside the temp directory so the test
+        // never writes into the executing user's real ~/.pisharp profile.
+        Assert.StartsWith(
+            Path.GetFullPath(temp.Path),
+            Path.GetFullPath(store.LegacyWorkspaceDirectory));
+
+        // A pre-Phase-3 session living under <legacySessionsRoot>/<key>/ for this workspace.
         // Its timestamps are pinned in the past so the newest-first ordering is deterministic.
         var legacyPath = Path.Combine(store.LegacyWorkspaceDirectory, "legacy.jsonl");
         Directory.CreateDirectory(store.LegacyWorkspaceDirectory);
