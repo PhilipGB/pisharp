@@ -80,17 +80,19 @@ public sealed class SessionDirectoryTests
         var store = new SessionStore(workspace, sessionsRoot: null, agentDirectory: agentDir);
 
         // A pre-Phase-3 session living under ~/.pisharp/sessions/<key>/ for this workspace.
+        // Its timestamps are pinned in the past so the newest-first ordering is deterministic.
         var legacyPath = Path.Combine(store.LegacyWorkspaceDirectory, "legacy.jsonl");
         Directory.CreateDirectory(store.LegacyWorkspaceDirectory);
+        var legacyTime = DateTimeOffset.UtcNow.AddMinutes(-5);
         var header = PiSessionHeader.Create(workspace);
         await File.WriteAllLinesAsync(legacyPath,
         [
             System.Text.Json.JsonSerializer.Serialize(header, Json),
             System.Text.Json.JsonSerializer.Serialize(new MessageEntry(
-                "u", null, DateTimeOffset.UtcNow,
+                "u", null, legacyTime,
                 System.Text.Json.JsonSerializer.SerializeToElement(new { role = "user", content = "legacy prompt" })), Json),
             System.Text.Json.JsonSerializer.Serialize(new MessageEntry(
-                "a", "u", DateTimeOffset.UtcNow,
+                "a", "u", legacyTime,
                 System.Text.Json.JsonSerializer.SerializeToElement(new { role = "assistant", content = "legacy answer" })), Json),
         ]);
 

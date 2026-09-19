@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -328,6 +329,99 @@ public sealed class SessionStore
 
         return await ListInfosFromDirectoriesAsync(
             directories, Path.GetFullPath(_workspaceRoot), filterCwd: false, cancellationToken);
+    }
+
+    /// <summary>
+    /// Result of a session file deletion (pinned deleteSessionFile): success plus the method
+    /// that removed it ("trash" or "unlink") and an error when both failed.
+    /// </summary>
+    public sealed record SessionDeleteResult(bool Ok, string Method, string? Error);
+
+    /// <summary>
+    /// Test seam for the <c>trash</c> CLI launch; null uses the real launcher.
+    /// </summary>
+    internal Func<string, CancellationToken, Task<(int ExitCode, string? ErrorText)>>? TrashLauncher;
+
+    /// <summary>
+    /// Test seam for the unlink step; when set it replaces <see cref="File.Delete"/> and
+    /// reports whether the file was removed (false simulates a failed unlink).
+    /// </summary>
+    internal Func<string, bool>? DeleteFileOverride;
+
+    /// <summary>
+    /// Pinned deleteSessionFile: tries the <c>trash</c> CLI first (adding <c>--</c> for
+    /// leading-dash paths), treats a zero exit code or a disappeared file as success, and
+    /// otherwise falls back to a permanent unlink.
+    /// </summary>
+    public async Task<SessionDeleteResult> DeleteSessionAsync(string path, CancellationToken cancellationToken = default)
+    {
+        string? trashError = null;
+        var trashExitCode = -1;
+        try
+        {
+            (trashExitCode, trashError) = await (TrashLauncher ?? LaunchTrashAsync)(path, cancellationToken);
+        }
+        catch (Exception)
+        {
+            // trash is not installed or not executable: fall through to the unlink path.
+            trashError = "trash unavailable";
+        }
+
+        if (trashExitCode == 0 || !File.Exists(path))
+        {
+            return new SessionDeleteResult(true, "trash", null);
+        }
+
+        try
+        {
+            if (DeleteFileOverride is not null)
+            {
+                if (!DeleteFileOverride(path))
+                {
+                    throw new IOException("Simulated unlink failure");
+                }
+            }
+            else
+            {
+                File.Delete(path);
+            }
+
+            return new SessionDeleteResult(true, "unlink", null);
+        }
+        catch (Exception ex)
+        {
+            var hint = string.IsNullOrWhiteSpace(trashError) ? null : $"trash: {FirstLine(trashError).Trim()}";
+            return new SessionDeleteResult(false, "unlink", hint is null ? ex.Message : $"{ex.Message} ({hint})");
+        }
+    }
+
+    private static string FirstLine(string text) => text.Split('\n')[0];
+
+    private static async Task<(int ExitCode, string? ErrorText)> LaunchTrashAsync(string path, CancellationToken cancellationToken)
+    {
+        using var process = new Process
+        {
+            StartInfo = new ProcessStartInfo
+            {
+                FileName = "trash",
+                UseShellExecute = false,
+                RedirectStandardError = true,
+                CreateNoWindow = true,
+            },
+        };
+
+        // Pinned: guard leading-dash paths with --.
+        if (path.Length > 0 && path[0] == '-')
+        {
+            process.StartInfo.ArgumentList.Add("--");
+        }
+
+        process.StartInfo.ArgumentList.Add(path);
+
+        process.Start();
+        var error = await process.StandardError.ReadToEndAsync(cancellationToken);
+        await process.WaitForExitAsync(cancellationToken);
+        return (process.ExitCode, error);
     }
 
     private static async Task<IReadOnlyList<PiSessionInfo>> ListInfosFromDirectoriesAsync(
