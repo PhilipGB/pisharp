@@ -37,7 +37,7 @@ public sealed class SessionDocument
     /// While false, pre-assistant entries stay in memory only and the file appears with the
     /// first assistant message (or never, for sessions that get no response).
     /// </summary>
-    internal bool IsFileFlushed { get; private set; }
+    public bool IsFileFlushed { get; private set; }
 
     /// <summary>Marks the session file as materialized after the first full write.</summary>
     internal void MarkFlushed() => IsFileFlushed = true;

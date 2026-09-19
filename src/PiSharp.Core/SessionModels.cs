@@ -28,14 +28,35 @@ public sealed record PiSessionHeader(
     string? ParentSession = null)
 {
     /// <summary>Creates a new Pi-compatible session header.</summary>
-    public static PiSessionHeader Create(string workingDirectory, string? parentSession = null) =>
+    public static PiSessionHeader Create(string workingDirectory, string? parentSession = null, string? id = null) =>
         new(
             "session",
             3,
-            Guid.NewGuid().ToString("N"),
+            string.IsNullOrEmpty(id) ? Guid.NewGuid().ToString("N") : ValidateId(id),
             DateTimeOffset.UtcNow,
             Path.GetFullPath(workingDirectory),
             parentSession);
+
+    /// <summary>
+    /// Pinned assertValidSessionId: the id must be non-empty, contain only alphanumeric
+    /// characters, '-', '_', and '.', and start and end with an alphanumeric character.
+    /// </summary>
+    public static string ValidateId(string id)
+    {
+        // Pinned /^[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?$/: ASCII alphanumerics only.
+        if (id.Length == 0 ||
+            !IsAsciiLetterOrDigit(id[0]) ||
+            !IsAsciiLetterOrDigit(id[^1]) ||
+            id.Any(ch => !IsAsciiLetterOrDigit(ch) && ch is not ('-' or '_' or '.')))
+        {
+            throw new ArgumentException(
+                "Session id must be non-empty, contain only alphanumeric characters, '-', '_', and '.', and start and end with an alphanumeric character");
+        }
+
+        return id;
+    }
+
+    private static bool IsAsciiLetterOrDigit(char ch) => ch is >= 'a' and <= 'z' or >= 'A' and <= 'Z' or >= '0' and <= '9';
 }
 
 /// <summary>Base for every durable Pi session entry.</summary>

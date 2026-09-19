@@ -59,6 +59,9 @@ public sealed class SessionStore
     /// <summary>True when a session directory override (CLI/env/settings) is in effect.</summary>
     public bool UsesExplicitSessionDir => _usesExplicitSessionDir;
 
+    /// <summary>Gets the workspace (project) directory this store's sessions belong to.</summary>
+    public string WorkspaceRoot => _workspaceRoot;
+
     public async Task<SessionDocument> CreateAsync(string model, CancellationToken cancellationToken = default)
     {
         Directory.CreateDirectory(_workspaceDirectory);
@@ -75,10 +78,13 @@ public sealed class SessionStore
     /// <c>_persist</c> lazy-flush contract), so a session that never gets a response never
     /// appears in listings or on disk.
     /// </summary>
-    public Task<SessionDocument> CreatePiAsync(CancellationToken cancellationToken = default, string? parentSession = null)
+    public Task<SessionDocument> CreatePiAsync(
+        CancellationToken cancellationToken = default,
+        string? parentSession = null,
+        string? sessionId = null)
     {
         Directory.CreateDirectory(_workspaceDirectory);
-        var header = PiSessionHeader.Create(_workspaceRoot, parentSession);
+        var header = PiSessionHeader.Create(_workspaceRoot, parentSession, sessionId);
         var fileName = $"{header.Timestamp:yyyyMMddTHHmmssfffZ}_{header.Id}.jsonl";
         var path = Path.Combine(_workspaceDirectory, fileName);
         return Task.FromResult(new SessionDocument(path, header, []));
@@ -89,12 +95,45 @@ public sealed class SessionStore
     /// missing <c>--session</c> file): the path is preserved and the file stays deferred
     /// until the first assistant message.
     /// </summary>
-    public Task<SessionDocument> CreatePiAtAsync(string path, CancellationToken cancellationToken = default, string? parentSession = null)
+    public Task<SessionDocument> CreatePiAtAsync(
+        string path,
+        CancellationToken cancellationToken = default,
+        string? parentSession = null,
+        string? sessionId = null)
     {
         var fullPath = Path.GetFullPath(path);
         Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
-        var header = PiSessionHeader.Create(_workspaceRoot, parentSession);
+        var header = PiSessionHeader.Create(_workspaceRoot, parentSession, sessionId);
         return Task.FromResult(new SessionDocument(fullPath, header, []));
+    }
+
+    /// <summary>Pinned normalizeSessionName: collapse every line break to a space, then trim.</summary>
+    public static string SanitizeName(string name)
+    {
+        var collapsed = name.Replace("\r\n", " ").Replace('\r', ' ').Replace('\n', ' ');
+        return collapsed.Trim();
+    }
+
+    /// <summary>
+    /// Pinned picker rename: opens the session file and appends a <c>session_info</c> entry
+    /// at its active leaf. A blank name is a no-op (pinned <c>if (!next) return</c>).
+    /// </summary>
+    public async Task RenameSessionAsync(string path, string name, CancellationToken cancellationToken = default)
+    {
+        var document = await LoadAsync(path, cancellationToken);
+        if (!document.IsPiV3)
+        {
+            throw new InvalidOperationException("Only Pi v3 sessions can be renamed.");
+        }
+
+        var sanitized = SanitizeName(name);
+        if (sanitized.Length == 0)
+        {
+            return;
+        }
+
+        var entry = new SessionInfoEntry(Guid.NewGuid().ToString("N"), document.LatestEntryId, DateTimeOffset.UtcNow, sanitized);
+        await AppendEntriesAsync(document, [entry], cancellationToken);
     }
 
     public async Task AppendTurnAsync(SessionDocument document, SessionTurn turn, CancellationToken cancellationToken = default)
@@ -305,6 +344,13 @@ public sealed class SessionStore
     /// </summary>
     public async Task<IReadOnlyList<PiSessionInfo>> ListAllInfosAsync(CancellationToken cancellationToken = default)
     {
+        // Pinned listAll(customSessionDir): an explicit session directory is the whole scope.
+        if (_usesExplicitSessionDir)
+        {
+            return await ListInfosFromDirectoriesAsync(
+                [_workspaceDirectory], Path.GetFullPath(_workspaceRoot), filterCwd: false, cancellationToken);
+        }
+
         var directories = new List<string>();
         var agentSessionsRoot = Path.GetDirectoryName(CanonicalDirectory)!;
         if (Directory.Exists(agentSessionsRoot))
@@ -584,7 +630,18 @@ public sealed class SessionStore
         var infos = await ListInfosAsync(cancellationToken);
         var match = infos.FirstOrDefault(info => string.Equals(info.Id, selector, StringComparison.Ordinal))
             ?? infos.FirstOrDefault(info => info.Id.StartsWith(selector, StringComparison.OrdinalIgnoreCase));
-        return match is null ? null : new SessionResolution(match.Path, null);
+        if (match is not null)
+        {
+            return new SessionResolution(match.Path, null);
+        }
+
+        // Pinned resolveSessionPath: fall back to a global search across every project's
+        // session directory; a hit carries the foreign cwd so the caller can offer to fork
+        // it into the current directory instead of opening it directly.
+        var all = await ListAllInfosAsync(cancellationToken);
+        var global = all.FirstOrDefault(info => string.Equals(info.Id, selector, StringComparison.Ordinal))
+            ?? all.FirstOrDefault(info => info.Id.StartsWith(selector, StringComparison.OrdinalIgnoreCase));
+        return global is null ? null : new SessionResolution(global.Path, global.Cwd);
     }
 
     public async Task<IReadOnlyList<SessionDocument>> ListAsync(CancellationToken cancellationToken = default)
@@ -624,14 +681,17 @@ public sealed class SessionStore
     public async Task<SessionDocument> ForkPiAsync(
         SessionDocument source,
         string? entryId,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        string? sessionId = null)
     {
         if (!source.IsPiV3)
         {
             throw new InvalidOperationException("Pi v3 forking requires a Pi v3 source session.");
         }
 
-        var fork = await CreatePiAsync(cancellationToken, source.FilePath);
+        // Pinned forkFrom: a fresh session (new id, parentSession = the source file) with
+        // the source's active branch up to the target entry; the source is never modified.
+        var fork = await CreatePiAsync(cancellationToken, source.FilePath, sessionId);
         var selectedEntryId = source.Entries
             .OfType<MessageEntry>()
             .FirstOrDefault(entry => string.Equals(entry.Id, entryId, StringComparison.OrdinalIgnoreCase) &&

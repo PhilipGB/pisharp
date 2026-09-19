@@ -44,7 +44,9 @@ internal sealed record CliOptions(
     bool PrintMode,
     bool ReadOnly,
     bool NoTools,
-    bool AutoRetry)
+    bool AutoRetry,
+    string? ForkSelector = null,
+    string? SessionId = null)
 {
     public static CliOptions Parse(string[] args) => ParseCore(args, mapEnvironment: true);
 
@@ -87,6 +89,8 @@ internal sealed record CliOptions(
         var continueSession = false;
         var resumeSession = false;
         string? sessionSelector = null;
+        string? forkSelector = null;
+        string? sessionId = null;
         string? sessionName = null;
         // Pi's session storage override env var (PI_CODING_AGENT_SESSION_DIR).
         string? sessionDirectory = Environment.GetEnvironmentVariable(SettingsPaths.SessionDirEnvironmentVariable);
@@ -165,6 +169,12 @@ internal sealed record CliOptions(
                 case "--session":
                     sessionSelector = RequireValue(args, ref i, "--session");
                     break;
+                case "--fork":
+                    forkSelector = RequireValue(args, ref i, "--fork");
+                    break;
+                case "--session-id":
+                    sessionId = RequireValue(args, ref i, "--session-id");
+                    break;
                 case "--name":
                     sessionName = RequireValue(args, ref i, "--name");
                     break;
@@ -241,6 +251,34 @@ internal sealed record CliOptions(
             throw new ArgumentException("Use only one of --continue, --resume, --session, or --no-session.");
         }
 
+        // Pinned validateForkFlags / validateSessionIdFlags.
+        if (forkSelector is not null)
+        {
+            var forkConflicts = new List<string>();
+            if (sessionSelector is not null) forkConflicts.Add("--session");
+            if (continueSession) forkConflicts.Add("--continue");
+            if (resumeSession) forkConflicts.Add("--resume");
+            if (noSession) forkConflicts.Add("--no-session");
+            if (forkConflicts.Count > 0)
+            {
+                throw new ArgumentException($"--fork cannot be combined with {string.Join(", ", forkConflicts)}.");
+            }
+        }
+
+        if (sessionId is not null)
+        {
+            var idConflicts = new List<string>();
+            if (sessionSelector is not null) idConflicts.Add("--session");
+            if (continueSession) idConflicts.Add("--continue");
+            if (resumeSession) idConflicts.Add("--resume");
+            if (idConflicts.Count > 0)
+            {
+                throw new ArgumentException($"--session-id cannot be combined with {string.Join(", ", idConflicts)}.");
+            }
+
+            PiSharp.Core.PiSessionHeader.ValidateId(sessionId);
+        }
+
         var fullCwd = Path.GetFullPath(cwd);
         if (contextRoot is not null)
         {
@@ -282,7 +320,9 @@ internal sealed record CliOptions(
             printMode,
             readOnly,
             noTools,
-            autoRetry);
+            autoRetry,
+            forkSelector,
+            sessionId);
     }
 
     private static void AddPositionalArguments(

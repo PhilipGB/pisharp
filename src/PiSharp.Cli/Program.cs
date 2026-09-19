@@ -511,6 +511,44 @@ static async Task<bool> HandleCommandAsync(
                 Console.WriteLine(sessions.FormatSessionInfo());
             }
             return true;
+        case "/import":
+            var importArgument = argument?.Trim();
+            if (string.IsNullOrWhiteSpace(importArgument))
+            {
+                Console.WriteLine("Usage: /import <path.jsonl>");
+                return true;
+            }
+
+            // Pinned getPathCommandArgument: a quoted path keeps its spaces; otherwise the
+            // first whitespace-separated token.
+            var importPath = importArgument.Length >= 2 && importArgument[0] == '"' && importArgument[^1] == '"'
+                ? importArgument[1..^1]
+                : importArgument.Split(' ', 2, StringSplitOptions.TrimEntries)[0];
+
+            // Pinned handleImportCommand: confirm, then import; a missing stored cwd is
+            // handled by the continue-in-current-cwd prompt inside ImportAsync.
+            if (!await SessionController.PromptConfirmAsync(
+                console, $"Replace current session with {importPath}? [y/N] ", cancellationToken))
+            {
+                Console.WriteLine("Import cancelled");
+                return true;
+            }
+
+            try
+            {
+                await sessions.ImportAsync(importPath, cancellationToken);
+                Console.WriteLine($"Session imported from: {importPath}");
+            }
+            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+            {
+                Console.WriteLine("Import cancelled");
+            }
+            catch (Exception ex) when (ex is FileNotFoundException or InvalidOperationException)
+            {
+                Console.Error.WriteLine($"Failed to import session: {ex.Message}");
+            }
+
+            return true;
         case "/trust":
             await SaveInteractiveTrustDecisionAsync(console, workspaceRoot, trustStore);
             return true;
@@ -877,10 +915,11 @@ static void PrintInteractiveHelp()
           /tree                    Show the turn tree (* marks active turn, [text] shows its label)
           /goto <entry-id|root> [--summarize]  Move point and optionally summarize abandoned work
           /compact [instructions]  Summarize old context and persist a compaction boundary
-          /fork [turn-id]          Copy an active path into a new session
+          /fork [entry-id]         Fork before a user message (clone the branch at that point)
           /clone                   Clone the current active branch into a new session
           /new                     Start a new persistent session
-          /resume                  Pick and resume a saved session
+          /resume                  Pick and resume a saved session (search, rename, delete)
+          /import <path.jsonl>     Import a session file from another machine
           /context                 List loaded AGENTS.md/CLAUDE.md files
           /trust                   Save project trust for the next startup
           /settings [key value]    Show settings status or set a global setting ("unset" clears)
@@ -936,6 +975,8 @@ static void PrintHelp()
           -c, --continue              Continue the most recently modified session for this workspace
           -r, --resume                Interactively select a saved workspace session
           --session <id|path>         Resume a session by id prefix or JSONL path
+          --session-id <id>           Use exact project session id, creating it if missing
+          --fork <path|id>            Fork a session file or id into a new session
           --name <text>               Set the session display name
           --session-dir <path>        Override session storage root (PI_CODING_AGENT_SESSION_DIR / sessionDir setting)
           --no-session                Do not persist session state

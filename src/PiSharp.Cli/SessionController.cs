@@ -472,18 +472,47 @@ internal sealed class SessionController : IProviderRequestCompactor
         var store = new SessionStore(
             options.WorkingDirectory,
             SettingsPaths.ResolveSessionDir(options.SessionDirectory, resolvedSettings.GetSessionDir()));
+        var interactiveConsole = console ?? new SystemConsoleIO();
         SessionDocument? document = null;
 
-        if (options.SessionSelector is not null)
+        if (options.ForkSelector is not null)
+        {
+            // Pinned --fork <path|id>: resolve like --session (path, local id, then global
+            // id) and fork the source's active branch into a fresh local session; the source
+            // file is never modified and a global match needs no cross-project prompt.
+            var forkResolution = await store.ResolveAsync(options.ForkSelector, cancellationToken)
+                ?? throw new FileNotFoundException($"No session found matching '{options.ForkSelector}'.");
+            var source = await store.LoadAsync(forkResolution.Path, cancellationToken);
+            document = await store.ForkPiAsync(source, source.LatestEntryId, cancellationToken, options.SessionId);
+        }
+        else if (options.SessionSelector is not null)
         {
             // Pinned resolveSessionPath: a path-like selector opens (or, when the file does
             // not exist yet, creates a new session at) that path; otherwise the current
-            // project's sessions are matched by exact id, then id prefix.
+            // project's sessions are matched by exact id, then id prefix, then a global
+            // search across every project.
             var resolution = await store.ResolveAsync(options.SessionSelector, cancellationToken)
                 ?? throw new FileNotFoundException($"No session found matching '{options.SessionSelector}'.");
-            document = File.Exists(resolution.Path)
-                ? await store.LoadAsync(resolution.Path, cancellationToken)
-                : await store.CreatePiAtAsync(resolution.Path, cancellationToken);
+
+            if (IsForeignProject(resolution, options.WorkingDirectory))
+            {
+                // Pinned: a session from another project is never opened directly; it is
+                // forked into the current directory after confirmation.
+                Console.WriteLine($"Session found in different project: {resolution.ForeignCwd}");
+                if (!await PromptConfirmAsync(interactiveConsole, "Fork this session into current directory? [y/N] ", cancellationToken))
+                {
+                    throw new OperationCanceledException("Aborted.");
+                }
+
+                var foreign = await store.LoadAsync(resolution.Path, cancellationToken);
+                document = await store.ForkPiAsync(foreign, foreign.LatestEntryId, cancellationToken, options.SessionId);
+            }
+            else
+            {
+                document = File.Exists(resolution.Path)
+                    ? await store.LoadAsync(resolution.Path, cancellationToken)
+                    : await store.CreatePiAtAsync(resolution.Path, cancellationToken, null, options.SessionId);
+            }
         }
         else if (options.ContinueSession)
         {
@@ -492,16 +521,36 @@ internal sealed class SessionController : IProviderRequestCompactor
         }
         else if (options.ResumeSession)
         {
-            document = await PickSessionAsync(store, console ?? new SystemConsoleIO(), cancellationToken)
+            var selected = await SessionPicker.PickAsync(store, interactiveConsole, null, cancellationToken)
                 ?? throw new OperationCanceledException("Session selection cancelled.");
+            document = await store.LoadAsync(selected.Path, cancellationToken);
         }
 
         if (document is null)
         {
-            document = await store.CreatePiAsync(cancellationToken);
+            if (options.SessionId is not null)
+            {
+                // Pinned: --session-id opens an exact-id local session when one exists, and
+                // otherwise warns and creates a new session with that id.
+                var existing = (await store.ListInfosAsync(cancellationToken))
+                    .FirstOrDefault(info => string.Equals(info.Id, options.SessionId, StringComparison.Ordinal));
+                if (existing is not null)
+                {
+                    document = await store.LoadAsync(existing.Path, cancellationToken);
+                }
+                else
+                {
+                    Console.Error.WriteLine($"Warning: No project session found with id '{options.SessionId}'; creating a new session with that id.");
+                    document = await store.CreatePiAsync(cancellationToken, null, options.SessionId);
+                }
+            }
+            else
+            {
+                document = await store.CreatePiAsync(cancellationToken);
+            }
         }
 
-        EnsureWorkspaceMatches(document, options.WorkingDirectory);
+        await EnsureCwdCompatibleAsync(document, options.WorkingDirectory, interactiveConsole, cancellationToken);
         var active = document.GetLatestTurnOnPath(document.LatestEntryId);
         var activeEntryId = document.IsPiV3 ? document.LatestEntryId : active?.Id;
         // Initial model/thinking entries are appended before the MAF session is restored so
@@ -1160,15 +1209,48 @@ internal sealed class SessionController : IProviderRequestCompactor
             cancellationToken);
     }
 
-    private async Task ForkCoreAsync(string? turnSelector, CancellationToken cancellationToken)
+    private async Task ForkCoreAsync(string? entrySelector, CancellationToken cancellationToken)
     {
-        var selectedId = turnSelector is null
-            ? ActiveEntryId
-            : Document!.ResolveTurn(turnSelector).Id;
+        var source = Document!;
+        if (!source.IsFileFlushed)
+        {
+            // Pinned runtime guard: an unsaved (pre-first-assistant) session has no file to
+            // fork from, so the operation is refused rather than silently dropped.
+            throw new InvalidOperationException(
+                "This session has not been saved yet. Wait for the first assistant response before cloning or forking it.");
+        }
 
-        Document = Document!.IsPiV3
-            ? await _store!.ForkPiAsync(Document, selectedId, cancellationToken).ConfigureAwait(false)
-            : await _store!.ForkAsync(Document, selectedId, _model, cancellationToken).ConfigureAwait(false);
+        string? targetId;
+        string? returnedText = null;
+
+        if (entrySelector is null)
+        {
+            // Pinned clone: fork "at" the active leaf.
+            targetId = source.IsPiV3 ? ActiveEntryId : source.LatestTurn?.Id;
+        }
+        else if (source.IsPiV3)
+        {
+            // Pinned /fork: the selected entry must be a user message; fork "before" it
+            // (target = its parent) and return its text to the editor — printed here in the
+            // REPL, where there is no editor to re-enter into.
+            var selected = source.ResolveEntry(entrySelector);
+            if (selected is not MessageEntry message || !IsMessageRole(message.Message, "user"))
+            {
+                throw new InvalidOperationException("Can only fork from a user message.");
+            }
+
+            targetId = selected.ParentId;
+            returnedText = ExtractTextContent(message.Message);
+        }
+        else
+        {
+            // Legacy turn-based sessions fork at turn granularity.
+            targetId = source.ResolveTurn(entrySelector).Id;
+        }
+
+        Document = source.IsPiV3
+            ? await _store!.ForkPiAsync(source, targetId, cancellationToken).ConfigureAwait(false)
+            : await _store!.ForkAsync(source, targetId, _model, cancellationToken).ConfigureAwait(false);
         ActiveEntryId = Document.IsPiV3 ? Document.LatestEntryId : Document.LatestTurn?.Id;
         // The forked document carries the same entry history; re-resolving reproduces the
         // model/thinking recorded on it (including model changes made before the fork point).
@@ -1178,6 +1260,83 @@ internal sealed class SessionController : IProviderRequestCompactor
         ActiveTurnId = Document.GetLatestTurnOnPath(ActiveEntryId)?.Id;
         _sessionHistory.SetActiveDocument(Document, ActiveEntryId);
         Session = await RestoreSessionAsync(Document.GetLatestTurnOnPath(ActiveEntryId), cancellationToken).ConfigureAwait(false);
+
+        if (returnedText is not null)
+        {
+            var flat = returnedText.ReplaceLineEndings(" ").Trim();
+            var preview = flat.Length > 120 ? flat[..120] + "…" : flat;
+            Console.WriteLine($"Fork point message (re-entered in the pinned UI): {preview}");
+        }
+    }
+
+    /// <summary>Extracts the readable text of a message entry (string content or text blocks).</summary>
+    private static string ExtractTextContent(JsonElement message)
+    {
+        if (!message.TryGetProperty("content", out var content))
+        {
+            return string.Empty;
+        }
+
+        if (content.ValueKind == JsonValueKind.String)
+        {
+            return content.GetString() ?? string.Empty;
+        }
+
+        if (content.ValueKind != JsonValueKind.Array)
+        {
+            return string.Empty;
+        }
+
+        return string.Join(" ", content.EnumerateArray()
+            .Where(item => item.ValueKind == JsonValueKind.Object &&
+                           item.TryGetProperty("type", out var itemType) &&
+                           string.Equals(itemType.GetString(), "text", StringComparison.Ordinal))
+            .Select(item => item.TryGetProperty("text", out var text) ? text.GetString() ?? string.Empty : string.Empty));
+    }
+
+    /// <summary>
+    /// Pinned runtimeHost.importFromJsonl: copies the source file into the session directory
+    /// (exclusive copy; name-1.jsonl, name-2.jsonl, ... on collision; a source that already
+    /// lives in the session directory is opened in place) and switches to it as the current
+    /// session. A missing stored cwd goes through the continue-in-current-cwd prompt.
+    /// </summary>
+    public async Task ImportAsync(string inputPath, CancellationToken cancellationToken)
+    {
+        EnsurePersistent();
+        await RunExclusiveAsync(OperationNavigation, async token =>
+        {
+            var source = Path.GetFullPath(inputPath, _options.WorkingDirectory);
+            if (!File.Exists(source))
+            {
+                throw new FileNotFoundException($"Import file not found: {source}", source);
+            }
+
+            var store = _store!;
+            var sessionDir = store.WorkspaceDirectory;
+            Directory.CreateDirectory(sessionDir);
+
+            var destination = Path.Combine(sessionDir, Path.GetFileName(source));
+            var sourceAlreadyStored = Path.GetFullPath(destination) == source;
+            if (!sourceAlreadyStored)
+            {
+                var dot = destination.LastIndexOf('.');
+                var name = dot <= 0 ? destination : destination[..dot];
+                var extension = dot <= 0 ? string.Empty : destination[dot..];
+                var suffix = 1;
+                while (File.Exists(destination))
+                {
+                    destination = Path.Combine(sessionDir, $"{name}-{suffix++}{extension}");
+                }
+
+                // Pinned COPYFILE_EXCL: fail loudly if a concurrent import lands first.
+                File.Copy(source, destination, overwrite: false);
+            }
+
+            var loaded = await store.LoadAsync(destination, token).ConfigureAwait(false);
+            await EnsureCwdCompatibleAsync(loaded, _options.WorkingDirectory, _console, token).ConfigureAwait(false);
+            await ActivateDocumentAsync(loaded, token).ConfigureAwait(false);
+            return true;
+        }, cancellationToken);
     }
 
     private static JsonElement CreateUserMessage(string message, IReadOnlyList<AIContent>? contents)
@@ -1229,24 +1388,99 @@ internal sealed class SessionController : IProviderRequestCompactor
 
     private async Task<bool> ResumeCoreAsync(CancellationToken cancellationToken)
     {
-        var selected = await PickSessionAsync(_store!, _console, cancellationToken).ConfigureAwait(false);
+        // Pinned /resume: the picker lists every project's sessions (or the whole explicit
+        // session directory) with search, sort modes, rename, and delete.
+        var selected = await SessionPicker.PickAsync(
+            _store!, _console, Document?.FilePath, cancellationToken).ConfigureAwait(false);
         if (selected is null)
         {
             return false;
         }
 
-        Document = selected;
-        ActiveEntryId = selected.IsPiV3 ? selected.LatestEntryId : selected.LatestTurn?.Id;
-        // /resume restores the model and thinking recorded on the resumed session (pinned
-        // resume flow): the saved model_change / assistant metadata and last
-        // thinking_level_change win over the previous session's runtime model.
+        var document = await _store!.LoadAsync(selected.Path, cancellationToken).ConfigureAwait(false);
+        await EnsureCwdCompatibleAsync(document, _options.WorkingDirectory, _console, cancellationToken).ConfigureAwait(false);
+        await ActivateDocumentAsync(document, cancellationToken).ConfigureAwait(false);
+        return true;
+    }
+
+    /// <summary>
+    /// Shared session activation (resume/import/new): makes the document current, re-resolves
+    /// the model and thinking recorded on it (pinned: saved model_change / assistant metadata
+    /// and the last thinking_level_change win over the previous session's runtime model),
+    /// and rebuilds the MAF session.
+    /// </summary>
+    private async Task ActivateDocumentAsync(SessionDocument document, CancellationToken cancellationToken)
+    {
+        Document = document;
+        ActiveEntryId = document.IsPiV3 ? document.LatestEntryId : document.LatestTurn?.Id;
         ActiveEntryId = await ResolveStartupModelAsync(
             _bootstrap, _options, _settings, _store, Document, ActiveEntryId, cancellationToken)
             ?? ActiveEntryId;
         ActiveTurnId = Document.GetLatestTurnOnPath(ActiveEntryId)?.Id;
         _sessionHistory.SetActiveDocument(Document, ActiveEntryId);
         Session = await RestoreSessionAsync(Document.GetLatestTurnOnPath(ActiveEntryId), cancellationToken).ConfigureAwait(false);
-        return true;
+    }
+
+    /// <summary>
+    /// Pinned getMissingSessionCwdIssue + promptForMissingSessionCwd, adapted to PiSharp's
+    /// conservative cwd policy: a session whose stored working directory no longer exists
+    /// offers "continue in the current directory" (interactive) or fails (non-interactive);
+    /// an existing-but-different cwd is still refused because the startup cwd stays
+    /// authoritative for resources, settings, and trust.
+    /// </summary>
+    internal static async Task EnsureCwdCompatibleAsync(
+        SessionDocument document,
+        string startupCwd,
+        IConsoleIO? console,
+        CancellationToken cancellationToken)
+    {
+        var sessionCwd = document.IsPiV3 ? document.PiHeader!.Cwd : document.Header.WorkingDirectory;
+        if (string.IsNullOrWhiteSpace(sessionCwd))
+        {
+            return;
+        }
+
+        var expected = Path.TrimEndingDirectorySeparator(Path.GetFullPath(startupCwd));
+        var actual = Path.TrimEndingDirectorySeparator(Path.GetFullPath(sessionCwd));
+        var comparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+        if (string.Equals(expected, actual, comparison))
+        {
+            return;
+        }
+
+        if (Directory.Exists(actual) || File.Exists(actual))
+        {
+            throw new InvalidOperationException($"Session belongs to a different workspace: {actual}");
+        }
+
+        // Pinned: the stored cwd is gone; continue in the current cwd or cancel.
+        if (console is null || !console.IsInteractive)
+        {
+            throw new InvalidOperationException(
+                $"Stored session working directory does not exist: {actual}\n"
+                + $"Session file: {document.FilePath}\n"
+                + $"Current working directory: {expected}");
+        }
+
+        console.WriteLine($"The stored session working directory does not exist: {actual}");
+        console.WriteLine($"Session file: {document.FilePath}");
+        console.WriteLine($"Current working directory: {expected}");
+        try
+        {
+            var answer = ConsoleKeyInput.ReadLine(
+                console, "Continue in the current directory? [y/N] ", cancellationToken);
+            if (answer.Equals("y", StringComparison.OrdinalIgnoreCase) ||
+                answer.Equals("yes", StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            // Esc on the confirm prompt: cancel.
+        }
+
+        throw new OperationCanceledException("Aborted.");
     }
 
     /// <summary>
@@ -1409,65 +1643,35 @@ internal sealed class SessionController : IProviderRequestCompactor
         }
     }
 
-    private static async Task<SessionDocument?> PickSessionAsync(
-        SessionStore store,
-        IConsoleIO console,
-        CancellationToken cancellationToken)
+    /// <summary>True when a resolution hit lives in another project (different stored cwd).</summary>
+    private static bool IsForeignProject(SessionResolution resolution, string workingDirectory)
     {
-        var sessions = await store.ListAsync(cancellationToken);
-        if (sessions.Count == 0)
+        if (resolution.ForeignCwd is null)
         {
-            Console.WriteLine("No saved sessions for this workspace.");
-            return null;
+            return false;
         }
 
-        Console.WriteLine("Saved sessions:");
-        for (var i = 0; i < sessions.Count; i++)
-        {
-            var session = sessions[i];
-            var latest = session.LatestTurn;
-            var summary = latest?.UserMessage.ReplaceLineEndings(" ") ?? "(empty)";
-            if (summary.Length > 60)
-            {
-                summary = summary[..57] + "...";
-            }
-
-            Console.WriteLine($"  {i + 1,2}. {session.Header.SessionId[..8]}  {session.Turns.Count,3} turns  {summary}");
-        }
-
-        string input;
-        try
-        {
-            input = ConsoleKeyInput.ReadLine(console, "Select session (blank to cancel): ", cancellationToken);
-        }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-        {
-            throw;
-        }
-        catch (OperationCanceledException)
-        {
-            // Esc (or EOF) cancels the selection; callers treat null as "no session".
-            return null;
-        }
-
-        if (string.IsNullOrWhiteSpace(input))
-        {
-            return null;
-        }
-
-        return !int.TryParse(input, out var selected) || selected < 1 || selected > sessions.Count
-            ? throw new ArgumentException("Invalid session selection.")
-            : sessions[selected - 1];
+        var comparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+        return !string.Equals(
+            Path.TrimEndingDirectorySeparator(Path.GetFullPath(resolution.ForeignCwd)),
+            Path.TrimEndingDirectorySeparator(Path.GetFullPath(workingDirectory)),
+            comparison);
     }
 
-    private static void EnsureWorkspaceMatches(SessionDocument document, string workspace)
+    /// <summary>
+    /// Pinned promptConfirm: a [y/N] question; Esc, EOF, and anything but y/yes decline.
+    /// </summary>
+    internal static async Task<bool> PromptConfirmAsync(IConsoleIO console, string prompt, CancellationToken cancellationToken)
     {
-        var expected = Path.TrimEndingDirectorySeparator(Path.GetFullPath(workspace));
-        var actual = Path.TrimEndingDirectorySeparator(Path.GetFullPath(document.Header.WorkingDirectory));
-        var comparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
-        if (!string.Equals(expected, actual, comparison))
+        try
         {
-            throw new InvalidOperationException($"Session belongs to a different workspace: {actual}");
+            var answer = ConsoleKeyInput.ReadLine(console, prompt, cancellationToken);
+            return answer.Equals("y", StringComparison.OrdinalIgnoreCase) ||
+                   answer.Equals("yes", StringComparison.OrdinalIgnoreCase);
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return false;
         }
     }
 

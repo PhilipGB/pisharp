@@ -301,6 +301,38 @@ public sealed class PiSessionStoreTests
         new(id, parentId, DateTimeOffset.UtcNow,
             JsonSerializer.SerializeToElement(new { role = "user", content }));
 
+    [Fact]
+    public async Task ResolveFallsBackToOtherProjectsUnderTheDefaultSessionRoot()
+    {
+        using var temp = TempDirectory.Create();
+        var sessionRoot = Path.Combine(temp.Path, "sessions");
+        var currentCwd = Directory.CreateDirectory(Path.Combine(temp.Path, "current")).FullName;
+        var foreignCwd = Directory.CreateDirectory(Path.Combine(temp.Path, "foreign")).FullName;
+
+        // A materialized session that belongs to a different project directory. Both stores
+        // share a temp agent directory so the canonical layout stays inside the test tree.
+        var foreignStore = new SessionStore(foreignCwd, null, temp.Path);
+        var foreign = await foreignStore.CreatePiAsync(CancellationToken.None);
+        await foreignStore.AppendEntriesAsync(foreign,
+        [
+            new MessageEntry("fu", null, DateTimeOffset.UtcNow,
+                JsonSerializer.SerializeToElement(new { role = "user", content = "foreign prompt" })),
+            new MessageEntry("fa", "fu", DateTimeOffset.UtcNow,
+                JsonSerializer.SerializeToElement(new { role = "assistant", content = "foreign answer" })),
+        ], CancellationToken.None);
+        var foreignId = foreign.PiHeader!.Id;
+
+        // The current project has no session with that id... and none at all.
+        var store = new SessionStore(currentCwd, null, temp.Path);
+        Assert.Empty(await store.ListInfosAsync(CancellationToken.None));
+
+        // ...but the global search finds it and reports the foreign cwd.
+        var resolution = await store.ResolveAsync(foreignId, CancellationToken.None);
+        Assert.NotNull(resolution);
+        Assert.Equal(foreign.FilePath, resolution!.Path);
+        Assert.Equal(foreignCwd, resolution.ForeignCwd);
+    }
+
     private static MessageEntry AssistantMessage(string id, string? parentId, object[] content) =>
         new(id, parentId, DateTimeOffset.UtcNow,
             JsonSerializer.SerializeToElement(new { role = "assistant", content }));
