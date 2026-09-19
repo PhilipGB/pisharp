@@ -368,6 +368,18 @@ static void QueueActiveInput(string input, LiveTurnCoordinator liveTurns, Func<s
     Console.WriteLine("[queued steering message]");
 }
 
+/// <summary>
+/// Pinned getPathCommandArgument: a fully-quoted argument keeps its spaces, otherwise only
+/// the first whitespace-separated token is used.
+/// </summary>
+static string ExtractPathArgument(string argument)
+{
+    var trimmed = argument.Trim();
+    return trimmed.Length >= 2 && trimmed[0] == '"' && trimmed[^1] == '"'
+        ? trimmed[1..^1]
+        : trimmed.Split(' ', 2, StringSplitOptions.TrimEntries)[0];
+}
+
 static Task<string?> ReadInputAsync(TerminalPromptReader promptReader, CancellationToken cancellationToken) =>
     // The token is observed inside the key loop (not via Task.Run's scheduling token, which
     // cannot cancel a blocked console read); the task always completes, so nothing is orphaned.
@@ -422,7 +434,7 @@ static async Task<bool> HandleCommandAsync(
             Console.WriteLine("Reloaded settings and keybindings.");
             return true;
         case "/session":
-            Console.WriteLine(sessions.FormatSessionInfo());
+            Console.WriteLine(sessions.FormatSessionStats());
             return true;
         case "/name":
             if (string.IsNullOrWhiteSpace(argument))
@@ -519,11 +531,7 @@ static async Task<bool> HandleCommandAsync(
                 return true;
             }
 
-            // Pinned getPathCommandArgument: a quoted path keeps its spaces; otherwise the
-            // first whitespace-separated token.
-            var importPath = importArgument.Length >= 2 && importArgument[0] == '"' && importArgument[^1] == '"'
-                ? importArgument[1..^1]
-                : importArgument.Split(' ', 2, StringSplitOptions.TrimEntries)[0];
+            var importPath = ExtractPathArgument(importArgument);
 
             // Pinned handleImportCommand: confirm, then import; a missing stored cwd is
             // handled by the continue-in-current-cwd prompt inside ImportAsync.
@@ -549,6 +557,83 @@ static async Task<bool> HandleCommandAsync(
             }
 
             return true;
+        case "/export":
+        {
+            var exportDocument = sessions.Document;
+            if (exportDocument is null)
+            {
+                Console.Error.WriteLine("Nothing to export yet - start a conversation first");
+                return true;
+            }
+
+            var exportArgument = argument?.Trim();
+            var exportPath = string.IsNullOrWhiteSpace(exportArgument)
+                ? null
+                : ExtractPathArgument(exportArgument);
+            var exportAsHtml = exportPath is null
+                ? false
+                : Path.GetExtension(exportPath).Equals(".html", StringComparison.OrdinalIgnoreCase);
+
+            try
+            {
+                var writtenPath = exportAsHtml
+                    ? await SessionExportHtml.ExportHtmlAsync(exportDocument, exportPath, cancellationToken)
+                    : await sessions.Store!.ExportJsonlAsync(exportDocument, exportPath, cancellationToken);
+                Console.WriteLine($"Session exported to: {writtenPath}");
+            }
+            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+            {
+                // User cancelled: nothing to report.
+            }
+            catch (Exception ex) when (ex is InvalidOperationException or IOException)
+            {
+                Console.Error.WriteLine($"Failed to export session: {ex.Message}");
+            }
+
+            return true;
+        }
+
+        case "/share":
+        {
+            var shareDocument = sessions.Document;
+            if (shareDocument is null)
+            {
+                Console.Error.WriteLine("Nothing to share yet - start a conversation first");
+                return true;
+            }
+
+            var shareArgument = argument?.Trim();
+            var shareFile = string.IsNullOrWhiteSpace(shareArgument)
+                ? null
+                : ExtractPathArgument(shareArgument);
+
+            // Pinned behaviour: when the target file does not exist, export the session to a
+            // temp file first and share that.
+            if (shareFile is null || !File.Exists(shareFile))
+            {
+                var shareDir = Path.Combine(Path.GetTempPath(), $"pisharp-share-{Guid.NewGuid():N}");
+                Directory.CreateDirectory(shareDir);
+                shareFile = await SessionExportHtml.ExportHtmlAsync(
+                    shareDocument, Path.Combine(shareDir, "session.html"), cancellationToken);
+            }
+
+            try
+            {
+                var gistUrl = await SessionShare.ShareFileAsync(shareFile, cancellationToken);
+                Console.WriteLine($"Shared: {gistUrl}");
+            }
+            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+            {
+                // User cancelled: nothing to report.
+            }
+            catch (Exception ex) when (ex is InvalidOperationException or FileNotFoundException)
+            {
+                Console.Error.WriteLine(ex.Message);
+            }
+
+            return true;
+        }
+
         case "/trust":
             await SaveInteractiveTrustDecisionAsync(console, workspaceRoot, trustStore);
             return true;
@@ -903,7 +988,7 @@ static void PrintInteractiveHelp()
 {
     Console.WriteLine("""
         Commands:
-          /session                 Show current session metadata
+          /session                 Show session info, message/token totals, and cost breakdown
           /model [ref|next|prev]   List models, select one, or cycle (--persist saves the default)
           /thinking [level|next]   List thinking levels, set one, or cycle (--persist saves the default)
           /login [provider]        Store credentials for a provider
@@ -920,6 +1005,8 @@ static void PrintInteractiveHelp()
           /new                     Start a new persistent session
           /resume                  Pick and resume a saved session (search, rename, delete)
           /import <path.jsonl>     Import a session file from another machine
+          /export [path]           Export the active branch (.jsonl, or .html when the path ends in .html)
+          /share [path.html]       Share a session export as a public GitHub gist (gh CLI required)
           /context                 List loaded AGENTS.md/CLAUDE.md files
           /trust                   Save project trust for the next startup
           /settings [key value]    Show settings status or set a global setting ("unset" clears)
