@@ -51,6 +51,28 @@ public sealed class CompactionTests
     }
 
     [Fact]
+    public async Task CompactionUsageIsPersistedAndIncludedInSessionBilling()
+    {
+        var conversation = Seed(Path.GetTempPath());
+        var client = new SummaryClient
+        {
+            SummaryUsage = new UsageDetails { InputTokenCount = 500, OutputTokenCount = 50, TotalTokenCount = 550 }
+        };
+        var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(Path.GetTempPath())), conversation,
+            pricing: new ModelPricing(Input: 2m, Output: 8m));
+
+        Assert.True(await run.CompactAsync());
+
+        var usage = Assert.Single(conversation.ActiveUsage());
+        Assert.Equal("compaction", usage.Source);
+        Assert.Equal(550, usage.TotalTokens);
+        Assert.Equal(0.0014m, usage.Cost);
+        var stats = SessionStatistics.Calculate(conversation);
+        Assert.Equal(550, stats.BilledTokens);
+        Assert.Equal(0.0014m, stats.Cost);
+    }
+
+    [Fact]
     public async Task AutoBudgetCompactsBeforeNextPromptAndPersistsRawHistory()
     {
         var cwd = Path.Combine(Path.GetTempPath(), "pisharp-auto-compact-" + Guid.NewGuid().ToString("N"));
@@ -82,6 +104,23 @@ public sealed class CompactionTests
     }
 
     [Fact]
+    public async Task AutoBudgetPrefersLatestProviderUsageAfterCurrentCompactionBoundary()
+    {
+        var conversation = Seed(Path.GetTempPath());
+        conversation.AppendUsage(new UsageRecord("fixture", "model", 4300, 200, 0, 0, 4500, null));
+        var client = new SummaryClient();
+        var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(Path.GetTempPath())), conversation,
+            autoCompaction: new AutoCompactionPolicy(5000, 1000));
+        var events = new List<AgentLifecycleEvent>();
+
+        await foreach (var item in run.RunEventsAsync("continue")) events.Add(item);
+
+        Assert.Contains(events, item => item.Type == "context_compacted");
+        Assert.DoesNotContain(client.SeenMessages!, message => message.Text == "first");
+        Assert.Null(conversation.LatestContextUsageTokens());
+    }
+
+    [Fact]
     public async Task AutoBudgetFailureRollsBackWithoutSendingNewPrompt()
     {
         var conversation = Seed(Path.GetTempPath());
@@ -108,6 +147,23 @@ public sealed class CompactionTests
         Assert.Throws<ArgumentOutOfRangeException>(() => new AutoCompactionPolicy(1024, 1024).TriggerTokens);
         var policy = AutoCompactionPolicy.FromEnvironment(name => name == "PISHARP_CONTEXT_WINDOW_TOKENS" ? "2048" : null);
         Assert.Equal(1536, policy!.TriggerTokens);
+        Assert.Null(ModelPricing.FromEnvironment(_ => null));
+        var pricing = ModelPricing.FromEnvironment(name => name switch
+        {
+            "PISHARP_INPUT_COST_PER_MILLION" => "2.5",
+            "PISHARP_OUTPUT_COST_PER_MILLION" => "10",
+            _ => null
+        });
+        Assert.Equal(new ModelPricing(2.5m, 10m), pricing);
+        Assert.Throws<ArgumentException>(() => ModelPricing.FromEnvironment(name =>
+            name == "PISHARP_INPUT_COST_PER_MILLION" ? "2" : null));
+        var usage = UsageRecord.Create("fixture", "model", new UsageDetails
+        {
+            InputTokenCount = 10,
+            OutputTokenCount = 2,
+            TotalTokenCount = 0
+        }, null);
+        Assert.Equal(12, usage.TotalTokens);
     }
 
     [Fact]
@@ -169,6 +225,7 @@ public sealed class CompactionTests
     private sealed class SummaryClient : IChatClient
     {
         public bool FailSummary { get; init; }
+        public UsageDetails? SummaryUsage { get; init; }
         public string LastSummaryRequest { get; private set; } = "";
         public List<ChatMessage>? SeenMessages { get; private set; }
         public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
@@ -176,7 +233,10 @@ public sealed class CompactionTests
         {
             LastSummaryRequest = messages.Last().Text;
             if (FailSummary) throw new IOException("summary provider failed");
-            return Task.FromResult(new ChatResponse([new ChatMessage(ChatRole.Assistant, "Summary of first turn")]));
+            return Task.FromResult(new ChatResponse([new ChatMessage(ChatRole.Assistant, "Summary of first turn")])
+            {
+                Usage = SummaryUsage
+            });
         }
         public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
             ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)

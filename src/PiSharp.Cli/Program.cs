@@ -20,7 +20,7 @@ catch (ArgumentException e)
 }
 if (cli.Help)
 {
-    Console.WriteLine("PiSharp (incomplete implementation)\nUsage: pisharp [--local] [--approve|--no-approve] [--mode interactive|print|json|rpc] [--print] [--continue | --session <path|project-id> | --fork <path|project-id> | --no-session] [--session-dir <dir>] [--list-models] [--model <id>] [--name <label>] [prompt]\n--tools <read,bash,edit,write,grep,find,ls> selects tools (grep/find/ls are opt-in); --exclude-tools <names> removes tools; --no-tools disables defaults.\n--local uses http://192.168.0.97:8000/v1 and Qwen3.8-27B-GGUF (no API key required).\nOverride with PISHARP_BASE_URL, PISHARP_MODEL, PISHARP_API_KEY. OPENAI_API_KEY is used only for OpenAI.\nInteractive: /tree, /branch <id>, /fork, /clone, /new, /sessions [filter], /resume <id>, /delete-session <id>, /compact, /export [path], /name <label>, /model <id>, /models, /session, /trust yes|no|forget, /reload, /quit; Ctrl+C interrupts.");
+    Console.WriteLine("PiSharp (incomplete implementation)\nUsage: pisharp [--local] [--approve|--no-approve] [--mode interactive|print|json|rpc] [--print] [--continue | --session <path|project-id> | --fork <path|project-id> | --no-session] [--session-dir <dir>] [--list-models] [--model <id>] [--name <label>] [prompt]\n--tools <read,bash,edit,write,grep,find,ls> selects tools (grep/find/ls are opt-in); --exclude-tools <names> removes tools; --no-tools disables defaults.\n--local uses http://192.168.0.97:8000/v1 and Qwen3.8-27B-GGUF (no API key required).\nOverride with PISHARP_BASE_URL, PISHARP_MODEL, PISHARP_API_KEY. OPENAI_API_KEY is used only for OpenAI. Context limits and per-million-token prices may be supplied with PISHARP_CONTEXT_WINDOW_TOKENS, PISHARP_CONTEXT_RESERVE_TOKENS, PISHARP_INPUT_COST_PER_MILLION, PISHARP_OUTPUT_COST_PER_MILLION, and PISHARP_CACHED_INPUT_COST_PER_MILLION.\nInteractive: /tree, /branch <id>, /fork, /clone, /new, /sessions [filter], /resume <id>, /delete-session <id>, /compact, /export [path], /name <label>, /model <id>, /models, /session, /trust yes|no|forget, /reload, /quit; Ctrl+C interrupts.");
     return;
 }
 ConnectionSettings connection;
@@ -93,11 +93,16 @@ catch (ArgumentException e)
 var store = new ConversationStore(Environment.CurrentDirectory, cli.SessionDirectory ??
     Environment.GetEnvironmentVariable("PISHARP_SESSION_DIR"));
 AutoCompactionPolicy? contextPolicy;
-try { contextPolicy = AutoCompactionPolicy.FromEnvironment(Environment.GetEnvironmentVariable); }
+ModelPricing? modelPricing;
+try
+{
+    contextPolicy = AutoCompactionPolicy.FromEnvironment(Environment.GetEnvironmentVariable);
+    modelPricing = ModelPricing.FromEnvironment(Environment.GetEnvironmentVariable);
+}
 catch (ArgumentException error) { Console.Error.WriteLine(error.Message); Environment.ExitCode = 2; return; }
 Task<ConversationRun> OpenRunAsync(PiAgent runningAgent, ConversationSession session, string? path) =>
     ConversationRun.OpenAsync(runningAgent, session, save: path is null ? null :
-        token => store.SaveAsync(session, path, token), autoCompaction: contextPolicy);
+        token => store.SaveAsync(session, path, token), autoCompaction: contextPolicy, pricing: modelPricing);
 var sessionPath = cli.NoSession || cli.ForkSource is not null ? null : cli.SessionPath is not null &&
     (cli.SessionPath.Contains(Path.DirectorySeparatorChar) || cli.SessionPath.EndsWith(".session.json", StringComparison.Ordinal))
     ? Path.GetFullPath(cli.SessionPath) : cli.Continue ? store.MostRecentPath() : null;
@@ -188,6 +193,12 @@ async Task Run(string input)
                 case "model_text_delta" when !string.IsNullOrEmpty(update.Text):
                     Console.Write(update.Text);
                     started = true;
+                    break;
+                case "reasoning_delta" when !print && !string.IsNullOrEmpty(update.Text):
+                    Console.Error.Write(update.Text);
+                    break;
+                case "usage" when !print && !string.IsNullOrEmpty(update.Text):
+                    Console.Error.WriteLine($"\nUsage: {update.Text}");
                     break;
                 case "context_compacted" when !print:
                     Console.Error.WriteLine(update.Text);
@@ -366,7 +377,9 @@ else
                     case "/session":
                         var stats = SessionStatistics.Calculate(conversation);
                         Console.WriteLine($"{sessionPath ?? "(ephemeral)"} · {stats.Id} · {stats.Name ?? "(unnamed)"} · {stats.Model} · head {conversation.Tree.HeadId ?? "(empty)"}");
-                        Console.WriteLine($"{stats.ActiveMessages} active messages · {stats.UserTurns} turns · {stats.ToolCalls} calls/{stats.ToolResults} results · {stats.Entries} entries/{stats.Leaves} leaves · ~{stats.EstimatedContextTokens} context tokens (estimate; billed usage unavailable)");
+                        var billing = stats.BilledTokens is null ? "provider usage unavailable" :
+                            $"{stats.BilledTokens} billed tokens" + (stats.Cost is null ? " · cost unavailable" : $" · ${stats.Cost:0.######}");
+                        Console.WriteLine($"{stats.ActiveMessages} active messages · {stats.UserTurns} turns · {stats.ToolCalls} calls/{stats.ToolResults} results · {stats.Entries} entries/{stats.Leaves} leaves · ~{stats.EstimatedContextTokens} context tokens (estimate) · {billing}");
                         break;
                     case "/trust":
                         if (argument.Length == 0)

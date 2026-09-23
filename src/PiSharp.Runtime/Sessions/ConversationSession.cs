@@ -64,6 +64,30 @@ public sealed class ConversationSession
         .Select(node => Restore(node.Payload, node.Id))
         .ToList();
 
+    /// <summary>Persist provider billing metadata without adding it to model context.</summary>
+    public void AppendUsage(UsageRecord usage)
+    {
+        ValidateUsage(usage, Tree.HeadId ?? "new entry");
+        Tree.Append("usage", JsonSerializer.SerializeToElement(usage));
+    }
+
+    public IReadOnlyList<UsageRecord> ActiveUsage() => Tree.ActivePath()
+        .Where(node => node.Type == "usage")
+        .Select(node => node.Payload.Deserialize<UsageRecord>() ??
+            throw new InvalidDataException($"Invalid usage record at {node.Id}."))
+        .ToArray();
+
+    /// <summary>Latest provider-reported context after the current compaction boundary.</summary>
+    public long? LatestContextUsageTokens()
+    {
+        var path = Tree.ActivePath();
+        var compactAt = path.ToList().FindLastIndex(node => node.Type == "compaction");
+        return path.Skip(compactAt + 1).Where(node => node.Type == "usage")
+            .Select(node => node.Payload.Deserialize<UsageRecord>() ??
+                throw new InvalidDataException($"Invalid usage record at {node.Id}."))
+            .LastOrDefault(usage => usage.Source == "model")?.TotalTokens;
+    }
+
     /// <summary>Model input for the selected path; raw chat entries remain available to history and export.</summary>
     public List<ChatMessage> ContextMessages()
     {
@@ -211,6 +235,9 @@ public sealed class ConversationSession
         foreach (var entry in entries) ValidateCheckpoint(entry);
         // Validate every branch, not merely the currently selected path.
         foreach (var entry in entries.Where(entry => entry.Type == "chat")) _ = Restore(entry.Payload, entry.Id);
+        foreach (var entry in entries.Where(entry => entry.Type == "usage"))
+            ValidateUsage(entry.Payload.Deserialize<UsageRecord>() ??
+                throw new InvalidDataException($"Invalid usage record at {entry.Id}."), entry.Id);
         var tree = new ConversationTree(entries);
         foreach (var node in entries.Where(entry => entry.Type == "compaction"))
         {
@@ -229,6 +256,14 @@ public sealed class ConversationSession
         }
         tree.Select(document.HeadId); // An explicit null selection is distinct from the last appended entry.
         return new ConversationSession(document.Id, document.WorkingDirectory, document.Model, document.Endpoint, document.Name, tree);
+    }
+
+    private static void ValidateUsage(UsageRecord usage, string id)
+    {
+        if (string.IsNullOrWhiteSpace(usage.Model) || string.IsNullOrWhiteSpace(usage.Source) ||
+            usage.InputTokens < 0 || usage.OutputTokens < 0 || usage.CachedInputTokens < 0 ||
+            usage.ReasoningTokens < 0 || usage.TotalTokens < 0 || usage.Cost < 0)
+            throw new InvalidDataException($"Invalid usage record at {id}.");
     }
 
     private static void ValidateCheckpoint(ConversationNode node)

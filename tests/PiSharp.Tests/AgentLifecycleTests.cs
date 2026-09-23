@@ -9,6 +9,38 @@ namespace PiSharp.Tests;
 public sealed class AgentLifecycleTests
 {
     [Fact]
+    public async Task ReasoningAndProviderUsageStreamAndPersistWithCalculatedCost()
+    {
+        var session = new ConversationSession(Path.GetTempPath(), "priced-model", null);
+        var run = await ConversationRun.OpenAsync(new PiAgent(new ReasoningUsageClient(),
+            new CodingTools(Path.GetTempPath())), session,
+            pricing: new ModelPricing(Input: 2m, Output: 10m, CachedInput: 1m));
+        var events = new List<AgentLifecycleEvent>();
+
+        await foreach (var item in run.RunEventsAsync("think")) events.Add(item);
+
+        Assert.Contains(events, item => item.Type == "reasoning_delta" && item.Text == "checking the context");
+        var usage = Assert.Single(events, item => item.Type == "usage");
+        Assert.Equal(100, usage.InputTokens);
+        Assert.Equal(40, usage.OutputTokens);
+        Assert.Equal(20, usage.CachedInputTokens);
+        Assert.Equal(12, usage.ReasoningTokens);
+        Assert.Equal(140, usage.TotalTokens);
+        Assert.Equal(0.00058m, usage.Cost);
+        var persisted = Assert.Single(session.ActiveUsage());
+        Assert.Equal("priced-model", persisted.Model);
+        Assert.Equal("model", persisted.Source);
+        Assert.Equal(0.00058m, persisted.Cost);
+        var stats = SessionStatistics.Calculate(session);
+        Assert.Equal(140, stats.BilledTokens);
+        Assert.Equal(0.00058m, stats.Cost);
+        Assert.Equal("answer", session.ActiveMessages().Last().Text);
+        var reloadedStats = SessionStatistics.Calculate(ConversationSession.Parse(session.ToJson()));
+        Assert.Equal(140, reloadedStats.BilledTokens);
+        Assert.Equal(0.00058m, reloadedStats.Cost);
+    }
+
+    [Fact]
     public async Task RealProviderCallsAndToolInvocationAreOrderedAcrossTwoModelRequests()
     {
         var cwd = Path.Combine(Path.GetTempPath(), "pisharp-events-" + Guid.NewGuid().ToString("N"));
@@ -233,6 +265,33 @@ public sealed class AgentLifecycleTests
         Assert.Contains(events, item => item.Type == "turn_interrupted");
         Assert.Equal("agent_settled", events[^1].Type);
         Assert.DoesNotContain(events, item => item.Type is "turn_completed" or "agent_run_completed");
+    }
+
+    private sealed class ReasoningUsageClient : IChatClient
+    {
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            yield return new ChatResponseUpdate(ChatRole.Assistant,
+                [new TextReasoningContent("checking the context")]);
+            yield return new ChatResponseUpdate(ChatRole.Assistant, "answer");
+            yield return new ChatResponseUpdate(ChatRole.Assistant,
+                [new UsageContent(new UsageDetails
+                {
+                    InputTokenCount = 100,
+                    OutputTokenCount = 40,
+                    CachedInputTokenCount = 20,
+                    ReasoningTokenCount = 12,
+                    TotalTokenCount = 140
+                })]);
+            await Task.CompletedTask;
+        }
+
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
     }
 
     private sealed class OrderedQueueClient : IChatClient

@@ -13,6 +13,7 @@ public sealed class ConversationRun
     private readonly PiAgent _agent;
     private readonly Func<CancellationToken, Task>? _save;
     private readonly AutoCompactionPolicy? _autoCompaction;
+    private readonly ModelPricing? _pricing;
     private readonly SemaphoreSlim _gate = new(1, 1);
     private readonly object _promptQueueGate = new();
     private readonly Queue<string> _steeringQueue = new();
@@ -24,11 +25,12 @@ public sealed class ConversationRun
     public ConversationSession Conversation { get; }
 
     private ConversationRun(PiAgent agent, ConversationSession conversation, AgentSession execution, Func<CancellationToken, Task>? save,
-        AutoCompactionPolicy? autoCompaction)
+        AutoCompactionPolicy? autoCompaction, ModelPricing? pricing)
     {
         _agent = agent;
         _save = save;
         _autoCompaction = autoCompaction;
+        _pricing = pricing;
         Conversation = conversation;
         _execution = execution;
         _historyCount = conversation.ContextMessages().Count;
@@ -36,12 +38,12 @@ public sealed class ConversationRun
 
     public static async Task<ConversationRun> OpenAsync(PiAgent agent, ConversationSession conversation,
         CancellationToken cancellationToken = default, Func<CancellationToken, Task>? save = null,
-        AutoCompactionPolicy? autoCompaction = null)
+        AutoCompactionPolicy? autoCompaction = null, ModelPricing? pricing = null)
     {
         if (autoCompaction is not null) _ = autoCompaction.TriggerTokens;
         if (conversation.RecoverIncomplete() && save is not null) await save(cancellationToken);
         var execution = await agent.RestoreHistoryAsync(conversation.ContextMessages(), cancellationToken);
-        return new ConversationRun(agent, conversation, execution, save, autoCompaction);
+        return new ConversationRun(agent, conversation, execution, save, autoCompaction, pricing);
     }
 
     /// <summary>Queue guidance ahead of follow-up work on the active application run.</summary>
@@ -127,10 +129,10 @@ public sealed class ConversationRun
                         if (update.Contents is not null)
                             foreach (var content in update.Contents)
                             {
-                                if (content is TextReasoningContent reasoning)
+                                if (content is TextReasoningContent reasoning && !string.IsNullOrEmpty(reasoning.Text))
                                     Publish(new("reasoning_delta", Text: reasoning.Text));
                                 else if (content is UsageContent usage)
-                                    Publish(new("usage", Text: usage.Details?.ToString()));
+                                    Publish(UsageEvent(UsageRecord.Create(Conversation.Model, "model", usage.Details, _pricing)));
                             }
                     }
                     Publish(new("turn_completed"));
@@ -239,7 +241,9 @@ public sealed class ConversationRun
         var previousHead = Conversation.Tree.HeadId;
         try
         {
-            Conversation.AppendCompaction(plan, summary);
+            Conversation.AppendCompaction(plan, summary.Text);
+            if (summary.Usage is not null)
+                Conversation.AppendUsage(UsageRecord.Create(Conversation.Model, "compaction", summary.Usage, _pricing));
             var messages = Conversation.ContextMessages();
             var restored = await _agent.RestoreHistoryAsync(messages, cancellationToken);
             if (_save is not null) await _save(cancellationToken);
@@ -291,11 +295,11 @@ public sealed class ConversationRun
         var accepted = false;
         try
         {
-            if (_autoCompaction is not null && AutoCompactionPolicy.Estimate(Conversation.ContextMessages(), prompt) > _autoCompaction.TriggerTokens)
+            if (_autoCompaction is not null && EstimateNextContext(prompt) > _autoCompaction.TriggerTokens)
             {
                 if (await CompactCoreAsync(null, cancellationToken))
                     onEvent?.Invoke(new("context_compacted", Text: "Automatic context summary saved; raw history retained."));
-                if (AutoCompactionPolicy.Estimate(Conversation.ContextMessages(), prompt) > _autoCompaction.TriggerTokens)
+                if (EstimateNextContext(prompt) > _autoCompaction.TriggerTokens)
                     throw new InvalidOperationException("Estimated context still exceeds the configured budget; shorten the prompt or increase the model context window.");
             }
             if (durable is not null)
@@ -323,6 +327,8 @@ public sealed class ConversationRun
                     foreach (var content in update.Contents)
                         if (content is FunctionCallContent call) events.Add($"call:{call.Name}:{call.CallId}");
                         else if (content is FunctionResultContent result) events.Add($"result:{result.CallId}:{(result.Exception is null ? "ok" : "error")}");
+                        else if (content is UsageContent usage)
+                            Conversation.AppendUsage(UsageRecord.Create(Conversation.Model, "model", usage.Details, _pricing));
                 yield return update;
             }
             completed = true;
@@ -347,4 +353,18 @@ public sealed class ConversationRun
             finally { _gate.Release(); }
         }
     }
+
+    private int EstimateNextContext(string prompt)
+    {
+        var measured = Conversation.LatestContextUsageTokens();
+        if (measured is null) return AutoCompactionPolicy.Estimate(Conversation.ContextMessages(), prompt);
+        var pending = (prompt.Length + 1L) / 2 + 64;
+        return (int)Math.Min(int.MaxValue, measured.Value + pending);
+    }
+
+    private static AgentLifecycleEvent UsageEvent(UsageRecord usage) => new("usage",
+        Text: $"{usage.TotalTokens} tokens" + (usage.Cost is null ? "" : $" · ${usage.Cost:0.######}"),
+        InputTokens: usage.InputTokens, OutputTokens: usage.OutputTokens,
+        CachedInputTokens: usage.CachedInputTokens, ReasoningTokens: usage.ReasoningTokens,
+        TotalTokens: usage.TotalTokens, Cost: usage.Cost);
 }

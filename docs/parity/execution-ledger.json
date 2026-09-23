@@ -225,15 +225,29 @@
     {
       "id": "feature-agent-usage-reasoning-context-and-compaction",
       "title": "Agent / usage, reasoning, context and compaction",
-      "status": "not_started",
+      "status": "verified",
       "source": "docs/parity/feature-matrix.md:9",
       "acceptance": [
         "Streaming reasoning, token/cost accounting, manual /compact and automatic compaction",
         "Summarization failure leaves original history intact",
         "Verify through application workflow and compare docs/models.md, docs/compaction.md; packages/coding-agent/src/core/compaction/; context builder and model metadata fixtures"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "src/PiSharp.Runtime/Sessions/UsageAccounting.cs, ConversationSession.cs, ConversationRun.cs, SessionStatistics.cs, and AgentLifecycleEvent.cs: structured MAF reasoning/usage events, branch-local durable provider and compaction usage, explicit-price cost calculation, usage-aware context budgeting, and selected-branch totals.",
+        "src/PiSharp.Runtime/PiAgent.cs and Sessions/{ConversationRun,ConversationSession,AutoCompactionPolicy}.cs: tool-free MAF summary generation with usage, validated summary checkpoints, summary-plus-whole-tail context projection, manual compaction, and pre-prompt automatic compaction with rollback on summary/restore/save failure.",
+        "src/PiSharp.Runtime/Providers/ModelCatalog.cs and src/PiSharp.Cli/Program.cs: context/reasoning/pricing metadata parsing, explicit environment context/pricing configuration, interactive reasoning/usage display, and token/cost session reporting.",
+        "tests/PiSharp.Tests/{AgentLifecycleTests,CompactionTests,ModelCatalogTests,RpcModeTests}.cs: deterministic application lifecycle, restart accounting, model metadata, manual/RPC/automatic compaction, atomic tool-group context, and rollback fixtures."
+      ],
+      "evidence": [
+        "Pinned upstream 002fc8385268300ca91a5fc95f935c2afbbdac02 inspected at packages/coding-agent/docs/{models.md,compaction.md}, packages/coding-agent/src/core/compaction/{compaction.ts,utils.ts,branch-summarization.ts,index.ts}, core/session-manager.ts buildSessionProjection/buildSessionContext, core/usage-totals.ts, and model metadata tests. The local slice follows summary-plus-retained-tail projection, non-context usage records, provider-usage-first threshold estimation, atomic tool call/result retention, and summary usage accounting.",
+        "AgentLifecycleTests.ReasoningAndProviderUsageStreamAndPersistWithCalculatedCost drives the MAF ChatClientAgent application path with TextReasoningContent and UsageContent; it verifies streamed reasoning, structured input/output/cache/reasoning/total counts, explicit per-million cost arithmetic, canonical non-context usage persistence, session totals, and JSON restart survival.",
+        "CompactionTests behaviorally verify manual summary focus, repeated summary-plus-tail projection after restart, branch restoration of raw history, RPC compaction, provider usage accounting for summaries, automatic compaction before prompt acceptance from both usage and fallback estimates, whole tool-call/result retention, and unchanged head/context when summarization or checkpointing fails.",
+        "ModelCatalogTests.ModelMetadataParsesContextReasoningAndBothPricingConventions verifies deterministic context-window/reasoning metadata plus Pi per-million and OpenRouter per-token pricing fixtures; invalid pricing remains unknown rather than inventing cost.",
+        "dotnet test PiSharp.slnx --no-build --filter 'FullyQualifiedName~AgentLifecycleTests|FullyQualifiedName~CompactionTests|FullyQualifiedName~ModelCatalogTests|FullyQualifiedName~RpcModeTests' => 31 passed, 0 failed.",
+        "dotnet format PiSharp.slnx --verify-no-changes --no-restore; dotnet build PiSharp.slnx --no-restore --warnaserror; dotnet test PiSharp.slnx --no-build => format passed, build succeeded with 0 warnings/errors, and 120 tests passed with 0 failures.",
+        "python3 -Werror::ResourceWarning -m unittest discover -s tools/autonomy -p 'test_*.py' -v => 8 passed.",
+        "Scope note: verified is local behavioral evidence for explicitly configured model windows/prices. PiSharp does not claim exact tokenizer estimates, in-tool-loop/overflow recovery, split-turn compaction, branch summarization, automatic hosted-model catalog parity, or byte-for-byte upstream protocol compatibility."
+      ],
       "dependencies": []
     },
     {

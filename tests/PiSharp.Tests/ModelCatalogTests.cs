@@ -32,6 +32,27 @@ public sealed class ModelCatalogTests
     }
 
     [Fact]
+    public async Task ModelMetadataParsesContextReasoningAndBothPricingConventions()
+    {
+        var handler = new FixtureHandler("""
+            {"data":[
+              {"id":"pi-style","context_length":200000,"reasoning":true,"cost":{"input":3,"output":15,"cacheRead":0.3}},
+              {"id":"router-style","pricing":{"prompt":"0.000002","completion":"0.00001","input_cache_read":"0.000001"}},
+              {"id":"unknown-price","cost":{"input":-1,"output":2}}
+            ]}
+            """);
+        using var http = new HttpClient(handler);
+
+        var models = await ModelCatalog.ListAsync(http, new Uri("https://models.test/v1"), "token");
+
+        Assert.Equal(200000, models[0].ContextLength);
+        Assert.True(models[0].Reasoning);
+        Assert.Equal(new PiSharp.Runtime.Sessions.ModelPricing(3m, 15m, 0.3m), models[0].Pricing);
+        Assert.Equal(new PiSharp.Runtime.Sessions.ModelPricing(2m, 10m, 1m), models[1].Pricing);
+        Assert.Null(models[2].Pricing);
+    }
+
+    [Fact]
     public async Task OversizedOrMalformedCatalogFailsWithoutLeakingCredentials()
     {
         using var oversized = new HttpClient(new FixtureHandler(new string('a', 1024 * 1024 + 1)));
