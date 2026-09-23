@@ -65,6 +65,39 @@ public sealed class ConversationStore(string workingDirectory, string? directory
         finally { lease.Unlock(0, 1); }
     }
 
+    /// <summary>Delete a listed inactive project session only if its bytes still match the indexed snapshot.</summary>
+    public async Task DeleteAsync(SessionListing listing, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(listing);
+        var target = Path.GetFullPath(listing.Path);
+        if (Path.GetDirectoryName(target) != Path.GetFullPath(DirectoryPath) ||
+            !Path.GetFileName(target).EndsWith(".session.json", StringComparison.Ordinal) ||
+            listing.Fingerprint.Length != 64)
+            throw new InvalidDataException("Session deletion requires a catalog entry from this project directory.");
+        var lockOptions = new FileStreamOptions { Mode = FileMode.OpenOrCreate, Access = FileAccess.ReadWrite, Share = FileShare.ReadWrite };
+        if (OperatingSystem.IsLinux()) lockOptions.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
+        await using var lease = new FileStream(target + ".lock", lockOptions);
+        if (OperatingSystem.IsMacOS()) throw new PlatformNotSupportedException("Session file locking is not supported on macOS.");
+        lease.Lock(0, 1);
+        try
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if ((File.GetAttributes(target) & FileAttributes.ReparsePoint) != 0)
+                throw new InvalidDataException("Refusing to delete a symbolic-link session.");
+            var bytes = await File.ReadAllBytesAsync(target, cancellationToken);
+            var hash = Convert.ToHexString(SHA256.HashData(bytes));
+            if (hash != listing.Fingerprint || _knownHashes.TryGetValue(target, out var known) && hash != known)
+                throw new InvalidDataException("Session changed on disk; list sessions again before deletion.");
+            var session = ConversationSession.Parse(Encoding.UTF8.GetString(bytes));
+            if (session.WorkingDirectory != WorkingDirectory || session.Id != listing.Id)
+                throw new InvalidDataException("Session identity or working directory changed.");
+            cancellationToken.ThrowIfCancellationRequested();
+            File.Delete(target);
+            _knownHashes.Remove(target);
+        }
+        finally { lease.Unlock(0, 1); }
+    }
+
     private static async Task WriteLockedAsync(byte[] snapshot, string target, string folder, CancellationToken cancellationToken)
     {
         var temp = Path.Combine(folder, ".pisharp-" + Guid.NewGuid().ToString("N") + ".tmp");

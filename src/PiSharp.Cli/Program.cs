@@ -20,7 +20,7 @@ catch (ArgumentException e)
 }
 if (cli.Help)
 {
-    Console.WriteLine("PiSharp (incomplete implementation)\nUsage: pisharp [--local] [--approve|--no-approve] [--mode interactive|print|json|rpc] [--print] [--continue | --session <path> | --no-session] [--session-dir <dir>] [--list-models] [prompt]\n--tools <read,bash,edit,write,grep,find,ls> selects tools (grep/find/ls are opt-in); --exclude-tools <names> removes tools; --no-tools disables defaults.\n--local uses http://192.168.0.97:8000/v1 and Qwen3.8-27B-GGUF (no API key required).\nOverride with PISHARP_BASE_URL, PISHARP_MODEL, PISHARP_API_KEY. OPENAI_API_KEY is used only for OpenAI.\nInteractive: /tree, /branch <id>, /fork, /clone, /new, /sessions, /resume <id>, /compact, /export [path], /name <label>, /model <id>, /models, /session, /trust yes|no|forget, /reload, /quit; Ctrl+C interrupts.");
+    Console.WriteLine("PiSharp (incomplete implementation)\nUsage: pisharp [--local] [--approve|--no-approve] [--mode interactive|print|json|rpc] [--print] [--continue | --session <path> | --no-session] [--session-dir <dir>] [--list-models] [prompt]\n--tools <read,bash,edit,write,grep,find,ls> selects tools (grep/find/ls are opt-in); --exclude-tools <names> removes tools; --no-tools disables defaults.\n--local uses http://192.168.0.97:8000/v1 and Qwen3.8-27B-GGUF (no API key required).\nOverride with PISHARP_BASE_URL, PISHARP_MODEL, PISHARP_API_KEY. OPENAI_API_KEY is used only for OpenAI.\nInteractive: /tree, /branch <id>, /fork, /clone, /new, /sessions [filter], /resume <id>, /delete-session <id>, /compact, /export [path], /name <label>, /model <id>, /models, /session, /trust yes|no|forget, /reload, /quit; Ctrl+C interrupts.");
     return;
 }
 ConnectionSettings connection;
@@ -255,10 +255,23 @@ else
                         Console.WriteLine($"Exported private HTML to {exportPath}. Review before sharing.");
                         break;
                     case "/sessions":
-                        var listings = await SessionCatalog.ListAsync(store);
+                        var listings = SessionCatalog.Search(await SessionCatalog.ListAsync(store), argument);
                         foreach (var item in listings)
                             Console.WriteLine($"{item.Id[..12]} · {item.Name ?? "(unnamed)"} · {item.Model} · {item.MessageCount} messages · {item.ModifiedAt:yyyy-MM-dd HH:mm}");
                         if (listings.Count == 0) Console.WriteLine("No saved sessions in this project.");
+                        break;
+                    case "/delete-session":
+                        if (cli.NoSession) throw new InvalidOperationException("There are no saved sessions in --no-session mode.");
+                        var victim = SessionCatalog.Resolve(await SessionCatalog.ListAsync(store), argument);
+                        if (victim.Path == sessionPath) throw new InvalidOperationException("Switch sessions before deleting the active session.");
+                        Console.WriteLine($"Delete {victim.Id[..12]} · {victim.Name ?? "(unnamed)"}? Type delete {victim.Id[..12]} to confirm:");
+                        if (editor.ReadLine()?.Trim() != "delete " + victim.Id[..12])
+                        {
+                            Console.WriteLine("Deletion cancelled.");
+                            break;
+                        }
+                        await store.DeleteAsync(victim);
+                        Console.WriteLine($"Deleted {victim.Id[..12]} permanently.");
                         break;
                     case "/resume":
                         if (cli.NoSession) throw new InvalidOperationException("Cannot resume in --no-session mode.");
