@@ -4,44 +4,71 @@ using Microsoft.Extensions.AI;
 namespace PiSharp.Runtime.Sessions;
 
 /// <summary>Observes every actual provider request, including subsequent tool-loop model calls.</summary>
-internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycleEvent> publish) : DelegatingChatClient(inner)
+internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycleEvent> publish,
+    ProviderRetryPolicy retryPolicy) : DelegatingChatClient(inner)
 {
     public override async Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages,
         ChatOptions? options = null, CancellationToken cancellationToken = default)
     {
-        publish(new("model_request_started"));
-        try
+        for (var retries = 0; ; retries++)
         {
-            var response = await base.GetResponseAsync(messages, options, cancellationToken);
-            publish(new("model_request_completed"));
-            return response;
+            publish(new("model_request_started"));
+            try
+            {
+                var response = await base.GetResponseAsync(messages, options, cancellationToken);
+                publish(new("model_request_completed"));
+                return response;
+            }
+            catch (OperationCanceledException) { publish(new("model_request_interrupted")); throw; }
+            catch (Exception error)
+            {
+                publish(new("model_request_failed", Error: error.Message));
+                if (!retryPolicy.CanRetry(error, retries, producedOutput: false)) throw;
+                publish(new("model_retry_scheduled", Text: $"{retries + 1}/{retryPolicy.MaxRetries}", Error: error.Message));
+                if (retryPolicy.Delay > TimeSpan.Zero) await Task.Delay(retryPolicy.Delay, cancellationToken);
+            }
         }
-        catch (OperationCanceledException) { publish(new("model_request_interrupted")); throw; }
-        catch (Exception error) { publish(new("model_request_failed", Error: error.Message)); throw; }
     }
 
     public override async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
         ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        publish(new("model_request_started"));
-        var ended = false;
-        await using var enumerator = base.GetStreamingResponseAsync(messages, options, cancellationToken).GetAsyncEnumerator(cancellationToken);
-        try
+        for (var retries = 0; ; retries++)
         {
-            while (true)
+            publish(new("model_request_started"));
+            var ended = false;
+            var producedOutput = false;
+            Exception? failure = null;
+            try
             {
-                bool next;
-                try { next = await enumerator.MoveNextAsync(); }
-                catch (OperationCanceledException) { ended = true; publish(new("model_request_interrupted")); throw; }
-                catch (Exception error) { ended = true; publish(new("model_request_failed", Error: error.Message)); throw; }
-                if (!next) break;
-                var update = enumerator.Current;
-                if (!string.IsNullOrEmpty(update.Text)) publish(new("model_text_delta", Text: update.Text));
-                yield return update;
+                await using var enumerator = base.GetStreamingResponseAsync(messages, options, cancellationToken)
+                    .GetAsyncEnumerator(cancellationToken);
+                while (true)
+                {
+                    bool next;
+                    try { next = await enumerator.MoveNextAsync(); }
+                    catch (OperationCanceledException) { ended = true; publish(new("model_request_interrupted")); throw; }
+                    catch (Exception error) { failure = error; break; }
+                    if (!next) break;
+                    producedOutput = true;
+                    var update = enumerator.Current;
+                    if (!string.IsNullOrEmpty(update.Text)) publish(new("model_text_delta", Text: update.Text));
+                    yield return update;
+                }
+                ended = true;
             }
-            ended = true;
-            publish(new("model_request_completed"));
+            finally { if (!ended) publish(new("model_request_interrupted")); }
+
+            if (failure is null)
+            {
+                publish(new("model_request_completed"));
+                yield break;
+            }
+
+            publish(new("model_request_failed", Error: failure.Message));
+            if (!retryPolicy.CanRetry(failure, retries, producedOutput)) throw failure;
+            publish(new("model_retry_scheduled", Text: $"{retries + 1}/{retryPolicy.MaxRetries}", Error: failure.Message));
+            if (retryPolicy.Delay > TimeSpan.Zero) await Task.Delay(retryPolicy.Delay, cancellationToken);
         }
-        finally { if (!ended) publish(new("model_request_interrupted")); }
     }
 }

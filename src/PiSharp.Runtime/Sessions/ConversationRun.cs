@@ -14,6 +14,10 @@ public sealed class ConversationRun
     private readonly Func<CancellationToken, Task>? _save;
     private readonly AutoCompactionPolicy? _autoCompaction;
     private readonly SemaphoreSlim _gate = new(1, 1);
+    private readonly object _promptQueueGate = new();
+    private readonly Queue<string> _promptQueue = new();
+    private object? _promptLoopOwner;
+    private Action<AgentLifecycleEvent>? _promptQueueEvents;
     private AgentSession _execution;
     private int _historyCount;
     public ConversationSession Conversation { get; }
@@ -39,8 +43,30 @@ public sealed class ConversationRun
         return new ConversationRun(agent, conversation, execution, save, autoCompaction);
     }
 
+    /// <summary>Queue another user turn on the active application run. The queued prompt starts only
+    /// after the current MAF tool loop and assistant response complete.</summary>
+    public bool TryQueuePrompt(string prompt)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(prompt);
+        Action<AgentLifecycleEvent>? publish;
+        lock (_promptQueueGate)
+        {
+            if (_promptLoopOwner is null) return false;
+            _promptQueue.Enqueue(prompt);
+            publish = _promptQueueEvents;
+        }
+        publish?.Invoke(new("prompt_queued", Text: prompt));
+        return true;
+    }
+
+    public int PendingPromptCount
+    {
+        get { lock (_promptQueueGate) return _promptQueue.Count; }
+    }
+
     /// <summary>Authoritative ordered lifecycle, including actual model and tool boundaries.
-    /// No completion is emitted when execution fails. Disposing the stream aborts the run.</summary>
+    /// Queued prompts are additional turns in the same run. No completion is emitted when execution
+    /// fails. Disposing the stream aborts the current turn and leaves unstarted prompts queued.</summary>
     public async IAsyncEnumerable<AgentLifecycleEvent> RunEventsAsync(string prompt,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
@@ -56,24 +82,31 @@ public sealed class ConversationRun
         var pump = Task.Run(async () =>
         {
             var accepted = false;
+            object? owner = null;
             try
             {
-                await foreach (var update in RunStreamingAsync(prompt, linked.Token, value =>
+                owner = BeginPromptLoop(Publish);
+                string? current = prompt;
+                while (current is not null)
                 {
-                    if (value.Type == "prompt_accepted") accepted = true;
-                    Publish(value);
-                }))
-                {
-                    if (update.Contents is not null)
-                        foreach (var content in update.Contents)
-                        {
-                            if (content is TextReasoningContent reasoning)
-                                Publish(new("reasoning_delta", Text: reasoning.Text));
-                            else if (content is UsageContent usage)
-                                Publish(new("usage", Text: usage.Details?.ToString()));
-                        }
+                    await foreach (var update in RunStreamingAsync(current, linked.Token, value =>
+                    {
+                        if (value.Type == "prompt_accepted") accepted = true;
+                        Publish(value);
+                    }))
+                    {
+                        if (update.Contents is not null)
+                            foreach (var content in update.Contents)
+                            {
+                                if (content is TextReasoningContent reasoning)
+                                    Publish(new("reasoning_delta", Text: reasoning.Text));
+                                else if (content is UsageContent usage)
+                                    Publish(new("usage", Text: usage.Details?.ToString()));
+                            }
+                    }
+                    Publish(new("turn_completed"));
+                    current = TakeQueuedPromptOrClose(owner);
                 }
-                Publish(new("turn_completed"));
                 Publish(new("agent_run_completed"));
             }
             catch (OperationCanceledException)
@@ -90,6 +123,7 @@ public sealed class ConversationRun
             }
             finally
             {
+                if (owner is not null) EndPromptLoop(owner);
                 try { await channel.Writer.WriteAsync(new("agent_settled"), consumerClosed.Token); }
                 catch (OperationCanceledException) { }
                 channel.Writer.TryComplete();
@@ -104,6 +138,39 @@ public sealed class ConversationRun
             consumerClosed.Cancel();
             linked.Cancel();
             await pump;
+        }
+    }
+
+    private object BeginPromptLoop(Action<AgentLifecycleEvent> publish)
+    {
+        lock (_promptQueueGate)
+        {
+            if (_promptLoopOwner is not null) throw new InvalidOperationException("An agent run is already active.");
+            _promptLoopOwner = new object();
+            _promptQueueEvents = publish;
+            return _promptLoopOwner;
+        }
+    }
+
+    private string? TakeQueuedPromptOrClose(object owner)
+    {
+        lock (_promptQueueGate)
+        {
+            if (!ReferenceEquals(_promptLoopOwner, owner)) return null;
+            if (_promptQueue.TryDequeue(out var prompt)) return prompt;
+            _promptLoopOwner = null;
+            _promptQueueEvents = null;
+            return null;
+        }
+    }
+
+    private void EndPromptLoop(object owner)
+    {
+        lock (_promptQueueGate)
+        {
+            if (!ReferenceEquals(_promptLoopOwner, owner)) return;
+            _promptLoopOwner = null;
+            _promptQueueEvents = null;
         }
     }
 

@@ -61,6 +61,40 @@ public sealed class RpcModeTests
     }
 
     [Fact]
+    public async Task PromptReceivedDuringStreamingQueuesAnotherTurnBeforeSettlement()
+    {
+        var channel = Channel.CreateUnbounded<string>();
+        using var output = new LockedWriter();
+        var client = new QueuedClient();
+        var session = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(Path.GetTempPath())), session);
+        var serving = new RpcMode(new CommandReader(channel.Reader), output, run).ServeAsync();
+
+        channel.Writer.TryWrite("{\"id\":\"first\",\"type\":\"prompt\",\"message\":\"one\"}");
+        await client.FirstRequestStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        channel.Writer.TryWrite("{\"id\":\"second\",\"type\":\"prompt\",\"message\":\"two\"}");
+        await WaitForAsync(output, "\"id\":\"second\"");
+        client.ReleaseFirstRequest.TrySetResult();
+        await WaitForAsync(output, "agent_settled");
+        channel.Writer.Complete();
+        await serving.WaitAsync(TimeSpan.FromSeconds(5));
+
+        var responses = output.Lines().Where(line => line.Contains("\"type\":\"response\"", StringComparison.Ordinal))
+            .Select(line => JsonDocument.Parse(line)).ToArray();
+        try
+        {
+            Assert.Equal(2, responses.Length);
+            Assert.All(responses, response => Assert.True(response.RootElement.GetProperty("success").GetBoolean()));
+            Assert.Contains(output.Lines(), line => line.Contains("prompt_queued", StringComparison.Ordinal));
+            Assert.Equal(2, client.Requests);
+            Assert.True(client.SecondRequestSawFirstTurn);
+            Assert.Equal(2, session.ActiveMessages().Count(message => message.Role == ChatRole.User));
+            Assert.Equal(1, output.Lines().Count(line => line.Contains("agent_settled", StringComparison.Ordinal)));
+        }
+        finally { foreach (var response in responses) response.Dispose(); }
+    }
+
+    [Fact]
     public async Task RpcHtmlExportIsPrivateIncludesBranchesAndNeverOverwrites()
     {
         var dir = Path.Combine(Path.GetTempPath(), "pisharp-rpc-export-" + Guid.NewGuid().ToString("N"));
@@ -247,6 +281,36 @@ public sealed class RpcModeTests
             return Task.CompletedTask;
         }
         public string[] Lines() { lock (_gate) return ToString().Split('\n', StringSplitOptions.RemoveEmptyEntries); }
+    }
+
+    private sealed class QueuedClient : IChatClient
+    {
+        public int Requests { get; private set; }
+        public bool SecondRequestSawFirstTurn { get; private set; }
+        public TaskCompletionSource FirstRequestStarted { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource ReleaseFirstRequest { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            Requests++;
+            if (Requests == 1)
+            {
+                FirstRequestStarted.TrySetResult();
+                await ReleaseFirstRequest.Task.WaitAsync(cancellationToken);
+                yield return new ChatResponseUpdate(ChatRole.Assistant, "first reply");
+                yield break;
+            }
+            var snapshot = messages.ToArray();
+            SecondRequestSawFirstTurn = snapshot.Any(message => message.Role == ChatRole.User && message.Text == "one") &&
+                snapshot.Any(message => message.Role == ChatRole.Assistant && message.Text == "first reply") &&
+                snapshot.Any(message => message.Role == ChatRole.User && message.Text == "two");
+            yield return new ChatResponseUpdate(ChatRole.Assistant, "second reply");
+        }
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
     }
 
     private sealed class StubClient : IChatClient

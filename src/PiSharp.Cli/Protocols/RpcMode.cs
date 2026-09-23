@@ -215,7 +215,6 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                             await RespondAsync(id, type, true);
                             break;
                         case "prompt":
-                            if (busy) { await RespondAsync(id, type, false, "Prompt already streaming; steering and follow-up are not implemented."); break; }
                             if (!root.TryGetProperty("message", out var message) || message.ValueKind != JsonValueKind.String ||
                                 string.IsNullOrWhiteSpace(message.GetString()) || root.TryGetProperty("images", out _))
                             { await RespondAsync(id, type, false, "A nonempty text message is required; images are not supported."); break; }
@@ -227,6 +226,13 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                             }
                             catch (Exception error) when (error is ArgumentException or IOException)
                             { await RespondAsync(id, type, false, error.Message); break; }
+                            if (busy)
+                            {
+                                var queued = run.TryQueuePrompt(expanded);
+                                await RespondAsync(id, type, queued, queued ? null :
+                                    "The active run is already settling; submit the prompt again.");
+                                break;
+                            }
                             _abort?.Dispose();
                             _abort = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
                             await RespondAsync(id, type, true);

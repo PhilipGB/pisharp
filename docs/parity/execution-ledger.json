@@ -166,15 +166,30 @@
     {
       "id": "feature-agent-multi-turn-and-streaming",
       "title": "Agent / multi-turn and streaming",
-      "status": "in_progress",
+      "status": "verified",
       "source": "docs/parity/feature-matrix.md:7",
       "acceptance": [
         "Stream text, tool calls and results, continue after tools; session preserves turns",
         "Interrupt, retry, partial response and queued messages per loop",
         "Verify through application workflow and compare docs/how-pi-works.md; packages/agent/src/agent-loop.ts, agent.ts; PiAgent on MAF ChatClientAgent, AgentSession; deterministic fake provider tests needed"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "src/PiSharp.Runtime/PiAgent.cs: ChatClientAgent/AgentSession runtime composes observed per-provider-request retries without replacing the MAF tool loop.",
+        "src/PiSharp.Runtime/Sessions/ObservedChatClient.cs and ProviderRetryPolicy.cs: default bounded transient retry before any streamed content; retry/partial/interruption lifecycle events; no replay after partial text, reasoning, or tool-call content.",
+        "src/PiSharp.Runtime/Sessions/ConversationRun.cs: bounded lifecycle stream runs queued text prompts as later MAF turns, emits per-turn completion and one run completion/settlement, and preserves canonical session history.",
+        "src/PiSharp.Cli/Protocols/RpcMode.cs: an RPC prompt received during streaming queues into the active application run rather than claiming completion or starting a competing run.",
+        "tests/PiSharp.Tests/AgentIntegrationTests.cs, AgentLifecycleTests.cs, RpcModeTests.cs: deterministic fake-provider coverage for streamed text/tools/results, tool continuation, retry, partial failure, interruption, queued multi-turn session history, and RPC workflow."
+      ],
+      "evidence": [
+        "Pinned upstream 002fc8385268300ca91a5fc95f935c2afbbdac02 inspected at packages/coding-agent/docs/how-pi-works.md and packages/agent/src/{agent-loop.ts,agent.ts}: provider response -> tools/results -> continuation, queued later turns, partial/error hard exit, and session transcript model were used as the behavioral reference.",
+        "dotnet test PiSharp.slnx --no-restore --filter 'FullyQualifiedName~AgentLifecycleTests|FullyQualifiedName~RpcModeTests' => 14 passed: combined fixture fails once before output, retries, writes via a streamed tool call, continues after its result, queues a second prompt while streaming, verifies prior turn/tool result in the next request, persists two user turns, and settles once; partial-output failure fixture proves one request/no retry and retained partialText; RPC fixture proves busy prompt queueing through the application adapter.",
+        "Existing AgentIntegrationTests.ModelToolCallWritesFileAndContinuesStreaming and TwoToolCallsRetainResultsAndContinueInOneModelTurn behaviorally verify streamed FunctionCallContent/FunctionResultContent, actual side effects, model continuation and canonical result persistence.",
+        "Existing AgentLifecycleTests.CancelledProviderReportsInterruptionAndSettlement verifies cancellation emits interruption then settlement without successful completion.",
+        "dotnet test PiSharp.slnx --no-build => 110 passed, 0 failed (deterministic suite).",
+        "dotnet build PiSharp.slnx --no-restore --warnaserror => succeeded with 0 warnings and 0 errors; dotnet format PiSharp.slnx --verify-no-changes --no-restore => passed after formatting.",
+        "python3 -Werror::ResourceWarning -m unittest discover -s tools/autonomy -p 'test_*.py' -v => 8 passed.",
+        "Scope note: this verifies this ledger slice through PiSharp application behavior; it does not claim byte-for-byte Pi protocol parity or distinct steering/follow-up semantics, which remain separate tasks."
+      ],
       "dependencies": []
     },
     {
