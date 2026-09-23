@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/PiSharp.Cli/PiSharp.Cli.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/PiSharp.Tests/PiSharp.Tests.csproj" />
+  </Folder>
+</Solution>

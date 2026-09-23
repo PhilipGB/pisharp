@@ -1,0 +1,17 @@
+name: Linux CI
+on:
+  push:
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - run: dotnet restore PiSharp.slnx
+      - run: dotnet format PiSharp.slnx --verify-no-changes --no-restore
+      - run: dotnet build PiSharp.slnx --no-restore --warnaserror
+      - run: dotnet test PiSharp.slnx --no-build --no-restore
+# Upstream differential suite is pending; do not represent this job as parity verification.
