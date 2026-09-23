@@ -36,7 +36,25 @@ Manual compaction requires at least two user turns. The latest whole turn and it
 
 ## Context instructions (experimental)
 
-At startup, PiSharp loads the first of `AGENTS.override.md`, `AGENTS.md`, `AGENTS.MD`, `CLAUDE.md`, `CLAUDE.MD` from `~/.pisharp/agent` (or `PISHARP_AGENT_DIR`) and each ancestor of the working directory, then includes them in the MAF system instructions. Each file is limited to 64KB; loading oversized files fails instead of silently truncating. Context files load regardless of trust, as in Pi; they are untrusted model input, not executable configuration. Project `.pi/SYSTEM.md` and `.pi/APPEND_SYSTEM.md` require project trust (a stored decision, interactive confirmation, or the one-run `--approve` flag). `--no-approve` overrides a saved decision for one run; noninteractive sessions without a decision deny protected project resources. `/trust yes|no|forget` persists a decision and rebuilds the agent, while `/reload` refreshes instructions. Global agent prompt files load as user resources. Trust does **not** sandbox tools. A first subset of user/project skills and prompt templates is discovered (project copies only after trust). Skill descriptions enter system context; `/skill:<name> [args]` loads full instructions on demand, and `/<template> [args]` expands a template before a terminal prompt. Complex Agent Skills frontmatter and configurable discovery paths are not implemented. Print, JSON and RPC prompts also resolve `/skill:<name>` and `/<template>`; RPC `get_commands` lists discovered resources. Project settings, extensions and themes are not yet loaded. Inspect context files before running in an unfamiliar directory.
+At startup, PiSharp loads the first of `AGENTS.override.md`, `AGENTS.md`, `AGENTS.MD`, `CLAUDE.md`, `CLAUDE.MD` from `~/.pisharp/agent` (or `PISHARP_AGENT_DIR`) and each ancestor of the working directory, then includes them in the MAF system instructions. Each file is limited to 64KB; loading oversized files fails instead of silently truncating. Context files load regardless of trust, as in Pi; they are untrusted model input, not executable configuration. Project `.pi/SYSTEM.md` and `.pi/APPEND_SYSTEM.md` require project trust (a stored decision, interactive confirmation, or the one-run `--approve` flag). `--no-approve` overrides a saved decision for one run; noninteractive sessions without a decision deny protected project resources. `/trust yes|no|forget` persists a decision and rebuilds the agent, while `/reload` refreshes instructions. Global agent prompt files load as user resources. Trust does **not** sandbox tools. A first subset of user/project skills and prompt templates is discovered (project copies only after trust). Skill descriptions enter system context; `/skill:<name> [args]` loads full instructions on demand, and `/<template> [args]` expands a template before a terminal prompt. Complex Agent Skills frontmatter and configurable discovery paths are not implemented. Print, JSON and RPC prompts also resolve `/skill:<name>` and `/<template>`; RPC `get_commands` lists discovered resources. Project settings and themes are not yet loaded. A limited native .NET extension host can load trusted project/user DLLs as described below. Inspect context files before running in an unfamiliar directory.
+
+## Native .NET extensions (experimental)
+
+A public class in a DLL implementing `PiSharp.Runtime.Extensions.IPiSharpExtension` can register `Microsoft.Extensions.AI.AIFunction` tools and terminal-only slash commands. Place DLLs in `~/.pisharp/agent/extensions/` (or `PISHARP_AGENT_DIR/extensions/`) or, **only after project trust**, in `.pi/extensions/`. `index.dll` inside an immediate subdirectory is also supported. Example:
+
+```csharp
+public sealed class Example : PiSharp.Runtime.Extensions.IPiSharpExtension
+{
+    public void Configure(PiSharp.Runtime.Extensions.ExtensionRegistration registration)
+    {
+        registration.AddTool(Microsoft.Extensions.AI.AIFunctionFactory.Create(
+            (string text) => "Echo: " + text, name: "echo_ext"));
+        registration.AddCommand("hello", (args, cancellationToken) => Task.FromResult("Hello " + args));
+    }
+}
+```
+
+A plugin needs a public parameterless constructor. Tools run through the same MAF invocation/checkpoint path as built-ins; `--no-tools`, `--tools` and `--exclude-tools` also apply to extension tools. `/hello ...` runs only in interactive mode; `/reload` recreates the extension catalog. Duplicate/reserved command and tool names fail startup. **DLLs execute arbitrary code with PiSharp's OS permissions**: inspect them first. This is a PiSharp-owned .NET API, not the upstream TypeScript extension API; lifecycle hooks, custom providers, UI components, RPC commands, plugin settings and Pi extension compatibility are not implemented.
 
 ## Experimental JSONL and RPC modes
 

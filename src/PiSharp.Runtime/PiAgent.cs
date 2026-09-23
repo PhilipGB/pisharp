@@ -13,7 +13,8 @@ public sealed class PiAgent
     private DurableExecution? _active;
     private Action<AgentLifecycleEvent>? _events;
 
-    public PiAgent(IChatClient client, CodingTools tools, IReadOnlyList<string>? selectedTools = null, IReadOnlyList<string>? excludedTools = null, bool noTools = false, string? contextInstructions = null, string? systemPrompt = null, string? appendSystemPrompt = null)
+    public PiAgent(IChatClient client, CodingTools tools, IReadOnlyList<string>? selectedTools = null, IReadOnlyList<string>? excludedTools = null, bool noTools = false, string? contextInstructions = null, string? systemPrompt = null, string? appendSystemPrompt = null,
+        IReadOnlyCollection<AIFunction>? extensionTools = null)
     {
         _summarizer = new ChatClientAgent(client, new ChatClientAgentOptions
         {
@@ -23,6 +24,13 @@ public sealed class PiAgent
                 Instructions = "Summarize the earlier conversation for a coding agent continuing it. Preserve goals, constraints, progress, decisions, file paths, tool outcomes and next steps. Do not attempt to execute tools. Return only the summary."
             }
         });
+        var added = extensionTools?.ToArray() ?? [];
+        var builtin = tools.Create(selectedTools?.Where(name => added.All(tool => tool.Name != name)).ToArray(), excludedTools, noTools);
+        var external = added.Where(tool => (selectedTools?.Contains(tool.Name) ?? !noTools) &&
+            excludedTools?.Contains(tool.Name) != true).Cast<AITool>().ToArray();
+        if (added.Any(tool => new[] { "read", "bash", "edit", "write", "grep", "find", "ls" }.Contains(tool.Name, StringComparer.Ordinal)) ||
+            builtin.Concat(external).GroupBy(tool => tool.Name, StringComparer.Ordinal).Any(group => group.Count() > 1))
+            throw new ArgumentException("Extension tool conflicts with a built-in tool name.");
         _agent = new ChatClientAgent(new ObservedChatClient(client, value => _events?.Invoke(value)), new ChatClientAgentOptions
         {
             Name = "PiSharp",
@@ -30,7 +38,7 @@ public sealed class PiAgent
             ChatOptions = new ChatOptions
             {
                 Instructions = (systemPrompt ?? "You are PiSharp, a coding agent. Inspect files before modifying them when tools are available. Use only the tools provided for this run.") + "\n\n" + (appendSystemPrompt ?? "") + "\n\n" + (contextInstructions ?? ""),
-                Tools = tools.Create(selectedTools, excludedTools, noTools).Select(tool => tool is AIFunction function ? new DurableToolFunction(function, () => _active, value => _events?.Invoke(value)) : tool).Cast<AITool>().ToArray()
+                Tools = builtin.Concat(external).Select(tool => tool is AIFunction function ? new DurableToolFunction(function, () => _active, value => _events?.Invoke(value)) : tool).Cast<AITool>().ToArray()
             }
         });
     }

@@ -5,6 +5,7 @@ using PiSharp.Cli;
 using PiSharp.Runtime;
 using PiSharp.Runtime.Sessions;
 using PiSharp.Runtime.Providers;
+using PiSharp.Runtime.Extensions;
 using PiSharp.Runtime.Resources;
 using PiSharp.Cli.Tui;
 using PiSharp.Cli.Protocols;
@@ -55,6 +56,7 @@ bool trusted;
 string instructions;
 (string? System, string? Append) prompts;
 ResourceCatalog resources;
+ExtensionCatalog extensions;
 try
 {
     trusted = await trustStore.ResolveAsync(Environment.CurrentDirectory, cli.ProjectTrustOverride,
@@ -62,16 +64,22 @@ try
     prompts = await ProjectPrompts.LoadAsync(Environment.CurrentDirectory, agentDirectory, trusted);
     instructions = await ContextInstructions.LoadAsync(Environment.CurrentDirectory, agentDirectory);
     resources = await ResourceCatalog.LoadAsync(Environment.CurrentDirectory, agentDirectory, trusted);
+    extensions = ExtensionCatalog.Load(agentDirectory, Environment.CurrentDirectory, trusted);
     instructions += "\n" + resources.SystemInstructions();
 }
-catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException or System.Text.Json.JsonException)
+catch (Exception e) when (e is not OperationCanceledException)
 {
-    Console.Error.WriteLine($"Could not load project resources: {e.Message}");
+    Console.Error.WriteLine($"Could not load project resources or extensions: {e.Message}");
     Environment.ExitCode = 2;
     return;
 }
+using var extensionLease = new ExtensionLease(extensions);
 PiAgent agent;
-try { agent = new PiAgent(chat, new CodingTools(Environment.CurrentDirectory), cli.Tools, cli.ExcludeTools, cli.NoTools, instructions, prompts.System, prompts.Append); }
+try
+{
+    agent = new PiAgent(chat, new CodingTools(Environment.CurrentDirectory), cli.Tools, cli.ExcludeTools, cli.NoTools,
+    instructions, prompts.System, prompts.Append, extensionLease.Current.Registration.Tools);
+}
 catch (ArgumentException e)
 {
     Console.Error.WriteLine(e.Message);
@@ -167,17 +175,23 @@ async Task ReloadResources()
     var nextContext = await ContextInstructions.LoadAsync(Environment.CurrentDirectory, agentDirectory) +
         "\n" + nextResources.SystemInstructions();
     var nextPrompts = await ProjectPrompts.LoadAsync(Environment.CurrentDirectory, agentDirectory, trusted);
-    var nextAgent = new PiAgent(client.GetChatClient(connection.Model).AsIChatClient(),
-        new CodingTools(Environment.CurrentDirectory), cli.Tools, cli.ExcludeTools, cli.NoTools,
-        nextContext, nextPrompts.System, nextPrompts.Append);
-    var path = sessionPath;
-    var nextRun = await ConversationRun.OpenAsync(nextAgent, conversation, save: path is null ? null :
-        token => store.SaveAsync(conversation, path, token));
-    instructions = nextContext;
-    resources = nextResources;
-    prompts = nextPrompts;
-    agent = nextAgent;
-    conversationRun = nextRun;
+    var nextExtensions = ExtensionCatalog.Load(agentDirectory, Environment.CurrentDirectory, trusted);
+    try
+    {
+        var nextAgent = new PiAgent(client.GetChatClient(connection.Model).AsIChatClient(),
+            new CodingTools(Environment.CurrentDirectory), cli.Tools, cli.ExcludeTools, cli.NoTools,
+            nextContext, nextPrompts.System, nextPrompts.Append, nextExtensions.Registration.Tools);
+        var path = sessionPath;
+        var nextRun = await ConversationRun.OpenAsync(nextAgent, conversation, save: path is null ? null :
+            token => store.SaveAsync(conversation, path, token));
+        extensionLease.Replace(nextExtensions);
+        instructions = nextContext;
+        resources = nextResources;
+        prompts = nextPrompts;
+        agent = nextAgent;
+        conversationRun = nextRun;
+    }
+    catch { nextExtensions.Dispose(); throw; }
 }
 if (cli.Mode == "rpc")
 {
@@ -217,7 +231,8 @@ else
 {
     if (!string.IsNullOrWhiteSpace(prompt)) await Run(prompt);
     var editor = new TerminalEditor(() => resources.Skills.Select(item => "/skill:" + item.Name)
-        .Concat(resources.Prompts.Select(item => "/" + item.Name)).ToArray());
+        .Concat(resources.Prompts.Select(item => "/" + item.Name))
+        .Concat(extensionLease.Current.Registration.Commands.Keys.Select(name => "/" + name)).ToArray());
     while (true)
     {
         var line = editor.ReadLine();
@@ -314,7 +329,7 @@ else
                     case "/model":
                         if (string.IsNullOrWhiteSpace(argument)) throw new ArgumentException("Specify a model ID.");
                         var nextAgent = new PiAgent(client.GetChatClient(argument).AsIChatClient(),
-                            new CodingTools(Environment.CurrentDirectory), cli.Tools, cli.ExcludeTools, cli.NoTools, instructions, prompts.System, prompts.Append);
+                            new CodingTools(Environment.CurrentDirectory), cli.Tools, cli.ExcludeTools, cli.NoTools, instructions, prompts.System, prompts.Append, extensionLease.Current.Registration.Tools);
                         var previousHead = conversation.Tree.HeadId;
                         try
                         {
@@ -347,6 +362,8 @@ else
                             await Run(line);
                         else if (resources.Prompts.Any(item => "/" + item.Name == command))
                             await Run(line);
+                        else if (extensionLease.Current.Registration.Commands.TryGetValue(command[1..], out var handler))
+                            Console.WriteLine(await handler(argument, CancellationToken.None));
                         else Console.Error.WriteLine($"Unknown command: {command}");
                         break;
                 }
