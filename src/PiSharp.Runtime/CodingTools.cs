@@ -21,6 +21,8 @@ public sealed class CodingTools(string workingDirectory)
             ["bash"] = AIFunctionFactory.Create(Bash, name: "bash"),
             ["edit"] = AIFunctionFactory.Create(EditBatch, name: "edit"),
             ["write"] = AIFunctionFactory.Create(Write, name: "write"),
+            ["grep"] = AIFunctionFactory.Create(new SearchTools(_cwd).Grep, name: "grep"),
+            ["find"] = AIFunctionFactory.Create(new SearchTools(_cwd).Find, name: "find"),
             ["ls"] = AIFunctionFactory.Create(new DirectoryListingTool(_cwd).List, name: "ls")
         };
         var names = requested ?? (noTools ? [] : ["read", "bash", "edit", "write"]);
