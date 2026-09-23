@@ -29,6 +29,10 @@ public sealed class ResourceCatalogTests
             Assert.DoesNotContain("Use references", untrusted.SystemInstructions());
             Assert.Equal("Review API compatibility and security: API compatibility", untrusted.ExpandPrompt("review", "\"API compatibility\""));
             Assert.Contains("Use references/guide.md", await untrusted.InvokeSkillAsync("unit-guide", "focus"));
+            Assert.Equal("Review API compatibility and security: API compatibility", await untrusted.ResolveInputAsync("/review \"API compatibility\""));
+            Assert.Contains("Use references/guide.md", await untrusted.ResolveInputAsync("/skill:unit-guide focus"));
+            Assert.Equal("ordinary text", await untrusted.ResolveInputAsync("ordinary text"));
+            await Assert.ThrowsAsync<ArgumentException>(() => untrusted.ResolveInputAsync("/skill:project-secret"));
             var trusted = await ResourceCatalog.LoadAsync(project, agent, true);
             Assert.Contains(trusted.Skills, skill => skill.Name == "project-secret");
             Assert.DoesNotContain("project-secret", trusted.SystemInstructions());

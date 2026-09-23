@@ -18,6 +18,12 @@ public sealed class JsonEventMode(JsonLineWriter output)
             cwd = conversation.WorkingDirectory
         }, cancellationToken);
 
+    public async Task RejectAsync(string reason)
+    {
+        await output.EmitAsync(new { type = "event", format = "pisharp", data = new AgentLifecycleEvent("prompt_rejected", Error: reason) });
+        await output.EmitAsync(new { type = "event", format = "pisharp", data = new AgentLifecycleEvent("agent_settled") });
+    }
+
     public async Task<bool> RunAsync(ConversationRun run, string prompt, CancellationToken cancellationToken = default)
     {
         var succeeded = false;

@@ -108,7 +108,8 @@ async Task Run(string input)
     var started = false;
     try
     {
-        await foreach (var update in conversationRun.RunEventsAsync(input, runCancel.Token))
+        var expanded = await resources.ResolveInputAsync(input, runCancel.Token);
+        await foreach (var update in conversationRun.RunEventsAsync(expanded, runCancel.Token))
         {
             switch (update.Type)
             {
@@ -166,7 +167,7 @@ async Task ReloadResources()
 if (cli.Mode == "rpc")
 {
     await new RpcMode(Console.In, Console.Out, conversationRun, sessionPath is null ? null :
-        cancellationToken => store.SaveAsync(conversation, sessionPath, cancellationToken)).ServeAsync();
+        cancellationToken => store.SaveAsync(conversation, sessionPath, cancellationToken), resources).ServeAsync();
     return;
 }
 if (cli.Mode == "json")
@@ -177,7 +178,14 @@ if (cli.Mode == "json")
     if (string.IsNullOrWhiteSpace(prompt)) { Console.Error.WriteLine("A prompt is required in JSON mode."); Environment.ExitCode = 2; }
     else
     {
-        if (!await protocol.RunAsync(conversationRun, prompt)) Environment.ExitCode = 1;
+        string? expanded = null;
+        try { expanded = await resources.ResolveInputAsync(prompt); }
+        catch (Exception e) when (e is ArgumentException or IOException)
+        {
+            await protocol.RejectAsync(e.Message);
+            Environment.ExitCode = 1;
+        }
+        if (expanded is not null && !await protocol.RunAsync(conversationRun, expanded)) Environment.ExitCode = 1;
         if (sessionPath is not null)
             try { await store.SaveAsync(conversation, sessionPath); }
             catch (Exception e) { Console.Error.WriteLine($"Could not save session: {e.Message}"); Environment.ExitCode = 1; }
@@ -283,9 +291,9 @@ else
                         break;
                     default:
                         if (command.StartsWith("/skill:", StringComparison.Ordinal))
-                            await Run(await resources.InvokeSkillAsync(command[7..], argument));
+                            await Run(line);
                         else if (resources.Prompts.Any(item => "/" + item.Name == command))
-                            await Run(resources.ExpandPrompt(command[1..], argument));
+                            await Run(line);
                         else Console.Error.WriteLine($"Unknown command: {command}");
                         break;
                 }

@@ -75,6 +75,17 @@ public sealed class ResourceCatalog
         return $"<skill name=\"{skill.Name}\" path=\"{skill.Path}\">\n{body}\n</skill>\n\n{arguments}";
     }
 
+    public async Task<string> ResolveInputAsync(string input, CancellationToken cancellationToken = default)
+    {
+        if (!input.StartsWith('/')) return input;
+        var separator = input.IndexOfAny([' ', '\n', '\t']);
+        var command = separator < 0 ? input : input[..separator];
+        var arguments = separator < 0 ? "" : input[(separator + 1)..].Trim();
+        if (command.StartsWith("/skill:", StringComparison.Ordinal))
+            return await InvokeSkillAsync(command[7..], arguments, cancellationToken);
+        return Prompts.Any(prompt => "/" + prompt.Name == command) ? ExpandPrompt(command[1..], arguments) : input;
+    }
+
     public string ExpandPrompt(string name, string arguments)
     {
         var prompt = Prompts.SingleOrDefault(item => item.Name == name) ?? throw new ArgumentException($"Unknown template: {name}");

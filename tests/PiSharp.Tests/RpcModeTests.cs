@@ -61,6 +61,33 @@ public sealed class RpcModeTests
     }
 
     [Fact]
+    public async Task CommandsAndTemplateExpansionUseSharedResourceCatalog()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-rpc-resources-" + Guid.NewGuid().ToString("N"));
+        var prompts = Path.Combine(root, "agent", "prompts");
+        Directory.CreateDirectory(prompts);
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(prompts, "review.md"), "Check $1");
+            var resources = await PiSharp.Runtime.Resources.ResourceCatalog.LoadAsync(root, Path.Combine(root, "agent"), false);
+            var channel = Channel.CreateUnbounded<string>();
+            using var output = new LockedWriter();
+            var session = new ConversationSession(root, "fixture", null);
+            var run = await ConversationRun.OpenAsync(new PiAgent(new StubClient(), new CodingTools(root)), session);
+            var service = new RpcMode(new CommandReader(channel.Reader), output, run, resources: resources);
+            var serving = service.ServeAsync();
+            channel.Writer.TryWrite("{\"id\":1,\"type\":\"get_commands\"}");
+            channel.Writer.TryWrite("{\"id\":2,\"type\":\"prompt\",\"message\":\"/review concurrency\"}");
+            await WaitForAsync(output, "agent_settled");
+            channel.Writer.Complete();
+            await serving.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.Equal("Check concurrency", session.ActiveMessages().First().Text);
+            Assert.Contains(output.Lines(), line => line.Contains("\"name\":\"review\"", StringComparison.Ordinal));
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
     public async Task AbortSettlesAndPreservesInterruptionMarker()
     {
         var channel = Channel.CreateUnbounded<string>();

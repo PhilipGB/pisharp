@@ -6,7 +6,7 @@ namespace PiSharp.Cli.Protocols;
 
 /// <summary>Experimental subset of Pi RPC. Unsupported commands return errors, never false success.</summary>
 public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun run,
-    Func<CancellationToken, Task>? save = null)
+    Func<CancellationToken, Task>? save = null, PiSharp.Runtime.Resources.ResourceCatalog? resources = null)
 {
     private readonly JsonLineWriter _writer = new(output);
     private CancellationTokenSource? _abort;
@@ -39,6 +39,20 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                     var busy = _active is { IsCompleted: false };
                     switch (type)
                     {
+                        case "get_commands":
+                            await _writer.EmitAsync(new
+                            {
+                                id,
+                                type = "response",
+                                command = type,
+                                success = true,
+                                data = new
+                                {
+                                    commands = (resources?.Prompts.Select(item => new { name = item.Name, description = item.Description, source = "prompt" })
+                                    ?? []).Concat(resources?.Skills.Select(item => new { name = "skill:" + item.Name, description = item.Description, source = "skill" }) ?? []).ToArray()
+                                }
+                            }, cancellationToken);
+                            break;
                         case "get_state":
                             await _writer.EmitAsync(new
                             {
@@ -139,10 +153,18 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                             if (!root.TryGetProperty("message", out var message) || message.ValueKind != JsonValueKind.String ||
                                 string.IsNullOrWhiteSpace(message.GetString()) || root.TryGetProperty("images", out _))
                             { await RespondAsync(id, type, false, "A nonempty text message is required; images are not supported."); break; }
+                            string expanded;
+                            try
+                            {
+                                expanded = resources is null ? message.GetString()! :
+                                await resources.ResolveInputAsync(message.GetString()!, cancellationToken);
+                            }
+                            catch (Exception error) when (error is ArgumentException or IOException)
+                            { await RespondAsync(id, type, false, error.Message); break; }
                             _abort?.Dispose();
                             _abort = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
                             await RespondAsync(id, type, true);
-                            _active = ExecuteAsync(message.GetString()!, _abort.Token);
+                            _active = ExecuteAsync(expanded, _abort.Token);
                             break;
                         case "abort":
                             if (busy) { _abort?.Cancel(); try { await _active!; } catch (OperationCanceledException) { } }

@@ -8,6 +8,8 @@ public sealed class TerminalEditor
     private readonly EditorCompletion _completion;
     public TerminalEditor(Func<IReadOnlyList<string>>? commands = null) => _completion = new(Environment.CurrentDirectory, commands);
     private const string Prompt = "❯ ";
+    private int _renderedRows;
+    private int _cursorRow;
 
     public string? ReadLine()
     {
@@ -73,19 +75,36 @@ public sealed class TerminalEditor
         finally { Console.TreatControlCAsInput = previous; }
     }
 
-    private static void ClearLine() => Console.Write("\r\u001b[2K");
+    private void ClearLine()
+    {
+        if (_renderedRows == 0) { Console.Write("\r\u001b[2K"); return; }
+        if (_cursorRow > 0) Console.Write($"\u001b[{_cursorRow}A");
+        for (var row = 0; row < _renderedRows; row++)
+        {
+            Console.Write("\r\u001b[2K");
+            if (row < _renderedRows - 1) Console.Write("\u001b[1B");
+        }
+        if (_renderedRows > 1) Console.Write($"\u001b[{_renderedRows - 1}A");
+        Console.Write("\r");
+        _renderedRows = 0;
+        _cursorRow = 0;
+    }
 
     private void Render()
     {
-        // A single-line viewport cannot wrap or erase the already streamed transcript.
-        var text = _buffer.Text.Replace("\n", "↵", StringComparison.Ordinal).Replace("\t", "⇥", StringComparison.Ordinal);
-        var cursor = _buffer.Text[.._buffer.Cursor].Replace("\n", "↵", StringComparison.Ordinal).Replace("\t", "⇥", StringComparison.Ordinal).Length;
-        var width = Math.Max(8, (Console.WindowWidth > 0 ? Console.WindowWidth : 80) - 5);
-        var start = Math.Max(0, cursor - width + 1);
-        var visible = text.Length > start ? text[start..Math.Min(text.Length, start + width)] : "";
-        visible = new string(visible.Select(c => char.IsControl(c) ? ' ' : c).ToArray());
+        var width = Console.WindowWidth > 0 ? Console.WindowWidth : 80;
+        var height = Console.WindowHeight > 0 ? Console.WindowHeight : 24;
+        var frame = EditorViewport.Layout(_buffer.Text, _buffer.Cursor, width, Math.Max(1, height / 3));
         ClearLine();
-        Console.Write($"{Prompt}{visible}");
-        Console.Write($"\r\u001b[{Math.Min(cursor - start + 3, width + 3)}G");
+        for (var row = 0; row < frame.Rows.Count; row++)
+        {
+            if (row > 0) Console.Write("\n");
+            Console.Write(frame.Rows[row]);
+        }
+        _renderedRows = frame.Rows.Count;
+        _cursorRow = frame.CursorRow;
+        var up = frame.Rows.Count - 1 - frame.CursorRow;
+        if (up > 0) Console.Write($"\u001b[{up}A");
+        Console.Write($"\r\u001b[{frame.CursorColumn}G");
     }
 }
