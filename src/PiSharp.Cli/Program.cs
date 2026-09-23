@@ -3,30 +3,29 @@ using Microsoft.Extensions.AI;
 using OpenAI;
 using PiSharp.Cli;
 
-var model = Environment.GetEnvironmentVariable("PISHARP_MODEL") ?? "gpt-4o-mini";
-var endpoint = Environment.GetEnvironmentVariable("PISHARP_BASE_URL");
-var key = Environment.GetEnvironmentVariable("OPENAI_API_KEY") ?? Environment.GetEnvironmentVariable("PISHARP_API_KEY");
 if (args.Contains("--help"))
 {
-    Console.WriteLine("PiSharp (early vertical slice)\nUsage: pisharp [--print] [prompt]\nSet OPENAI_API_KEY (or PISHARP_API_KEY), PISHARP_MODEL, optionally PISHARP_BASE_URL for OpenAI-compatible Chat Completions.\nInteractive: /quit to exit, Ctrl+C to cancel current run.");
+    Console.WriteLine("PiSharp (early vertical slice)\nUsage: pisharp [--local] [--print] [prompt]\n--local uses http://192.168.0.98:8000/v1 and Qwen3.8-27B-GGUF (no API key required).\nOverride with PISHARP_BASE_URL, PISHARP_MODEL, PISHARP_API_KEY. OPENAI_API_KEY is used only for OpenAI.\nInteractive: /quit to exit, Ctrl+C to cancel current run.");
     return;
 }
-if (string.IsNullOrWhiteSpace(key))
+ConnectionSettings connection;
+try { connection = ConnectionSettings.Resolve(args.Contains("--local"), Environment.GetEnvironmentVariable); }
+catch (ArgumentException e)
 {
-    Console.Error.WriteLine("Missing OPENAI_API_KEY or PISHARP_API_KEY. Use --help for setup.");
+    Console.Error.WriteLine(e.Message);
     Environment.ExitCode = 2;
     return;
 }
 
 var options = new OpenAIClientOptions();
-if (!string.IsNullOrWhiteSpace(endpoint)) options.Endpoint = new Uri(endpoint);
-var client = new OpenAIClient(new ApiKeyCredential(key), options);
-IChatClient chat = client.GetChatClient(model).AsIChatClient();
+if (connection.Endpoint is not null) options.Endpoint = connection.Endpoint;
+var client = new OpenAIClient(new ApiKeyCredential(connection.ApiKey), options);
+IChatClient chat = client.GetChatClient(connection.Model).AsIChatClient();
 var agent = new PiAgent(chat, new CodingTools(Environment.CurrentDirectory));
 var session = await agent.CreateSessionAsync();
 bool print = args.Contains("--print") || Console.IsInputRedirected || Console.IsOutputRedirected;
-var prompt = string.Join(" ", args.Where(a => a != "--print"));
-if (!print) Console.WriteLine($"PiSharp · {model} · {Environment.CurrentDirectory}\n/quit to exit · Ctrl+C to interrupt\n");
+var prompt = string.Join(" ", args.Where(a => a != "--print" && a != "--local"));
+if (!print) Console.WriteLine($"PiSharp · {connection.Model} · {Environment.CurrentDirectory}\n/quit to exit · Ctrl+C to interrupt\n");
 CancellationTokenSource? activeRun = null;
 Console.CancelKeyPress += (_, e) => { e.Cancel = true; activeRun?.Cancel(); };
 
