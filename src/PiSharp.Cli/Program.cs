@@ -4,6 +4,7 @@ using OpenAI;
 using PiSharp.Cli;
 using PiSharp.Runtime;
 using PiSharp.Runtime.Sessions;
+using PiSharp.Cli.Tui;
 
 CliArguments cli;
 try { cli = CliArguments.Parse(args); }
@@ -110,10 +111,10 @@ if (print)
 else
 {
     if (!string.IsNullOrWhiteSpace(prompt)) await Run(prompt);
+    var editor = new TerminalEditor();
     while (true)
     {
-        Console.Write("❯ ");
-        var line = Console.ReadLine();
+        var line = editor.ReadLine();
         if (line is null || line.Trim() is "/quit" or "/exit") break;
         if (string.IsNullOrWhiteSpace(line)) continue;
         if (line.StartsWith('/'))
