@@ -59,8 +59,29 @@ public sealed class AgentIntegrationTests
             var reloaded = await store.LoadAsync(path);
             Assert.Contains(reloaded.ActiveMessages().SelectMany(m => m.Contents), c =>
                 c is FunctionResultContent { CallId: "fail-1", Exception: not null });
+            var resumed = new FailureContinuationClient();
+            var continuation = await ConversationRun.OpenAsync(new PiAgent(resumed, new CodingTools(cwd)), reloaded);
+            await foreach (var _ in continuation.RunStreamingAsync("continue after failure")) { }
+            Assert.True(resumed.SawFailure);
         }
         finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    private sealed class FailureContinuationClient : IChatClient
+    {
+        public bool SawFailure { get; private set; }
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            SawFailure = messages.SelectMany(m => m.Contents).OfType<FunctionResultContent>()
+                .Any(result => result.CallId == "fail-1" && result.Exception is not null);
+            yield return new ChatResponseUpdate(ChatRole.Assistant, "resumed");
+            await Task.CompletedTask;
+        }
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
     }
 
     private sealed class FailureClient : IChatClient

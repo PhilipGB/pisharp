@@ -1,6 +1,7 @@
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using Microsoft.Agents.AI;
+using Microsoft.Extensions.AI;
 using PiSharp.Core;
 
 namespace PiSharp.Runtime.Sessions;
@@ -55,10 +56,19 @@ public sealed class ConversationRun
     {
         await _gate.WaitAsync(cancellationToken);
         var completed = false;
+        var partialText = new System.Text.StringBuilder();
+        var events = new List<string>();
         try
         {
             await foreach (var update in _agent.RunStreamingAsync(prompt, _execution, cancellationToken))
+            {
+                if (!string.IsNullOrEmpty(update.Text)) partialText.Append(update.Text);
+                if (update.Contents is not null)
+                    foreach (var content in update.Contents)
+                        if (content is FunctionCallContent call) events.Add($"call:{call.Name}:{call.CallId}");
+                        else if (content is FunctionResultContent result) events.Add($"result:{result.CallId}:{(result.Exception is null ? "ok" : "error")}");
                 yield return update;
+            }
             completed = true;
         }
         finally
@@ -67,9 +77,15 @@ public sealed class ConversationRun
             {
                 var history = _agent.GetHistory(_execution);
                 if (history.Count < _historyCount) throw new InvalidDataException("MAF discarded canonical conversation history.");
+                var existing = Conversation.ActiveMessages();
+                if (existing.Count != _historyCount || existing.Where((message, index) => !JsonElement.DeepEquals(
+                    JsonSerializer.SerializeToElement(message, AIJsonUtilities.DefaultOptions),
+                    JsonSerializer.SerializeToElement(history[index], AIJsonUtilities.DefaultOptions))).Any())
+                    throw new InvalidDataException("MAF changed existing canonical conversation history.");
                 foreach (var message in history.Skip(_historyCount)) Conversation.Append(message);
                 _historyCount = history.Count;
-                if (!completed) Conversation.Tree.Append("interrupted", JsonSerializer.SerializeToElement(new { prompt, timestamp = DateTimeOffset.UtcNow }));
+                if (!completed) Conversation.Tree.Append("interrupted", JsonSerializer.SerializeToElement(
+                    new { prompt, partialText = partialText.ToString(), events, timestamp = DateTimeOffset.UtcNow }));
             }
             finally { _gate.Release(); }
         }
