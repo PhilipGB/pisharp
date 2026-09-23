@@ -27,6 +27,32 @@ public sealed class EditorViewportTests
     }
 
     [Fact]
+    public void WideAndCombiningGraphemesUseTerminalCellsNotUtf16Length()
+    {
+        var text = "a界e\u0301🙂z";
+        var frame = EditorViewport.Layout(text, text.IndexOf('z'), 8, 4);
+        Assert.Equal(["❯ a界e\u0301", "│ 🙂z"], frame.Rows);
+        Assert.Equal(1, frame.CursorRow);
+        Assert.Equal(5, frame.CursorColumn);
+        var withinCluster = text.IndexOf('\u0301');
+        Assert.Throws<ArgumentException>(() => EditorViewport.Layout(text, withinCluster, 8, 4));
+        var family = "👩‍👩‍👧‍👦";
+        var emoji = EditorViewport.Layout("A" + family + "B", 1 + family.Length, 8, 4);
+        Assert.Single(emoji.Rows);
+        Assert.Equal(6, emoji.CursorColumn);
+    }
+
+    [Fact]
+    public void LayoutChangesWhenTerminalWidthChanges()
+    {
+        var narrow = EditorViewport.Layout("abcdef", 5, 6, 4);
+        var wide = EditorViewport.Layout("abcdef", 5, 15, 4);
+        Assert.True(narrow.Rows.Count > wide.Rows.Count);
+        Assert.Equal(0, wide.CursorRow);
+        Assert.InRange(narrow.CursorColumn, 3, 6);
+    }
+
+    [Fact]
     public void NewlinesAndControlCharactersCannotInjectTerminalEscapeSequences()
     {
         var frame = EditorViewport.Layout("a\u001b[2J\nb", 7, 80, 8);
