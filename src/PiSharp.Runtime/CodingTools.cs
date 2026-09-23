@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Text;
 using Microsoft.Extensions.AI;
 using PiSharp.Core;
+using PiSharp.Runtime.Tools;
 
 namespace PiSharp.Runtime;
 
@@ -42,16 +43,16 @@ public sealed class CodingTools(string workingDirectory)
         [Description("Maximum number of lines to return.")] int? limit = null,
         CancellationToken cancellationToken = default)
     {
-        if (offset < 1 || limit is <= 0) return "Error: offset and limit must be positive.";
+        if (offset < 1 || limit is <= 0) throw new ToolFailureException("offset and limit must be positive.");
         try
         {
             var text = await File.ReadAllTextAsync(Resolve(path), cancellationToken);
             return ReadTextPlanner.Select(text, path, offset, limit);
         }
-        catch (ArgumentOutOfRangeException e) { return $"Error: {e.Message.Split('\n')[0]}"; }
+        catch (ArgumentOutOfRangeException e) { throw new ToolFailureException(e.Message.Split('\n')[0], inner: e); }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
-            return $"Error reading {path}: {e.Message}";
+            throw new ToolFailureException($"Error reading {path}: {e.Message}", inner: e);
         }
     }
 
@@ -66,15 +67,13 @@ public sealed class CodingTools(string workingDirectory)
             var absolute = Resolve(path);
             return await s_mutations.RunAsync(absolute, async () =>
             {
-                Directory.CreateDirectory(Path.GetDirectoryName(absolute)!);
-                cancellationToken.ThrowIfCancellationRequested();
-                await File.WriteAllTextAsync(absolute, content, cancellationToken);
+                await AtomicFileWriter.ReplaceAsync(absolute, Encoding.UTF8.GetBytes(content), cancellationToken);
                 return $"Successfully wrote to {path}";
             }, cancellationToken);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
-            return $"Error writing {path}: {e.Message}";
+            throw new ToolFailureException($"Error writing {path}: {e.Message}", inner: e);
         }
     }
 
@@ -88,7 +87,7 @@ public sealed class CodingTools(string workingDirectory)
         [Description("One or more oldText/newText blocks; each oldText must match uniquely in the original file.")] List<TextEdit> edits,
         CancellationToken cancellationToken = default)
     {
-        if (edits is null || edits.Count == 0) return "Error: Edit tool input is invalid. edits must contain at least one replacement.";
+        if (edits is null || edits.Count == 0) throw new ToolFailureException("Edit tool input is invalid. edits must contain at least one replacement.");
         try
         {
             var absolute = Resolve(path);
@@ -103,14 +102,13 @@ public sealed class CodingTools(string workingDirectory)
                 var restored = ending == "\r\n" ? modified.Replace("\n", "\r\n", StringComparison.Ordinal) : modified;
                 var payload = Encoding.UTF8.GetBytes(restored);
                 if (bom) payload = [0xEF, 0xBB, 0xBF, .. payload];
-                cancellationToken.ThrowIfCancellationRequested();
-                await File.WriteAllBytesAsync(absolute, payload, cancellationToken);
+                await AtomicFileWriter.ReplaceAsync(absolute, payload, cancellationToken);
                 return $"Successfully replaced {edits.Count} block(s) in {path}.";
             }, cancellationToken);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException or DecoderFallbackException)
         {
-            return $"Error: {e.Message}";
+            throw new ToolFailureException(e.Message, inner: e);
         }
     }
 
@@ -120,7 +118,7 @@ public sealed class CodingTools(string workingDirectory)
         [Description("Optional timeout in seconds; no default timeout.")] int? timeout = null,
         CancellationToken cancellationToken = default)
     {
-        if (timeout is <= 0) return "Error: timeout must be positive.";
+        if (timeout is <= 0) throw new ToolFailureException("timeout must be positive.");
         using var timeoutSource = timeout.HasValue ? new CancellationTokenSource(TimeSpan.FromSeconds(timeout.Value)) : new CancellationTokenSource();
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutSource.Token);
         using var process = new Process
@@ -154,7 +152,8 @@ public sealed class CodingTools(string workingDirectory)
                 // Keep the timeout active until both streams reach EOF.
                 await Task.WhenAll(stdout, stderr).WaitAsync(linked.Token);
                 var result = await output.FinishAsync();
-                return process.ExitCode == 0 ? result : $"{result}\n\nError: Command exited with code {process.ExitCode}";
+                if (process.ExitCode != 0) throw new ToolFailureException($"Command exited with code {process.ExitCode}", result, process.ExitCode);
+                return result;
             }
             catch (OperationCanceledException)
             {
@@ -166,12 +165,13 @@ public sealed class CodingTools(string workingDirectory)
                 try { await Task.WhenAll(stdout, stderr).WaitAsync(TimeSpan.FromSeconds(5)); }
                 catch (TimeoutException) { process.StandardOutput.Close(); process.StandardError.Close(); }
                 var result = await output.FinishAsync();
-                return $"{result}\n\nError: " + (cancellationToken.IsCancellationRequested ? "Command aborted" : $"Command timed out after {timeout} seconds");
+                if (cancellationToken.IsCancellationRequested) throw new OperationCanceledException($"Command aborted. {result}", cancellationToken);
+                throw new ToolFailureException($"Command timed out after {timeout} seconds", result);
             }
         }
         catch (Exception e) when (e is IOException or System.ComponentModel.Win32Exception)
         {
-            return $"Error executing command: {e.Message}";
+            throw new ToolFailureException($"Error executing command: {e.Message}", inner: e);
         }
     }
 }

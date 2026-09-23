@@ -19,7 +19,8 @@ public sealed class ToolSelectionTests
             Assert.Equal(".env\nalpha.txt\nBeta/\nz.txt", await tool.List());
             Assert.Equal(".env\nalpha.txt\n\n[2 entries limit reached. Use limit=4 for more]", await tool.List(limit: 2));
             Assert.Equal("(empty directory)", await tool.List(limit: 0));
-            Assert.Equal($"Not a directory: {Path.Combine(directory, "z.txt")}", await tool.List("z.txt"));
+            Assert.Equal($"Not a directory: {Path.Combine(directory, "z.txt")}",
+                (await Assert.ThrowsAsync<PiSharp.Runtime.Tools.ToolFailureException>(() => tool.List("z.txt"))).Message);
             var registry = new CodingTools(directory);
             Assert.Equal(["read", "bash", "edit", "write"], registry.Create().Select(t => t.Name));
             Assert.Equal(["ls"], registry.Create(["ls"]).Select(t => t.Name));

@@ -1,35 +1,29 @@
-# Continuation handoff — partial milestone (NOT Pi parity)
+# Continuation — incomplete PiSharp implementation
 
-## Reference and verification
+## Baseline and evidence
 
-- Workspace `/home/philip/Documents/projects/dotnet/pisharp`, branch `main`, remote `origin`. Normative reference `/tmp/pisharp-upstream` at `002fc8385268300ca91a5fc95f935c2afbbdac02` (reported version 0.87.1). Pi Packages are the **only** planned exclusion.
-- Upstream pinned `npx vitest run packages/coding-agent/test/tools.test.ts --reporter=dot`: 84/84 passed. Pinned edit-planner results recorded in `docs/parity/fixtures/edit-baseline.md`. Only narrow fixtures match locally; `docs/parity/feature-matrix.md` marks **no whole feature Verified**. Inventory in `docs/parity/detailed-inventory.md` is incomplete.
-- At this checkpoint: `dotnet format PiSharp.slnx --no-restore`, `dotnet build PiSharp.slnx --no-restore --warnaserror` passed with zero warnings, and `dotnet test PiSharp.slnx --no-build --no-restore --logger 'console;verbosity=normal'` passed **42/42** (including killed-descendant shell test and pinned v3 projection fixtures). Re-run after further edits.
-- On 2026-09-23, `192.168.0.97:8000/v1/models` advertised `Qwen3.8-27B-GGUF` as loaded. Live `--local --print` text returned `PISHARP_LIVE_OK`; model ran bash `printf PISHARP_TOOL_OK`; default snapshot saved prompt `Remember the secret word BLUEBERRY` and `--continue` on a new process answered `BLUEBERRY`. Separate `--no-session` live run in `/tmp/pisharp-live-4OlWIY` performed write→read→batched edit→bash, and `sample.txt` really contained `ALPHA BETA\n`. A later opt-in `--local --no-session --tools ls --print` run returned the first three actual entries of `src/PiSharp.Core` and a limit notice; print mode did not independently record the tool call, so this is only a narrow smoke check. These are narrow demonstrations, not upstream parity tests. Never send `OPENAI_API_KEY` to custom endpoints.
+- Pinned upstream: `earendil-works/pi@002fc8385268300ca91a5fc95f935c2afbbdac02` in `/tmp/pisharp-upstream`. Pi Packages are the only *planned* exclusion. Do not call the application Pi-compatible yet.
+- The upstream pinned tool suite passed 84/84. Narrow upstream edit/read/ls and historical Pi JSONL fixtures remain in `docs/parity/fixtures`; their previous experimental JSONL implementation was removed to avoid maintaining competing durable histories. **The new canonical format is PiSharp-specific, not Pi JSONL.** Historical fixtures are archival evidence only and no longer executed.
+- Current canonical sessions: `ConversationSession` + `ConversationStore` + `ConversationRun` in `src/PiSharp.Runtime/Sessions`. Project-scoped private `.session.json`, atomic replacement, explicit selected branch, MAF history reconstructed from selected path. CLI `--continue`, `--session`, `--no-session`, `/tree`, `/branch`, `/fork`, `/new`, `/name`, `/session` use that one history. The former linear MAF snapshot and unused Pi JSONL codec were removed. **Old snapshot files are not migrated.** A tool call/result round trip survives restart without replay. Function failures are persisted explicitly because Microsoft.Extensions.AI intentionally does not serialize exceptions. Cancellation records an interruption marker, but partially emitted provider messages may not be in MAF history; stronger recovery still needed.
+- Tools: failed read/write/edit/bash/ls now throw `ToolFailureException`, which MAF exposes as a failing function result; bash cancellation propagates. Same-directory atomic write/edit replaces target while preserving Linux mode and following existing symlinks. Bash output remains bounded with private full-output spill; child process group is killed even if shell exits first. Deterministic tests cover tool failure reaching the model, serialization after restart, cancellation, branches and file operations. Exact upstream error/update event parity is **not** established.
+- The local model endpoint `http://192.168.0.97:8000/v1` advertised `Qwen3.8-27B-GGUF` loaded. A separate-process `--local --print` then `--continue` smoke run in `/tmp/pisharp-canonical-live-emXetY` recalled `VIOLET-KITE`. This is NOT an upstream differential test; no live credentials should be part of CI.
+- At this checkpoint, `dotnet format PiSharp.slnx --verify-no-changes --no-restore` passed; warning-as-error build passed with zero warnings; `dotnet test PiSharp.slnx --no-build --no-restore` passed **31/31**. Re-run after further edits.
 
-## Current architecture and deficits
+## Remaining priority
 
-- `src/PiSharp.Core`: edit planner, append-only tree, v3 Pi JSONL codec and compaction/context-edit-aware branch projection. Two small hand-authored branch fixtures compared to pinned upstream `buildSessionContext`; private atomic JSONL file adapter in Runtime. **Experimental one-way branch-to-MAF restore is tested (including tool call/result after disk reload), but not wired to CLI nor journaling new turns. v1/v2 migration matches only small pinned fixtures; none establishes full session parity.**
-- `src/PiSharp.Runtime`: MAF `ChatClientAgent`, four default `AIFunction` tools, per-path write/edit serialization, bounded shell-output tail/private full-output spill, Linux setsid-based process-group abort/timeout, preliminary MAF session snapshots with atomic file replacement. Snapshots save only after completed turns and are **not Pi JSONL**, have no branching and no recovery of incomplete tool calls. Scripted-provider and HTTP/SSE tests use no credentials.
-- `src/PiSharp.Cli`: OpenAI SDK Chat Completions client, local `.97` opt-in, `--print`, line-oriented REPL, `--continue`/`--session <existing>`/`--no-session`. All modes use the same `PiAgent`/session mechanism. **No actual TUI**, multimodal input, keyboard editor, JSON/RPC protocols, provider discovery/auth, project trust, settings, compaction, commands (other than `/quit`), skills/templates/themes, extension API or Pi-compatible session store. Optional ls and tool selectors have only narrow fixture coverage; grep/find and full read/edit/bash contracts are not complete. Do not claim usability for untrusted projects.
-- Important shell-output fix: after the shell exits, pipe draining is covered by the timeout because background descendants can inherit the pipes. Test kills descendant after shell exits. Any further shell changes should preserve this.
+1. Audit session/incomplete-turn recovery, corrupted and concurrent stores, model/provider switching, tool-call failure persistence and migration policy. Add recovery fixtures and PTY integration; ensure no silent history loss. Improve terminal session controls.
+2. Build real Linux VT terminal/editor with raw-mode input, multiline editing, history, shortcuts, paste and resize, pseudo-TTY tests; the CLI is still a **line-based REPL**.
+3. Add opt-in grep/find (this host lacks `rg`/`fd`), complete read image, bash event output, file read bounds, multimodal and exact tool contracts against pinned upstream.
+4. Implement JSON and RPC on the same `ChatClientAgent`/canonical sessions, provider/auth/settings, model catalog, compaction, skills/templates/themes, project trust, extension API, complete feature inventory. Update `docs/parity/feature-matrix.md` only with evidence.
+5. Keep committing and pushing coherent tested slices. No whole feature has been marked Verified.
 
-## Next concrete work (keep progressing)
-
-1. Audit current work (`git status`, `git diff`); rerun format/build/tests, then commit/push a coherent milestone. Check `git log -1 --oneline` and `git status --short --branch` for the current pushed milestone; do not rely on an old handoff hash. Update README/matrix on each slice.
-2. Expand the experimental **Pi v3 JSONL codec/projection** beyond two fixtures, expand v1/v2 migration fixtures and full error/partial-write contracts, then complete the one-way branch-to-MAF restore seam (system patch replay, images, reasoning, tool errors, provider metadata), record new MAF turns in the journal, and only then switch CLI from the separate MAF snapshot. Implement `/tree`, `/fork`, `/clone`, `/resume`, `/new` on that foundation. Test model tool-call state after save/restart, not just text.
-3. Narrow pinned text read selection now matches six fixtures; finish read/edit/bash conformance (image read, bounded streaming IO, UTF-8 boundaries, output/diff/error rendering, cancellation), finish opt-in ls locale/error/cancellation/size semantics, implement grep/find, and compare exact upstream outputs. Basic --tools/--exclude-tools/--no-tools selectors now exist. `rg` and `fd` are not installed on this host; choose a managed implementation or explicit dependency, do not assume they exist.
-4. Implement real Linux terminal rendering/editor with pseudo-TTY tests, then JSON/RPC adapters on **the same MAF runtime**. Complete detailed upstream inventory, providers/settings/resources/extensions; test side-effectful flows deterministically without credentials. Opt-in live runs remain separate.
-
-## Reproduction
+## Reproduce
 
 ```sh
 git -C /tmp/pisharp-upstream rev-parse HEAD
 dotnet restore PiSharp.slnx
 dotnet format PiSharp.slnx --verify-no-changes --no-restore
 dotnet build PiSharp.slnx --warnaserror
-dotnet test PiSharp.slnx --no-build --logger 'console;verbosity=normal'
+dotnet test PiSharp.slnx --no-build
 dotnet run --project src/PiSharp.Cli -- --local --no-session --print 'Reply hello'
 ```
-
-This is an intermediate, incomplete implementation. Keep the feature matrix honest; Verified requires an observable comparison with the pinned upstream.

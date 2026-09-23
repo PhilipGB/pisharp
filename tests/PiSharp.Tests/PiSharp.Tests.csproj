@@ -21,8 +21,4 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\PiSharp.Cli\PiSharp.Cli.csproj" />
   </ItemGroup>
-  <ItemGroup>
-    <Content Include="..\..\docs\parity\fixtures\session-v*-*.json*" Link="fixtures\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
-  </ItemGroup>
-
 </Project>

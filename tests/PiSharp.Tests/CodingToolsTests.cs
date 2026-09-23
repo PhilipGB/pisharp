@@ -1,5 +1,6 @@
 using PiSharp.Cli;
 using PiSharp.Runtime;
+using PiSharp.Runtime.Tools;
 
 namespace PiSharp.Tests;
 
@@ -24,17 +25,41 @@ public sealed class CodingToolsTests : IDisposable
     {
         var tools = new CodingTools(_dir);
         await tools.Write("file", "x x");
-        Assert.Contains("2 occurrences", await tools.Edit("file", "x", "y"));
-        Assert.Contains("Could not find", await tools.Edit("file", "z", "y"));
+        Assert.Contains("2 occurrences", (await Assert.ThrowsAsync<ToolFailureException>(() => tools.Edit("file", "x", "y"))).Message);
+        Assert.Contains("Could not find", (await Assert.ThrowsAsync<ToolFailureException>(() => tools.Edit("file", "z", "y"))).Message);
         Assert.Equal("x x", await tools.Read("file"));
+    }
+
+    [Fact]
+    public async Task AtomicWritePreservesTargetOnCancellationAndFollowsSymlinks()
+    {
+        var tools = new CodingTools(_dir);
+        await tools.Write("actual.txt", "before");
+        var actual = Path.Combine(_dir, "actual.txt");
+        if (OperatingSystem.IsLinux()) File.SetUnixFileMode(actual, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        using (var cancelled = new CancellationTokenSource())
+        {
+            cancelled.Cancel();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => tools.Write("actual.txt", "after", cancelled.Token));
+        }
+        Assert.Equal("before", await File.ReadAllTextAsync(actual));
+        if (OperatingSystem.IsLinux())
+        {
+            File.CreateSymbolicLink(Path.Combine(_dir, "alias.txt"), actual);
+            await tools.Write("alias.txt", "after");
+            Assert.Equal("after", await File.ReadAllTextAsync(actual));
+            Assert.True(new FileInfo(Path.Combine(_dir, "alias.txt")).LinkTarget is not null);
+            Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute, File.GetUnixFileMode(actual));
+        }
+        Assert.Empty(Directory.EnumerateFiles(_dir, ".pisharp-*.tmp"));
     }
 
     [Fact]
     public async Task BashReportsExitAndCanTimeOut()
     {
         var tools = new CodingTools(_dir);
-        Assert.Contains("Error: Command exited with code 7", await tools.Bash("exit 7"));
-        Assert.Contains("timed out after 1 seconds", await tools.Bash("sleep 10", timeout: 1));
+        Assert.Equal(7, (await Assert.ThrowsAsync<ToolFailureException>(() => tools.Bash("exit 7"))).ExitCode);
+        Assert.Contains("timed out after 1 seconds", (await Assert.ThrowsAsync<ToolFailureException>(() => tools.Bash("sleep 10", timeout: 1))).Message);
     }
 
     [Fact]
@@ -43,12 +68,12 @@ public sealed class CodingToolsTests : IDisposable
         if (!OperatingSystem.IsLinux()) return;
         var tools = new CodingTools(_dir);
         using var abort = new CancellationTokenSource(TimeSpan.FromMilliseconds(200));
-        Assert.Contains("Command aborted", await tools.Bash("sleep 10", cancellationToken: abort.Token));
+        Assert.Contains("Command aborted", (await Assert.ThrowsAnyAsync<OperationCanceledException>(() => tools.Bash("sleep 10", cancellationToken: abort.Token))).Message);
 
         // The shell exits immediately, but its child still owns stdout/stderr.
         // The timeout must cover stream draining too and kill the entire process group.
-        var result = await tools.Bash("(sleep 3; touch escaped) &", timeout: 1);
-        Assert.Contains("timed out after 1 seconds", result);
+        var result = await Assert.ThrowsAsync<ToolFailureException>(() => tools.Bash("(sleep 3; touch escaped) &", timeout: 1));
+        Assert.Contains("timed out after 1 seconds", result.Message);
         await Task.Delay(TimeSpan.FromSeconds(2.5));
         Assert.False(File.Exists(Path.Combine(_dir, "escaped")));
     }

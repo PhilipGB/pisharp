@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Text;
+using PiSharp.Runtime.Tools;
 
 namespace PiSharp.Runtime;
 
@@ -17,7 +18,7 @@ public sealed class DirectoryListingTool(string workingDirectory)
     {
         var absolute = Path.GetFullPath(path is null or "" ? "." : path, _cwd);
         if (!Directory.Exists(absolute))
-            return Task.FromResult(File.Exists(absolute) ? $"Not a directory: {absolute}" : $"Path not found: {absolute}");
+            throw new ToolFailureException(File.Exists(absolute) ? $"Not a directory: {absolute}" : $"Path not found: {absolute}");
         try
         {
             var names = Directory.GetFileSystemEntries(absolute)
@@ -57,7 +58,7 @@ public sealed class DirectoryListingTool(string workingDirectory)
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException)
         {
-            return Task.FromResult($"Cannot read directory: {error.Message}");
+            throw new ToolFailureException($"Cannot read directory: {error.Message}", inner: error);
         }
     }
 }

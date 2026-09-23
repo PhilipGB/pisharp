@@ -1,6 +1,7 @@
 using System.Text;
 using PiSharp.Core;
 using PiSharp.Runtime;
+using PiSharp.Runtime.Tools;
 
 namespace PiSharp.Tests;
 
@@ -42,7 +43,7 @@ public sealed class EditConformanceTests
             var before = new byte[] { 0xEF, 0xBB, 0xBF }.Concat(Encoding.UTF8.GetBytes("one\r\ntwo\r\nthree\r\n")).ToArray();
             await File.WriteAllBytesAsync(file, before);
             var tool = new CodingTools(dir);
-            Assert.Contains("Could not find", await tool.EditBatch("fixture.txt", [new("one", "ONE"), new("missing", "X")]));
+            Assert.Contains("Could not find", (await Assert.ThrowsAsync<ToolFailureException>(() => tool.EditBatch("fixture.txt", [new("one", "ONE"), new("missing", "X")]))).Message);
             Assert.Equal(before, await File.ReadAllBytesAsync(file));
             Assert.Equal("Successfully replaced 2 block(s) in fixture.txt.",
                 await tool.EditBatch("fixture.txt", [new("one", "ONE"), new("three", "THREE")]));

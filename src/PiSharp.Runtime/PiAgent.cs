@@ -1,7 +1,5 @@
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
-using PiSharp.Core;
-
 namespace PiSharp.Runtime;
 
 /// <summary>One shared streaming runtime for terminal and one-shot invocation.</summary>
@@ -27,22 +25,15 @@ public sealed class PiAgent
     public async Task<AgentSession> CreateSessionAsync(CancellationToken cancellationToken = default) =>
         await _agent.CreateSessionAsync(cancellationToken);
 
-    /// <summary>Experimental branch restore. Does not append subsequent turns to the Pi journal.</summary>
-    public async Task<AgentSession> CreateSessionFromJournalAsync(PiSessionJournal journal, CancellationToken cancellationToken = default)
+    public IReadOnlyList<ChatMessage> GetHistory(AgentSession session) => _history.GetMessages(session).ToArray();
+
+    public async Task<AgentSession> RestoreHistoryAsync(IEnumerable<ChatMessage> messages, CancellationToken cancellationToken = default)
     {
-        // Perform the entire conversion before mutating session history, so unsupported
-        // content cannot leave a partially imported conversation behind.
-        var history = PiHistoryBridge.ToChatMessages(PiSessionProjection.Build(journal.Tree));
         var session = await CreateSessionAsync(cancellationToken);
-        _history.SetMessages(session, history);
+        _history.SetMessages(session, messages.ToList());
         return session;
     }
 
-    public ValueTask<System.Text.Json.JsonElement> SerializeSessionAsync(AgentSession session, CancellationToken cancellationToken = default) =>
-        _agent.SerializeSessionAsync(session, cancellationToken: cancellationToken);
-
-    public ValueTask<AgentSession> DeserializeSessionAsync(System.Text.Json.JsonElement snapshot, CancellationToken cancellationToken = default) =>
-        _agent.DeserializeSessionAsync(snapshot, cancellationToken: cancellationToken);
 
     public async IAsyncEnumerable<AgentResponseUpdate> RunStreamingAsync(string prompt, AgentSession session,
         [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
