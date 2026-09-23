@@ -32,9 +32,18 @@ public sealed class ConversationSession
     public void Rename(string? name) => Name = name;
     public void SelectModel(string model, string? endpoint)
     {
+        if (string.IsNullOrWhiteSpace(model)) throw new ArgumentException("Model ID cannot be empty.", nameof(model));
         Model = model;
         Endpoint = endpoint;
         Tree.Append("model_change", JsonSerializer.SerializeToElement(new { model, endpoint }));
+    }
+
+    /// <summary>Rollback a model change that failed before becoming authoritative.</summary>
+    public void RevertModel(string model, string? endpoint, string? previousHead)
+    {
+        Model = model;
+        Endpoint = endpoint;
+        Tree.Select(previousHead);
     }
 
     // M.E.AI deliberately does not serialize function exceptions. Capture failures explicitly

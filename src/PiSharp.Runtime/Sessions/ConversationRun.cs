@@ -40,7 +40,11 @@ public sealed class ConversationRun
             var previous = Conversation.Tree.HeadId;
             try
             {
+                var currentModelEntry = Conversation.Tree.ActivePath().LastOrDefault(node => node.Type == "model_change")?.Id;
                 Conversation.Tree.Select(id);
+                var selectedModelEntry = Conversation.Tree.ActivePath().LastOrDefault(node => node.Type == "model_change")?.Id;
+                if (currentModelEntry != selectedModelEntry)
+                    throw new InvalidOperationException("Branch changes the model. Select the matching model before running.");
                 var history = Conversation.ActiveMessages();
                 var restored = await _agent.RestoreHistoryAsync(history, cancellationToken);
                 _execution = restored;

@@ -22,6 +22,32 @@ public sealed class ConversationSessionTests
     }
 
     [Fact]
+    public async Task ModelChangePersistsAndCrossModelBranchSelectionFailsClosed()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-model-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        try
+        {
+            var session = new ConversationSession(cwd, "first", null);
+            var run = await ConversationRun.OpenAsync(new PiAgent(new ScriptedClient(), new CodingTools(cwd)), session);
+            await foreach (var _ in run.RunStreamingAsync("first turn")) { }
+            var oldHead = session.Tree.HeadId;
+            session.SelectModel("second", null);
+            var changedRun = await ConversationRun.OpenAsync(new PiAgent(new ScriptedClient(), new CodingTools(cwd)), session);
+            await foreach (var _ in changedRun.RunStreamingAsync("second turn")) { }
+            var store = new ConversationStore(cwd, Path.Combine(cwd, "sessions"));
+            var path = store.NewPath(session);
+            await store.SaveAsync(session, path);
+            var reloaded = await store.LoadAsync(path);
+            Assert.Equal("second", reloaded.Model);
+            var resumed = await ConversationRun.OpenAsync(new PiAgent(new ScriptedClient(), new CodingTools(cwd)), reloaded);
+            await Assert.ThrowsAsync<InvalidOperationException>(() => resumed.SelectAsync(oldHead));
+            Assert.Equal(session.Tree.HeadId, reloaded.Tree.HeadId);
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Fact]
     public async Task ConcurrentStoresRejectStaleWrites()
     {
         var cwd = Path.Combine(Path.GetTempPath(), "pisharp-store-" + Guid.NewGuid().ToString("N"));

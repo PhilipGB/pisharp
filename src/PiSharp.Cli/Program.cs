@@ -16,7 +16,7 @@ catch (ArgumentException e)
 }
 if (cli.Help)
 {
-    Console.WriteLine("PiSharp (early vertical slice)\nUsage: pisharp [--local] [--print] [--continue | --session <path> | --no-session] [prompt]\n--tools <read,bash,edit,write,grep,find,ls> selects tools (grep/find/ls are opt-in); --exclude-tools <names> removes tools; --no-tools disables defaults.\n--local uses http://192.168.0.97:8000/v1 and Qwen3.8-27B-GGUF (no API key required).\nOverride with PISHARP_BASE_URL, PISHARP_MODEL, PISHARP_API_KEY. OPENAI_API_KEY is used only for OpenAI.\nInteractive: /tree, /branch <id>, /fork, /new, /name <label>, /session, /quit; Ctrl+C interrupts.");
+    Console.WriteLine("PiSharp (early vertical slice)\nUsage: pisharp [--local] [--print] [--continue | --session <path> | --no-session] [prompt]\n--tools <read,bash,edit,write,grep,find,ls> selects tools (grep/find/ls are opt-in); --exclude-tools <names> removes tools; --no-tools disables defaults.\n--local uses http://192.168.0.97:8000/v1 and Qwen3.8-27B-GGUF (no API key required).\nOverride with PISHARP_BASE_URL, PISHARP_MODEL, PISHARP_API_KEY. OPENAI_API_KEY is used only for OpenAI.\nInteractive: /tree, /branch <id>, /fork, /new, /name <label>, /model <id>, /session, /quit; Ctrl+C interrupts.");
     return;
 }
 ConnectionSettings connection;
@@ -50,8 +50,16 @@ try
     conversation = sessionPath is not null && File.Exists(sessionPath)
         ? await store.LoadAsync(sessionPath)
         : new ConversationSession(Environment.CurrentDirectory, connection.Model, connection.Endpoint?.ToString());
-    if (conversation.Model != connection.Model || conversation.Endpoint != connection.Endpoint?.ToString())
-        throw new InvalidDataException("Session model or endpoint differs from the current connection. Select the saved model first.");
+    if (conversation.Endpoint != connection.Endpoint?.ToString())
+        throw new InvalidDataException("Session endpoint differs from the current connection. Set PISHARP_BASE_URL to the saved endpoint first.");
+    if (conversation.Model != connection.Model)
+    {
+        if (Environment.GetEnvironmentVariable("PISHARP_MODEL") is not null)
+            throw new InvalidDataException("PISHARP_MODEL conflicts with the saved session model. Use /model after opening the session.");
+        connection = connection with { Model = conversation.Model };
+        agent = new PiAgent(client.GetChatClient(connection.Model).AsIChatClient(),
+            new CodingTools(Environment.CurrentDirectory), cli.Tools, cli.ExcludeTools, cli.NoTools);
+    }
     conversationRun = await ConversationRun.OpenAsync(agent, conversation);
     if (!cli.NoSession) sessionPath ??= store.NewPath(conversation);
 }
@@ -63,7 +71,7 @@ catch (Exception e) when (e is IOException or UnauthorizedAccessException or Sys
 }
 bool print = cli.Print || Console.IsInputRedirected || Console.IsOutputRedirected;
 var prompt = cli.Prompt;
-if (!print) Console.WriteLine($"PiSharp · {connection.Model} · {Environment.CurrentDirectory}\n/tree · /branch · /fork · /new · /name · /session · /quit · Ctrl+C interrupts\n");
+if (!print) Console.WriteLine($"PiSharp · {connection.Model} · {Environment.CurrentDirectory}\n/tree · /branch · /fork · /new · /name · /model · /session · /quit · Ctrl+C interrupts\n");
 CancellationTokenSource? activeRun = null;
 Console.CancelKeyPress += (_, e) => { e.Cancel = true; activeRun?.Cancel(); };
 
@@ -144,6 +152,23 @@ else
                         break;
                     case "/session":
                         Console.WriteLine($"{sessionPath ?? "(ephemeral)"} · {conversation.Id} · head {conversation.Tree.HeadId ?? "(empty)"}");
+                        break;
+                    case "/model":
+                        if (string.IsNullOrWhiteSpace(argument)) throw new ArgumentException("Specify a model ID.");
+                        var nextAgent = new PiAgent(client.GetChatClient(argument).AsIChatClient(),
+                            new CodingTools(Environment.CurrentDirectory), cli.Tools, cli.ExcludeTools, cli.NoTools);
+                        var previousHead = conversation.Tree.HeadId;
+                        try
+                        {
+                            conversation.SelectModel(argument, connection.Endpoint?.ToString());
+                            var nextRun = await ConversationRun.OpenAsync(nextAgent, conversation);
+                            if (sessionPath is not null) await store.SaveAsync(conversation, sessionPath);
+                            agent = nextAgent;
+                            conversationRun = nextRun;
+                            connection = connection with { Model = argument };
+                            Console.WriteLine($"Model: {argument}");
+                        }
+                        catch { conversation.RevertModel(connection.Model, connection.Endpoint?.ToString(), previousHead); throw; }
                         break;
                     case "/new":
                     case "/fork":
