@@ -43,6 +43,23 @@ public sealed class ResourceCatalogTests
     }
 
     [Fact]
+    public async Task OversizedAndInvalidUtf8ResourcesFailClosed()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-resources-" + Guid.NewGuid().ToString("N"));
+        var prompts = Path.Combine(root, "prompts");
+        Directory.CreateDirectory(prompts);
+        var path = Path.Combine(prompts, "oversized.md");
+        try
+        {
+            await File.WriteAllBytesAsync(path, new byte[64 * 1024 + 1]);
+            await Assert.ThrowsAsync<InvalidDataException>(() => ResourceCatalog.LoadAsync(root, root, false));
+            await File.WriteAllBytesAsync(path, [0xC3, 0x28]);
+            await Assert.ThrowsAsync<System.Text.DecoderFallbackException>(() => ResourceCatalog.LoadAsync(root, root, false));
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
     public async Task InvalidResourcesDoNotAdvertiseAndBadArgumentsFail()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-resources-" + Guid.NewGuid().ToString("N"));

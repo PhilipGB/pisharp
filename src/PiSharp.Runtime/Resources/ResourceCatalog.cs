@@ -64,9 +64,12 @@ public sealed class ResourceCatalog
         return new(skills, prompts);
     }
 
-    public string SystemInstructions() => Skills.Count == 0 ? "" : "Available skills (read SKILL.md when relevant; paths are absolute):\n" +
-        string.Join('\n', Skills.Where(skill => !skill.ExplicitOnly).Select(skill =>
-            $"- {skill.Name}: {skill.Description} ({skill.Path})"));
+    public string SystemInstructions()
+    {
+        var visible = Skills.Where(skill => !skill.ExplicitOnly).ToArray();
+        return visible.Length == 0 ? "" : "Available skills (read SKILL.md when relevant; paths are absolute):\n" +
+            string.Join('\n', visible.Select(skill => $"- {skill.Name}: {skill.Description} ({skill.Path})"));
+    }
 
     public async Task<string> InvokeSkillAsync(string name, string arguments, CancellationToken cancellationToken = default)
     {
@@ -135,7 +138,15 @@ public sealed class ResourceCatalog
 
     private static async Task<string> ReadBoundedAsync(string path, CancellationToken token)
     {
-        if (new FileInfo(path).Length > 64 * 1024) throw new InvalidDataException($"Resource exceeds 64KB: {path}");
-        return await File.ReadAllTextAsync(path, token);
+        await using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, 4096, FileOptions.Asynchronous);
+        const int maxBytes = 64 * 1024;
+        if (stream.Length > maxBytes) throw new InvalidDataException($"Resource exceeds 64KB: {path}");
+        var buffer = new byte[maxBytes + 1];
+        var count = 0;
+        int read;
+        while (count < buffer.Length && (read = await stream.ReadAsync(buffer.AsMemory(count), token)) > 0)
+            count += read;
+        if (count > maxBytes) throw new InvalidDataException($"Resource exceeds 64KB: {path}");
+        return new UTF8Encoding(false, true).GetString(buffer.AsSpan(0, count));
     }
 }
