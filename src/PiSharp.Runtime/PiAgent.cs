@@ -10,17 +10,18 @@ public sealed class PiAgent
     private readonly ChatClientAgent _agent;
     private readonly SemaphoreSlim _runGate = new(1, 1);
     private DurableExecution? _active;
+    private Action<AgentLifecycleEvent>? _events;
 
     public PiAgent(IChatClient client, CodingTools tools, IReadOnlyList<string>? selectedTools = null, IReadOnlyList<string>? excludedTools = null, bool noTools = false, string? contextInstructions = null, string? systemPrompt = null, string? appendSystemPrompt = null)
     {
-        _agent = new ChatClientAgent(client, new ChatClientAgentOptions
+        _agent = new ChatClientAgent(new ObservedChatClient(client, value => _events?.Invoke(value)), new ChatClientAgentOptions
         {
             Name = "PiSharp",
             ChatHistoryProvider = _history,
             ChatOptions = new ChatOptions
             {
                 Instructions = (systemPrompt ?? "You are PiSharp, a coding agent. Inspect files before modifying them when tools are available. Use only the tools provided for this run.") + "\n\n" + (appendSystemPrompt ?? "") + "\n\n" + (contextInstructions ?? ""),
-                Tools = tools.Create(selectedTools, excludedTools, noTools).Select(tool => tool is AIFunction function ? new DurableToolFunction(function, () => _active) : tool).Cast<AITool>().ToArray()
+                Tools = tools.Create(selectedTools, excludedTools, noTools).Select(tool => tool is AIFunction function ? new DurableToolFunction(function, () => _active, value => _events?.Invoke(value)) : tool).Cast<AITool>().ToArray()
             }
         });
     }
@@ -42,15 +43,17 @@ public sealed class PiAgent
         CancellationToken cancellationToken = default) => RunStreamingDurableAsync(prompt, session, cancellationToken, null);
 
     internal async IAsyncEnumerable<AgentResponseUpdate> RunStreamingDurableAsync(string prompt, AgentSession session,
-        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken, DurableExecution? durable)
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken, DurableExecution? durable,
+        Action<AgentLifecycleEvent>? onEvent = null)
     {
         await _runGate.WaitAsync(cancellationToken);
         try
         {
             _active = durable;
+            _events = onEvent;
             await foreach (var update in _agent.RunStreamingAsync(prompt, session: session, cancellationToken: cancellationToken))
                 yield return update;
         }
-        finally { _active = null; _runGate.Release(); }
+        finally { _events = null; _active = null; _runGate.Release(); }
     }
 }

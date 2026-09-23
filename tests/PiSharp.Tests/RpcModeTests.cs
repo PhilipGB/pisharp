@@ -69,7 +69,7 @@ public sealed class RpcModeTests
         var run = await ConversationRun.OpenAsync(new PiAgent(new BlockingClient(), new CodingTools(Path.GetTempPath())), session);
         var serving = new RpcMode(new CommandReader(channel.Reader), output, run).ServeAsync();
         channel.Writer.TryWrite("{\"id\":1,\"type\":\"prompt\",\"message\":\"wait\"}");
-        await WaitForAsync(output, "agent_start");
+        await WaitForAsync(output, "model_request_started");
         channel.Writer.TryWrite("{\"id\":2,\"type\":\"abort\"}");
         await WaitForAsync(output, "agent_settled");
         channel.Writer.Complete();

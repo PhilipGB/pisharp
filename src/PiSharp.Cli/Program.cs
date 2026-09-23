@@ -105,18 +105,27 @@ async Task Run(string input)
     var started = false;
     try
     {
-        await foreach (var update in conversationRun.RunStreamingAsync(input, runCancel.Token))
+        await foreach (var update in conversationRun.RunEventsAsync(input, runCancel.Token))
         {
-            if (update.Contents is not null)
-                foreach (var content in update.Contents)
-                    if (!print && content is FunctionCallContent call)
-                        Console.Error.WriteLine($"\n→ {call.Name}({call.Arguments})");
-                    else if (!print && content is FunctionResultContent result)
-                        Console.Error.WriteLine($"← {result.Result}");
-            if (!string.IsNullOrEmpty(update.Text))
+            switch (update.Type)
             {
-                Console.Write(update.Text);
-                started = true;
+                case "model_text_delta" when !string.IsNullOrEmpty(update.Text):
+                    Console.Write(update.Text);
+                    started = true;
+                    break;
+                case "tool_execution_started" when !print:
+                    Console.Error.WriteLine($"\n→ {update.Tool} ({update.OperationId})");
+                    break;
+                case "tool_execution_finished" when !print:
+                    Console.Error.WriteLine($"← {(update.IsError == true ? update.Error : update.Text)}");
+                    break;
+                case "turn_failed" or "prompt_rejected":
+                    Console.Error.WriteLine($"Agent error: {update.Error ?? update.Type}");
+                    Environment.ExitCode = 1;
+                    break;
+                case "turn_interrupted":
+                    Console.Error.WriteLine("Interrupted.");
+                    break;
             }
         }
         if (started) Console.WriteLine();

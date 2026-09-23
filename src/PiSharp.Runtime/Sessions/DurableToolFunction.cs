@@ -3,20 +3,29 @@ using Microsoft.Extensions.AI;
 
 namespace PiSharp.Runtime.Sessions;
 
-/// <summary>Invokes a tool only after its intention has reached the canonical session store.</summary>
-internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecution?> current) : DelegatingAIFunction(inner)
+/// <summary>Tool lifecycle originates here, at invocation time rather than from inferred model updates.</summary>
+internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecution?> current,
+    Action<AgentLifecycleEvent> publish) : DelegatingAIFunction(inner)
 {
     protected override async ValueTask<object?> InvokeCoreAsync(AIFunctionArguments arguments, CancellationToken cancellationToken)
     {
-        var execution = current();
-        if (execution is null) return await base.InvokeCoreAsync(arguments, cancellationToken);
         cancellationToken.ThrowIfCancellationRequested();
-        var id = await execution.StartToolAsync(Name, arguments, cancellationToken);
+        var execution = current();
+        var id = execution is null ? Guid.NewGuid().ToString("N") :
+            await execution.StartToolAsync(Name, arguments, cancellationToken);
+        publish(new("tool_execution_started", Tool: Name, OperationId: id));
         object? value = null;
         Exception? failure = null;
         try { value = await base.InvokeCoreAsync(arguments, cancellationToken); }
         catch (Exception error) { failure = error; }
-        await execution.EndToolAsync(id, value, failure);
+        try { if (execution is not null) await execution.EndToolAsync(id, value, failure); }
+        catch (Exception error)
+        {
+            publish(new("tool_outcome_unknown", Tool: Name, OperationId: id, IsError: true, Error: error.Message));
+            throw;
+        }
+        publish(new("tool_execution_finished", Text: value?.ToString(), Tool: Name, OperationId: id,
+            IsError: failure is not null, Error: failure?.Message));
         if (failure is not null) ExceptionDispatchInfo.Capture(failure).Throw();
         return value;
     }

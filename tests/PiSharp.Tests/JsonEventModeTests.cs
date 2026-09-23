@@ -25,13 +25,13 @@ public sealed class JsonEventModeTests
         {
             Assert.Equal("session", records[0].RootElement.GetProperty("type").GetString());
             Assert.Equal("pisharp", records[0].RootElement.GetProperty("format").GetString());
-            Assert.Equal("agent_settled", records[^1].RootElement.GetProperty("type").GetString());
-            Assert.Single(records, record => record.RootElement.GetProperty("type").GetString() == "message_update");
-            Assert.Contains(records, record => record.RootElement.GetProperty("type").GetString() == "turn_end" &&
-                record.RootElement.GetProperty("message").GetProperty("content").GetString() == "hello back");
-            Assert.Contains(records, record => record.RootElement.GetProperty("type").GetString() == "message_end" &&
-                record.RootElement.GetProperty("message").GetProperty("role").GetString() == "user" &&
-                record.RootElement.GetProperty("message").GetProperty("content").GetString() == "hello\u2028world");
+            Assert.Equal("agent_settled", records[^1].RootElement.GetProperty("data").GetProperty("Type").GetString());
+            Assert.Single(records, record => record.RootElement.GetProperty("type").GetString() == "event" &&
+                record.RootElement.GetProperty("data").GetProperty("Type").GetString() == "model_text_delta");
+            Assert.Contains(records.Skip(1), record => record.RootElement.GetProperty("data").GetProperty("Type").GetString() == "model_text_delta" &&
+                record.RootElement.GetProperty("data").GetProperty("Text").GetString() == "hello back");
+            Assert.Contains(records.Skip(1), record => record.RootElement.GetProperty("data").GetProperty("Type").GetString() == "prompt_accepted" &&
+                record.RootElement.GetProperty("data").GetProperty("Text").GetString() == "hello\u2028world");
         }
         finally { foreach (var record in records) record.Dispose(); }
     }
@@ -51,8 +51,8 @@ public sealed class JsonEventModeTests
                 .Select(line => JsonDocument.Parse(line)).ToArray();
             try
             {
-                Assert.Contains(records, record => record.RootElement.GetProperty("type").GetString() == "tool_execution_end" &&
-                    record.RootElement.GetProperty("isError").GetBoolean());
+                Assert.Contains(records, record => record.RootElement.GetProperty("data").GetProperty("Type").GetString() == "tool_execution_finished" &&
+                    record.RootElement.GetProperty("data").GetProperty("IsError").GetBoolean());
                 Assert.Contains(conversation.ActiveMessages().SelectMany(message => message.Contents), content =>
                     content is FunctionResultContent { Exception: not null });
             }

@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using System.Text.Json;
+using System.Threading.Channels;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using PiSharp.Core;
@@ -33,6 +34,59 @@ public sealed class ConversationRun
         return new ConversationRun(agent, conversation, execution, save);
     }
 
+    /// <summary>Authoritative ordered lifecycle, including actual model and tool boundaries.
+    /// No completion is emitted when execution fails. Disposing the stream aborts the run.</summary>
+    public async IAsyncEnumerable<AgentLifecycleEvent> RunEventsAsync(string prompt,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        var channel = Channel.CreateUnbounded<AgentLifecycleEvent>(new UnboundedChannelOptions
+        {
+            SingleReader = true,
+            SingleWriter = false
+        });
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        var pump = Task.Run(async () =>
+        {
+            var accepted = false;
+            try
+            {
+                await foreach (var update in RunStreamingAsync(prompt, linked.Token, value =>
+                {
+                    if (value.Type == "prompt_accepted") accepted = true;
+                    channel.Writer.TryWrite(value);
+                }))
+                {
+                    if (update.Contents is not null)
+                        foreach (var content in update.Contents)
+                        {
+                            if (content is TextReasoningContent reasoning)
+                                channel.Writer.TryWrite(new("reasoning_delta", Text: reasoning.Text));
+                            else if (content is UsageContent usage)
+                                channel.Writer.TryWrite(new("usage", Text: usage.Details?.ToString()));
+                        }
+                }
+                channel.Writer.TryWrite(new("turn_completed"));
+                channel.Writer.TryWrite(new("agent_run_completed"));
+            }
+            catch (OperationCanceledException) { channel.Writer.TryWrite(new(accepted ? "turn_interrupted" : "prompt_rejected")); }
+            catch (Exception error) { channel.Writer.TryWrite(new(accepted ? "turn_failed" : "prompt_rejected", Error: error.Message)); }
+            finally
+            {
+                channel.Writer.TryWrite(new("agent_settled"));
+                channel.Writer.TryComplete();
+            }
+        }, CancellationToken.None);
+        try
+        {
+            await foreach (var value in channel.Reader.ReadAllAsync()) yield return value;
+        }
+        finally
+        {
+            linked.Cancel();
+            await pump;
+        }
+    }
+
     /// <summary>Selection is durable in Conversation.HeadId; rebuild MAF state before the next run.</summary>
     public async Task SelectAsync(string? id, CancellationToken cancellationToken = default)
     {
@@ -60,7 +114,8 @@ public sealed class ConversationRun
     }
 
     public async IAsyncEnumerable<AgentResponseUpdate> RunStreamingAsync(string prompt,
-        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        [EnumeratorCancellation] CancellationToken cancellationToken = default,
+        Action<AgentLifecycleEvent>? onEvent = null)
     {
         await _gate.WaitAsync(cancellationToken);
         var completed = false;
@@ -77,7 +132,8 @@ public sealed class ConversationRun
                 await durable.StartAsync(prompt, cancellationToken);
                 started = true;
             }
-            await foreach (var update in _agent.RunStreamingDurableAsync(prompt, _execution, cancellationToken, durable))
+            onEvent?.Invoke(new("prompt_accepted", Text: prompt));
+            await foreach (var update in _agent.RunStreamingDurableAsync(prompt, _execution, cancellationToken, durable, onEvent))
             {
                 if (!string.IsNullOrEmpty(update.Text))
                 {
