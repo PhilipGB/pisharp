@@ -32,6 +32,36 @@ public sealed class ToolSelectionTests
     }
 
     [Fact]
+    public async Task MafReceivesOnlyTheSelectedToolLoadout()
+    {
+        var provider = new ToolCaptureClient();
+        var tools = new CodingTools(Path.GetTempPath());
+        var agent = new PiAgent(provider, tools, ["ls"], noTools: true);
+        var session = await agent.CreateSessionAsync();
+        await foreach (var _ in agent.RunStreamingAsync("list", session)) { }
+        Assert.Equal(["ls"], provider.ToolNames);
+        var empty = new PiAgent(provider, tools, noTools: true);
+        await foreach (var _ in empty.RunStreamingAsync("no tools", await empty.CreateSessionAsync())) { }
+        Assert.Empty(provider.ToolNames);
+    }
+
+    private sealed class ToolCaptureClient : Microsoft.Extensions.AI.IChatClient
+    {
+        public IReadOnlyList<string> ToolNames { get; private set; } = [];
+        public Task<Microsoft.Extensions.AI.ChatResponse> GetResponseAsync(IEnumerable<Microsoft.Extensions.AI.ChatMessage> messages,
+            Microsoft.Extensions.AI.ChatOptions? options = null, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+        public async IAsyncEnumerable<Microsoft.Extensions.AI.ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<Microsoft.Extensions.AI.ChatMessage> messages,
+            Microsoft.Extensions.AI.ChatOptions? options = null, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            ToolNames = options?.Tools?.Select(t => t.Name).ToArray() ?? [];
+            yield return new Microsoft.Extensions.AI.ChatResponseUpdate(Microsoft.Extensions.AI.ChatRole.Assistant, "done");
+            await Task.CompletedTask;
+        }
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
+    }
+
+    [Fact]
     public void CliToolFiltersAreParsedWithoutConsumingPromptAfterSeparator()
     {
         var args = CliArguments.Parse(["--tools", "read, ls", "--exclude-tools", "ls", "--", "--no-tools"]);
