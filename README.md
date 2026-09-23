@@ -28,7 +28,7 @@ dotnet run --project src/PiSharp.Cli -- --local --print 'Reply hello'
 
 ## Experimental sessions
 
-Sessions are grouped by working directory under `~/.pisharp/sessions/`. Use `--continue` to reopen the latest snapshot in that directory, `--session /absolute/path/to/existing.json` to reopen a specific snapshot, or `--no-session` to disable saving. Supplying `--session` with a nonexistent file currently errors; a new session is created automatically by default. Snapshot files are user-private and atomically replaced on successful turns. They are **not compatible** with upstream Pi JSONL, cannot branch/replay, and do not preserve partial interrupted turns. Do not switch providers or models while continuing a snapshot.
+Sessions are grouped by working directory under `~/.pisharp/sessions/`. Use `--continue` to reopen the latest snapshot in that directory, `--session /absolute/path/to/existing.json` to reopen a specific snapshot, or `--no-session` to disable saving. Supplying `--session` with a nonexistent file currently errors; a new session is created automatically by default. Snapshot files are user-private and atomically replaced on successful turns. They are **not compatible** with upstream Pi JSONL, cannot branch/replay, and do not preserve partial interrupted turns. Do not switch providers or models while continuing a snapshot. A separate experimental Pi v3 JSONL codec and branch projection exists in Core with a private file adapter, but **the CLI does not use it yet**.
 
 ## Build and test
 
@@ -37,4 +37,4 @@ dotnet build PiSharp.slnx --warnaserror
 dotnet test PiSharp.slnx
 ```
 
-Integration tests exercise a scripted tool call and a local HTTP Chat Completions streaming fixture; no live-provider credentials are needed for tests. No upstream differential tests have been completed.
+Integration tests exercise a scripted tool call and a local HTTP Chat Completions streaming fixture; no live-provider credentials are needed for tests. Narrow edit-planner and v3 branch-projection fixtures have been compared with pinned upstream Pi; full-feature parity has not been established.

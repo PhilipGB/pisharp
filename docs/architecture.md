@@ -4,7 +4,7 @@ Reference: `earendil-works/pi@002fc8385268300ca91a5fc95f935c2afbbdac02`, version
 
 ## Boundaries
 
-- `PiSharp.Core`: deterministic product logic and data contracts, with no model SDK, filesystem or terminal references. Currently holds original-snapshot batched edit planning. Intended home for canonical conversation tree, context reconstruction and settings validation.
+- `PiSharp.Core`: deterministic product logic and data contracts, with no model SDK, filesystem or terminal references. Holds original-snapshot batched edit planning, an experimental Pi v3 JSONL entry codec, conversation tree and branch-aware context projection; settings validation and MAF bridging remain future work.
 - `PiSharp.Runtime`: Microsoft Agent Framework `ChatClientAgent`, tool registration and local Linux filesystem/process adapters. It depends on Core but not the CLI or a provider SDK. Its `PiAgent` is the one execution runtime for all interaction modes. Tools use process permissions, not a sandbox.
 - `PiSharp.Cli`: composition and OpenAI Chat Completions provider adapter (`Microsoft.Extensions.AI.OpenAI`), terminal and CLI mode. The current `Console.ReadLine` REPL is *not* an acceptable final TUI. Extend it with a separately testable VT input/rendering adapter rather than migrating state into the view.
 - `PiSharp.Tests`: filesystem/process and deterministic provider/HTTP tests, including behavioural cases recorded against pinned Pi. Live server tests run separately and never gate PRs.
@@ -13,10 +13,10 @@ This is a small vertical-first layout; do not add separate projects for each tec
 
 ## Current risks / required next decisions
 
-1. `CodingTools` is still one class with four operations and a basic buffered bash tool. Move each contract to a cohesive feature file while adding the remaining tools; implement upstream bounded shell output and real cancellation semantics.
+1. `CodingTools` is still one class with four operations, and shell capture is bounded but its live updates/terminal semantics differ. Move each contract to a cohesive feature file while adding the remaining tools and exact pinned comparisons.
 2. The edit planner now matches original-snapshot batched replacements including limited fuzzy normalization and per-file queueing. It does not yet generate Pi's diff/patch details or preserve every fuzzy-match edge case. Tool errors currently return text instead of Pi's error result; error transport needs tests.
 3. Tool file writes are not crash-atomic. Explicitly design temp-file/rename and permission preservation, with interrupted-write tests, before advertising full reliability.
-4. Build the session tree and session persistence as a Core feature slice with an infrastructure JSONL adapter, then wire **all** CLI modes through the same session lifecycle.
+4. Experimental Core Pi v3 codec, context projection and private JSONL file store are tested only on small pinned branch fixtures. Implement migrations and a durable branch-aware runtime history bridge, then replace preliminary MAF-only snapshots in **all** CLI modes. The codec is not yet the CLI's authoritative history.
 5. Evaluate a VT library on actual normal-screen/alt-screen/editor/resizing and PTY tests rather than accepting a library because it can render styled lines. Preserve terminal scrollback in normal mode.
 
 No capabilities have been marked Verified in the broad parity matrix solely for compiling. The deterministic edit cases in `EditConformanceTests` constitute *narrow* differential evidence for only those exact text cases, not full tool parity.

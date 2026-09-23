@@ -1,0 +1,4 @@
+{
+  "f6666666": {"messages":[{"role":"system","content":"checkpoint","timestamp":1733234405000},{"role":"compactionSummary","summary":"prior summary","tokensBefore":400,"timestamp":1733234405000},{"role":"assistant","content":[{"type":"text","text":"corrected"}],"provider":"openai","model":"gpt-4o","timestamp":1733234403000},{"role":"user","content":"next","timestamp":1733234406000}],"thinkingLevel":"off","model":{"provider":"openai","modelId":"gpt-4o"}},
+  "daaaaaaa": {"messages":[{"role":"system","content":"instructions","timestamp":1733234401000},{"role":"user","content":"alternate","timestamp":1733234402000},{"role":"branchSummary","summary":"abandoned path","fromId":"f6666666","timestamp":1733234407000},{"role":"user","content":"branch prompt","timestamp":1733234410000}],"thinkingLevel":"high","model":null}
+}

@@ -1,0 +1,11 @@
+{"type":"session","version":3,"id":"12345678-1234-1234-1234-123456789abc","timestamp":"2024-12-03T14:00:00.000Z","cwd":"/project"}
+{"type":"message","id":"a1111111","parentId":null,"timestamp":"2024-12-03T14:00:01.000Z","message":{"role":"system","content":"instructions","timestamp":1733234401000}}
+{"type":"message","id":"b2222222","parentId":"a1111111","timestamp":"2024-12-03T14:00:02.000Z","message":{"role":"user","content":"original","timestamp":1733234402000}}
+{"type":"message","id":"c3333333","parentId":"b2222222","timestamp":"2024-12-03T14:00:03.000Z","message":{"role":"assistant","content":[{"type":"text","text":"reply"}],"provider":"openai","model":"gpt-4o","timestamp":1733234403000}}
+{"type":"context_edit","id":"d4444444","parentId":"c3333333","timestamp":"2024-12-03T14:00:04.000Z","targetId":"c3333333","replacement":{"content":"corrected"}}
+{"type":"compaction","id":"e5555555","parentId":"d4444444","timestamp":"2024-12-03T14:00:05.000Z","summary":"prior summary","firstKeptEntryId":"c3333333","tokensBefore":400,"systemMessage":{"role":"system","content":"checkpoint","timestamp":1733234405000}}
+{"type":"message","id":"f6666666","parentId":"e5555555","timestamp":"2024-12-03T14:00:06.000Z","message":{"role":"user","content":"next","timestamp":1733234406000}}
+{"type":"branch_summary","id":"a7777777","parentId":"b2222222","timestamp":"2024-12-03T14:00:07.000Z","fromId":"f6666666","summary":"abandoned path"}
+{"type":"context_edit","id":"b8888888","parentId":"a7777777","timestamp":"2024-12-03T14:00:08.000Z","targetId":"b2222222","replacement":{"content":"alternate"}}
+{"type":"thinking_level_change","id":"c9999999","parentId":"b8888888","timestamp":"2024-12-03T14:00:09.000Z","thinkingLevel":"high"}
+{"type":"message","id":"daaaaaaa","parentId":"c9999999","timestamp":"2024-12-03T14:00:10.000Z","message":{"role":"user","content":"branch prompt","timestamp":1733234410000}}
