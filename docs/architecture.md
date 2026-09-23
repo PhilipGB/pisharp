@@ -4,7 +4,7 @@ Reference: `earendil-works/pi@002fc8385268300ca91a5fc95f935c2afbbdac02`, version
 
 ## Boundaries
 
-- `PiSharp.Core`: deterministic product logic and data contracts, with no model SDK, filesystem or terminal references. Holds original-snapshot batched edit planning, an experimental Pi v3 JSONL entry codec, conversation tree and branch-aware context projection; settings validation and MAF bridging remain future work.
+- `PiSharp.Core`: deterministic product logic and data contracts, with no model SDK, filesystem or terminal references. Holds original-snapshot batched edit and text-read planning, experimental Pi v3 JSONL entry codec, conversation tree and branch-aware context projection; settings validation remains future work. Runtime has a limited one-way MAF restore seam.
 - `PiSharp.Runtime`: Microsoft Agent Framework `ChatClientAgent`, tool registration and local Linux filesystem/process adapters. It depends on Core but not the CLI or a provider SDK. Its `PiAgent` is the one execution runtime for all interaction modes. Tools use process permissions, not a sandbox.
 - `PiSharp.Cli`: composition and OpenAI Chat Completions provider adapter (`Microsoft.Extensions.AI.OpenAI`), terminal and CLI mode. The current `Console.ReadLine` REPL is *not* an acceptable final TUI. Extend it with a separately testable VT input/rendering adapter rather than migrating state into the view.
 - `PiSharp.Tests`: filesystem/process and deterministic provider/HTTP tests, including behavioural cases recorded against pinned Pi. Live server tests run separately and never gate PRs.

@@ -37,4 +37,4 @@ dotnet build PiSharp.slnx --warnaserror
 dotnet test PiSharp.slnx
 ```
 
-Integration tests exercise a scripted tool call and a local HTTP Chat Completions streaming fixture; no live-provider credentials are needed for tests. Narrow edit-planner, v3 branch-projection and v1/v2 migration fixtures have been compared with pinned upstream Pi; full-feature parity has not been established.
+Integration tests exercise a scripted tool call and a local HTTP Chat Completions streaming fixture; no live-provider credentials are needed for tests. Narrow edit-planner, read text-selection, v3 branch-projection and v1/v2 migration fixtures have been compared with pinned upstream Pi; full-feature parity has not been established.

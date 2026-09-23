@@ -11,8 +11,6 @@ public sealed class CodingTools(string workingDirectory)
 {
     private readonly string _cwd = Path.GetFullPath(workingDirectory);
     private static readonly FileMutationQueue s_mutations = new();
-    private const int MaxBytes = 50 * 1024;
-    private const int MaxLines = 2000;
 
     public IList<AITool> Create() =>
     [
@@ -32,18 +30,10 @@ public sealed class CodingTools(string workingDirectory)
         if (offset < 1 || limit is <= 0) return "Error: offset and limit must be positive.";
         try
         {
-            var lines = (await File.ReadAllTextAsync(Resolve(path), cancellationToken)).Split('\n');
-            if (offset > lines.Length) return $"Error: Offset {offset} is beyond end of file ({lines.Length} lines total)";
-            int count = Math.Min(lines.Length - offset + 1, Math.Min(limit ?? MaxLines, MaxLines));
-            var result = string.Join("\n", lines.Skip(offset - 1).Take(count));
-            while (Encoding.UTF8.GetByteCount(result) > MaxBytes && count > 1)
-                result = string.Join("\n", lines.Skip(offset - 1).Take(--count));
-            if (Encoding.UTF8.GetByteCount(result) > MaxBytes)
-                return $"[Line {offset} exceeds 50KB limit. Use bash to inspect it.]";
-            if (offset - 1 + count < lines.Length)
-                result += $"\n\n[Showing lines {offset}-{offset + count - 1} of {lines.Length}. Use offset={offset + count} to continue.]";
-            return result;
+            var text = await File.ReadAllTextAsync(Resolve(path), cancellationToken);
+            return ReadTextPlanner.Select(text, path, offset, limit);
         }
+        catch (ArgumentOutOfRangeException e) { return $"Error: {e.Message.Split('\n')[0]}"; }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
             return $"Error reading {path}: {e.Message}";
