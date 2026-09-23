@@ -92,6 +92,12 @@ catch (ArgumentException e)
 }
 var store = new ConversationStore(Environment.CurrentDirectory, cli.SessionDirectory ??
     Environment.GetEnvironmentVariable("PISHARP_SESSION_DIR"));
+AutoCompactionPolicy? contextPolicy;
+try { contextPolicy = AutoCompactionPolicy.FromEnvironment(Environment.GetEnvironmentVariable); }
+catch (ArgumentException error) { Console.Error.WriteLine(error.Message); Environment.ExitCode = 2; return; }
+Task<ConversationRun> OpenRunAsync(PiAgent runningAgent, ConversationSession session, string? path) =>
+    ConversationRun.OpenAsync(runningAgent, session, save: path is null ? null :
+        token => store.SaveAsync(session, path, token), autoCompaction: contextPolicy);
 var sessionPath = cli.NoSession || cli.ForkSource is not null ? null : cli.SessionPath is not null &&
     (cli.SessionPath.Contains(Path.DirectorySeparatorChar) || cli.SessionPath.EndsWith(".session.json", StringComparison.Ordinal))
     ? Path.GetFullPath(cli.SessionPath) : cli.Continue ? store.MostRecentPath() : null;
@@ -126,8 +132,7 @@ try
     if (cli.SessionName is not null) conversation.Rename(cli.SessionName);
     if (!cli.NoSession) sessionPath ??= store.NewPath(conversation);
     var initialPath = sessionPath;
-    conversationRun = await ConversationRun.OpenAsync(agent, conversation, save: initialPath is null ? null :
-        token => store.SaveAsync(conversation, initialPath, token));
+    conversationRun = await OpenRunAsync(agent, conversation, initialPath);
     if ((cli.SessionName is not null || cli.ForkSource is not null) && sessionPath is not null)
         await store.SaveAsync(conversation, sessionPath);
 }
@@ -158,6 +163,9 @@ async Task Run(string input)
                 case "model_text_delta" when !string.IsNullOrEmpty(update.Text):
                     Console.Write(update.Text);
                     started = true;
+                    break;
+                case "context_compacted" when !print:
+                    Console.Error.WriteLine(update.Text);
                     break;
                 case "tool_execution_started" when !print:
                     Console.Error.WriteLine($"\n→ {update.Tool} ({update.OperationId})");
@@ -201,8 +209,7 @@ async Task ReloadResources()
             new CodingTools(Environment.CurrentDirectory), cli.Tools, cli.ExcludeTools, cli.NoTools,
             nextContext, nextPrompts.System, nextPrompts.Append, nextExtensions.Registration.Tools);
         var path = sessionPath;
-        var nextRun = await ConversationRun.OpenAsync(nextAgent, conversation, save: path is null ? null :
-            token => store.SaveAsync(conversation, path, token));
+        var nextRun = await OpenRunAsync(nextAgent, conversation, path);
         extensionLease.Replace(nextExtensions);
         instructions = nextContext;
         resources = nextResources;
@@ -300,8 +307,7 @@ else
                         var resumedConversation = await store.LoadAsync(listing.Path);
                         if (resumedConversation.Model != connection.Model || resumedConversation.Endpoint != connection.Endpoint?.ToString())
                             throw new InvalidOperationException("Session uses another model or endpoint; open it directly with --session.");
-                        var resumedRun = await ConversationRun.OpenAsync(agent, resumedConversation,
-                            save: token => store.SaveAsync(resumedConversation, listing.Path, token));
+                        var resumedRun = await OpenRunAsync(agent, resumedConversation, listing.Path);
                         conversation = resumedConversation;
                         conversationRun = resumedRun;
                         sessionPath = listing.Path;
@@ -366,8 +372,7 @@ else
                         try
                         {
                             conversation.SelectModel(argument, connection.Endpoint?.ToString());
-                            var nextRun = await ConversationRun.OpenAsync(nextAgent, conversation, save: sessionPath is null ? null :
-                                token => store.SaveAsync(conversation, sessionPath, token));
+                            var nextRun = await OpenRunAsync(nextAgent, conversation, sessionPath);
                             if (sessionPath is not null) await store.SaveAsync(conversation, sessionPath);
                             agent = nextAgent;
                             conversationRun = nextRun;
@@ -390,8 +395,7 @@ else
                         var (forked, draft) = conversation.ForkAtUser(candidates[0].Id);
                         if (sessionPath is not null) await store.SaveAsync(conversation, sessionPath);
                         var forkPath = cli.NoSession ? null : store.NewPath(forked);
-                        var forkRun = await ConversationRun.OpenAsync(agent, forked, save: forkPath is null ? null :
-                            token => store.SaveAsync(forked, forkPath, token));
+                        var forkRun = await OpenRunAsync(agent, forked, forkPath);
                         if (forkPath is not null) await store.SaveAsync(forked, forkPath);
                         conversation = forked;
                         sessionPath = forkPath;
@@ -406,8 +410,7 @@ else
                             : new ConversationSession(Environment.CurrentDirectory, connection.Model, connection.Endpoint?.ToString());
                         sessionPath = cli.NoSession ? null : store.NewPath(conversation);
                         var newPath = sessionPath;
-                        conversationRun = await ConversationRun.OpenAsync(agent, conversation, save: newPath is null ? null :
-                            token => store.SaveAsync(conversation, newPath, token));
+                        conversationRun = await OpenRunAsync(agent, conversation, newPath);
                         if (sessionPath is not null) await store.SaveAsync(conversation, sessionPath);
                         Console.WriteLine($"{command[1..]}: {sessionPath ?? "(ephemeral)"}");
                         break;

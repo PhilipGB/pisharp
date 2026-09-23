@@ -51,6 +51,66 @@ public sealed class CompactionTests
     }
 
     [Fact]
+    public async Task AutoBudgetCompactsBeforeNextPromptAndPersistsRawHistory()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-auto-compact-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        try
+        {
+            var conversation = new ConversationSession(cwd, "fixture", null);
+            conversation.Append(new ChatMessage(ChatRole.User, new string('a', 3000)));
+            conversation.Append(new ChatMessage(ChatRole.Assistant, "earlier answer"));
+            conversation.Append(new ChatMessage(ChatRole.User, "latest"));
+            conversation.Append(new ChatMessage(ChatRole.Assistant, "latest answer"));
+            var store = new ConversationStore(cwd, Path.Combine(cwd, "sessions"));
+            var path = store.NewPath(conversation);
+            await store.SaveAsync(conversation, path);
+            var client = new SummaryClient();
+            var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(cwd)), conversation,
+                save: token => store.SaveAsync(conversation, path, token),
+                autoCompaction: new AutoCompactionPolicy(1800, 300));
+            var events = new List<AgentLifecycleEvent>();
+            await foreach (var item in run.RunEventsAsync("continue")) events.Add(item);
+            Assert.Contains(events, item => item.Type == "context_compacted");
+            Assert.True(events.FindIndex(item => item.Type == "context_compacted") < events.FindIndex(item => item.Type == "prompt_accepted"));
+            Assert.Equal(6, conversation.ActiveMessages().Count);
+            Assert.Equal("Summary of first turn", conversation.ContextMessages()[0].Text.Split('\n').Last());
+            Assert.DoesNotContain(client.SeenMessages!, message => message.Text == new string('a', 3000));
+            Assert.Equal(6, (await store.LoadAsync(path)).ActiveMessages().Count);
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Fact]
+    public async Task AutoBudgetFailureRollsBackWithoutSendingNewPrompt()
+    {
+        var conversation = Seed(Path.GetTempPath());
+        conversation.Append(new ChatMessage(ChatRole.Assistant, new string('X', 3000)));
+        var oldHead = conversation.Tree.HeadId;
+        var client = new SummaryClient { FailSummary = true };
+        var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(Path.GetTempPath())), conversation,
+            autoCompaction: new AutoCompactionPolicy(1800, 300));
+        var events = new List<AgentLifecycleEvent>();
+        await foreach (var item in run.RunEventsAsync("continue")) events.Add(item);
+        Assert.Contains(events, item => item.Type == "prompt_rejected");
+        Assert.DoesNotContain(events, item => item.Type == "prompt_accepted");
+        Assert.Null(client.SeenMessages);
+        Assert.Equal(oldHead, conversation.Tree.HeadId);
+        Assert.Equal(5, conversation.ContextMessages().Count);
+    }
+
+    [Fact]
+    public void AutoBudgetIsDisabledWithoutKnownContextWindowAndRejectsInvalidLimits()
+    {
+        Assert.Null(AutoCompactionPolicy.FromEnvironment(_ => null));
+        Assert.Throws<ArgumentException>(() => AutoCompactionPolicy.FromEnvironment(name =>
+            name == "PISHARP_CONTEXT_WINDOW_TOKENS" ? "invalid" : null));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new AutoCompactionPolicy(1024, 1024).TriggerTokens);
+        var policy = AutoCompactionPolicy.FromEnvironment(name => name == "PISHARP_CONTEXT_WINDOW_TOKENS" ? "2048" : null);
+        Assert.Equal(1536, policy!.TriggerTokens);
+    }
+
+    [Fact]
     public void CutAtLatestUserKeepsToolCallWithItsResult()
     {
         var conversation = new ConversationSession(Path.GetTempPath(), "fixture", null);

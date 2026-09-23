@@ -12,26 +12,31 @@ public sealed class ConversationRun
 {
     private readonly PiAgent _agent;
     private readonly Func<CancellationToken, Task>? _save;
+    private readonly AutoCompactionPolicy? _autoCompaction;
     private readonly SemaphoreSlim _gate = new(1, 1);
     private AgentSession _execution;
     private int _historyCount;
     public ConversationSession Conversation { get; }
 
-    private ConversationRun(PiAgent agent, ConversationSession conversation, AgentSession execution, Func<CancellationToken, Task>? save)
+    private ConversationRun(PiAgent agent, ConversationSession conversation, AgentSession execution, Func<CancellationToken, Task>? save,
+        AutoCompactionPolicy? autoCompaction)
     {
         _agent = agent;
         _save = save;
+        _autoCompaction = autoCompaction;
         Conversation = conversation;
         _execution = execution;
         _historyCount = conversation.ContextMessages().Count;
     }
 
     public static async Task<ConversationRun> OpenAsync(PiAgent agent, ConversationSession conversation,
-        CancellationToken cancellationToken = default, Func<CancellationToken, Task>? save = null)
+        CancellationToken cancellationToken = default, Func<CancellationToken, Task>? save = null,
+        AutoCompactionPolicy? autoCompaction = null)
     {
+        if (autoCompaction is not null) _ = autoCompaction.TriggerTokens;
         if (conversation.RecoverIncomplete() && save is not null) await save(cancellationToken);
         var execution = await agent.RestoreHistoryAsync(conversation.ContextMessages(), cancellationToken);
-        return new ConversationRun(agent, conversation, execution, save);
+        return new ConversationRun(agent, conversation, execution, save, autoCompaction);
     }
 
     /// <summary>Authoritative ordered lifecycle, including actual model and tool boundaries.
@@ -106,25 +111,28 @@ public sealed class ConversationRun
     public async Task<bool> CompactAsync(string? focus = null, CancellationToken cancellationToken = default)
     {
         await _gate.WaitAsync(cancellationToken);
+        try { return await CompactCoreAsync(focus, cancellationToken); }
+        finally { _gate.Release(); }
+    }
+
+    // Called only while the run gate is held. A failed summary or save cannot switch active context.
+    private async Task<bool> CompactCoreAsync(string? focus, CancellationToken cancellationToken)
+    {
+        var plan = Conversation.PrepareCompaction();
+        if (plan is null) return false;
+        var summary = await _agent.SummarizeAsync(plan.MessagesToSummarize, focus, cancellationToken);
+        var previousHead = Conversation.Tree.HeadId;
         try
         {
-            var plan = Conversation.PrepareCompaction();
-            if (plan is null) return false;
-            var summary = await _agent.SummarizeAsync(plan.MessagesToSummarize, focus, cancellationToken);
-            var previousHead = Conversation.Tree.HeadId;
-            try
-            {
-                Conversation.AppendCompaction(plan, summary);
-                var messages = Conversation.ContextMessages();
-                var restored = await _agent.RestoreHistoryAsync(messages, cancellationToken);
-                if (_save is not null) await _save(cancellationToken);
-                _execution = restored;
-                _historyCount = messages.Count;
-                return true;
-            }
-            catch { Conversation.Tree.Select(previousHead); throw; }
+            Conversation.AppendCompaction(plan, summary);
+            var messages = Conversation.ContextMessages();
+            var restored = await _agent.RestoreHistoryAsync(messages, cancellationToken);
+            if (_save is not null) await _save(cancellationToken);
+            _execution = restored;
+            _historyCount = messages.Count;
+            return true;
         }
-        finally { _gate.Release(); }
+        catch { Conversation.Tree.Select(previousHead); throw; }
     }
 
     /// <summary>Selection is durable in Conversation.HeadId; rebuild MAF state before the next run.</summary>
@@ -165,13 +173,22 @@ public sealed class ConversationRun
         var events = new List<string>();
         DurableExecution? durable = _save is null ? null : new DurableExecution(Conversation, _save);
         var started = false;
+        var accepted = false;
         try
         {
+            if (_autoCompaction is not null && AutoCompactionPolicy.Estimate(Conversation.ContextMessages(), prompt) > _autoCompaction.TriggerTokens)
+            {
+                if (await CompactCoreAsync(null, cancellationToken))
+                    onEvent?.Invoke(new("context_compacted", Text: "Automatic context summary saved; raw history retained."));
+                if (AutoCompactionPolicy.Estimate(Conversation.ContextMessages(), prompt) > _autoCompaction.TriggerTokens)
+                    throw new InvalidOperationException("Estimated context still exceeds the configured budget; shorten the prompt or increase the model context window.");
+            }
             if (durable is not null)
             {
                 await durable.StartAsync(prompt, cancellationToken);
                 started = true;
             }
+            accepted = true;
             onEvent?.Invoke(new("prompt_accepted", Text: prompt));
             await foreach (var update in _agent.RunStreamingDurableAsync(prompt, _execution, cancellationToken, durable, onEvent))
             {
@@ -207,7 +224,7 @@ public sealed class ConversationRun
                     throw new InvalidDataException("MAF changed existing canonical conversation history.");
                 foreach (var message in history.Skip(_historyCount)) Conversation.Append(message);
                 _historyCount = history.Count;
-                if (!completed) Conversation.Tree.Append("interrupted", JsonSerializer.SerializeToElement(
+                if (!completed && accepted) Conversation.Tree.Append("interrupted", JsonSerializer.SerializeToElement(
                     new { prompt, partialText = partialText.ToString(), events, timestamp = DateTimeOffset.UtcNow }));
                 if (started) await durable!.FinishAsync(completed);
             }
