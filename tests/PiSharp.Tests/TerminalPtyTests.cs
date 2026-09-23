@@ -26,7 +26,7 @@ public sealed class TerminalPtyTests
             Assert.NotNull(process);
             var stdout = process.StandardOutput.ReadToEndAsync();
             var stderr = process.StandardError.ReadToEndAsync();
-            await process.StandardInput.WriteAsync("/name first\n/new\n/name second\n/sessions\n/resume first\n/session\n/clone\n/session\n/quit\n");
+            await process.StandardInput.WriteAsync($"/name first\n/new\n/name second\n/sessions\n/resume first\n/session\n/export {cwd}/export.html\n/clone\n/session\n/quit\n");
             process.StandardInput.Close();
             using var limit = new CancellationTokenSource(TimeSpan.FromSeconds(12));
             try { await process.WaitForExitAsync(limit.Token); }
@@ -35,6 +35,8 @@ public sealed class TerminalPtyTests
             Assert.Equal(0, process.ExitCode);
             Assert.Contains("Resumed", output);
             Assert.Contains("clone:", output);
+            Assert.Contains("Exported private HTML", output);
+            Assert.Contains("PiSharp session", await File.ReadAllTextAsync(Path.Combine(cwd, "export.html")));
             Assert.Equal(3, Directory.EnumerateFiles(Path.Combine(cwd, "sessions"), "*.session.json").Count());
             Assert.DoesNotContain("Session error", output);
             Assert.DoesNotContain("Agent error", await stderr);

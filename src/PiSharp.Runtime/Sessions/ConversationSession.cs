@@ -104,6 +104,9 @@ public sealed class ConversationSession
         Tree.Append("compaction", JsonSerializer.SerializeToElement(new { summary, firstKeptEntryId = plan.FirstKeptEntryId }));
     }
 
+    internal static ChatMessage RestoreEntry(ConversationNode entry) => entry.Type == "chat"
+        ? Restore(entry.Payload, entry.Id) : throw new ArgumentException("Not a chat entry.", nameof(entry));
+
     private static ChatMessage Restore(JsonElement payload, string id)
     {
         var record = payload.Deserialize<ChatRecord>() ?? throw new InvalidDataException($"Missing message at {id}.");
