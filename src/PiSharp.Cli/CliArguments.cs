@@ -1,7 +1,7 @@
 namespace PiSharp.Cli;
 
 public sealed record CliArguments(bool Help, bool Local, bool Print, bool Continue, bool NoSession, string? SessionPath, string Prompt,
-    IReadOnlyList<string>? Tools, IReadOnlyList<string>? ExcludeTools, bool NoTools, string Mode, bool? ProjectTrustOverride = null, string? SessionDirectory = null, bool ListModels = false, string? ModelOverride = null, string? SessionName = null)
+    IReadOnlyList<string>? Tools, IReadOnlyList<string>? ExcludeTools, bool NoTools, string Mode, bool? ProjectTrustOverride = null, string? SessionDirectory = null, bool ListModels = false, string? ModelOverride = null, string? SessionName = null, string? ForkSource = null)
 {
     private static IReadOnlyList<string> ParseToolNames(string[] arguments, ref int index, string flag)
     {
@@ -13,7 +13,7 @@ public sealed record CliArguments(bool Help, bool Local, bool Print, bool Contin
     {
         bool help = false, local = false, print = false, resume = false, noSession = false, noTools = false, afterSeparator = false, listModels = false;
         bool? trust = null;
-        string? sessionPath = null, sessionDirectory = null, modelOverride = null, sessionName = null;
+        string? sessionPath = null, sessionDirectory = null, modelOverride = null, sessionName = null, forkSource = null;
         var mode = "interactive";
         IReadOnlyList<string>? tools = null, excludeTools = null;
         var prompt = new List<string>();
@@ -68,6 +68,11 @@ public sealed record CliArguments(bool Help, bool Local, bool Print, bool Contin
                         throw new ArgumentException("--session-dir requires a directory path.");
                     sessionDirectory = arguments[i];
                     break;
+                case "--fork":
+                    if (++i >= arguments.Length || arguments[i].StartsWith('-'))
+                        throw new ArgumentException("--fork requires an existing session path or project session ID.");
+                    forkSource = arguments[i];
+                    break;
                 case "--session":
                     if (++i >= arguments.Length || arguments[i].StartsWith('-'))
                         throw new ArgumentException("--session requires a file path.");
@@ -81,10 +86,12 @@ public sealed record CliArguments(bool Help, bool Local, bool Print, bool Contin
         }
         if ((resume ? 1 : 0) + (noSession ? 1 : 0) + (sessionPath is null ? 0 : 1) > 1)
             throw new ArgumentException("--continue, --session and --no-session cannot be combined.");
+        if (forkSource is not null && (resume || noSession || sessionPath is not null))
+            throw new ArgumentException("--fork cannot be combined with --continue, --session or --no-session.");
         if (print && mode is not "interactive" and not "print") throw new ArgumentException("--print cannot be combined with --mode json or rpc.");
         if (mode == "rpc" && prompt.Count > 0) throw new ArgumentException("RPC mode reads commands from stdin, not positional prompts.");
-        if (listModels && (prompt.Count > 0 || mode != "interactive" || print || resume || sessionPath is not null || noSession || sessionName is not null))
+        if (listModels && (prompt.Count > 0 || mode != "interactive" || print || resume || sessionPath is not null || noSession || sessionName is not null || forkSource is not null))
             throw new ArgumentException("--list-models cannot be combined with a prompt, mode or session operation.");
-        return new CliArguments(help, local, print, resume, noSession, sessionPath, string.Join(" ", prompt), tools, excludeTools, noTools, mode, trust, sessionDirectory, listModels, modelOverride, sessionName);
+        return new CliArguments(help, local, print, resume, noSession, sessionPath, string.Join(" ", prompt), tools, excludeTools, noTools, mode, trust, sessionDirectory, listModels, modelOverride, sessionName, forkSource);
     }
 }

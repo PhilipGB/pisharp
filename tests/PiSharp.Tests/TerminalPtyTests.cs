@@ -193,6 +193,60 @@ public sealed class TerminalPtyTests
     }
 
     [Fact]
+    public async Task StartupCanResolveSessionIdAndForkWithoutModifyingSource()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-cli-fork-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        try
+        {
+            var store = new PiSharp.Runtime.Sessions.ConversationStore(cwd, Path.Combine(cwd, "sessions"));
+            var source = new PiSharp.Runtime.Sessions.ConversationSession(cwd, ConnectionSettings.LocalModel,
+                new Uri(ConnectionSettings.LocalEndpoint).ToString());
+            source.Append(new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User, "original context"));
+            var path = store.NewPath(source);
+            await store.SaveAsync(source, path);
+            async Task<(int ExitCode, string Error)> Run(params string[] options)
+            {
+                var start = new ProcessStartInfo("dotnet")
+                {
+                    WorkingDirectory = cwd,
+                    RedirectStandardInput = true,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true
+                };
+                start.ArgumentList.Add(typeof(CliArguments).Assembly.Location);
+                foreach (var arg in options) start.ArgumentList.Add(arg);
+                using var process = Process.Start(start);
+                Assert.NotNull(process);
+                var output = process.StandardOutput.ReadToEndAsync();
+                var error = process.StandardError.ReadToEndAsync();
+                process.StandardInput.Close();
+                using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(12));
+                try { await process.WaitForExitAsync(timeout.Token); }
+                catch (OperationCanceledException) { process.Kill(entireProcessTree: true); throw; }
+                _ = await output;
+                return (process.ExitCode, await error);
+            }
+            var opened = await Run("--local", "--session-dir", store.DirectoryPath, "--session", source.Id[..12], "--mode", "rpc");
+            Assert.Equal(0, opened.ExitCode);
+            Assert.Single(Directory.GetFiles(store.DirectoryPath, "*.session.json"));
+            var forked = await Run("--local", "--session-dir", store.DirectoryPath, "--fork", source.Id[..12], "--mode", "rpc");
+            Assert.Equal(0, forked.ExitCode);
+            var paths = Directory.GetFiles(store.DirectoryPath, "*.session.json");
+            Assert.Equal(2, paths.Length);
+            var copy = await store.LoadAsync(Assert.Single(paths, item => item != path));
+            Assert.NotEqual(source.Id, copy.Id);
+            Assert.Equal("original context", Assert.Single(copy.ActiveMessages()).Text);
+            Assert.Equal(source.ToJson(), (await store.LoadAsync(path)).ToJson());
+            var rejected = await Run("--local", "--session-dir", store.DirectoryPath, "--fork", source.Id[..12],
+                "--session", path, "--mode", "rpc");
+            Assert.Equal(2, rejected.ExitCode);
+            Assert.Contains("cannot be combined", rejected.Error);
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Fact]
     public async Task InteractiveCommandsRenderAndExitThroughLinuxPty()
     {
         if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;

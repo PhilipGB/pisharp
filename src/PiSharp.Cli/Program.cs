@@ -20,7 +20,7 @@ catch (ArgumentException e)
 }
 if (cli.Help)
 {
-    Console.WriteLine("PiSharp (incomplete implementation)\nUsage: pisharp [--local] [--approve|--no-approve] [--mode interactive|print|json|rpc] [--print] [--continue | --session <path> | --no-session] [--session-dir <dir>] [--list-models] [--model <id>] [--name <label>] [prompt]\n--tools <read,bash,edit,write,grep,find,ls> selects tools (grep/find/ls are opt-in); --exclude-tools <names> removes tools; --no-tools disables defaults.\n--local uses http://192.168.0.97:8000/v1 and Qwen3.8-27B-GGUF (no API key required).\nOverride with PISHARP_BASE_URL, PISHARP_MODEL, PISHARP_API_KEY. OPENAI_API_KEY is used only for OpenAI.\nInteractive: /tree, /branch <id>, /fork, /clone, /new, /sessions [filter], /resume <id>, /delete-session <id>, /compact, /export [path], /name <label>, /model <id>, /models, /session, /trust yes|no|forget, /reload, /quit; Ctrl+C interrupts.");
+    Console.WriteLine("PiSharp (incomplete implementation)\nUsage: pisharp [--local] [--approve|--no-approve] [--mode interactive|print|json|rpc] [--print] [--continue | --session <path|project-id> | --fork <path|project-id> | --no-session] [--session-dir <dir>] [--list-models] [--model <id>] [--name <label>] [prompt]\n--tools <read,bash,edit,write,grep,find,ls> selects tools (grep/find/ls are opt-in); --exclude-tools <names> removes tools; --no-tools disables defaults.\n--local uses http://192.168.0.97:8000/v1 and Qwen3.8-27B-GGUF (no API key required).\nOverride with PISHARP_BASE_URL, PISHARP_MODEL, PISHARP_API_KEY. OPENAI_API_KEY is used only for OpenAI.\nInteractive: /tree, /branch <id>, /fork, /clone, /new, /sessions [filter], /resume <id>, /delete-session <id>, /compact, /export [path], /name <label>, /model <id>, /models, /session, /trust yes|no|forget, /reload, /quit; Ctrl+C interrupts.");
     return;
 }
 ConnectionSettings connection;
@@ -92,15 +92,26 @@ catch (ArgumentException e)
 }
 var store = new ConversationStore(Environment.CurrentDirectory, cli.SessionDirectory ??
     Environment.GetEnvironmentVariable("PISHARP_SESSION_DIR"));
-var sessionPath = cli.NoSession ? null : cli.SessionPath is not null ? Path.GetFullPath(cli.SessionPath)
-    : cli.Continue ? store.MostRecentPath() : null;
+var sessionPath = cli.NoSession || cli.ForkSource is not null ? null : cli.SessionPath is not null &&
+    (cli.SessionPath.Contains(Path.DirectorySeparatorChar) || cli.SessionPath.EndsWith(".session.json", StringComparison.Ordinal))
+    ? Path.GetFullPath(cli.SessionPath) : cli.Continue ? store.MostRecentPath() : null;
 ConversationSession conversation;
 ConversationRun conversationRun;
 try
 {
-    conversation = sessionPath is not null && File.Exists(sessionPath)
-        ? await store.LoadAsync(sessionPath)
-        : new ConversationSession(Environment.CurrentDirectory, connection.Model, connection.Endpoint?.ToString());
+    if (cli.SessionPath is not null && sessionPath is null)
+        sessionPath = SessionCatalog.Resolve(await SessionCatalog.ListAsync(store), cli.SessionPath).Path;
+    if (cli.ForkSource is not null)
+    {
+        var sourcePath = cli.ForkSource.Contains(Path.DirectorySeparatorChar) || cli.ForkSource.EndsWith(".session.json", StringComparison.Ordinal)
+            ? Path.GetFullPath(cli.ForkSource)
+            : SessionCatalog.Resolve(await SessionCatalog.ListAsync(store), cli.ForkSource).Path;
+        conversation = (await store.LoadAsync(sourcePath)).Fork();
+    }
+    else
+        conversation = sessionPath is not null && File.Exists(sessionPath)
+            ? await store.LoadAsync(sessionPath)
+            : new ConversationSession(Environment.CurrentDirectory, connection.Model, connection.Endpoint?.ToString());
     if (conversation.Endpoint != connection.Endpoint?.ToString())
         throw new InvalidDataException("Session endpoint differs from the current connection. Set PISHARP_BASE_URL to the saved endpoint first.");
     if (conversation.Model != connection.Model)
@@ -117,7 +128,8 @@ try
     var initialPath = sessionPath;
     conversationRun = await ConversationRun.OpenAsync(agent, conversation, save: initialPath is null ? null :
         token => store.SaveAsync(conversation, initialPath, token));
-    if (cli.SessionName is not null && sessionPath is not null) await store.SaveAsync(conversation, sessionPath);
+    if ((cli.SessionName is not null || cli.ForkSource is not null) && sessionPath is not null)
+        await store.SaveAsync(conversation, sessionPath);
 }
 catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException or System.Text.Json.JsonException or ArgumentException)
 {
