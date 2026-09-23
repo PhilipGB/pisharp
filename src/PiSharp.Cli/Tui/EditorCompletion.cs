@@ -1,7 +1,7 @@
 namespace PiSharp.Cli.Tui;
 
 /// <summary>Completes implemented slash commands and local paths; UI only, no agent state.</summary>
-public sealed class EditorCompletion(string workingDirectory)
+public sealed class EditorCompletion(string workingDirectory, Func<IReadOnlyList<string>>? dynamicCommands = null)
 {
     private static readonly string[] s_commands =
     ["/tree", "/branch", "/fork", "/new", "/name", "/model", "/session", "/trust", "/reload", "/quit"];
@@ -14,7 +14,8 @@ public sealed class EditorCompletion(string workingDirectory)
         var fragment = before[start..];
         if (start == 0 && fragment.StartsWith('/'))
         {
-            var matches = s_commands.Where(command => command.StartsWith(fragment, StringComparison.OrdinalIgnoreCase)).ToArray();
+            var matches = s_commands.Concat(dynamicCommands?.Invoke() ?? [])
+                .Where(command => command.StartsWith(fragment, StringComparison.OrdinalIgnoreCase)).ToArray();
             return Apply(buffer, start, fragment, matches);
         }
         if (!fragment.StartsWith('@')) return [];

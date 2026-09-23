@@ -40,12 +40,15 @@ var trustStore = new ProjectTrust(agentDirectory);
 bool trusted;
 string instructions;
 (string? System, string? Append) prompts;
+ResourceCatalog resources;
 try
 {
     trusted = await trustStore.ResolveAsync(Environment.CurrentDirectory, cli.ProjectTrustOverride,
         cli.Mode == "interactive" && !cli.Print && !Console.IsInputRedirected && !Console.IsOutputRedirected, Console.In, Console.Error);
     prompts = await ProjectPrompts.LoadAsync(Environment.CurrentDirectory, agentDirectory, trusted);
     instructions = await ContextInstructions.LoadAsync(Environment.CurrentDirectory, agentDirectory);
+    resources = await ResourceCatalog.LoadAsync(Environment.CurrentDirectory, agentDirectory, trusted);
+    instructions += "\n" + resources.SystemInstructions();
 }
 catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException or System.Text.Json.JsonException)
 {
@@ -144,7 +147,9 @@ async Task Run(string input)
 
 async Task ReloadResources()
 {
-    var nextContext = await ContextInstructions.LoadAsync(Environment.CurrentDirectory, agentDirectory);
+    var nextResources = await ResourceCatalog.LoadAsync(Environment.CurrentDirectory, agentDirectory, trusted);
+    var nextContext = await ContextInstructions.LoadAsync(Environment.CurrentDirectory, agentDirectory) +
+        "\n" + nextResources.SystemInstructions();
     var nextPrompts = await ProjectPrompts.LoadAsync(Environment.CurrentDirectory, agentDirectory, trusted);
     var nextAgent = new PiAgent(client.GetChatClient(connection.Model).AsIChatClient(),
         new CodingTools(Environment.CurrentDirectory), cli.Tools, cli.ExcludeTools, cli.NoTools,
@@ -153,6 +158,7 @@ async Task ReloadResources()
     var nextRun = await ConversationRun.OpenAsync(nextAgent, conversation, save: path is null ? null :
         token => store.SaveAsync(conversation, path, token));
     instructions = nextContext;
+    resources = nextResources;
     prompts = nextPrompts;
     agent = nextAgent;
     conversationRun = nextRun;
@@ -187,7 +193,8 @@ if (print)
 else
 {
     if (!string.IsNullOrWhiteSpace(prompt)) await Run(prompt);
-    var editor = new TerminalEditor();
+    var editor = new TerminalEditor(() => resources.Skills.Select(item => "/skill:" + item.Name)
+        .Concat(resources.Prompts.Select(item => "/" + item.Name)).ToArray());
     while (true)
     {
         var line = editor.ReadLine();
@@ -274,7 +281,13 @@ else
                         if (sessionPath is not null) await store.SaveAsync(conversation, sessionPath);
                         Console.WriteLine($"{command[1..]}: {sessionPath ?? "(ephemeral)"}");
                         break;
-                    default: Console.Error.WriteLine($"Unknown command: {command}"); break;
+                    default:
+                        if (command.StartsWith("/skill:", StringComparison.Ordinal))
+                            await Run(await resources.InvokeSkillAsync(command[7..], argument));
+                        else if (resources.Prompts.Any(item => "/" + item.Name == command))
+                            await Run(resources.ExpandPrompt(command[1..], argument));
+                        else Console.Error.WriteLine($"Unknown command: {command}");
+                        break;
                 }
             }
             catch (Exception e) { Console.Error.WriteLine($"Session error: {e.Message}"); Environment.ExitCode = 1; }

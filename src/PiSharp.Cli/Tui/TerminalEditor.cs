@@ -5,7 +5,8 @@ public sealed class TerminalEditor
 {
     private readonly EditorBuffer _buffer = new();
     private TerminalInput? _input;
-    private readonly EditorCompletion _completion = new(Environment.CurrentDirectory);
+    private readonly EditorCompletion _completion;
+    public TerminalEditor(Func<IReadOnlyList<string>>? commands = null) => _completion = new(Environment.CurrentDirectory, commands);
     private const string Prompt = "❯ ";
 
     public string? ReadLine()
