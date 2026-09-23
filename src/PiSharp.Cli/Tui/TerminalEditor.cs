@@ -11,8 +11,83 @@ public sealed class TerminalEditor
     private int _renderedRows;
     private int _cursorRow;
 
+    public string Draft => _buffer.Text;
+
     /// <summary>Seed the next editable prompt after a session fork; never submits it automatically.</summary>
     public void Prefill(string text) => _buffer.SetText(text);
+
+    /// <summary>Return queued messages to the editor without discarding a draft typed during the run.</summary>
+    public void RestorePending(IEnumerable<string> messages)
+    {
+        var restored = messages.Where(value => !string.IsNullOrWhiteSpace(value)).ToList();
+        if (!string.IsNullOrWhiteSpace(_buffer.Text)) restored.Add(_buffer.Text);
+        _buffer.SetText(string.Join("\n\n", restored));
+    }
+
+    /// <summary>Read active-run controls while provider output streams. Enter steers, Alt+Enter
+    /// follows up, Alt+Up restores queued input, and Escape aborts after restoring queued input.</summary>
+    public async Task MonitorRunAsync(Func<string, bool, CancellationToken, Task<bool>> queue,
+        Func<IReadOnlyList<string>> clearQueue, Action abort, CancellationToken cancellationToken)
+    {
+        var previous = Console.TreatControlCAsInput;
+        try
+        {
+            Console.TreatControlCAsInput = true;
+            using var mode = TerminalMode.Enter();
+            _input ??= TerminalInput.OpenConsole();
+            Render();
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                if (!_input.TryRead(50, out var next))
+                {
+                    await Task.Delay(10, CancellationToken.None);
+                    continue;
+                }
+                if (!await HandleActiveInputAsync(next, queue, clearQueue, abort, cancellationToken)) break;
+                Render();
+            }
+        }
+        finally
+        {
+            ClearLine();
+            Console.TreatControlCAsInput = previous;
+        }
+    }
+
+    /// <summary>Apply one active-run key event. Exposed separately for deterministic input tests.</summary>
+    public async Task<bool> HandleActiveInputAsync(TerminalInputEvent next,
+        Func<string, bool, CancellationToken, Task<bool>> queue, Func<IReadOnlyList<string>> clearQueue,
+        Action abort, CancellationToken cancellationToken = default)
+    {
+        if (next.Key is { Key: ConsoleKey.Escape } ||
+            next.Key is { Key: ConsoleKey.C, Modifiers: var modifiers } && modifiers.HasFlag(ConsoleModifiers.Control))
+        {
+            RestorePending(clearQueue());
+            abort();
+            return false;
+        }
+        if (next.Key is { Key: ConsoleKey.UpArrow, Modifiers: var upModifiers } &&
+            upModifiers.HasFlag(ConsoleModifiers.Alt))
+        {
+            RestorePending(clearQueue());
+            return true;
+        }
+        if (next.Key is { Key: ConsoleKey.Enter } enter)
+        {
+            if (enter.Modifiers.HasFlag(ConsoleModifiers.Shift))
+            {
+                _ = _buffer.Handle(enter);
+                return true;
+            }
+            if (!_buffer.TrySubmit(out var text)) return true;
+            var followUp = enter.Modifiers.HasFlag(ConsoleModifiers.Alt);
+            _buffer.Clear();
+            if (!await queue(text, followUp, cancellationToken)) RestorePending([text]);
+            return true;
+        }
+        _ = next.Text is not null ? _buffer.InsertText(next.Text) : _buffer.Handle(next.Key!.Value);
+        return true;
+    }
 
     public string? ReadLine()
     {

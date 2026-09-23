@@ -95,6 +95,40 @@ public sealed class RpcModeTests
     }
 
     [Fact]
+    public async Task RpcSteeringFollowUpAndClearQueueExposeDistinctPendingInput()
+    {
+        var channel = Channel.CreateUnbounded<string>();
+        using var output = new LockedWriter();
+        var client = new OrderedRpcQueueClient();
+        var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(Path.GetTempPath())),
+            new ConversationSession(Path.GetTempPath(), "fixture", null));
+        var serving = new RpcMode(new CommandReader(channel.Reader), output, run).ServeAsync();
+
+        channel.Writer.TryWrite("{\"id\":\"start\",\"type\":\"prompt\",\"message\":\"initial\"}");
+        await client.FirstRequestStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        channel.Writer.TryWrite("{\"id\":\"f0\",\"type\":\"follow_up\",\"message\":\"discard follow\"}");
+        channel.Writer.TryWrite("{\"id\":\"s0\",\"type\":\"steer\",\"message\":\"discard steer\"}");
+        channel.Writer.TryWrite("{\"id\":\"clear\",\"type\":\"clear_queue\"}");
+        await WaitForAsync(output, "\"command\":\"clear_queue\"");
+        channel.Writer.TryWrite("{\"id\":\"follow\",\"type\":\"follow_up\",\"message\":\"later\"}");
+        channel.Writer.TryWrite("{\"id\":\"steer\",\"type\":\"steer\",\"message\":\"direction\"}");
+        await WaitForAsync(output, "\"id\":\"steer\"");
+        client.ReleaseFirstRequest.TrySetResult();
+        await WaitForAsync(output, "agent_settled");
+        channel.Writer.Complete();
+        await serving.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.Equal(["initial", "direction", "later"], client.LatestUserByRequest);
+        using var clear = JsonDocument.Parse(Assert.Single(output.Lines(), line =>
+            line.Contains("\"command\":\"clear_queue\"", StringComparison.Ordinal)));
+        Assert.Equal(["discard steer"], clear.RootElement.GetProperty("data").GetProperty("steering")
+            .EnumerateArray().Select(item => item.GetString()));
+        Assert.Equal(["discard follow"], clear.RootElement.GetProperty("data").GetProperty("followUp")
+            .EnumerateArray().Select(item => item.GetString()));
+        Assert.Contains(output.Lines(), line => line.Contains("queue_update", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task RpcHtmlExportIsPrivateIncludesBranchesAndNeverOverwrites()
     {
         var dir = Path.Combine(Path.GetTempPath(), "pisharp-rpc-export-" + Guid.NewGuid().ToString("N"));
@@ -281,6 +315,28 @@ public sealed class RpcModeTests
             return Task.CompletedTask;
         }
         public string[] Lines() { lock (_gate) return ToString().Split('\n', StringSplitOptions.RemoveEmptyEntries); }
+    }
+
+    private sealed class OrderedRpcQueueClient : IChatClient
+    {
+        public List<string> LatestUserByRequest { get; } = [];
+        public TaskCompletionSource FirstRequestStarted { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource ReleaseFirstRequest { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            LatestUserByRequest.Add(messages.Last(message => message.Role == ChatRole.User).Text!);
+            if (LatestUserByRequest.Count == 1)
+            {
+                FirstRequestStarted.TrySetResult();
+                await ReleaseFirstRequest.Task.WaitAsync(cancellationToken);
+            }
+            yield return new ChatResponseUpdate(ChatRole.Assistant, "reply");
+        }
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
     }
 
     private sealed class QueuedClient : IChatClient

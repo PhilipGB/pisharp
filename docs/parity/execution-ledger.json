@@ -195,15 +195,31 @@
     {
       "id": "feature-agent-steering-follow-up-concurrent-tools",
       "title": "Agent / steering, follow-up, concurrent tools",
-      "status": "not_started",
+      "status": "verified",
       "source": "docs/parity/feature-matrix.md:8",
       "acceptance": [
         "Escape abort; Enter steering; Alt+Enter follow-up; parallel tool calls",
         "Pending messages returned to editor on abort",
         "Verify through application workflow and compare docs/usage.md; packages/agent/src/agent-loop.ts; application queue and lifecycle tests"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "src/PiSharp.Runtime/Sessions/ConversationRun.cs and PendingPrompts.cs: separate ordered steering/follow-up queues, lifecycle snapshots, atomic clear/return, steering dequeue at provider boundaries, and pending preservation after interruption.",
+        "src/PiSharp.Runtime/PiAgent.cs and Sessions/ObservedChatClient.cs: MAF ChatClientAgent concurrent function invocation is enabled; steering is inserted before a continuation provider request and then reconciled into AgentSession history after the preceding tool result.",
+        "src/PiSharp.Cli/Tui/{TerminalEditor,TerminalInput,EditorBuffer}.cs and Program.cs: input stays active while a run streams; Enter steers, Alt+Enter follows up, Alt+Up dequeues, Escape/Ctrl+C abort, and unsent queue plus draft return to the editor.",
+        "src/PiSharp.Cli/Protocols/RpcMode.cs: distinct steer, follow_up, clear_queue commands and queue state/events share the application runtime.",
+        "tests/PiSharp.Tests/{AgentLifecycleTests,RpcModeTests,TerminalInputTests}.cs: deterministic queue-boundary, abort restoration, key routing, RPC, transcript ordering, and concurrent-tool overlap fixtures."
+      ],
+      "evidence": [
+        "Pinned upstream 002fc8385268300ca91a5fc95f935c2afbbdac02 inspected at packages/coding-agent/docs/usage.md, packages/agent/src/agent-loop.ts, packages/coding-agent/src/core/agent-session.ts, interactive-mode.ts, and modes/rpc: Enter steering is delivered after the current response/tool batch, follow-up waits for natural stop, abort returns pending input, and multiple tool calls default to parallel unless constrained.",
+        "dotnet test PiSharp.slnx --no-restore --filter 'FullyQualifiedName~AgentLifecycleTests|FullyQualifiedName~RpcModeTests|FullyQualifiedName~TerminalInputTests|FullyQualifiedName~EditorBufferTests' => 26 passed. SteeringQueuedDuringToolExecutionReachesImmediateContinuationRequest blocks a real MAF tool, queues steering, then proves the immediate continuation sees both tool result and steering and canonical AgentSession order is user/assistant/tool/user/assistant.",
+        "AgentLifecycleTests.SteeringRunsBeforeFollowUpAndAbortReturnsUnstartedInput proves one-at-a-time steering priority, follow-up deferral, cancellation, atomic return of both unsent queues, and empty queue after restoration.",
+        "AgentLifecycleTests.MultipleModelToolCallsExecuteConcurrentlyAndPersistInSourceOrder uses a two-function barrier: both tool_execution_started events occur before either finish, overlap is observed, and results persist in model call order.",
+        "TerminalInputTests.ActiveEditorRoutesEnterAltEnterAndEscapeWithPendingRestoration proves Enter routes steering, Alt+Enter routes follow-up, Escape invokes abort, and queued messages plus unfinished draft are restored; VT decoding separately proves Alt+Up and Alt+Enter sequences.",
+        "RpcModeTests.RpcSteeringFollowUpAndClearQueueExposeDistinctPendingInput exercises the application adapter while a provider request is blocked, verifies atomic clear response arrays, requeues both kinds, and observes steering before follow-up before settlement.",
+        "dotnet test PiSharp.slnx --no-build => 116 passed, 0 failed; dotnet build PiSharp.slnx --no-restore --warnaserror => 0 warnings/errors; dotnet format PiSharp.slnx --verify-no-changes --no-restore => passed.",
+        "python3 -Werror::ResourceWarning -m unittest discover -s tools/autonomy -p 'test_*.py' -v => 8 passed.",
+        "Scope note: behavior is verified for the fixed one-at-a-time PiSharp queue policy and MAF local function loop. Configurable all-at-once queue modes and byte-for-byte upstream wire compatibility remain separate requirements."
+      ],
       "dependencies": []
     },
     {

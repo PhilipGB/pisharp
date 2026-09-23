@@ -25,6 +25,49 @@ public sealed class TerminalInputTests
     }
 
     [Fact]
+    public void ActiveRunKeysDecodeFollowUpDequeueAndRestorePendingDraft()
+    {
+        var reader = new TerminalInput(new MemoryStream(Encoding.UTF8.GetBytes("\u001b[13;3u\u001b[1;3A")));
+        Assert.True(reader.TryRead(0, out var followUp));
+        Assert.Equal(ConsoleKey.Enter, followUp.Key?.Key);
+        Assert.True(followUp.Key?.Modifiers.HasFlag(ConsoleModifiers.Alt));
+        Assert.True(reader.TryRead(0, out var dequeue));
+        Assert.Equal(ConsoleKey.UpArrow, dequeue.Key?.Key);
+        Assert.True(dequeue.Key?.Modifiers.HasFlag(ConsoleModifiers.Alt));
+        Assert.False(reader.TryRead(0, out _));
+
+        var editor = new TerminalEditor();
+        editor.Prefill("draft");
+        editor.RestorePending(["steer", "follow up"]);
+        Assert.Equal("steer\n\nfollow up\n\ndraft", editor.Draft);
+    }
+
+    [Fact]
+    public async Task ActiveEditorRoutesEnterAltEnterAndEscapeWithPendingRestoration()
+    {
+        var editor = new TerminalEditor();
+        var queued = new List<(string Text, bool FollowUp)>();
+        Task<bool> Queue(string text, bool followUp, CancellationToken _) { queued.Add((text, followUp)); return Task.FromResult(true); }
+        var aborted = false;
+        IReadOnlyList<string> Clear() => ["pending steer", "pending follow up"];
+        static TerminalInputEvent Key(ConsoleKey key, ConsoleModifiers modifiers = 0) => new(
+            new ConsoleKeyInfo('\0', key, modifiers.HasFlag(ConsoleModifiers.Shift),
+                modifiers.HasFlag(ConsoleModifiers.Alt), modifiers.HasFlag(ConsoleModifiers.Control)), null);
+
+        editor.Prefill("steer now");
+        Assert.True(await editor.HandleActiveInputAsync(Key(ConsoleKey.Enter), Queue, Clear, () => aborted = true));
+        editor.Prefill("do later");
+        Assert.True(await editor.HandleActiveInputAsync(Key(ConsoleKey.Enter, ConsoleModifiers.Alt), Queue, Clear,
+            () => aborted = true));
+        editor.Prefill("unfinished draft");
+        Assert.False(await editor.HandleActiveInputAsync(Key(ConsoleKey.Escape), Queue, Clear, () => aborted = true));
+
+        Assert.Equal([("steer now", false), ("do later", true)], queued);
+        Assert.True(aborted);
+        Assert.Equal("pending steer\n\npending follow up\n\nunfinished draft", editor.Draft);
+    }
+
+    [Fact]
     public void PastedMultilineTextRemainsOneAtomicEditorInsertion()
     {
         var reader = new TerminalInput(new MemoryStream(Encoding.UTF8.GetBytes(

@@ -144,7 +144,11 @@ catch (Exception e) when (e is IOException or InvalidDataException or Unauthoriz
 }
 bool print = cli.Print || cli.Mode == "print" || Console.IsInputRedirected || Console.IsOutputRedirected;
 var prompt = cli.Prompt;
-if (!print && cli.Mode is not ("json" or "rpc")) Console.WriteLine($"PiSharp · {connection.Model} · {Environment.CurrentDirectory}\n/tree · /branch · /fork · /new · /name · /model · /session · /trust · /reload · /quit · Ctrl+C interrupts\n");
+TerminalEditor? editor = !print && cli.Mode is not ("json" or "rpc") ? new TerminalEditor(() =>
+    resources.Skills.Select(item => "/skill:" + item.Name)
+        .Concat(resources.Prompts.Select(item => "/" + item.Name))
+        .Concat(extensionLease.Current.Registration.Commands.Keys.Select(name => "/" + name)).ToArray()) : null;
+if (editor is not null) Console.WriteLine($"PiSharp · {connection.Model} · {Environment.CurrentDirectory}\n/tree · /branch · /fork · /new · /name · /model · /session · /trust · /reload · /quit · Escape interrupts; Enter steers; Alt+Enter follows up\n");
 CancellationTokenSource? activeRun = null;
 Console.CancelKeyPress += (_, e) => { e.Cancel = true; activeRun?.Cancel(); };
 
@@ -152,6 +156,9 @@ async Task Run(string input)
 {
     using var runCancel = new CancellationTokenSource();
     activeRun = runCancel;
+    using var monitorStop = new CancellationTokenSource();
+    var monitor = Task.CompletedTask;
+    var monitorStarted = false;
     var started = false;
     try
     {
@@ -160,6 +167,24 @@ async Task Run(string input)
         {
             switch (update.Type)
             {
+                case "prompt_accepted" when editor is not null && !monitorStarted:
+                    monitorStarted = true;
+                    monitor = editor.MonitorRunAsync(async (text, followUp, token) =>
+                    {
+                        try
+                        {
+                            var queued = await resources.ResolveInputAsync(text, token);
+                            var accepted = followUp ? conversationRun.TryFollowUp(queued) : conversationRun.TrySteer(queued);
+                            if (accepted) Console.Error.WriteLine(followUp ? "Queued follow-up." : "Queued steering message.");
+                            return accepted;
+                        }
+                        catch (Exception error) when (error is ArgumentException or IOException)
+                        {
+                            Console.Error.WriteLine($"Could not queue input: {error.Message}");
+                            return false;
+                        }
+                    }, () => conversationRun.ClearPendingPrompts().InDeliveryOrder, runCancel.Cancel, monitorStop.Token);
+                    break;
                 case "model_text_delta" when !string.IsNullOrEmpty(update.Text):
                     Console.Write(update.Text);
                     started = true;
@@ -188,6 +213,9 @@ async Task Run(string input)
     catch (Exception ex) { Console.Error.WriteLine($"Agent error: {ex.Message}"); Environment.ExitCode = 1; }
     finally
     {
+        monitorStop.Cancel();
+        try { await monitor; }
+        catch (OperationCanceledException) { }
         // Store the selected branch and any completed/aborted messages even when a turn fails.
         if (sessionPath is not null)
             try { await store.SaveAsync(conversation, sessionPath); }
@@ -256,12 +284,9 @@ if (print)
 else
 {
     if (!string.IsNullOrWhiteSpace(prompt)) await Run(prompt);
-    var editor = new TerminalEditor(() => resources.Skills.Select(item => "/skill:" + item.Name)
-        .Concat(resources.Prompts.Select(item => "/" + item.Name))
-        .Concat(extensionLease.Current.Registration.Commands.Keys.Select(name => "/" + name)).ToArray());
     while (true)
     {
-        var line = editor.ReadLine();
+        var line = editor!.ReadLine();
         if (line is null || line.Trim() is "/quit" or "/exit") break;
         if (string.IsNullOrWhiteSpace(line)) continue;
         if (line.StartsWith('/'))

@@ -15,7 +15,8 @@ public sealed class ConversationRun
     private readonly AutoCompactionPolicy? _autoCompaction;
     private readonly SemaphoreSlim _gate = new(1, 1);
     private readonly object _promptQueueGate = new();
-    private readonly Queue<string> _promptQueue = new();
+    private readonly Queue<string> _steeringQueue = new();
+    private readonly Queue<string> _followUpQueue = new();
     private object? _promptLoopOwner;
     private Action<AgentLifecycleEvent>? _promptQueueEvents;
     private AgentSession _execution;
@@ -43,26 +44,54 @@ public sealed class ConversationRun
         return new ConversationRun(agent, conversation, execution, save, autoCompaction);
     }
 
-    /// <summary>Queue another user turn on the active application run. The queued prompt starts only
-    /// after the current MAF tool loop and assistant response complete.</summary>
-    public bool TryQueuePrompt(string prompt)
+    /// <summary>Queue guidance ahead of follow-up work on the active application run.</summary>
+    public bool TrySteer(string prompt) => TryQueue(prompt, _steeringQueue, "steering");
+
+    /// <summary>Queue work that runs after steering input has drained.</summary>
+    public bool TryFollowUp(string prompt) => TryQueue(prompt, _followUpQueue, "follow_up");
+
+    /// <summary>Compatibility alias: an additional RPC prompt is follow-up work.</summary>
+    public bool TryQueuePrompt(string prompt) => TryFollowUp(prompt);
+
+    private bool TryQueue(string prompt, Queue<string> queue, string kind)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(prompt);
-        Action<AgentLifecycleEvent>? publish;
         lock (_promptQueueGate)
         {
             if (_promptLoopOwner is null) return false;
-            _promptQueue.Enqueue(prompt);
-            publish = _promptQueueEvents;
+            queue.Enqueue(prompt);
+            _promptQueueEvents?.Invoke(new("prompt_queued", Text: prompt, Tool: kind));
+            _promptQueueEvents?.Invoke(QueueEvent(SnapshotQueues()));
+            return true;
         }
-        publish?.Invoke(new("prompt_queued", Text: prompt));
-        return true;
+    }
+
+    public PendingPrompts GetPendingPrompts()
+    {
+        lock (_promptQueueGate) return SnapshotQueues();
+    }
+
+    /// <summary>Remove and return input that has not reached the model, for editor restoration.</summary>
+    public PendingPrompts ClearPendingPrompts()
+    {
+        lock (_promptQueueGate)
+        {
+            var pending = SnapshotQueues();
+            _steeringQueue.Clear();
+            _followUpQueue.Clear();
+            _promptQueueEvents?.Invoke(QueueEvent(PendingPrompts.Empty));
+            return pending;
+        }
     }
 
     public int PendingPromptCount
     {
-        get { lock (_promptQueueGate) return _promptQueue.Count; }
+        get { lock (_promptQueueGate) return _steeringQueue.Count + _followUpQueue.Count; }
     }
+
+    private PendingPrompts SnapshotQueues() => new(_steeringQueue.ToArray(), _followUpQueue.ToArray());
+    private static AgentLifecycleEvent QueueEvent(PendingPrompts pending) => new("queue_update",
+        Text: JsonSerializer.Serialize(new { steering = pending.Steering, followUp = pending.FollowUp }));
 
     /// <summary>Authoritative ordered lifecycle, including actual model and tool boundaries.
     /// Queued prompts are additional turns in the same run. No completion is emitted when execution
@@ -152,12 +181,31 @@ public sealed class ConversationRun
         }
     }
 
+    private IReadOnlyList<ChatMessage> TakeSteeringForProvider()
+    {
+        lock (_promptQueueGate)
+        {
+            if (!_steeringQueue.TryDequeue(out var prompt)) return [];
+            _promptQueueEvents?.Invoke(QueueEvent(SnapshotQueues()));
+            return [new ChatMessage(ChatRole.User, prompt)];
+        }
+    }
+
     private string? TakeQueuedPromptOrClose(object owner)
     {
         lock (_promptQueueGate)
         {
             if (!ReferenceEquals(_promptLoopOwner, owner)) return null;
-            if (_promptQueue.TryDequeue(out var prompt)) return prompt;
+            if (_steeringQueue.TryDequeue(out var steering))
+            {
+                _promptQueueEvents?.Invoke(QueueEvent(SnapshotQueues()));
+                return steering;
+            }
+            if (_followUpQueue.TryDequeue(out var followUp))
+            {
+                _promptQueueEvents?.Invoke(QueueEvent(SnapshotQueues()));
+                return followUp;
+            }
             _promptLoopOwner = null;
             _promptQueueEvents = null;
             return null;
@@ -257,7 +305,8 @@ public sealed class ConversationRun
             }
             accepted = true;
             onEvent?.Invoke(new("prompt_accepted", Text: prompt));
-            await foreach (var update in _agent.RunStreamingDurableAsync(prompt, _execution, cancellationToken, durable, onEvent))
+            await foreach (var update in _agent.RunStreamingDurableAsync(prompt, _execution, cancellationToken, durable,
+                onEvent, TakeSteeringForProvider))
             {
                 if (!string.IsNullOrEmpty(update.Text))
                 {

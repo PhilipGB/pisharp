@@ -5,17 +5,18 @@ namespace PiSharp.Runtime.Sessions;
 
 /// <summary>Observes every actual provider request, including subsequent tool-loop model calls.</summary>
 internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycleEvent> publish,
-    ProviderRetryPolicy retryPolicy) : DelegatingChatClient(inner)
+    ProviderRetryPolicy retryPolicy, Func<IEnumerable<ChatMessage>, IReadOnlyList<ChatMessage>> takeSteering) : DelegatingChatClient(inner)
 {
     public override async Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages,
         ChatOptions? options = null, CancellationToken cancellationToken = default)
     {
+        var requestMessages = WithSteering(messages);
         for (var retries = 0; ; retries++)
         {
             publish(new("model_request_started"));
             try
             {
-                var response = await base.GetResponseAsync(messages, options, cancellationToken);
+                var response = await base.GetResponseAsync(requestMessages, options, cancellationToken);
                 publish(new("model_request_completed"));
                 return response;
             }
@@ -33,6 +34,7 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
     public override async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
         ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
+        var requestMessages = WithSteering(messages);
         for (var retries = 0; ; retries++)
         {
             publish(new("model_request_started"));
@@ -41,7 +43,7 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
             Exception? failure = null;
             try
             {
-                await using var enumerator = base.GetStreamingResponseAsync(messages, options, cancellationToken)
+                await using var enumerator = base.GetStreamingResponseAsync(requestMessages, options, cancellationToken)
                     .GetAsyncEnumerator(cancellationToken);
                 while (true)
                 {
@@ -70,5 +72,17 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
             publish(new("model_retry_scheduled", Text: $"{retries + 1}/{retryPolicy.MaxRetries}", Error: failure.Message));
             if (retryPolicy.Delay > TimeSpan.Zero) await Task.Delay(retryPolicy.Delay, cancellationToken);
         }
+    }
+
+    private IEnumerable<ChatMessage> WithSteering(IEnumerable<ChatMessage> messages)
+    {
+        var steering = takeSteering(messages);
+        if (steering.Count == 0) return messages;
+        if (messages is ICollection<ChatMessage> mutable && !mutable.IsReadOnly)
+        {
+            foreach (var message in steering) mutable.Add(message);
+            return messages;
+        }
+        return messages.Concat(steering);
     }
 }

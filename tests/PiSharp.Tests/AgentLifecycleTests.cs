@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.AI;
 using PiSharp.Runtime;
@@ -74,6 +75,102 @@ public sealed class AgentLifecycleTests
     }
 
     [Fact]
+    public async Task SteeringRunsBeforeFollowUpAndAbortReturnsUnstartedInput()
+    {
+        var client = new OrderedQueueClient();
+        var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(Path.GetTempPath())),
+            new ConversationSession(Path.GetTempPath(), "fixture", null));
+        var events = new List<AgentLifecycleEvent>();
+        var active = Task.Run(async () =>
+        {
+            await foreach (var item in run.RunEventsAsync("initial")) events.Add(item);
+        });
+        await client.FirstRequestStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.True(run.TryFollowUp("follow up"));
+        Assert.True(run.TrySteer("steer one"));
+        Assert.True(run.TrySteer("steer two"));
+        client.ReleaseFirstRequest.TrySetResult();
+        await active.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.Equal(["initial", "steer one", "steer two", "follow up"], client.LatestUserByRequest);
+        Assert.Equal(4, events.Count(item => item.Type == "turn_completed"));
+        Assert.Contains(events, item => item.Type == "prompt_queued" && item.Tool == "steering");
+        Assert.Contains(events, item => item.Type == "prompt_queued" && item.Tool == "follow_up");
+
+        var blocked = new WaitingClient();
+        var abortRun = await ConversationRun.OpenAsync(new PiAgent(blocked, new CodingTools(Path.GetTempPath())),
+            new ConversationSession(Path.GetTempPath(), "fixture", null));
+        using var cancel = new CancellationTokenSource();
+        var interrupted = Task.Run(async () =>
+        {
+            await foreach (var _ in abortRun.RunEventsAsync("wait", cancel.Token)) { }
+        });
+        await blocked.Started.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.True(abortRun.TrySteer("restore steer"));
+        Assert.True(abortRun.TryFollowUp("restore follow up"));
+        cancel.Cancel();
+        await interrupted.WaitAsync(TimeSpan.FromSeconds(5));
+        var returned = abortRun.ClearPendingPrompts();
+        Assert.Equal(["restore steer"], returned.Steering);
+        Assert.Equal(["restore follow up"], returned.FollowUp);
+        Assert.Equal(0, abortRun.PendingPromptCount);
+    }
+
+    [Fact]
+    public async Task SteeringQueuedDuringToolExecutionReachesImmediateContinuationRequest()
+    {
+        var fixture = new SteeringToolFixture();
+        var client = new SteeringToolClient();
+        var tool = AIFunctionFactory.Create(fixture.WaitAsync, name: "wait_for_steering");
+        var session = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(Path.GetTempPath()),
+            selectedTools: ["wait_for_steering"], noTools: true, extensionTools: [tool]), session);
+        var events = new List<AgentLifecycleEvent>();
+        var active = Task.Run(async () =>
+        {
+            await foreach (var item in run.RunEventsAsync("start")) events.Add(item);
+        });
+        await fixture.Started.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.True(run.TrySteer("change direction"));
+        fixture.Release.TrySetResult();
+        await active.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.True(client.ContinuationSawSteeringAndResult);
+        Assert.Equal(2, client.Requests);
+        Assert.Equal(0, run.PendingPromptCount);
+        Assert.Equal([ChatRole.User, ChatRole.Assistant, ChatRole.Tool, ChatRole.User, ChatRole.Assistant],
+            session.ActiveMessages().Select(message => message.Role));
+        Assert.Equal("change direction", session.ActiveMessages()[3].Text);
+        Assert.Single(events, item => item.Type == "turn_completed");
+    }
+
+    [Fact]
+    public async Task MultipleModelToolCallsExecuteConcurrentlyAndPersistInSourceOrder()
+    {
+        var fixture = new ConcurrentToolFixture();
+        var tool = AIFunctionFactory.Create(fixture.BarrierAsync, name: "barrier");
+        var client = new ParallelToolClient();
+        var session = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(Path.GetTempPath()),
+            selectedTools: ["barrier"], noTools: true, extensionTools: [tool]), session);
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        var events = new List<AgentLifecycleEvent>();
+        await foreach (var item in run.RunEventsAsync("run both", timeout.Token)) events.Add(item);
+
+        Assert.True(fixture.OverlapObserved);
+        Assert.Equal(["first", "second"], client.ResultValues);
+        var starts = events.Select((item, index) => (item, index))
+            .Where(pair => pair.item.Type == "tool_execution_started").Select(pair => pair.index).ToArray();
+        var finishes = events.Select((item, index) => (item, index))
+            .Where(pair => pair.item.Type == "tool_execution_finished").Select(pair => pair.index).ToArray();
+        Assert.Equal(2, starts.Length);
+        Assert.Equal(2, finishes.Length);
+        Assert.True(starts.Max() < finishes.Min());
+        Assert.Equal(["a", "b"], session.ActiveMessages().SelectMany(message => message.Contents)
+            .OfType<FunctionResultContent>().Select(result => result.CallId));
+    }
+
+    [Fact]
     public async Task ProviderFailureAfterPartialOutputIsNotRetriedAndPreservesPartialResponse()
     {
         var session = new ConversationSession(Path.GetTempPath(), "fixture", null);
@@ -136,6 +233,120 @@ public sealed class AgentLifecycleTests
         Assert.Contains(events, item => item.Type == "turn_interrupted");
         Assert.Equal("agent_settled", events[^1].Type);
         Assert.DoesNotContain(events, item => item.Type is "turn_completed" or "agent_run_completed");
+    }
+
+    private sealed class OrderedQueueClient : IChatClient
+    {
+        public List<string> LatestUserByRequest { get; } = [];
+        public TaskCompletionSource FirstRequestStarted { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource ReleaseFirstRequest { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            LatestUserByRequest.Add(messages.Last(message => message.Role == ChatRole.User).Text!);
+            if (LatestUserByRequest.Count == 1)
+            {
+                FirstRequestStarted.TrySetResult();
+                await ReleaseFirstRequest.Task.WaitAsync(cancellationToken);
+            }
+            yield return new ChatResponseUpdate(ChatRole.Assistant, "done");
+        }
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
+    }
+
+    private sealed class SteeringToolFixture
+    {
+        public TaskCompletionSource Started { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource Release { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        [Description("Wait until steering has been queued.")]
+        public async Task<string> WaitAsync(CancellationToken cancellationToken)
+        {
+            Started.TrySetResult();
+            await Release.Task.WaitAsync(cancellationToken);
+            return "tool done";
+        }
+    }
+
+    private sealed class SteeringToolClient : IChatClient
+    {
+        public int Requests { get; private set; }
+        public bool ContinuationSawSteeringAndResult { get; private set; }
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            if (++Requests == 1)
+                yield return new ChatResponseUpdate(ChatRole.Assistant,
+                    [new FunctionCallContent("wait", "wait_for_steering", new Dictionary<string, object?>())]);
+            else
+            {
+                var snapshot = messages.ToArray();
+                ContinuationSawSteeringAndResult = snapshot.Any(message => message.Role == ChatRole.User &&
+                        message.Text == "change direction") &&
+                    snapshot.SelectMany(message => message.Contents).OfType<FunctionResultContent>()
+                        .Any(result => result.CallId == "wait");
+                yield return new ChatResponseUpdate(ChatRole.Assistant, "steered");
+            }
+            await Task.CompletedTask;
+        }
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
+    }
+
+    private sealed class ConcurrentToolFixture
+    {
+        private readonly TaskCompletionSource _firstStarted = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource _secondStarted = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public bool OverlapObserved { get; private set; }
+
+        [Description("Wait for both calls so the fixture can prove concurrent invocation.")]
+        public async Task<string> BarrierAsync(string value, CancellationToken cancellationToken)
+        {
+            if (value == "first")
+            {
+                _firstStarted.TrySetResult();
+                await _secondStarted.Task.WaitAsync(cancellationToken);
+                OverlapObserved = true;
+            }
+            else
+            {
+                await _firstStarted.Task.WaitAsync(cancellationToken);
+                _secondStarted.TrySetResult();
+            }
+            return value;
+        }
+    }
+
+    private sealed class ParallelToolClient : IChatClient
+    {
+        private int _requests;
+        public string[] ResultValues { get; private set; } = [];
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            if (++_requests == 1)
+                yield return new ChatResponseUpdate(ChatRole.Assistant,
+                [
+                    new FunctionCallContent("a", "barrier", new Dictionary<string, object?> { ["value"] = "first" }),
+                    new FunctionCallContent("b", "barrier", new Dictionary<string, object?> { ["value"] = "second" })
+                ]);
+            else
+            {
+                ResultValues = messages.SelectMany(message => message.Contents).OfType<FunctionResultContent>()
+                    .Select(result => result.Result?.ToString()!).ToArray();
+                yield return new ChatResponseUpdate(ChatRole.Assistant, "done");
+            }
+            await Task.CompletedTask;
+        }
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
     }
 
     private sealed class RetryQueueClient : IChatClient
@@ -209,11 +420,13 @@ public sealed class AgentLifecycleTests
 
     private sealed class WaitingClient : IChatClient
     {
+        public TaskCompletionSource Started { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
             CancellationToken cancellationToken = default) => throw new NotSupportedException();
         public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
             ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
+            Started.TrySetResult();
             await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
             yield break;
         }

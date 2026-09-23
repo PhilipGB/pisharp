@@ -12,6 +12,9 @@ public sealed class PiAgent
     private readonly SemaphoreSlim _runGate = new(1, 1);
     private DurableExecution? _active;
     private Action<AgentLifecycleEvent>? _events;
+    private Func<IReadOnlyList<ChatMessage>>? _takeSteering;
+    private readonly List<(ChatMessage Message, string? AfterCallId)> _injectedSteering = [];
+    private int _providerRequestIndex;
 
     public PiAgent(IChatClient client, CodingTools tools, IReadOnlyList<string>? selectedTools = null, IReadOnlyList<string>? excludedTools = null, bool noTools = false, string? contextInstructions = null, string? systemPrompt = null, string? appendSystemPrompt = null,
         IReadOnlyCollection<AIFunction>? extensionTools = null, ProviderRetryPolicy? retryPolicy = null)
@@ -32,16 +35,28 @@ public sealed class PiAgent
             builtin.Concat(external).GroupBy(tool => tool.Name, StringComparer.Ordinal).Any(group => group.Count() > 1))
             throw new ArgumentException("Extension tool conflicts with a built-in tool name.");
         _agent = new ChatClientAgent(new ObservedChatClient(client, value => _events?.Invoke(value),
-            retryPolicy ?? ProviderRetryPolicy.Default), new ChatClientAgentOptions
+            retryPolicy ?? ProviderRetryPolicy.Default, TakeSteeringForRequest), new ChatClientAgentOptions
             {
                 Name = "PiSharp",
                 ChatHistoryProvider = _history,
+                AllowConcurrentInvocation = true,
                 ChatOptions = new ChatOptions
                 {
                     Instructions = (systemPrompt ?? "You are PiSharp, a coding agent. Inspect files before modifying them when tools are available. Use only the tools provided for this run.") + "\n\n" + (appendSystemPrompt ?? "") + "\n\n" + (contextInstructions ?? ""),
                     Tools = builtin.Concat(external).Select(tool => tool is AIFunction function ? new DurableToolFunction(function, () => _active, value => _events?.Invoke(value)) : tool).Cast<AITool>().ToArray()
                 }
             });
+    }
+
+    private IReadOnlyList<ChatMessage> TakeSteeringForRequest(IEnumerable<ChatMessage> messages)
+    {
+        if (_providerRequestIndex++ == 0) return [];
+        var steering = _takeSteering?.Invoke() ?? [];
+        if (steering.Count == 0) return steering;
+        var afterCallId = messages.SelectMany(message => message.Contents).OfType<FunctionResultContent>()
+            .LastOrDefault()?.CallId;
+        _injectedSteering.AddRange(steering.Select(message => (message, afterCallId)));
+        return steering;
     }
 
     public async Task<string> SummarizeAsync(IReadOnlyList<ChatMessage> messages, string? focus,
@@ -80,16 +95,38 @@ public sealed class PiAgent
 
     internal async IAsyncEnumerable<AgentResponseUpdate> RunStreamingDurableAsync(string prompt, AgentSession session,
         [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken, DurableExecution? durable,
-        Action<AgentLifecycleEvent>? onEvent = null)
+        Action<AgentLifecycleEvent>? onEvent = null, Func<IReadOnlyList<ChatMessage>>? takeSteering = null)
     {
         await _runGate.WaitAsync(cancellationToken);
         try
         {
             _active = durable;
             _events = onEvent;
-            await foreach (var update in _agent.RunStreamingAsync(prompt, session: session, cancellationToken: cancellationToken))
-                yield return update;
+            _takeSteering = takeSteering;
+            _providerRequestIndex = 0;
+            _injectedSteering.Clear();
+            try
+            {
+                await foreach (var update in _agent.RunStreamingAsync(prompt, session: session, cancellationToken: cancellationToken))
+                    yield return update;
+            }
+            finally { PersistInjectedSteering(session); }
         }
-        finally { _events = null; _active = null; _runGate.Release(); }
+        finally { _takeSteering = null; _events = null; _active = null; _runGate.Release(); }
+    }
+
+    private void PersistInjectedSteering(AgentSession session)
+    {
+        if (_injectedSteering.Count == 0) return;
+        var history = _history.GetMessages(session).ToList();
+        foreach (var (message, afterCallId) in _injectedSteering)
+        {
+            if (history.Any(item => ReferenceEquals(item, message))) continue;
+            var index = afterCallId is null ? history.Count - 1 : history.FindLastIndex(item =>
+                item.Contents.OfType<FunctionResultContent>().Any(result => result.CallId == afterCallId));
+            history.Insert(Math.Clamp(index + 1, 0, history.Count), message);
+        }
+        _history.SetMessages(session, history);
+        _injectedSteering.Clear();
     }
 }

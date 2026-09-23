@@ -21,10 +21,7 @@ public sealed class EditorBuffer
         if (key.Key == ConsoleKey.Enter)
         {
             if (alt || key.Modifiers.HasFlag(ConsoleModifiers.Shift)) { Insert("\n"); return EditorAction.Render; }
-            if (string.IsNullOrWhiteSpace(_text)) return EditorAction.None;
-            _history.Add(_text);
-            _historyIndex = _history.Count;
-            return EditorAction.Submit;
+            return TrySubmit(out _) ? EditorAction.Submit : EditorAction.None;
         }
         if (control && key.Key == ConsoleKey.J) { Insert("\n"); return EditorAction.Render; }
         if (control && key.Key == ConsoleKey.C) { Clear(); return EditorAction.Cancel; }
@@ -80,6 +77,15 @@ public sealed class EditorBuffer
         if (safe.Length == 0) return EditorAction.None;
         Insert(safe);
         return EditorAction.Render;
+    }
+
+    public bool TrySubmit(out string text)
+    {
+        text = _text;
+        if (string.IsNullOrWhiteSpace(text)) return false;
+        _history.Add(text);
+        _historyIndex = _history.Count;
+        return true;
     }
 
     public void Clear() { _text = ""; Cursor = 0; _historyIndex = _history.Count; _draft = ""; }

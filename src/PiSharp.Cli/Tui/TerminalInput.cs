@@ -22,6 +22,17 @@ public sealed class TerminalInput
         return read(0, bytes, 1) == 1 ? bytes[0] : -1;
     }
 
+    public bool TryRead(int timeoutMilliseconds, out TerminalInputEvent value)
+    {
+        if (!Available(timeoutMilliseconds))
+        {
+            value = new(null, null);
+            return false;
+        }
+        value = Read();
+        return true;
+    }
+
     public TerminalInputEvent Read()
     {
         var first = ReadByte();
@@ -58,6 +69,7 @@ public sealed class TerminalInput
                 "Z" => Key(ConsoleKey.Tab, '\t', shift: true),
                 "13;3u" or "13;3~" => Key(ConsoleKey.Enter, '\n', alt: true),
                 "13;2u" or "13;2~" => Key(ConsoleKey.Enter, '\n', shift: true),
+                "1;3A" => Key(ConsoleKey.UpArrow, alt: true),
                 _ => new(null, null)
             };
         }

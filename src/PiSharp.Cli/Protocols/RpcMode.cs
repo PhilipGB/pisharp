@@ -86,6 +86,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                             }, cancellationToken);
                             break;
                         case "get_state":
+                            var queue = run.GetPendingPrompts();
                             await _writer.EmitAsync(new
                             {
                                 id,
@@ -99,6 +100,8 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                                     sessionId = run.Conversation.Id,
                                     sessionName = run.Conversation.Name,
                                     messageCount = run.Conversation.ActiveMessages().Count,
+                                    steering = queue.Steering,
+                                    followUp = queue.FollowUp,
                                     format = "pisharp",
                                     version = ConversationSession.FormatVersion
                                 }
@@ -238,6 +241,33 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                             await RespondAsync(id, type, true);
                             _active = ExecuteAsync(expanded, _abort.Token);
                             break;
+                        case "steer":
+                        case "follow_up":
+                            if (!busy) { await RespondAsync(id, type, false, "There is no active run to queue input for."); break; }
+                            if (!TryGetTextMessage(root, out var queuedMessage, out var queueError))
+                            { await RespondAsync(id, type, false, queueError); break; }
+                            string queuedExpanded;
+                            try
+                            {
+                                queuedExpanded = resources is null ? queuedMessage! :
+                                    await resources.ResolveInputAsync(queuedMessage!, cancellationToken);
+                            }
+                            catch (Exception error) when (error is ArgumentException or IOException)
+                            { await RespondAsync(id, type, false, error.Message); break; }
+                            var added = type == "steer" ? run.TrySteer(queuedExpanded) : run.TryFollowUp(queuedExpanded);
+                            await RespondAsync(id, type, added, added ? null : "The active run is already settling.");
+                            break;
+                        case "clear_queue":
+                            var pending = run.ClearPendingPrompts();
+                            await _writer.EmitAsync(new
+                            {
+                                id,
+                                type = "response",
+                                command = type,
+                                success = true,
+                                data = new { steering = pending.Steering, followUp = pending.FollowUp }
+                            }, cancellationToken);
+                            break;
                         case "abort":
                             if (busy) { _abort?.Cancel(); try { await _active!; } catch (OperationCanceledException) { } }
                             await RespondAsync(id, type, true);
@@ -258,6 +288,19 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
             }
             _abort?.Dispose();
         }
+    }
+
+    private static bool TryGetTextMessage(JsonElement root, out string? message, out string? error)
+    {
+        message = null;
+        error = null;
+        if (!root.TryGetProperty("message", out var value) || value.ValueKind != JsonValueKind.String ||
+            string.IsNullOrWhiteSpace(message = value.GetString()) || root.TryGetProperty("images", out _))
+        {
+            error = "A nonempty text message is required; images are not supported.";
+            return false;
+        }
+        return true;
     }
 
     private static IReadOnlyList<TreeNode> BuildTree(ConversationSession conversation)
