@@ -88,6 +88,23 @@ public sealed class RpcModeTests
     }
 
     [Fact]
+    public async Task ModelDiscoveryIsAvailableThroughRpcWithoutModelCall()
+    {
+        var channel = Channel.CreateUnbounded<string>();
+        using var output = new LockedWriter();
+        var run = await ConversationRun.OpenAsync(new PiAgent(new StubClient(), new CodingTools(Path.GetTempPath())),
+            new ConversationSession(Path.GetTempPath(), "fixture", null));
+        var serving = new RpcMode(new CommandReader(channel.Reader), output, run,
+            discoverModels: _ => Task.FromResult<IReadOnlyList<PiSharp.Runtime.Providers.ModelDescriptor>>(
+                [new("model-one", "fixture", 4096, "loaded")])).ServeAsync();
+        channel.Writer.TryWrite("{\"id\":5,\"type\":\"get_available_models\"}");
+        channel.Writer.Complete();
+        await serving.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.Contains(output.Lines(), line => line.Contains("\"command\":\"get_available_models\"", StringComparison.Ordinal) &&
+            line.Contains("\"Id\":\"model-one\"", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task CompactCommandRebuildsContextButNotRawMessages()
     {
         var channel = Channel.CreateUnbounded<string>();

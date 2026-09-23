@@ -1,12 +1,14 @@
 using System.Text.Json;
 using Microsoft.Extensions.AI;
 using PiSharp.Runtime.Sessions;
+using PiSharp.Runtime.Providers;
 
 namespace PiSharp.Cli.Protocols;
 
 /// <summary>Experimental subset of Pi RPC. Unsupported commands return errors, never false success.</summary>
 public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun run,
-    Func<CancellationToken, Task>? save = null, PiSharp.Runtime.Resources.ResourceCatalog? resources = null)
+    Func<CancellationToken, Task>? save = null, PiSharp.Runtime.Resources.ResourceCatalog? resources = null,
+    Func<CancellationToken, Task<IReadOnlyList<ModelDescriptor>>>? discoverModels = null)
 {
     private readonly JsonLineWriter _writer = new(output);
     private CancellationTokenSource? _abort;
@@ -39,6 +41,24 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                     var busy = _active is { IsCompleted: false };
                     switch (type)
                     {
+                        case "get_available_models":
+                            if (busy) { await RespondAsync(id, type, false, "Wait until the active prompt settles."); break; }
+                            if (discoverModels is null) { await RespondAsync(id, type, false, "Model discovery is unavailable."); break; }
+                            try
+                            {
+                                var models = await discoverModels(cancellationToken);
+                                await _writer.EmitAsync(new
+                                {
+                                    id,
+                                    type = "response",
+                                    command = type,
+                                    success = true,
+                                    data = new { models }
+                                }, cancellationToken);
+                            }
+                            catch (Exception error) when (error is HttpRequestException or InvalidDataException or JsonException or TaskCanceledException)
+                            { await RespondAsync(id, type, false, error.Message); }
+                            break;
                         case "compact":
                             if (busy) { await RespondAsync(id, type, false, "Wait until the active prompt settles."); break; }
                             if (root.TryGetProperty("instructions", out var focus) && focus.ValueKind != JsonValueKind.String)
