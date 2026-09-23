@@ -105,7 +105,8 @@ try
             throw new InvalidDataException("PISHARP_MODEL conflicts with the saved session model. Use /model after opening the session.");
         connection = connection with { Model = conversation.Model };
         agent = new PiAgent(client.GetChatClient(connection.Model).AsIChatClient(),
-            new CodingTools(Environment.CurrentDirectory), cli.Tools, cli.ExcludeTools, cli.NoTools, instructions, prompts.System, prompts.Append);
+            new CodingTools(Environment.CurrentDirectory), cli.Tools, cli.ExcludeTools, cli.NoTools, instructions, prompts.System, prompts.Append,
+            extensionLease.Current.Registration.Tools);
     }
     if (!cli.NoSession) sessionPath ??= store.NewPath(conversation);
     var initialPath = sessionPath;

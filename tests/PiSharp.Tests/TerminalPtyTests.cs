@@ -45,6 +45,60 @@ public sealed class TerminalPtyTests
     }
 
     [Fact]
+    public async Task ForkFromEarlierUserTurnPreservesSourceAndSeedsEditableDraft()
+    {
+        if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-fork-pty-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        try
+        {
+            var store = new PiSharp.Runtime.Sessions.ConversationStore(cwd, Path.Combine(cwd, "sessions"));
+            var original = new PiSharp.Runtime.Sessions.ConversationSession(cwd, ConnectionSettings.LocalModel,
+                new Uri(ConnectionSettings.LocalEndpoint).ToString());
+            original.Append(new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User, "draft to change"));
+            var userId = original.Tree.HeadId!;
+            original.Append(new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.Assistant, "original answer"));
+            var sourcePath = store.NewPath(original);
+            await store.SaveAsync(original, sourcePath);
+            var assembly = typeof(CliArguments).Assembly.Location;
+            var start = new ProcessStartInfo("/usr/bin/script")
+            {
+                WorkingDirectory = cwd,
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                ArgumentList = { "-q", "-e", "-c", $"dotnet '{assembly}' --local --continue --session-dir '{store.DirectoryPath}' --no-tools", "/dev/null" }
+            };
+            using var process = Process.Start(start);
+            Assert.NotNull(process);
+            var stdout = process.StandardOutput.ReadToEndAsync();
+            var stderr = process.StandardError.ReadToEndAsync();
+            await process.StandardInput.WriteAsync($"/fork\n/fork {userId[..12]}\n");
+            await process.StandardInput.FlushAsync();
+            await Task.Delay(700);
+            await process.StandardInput.WriteAsync("\u0015/name forked\n/quit\n");
+            process.StandardInput.Close();
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(12));
+            try { await process.WaitForExitAsync(timeout.Token); }
+            catch (OperationCanceledException) { process.Kill(entireProcessTree: true); throw; }
+            var output = await stdout;
+            Assert.Equal(0, process.ExitCode);
+            Assert.Contains("draft to change", output);
+            Assert.Contains("Forked " + userId[..12], output);
+            Assert.Contains("Name: forked", output);
+            Assert.DoesNotContain("Session error:", output);
+            Assert.DoesNotContain("Agent error:", await stderr);
+            var source = await store.LoadAsync(sourcePath);
+            Assert.Equal(["draft to change", "original answer"], source.ActiveMessages().Select(message => message.Text));
+            var paths = Directory.EnumerateFiles(store.DirectoryPath, "*.session.json").Where(path => path != sourcePath).ToArray();
+            var fork = await store.LoadAsync(Assert.Single(paths));
+            Assert.Empty(fork.ActiveMessages());
+            Assert.Equal("forked", fork.Name);
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Fact]
     public async Task InteractiveCommandsRenderAndExitThroughLinuxPty()
     {
         if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
