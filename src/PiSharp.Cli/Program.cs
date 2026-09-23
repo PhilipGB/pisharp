@@ -18,7 +18,7 @@ catch (ArgumentException e)
 }
 if (cli.Help)
 {
-    Console.WriteLine("PiSharp (incomplete implementation)\nUsage: pisharp [--local] [--approve|--no-approve] [--mode interactive|print|json|rpc] [--print] [--continue | --session <path> | --no-session] [prompt]\n--tools <read,bash,edit,write,grep,find,ls> selects tools (grep/find/ls are opt-in); --exclude-tools <names> removes tools; --no-tools disables defaults.\n--local uses http://192.168.0.97:8000/v1 and Qwen3.8-27B-GGUF (no API key required).\nOverride with PISHARP_BASE_URL, PISHARP_MODEL, PISHARP_API_KEY. OPENAI_API_KEY is used only for OpenAI.\nInteractive: /tree, /branch <id>, /fork, /new, /name <label>, /model <id>, /session, /trust yes|no|forget, /reload, /quit; Ctrl+C interrupts.");
+    Console.WriteLine("PiSharp (incomplete implementation)\nUsage: pisharp [--local] [--approve|--no-approve] [--mode interactive|print|json|rpc] [--print] [--continue | --session <path> | --no-session] [--session-dir <dir>] [prompt]\n--tools <read,bash,edit,write,grep,find,ls> selects tools (grep/find/ls are opt-in); --exclude-tools <names> removes tools; --no-tools disables defaults.\n--local uses http://192.168.0.97:8000/v1 and Qwen3.8-27B-GGUF (no API key required).\nOverride with PISHARP_BASE_URL, PISHARP_MODEL, PISHARP_API_KEY. OPENAI_API_KEY is used only for OpenAI.\nInteractive: /tree, /branch <id>, /fork, /clone, /new, /sessions, /resume <id>, /compact, /name <label>, /model <id>, /session, /trust yes|no|forget, /reload, /quit; Ctrl+C interrupts.");
     return;
 }
 ConnectionSettings connection;
@@ -64,7 +64,8 @@ catch (ArgumentException e)
     Environment.ExitCode = 2;
     return;
 }
-var store = new ConversationStore(Environment.CurrentDirectory);
+var store = new ConversationStore(Environment.CurrentDirectory, cli.SessionDirectory ??
+    Environment.GetEnvironmentVariable("PISHARP_SESSION_DIR"));
 var sessionPath = cli.NoSession ? null : cli.SessionPath is not null ? Path.GetFullPath(cli.SessionPath)
     : cli.Continue ? store.MostRecentPath() : null;
 ConversationSession conversation;
@@ -217,6 +218,28 @@ else
                 var argument = split < 0 ? "" : line[(split + 1)..].Trim();
                 switch (command)
                 {
+                    case "/sessions":
+                        var listings = await SessionCatalog.ListAsync(store);
+                        foreach (var item in listings)
+                            Console.WriteLine($"{item.Id[..12]} · {item.Name ?? "(unnamed)"} · {item.Model} · {item.MessageCount} messages · {item.ModifiedAt:yyyy-MM-dd HH:mm}");
+                        if (listings.Count == 0) Console.WriteLine("No saved sessions in this project.");
+                        break;
+                    case "/resume":
+                        if (cli.NoSession) throw new InvalidOperationException("Cannot resume in --no-session mode.");
+                        if (argument.Length == 0) { Console.WriteLine("Use /sessions, then /resume <ID-prefix|exact-name>."); break; }
+                        var listing = SessionCatalog.Resolve(await SessionCatalog.ListAsync(store), argument);
+                        if (listing.Path == sessionPath) { Console.WriteLine("Already in this session."); break; }
+                        if (sessionPath is not null) await store.SaveAsync(conversation, sessionPath);
+                        var resumedConversation = await store.LoadAsync(listing.Path);
+                        if (resumedConversation.Model != connection.Model || resumedConversation.Endpoint != connection.Endpoint?.ToString())
+                            throw new InvalidOperationException("Session uses another model or endpoint; open it directly with --session.");
+                        var resumedRun = await ConversationRun.OpenAsync(agent, resumedConversation,
+                            save: token => store.SaveAsync(resumedConversation, listing.Path, token));
+                        conversation = resumedConversation;
+                        conversationRun = resumedRun;
+                        sessionPath = listing.Path;
+                        Console.WriteLine($"Resumed {conversation.Id[..12]} · {conversation.Name ?? "(unnamed)"}");
+                        break;
                     case "/compact":
                         Console.WriteLine(await conversationRun.CompactAsync(argument) ? "Context compacted; full history retained." :
                             "Nothing to compact (at least two completed user turns are required).");
@@ -283,8 +306,9 @@ else
                         break;
                     case "/new":
                     case "/fork":
+                    case "/clone":
                         if (sessionPath is not null) await store.SaveAsync(conversation, sessionPath);
-                        conversation = command == "/fork" ? conversation.Fork()
+                        conversation = command is "/fork" or "/clone" ? conversation.Fork()
                             : new ConversationSession(Environment.CurrentDirectory, connection.Model, connection.Endpoint?.ToString());
                         sessionPath = cli.NoSession ? null : store.NewPath(conversation);
                         var newPath = sessionPath;

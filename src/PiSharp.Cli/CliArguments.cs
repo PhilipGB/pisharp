@@ -1,7 +1,7 @@
 namespace PiSharp.Cli;
 
 public sealed record CliArguments(bool Help, bool Local, bool Print, bool Continue, bool NoSession, string? SessionPath, string Prompt,
-    IReadOnlyList<string>? Tools, IReadOnlyList<string>? ExcludeTools, bool NoTools, string Mode, bool? ProjectTrustOverride = null)
+    IReadOnlyList<string>? Tools, IReadOnlyList<string>? ExcludeTools, bool NoTools, string Mode, bool? ProjectTrustOverride = null, string? SessionDirectory = null)
 {
     private static IReadOnlyList<string> ParseToolNames(string[] arguments, ref int index, string flag)
     {
@@ -13,7 +13,7 @@ public sealed record CliArguments(bool Help, bool Local, bool Print, bool Contin
     {
         bool help = false, local = false, print = false, resume = false, noSession = false, noTools = false, afterSeparator = false;
         bool? trust = null;
-        string? sessionPath = null;
+        string? sessionPath = null, sessionDirectory = null;
         var mode = "interactive";
         IReadOnlyList<string>? tools = null, excludeTools = null;
         var prompt = new List<string>();
@@ -51,6 +51,11 @@ public sealed record CliArguments(bool Help, bool Local, bool Print, bool Contin
                         throw new ArgumentException("--mode supports interactive, print, json, or rpc.");
                     mode = arguments[i];
                     break;
+                case "--session-dir":
+                    if (++i >= arguments.Length || arguments[i].StartsWith('-'))
+                        throw new ArgumentException("--session-dir requires a directory path.");
+                    sessionDirectory = arguments[i];
+                    break;
                 case "--session":
                     if (++i >= arguments.Length || arguments[i].StartsWith('-'))
                         throw new ArgumentException("--session requires a file path.");
@@ -66,6 +71,6 @@ public sealed record CliArguments(bool Help, bool Local, bool Print, bool Contin
             throw new ArgumentException("--continue, --session and --no-session cannot be combined.");
         if (print && mode is not "interactive" and not "print") throw new ArgumentException("--print cannot be combined with --mode json or rpc.");
         if (mode == "rpc" && prompt.Count > 0) throw new ArgumentException("RPC mode reads commands from stdin, not positional prompts.");
-        return new CliArguments(help, local, print, resume, noSession, sessionPath, string.Join(" ", prompt), tools, excludeTools, noTools, mode, trust);
+        return new CliArguments(help, local, print, resume, noSession, sessionPath, string.Join(" ", prompt), tools, excludeTools, noTools, mode, trust, sessionDirectory);
     }
 }
