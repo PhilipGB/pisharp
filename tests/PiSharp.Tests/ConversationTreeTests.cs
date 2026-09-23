@@ -26,6 +26,21 @@ public sealed class ConversationTreeTests
     }
 
     [Fact]
+    public void ClonePathCopiesOnlyAncestorsThroughSpecifiedHead()
+    {
+        var tree = new ConversationTree();
+        var root = tree.Append("user", Text("first"));
+        tree.Append("assistant", Text("answer"));
+        tree.Append("user", Text("later"));
+        var copy = tree.ClonePath(root.Id);
+        Assert.Equal([root.Id], copy.Entries.Select(item => item.Id));
+        Assert.Equal(root.Id, copy.HeadId);
+        Assert.Empty(tree.ClonePath(null).Entries);
+        Assert.Throws<KeyNotFoundException>(() => tree.ClonePath("missing"));
+        Assert.Equal(3, tree.Entries.Count);
+    }
+
+    [Fact]
     public void RejectsDanglingParentsAndDuplicateIds()
     {
         var node = new ConversationNode("id", "missing", "user", Text("hello"), DateTimeOffset.UtcNow);

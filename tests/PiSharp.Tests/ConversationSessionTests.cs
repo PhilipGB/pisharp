@@ -35,6 +35,32 @@ public sealed class ConversationSessionTests
     }
 
     [Fact]
+    public void ForkAtUserExcludesSelectedTurnKeepsSourceAndRestoresDraft()
+    {
+        var original = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        original.Append(new ChatMessage(ChatRole.User, "first"));
+        original.Append(new ChatMessage(ChatRole.Assistant, "answer"));
+        var oldHead = original.Tree.HeadId;
+        original.Append(new ChatMessage(ChatRole.User, "second\nline"));
+        var selectedId = original.Tree.HeadId!;
+        original.Append(new ChatMessage(ChatRole.Assistant, "discarded"));
+        var (fork, draft) = original.ForkAtUser(selectedId);
+        Assert.Equal("second\nline", draft);
+        Assert.Equal(oldHead, fork.Tree.HeadId);
+        Assert.Equal(["first", "answer"], fork.ActiveMessages().Select(message => message.Text));
+        Assert.Equal(["first", "answer", "second\nline", "discarded"], original.ActiveMessages().Select(message => message.Text));
+        Assert.NotEqual(original.Id, fork.Id);
+        var parsed = ConversationSession.Parse(fork.ToJson());
+        Assert.Equal(oldHead, parsed.Tree.HeadId);
+        Assert.Equal(["first", "answer"], parsed.ActiveMessages().Select(message => message.Text));
+        Assert.Throws<ArgumentException>(() => original.ForkAtUser(oldHead!));
+        Assert.Throws<ArgumentException>(() => original.ForkAtUser("missing"));
+        original.SelectModel("other", null);
+        Assert.Empty(original.ForkableUserMessages());
+        Assert.Throws<InvalidOperationException>(() => original.ForkAtUser(selectedId));
+    }
+
+    [Fact]
     public async Task ModelChangePersistsAndCrossModelBranchSelectionFailsClosed()
     {
         var cwd = Path.Combine(Path.GetTempPath(), "pisharp-model-" + Guid.NewGuid().ToString("N"));

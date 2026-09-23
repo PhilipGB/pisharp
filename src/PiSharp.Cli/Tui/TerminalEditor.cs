@@ -11,6 +11,9 @@ public sealed class TerminalEditor
     private int _renderedRows;
     private int _cursorRow;
 
+    /// <summary>Seed the next editable prompt after a session fork; never submits it automatically.</summary>
+    public void Prefill(string text) => _buffer.SetText(text);
+
     public string? ReadLine()
     {
         var previous = Console.TreatControlCAsInput;

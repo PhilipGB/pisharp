@@ -154,6 +154,35 @@ public sealed class ConversationSession
         return true;
     }
 
+    public IReadOnlyList<(string Id, string Text)> ForkableUserMessages()
+    {
+        var path = Tree.ActivePath();
+        var start = path.ToList().FindLastIndex(node => node.Type == "model_change") + 1;
+        return path.Skip(start).Where(node => node.Type == "chat")
+            .Select(node => (node.Id, Message: RestoreEntry(node)))
+            .Where(item => item.Message.Role == ChatRole.User && item.Message.Contents.All(content => content is TextContent) &&
+                !string.IsNullOrWhiteSpace(item.Message.Text))
+            .Select(item => (item.Id, item.Message.Text))
+            .ToArray();
+    }
+
+    /// <summary>Create a separate session ending immediately before a selected user message.
+    /// Return its editable prompt without silently sending it to the provider.</summary>
+    public (ConversationSession Session, string Prompt) ForkAtUser(string id)
+    {
+        var entry = Tree.ActivePath().FirstOrDefault(node => node.Id == id)
+            ?? throw new ArgumentException("Select a user message on the active branch.", nameof(id));
+        if (entry.Type != "chat") throw new ArgumentException("Select a user message.", nameof(id));
+        var message = RestoreEntry(entry);
+        if (message.Role != ChatRole.User || message.Contents.Any(content => content is not TextContent) ||
+            string.IsNullOrWhiteSpace(message.Text))
+            throw new ArgumentException("Select a text-only user message.", nameof(id));
+        if (Tree.ActivePath().SkipWhile(node => node.Id != id).Any(node => node.Type == "model_change"))
+            throw new InvalidOperationException("Forking across a model change requires per-branch provider selection.");
+        var previous = Tree.ClonePath(entry.ParentId);
+        return (new ConversationSession(Guid.NewGuid().ToString("N"), WorkingDirectory, Model, Endpoint, Name, previous), message.Text);
+    }
+
     public ConversationSession Fork() => new(Guid.NewGuid().ToString("N"), WorkingDirectory, Model, Endpoint, Name, Tree.CloneActivePath());
 
     public string ToJson()

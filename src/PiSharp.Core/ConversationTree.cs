@@ -47,6 +47,18 @@ public sealed class ConversationTree
 
     public ConversationTree CloneActivePath() => new(ActivePath(), HeadId);
 
+    /// <summary>Copy one ancestor path through an entry (or an empty path for null).</summary>
+    public ConversationTree ClonePath(string? headId)
+    {
+        if (headId is null) return new ConversationTree();
+        if (!_byId.ContainsKey(headId)) throw new KeyNotFoundException($"No session entry with id {headId}.");
+        var path = new List<ConversationNode>();
+        for (var current = headId; current is not null; current = _byId[current].ParentId)
+            path.Add(_byId[current]);
+        path.Reverse();
+        return new ConversationTree(path, headId);
+    }
+
     private void Add(ConversationNode entry)
     {
         if (string.IsNullOrWhiteSpace(entry.Id) || string.IsNullOrWhiteSpace(entry.Type))

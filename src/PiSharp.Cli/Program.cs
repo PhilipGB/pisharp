@@ -344,11 +344,33 @@ else
                         }
                         catch { conversation.RevertModel(connection.Model, connection.Endpoint?.ToString(), previousHead); throw; }
                         break;
-                    case "/new":
                     case "/fork":
+                        var forkable = conversation.ForkableUserMessages();
+                        if (argument.Length == 0)
+                        {
+                            foreach (var item in forkable)
+                                Console.WriteLine($"{item.Id[..12]} · {new string(item.Text.Replace('\n', ' ').Take(90).Select(c => char.IsControl(c) ? ' ' : c).ToArray())}");
+                            Console.WriteLine(forkable.Count == 0 ? "No text-only user messages on this branch." : "Use /fork <user-message-id> to edit a copy of its prompt in a new session.");
+                            break;
+                        }
+                        var candidates = forkable.Where(item => item.Id.StartsWith(argument, StringComparison.Ordinal)).ToArray();
+                        if (candidates.Length != 1) throw new ArgumentException("Specify a unique user message id prefix from /fork.");
+                        var (forked, draft) = conversation.ForkAtUser(candidates[0].Id);
+                        if (sessionPath is not null) await store.SaveAsync(conversation, sessionPath);
+                        var forkPath = cli.NoSession ? null : store.NewPath(forked);
+                        var forkRun = await ConversationRun.OpenAsync(agent, forked, save: forkPath is null ? null :
+                            token => store.SaveAsync(forked, forkPath, token));
+                        if (forkPath is not null) await store.SaveAsync(forked, forkPath);
+                        conversation = forked;
+                        sessionPath = forkPath;
+                        conversationRun = forkRun;
+                        editor.Prefill(draft);
+                        Console.WriteLine($"Forked {candidates[0].Id[..12]} to {forkPath ?? "(ephemeral)"}. Edit and submit the draft prompt.");
+                        break;
+                    case "/new":
                     case "/clone":
                         if (sessionPath is not null) await store.SaveAsync(conversation, sessionPath);
-                        conversation = command is "/fork" or "/clone" ? conversation.Fork()
+                        conversation = command == "/clone" ? conversation.Fork()
                             : new ConversationSession(Environment.CurrentDirectory, connection.Model, connection.Endpoint?.ToString());
                         sessionPath = cli.NoSession ? null : store.NewPath(conversation);
                         var newPath = sessionPath;
