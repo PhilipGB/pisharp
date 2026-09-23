@@ -4,7 +4,9 @@ using OpenAI;
 using PiSharp.Cli;
 using PiSharp.Runtime;
 using PiSharp.Runtime.Sessions;
+using PiSharp.Runtime.Resources;
 using PiSharp.Cli.Tui;
+using PiSharp.Cli.Protocols;
 
 CliArguments cli;
 try { cli = CliArguments.Parse(args); }
@@ -16,7 +18,7 @@ catch (ArgumentException e)
 }
 if (cli.Help)
 {
-    Console.WriteLine("PiSharp (early vertical slice)\nUsage: pisharp [--local] [--print] [--continue | --session <path> | --no-session] [prompt]\n--tools <read,bash,edit,write,grep,find,ls> selects tools (grep/find/ls are opt-in); --exclude-tools <names> removes tools; --no-tools disables defaults.\n--local uses http://192.168.0.97:8000/v1 and Qwen3.8-27B-GGUF (no API key required).\nOverride with PISHARP_BASE_URL, PISHARP_MODEL, PISHARP_API_KEY. OPENAI_API_KEY is used only for OpenAI.\nInteractive: /tree, /branch <id>, /fork, /new, /name <label>, /model <id>, /session, /quit; Ctrl+C interrupts.");
+    Console.WriteLine("PiSharp (early vertical slice)\nUsage: pisharp [--local] [--mode interactive|print|json|rpc] [--print] [--continue | --session <path> | --no-session] [prompt]\n--tools <read,bash,edit,write,grep,find,ls> selects tools (grep/find/ls are opt-in); --exclude-tools <names> removes tools; --no-tools disables defaults.\n--local uses http://192.168.0.97:8000/v1 and Qwen3.8-27B-GGUF (no API key required).\nOverride with PISHARP_BASE_URL, PISHARP_MODEL, PISHARP_API_KEY. OPENAI_API_KEY is used only for OpenAI.\nInteractive: /tree, /branch <id>, /fork, /new, /name <label>, /model <id>, /session, /quit; Ctrl+C interrupts.");
     return;
 }
 ConnectionSettings connection;
@@ -32,8 +34,21 @@ var options = new OpenAIClientOptions();
 if (connection.Endpoint is not null) options.Endpoint = connection.Endpoint;
 var client = new OpenAIClient(new ApiKeyCredential(connection.ApiKey), options);
 IChatClient chat = client.GetChatClient(connection.Model).AsIChatClient();
+string instructions;
+try
+{
+    var agentDirectory = Environment.GetEnvironmentVariable("PISHARP_AGENT_DIR") ??
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".pisharp", "agent");
+    instructions = await ContextInstructions.LoadAsync(Environment.CurrentDirectory, agentDirectory);
+}
+catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException)
+{
+    Console.Error.WriteLine($"Could not load context instructions: {e.Message}");
+    Environment.ExitCode = 2;
+    return;
+}
 PiAgent agent;
-try { agent = new PiAgent(chat, new CodingTools(Environment.CurrentDirectory), cli.Tools, cli.ExcludeTools, cli.NoTools); }
+try { agent = new PiAgent(chat, new CodingTools(Environment.CurrentDirectory), cli.Tools, cli.ExcludeTools, cli.NoTools, instructions); }
 catch (ArgumentException e)
 {
     Console.Error.WriteLine(e.Message);
@@ -58,7 +73,7 @@ try
             throw new InvalidDataException("PISHARP_MODEL conflicts with the saved session model. Use /model after opening the session.");
         connection = connection with { Model = conversation.Model };
         agent = new PiAgent(client.GetChatClient(connection.Model).AsIChatClient(),
-            new CodingTools(Environment.CurrentDirectory), cli.Tools, cli.ExcludeTools, cli.NoTools);
+            new CodingTools(Environment.CurrentDirectory), cli.Tools, cli.ExcludeTools, cli.NoTools, instructions);
     }
     conversationRun = await ConversationRun.OpenAsync(agent, conversation);
     if (!cli.NoSession) sessionPath ??= store.NewPath(conversation);
@@ -69,9 +84,9 @@ catch (Exception e) when (e is IOException or UnauthorizedAccessException or Sys
     Environment.ExitCode = 2;
     return;
 }
-bool print = cli.Print || Console.IsInputRedirected || Console.IsOutputRedirected;
+bool print = cli.Print || cli.Mode == "print" || Console.IsInputRedirected || Console.IsOutputRedirected;
 var prompt = cli.Prompt;
-if (!print) Console.WriteLine($"PiSharp · {connection.Model} · {Environment.CurrentDirectory}\n/tree · /branch · /fork · /new · /name · /model · /session · /quit · Ctrl+C interrupts\n");
+if (!print && cli.Mode is not ("json" or "rpc")) Console.WriteLine($"PiSharp · {connection.Model} · {Environment.CurrentDirectory}\n/tree · /branch · /fork · /new · /name · /model · /session · /quit · Ctrl+C interrupts\n");
 CancellationTokenSource? activeRun = null;
 Console.CancelKeyPress += (_, e) => { e.Cancel = true; activeRun?.Cancel(); };
 
@@ -110,6 +125,27 @@ async Task Run(string input)
     }
 }
 
+if (cli.Mode == "rpc")
+{
+    await new RpcMode(Console.In, Console.Out, conversationRun, sessionPath is null ? null :
+        cancellationToken => store.SaveAsync(conversation, sessionPath, cancellationToken)).ServeAsync();
+    return;
+}
+if (cli.Mode == "json")
+{
+    var protocol = new JsonEventMode(Console.Out);
+    await protocol.HeaderAsync(conversation);
+    if (string.IsNullOrWhiteSpace(prompt) && Console.IsInputRedirected) prompt = await Console.In.ReadToEndAsync();
+    if (string.IsNullOrWhiteSpace(prompt)) { Console.Error.WriteLine("A prompt is required in JSON mode."); Environment.ExitCode = 2; }
+    else
+    {
+        if (!await protocol.RunAsync(conversationRun, prompt)) Environment.ExitCode = 1;
+        if (sessionPath is not null)
+            try { await store.SaveAsync(conversation, sessionPath); }
+            catch (Exception e) { Console.Error.WriteLine($"Could not save session: {e.Message}"); Environment.ExitCode = 1; }
+    }
+    return;
+}
 if (print)
 {
     if (string.IsNullOrWhiteSpace(prompt) && Console.IsInputRedirected) prompt = await Console.In.ReadToEndAsync();
@@ -156,7 +192,7 @@ else
                     case "/model":
                         if (string.IsNullOrWhiteSpace(argument)) throw new ArgumentException("Specify a model ID.");
                         var nextAgent = new PiAgent(client.GetChatClient(argument).AsIChatClient(),
-                            new CodingTools(Environment.CurrentDirectory), cli.Tools, cli.ExcludeTools, cli.NoTools);
+                            new CodingTools(Environment.CurrentDirectory), cli.Tools, cli.ExcludeTools, cli.NoTools, instructions);
                         var previousHead = conversation.Tree.HeadId;
                         try
                         {
