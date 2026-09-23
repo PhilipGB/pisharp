@@ -61,6 +61,54 @@ public sealed class RpcModeTests
     }
 
     [Fact]
+    public async Task RpcHtmlExportIsPrivateIncludesBranchesAndNeverOverwrites()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "pisharp-rpc-export-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        try
+        {
+            var session = new ConversationSession(dir, "fixture", null);
+            session.Append(new ChatMessage(ChatRole.User, "first"));
+            var root = session.Tree.HeadId;
+            session.Append(new ChatMessage(ChatRole.Assistant, "inactive <script>"));
+            session.Tree.Select(root);
+            session.Append(new ChatMessage(ChatRole.Assistant, "active"));
+            var run = await ConversationRun.OpenAsync(new PiAgent(new StubClient(), new CodingTools(dir)), session);
+            var channel = Channel.CreateUnbounded<string>();
+            using var output = new LockedWriter();
+            var serving = new RpcMode(new CommandReader(channel.Reader), output, run).ServeAsync();
+            channel.Writer.TryWrite("{\"id\":1,\"type\":\"export_html\"}");
+            channel.Writer.TryWrite("{\"id\":2,\"type\":\"export_html\"}");
+            channel.Writer.TryWrite("{\"id\":3,\"type\":\"export_html\",\"outputPath\":null}");
+            var customPath = Path.Combine(dir, "custom.html");
+            channel.Writer.TryWrite(JsonSerializer.Serialize(new { id = 4, type = "export_html", outputPath = customPath }));
+            channel.Writer.Complete();
+            await serving.WaitAsync(TimeSpan.FromSeconds(5));
+            var path = Path.Combine(dir, $"pisharp-{session.Id[..12]}.html");
+            var html = await File.ReadAllTextAsync(path);
+            Assert.Contains("inactive", html);
+            Assert.DoesNotContain("<script>", html);
+            Assert.Contains("active", html);
+            using var first = JsonDocument.Parse(output.Lines()[0]);
+            Assert.True(first.RootElement.GetProperty("success").GetBoolean());
+            Assert.Equal(path, first.RootElement.GetProperty("data").GetProperty("path").GetString());
+            Assert.Equal(4, output.Lines().Length);
+            foreach (var line in output.Lines().Skip(1).Take(2))
+            {
+                using var response = JsonDocument.Parse(line);
+                Assert.False(response.RootElement.GetProperty("success").GetBoolean());
+            }
+            using var custom = JsonDocument.Parse(output.Lines()[3]);
+            Assert.True(custom.RootElement.GetProperty("success").GetBoolean());
+            Assert.Equal(customPath, custom.RootElement.GetProperty("data").GetProperty("path").GetString());
+            Assert.True(File.Exists(customPath));
+            if (OperatingSystem.IsLinux()) Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite,
+                File.GetUnixFileMode(path) & (UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.GroupRead | UnixFileMode.OtherRead));
+        }
+        finally { Directory.Delete(dir, recursive: true); }
+    }
+
+    [Fact]
     public async Task SessionStatisticsCountActiveBranchAndExposeUnknownBillingThroughRpc()
     {
         var session = new ConversationSession(Path.GetTempPath(), "fixture", null);

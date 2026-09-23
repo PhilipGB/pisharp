@@ -104,6 +104,29 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                                 }
                             }, cancellationToken);
                             break;
+                        case "export_html":
+                            if (busy) { await RespondAsync(id, type, false, "Wait until the active prompt settles."); break; }
+                            if (root.TryGetProperty("outputPath", out var outputPath) &&
+                                (outputPath.ValueKind != JsonValueKind.String || string.IsNullOrWhiteSpace(outputPath.GetString())))
+                            { await RespondAsync(id, type, false, "outputPath must be a nonempty string."); break; }
+                            try
+                            {
+                                var path = Path.GetFullPath(root.TryGetProperty("outputPath", out outputPath)
+                                    ? outputPath.GetString()! : Path.Combine(run.Conversation.WorkingDirectory,
+                                        $"pisharp-{run.Conversation.Id[..12]}.html"));
+                                await SessionExport.ExportHtmlAsync(run.Conversation, path, cancellationToken);
+                                await _writer.EmitAsync(new
+                                {
+                                    id,
+                                    type = "response",
+                                    command = type,
+                                    success = true,
+                                    data = new { path }
+                                }, cancellationToken);
+                            }
+                            catch (Exception error) when (error is IOException or ArgumentException or UnauthorizedAccessException or NotSupportedException)
+                            { await RespondAsync(id, type, false, error.Message); }
+                            break;
                         case "get_session_stats":
                             if (busy) { await RespondAsync(id, type, false, "Wait until the active prompt settles."); break; }
                             await _writer.EmitAsync(new
