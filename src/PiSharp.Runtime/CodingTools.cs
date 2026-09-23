@@ -48,7 +48,10 @@ public sealed class CodingTools(string workingDirectory)
         if (offset < 1 || limit is <= 0) throw new ToolFailureException("offset and limit must be positive.");
         try
         {
-            var text = await File.ReadAllTextAsync(Resolve(path), cancellationToken);
+            var resolved = Resolve(path);
+            if (new FileInfo(resolved).Length > 2 * 1024 * 1024)
+                return await StreamingTextReader.SelectAsync(resolved, path, offset, limit, cancellationToken);
+            var text = await File.ReadAllTextAsync(resolved, cancellationToken);
             return ReadTextPlanner.Select(text, path, offset, limit);
         }
         catch (ArgumentOutOfRangeException e) { throw new ToolFailureException(e.Message.Split('\n')[0], inner: e); }

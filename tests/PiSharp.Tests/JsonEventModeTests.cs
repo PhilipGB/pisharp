@@ -37,6 +37,49 @@ public sealed class JsonEventModeTests
     }
 
     [Fact]
+    public async Task FailedToolIsMarkedErrorOnWireAndInPersistedSession()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-json-tool-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            using var output = new StringWriter();
+            var conversation = new ConversationSession(root, "fixture", null);
+            var run = await ConversationRun.OpenAsync(new PiAgent(new ToolFixture(), new CodingTools(root)), conversation);
+            Assert.True(await new JsonEventMode(output).RunAsync(run, "run failing shell"));
+            var records = output.ToString().Split('\n', StringSplitOptions.RemoveEmptyEntries)
+                .Select(line => JsonDocument.Parse(line)).ToArray();
+            try
+            {
+                Assert.Contains(records, record => record.RootElement.GetProperty("type").GetString() == "tool_execution_end" &&
+                    record.RootElement.GetProperty("isError").GetBoolean());
+                Assert.Contains(conversation.ActiveMessages().SelectMany(message => message.Contents), content =>
+                    content is FunctionResultContent { Exception: not null });
+            }
+            finally { foreach (var record in records) record.Dispose(); }
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    private sealed class ToolFixture : IChatClient
+    {
+        private int _calls;
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            if (++_calls == 1)
+                yield return new ChatResponseUpdate(ChatRole.Assistant,
+                    [new FunctionCallContent("failure-1", "bash", new Dictionary<string, object?> { ["command"] = "exit 7" })]);
+            else yield return new ChatResponseUpdate(ChatRole.Assistant, "recovered");
+            await Task.CompletedTask;
+        }
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
+    }
+
+    [Fact]
     public void CliRejectsInvalidModeCombinations()
     {
         Assert.Equal("json", CliArguments.Parse(["--mode", "json", "hello"]).Mode);

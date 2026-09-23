@@ -29,6 +29,8 @@ public sealed class SearchToolsTests
             Assert.Equal("No files found matching pattern", await tools.Find("*.unknown"));
             await Assert.ThrowsAsync<ToolFailureException>(() => tools.Grep("("));
             await Assert.ThrowsAsync<ToolFailureException>(() => tools.Find("*.cs", "missing"));
+            await Assert.ThrowsAsync<ToolFailureException>(() => tools.Find("*.cs", "alpha.cs"));
+            Assert.Equal("alpha.cs:2: match-one", await tools.Grep("match-one", "alpha.cs"));
         }
         finally { Directory.Delete(root, recursive: true); }
     }

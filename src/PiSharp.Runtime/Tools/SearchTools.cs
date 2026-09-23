@@ -18,6 +18,7 @@ public sealed class SearchTools(string workingDirectory)
         CancellationToken cancellationToken = default)
     {
         var root = Path.GetFullPath(path is null or "" ? "." : path, _cwd);
+        if (File.Exists(root)) throw new ToolFailureException($"Not a directory: {root}");
         var max = Math.Max(1, limit ?? 1000);
         Regex regex;
         try { regex = GlobRegex(pattern); }
