@@ -65,7 +65,7 @@ public sealed class TerminalEditor
                     case EditorAction.Submit:
                         var submitted = _buffer.Text;
                         ClearLine();
-                        Console.WriteLine($"{Prompt}{submitted.Replace('\n', '↵')}");
+                        Console.WriteLine($"{Prompt}{new string(submitted.Replace('\n', '↵').Select(c => char.IsControl(c) ? ' ' : c).ToArray())}");
                         _buffer.Clear();
                         return submitted;
                     case EditorAction.Render: Render(); break;

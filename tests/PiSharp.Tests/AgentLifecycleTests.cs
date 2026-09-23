@@ -46,6 +46,70 @@ public sealed class AgentLifecycleTests
         Assert.Equal("agent_settled", events[^1].Type);
     }
 
+    [Fact]
+    public async Task SlowConsumerCanDisposeBoundedStreamWithoutDeadlock()
+    {
+        var run = await ConversationRun.OpenAsync(new PiAgent(new ManyUpdatesClient(), new CodingTools(Path.GetTempPath())),
+            new ConversationSession(Path.GetTempPath(), "fixture", null));
+        var consuming = Task.Run(async () =>
+        {
+            await using var enumerator = run.RunEventsAsync("lots").GetAsyncEnumerator();
+            Assert.True(await enumerator.MoveNextAsync());
+            Assert.Equal("prompt_accepted", enumerator.Current.Type);
+            await Task.Delay(50);
+        });
+        await consuming.WaitAsync(TimeSpan.FromSeconds(5));
+    }
+
+    [Fact]
+    public async Task CancelledProviderReportsInterruptionAndSettlement()
+    {
+        var run = await ConversationRun.OpenAsync(new PiAgent(new WaitingClient(), new CodingTools(Path.GetTempPath())),
+            new ConversationSession(Path.GetTempPath(), "fixture", null));
+        using var cancel = new CancellationTokenSource();
+        var events = new List<AgentLifecycleEvent>();
+        await foreach (var item in run.RunEventsAsync("wait", cancel.Token))
+        {
+            events.Add(item);
+            if (item.Type == "model_request_started") cancel.Cancel();
+        }
+        Assert.Contains(events, item => item.Type == "turn_interrupted");
+        Assert.Equal("agent_settled", events[^1].Type);
+        Assert.DoesNotContain(events, item => item.Type is "turn_completed" or "agent_run_completed");
+    }
+
+    private sealed class WaitingClient : IChatClient
+    {
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+            yield break;
+        }
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
+    }
+
+    private sealed class ManyUpdatesClient : IChatClient
+    {
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            for (var i = 0; i < 10000; i++)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                yield return new ChatResponseUpdate(ChatRole.Assistant, "x");
+            }
+            await Task.CompletedTask;
+        }
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
+    }
+
     private sealed class ToolClient : IChatClient
     {
         public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,

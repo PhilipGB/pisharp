@@ -39,12 +39,15 @@ public sealed class ConversationRun
     public async IAsyncEnumerable<AgentLifecycleEvent> RunEventsAsync(string prompt,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        var channel = Channel.CreateUnbounded<AgentLifecycleEvent>(new UnboundedChannelOptions
+        var channel = Channel.CreateBounded<AgentLifecycleEvent>(new BoundedChannelOptions(256)
         {
             SingleReader = true,
-            SingleWriter = false
+            SingleWriter = false,
+            FullMode = BoundedChannelFullMode.Wait
         });
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        using var consumerClosed = new CancellationTokenSource();
+        void Publish(AgentLifecycleEvent value) => channel.Writer.WriteAsync(value, linked.Token).AsTask().GetAwaiter().GetResult();
         var pump = Task.Run(async () =>
         {
             var accepted = false;
@@ -53,26 +56,37 @@ public sealed class ConversationRun
                 await foreach (var update in RunStreamingAsync(prompt, linked.Token, value =>
                 {
                     if (value.Type == "prompt_accepted") accepted = true;
-                    channel.Writer.TryWrite(value);
+                    Publish(value);
                 }))
                 {
                     if (update.Contents is not null)
                         foreach (var content in update.Contents)
                         {
                             if (content is TextReasoningContent reasoning)
-                                channel.Writer.TryWrite(new("reasoning_delta", Text: reasoning.Text));
+                                Publish(new("reasoning_delta", Text: reasoning.Text));
                             else if (content is UsageContent usage)
-                                channel.Writer.TryWrite(new("usage", Text: usage.Details?.ToString()));
+                                Publish(new("usage", Text: usage.Details?.ToString()));
                         }
                 }
-                channel.Writer.TryWrite(new("turn_completed"));
-                channel.Writer.TryWrite(new("agent_run_completed"));
+                Publish(new("turn_completed"));
+                Publish(new("agent_run_completed"));
             }
-            catch (OperationCanceledException) { channel.Writer.TryWrite(new(accepted ? "turn_interrupted" : "prompt_rejected")); }
-            catch (Exception error) { channel.Writer.TryWrite(new(accepted ? "turn_failed" : "prompt_rejected", Error: error.Message)); }
+            catch (OperationCanceledException)
+            {
+                if (!consumerClosed.IsCancellationRequested)
+                    try { await channel.Writer.WriteAsync(new(accepted ? "turn_interrupted" : "prompt_rejected"), consumerClosed.Token); }
+                    catch (OperationCanceledException) { }
+            }
+            catch (Exception error)
+            {
+                if (!consumerClosed.IsCancellationRequested)
+                    try { await channel.Writer.WriteAsync(new(accepted ? "turn_failed" : "prompt_rejected", Error: error.Message), consumerClosed.Token); }
+                    catch (OperationCanceledException) { }
+            }
             finally
             {
-                channel.Writer.TryWrite(new("agent_settled"));
+                try { await channel.Writer.WriteAsync(new("agent_settled"), consumerClosed.Token); }
+                catch (OperationCanceledException) { }
                 channel.Writer.TryComplete();
             }
         }, CancellationToken.None);
@@ -82,6 +96,7 @@ public sealed class ConversationRun
         }
         finally
         {
+            consumerClosed.Cancel();
             linked.Cancel();
             await pump;
         }
