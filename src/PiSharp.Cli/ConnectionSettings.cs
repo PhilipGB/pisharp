@@ -4,7 +4,7 @@ namespace PiSharp.Cli;
 public sealed record ConnectionSettings(string Model, Uri? Endpoint, string ApiKey)
 {
     public const string LocalModel = "Qwen3.8-27B-GGUF";
-    public const string LocalEndpoint = "http://192.168.0.98:8000/v1";
+    public const string LocalEndpoint = "http://192.168.0.97:8000/v1";
 
     public static ConnectionSettings Resolve(bool local, Func<string, string?> getEnvironmentVariable)
     {

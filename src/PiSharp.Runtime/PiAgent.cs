@@ -1,7 +1,7 @@
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 
-namespace PiSharp.Cli;
+namespace PiSharp.Runtime;
 
 /// <summary>One shared streaming runtime for terminal and one-shot invocation.</summary>
 public sealed class PiAgent(IChatClient client, CodingTools tools)
@@ -18,6 +18,12 @@ public sealed class PiAgent(IChatClient client, CodingTools tools)
 
     public async Task<AgentSession> CreateSessionAsync(CancellationToken cancellationToken = default) =>
         await _agent.CreateSessionAsync(cancellationToken);
+
+    public ValueTask<System.Text.Json.JsonElement> SerializeSessionAsync(AgentSession session, CancellationToken cancellationToken = default) =>
+        _agent.SerializeSessionAsync(session, cancellationToken: cancellationToken);
+
+    public ValueTask<AgentSession> DeserializeSessionAsync(System.Text.Json.JsonElement snapshot, CancellationToken cancellationToken = default) =>
+        _agent.DeserializeSessionAsync(snapshot, cancellationToken: cancellationToken);
 
     public async IAsyncEnumerable<AgentResponseUpdate> RunStreamingAsync(string prompt, AgentSession session,
         [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)

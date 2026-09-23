@@ -2,20 +2,22 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Text;
 using Microsoft.Extensions.AI;
+using PiSharp.Core;
 
-namespace PiSharp.Cli;
+namespace PiSharp.Runtime;
 
 /// <summary>Local coding tools. Paths resolve against the directory in which the agent was started.</summary>
 public sealed class CodingTools(string workingDirectory)
 {
     private readonly string _cwd = Path.GetFullPath(workingDirectory);
+    private static readonly FileMutationQueue s_mutations = new();
     private const int MaxBytes = 50 * 1024;
     private const int MaxLines = 2000;
 
     public IList<AITool> Create() =>
     [
         AIFunctionFactory.Create(Read, name: "read"), AIFunctionFactory.Create(Write, name: "write"),
-        AIFunctionFactory.Create(Edit, name: "edit"), AIFunctionFactory.Create(Bash, name: "bash")
+        AIFunctionFactory.Create(EditBatch, name: "edit"), AIFunctionFactory.Create(Bash, name: "bash")
     ];
 
     private string Resolve(string path) => Path.GetFullPath(path, _cwd);
@@ -57,9 +59,13 @@ public sealed class CodingTools(string workingDirectory)
         try
         {
             var absolute = Resolve(path);
-            Directory.CreateDirectory(Path.GetDirectoryName(absolute)!);
-            await File.WriteAllTextAsync(absolute, content, cancellationToken);
-            return $"Successfully wrote to {path}";
+            return await s_mutations.RunAsync(absolute, async () =>
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(absolute)!);
+                cancellationToken.ThrowIfCancellationRequested();
+                await File.WriteAllTextAsync(absolute, content, cancellationToken);
+                return $"Successfully wrote to {path}";
+            }, cancellationToken);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
@@ -68,34 +74,38 @@ public sealed class CodingTools(string workingDirectory)
     }
 
     [Description("Replace one uniquely matching block in an existing file. Does not create files.")]
-    public async Task<string> Edit(
-        [Description("Path to the file to edit.")] string path,
-        [Description("Exact text to replace; must occur exactly once.")] string oldText,
-        [Description("Replacement text.")] string newText,
+    public Task<string> Edit(string path, string oldText, string newText, CancellationToken cancellationToken = default) =>
+        EditBatch(path, [new TextEdit(oldText, newText)], cancellationToken);
+
+    [Description("Edit a file with multiple exact, unique, nonoverlapping replacements matched against its original contents.")]
+    public async Task<string> EditBatch(
+        [Description("Path relative to the working directory or absolute path.")] string path,
+        [Description("One or more oldText/newText blocks; each oldText must match uniquely in the original file.")] List<TextEdit> edits,
         CancellationToken cancellationToken = default)
     {
-        if (oldText.Length == 0) return "Error: oldText cannot be empty.";
+        if (edits is null || edits.Count == 0) return "Error: Edit tool input is invalid. edits must contain at least one replacement.";
         try
         {
             var absolute = Resolve(path);
-            var original = await File.ReadAllTextAsync(absolute, cancellationToken);
-            var bom = original.StartsWith('\uFEFF') ? "\uFEFF" : "";
-            var content = original[bom.Length..];
-            bool crlf = content.Contains("\r\n", StringComparison.Ordinal);
-            var normalized = content.Replace("\r\n", "\n", StringComparison.Ordinal);
-            var needle = oldText.Replace("\r\n", "\n", StringComparison.Ordinal);
-            int index = normalized.IndexOf(needle, StringComparison.Ordinal);
-            if (index < 0) return $"Error: Could not find exact text in {path}.";
-            if (normalized.IndexOf(needle, index + 1, StringComparison.Ordinal) >= 0)
-                return $"Error: oldText is ambiguous in {path}; provide more context.";
-            var replaced = normalized[..index] + newText.Replace("\r\n", "\n", StringComparison.Ordinal) + normalized[(index + needle.Length)..];
-            cancellationToken.ThrowIfCancellationRequested();
-            await File.WriteAllTextAsync(absolute, bom + (crlf ? replaced.Replace("\n", "\r\n", StringComparison.Ordinal) : replaced), cancellationToken);
-            return $"Successfully replaced 1 block(s) in {path}.";
+            return await s_mutations.RunAsync(absolute, async () =>
+            {
+                var bytes = await File.ReadAllBytesAsync(absolute, cancellationToken);
+                var bom = bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF;
+                var source = new UTF8Encoding(false, true).GetString(bytes, bom ? 3 : 0, bytes.Length - (bom ? 3 : 0));
+                var lf = source.IndexOf('\n');
+                var ending = lf > 0 && source[lf - 1] == '\r' ? "\r\n" : "\n";
+                var modified = FileEdits.Apply(source, edits, path);
+                var restored = ending == "\r\n" ? modified.Replace("\n", "\r\n", StringComparison.Ordinal) : modified;
+                var payload = Encoding.UTF8.GetBytes(restored);
+                if (bom) payload = [0xEF, 0xBB, 0xBF, .. payload];
+                cancellationToken.ThrowIfCancellationRequested();
+                await File.WriteAllBytesAsync(absolute, payload, cancellationToken);
+                return $"Successfully replaced {edits.Count} block(s) in {path}.";
+            }, cancellationToken);
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException or DecoderFallbackException)
         {
-            return $"Error editing {path}: {e.Message}";
+            return $"Error: {e.Message}";
         }
     }
 
@@ -118,20 +128,28 @@ public sealed class CodingTools(string workingDirectory)
                 ArgumentList = { "/bin/bash", "-c", command }
             }
         };
+        await using var output = new ShellOutputBuffer();
         try
         {
+            linked.Token.ThrowIfCancellationRequested();
             process.Start();
-            // Drain both pipes concurrently, even when output exceeds the display limit.
-            var stdout = process.StandardOutput.ReadToEndAsync(linked.Token);
-            var stderr = process.StandardError.ReadToEndAsync(linked.Token);
+            static async Task Pump(Stream source, ShellOutputBuffer target)
+            {
+                var buffer = new byte[8192];
+                int count;
+                while ((count = await source.ReadAsync(buffer)) > 0)
+                    await target.AppendAsync(buffer.AsMemory(0, count));
+            }
+            var stdout = Pump(process.StandardOutput.BaseStream, output);
+            var stderr = Pump(process.StandardError.BaseStream, output);
             try
             {
                 await process.WaitForExitAsync(linked.Token);
-                var combined = await stdout + await stderr;
-                var lines = combined.Split('\n');
-                var tail = string.Join("\n", lines.TakeLast(MaxLines));
-                if (tail.Length > MaxBytes) tail = tail[^MaxBytes..];
-                return (combined.Length != tail.Length ? "[Output truncated]\n" : "") + tail + $"\n\nProcess exited with code {process.ExitCode}";
+                // A background descendant may inherit the pipes after the shell exits.
+                // Keep the timeout active until both streams reach EOF.
+                await Task.WhenAll(stdout, stderr).WaitAsync(linked.Token);
+                var result = await output.FinishAsync();
+                return process.ExitCode == 0 ? result : $"{result}\n\nError: Command exited with code {process.ExitCode}";
             }
             catch (OperationCanceledException)
             {
@@ -140,7 +158,10 @@ public sealed class CodingTools(string workingDirectory)
                 if (kill is not null) await kill.WaitForExitAsync(CancellationToken.None);
                 if (!process.HasExited) process.Kill(entireProcessTree: true);
                 await process.WaitForExitAsync(CancellationToken.None);
-                return cancellationToken.IsCancellationRequested ? "Error: aborted" : $"Error: timeout:{timeout}";
+                try { await Task.WhenAll(stdout, stderr).WaitAsync(TimeSpan.FromSeconds(5)); }
+                catch (TimeoutException) { process.StandardOutput.Close(); process.StandardError.Close(); }
+                var result = await output.FinishAsync();
+                return $"{result}\n\nError: " + (cancellationToken.IsCancellationRequested ? "Command aborted" : $"Command timed out after {timeout} seconds");
             }
         }
         catch (Exception e) when (e is IOException or System.ComponentModel.Win32Exception)

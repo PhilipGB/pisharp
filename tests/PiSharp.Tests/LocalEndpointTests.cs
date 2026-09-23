@@ -4,6 +4,7 @@ using System.Net.Sockets;
 using Microsoft.Extensions.AI;
 using OpenAI;
 using PiSharp.Cli;
+using PiSharp.Runtime;
 
 namespace PiSharp.Tests;
 

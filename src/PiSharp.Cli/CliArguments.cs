@@ -1,0 +1,37 @@
+namespace PiSharp.Cli;
+
+public sealed record CliArguments(bool Help, bool Local, bool Print, bool Continue, bool NoSession, string? SessionPath, string Prompt)
+{
+    public static CliArguments Parse(string[] arguments)
+    {
+        bool help = false, local = false, print = false, resume = false, noSession = false, afterSeparator = false;
+        string? sessionPath = null;
+        var prompt = new List<string>();
+        for (var i = 0; i < arguments.Length; i++)
+        {
+            var arg = arguments[i];
+            if (!afterSeparator && arg == "--") { afterSeparator = true; continue; }
+            if (afterSeparator) { prompt.Add(arg); continue; }
+            switch (arg)
+            {
+                case "--help": help = true; break;
+                case "--local": local = true; break;
+                case "--print": print = true; break;
+                case "--continue": resume = true; break;
+                case "--no-session": noSession = true; break;
+                case "--session":
+                    if (++i >= arguments.Length || arguments[i].StartsWith('-'))
+                        throw new ArgumentException("--session requires a file path.");
+                    sessionPath = arguments[i];
+                    break;
+                default:
+                    if (arg.StartsWith('-')) throw new ArgumentException($"Unknown option: {arg}");
+                    prompt.Add(arg);
+                    break;
+            }
+        }
+        if ((resume ? 1 : 0) + (noSession ? 1 : 0) + (sessionPath is null ? 0 : 1) > 1)
+            throw new ArgumentException("--continue, --session and --no-session cannot be combined.");
+        return new CliArguments(help, local, print, resume, noSession, sessionPath, string.Join(" ", prompt));
+    }
+}

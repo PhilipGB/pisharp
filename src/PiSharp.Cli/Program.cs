@@ -2,14 +2,23 @@ using System.ClientModel;
 using Microsoft.Extensions.AI;
 using OpenAI;
 using PiSharp.Cli;
+using PiSharp.Runtime;
 
-if (args.Contains("--help"))
+CliArguments cli;
+try { cli = CliArguments.Parse(args); }
+catch (ArgumentException e)
 {
-    Console.WriteLine("PiSharp (early vertical slice)\nUsage: pisharp [--local] [--print] [prompt]\n--local uses http://192.168.0.98:8000/v1 and Qwen3.8-27B-GGUF (no API key required).\nOverride with PISHARP_BASE_URL, PISHARP_MODEL, PISHARP_API_KEY. OPENAI_API_KEY is used only for OpenAI.\nInteractive: /quit to exit, Ctrl+C to cancel current run.");
+    Console.Error.WriteLine(e.Message);
+    Environment.ExitCode = 2;
+    return;
+}
+if (cli.Help)
+{
+    Console.WriteLine("PiSharp (early vertical slice)\nUsage: pisharp [--local] [--print] [--continue | --session <path> | --no-session] [prompt]\n--local uses http://192.168.0.97:8000/v1 and Qwen3.8-27B-GGUF (no API key required).\nOverride with PISHARP_BASE_URL, PISHARP_MODEL, PISHARP_API_KEY. OPENAI_API_KEY is used only for OpenAI.\nInteractive: /quit to exit, Ctrl+C to cancel current run.");
     return;
 }
 ConnectionSettings connection;
-try { connection = ConnectionSettings.Resolve(args.Contains("--local"), Environment.GetEnvironmentVariable); }
+try { connection = ConnectionSettings.Resolve(cli.Local, Environment.GetEnvironmentVariable); }
 catch (ArgumentException e)
 {
     Console.Error.WriteLine(e.Message);
@@ -22,9 +31,25 @@ if (connection.Endpoint is not null) options.Endpoint = connection.Endpoint;
 var client = new OpenAIClient(new ApiKeyCredential(connection.ApiKey), options);
 IChatClient chat = client.GetChatClient(connection.Model).AsIChatClient();
 var agent = new PiAgent(chat, new CodingTools(Environment.CurrentDirectory));
-var session = await agent.CreateSessionAsync();
-bool print = args.Contains("--print") || Console.IsInputRedirected || Console.IsOutputRedirected;
-var prompt = string.Join(" ", args.Where(a => a != "--print" && a != "--local"));
+var snapshots = new SessionSnapshots(Environment.CurrentDirectory, connection.Model, connection.Endpoint?.ToString());
+var snapshotPath = cli.NoSession ? null : cli.SessionPath is not null ? Path.GetFullPath(cli.SessionPath)
+    : cli.Continue ? snapshots.MostRecentPath() : null;
+Microsoft.Agents.AI.AgentSession session;
+try
+{
+    session = snapshotPath is not null
+        ? await snapshots.LoadAsync(agent, snapshotPath)
+        : await agent.CreateSessionAsync();
+    if (!cli.NoSession) snapshotPath ??= snapshots.NewPath();
+}
+catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.Text.Json.JsonException or ArgumentException)
+{
+    Console.Error.WriteLine($"Could not open session: {e.Message}");
+    Environment.ExitCode = 2;
+    return;
+}
+bool print = cli.Print || Console.IsInputRedirected || Console.IsOutputRedirected;
+var prompt = cli.Prompt;
 if (!print) Console.WriteLine($"PiSharp · {connection.Model} · {Environment.CurrentDirectory}\n/quit to exit · Ctrl+C to interrupt\n");
 CancellationTokenSource? activeRun = null;
 Console.CancelKeyPress += (_, e) => { e.Cancel = true; activeRun?.Cancel(); };
@@ -50,6 +75,7 @@ async Task Run(string input)
                 started = true;
             }
         }
+        if (snapshotPath is not null) await snapshots.SaveAsync(agent, session, snapshotPath, runCancel.Token);
         if (started) Console.WriteLine();
     }
     catch (OperationCanceledException) { Console.Error.WriteLine("Interrupted."); }

@@ -1,6 +1,7 @@
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.AI;
 using PiSharp.Cli;
+using PiSharp.Runtime;
 
 namespace PiSharp.Tests;
 

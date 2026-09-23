@@ -1,6 +1,8 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/PiSharp.Cli/PiSharp.Cli.csproj" />
+    <Project Path="src/PiSharp.Core/PiSharp.Core.csproj" />
+    <Project Path="src/PiSharp.Runtime/PiSharp.Runtime.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/PiSharp.Tests/PiSharp.Tests.csproj" />

@@ -11,7 +11,7 @@ public sealed class ConnectionSettingsTests
     public void LocalProfileUsesRequestedEndpointAndModelWithoutOpenAiSecret()
     {
         var settings = ConnectionSettings.Resolve(true, Environment(("OPENAI_API_KEY", "sensitive-openai-key")));
-        Assert.Equal("http://192.168.0.98:8000/v1", settings.Endpoint?.ToString().TrimEnd('/'));
+        Assert.Equal("http://192.168.0.97:8000/v1", settings.Endpoint?.ToString().TrimEnd('/'));
         Assert.Equal("Qwen3.8-27B-GGUF", settings.Model);
         Assert.Equal("not-needed", settings.ApiKey);
     }

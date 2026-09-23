@@ -1,32 +1,35 @@
-# Continuation handoff — milestone 0/early milestone 1
+# Continuation handoff — partial milestone (NOT Pi parity)
 
-## State
+## Reference and verification
 
-- Greenfield repository initialized with .NET 10 solution (`PiSharp.slnx`), CLI and xUnit test project. Reference checkout is `/tmp/pisharp-upstream` pinned to `002fc8385268300ca91a5fc95f935c2afbbdac02`; re-clone there at the exact hash if the temporary checkout is gone. Do not substitute a newer HEAD.
-- `docs/parity/feature-matrix.md` lists the initial feature families and explicit differences. **Inventory is not yet exhaustive** at the subfeature/shortcut/edge-case level; expand before claiming parity. The pinned upstream tool suite ran successfully (84/84) after installing/building in the temporary checkout; no **cross-implementation** fixture comparison has been executed. No row is Verified.
-- `PiAgent` is a `ChatClientAgent` with four local `AIFunction` tools; `OpenAIClient.AsIChatClient()` supplies OpenAI or Chat Completions-compatible model streams. `--local` selects an opt-in `http://192.168.0.98:8000/v1` / `Qwen3.8-27B-GGUF` profile without needing an OpenAI credential; endpoint-specific `PISHARP_API_KEY` is used when configured, and `OPENAI_API_KEY` is never forwarded to a custom endpoint. The LAN endpoint was unreachable when tested (curl connection refused); live inference is unverified. Same agent drives line-oriented terminal and `--print`, using a per-process `AgentSession`. The session is NOT persisted. `CodingTools` has basic text read, single-block edit, write, and bash. Function result messages and streamed text reach the caller. Tool tests plus a scripted model integration test and local HTTP SSE endpoint test run without credentials.
-- UI is a basic REPL, **not** Pi's TUI. Only `/quit` is recognized; no slash-command framework, keyboard editor or project trust exists. No images, session JSONL, JSON/RPC, provider discovery/auth flows, compaction, resources or extensions. There is no live-provider test. The command runner does not implement upstream live-output or full-output retention. Do not treat this implementation as safe for untrusted projects; tools use process privileges.
+- Workspace `/home/philip/Documents/projects/dotnet/pisharp`, branch `main`, remote `origin`. Normative reference `/tmp/pisharp-upstream` at `002fc8385268300ca91a5fc95f935c2afbbdac02` (reported version 0.87.1). Pi Packages are the **only** planned exclusion.
+- Upstream pinned `npx vitest run packages/coding-agent/test/tools.test.ts --reporter=dot`: 84/84 passed. Pinned edit-planner results recorded in `docs/parity/fixtures/edit-baseline.md`. Only narrow fixtures match locally; `docs/parity/feature-matrix.md` marks **no whole feature Verified**. Inventory in `docs/parity/detailed-inventory.md` is incomplete.
+- At handoff: `dotnet format PiSharp.slnx --no-restore` then `dotnet build PiSharp.slnx --no-restore --warnaserror` passed with zero warnings and `dotnet test PiSharp.slnx --no-build --no-restore --logger 'console;verbosity=normal'` passed **21/21** (including killed-descendant shell test). Re-run after further edits.
+- On 2026-09-23, `192.168.0.97:8000/v1/models` advertised `Qwen3.8-27B-GGUF` as loaded. Live `--local --print` text returned `PISHARP_LIVE_OK`; model ran bash `printf PISHARP_TOOL_OK`; default snapshot saved prompt `Remember the secret word BLUEBERRY` and `--continue` on a new process answered `BLUEBERRY`. Separate `--no-session` live run in `/tmp/pisharp-live-4OlWIY` performed write→read→batched edit→bash, and `sample.txt` really contained `ALPHA BETA\n`. These are narrow demonstrations, not upstream parity tests. Never send `OPENAI_API_KEY` to custom endpoints.
 
-## Decisions and adaptation
+## Current architecture and deficits
 
-- MAF 1.21.0 / MEAI.OpenAI 10.10.0 pinned in project; use `ChatClientAgent`'s built-in function-invoking wrapper and MAF `AgentSession` for the initial model/tool loop. Pi's tree-shaped JSONL history will need an application-owned canonical log and context reconstruction instead of assuming MAF session serialization alone models branches; avoid writing an incompatible persistence format.
-- OpenAI SDK Chat Completions used for broad endpoint compatibility. Provider capability negotiation, authentication and thinking settings still required. No TS extension source compatibility required; C# plugin API should preserve observable capabilities.
+- `src/PiSharp.Core`: deterministic edit planner and a small append-only `ConversationTree` with branch selection/clone tests. **Tree is not wired to the agent, persisted, or Pi-compatible.**
+- `src/PiSharp.Runtime`: MAF `ChatClientAgent`, four default `AIFunction` tools, per-path write/edit serialization, bounded shell-output tail/private full-output spill, Linux setsid-based process-group abort/timeout, preliminary MAF session snapshots with atomic file replacement. Snapshots save only after completed turns and are **not Pi JSONL**, have no branching and no recovery of incomplete tool calls. Scripted-provider and HTTP/SSE tests use no credentials.
+- `src/PiSharp.Cli`: OpenAI SDK Chat Completions client, local `.97` opt-in, `--print`, line-oriented REPL, `--continue`/`--session <existing>`/`--no-session`. All modes use the same `PiAgent`/session mechanism. **No actual TUI**, multimodal input, keyboard editor, JSON/RPC protocols, provider discovery/auth, project trust, settings, compaction, commands (other than `/quit`), skills/templates/themes, extension API or Pi-compatible session store. Built-in optional grep/find/ls and full read/edit/bash contracts are not yet complete. Do not claim usability for untrusted projects.
+- Important shell-output fix: after the shell exits, pipe draining is covered by the timeout because background descendants can inherit the pipes. Test kills descendant after shell exits. Any further shell changes should preserve this.
 
-## Next concrete task
+## Next concrete work (keep progressing)
 
-+ Read the pinned `packages/coding-agent/src/core/tools/{edit,edit-diff,file-mutation-queue,truncate,read,bash,output-accumulator}.ts` and corresponding `test/*` thoroughly. Use the now-runnable upstream tool test suite to capture exact deterministic tool-output fixtures and add an upstream conformance test project.
-+ Change `edit` from `(path,oldText,newText)` to upstream `edits[]` (validate each unique/nonoverlapping region against original snapshot; BOM/CRLF/diff; queue same-file mutations). Adjust tool schemas and test ambiguous/missing/overlap/no-write/CRLF cases against upstream. Then complete read and bash truncation/cancellation to reference contracts. Never mark Verified on local tests alone.
-+ Implement project-independent session JSONL tree before broadening interfaces; inspect `docs/session-format.md` and `src/core/session-manager.ts` and capture versioned fixtures. For TUI, inspect `packages/tui/src/{tui,terminal,editor-component}.ts` and make an explicit library/VT decision, then add PTY tests. Keep `PiAgent` the one runtime for all modes.
+1. Audit current edits (`git status`, `git diff`, new files); rerun format/build/tests, then commit one coherent milestone. Latest committed `25d755c` is *behind* this handoff; large new changes remain uncommitted. Update README/matrix on each slice. Push only after green tests.
+2. Complete **Pi-compatible canonical JSONL session journal** and MAF context reconstruction from active branch, with upstream versioned fixtures, migration/error handling and commands (`/tree`, `/fork`, `/clone`, `/resume`, `/new`); do not mistake existing snapshot/Core tree for this. Test model tool-call state after save/restart, not just text.
+3. Finish read/edit/bash conformance (image read, UTF-8 boundaries, output/diff/error rendering, cancellation), implement optional grep/find/ls and `--tools` controls, then compare exact upstream outputs. `rg` and `fd` are not installed on this host; choose a managed implementation or explicit dependency, do not assume they exist.
+4. Implement real Linux terminal rendering/editor with pseudo-TTY tests, then JSON/RPC adapters on **the same MAF runtime**. Complete detailed upstream inventory, providers/settings/resources/extensions; test side-effectful flows deterministically without credentials. Opt-in live runs remain separate.
 
-## How to reproduce
+## Reproduction
 
 ```sh
-git status --short
 git -C /tmp/pisharp-upstream rev-parse HEAD
+dotnet restore PiSharp.slnx
 dotnet format PiSharp.slnx --verify-no-changes --no-restore
-dotnet build PiSharp.slnx --no-restore --warnaserror
-dotnet test PiSharp.slnx --no-build --no-restore
-OPENAI_API_KEY=... dotnet run --project src/PiSharp.Cli -- --print 'Read README.md'
+dotnet build PiSharp.slnx --warnaserror
+dotnet test PiSharp.slnx --no-build --logger 'console;verbosity=normal'
+dotnet run --project src/PiSharp.Cli -- --local --no-session --print 'Reply hello'
 ```
 
-Conformance evidence: upstream pinned commit, source/docs and passing upstream tool suite (84 tests), **no differential runtime results**. Integration test validates MAF tool invocation/continuation against scripted provider, not Pi.
+This is an intermediate, incomplete implementation. Keep the feature matrix honest; Verified requires an observable comparison with the pinned upstream.
