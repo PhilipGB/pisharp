@@ -339,7 +339,9 @@ else
                         Console.WriteLine($"Name: {conversation.Name ?? "(none)"}");
                         break;
                     case "/session":
-                        Console.WriteLine($"{sessionPath ?? "(ephemeral)"} · {conversation.Id} · head {conversation.Tree.HeadId ?? "(empty)"}");
+                        var stats = SessionStatistics.Calculate(conversation);
+                        Console.WriteLine($"{sessionPath ?? "(ephemeral)"} · {stats.Id} · {stats.Name ?? "(unnamed)"} · {stats.Model} · head {conversation.Tree.HeadId ?? "(empty)"}");
+                        Console.WriteLine($"{stats.ActiveMessages} active messages · {stats.UserTurns} turns · {stats.ToolCalls} calls/{stats.ToolResults} results · {stats.Entries} entries/{stats.Leaves} leaves · ~{stats.EstimatedContextTokens} context tokens (estimate; billed usage unavailable)");
                         break;
                     case "/trust":
                         if (argument.Length == 0)

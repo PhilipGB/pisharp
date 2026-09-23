@@ -61,6 +61,38 @@ public sealed class RpcModeTests
     }
 
     [Fact]
+    public async Task SessionStatisticsCountActiveBranchAndExposeUnknownBillingThroughRpc()
+    {
+        var session = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        session.Append(new ChatMessage(ChatRole.User, "question"));
+        var root = session.Tree.HeadId;
+        session.Append(new ChatMessage(ChatRole.Assistant, [new FunctionCallContent("a", "read",
+            new Dictionary<string, object?> { ["path"] = "x" })]));
+        session.Append(new ChatMessage(ChatRole.Tool, [new FunctionResultContent("a", "contents")]));
+        session.Tree.Select(root);
+        session.Append(new ChatMessage(ChatRole.Assistant, "alternate"));
+        var stats = SessionStatistics.Calculate(session);
+        Assert.Equal(4, stats.Entries);
+        Assert.Equal(2, stats.Leaves);
+        Assert.Equal(2, stats.ActiveMessages);
+        Assert.Equal(1, stats.UserTurns);
+        Assert.Equal(0, stats.ToolCalls);
+        Assert.Null(stats.BilledTokens);
+        Assert.Null(stats.Cost);
+        var channel = Channel.CreateUnbounded<string>();
+        using var output = new LockedWriter();
+        var run = await ConversationRun.OpenAsync(new PiAgent(new StubClient(), new CodingTools(Path.GetTempPath())), session);
+        var serving = new RpcMode(new CommandReader(channel.Reader), output, run).ServeAsync();
+        channel.Writer.TryWrite("{\"id\":\"stats\",\"type\":\"get_session_stats\"}");
+        channel.Writer.Complete();
+        await serving.WaitAsync(TimeSpan.FromSeconds(5));
+        using var response = JsonDocument.Parse(Assert.Single(output.Lines()));
+        var data = response.RootElement.GetProperty("data");
+        Assert.Equal(2, data.GetProperty("Leaves").GetInt32());
+        Assert.Equal(JsonValueKind.Null, data.GetProperty("BilledTokens").ValueKind);
+    }
+
+    [Fact]
     public async Task CommandsAndTemplateExpansionUseSharedResourceCatalog()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-rpc-resources-" + Guid.NewGuid().ToString("N"));

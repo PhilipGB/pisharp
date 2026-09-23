@@ -35,6 +35,55 @@ public sealed class AgentIntegrationTests
     }
 
     [Fact]
+    public async Task TwoToolCallsRetainResultsAndContinueInOneModelTurn()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-multiple-tools-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        try
+        {
+            var client = new TwoToolsClient();
+            var conversation = new ConversationSession(cwd, "fixture", null);
+            var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(cwd)), conversation);
+            var events = new List<AgentLifecycleEvent>();
+            await foreach (var item in run.RunEventsAsync("write both")) events.Add(item);
+            Assert.Equal("one", await File.ReadAllTextAsync(Path.Combine(cwd, "one.txt")));
+            Assert.Equal("two", await File.ReadAllTextAsync(Path.Combine(cwd, "two.txt")));
+            Assert.Equal(["a", "b"], client.SeenResults!.Order(StringComparer.Ordinal));
+            Assert.Equal(2, events.Count(item => item.Type == "tool_execution_started"));
+            Assert.Equal(2, events.Count(item => item.Type == "tool_execution_finished"));
+            Assert.Equal("agent_settled", events[^1].Type);
+            Assert.Equal(2, conversation.ActiveMessages().SelectMany(message => message.Contents).OfType<FunctionResultContent>().Count());
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    private sealed class TwoToolsClient : IChatClient
+    {
+        public string[]? SeenResults { get; private set; }
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            var results = messages.SelectMany(message => message.Contents).OfType<FunctionResultContent>().ToArray();
+            if (results.Length == 0)
+                yield return new ChatResponseUpdate(ChatRole.Assistant,
+                [
+                    new FunctionCallContent("a", "write", new Dictionary<string, object?> { ["path"] = "one.txt", ["content"] = "one" }),
+                    new FunctionCallContent("b", "write", new Dictionary<string, object?> { ["path"] = "two.txt", ["content"] = "two" })
+                ]);
+            else
+            {
+                SeenResults = results.Select(result => result.CallId).ToArray();
+                yield return new ChatResponseUpdate(ChatRole.Assistant, "done");
+            }
+            await Task.CompletedTask;
+        }
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
+    }
+
+    [Fact]
     public async Task FailedShellIsReportedAsToolFailureAndModelCanRecover()
     {
         var cwd = Path.Combine(Path.GetTempPath(), "pisharp-tool-failure-" + Guid.NewGuid().ToString("N"));

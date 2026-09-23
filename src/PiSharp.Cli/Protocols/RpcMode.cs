@@ -104,6 +104,17 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                                 }
                             }, cancellationToken);
                             break;
+                        case "get_session_stats":
+                            if (busy) { await RespondAsync(id, type, false, "Wait until the active prompt settles."); break; }
+                            await _writer.EmitAsync(new
+                            {
+                                id,
+                                type = "response",
+                                command = type,
+                                success = true,
+                                data = SessionStatistics.Calculate(run.Conversation)
+                            }, cancellationToken);
+                            break;
                         case "get_messages":
                             if (busy) { await RespondAsync(id, type, false, "Wait until the active prompt settles."); break; }
                             await _writer.EmitAsync(new

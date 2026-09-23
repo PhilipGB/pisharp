@@ -28,12 +28,12 @@ Supplement to the authoritative [feature matrix](feature-matrix.md). These are *
 
 ## RPC and JSON events (`rpc-commands.md`, `json.md`, `src/modes/rpc/`)
 
-Every RPC command below is **Not started**. JSONL uses LF framing (not JavaScript `readline`'s Unicode line separators); stdout must contain only protocol records. `prompt` success means accepted, not completed; `agent_settled` follows retries/queued work, unlike `agent_end`.
+The commands below are reference interfaces, not claims of implementation; the feature matrix and notes identify partial subsets, and no RPC group is Verified. JSONL uses LF framing (not JavaScript `readline`'s Unicode line separators); stdout must contain only protocol records. `prompt` success means accepted, not completed; `agent_settled` follows retries/queued work, unlike `agent_end`.
 
 - Prompt/queue: `prompt`, `steer`, `follow_up`, `abort`, `clear_queue`, `new_session` (event-order and queue-cancel tests).
 - State/model: `get_state`, `get_messages`, `set_model`, `cycle_model`, `get_available_models`, `set_thinking_level`, `cycle_thinking_level`, `get_available_thinking_levels`, `set_steering_mode`, `set_follow_up_mode` (correlated request/response tests).
 - Recovery/context: `compact`, `set_auto_compaction`, `set_auto_retry`, `abort_retry` (asynchronous failure and settled-event tests).
-- Shell/stats/export: `bash`, `abort_bash`, `get_session_stats`, `export_html` (parallel command/output/cancellation tests).
+- Shell/stats/export: `bash`, `abort_bash`, `get_session_stats` (in progress: approximate counts, no billed tokens/cost), `export_html` (parallel command/output/cancellation tests).
 - Tree/session: `switch_session`, `fork`, `clone`, `get_fork_messages`, `get_entries`, `get_tree`, `get_last_assistant_text`, `set_session_name`, `get_commands` (selected branch and naming tests).
 - Events: `agent_start/end/settled`, `turn_start/end`, `message_start/update/end`, `tool_execution_start/update/end`, `queue_update`, `entry_appended`, `session_info_changed`, `thinking_level_changed`, compaction and retry events (ordered deterministic provider fixtures).
 
