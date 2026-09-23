@@ -58,13 +58,14 @@ public sealed class ConversationStore(string workingDirectory, string? directory
                     throw new InvalidDataException("Session changed on disk; reopen before writing.");
             }
             else if (File.Exists(target)) throw new InvalidDataException("Session already exists; refusing to replace an unloaded file.");
-            await WriteLockedAsync(session, target, folder, cancellationToken);
-            _knownHashes[target] = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(session.ToJson())));
+            var snapshot = Encoding.UTF8.GetBytes(session.ToJson());
+            await WriteLockedAsync(snapshot, target, folder, cancellationToken);
+            _knownHashes[target] = Convert.ToHexString(SHA256.HashData(snapshot));
         }
         finally { lease.Unlock(0, 1); }
     }
 
-    private static async Task WriteLockedAsync(ConversationSession session, string target, string folder, CancellationToken cancellationToken)
+    private static async Task WriteLockedAsync(byte[] snapshot, string target, string folder, CancellationToken cancellationToken)
     {
         var temp = Path.Combine(folder, ".pisharp-" + Guid.NewGuid().ToString("N") + ".tmp");
         try
@@ -79,8 +80,8 @@ public sealed class ConversationStore(string workingDirectory, string? directory
             if (OperatingSystem.IsLinux()) options.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
             await using (var file = new FileStream(temp, options))
             {
-                await file.WriteAsync(Encoding.UTF8.GetBytes(session.ToJson()), cancellationToken);
-                await file.FlushAsync(cancellationToken);
+                await file.WriteAsync(snapshot, cancellationToken);
+                file.Flush(flushToDisk: true);
             }
             cancellationToken.ThrowIfCancellationRequested();
             File.Move(temp, target, overwrite: true);
