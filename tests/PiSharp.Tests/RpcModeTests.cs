@@ -24,6 +24,11 @@ public sealed class RpcModeTests
         channel.Writer.TryWrite("{\"id\":\"prompt-1\",\"type\":\"prompt\",\"message\":\"hello\"}");
         await WaitForAsync(output, "agent_settled");
         channel.Writer.TryWrite("{\"id\":\"after\",\"type\":\"get_messages\"}");
+        channel.Writer.TryWrite("{\"id\":\"name\",\"type\":\"set_session_name\",\"name\":\"my feature\"}");
+        channel.Writer.TryWrite("{\"id\":\"entries\",\"type\":\"get_entries\"}");
+        channel.Writer.TryWrite("{\"id\":\"bad-cursor\",\"type\":\"get_entries\",\"since\":\"missing\"}");
+        channel.Writer.TryWrite("{\"id\":\"tree\",\"type\":\"get_tree\"}");
+        channel.Writer.TryWrite("{\"id\":\"text\",\"type\":\"get_last_assistant_text\"}");
         channel.Writer.TryWrite("{\"id\":\"unknown\",\"type\":\"unsupported\"}");
         channel.Writer.Complete();
         await serving.WaitAsync(TimeSpan.FromSeconds(5));
@@ -37,6 +42,19 @@ public sealed class RpcModeTests
             Assert.Contains(events, e => e.RootElement.GetProperty("type").GetString() == "response" &&
                 e.RootElement.GetProperty("id").GetString() == "after" &&
                 e.RootElement.GetProperty("data").GetProperty("messages").GetArrayLength() == 2);
+            Assert.Contains(events, e => e.RootElement.GetProperty("type").GetString() == "response" &&
+                e.RootElement.GetProperty("id").GetString() == "bad-cursor" &&
+                !e.RootElement.GetProperty("success").GetBoolean());
+            Assert.Equal("my feature", session.Name);
+            Assert.Contains(events, e => e.RootElement.GetProperty("type").GetString() == "response" &&
+                e.RootElement.GetProperty("id").GetString() == "entries" &&
+                e.RootElement.GetProperty("data").GetProperty("entries").GetArrayLength() == 2);
+            Assert.Contains(events, e => e.RootElement.GetProperty("type").GetString() == "response" &&
+                e.RootElement.GetProperty("id").GetString() == "tree" &&
+                e.RootElement.GetProperty("data").GetProperty("tree").GetArrayLength() == 1);
+            Assert.Contains(events, e => e.RootElement.GetProperty("type").GetString() == "response" &&
+                e.RootElement.GetProperty("id").GetString() == "text" &&
+                e.RootElement.GetProperty("data").GetProperty("text").GetString() == "reply");
             Assert.DoesNotContain(events, e => e.RootElement.GetProperty("type").GetString() == "session");
         }
         finally { foreach (var e in events) e.Dispose(); }

@@ -36,7 +36,7 @@ At startup, PiSharp loads the first of `AGENTS.override.md`, `AGENTS.md`, `AGENT
 
 ## Experimental JSONL and RPC modes
 
-`--mode json <prompt>` emits LF-framed `pisharp` session and streaming event records. `--mode rpc` reads one JSON command per line on stdin, replies with correlated `response` records, and emits the same agent events without a session header. Supported RPC commands are `prompt` (nonempty text only), `get_state`, `get_messages` (idle only), and `abort`. Other commands reject explicitly; steering, follow-up, images, provider controls and Pi-compatible payloads are **not implemented**. Both modes use the same MAF agent and canonical session store as print/terminal modes. Stdout is reserved for JSONL; consume it continuously. The `format: "pisharp"` marker means these event and session payloads are not upstream Pi wire-compatible.
+`--mode json <prompt>` emits LF-framed `pisharp` session and streaming event records. `--mode rpc` reads one JSON command per line on stdin, replies with correlated `response` records, and emits the same agent events without a session header. Supported RPC commands are `prompt` (nonempty text only), `get_state`, `get_messages`, `get_entries` (with cursor), `get_tree`, `get_last_assistant_text`, `set_session_name` (idle only), and `abort`. Other commands reject explicitly; steering, follow-up, images, provider controls and Pi-compatible payloads are **not implemented**. Both modes use the same MAF agent and canonical session store as print/terminal modes. Stdout is reserved for JSONL; consume it continuously. The `format: "pisharp"` marker means these event and session payloads are not upstream Pi wire-compatible.
 
 ## Build and test
 

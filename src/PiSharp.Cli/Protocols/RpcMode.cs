@@ -73,6 +73,67 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                                 }
                             }, cancellationToken);
                             break;
+                        case "get_last_assistant_text":
+                            if (busy) { await RespondAsync(id, type, false, "Wait until the active prompt settles."); break; }
+                            await _writer.EmitAsync(new
+                            {
+                                id,
+                                type = "response",
+                                command = type,
+                                success = true,
+                                data = new
+                                {
+                                    text = run.Conversation.ActiveMessages().LastOrDefault(message =>
+                                    message.Role == ChatRole.Assistant)?.Text
+                                }
+                            }, cancellationToken);
+                            break;
+                        case "get_entries":
+                            if (busy) { await RespondAsync(id, type, false, "Wait until the active prompt settles."); break; }
+                            var entries = run.Conversation.Tree.Entries;
+                            var index = -1;
+                            if (root.TryGetProperty("since", out var since))
+                            {
+                                if (since.ValueKind != JsonValueKind.String ||
+                                    (index = entries.ToList().FindIndex(entry => entry.Id == since.GetString())) < 0)
+                                { await RespondAsync(id, type, false, "Unknown entry cursor."); break; }
+                            }
+                            await _writer.EmitAsync(new
+                            {
+                                id,
+                                type = "response",
+                                command = type,
+                                success = true,
+                                data = new
+                                {
+                                    format = "pisharp",
+                                    entries = entries.Skip(index + 1).ToArray(),
+                                    leafId = run.Conversation.Tree.HeadId
+                                }
+                            }, cancellationToken);
+                            break;
+                        case "get_tree":
+                            if (busy) { await RespondAsync(id, type, false, "Wait until the active prompt settles."); break; }
+                            await _writer.EmitAsync(new
+                            {
+                                id,
+                                type = "response",
+                                command = type,
+                                success = true,
+                                data = new { format = "pisharp", tree = BuildTree(run.Conversation), leafId = run.Conversation.Tree.HeadId }
+                            }, cancellationToken);
+                            break;
+                        case "set_session_name":
+                            if (busy) { await RespondAsync(id, type, false, "Wait until the active prompt settles."); break; }
+                            if (!root.TryGetProperty("name", out var name) || name.ValueKind != JsonValueKind.String)
+                            { await RespondAsync(id, type, false, "A string name is required."); break; }
+                            var oldName = run.Conversation.Name;
+                            run.Conversation.Rename(name.GetString());
+                            try { if (save is not null) await save(cancellationToken); }
+                            catch (Exception error)
+                            { run.Conversation.Rename(oldName); await RespondAsync(id, type, false, error.Message); break; }
+                            await RespondAsync(id, type, true);
+                            break;
                         case "prompt":
                             if (busy) { await RespondAsync(id, type, false, "Prompt already streaming; steering and follow-up are not implemented."); break; }
                             if (!root.TryGetProperty("message", out var message) || message.ValueKind != JsonValueKind.String ||
@@ -103,6 +164,26 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
             }
             _abort?.Dispose();
         }
+    }
+
+    private static IReadOnlyList<TreeNode> BuildTree(ConversationSession conversation)
+    {
+        var lookup = conversation.Tree.Entries.ToDictionary(entry => entry.Id, entry => new TreeNode(entry));
+        var roots = new List<TreeNode>();
+        foreach (var entry in conversation.Tree.Entries)
+        {
+            var node = lookup[entry.Id];
+            if (entry.ParentId is not null && lookup.TryGetValue(entry.ParentId, out var parent))
+                parent.Children.Add(node);
+            else roots.Add(node);
+        }
+        return roots;
+    }
+
+    private sealed class TreeNode(PiSharp.Core.ConversationNode entry)
+    {
+        public PiSharp.Core.ConversationNode Entry { get; } = entry;
+        public List<TreeNode> Children { get; } = [];
     }
 
     private async Task ExecuteAsync(string message, CancellationToken token)
