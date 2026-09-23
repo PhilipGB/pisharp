@@ -88,6 +88,26 @@ public sealed class RpcModeTests
     }
 
     [Fact]
+    public async Task CompactCommandRebuildsContextButNotRawMessages()
+    {
+        var channel = Channel.CreateUnbounded<string>();
+        using var output = new LockedWriter();
+        var session = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        session.Append(new ChatMessage(ChatRole.User, "one"));
+        session.Append(new ChatMessage(ChatRole.Assistant, "answer"));
+        session.Append(new ChatMessage(ChatRole.User, "two"));
+        var run = await ConversationRun.OpenAsync(new PiAgent(new StubClient(), new CodingTools(Path.GetTempPath())), session);
+        var serving = new RpcMode(new CommandReader(channel.Reader), output, run).ServeAsync();
+        channel.Writer.TryWrite("{\"id\":9,\"type\":\"compact\",\"instructions\":\"retain decisions\"}");
+        await WaitForAsync(output, "\"compacted\":true");
+        channel.Writer.Complete();
+        await serving.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.Equal(3, session.ActiveMessages().Count);
+        Assert.Equal(2, session.ContextMessages().Count);
+        Assert.Contains(output.Lines(), line => line.Contains("\"command\":\"compact\"", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task AbortSettlesAndPreservesInterruptionMarker()
     {
         var channel = Channel.CreateUnbounded<string>();
@@ -135,7 +155,7 @@ public sealed class RpcModeTests
     private sealed class StubClient : IChatClient
     {
         public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
-            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+            CancellationToken cancellationToken = default) => Task.FromResult(new ChatResponse([new ChatMessage(ChatRole.Assistant, "summary")]));
         public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
             ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         { yield return new ChatResponseUpdate(ChatRole.Assistant, "reply"); await Task.CompletedTask; }

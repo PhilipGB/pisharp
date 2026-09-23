@@ -39,6 +39,18 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                     var busy = _active is { IsCompleted: false };
                     switch (type)
                     {
+                        case "compact":
+                            if (busy) { await RespondAsync(id, type, false, "Wait until the active prompt settles."); break; }
+                            if (root.TryGetProperty("instructions", out var focus) && focus.ValueKind != JsonValueKind.String)
+                            { await RespondAsync(id, type, false, "Instructions must be text."); break; }
+                            try
+                            {
+                                var compacted = await run.CompactAsync(root.TryGetProperty("instructions", out focus) ? focus.GetString() : null, cancellationToken);
+                                await _writer.EmitAsync(new { id, type = "response", command = type, success = true, data = new { compacted } }, cancellationToken);
+                            }
+                            catch (Exception error) when (error is not OperationCanceledException)
+                            { await RespondAsync(id, type, false, error.Message); }
+                            break;
                         case "get_commands":
                             await _writer.EmitAsync(new
                             {

@@ -64,6 +64,46 @@ public sealed class ConversationSession
         .Select(node => Restore(node.Payload, node.Id))
         .ToList();
 
+    /// <summary>Model input for the selected path; raw chat entries remain available to history and export.</summary>
+    public List<ChatMessage> ContextMessages()
+    {
+        var path = Tree.ActivePath();
+        var compactAt = path.ToList().FindLastIndex(node => node.Type == "compaction");
+        if (compactAt < 0) return ActiveMessages();
+        var compact = path[compactAt].Payload;
+        var kept = compact.GetProperty("firstKeptEntryId").GetString();
+        var from = path.ToList().FindIndex(node => node.Id == kept);
+        if (from < 0 || from >= compactAt) throw new InvalidDataException("Invalid compaction boundary.");
+        var context = new List<ChatMessage> { new(ChatRole.User,
+            "[Summary of earlier conversation; original turns remain in session history.]\n" + compact.GetProperty("summary").GetString()) };
+        context.AddRange(path.Skip(from).Where(node => node.Type == "chat").Select(node => Restore(node.Payload, node.Id)));
+        return context;
+    }
+
+    /// <summary>Keep the latest whole user turn; never split a tool call/result group.</summary>
+    public CompactionPlan? PrepareCompaction()
+    {
+        var path = Tree.ActivePath();
+        var compactAt = path.ToList().FindLastIndex(node => node.Type == "compaction");
+        var first = compactAt < 0 ? 0 : path.ToList().FindIndex(node =>
+            node.Id == path[compactAt].Payload.GetProperty("firstKeptEntryId").GetString());
+        var lastUser = path.ToList().FindLastIndex(node => node.Type == "chat" &&
+            Restore(node.Payload, node.Id).Role == ChatRole.User);
+        if (lastUser <= first) return null;
+        var context = ContextMessages();
+        var keptCount = path.Skip(lastUser).Count(node => node.Type == "chat");
+        return new CompactionPlan(path[lastUser].Id, context.Take(context.Count - keptCount).ToArray());
+    }
+
+    public void AppendCompaction(CompactionPlan plan, string summary)
+    {
+        if (string.IsNullOrWhiteSpace(summary) || summary.Length > 64 * 1024)
+            throw new InvalidDataException("Compaction summary must be nonempty and at most 64KB.");
+        if (PrepareCompaction()?.FirstKeptEntryId != plan.FirstKeptEntryId)
+            throw new InvalidOperationException("Conversation changed during compaction.");
+        Tree.Append("compaction", JsonSerializer.SerializeToElement(new { summary, firstKeptEntryId = plan.FirstKeptEntryId }));
+    }
+
     private static ChatMessage Restore(JsonElement payload, string id)
     {
         var record = payload.Deserialize<ChatRecord>() ?? throw new InvalidDataException($"Missing message at {id}.");
@@ -140,6 +180,21 @@ public sealed class ConversationSession
         // Validate every branch, not merely the currently selected path.
         foreach (var entry in entries.Where(entry => entry.Type == "chat")) _ = Restore(entry.Payload, entry.Id);
         var tree = new ConversationTree(entries);
+        foreach (var node in entries.Where(entry => entry.Type == "compaction"))
+        {
+            if (node.Payload.ValueKind != JsonValueKind.Object ||
+                !node.Payload.TryGetProperty("summary", out var summary) || summary.ValueKind != JsonValueKind.String ||
+                string.IsNullOrWhiteSpace(summary.GetString()) || summary.GetString()!.Length > 64 * 1024 ||
+                !node.Payload.TryGetProperty("firstKeptEntryId", out var kept) || kept.ValueKind != JsonValueKind.String)
+                throw new InvalidDataException($"Invalid compaction at {node.Id}.");
+            tree.Select(node.ParentId);
+            var path = tree.ActivePath();
+            var boundary = path.ToList().FindIndex(entry => entry.Id == kept.GetString());
+            var previous = path.ToList().FindLastIndex(entry => entry.Type == "compaction");
+            if (boundary <= previous || boundary >= path.Count || path[boundary].Type != "chat" ||
+                Restore(path[boundary].Payload, path[boundary].Id).Role != ChatRole.User)
+                throw new InvalidDataException($"Invalid compaction boundary at {node.Id}.");
+        }
         tree.Select(document.HeadId); // An explicit null selection is distinct from the last appended entry.
         return new ConversationSession(document.Id, document.WorkingDirectory, document.Model, document.Endpoint, document.Name, tree);
     }
@@ -162,6 +217,8 @@ public sealed class ConversationSession
                 unknown.ValueKind != JsonValueKind.Array)))
             throw new InvalidDataException($"Invalid checkpoint {node.Type} at {node.Id}.");
     }
+
+    public sealed record CompactionPlan(string FirstKeptEntryId, IReadOnlyList<ChatMessage> MessagesToSummarize);
 
     private sealed record ChatRecord(JsonElement Message, ToolError[]? Errors);
     private sealed record ToolError(int Index, string Type, string Message);

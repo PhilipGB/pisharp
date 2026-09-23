@@ -217,6 +217,10 @@ else
                 var argument = split < 0 ? "" : line[(split + 1)..].Trim();
                 switch (command)
                 {
+                    case "/compact":
+                        Console.WriteLine(await conversationRun.CompactAsync(argument) ? "Context compacted; full history retained." :
+                            "Nothing to compact (at least two completed user turns are required).");
+                        break;
                     case "/tree":
                         foreach (var node in conversation.Tree.Entries)
                             Console.WriteLine($"{(node.Id == conversation.Tree.HeadId ? '>' : ' ')} {node.Id[..12]} ← {node.ParentId?[..12] ?? "root"} {node.Type} {node.Timestamp:HH:mm:ss}");

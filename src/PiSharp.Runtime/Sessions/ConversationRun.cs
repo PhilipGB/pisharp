@@ -23,14 +23,14 @@ public sealed class ConversationRun
         _save = save;
         Conversation = conversation;
         _execution = execution;
-        _historyCount = conversation.ActiveMessages().Count;
+        _historyCount = conversation.ContextMessages().Count;
     }
 
     public static async Task<ConversationRun> OpenAsync(PiAgent agent, ConversationSession conversation,
         CancellationToken cancellationToken = default, Func<CancellationToken, Task>? save = null)
     {
         if (conversation.RecoverIncomplete() && save is not null) await save(cancellationToken);
-        var execution = await agent.RestoreHistoryAsync(conversation.ActiveMessages(), cancellationToken);
+        var execution = await agent.RestoreHistoryAsync(conversation.ContextMessages(), cancellationToken);
         return new ConversationRun(agent, conversation, execution, save);
     }
 
@@ -102,6 +102,31 @@ public sealed class ConversationRun
         }
     }
 
+    /// <summary>Manually summarize completed earlier turns; no raw session messages are removed.</summary>
+    public async Task<bool> CompactAsync(string? focus = null, CancellationToken cancellationToken = default)
+    {
+        await _gate.WaitAsync(cancellationToken);
+        try
+        {
+            var plan = Conversation.PrepareCompaction();
+            if (plan is null) return false;
+            var summary = await _agent.SummarizeAsync(plan.MessagesToSummarize, focus, cancellationToken);
+            var previousHead = Conversation.Tree.HeadId;
+            try
+            {
+                Conversation.AppendCompaction(plan, summary);
+                var messages = Conversation.ContextMessages();
+                var restored = await _agent.RestoreHistoryAsync(messages, cancellationToken);
+                if (_save is not null) await _save(cancellationToken);
+                _execution = restored;
+                _historyCount = messages.Count;
+                return true;
+            }
+            catch { Conversation.Tree.Select(previousHead); throw; }
+        }
+        finally { _gate.Release(); }
+    }
+
     /// <summary>Selection is durable in Conversation.HeadId; rebuild MAF state before the next run.</summary>
     public async Task SelectAsync(string? id, CancellationToken cancellationToken = default)
     {
@@ -118,7 +143,7 @@ public sealed class ConversationRun
                 if (currentModelEntry != selectedModelEntry)
                     throw new InvalidOperationException("Branch changes the model. Select the matching model before running.");
                 if (Conversation.RecoverIncomplete() && _save is not null) await _save(cancellationToken);
-                var history = Conversation.ActiveMessages();
+                var history = Conversation.ContextMessages();
                 var restored = await _agent.RestoreHistoryAsync(history, cancellationToken);
                 _execution = restored;
                 _historyCount = history.Count;
@@ -175,7 +200,7 @@ public sealed class ConversationRun
             {
                 var history = _agent.GetHistory(_execution);
                 if (history.Count < _historyCount) throw new InvalidDataException("MAF discarded canonical conversation history.");
-                var existing = Conversation.ActiveMessages();
+                var existing = Conversation.ContextMessages();
                 if (existing.Count != _historyCount || existing.Where((message, index) => !JsonElement.DeepEquals(
                     JsonSerializer.SerializeToElement(message, AIJsonUtilities.DefaultOptions),
                     JsonSerializer.SerializeToElement(history[index], AIJsonUtilities.DefaultOptions))).Any())
