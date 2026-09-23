@@ -26,7 +26,7 @@ public sealed class TerminalPtyTests
             Assert.NotNull(process);
             var stdout = process.StandardOutput.ReadToEndAsync();
             var stderr = process.StandardError.ReadToEndAsync();
-            await process.StandardInput.WriteAsync("/session\n/name smoke\n/session\n/quit\n");
+            await process.StandardInput.WriteAsync("/session\n/name smoke\n/session\n\u001b[200~/name pasted\nsecond\u001b[201~\n/quit\n");
             process.StandardInput.Close();
             using var limit = new CancellationTokenSource(TimeSpan.FromSeconds(12));
             try { await process.WaitForExitAsync(limit.Token); }
@@ -35,6 +35,8 @@ public sealed class TerminalPtyTests
             Assert.Equal(0, process.ExitCode);
             Assert.Contains("(ephemeral)", output);
             Assert.Contains("Name: smoke", output);
+            var normalized = System.Text.RegularExpressions.Regex.Replace(output, "\\r+\\n", "\n");
+            Assert.True(normalized.Contains("Name: pasted\nsecond", StringComparison.Ordinal), normalized);
             Assert.Contains("PiSharp", output);
             Assert.DoesNotContain("Agent error", await stderr);
         }

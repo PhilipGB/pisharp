@@ -4,6 +4,8 @@ namespace PiSharp.Cli.Tui;
 public sealed class TerminalEditor
 {
     private readonly EditorBuffer _buffer = new();
+    private TerminalInput? _input;
+    private readonly EditorCompletion _completion = new(Environment.CurrentDirectory);
     private const string Prompt = "❯ ";
 
     public string? ReadLine()
@@ -12,10 +14,42 @@ public sealed class TerminalEditor
         try
         {
             Console.TreatControlCAsInput = true;
+            using var mode = TerminalMode.Enter();
+            _input ??= TerminalInput.OpenConsole();
             Render();
             while (true)
             {
-                var action = _buffer.Handle(Console.ReadKey(intercept: true));
+                var next = _input.Read();
+                if (next.Key is null && next.Text is null)
+                {
+                    ClearLine();
+                    Console.WriteLine();
+                    return null;
+                }
+                if (next.Key is { Key: ConsoleKey.Tab, Modifiers: ConsoleModifiers.None })
+                {
+                    try
+                    {
+                        var matches = _completion.Complete(_buffer);
+                        if (matches.Count == 0) _buffer.Handle(next.Key.Value);
+                        else if (matches.Count > 1)
+                        {
+                            ClearLine();
+                            Console.WriteLine();
+                            Console.WriteLine(string.Join("  ", matches.Take(10).Select(match =>
+                                new string(match.Select(c => char.IsControl(c) ? ' ' : c).ToArray()))) +
+                                (matches.Count > 10 ? "  …" : ""));
+                        }
+                    }
+                    catch (Exception error) when (error is IOException or UnauthorizedAccessException or ArgumentException)
+                    {
+                        ClearLine();
+                        Console.WriteLine($"\nCompletion unavailable: {error.Message}");
+                    }
+                    Render();
+                    continue;
+                }
+                var action = next.Text is not null ? _buffer.InsertText(next.Text) : _buffer.Handle(next.Key!.Value);
                 switch (action)
                 {
                     case EditorAction.Exit:

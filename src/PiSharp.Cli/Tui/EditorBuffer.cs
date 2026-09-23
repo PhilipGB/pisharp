@@ -20,7 +20,7 @@ public sealed class EditorBuffer
         var alt = key.Modifiers.HasFlag(ConsoleModifiers.Alt);
         if (key.Key == ConsoleKey.Enter)
         {
-            if (alt) { Insert("\n"); return EditorAction.Render; }
+            if (alt || key.Modifiers.HasFlag(ConsoleModifiers.Shift)) { Insert("\n"); return EditorAction.Render; }
             if (string.IsNullOrWhiteSpace(_text)) return EditorAction.None;
             _history.Add(_text);
             _historyIndex = _history.Count;
@@ -73,7 +73,24 @@ public sealed class EditorBuffer
         return EditorAction.Render;
     }
 
+    public EditorAction InsertText(string text)
+    {
+        var safe = new string(text.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n')
+            .Where(c => c is '\n' or '\t' || !char.IsControl(c)).ToArray());
+        if (safe.Length == 0) return EditorAction.None;
+        Insert(safe);
+        return EditorAction.Render;
+    }
+
     public void Clear() { _text = ""; Cursor = 0; _historyIndex = _history.Count; _draft = ""; }
+
+    public void Replace(int start, int length, string replacement)
+    {
+        if (start < 0 || length < 0 || start + length > _text.Length || start + length > Cursor)
+            throw new ArgumentOutOfRangeException(nameof(start));
+        _text = _text.Remove(start, length).Insert(start, replacement);
+        Cursor = start + replacement.Length;
+    }
 
     public void SetText(string text) { _text = text; Cursor = text.Length; }
 
