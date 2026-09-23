@@ -1,0 +1,4 @@
+{"type":"session","version":2,"id":"session","timestamp":"2024-12-03T14:00:00.000Z","cwd":"/project"}
+{"type":"message","id":"before","parentId":null,"timestamp":"2024-12-03T14:00:01.000Z","message":{"role":"user","content":"hello","timestamp":1733234401000}}
+{"type":"message","id":"after","parentId":"before","timestamp":"2024-12-03T14:00:02.000Z","message":{"role":"hookMessage","content":"legacy","timestamp":1733234402000}}
+{"type":"compaction","id":"summary","parentId":"after","timestamp":"2024-12-03T14:00:03.000Z","summary":"compact","tokensBefore":100,"firstKeptEntryId":"before"}

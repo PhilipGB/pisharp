@@ -42,6 +42,29 @@ public sealed class PiSessionJournalTests
         Assert.Equal("next", PiSessionProjection.Build(reloaded.Tree).Messages.Last().GetProperty("content").GetString());
     }
 
+    [Theory]
+    [InlineData("session-v1-linear.jsonl")]
+    [InlineData("session-v2-linear.jsonl")]
+    public void MigratesLegacyLinearHistoryAndCompactionLikePinnedPi(string fixture)
+    {
+        var journal = PiSessionJournal.Parse(Fixture(fixture));
+        var entries = journal.Tree.Entries;
+        Assert.Equal(3, entries.Count);
+        Assert.Null(entries[0].ParentId);
+        Assert.Equal(entries[0].Id, entries[1].ParentId);
+        Assert.Equal(entries[1].Id, entries[2].ParentId);
+        Assert.Equal("custom", entries[1].Payload.GetProperty("message").GetProperty("role").GetString());
+        Assert.Equal(entries[0].Id, entries[2].Payload.GetProperty("firstKeptEntryId").GetString());
+        Assert.False(entries[2].Payload.TryGetProperty("firstKeptEntryIndex", out _));
+        using var expected = JsonDocument.Parse("[" +
+            "{\"role\":\"compactionSummary\",\"summary\":\"compact\",\"tokensBefore\":100,\"timestamp\":1733234403000}," +
+            "{\"role\":\"user\",\"content\":\"hello\",\"timestamp\":1733234401000}," +
+            "{\"role\":\"custom\",\"content\":\"legacy\",\"timestamp\":1733234402000}]");
+        Assert.True(JsonElement.DeepEquals(expected.RootElement, JsonSerializer.SerializeToElement(PiSessionProjection.Build(journal.Tree).Messages)));
+        Assert.Contains("\"version\":3", journal.ToJsonLines());
+        Assert.Equal(3, PiSessionJournal.Parse(journal.ToJsonLines()).Tree.Entries.Count);
+    }
+
     [Fact]
     public async Task SavedJsonlIsPrivateAndReloadable()
     {
@@ -67,7 +90,7 @@ public sealed class PiSessionJournalTests
         var fresh = new PiSessionJournal("/project");
         Assert.Throws<ArgumentException>(() => fresh.Append("message", JsonSerializer.SerializeToElement(new { id = "spoofed" })));
         Assert.Empty(fresh.Tree.Entries);
-        Assert.Throws<InvalidDataException>(() => PiSessionJournal.Parse(Fixture("session-v3-branch.jsonl").Replace("\"version\":3", "\"version\":2", StringComparison.Ordinal)));
+        Assert.Throws<InvalidDataException>(() => PiSessionJournal.Parse(Fixture("session-v3-branch.jsonl").Replace("\"version\":3", "\"version\":4", StringComparison.Ordinal)));
         Assert.Throws<InvalidDataException>(() => PiSessionJournal.Parse(Fixture("session-v3-branch.jsonl") + "{bad json}\n"));
         Assert.Throws<InvalidDataException>(() => PiSessionJournal.Parse(Fixture("session-v3-branch.jsonl").Replace("\"parentId\":\"a1111111\"", "\"parentId\":\"missing\"", StringComparison.Ordinal)));
     }

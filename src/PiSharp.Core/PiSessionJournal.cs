@@ -5,7 +5,7 @@ namespace PiSharp.Core;
 
 /// <summary>
 /// Pi v3 JSONL session representation. This is the canonical, append-only entry format,
-/// distinct from the current MAF provider-specific snapshot. v1/v2 migration is not supported yet.
+/// distinct from the current MAF provider-specific snapshot. v1/v2 are migrated in memory on load.
 /// </summary>
 public sealed class PiSessionJournal
 {
@@ -68,23 +68,56 @@ public sealed class PiSessionJournal
         return string.Join('\n', lines) + "\n";
     }
 
+    private static void Migrate(List<JsonObject> records, int version)
+    {
+        if (version < 2)
+        {
+            string? previous = null;
+            var ids = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var item in records.Skip(1))
+            {
+                string id;
+                do { id = Guid.NewGuid().ToString("N")[..8]; } while (!ids.Add(id));
+                item["id"] = id;
+                item["parentId"] = previous;
+                previous = id;
+                if (item["type"]?.GetValue<string>() == "compaction" && item["firstKeptEntryIndex"] is JsonValue indexValue)
+                {
+                    var index = indexValue.GetValue<int>();
+                    if (index < 1 || index >= records.Count)
+                        throw new InvalidDataException($"Compaction firstKeptEntryIndex {index} is invalid.");
+                    item["firstKeptEntryId"] = records[index]["id"]?.GetValue<string>();
+                    item.Remove("firstKeptEntryIndex");
+                }
+            }
+        }
+        if (version < 3)
+            foreach (var item in records.Skip(1))
+                if (item["type"]?.GetValue<string>() == "message" && item["message"] is JsonObject message &&
+                    message["role"]?.GetValue<string>() == "hookMessage") message["role"] = "custom";
+        records[0]["version"] = Version;
+    }
+
     public static PiSessionJournal Parse(string jsonl)
     {
         var lines = jsonl.Split('\n', StringSplitOptions.RemoveEmptyEntries);
         if (lines.Length == 0) throw new InvalidDataException("Session header is missing.");
         try
         {
-            using var header = JsonDocument.Parse(lines[0]);
-            var root = header.RootElement;
-            if (root.GetProperty("type").GetString() != "session") throw new InvalidDataException("First line is not a session header.");
-            if (root.GetProperty("version").GetInt32() != Version)
-                throw new InvalidDataException("Only Pi v3 sessions are supported; migration is not implemented.");
+            var records = lines.Select((line, index) => JsonNode.Parse(line) as JsonObject
+                ?? throw new InvalidDataException($"Session line {index + 1} is not an object.")).ToList();
+            var header = records[0];
+            if (header["type"]?.GetValue<string>() != "session") throw new InvalidDataException("First line is not a session header.");
+            var version = header["version"]?.GetValue<int>() ?? 1;
+            if (version < 1 || version > Version) throw new InvalidDataException($"Unsupported Pi session version: {version}.");
+            Migrate(records, version);
+            using var headerDocument = JsonDocument.Parse(header.ToJsonString());
+            var root = headerDocument.RootElement;
             var entries = new List<ConversationNode>();
-            for (var i = 1; i < lines.Length; i++)
+            for (var i = 1; i < records.Count; i++)
             {
-                using var document = JsonDocument.Parse(lines[i]);
+                using var document = JsonDocument.Parse(records[i].ToJsonString());
                 var item = document.RootElement;
-                if (item.ValueKind != JsonValueKind.Object) throw new InvalidDataException($"Session line {i + 1} is not an object.");
                 var extra = new JsonObject();
                 foreach (var field in item.EnumerateObject())
                     if (field.Name is not ("type" or "id" or "parentId" or "timestamp"))
