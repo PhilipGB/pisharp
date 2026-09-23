@@ -82,6 +82,35 @@ public sealed class ConversationSession
         return message;
     }
 
+    /// <summary>Close a crash-interrupted run without guessing which side effects happened.
+    /// No tool is invoked during recovery; the next model turn sees an explicit warning.</summary>
+    public bool RecoverIncomplete()
+    {
+        var path = Tree.ActivePath();
+        var start = path.LastOrDefault(node => node.Type == "run_started");
+        if (start is null) return false;
+        var runId = start.Payload.GetProperty("runId").GetString();
+        if (path.Any(node => (node.Type is "run_finished" or "run_recovered") &&
+            node.Payload.GetProperty("runId").GetString() == runId)) return false;
+        var prompt = start.Payload.GetProperty("prompt").GetString();
+        var intents = path.SkipWhile(node => node.Id != start.Id).Where(node => node.Type == "tool_intent" &&
+            node.Payload.GetProperty("runId").GetString() == runId).ToArray();
+        var outcomes = path.Where(node => (node.Type is "tool_outcome" or "tool_skipped") &&
+            node.Payload.GetProperty("runId").GetString() == runId)
+            .Select(node => node.Payload.GetProperty("operationId").GetString()).ToHashSet();
+        var unknown = intents.Where(node => !outcomes.Contains(node.Payload.GetProperty("operationId").GetString()))
+            .Select(node => node.Payload.GetProperty("name").GetString()).ToArray();
+        Tree.Append("run_recovered", JsonSerializer.SerializeToElement(new { runId, unknownOperations = unknown }));
+        var warning = unknown.Length == 0 ? "No tool outcome is unknown."
+            : $"Outcome UNKNOWN for {string.Join(", ", unknown)}; a side effect may already have happened. Inspect before repeating any operation.";
+        var progress = path.LastOrDefault(node => node.Type == "assistant_progress" &&
+            node.Payload.GetProperty("runId").GetString() == runId)?.Payload.GetProperty("text").GetString();
+        var fragment = string.IsNullOrEmpty(progress) ? "" : $" Last checkpointed assistant text: {progress[..Math.Min(progress.Length, 2048)]}.";
+        Append(new ChatMessage(ChatRole.User,
+            $"[Recovery notice: the previous request '{prompt}' was interrupted. {warning}{fragment} Uncheckpointed output may be missing. Do not automatically repeat it.]"));
+        return true;
+    }
+
     public ConversationSession Fork() => new(Guid.NewGuid().ToString("N"), WorkingDirectory, Model, Endpoint, Name, Tree.CloneActivePath());
 
     public string ToJson()
@@ -107,11 +136,31 @@ public sealed class ConversationSession
                 ? entry with { Payload = JsonSerializer.SerializeToElement(new ChatRecord(entry.Payload, [])) }
                 : entry).ToArray()
             : document.Entries;
+        foreach (var entry in entries) ValidateCheckpoint(entry);
         // Validate every branch, not merely the currently selected path.
         foreach (var entry in entries.Where(entry => entry.Type == "chat")) _ = Restore(entry.Payload, entry.Id);
         var tree = new ConversationTree(entries);
         tree.Select(document.HeadId); // An explicit null selection is distinct from the last appended entry.
         return new ConversationSession(document.Id, document.WorkingDirectory, document.Model, document.Endpoint, document.Name, tree);
+    }
+
+    private static void ValidateCheckpoint(ConversationNode node)
+    {
+        if (node.Type is not ("run_started" or "run_finished" or "run_recovered" or "tool_intent" or "tool_outcome" or "tool_skipped" or "assistant_progress")) return;
+        var value = node.Payload;
+        static bool HasString(JsonElement element, string key) => element.TryGetProperty(key, out var field) &&
+            field.ValueKind == JsonValueKind.String && !string.IsNullOrEmpty(field.GetString());
+        if (value.ValueKind != JsonValueKind.Object || !HasString(value, "runId") ||
+            ((node.Type is "tool_intent" or "tool_outcome" or "tool_skipped") && !HasString(value, "operationId")) ||
+            (node.Type == "run_started" && !HasString(value, "prompt")) ||
+            (node.Type == "tool_intent" && (!HasString(value, "name") ||
+                !value.TryGetProperty("arguments", out var arguments) || arguments.ValueKind != JsonValueKind.Object)) ||
+            (node.Type == "assistant_progress" && !HasString(value, "text")) ||
+            (node.Type == "run_finished" && (!value.TryGetProperty("completed", out var completed) ||
+                completed.ValueKind is not (JsonValueKind.True or JsonValueKind.False))) ||
+            (node.Type == "run_recovered" && (!value.TryGetProperty("unknownOperations", out var unknown) ||
+                unknown.ValueKind != JsonValueKind.Array)))
+            throw new InvalidDataException($"Invalid checkpoint {node.Type} at {node.Id}.");
     }
 
     private sealed record ChatRecord(JsonElement Message, ToolError[]? Errors);

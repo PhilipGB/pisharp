@@ -1,7 +1,7 @@
 namespace PiSharp.Cli;
 
 public sealed record CliArguments(bool Help, bool Local, bool Print, bool Continue, bool NoSession, string? SessionPath, string Prompt,
-    IReadOnlyList<string>? Tools, IReadOnlyList<string>? ExcludeTools, bool NoTools, string Mode)
+    IReadOnlyList<string>? Tools, IReadOnlyList<string>? ExcludeTools, bool NoTools, string Mode, bool? ProjectTrustOverride = null)
 {
     private static IReadOnlyList<string> ParseToolNames(string[] arguments, ref int index, string flag)
     {
@@ -12,6 +12,7 @@ public sealed record CliArguments(bool Help, bool Local, bool Print, bool Contin
     public static CliArguments Parse(string[] arguments)
     {
         bool help = false, local = false, print = false, resume = false, noSession = false, noTools = false, afterSeparator = false;
+        bool? trust = null;
         string? sessionPath = null;
         var mode = "interactive";
         IReadOnlyList<string>? tools = null, excludeTools = null;
@@ -25,6 +26,14 @@ public sealed record CliArguments(bool Help, bool Local, bool Print, bool Contin
             {
                 case "--help": help = true; break;
                 case "--local": local = true; break;
+                case "--approve":
+                    if (trust == false) throw new ArgumentException("--approve conflicts with --no-approve.");
+                    trust = true;
+                    break;
+                case "--no-approve":
+                    if (trust == true) throw new ArgumentException("--no-approve conflicts with --approve.");
+                    trust = false;
+                    break;
                 case "--print": print = true; break;
                 case "--continue": resume = true; break;
                 case "--no-session": noSession = true; break;
@@ -57,6 +66,6 @@ public sealed record CliArguments(bool Help, bool Local, bool Print, bool Contin
             throw new ArgumentException("--continue, --session and --no-session cannot be combined.");
         if (print && mode is not "interactive" and not "print") throw new ArgumentException("--print cannot be combined with --mode json or rpc.");
         if (mode == "rpc" && prompt.Count > 0) throw new ArgumentException("RPC mode reads commands from stdin, not positional prompts.");
-        return new CliArguments(help, local, print, resume, noSession, sessionPath, string.Join(" ", prompt), tools, excludeTools, noTools, mode);
+        return new CliArguments(help, local, print, resume, noSession, sessionPath, string.Join(" ", prompt), tools, excludeTools, noTools, mode, trust);
     }
 }

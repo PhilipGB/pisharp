@@ -10,7 +10,7 @@ Supplement to the authoritative [feature matrix](feature-matrix.md). These are *
 | Session | `/new`, `/resume`, `/name [name]`, `/session`, `/tree`, `/fork`, `/clone`, `/import <path>` | Prompt history tree, project association, rename/delete picker, clone vs fork, invalid import recovery | Not started; JSONL/tree/PTY tests |
 | Context | `/compact [instructions]` | Summarize with cut-point, keep original branch; surface summary failure | Not started; context budget and failure fixtures |
 | Output/share | `/copy`, `/export [path]`, `/share`, `/bug [description]` | Clipboard/export or upload, user confirms sensitive content; upload error offers export | Not started; export/clipboard tests |
-| Runtime | `/trust`, `/reload`, `/hotkeys`, `/changelog`, `/quit` | Trust persistence, resource reload without stale handlers, interactive help and clean terminal exit | `/quit` basic only; trust/reload/PTY tests missing |
+| Runtime | `/trust`, `/reload`, `/hotkeys`, `/changelog`, `/quit` | Trust persistence, resource reload without stale handlers, interactive help and clean terminal exit | `/quit`, `/trust yes|no|forget`, `/reload` implemented in basic CLI; PTY tests cover only baseline interactions |
 | Dynamic | template names, `/skill:name`, extension-registered commands | Loaded resource commands discoverable and completable; missing resource error | Not started; resource lifecycle tests |
 
 ## CLI (`cli.md` and `src/cli/`)
@@ -18,11 +18,11 @@ Supplement to the authoritative [feature matrix](feature-matrix.md). These are *
 | Group | Flags/interfaces | Required behaviour / recovery | Status |
 |---|---|---|---|
 | Prompt/modes | `[@files...] [messages...]`, `--`, piped stdin, `-p/--print`, `--mode text/json/rpc`, `--export`, `-h/--help`, `-v/--version` | Input expansion, TTY-sensitive default mode, stdout clean in machine modes | Basic print/REPL only; protocol/arg and I/O tests not started |
-| Models | `--provider`, `--model`, `--models`, `--list-models`, `--thinking`, `--api-key` | Discovery, filtering, scoped model cycling, credential precedence and capability handling | Only environment model/endpoint and `--local` implemented |
+| Models | `--provider`, `--model`, `--models`, `--list-models`, `--thinking`, `--api-key` | Discovery, filtering, scoped model cycling, credential precedence and capability handling | Environment model/endpoint, `--local`, and same-endpoint `/model` only |
 | Sessions | `-c/--continue`, `-r/--resume`, `--session`, `--session-id`, `--fork`, `--session-dir`, `--no-session`, `-n/--name` | Project grouping, exact/partial IDs and incompatibility checks | Not started |
 | Tools | `-t/--tools`, `-xt/--exclude-tools`, `-nbt/--no-builtin-tools`, `-nt/--no-tools` | Tool presence changes for next request; invalid names reported | Not started |
 | Resources | `-e/--extension`, `-ne/--no-extensions`, `--skill`, `-ns/--no-skills`, `--prompt-template`, `-np/--no-prompt-templates`, `--theme`, `--use-theme`, `--no-themes`, `-nc/--no-context-files` | Local paths, trust, discovery and explicit override precedence | Not started |
-| Runtime | `--system-prompt`, `--append-system-prompt`, `--tui-mode`, `--verbose`, `-a/--approve`, `-na/--no-approve`, `--offline` | Per-invocation overrides, trust for project resources, no accidental network activity | Not started |
+| Runtime | `--system-prompt`, `--append-system-prompt`, `--tui-mode`, `--verbose`, `-a/--approve`, `-na/--no-approve`, `--offline` | Per-invocation overrides, trust for project resources, no accidental network activity | `--approve` and `--no-approve` gate project system prompts; remaining flags absent |
 | Auth | `auth check`, `auth print-api-key`, `auth print-bearer-token` | Provider/model resolution, status/exit code, credential output only on explicit request | Not started |
 | Pi Packages | `install`, `remove/uninstall`, `update` package targets, `list`, `config` | Package management only | Excluded: Pi Packages; model catalogue refresh independent of packages remains in scope |
 

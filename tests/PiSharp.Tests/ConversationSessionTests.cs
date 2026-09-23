@@ -22,6 +22,19 @@ public sealed class ConversationSessionTests
     }
 
     [Fact]
+    public void InvalidCheckpointOnInactiveBranchFailsClosed()
+    {
+        var session = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        var head = session.Tree.Append("run_started", System.Text.Json.JsonSerializer.SerializeToElement(new { runId = "test", prompt = "hi" })).Id;
+        session.Tree.Append("tool_intent", System.Text.Json.JsonSerializer.SerializeToElement(new { runId = "test", operationId = "op", name = "write", arguments = new { path = "file" } }));
+        session.Tree.Select(head);
+        var json = System.Text.Json.Nodes.JsonNode.Parse(session.ToJson())!;
+        json["Entries"]![1]!["Payload"]!["operationId"] = null;
+        Assert.Contains("Invalid checkpoint", Assert.Throws<InvalidDataException>(() =>
+            ConversationSession.Parse(json.ToJsonString())).Message);
+    }
+
+    [Fact]
     public async Task ModelChangePersistsAndCrossModelBranchSelectionFailsClosed()
     {
         var cwd = Path.Combine(Path.GetTempPath(), "pisharp-model-" + Guid.NewGuid().ToString("N"));

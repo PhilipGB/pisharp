@@ -10,24 +10,27 @@ namespace PiSharp.Runtime.Sessions;
 public sealed class ConversationRun
 {
     private readonly PiAgent _agent;
+    private readonly Func<CancellationToken, Task>? _save;
     private readonly SemaphoreSlim _gate = new(1, 1);
     private AgentSession _execution;
     private int _historyCount;
     public ConversationSession Conversation { get; }
 
-    private ConversationRun(PiAgent agent, ConversationSession conversation, AgentSession execution)
+    private ConversationRun(PiAgent agent, ConversationSession conversation, AgentSession execution, Func<CancellationToken, Task>? save)
     {
         _agent = agent;
+        _save = save;
         Conversation = conversation;
         _execution = execution;
         _historyCount = conversation.ActiveMessages().Count;
     }
 
     public static async Task<ConversationRun> OpenAsync(PiAgent agent, ConversationSession conversation,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default, Func<CancellationToken, Task>? save = null)
     {
+        if (conversation.RecoverIncomplete() && save is not null) await save(cancellationToken);
         var execution = await agent.RestoreHistoryAsync(conversation.ActiveMessages(), cancellationToken);
-        return new ConversationRun(agent, conversation, execution);
+        return new ConversationRun(agent, conversation, execution, save);
     }
 
     /// <summary>Selection is durable in Conversation.HeadId; rebuild MAF state before the next run.</summary>
@@ -45,6 +48,7 @@ public sealed class ConversationRun
                 var selectedModelEntry = Conversation.Tree.ActivePath().LastOrDefault(node => node.Type == "model_change")?.Id;
                 if (currentModelEntry != selectedModelEntry)
                     throw new InvalidOperationException("Branch changes the model. Select the matching model before running.");
+                if (Conversation.RecoverIncomplete() && _save is not null) await _save(cancellationToken);
                 var history = Conversation.ActiveMessages();
                 var restored = await _agent.RestoreHistoryAsync(history, cancellationToken);
                 _execution = restored;
@@ -61,12 +65,31 @@ public sealed class ConversationRun
         await _gate.WaitAsync(cancellationToken);
         var completed = false;
         var partialText = new System.Text.StringBuilder();
+        var lastProgress = 0;
+        var lastProgressAt = DateTimeOffset.UtcNow;
         var events = new List<string>();
+        DurableExecution? durable = _save is null ? null : new DurableExecution(Conversation, _save);
+        var started = false;
         try
         {
-            await foreach (var update in _agent.RunStreamingAsync(prompt, _execution, cancellationToken))
+            if (durable is not null)
             {
-                if (!string.IsNullOrEmpty(update.Text)) partialText.Append(update.Text);
+                await durable.StartAsync(prompt, cancellationToken);
+                started = true;
+            }
+            await foreach (var update in _agent.RunStreamingDurableAsync(prompt, _execution, cancellationToken, durable))
+            {
+                if (!string.IsNullOrEmpty(update.Text))
+                {
+                    partialText.Append(update.Text);
+                    if (durable is not null && (partialText.Length - lastProgress >= 512 ||
+                        DateTimeOffset.UtcNow - lastProgressAt >= TimeSpan.FromSeconds(2)))
+                    {
+                        await durable.ProgressAsync(partialText.ToString());
+                        lastProgress = partialText.Length;
+                        lastProgressAt = DateTimeOffset.UtcNow;
+                    }
+                }
                 if (update.Contents is not null)
                     foreach (var content in update.Contents)
                         if (content is FunctionCallContent call) events.Add($"call:{call.Name}:{call.CallId}");
@@ -90,6 +113,7 @@ public sealed class ConversationRun
                 _historyCount = history.Count;
                 if (!completed) Conversation.Tree.Append("interrupted", JsonSerializer.SerializeToElement(
                     new { prompt, partialText = partialText.ToString(), events, timestamp = DateTimeOffset.UtcNow }));
+                if (started) await durable!.FinishAsync(completed);
             }
             finally { _gate.Release(); }
         }
