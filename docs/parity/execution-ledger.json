@@ -1,0 +1,2187 @@
+{
+  "schema": 1,
+  "plan_received": false,
+  "source_note": "Original plan was announced after a heading but not appended. Conservative provisional inventory from pinned upstream feature matrix and detailed inventory; never treat as complete until reconciled with the missing plan and audited upstream.",
+  "baseline": "earendil-works/pi@002fc8385268300ca91a5fc95f935c2afbbdac02",
+  "required_ids": [
+    "feature-agent-multi-turn-and-streaming",
+    "feature-agent-steering-follow-up-concurrent-tools",
+    "feature-agent-usage-reasoning-context-and-compaction",
+    "feature-models-selection-catalogs-and-credentials",
+    "feature-tools-default-set-dynamic-availability",
+    "feature-tools-read",
+    "feature-tools-write",
+    "feature-tools-edit",
+    "feature-tools-bash",
+    "feature-tools-grep-find-ls",
+    "feature-multimodal-input-and-inline-images",
+    "feature-tui-normal-fullscreen-renderer",
+    "feature-tui-editor-history-completion-and-paste",
+    "feature-tui-keybindings-display-controls",
+    "feature-sessions-jsonl-lifecycle",
+    "feature-sessions-tree-clone-fork-import-export",
+    "feature-cli-text-print-json-rpc-sdk",
+    "feature-commands-model-settings",
+    "feature-commands-sessions-context",
+    "feature-commands-export-runtime",
+    "feature-resources-instructions-and-trust",
+    "feature-resources-skills-templates-themes",
+    "feature-extensions-net-api",
+    "feature-security-settings-and-authentication",
+    "feature-pi-packages",
+    "commands-model-auth",
+    "commands-session",
+    "commands-context",
+    "commands-output-share",
+    "commands-runtime",
+    "commands-dynamic",
+    "cli-prompt-modes",
+    "cli-models",
+    "cli-sessions",
+    "cli-tools",
+    "cli-resources",
+    "cli-runtime",
+    "cli-auth",
+    "rpc-prompt",
+    "rpc-steer",
+    "rpc-follow-up",
+    "rpc-abort",
+    "rpc-clear-queue",
+    "rpc-new-session",
+    "rpc-get-state",
+    "rpc-get-messages",
+    "rpc-set-model",
+    "rpc-cycle-model",
+    "rpc-get-available-models",
+    "rpc-set-thinking-level",
+    "rpc-cycle-thinking-level",
+    "rpc-get-available-thinking-levels",
+    "rpc-set-steering-mode",
+    "rpc-set-follow-up-mode",
+    "rpc-compact",
+    "rpc-set-auto-compaction",
+    "rpc-set-auto-retry",
+    "rpc-abort-retry",
+    "rpc-bash",
+    "rpc-abort-bash",
+    "rpc-get-session-stats",
+    "rpc-export-html",
+    "rpc-switch-session",
+    "rpc-fork",
+    "rpc-clone",
+    "rpc-get-fork-messages",
+    "rpc-get-entries",
+    "rpc-get-tree",
+    "rpc-get-last-assistant-text",
+    "rpc-set-session-name",
+    "rpc-get-commands",
+    "rpc-agent-start-end-settled",
+    "rpc-turn-start-end",
+    "rpc-message-start-update-end",
+    "rpc-tool-execution-start-update-end",
+    "rpc-queue-update",
+    "rpc-entry-appended",
+    "rpc-session-info-changed",
+    "rpc-thinking-level-changed",
+    "keys-editor-movement-history",
+    "keys-editor-mutation",
+    "keys-editor-input",
+    "keys-app-control",
+    "keys-model-display",
+    "keys-queue-session",
+    "keys-tree-scoped-picker",
+    "keys-fullscreen",
+    "settings-defaultprovider",
+    "settings-defaultmodel",
+    "settings-defaultthinkinglevel",
+    "settings-modelthinkinglevels",
+    "settings-thinkingbudgets",
+    "settings-enabledmodels",
+    "settings-hidethinkingblock",
+    "settings-showcachemissnotices",
+    "settings-cachewarming",
+    "settings-steeringmode",
+    "settings-followupmode",
+    "settings-externaleditor",
+    "settings-doubleescapeaction",
+    "settings-treefiltermode",
+    "settings-defaultprojecttrust",
+    "settings-defaulttools",
+    "settings-sessiondir",
+    "settings-compaction-enabled",
+    "settings-compaction-reservetokens",
+    "settings-compaction-keeprecenttokens",
+    "settings-compaction-modeloverrides",
+    "settings-branchsummary-reservetokens",
+    "settings-branchsummary-skipprompt",
+    "settings-theme",
+    "settings-quietstartup",
+    "settings-tuimode",
+    "settings-fullscreenexitoutput",
+    "settings-fullscreenscrollbar",
+    "settings-fullscreencopyonselect",
+    "settings-editorpaddingx",
+    "settings-outputpad",
+    "settings-autocompletemaxvisible",
+    "settings-showhardwarecursor",
+    "settings-terminal-showimages",
+    "settings-terminal-imagewidthcells",
+    "settings-terminal-clearonshrink",
+    "settings-terminal-showterminalprogress",
+    "settings-terminal-hyperlinks",
+    "settings-terminal-images",
+    "settings-terminal-truecolor",
+    "settings-images-autoresize",
+    "settings-images-blockimages",
+    "settings-markdown-codeblockindent",
+    "settings-markdown-mermaid",
+    "settings-transport",
+    "settings-httpproxy",
+    "settings-httpidletimeoutms",
+    "settings-websocketconnecttimeoutms",
+    "settings-retry-enabled",
+    "settings-retry-maxretries",
+    "settings-retry-basedelayms",
+    "settings-retry-maxagentdelayms",
+    "settings-retry-provider-timeoutms",
+    "settings-retry-provider-maxretries",
+    "settings-retry-provider-maxretrydelayms",
+    "settings-shellpath",
+    "settings-shellcommandprefix",
+    "settings-extensions",
+    "settings-skills",
+    "settings-prompts",
+    "settings-themes",
+    "settings-enableskillcommands",
+    "settings-collapsechangelog",
+    "settings-enableinstalltelemetry",
+    "settings-enableanalytics",
+    "settings-warnings-anthropicextrausage"
+  ],
+  "final_audit": {
+    "complete": false,
+    "evidence": []
+  },
+  "tasks": [
+    {
+      "id": "feature-agent-multi-turn-and-streaming",
+      "title": "Agent / multi-turn and streaming",
+      "status": "in_progress",
+      "source": "docs/parity/feature-matrix.md:7",
+      "acceptance": [
+        "Stream text, tool calls and results, continue after tools; session preserves turns",
+        "Interrupt, retry, partial response and queued messages per loop",
+        "Verify through application workflow and compare docs/how-pi-works.md; packages/agent/src/agent-loop.ts, agent.ts; PiAgent on MAF ChatClientAgent, AgentSession; deterministic fake provider tests needed"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "feature-agent-steering-follow-up-concurrent-tools",
+      "title": "Agent / steering, follow-up, concurrent tools",
+      "status": "not_started",
+      "source": "docs/parity/feature-matrix.md:8",
+      "acceptance": [
+        "Escape abort; Enter steering; Alt+Enter follow-up; parallel tool calls",
+        "Pending messages returned to editor on abort",
+        "Verify through application workflow and compare docs/usage.md; packages/agent/src/agent-loop.ts; application queue and lifecycle tests"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "feature-agent-usage-reasoning-context-and-compaction",
+      "title": "Agent / usage, reasoning, context and compaction",
+      "status": "not_started",
+      "source": "docs/parity/feature-matrix.md:9",
+      "acceptance": [
+        "Streaming reasoning, token/cost accounting, manual /compact and automatic compaction",
+        "Summarization failure leaves original history intact",
+        "Verify through application workflow and compare docs/models.md, docs/compaction.md; packages/coding-agent/src/core/compaction/; context builder and model metadata fixtures"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "feature-models-selection-catalogs-and-credentials",
+      "title": "Models / selection, catalogs and credentials",
+      "status": "in_progress",
+      "source": "docs/parity/feature-matrix.md:10",
+      "acceptance": [
+        "/model, /thinking, /scoped-models, /login, /logout, --provider, --models, --thinking, API key/OAuth",
+        "unavailable models and auth failures shown; don't log keys",
+        "Verify through application workflow and compare docs/models.md, docs/providers.md; packages/coding-agent/src/core/model-, auth-storage.ts; provider adapters and capability-based selectors"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "feature-tools-default-set-dynamic-availability",
+      "title": "Tools / default set, dynamic availability",
+      "status": "in_progress",
+      "source": "docs/parity/feature-matrix.md:11",
+      "acceptance": [
+        "Default read,bash,edit,write; optional grep,find,ls; --tools, --exclude-tools, --no-tools",
+        "invalid name reported",
+        "Verify through application workflow and compare docs/cli.md; packages/coding-agent/src/core/tools/index.ts; registry with per-run availability and tests"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "feature-tools-read",
+      "title": "Tools / read",
+      "status": "in_progress",
+      "source": "docs/parity/feature-matrix.md:12",
+      "acceptance": [
+        "Text and images; offset/limit; 2000 lines/50KB, continuation notice",
+        "out-of-range, missing file, cancellation",
+        "Verify through application workflow and compare packages/coding-agent/src/core/tools/read.ts, truncate.ts; CodingTools.Read; unit + upstream fixtures"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "feature-tools-write",
+      "title": "Tools / write",
+      "status": "in_progress",
+      "source": "docs/parity/feature-matrix.md:13",
+      "acceptance": [
+        "Create parents, replace file, cwd-relative or absolute",
+        "filesystem failures and cancellation serialize same-file mutations",
+        "Verify through application workflow and compare packages/coding-agent/src/core/tools/write.ts, file-mutation-queue.ts; CodingTools.Write; atomic-write/mode/symlink tests"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "feature-tools-edit",
+      "title": "Tools / edit",
+      "status": "in_progress",
+      "source": "docs/parity/feature-matrix.md:14",
+      "acceptance": [
+        "Batched unique nonoverlapping edits[] against original, BOM/CRLF, diff",
+        "ambiguous/missing block aborts entire batch; cancellable",
+        "Verify through application workflow and compare packages/coding-agent/src/core/tools/edit.ts, edit-diff.ts; CodingTools.Edit; unit tests"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "feature-tools-bash",
+      "title": "Tools / bash",
+      "status": "in_progress",
+      "source": "docs/parity/feature-matrix.md:15",
+      "acceptance": [
+        "Shell command, optional timeout, live output, tail truncation",
+        "kill process group on timeout/abort; retain full output",
+        "Verify through application workflow and compare packages/coding-agent/src/core/tools/bash.ts, output-accumulator.ts; CodingTools.Bash; unit tests"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "feature-tools-grep-find-ls",
+      "title": "Tools / grep,find,ls",
+      "status": "in_progress",
+      "source": "docs/parity/feature-matrix.md:16",
+      "acceptance": [
+        "Search/list paths with upstream schemas/truncation",
+        "symlink/ignore and permission errors",
+        "Verify through application workflow and compare packages/coding-agent/src/core/tools/{grep,find,ls}.ts; filesystem integration tests"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "feature-multimodal-input-and-inline-images",
+      "title": "Multimodal / input and inline images",
+      "status": "not_started",
+      "source": "docs/parity/feature-matrix.md:17",
+      "acceptance": [
+        "@image, clipboard, read image, compatible terminal rendering",
+        "reject unsupported image/provider safely",
+        "Verify through application workflow and compare docs/usage.md; packages/coding-agent/src/utils/image-process.ts; packages/tui/src/terminal-image.ts; DataContent, terminal capability checks"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "feature-tui-normal-fullscreen-renderer",
+      "title": "TUI / normal/fullscreen renderer",
+      "status": "in_progress",
+      "source": "docs/parity/feature-matrix.md:18",
+      "acceptance": [
+        "header, streaming transcript, markdown, tools, footer, scrollback or alternate screen, resize, mouse",
+        "restore terminal on exit/crash",
+        "Verify through application workflow and compare docs/tui.md, docs/terminal-setup.md; packages/tui/src/tui.ts, tui-alt-screen.ts; packages/coding-agent/src/modes/interactive/; VT renderer, pseudo-terminal snapshots"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "feature-tui-editor-history-completion-and-paste",
+      "title": "TUI / editor, history, completion and paste",
+      "status": "in_progress",
+      "source": "docs/parity/feature-matrix.md:19",
+      "acceptance": [
+        "cursor/selection, multiline, history, / and @ completion, bracketed paste, external editor",
+        "escape/ctrl+c semantics, Unicode widths",
+        "Verify through application workflow and compare docs/keybindings.md; packages/tui/src/editor-component.ts, autocomplete.ts, terminal.ts; editor state machine + PTY tests"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "feature-tui-keybindings-display-controls",
+      "title": "TUI / keybindings, display controls",
+      "status": "not_started",
+      "source": "docs/parity/feature-matrix.md:20",
+      "acceptance": [
+        "configurable keybindings.json, Ctrl+L/P/T/O, Shift+Tab, Alt+Up, session shortcuts",
+        "conflicting keys resolved by context",
+        "Verify through application workflow and compare docs/keybindings.md; packages/coding-agent/src/core/keybindings.ts; key map and interaction tests"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "feature-sessions-jsonl-lifecycle",
+      "title": "Sessions / JSONL lifecycle",
+      "status": "in_progress",
+      "source": "docs/parity/feature-matrix.md:21",
+      "acceptance": [
+        "--continue, --session, --no-session, /new, /resume, /name, auto-save; project grouping",
+        "malformed/partial writes surfaced, recover history",
+        "Verify through application workflow and compare docs/sessions.md, docs/session-format.md; packages/coding-agent/src/core/session-manager.ts; PiSharp-specific application-owned ConversationSession, ConversationRun, private atomic ConversationStore"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "feature-sessions-tree-clone-fork-import-export",
+      "title": "Sessions / tree, clone, fork, import/export",
+      "status": "in_progress",
+      "source": "docs/parity/feature-matrix.md:22",
+      "acceptance": [
+        "/tree, /fork, /clone, /import, /export, active branch context",
+        "navigating never deletes other branches",
+        "Verify through application workflow and compare docs/sessions.md; packages/coding-agent/src/core/session-manager.ts, session-export.ts; persisted selected-branch tests with tool calls, failures and restart"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "feature-cli-text-print-json-rpc-sdk",
+      "title": "CLI / text, print, JSON, RPC, SDK",
+      "status": "in_progress",
+      "source": "docs/parity/feature-matrix.md:23",
+      "acceptance": [
+        "protocol framing on stdin/stdout; command correlation, distinct accepted/done; embeddable runtime",
+        "protocol-safe errors, shutdown",
+        "Verify through application workflow and compare docs/cli.md, docs/json.md, docs/rpc.md, docs/rpc-commands.md, docs/sdk.md; packages/coding-agent/src/modes/; adapters on common PiAgent, contract tests"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "feature-commands-model-settings",
+      "title": "Commands / model & settings",
+      "status": "in_progress",
+      "source": "docs/parity/feature-matrix.md:24",
+      "acceptance": [
+        "/settings, /model, /thinking, /scoped-models, /login, /logout, /llama",
+        "unknown/invalid input feedback",
+        "Verify through application workflow and compare docs/slash-commands.md; packages/coding-agent/src/core/slash-commands.ts; command registry and dialog tests"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "feature-commands-sessions-context",
+      "title": "Commands / sessions & context",
+      "status": "in_progress",
+      "source": "docs/parity/feature-matrix.md:25",
+      "acceptance": [
+        "/new, /resume, /name, /session, /tree, /fork, /clone, /compact, /import",
+        "abort leaves consistent session",
+        "Verify through application workflow and compare same; command/session integration tests"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "feature-commands-export-runtime",
+      "title": "Commands / export, runtime",
+      "status": "in_progress",
+      "source": "docs/parity/feature-matrix.md:26",
+      "acceptance": [
+        "/copy, /export, /share, /bug, /trust, /reload, /hotkeys, /changelog, /quit",
+        "failed uploads/reloads diagnosed",
+        "Verify through application workflow and compare same; command and UI tests"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "feature-resources-instructions-and-trust",
+      "title": "Resources / instructions and trust",
+      "status": "in_progress",
+      "source": "docs/parity/feature-matrix.md:27",
+      "acceptance": [
+        "global/project AGENTS.md, CLAUDE.md, trust before privileged project resources",
+        "declined trust ignores project resources",
+        "Verify through application workflow and compare docs/configuration.md, docs/security.md; packages/coding-agent/src/core/{resource-loader,project-trust,system-prompt}.ts; discovery/trust fixtures"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "feature-resources-skills-templates-themes",
+      "title": "Resources / skills, templates, themes",
+      "status": "in_progress",
+      "source": "docs/parity/feature-matrix.md:28",
+      "acceptance": [
+        "discovery, on-demand skill load, /skill:name, template expansion, theme reload",
+        "invalid metadata reported",
+        "Verify through application workflow and compare docs/skills.md, docs/prompt-templates.md, docs/themes.md; packages/coding-agent/src/core/{skills,prompt-templates}.ts; loader and TUI tests"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "feature-extensions-net-api",
+      "title": "Extensions / .NET API",
+      "status": "in_progress",
+      "source": "docs/parity/feature-matrix.md:29",
+      "acceptance": [
+        "tools, commands, events, context transforms, providers, state, keybindings, UI",
+        "hook order, cancellation, exceptions",
+        "Verify through application workflow and compare docs/extensions.md; packages/coding-agent/src/core/extensions/; C# plugin interfaces and lifecycle tests"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "feature-security-settings-and-authentication",
+      "title": "Security / settings and authentication",
+      "status": "in_progress",
+      "source": "docs/parity/feature-matrix.md:30",
+      "acceptance": [
+        "precedence, project trust, secrets never exported",
+        "project trust is not an OS sandbox",
+        "Verify through application workflow and compare docs/settings.md, docs/environment-variables.md, docs/security.md; packages/coding-agent/src/core/settings-manager.ts; config/trust/security tests"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "feature-pi-packages",
+      "title": "Pi Packages",
+      "status": "excluded",
+      "source": "docs/parity/feature-matrix.md:31",
+      "acceptance": [
+        "install/remove/update/distribute package resources",
+        "out of scope by explicit request",
+        "Verify through application workflow and compare docs/packages.md; packages/coding-agent/src/core/package-manager.ts; none"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "commands-model-auth",
+      "title": "Interactive commands: /settings, /model [provider/model], /thinking [level], /scoped-models, /login [provider], /logout, /llama",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:9",
+      "acceptance": [
+        "Select/filter/cycle models, clamp thinking to capabilities, persist settings/auth without leaking secrets, retry router disconnect",
+        "Not started; selectors, settings and provider fixtures",
+        "Verify command results, errors and PTY workflows"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "commands-session",
+      "title": "Interactive commands: /new, /resume, /name [name], /session, /tree, /fork, /clone, /import <path>",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:10",
+      "acceptance": [
+        "Prompt history tree, project association, rename/delete picker, clone vs fork, invalid import recovery",
+        "In progress: /sessions, /resume <id|name>, basic clone, branch selection and PTY session test; no interactive picker, trash or import; metadata search and confirmation-gated permanent deletion tested under PTY; /fork <id> copies prior active path and seeds an editable draft with unit and PTY evidence",
+        "Verify command results, errors and PTY workflows"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "commands-context",
+      "title": "Interactive commands: /compact [instructions]",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:11",
+      "acceptance": [
+        "Summarize with cut-point, keep original branch; surface summary failure",
+        "In progress: manual whole-turn model-context compaction, raw tree preserved; tests cover persistence, repeated summaries, inactive malformed branch and failure rollback. Opt-in pre-prompt approximate auto budget has deterministic provider tests; automatic between-tool-call budget, exact token accounting, split-turn and overflow recovery remain",
+        "Verify command results, errors and PTY workflows"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "commands-output-share",
+      "title": "Interactive commands: /copy, /export [path], /share, /bug [description]",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:12",
+      "acceptance": [
+        "Clipboard/export or upload, user confirms sensitive content; upload error offers export",
+        "In progress: standalone private escaped HTML /export tested with inactive branches, tool failures, cancellation and PTY; no JSONL export, clipboard/share/report",
+        "Verify command results, errors and PTY workflows"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "commands-runtime",
+      "title": "Interactive commands: /trust, /reload, /hotkeys, /changelog, /quit",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:13",
+      "acceptance": [
+        "Trust persistence, resource reload without stale handlers, interactive help and clean terminal exit",
+        "/quit, /trust yes|no|forget, /reload implemented in basic CLI; PTY tests cover only baseline interactions",
+        "Verify command results, errors and PTY workflows"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "commands-dynamic",
+      "title": "Interactive commands: template names, /skill:name, extension-registered commands",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:14",
+      "acceptance": [
+        "Loaded resource commands discoverable and completable; missing resource error",
+        "Not started; resource lifecycle tests",
+        "Verify command results, errors and PTY workflows"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "cli-prompt-modes",
+      "title": "CLI flags: [@files...] [messages...], --, piped stdin, -p/--print, --mode text/json/rpc, --export, -h/--help, -v/--version",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:20",
+      "acceptance": [
+        "Input expansion, TTY-sensitive default mode, stdout clean in machine modes",
+        "Test parsed flags, conflict/recovery and process behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "cli-models",
+      "title": "CLI flags: --provider, --model, --models, --list-models, --thinking, --api-key",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:21",
+      "acceptance": [
+        "Discovery, filtering, scoped model cycling, credential precedence and capability handling",
+        "Test parsed flags, conflict/recovery and process behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "cli-sessions",
+      "title": "CLI flags: -c/--continue, -r/--resume, --session, --session-id, --fork, --session-dir, --no-session, -n/--name",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:22",
+      "acceptance": [
+        "Project grouping, exact/partial IDs and incompatibility checks",
+        "Test parsed flags, conflict/recovery and process behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "cli-tools",
+      "title": "CLI flags: -t/--tools, -xt/--exclude-tools, -nbt/--no-builtin-tools, -nt/--no-tools",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:23",
+      "acceptance": [
+        "Tool presence changes for next request; invalid names reported",
+        "Test parsed flags, conflict/recovery and process behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "cli-resources",
+      "title": "CLI flags: -e/--extension, -ne/--no-extensions, --skill, -ns/--no-skills, --prompt-template, -np/--no-prompt-templates, --theme, --use-theme, --no-themes, -nc/--no-context-files",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:24",
+      "acceptance": [
+        "Local paths, trust, discovery and explicit override precedence",
+        "Test parsed flags, conflict/recovery and process behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "cli-runtime",
+      "title": "CLI flags: --system-prompt, --append-system-prompt, --tui-mode, --verbose, -a/--approve, -na/--no-approve, --offline",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:25",
+      "acceptance": [
+        "Per-invocation overrides, trust for project resources, no accidental network activity",
+        "Test parsed flags, conflict/recovery and process behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "cli-auth",
+      "title": "CLI flags: auth check, auth print-api-key, auth print-bearer-token",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:26",
+      "acceptance": [
+        "Provider/model resolution, status/exit code, credential output only on explicit request",
+        "Test parsed flags, conflict/recovery and process behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "rpc-prompt",
+      "title": "RPC / event: prompt",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:33",
+      "acceptance": [
+        "Implement prompt using shared canonical runtime with correlated responses/event ordering",
+        "Test protocol through RPC process, including failures and cancellation"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "rpc-steer",
+      "title": "RPC / event: steer",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:33",
+      "acceptance": [
+        "Implement steer using shared canonical runtime with correlated responses/event ordering",
+        "Test protocol through RPC process, including failures and cancellation"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "rpc-follow-up",
+      "title": "RPC / event: follow_up",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:33",
+      "acceptance": [
+        "Implement follow_up using shared canonical runtime with correlated responses/event ordering",
+        "Test protocol through RPC process, including failures and cancellation"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "rpc-abort",
+      "title": "RPC / event: abort",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:33",
+      "acceptance": [
+        "Implement abort using shared canonical runtime with correlated responses/event ordering",
+        "Test protocol through RPC process, including failures and cancellation"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "rpc-clear-queue",
+      "title": "RPC / event: clear_queue",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:33",
+      "acceptance": [
+        "Implement clear_queue using shared canonical runtime with correlated responses/event ordering",
+        "Test protocol through RPC process, including failures and cancellation"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "rpc-new-session",
+      "title": "RPC / event: new_session",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:33",
+      "acceptance": [
+        "Implement new_session using shared canonical runtime with correlated responses/event ordering",
+        "Test protocol through RPC process, including failures and cancellation"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "rpc-get-state",
+      "title": "RPC / event: get_state",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:34",
+      "acceptance": [
+        "Implement get_state using shared canonical runtime with correlated responses/event ordering",
+        "Test protocol through RPC process, including failures and cancellation"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "rpc-get-messages",
+      "title": "RPC / event: get_messages",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:34",
+      "acceptance": [
+        "Implement get_messages using shared canonical runtime with correlated responses/event ordering",
+        "Test protocol through RPC process, including failures and cancellation"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "rpc-set-model",
+      "title": "RPC / event: set_model",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:34",
+      "acceptance": [
+        "Implement set_model using shared canonical runtime with correlated responses/event ordering",
+        "Test protocol through RPC process, including failures and cancellation"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "rpc-cycle-model",
+      "title": "RPC / event: cycle_model",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:34",
+      "acceptance": [
+        "Implement cycle_model using shared canonical runtime with correlated responses/event ordering",
+        "Test protocol through RPC process, including failures and cancellation"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "rpc-get-available-models",
+      "title": "RPC / event: get_available_models",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:34",
+      "acceptance": [
+        "Implement get_available_models using shared canonical runtime with correlated responses/event ordering",
+        "Test protocol through RPC process, including failures and cancellation"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "rpc-set-thinking-level",
+      "title": "RPC / event: set_thinking_level",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:34",
+      "acceptance": [
+        "Implement set_thinking_level using shared canonical runtime with correlated responses/event ordering",
+        "Test protocol through RPC process, including failures and cancellation"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "rpc-cycle-thinking-level",
+      "title": "RPC / event: cycle_thinking_level",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:34",
+      "acceptance": [
+        "Implement cycle_thinking_level using shared canonical runtime with correlated responses/event ordering",
+        "Test protocol through RPC process, including failures and cancellation"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "rpc-get-available-thinking-levels",
+      "title": "RPC / event: get_available_thinking_levels",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:34",
+      "acceptance": [
+        "Implement get_available_thinking_levels using shared canonical runtime with correlated responses/event ordering",
+        "Test protocol through RPC process, including failures and cancellation"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "rpc-set-steering-mode",
+      "title": "RPC / event: set_steering_mode",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:34",
+      "acceptance": [
+        "Implement set_steering_mode using shared canonical runtime with correlated responses/event ordering",
+        "Test protocol through RPC process, including failures and cancellation"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "rpc-set-follow-up-mode",
+      "title": "RPC / event: set_follow_up_mode",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:34",
+      "acceptance": [
+        "Implement set_follow_up_mode using shared canonical runtime with correlated responses/event ordering",
+        "Test protocol through RPC process, including failures and cancellation"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "rpc-compact",
+      "title": "RPC / event: compact",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:35",
+      "acceptance": [
+        "Implement compact using shared canonical runtime with correlated responses/event ordering",
+        "Test protocol through RPC process, including failures and cancellation"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "rpc-set-auto-compaction",
+      "title": "RPC / event: set_auto_compaction",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:35",
+      "acceptance": [
+        "Implement set_auto_compaction using shared canonical runtime with correlated responses/event ordering",
+        "Test protocol through RPC process, including failures and cancellation"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "rpc-set-auto-retry",
+      "title": "RPC / event: set_auto_retry",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:35",
+      "acceptance": [
+        "Implement set_auto_retry using shared canonical runtime with correlated responses/event ordering",
+        "Test protocol through RPC process, including failures and cancellation"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "rpc-abort-retry",
+      "title": "RPC / event: abort_retry",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:35",
+      "acceptance": [
+        "Implement abort_retry using shared canonical runtime with correlated responses/event ordering",
+        "Test protocol through RPC process, including failures and cancellation"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "rpc-bash",
+      "title": "RPC / event: bash",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:36",
+      "acceptance": [
+        "Implement bash using shared canonical runtime with correlated responses/event ordering",
+        "Test protocol through RPC process, including failures and cancellation"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "rpc-abort-bash",
+      "title": "RPC / event: abort_bash",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:36",
+      "acceptance": [
+        "Implement abort_bash using shared canonical runtime with correlated responses/event ordering",
+        "Test protocol through RPC process, including failures and cancellation"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "rpc-get-session-stats",
+      "title": "RPC / event: get_session_stats",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:36",
+      "acceptance": [
+        "Implement get_session_stats using shared canonical runtime with correlated responses/event ordering",
+        "Test protocol through RPC process, including failures and cancellation"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "rpc-export-html",
+      "title": "RPC / event: export_html",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:36",
+      "acceptance": [
+        "Implement export_html using shared canonical runtime with correlated responses/event ordering",
+        "Test protocol through RPC process, including failures and cancellation"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "rpc-switch-session",
+      "title": "RPC / event: switch_session",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:37",
+      "acceptance": [
+        "Implement switch_session using shared canonical runtime with correlated responses/event ordering",
+        "Test protocol through RPC process, including failures and cancellation"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "rpc-fork",
+      "title": "RPC / event: fork",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:37",
+      "acceptance": [
+        "Implement fork using shared canonical runtime with correlated responses/event ordering",
+        "Test protocol through RPC process, including failures and cancellation"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "rpc-clone",
+      "title": "RPC / event: clone",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:37",
+      "acceptance": [
+        "Implement clone using shared canonical runtime with correlated responses/event ordering",
+        "Test protocol through RPC process, including failures and cancellation"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "rpc-get-fork-messages",
+      "title": "RPC / event: get_fork_messages",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:37",
+      "acceptance": [
+        "Implement get_fork_messages using shared canonical runtime with correlated responses/event ordering",
+        "Test protocol through RPC process, including failures and cancellation"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "rpc-get-entries",
+      "title": "RPC / event: get_entries",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:37",
+      "acceptance": [
+        "Implement get_entries using shared canonical runtime with correlated responses/event ordering",
+        "Test protocol through RPC process, including failures and cancellation"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "rpc-get-tree",
+      "title": "RPC / event: get_tree",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:37",
+      "acceptance": [
+        "Implement get_tree using shared canonical runtime with correlated responses/event ordering",
+        "Test protocol through RPC process, including failures and cancellation"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "rpc-get-last-assistant-text",
+      "title": "RPC / event: get_last_assistant_text",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:37",
+      "acceptance": [
+        "Implement get_last_assistant_text using shared canonical runtime with correlated responses/event ordering",
+        "Test protocol through RPC process, including failures and cancellation"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "rpc-set-session-name",
+      "title": "RPC / event: set_session_name",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:37",
+      "acceptance": [
+        "Implement set_session_name using shared canonical runtime with correlated responses/event ordering",
+        "Test protocol through RPC process, including failures and cancellation"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "rpc-get-commands",
+      "title": "RPC / event: get_commands",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:37",
+      "acceptance": [
+        "Implement get_commands using shared canonical runtime with correlated responses/event ordering",
+        "Test protocol through RPC process, including failures and cancellation"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "rpc-agent-start-end-settled",
+      "title": "RPC / event: agent_start/end/settled",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:38",
+      "acceptance": [
+        "Implement agent_start/end/settled using shared canonical runtime with correlated responses/event ordering",
+        "Test protocol through RPC process, including failures and cancellation"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "rpc-turn-start-end",
+      "title": "RPC / event: turn_start/end",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:38",
+      "acceptance": [
+        "Implement turn_start/end using shared canonical runtime with correlated responses/event ordering",
+        "Test protocol through RPC process, including failures and cancellation"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "rpc-message-start-update-end",
+      "title": "RPC / event: message_start/update/end",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:38",
+      "acceptance": [
+        "Implement message_start/update/end using shared canonical runtime with correlated responses/event ordering",
+        "Test protocol through RPC process, including failures and cancellation"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "rpc-tool-execution-start-update-end",
+      "title": "RPC / event: tool_execution_start/update/end",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:38",
+      "acceptance": [
+        "Implement tool_execution_start/update/end using shared canonical runtime with correlated responses/event ordering",
+        "Test protocol through RPC process, including failures and cancellation"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "rpc-queue-update",
+      "title": "RPC / event: queue_update",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:38",
+      "acceptance": [
+        "Implement queue_update using shared canonical runtime with correlated responses/event ordering",
+        "Test protocol through RPC process, including failures and cancellation"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "rpc-entry-appended",
+      "title": "RPC / event: entry_appended",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:38",
+      "acceptance": [
+        "Implement entry_appended using shared canonical runtime with correlated responses/event ordering",
+        "Test protocol through RPC process, including failures and cancellation"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "rpc-session-info-changed",
+      "title": "RPC / event: session_info_changed",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:38",
+      "acceptance": [
+        "Implement session_info_changed using shared canonical runtime with correlated responses/event ordering",
+        "Test protocol through RPC process, including failures and cancellation"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "rpc-thinking-level-changed",
+      "title": "RPC / event: thinking_level_changed",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:38",
+      "acceptance": [
+        "Implement thinking_level_changed using shared canonical runtime with correlated responses/event ordering",
+        "Test protocol through RPC process, including failures and cancellation"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "keys-editor-movement-history",
+      "title": "Terminal keys: Up/Down, Left/Right, Ctrl+B/F, Alt/Ctrl+arrows, Alt+B/F, Home/End, Ctrl+A/E, PageUp/Down, Ctrl+], Ctrl+Alt+]",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:46",
+      "acceptance": [
+        "Unicode widths, visual lines vs history, selection",
+        "Test in PTY including configurable bindings and widget precedence"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "keys-editor-mutation",
+      "title": "Terminal keys: Backspace, Delete/Ctrl+D, Ctrl+W/Alt+Backspace, Alt+D/Delete, Ctrl+U/K, Ctrl+Y, Alt+Y, Ctrl+-",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:47",
+      "acceptance": [
+        "Kill ring, undo, cursor/selection integrity",
+        "Test in PTY including configurable bindings and widget precedence"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "keys-editor-input",
+      "title": "Terminal keys: Enter submit, Shift+Enter/Ctrl+J newline, Tab completion, Ctrl+C copy, bracketed paste, Ctrl+G external editor, Ctrl+V image",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:48",
+      "acceptance": [
+        "Paste multiline, file @ and slash completion, clipboard type",
+        "Test in PTY including configurable bindings and widget precedence"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "keys-app-control",
+      "title": "Terminal keys: Esc abort, Ctrl+C clear/exit, Ctrl+D exit empty, Ctrl+Z suspend, double Esc tree/fork",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:49",
+      "acceptance": [
+        "Stop tool process tree, restore raw mode on exit/suspend",
+        "Test in PTY including configurable bindings and widget precedence"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "keys-model-display",
+      "title": "Terminal keys: Ctrl+L selector, Ctrl+P/Shift+Ctrl+P cycle, Shift+Tab thinking cycle, Ctrl+T thinking visibility, Ctrl+O tools expand, Ctrl+X copy",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:50",
+      "acceptance": [
+        "Model change preserves context; disclosure persists",
+        "Test in PTY including configurable bindings and widget precedence"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "keys-queue-session",
+      "title": "Terminal keys: Alt+Enter follow-up, Alt+Up dequeue, session Ctrl+P/S/N/R/D/Backspace picker controls",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:51",
+      "acceptance": [
+        "Steering vs follow-up ordering and queue restore",
+        "Test in PTY including configurable bindings and widget precedence"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "keys-tree-scoped-picker",
+      "title": "Terminal keys: Ctrl+Left/Right fold, Shift+L/T label, Ctrl+D/T/U/L/A/O filters, scoped Ctrl+A/X/P/S, Alt+Up/Down reorder",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:52",
+      "acceptance": [
+        "Selection/routing precedence, branch reconstruction",
+        "Test in PTY including configurable bindings and widget precedence"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "keys-fullscreen",
+      "title": "Terminal keys: PageUp/Down, Home/End, Ctrl+Shift+Up/Down, Ctrl+Shift+F search, Enter/Shift+Enter search navigation, Esc close",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:53",
+      "acceptance": [
+        "Resize, scrolling, focus and screen restoration",
+        "Test in PTY including configurable bindings and widget precedence"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "settings-defaultprovider",
+      "title": "Setting: defaultProvider",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:61",
+      "acceptance": [
+        "Support defaultProvider with upstream type/default and user/trusted-project precedence",
+        "Test malformed settings, trust boundaries, reload and startup behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "settings-defaultmodel",
+      "title": "Setting: defaultModel",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:61",
+      "acceptance": [
+        "Support defaultModel with upstream type/default and user/trusted-project precedence",
+        "Test malformed settings, trust boundaries, reload and startup behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "settings-defaultthinkinglevel",
+      "title": "Setting: defaultThinkingLevel",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:61",
+      "acceptance": [
+        "Support defaultThinkingLevel with upstream type/default and user/trusted-project precedence",
+        "Test malformed settings, trust boundaries, reload and startup behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "settings-modelthinkinglevels",
+      "title": "Setting: modelThinkingLevels",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:61",
+      "acceptance": [
+        "Support modelThinkingLevels with upstream type/default and user/trusted-project precedence",
+        "Test malformed settings, trust boundaries, reload and startup behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "settings-thinkingbudgets",
+      "title": "Setting: thinkingBudgets",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:61",
+      "acceptance": [
+        "Support thinkingBudgets with upstream type/default and user/trusted-project precedence",
+        "Test malformed settings, trust boundaries, reload and startup behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "settings-enabledmodels",
+      "title": "Setting: enabledModels",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:61",
+      "acceptance": [
+        "Support enabledModels with upstream type/default and user/trusted-project precedence",
+        "Test malformed settings, trust boundaries, reload and startup behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "settings-hidethinkingblock",
+      "title": "Setting: hideThinkingBlock",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:61",
+      "acceptance": [
+        "Support hideThinkingBlock with upstream type/default and user/trusted-project precedence",
+        "Test malformed settings, trust boundaries, reload and startup behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "settings-showcachemissnotices",
+      "title": "Setting: showCacheMissNotices",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:61",
+      "acceptance": [
+        "Support showCacheMissNotices with upstream type/default and user/trusted-project precedence",
+        "Test malformed settings, trust boundaries, reload and startup behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "settings-cachewarming",
+      "title": "Setting: cacheWarming",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:61",
+      "acceptance": [
+        "Support cacheWarming with upstream type/default and user/trusted-project precedence",
+        "Test malformed settings, trust boundaries, reload and startup behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "settings-steeringmode",
+      "title": "Setting: steeringMode",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:61",
+      "acceptance": [
+        "Support steeringMode with upstream type/default and user/trusted-project precedence",
+        "Test malformed settings, trust boundaries, reload and startup behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "settings-followupmode",
+      "title": "Setting: followUpMode",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:61",
+      "acceptance": [
+        "Support followUpMode with upstream type/default and user/trusted-project precedence",
+        "Test malformed settings, trust boundaries, reload and startup behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "settings-externaleditor",
+      "title": "Setting: externalEditor",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:61",
+      "acceptance": [
+        "Support externalEditor with upstream type/default and user/trusted-project precedence",
+        "Test malformed settings, trust boundaries, reload and startup behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "settings-doubleescapeaction",
+      "title": "Setting: doubleEscapeAction",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:61",
+      "acceptance": [
+        "Support doubleEscapeAction with upstream type/default and user/trusted-project precedence",
+        "Test malformed settings, trust boundaries, reload and startup behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "settings-treefiltermode",
+      "title": "Setting: treeFilterMode",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:61",
+      "acceptance": [
+        "Support treeFilterMode with upstream type/default and user/trusted-project precedence",
+        "Test malformed settings, trust boundaries, reload and startup behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "settings-defaultprojecttrust",
+      "title": "Setting: defaultProjectTrust",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:61",
+      "acceptance": [
+        "Support defaultProjectTrust with upstream type/default and user/trusted-project precedence",
+        "Test malformed settings, trust boundaries, reload and startup behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "settings-defaulttools",
+      "title": "Setting: defaultTools",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:62",
+      "acceptance": [
+        "Support defaultTools with upstream type/default and user/trusted-project precedence",
+        "Test malformed settings, trust boundaries, reload and startup behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "settings-sessiondir",
+      "title": "Setting: sessionDir",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:62",
+      "acceptance": [
+        "Support sessionDir with upstream type/default and user/trusted-project precedence",
+        "Test malformed settings, trust boundaries, reload and startup behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "settings-compaction-enabled",
+      "title": "Setting: compaction.enabled",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:62",
+      "acceptance": [
+        "Support compaction.enabled with upstream type/default and user/trusted-project precedence",
+        "Test malformed settings, trust boundaries, reload and startup behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "settings-compaction-reservetokens",
+      "title": "Setting: compaction.reserveTokens",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:62",
+      "acceptance": [
+        "Support compaction.reserveTokens with upstream type/default and user/trusted-project precedence",
+        "Test malformed settings, trust boundaries, reload and startup behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "settings-compaction-keeprecenttokens",
+      "title": "Setting: compaction.keepRecentTokens",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:62",
+      "acceptance": [
+        "Support compaction.keepRecentTokens with upstream type/default and user/trusted-project precedence",
+        "Test malformed settings, trust boundaries, reload and startup behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "settings-compaction-modeloverrides",
+      "title": "Setting: compaction.modelOverrides",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:62",
+      "acceptance": [
+        "Support compaction.modelOverrides with upstream type/default and user/trusted-project precedence",
+        "Test malformed settings, trust boundaries, reload and startup behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "settings-branchsummary-reservetokens",
+      "title": "Setting: branchSummary.reserveTokens",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:62",
+      "acceptance": [
+        "Support branchSummary.reserveTokens with upstream type/default and user/trusted-project precedence",
+        "Test malformed settings, trust boundaries, reload and startup behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "settings-branchsummary-skipprompt",
+      "title": "Setting: branchSummary.skipPrompt",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:62",
+      "acceptance": [
+        "Support branchSummary.skipPrompt with upstream type/default and user/trusted-project precedence",
+        "Test malformed settings, trust boundaries, reload and startup behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "settings-theme",
+      "title": "Setting: theme",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:63",
+      "acceptance": [
+        "Support theme with upstream type/default and user/trusted-project precedence",
+        "Test malformed settings, trust boundaries, reload and startup behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "settings-quietstartup",
+      "title": "Setting: quietStartup",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:63",
+      "acceptance": [
+        "Support quietStartup with upstream type/default and user/trusted-project precedence",
+        "Test malformed settings, trust boundaries, reload and startup behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "settings-tuimode",
+      "title": "Setting: tuiMode",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:63",
+      "acceptance": [
+        "Support tuiMode with upstream type/default and user/trusted-project precedence",
+        "Test malformed settings, trust boundaries, reload and startup behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "settings-fullscreenexitoutput",
+      "title": "Setting: fullscreenExitOutput",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:63",
+      "acceptance": [
+        "Support fullscreenExitOutput with upstream type/default and user/trusted-project precedence",
+        "Test malformed settings, trust boundaries, reload and startup behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "settings-fullscreenscrollbar",
+      "title": "Setting: fullscreenScrollbar",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:63",
+      "acceptance": [
+        "Support fullscreenScrollbar with upstream type/default and user/trusted-project precedence",
+        "Test malformed settings, trust boundaries, reload and startup behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "settings-fullscreencopyonselect",
+      "title": "Setting: fullscreenCopyOnSelect",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:63",
+      "acceptance": [
+        "Support fullscreenCopyOnSelect with upstream type/default and user/trusted-project precedence",
+        "Test malformed settings, trust boundaries, reload and startup behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "settings-editorpaddingx",
+      "title": "Setting: editorPaddingX",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:63",
+      "acceptance": [
+        "Support editorPaddingX with upstream type/default and user/trusted-project precedence",
+        "Test malformed settings, trust boundaries, reload and startup behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "settings-outputpad",
+      "title": "Setting: outputPad",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:63",
+      "acceptance": [
+        "Support outputPad with upstream type/default and user/trusted-project precedence",
+        "Test malformed settings, trust boundaries, reload and startup behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "settings-autocompletemaxvisible",
+      "title": "Setting: autocompleteMaxVisible",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:63",
+      "acceptance": [
+        "Support autocompleteMaxVisible with upstream type/default and user/trusted-project precedence",
+        "Test malformed settings, trust boundaries, reload and startup behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "settings-showhardwarecursor",
+      "title": "Setting: showHardwareCursor",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:63",
+      "acceptance": [
+        "Support showHardwareCursor with upstream type/default and user/trusted-project precedence",
+        "Test malformed settings, trust boundaries, reload and startup behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "settings-terminal-showimages",
+      "title": "Setting: terminal.showImages",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:63",
+      "acceptance": [
+        "Support terminal.showImages with upstream type/default and user/trusted-project precedence",
+        "Test malformed settings, trust boundaries, reload and startup behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "settings-terminal-imagewidthcells",
+      "title": "Setting: terminal.imageWidthCells",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:63",
+      "acceptance": [
+        "Support terminal.imageWidthCells with upstream type/default and user/trusted-project precedence",
+        "Test malformed settings, trust boundaries, reload and startup behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "settings-terminal-clearonshrink",
+      "title": "Setting: terminal.clearOnShrink",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:63",
+      "acceptance": [
+        "Support terminal.clearOnShrink with upstream type/default and user/trusted-project precedence",
+        "Test malformed settings, trust boundaries, reload and startup behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "settings-terminal-showterminalprogress",
+      "title": "Setting: terminal.showTerminalProgress",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:63",
+      "acceptance": [
+        "Support terminal.showTerminalProgress with upstream type/default and user/trusted-project precedence",
+        "Test malformed settings, trust boundaries, reload and startup behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "settings-terminal-hyperlinks",
+      "title": "Setting: terminal.hyperlinks",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:63",
+      "acceptance": [
+        "Support terminal.hyperlinks with upstream type/default and user/trusted-project precedence",
+        "Test malformed settings, trust boundaries, reload and startup behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "settings-terminal-images",
+      "title": "Setting: terminal.images",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:63",
+      "acceptance": [
+        "Support terminal.images with upstream type/default and user/trusted-project precedence",
+        "Test malformed settings, trust boundaries, reload and startup behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "settings-terminal-truecolor",
+      "title": "Setting: terminal.trueColor",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:63",
+      "acceptance": [
+        "Support terminal.trueColor with upstream type/default and user/trusted-project precedence",
+        "Test malformed settings, trust boundaries, reload and startup behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "settings-images-autoresize",
+      "title": "Setting: images.autoResize",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:63",
+      "acceptance": [
+        "Support images.autoResize with upstream type/default and user/trusted-project precedence",
+        "Test malformed settings, trust boundaries, reload and startup behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "settings-images-blockimages",
+      "title": "Setting: images.blockImages",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:63",
+      "acceptance": [
+        "Support images.blockImages with upstream type/default and user/trusted-project precedence",
+        "Test malformed settings, trust boundaries, reload and startup behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "settings-markdown-codeblockindent",
+      "title": "Setting: markdown.codeBlockIndent",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:63",
+      "acceptance": [
+        "Support markdown.codeBlockIndent with upstream type/default and user/trusted-project precedence",
+        "Test malformed settings, trust boundaries, reload and startup behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "settings-markdown-mermaid",
+      "title": "Setting: markdown.mermaid",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:63",
+      "acceptance": [
+        "Support markdown.mermaid with upstream type/default and user/trusted-project precedence",
+        "Test malformed settings, trust boundaries, reload and startup behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "settings-transport",
+      "title": "Setting: transport",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:64",
+      "acceptance": [
+        "Support transport with upstream type/default and user/trusted-project precedence",
+        "Test malformed settings, trust boundaries, reload and startup behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "settings-httpproxy",
+      "title": "Setting: httpProxy",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:64",
+      "acceptance": [
+        "Support httpProxy with upstream type/default and user/trusted-project precedence",
+        "Test malformed settings, trust boundaries, reload and startup behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "settings-httpidletimeoutms",
+      "title": "Setting: httpIdleTimeoutMs",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:64",
+      "acceptance": [
+        "Support httpIdleTimeoutMs with upstream type/default and user/trusted-project precedence",
+        "Test malformed settings, trust boundaries, reload and startup behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "settings-websocketconnecttimeoutms",
+      "title": "Setting: websocketConnectTimeoutMs",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:64",
+      "acceptance": [
+        "Support websocketConnectTimeoutMs with upstream type/default and user/trusted-project precedence",
+        "Test malformed settings, trust boundaries, reload and startup behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "settings-retry-enabled",
+      "title": "Setting: retry.enabled",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:64",
+      "acceptance": [
+        "Support retry.enabled with upstream type/default and user/trusted-project precedence",
+        "Test malformed settings, trust boundaries, reload and startup behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "settings-retry-maxretries",
+      "title": "Setting: retry.maxRetries",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:64",
+      "acceptance": [
+        "Support retry.maxRetries with upstream type/default and user/trusted-project precedence",
+        "Test malformed settings, trust boundaries, reload and startup behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "settings-retry-basedelayms",
+      "title": "Setting: retry.baseDelayMs",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:64",
+      "acceptance": [
+        "Support retry.baseDelayMs with upstream type/default and user/trusted-project precedence",
+        "Test malformed settings, trust boundaries, reload and startup behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "settings-retry-maxagentdelayms",
+      "title": "Setting: retry.maxAgentDelayMs",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:64",
+      "acceptance": [
+        "Support retry.maxAgentDelayMs with upstream type/default and user/trusted-project precedence",
+        "Test malformed settings, trust boundaries, reload and startup behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "settings-retry-provider-timeoutms",
+      "title": "Setting: retry.provider.timeoutMs",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:64",
+      "acceptance": [
+        "Support retry.provider.timeoutMs with upstream type/default and user/trusted-project precedence",
+        "Test malformed settings, trust boundaries, reload and startup behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "settings-retry-provider-maxretries",
+      "title": "Setting: retry.provider.maxRetries",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:64",
+      "acceptance": [
+        "Support retry.provider.maxRetries with upstream type/default and user/trusted-project precedence",
+        "Test malformed settings, trust boundaries, reload and startup behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "settings-retry-provider-maxretrydelayms",
+      "title": "Setting: retry.provider.maxRetryDelayMs",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:64",
+      "acceptance": [
+        "Support retry.provider.maxRetryDelayMs with upstream type/default and user/trusted-project precedence",
+        "Test malformed settings, trust boundaries, reload and startup behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "settings-shellpath",
+      "title": "Setting: shellPath",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:64",
+      "acceptance": [
+        "Support shellPath with upstream type/default and user/trusted-project precedence",
+        "Test malformed settings, trust boundaries, reload and startup behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "settings-shellcommandprefix",
+      "title": "Setting: shellCommandPrefix",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:64",
+      "acceptance": [
+        "Support shellCommandPrefix with upstream type/default and user/trusted-project precedence",
+        "Test malformed settings, trust boundaries, reload and startup behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "settings-extensions",
+      "title": "Setting: extensions",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:65",
+      "acceptance": [
+        "Support extensions with upstream type/default and user/trusted-project precedence",
+        "Test malformed settings, trust boundaries, reload and startup behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "settings-skills",
+      "title": "Setting: skills",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:65",
+      "acceptance": [
+        "Support skills with upstream type/default and user/trusted-project precedence",
+        "Test malformed settings, trust boundaries, reload and startup behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "settings-prompts",
+      "title": "Setting: prompts",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:65",
+      "acceptance": [
+        "Support prompts with upstream type/default and user/trusted-project precedence",
+        "Test malformed settings, trust boundaries, reload and startup behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "settings-themes",
+      "title": "Setting: themes",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:65",
+      "acceptance": [
+        "Support themes with upstream type/default and user/trusted-project precedence",
+        "Test malformed settings, trust boundaries, reload and startup behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "settings-enableskillcommands",
+      "title": "Setting: enableSkillCommands",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:65",
+      "acceptance": [
+        "Support enableSkillCommands with upstream type/default and user/trusted-project precedence",
+        "Test malformed settings, trust boundaries, reload and startup behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "settings-collapsechangelog",
+      "title": "Setting: collapseChangelog",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:66",
+      "acceptance": [
+        "Support collapseChangelog with upstream type/default and user/trusted-project precedence",
+        "Test malformed settings, trust boundaries, reload and startup behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "settings-enableinstalltelemetry",
+      "title": "Setting: enableInstallTelemetry",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:66",
+      "acceptance": [
+        "Support enableInstallTelemetry with upstream type/default and user/trusted-project precedence",
+        "Test malformed settings, trust boundaries, reload and startup behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "settings-enableanalytics",
+      "title": "Setting: enableAnalytics",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:66",
+      "acceptance": [
+        "Support enableAnalytics with upstream type/default and user/trusted-project precedence",
+        "Test malformed settings, trust boundaries, reload and startup behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    },
+    {
+      "id": "settings-warnings-anthropicextrausage",
+      "title": "Setting: warnings.anthropicExtraUsage",
+      "status": "not_started",
+      "source": "docs/parity/detailed-inventory.md:66",
+      "acceptance": [
+        "Support warnings.anthropicExtraUsage with upstream type/default and user/trusted-project precedence",
+        "Test malformed settings, trust boundaries, reload and startup behaviour"
+      ],
+      "implementation": [],
+      "evidence": [],
+      "dependencies": []
+    }
+  ]
+}

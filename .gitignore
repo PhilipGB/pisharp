@@ -4,3 +4,5 @@
 .idea/
 *.user
 *.suo
+.pisharp-autonomy/
+**/__pycache__/

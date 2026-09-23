@@ -75,7 +75,12 @@ public sealed class TerminalPtyTests
             var stderr = process.StandardError.ReadToEndAsync();
             await process.StandardInput.WriteAsync($"/fork\n/fork {userId[..12]}\n");
             await process.StandardInput.FlushAsync();
-            await Task.Delay(700);
+            using (var forkReady = new CancellationTokenSource(TimeSpan.FromSeconds(12)))
+            {
+                while (Directory.EnumerateFiles(store.DirectoryPath, "*.session.json").Count() < 2)
+                    await Task.Delay(30, forkReady.Token);
+            }
+            await Task.Delay(150);
             await process.StandardInput.WriteAsync("\u0015/name forked\n/quit\n");
             process.StandardInput.Close();
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(12));
@@ -85,7 +90,7 @@ public sealed class TerminalPtyTests
             Assert.Equal(0, process.ExitCode);
             Assert.Contains("draft to change", output);
             Assert.Contains("Forked " + userId[..12], output);
-            Assert.Contains("Name: forked", output);
+            Assert.True(output.Contains("Name: forked", StringComparison.Ordinal), output);
             Assert.DoesNotContain("Session error:", output);
             Assert.DoesNotContain("Agent error:", await stderr);
             var source = await store.LoadAsync(sourcePath);
