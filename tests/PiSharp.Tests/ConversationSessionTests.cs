@@ -35,6 +35,18 @@ public sealed class ConversationSessionTests
     }
 
     [Fact]
+    public void StartupModelAndNameFlagsValidateArguments()
+    {
+        var cli = PiSharp.Cli.CliArguments.Parse(["--model", "local/test", "--name", "Research notes", "--no-session"]);
+        Assert.Equal("local/test", cli.ModelOverride);
+        Assert.Equal("Research notes", cli.SessionName);
+        Assert.Equal("draft", PiSharp.Cli.CliArguments.Parse(["-n", "draft"]).SessionName);
+        Assert.Throws<ArgumentException>(() => PiSharp.Cli.CliArguments.Parse(["--model"]));
+        Assert.Throws<ArgumentException>(() => PiSharp.Cli.CliArguments.Parse(["--name", ""]));
+        Assert.Throws<ArgumentException>(() => PiSharp.Cli.CliArguments.Parse(["--list-models", "--name", "x"]));
+    }
+
+    [Fact]
     public void ForkAtUserExcludesSelectedTurnKeepsSourceAndRestoresDraft()
     {
         var original = new ConversationSession(Path.GetTempPath(), "fixture", null);

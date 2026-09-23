@@ -149,6 +149,50 @@ public sealed class TerminalPtyTests
     }
 
     [Fact]
+    public async Task StartupModelAndNameArePersistedAndConflictingResumeIsRejected()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-startup-flags-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        try
+        {
+            var cli = typeof(CliArguments).Assembly.Location;
+            var folder = Path.Combine(cwd, "sessions");
+            async Task<(int ExitCode, string Error)> Run(params string[] arguments)
+            {
+                var start = new ProcessStartInfo("dotnet")
+                {
+                    WorkingDirectory = cwd,
+                    RedirectStandardInput = true,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true
+                };
+                start.ArgumentList.Add(cli);
+                foreach (var arg in arguments) start.ArgumentList.Add(arg);
+                using var process = Process.Start(start);
+                Assert.NotNull(process);
+                var stdout = process.StandardOutput.ReadToEndAsync();
+                var stderr = process.StandardError.ReadToEndAsync();
+                process.StandardInput.Close();
+                using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(12));
+                try { await process.WaitForExitAsync(timeout.Token); }
+                catch (OperationCanceledException) { process.Kill(entireProcessTree: true); throw; }
+                _ = await stdout;
+                return (process.ExitCode, await stderr);
+            }
+            var first = await Run("--local", "--model", "local/test", "--name", "startup", "--session-dir", folder, "--mode", "rpc");
+            Assert.Equal(0, first.ExitCode);
+            var store = new PiSharp.Runtime.Sessions.ConversationStore(cwd, folder);
+            var saved = await store.LoadAsync(Assert.Single(Directory.GetFiles(folder, "*.session.json")));
+            Assert.Equal("local/test", saved.Model);
+            Assert.Equal("startup", saved.Name);
+            var second = await Run("--local", "--model", "other", "--continue", "--session-dir", folder, "--mode", "rpc");
+            Assert.Equal(2, second.ExitCode);
+            Assert.Contains("conflicts with the saved session model", second.Error);
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Fact]
     public async Task InteractiveCommandsRenderAndExitThroughLinuxPty()
     {
         if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;

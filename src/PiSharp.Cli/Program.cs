@@ -20,11 +20,15 @@ catch (ArgumentException e)
 }
 if (cli.Help)
 {
-    Console.WriteLine("PiSharp (incomplete implementation)\nUsage: pisharp [--local] [--approve|--no-approve] [--mode interactive|print|json|rpc] [--print] [--continue | --session <path> | --no-session] [--session-dir <dir>] [--list-models] [prompt]\n--tools <read,bash,edit,write,grep,find,ls> selects tools (grep/find/ls are opt-in); --exclude-tools <names> removes tools; --no-tools disables defaults.\n--local uses http://192.168.0.97:8000/v1 and Qwen3.8-27B-GGUF (no API key required).\nOverride with PISHARP_BASE_URL, PISHARP_MODEL, PISHARP_API_KEY. OPENAI_API_KEY is used only for OpenAI.\nInteractive: /tree, /branch <id>, /fork, /clone, /new, /sessions [filter], /resume <id>, /delete-session <id>, /compact, /export [path], /name <label>, /model <id>, /models, /session, /trust yes|no|forget, /reload, /quit; Ctrl+C interrupts.");
+    Console.WriteLine("PiSharp (incomplete implementation)\nUsage: pisharp [--local] [--approve|--no-approve] [--mode interactive|print|json|rpc] [--print] [--continue | --session <path> | --no-session] [--session-dir <dir>] [--list-models] [--model <id>] [--name <label>] [prompt]\n--tools <read,bash,edit,write,grep,find,ls> selects tools (grep/find/ls are opt-in); --exclude-tools <names> removes tools; --no-tools disables defaults.\n--local uses http://192.168.0.97:8000/v1 and Qwen3.8-27B-GGUF (no API key required).\nOverride with PISHARP_BASE_URL, PISHARP_MODEL, PISHARP_API_KEY. OPENAI_API_KEY is used only for OpenAI.\nInteractive: /tree, /branch <id>, /fork, /clone, /new, /sessions [filter], /resume <id>, /delete-session <id>, /compact, /export [path], /name <label>, /model <id>, /models, /session, /trust yes|no|forget, /reload, /quit; Ctrl+C interrupts.");
     return;
 }
 ConnectionSettings connection;
-try { connection = ConnectionSettings.Resolve(cli.Local, Environment.GetEnvironmentVariable); }
+try
+{
+    connection = ConnectionSettings.Resolve(cli.Local, Environment.GetEnvironmentVariable);
+    if (cli.ModelOverride is not null) connection = connection with { Model = cli.ModelOverride };
+}
 catch (ArgumentException e)
 {
     Console.Error.WriteLine(e.Message);
@@ -101,19 +105,21 @@ try
         throw new InvalidDataException("Session endpoint differs from the current connection. Set PISHARP_BASE_URL to the saved endpoint first.");
     if (conversation.Model != connection.Model)
     {
-        if (Environment.GetEnvironmentVariable("PISHARP_MODEL") is not null)
-            throw new InvalidDataException("PISHARP_MODEL conflicts with the saved session model. Use /model after opening the session.");
+        if (Environment.GetEnvironmentVariable("PISHARP_MODEL") is not null || cli.ModelOverride is not null)
+            throw new InvalidDataException("Requested model conflicts with the saved session model. Open it without --model/PISHARP_MODEL and use /model after opening.");
         connection = connection with { Model = conversation.Model };
         agent = new PiAgent(client.GetChatClient(connection.Model).AsIChatClient(),
             new CodingTools(Environment.CurrentDirectory), cli.Tools, cli.ExcludeTools, cli.NoTools, instructions, prompts.System, prompts.Append,
             extensionLease.Current.Registration.Tools);
     }
+    if (cli.SessionName is not null) conversation.Rename(cli.SessionName);
     if (!cli.NoSession) sessionPath ??= store.NewPath(conversation);
     var initialPath = sessionPath;
     conversationRun = await ConversationRun.OpenAsync(agent, conversation, save: initialPath is null ? null :
         token => store.SaveAsync(conversation, initialPath, token));
+    if (cli.SessionName is not null && sessionPath is not null) await store.SaveAsync(conversation, sessionPath);
 }
-catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.Text.Json.JsonException or ArgumentException)
+catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException or System.Text.Json.JsonException or ArgumentException)
 {
     Console.Error.WriteLine($"Could not open session: {e.Message}");
     Environment.ExitCode = 2;
