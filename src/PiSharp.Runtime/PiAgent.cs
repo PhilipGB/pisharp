@@ -10,7 +10,7 @@ public sealed class PiAgent
     private readonly InMemoryChatHistoryProvider _history = new();
     private readonly ChatClientAgent _agent;
 
-    public PiAgent(IChatClient client, CodingTools tools)
+    public PiAgent(IChatClient client, CodingTools tools, IReadOnlyList<string>? selectedTools = null, IReadOnlyList<string>? excludedTools = null, bool noTools = false)
     {
         _agent = new ChatClientAgent(client, new ChatClientAgentOptions
         {
@@ -18,8 +18,8 @@ public sealed class PiAgent
             ChatHistoryProvider = _history,
             ChatOptions = new ChatOptions
             {
-                Instructions = "You are PiSharp, a coding agent. Inspect files before modifying them. Use read for text and bash for shell commands. Use edit for targeted changes and write for new files.",
-                Tools = tools.Create()
+                Instructions = "You are PiSharp, a coding agent. Inspect files before modifying them when tools are available. Use only the tools provided for this run.",
+                Tools = tools.Create(selectedTools, excludedTools, noTools)
             }
         });
     }

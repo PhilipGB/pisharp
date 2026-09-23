@@ -14,7 +14,7 @@ catch (ArgumentException e)
 }
 if (cli.Help)
 {
-    Console.WriteLine("PiSharp (early vertical slice)\nUsage: pisharp [--local] [--print] [--continue | --session <path> | --no-session] [prompt]\n--local uses http://192.168.0.97:8000/v1 and Qwen3.8-27B-GGUF (no API key required).\nOverride with PISHARP_BASE_URL, PISHARP_MODEL, PISHARP_API_KEY. OPENAI_API_KEY is used only for OpenAI.\nInteractive: /quit to exit, Ctrl+C to cancel current run.");
+    Console.WriteLine("PiSharp (early vertical slice)\nUsage: pisharp [--local] [--print] [--continue | --session <path> | --no-session] [prompt]\n--tools <read,bash,edit,write,ls> selects tools (ls is opt-in); --exclude-tools <names> removes tools; --no-tools disables defaults.\n--local uses http://192.168.0.97:8000/v1 and Qwen3.8-27B-GGUF (no API key required).\nOverride with PISHARP_BASE_URL, PISHARP_MODEL, PISHARP_API_KEY. OPENAI_API_KEY is used only for OpenAI.\nInteractive: /quit to exit, Ctrl+C to cancel current run.");
     return;
 }
 ConnectionSettings connection;
@@ -30,7 +30,14 @@ var options = new OpenAIClientOptions();
 if (connection.Endpoint is not null) options.Endpoint = connection.Endpoint;
 var client = new OpenAIClient(new ApiKeyCredential(connection.ApiKey), options);
 IChatClient chat = client.GetChatClient(connection.Model).AsIChatClient();
-var agent = new PiAgent(chat, new CodingTools(Environment.CurrentDirectory));
+PiAgent agent;
+try { agent = new PiAgent(chat, new CodingTools(Environment.CurrentDirectory), cli.Tools, cli.ExcludeTools, cli.NoTools); }
+catch (ArgumentException e)
+{
+    Console.Error.WriteLine(e.Message);
+    Environment.ExitCode = 2;
+    return;
+}
 var snapshots = new SessionSnapshots(Environment.CurrentDirectory, connection.Model, connection.Endpoint?.ToString());
 var snapshotPath = cli.NoSession ? null : cli.SessionPath is not null ? Path.GetFullPath(cli.SessionPath)
     : cli.Continue ? snapshots.MostRecentPath() : null;

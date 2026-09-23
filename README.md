@@ -12,7 +12,7 @@ dotnet run --project src/PiSharp.Cli -- --print 'Describe this repository'
 dotnet run --project src/PiSharp.Cli
 ```
 
-Run from the repository the agent should edit. `read`, `write`, `edit` and `bash` operate with the local process's filesystem permissions; there is **no sandbox**. The early interactive UI is a line-oriented REPL (not Pi's terminal UI). A preliminary MAF snapshot of the linear conversation is saved after successful turns (not Pi's JSONL session tree). Do not load untrusted repository instructions or extensions; those features are not implemented. `--help` lists implemented flags. Do not use on sensitive files without reviewing model requests and generated commands.
+Run from the repository the agent should edit. Four default tools are `read`, `bash`, `edit`, `write`; use `--tools read,ls` to select the experimental `ls` tool, `--exclude-tools <names>` to remove tools, or `--no-tools` to disable defaults (an explicit allowlist takes precedence). `read`, `write`, `edit` and `bash` operate with the local process's filesystem permissions; there is **no sandbox**. The early interactive UI is a line-oriented REPL (not Pi's terminal UI). A preliminary MAF snapshot of the linear conversation is saved after successful turns (not Pi's JSONL session tree). Do not load untrusted repository instructions or extensions; those features are not implemented. `--help` lists implemented flags. Do not use on sensitive files without reviewing model requests and generated commands.
 
 ## Local llama-server testing
 
@@ -37,4 +37,4 @@ dotnet build PiSharp.slnx --warnaserror
 dotnet test PiSharp.slnx
 ```
 
-Integration tests exercise a scripted tool call and a local HTTP Chat Completions streaming fixture; no live-provider credentials are needed for tests. Narrow edit-planner, read text-selection, v3 branch-projection and v1/v2 migration fixtures have been compared with pinned upstream Pi; full-feature parity has not been established.
+Integration tests exercise a scripted tool call and a local HTTP Chat Completions streaming fixture; no live-provider credentials are needed for tests. Narrow edit-planner, read text-selection, opt-in ls listing, v3 branch-projection and v1/v2 migration fixtures have been compared with pinned upstream Pi; full-feature parity has not been established.

@@ -12,11 +12,26 @@ public sealed class CodingTools(string workingDirectory)
     private readonly string _cwd = Path.GetFullPath(workingDirectory);
     private static readonly FileMutationQueue s_mutations = new();
 
-    public IList<AITool> Create() =>
-    [
-        AIFunctionFactory.Create(Read, name: "read"), AIFunctionFactory.Create(Write, name: "write"),
-        AIFunctionFactory.Create(EditBatch, name: "edit"), AIFunctionFactory.Create(Bash, name: "bash")
-    ];
+    public IList<AITool> Create(IReadOnlyList<string>? requested = null, IReadOnlyList<string>? excluded = null, bool noTools = false)
+    {
+        var available = new Dictionary<string, AITool>(StringComparer.Ordinal)
+        {
+            ["read"] = AIFunctionFactory.Create(Read, name: "read"),
+            ["bash"] = AIFunctionFactory.Create(Bash, name: "bash"),
+            ["edit"] = AIFunctionFactory.Create(EditBatch, name: "edit"),
+            ["write"] = AIFunctionFactory.Create(Write, name: "write"),
+            ["ls"] = AIFunctionFactory.Create(new DirectoryListingTool(_cwd).List, name: "ls")
+        };
+        var names = requested ?? (noTools ? [] : ["read", "bash", "edit", "write"]);
+        var disabled = excluded is null ? null : new HashSet<string>(excluded, StringComparer.Ordinal);
+        var selected = new List<AITool>();
+        foreach (var name in names.Distinct(StringComparer.Ordinal))
+        {
+            if (!available.TryGetValue(name, out var tool)) throw new ArgumentException($"Unknown tool name: {name}");
+            if (disabled?.Contains(name) != true) selected.Add(tool);
+        }
+        return selected;
+    }
 
     private string Resolve(string path) => Path.GetFullPath(path, _cwd);
 
