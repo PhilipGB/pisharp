@@ -44,6 +44,19 @@ public sealed class ExtensionCatalogTests
                 Assert.Empty(disabled.Registration.Tools);
                 Assert.Empty(disabled.Registration.Commands);
             }
+            var flags = CliArguments.Parse(["-ne", "-e", Path.Combine(project, "fixture.dll")]);
+            using (var explicitOnly = ExtensionCatalog.Load(agent, cwd, false, discover: !flags.NoExtensions,
+                additionalPaths: flags.ExtensionPaths))
+                Assert.Equal("extension: explicit", await explicitOnly.Registration.Commands["fixture"]("explicit", CancellationToken.None));
+            using (var explicitDirectory = ExtensionCatalog.Load(agent, cwd, false, discover: false,
+                additionalPaths: [project]))
+                Assert.Single(explicitDirectory.Registration.Tools);
+            using (var deduplicated = ExtensionCatalog.Load(agent, cwd, false,
+                additionalPaths: [Path.Combine(agent, "extensions", "fixture.dll")]))
+                Assert.Single(deduplicated.Registration.Tools);
+            Assert.Throws<FileNotFoundException>(() => ExtensionCatalog.Load(agent, cwd, false, discover: false,
+                additionalPaths: ["missing.dll"]));
+            Assert.Throws<ArgumentException>(() => CliArguments.Parse(["--extension"]));
             using var personal = ExtensionCatalog.Load(agent, cwd, false);
             Assert.Single(personal.Registration.Tools);
             Assert.Throws<ArgumentException>(() => ExtensionCatalog.Load(agent, cwd, true)); // duplicate names fail closed
@@ -72,7 +85,7 @@ public sealed class ExtensionCatalogTests
         try
         {
             File.Copy(typeof(FixtureExtension).Assembly.Location, Path.Combine(folder, "fixture.dll"));
-            async Task<(string Output, string Error)> Run(bool trusted, bool disableExtensions = false)
+            async Task<(string Output, string Error)> Run(bool trusted, bool disableExtensions = false, bool explicitPath = false)
             {
                 var cli = typeof(CliArguments).Assembly.Location;
                 var start = new ProcessStartInfo("/usr/bin/script")
@@ -81,7 +94,7 @@ public sealed class ExtensionCatalogTests
                     RedirectStandardInput = true,
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
-                    ArgumentList = { "-q", "-e", "-c", $"dotnet '{cli}' --local --no-session --no-tools {(trusted ? "--approve" : "--no-approve")} {(disableExtensions ? "--no-extensions" : "")}", "/dev/null" }
+                    ArgumentList = { "-q", "-e", "-c", $"dotnet '{cli}' --local --no-session --no-tools {(trusted ? "--approve" : "--no-approve")} {(disableExtensions ? "--no-extensions" : "")} {(explicitPath ? "-e '.pi/extensions/fixture.dll'" : "")}", "/dev/null" }
                 };
                 start.Environment["PISHARP_AGENT_DIR"] = Path.Combine(cwd, "agent");
                 using var process = Process.Start(start);
@@ -102,6 +115,8 @@ public sealed class ExtensionCatalogTests
             Assert.Contains("extension: hi", allowed.Output);
             var disabled = await Run(true, disableExtensions: true);
             Assert.Contains("Unknown command: /fixture", disabled.Output + disabled.Error);
+            var explicitlyAllowed = await Run(false, disableExtensions: true, explicitPath: true);
+            Assert.Contains("extension: hi", explicitlyAllowed.Output);
         }
         finally { Directory.Delete(cwd, true); }
     }

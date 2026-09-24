@@ -38,7 +38,7 @@ if (cli.Version)
 }
 if (cli.Help)
 {
-    Console.WriteLine("PiSharp (incomplete implementation)\nUsage: pisharp [--local | --provider <id>] [--model <id>] [--models <globs>] [--thinking <level>] [--api-key <key>] [--list-models] [--system-prompt <text|file>] [--append-system-prompt <text|file>] [--no-context-files] [--no-extensions] [--no-skills] [--skill <path>] [--no-prompt-templates] [--prompt-template <path>] [--offline] [-a|--approve|-na|--no-approve] [--mode text|interactive|print|json|rpc] [-p|--print] [-h|--help] [-v|--version] [-c|--continue | --session <path|project-id> | --fork <path|project-id> | --no-session] [--session-dir <dir>] [--name <label>] [prompt] [@files...]\n--tools <read,bash,edit,write,grep,find,ls> selects tools (grep/find/ls are opt-in); --exclude-tools <names> removes tools; --no-tools disables defaults (including extension tools); --no-builtin-tools disables only default built-ins.\nProviders and static model metadata may be configured in $PISHARP_AGENT_DIR/models.json. Credentials are read from environment or private auth.json; --api-key is runtime-only.\nOffline credential status: pisharp auth check --provider <id> [--model <configured-exact-id>] [--local]; explicit pisharp auth print-api-key --provider <id> prints an API key to stdout.\nStandalone private HTML: pisharp --export <PiSharp-session-file> [output.html]; never overwrites.\n--local uses http://192.168.0.97:8000/v1 and Qwen3.8-27B-GGUF (no API key required).\nInteractive: /model, /models, /thinking, /scoped-models, /login, /logout, /tree, /branch, /fork, /clone, /new, /sessions, /resume, /delete-session, /compact, /export, /name, /session, /trust, /reload, /quit.");
+    Console.WriteLine("PiSharp (incomplete implementation)\nUsage: pisharp [--local | --provider <id>] [--model <id>] [--models <globs>] [--thinking <level>] [--api-key <key>] [--list-models] [--system-prompt <text|file>] [--append-system-prompt <text|file>] [--no-context-files] [--no-extensions] [-e|--extension <path>] [--no-skills] [--skill <path>] [--no-prompt-templates] [--prompt-template <path>] [--offline] [-a|--approve|-na|--no-approve] [--mode text|interactive|print|json|rpc] [-p|--print] [-h|--help] [-v|--version] [-c|--continue | --session <path|project-id> | --fork <path|project-id> | --no-session] [--session-dir <dir>] [--name <label>] [prompt] [@files...]\n--tools <read,bash,edit,write,grep,find,ls> selects tools (grep/find/ls are opt-in); --exclude-tools <names> removes tools; --no-tools disables defaults (including extension tools); --no-builtin-tools disables only default built-ins.\nProviders and static model metadata may be configured in $PISHARP_AGENT_DIR/models.json. Credentials are read from environment or private auth.json; --api-key is runtime-only.\nOffline credential status: pisharp auth check --provider <id> [--model <configured-exact-id>] [--local]; explicit pisharp auth print-api-key --provider <id> prints an API key to stdout.\nStandalone private HTML: pisharp --export <PiSharp-session-file> [output.html]; never overwrites.\n--local uses http://192.168.0.97:8000/v1 and Qwen3.8-27B-GGUF (no API key required).\nInteractive: /model, /models, /thinking, /scoped-models, /login, /logout, /tree, /branch, /fork, /clone, /new, /sessions, /resume, /delete-session, /compact, /export, /name, /session, /trust, /reload, /quit.");
     return;
 }
 var trustStore = new ProjectTrust(agentDirectory);
@@ -110,7 +110,8 @@ try
     resources = await ResourceCatalog.LoadAsync(Environment.CurrentDirectory, agentDirectory, trusted,
         discoverSkills: !cli.NoSkills, discoverPrompts: !cli.NoPromptTemplates,
         additionalSkills: cli.SkillPaths, additionalPrompts: cli.PromptTemplatePaths);
-    extensions = ExtensionCatalog.Load(agentDirectory, Environment.CurrentDirectory, trusted, discover: !cli.NoExtensions);
+    extensions = ExtensionCatalog.Load(agentDirectory, Environment.CurrentDirectory, trusted, discover: !cli.NoExtensions,
+        additionalPaths: cli.ExtensionPaths);
     instructions += "\n" + resources.SystemInstructions();
 }
 catch (Exception e) when (e is not OperationCanceledException)
@@ -360,7 +361,8 @@ async Task ReloadResources()
         "\n" + nextResources.SystemInstructions();
     var nextPrompts = await CliPromptOverrides.ResolveAsync(cli,
         await ProjectPrompts.LoadAsync(Environment.CurrentDirectory, agentDirectory, trusted), Environment.CurrentDirectory);
-    var nextExtensions = ExtensionCatalog.Load(agentDirectory, Environment.CurrentDirectory, trusted, discover: !cli.NoExtensions);
+    var nextExtensions = ExtensionCatalog.Load(agentDirectory, Environment.CurrentDirectory, trusted, discover: !cli.NoExtensions,
+        additionalPaths: cli.ExtensionPaths);
     try
     {
         var nextAgent = new PiAgent(client.GetChatClient(connection.Model).AsIChatClient(),

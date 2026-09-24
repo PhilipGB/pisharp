@@ -52,7 +52,7 @@ public sealed class ExtensionLease(ExtensionCatalog initial) : IDisposable
     public void Dispose() => Current.Dispose();
 }
 
-/// <summary>Loads personal assemblies and trust-gated project assemblies in isolated contexts for reload.</summary>
+/// <summary>Loads personal and trust-gated project assemblies, plus caller-selected paths, in isolated contexts for reload.</summary>
 public sealed class ExtensionCatalog : IDisposable
 {
     private readonly List<AssemblyLoadContext> _contexts = [];
@@ -60,37 +60,47 @@ public sealed class ExtensionCatalog : IDisposable
 
     private ExtensionCatalog() { }
 
-    public static ExtensionCatalog Load(string agentDirectory, string cwd, bool projectTrusted, bool discover = true)
+    public static ExtensionCatalog Load(string agentDirectory, string cwd, bool projectTrusted, bool discover = true,
+        IReadOnlyList<string>? additionalPaths = null)
     {
         var catalog = new ExtensionCatalog();
-        if (!discover) return catalog;
         try
         {
-            foreach (var root in new[] { Path.Combine(agentDirectory, "extensions"),
-                projectTrusted ? Path.Combine(cwd, ".pi", "extensions") : null }.Where(path => path is not null))
+            var selectedPaths = new List<string>();
+            if (discover)
+                foreach (var root in new[] { Path.Combine(agentDirectory, "extensions"),
+                    projectTrusted ? Path.Combine(cwd, ".pi", "extensions") : null }.Where(path => path is not null))
+                    if (Directory.Exists(root)) selectedPaths.AddRange(FindAssemblies(root));
+            foreach (var entry in additionalPaths ?? [])
             {
-                if (!Directory.Exists(root)) continue;
-                var files = Directory.EnumerateFiles(root, "*.dll", SearchOption.TopDirectoryOnly)
-                    .Concat(Directory.EnumerateDirectories(root).Select(path => Path.Combine(path, "index.dll"))
-                        .Where(File.Exists)).Order(StringComparer.Ordinal).Take(100).ToArray();
-                foreach (var path in files)
+                var path = Path.GetFullPath(entry, cwd);
+                if (Directory.Exists(path)) selectedPaths.AddRange(FindAssemblies(path));
+                else if (File.Exists(path) && Path.GetExtension(path).Equals(".dll", StringComparison.OrdinalIgnoreCase))
+                    selectedPaths.Add(path);
+                else throw new FileNotFoundException("Explicit extension must be a .dll file or an existing directory.", path);
+            }
+            foreach (var path in selectedPaths.Distinct(StringComparer.Ordinal))
+            {
+                var context = new PluginLoadContext(path);
+                catalog._contexts.Add(context);
+                var assembly = context.LoadFromAssemblyPath(path);
+                foreach (var type in assembly.GetExportedTypes().Where(type =>
+                    typeof(IPiSharpExtension).IsAssignableFrom(type) && !type.IsAbstract && !type.IsInterface))
                 {
-                    var context = new PluginLoadContext(Path.GetFullPath(path));
-                    catalog._contexts.Add(context);
-                    var assembly = context.LoadFromAssemblyPath(Path.GetFullPath(path));
-                    foreach (var type in assembly.GetExportedTypes().Where(type =>
-                        typeof(IPiSharpExtension).IsAssignableFrom(type) && !type.IsAbstract && !type.IsInterface))
-                    {
-                        if (Activator.CreateInstance(type) is not IPiSharpExtension extension)
-                            throw new InvalidDataException($"Extension {type.FullName} needs a public parameterless constructor.");
-                        extension.Configure(catalog.Registration);
-                    }
+                    if (Activator.CreateInstance(type) is not IPiSharpExtension extension)
+                        throw new InvalidDataException($"Extension {type.FullName} needs a public parameterless constructor.");
+                    extension.Configure(catalog.Registration);
                 }
             }
             return catalog;
         }
         catch { catalog.Dispose(); throw; }
     }
+
+    private static IEnumerable<string> FindAssemblies(string root) =>
+        Directory.EnumerateFiles(root, "*.dll", SearchOption.TopDirectoryOnly)
+            .Concat(Directory.EnumerateDirectories(root).Select(path => Path.Combine(path, "index.dll"))
+                .Where(File.Exists)).Order(StringComparer.Ordinal).Take(100).Select(Path.GetFullPath).ToArray();
 
     public void Dispose()
     {

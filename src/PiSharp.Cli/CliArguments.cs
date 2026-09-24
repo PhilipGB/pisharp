@@ -2,7 +2,7 @@ namespace PiSharp.Cli;
 
 public sealed record CliArguments(bool Help, bool Local, bool Print, bool Continue, bool NoSession, string? SessionPath, string Prompt,
     IReadOnlyList<string>? Tools, IReadOnlyList<string>? ExcludeTools, bool NoTools, string Mode, bool? ProjectTrustOverride = null, string? SessionDirectory = null, bool ListModels = false, string? ModelOverride = null, string? SessionName = null, string? ForkSource = null,
-    string? Provider = null, IReadOnlyList<string>? ScopedModels = null, string? Thinking = null, string? ApiKey = null, IReadOnlyList<string>? FileArguments = null, string? SystemPrompt = null, IReadOnlyList<string>? AppendSystemPrompts = null, bool NoContextFiles = false, bool NoBuiltinTools = false, bool NoExtensions = false, bool NoSkills = false, bool NoPromptTemplates = false, bool Version = false, bool Offline = false, IReadOnlyList<string>? SkillPaths = null, IReadOnlyList<string>? PromptTemplatePaths = null)
+    string? Provider = null, IReadOnlyList<string>? ScopedModels = null, string? Thinking = null, string? ApiKey = null, IReadOnlyList<string>? FileArguments = null, string? SystemPrompt = null, IReadOnlyList<string>? AppendSystemPrompts = null, bool NoContextFiles = false, bool NoBuiltinTools = false, bool NoExtensions = false, bool NoSkills = false, bool NoPromptTemplates = false, bool Version = false, bool Offline = false, IReadOnlyList<string>? SkillPaths = null, IReadOnlyList<string>? PromptTemplatePaths = null, IReadOnlyList<string>? ExtensionPaths = null)
 {
     private static IReadOnlyList<string> ParseToolNames(string[] arguments, ref int index, string flag)
     {
@@ -19,6 +19,7 @@ public sealed record CliArguments(bool Help, bool Local, bool Print, bool Contin
         var appendSystemPrompts = new List<string>();
         var skillPaths = new List<string>();
         var promptTemplatePaths = new List<string>();
+        var extensionPaths = new List<string>();
         var mode = "interactive";
         IReadOnlyList<string>? tools = null, excludeTools = null, scopedModels = null;
         var prompt = new List<string>();
@@ -51,9 +52,11 @@ public sealed record CliArguments(bool Help, bool Local, bool Print, bool Contin
                 case "--no-context-files": case "-nc": noContextFiles = true; break;
                 case "--skill":
                 case "--prompt-template":
+                case "--extension":
+                case "-e":
                     if (++i >= arguments.Length || string.IsNullOrWhiteSpace(arguments[i]) || arguments[i].StartsWith('-'))
                         throw new ArgumentException($"{arg} requires a file or directory path.");
-                    (arg == "--skill" ? skillPaths : promptTemplatePaths).Add(arguments[i]);
+                    (arg == "--skill" ? skillPaths : arg == "--prompt-template" ? promptTemplatePaths : extensionPaths).Add(arguments[i]);
                     break;
                 case "--no-skills": case "-ns": noSkills = true; break;
                 case "--no-prompt-templates": case "-np": noPromptTemplates = true; break;
@@ -145,6 +148,6 @@ public sealed record CliArguments(bool Help, bool Local, bool Print, bool Contin
         if (local && provider is not null && !provider.Equals("local", StringComparison.OrdinalIgnoreCase))
             throw new ArgumentException("--local cannot be combined with a provider other than local.");
         return new CliArguments(help, local, print, resume, noSession, sessionPath, string.Join(" ", prompt), tools, excludeTools, noTools, mode, trust, sessionDirectory, listModels, modelOverride, sessionName, forkSource,
-            provider, scopedModels, thinking, apiKey, fileArguments, systemPrompt, appendSystemPrompts, noContextFiles, noBuiltinTools, noExtensions, noSkills, noPromptTemplates, version, offline, skillPaths, promptTemplatePaths);
+            provider, scopedModels, thinking, apiKey, fileArguments, systemPrompt, appendSystemPrompts, noContextFiles, noBuiltinTools, noExtensions, noSkills, noPromptTemplates, version, offline, skillPaths, promptTemplatePaths, extensionPaths);
     }
 }

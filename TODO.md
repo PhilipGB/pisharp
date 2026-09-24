@@ -6,7 +6,7 @@
 
 ## Current state and audit evidence
 
-Repository `main` was clean at the latest checkpoint (`2645b9714` pushed). Format verification, warnings-as-errors build and all 182 local tests pass; this is not differential parity evidence. Tracking describes partial implementations, but the ledger still contains stale statuses; reconcile it against code/tests before relying on statuses. There is no evidence for full feature parity. In particular the README explicitly calls out absent OAuth, wide provider semantics, Pi JSONL, full TUI, broad settings/keybindings, comprehensive multimodal support, rich resources/extensions and Pi-compatible RPC.
+Repository `main` was clean at the latest checkpoint (`bc58ac7fa` pushed). Format verification, warnings-as-errors build and all 190 local tests pass; this is not differential parity evidence. Tracking describes partial implementations, but the ledger still contains stale statuses; reconcile it against code/tests before relying on statuses. There is no evidence for full feature parity. In particular the README explicitly calls out absent OAuth, wide provider semantics, Pi JSONL, full TUI, broad settings/keybindings, comprehensive multimodal support, rich resources/extensions and Pi-compatible RPC.
 
 ## Highest-priority actionable work (continue in order, reprioritize as evidence dictates)
 
@@ -34,7 +34,8 @@ After each significant change: add/update tests and parity evidence, run focused
 
 ## Completed in this continuation
 
-- Repeatable `--skill <path>` and `--prompt-template <path>` select explicit files/directories even with automatic discovery disabled; the same paths reload. Bounded parsing, fail-closed missing paths, local untrusted-project fixture and HTTP provider-process request evidence; upstream path resolution/diagnostics/precedence and explicit-extension paths remain open.
+- Repeatable `-e`/`--extension <path>` selects .NET DLLs or directories independently of `--no-extensions`, including on reload; a local isolated-load fixture and Linux PTY fixture prove explicitly selected untrusted-project code executes only when requested. Paths are full-trust code, not Pi TypeScript extensions. Broad extension API parity and upstream path semantics remain open.
+- Repeatable `--skill <path>` and `--prompt-template <path>` select explicit files/directories even with automatic discovery disabled; the same paths reload. Bounded parsing, fail-closed missing paths, local untrusted-project fixture and HTTP provider-process request evidence; upstream path resolution/diagnostics/precedence remain open.
 - `--offline` and truthy `PI_OFFLINE` now suppress dynamic OpenAI-compatible `/models` HTTP reads for discovery/listing while using configured/built-in models; a local fake HTTP fixture shows no catalog request and fuzzy configured selection, and subprocess fixtures verify both CLI and environment forms with an unreachable endpoint. This does not block inference traffic, auth refresh (not implemented), or establish upstream offline parity.
 - CLI trust aliases `-a`/`-na` and upstream `--mode text` now parse; text maps to existing TTY-sensitive interactive/print lifecycle, not a Pi protocol match. Parser conflict tests only; mode behavior and Pi CLI differential remain open.
 - CLI `-h/--help` and `-v/--version` work without reading invalid settings (subprocess fixture), and `-p`/`-c` aliases parse; version reports PiSharp assembly version rather than Pi's version. Other CLI flags, resume picker, and mode equivalence remain open.
