@@ -287,6 +287,19 @@ public sealed class CompactionTests
     }
 
     [Fact]
+    public async Task LongSummaryTranscriptRetainsLatestMessageWithinBound()
+    {
+        var client = new ToolLoopBudgetClient();
+        var agent = new PiAgent(client, new CodingTools(Path.GetTempPath()));
+        var messages = Enumerable.Range(0, 60).Select(i =>
+            new ChatMessage(ChatRole.User, new string('A', 1900) + (i == 59 ? " LATEST_MARKER" : $" {i}"))).ToArray();
+        await agent.SummarizeAsync(messages, null);
+        Assert.Contains("LATEST_MARKER", client.LastSummaryRequest);
+        Assert.Contains("Earlier conversation omitted", client.LastSummaryRequest);
+        Assert.True(client.LastSummaryRequest.Length < 65 * 1024);
+    }
+
+    [Fact]
     public async Task ParallelToolCallBatchCutsOnlyAfterBothResultsAndRetainsRawHistory()
     {
         var cwd = Path.Combine(Path.GetTempPath(), "pisharp-parallel-cut-" + Guid.NewGuid().ToString("N"));
@@ -321,7 +334,7 @@ public sealed class CompactionTests
         Directory.CreateDirectory(cwd);
         try
         {
-            await File.WriteAllTextAsync(Path.Combine(cwd, "output.txt"), new string('Z', 4000));
+            await File.WriteAllTextAsync(Path.Combine(cwd, "output.txt"), new string('Z', 4000) + " TAIL_SENTINEL");
             var conversation = new ConversationSession(cwd, "fixture", null);
             var client = new ToolLoopBudgetClient();
             var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(cwd)), conversation,
@@ -331,6 +344,8 @@ public sealed class CompactionTests
             Assert.Equal(2, client.Requests);
             Assert.Equal(1, client.Summaries);
             Assert.True(client.ContinuationSawSummaryWithoutRawToolResult);
+            Assert.Contains("TAIL_SENTINEL", client.LastSummaryRequest);
+            Assert.True(client.LastSummaryRequest.Length < 64 * 1024);
             Assert.Single(events, item => item.Type == "context_compacted_in_flight");
             Assert.Contains(conversation.ActiveMessages().SelectMany(message => message.Contents)
                 .OfType<FunctionResultContent>(), result => result.Result?.ToString()?.Contains(new string('Z', 4000), StringComparison.Ordinal) == true);
@@ -650,6 +665,7 @@ public sealed class CompactionTests
         public int Summaries { get; private set; }
         public bool FailSummary { get; init; }
         public bool ContinuationSawSummaryAndToolResult { get; private set; }
+        public string LastSummaryRequest { get; private set; } = "";
         public bool RepeatRead { get; init; }
         public Action? OnFirstSummary { get; init; }
         public bool ContinuationSawSummaryWithoutRawToolResult { get; private set; }
@@ -660,6 +676,7 @@ public sealed class CompactionTests
         {
             Summaries++;
             if (FailSummary) throw new IOException("summarizer unavailable");
+            LastSummaryRequest = messages.Last().Text;
             if (Summaries == 1) OnFirstSummary?.Invoke();
             return Task.FromResult(new ChatResponse([new ChatMessage(ChatRole.Assistant, "Previous question answered.")])
             {
