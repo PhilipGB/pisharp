@@ -241,13 +241,13 @@ public sealed class ConversationRun
     // Called only while the run gate is held. A failed summary or save cannot switch active context.
     private async Task<bool> CompactCoreAsync(string? focus, CancellationToken cancellationToken)
     {
-        var plan = Conversation.PrepareCompaction();
+        var plan = Conversation.PrepareCompaction(_autoCompaction?.KeepRecentTokens);
         if (plan is null) return false;
         var summary = await _agent.SummarizeAsync(plan.MessagesToSummarize, focus, cancellationToken);
         var previousHead = Conversation.Tree.HeadId;
         try
         {
-            Conversation.AppendCompaction(plan, summary.Text);
+            Conversation.AppendCompaction(plan, summary.Text, _autoCompaction?.KeepRecentTokens);
             if (summary.Usage is not null)
                 Conversation.AppendUsage(UsageRecord.Create(Conversation.Model, "compaction", summary.Usage, _pricing));
             var messages = Conversation.ContextMessages();

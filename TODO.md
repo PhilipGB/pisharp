@@ -28,11 +28,13 @@ After each significant change: add/update tests and parity evidence, run focused
 
 ## Immediate discovered tasks
 
-- Finish compaction settings: `keepRecentTokens` and per-model overrides, dynamic automatic compaction inside tool loops, upstream differential evidence; current user/trusted-project `enabled` and `reserveTokens` govern pre-prompt compaction only.
+- Finish compaction: dynamic automatic compaction inside tool loops, upstream differential evidence; current user/trusted-project compaction settings govern pre-prompt compaction only.
 - Reconcile stale ledger entries per implementation/test (the ledger's `verified` agent row denotes local evidence, not upstream differential verification). Preserve honest states.
 
 ## Completed in this continuation
 
+- Exact `provider/model` compaction reserve/recent overrides now merge across user/trusted-project scopes with explicit env window/reserve precedence; malformed entries fail closed and model-switch paths resolve policies. Differential provider-token accuracy remains unverified.
+- `compaction.keepRecentTokens` selects recent whole user turns (including tool call/results), with settings validation and preserved raw history; local budget/rollback tests pass. This is a conservative heuristic rather than upstream tokenizer-exact retention. In-loop compaction and differential token accounting remain open.
 - Image setting `images.blockImages` has local provider-boundary and history-retention evidence; still verify tool-result image filtering and upstream differential; resumed session provider-boundary filtering is locally tested. `autoResize` and image tool/clipboard/terminal support remain open.
 - Added validated user `compaction.enabled` and `compaction.reserveTokens` with explicit context environment override, known-model context budget, malformed/duplicate rejection and local tests. Trusted-project settings now overlay the validated subset after trust resolution; untrusted project JSON is never read. Pre-prompt only, no upstream differential proof; process trust fixture and local precedence fixtures added.
 - Expanded the provider model descriptor with model name, API identifier, declared input modalities, and max output tokens; load these from local catalogues (including OpenRouter `architecture.input_modalities`) and configured `models.json`, and preserve configured fallback metadata when the live endpoint omits it. Unit fixtures added. This metadata is descriptive only: native provider request adapters and image transport remain open.

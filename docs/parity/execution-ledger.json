@@ -1646,7 +1646,7 @@
     {
       "id": "settings-compaction-keeprecenttokens",
       "title": "Setting: compaction.keepRecentTokens",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:62",
       "acceptance": [
         "Support compaction.keepRecentTokens with upstream type/default and user/trusted-project precedence",
@@ -1659,7 +1659,7 @@
     {
       "id": "settings-compaction-modeloverrides",
       "title": "Setting: compaction.modelOverrides",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:62",
       "acceptance": [
         "Support compaction.modelOverrides with upstream type/default and user/trusted-project precedence",

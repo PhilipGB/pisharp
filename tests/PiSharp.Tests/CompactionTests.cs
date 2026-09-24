@@ -207,6 +207,27 @@ public sealed class CompactionTests
     }
 
     [Fact]
+    public void RecentTokenBudgetKeepsWholeTurnsAndNeverSplitsToolResults()
+    {
+        var conversation = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        conversation.Append(new ChatMessage(ChatRole.User, "first"));
+        conversation.Append(new ChatMessage(ChatRole.Assistant, "reply one"));
+        conversation.Append(new ChatMessage(ChatRole.User, "second"));
+        conversation.Append(new ChatMessage(ChatRole.Assistant,
+            [new FunctionCallContent("tool2", "read", new Dictionary<string, object?>())]));
+        conversation.Append(new ChatMessage(ChatRole.Tool, [new FunctionResultContent("tool2", "read output")]));
+        conversation.Append(new ChatMessage(ChatRole.User, "third"));
+        var minimum = conversation.PrepareCompaction(0)!;
+        Assert.Equal(5, minimum.MessagesToSummarize.Count);
+        var twoTurns = conversation.PrepareCompaction(300)!;
+        Assert.Equal(2, twoTurns.MessagesToSummarize.Count);
+        conversation.AppendCompaction(twoTurns, "First turn summary", 300);
+        Assert.Equal(6, conversation.ActiveMessages().Count);
+        Assert.Equal(5, conversation.ContextMessages().Count);
+        Assert.Null(conversation.PrepareCompaction(100000));
+    }
+
+    [Fact]
     public async Task FailedSummaryOrCheckpointCannotReplaceModelContext()
     {
         var cwd = Path.GetTempPath();

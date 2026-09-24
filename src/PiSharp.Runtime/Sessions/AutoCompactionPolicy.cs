@@ -4,7 +4,7 @@ using Microsoft.Extensions.AI;
 namespace PiSharp.Runtime.Sessions;
 
 /// <summary>Explicit context budget for a model whose window size is known. Never assume a default model limit.</summary>
-public sealed record AutoCompactionPolicy(int ContextWindowTokens, int ReserveTokens = 16_384)
+public sealed record AutoCompactionPolicy(int ContextWindowTokens, int ReserveTokens = 16_384, int? KeepRecentTokens = null)
 {
     public static AutoCompactionPolicy? FromEnvironment(Func<string, string?> get)
     {

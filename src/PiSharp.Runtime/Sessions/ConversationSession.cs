@@ -109,25 +109,45 @@ public sealed class ConversationSession
     }
 
     /// <summary>Keep the latest whole user turn; never split a tool call/result group.</summary>
-    public CompactionPlan? PrepareCompaction()
+    public CompactionPlan? PrepareCompaction(int? keepRecentTokens = null)
     {
         var path = Tree.ActivePath();
         var compactAt = path.ToList().FindLastIndex(node => node.Type == "compaction");
         var first = compactAt < 0 ? 0 : path.ToList().FindIndex(node =>
             node.Id == path[compactAt].Payload.GetProperty("firstKeptEntryId").GetString());
-        var lastUser = path.ToList().FindLastIndex(node => node.Type == "chat" &&
+        if (keepRecentTokens < 0) throw new ArgumentOutOfRangeException(nameof(keepRecentTokens));
+        // Select a user-turn boundary backwards; every tool call and result in a turn stays together.
+        var latestUser = path.ToList().FindLastIndex(node => node.Type == "chat" &&
             Restore(node.Payload, node.Id).Role == ChatRole.User);
-        if (lastUser <= first) return null;
+        if (latestUser <= first) return null;
+        var boundary = latestUser;
+        if (keepRecentTokens is int minimum)
+        {
+            long estimated = 0;
+            var turns = path.Skip(first).Select((node, index) => (node, index: index + first))
+                .Where(item => item.node.Type == "chat" && Restore(item.node.Payload, item.node.Id).Role == ChatRole.User)
+                .Select(item => item.index).ToArray();
+            for (var i = turns.Length - 1; i >= 0; i--)
+            {
+                var start = turns[i];
+                var end = i + 1 < turns.Length ? turns[i + 1] : path.Count;
+                foreach (var node in path.Skip(start).Take(end - start).Where(node => node.Type == "chat"))
+                    estimated += AutoCompactionPolicy.Estimate([Restore(node.Payload, node.Id)], "") - 512;
+                boundary = start;
+                if (estimated >= minimum) break;
+            }
+        }
+        if (boundary <= first) return null;
         var context = ContextMessages();
-        var keptCount = path.Skip(lastUser).Count(node => node.Type == "chat");
-        return new CompactionPlan(path[lastUser].Id, context.Take(context.Count - keptCount).ToArray());
+        var keptCount = path.Skip(boundary).Count(node => node.Type == "chat");
+        return new CompactionPlan(path[boundary].Id, context.Take(context.Count - keptCount).ToArray());
     }
 
-    public void AppendCompaction(CompactionPlan plan, string summary)
+    public void AppendCompaction(CompactionPlan plan, string summary, int? keepRecentTokens = null)
     {
         if (string.IsNullOrWhiteSpace(summary) || summary.Length > 64 * 1024)
             throw new InvalidDataException("Compaction summary must be nonempty and at most 64KB.");
-        if (PrepareCompaction()?.FirstKeptEntryId != plan.FirstKeptEntryId)
+        if (PrepareCompaction(keepRecentTokens)?.FirstKeptEntryId != plan.FirstKeptEntryId)
             throw new InvalidOperationException("Conversation changed during compaction.");
         Tree.Append("compaction", JsonSerializer.SerializeToElement(new { summary, firstKeptEntryId = plan.FirstKeptEntryId }));
     }

@@ -4,14 +4,16 @@ using PiSharp.Runtime.Sessions;
 namespace PiSharp.Cli;
 
 /// <summary>Validated pre-prompt compaction defaults; raw session history is never discarded.</summary>
-public sealed record CompactionSettings(bool? Enabled = null, int? ReserveTokens = null)
+public sealed record CompactionSettings(bool? Enabled = null, int? ReserveTokens = null, int? KeepRecentTokens = null,
+    IReadOnlyDictionary<string, CompactionSettings>? ModelOverrides = null)
 {
-    public static CompactionSettings Parse(JsonElement value)
+    public static CompactionSettings Parse(JsonElement value, bool overrideEntry = false)
     {
         if (value.ValueKind != JsonValueKind.Object)
             throw new InvalidDataException("settings.json compaction must be an object.");
         bool? enabled = null;
-        int? reserve = null;
+        int? reserve = null, keepRecent = null;
+        Dictionary<string, CompactionSettings>? modelOverrides = null;
         var seen = new HashSet<string>(StringComparer.Ordinal);
         foreach (var property in value.EnumerateObject())
         {
@@ -19,27 +21,44 @@ public sealed record CompactionSettings(bool? Enabled = null, int? ReserveTokens
                 throw new InvalidDataException($"settings.json compaction contains duplicate property '{property.Name}'.");
             switch (property.Name)
             {
-                case "enabled" when property.Value.ValueKind is JsonValueKind.True or JsonValueKind.False:
+                case "enabled" when !overrideEntry && property.Value.ValueKind is JsonValueKind.True or JsonValueKind.False:
                     enabled = property.Value.GetBoolean();
                     break;
                 case "reserveTokens" when property.Value.ValueKind == JsonValueKind.Number &&
                     property.Value.TryGetInt32(out var tokens) && tokens >= 0:
                     reserve = tokens;
                     break;
+                case "keepRecentTokens" when property.Value.ValueKind == JsonValueKind.Number &&
+                    property.Value.TryGetInt32(out var recent) && recent >= 0:
+                    keepRecent = recent;
+                    break;
+                case "modelOverrides" when !overrideEntry && property.Value.ValueKind == JsonValueKind.Object:
+                    modelOverrides = new Dictionary<string, CompactionSettings>(StringComparer.Ordinal);
+                    foreach (var model in property.Value.EnumerateObject())
+                    {
+                        var separator = model.Name.IndexOf('/');
+                        if (separator <= 0 || separator == model.Name.Length - 1 || model.Name.Length > 384 ||
+                            !modelOverrides.TryAdd(model.Name, Parse(model.Value, overrideEntry: true)))
+                            throw new InvalidDataException("settings.json compaction.modelOverrides contains an invalid or duplicate provider/model ID.");
+                    }
+                    break;
                 default:
                     throw new InvalidDataException($"settings.json compaction.{property.Name} is unsupported or invalid.");
             }
         }
-        return new(enabled, reserve);
+        return new(enabled, reserve, keepRecent, modelOverrides);
     }
 
-    public AutoCompactionPolicy? Resolve(int? contextWindow, Func<string, string?> environment)
+    public AutoCompactionPolicy? Resolve(int? contextWindow, Func<string, string?> environment, string? modelKey = null)
     {
+        var modelOverride = modelKey is not null && ModelOverrides is not null &&
+            ModelOverrides.TryGetValue(modelKey, out var matched) ? matched : null;
+        var recent = modelOverride?.KeepRecentTokens ?? KeepRecentTokens;
         var explicitPolicy = AutoCompactionPolicy.FromEnvironment(environment);
-        if (explicitPolicy is not null) return explicitPolicy;
+        if (explicitPolicy is not null) return explicitPolicy with { KeepRecentTokens = recent };
         if (Enabled == false || contextWindow is null) return null;
         var policy = new AutoCompactionPolicy(contextWindow.Value,
-            ReserveTokens ?? Math.Min(16_384, contextWindow.Value / 4));
+            modelOverride?.ReserveTokens ?? ReserveTokens ?? Math.Min(16_384, contextWindow.Value / 4), recent);
         _ = policy.TriggerTokens;
         return policy;
     }
@@ -131,13 +150,29 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         project.SessionDirectory ?? SessionDirectory,
         project.Compaction is null ? Compaction : new CompactionSettings(
             project.Compaction.Enabled ?? Compaction?.Enabled,
-            project.Compaction.ReserveTokens ?? Compaction?.ReserveTokens),
+            project.Compaction.ReserveTokens ?? Compaction?.ReserveTokens,
+            project.Compaction.KeepRecentTokens ?? Compaction?.KeepRecentTokens,
+            MergeOverrides(Compaction?.ModelOverrides, project.Compaction.ModelOverrides)),
         project.BlockImages ?? BlockImages);
 
+    private static IReadOnlyDictionary<string, CompactionSettings>? MergeOverrides(
+        IReadOnlyDictionary<string, CompactionSettings>? global, IReadOnlyDictionary<string, CompactionSettings>? project)
+    {
+        if (project is null) return global;
+        var merged = global is null ? new Dictionary<string, CompactionSettings>(StringComparer.Ordinal) :
+            new Dictionary<string, CompactionSettings>(global, StringComparer.Ordinal);
+        foreach (var (model, setting) in project)
+        {
+            merged.TryGetValue(model, out var existing);
+            merged[model] = new CompactionSettings(ReserveTokens: setting.ReserveTokens ?? existing?.ReserveTokens,
+                KeepRecentTokens: setting.KeepRecentTokens ?? existing?.KeepRecentTokens);
+        }
+        return merged;
+    }
     public static Task<UserSettings> LoadProjectAsync(string workingDirectory, CancellationToken cancellationToken = default) =>
         LoadAsync(workingDirectory, _ => Path.Combine(workingDirectory, ".pi", "settings.json"), cancellationToken);
-    public AutoCompactionPolicy? ResolveCompaction(int? contextWindow, Func<string, string?> environment) =>
-        (Compaction ?? new CompactionSettings()).Resolve(contextWindow, environment);
+    public AutoCompactionPolicy? ResolveCompaction(int? contextWindow, Func<string, string?> environment, string? modelKey = null) =>
+        (Compaction ?? new CompactionSettings()).Resolve(contextWindow, environment, modelKey);
     public CliArguments ApplyDefaults(CliArguments cli, Func<string, string?> environment, bool preserveSessionModel = false)
     {
         var useLocal = cli.Local || (!preserveSessionModel && cli.Provider is null && DefaultProvider == "local");

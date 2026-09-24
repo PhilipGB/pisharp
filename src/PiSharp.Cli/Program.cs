@@ -137,7 +137,7 @@ AutoCompactionPolicy? contextPolicy;
 ModelPricing? modelPricing;
 try
 {
-    contextPolicy = userSettings.ResolveCompaction(selection.Model.ContextLength, Environment.GetEnvironmentVariable);
+    contextPolicy = userSettings.ResolveCompaction(selection.Model.ContextLength, Environment.GetEnvironmentVariable, $"{selection.Provider.Id}/{selection.Model.Id}");
     modelPricing = ModelPricing.FromEnvironment(Environment.GetEnvironmentVariable) ?? selection.Model.Pricing;
 }
 catch (ArgumentException error) { Console.Error.WriteLine(error.Message); Environment.ExitCode = 2; return; }
@@ -181,7 +181,7 @@ try
         connection = selection.Connection;
         thinking = ThinkingLevels.ValidateForModel(thinking, selection.Model.Reasoning);
         client = CreateClient(selection);
-        contextPolicy = userSettings.ResolveCompaction(selection.Model.ContextLength, Environment.GetEnvironmentVariable);
+        contextPolicy = userSettings.ResolveCompaction(selection.Model.ContextLength, Environment.GetEnvironmentVariable, $"{selection.Provider.Id}/{selection.Model.Id}");
         modelPricing = ModelPricing.FromEnvironment(Environment.GetEnvironmentVariable) ?? selection.Model.Pricing;
         agent = new PiAgent(client.GetChatClient(connection.Model).AsIChatClient(),
             new CodingTools(Environment.CurrentDirectory), cli.Tools, cli.ExcludeTools, cli.NoTools, instructions, prompts.System, prompts.Append,
@@ -309,7 +309,7 @@ async Task ReplaceModelRuntime(ModelSelection nextSelection, string nextThinking
     nextThinking = ThinkingLevels.ValidateForModel(nextThinking, nextSelection.Model.Reasoning);
     var nextConnection = nextSelection.Connection;
     var nextClient = CreateClient(nextSelection);
-    var nextPolicy = userSettings.ResolveCompaction(nextSelection.Model.ContextLength, Environment.GetEnvironmentVariable);
+    var nextPolicy = userSettings.ResolveCompaction(nextSelection.Model.ContextLength, Environment.GetEnvironmentVariable, $"{nextSelection.Provider.Id}/{nextSelection.Model.Id}");
     var nextPricing = ModelPricing.FromEnvironment(Environment.GetEnvironmentVariable) ?? nextSelection.Model.Pricing;
     var nextAgent = new PiAgent(nextClient.GetChatClient(nextConnection.Model).AsIChatClient(),
         new CodingTools(Environment.CurrentDirectory), cli.Tools, cli.ExcludeTools, cli.NoTools,

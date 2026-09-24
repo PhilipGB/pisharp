@@ -52,10 +52,11 @@ public sealed class UserSettingsTests
         try
         {
             await File.WriteAllTextAsync(Path.Combine(root, "settings.json"),
-                "{\"compaction\":{\"enabled\":true,\"reserveTokens\":2048}}");
+                "{\"compaction\":{\"enabled\":true,\"reserveTokens\":2048,\"keepRecentTokens\":512}}");
             var settings = await UserSettings.LoadAsync(root, _ => null);
             Assert.Null(settings.ResolveCompaction(null, _ => null));
             Assert.Equal(7952, settings.ResolveCompaction(10000, _ => null)!.TriggerTokens);
+            Assert.Equal(512, settings.ResolveCompaction(10000, _ => null)!.KeepRecentTokens);
             Assert.Equal(4000, settings.ResolveCompaction(10000, name => name switch
             {
                 "PISHARP_CONTEXT_WINDOW_TOKENS" => "5000",
@@ -102,6 +103,33 @@ public sealed class UserSettingsTests
     }
 
     [Fact]
+    public async Task ExactModelCompactionOverridesMergeAcrossScopes()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-model-compaction-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(Path.Combine(root, ".pi"));
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(root, "settings.json"),
+                "{\"compaction\":{\"reserveTokens\":1000,\"modelOverrides\":{\"openai/large\":{\"reserveTokens\":3000,\"keepRecentTokens\":700},\"other/one\":{\"reserveTokens\":2500}}}}");
+            await File.WriteAllTextAsync(Path.Combine(root, ".pi", "settings.json"),
+                "{\"compaction\":{\"modelOverrides\":{\"openai/large\":{\"keepRecentTokens\":800}}}}");
+            var global = await UserSettings.LoadAsync(root, _ => null);
+            var merged = global.Overlay(await UserSettings.LoadProjectAsync(root));
+            Assert.Equal(7000, merged.ResolveCompaction(10000, _ => null, "openai/large")!.TriggerTokens);
+            Assert.Equal(800, merged.ResolveCompaction(10000, _ => null, "openai/large")!.KeepRecentTokens);
+            Assert.Equal(7500, merged.ResolveCompaction(10000, _ => null, "other/one")!.TriggerTokens);
+            Assert.Equal(9000, merged.ResolveCompaction(10000, _ => null, "openai/other")!.TriggerTokens);
+            Assert.Equal(8000, merged.ResolveCompaction(10000, name => name switch
+            {
+                "PISHARP_CONTEXT_WINDOW_TOKENS" => "9000",
+                "PISHARP_CONTEXT_RESERVE_TOKENS" => "1000",
+                _ => null
+            }, "openai/large")!.TriggerTokens);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [Fact]
     public async Task ImageBlockingIsScopedAndValidated()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-image-settings-" + Guid.NewGuid().ToString("N"));
@@ -128,8 +156,13 @@ public sealed class UserSettingsTests
     [InlineData("{\"compaction\":{\"enabled\":\"false\"}}")]
     [InlineData("{\"compaction\":{\"reserveTokens\":-1}}")]
     [InlineData("{\"compaction\":{\"reserveTokens\":2,\"reserveTokens\":3}}")]
-    [InlineData("{\"compaction\":{\"keepRecentTokens\":50}}")]
+    [InlineData("{\"compaction\":{\"keepRecentTokens\":-1}}")]
+    [InlineData("{\"compaction\":{\"keepRecentTokens\":3,\"keepRecentTokens\":4}}")] // duplicate fails
     [InlineData("{\"compaction\":[]}")]
+    [InlineData("{\"compaction\":{\"modelOverrides\":{\"bare-model\":{\"reserveTokens\":10}}}}")]
+    [InlineData("{\"compaction\":{\"modelOverrides\":{\"p/m\":{\"enabled\":false}}}}")]
+    [InlineData("{\"compaction\":{\"modelOverrides\":{\"p/m\":{\"reserveTokens\":1},\"p/m\":{\"reserveTokens\":2}}}}")]
+    [InlineData("{\"compaction\":{\"modelOverrides\":[]}}")]
     [InlineData("{\"images\":{\"blockImages\":\"true\"}}")]
     [InlineData("{\"images\":{\"blockImages\":true,\"blockImages\":false}}")]
     [InlineData("{\"images\":{\"autoResize\":true}}")]
