@@ -32,6 +32,31 @@ public sealed class ProviderModelRuntimeTests
     }
 
     [Fact]
+    public async Task MistralUsesItsOwnCredentialAndDocumentedOpenAiCompatibleEndpoint()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-mistral-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            using var http = new HttpClient(new ModelHandler());
+            var environment = new Dictionary<string, string>
+            {
+                ["OPENAI_API_KEY"] = "must-not-cross-provider-boundary",
+                ["MISTRAL_API_KEY"] = "mistral-test-key"
+            };
+            var runtime = await ProviderModelRuntime.CreateAsync(root, false,
+                name => environment.GetValueOrDefault(name), http);
+            var selection = await runtime.ResolveAsync("mistral", "mistral-small-latest");
+            Assert.Equal("mistral", selection.Provider.Id);
+            Assert.Equal("mistral-small-latest", selection.Model.Id);
+            Assert.Equal("mistral-test-key", selection.ApiKey);
+            Assert.Equal(new Uri("https://api.mistral.ai/v1"), selection.Connection.Endpoint);
+            Assert.DoesNotContain("must-not-cross-provider-boundary", selection.ApiKey);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [Fact]
     public async Task CustomCatalogSelectsExactOrUnambiguousModelAndNeverSendsCloudKey()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-provider-" + Guid.NewGuid().ToString("N"));
