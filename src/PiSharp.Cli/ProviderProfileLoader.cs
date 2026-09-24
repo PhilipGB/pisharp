@@ -38,6 +38,9 @@ internal static class ProviderProfileLoader
             if (!seenProviders.Add(item.Name)) throw new InvalidDataException("models.json contains duplicate provider IDs.");
             if (item.Value.ValueKind != JsonValueKind.Object) throw new InvalidDataException($"Provider '{item.Name}' must be an object.");
             var value = item.Value;
+            // Preserve built-in identity across case-insensitive models.json overrides. Protocol
+            // dispatch and credential storage use the canonical provider ID, not JSON spelling.
+            var canonicalId = providers.GetValueOrDefault(item.Name)?.Id ?? item.Name;
             var baseUrl = String(value, "baseUrl") ?? providers.GetValueOrDefault(item.Name)?.Endpoint.ToString();
             if (baseUrl is null) throw new InvalidDataException($"Provider '{item.Name}' requires baseUrl.");
             var models = new List<ModelDescriptor>();
@@ -49,8 +52,8 @@ internal static class ProviderProfileLoader
                         throw new InvalidDataException($"Provider '{item.Name}' has an invalid model.");
                     if (!seenModels.Add(String(model, "id")!))
                         throw new InvalidDataException($"Provider '{item.Name}' has duplicate model IDs.");
-                    models.Add(new(String(model, "id")!, item.Name, PositiveInt(model, "contextWindow") ?? PositiveInt(model, "context_length"),
-                        "configured", Boolean(model, "reasoning"), ParsePricing(model), item.Name,
+                    models.Add(new(String(model, "id")!, canonicalId, PositiveInt(model, "contextWindow") ?? PositiveInt(model, "context_length"),
+                        "configured", Boolean(model, "reasoning"), ParsePricing(model), canonicalId,
                         Name: String(model, "name"), MaxOutputTokens: PositiveInt(model, "maxTokens") ?? PositiveInt(model, "max_tokens"),
                         Input: ParseInputs(model), Api: String(model, "api")));
                 }
@@ -75,7 +78,7 @@ internal static class ProviderProfileLoader
             var authHeader = Boolean(value, "authHeader") ?? true;
             if (value.TryGetProperty("oauth", out var oauthValue) && oauthValue.ValueKind is not JsonValueKind.Null and not JsonValueKind.False)
                 throw new InvalidDataException("models.json cannot enable OAuth without a provider-specific refresh adapter.");
-            providers[item.Name] = new(item.Name, String(value, "name") ?? existing?.Name ?? item.Name,
+            providers[canonicalId] = new(canonicalId, String(value, "name") ?? existing?.Name ?? item.Name,
                 endpoint, authHeader, false, apiKeyEnvironment,
                 String(value, "apiKey"), models.Count == 0 ? existing?.Models ?? [] : models);
         }

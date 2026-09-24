@@ -144,6 +144,29 @@ public sealed class ProviderModelRuntimeTests
     }
 
     [Fact]
+    public async Task CaseVariantBuiltInOverrideKeepsCanonicalIdentityAndProtocol()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-case-provider-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(root, "models.json"), """
+                {"providers":{"ANTHROPIC":{"models":[{"id":"claude-custom"}]}}}
+                """);
+            using var http = new HttpClient(new ModelHandler());
+            var runtime = await ProviderModelRuntime.CreateAsync(root, false,
+                name => name == "ANTHROPIC_API_KEY" ? "only-anthropic" : null, http);
+            var selection = await runtime.ResolveAsync("ANTHROPIC", "claude-custom");
+            Assert.Equal("anthropic", selection.Provider.Id);
+            Assert.Equal("anthropic", selection.Model.Provider);
+            Assert.Equal("anthropic", selection.Model.Owner);
+            Assert.Equal("only-anthropic", selection.ApiKey);
+            Assert.Equal("anthropic-messages", ProviderChatClientFactory.ResolveProtocol(selection));
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [Fact]
     public async Task XaiUsesResponsesApiAndIsolatedCredentialAndPinnedModelMetadata()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-xai-" + Guid.NewGuid().ToString("N"));
