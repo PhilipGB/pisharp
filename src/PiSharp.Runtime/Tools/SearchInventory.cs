@@ -11,7 +11,7 @@ internal static class SearchInventory
     private sealed record IgnoreRule(string BaseDirectory, Regex Pattern, bool Negated, bool DirectoryOnly);
 
     public static async Task<IReadOnlyList<string>> EnumerateAsync(string root, CancellationToken cancellationToken,
-        bool includeDirectories = false)
+        bool includeDirectories = false, bool includeFdIgnore = false)
     {
         if (File.Exists(root)) return [root];
         if (!Directory.Exists(root)) throw new ToolFailureException($"Path not found: {root}");
@@ -47,7 +47,8 @@ internal static class SearchInventory
                 if (git.ExitCode == 0)
                 {
                     if (includeDirectories)
-                        results.AddRange(await EnumerateDirectoriesAsync(root, MaxEntries - results.Count, cancellationToken));
+                        results.AddRange(await EnumerateDirectoriesAsync(root, MaxEntries - results.Count,
+                            includeFdIgnore, cancellationToken));
                     return results;
                 }
             }
@@ -70,7 +71,7 @@ internal static class SearchInventory
             cancellationToken.ThrowIfCancellationRequested();
             var directory = item.Directory;
             var rules = new List<IgnoreRule>(item.Rules);
-            rules.AddRange(ReadIgnoreRules(directory));
+            rules.AddRange(ReadIgnoreRules(directory, includeFdIgnore));
             IEnumerable<string> entries;
             try { entries = Directory.EnumerateFileSystemEntries(directory).ToArray(); }
             catch (Exception error) when (error is IOException or UnauthorizedAccessException) { continue; }
@@ -99,7 +100,7 @@ internal static class SearchInventory
     }
 
     private static async Task<IReadOnlyList<string>> EnumerateDirectoriesAsync(string root, int maxEntries,
-        CancellationToken cancellationToken)
+        bool includeFdIgnore, CancellationToken cancellationToken)
     {
         var directories = new List<string>();
         var pending = new Stack<(string Directory, IReadOnlyList<IgnoreRule> Rules)>();
@@ -108,7 +109,7 @@ internal static class SearchInventory
         {
             cancellationToken.ThrowIfCancellationRequested();
             var rules = new List<IgnoreRule>(item.Rules);
-            rules.AddRange(ReadIgnoreRules(item.Directory));
+            rules.AddRange(ReadIgnoreRules(item.Directory, includeFdIgnore));
             IEnumerable<string> entries;
             try { entries = Directory.EnumerateDirectories(item.Directory).ToArray(); }
             catch (Exception error) when (error is IOException or UnauthorizedAccessException) { continue; }
@@ -133,38 +134,42 @@ internal static class SearchInventory
         return directories;
     }
 
-    private static IReadOnlyList<IgnoreRule> ReadIgnoreRules(string directory)
+    private static IReadOnlyList<IgnoreRule> ReadIgnoreRules(string directory, bool includeFdIgnore)
     {
-        string[] lines;
-        try { lines = File.ReadAllLines(Path.Combine(directory, ".gitignore")); }
-        catch (Exception error) when (error is IOException or UnauthorizedAccessException) { return []; }
-
         var rules = new List<IgnoreRule>();
-        foreach (var rawLine in lines)
+        string[] ignoreFiles = includeFdIgnore ? [".gitignore", ".ignore", ".fdignore"] : [".gitignore", ".ignore"];
+        foreach (var ignoreFile in ignoreFiles)
         {
-            var line = rawLine;
-            if (line.Length == 0 || line[0] == '#') continue;
+            string[] lines;
+            try { lines = File.ReadAllLines(Path.Combine(directory, ignoreFile)); }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException) { continue; }
 
-            var negated = line[0] == '!';
-            if (negated) line = line[1..];
-            if (line.Length == 0) continue;
-
-            var directoryOnly = line.EndsWith('/');
-            if (directoryOnly) line = line[..^1];
-            var anchored = line.StartsWith("/", StringComparison.Ordinal);
-            if (anchored) line = line[1..];
-            if (line.Length == 0) continue;
-
-            var hasSlash = line.Contains('/');
-            var prefix = anchored || hasSlash ? "^" : "(?:^|/)";
-            Regex pattern;
-            try
+            foreach (var rawLine in lines)
             {
-                pattern = new Regex(prefix + IgnoreGlobRegex(line) + "$", RegexOptions.CultureInvariant,
-                    TimeSpan.FromSeconds(1));
+                var line = rawLine;
+                if (line.Length == 0 || line[0] == '#') continue;
+
+                var negated = line[0] == '!';
+                if (negated) line = line[1..];
+                if (line.Length == 0) continue;
+
+                var directoryOnly = line.EndsWith('/');
+                if (directoryOnly) line = line[..^1];
+                var anchored = line.StartsWith("/", StringComparison.Ordinal);
+                if (anchored) line = line[1..];
+                if (line.Length == 0) continue;
+
+                var hasSlash = line.Contains('/');
+                var prefix = anchored || hasSlash ? "^" : "(?:^|/)";
+                Regex pattern;
+                try
+                {
+                    pattern = new Regex(prefix + IgnoreGlobRegex(line) + "$", RegexOptions.CultureInvariant,
+                        TimeSpan.FromSeconds(1));
+                }
+                catch (ArgumentException) { continue; }
+                rules.Add(new IgnoreRule(directory, pattern, negated, directoryOnly));
             }
-            catch (ArgumentException) { continue; }
-            rules.Add(new IgnoreRule(directory, pattern, negated, directoryOnly));
         }
         return rules;
     }

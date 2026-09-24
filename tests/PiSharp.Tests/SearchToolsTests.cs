@@ -147,4 +147,24 @@ public sealed class SearchToolsTests
         }
         finally { Directory.Delete(root, recursive: true); }
     }
+
+    [Fact]
+    public async Task GrepAndFindRespectTheirSpecificIgnoreFilesOutsideGit()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-ignore-specific-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(root, ".gitignore"), "*.txt\n");
+            await File.WriteAllTextAsync(Path.Combine(root, ".ignore"), "!shared.txt\n");
+            await File.WriteAllTextAsync(Path.Combine(root, ".fdignore"), "!find-only.txt\n");
+            await File.WriteAllTextAsync(Path.Combine(root, "shared.txt"), "match-value\n");
+            await File.WriteAllTextAsync(Path.Combine(root, "find-only.txt"), "match-value\n");
+            await File.WriteAllTextAsync(Path.Combine(root, "ignored.txt"), "match-value\n");
+            var tools = new SearchTools(root);
+            Assert.Equal("find-only.txt\nshared.txt", await tools.Find("*.txt"));
+            Assert.Equal("shared.txt:1: match-value", await tools.Grep("match-value"));
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
 }
