@@ -75,12 +75,16 @@ public sealed class ProjectTrust(string agentDirectory)
     }
 
     public async Task<bool> ResolveAsync(string cwd, bool? overrideDecision, bool interactive,
-        TextReader input, TextWriter output, CancellationToken cancellationToken = default)
+        TextReader input, TextWriter output, CancellationToken cancellationToken = default,
+        string defaultProjectTrust = "ask")
     {
         if (overrideDecision.HasValue) return overrideDecision.Value;
         if (!HasProtectedResources(cwd)) return true;
         var saved = await GetAsync(cwd, cancellationToken);
         if (saved.HasValue) return saved.Value;
+        if (defaultProjectTrust == "always") return true;
+        if (defaultProjectTrust == "never") return false;
+        if (defaultProjectTrust != "ask") throw new ArgumentException("Invalid default project trust setting.", nameof(defaultProjectTrust));
         if (!interactive) return false;
         await output.WriteLineAsync($"Trust project resources in {System.IO.Path.GetFullPath(cwd)}? [y]es / [n]o / [o]nce / [Enter] deny once");
         var answer = (await input.ReadLineAsync(cancellationToken))?.Trim().ToLowerInvariant();

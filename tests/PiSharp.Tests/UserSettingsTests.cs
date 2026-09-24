@@ -145,8 +145,26 @@ public sealed class UserSettingsTests
         finally { Directory.Delete(root, true); }
     }
 
+    [Fact]
+    public async Task DefaultProjectTrustIsGlobalOnly()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-default-trust-settings-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(Path.Combine(root, ".pi"));
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(root, "settings.json"), "{\"defaultProjectTrust\":\"always\"}");
+            var global = await UserSettings.LoadAsync(root, _ => null);
+            Assert.Equal("always", global.DefaultProjectTrust);
+            await File.WriteAllTextAsync(Path.Combine(root, ".pi", "settings.json"), "{\"defaultProjectTrust\":\"never\"}");
+            await Assert.ThrowsAsync<InvalidDataException>(() => UserSettings.LoadProjectAsync(root));
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
     [Theory]
     [InlineData("{\"defaultThinkingLevel\":\"ultra\"}")]
+    [InlineData("{\"defaultProjectTrust\":\"maybe\"}")]
+    [InlineData("{\"defaultProjectTrust\":true}")]
     [InlineData("{\"unknown\":\"value\"}")]
     [InlineData("{\"defaultModel\":42}")]
     [InlineData("{\"defaultTools\":\"read\"}")]

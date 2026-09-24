@@ -66,7 +66,7 @@ public sealed record CompactionSettings(bool? Enabled = null, int? ReserveTokens
 /// <summary>Validated non-secret settings subset for the user and trusted project scopes.</summary>
 public sealed record UserSettings(string? DefaultProvider = null, string? DefaultModel = null,
     string? DefaultThinkingLevel = null, IReadOnlyList<string>? DefaultTools = null, string? SessionDirectory = null,
-    CompactionSettings? Compaction = null, bool? BlockImages = null)
+    CompactionSettings? Compaction = null, bool? BlockImages = null, string? DefaultProjectTrust = null)
 {
     public static async Task<UserSettings> LoadAsync(string agentDirectory, Func<string, string?> environment,
         CancellationToken cancellationToken = default)
@@ -79,7 +79,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         using var document = JsonDocument.Parse(bytes, new JsonDocumentOptions { MaxDepth = 16 });
         if (document.RootElement.ValueKind != JsonValueKind.Object)
             throw new InvalidDataException("settings.json must contain a JSON object.");
-        string? provider = null, model = null, thinking = null, sessionDirectory = null;
+        string? provider = null, model = null, thinking = null, sessionDirectory = null, defaultTrust = null;
         IReadOnlyList<string>? tools = null;
         CompactionSettings? compaction = null;
         bool? blockImages = null;
@@ -127,6 +127,11 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
             var value = property.Value.GetString();
             switch (property.Name)
             {
+                case "defaultProjectTrust":
+                    defaultTrust = Validate(value, property.Name, 8);
+                    if (defaultTrust is not ("ask" or "always" or "never"))
+                        throw new InvalidDataException("settings.json defaultProjectTrust must be ask, always or never.");
+                    break;
                 case "defaultProvider": provider = Validate(value, property.Name, 128); break;
                 case "defaultModel": model = Validate(value, property.Name, 256); break;
                 case "sessionDir": sessionDirectory = Validate(value, property.Name, 1024); break;
@@ -138,7 +143,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
                 default: throw new InvalidDataException($"settings.json contains unsupported property '{property.Name}'.");
             }
         }
-        return new(provider, model, thinking, tools, sessionDirectory, compaction, blockImages);
+        return new(provider, model, thinking, tools, sessionDirectory, compaction, blockImages, defaultTrust);
     }
 
     /// <summary>Overlay a trusted project's explicitly specified defaults; nested compaction values merge.</summary>
@@ -153,7 +158,8 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
             project.Compaction.ReserveTokens ?? Compaction?.ReserveTokens,
             project.Compaction.KeepRecentTokens ?? Compaction?.KeepRecentTokens,
             MergeOverrides(Compaction?.ModelOverrides, project.Compaction.ModelOverrides)),
-        project.BlockImages ?? BlockImages);
+        project.BlockImages ?? BlockImages,
+        DefaultProjectTrust);
 
     private static IReadOnlyDictionary<string, CompactionSettings>? MergeOverrides(
         IReadOnlyDictionary<string, CompactionSettings>? global, IReadOnlyDictionary<string, CompactionSettings>? project)
@@ -169,8 +175,13 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         }
         return merged;
     }
-    public static Task<UserSettings> LoadProjectAsync(string workingDirectory, CancellationToken cancellationToken = default) =>
-        LoadAsync(workingDirectory, _ => Path.Combine(workingDirectory, ".pi", "settings.json"), cancellationToken);
+    public static async Task<UserSettings> LoadProjectAsync(string workingDirectory, CancellationToken cancellationToken = default)
+    {
+        var settings = await LoadAsync(workingDirectory, _ => Path.Combine(workingDirectory, ".pi", "settings.json"), cancellationToken);
+        if (settings.DefaultProjectTrust is not null)
+            throw new InvalidDataException("defaultProjectTrust is only allowed in user settings.json.");
+        return settings;
+    }
     public AutoCompactionPolicy? ResolveCompaction(int? contextWindow, Func<string, string?> environment, string? modelKey = null) =>
         (Compaction ?? new CompactionSettings()).Resolve(contextWindow, environment, modelKey);
     public CliArguments ApplyDefaults(CliArguments cli, Func<string, string?> environment, bool preserveSessionModel = false)

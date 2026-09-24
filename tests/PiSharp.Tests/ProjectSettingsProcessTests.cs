@@ -15,7 +15,7 @@ public sealed class ProjectSettingsProcessTests
         try
         {
             await File.WriteAllTextAsync(Path.Combine(root, ".pi", "settings.json"), "{\"compaction\":{\"reserveTokens\":-1}}");
-            async Task<(int Code, string Error)> Run(string trust)
+            async Task<(int Code, string Error)> Run(string? trust)
             {
                 var start = new ProcessStartInfo("dotnet")
                 {
@@ -23,7 +23,9 @@ public sealed class ProjectSettingsProcessTests
                     RedirectStandardOutput = true,
                     RedirectStandardError = true
                 };
-                foreach (var arg in new[] { typeof(CliArguments).Assembly.Location, trust, "--provider", "openai", "--model", "gpt-4o-mini", "--no-session", "--no-tools", "--print", "hello" })
+                start.ArgumentList.Add(typeof(CliArguments).Assembly.Location);
+                if (trust is not null) start.ArgumentList.Add(trust);
+                foreach (var arg in new[] { "--provider", "openai", "--model", "gpt-4o-mini", "--no-session", "--no-tools", "--print", "hello" })
                     start.ArgumentList.Add(arg);
                 start.Environment["PISHARP_AGENT_DIR"] = agent;
                 foreach (var name in new[] { "OPENAI_API_KEY", "PISHARP_API_KEY", "PISHARP_MODEL", "PISHARP_BASE_URL", "PISHARP_SETTINGS_PATH" })
@@ -43,6 +45,15 @@ public sealed class ProjectSettingsProcessTests
             Assert.True(allowed.Code == 2, $"Exit: {allowed.Code}; stderr: {allowed.Error}");
             Assert.Contains("compaction.reserveTokens", allowed.Error);
             Assert.DoesNotContain("not authenticated", allowed.Error);
+            await File.WriteAllTextAsync(Path.Combine(agent, "settings.json"), "{\"defaultProjectTrust\":\"always\"}");
+            var defaultAllowed = await Run(null);
+            Assert.Equal(2, defaultAllowed.Code);
+            Assert.Contains("compaction.reserveTokens", defaultAllowed.Error);
+            await File.WriteAllTextAsync(Path.Combine(agent, "settings.json"), "{\"defaultProjectTrust\":\"never\"}");
+            var defaultDenied = await Run(null);
+            Assert.Equal(2, defaultDenied.Code);
+            Assert.Contains("not authenticated", defaultDenied.Error);
+            Assert.DoesNotContain("compaction", defaultDenied.Error);
         }
         finally { Directory.Delete(root, true); }
     }

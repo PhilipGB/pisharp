@@ -1581,7 +1581,7 @@
     {
       "id": "settings-defaultprojecttrust",
       "title": "Setting: defaultProjectTrust",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:61",
       "acceptance": [
         "Support defaultProjectTrust with upstream type/default and user/trusted-project precedence",

@@ -38,25 +38,17 @@ if (cli.Help)
 }
 var trustStore = new ProjectTrust(agentDirectory);
 bool trusted;
-try
-{
-    trusted = await trustStore.ResolveAsync(Environment.CurrentDirectory, cli.ProjectTrustOverride,
-        cli.Mode == "interactive" && !cli.Print && !Console.IsInputRedirected && !Console.IsOutputRedirected, Console.In, Console.Error);
-}
-catch (Exception error) when (error is not OperationCanceledException)
-{
-    Console.Error.WriteLine($"Could not resolve project trust: {error.Message}");
-    Environment.ExitCode = 2;
-    return;
-}
 UserSettings userSettings;
 try
 {
     userSettings = await UserSettings.LoadAsync(agentDirectory, Environment.GetEnvironmentVariable);
+    trusted = await trustStore.ResolveAsync(Environment.CurrentDirectory, cli.ProjectTrustOverride,
+        cli.Mode == "interactive" && !cli.Print && !Console.IsInputRedirected && !Console.IsOutputRedirected, Console.In, Console.Error,
+        defaultProjectTrust: userSettings.DefaultProjectTrust ?? "ask");
     if (trusted)
         userSettings = userSettings.Overlay(await UserSettings.LoadProjectAsync(Environment.CurrentDirectory));
 }
-catch (Exception error) when (error is IOException or InvalidDataException or System.Text.Json.JsonException or ArgumentException)
+catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidDataException or System.Text.Json.JsonException or ArgumentException)
 {
     Console.Error.WriteLine(error.Message);
     Environment.ExitCode = 2;

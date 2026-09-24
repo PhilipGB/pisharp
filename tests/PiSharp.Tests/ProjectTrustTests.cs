@@ -69,6 +69,32 @@ public sealed class ProjectTrustTests
         finally { Directory.Delete(root, recursive: true); }
     }
 
+    [Fact]
+    public async Task UserDefaultTrustAppliesOnlyWithoutStoredDecisionAndNeverOverridesCli()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-default-trust-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(Path.Combine(root, ".pi"));
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(root, ".pi", "settings.json"), "{}");
+            var trust = new ProjectTrust(Path.Combine(root, "agent"));
+            Assert.True(await trust.ResolveAsync(root, null, false, TextReader.Null, TextWriter.Null,
+                defaultProjectTrust: "always"));
+            Assert.False(await trust.ResolveAsync(root, null, false, TextReader.Null, TextWriter.Null,
+                defaultProjectTrust: "never"));
+            Assert.False(await trust.ResolveAsync(root, null, false, TextReader.Null, TextWriter.Null));
+            await trust.SetAsync(root, false);
+            Assert.False(await trust.ResolveAsync(root, null, false, TextReader.Null, TextWriter.Null,
+                defaultProjectTrust: "always"));
+            Assert.True(await trust.ResolveAsync(root, true, false, TextReader.Null, TextWriter.Null,
+                defaultProjectTrust: "never"));
+            await trust.SetAsync(root, true);
+            Assert.True(await trust.ResolveAsync(root, null, false, TextReader.Null, TextWriter.Null,
+                defaultProjectTrust: "never"));
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
     private sealed class CaptureClient : IChatClient
     {
         public string? Instructions { get; private set; }
