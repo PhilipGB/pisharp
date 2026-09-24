@@ -1607,8 +1607,12 @@
         "Support defaultProjectTrust with upstream type/default and user/trusted-project precedence",
         "Test malformed settings, trust boundaries, reload and startup behaviour"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "Partial: User-only defaultProjectTrust ask/always/never is loaded before project trust resolution; project settings cannot supply it and explicit/stored decisions prevail."
+      ],
+      "evidence": [
+        "UserSettingsTests.DefaultProjectTrustIsGlobalOnly, ProjectSettingsProcessTests.UntrustedProjectSettingsAreNeverParsedAndTrustedInvalidSettingsFailClosed, and ProjectTrustTests cover boundaries. No Pi differential."
+      ],
       "dependencies": []
     },
     {
@@ -1654,8 +1658,12 @@
         "Support compaction.enabled with upstream type/default and user/trusted-project precedence",
         "Test malformed settings, trust boundaries, reload and startup behaviour"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "Partial: Validated enabled setting controls pre-prompt auto compaction only."
+      ],
+      "evidence": [
+        "UserSettingsTests.CompactionSettingsApplyToKnownModelAndExplicitEnvironmentWins and CompactionTests exercise opt-in/out and rollback; in-loop/overflow compaction absent."
+      ],
       "dependencies": []
     },
     {
@@ -1667,8 +1675,12 @@
         "Support compaction.reserveTokens with upstream type/default and user/trusted-project precedence",
         "Test malformed settings, trust boundaries, reload and startup behaviour"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "Partial: Validated reserveTokens sets pre-prompt threshold, with environment priority."
+      ],
+      "evidence": [
+        "UserSettingsTests.CompactionSettingsApplyToKnownModelAndExplicitEnvironmentWins and ExactModelCompactionOverridesMergeAcrossScopes cover threshold/override arithmetic."
+      ],
       "dependencies": []
     },
     {
@@ -1680,8 +1692,12 @@
         "Support compaction.keepRecentTokens with upstream type/default and user/trusted-project precedence",
         "Test malformed settings, trust boundaries, reload and startup behaviour"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "Partial: Validated keepRecentTokens configures bounded whole-turn retained context."
+      ],
+      "evidence": [
+        "UserSettingsTests and CompactionTests cover tail retention without splitting tool groups; Pi differential absent."
+      ],
       "dependencies": []
     },
     {
@@ -1693,8 +1709,12 @@
         "Support compaction.modelOverrides with upstream type/default and user/trusted-project precedence",
         "Test malformed settings, trust boundaries, reload and startup behaviour"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "Partial: Validated exact provider/model modelOverrides merge across user and trusted-project scopes."
+      ],
+      "evidence": [
+        "UserSettingsTests.ExactModelCompactionOverridesMergeAcrossScopes tests nested merge and environment precedence; Pi differential absent."
+      ],
       "dependencies": []
     },
     {
