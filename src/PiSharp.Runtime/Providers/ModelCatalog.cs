@@ -76,6 +76,20 @@ public static class ModelCatalog
         return modalities.Length == 0 ? null : modalities;
     }
 
+    private static IReadOnlyList<ModelPricingTier>? ParseTiers(JsonElement cost)
+    {
+        if (!cost.TryGetProperty("tiers", out var tiers) || tiers.ValueKind != JsonValueKind.Array) return null;
+        var result = new List<ModelPricingTier>();
+        foreach (var tier in tiers.EnumerateArray())
+        {
+            if (tier.ValueKind != JsonValueKind.Object || PositiveInt(tier, "inputTokensAbove") is not int threshold ||
+                !TryNonnegativeDecimal(tier, "input", out var input) || !TryNonnegativeDecimal(tier, "output", out var output)) return null;
+            decimal? cached = TryNonnegativeDecimal(tier, "cacheRead", out var cachedRate) ? cachedRate : null;
+            result.Add(new ModelPricingTier(threshold, input, output, cached));
+        }
+        return result.OrderBy(tier => tier.InputTokensAbove).ToArray();
+    }
+
     private static ModelPricing? ParsePricing(JsonElement model)
     {
         // Pi-style model metadata expresses dollars per million tokens.
@@ -84,7 +98,7 @@ public static class ModelCatalog
             TryNonnegativeDecimal(cost, "output", out var output))
         {
             decimal? cached = TryNonnegativeDecimal(cost, "cacheRead", out var cacheRead) ? cacheRead : null;
-            return new ModelPricing(input, output, cached);
+            return new ModelPricing(input, output, cached, ParseTiers(cost));
         }
         // OpenRouter-compatible catalogues express dollars per token as JSON strings.
         if (model.TryGetProperty("pricing", out var pricing) && pricing.ValueKind == JsonValueKind.Object &&

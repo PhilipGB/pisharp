@@ -3,8 +3,13 @@ using Microsoft.Extensions.AI;
 namespace PiSharp.Runtime.Sessions;
 
 /// <summary>Model prices in US dollars per one million tokens. Unknown prices stay unknown.</summary>
-public sealed record ModelPricing(decimal Input, decimal Output, decimal? CachedInput = null)
+public sealed record ModelPricing(decimal Input, decimal Output, decimal? CachedInput = null,
+    IReadOnlyList<ModelPricingTier>? Tiers = null)
 {
+    public ModelPricing ForInput(long inputTokens) => Tiers?.Where(tier => inputTokens > tier.InputTokensAbove)
+        .OrderByDescending(tier => tier.InputTokensAbove)
+        .Select(tier => new ModelPricing(tier.Input, tier.Output, tier.CachedInput)).FirstOrDefault() ?? this;
+
     public static ModelPricing? FromEnvironment(Func<string, string?> get)
     {
         var input = get("PISHARP_INPUT_COST_PER_MILLION");
@@ -23,6 +28,8 @@ public sealed record ModelPricing(decimal Input, decimal Output, decimal? Cached
             System.Globalization.CultureInfo.InvariantCulture, out price) && price >= 0;
 }
 
+public sealed record ModelPricingTier(int InputTokensAbove, decimal Input, decimal Output, decimal? CachedInput = null);
+
 /// <summary>An immutable provider-usage snapshot persisted outside model context.</summary>
 public sealed record UsageRecord(string Model, string Source, long InputTokens, long OutputTokens,
     long CachedInputTokens, long ReasoningTokens, long TotalTokens, decimal? Cost)
@@ -40,9 +47,10 @@ public sealed record UsageRecord(string Model, string Source, long InputTokens, 
         decimal? cost = null;
         if (pricing is not null)
         {
+            var rates = pricing.ForInput(input);
             var ordinaryInput = Math.Max(0, input - cached);
-            var cachedRate = pricing.CachedInput ?? pricing.Input;
-            cost = (ordinaryInput * pricing.Input + cached * cachedRate + output * pricing.Output) / 1_000_000m;
+            var cachedRate = rates.CachedInput ?? rates.Input;
+            cost = (ordinaryInput * rates.Input + cached * cachedRate + output * rates.Output) / 1_000_000m;
         }
         return new UsageRecord(model, source, input, output, cached, reasoning, total, cost);
     }

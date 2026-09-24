@@ -320,7 +320,22 @@ public sealed class ProviderModelRuntime
     {
         if (!model.TryGetProperty("cost", out var cost) || cost.ValueKind != JsonValueKind.Object ||
             !Decimal(cost, "input", out var input) || !Decimal(cost, "output", out var output)) return null;
-        return new(input, output, Decimal(cost, "cacheRead", out var cached) ? cached : null);
+        IReadOnlyList<ModelPricingTier>? tiers = null;
+        if (cost.TryGetProperty("tiers", out var tierArray) && tierArray.ValueKind == JsonValueKind.Array)
+        {
+            var parsedTiers = new List<ModelPricingTier>();
+            foreach (var tier in tierArray.EnumerateArray())
+            {
+                if (tier.ValueKind != JsonValueKind.Object || PositiveInt(tier, "inputTokensAbove") is not int threshold ||
+                    !Decimal(tier, "input", out var tierInput) || !Decimal(tier, "output", out var tierOutput))
+                    throw new InvalidDataException("Configured model pricing tiers require positive inputTokensAbove and nonnegative input/output rates.");
+                parsedTiers.Add(new(threshold, tierInput, tierOutput, Decimal(tier, "cacheRead", out var tierCached) ? tierCached : null));
+            }
+            if (parsedTiers.Select(tier => tier.InputTokensAbove).Distinct().Count() != parsedTiers.Count)
+                throw new InvalidDataException("Configured model pricing tiers must have unique input thresholds.");
+            tiers = parsedTiers.OrderBy(tier => tier.InputTokensAbove).ToArray();
+        }
+        return new(input, output, Decimal(cost, "cacheRead", out var cached) ? cached : null, tiers);
     }
 
     private static bool Decimal(JsonElement parent, string property, out decimal result)
