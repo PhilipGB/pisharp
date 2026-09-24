@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.AI;
 
@@ -36,7 +37,35 @@ public sealed record AutoCompactionPolicy(int ContextWindowTokens, int ReserveTo
     {
         long chars = prompt.Length;
         foreach (var message in context)
-            chars += JsonSerializer.Serialize(message, AIJsonUtilities.DefaultOptions).Length + 64;
+        {
+            using var counter = new SerializedCharacterCounter();
+            JsonSerializer.Serialize(counter, message, AIJsonUtilities.DefaultOptions);
+            chars += counter.CharacterCount + 64;
+            if (chars >= 2L * int.MaxValue) return int.MaxValue;
+        }
         return (int)Math.Min(int.MaxValue, (chars + 1) / 2 + 512);
+    }
+
+    private sealed class SerializedCharacterCounter : Stream
+    {
+        private readonly Decoder _decoder = Encoding.UTF8.GetDecoder();
+        private long _characters;
+        private long _position;
+        public long CharacterCount => _characters + _decoder.GetCharCount(ReadOnlySpan<byte>.Empty, flush: true);
+        public override bool CanRead => false;
+        public override bool CanSeek => false;
+        public override bool CanWrite => true;
+        public override long Length => _position;
+        public override long Position { get => _position; set => throw new NotSupportedException(); }
+        public override void Flush() { }
+        public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        public override void SetLength(long value) => throw new NotSupportedException();
+        public override void Write(byte[] buffer, int offset, int count) => Write(buffer.AsSpan(offset, count));
+        public override void Write(ReadOnlySpan<byte> buffer)
+        {
+            _characters += _decoder.GetCharCount(buffer, flush: false);
+            _position += buffer.Length;
+        }
     }
 }

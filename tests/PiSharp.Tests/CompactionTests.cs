@@ -528,6 +528,23 @@ public sealed class CompactionTests
     }
 
     [Fact]
+    public void StreamingContextEstimateMatchesSerializedUtf16LengthsIncludingUnicodeAndLargeToolResults()
+    {
+        var context = new ChatMessage[]
+        {
+            new(ChatRole.User, "emoji 😀, Greek α, newline\n, quote \" and backslash \\"),
+            new(ChatRole.Assistant,
+            [new FunctionCallContent("call-1", "read", new Dictionary<string, object?> { ["path"] = "π.txt" })]),
+            new(ChatRole.Tool, [new FunctionResultContent("call-1", new string('Z', 1_100_000) + " ✓")])
+        };
+        const string prompt = "more 😀";
+        var chars = prompt.Length + context.Sum(message =>
+            JsonSerializer.Serialize(message, AIJsonUtilities.DefaultOptions).Length + 64L);
+        var expected = (int)Math.Min(int.MaxValue, (chars + 1) / 2 + 512);
+        Assert.Equal(expected, AutoCompactionPolicy.Estimate(context, prompt));
+    }
+
+    [Fact]
     public void AutoBudgetIsDisabledWithoutKnownContextWindowAndRejectsInvalidLimits()
     {
         Assert.Null(AutoCompactionPolicy.FromEnvironment(_ => null));
