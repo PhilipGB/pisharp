@@ -278,7 +278,7 @@ async Task Run(string input, IReadOnlyList<DataContent>? images = null)
                     Console.Write(update.Text);
                     started = true;
                     break;
-                case "reasoning_delta" when !print && !string.IsNullOrEmpty(update.Text):
+                case "reasoning_delta" when !print && userSettings.HideThinkingBlock != true && !string.IsNullOrEmpty(update.Text):
                     Console.Error.Write(update.Text);
                     break;
                 case "usage" when !print && !string.IsNullOrEmpty(update.Text):

@@ -37,6 +37,7 @@ After each significant change: add/update tests and parity evidence, run focused
 
 ## Completed in this continuation
 
+- `settings.json` now validates `hideThinkingBlock` (default visible), merges trusted-project override, and suppresses interactive stderr reasoning deltas while leaving history/events intact. Local parse/overlay/invalid tests only; pinned Pi renders a collapsible thinking block in its full TUI, and no PTY rendering/reload differential exists.
 - Scoped model patterns now distinguish `*` from cross-segment `**`, match simple bracket ranges/negation and avoid hidden segments, with a pinned minimatch Node differential slice (`docs/parity/model-scope-globs.md`) plus C# integration tests. Brace/extglob/escape semantics, thinking suffixes, ordering and full CLI parity remain open.
 - Redirected non-RPC stdin is now limited to 1M UTF-16 characters before prompt composition, with trimmed/boundary/cancellation tests and a CLI subprocess proving oversized input exits 2 before provider auth/inference. This is a PiSharp safety bound, not pinned Pi stdin parity; streamed RPC input is unaffected.
 - CLI `--list-models` now sorts filtered rows by provider/ID and emits Pi's no-match message for an unmatched pattern; offline subprocess fixture checks no-match stdout and zero stderr. Table columns and catalog coverage still differ.

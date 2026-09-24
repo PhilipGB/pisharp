@@ -1497,14 +1497,18 @@
     {
       "id": "settings-hidethinkingblock",
       "title": "Setting: hideThinkingBlock",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:61",
       "acceptance": [
         "Support hideThinkingBlock with upstream type/default and user/trusted-project precedence",
         "Test malformed settings, trust boundaries, reload and startup behaviour"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "src/PiSharp.Cli/UserSettings.cs validates boolean user/trusted-project hideThinkingBlock (default visible) and Program.cs suppresses interactive stderr reasoning deltas when true. It does not remove model reasoning from history or machine events."
+      ],
+      "evidence": [
+        "UserSettingsTests.HideThinkingBlockRequiresBooleanAndTrustedProjectCanOverrideDisplay verifies load, overlay, invalid type and duplicate rejection. No PTY render, reload, or pinned upstream differential evidence."
+      ],
       "dependencies": []
     },
     {

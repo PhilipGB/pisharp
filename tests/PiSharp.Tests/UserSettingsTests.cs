@@ -146,6 +146,28 @@ public sealed class UserSettingsTests
     }
 
     [Fact]
+    public async Task HideThinkingBlockRequiresBooleanAndTrustedProjectCanOverrideDisplay()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-thinking-display-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(Path.Combine(root, ".pi"));
+        try
+        {
+            var globalPath = Path.Combine(root, "settings.json");
+            var projectPath = Path.Combine(root, ".pi", "settings.json");
+            await File.WriteAllTextAsync(globalPath, "{\"hideThinkingBlock\":true}");
+            var global = await UserSettings.LoadAsync(root, _ => null);
+            Assert.True(global.HideThinkingBlock);
+            await File.WriteAllTextAsync(projectPath, "{\"hideThinkingBlock\":false}");
+            Assert.False(global.Overlay(await UserSettings.LoadProjectAsync(root)).HideThinkingBlock);
+            Assert.True(global.Overlay(new UserSettings()).HideThinkingBlock);
+            await File.WriteAllTextAsync(globalPath, "{\"hideThinkingBlock\":\"true\"}");
+            await Assert.ThrowsAsync<InvalidDataException>(() => UserSettings.LoadAsync(root, _ => null));
+            await File.WriteAllTextAsync(globalPath, "{\"hideThinkingBlock\":true,\"hideThinkingBlock\":false}");
+            await Assert.ThrowsAsync<InvalidDataException>(() => UserSettings.LoadAsync(root, _ => null));
+        }
+        finally { Directory.Delete(root, true); }
+    }
+    [Fact]
     public async Task DefaultProjectTrustIsGlobalOnly()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-default-trust-settings-" + Guid.NewGuid().ToString("N"));
