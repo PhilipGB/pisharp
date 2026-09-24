@@ -40,6 +40,47 @@ public sealed class LiveLlamaOverflowTests
     }
 
     [Fact]
+    public async Task ActualLlamaServerRecoversOverflowAfterToolWithoutRepeatingSideEffect()
+    {
+        var endpointText = Environment.GetEnvironmentVariable("PISHARP_TEST_LLAMA_ENDPOINT");
+        if (string.IsNullOrWhiteSpace(endpointText)) return;
+        var endpoint = new Uri(endpointText, UriKind.Absolute);
+        var modelId = Environment.GetEnvironmentVariable("PISHARP_TEST_LLAMA_MODEL") ?? ConnectionSettings.LocalModel;
+        var fixture = new LargeToolFixture();
+        var tool = AIFunctionFactory.Create(fixture.Emit, name: "emit_large_fixture");
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(150));
+        var conversation = new ConversationSession(Path.GetTempPath(), modelId, null);
+        var run = await ConversationRun.OpenAsync(new PiAgent(ProviderChatClientFactory.Create(Select(endpoint, modelId)),
+            new CodingTools(Path.GetTempPath()), selectedTools: ["emit_large_fixture"], noTools: true,
+            extensionTools: [tool]), conversation, autoCompaction: new AutoCompactionPolicy(1_200_000, 1000));
+        var events = new List<AgentLifecycleEvent>();
+        await foreach (var item in run.RunEventsAsync(
+            "Call emit_large_fixture exactly once. After receiving its output, reply briefly with the sentinel. Do not call it again.", deadline.Token))
+            events.Add(item);
+
+        Assert.Equal(1, fixture.Calls);
+        Assert.Contains(events, item => item.Type == "model_request_failed" &&
+            item.Error?.Contains("exceeds the available context size", StringComparison.OrdinalIgnoreCase) == true);
+        Assert.Single(events, item => item.Type == "model_context_overflow_recovery");
+        Assert.Contains(events, item => item.Type == "turn_completed");
+        Assert.Contains(conversation.ActiveMessages().SelectMany(message => message.Contents).OfType<FunctionResultContent>(),
+            result => result.Result?.ToString()?.Contains("PISHARP_LIVE_LARGE_TOOL_SENTINEL", StringComparison.Ordinal) == true);
+        Assert.Contains(conversation.Tree.ActivePath(), node => node.Type == "context_projection");
+    }
+
+    private sealed class LargeToolFixture
+    {
+        public int Calls { get; private set; }
+
+        [System.ComponentModel.Description("Emit a large deterministic diagnostic fixture. Call once only.")]
+        public string Emit()
+        {
+            Calls++;
+            return "PISHARP_LIVE_LARGE_TOOL_SENTINEL " + string.Concat(Enumerable.Repeat("ping ", 190_000));
+        }
+    }
+
+    [Fact]
     public async Task ActualLlamaServerContextOverflowRetriesWithSummaryAndPreservesRawHistory()
     {
         var endpointText = Environment.GetEnvironmentVariable("PISHARP_TEST_LLAMA_ENDPOINT");
