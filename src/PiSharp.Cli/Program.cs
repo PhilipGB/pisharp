@@ -118,7 +118,7 @@ catch (ArgumentException e)
     return;
 }
 var store = new ConversationStore(Environment.CurrentDirectory, cli.SessionDirectory ??
-    Environment.GetEnvironmentVariable("PISHARP_SESSION_DIR"));
+    Environment.GetEnvironmentVariable("PISHARP_SESSION_DIR") ?? userSettings.SessionDirectory);
 AutoCompactionPolicy? contextPolicy;
 ModelPricing? modelPricing;
 try

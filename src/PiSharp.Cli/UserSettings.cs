@@ -4,7 +4,7 @@ namespace PiSharp.Cli;
 
 /// <summary>Validated, non-secret user defaults. Project settings are intentionally not loaded yet.</summary>
 public sealed record UserSettings(string? DefaultProvider = null, string? DefaultModel = null,
-    string? DefaultThinkingLevel = null, IReadOnlyList<string>? DefaultTools = null)
+    string? DefaultThinkingLevel = null, IReadOnlyList<string>? DefaultTools = null, string? SessionDirectory = null)
 {
     public static async Task<UserSettings> LoadAsync(string agentDirectory, Func<string, string?> environment,
         CancellationToken cancellationToken = default)
@@ -17,7 +17,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         using var document = JsonDocument.Parse(bytes, new JsonDocumentOptions { MaxDepth = 16 });
         if (document.RootElement.ValueKind != JsonValueKind.Object)
             throw new InvalidDataException("settings.json must contain a JSON object.");
-        string? provider = null, model = null, thinking = null;
+        string? provider = null, model = null, thinking = null, sessionDirectory = null;
         IReadOnlyList<string>? tools = null;
         var seen = new HashSet<string>(StringComparer.Ordinal);
         foreach (var property in document.RootElement.EnumerateObject())
@@ -46,6 +46,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
             {
                 case "defaultProvider": provider = Validate(value, property.Name, 128); break;
                 case "defaultModel": model = Validate(value, property.Name, 256); break;
+                case "sessionDir": sessionDirectory = Validate(value, property.Name, 1024); break;
                 case "defaultThinkingLevel":
                     thinking = Validate(value, property.Name, 16)?.ToLowerInvariant();
                     if (!ThinkingLevels.IsValid(thinking))
@@ -54,7 +55,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
                 default: throw new InvalidDataException($"settings.json contains unsupported property '{property.Name}'.");
             }
         }
-        return new(provider, model, thinking, tools);
+        return new(provider, model, thinking, tools, sessionDirectory);
     }
 
     public CliArguments ApplyDefaults(CliArguments cli, Func<string, string?> environment, bool preserveSessionModel = false)

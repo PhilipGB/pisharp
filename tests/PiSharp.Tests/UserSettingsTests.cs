@@ -12,13 +12,14 @@ public sealed class UserSettingsTests
         try
         {
             await File.WriteAllTextAsync(Path.Combine(root, "settings.json"),
-                "{\"defaultProvider\":\"mistral\",\"defaultModel\":\"mistral-large-latest\",\"defaultThinkingLevel\":\"HIGH\",\"defaultTools\":[\"read\",\"grep\"]}");
+                "{\"defaultProvider\":\"mistral\",\"defaultModel\":\"mistral-large-latest\",\"defaultThinkingLevel\":\"HIGH\",\"defaultTools\":[\"read\",\"grep\"],\"sessionDir\":\"/tmp/pisharp-sessions\"}");
             var settings = await UserSettings.LoadAsync(root, _ => null);
             var defaults = settings.ApplyDefaults(CliArguments.Parse(["--print", "hello"]), _ => null);
             Assert.Equal("mistral", defaults.Provider);
             Assert.Equal("mistral-large-latest", defaults.ModelOverride);
             Assert.Equal("high", defaults.Thinking);
             Assert.Equal(["read", "grep"], defaults.Tools);
+            Assert.Equal("/tmp/pisharp-sessions", settings.SessionDirectory);
 
             var explicitOptions = settings.ApplyDefaults(CliArguments.Parse(["--provider", "openai", "--model", "gpt-custom", "--thinking", "low", "--tools", "write"]), _ => null);
             Assert.Equal("openai", explicitOptions.Provider);
