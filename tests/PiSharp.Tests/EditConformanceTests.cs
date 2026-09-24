@@ -11,8 +11,16 @@ public sealed class EditConformanceTests
     [Theory]
     [InlineData("one\r\ntwo\n", "one\ntwo", "three\nfour", "three\nfour\n")]
     [InlineData("a—b  \nnext\n", "a-b\nnext", "done", "done\n")]
+    [InlineData("hello\uFEFF\n", "hello\n", "changed\n", "changed\n")]
     public void SingleReplacementMatchesPinnedEditPlanner(string content, string oldText, string newText, string expected) =>
         Assert.Equal(expected, FileEdits.Apply(content, [new TextEdit(oldText, newText)], "sample.txt"));
+
+    [Fact]
+    public void FuzzyMatchingDoesNotTrimWhitespaceOutsideTheJavaScriptSet()
+    {
+        var error = Assert.Throws<ArgumentException>(() => FileEdits.Apply("hello\u0085\n", [new("hello\n", "changed\n")], "sample.txt"));
+        Assert.Equal("Could not find the exact text in sample.txt. The old text must match exactly including all whitespace and newlines.", error.Message);
+    }
 
     [Fact]
     public void DisjointReplacementsUseOriginalSnapshot()
@@ -49,6 +57,21 @@ public sealed class EditConformanceTests
                 await tool.EditBatch("fixture.txt", [new("one", "ONE"), new("three", "THREE")]));
             Assert.Equal(new byte[] { 0xEF, 0xBB, 0xBF }.Concat(Encoding.UTF8.GetBytes("ONE\r\ntwo\r\nTHREE\r\n")),
                 await File.ReadAllBytesAsync(file));
+        }
+        finally { Directory.Delete(dir, recursive: true); }
+    }
+
+    [Fact]
+    public async Task MissingEditTargetUsesPinnedNoSuchFileErrorWithoutCreatingIt()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "pisharp-edit-" + Guid.NewGuid());
+        Directory.CreateDirectory(dir);
+        try
+        {
+            var tool = new CodingTools(dir);
+            var error = await Assert.ThrowsAsync<ToolFailureException>(() => tool.Edit("missing.txt", "before", "after"));
+            Assert.Equal("Could not edit file: missing.txt. Error code: ENOENT.", error.Message);
+            Assert.False(File.Exists(Path.Combine(dir, "missing.txt")));
         }
         finally { Directory.Delete(dir, recursive: true); }
     }

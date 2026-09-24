@@ -69,13 +69,27 @@ public static class FileEdits
     private static string Fuzzy(string text)
     {
         var lines = text.Normalize(NormalizationForm.FormKC).Split('\n');
-        for (var i = 0; i < lines.Length; i++) lines[i] = lines[i].TrimEnd();
+        for (var i = 0; i < lines.Length; i++) lines[i] = TrimJavaScriptWhitespaceEnd(lines[i]);
         return string.Join("\n", lines)
             .Replace('‘', '\'').Replace('’', '\'').Replace('‚', '\'').Replace('‛', '\'')
             .Replace('“', '"').Replace('”', '"').Replace('„', '"').Replace('‟', '"')
             .Replace('‐', '-').Replace('‑', '-').Replace('‒', '-').Replace('–', '-').Replace('—', '-').Replace('―', '-').Replace('−', '-')
             .Replace('\u00A0', ' ').Replace('\u202F', ' ').Replace('\u205F', ' ').Replace('\u3000', ' ');
     }
+
+    private static string TrimJavaScriptWhitespaceEnd(string value)
+    {
+        var length = value.Length;
+        while (length > 0 && IsJavaScriptWhitespace(value[length - 1])) length--;
+        return length == value.Length ? value : value[..length];
+    }
+
+    // ECMAScript String.trimEnd has a fixed whitespace set. char.IsWhiteSpace also
+    // trims U+0085, which Pi preserves, and omits U+FEFF, which Pi removes.
+    private static bool IsJavaScriptWhitespace(char value) => value is
+        '\u0009' or '\u000B' or '\u000C' or '\u0020' or '\u00A0' or '\u1680' or
+        >= '\u2000' and <= '\u200A' or '\u2028' or '\u2029' or '\u202F' or
+        '\u205F' or '\u3000' or '\uFEFF';
 
     private static string OverlayChangedLines(string original, string basis, List<(int Start, int Length, int Index, string Replacement)> spans)
     {

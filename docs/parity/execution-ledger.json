@@ -368,8 +368,15 @@
         "ambiguous/missing block aborts entire batch; cancellable",
         "Verify through application workflow and compare packages/coding-agent/src/core/tools/edit.ts, edit-diff.ts; CodingTools.Edit; unit tests"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "src/PiSharp.Core/FileEdits.cs uses Pi's ECMAScript trimEnd whitespace set for fuzzy matching, avoiding false matches on U+0085 and allowing Pi-compatible U+FEFF trimming.",
+        "src/PiSharp.Runtime/CodingTools.cs checks edit targets with a read/write open and reports missing files as `Could not edit file: {path}. Error code: ENOENT.`; successful edit text remains `Successfully replaced {count} block(s) in {path}.`.",
+        "Pi renderer details (`diff`, unified `patch`, and `firstChangedLine`) are not represented in the current PiSharp tool result or lifecycle event."
+      ],
+      "evidence": [
+        "tests/PiSharp.Tests/EditConformanceTests.cs: 9 focused cases pass, including JavaScript whitespace boundaries, unchanged file on batch failure, BOM/CRLF, queue serialization, and exact ENOENT missing-target output.",
+        "Pinned d5629e20489ccf770ed90b5a33941cb3b7ef24d0 and refreshed Pi main b2bd111f2d46eed1a4689c32f30fde6306498827 use the inspected edit.ts/edit-diff.ts matching and renderer-detail contracts."
+      ],
       "dependencies": []
     },
     {

@@ -50,6 +50,15 @@ public sealed class CodingTools
 
     private string Resolve(string path) => Path.GetFullPath(path, _cwd);
 
+    private static async Task<byte[]> ReadEditableFileAsync(string path, CancellationToken cancellationToken)
+    {
+        await using var stream = new FileStream(path, FileMode.Open, FileAccess.ReadWrite,
+            FileShare.ReadWrite | FileShare.Delete, 81920, FileOptions.Asynchronous | FileOptions.SequentialScan);
+        using var content = new MemoryStream();
+        await stream.CopyToAsync(content, cancellationToken);
+        return content.ToArray();
+    }
+
     [Description("Read a text file. Output is limited to 2000 lines or 50KB. Use offset and limit to continue.")]
     public async Task<string> Read(
         [Description("Path relative to the working directory or absolute path.")] string path,
@@ -140,7 +149,16 @@ public sealed class CodingTools
             var absolute = Resolve(path);
             return await s_mutations.RunAsync(absolute, async () =>
             {
-                var bytes = await File.ReadAllBytesAsync(absolute, cancellationToken);
+                byte[] bytes;
+                try { bytes = await ReadEditableFileAsync(absolute, cancellationToken); }
+                catch (Exception e) when (e is FileNotFoundException or DirectoryNotFoundException)
+                {
+                    throw new ToolFailureException($"Could not edit file: {path}. Error code: ENOENT.", inner: e);
+                }
+                catch (UnauthorizedAccessException e)
+                {
+                    throw new ToolFailureException($"Could not edit file: {path}. Error code: EACCES.", inner: e);
+                }
                 var bom = bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF;
                 var source = new UTF8Encoding(false, true).GetString(bytes, bom ? 3 : 0, bytes.Length - (bom ? 3 : 0));
                 var lf = source.IndexOf('\n');
