@@ -18,7 +18,7 @@ public sealed class PiAgent
 
     public PiAgent(IChatClient client, CodingTools tools, IReadOnlyList<string>? selectedTools = null, IReadOnlyList<string>? excludedTools = null, bool noTools = false, string? contextInstructions = null, string? systemPrompt = null, string? appendSystemPrompt = null,
         IReadOnlyCollection<AIFunction>? extensionTools = null, ProviderRetryPolicy? retryPolicy = null,
-        ReasoningOptions? reasoning = null)
+        ReasoningOptions? reasoning = null, bool blockImages = false)
     {
         _summarizer = new ChatClientAgent(client, new ChatClientAgentOptions
         {
@@ -36,7 +36,7 @@ public sealed class PiAgent
             builtin.Concat(external).GroupBy(tool => tool.Name, StringComparer.Ordinal).Any(group => group.Count() > 1))
             throw new ArgumentException("Extension tool conflicts with a built-in tool name.");
         _agent = new ChatClientAgent(new ObservedChatClient(client, value => _events?.Invoke(value),
-            retryPolicy ?? ProviderRetryPolicy.Default, TakeSteeringForRequest), new ChatClientAgentOptions
+            retryPolicy ?? ProviderRetryPolicy.Default, TakeSteeringForRequest, blockImages), new ChatClientAgentOptions
             {
                 Name = "PiSharp",
                 ChatHistoryProvider = _history,

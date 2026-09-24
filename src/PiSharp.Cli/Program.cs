@@ -123,7 +123,7 @@ try
 {
     agent = new PiAgent(chat, new CodingTools(Environment.CurrentDirectory), cli.Tools, cli.ExcludeTools, cli.NoTools,
     instructions, prompts.System, prompts.Append, extensionLease.Current.Registration.Tools,
-    reasoning: ThinkingLevels.ToOptions(thinking));
+    reasoning: ThinkingLevels.ToOptions(thinking), blockImages: userSettings.BlockImages == true);
 }
 catch (ArgumentException e)
 {
@@ -185,7 +185,7 @@ try
         modelPricing = ModelPricing.FromEnvironment(Environment.GetEnvironmentVariable) ?? selection.Model.Pricing;
         agent = new PiAgent(client.GetChatClient(connection.Model).AsIChatClient(),
             new CodingTools(Environment.CurrentDirectory), cli.Tools, cli.ExcludeTools, cli.NoTools, instructions, prompts.System, prompts.Append,
-            extensionLease.Current.Registration.Tools, reasoning: ThinkingLevels.ToOptions(thinking));
+            extensionLease.Current.Registration.Tools, reasoning: ThinkingLevels.ToOptions(thinking), blockImages: userSettings.BlockImages == true);
     }
     if (cli.SessionName is not null) conversation.Rename(cli.SessionName);
     if (!cli.NoSession) sessionPath ??= store.NewPath(conversation);
@@ -228,7 +228,7 @@ async Task Run(string input, IReadOnlyList<DataContent>? images = null)
     {
         if (!selection.Authenticated)
             throw new InvalidOperationException($"Provider '{selection.Provider.Id}' is not authenticated. Use /login {selection.Provider.Id} before sending a prompt.");
-        if (images is { Count: > 0 } && selection.Model.Input is { } modalities &&
+        if (images is { Count: > 0 } && userSettings.BlockImages != true && selection.Model.Input is { } modalities &&
             !modalities.Contains("image", StringComparer.Ordinal))
             throw new InvalidOperationException($"Model '{selection.Model.Id}' is not declared image-capable; refusing to send image attachments.");
         var expanded = await resources.ResolveInputAsync(input, runCancel.Token);
@@ -309,13 +309,12 @@ async Task ReplaceModelRuntime(ModelSelection nextSelection, string nextThinking
     nextThinking = ThinkingLevels.ValidateForModel(nextThinking, nextSelection.Model.Reasoning);
     var nextConnection = nextSelection.Connection;
     var nextClient = CreateClient(nextSelection);
-    var nextPolicy = AutoCompactionPolicy.FromEnvironment(Environment.GetEnvironmentVariable) ??
-        (nextSelection.Model.ContextLength is int window ? new AutoCompactionPolicy(window, Math.Min(16_384, window / 4)) : null);
+    var nextPolicy = userSettings.ResolveCompaction(nextSelection.Model.ContextLength, Environment.GetEnvironmentVariable);
     var nextPricing = ModelPricing.FromEnvironment(Environment.GetEnvironmentVariable) ?? nextSelection.Model.Pricing;
     var nextAgent = new PiAgent(nextClient.GetChatClient(nextConnection.Model).AsIChatClient(),
         new CodingTools(Environment.CurrentDirectory), cli.Tools, cli.ExcludeTools, cli.NoTools,
         instructions, prompts.System, prompts.Append, extensionLease.Current.Registration.Tools,
-        reasoning: ThinkingLevels.ToOptions(nextThinking));
+        reasoning: ThinkingLevels.ToOptions(nextThinking), blockImages: userSettings.BlockImages == true);
     var previousHead = conversation.Tree.HeadId;
     var previousSelection = selection;
     var previousConnection = connection;
@@ -359,7 +358,7 @@ async Task ReloadResources()
         var nextAgent = new PiAgent(client.GetChatClient(connection.Model).AsIChatClient(),
             new CodingTools(Environment.CurrentDirectory), cli.Tools, cli.ExcludeTools, cli.NoTools,
             nextContext, nextPrompts.System, nextPrompts.Append, nextExtensions.Registration.Tools,
-            reasoning: ThinkingLevels.ToOptions(thinking));
+            reasoning: ThinkingLevels.ToOptions(thinking), blockImages: userSettings.BlockImages == true);
         var path = sessionPath;
         var nextRun = await OpenRunAsync(nextAgent, conversation, path);
         extensionLease.Replace(nextExtensions);

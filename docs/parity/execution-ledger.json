@@ -1932,14 +1932,14 @@
     {
       "id": "settings-images-blockimages",
       "title": "Setting: images.blockImages",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:63",
       "acceptance": [
         "Support images.blockImages with upstream type/default and user/trusted-project precedence",
         "Test malformed settings, trust boundaries, reload and startup behaviour"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": ["src/PiSharp.Cli/UserSettings.cs: validated user/trusted-project boolean overlay", "src/PiSharp.Runtime/Sessions/ObservedChatClient.cs: filter each provider request without changing canonical history"],
+      "evidence": ["tests/PiSharp.Tests/UserSettingsTests.cs: precedence and malformed JSON", "tests/PiSharp.Tests/MultimodalRuntimeTests.cs: two turns, restored history; tool-result and reload evidence outstanding"],
       "dependencies": []
     },
     {

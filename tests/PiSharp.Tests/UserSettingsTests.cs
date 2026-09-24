@@ -101,6 +101,22 @@ public sealed class UserSettingsTests
         finally { Directory.Delete(root, true); }
     }
 
+    [Fact]
+    public async Task ImageBlockingIsScopedAndValidated()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-image-settings-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(Path.Combine(root, ".pi"));
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(root, "settings.json"), "{\"images\":{\"blockImages\":true}}");
+            await File.WriteAllTextAsync(Path.Combine(root, ".pi", "settings.json"), "{\"images\":{\"blockImages\":false}}");
+            var global = await UserSettings.LoadAsync(root, _ => null);
+            Assert.True(global.BlockImages);
+            Assert.False(global.Overlay(await UserSettings.LoadProjectAsync(root)).BlockImages);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
     [Theory]
     [InlineData("{\"defaultThinkingLevel\":\"ultra\"}")]
     [InlineData("{\"unknown\":\"value\"}")]
@@ -114,6 +130,10 @@ public sealed class UserSettingsTests
     [InlineData("{\"compaction\":{\"reserveTokens\":2,\"reserveTokens\":3}}")]
     [InlineData("{\"compaction\":{\"keepRecentTokens\":50}}")]
     [InlineData("{\"compaction\":[]}")]
+    [InlineData("{\"images\":{\"blockImages\":\"true\"}}")]
+    [InlineData("{\"images\":{\"blockImages\":true,\"blockImages\":false}}")]
+    [InlineData("{\"images\":{\"autoResize\":true}}")]
+    [InlineData("{\"images\":[]}")]
     public async Task InvalidSettingsFailClosed(string json)
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-settings-invalid-" + Guid.NewGuid().ToString("N"));

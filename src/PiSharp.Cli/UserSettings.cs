@@ -47,7 +47,7 @@ public sealed record CompactionSettings(bool? Enabled = null, int? ReserveTokens
 /// <summary>Validated non-secret settings subset for the user and trusted project scopes.</summary>
 public sealed record UserSettings(string? DefaultProvider = null, string? DefaultModel = null,
     string? DefaultThinkingLevel = null, IReadOnlyList<string>? DefaultTools = null, string? SessionDirectory = null,
-    CompactionSettings? Compaction = null)
+    CompactionSettings? Compaction = null, bool? BlockImages = null)
 {
     public static async Task<UserSettings> LoadAsync(string agentDirectory, Func<string, string?> environment,
         CancellationToken cancellationToken = default)
@@ -63,10 +63,25 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         string? provider = null, model = null, thinking = null, sessionDirectory = null;
         IReadOnlyList<string>? tools = null;
         CompactionSettings? compaction = null;
+        bool? blockImages = null;
         var seen = new HashSet<string>(StringComparer.Ordinal);
         foreach (var property in document.RootElement.EnumerateObject())
         {
             if (!seen.Add(property.Name)) throw new InvalidDataException($"settings.json contains duplicate property '{property.Name}'.");
+            if (property.Name == "images")
+            {
+                if (property.Value.ValueKind != JsonValueKind.Object)
+                    throw new InvalidDataException("settings.json images must be an object.");
+                var imageKeys = new HashSet<string>(StringComparer.Ordinal);
+                foreach (var imageSetting in property.Value.EnumerateObject())
+                {
+                    if (!imageKeys.Add(imageSetting.Name) || imageSetting.Name != "blockImages" ||
+                        imageSetting.Value.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
+                        throw new InvalidDataException($"settings.json images.{imageSetting.Name} is unsupported, duplicate or invalid.");
+                    blockImages = imageSetting.Value.GetBoolean();
+                }
+                continue;
+            }
             if (property.Name == "compaction")
             {
                 compaction = CompactionSettings.Parse(property.Value);
@@ -104,7 +119,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
                 default: throw new InvalidDataException($"settings.json contains unsupported property '{property.Name}'.");
             }
         }
-        return new(provider, model, thinking, tools, sessionDirectory, compaction);
+        return new(provider, model, thinking, tools, sessionDirectory, compaction, blockImages);
     }
 
     /// <summary>Overlay a trusted project's explicitly specified defaults; nested compaction values merge.</summary>
@@ -116,7 +131,8 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         project.SessionDirectory ?? SessionDirectory,
         project.Compaction is null ? Compaction : new CompactionSettings(
             project.Compaction.Enabled ?? Compaction?.Enabled,
-            project.Compaction.ReserveTokens ?? Compaction?.ReserveTokens));
+            project.Compaction.ReserveTokens ?? Compaction?.ReserveTokens),
+        project.BlockImages ?? BlockImages);
 
     public static Task<UserSettings> LoadProjectAsync(string workingDirectory, CancellationToken cancellationToken = default) =>
         LoadAsync(workingDirectory, _ => Path.Combine(workingDirectory, ".pi", "settings.json"), cancellationToken);
