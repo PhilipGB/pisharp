@@ -6,9 +6,10 @@ namespace PiSharp.Tests;
 public sealed class OfflineCatalogProcessTests
 {
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task OfflineListModelsUsesStaticMetadataWithoutReachingUnavailableEndpoint(bool viaEnvironment)
+    [InlineData(false, "STATIC")]
+    [InlineData(true, "STATIC")]
+    [InlineData(false, "missing")]
+    public async Task OfflineListModelsUsesStaticMetadataWithoutReachingUnavailableEndpoint(bool viaEnvironment, string pattern)
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-offline-process-" + Guid.NewGuid().ToString("N"));
         var agent = Path.Combine(root, "agent");
@@ -24,7 +25,7 @@ public sealed class OfflineCatalogProcessTests
                 RedirectStandardOutput = true,
                 RedirectStandardError = true
             };
-            foreach (var argument in new[] { typeof(CliArguments).Assembly.Location, "--provider", "fixture", "--list-models", "STATIC" })
+            foreach (var argument in new[] { typeof(CliArguments).Assembly.Location, "--provider", "fixture", "--list-models", pattern })
                 start.ArgumentList.Add(argument);
             if (viaEnvironment) start.Environment["PI_OFFLINE"] = "yes";
             else { start.Environment.Remove("PI_OFFLINE"); start.ArgumentList.Add("--offline"); }
@@ -36,8 +37,13 @@ public sealed class OfflineCatalogProcessTests
             await process.WaitForExitAsync(timeout.Token);
             Assert.Equal(0, process.ExitCode);
             Assert.Equal("", await errors);
-            Assert.Contains("fixture/static-only\tconfigured\t8192", await output);
-            Assert.DoesNotContain("omit-me", await output);
+            if (pattern == "missing")
+                Assert.Equal("No models matching \"missing\"\n", await output);
+            else
+            {
+                Assert.Contains("fixture/static-only\tconfigured\t8192", await output);
+                Assert.DoesNotContain("omit-me", await output);
+            }
             Assert.Equal("STATIC", CliArguments.Parse(["--list-models", "STATIC"]).ListModelsFilter);
             Assert.Null(CliArguments.Parse(["--list-models", "--offline"]).ListModelsFilter);
         }

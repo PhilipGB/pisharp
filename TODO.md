@@ -37,6 +37,7 @@ After each significant change: add/update tests and parity evidence, run focused
 
 ## Completed in this continuation
 
+- CLI `--list-models` now sorts filtered rows by provider/ID and emits Pi's no-match message for an unmatched pattern; offline subprocess fixture checks no-match stdout and zero stderr. Table columns and catalog coverage still differ.
 - Differential slice: executed pinned `packages/tui/src/fuzzy.ts` directly under Node 24 for seven provider/model search patterns; all seven match/empty cases agree with local C# `CliModelFilterTests` on the same fixture. Score order, Unicode edge cases, full CLI table and catalog remain unverified.
 - `--list-models [pattern]` now consumes the optional next nonflag/non-@ token and filters provider plus ID using pinned `packages/tui/src/fuzzy.ts` token/subsequence and alpha-digit-swap rules (local cases and CLI subprocess with unavailable endpoint). Pi's model table and remote catalogue behavior still differ.
 - Explicit skill/template resource paths now take precedence over discovered same-name resources, with collision fixtures. Pinned `resource-loader.ts` merges CLI sources before enabled discovery and `skills.ts` keeps first winner; broader package-resolution/diagnostics semantics remain open.
