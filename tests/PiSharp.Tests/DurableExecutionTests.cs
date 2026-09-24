@@ -34,7 +34,9 @@ public sealed class DurableExecutionTests
             Assert.Equal(["run_started", "tool_intent", "tool_outcome", "run_finished"], checkpoints);
             var document = await store.LoadAsync(path);
             Assert.Contains(document.Tree.Entries, node => node.Type == "tool_outcome");
+            Assert.True(document.RecoverIncomplete()); // A settled but failed continuation still needs a no-replay warning.
             Assert.False(document.RecoverIncomplete());
+            Assert.Contains("No tool outcome is unknown", document.ActiveMessages().Last().Text);
             // Simulate SIGKILL immediately after the side-effect checkpoint, before run_finished.
             document.Tree.Select(document.Tree.Entries.Single(node => node.Type == "tool_outcome").Id);
             await store.SaveAsync(document, path);
@@ -86,6 +88,26 @@ public sealed class DurableExecutionTests
             Assert.Contains("Outcome UNKNOWN", client.Requests.Single().Single(m => m.Text?.Contains("Recovery notice") == true).Text);
         }
         finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Fact]
+    public void FailedSettledRunWithUnknownToolOutcomeRequiresRecoveryWarning()
+    {
+        var session = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        var runId = Guid.NewGuid().ToString("N");
+        session.Tree.Append("run_started", System.Text.Json.JsonSerializer.SerializeToElement(new { runId, prompt = "write" }));
+        session.Tree.Append("tool_intent", System.Text.Json.JsonSerializer.SerializeToElement(new
+        {
+            runId,
+            operationId = "unknown",
+            name = "write",
+            arguments = new { path = "file.txt", content = "maybe" }
+        }));
+        session.Tree.Append("run_finished", System.Text.Json.JsonSerializer.SerializeToElement(new { runId, completed = false }));
+        var persisted = ConversationSession.Parse(session.ToJson());
+        Assert.True(persisted.RecoverIncomplete());
+        Assert.Contains("Outcome UNKNOWN for write", persisted.ActiveMessages().Last().Text);
+        Assert.False(persisted.RecoverIncomplete());
     }
 
     [Fact]

@@ -305,6 +305,16 @@ public sealed class ConversationRun
         var accepted = false;
         try
         {
+            // A failed settled run can have checkpointed side effects without MAF-persisted tool results.
+            // Rebuild from canonical history with an explicit no-replay warning before accepting another prompt.
+            if (Conversation.RecoverIncomplete())
+            {
+                var history = Conversation.ContextMessages();
+                var restored = await _agent.RestoreHistoryAsync(history, cancellationToken);
+                if (_save is not null) await _save(cancellationToken);
+                _execution = restored;
+                _historyCount = history.Count;
+            }
             if (_autoCompaction is not null && EstimateNextContext(prompt) > _autoCompaction.TriggerTokens)
             {
                 if (await CompactCoreAsync(null, cancellationToken))
@@ -319,8 +329,18 @@ public sealed class ConversationRun
             }
             accepted = true;
             onEvent?.Invoke(new("prompt_accepted", Text: prompt));
+            var inFlightBudget = _autoCompaction is null ? null : new InFlightContextBudget(_autoCompaction,
+                (messages, token) => _agent.SummarizeAsync(messages, null, token),
+                async (summary, token) =>
+                {
+                    Conversation.MarkInFlightProjection();
+                    if (summary.Usage is not null)
+                        Conversation.AppendUsage(UsageRecord.Create(Conversation.Model, "compaction", summary.Usage, _pricing));
+                    if (_save is not null) await _save(token);
+                    onEvent?.Invoke(new("context_compacted_in_flight", Text: "Continuation request summarized; canonical history was not changed."));
+                });
             await foreach (var update in _agent.RunStreamingDurableAsync(promptMessage, _execution, cancellationToken, durable,
-                onEvent, TakeSteeringForProvider))
+                onEvent, TakeSteeringForProvider, inFlightBudget is null ? null : inFlightBudget.ProjectAsync))
             {
                 if (!string.IsNullOrEmpty(update.Text))
                 {

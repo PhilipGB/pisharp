@@ -81,11 +81,15 @@ public sealed class ConversationSession
             throw new InvalidDataException($"Invalid usage record at {node.Id}."))
         .ToArray();
 
+    /// <summary>Record an in-flight-only summary so later budget checks never mistake its lower provider usage for raw context.</summary>
+    public void MarkInFlightProjection() => Tree.Append("context_projection", JsonSerializer.SerializeToElement(new { }));
+
     /// <summary>Latest provider-reported context after the current compaction boundary.</summary>
     public long? LatestContextUsageTokens()
     {
         var path = Tree.ActivePath();
         var compactAt = path.ToList().FindLastIndex(node => node.Type == "compaction");
+        if (path.Skip(compactAt + 1).Any(node => node.Type == "context_projection")) return null;
         return path.Skip(compactAt + 1).Where(node => node.Type == "usage")
             .Select(node => node.Payload.Deserialize<UsageRecord>() ??
                 throw new InvalidDataException($"Invalid usage record at {node.Id}."))
@@ -181,8 +185,9 @@ public sealed class ConversationSession
         var start = path.LastOrDefault(node => node.Type == "run_started");
         if (start is null) return false;
         var runId = start.Payload.GetProperty("runId").GetString();
-        if (path.Any(node => (node.Type is "run_finished" or "run_recovered") &&
-            node.Payload.GetProperty("runId").GetString() == runId)) return false;
+        if (path.Any(node => node.Type == "run_recovered" && node.Payload.GetProperty("runId").GetString() == runId) ||
+            path.Any(node => node.Type == "run_finished" && node.Payload.GetProperty("runId").GetString() == runId &&
+                node.Payload.GetProperty("completed").GetBoolean())) return false;
         var prompt = start.Payload.GetProperty("prompt").GetString();
         var intents = path.SkipWhile(node => node.Id != start.Id).Where(node => node.Type == "tool_intent" &&
             node.Payload.GetProperty("runId").GetString() == runId).ToArray();

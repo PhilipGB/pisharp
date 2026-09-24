@@ -13,6 +13,7 @@ public sealed class PiAgent
     private DurableExecution? _active;
     private Action<AgentLifecycleEvent>? _events;
     private Func<IReadOnlyList<ChatMessage>>? _takeSteering;
+    private Func<IReadOnlyList<ChatMessage>, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? _projectContext;
     private readonly List<(ChatMessage Message, string? AfterCallId)> _injectedSteering = [];
     private int _providerRequestIndex;
 
@@ -36,7 +37,7 @@ public sealed class PiAgent
             builtin.Concat(external).GroupBy(tool => tool.Name, StringComparer.Ordinal).Any(group => group.Count() > 1))
             throw new ArgumentException("Extension tool conflicts with a built-in tool name.");
         _agent = new ChatClientAgent(new ObservedChatClient(client, value => _events?.Invoke(value),
-            retryPolicy ?? ProviderRetryPolicy.Default, TakeSteeringForRequest, blockImages), new ChatClientAgentOptions
+            retryPolicy ?? ProviderRetryPolicy.Default, TakeSteeringForRequest, blockImages, ProjectForRequestAsync), new ChatClientAgentOptions
             {
                 Name = "PiSharp",
                 ChatHistoryProvider = _history,
@@ -60,6 +61,11 @@ public sealed class PiAgent
         _injectedSteering.AddRange(steering.Select(message => (message, afterCallId)));
         return steering;
     }
+
+    private Task<IReadOnlyList<ChatMessage>> ProjectForRequestAsync(IReadOnlyList<ChatMessage> messages, CancellationToken token) =>
+        // The pre-prompt policy owns the first request; this guard runs only at tool-loop continuations.
+        _providerRequestIndex > 1 && _projectContext is { } project
+            ? project(messages, token) : Task.FromResult(messages);
 
     public async Task<CompactionSummary> SummarizeAsync(IReadOnlyList<ChatMessage> messages, string? focus,
         CancellationToken cancellationToken = default)
@@ -102,12 +108,14 @@ public sealed class PiAgent
 
     internal IAsyncEnumerable<AgentResponseUpdate> RunStreamingDurableAsync(string prompt, AgentSession session,
         CancellationToken cancellationToken, DurableExecution? durable, Action<AgentLifecycleEvent>? onEvent = null,
-        Func<IReadOnlyList<ChatMessage>>? takeSteering = null) =>
-        RunStreamingDurableAsync(new ChatMessage(ChatRole.User, prompt), session, cancellationToken, durable, onEvent, takeSteering);
+        Func<IReadOnlyList<ChatMessage>>? takeSteering = null,
+        Func<IReadOnlyList<ChatMessage>, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? projectContext = null) =>
+        RunStreamingDurableAsync(new ChatMessage(ChatRole.User, prompt), session, cancellationToken, durable, onEvent, takeSteering, projectContext);
 
     internal async IAsyncEnumerable<AgentResponseUpdate> RunStreamingDurableAsync(ChatMessage prompt, AgentSession session,
         [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken, DurableExecution? durable,
-        Action<AgentLifecycleEvent>? onEvent = null, Func<IReadOnlyList<ChatMessage>>? takeSteering = null)
+        Action<AgentLifecycleEvent>? onEvent = null, Func<IReadOnlyList<ChatMessage>>? takeSteering = null,
+        Func<IReadOnlyList<ChatMessage>, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? projectContext = null)
     {
         await _runGate.WaitAsync(cancellationToken);
         try
@@ -115,6 +123,7 @@ public sealed class PiAgent
             _active = durable;
             _events = onEvent;
             _takeSteering = takeSteering;
+            _projectContext = projectContext;
             _providerRequestIndex = 0;
             _injectedSteering.Clear();
             try
@@ -124,7 +133,7 @@ public sealed class PiAgent
             }
             finally { PersistInjectedSteering(session); }
         }
-        finally { _takeSteering = null; _events = null; _active = null; _runGate.Release(); }
+        finally { _projectContext = null; _takeSteering = null; _events = null; _active = null; _runGate.Release(); }
     }
 
     private void PersistInjectedSteering(AgentSession session)

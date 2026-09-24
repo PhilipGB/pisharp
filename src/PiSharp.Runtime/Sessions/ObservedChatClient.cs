@@ -6,12 +6,13 @@ namespace PiSharp.Runtime.Sessions;
 /// <summary>Observes every actual provider request, including subsequent tool-loop model calls.</summary>
 internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycleEvent> publish,
     ProviderRetryPolicy retryPolicy, Func<IEnumerable<ChatMessage>, IReadOnlyList<ChatMessage>> takeSteering,
-    bool blockImages = false) : DelegatingChatClient(inner)
+    bool blockImages = false,
+    Func<IReadOnlyList<ChatMessage>, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? projectContext = null) : DelegatingChatClient(inner)
 {
     public override async Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages,
         ChatOptions? options = null, CancellationToken cancellationToken = default)
     {
-        var requestMessages = FilterImages(WithSteering(messages));
+        var requestMessages = await PrepareRequestAsync(messages, cancellationToken);
         for (var retries = 0; ; retries++)
         {
             publish(new("model_request_started"));
@@ -35,7 +36,7 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
     public override async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
         ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        var requestMessages = FilterImages(WithSteering(messages));
+        var requestMessages = await PrepareRequestAsync(messages, cancellationToken);
         for (var retries = 0; ; retries++)
         {
             publish(new("model_request_started"));
@@ -75,6 +76,13 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
             publish(new("model_retry_scheduled", Text: $"{retries + 1}/{retryPolicy.MaxRetries}", Error: failure.Message));
             if (retryPolicy.Delay > TimeSpan.Zero) await Task.Delay(retryPolicy.Delay, cancellationToken);
         }
+    }
+
+    private async Task<IReadOnlyList<ChatMessage>> PrepareRequestAsync(IEnumerable<ChatMessage> messages, CancellationToken cancellationToken)
+    {
+        var withSteering = WithSteering(messages).ToArray();
+        var projected = projectContext is null ? withSteering : await projectContext(withSteering, cancellationToken);
+        return FilterImages(projected).ToArray();
     }
 
     // Filter at the final provider boundary, including persisted history and subsequent tool-loop requests.
