@@ -36,12 +36,13 @@ public static class ModelCatalog
             !document.RootElement.TryGetProperty("data", out var data) || data.ValueKind != JsonValueKind.Array)
             throw new InvalidDataException("Model catalogue has no data array.");
         var models = new List<ModelDescriptor>();
+        var seenIds = new HashSet<string>(StringComparer.Ordinal);
         foreach (var item in data.EnumerateArray())
         {
             if (item.ValueKind != JsonValueKind.Object || !item.TryGetProperty("id", out var name) ||
                 name.ValueKind != JsonValueKind.String || string.IsNullOrWhiteSpace(name.GetString())) continue;
             var id = name.GetString()!;
-            if (models.Any(model => model.Id == id)) continue;
+            if (!seenIds.Add(id)) continue;
             static string? StringProperty(JsonElement element, string property) =>
                 element.TryGetProperty(property, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
             var context = item.TryGetProperty("context_length", out var size) && size.ValueKind == JsonValueKind.Number &&

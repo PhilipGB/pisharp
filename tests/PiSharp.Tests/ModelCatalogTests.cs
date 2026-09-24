@@ -83,6 +83,15 @@ public sealed class ModelCatalogTests
         Assert.Null(models[0].Pricing!.Tiers);
         Assert.Equal(4096, models[1].ContextLength);
     }
+    [Fact]
+    public async Task LargeCatalogRetainsFirstDuplicateAndAllDistinctIds()
+    {
+        var entries = Enumerable.Range(0, 8000).Select(id => $"{{\"id\":\"model-{id}\"}}");
+        using var http = new HttpClient(new FixtureHandler("{\"data\":[" + string.Join(',', entries) + ", {\"id\":\"model-0\"}]}"));
+        var models = await ModelCatalog.ListAsync(http, new Uri("https://models.test/v1"), "token");
+        Assert.Equal(8000, models.Count);
+        Assert.Equal("model-7999", models[^1].Id);
+    }
     private sealed class FixtureHandler(string json) : HttpMessageHandler
     {
         public string? Url { get; private set; }
