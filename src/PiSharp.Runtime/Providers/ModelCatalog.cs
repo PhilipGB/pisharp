@@ -85,7 +85,8 @@ public static class ModelCatalog
             if (tier.ValueKind != JsonValueKind.Object || PositiveInt(tier, "inputTokensAbove") is not int threshold ||
                 !TryNonnegativeDecimal(tier, "input", out var input) || !TryNonnegativeDecimal(tier, "output", out var output)) return null;
             decimal? cached = TryNonnegativeDecimal(tier, "cacheRead", out var cachedRate) ? cachedRate : null;
-            result.Add(new ModelPricingTier(threshold, input, output, cached));
+            result.Add(new ModelPricingTier(threshold, input, output, cached,
+                TryNonnegativeDecimal(tier, "cacheWrite", out var cachedWrite) ? cachedWrite : null));
         }
         return result.OrderBy(tier => tier.InputTokensAbove).ToArray();
     }
@@ -98,7 +99,8 @@ public static class ModelCatalog
             TryNonnegativeDecimal(cost, "output", out var output))
         {
             decimal? cached = TryNonnegativeDecimal(cost, "cacheRead", out var cacheRead) ? cacheRead : null;
-            return new ModelPricing(input, output, cached, ParseTiers(cost));
+            return new ModelPricing(input, output, cached, ParseTiers(cost),
+                TryNonnegativeDecimal(cost, "cacheWrite", out var cachedWrite) ? cachedWrite : null);
         }
         // OpenRouter-compatible catalogues express dollars per token as JSON strings.
         if (model.TryGetProperty("pricing", out var pricing) && pricing.ValueKind == JsonValueKind.Object &&

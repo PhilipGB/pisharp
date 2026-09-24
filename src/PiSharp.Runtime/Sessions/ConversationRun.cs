@@ -366,5 +366,5 @@ public sealed class ConversationRun
         Text: $"{usage.TotalTokens} tokens" + (usage.Cost is null ? "" : $" · ${usage.Cost:0.######}"),
         InputTokens: usage.InputTokens, OutputTokens: usage.OutputTokens,
         CachedInputTokens: usage.CachedInputTokens, ReasoningTokens: usage.ReasoningTokens,
-        TotalTokens: usage.TotalTokens, Cost: usage.Cost);
+        TotalTokens: usage.TotalTokens, Cost: usage.Cost, CachedWriteTokens: usage.CachedWriteTokens);
 }

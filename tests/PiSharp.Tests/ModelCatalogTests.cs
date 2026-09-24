@@ -43,7 +43,7 @@ public sealed class ModelCatalogTests
               {"id":"pi-style","context_length":200000,"reasoning":true,"cost":{"input":3,"output":15,"cacheRead":0.3}},
               {"id":"router-style","max_output_tokens":4096,"architecture":{"input_modalities":["text","image"]},"pricing":{"prompt":"0.000002","completion":"0.00001","input_cache_read":"0.000001"}},
               {"id":"unknown-price","cost":{"input":-1,"output":2}},
-              {"id":"tiered","cost":{"input":5,"output":30,"cacheRead":0.5,"tiers":[{"inputTokensAbove":272000,"input":10,"output":45,"cacheRead":1}]}}
+              {"id":"tiered","cost":{"input":5,"output":30,"cacheRead":0.5,"cacheWrite":6.25,"tiers":[{"inputTokensAbove":272000,"input":10,"output":45,"cacheRead":1,"cacheWrite":12.5}]}}
             ]}
             """);
         using var http = new HttpClient(handler);
@@ -57,8 +57,9 @@ public sealed class ModelCatalogTests
         Assert.Equal(4096, models[1].MaxOutputTokens);
         Assert.Equal(["text", "image"], models[1].Input);
         Assert.Null(models[2].Pricing);
-        Assert.Equal([new PiSharp.Runtime.Sessions.ModelPricingTier(272000, 10m, 45m, 1m)], models[3].Pricing!.Tiers);
-        Assert.Equal(new PiSharp.Runtime.Sessions.ModelPricing(10m, 45m, 1m), models[3].Pricing!.ForInput(272001));
+        Assert.Equal([new PiSharp.Runtime.Sessions.ModelPricingTier(272000, 10m, 45m, 1m, 12.5m)], models[3].Pricing!.Tiers);
+        Assert.Equal(6.25m, models[3].Pricing!.CachedWrite);
+        Assert.Equal(new PiSharp.Runtime.Sessions.ModelPricing(10m, 45m, 1m, CachedWrite: 12.5m), models[3].Pricing!.ForInput(272001));
     }
 
     [Fact]

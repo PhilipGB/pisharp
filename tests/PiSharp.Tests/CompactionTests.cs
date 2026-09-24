@@ -169,21 +169,23 @@ public sealed class CompactionTests
     [Fact]
     public void UsageAccountingAppliesRequestWideModelInputPricingTiers()
     {
-        var pricing = new ModelPricing(5m, 30m, 0.5m, [new ModelPricingTier(272000, 10m, 45m, 1m)]);
+        var pricing = new ModelPricing(5m, 30m, 0.5m, [new ModelPricingTier(272000, 10m, 45m, 1m, 12.5m)], 6.25m);
         var below = UsageRecord.Create("tiered", "model", new UsageDetails
         {
             InputTokenCount = 200000,
             CachedInputTokenCount = 100000,
-            OutputTokenCount = 1000
+            OutputTokenCount = 1000,
+            AdditionalCounts = new AdditionalPropertiesDictionary<long> { ["cacheWriteTokens"] = 10000 }
         }, pricing);
         var above = UsageRecord.Create("tiered", "model", new UsageDetails
         {
             InputTokenCount = 272001,
             CachedInputTokenCount = 100000,
-            OutputTokenCount = 1000
+            OutputTokenCount = 1000,
+            AdditionalCounts = new AdditionalPropertiesDictionary<long> { ["cacheWriteTokens"] = 10000 }
         }, pricing);
-        Assert.Equal(0.58m, below.Cost);
-        Assert.Equal(1.86501m, above.Cost);
+        Assert.Equal(0.6425m, below.Cost);
+        Assert.Equal(1.99001m, above.Cost);
     }
 
     [Fact]

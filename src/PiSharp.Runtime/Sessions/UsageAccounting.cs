@@ -4,11 +4,11 @@ namespace PiSharp.Runtime.Sessions;
 
 /// <summary>Model prices in US dollars per one million tokens. Unknown prices stay unknown.</summary>
 public sealed record ModelPricing(decimal Input, decimal Output, decimal? CachedInput = null,
-    IReadOnlyList<ModelPricingTier>? Tiers = null)
+    IReadOnlyList<ModelPricingTier>? Tiers = null, decimal? CachedWrite = null)
 {
     public ModelPricing ForInput(long inputTokens) => Tiers?.Where(tier => inputTokens > tier.InputTokensAbove)
         .OrderByDescending(tier => tier.InputTokensAbove)
-        .Select(tier => new ModelPricing(tier.Input, tier.Output, tier.CachedInput)).FirstOrDefault() ?? this;
+        .Select(tier => new ModelPricing(tier.Input, tier.Output, tier.CachedInput, CachedWrite: tier.CachedWrite)).FirstOrDefault() ?? this;
 
     public static ModelPricing? FromEnvironment(Func<string, string?> get)
     {
@@ -28,21 +28,27 @@ public sealed record ModelPricing(decimal Input, decimal Output, decimal? Cached
             System.Globalization.CultureInfo.InvariantCulture, out price) && price >= 0;
 }
 
-public sealed record ModelPricingTier(int InputTokensAbove, decimal Input, decimal Output, decimal? CachedInput = null);
+public sealed record ModelPricingTier(int InputTokensAbove, decimal Input, decimal Output, decimal? CachedInput = null,
+    decimal? CachedWrite = null);
 
 /// <summary>An immutable provider-usage snapshot persisted outside model context.</summary>
 public sealed record UsageRecord(string Model, string Source, long InputTokens, long OutputTokens,
-    long CachedInputTokens, long ReasoningTokens, long TotalTokens, decimal? Cost)
+    long CachedInputTokens, long ReasoningTokens, long TotalTokens, decimal? Cost, long CachedWriteTokens = 0)
 {
     public static UsageRecord Create(string model, string source, UsageDetails details, ModelPricing? pricing)
     {
         var input = details.InputTokenCount ?? 0;
         var output = details.OutputTokenCount ?? 0;
         var cached = details.CachedInputTokenCount ?? 0;
+        var cachedWrite = details.AdditionalCounts?.Where(count => count.Key.Equals("cacheWriteTokens", StringComparison.OrdinalIgnoreCase) ||
+                count.Key.Equals("cacheWriteTokenCount", StringComparison.OrdinalIgnoreCase) ||
+                count.Key.Equals("cache_write_tokens", StringComparison.OrdinalIgnoreCase) ||
+                count.Key.Equals("cache_creation_input_tokens", StringComparison.OrdinalIgnoreCase))
+            .Sum(count => count.Value) ?? 0;
         var reasoning = details.ReasoningTokenCount ?? 0;
         var reportedTotal = details.TotalTokenCount ?? 0;
         var total = reportedTotal > 0 ? reportedTotal : input + output;
-        if (input < 0 || output < 0 || cached < 0 || reasoning < 0 || total < 0)
+        if (input < 0 || output < 0 || cached < 0 || cachedWrite < 0 || reasoning < 0 || total < 0)
             throw new InvalidDataException("Provider usage counts cannot be negative.");
         decimal? cost = null;
         if (pricing is not null)
@@ -50,8 +56,9 @@ public sealed record UsageRecord(string Model, string Source, long InputTokens, 
             var rates = pricing.ForInput(input);
             var ordinaryInput = Math.Max(0, input - cached);
             var cachedRate = rates.CachedInput ?? rates.Input;
-            cost = (ordinaryInput * rates.Input + cached * cachedRate + output * rates.Output) / 1_000_000m;
+            var cachedWriteRate = rates.CachedWrite ?? rates.Input;
+            cost = (ordinaryInput * rates.Input + cached * cachedRate + cachedWrite * cachedWriteRate + output * rates.Output) / 1_000_000m;
         }
-        return new UsageRecord(model, source, input, output, cached, reasoning, total, cost);
+        return new UsageRecord(model, source, input, output, cached, reasoning, total, cost, cachedWrite);
     }
 }

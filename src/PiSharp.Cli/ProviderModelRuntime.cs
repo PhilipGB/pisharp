@@ -329,13 +329,15 @@ public sealed class ProviderModelRuntime
                 if (tier.ValueKind != JsonValueKind.Object || PositiveInt(tier, "inputTokensAbove") is not int threshold ||
                     !Decimal(tier, "input", out var tierInput) || !Decimal(tier, "output", out var tierOutput))
                     throw new InvalidDataException("Configured model pricing tiers require positive inputTokensAbove and nonnegative input/output rates.");
-                parsedTiers.Add(new(threshold, tierInput, tierOutput, Decimal(tier, "cacheRead", out var tierCached) ? tierCached : null));
+                parsedTiers.Add(new(threshold, tierInput, tierOutput, Decimal(tier, "cacheRead", out var tierCached) ? tierCached : null,
+                    Decimal(tier, "cacheWrite", out var tierCacheWrite) ? tierCacheWrite : null));
             }
             if (parsedTiers.Select(tier => tier.InputTokensAbove).Distinct().Count() != parsedTiers.Count)
                 throw new InvalidDataException("Configured model pricing tiers must have unique input thresholds.");
             tiers = parsedTiers.OrderBy(tier => tier.InputTokensAbove).ToArray();
         }
-        return new(input, output, Decimal(cost, "cacheRead", out var cached) ? cached : null, tiers);
+        return new(input, output, Decimal(cost, "cacheRead", out var cached) ? cached : null, tiers,
+            Decimal(cost, "cacheWrite", out var cachedWrite) ? cachedWrite : null);
     }
 
     private static bool Decimal(JsonElement parent, string property, out decimal result)
