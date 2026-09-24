@@ -46,7 +46,7 @@ At startup, PiSharp loads the first of `AGENTS.override.md`, `AGENTS.md`, `AGENT
 
 ## Native .NET extensions (experimental)
 
-A public class in a DLL implementing `PiSharp.Runtime.Extensions.IPiSharpExtension` can register `Microsoft.Extensions.AI.AIFunction` tools and terminal-only slash commands. Place DLLs in `~/.pisharp/agent/extensions/` (or `PISHARP_AGENT_DIR/extensions/`) or, **only after project trust**, in `.pi/extensions/`. `index.dll` inside an immediate subdirectory is also supported. Example:
+A public class in a DLL implementing `PiSharp.Runtime.Extensions.IPiSharpExtension` can register `Microsoft.Extensions.AI.AIFunction` tools and terminal-only slash commands. Place DLLs in `~/.pisharp/agent/extensions/` (or `PISHARP_AGENT_DIR/extensions/`) or, **only after project trust**, in `.pi/extensions/`. `--no-extensions` (`-ne`) disables both discovered locations for this run, including `/reload`; no explicit extension-path flag exists yet. `index.dll` inside an immediate subdirectory is also supported. Example:
 
 ```csharp
 public sealed class Example : PiSharp.Runtime.Extensions.IPiSharpExtension

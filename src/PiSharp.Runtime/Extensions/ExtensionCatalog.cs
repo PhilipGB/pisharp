@@ -60,9 +60,10 @@ public sealed class ExtensionCatalog : IDisposable
 
     private ExtensionCatalog() { }
 
-    public static ExtensionCatalog Load(string agentDirectory, string cwd, bool projectTrusted)
+    public static ExtensionCatalog Load(string agentDirectory, string cwd, bool projectTrusted, bool discover = true)
     {
         var catalog = new ExtensionCatalog();
+        if (!discover) return catalog;
         try
         {
             foreach (var root in new[] { Path.Combine(agentDirectory, "extensions"),

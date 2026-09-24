@@ -34,6 +34,7 @@ After each significant change: add/update tests and parity evidence, run focused
 
 ## Completed in this continuation
 
+- CLI `--no-extensions`/`-ne` now skips user/project DLL discovery at startup and reload; loader and PTY tests show trusted project commands are disabled; other resource discovery remains wired independently. Upstream explicit `-e` path semantics and full extension parity remain open.
 - CLI `--no-builtin-tools`/`-nbt` now disables default built-ins while retaining extension tools; explicit allowlist can re-enable a built-in, and exclusion still removes extension tools. Local parser and provider tool-loadout fixtures; full upstream selector behavior remains unverified.
 - CLI now reads trimmed redirected stdin even when a positional prompt is present (except RPC), prepending it before @file content and prompt, matching pinned Pi `main.ts`/`cli/initial-message.ts` composition; local HTTP subprocess asserts actual provider message order. No broad input-mode differential or stdin size bound yet.
 - Anonymous configured providers no longer borrow `PISHARP_API_KEY` implicitly from the local endpoint; only explicit `apiKeyEnv` or provider-specific keys can select a secret. Local auth/connection isolation tests also preserve explicit local-endpoint key use. Broader provider credential precedence and process evidence remain open.
