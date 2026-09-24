@@ -4,7 +4,7 @@ namespace PiSharp.Cli;
 
 /// <summary>Validated, non-secret user defaults. Project settings are intentionally not loaded yet.</summary>
 public sealed record UserSettings(string? DefaultProvider = null, string? DefaultModel = null,
-    string? DefaultThinkingLevel = null)
+    string? DefaultThinkingLevel = null, IReadOnlyList<string>? DefaultTools = null)
 {
     public static async Task<UserSettings> LoadAsync(string agentDirectory, Func<string, string?> environment,
         CancellationToken cancellationToken = default)
@@ -18,10 +18,27 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         if (document.RootElement.ValueKind != JsonValueKind.Object)
             throw new InvalidDataException("settings.json must contain a JSON object.");
         string? provider = null, model = null, thinking = null;
+        IReadOnlyList<string>? tools = null;
         var seen = new HashSet<string>(StringComparer.Ordinal);
         foreach (var property in document.RootElement.EnumerateObject())
         {
             if (!seen.Add(property.Name)) throw new InvalidDataException($"settings.json contains duplicate property '{property.Name}'.");
+            if (property.Name == "defaultTools")
+            {
+                if (property.Value.ValueKind != JsonValueKind.Array)
+                    throw new InvalidDataException("settings.json defaultTools must be a string array.");
+                var values = new List<string>();
+                foreach (var item in property.Value.EnumerateArray())
+                {
+                    if (item.ValueKind != JsonValueKind.String) throw new InvalidDataException("settings.json defaultTools entries must be strings.");
+                    var name = item.GetString();
+                    if (name is not ("read" or "bash" or "edit" or "write" or "grep" or "find" or "ls") || values.Contains(name, StringComparer.Ordinal))
+                        throw new InvalidDataException($"settings.json defaultTools contains an invalid or duplicate tool '{name}'.");
+                    values.Add(name);
+                }
+                tools = values;
+                continue;
+            }
             if (property.Value.ValueKind != JsonValueKind.String)
                 throw new InvalidDataException($"settings.json property '{property.Name}' must be a string.");
             var value = property.Value.GetString();
@@ -37,12 +54,13 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
                 default: throw new InvalidDataException($"settings.json contains unsupported property '{property.Name}'.");
             }
         }
-        return new(provider, model, thinking);
+        return new(provider, model, thinking, tools);
     }
 
     public CliArguments ApplyDefaults(CliArguments cli, Func<string, string?> environment, bool preserveSessionModel = false)
     {
-        var provider = cli.Local ? null : cli.Provider ?? (preserveSessionModel ? null : DefaultProvider);
+        var useLocal = cli.Local || (!preserveSessionModel && cli.Provider is null && DefaultProvider == "local");
+        var provider = useLocal ? null : cli.Provider ?? (preserveSessionModel ? null : DefaultProvider);
         var modelEnvironment = provider?.ToLowerInvariant() switch
         {
             "openrouter" => "PISHARP_OPENROUTER_MODEL",
@@ -52,8 +70,10 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         return cli with
         {
             Provider = provider,
-            ModelOverride = cli.ModelOverride ?? (!cli.Local && !preserveSessionModel && environment(modelEnvironment) is null ? DefaultModel : null),
-            Thinking = cli.Thinking ?? DefaultThinkingLevel
+            Local = useLocal,
+            ModelOverride = cli.ModelOverride ?? (!useLocal && !preserveSessionModel && environment(modelEnvironment) is null ? DefaultModel : null),
+            Thinking = cli.Thinking ?? DefaultThinkingLevel,
+            Tools = cli.Tools ?? (!cli.NoTools ? DefaultTools : null)
         };
     }
 

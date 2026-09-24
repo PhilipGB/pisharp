@@ -12,17 +12,21 @@ public sealed class UserSettingsTests
         try
         {
             await File.WriteAllTextAsync(Path.Combine(root, "settings.json"),
-                "{\"defaultProvider\":\"mistral\",\"defaultModel\":\"mistral-large-latest\",\"defaultThinkingLevel\":\"HIGH\"}");
+                "{\"defaultProvider\":\"mistral\",\"defaultModel\":\"mistral-large-latest\",\"defaultThinkingLevel\":\"HIGH\",\"defaultTools\":[\"read\",\"grep\"]}");
             var settings = await UserSettings.LoadAsync(root, _ => null);
             var defaults = settings.ApplyDefaults(CliArguments.Parse(["--print", "hello"]), _ => null);
             Assert.Equal("mistral", defaults.Provider);
             Assert.Equal("mistral-large-latest", defaults.ModelOverride);
             Assert.Equal("high", defaults.Thinking);
+            Assert.Equal(["read", "grep"], defaults.Tools);
 
-            var explicitOptions = settings.ApplyDefaults(CliArguments.Parse(["--provider", "openai", "--model", "gpt-custom", "--thinking", "low"]), _ => null);
+            var explicitOptions = settings.ApplyDefaults(CliArguments.Parse(["--provider", "openai", "--model", "gpt-custom", "--thinking", "low", "--tools", "write"]), _ => null);
             Assert.Equal("openai", explicitOptions.Provider);
             Assert.Equal("gpt-custom", explicitOptions.ModelOverride);
             Assert.Equal("low", explicitOptions.Thinking);
+            Assert.Equal(["write"], explicitOptions.Tools);
+            var disabledTools = settings.ApplyDefaults(CliArguments.Parse(["--no-tools"]), _ => null);
+            Assert.Null(disabledTools.Tools);
 
             var continuation = settings.ApplyDefaults(CliArguments.Parse(["--continue"]), _ => null, preserveSessionModel: true);
             Assert.Null(continuation.Provider);
@@ -43,6 +47,9 @@ public sealed class UserSettingsTests
     [InlineData("{\"defaultThinkingLevel\":\"ultra\"}")]
     [InlineData("{\"unknown\":\"value\"}")]
     [InlineData("{\"defaultModel\":42}")]
+    [InlineData("{\"defaultTools\":\"read\"}")]
+    [InlineData("{\"defaultTools\":[\"unknown\"]}")]
+    [InlineData("{\"defaultTools\":[\"read\",\"read\"]}")]
     [InlineData("{\"defaultModel\":\"a\",\"defaultModel\":\"b\"}")]
     public async Task InvalidSettingsFailClosed(string json)
     {

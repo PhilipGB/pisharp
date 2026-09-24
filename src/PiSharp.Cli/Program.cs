@@ -53,7 +53,7 @@ ConnectionSettings connection;
 var thinking = cli.Thinking ?? "off";
 try
 {
-    modelRuntime = await ProviderModelRuntime.CreateAsync(agentDirectory, cli.Local,
+    modelRuntime = await ProviderModelRuntime.CreateAsync(agentDirectory, cli.Local || userSettings.DefaultProvider == "local",
         Environment.GetEnvironmentVariable, catalogHttp, cli.ApiKey, cli.ScopedModels);
     selection = await modelRuntime.ResolveAsync(cli.Provider ?? (cli.Local ? "local" : null), cli.ModelOverride);
     thinking = ThinkingLevels.ValidateForModel(thinking, selection.Model.Reasoning);
