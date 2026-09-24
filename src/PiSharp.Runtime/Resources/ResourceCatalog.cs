@@ -32,7 +32,7 @@ public sealed class ResourceCatalog
             skillRoots.Add(Path.Combine(cwd, ".agents", "skills"));
             promptRoots.Add(Path.Combine(cwd, ".pi", "prompts"));
         }
-        foreach (var root in (discoverSkills ? skillRoots : []).Concat(additionalSkills ?? []).Distinct(StringComparer.Ordinal))
+        foreach (var root in (additionalSkills ?? []).Concat(discoverSkills ? skillRoots : []).Distinct(StringComparer.Ordinal))
         {
             var selected = Path.GetFullPath(root, cwd);
             if (!Directory.Exists(selected) && !File.Exists(selected))
@@ -55,7 +55,7 @@ public sealed class ResourceCatalog
                 skills.Add(new(name, description, path, metadata.GetValueOrDefault("disable-model-invocation") == "true"));
             }
         }
-        foreach (var root in (discoverPrompts ? promptRoots : []).Concat(additionalPrompts ?? []).Distinct(StringComparer.Ordinal))
+        foreach (var root in (additionalPrompts ?? []).Concat(discoverPrompts ? promptRoots : []).Distinct(StringComparer.Ordinal))
         {
             var selected = Path.GetFullPath(root, cwd);
             if (!Directory.Exists(selected) && !File.Exists(selected))

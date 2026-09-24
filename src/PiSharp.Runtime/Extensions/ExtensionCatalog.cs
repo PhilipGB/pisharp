@@ -67,10 +67,6 @@ public sealed class ExtensionCatalog : IDisposable
         try
         {
             var selectedPaths = new List<string>();
-            if (discover)
-                foreach (var root in new[] { Path.Combine(agentDirectory, "extensions"),
-                    projectTrusted ? Path.Combine(cwd, ".pi", "extensions") : null }.Where(path => path is not null))
-                    if (Directory.Exists(root)) selectedPaths.AddRange(FindAssemblies(root));
             foreach (var entry in additionalPaths ?? [])
             {
                 var path = Path.GetFullPath(entry, cwd);
@@ -79,6 +75,10 @@ public sealed class ExtensionCatalog : IDisposable
                     selectedPaths.Add(path);
                 else throw new FileNotFoundException("Explicit extension must be a .dll file or an existing directory.", path);
             }
+            if (discover)
+                foreach (var root in new[] { Path.Combine(agentDirectory, "extensions"),
+                    projectTrusted ? Path.Combine(cwd, ".pi", "extensions") : null }.Where(path => path is not null))
+                    if (Directory.Exists(root)) selectedPaths.AddRange(FindAssemblies(root));
             foreach (var path in selectedPaths.Distinct(StringComparer.Ordinal))
             {
                 var context = new PluginLoadContext(path);

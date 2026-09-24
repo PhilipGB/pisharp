@@ -56,6 +56,19 @@ public sealed class ResourceCatalogTests
             Assert.Single(explicitResources.Prompts);
             Assert.Contains("Review value", await explicitResources.ResolveInputAsync("/review value"));
             Assert.Equal("Run a script", (await explicitResources.InvokeSkillAsync("project-secret", "")).Split('\n')[1]);
+            var collidingSkill = Path.Combine(agent, "skills", "collision");
+            Directory.CreateDirectory(collidingSkill);
+            await File.WriteAllTextAsync(Path.Combine(collidingSkill, "SKILL.md"),
+                "---\nname: project-secret\ndescription: Auto discovered collision\n---\nWrong skill");
+            var chosenPrompt = Path.Combine(project, ".pi", "prompts", "review.md");
+            await File.WriteAllTextAsync(chosenPrompt, "Chosen prompt: $1");
+            var chosen = await ResourceCatalog.LoadAsync(project, agent, false,
+                additionalSkills: [Path.Combine(projectSkill, "SKILL.md")],
+                additionalPrompts: [chosenPrompt]);
+            Assert.Equal("Chosen prompt: value", chosen.ExpandPrompt("review", "value"));
+            Assert.Contains("Run a script", await chosen.InvokeSkillAsync("project-secret", ""));
+            Assert.DoesNotContain("Wrong skill", await chosen.InvokeSkillAsync("project-secret", ""));
+            File.Delete(Path.Combine(collidingSkill, "SKILL.md"));
             await Assert.ThrowsAsync<FileNotFoundException>(() => ResourceCatalog.LoadAsync(project, agent, false,
                 discoverSkills: false, additionalSkills: ["missing-skill"]));
             Assert.Throws<ArgumentException>(() => PiSharp.Cli.CliArguments.Parse(["--skill"]));
