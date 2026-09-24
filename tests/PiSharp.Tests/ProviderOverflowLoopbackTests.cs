@@ -65,6 +65,84 @@ public sealed class ProviderOverflowLoopbackTests
         Assert.Equal("partial", interrupted.Payload.GetProperty("partialText").GetString());
     }
 
+    [Fact]
+    public async Task RealCompletionsSdkDoesNotReplayCompletedWriteAfterPartialContinuationFails()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-post-tool-failure-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        try
+        {
+            using var reservation = new TcpListener(IPAddress.Loopback, 0);
+            reservation.Start();
+            var port = ((IPEndPoint)reservation.LocalEndpoint).Port;
+            reservation.Stop();
+            using var listener = new HttpListener();
+            listener.Prefixes.Add($"http://127.0.0.1:{port}/");
+            listener.Start();
+            using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(12));
+            var bodies = new List<string>();
+            var server = Task.Run(async () =>
+            {
+                for (var i = 0; i < 2; i++)
+                {
+                    var request = await listener.GetContextAsync().WaitAsync(deadline.Token);
+                    Assert.Equal("/v1/chat/completions", request.Request.Url?.AbsolutePath);
+                    using var reader = new StreamReader(request.Request.InputStream);
+                    bodies.Add(await reader.ReadToEndAsync(deadline.Token));
+                    request.Response.ContentType = "text/event-stream";
+                    await using var writer = new StreamWriter(request.Response.OutputStream);
+                    if (i == 0)
+                    {
+                        await writer.WriteAsync("data: {\"id\":\"chatcmpl_tool\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"fixture-model\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"tool_calls\":[{\"index\":0,\"id\":\"call-1\",\"type\":\"function\",\"function\":{\"name\":\"write\",\"arguments\":\"{\\\"path\\\":\\\"result.txt\\\",\\\"content\\\":\\\"made\\\"}\"}}]},\"finish_reason\":null}]}\n\n");
+                        await writer.WriteAsync("data: {\"id\":\"chatcmpl_tool\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"fixture-model\",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"tool_calls\"}]}\n\n");
+                        await writer.WriteAsync("data: [DONE]\n\n");
+                    }
+                    else
+                    {
+                        await writer.WriteAsync("data: {\"id\":\"chatcmpl_partial\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"fixture-model\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"partial\"},\"finish_reason\":null}]}\n\n");
+                        await writer.WriteAsync("data: {malformed-json}\n\n");
+                    }
+                    await writer.FlushAsync(deadline.Token);
+                    request.Response.Close();
+                }
+            }, deadline.Token);
+
+            var model = new ModelDescriptor("fixture-model", "fixture", null, "fixture", Provider: "fixture", Api: "openai-completions");
+            var profile = new ProviderProfile("fixture", "fixture", new Uri($"http://127.0.0.1:{port}/v1"), true, false,
+                null, null, [model]);
+            var selection = new ModelSelection(profile, model, "fixture-key", true, "fixture");
+            var conversation = new ConversationSession(cwd, "fixture-model", null);
+            var store = new ConversationStore(cwd, Path.Combine(cwd, "sessions"));
+            var path = store.NewPath(conversation);
+            var run = await ConversationRun.OpenAsync(new PiAgent(ProviderChatClientFactory.Create(selection),
+                new CodingTools(cwd), retryPolicy: new ProviderRetryPolicy(maxRetries: 2)), conversation,
+                save: token => store.SaveAsync(conversation, path, token));
+            var events = new List<AgentLifecycleEvent>();
+            await foreach (var item in run.RunEventsAsync("write the file", deadline.Token)) events.Add(item);
+            await server.WaitAsync(deadline.Token);
+
+            Assert.Equal(2, bodies.Count);
+            Assert.Contains("call-1", bodies[1]);
+            Assert.Equal("made", await File.ReadAllTextAsync(Path.Combine(cwd, "result.txt"), deadline.Token));
+            Assert.Single(events, item => item.Type == "tool_execution_started");
+            Assert.Equal(2, events.Count(item => item.Type == "model_request_started"));
+            Assert.Contains(events, item => item.Type == "model_text_delta" && item.Text == "partial");
+            Assert.Contains(events, item => item.Type == "turn_failed");
+            Assert.DoesNotContain(events, item => item.Type is "model_retry_scheduled" or "turn_completed");
+            var persisted = await store.LoadAsync(path, deadline.Token);
+            Assert.Single(persisted.Tree.Entries, entry => entry.Type == "tool_intent");
+            Assert.Single(persisted.Tree.Entries, entry => entry.Type == "tool_outcome");
+            Assert.Contains(persisted.Tree.Entries, entry => entry.Type == "run_finished" &&
+                !entry.Payload.GetProperty("completed").GetBoolean());
+            var interrupted = Assert.Single(persisted.Tree.Entries, entry => entry.Type == "interrupted");
+            Assert.Equal("partial", interrupted.Payload.GetProperty("partialText").GetString());
+            Assert.True(persisted.RecoverIncomplete());
+            Assert.False(persisted.RecoverIncomplete());
+            Assert.Contains("No tool outcome is unknown", persisted.ActiveMessages().Last().Text);
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
+    }
+
     [Theory]
     [InlineData("openai-responses")]
     [InlineData("openai-completions")]
