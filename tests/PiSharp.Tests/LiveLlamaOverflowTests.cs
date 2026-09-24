@@ -62,6 +62,8 @@ public sealed class LiveLlamaOverflowTests
         Assert.Contains(events, item => item.Type == "model_request_failed" &&
             item.Error?.Contains("exceeds the available context size", StringComparison.OrdinalIgnoreCase) == true);
         Assert.Single(events, item => item.Type == "model_context_overflow_recovery");
+        Assert.Single(events, item => item.Type == "model_request_failed");
+        Assert.Equal(3, events.Count(item => item.Type == "model_request_started"));
         Assert.Contains(events, item => item.Type == "turn_completed");
         Assert.Contains(conversation.ActiveMessages().SelectMany(message => message.Contents).OfType<FunctionResultContent>(),
             result => result.Result?.ToString()?.Contains("PISHARP_LIVE_LARGE_TOOL_SENTINEL", StringComparison.Ordinal) == true);
