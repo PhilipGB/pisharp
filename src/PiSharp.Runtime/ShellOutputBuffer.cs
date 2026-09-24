@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 
 namespace PiSharp.Runtime;
@@ -13,70 +14,178 @@ public sealed class ShellOutputBuffer : IAsyncDisposable
     private readonly Decoder _decoder = new UTF8Encoding(false).GetDecoder();
     private FileStream? _full;
     private string? _fullPath;
-    private long _bytes;
+    private long _rawBytes;
+    private long _decodedBytes;
+    private long _currentLineBytes;
     private int _newlines;
     private bool _endsWithNewline;
+    private bool _decoderFlushed;
 
-    public async Task AppendAsync(ReadOnlyMemory<byte> data, CancellationToken cancellationToken = default)
+    /// <summary>Appends raw bytes and returns only newly decoded UTF-8 text.</summary>
+    public async Task<string> AppendAsync(ReadOnlyMemory<byte> data, CancellationToken cancellationToken = default,
+        Action<string>? onDecoded = null)
     {
         await _gate.WaitAsync(cancellationToken);
         try
         {
-            if (_full is null && _bytes + data.Length > MaxBytes)
+            if (_decoderFlushed) throw new InvalidOperationException("Cannot append after the output decoder has been flushed.");
+            if (_full is null && _rawBytes + data.Length > MaxBytes)
             {
-                _fullPath = Path.Combine(Path.GetTempPath(), "pisharp-bash-" + Guid.NewGuid().ToString("N") + ".log");
+                _fullPath = Path.Combine(Path.GetTempPath(), "pi-bash-" + Guid.NewGuid().ToString("N") + ".log");
                 _full = NewPrivateFile(_fullPath);
                 _prefix.Position = 0;
                 await _prefix.CopyToAsync(_full, cancellationToken);
             }
             if (_full is null) await _prefix.WriteAsync(data, cancellationToken);
             else await _full.WriteAsync(data, cancellationToken);
-            _bytes += data.Length;
+            _rawBytes += data.Length;
+
             var chars = new char[Encoding.UTF8.GetMaxCharCount(data.Length)];
             var count = _decoder.GetChars(data.Span, chars, flush: false);
-            _tail.Append(chars, 0, count);
-            for (var i = 0; i < count; i++) if (chars[i] == '\n') _newlines++;
-            if (count > 0) _endsWithNewline = chars[count - 1] == '\n';
-            // Keep a generous rolling suffix so we can select the last 2000 lines or 50KB.
-            if (_tail.Length > 4 * MaxBytes) _tail.Remove(0, _tail.Length - 2 * MaxBytes);
+            var decoded = AppendDecoded(chars, count);
+            onDecoded?.Invoke(decoded);
+            return decoded;
+        }
+        finally { _gate.Release(); }
+    }
+
+    /// <summary>Flushes any incomplete UTF-8 sequence using the decoder's replacement fallback.</summary>
+    public async Task<string> FlushDecoderAsync()
+    {
+        await _gate.WaitAsync();
+        try
+        {
+            if (_decoderFlushed) return "";
+            _decoderFlushed = true;
+            var chars = new char[4];
+            var count = _decoder.GetChars(ReadOnlySpan<byte>.Empty, chars, flush: true);
+            return AppendDecoded(chars, count);
         }
         finally { _gate.Release(); }
     }
 
     public async Task<string> FinishAsync()
     {
+        await FlushDecoderAsync();
         await _gate.WaitAsync();
         try
         {
             if (_full is not null) await _full.FlushAsync();
-            var suffix = _tail.ToString();
-            var lines = suffix.Split('\n');
-            var keep = MaxLines + (suffix.EndsWith('\n') ? 1 : 0);
-            if (lines.Length > keep) suffix = string.Join("\n", lines.TakeLast(keep));
-            var tailBytes = Encoding.UTF8.GetBytes(suffix);
-            if (tailBytes.Length > MaxBytes)
+            var totalLines = TotalLines;
+            var truncated = _full is not null || totalLines > MaxLines || _decodedBytes > MaxBytes;
+            string suffix;
+            int shownLines, shownBytes;
+            bool partialLastLine;
+            if (truncated)
+                suffix = SelectTail(_tail.ToString(), out shownLines, out shownBytes, out partialLastLine);
+            else
             {
-                var start = tailBytes.Length - MaxBytes;
-                while (start < tailBytes.Length && (tailBytes[start] & 0xC0) == 0x80) start++;
-                suffix = Encoding.UTF8.GetString(tailBytes, start, tailBytes.Length - start);
-                var newline = suffix.IndexOf('\n');
-                if (newline >= 0) suffix = suffix[(newline + 1)..];
+                suffix = _tail.ToString();
+                shownLines = totalLines;
+                shownBytes = (int)_decodedBytes;
+                partialLastLine = false;
             }
-            var totalLines = _newlines + (_endsWithNewline ? 0 : _bytes > 0 ? 1 : 0);
-            if (_full is not null || totalLines > MaxLines)
+            if (truncated)
             {
-                // Large output is always spooled, even when the limit is line count only.
                 if (_full is null)
                 {
-                    _fullPath = Path.Combine(Path.GetTempPath(), "pisharp-bash-" + Guid.NewGuid().ToString("N") + ".log");
+                    _fullPath = Path.Combine(Path.GetTempPath(), "pi-bash-" + Guid.NewGuid().ToString("N") + ".log");
                     await using var spill = NewPrivateFile(_fullPath);
-                    await spill.WriteAsync(_prefix.ToArray());
+                    _prefix.Position = 0;
+                    await _prefix.CopyToAsync(spill);
                 }
-                suffix += $"\n\n[Output truncated; {totalLines} lines, {_bytes} bytes. Full output: {_fullPath}]";
+                var startLine = totalLines - shownLines + 1;
+                if (partialLastLine)
+                {
+                    var lineBytes = LastLineBytes;
+                    var shown = FormatSize(shownBytes);
+                    suffix += $"\n\n[Showing last {shown} of line {totalLines} (line is {FormatSize(lineBytes)}). Full output: {_fullPath}]";
+                }
+                else if (shownLines >= MaxLines && shownBytes <= MaxBytes)
+                    suffix += $"\n\n[Showing lines {startLine}-{totalLines} of {totalLines}. Full output: {_fullPath}]";
+                else
+                    suffix += $"\n\n[Showing lines {startLine}-{totalLines} of {totalLines} ({FormatSize(MaxBytes)} limit). Full output: {_fullPath}]";
             }
             return suffix.Length == 0 ? "(no output)" : suffix;
         }
         finally { _gate.Release(); }
+    }
+
+    private int TotalLines => _decodedBytes == 0 ? 0 : _newlines + (_endsWithNewline ? 0 : 1);
+    private long LastLineBytes
+        => _currentLineBytes;
+
+    private string AppendDecoded(ReadOnlySpan<char> chars, int count)
+    {
+        if (count == 0) return "";
+        _decodedBytes += Encoding.UTF8.GetByteCount(chars[..count]);
+        var lastNewline = -1;
+        for (var i = 0; i < count; i++)
+            if (chars[i] == '\n') { _newlines++; lastNewline = i; }
+        _currentLineBytes = lastNewline < 0
+            ? _currentLineBytes + Encoding.UTF8.GetByteCount(chars[..count])
+            : Encoding.UTF8.GetByteCount(chars[(lastNewline + 1)..count]);
+        _endsWithNewline = chars[count - 1] == '\n';
+        _tail.Append(chars[..count]);
+        // Keep enough suffix for both the byte and line limits, including multibyte text.
+        if (_tail.Length > 4 * MaxBytes)
+        {
+            var remove = _tail.Length - 2 * MaxBytes;
+            if (remove < _tail.Length && char.IsLowSurrogate(_tail[remove])) remove++;
+            _tail.Remove(0, remove);
+        }
+        return new string(chars[..count]);
+    }
+
+    private static string SelectTail(string content, out int outputLines, out int outputBytes, out bool partialLastLine)
+    {
+        if (content.EndsWith('\n')) content = content[..^1];
+        if (content.Length == 0)
+        {
+            outputLines = outputBytes = 0;
+            partialLastLine = false;
+            return "";
+        }
+
+        var lines = content.Split('\n');
+        var selected = new List<string>(Math.Min(lines.Length, MaxLines));
+        var bytes = 0;
+        partialLastLine = false;
+        for (var i = lines.Length - 1; i >= 0 && selected.Count < MaxLines; i--)
+        {
+            var lineBytes = Encoding.UTF8.GetByteCount(lines[i]) + (selected.Count > 0 ? 1 : 0);
+            if (bytes + lineBytes > MaxBytes)
+            {
+                if (selected.Count == 0)
+                {
+                    selected.Add(TruncateUtf8FromEnd(lines[i], MaxBytes));
+                    partialLastLine = true;
+                }
+                break;
+            }
+            selected.Insert(0, lines[i]);
+            bytes += lineBytes;
+        }
+        var suffix = string.Join('\n', selected);
+        outputLines = selected.Count;
+        outputBytes = Encoding.UTF8.GetByteCount(suffix);
+        return suffix;
+    }
+
+    private static string TruncateUtf8FromEnd(string value, int maxBytes)
+    {
+        var bytes = Encoding.UTF8.GetBytes(value);
+        var start = Math.Max(0, bytes.Length - maxBytes);
+        while (start < bytes.Length && (bytes[start] & 0xC0) == 0x80) start++;
+        return Encoding.UTF8.GetString(bytes, start, bytes.Length - start);
+    }
+
+    private static string FormatSize(long bytes)
+    {
+        if (bytes < 1024) return $"{bytes}B";
+        var divisor = bytes < 1024 * 1024 ? 1024d : 1024d * 1024;
+        var unit = bytes < 1024 * 1024 ? "KB" : "MB";
+        return (bytes / divisor).ToString("0.0", CultureInfo.InvariantCulture) + unit;
     }
 
     private static FileStream NewPrivateFile(string path)
@@ -89,9 +198,10 @@ public sealed class ShellOutputBuffer : IAsyncDisposable
             BufferSize = 8192,
             Options = FileOptions.Asynchronous
         };
-        if (OperatingSystem.IsLinux()) options.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
+        if (!OperatingSystem.IsWindows()) options.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
         return new FileStream(path, options);
     }
+
     public async ValueTask DisposeAsync()
     {
         if (_full is not null) await _full.DisposeAsync();

@@ -6,15 +6,15 @@
 
 ## Baseline
 
-- PiSharp started from clean `main` at `1520f311196fdbd6a3f2eae07f09bc3f80e55353`. The latest successful Linux CI run before this image slice is [run 36059356140](https://github.com/PhilipGB/pisharp/actions/runs/36059356140), for `e15f051d989ada94ccd54bb3ae7535b20c2a0c9f` on 2026-09-24.
+- PiSharp started from clean `main` at `1520f311196fdbd6a3f2eae07f09bc3f80e55353`. The latest successful Linux CI run is [run 36065775235](https://github.com/PhilipGB/pisharp/actions/runs/36065775235), for `8b109ecac49d1c88df852186c52006553d6231e9` on 2026-09-24.
 - Pinned Pi: `earendil-works/pi@d5629e20489ccf770ed90b5a33941cb3b7ef24d0`. Refreshed upstream `main` as `b2bd111f2d46eed1a4689c32f30fde6306498827`; pinned/current read, MIME, and image processing sources and tests are unchanged. Refresh before the final audit and relevant capability families.
-- Current image-read changes are uncommitted. `dotnet format PiSharp.slnx --verify-no-changes --no-restore` passed; the Release warnings-as-errors build passed with 0 warnings/errors; the Release suite passed 307/307 with 0 skipped; focused read/image tests passed 10/10. CI has not run for these edits.
+- Read/image processing is committed at `8b109ecac49d1c88df852186c52006553d6231e9`; its Release suite passed 307/307 with 0 skipped, focused read/image tests passed 10/10, and the linked Linux CI run succeeded. Image differences remain listed in the matrix and fixture notes.
 
 ## Priorities
 
 1. **Coding tools (active):** complete `read`, `bash`, `edit`, `write`, `grep`, `find`, and `ls` contracts using upstream implementation/tests, deterministic local cases, pinned differentials, and real agent turns. Once major behavior is covered, move on rather than polishing obscure edge cases.
    - `read`: small and streamed text paths decode UTF-8 consistently, preserve BOMs, and avoid UTF-16 BOM auto-detection. Image processing now decodes and validates, converts BMP to PNG, resizes to 2000×2000 / 4.5 MiB base64 limits, and sends inline content through local Responses and Chat Completions tool turns; high-entropy provider payload tests cover the byte limit and session reload. Still open: EXIF orientation, Lanczos3 equivalence, model-specific resize profiles, files over 20 MiB, animated-image transformations, exact metadata/errors, broader filesystem/cancellation cases, and pinned image request/result differentials.
-   - `bash`: high priority. Still open: live output, exact result/events, stdout/stderr behavior, full-output retention, process tree cleanup, and broad PTY/agent-turn evidence.
+   - `bash`: live text updates now flow through the shared lifecycle stream at a 100ms cadence; shell selection honors validated `shellPath`; combined stdout/stderr, inherited process environment, UTF-8 final flush, bounded tail/full spill, cwd and finite timeout validation, 100ms rearmed post-exit drain, and process-group timeout/abort cleanup have local unit, process, agent and JSON event evidence. The focused Bash set passed 13/13; the full Release suite passed 314/314 with 0 skipped; build and format checks passed. Still open: Pi session-derived `PI_*` variables, PTY/terminal presentation, direct RPC wire fixture, precise pinned result/error differentials, wider signal/platform behavior, and broad settings reload parity.
    - `edit`, `write`, `grep`, `find`, `ls`: compare remaining matching, encoding, symlink, permission, atomicity, glob/ignore, truncation, ordering, cancellation and result details against Pi. Existing local coverage is narrow.
    - Acceptance gate: all seven tools' major externally visible behavior is covered and remaining differences are evidenced; then begin the real TUI.
 2. **TUI/editor/keybindings:** replace the editor-only UX with a separated terminal, input/keymap, transcript, renderer, status, overlay/picker and application architecture. Cover streaming, reasoning, Markdown/code/tools, resize, scroll/search, Unicode, clipboard, external editor, images, and terminal restoration.
@@ -31,4 +31,4 @@
 
 ## Immediate next action
 
-Commit and push this validated read slice; retain its evidenced image differences for final audit. Then start `bash` live-output/result/event parity with process-group, cancellation, truncation and agent-turn fixtures. Add deterministic comparisons and keep the active matrix/ledger aligned.
+Commit and push the validated Bash slice, then continue with the remaining coding-tool contracts. Return to Bash for direct RPC wire and pinned result/error differentials during the broader parity pass.

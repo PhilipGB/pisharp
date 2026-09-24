@@ -61,6 +61,34 @@ public sealed class JsonEventModeTests
         finally { Directory.Delete(root, recursive: true); }
     }
 
+    [Fact]
+    public async Task LiveBashOutputIsSerializedAsToolExecutionUpdateEvents()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-json-bash-live-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            using var output = new StringWriter();
+            var conversation = new ConversationSession(root, "fixture", null);
+            var run = await ConversationRun.OpenAsync(new PiAgent(new LiveToolFixture(), new CodingTools(root)), conversation);
+            Assert.True(await new JsonEventMode(output).RunAsync(run, "run a shell command"));
+            var records = output.ToString().Split('\n', StringSplitOptions.RemoveEmptyEntries)
+                .Select(line => JsonDocument.Parse(line)).ToArray();
+            try
+            {
+                var live = Assert.Single(records, record => record.RootElement.GetProperty("data").GetProperty("Type").GetString() == "tool_execution_update");
+                Assert.Equal("bash", live.RootElement.GetProperty("data").GetProperty("Tool").GetString());
+                Assert.Contains("json-live-output", live.RootElement.GetProperty("data").GetProperty("Text").GetString());
+                var startIndex = Array.FindIndex(records, record => record.RootElement.GetProperty("data").GetProperty("Type").GetString() == "tool_execution_started");
+                var updateIndex = Array.IndexOf(records, live);
+                var finishIndex = Array.FindIndex(records, record => record.RootElement.GetProperty("data").GetProperty("Type").GetString() == "tool_execution_finished");
+                Assert.True(startIndex < updateIndex && updateIndex < finishIndex);
+            }
+            finally { foreach (var record in records) record.Dispose(); }
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
     private sealed class ToolFixture : IChatClient
     {
         private int _calls;
@@ -73,6 +101,24 @@ public sealed class JsonEventModeTests
                 yield return new ChatResponseUpdate(ChatRole.Assistant,
                     [new FunctionCallContent("failure-1", "bash", new Dictionary<string, object?> { ["command"] = "exit 7" })]);
             else yield return new ChatResponseUpdate(ChatRole.Assistant, "recovered");
+            await Task.CompletedTask;
+        }
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
+    }
+
+    private sealed class LiveToolFixture : IChatClient
+    {
+        private int _calls;
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            if (++_calls == 1)
+                yield return new ChatResponseUpdate(ChatRole.Assistant,
+                    [new FunctionCallContent("live-1", "bash", new Dictionary<string, object?> { ["command"] = "printf 'json-live-output\\n'" })]);
+            else yield return new ChatResponseUpdate(ChatRole.Assistant, "done");
             await Task.CompletedTask;
         }
         public object? GetService(Type serviceType, object? serviceKey = null) => null;

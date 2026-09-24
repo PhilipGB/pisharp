@@ -378,12 +378,24 @@
       "status": "in_progress",
       "source": "docs/parity/feature-matrix.md:15",
       "acceptance": [
-        "Shell command, optional timeout, live output, tail truncation",
-        "kill process group on timeout/abort; retain full output",
-        "Verify through application workflow and compare packages/coding-agent/src/core/tools/bash.ts, output-accumulator.ts; CodingTools.Bash; unit tests"
+        "Shell command with cwd/environment/shell selection, optional finite timeout, live output, combined stdout/stderr and tail truncation",
+        "Kill the process tree on timeout/abort, retain full output and preserve exit failure in the tool result",
+        "Compare packages/coding-agent/src/core/tools/bash.ts, output-accumulator.ts, utils/child-process.ts and utils/shell.ts; verify application lifecycle and JSON event paths"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "src/PiSharp.Runtime/CodingTools.cs resolves bash by platform, accepts configured shell paths, inherits the process environment, sets cwd, drains stdout and stderr concurrently, validates finite seconds, and kills the process group/tree on timeout or cancellation.",
+        "src/PiSharp.Runtime/ShellOutputBuffer.cs keeps a UTF-8 decoded tail within the 2000-line/50KiB limits, flushes incomplete final UTF-8, and retains a private complete-output file when truncated.",
+        "src/PiSharp.Runtime/BashOutputUpdates.cs coalesces bounded text deltas at 100ms; DurableToolFunction publishes correlated tool_execution_update lifecycle events; Program.cs prints those deltas during interactive runs without repeating successful output.",
+        "src/PiSharp.Cli/UserSettings.cs and Program.cs carry shellPath from user or trusted-project settings through agent creation and replacement."
+      ],
+      "evidence": [
+        "Pinned Pi d5629e20489ccf770ed90b5a33941cb3b7ef24d0 and refreshed current main b2bd111f2d46eed1a4689c32f30fde6306498827 use the same Bash update throttle, platform shell resolution and rearmed 100ms post-exit stdio idle grace in the inspected source paths.",
+        "CodingToolsTests cover cwd, inherited environment, custom shell selection, both output streams, nonzero exit, timeout/cancellation process-group cleanup, 2000-line and single-line 50KiB truncation, exact private full-output retention, incomplete UTF-8 flush and a child that writes after the parent shell exits.",
+        "AgentIntegrationTests.BashEmitsOutputUpdatesBeforeTheShellCompletes uses a release-file barrier to prove a real tool update arrives before command completion; JsonEventModeTests.LiveBashOutputIsSerializedAsToolExecutionUpdateEvents checks event data and order on the JSONL path.",
+        "UserSettingsTests.ShellPathLoadsFromUserSettingsAndTrustedProjectOverlay checks malformed values and user/project precedence.",
+        "Focused Bash tests => 13 passed, 0 failed, 0 skipped. dotnet test PiSharp.slnx -c Release --no-restore => 314 passed, 0 failed, 0 skipped; dotnet build PiSharp.slnx -c Release --warnaserror --no-restore => 0 warnings/errors; dotnet format PiSharp.slnx --verify-no-changes --no-restore => passed.",
+        "Still open: Pi session-derived PI_* environment injection, exact pinned result/error/truncation differentials, direct RPC-wire and PTY presentation fixtures, cross-platform signal/tree behavior, and broader settings reload parity."
+      ],
       "dependencies": []
     },
     {
@@ -2362,14 +2374,20 @@
     {
       "id": "settings-shellpath",
       "title": "Setting: shellPath",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:64",
       "acceptance": [
         "Support shellPath with upstream type/default and user/trusted-project precedence",
         "Test malformed settings, trust boundaries, reload and startup behaviour"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "src/PiSharp.Cli/UserSettings.cs parses bounded shellPath strings and overlays trusted-project values; src/PiSharp.Cli/Program.cs supplies the selected path to every agent construction path; src/PiSharp.Runtime/CodingTools.cs expands leading ~ and Windows Git Bash/Cygwin drive paths before resolution."
+      ],
+      "evidence": [
+        "UserSettingsTests.ShellPathLoadsFromUserSettingsAndTrustedProjectOverlay checks user defaults, trusted project precedence, malformed values and missing project overrides.",
+        "CodingToolsTests.BashHonorsShellPathAndRejectsInvalidTimeoutsAndWorkingDirectories executes /bin/sh through the configured path and verifies missing paths fail closed.",
+        "Startup precedence is covered; settings reload and interactive shell switching are not implemented."
+      ],
       "dependencies": []
     },
     {

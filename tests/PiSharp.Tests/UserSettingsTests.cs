@@ -68,6 +68,34 @@ public sealed class UserSettingsTests
         }
         finally { Directory.Delete(root, true); }
     }
+
+    [Fact]
+    public async Task ShellPathLoadsFromUserSettingsAndTrustedProjectOverlay()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-shell-settings-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(Path.Combine(root, ".pi"));
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(root, "settings.json"), "{\"shellPath\":\"~/bin/custom-bash\"}");
+            var user = await UserSettings.LoadAsync(root, _ => null);
+            Assert.Equal("~/bin/custom-bash", user.ShellPath);
+            Assert.Equal("~/bin/custom-bash", user.Overlay(await UserSettings.LoadProjectAsync(root)).ShellPath);
+
+            await File.WriteAllTextAsync(Path.Combine(root, ".pi", "settings.json"), "{\"shellPath\":\"/bin/sh\"}");
+            Assert.Equal("/bin/sh", user.Overlay(await UserSettings.LoadProjectAsync(root)).ShellPath);
+            Assert.Equal("~/bin/custom-bash", user.Overlay(new UserSettings()).ShellPath);
+
+            foreach (var invalid in new[] { "null", "1", "\"\"", "\" leading\"" })
+            {
+                await File.WriteAllTextAsync(Path.Combine(root, "settings.json"), "{\"shellPath\":" + invalid + "}");
+                await Assert.ThrowsAsync<InvalidDataException>(() => UserSettings.LoadAsync(root, _ => null));
+            }
+            await File.WriteAllTextAsync(Path.Combine(root, "settings.json"), "{\"shellPath\":\"user-shell\"}");
+            await File.WriteAllTextAsync(Path.Combine(root, ".pi", "settings.json"), "{\"shellPath\":\"project-shell\"}");
+            Assert.Equal("project-shell", user.Overlay(await UserSettings.LoadProjectAsync(root)).ShellPath);
+        }
+        finally { Directory.Delete(root, true); }
+    }
     [Fact]
     public async Task CompactionSettingsApplyToKnownModelAndExplicitEnvironmentWins()
     {

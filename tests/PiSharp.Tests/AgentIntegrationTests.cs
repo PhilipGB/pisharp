@@ -115,6 +115,58 @@ public sealed class AgentIntegrationTests
         finally { Directory.Delete(cwd, recursive: true); }
     }
 
+    [Fact]
+    public async Task BashEmitsOutputUpdatesBeforeTheShellCompletes()
+    {
+        if (!OperatingSystem.IsLinux()) return;
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-bash-live-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        var gate = Path.Combine(cwd, "release");
+        var command = $"printf 'before-release\\n'; while [ ! -e {ProcessTestHelpers.ShellQuote(gate)} ]; do :; done; printf 'after-release\\n'";
+        using var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        Task? collecting = null;
+        try
+        {
+            var client = new BashCommandClient(command);
+            var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(cwd)),
+                new ConversationSession(cwd, "fixture", null));
+            var events = new List<AgentLifecycleEvent>();
+            var firstOutput = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            collecting = Task.Run(async () =>
+            {
+                await foreach (var item in run.RunEventsAsync("run a shell command", cancellation.Token))
+                {
+                    events.Add(item);
+                    if (item.Type == "tool_execution_update" && item.Text?.Contains("before-release", StringComparison.Ordinal) == true)
+                        firstOutput.TrySetResult();
+                }
+            });
+
+            await firstOutput.Task.WaitAsync(TimeSpan.FromSeconds(5), cancellation.Token);
+            Assert.False(collecting.IsCompleted);
+            File.WriteAllText(gate, "release");
+            await collecting.WaitAsync(TimeSpan.FromSeconds(5), cancellation.Token);
+
+            var startIndex = events.FindIndex(item => item.Type == "tool_execution_started" && item.Tool == "bash");
+            var liveIndex = events.FindIndex(item => item.Type == "tool_execution_update" && item.Text?.Contains("before-release", StringComparison.Ordinal) == true);
+            var finishIndex = events.FindIndex(item => item.Type == "tool_execution_finished" && item.Tool == "bash");
+            Assert.True(startIndex >= 0 && liveIndex > startIndex && finishIndex > liveIndex);
+            Assert.Contains("before-release", events[finishIndex].Text);
+            Assert.Contains("after-release", events[finishIndex].Text);
+        }
+        finally
+        {
+            File.WriteAllText(gate, "release");
+            cancellation.Cancel();
+            if (collecting is not null)
+            {
+                try { await collecting.WaitAsync(TimeSpan.FromSeconds(5)); }
+                catch (Exception error) when (error is OperationCanceledException or TimeoutException) { }
+            }
+            Directory.Delete(cwd, recursive: true);
+        }
+    }
+
     private sealed class FailureContinuationClient : IChatClient
     {
         public bool SawFailure { get; private set; }
@@ -126,6 +178,24 @@ public sealed class AgentIntegrationTests
             SawFailure = messages.SelectMany(m => m.Contents).OfType<FunctionResultContent>()
                 .Any(result => result.CallId == "fail-1" && result.Exception is not null);
             yield return new ChatResponseUpdate(ChatRole.Assistant, "resumed");
+            await Task.CompletedTask;
+        }
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
+    }
+
+    private sealed class BashCommandClient(string command) : IChatClient
+    {
+        private int _requests;
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            if (Interlocked.Increment(ref _requests) == 1)
+                yield return new ChatResponseUpdate(ChatRole.Assistant,
+                    [new FunctionCallContent("bash-live", "bash", new Dictionary<string, object?> { ["command"] = command })]);
+            else yield return new ChatResponseUpdate(ChatRole.Assistant, "done");
             await Task.CompletedTask;
         }
         public object? GetService(Type serviceType, object? serviceKey = null) => null;

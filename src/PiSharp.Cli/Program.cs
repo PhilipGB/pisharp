@@ -127,7 +127,7 @@ using var extensionLease = new ExtensionLease(extensions);
 PiAgent agent;
 try
 {
-    agent = new PiAgent(chat, new CodingTools(Environment.CurrentDirectory), cli.Tools, cli.ExcludeTools, cli.NoTools,
+    agent = new PiAgent(chat, new CodingTools(Environment.CurrentDirectory, userSettings.ShellPath), cli.Tools, cli.ExcludeTools, cli.NoTools,
     instructions, prompts.System, prompts.Append, extensionLease.Current.Registration.Tools,
     reasoning: ThinkingLevels.ToOptions(thinking), blockImages: userSettings.BlockImages == true, noBuiltinTools: cli.NoBuiltinTools,
     supportsImages: selection.Model.Input?.Contains("image", StringComparer.Ordinal) != false);
@@ -191,7 +191,7 @@ try
         contextPolicy = userSettings.ResolveCompaction(selection.Model.ContextLength, Environment.GetEnvironmentVariable, $"{selection.Provider.Id}/{selection.Model.Id}");
         modelPricing = ModelPricing.FromEnvironment(Environment.GetEnvironmentVariable) ?? selection.Model.Pricing;
         agent = new PiAgent(chat,
-            new CodingTools(Environment.CurrentDirectory), cli.Tools, cli.ExcludeTools, cli.NoTools, instructions, prompts.System, prompts.Append,
+            new CodingTools(Environment.CurrentDirectory, userSettings.ShellPath), cli.Tools, cli.ExcludeTools, cli.NoTools, instructions, prompts.System, prompts.Append,
             extensionLease.Current.Registration.Tools, reasoning: ThinkingLevels.ToOptions(thinking), blockImages: userSettings.BlockImages == true, noBuiltinTools: cli.NoBuiltinTools,
             supportsImages: selection.Model.Input?.Contains("image", StringComparer.Ordinal) != false);
     }
@@ -242,6 +242,7 @@ async Task Run(string input, IReadOnlyList<DataContent>? images = null)
     var monitor = Task.CompletedTask;
     var monitorStarted = false;
     var started = false;
+    var liveBash = new HashSet<string>(StringComparer.Ordinal);
     try
     {
         if (!selection.Authenticated)
@@ -290,8 +291,20 @@ async Task Run(string input, IReadOnlyList<DataContent>? images = null)
                 case "tool_execution_started" when !print:
                     Console.Error.WriteLine($"\n→ {update.Tool} ({update.OperationId})");
                     break;
+                case "tool_execution_update" when !print && update.Tool == "bash" && !string.IsNullOrEmpty(update.Text):
+                    if (update.OperationId is not null) liveBash.Add(update.OperationId);
+                    Console.Error.Write(update.Text);
+                    break;
                 case "tool_execution_finished" when !print:
-                    Console.Error.WriteLine($"← {(update.IsError == true ? update.Error : update.Text)}");
+                    if (update.Tool == "bash" && update.OperationId is not null && liveBash.Remove(update.OperationId))
+                    {
+                        Console.Error.WriteLine();
+                        var status = update.Error;
+                        var statusStart = status?.LastIndexOf("\n\nCommand ", StringComparison.Ordinal) ?? -1;
+                        if (statusStart >= 0) status = status![(statusStart + 2)..];
+                        Console.Error.WriteLine($"← {(update.IsError == true ? status ?? "bash failed" : "bash completed")}");
+                    }
+                    else Console.Error.WriteLine($"← {(update.IsError == true ? update.Error : update.Text)}");
                     break;
                 case "turn_failed" or "prompt_rejected":
                     Console.Error.WriteLine($"Agent error: {update.Error ?? update.Type}");
@@ -330,7 +343,7 @@ async Task ReplaceModelRuntime(ModelSelection nextSelection, string nextThinking
     var nextPolicy = userSettings.ResolveCompaction(nextSelection.Model.ContextLength, Environment.GetEnvironmentVariable, $"{nextSelection.Provider.Id}/{nextSelection.Model.Id}");
     var nextPricing = ModelPricing.FromEnvironment(Environment.GetEnvironmentVariable) ?? nextSelection.Model.Pricing;
     var nextAgent = new PiAgent(nextChat,
-        new CodingTools(Environment.CurrentDirectory), cli.Tools, cli.ExcludeTools, cli.NoTools,
+        new CodingTools(Environment.CurrentDirectory, userSettings.ShellPath), cli.Tools, cli.ExcludeTools, cli.NoTools,
         instructions, prompts.System, prompts.Append, extensionLease.Current.Registration.Tools,
         reasoning: ThinkingLevels.ToOptions(nextThinking), blockImages: userSettings.BlockImages == true, noBuiltinTools: cli.NoBuiltinTools,
         supportsImages: nextSelection.Model.Input?.Contains("image", StringComparer.Ordinal) != false);
@@ -379,7 +392,7 @@ async Task ReloadResources()
     try
     {
         var nextAgent = new PiAgent(chat,
-            new CodingTools(Environment.CurrentDirectory), cli.Tools, cli.ExcludeTools, cli.NoTools,
+            new CodingTools(Environment.CurrentDirectory, userSettings.ShellPath), cli.Tools, cli.ExcludeTools, cli.NoTools,
             nextContext, nextPrompts.System, nextPrompts.Append, nextExtensions.Registration.Tools,
             reasoning: ThinkingLevels.ToOptions(thinking), blockImages: userSettings.BlockImages == true, noBuiltinTools: cli.NoBuiltinTools,
             supportsImages: selection.Model.Input?.Contains("image", StringComparer.Ordinal) != false);

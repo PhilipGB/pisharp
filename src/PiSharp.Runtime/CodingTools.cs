@@ -1,5 +1,7 @@
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Globalization;
+using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.Extensions.AI;
 using PiSharp.Core;
@@ -8,17 +10,27 @@ using PiSharp.Runtime.Tools;
 namespace PiSharp.Runtime;
 
 /// <summary>Local coding tools. Paths resolve against the directory in which the agent was started.</summary>
-public sealed class CodingTools(string workingDirectory)
+public sealed class CodingTools
 {
-    private readonly string _cwd = Path.GetFullPath(workingDirectory);
+    internal const string BashOutputContextKey = "PiSharp.Runtime.BashOutputUpdate";
+    private const double MaxTimeoutSeconds = int.MaxValue / 1000d;
+    private static readonly TimeSpan s_stdioIdleGrace = TimeSpan.FromMilliseconds(100);
+    private readonly string _cwd;
+    private readonly string? _shellPath;
     private static readonly FileMutationQueue s_mutations = new();
+
+    public CodingTools(string workingDirectory, string? shellPath = null)
+    {
+        _cwd = Path.GetFullPath(workingDirectory);
+        _shellPath = shellPath;
+    }
 
     public IList<AITool> Create(IReadOnlyList<string>? requested = null, IReadOnlyList<string>? excluded = null, bool noTools = false)
     {
         var available = new Dictionary<string, AITool>(StringComparer.Ordinal)
         {
             ["read"] = AIFunctionFactory.Create(ReadForTool, name: "read"),
-            ["bash"] = AIFunctionFactory.Create(Bash, name: "bash"),
+            ["bash"] = AIFunctionFactory.Create(BashForTool, name: "bash"),
             ["edit"] = AIFunctionFactory.Create(EditBatch, name: "edit"),
             ["write"] = AIFunctionFactory.Create(Write, name: "write"),
             ["grep"] = AIFunctionFactory.Create(new SearchTools(_cwd).Grep, name: "grep"),
@@ -147,66 +159,263 @@ public sealed class CodingTools(string workingDirectory)
         }
     }
 
-    [Description("Execute a bash command in the working directory. Returns combined stdout/stderr and exit code.")]
-    public async Task<string> Bash(
+    [Description("Execute a bash command in the current working directory. Returns stdout and stderr. Output is truncated to the last 2000 lines or 50KB, whichever is hit first. If truncated, full output is saved to a temp file. Optionally provide a timeout in seconds.")]
+    private Task<string> BashForTool(
         [Description("Shell command to execute.")] string command,
-        [Description("Optional timeout in seconds; no default timeout.")] int? timeout = null,
+        [Description("Optional timeout in seconds; no default timeout.")] double? timeout = null,
+        AIFunctionArguments? arguments = null,
         CancellationToken cancellationToken = default)
     {
-        if (timeout is <= 0) throw new ToolFailureException("timeout must be positive.");
-        using var timeoutSource = timeout.HasValue ? new CancellationTokenSource(TimeSpan.FromSeconds(timeout.Value)) : new CancellationTokenSource();
+        Action<string>? onUpdate = null;
+        if (arguments?.Context?.TryGetValue(BashOutputContextKey, out var value) == true)
+            onUpdate = value as Action<string>;
+        return BashCoreAsync(command, timeout, onUpdate, cancellationToken);
+    }
+
+    /// <summary>Execute bash in the configured working directory, returning the bounded combined output.</summary>
+    public Task<string> Bash(string command, double? timeout = null, CancellationToken cancellationToken = default) =>
+        BashCoreAsync(command, timeout, onUpdate: null, cancellationToken);
+
+    private async Task<string> BashCoreAsync(string command, double? timeout, Action<string>? onUpdate,
+        CancellationToken cancellationToken)
+    {
+        if (timeout.HasValue && (!double.IsFinite(timeout.Value) || timeout.Value <= 0))
+            throw new ToolFailureException("Invalid timeout: must be a finite number of seconds");
+        if (timeout > MaxTimeoutSeconds)
+            throw new ToolFailureException($"Invalid timeout: maximum is {MaxTimeoutSeconds.ToString("0.###", CultureInfo.InvariantCulture)} seconds");
+        if (!Directory.Exists(_cwd))
+            throw new ToolFailureException($"Working directory does not exist: {_cwd}\nCannot execute bash commands.");
+
+        var shell = ResolveShell(_shellPath, _cwd);
+        using var timeoutSource = new CancellationTokenSource();
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutSource.Token);
-        using var process = new Process
-        {
-            StartInfo = new ProcessStartInfo("/usr/bin/setsid")
-            {
-                WorkingDirectory = _cwd,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                ArgumentList = { "/bin/bash", "-c", command }
-            }
-        };
+        using var process = new Process { StartInfo = CreateStartInfo(shell, command, _cwd, out var processGroup) };
+        using var pumpStop = new CancellationTokenSource();
         await using var output = new ShellOutputBuffer();
+        using var updates = new BashOutputUpdates(onUpdate);
+        long lastOutputTicks = Stopwatch.GetTimestamp();
+        var started = false;
+        Task? stdout = null;
+        Task? stderr = null;
         try
         {
             linked.Token.ThrowIfCancellationRequested();
             process.Start();
-            static async Task Pump(Stream source, ShellOutputBuffer target)
-            {
-                var buffer = new byte[8192];
-                int count;
-                while ((count = await source.ReadAsync(buffer)) > 0)
-                    await target.AppendAsync(buffer.AsMemory(0, count));
-            }
-            var stdout = Pump(process.StandardOutput.BaseStream, output);
-            var stderr = Pump(process.StandardError.BaseStream, output);
-            try
-            {
-                await process.WaitForExitAsync(linked.Token);
-                // A background descendant may inherit the pipes after the shell exits.
-                // Keep the timeout active until both streams reach EOF.
-                await Task.WhenAll(stdout, stderr).WaitAsync(linked.Token);
-                var result = await output.FinishAsync();
-                if (process.ExitCode != 0) throw new ToolFailureException($"Command exited with code {process.ExitCode}", result, process.ExitCode);
-                return result;
-            }
-            catch (OperationCanceledException)
-            {
-                // setsid puts the shell and descendants into their own process group.
-                using var kill = Process.Start(new ProcessStartInfo("/bin/kill") { ArgumentList = { "-KILL", "--", $"-{process.Id}" } });
-                if (kill is not null) await kill.WaitForExitAsync(CancellationToken.None);
-                if (!process.HasExited) process.Kill(entireProcessTree: true);
-                await process.WaitForExitAsync(CancellationToken.None);
-                try { await Task.WhenAll(stdout, stderr).WaitAsync(TimeSpan.FromSeconds(5)); }
-                catch (TimeoutException) { process.StandardOutput.Close(); process.StandardError.Close(); }
-                var result = await output.FinishAsync();
-                if (cancellationToken.IsCancellationRequested) throw new OperationCanceledException($"Command aborted. {result}", cancellationToken);
-                throw new ToolFailureException($"Command timed out after {timeout} seconds", result);
-            }
+            started = true;
+            if (timeout.HasValue) timeoutSource.CancelAfter(TimeSpan.FromSeconds(timeout.Value));
+            stdout = PumpAsync(process.StandardOutput.BaseStream, output, updates, pumpStop.Token, ticks =>
+                Interlocked.Exchange(ref lastOutputTicks, ticks));
+            stderr = PumpAsync(process.StandardError.BaseStream, output, updates, pumpStop.Token, ticks =>
+                Interlocked.Exchange(ref lastOutputTicks, ticks));
+            await process.WaitForExitAsync(linked.Token);
+            Interlocked.Exchange(ref lastOutputTicks, Stopwatch.GetTimestamp());
+            await DrainOutputAfterExitAsync(process, stdout, stderr, linked.Token, pumpStop,
+                () => Interlocked.Read(ref lastOutputTicks));
+            var finalDecoded = await output.FlushDecoderAsync();
+            updates.Append(finalDecoded);
+            updates.Complete();
+            var result = await output.FinishAsync();
+            if (process.ExitCode != 0)
+                throw new ToolFailureException($"Command exited with code {process.ExitCode}", result, process.ExitCode);
+            return result;
+        }
+        catch (OperationCanceledException) when (started)
+        {
+            KillProcessTree(process, processGroup);
+            await WaitForExitQuietlyAsync(process);
+            await StopPumpsAsync(process, stdout, stderr, pumpStop);
+            var finalDecoded = await output.FlushDecoderAsync();
+            updates.Append(finalDecoded);
+            updates.Complete();
+            var result = await output.FinishAsync();
+            if (cancellationToken.IsCancellationRequested)
+                throw new OperationCanceledException(result == "(no output)" ? "Command aborted" : $"{result}\n\nCommand aborted", cancellationToken);
+            var seconds = timeout!.Value.ToString("0.################", CultureInfo.InvariantCulture);
+            throw new ToolFailureException($"Command timed out after {seconds} seconds", result);
         }
         catch (Exception e) when (e is IOException or System.ComponentModel.Win32Exception)
         {
+            if (started)
+            {
+                KillProcessTree(process, processGroup);
+                await WaitForExitQuietlyAsync(process);
+                await StopPumpsAsync(process, stdout, stderr, pumpStop);
+            }
             throw new ToolFailureException($"Error executing command: {e.Message}", inner: e);
         }
+        finally
+        {
+            if (started && (!process.HasExited || stdout is { IsCompleted: false } || stderr is { IsCompleted: false }))
+            {
+                KillProcessTree(process, processGroup);
+                await WaitForExitQuietlyAsync(process);
+                await StopPumpsAsync(process, stdout, stderr, pumpStop);
+            }
+        }
+
+        static async Task PumpAsync(Stream source, ShellOutputBuffer target, BashOutputUpdates updates,
+            CancellationToken stop, Action<long> activity)
+        {
+            var buffer = new byte[8192];
+            try
+            {
+                int count;
+                while ((count = await source.ReadAsync(buffer, stop)) > 0)
+                {
+                    activity(Stopwatch.GetTimestamp());
+                    await target.AppendAsync(buffer.AsMemory(0, count), stop, updates.Append);
+                }
+            }
+            catch (OperationCanceledException) when (stop.IsCancellationRequested) { }
+            catch (IOException) when (stop.IsCancellationRequested) { }
+            catch (ObjectDisposedException) when (stop.IsCancellationRequested) { }
+        }
+
+        static async Task DrainOutputAfterExitAsync(Process process, Task stdoutTask, Task stderrTask,
+            CancellationToken cancellationToken, CancellationTokenSource stop, Func<long> lastOutput)
+        {
+            var streams = Task.WhenAll(stdoutTask, stderrTask);
+            while (!streams.IsCompleted)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var quietFor = Stopwatch.GetElapsedTime(lastOutput());
+                var remaining = s_stdioIdleGrace - quietFor;
+                if (remaining <= TimeSpan.Zero) break;
+                await Task.WhenAny(streams, Task.Delay(remaining, cancellationToken));
+            }
+            if (!streams.IsCompleted)
+            {
+                stop.Cancel();
+                process.StandardOutput.Close();
+                process.StandardError.Close();
+            }
+            await streams;
+        }
+
+        static async Task StopPumpsAsync(Process process, Task? stdoutTask, Task? stderrTask,
+            CancellationTokenSource stop)
+        {
+            stop.Cancel();
+            try { process.StandardOutput.Close(); } catch (InvalidOperationException) { }
+            try { process.StandardError.Close(); } catch (InvalidOperationException) { }
+            var active = new[] { stdoutTask, stderrTask }.Where(task => task is not null).Cast<Task>().ToArray();
+            if (active.Length == 0) return;
+            try { await Task.WhenAll(active).WaitAsync(TimeSpan.FromSeconds(5)); }
+            catch (TimeoutException) { }
+        }
+
+        static async Task WaitForExitQuietlyAsync(Process process)
+        {
+            try { await process.WaitForExitAsync(CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(5)); }
+            catch (TimeoutException) { }
+            catch (InvalidOperationException) { }
+        }
     }
+
+    private static ProcessStartInfo CreateStartInfo(string shell, string command, string workingDirectory,
+        out bool processGroup)
+    {
+        processGroup = false;
+        var start = new ProcessStartInfo
+        {
+            WorkingDirectory = workingDirectory,
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            CreateNoWindow = true
+        };
+        if (!OperatingSystem.IsWindows() && FindExecutable("setsid") is { } setsid)
+        {
+            start.FileName = setsid;
+            start.ArgumentList.Add(shell);
+            start.ArgumentList.Add("-c");
+            start.ArgumentList.Add(command);
+            processGroup = true;
+        }
+        else
+        {
+            start.FileName = shell;
+            start.ArgumentList.Add("-c");
+            start.ArgumentList.Add(command);
+        }
+        var pathKey = start.Environment.Keys.FirstOrDefault(key => key.Equals("PATH", StringComparison.OrdinalIgnoreCase)) ?? "PATH";
+        var path = start.Environment.TryGetValue(pathKey, out var inheritedPath) ? inheritedPath ?? "" : "";
+        var appDirectory = AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        if (!path.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries).Contains(appDirectory,
+                OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal))
+            start.Environment[pathKey] = path.Length == 0 ? appDirectory : appDirectory + Path.PathSeparator + path;
+        return start;
+    }
+
+    private static string ResolveShell(string? customPath, string workingDirectory)
+    {
+        if (!string.IsNullOrWhiteSpace(customPath))
+        {
+            var expanded = customPath == "~" ? Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) :
+                customPath.StartsWith("~/", StringComparison.Ordinal) || customPath.StartsWith("~\\", StringComparison.Ordinal)
+                    ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), customPath[2..])
+                    : customPath;
+            expanded = NormalizeWindowsShellPath(expanded);
+            var resolved = Path.GetFullPath(expanded, workingDirectory);
+            if (File.Exists(resolved)) return resolved;
+            throw new ToolFailureException($"Custom shell path not found: {customPath}");
+        }
+        if (OperatingSystem.IsWindows())
+        {
+            var candidates = new[]
+            {
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Git", "bin", "bash.exe"),
+                Environment.GetEnvironmentVariable("ProgramFiles(x86)") is { Length: > 0 } x86
+                    ? Path.Combine(x86, "Git", "bin", "bash.exe") : null,
+                FindExecutable("bash.exe")
+            };
+            var match = candidates.FirstOrDefault(candidate => candidate is not null && File.Exists(candidate));
+            if (match is not null) return match;
+            throw new ToolFailureException("No bash shell found. Install Git for Windows, add bash.exe to PATH, or set shellPath in settings.json.");
+        }
+        if (File.Exists("/bin/bash")) return "/bin/bash";
+        if (FindExecutable("bash") is { } bash) return bash;
+        return File.Exists("/bin/sh") ? "/bin/sh" : "sh";
+    }
+
+    private static string NormalizeWindowsShellPath(string path)
+    {
+        if (!OperatingSystem.IsWindows() || !path.StartsWith('/') || path.Contains('\\')) return path;
+        var parts = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        var driveIndex = parts.Length > 1 && parts[0] is "mnt" or "cygdrive" ? 1 : 0;
+        if (parts.Length <= driveIndex || parts[driveIndex].Length != 1 || !char.IsAsciiLetter(parts[driveIndex][0])) return path;
+        var drive = char.ToUpperInvariant(parts[driveIndex][0]) + ":\\";
+        return parts.Length == driveIndex + 1 ? drive : Path.Combine(drive, Path.Combine(parts[(driveIndex + 1)..]));
+    }
+
+    private static string? FindExecutable(string name)
+    {
+        foreach (var directory in (Environment.GetEnvironmentVariable("PATH") ?? "").Split(Path.PathSeparator,
+                     StringSplitOptions.RemoveEmptyEntries))
+        {
+            var candidate = Path.Combine(directory, name);
+            if (File.Exists(candidate)) return candidate;
+        }
+        return null;
+    }
+
+    private static void KillProcessTree(Process process, bool processGroup)
+    {
+        try
+        {
+            if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS() || OperatingSystem.IsFreeBSD())
+            {
+                if (processGroup && kill(-process.Id, 9) == 0) return;
+            }
+            if (!process.HasExited) process.Kill(entireProcessTree: true);
+        }
+        catch (Exception error) when (error is InvalidOperationException or System.ComponentModel.Win32Exception)
+        {
+            try { if (!process.HasExited) process.Kill(entireProcessTree: true); }
+            catch (Exception fallback) when (fallback is InvalidOperationException or System.ComponentModel.Win32Exception) { }
+        }
+    }
+
+    [DllImport("libc", SetLastError = true)]
+    private static extern int kill(int processId, int signal);
 }

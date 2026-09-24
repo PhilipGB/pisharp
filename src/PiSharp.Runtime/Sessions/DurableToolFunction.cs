@@ -1,5 +1,6 @@
 using System.Runtime.ExceptionServices;
 using Microsoft.Extensions.AI;
+using PiSharp.Runtime;
 
 namespace PiSharp.Runtime.Sessions;
 
@@ -16,8 +17,26 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
         publish(new("tool_execution_started", Tool: Name, OperationId: id));
         object? value = null;
         Exception? failure = null;
+        IDictionary<object, object?>? context = null;
+        object? previousUpdate = null;
+        var hadUpdate = false;
+        if (Name == "bash")
+        {
+            context = arguments.Context ??= new Dictionary<object, object?>();
+            hadUpdate = context.TryGetValue(CodingTools.BashOutputContextKey, out previousUpdate);
+            context[CodingTools.BashOutputContextKey] = (Action<string>)(text =>
+                publish(new("tool_execution_update", Text: text, Tool: Name, OperationId: id)));
+        }
         try { value = await base.InvokeCoreAsync(arguments, cancellationToken); }
         catch (Exception error) { failure = error; }
+        finally
+        {
+            if (context is not null)
+            {
+                if (hadUpdate) context[CodingTools.BashOutputContextKey] = previousUpdate!;
+                else context.Remove(CodingTools.BashOutputContextKey);
+            }
+        }
         try { if (execution is not null) await execution.EndToolAsync(id, value, failure); }
         catch (Exception error)
         {
