@@ -263,7 +263,7 @@
       "implementation": [
         "Partial: src/PiSharp.Cli/{ProviderModelRuntime,AuthStorage,ThinkingLevels,CliArguments,Program}.cs selects configured OpenAI-compatible endpoints, adds model flags and interactive commands, and stores private credentials.",
         "Partial: src/PiSharp.Runtime/{Providers/ModelCatalog,Sessions/ConversationSession,PiAgent}.cs records provider/model metadata, persists the provider ID, and passes reasoning options to MAF.",
-        "src/PiSharp.Cli/ProviderProfileLoader.cs: extracted bounded models.json provider parsing, pinned xAI Grok 4.3 Responses metadata and endpoint/key-environment identity checks; xAI OAuth is not supported."
+        "src/PiSharp.Cli/ProviderProfileLoader.cs: bounded models.json parsing and provider endpoint/key-environment identity checks; src/PiSharp.Cli/BuiltinProviderProfiles.cs: pinned xAI Grok 4.3/4.5/4.6/4.7 Responses metadata; ProviderModelRuntime.ListModelsAsync uses static xAI catalogue without /models. xAI OAuth is not supported."
       ],
       "evidence": [
         "tests/PiSharp.Tests/ProviderModelRuntimeTests.cs: deterministic custom endpoint key isolation, configured metadata and fuzzy lookup, no /models request for exact IDs, private credential restart/symlink/permission checks, and CLI missing-auth rejection.",
@@ -274,7 +274,7 @@
         "Earlier recovery checkpoint: dotnet format --verify-no-changes and warning-as-error build passed; 123/123 deterministic PiSharp tests plus 10/10 controller fixtures passed on 2026-09-24. Full provider/OAuth/PTY behaviour was unverified.",
         "Post-recovery workflow checkpoint: dotnet format --verify-no-changes, dotnet build --warnaserror, dotnet test --no-build (125/125), and 10/10 supervisor fixture tests passed; full provider/OAuth parity remains unverified.",
         "After provider-identity isolation: dotnet format --verify-no-changes, warning-as-error build, and full deterministic suite passed (128/128); no live hosted-provider call was made.",
-        "tests/PiSharp.Tests/ProviderModelRuntimeTests.cs: xAI pinned Grok 4.3 API/price/credential isolation, no invented override-model metadata, and six endpoint/key-env leakage rejection cases; local format/build/full 233-test suite passes, but no xAI account/OAuth request or upstream differential.",
+        "tests/PiSharp.Tests/ProviderModelRuntimeTests.cs: xAI pinned Grok 4.3/4.5/4.6/4.7 API/price/static catalog and credential isolation, no invented unknown-model metadata, and six endpoint/key-env leakage rejection cases; local format/build/full 233-test suite passes, but no xAI account/OAuth request or upstream differential.",
         "tests/PiSharp.Tests/ProviderChatClientFactoryTests.cs: protocol selection for OpenAI Responses vs compatible Completions, unsupported API refusal, loopback Responses SSE request, nonstream usage and stateless history, function-call/tool-result continuation without previous_response_id, and subprocess unsupported-API refusal; src/PiSharp.Cli/{ProviderChatClientFactory,StatelessResponsesChatClient}.cs keeps canonical MAF history. No hosted provider or OAuth differential."
       ],
       "dependencies": []
@@ -379,7 +379,7 @@
         "src/PiSharp.Runtime/Sessions/ObservedChatClient.cs: images.blockImages provider-boundary filtering while retaining canonical session images"
       ],
       "evidence": [
-        "tests/PiSharp.Tests/MultimodalRuntimeTests.cs: fake-provider image request and session round-trip/blocking",
+        "tests/PiSharp.Tests/MultimodalRuntimeTests.cs: fake-provider image request and session round-trip/blocking; tests/PiSharp.Tests/ProviderChatClientFactoryTests.cs: loopback Responses request transports PNG DataContent as input_image data URL, not plain text",
         "tests/PiSharp.Tests/ToolSelectionTests.cs: positional image and invalid-signature CLI file argument fixtures"
       ],
       "dependencies": []

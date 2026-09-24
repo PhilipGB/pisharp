@@ -46,24 +46,7 @@ public sealed class ProviderModelRuntime
         Func<string, string?> environment, HttpClient http, string? runtimeApiKey = null,
         IReadOnlyList<string>? scope = null, CancellationToken cancellationToken = default, bool offline = false)
     {
-        var xaiModel = environment("PISHARP_XAI_MODEL") ?? "grok-4.3";
-        var providers = new Dictionary<string, ProviderProfile>(StringComparer.OrdinalIgnoreCase)
-        {
-            ["openai"] = new("openai", "OpenAI", new Uri("https://api.openai.com/v1"), true, false,
-                "OPENAI_API_KEY", null, [new(environment("PISHARP_MODEL") ?? "gpt-4o-mini", "openai", null, "catalog default", false, Provider: "openai")]),
-            ["openrouter"] = new("openrouter", "OpenRouter", new Uri("https://openrouter.ai/api/v1"), true, false,
-                "OPENROUTER_API_KEY", null, [new(environment("PISHARP_OPENROUTER_MODEL") ?? "openai/gpt-4o-mini", "openrouter", null, "catalog default", false, Provider: "openrouter")]),
-            ["mistral"] = new("mistral", "Mistral", new Uri("https://api.mistral.ai/v1"), true, false,
-                "MISTRAL_API_KEY", null, [new(environment("PISHARP_MISTRAL_MODEL") ?? "mistral-small-latest", "mistral", null, "catalog default", false, Provider: "mistral")]),
-            ["xai"] = new("xai", "xAI", new Uri("https://api.x.ai/v1"), true, false,
-                "XAI_API_KEY", null, [new(xaiModel, "xai", xaiModel == "grok-4.3" ? 1000000 : null, "catalog default",
-                    xaiModel == "grok-4.3" ? true : null,
-                    xaiModel == "grok-4.3" ? new ModelPricing(1.25m, 2.5m, 0.2m,
-                        [new ModelPricingTier(200000, 2.5m, 5m, 0.4m, 0m)], 0m) : null,
-                    Provider: "xai", Name: xaiModel == "grok-4.3" ? "Grok 4.3" : null,
-                    MaxOutputTokens: xaiModel == "grok-4.3" ? 30000 : null,
-                    Input: xaiModel == "grok-4.3" ? ["text", "image"] : null, Api: "openai-responses")])
-        };
+        var providers = BuiltinProviderProfiles.Create(environment);
         var configuredEndpoint = environment("PISHARP_BASE_URL");
         if (includeLocal || configuredEndpoint is not null)
         {
@@ -134,7 +117,10 @@ public sealed class ProviderModelRuntime
                 }));
                 continue;
             }
-            if (_offline)
+            // xAI publishes a versioned model catalogue rather than relying on an
+            // OpenAI-compatible /models endpoint. Do not mislabel a usable model as
+            // unavailable merely because that optional endpoint is missing.
+            if (_offline || provider.Id == "xai")
             {
                 result.AddRange(provider.Models.Select(model => model with { Provider = provider.Id }));
                 continue;

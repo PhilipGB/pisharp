@@ -107,7 +107,8 @@ public sealed class ProviderModelRuntimeTests
         Directory.CreateDirectory(root);
         try
         {
-            using var http = new HttpClient(new ModelHandler());
+            using var handler = new ModelHandler();
+            using var http = new HttpClient(handler);
             var runtime = await ProviderModelRuntime.CreateAsync(root, false,
                 name => name switch { "XAI_API_KEY" => "xai-secret", "OPENAI_API_KEY" => "openai-secret", _ => null }, http);
             var selection = await runtime.ResolveAsync("xai", "grok-4.3");
@@ -120,12 +121,22 @@ public sealed class ProviderModelRuntimeTests
             Assert.Equal(200000, selection.Model.Pricing!.Tiers![0].InputTokensAbove);
             Assert.Equal(2.5m, selection.Model.Pricing.Tiers[0].Input);
             Assert.NotEqual("openai-secret", selection.ApiKey);
+            var catalog = await runtime.ListModelsAsync("xai");
+            Assert.Equal(4, catalog.Count);
+            Assert.True(catalog[0].Available);
+            Assert.Equal("openai-responses", ProviderChatClientFactory.ResolveProtocol(selection with { Model = catalog[0] }));
+            Assert.Null(handler.Url);
             var alternate = await ProviderModelRuntime.CreateAsync(root, false,
                 name => name == "PISHARP_XAI_MODEL" ? "grok-4.7" : null, http);
             var overrideModel = (await alternate.ResolveAsync("xai", "grok-4.7")).Model;
             Assert.Equal("openai-responses", overrideModel.Api);
-            Assert.Null(overrideModel.Pricing); // Never attach Grok 4.3 prices to a different model ID.
-            Assert.Null(overrideModel.ContextLength);
+            Assert.Equal(2m, overrideModel.Pricing!.Input);
+            Assert.Equal(500000, overrideModel.ContextLength);
+            var unknown = await ProviderModelRuntime.CreateAsync(root, false,
+                name => name == "PISHARP_XAI_MODEL" ? "grok-unlisted" : null, http);
+            var unknownModel = (await unknown.ResolveAsync("xai", "grok-unlisted")).Model;
+            Assert.Null(unknownModel.Pricing); // Never attach Grok prices to an unknown model ID.
+            Assert.Null(unknownModel.ContextLength);
         }
         finally { Directory.Delete(root, true); }
     }

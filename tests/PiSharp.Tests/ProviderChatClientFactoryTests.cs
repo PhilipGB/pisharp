@@ -118,6 +118,52 @@ public sealed class ProviderChatClientFactoryTests
         Assert.DoesNotContain("previous_response_id", requests[1]);
     }
     [Fact]
+    public async Task ResponsesTransportSendsInlineImageAsImageContentNotText()
+    {
+        using var listener = new HttpListener();
+        var port = 0;
+        for (var attempt = 0; attempt < 10; attempt++)
+        {
+            using var reservation = new TcpListener(IPAddress.Loopback, 0);
+            reservation.Start();
+            port = ((IPEndPoint)reservation.LocalEndpoint).Port;
+            reservation.Stop();
+            listener.Prefixes.Clear();
+            listener.Prefixes.Add($"http://127.0.0.1:{port}/");
+            try { listener.Start(); break; }
+            catch (HttpListenerException) when (attempt < 9) { }
+        }
+        var png = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/bX8AAAAASUVORK5CYII=");
+        var server = Task.Run(async () =>
+        {
+            var request = await listener.GetContextAsync();
+            Assert.Equal("/v1/responses", request.Request.Url?.AbsolutePath);
+            using var reader = new StreamReader(request.Request.InputStream);
+            using var body = System.Text.Json.JsonDocument.Parse(await reader.ReadToEndAsync());
+            var input = body.RootElement.GetProperty("input");
+            var parts = input.EnumerateArray().Last().GetProperty("content").EnumerateArray().ToArray();
+            Assert.Contains(parts, part => part.GetProperty("type").GetString() == "input_text" &&
+                part.GetProperty("text").GetString() == "describe image");
+            Assert.Contains(parts, part => part.GetProperty("type").GetString() == "input_image" &&
+                part.GetProperty("image_url").GetString()!.StartsWith("data:image/png;base64,", StringComparison.Ordinal));
+            request.Response.ContentType = "application/json";
+            await using var writer = new StreamWriter(request.Response.OutputStream);
+            await writer.WriteAsync("""
+                {"id":"resp_image","object":"response","created_at":1,"model":"fixture-model","status":"completed","output":[{"id":"msg_1","type":"message","role":"assistant","status":"completed","content":[{"type":"output_text","text":"seen","annotations":[]}]}]}
+                """);
+            await writer.FlushAsync();
+            request.Response.Close();
+        });
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var selection = Selection("fixture", $"http://127.0.0.1:{port}/v1", "openai-responses");
+        var prompt = new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User,
+            [new Microsoft.Extensions.AI.TextContent("describe image"), new Microsoft.Extensions.AI.DataContent(png, "image/png")]);
+        var response = await ProviderChatClientFactory.Create(selection).GetResponseAsync([prompt], cancellationToken: deadline.Token);
+        await server.WaitAsync(deadline.Token);
+        Assert.Equal("seen", response.Text);
+    }
+
+    [Fact]
     public async Task NonStreamingResponsesDoNotEnableProviderOwnedHistory()
     {
         using var listener = new HttpListener();

@@ -9,7 +9,7 @@ public static class ProviderChatClientFactory
 {
     public static string ResolveProtocol(ModelSelection selection)
     {
-        var protocol = selection.Model.Api ?? (selection.Provider.Id == "openai" ? "openai-responses" : "openai-completions");
+        var protocol = selection.Model.Api ?? (selection.Provider.Id is "openai" or "xai" ? "openai-responses" : "openai-completions");
         if (protocol is not ("openai-responses" or "openai-completions"))
             throw new NotSupportedException($"Model '{selection.Provider.Id}/{selection.Model.Id}' requires unsupported API '{protocol}'.");
         // The official OpenAI identity must never be redirected by catalog metadata to an alternate endpoint.
