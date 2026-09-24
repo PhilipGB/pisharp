@@ -615,10 +615,12 @@ public sealed class ProviderModelRuntimeTests
                 var stdout = process.StandardOutput.ReadToEndAsync();
                 var stderr = process.StandardError.ReadToEndAsync();
                 await process.WaitForExitAsync(timeout.Token);
+                var output = await stdout;
+                var errors = await stderr;
+                Assert.True(process.ExitCode == 0, $"CLI exited {process.ExitCode}; stdout: {output}; stderr: {errors}");
                 var request = await server.WaitAsync(timeout.Token);
-                Assert.Equal(0, process.ExitCode);
-                Assert.Equal("PROVIDER_FLOW_OK\n", await stdout);
-                Assert.Equal("", await stderr);
+                Assert.Equal("PROVIDER_FLOW_OK\n", output);
+                Assert.Equal("", errors);
                 Assert.StartsWith("/v1/chat/completions", request.path);
                 Assert.Equal("Bearer fixture-only-key", request.authorization);
                 Assert.DoesNotContain("unrelated-openai-key", request.authorization!);
