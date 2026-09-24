@@ -261,6 +261,32 @@ public sealed class CompactionTests
     }
 
     [Fact]
+    public async Task OversizedMultiCycleTurnCutsOnlyAfterEachCompletedToolResult()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-split-cycles-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(cwd, "output.txt"), new string('Z', 4000));
+            await File.WriteAllTextAsync(Path.Combine(cwd, "small.txt"), "small result");
+            var conversation = new ConversationSession(cwd, "fixture", null);
+            var client = new ToolLoopBudgetClient { RepeatRead = true };
+            var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(cwd)), conversation,
+                autoCompaction: new AutoCompactionPolicy(2700, 300));
+            var events = new List<AgentLifecycleEvent>();
+            await foreach (var item in run.RunEventsAsync("read two files")) events.Add(item);
+            Assert.Equal(3, client.Requests);
+            Assert.Equal(2, client.Summaries);
+            Assert.True(client.ContinuationSawSummaryWithoutRawToolResult);
+            Assert.Equal(2, events.Count(item => item.Type == "context_compacted_in_flight"));
+            Assert.Equal(2, conversation.ActiveMessages().SelectMany(message => message.Contents).OfType<FunctionResultContent>().Count());
+            Assert.Contains(conversation.ActiveMessages().SelectMany(message => message.Contents).OfType<FunctionResultContent>(),
+                result => result.Result?.ToString()?.Contains(new string('Z', 4000), StringComparison.Ordinal) == true);
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Fact]
     public async Task OversizedSingleTurnSummarizesOnlyCompletedToolCycleWithoutReplacingHistory()
     {
         var cwd = Path.Combine(Path.GetTempPath(), "pisharp-split-turn-" + Guid.NewGuid().ToString("N"));
