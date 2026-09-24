@@ -23,6 +23,21 @@ internal static class BuiltinProviderProfiles
             xaiModels.RemoveAt(index);
             xaiModels.Insert(0, chosen);
         }
+        var anthropicDefault = environment("PISHARP_ANTHROPIC_MODEL") ?? "claude-sonnet-4-6";
+        var anthropicModels = new List<ModelDescriptor>
+        {
+            Anthropic("claude-sonnet-4-6", "Claude Sonnet 4.6", 1000000, 128000, 3m, 15m, 0.3m, 3.75m),
+            Anthropic("claude-opus-4-6", "Claude Opus 4.6", 1000000, 128000, 5m, 25m, 0.5m, 6.25m),
+            Anthropic("claude-haiku-4-5", "Claude Haiku 4.5 (latest)", 200000, 64000, 1m, 5m, 0.1m, 1.25m)
+        };
+        if (anthropicModels.FindIndex(model => model.Id == anthropicDefault) is int knownIndex && knownIndex >= 0)
+        {
+            var chosen = anthropicModels[knownIndex];
+            anthropicModels.RemoveAt(knownIndex);
+            anthropicModels.Insert(0, chosen);
+        }
+        else
+            anthropicModels.Insert(0, new(anthropicDefault, "anthropic", null, "configured", Provider: "anthropic", Api: "anthropic-messages"));
         return new(StringComparer.OrdinalIgnoreCase)
         {
             ["openai"] = new("openai", "OpenAI", new Uri("https://api.openai.com/v1"), true, false,
@@ -33,13 +48,17 @@ internal static class BuiltinProviderProfiles
                 "MISTRAL_API_KEY", null, [new(environment("PISHARP_MISTRAL_MODEL") ?? "mistral-small-latest", "mistral", null, "catalog default", false, Provider: "mistral")]),
             ["anthropic"] = new("anthropic", "Anthropic", new Uri("https://api.anthropic.com"), true, false,
                 "ANTHROPIC_API_KEY", null,
-                [new(environment("PISHARP_ANTHROPIC_MODEL") ?? "claude-sonnet-4-6", "anthropic", null,
-                    "configured", Provider: "anthropic", Api: "anthropic-messages")]),
+                anthropicModels),
             ["xai"] = new("xai", "xAI", new Uri("https://api.x.ai/v1"), true, false,
                 "XAI_API_KEY", null, xaiModels)
         };
     }
 
+    private static ModelDescriptor Anthropic(string id, string name, int context, int maxOutput,
+        decimal input, decimal output, decimal cacheRead, decimal cacheWrite) =>
+        new(id, "anthropic", context, "pinned catalogue", true,
+            new ModelPricing(input, output, cacheRead, CachedWrite: cacheWrite), Provider: "anthropic",
+            Name: name, MaxOutputTokens: maxOutput, Input: ["text", "image"], Api: "anthropic-messages");
     private static ModelDescriptor Xai(string id, string name, int context, int maxOutput,
         decimal input, decimal output, decimal cached, decimal tierInput, decimal tierOutput, decimal tierCached) =>
         new(id, "xai", context, "pinned catalogue", true,

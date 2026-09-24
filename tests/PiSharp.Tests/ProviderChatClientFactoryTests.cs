@@ -223,6 +223,7 @@ public sealed class ProviderChatClientFactoryTests
             using var reader = new StreamReader(request.Request.InputStream);
             using var body = System.Text.Json.JsonDocument.Parse(await reader.ReadToEndAsync());
             Assert.Equal("fixture-model", body.RootElement.GetProperty("model").GetString());
+            Assert.Equal(321, body.RootElement.GetProperty("max_tokens").GetInt32());
             Assert.Equal("hello", body.RootElement.GetProperty("messages")[0].GetProperty("content")[0]
                 .GetProperty("text").GetString());
             request.Response.ContentType = "application/json";
@@ -234,7 +235,8 @@ public sealed class ProviderChatClientFactoryTests
             request.Response.Close();
         });
         using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-        var response = await ProviderChatClientFactory.Create(Selection("fixture", $"http://127.0.0.1:{port}", "anthropic-messages"))
+        var selection = Selection("fixture", $"http://127.0.0.1:{port}", "anthropic-messages");
+        var response = await ProviderChatClientFactory.Create(selection with { Model = selection.Model with { MaxOutputTokens = 321 } })
             .GetResponseAsync([new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User, "hello")],
                 cancellationToken: deadline.Token);
         await server.WaitAsync(deadline.Token);
@@ -292,6 +294,100 @@ public sealed class ProviderChatClientFactoryTests
         await foreach (var update in agent.RunStreamingAsync("hello", session, deadline.Token)) text += update.Text;
         await server.WaitAsync(deadline.Token);
         Assert.Equal("streamed", text);
+    }
+
+    [Fact]
+    public async Task AnthropicToolUseContinuesWithToolResultOnNextMessagesRequest()
+    {
+        using var listener = new HttpListener();
+        using var reservation = new TcpListener(IPAddress.Loopback, 0);
+        reservation.Start();
+        var port = ((IPEndPoint)reservation.LocalEndpoint).Port;
+        reservation.Stop();
+        listener.Prefixes.Add($"http://127.0.0.1:{port}/");
+        listener.Start();
+        var bodies = new List<string>();
+        var server = Task.Run(async () =>
+        {
+            for (var i = 0; i < 2; i++)
+            {
+                var request = await listener.GetContextAsync();
+                Assert.Equal("/v1/messages", request.Request.Url?.AbsolutePath);
+                using var reader = new StreamReader(request.Request.InputStream);
+                bodies.Add(await reader.ReadToEndAsync());
+                request.Response.ContentType = "text/event-stream";
+                await using var writer = new StreamWriter(request.Response.OutputStream);
+                await writer.WriteAsync($"event: message_start\ndata: {{\"type\":\"message_start\",\"message\":{{\"id\":\"msg_{i}\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"fixture-model\",\"content\":[],\"stop_reason\":null,\"stop_sequence\":null,\"usage\":{{\"input_tokens\":4,\"output_tokens\":0}}}}}}\n\n");
+                if (i == 0)
+                {
+                    await writer.WriteAsync("event: content_block_start\ndata: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"tool_use\",\"id\":\"toolu_1\",\"name\":\"echo_ext\",\"input\":{}}}\n\n");
+                    await writer.WriteAsync("event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"{\\\"text\\\":\\\"ping\\\"}\"}}\n\n");
+                    await writer.WriteAsync("event: content_block_stop\ndata: {\"type\":\"content_block_stop\",\"index\":0}\n\n");
+                }
+                else
+                {
+                    await writer.WriteAsync("event: content_block_start\ndata: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"text\",\"text\":\"\"}}\n\n");
+                    await writer.WriteAsync("event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"done\"}}\n\n");
+                    await writer.WriteAsync("event: content_block_stop\ndata: {\"type\":\"content_block_stop\",\"index\":0}\n\n");
+                }
+                await writer.WriteAsync($"event: message_delta\ndata: {{\"type\":\"message_delta\",\"delta\":{{\"stop_reason\":\"{(i == 0 ? "tool_use" : "end_turn")}\",\"stop_sequence\":null}},\"usage\":{{\"output_tokens\":2}}}}\n\n");
+                await writer.WriteAsync("event: message_stop\ndata: {\"type\":\"message_stop\"}\n\n");
+                await writer.FlushAsync();
+                request.Response.Close();
+            }
+        });
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var echo = Microsoft.Extensions.AI.AIFunctionFactory.Create((string text) => "echo:" + text, name: "echo_ext");
+        var agent = new PiAgent(ProviderChatClientFactory.Create(Selection("fixture", $"http://127.0.0.1:{port}", "anthropic-messages")),
+            new CodingTools(Path.GetTempPath()), extensionTools: [echo]);
+        var session = await agent.CreateSessionAsync(deadline.Token);
+        var text = "";
+        await foreach (var update in agent.RunStreamingAsync("use echo", session, deadline.Token)) text += update.Text;
+        await server.WaitAsync(deadline.Token);
+        Assert.Equal("done", text);
+        Assert.Contains("echo:ping", bodies[1]);
+        Assert.Contains("toolu_1", bodies[1]);
+    }
+
+    [Fact]
+    public async Task AnthropicMessagesSendsInlinePngAsNativeImageBlock()
+    {
+        using var listener = new HttpListener();
+        using var reservation = new TcpListener(IPAddress.Loopback, 0);
+        reservation.Start();
+        var port = ((IPEndPoint)reservation.LocalEndpoint).Port;
+        reservation.Stop();
+        listener.Prefixes.Add($"http://127.0.0.1:{port}/");
+        listener.Start();
+        var server = Task.Run(async () =>
+        {
+            var request = await listener.GetContextAsync();
+            Assert.Equal("/v1/messages", request.Request.Url?.AbsolutePath);
+            using var reader = new StreamReader(request.Request.InputStream);
+            using var body = System.Text.Json.JsonDocument.Parse(await reader.ReadToEndAsync());
+            var parts = body.RootElement.GetProperty("messages")[0].GetProperty("content").EnumerateArray().ToArray();
+            Assert.Contains(parts, part => part.GetProperty("type").GetString() == "text" &&
+                part.GetProperty("text").GetString() == "describe image");
+            Assert.Contains(parts, part => part.GetProperty("type").GetString() == "image" &&
+                part.GetProperty("source").GetProperty("type").GetString() == "base64" &&
+                part.GetProperty("source").GetProperty("media_type").GetString() == "image/png" &&
+                part.GetProperty("source").GetProperty("data").GetString()!.StartsWith("iVBORw0KGgo", StringComparison.Ordinal));
+            request.Response.ContentType = "application/json";
+            await using var writer = new StreamWriter(request.Response.OutputStream);
+            await writer.WriteAsync("""
+                {"id":"msg_image","type":"message","role":"assistant","model":"fixture-model","content":[{"type":"text","text":"seen"}],"stop_reason":"end_turn","stop_sequence":null,"usage":{"input_tokens":7,"output_tokens":2}}
+                """);
+            await writer.FlushAsync();
+            request.Response.Close();
+        });
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var png = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/bX8AAAAASUVORK5CYII=");
+        var prompt = new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User,
+            [new Microsoft.Extensions.AI.TextContent("describe image"), new Microsoft.Extensions.AI.DataContent(png, "image/png")]);
+        var response = await ProviderChatClientFactory.Create(Selection("fixture", $"http://127.0.0.1:{port}", "anthropic-messages"))
+            .GetResponseAsync([prompt], cancellationToken: deadline.Token);
+        await server.WaitAsync(deadline.Token);
+        Assert.Equal("seen", response.Text);
     }
 
     [Fact]

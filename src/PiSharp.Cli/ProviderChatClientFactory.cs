@@ -29,7 +29,7 @@ public static class ProviderChatClientFactory
         var protocol = ResolveProtocol(selection);
         if (protocol == "anthropic-messages")
             return new AnthropicClient { ApiKey = selection.ApiKey, BaseUrl = selection.Provider.Endpoint.ToString() }
-                .AsIChatClient(selection.Model.Id);
+                .AsIChatClient(selection.Model.Id, selection.Model.MaxOutputTokens);
         var options = new OpenAIClientOptions();
         if (selection.Connection.Endpoint is not null) options.Endpoint = selection.Connection.Endpoint;
         var client = new OpenAIClient(new ApiKeyCredential(selection.ApiKey), options);

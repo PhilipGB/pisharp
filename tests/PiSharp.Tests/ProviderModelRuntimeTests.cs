@@ -117,10 +117,28 @@ public sealed class ProviderModelRuntimeTests
             Assert.Equal("ANTHROPIC_API_KEY", selection.AuthSource);
             Assert.Equal("anthropic-messages", ProviderChatClientFactory.ResolveProtocol(selection));
             Assert.Equal(new Uri("https://api.anthropic.com"), selection.Provider.Endpoint);
-            Assert.Null(selection.Model.Pricing);
+            Assert.Equal(1000000, selection.Model.ContextLength);
+            Assert.Equal(128000, selection.Model.MaxOutputTokens);
+            Assert.Equal(["text", "image"], selection.Model.Input);
+            Assert.Equal(3m, selection.Model.Pricing!.Input);
+            Assert.Equal(3.75m, selection.Model.Pricing.CachedWrite);
             Assert.NotEqual("openai-secret", selection.ApiKey);
-            Assert.Single(await runtime.ListModelsAsync("anthropic"));
+            var catalog = await runtime.ListModelsAsync("anthropic");
+            Assert.Equal(3, catalog.Count);
+            Assert.Equal(5m, catalog.Single(item => item.Id == "claude-opus-4-6").Pricing!.Input);
+            Assert.Equal(200000, catalog.Single(item => item.Id == "claude-haiku-4-5").ContextLength);
             Assert.Null(handler.Url);
+            var knownOverride = await ProviderModelRuntime.CreateAsync(root, false,
+                name => name == "PISHARP_ANTHROPIC_MODEL" ? "claude-opus-4-6" : null, http);
+            Assert.Equal("claude-opus-4-6", (await knownOverride.ResolveAsync("anthropic", null)).Model.Id);
+            var unknownOverride = await ProviderModelRuntime.CreateAsync(root, false,
+                name => name == "PISHARP_ANTHROPIC_MODEL" ? "claude-unknown" : null, http);
+            var unknown = (await unknownOverride.ResolveAsync("anthropic", null)).Model;
+            Assert.Equal("claude-unknown", unknown.Id);
+            Assert.Null(unknown.Pricing);
+            Assert.Null(unknown.ContextLength);
+            Assert.Null(unknown.Input);
+            Assert.Equal("anthropic-messages", unknown.Api);
         }
         finally { Directory.Delete(root, true); }
     }
