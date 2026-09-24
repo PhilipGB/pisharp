@@ -34,6 +34,8 @@ A security regression test now forbids `models.json` from redirecting the built-
 
 At this checkpoint, format verification and warning-as-error build passed, and 128/128 credential-free PiSharp tests passed. The provider and CLI-auth ledger rows remain in progress; the original plan is still absent and the Codex supervisor remains stopped on its genuine usage limit.
 
+Standalone `pisharp --export <PiSharp-session-file> [output.html]` now reuses private escaped HTML export without loading provider, project resources or tools; an isolated CLI-process test covers derived/explicit paths, no-overwrite, corrupt and symlink input. It is PiSharp canonical-session-only, not an importer or exporter of Pi JSONL. Format verification, warning-as-error build and the full deterministic suite now pass at 129/129.
+
 ## Remaining priority
 
 1. Audit pending checkpoint validity across all branches, corrupted and network-filesystem stores, provider switching and migration policy. Add process-kill tests at more boundaries; unknown side effects are not replayed. Shared `ConversationRun.RunEventsAsync` now drives terminal, JSON, RPC and .NET callers with actual provider/tool boundaries and failure vs completion ordering; improve terminal session controls and queue semantics; lifecycle event channel now bounds pending records to 256 and stalls the provider on slow consumers, with disposal cancellation tested.

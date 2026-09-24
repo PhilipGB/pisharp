@@ -657,27 +657,36 @@
     {
       "id": "cli-prompt-modes",
       "title": "CLI flags: [@files...] [messages...], --, piped stdin, -p/--print, --mode text/json/rpc, --export, -h/--help, -v/--version",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:20",
       "acceptance": [
         "Input expansion, TTY-sensitive default mode, stdout clean in machine modes",
         "Test parsed flags, conflict/recovery and process behaviour"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "Partial: src/PiSharp.Cli/{CliArguments,Program,SessionExportCommand}.cs dispatches print/JSON/RPC/TTY and a standalone --export path. Export reads an explicit PiSharp canonical session and uses Runtime/Sessions/SessionExport.cs to write no-overwrite, escaped, private HTML without initializing any model or resource loader."
+      ],
+      "evidence": [
+        "tests/PiSharp.Tests/SessionExportCommandTests.cs invokes separate CLI processes to check inferred and explicit destinations, escaped prompt, private file permissions, no overwrite, corrupt/symlink input rejection, and no agent directory/provider requirement. Other prompt and protocol modes have separate narrow tests; no whole CLI parity claim.",
+        "dotnet format --verify-no-changes and warning-as-error build passed; 129/129 deterministic tests passed including the standalone export process fixture."
+      ],
       "dependencies": []
     },
     {
       "id": "cli-models",
       "title": "CLI flags: --provider, --model, --models, --list-models, --thinking, --api-key",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:21",
       "acceptance": [
         "Discovery, filtering, scoped model cycling, credential precedence and capability handling",
         "Test parsed flags, conflict/recovery and process behaviour"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "Partial: src/PiSharp.Cli/{CliArguments,Program,ProviderModelRuntime,ThinkingLevels}.cs implements configured OpenAI-compatible provider/model flags, bounded catalog and a basic capability-based reasoning option; --api-key is runtime-only."
+      ],
+      "evidence": [
+        "tests/PiSharp.Tests/{ProviderModelRuntimeTests,TerminalPtyTests,ModelCatalogTests}.cs: exact-model/no-/models selection, custom-endpoint credential isolation, PTY model switch and unsupported thinking rejection, CLI startup saved-model conflict, catalog and streamed prompt fixtures. Full provider selector and hosted adapters remain missing."
+      ],
       "dependencies": []
     },
     {
