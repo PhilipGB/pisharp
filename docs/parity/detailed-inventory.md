@@ -54,7 +54,7 @@ All actions in this table are **Not started**, except the line REPL's process-le
 
 ## Settings inventory (`settings.md`, `configuration.md`, `security.md`)
 
-User settings `<agent-dir>/settings.json`, trusted project `.pi/settings.json`, keybindings, `models.json` and `auth.json` have distinct trust/precedence rules. All settings below are **Not started** unless noted; compare their types/defaults/validation to the reference before implementation.
+User settings `<agent-dir>/settings.json`, trusted project `.pi/settings.json`, keybindings, `models.json` and `auth.json` have distinct trust/precedence rules. All settings below are **Not started** except a validated user `settings.json` subset for `defaultProvider`, `defaultModel`, and `defaultThinkingLevel` (bounded size, duplicate/unknown-key checks, CLI/environment/session precedence tests); compare remaining types/defaults/validation to the reference before implementation.
 
 | Group | Settings |
 |---|---|

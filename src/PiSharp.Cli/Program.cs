@@ -36,6 +36,16 @@ if (cli.Help)
     Console.WriteLine("PiSharp (incomplete implementation)\nUsage: pisharp [--local | --provider <id>] [--model <id>] [--models <globs>] [--thinking <level>] [--api-key <key>] [--list-models] [--approve|--no-approve] [--mode interactive|print|json|rpc] [--print] [--continue | --session <path|project-id> | --fork <path|project-id> | --no-session] [--session-dir <dir>] [--name <label>] [prompt] [@files...]\n--tools <read,bash,edit,write,grep,find,ls> selects tools (grep/find/ls are opt-in); --exclude-tools <names> removes tools; --no-tools disables defaults.\nProviders and static model metadata may be configured in $PISHARP_AGENT_DIR/models.json. Credentials are read from environment or private auth.json; --api-key is runtime-only.\nOffline credential status: pisharp auth check --provider <id> [--model <configured-exact-id>] [--local]; never prints secrets.\nStandalone private HTML: pisharp --export <PiSharp-session-file> [output.html]; never overwrites.\n--local uses http://192.168.0.97:8000/v1 and Qwen3.8-27B-GGUF (no API key required).\nInteractive: /model, /models, /thinking, /scoped-models, /login, /logout, /tree, /branch, /fork, /clone, /new, /sessions, /resume, /delete-session, /compact, /export, /name, /session, /trust, /reload, /quit.");
     return;
 }
+UserSettings userSettings;
+try { userSettings = await UserSettings.LoadAsync(agentDirectory, Environment.GetEnvironmentVariable); }
+catch (Exception error) when (error is IOException or System.Text.Json.JsonException or ArgumentException)
+{
+    Console.Error.WriteLine(error.Message);
+    Environment.ExitCode = 2;
+    return;
+}
+cli = userSettings.ApplyDefaults(cli, Environment.GetEnvironmentVariable,
+    preserveSessionModel: cli.Continue || cli.SessionPath is not null || cli.ForkSource is not null || cli.ListModels);
 using var catalogHttp = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
 ProviderModelRuntime modelRuntime;
 ModelSelection selection;
