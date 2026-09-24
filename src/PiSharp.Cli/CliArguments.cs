@@ -2,7 +2,7 @@ namespace PiSharp.Cli;
 
 public sealed record CliArguments(bool Help, bool Local, bool Print, bool Continue, bool NoSession, string? SessionPath, string Prompt,
     IReadOnlyList<string>? Tools, IReadOnlyList<string>? ExcludeTools, bool NoTools, string Mode, bool? ProjectTrustOverride = null, string? SessionDirectory = null, bool ListModels = false, string? ModelOverride = null, string? SessionName = null, string? ForkSource = null,
-    string? Provider = null, IReadOnlyList<string>? ScopedModels = null, string? Thinking = null, string? ApiKey = null)
+    string? Provider = null, IReadOnlyList<string>? ScopedModels = null, string? Thinking = null, string? ApiKey = null, IReadOnlyList<string>? FileArguments = null)
 {
     private static IReadOnlyList<string> ParseToolNames(string[] arguments, ref int index, string flag)
     {
@@ -19,11 +19,12 @@ public sealed record CliArguments(bool Help, bool Local, bool Print, bool Contin
         var mode = "interactive";
         IReadOnlyList<string>? tools = null, excludeTools = null, scopedModels = null;
         var prompt = new List<string>();
+        var fileArguments = new List<string>();
         for (var i = 0; i < arguments.Length; i++)
         {
             var arg = arguments[i];
             if (!afterSeparator && arg == "--") { afterSeparator = true; continue; }
-            if (afterSeparator) { prompt.Add(arg); continue; }
+            if (afterSeparator) { if (arg.StartsWith('@') && arg.Length > 1) fileArguments.Add(arg[1..]); else prompt.Add(arg); continue; }
             switch (arg)
             {
                 case "--help": help = true; break;
@@ -100,7 +101,8 @@ public sealed record CliArguments(bool Help, bool Local, bool Print, bool Contin
                     break;
                 default:
                     if (arg.StartsWith('-')) throw new ArgumentException($"Unknown option: {arg}");
-                    prompt.Add(arg);
+                    if (arg.StartsWith('@') && arg.Length > 1) fileArguments.Add(arg[1..]);
+                    else prompt.Add(arg);
                     break;
             }
         }
@@ -109,12 +111,12 @@ public sealed record CliArguments(bool Help, bool Local, bool Print, bool Contin
         if (forkSource is not null && (resume || noSession || sessionPath is not null))
             throw new ArgumentException("--fork cannot be combined with --continue, --session or --no-session.");
         if (print && mode is not "interactive" and not "print") throw new ArgumentException("--print cannot be combined with --mode json or rpc.");
-        if (mode == "rpc" && prompt.Count > 0) throw new ArgumentException("RPC mode reads commands from stdin, not positional prompts.");
-        if (listModels && (prompt.Count > 0 || mode != "interactive" || print || resume || sessionPath is not null || noSession || sessionName is not null || forkSource is not null))
+        if (mode == "rpc" && (prompt.Count > 0 || fileArguments.Count > 0)) throw new ArgumentException("RPC mode reads commands from stdin, not positional prompts.");
+        if (listModels && (prompt.Count > 0 || fileArguments.Count > 0 || mode != "interactive" || print || resume || sessionPath is not null || noSession || sessionName is not null || forkSource is not null))
             throw new ArgumentException("--list-models cannot be combined with a prompt, mode or session operation.");
         if (local && provider is not null && !provider.Equals("local", StringComparison.OrdinalIgnoreCase))
             throw new ArgumentException("--local cannot be combined with a provider other than local.");
         return new CliArguments(help, local, print, resume, noSession, sessionPath, string.Join(" ", prompt), tools, excludeTools, noTools, mode, trust, sessionDirectory, listModels, modelOverride, sessionName, forkSource,
-            provider, scopedModels, thinking, apiKey);
+            provider, scopedModels, thinking, apiKey, fileArguments);
     }
 }

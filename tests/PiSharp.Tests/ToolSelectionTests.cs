@@ -33,6 +33,26 @@ public sealed class ToolSelectionTests
     }
 
     [Fact]
+    public async Task CliAtFileArgumentsAppendUtf8TextAndEscapeFilename()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-at-file-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            var path = Path.Combine(root, "source & notes.txt");
+            await File.WriteAllTextAsync(path, "\uFEFFImportant source", new System.Text.UTF8Encoding(true));
+            var cli = CliArguments.Parse(["--print", "Explain", "@source & notes.txt"]);
+            Assert.Equal(["source & notes.txt"], cli.FileArguments);
+            var prompt = await CliFileArguments.AppendTextFilesAsync(cli.Prompt, cli.FileArguments, root);
+            Assert.Equal($"<file name=\"{System.Security.SecurityElement.Escape(path)}\">\\nImportant source\\n</file>\\n\\nExplain".Replace("\\n", "\n"), prompt);
+            await Assert.ThrowsAsync<FileNotFoundException>(() => CliFileArguments.AppendTextFilesAsync("", ["missing.txt"], root));
+            await File.WriteAllBytesAsync(Path.Combine(root, "binary"), [0xff, 0x00]);
+            await Assert.ThrowsAsync<InvalidDataException>(() => CliFileArguments.AppendTextFilesAsync("", ["binary"], root));
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [Fact]
     public async Task MafReceivesOnlyTheSelectedToolLoadout()
     {
         var provider = new ToolCaptureClient();

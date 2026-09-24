@@ -33,7 +33,7 @@ catch (ArgumentException e)
 }
 if (cli.Help)
 {
-    Console.WriteLine("PiSharp (incomplete implementation)\nUsage: pisharp [--local | --provider <id>] [--model <id>] [--models <globs>] [--thinking <level>] [--api-key <key>] [--list-models] [--approve|--no-approve] [--mode interactive|print|json|rpc] [--print] [--continue | --session <path|project-id> | --fork <path|project-id> | --no-session] [--session-dir <dir>] [--name <label>] [prompt]\n--tools <read,bash,edit,write,grep,find,ls> selects tools (grep/find/ls are opt-in); --exclude-tools <names> removes tools; --no-tools disables defaults.\nProviders and static model metadata may be configured in $PISHARP_AGENT_DIR/models.json. Credentials are read from environment or private auth.json; --api-key is runtime-only.\nOffline credential status: pisharp auth check --provider <id> [--model <configured-exact-id>] [--local]; never prints secrets.\nStandalone private HTML: pisharp --export <PiSharp-session-file> [output.html]; never overwrites.\n--local uses http://192.168.0.97:8000/v1 and Qwen3.8-27B-GGUF (no API key required).\nInteractive: /model, /models, /thinking, /scoped-models, /login, /logout, /tree, /branch, /fork, /clone, /new, /sessions, /resume, /delete-session, /compact, /export, /name, /session, /trust, /reload, /quit.");
+    Console.WriteLine("PiSharp (incomplete implementation)\nUsage: pisharp [--local | --provider <id>] [--model <id>] [--models <globs>] [--thinking <level>] [--api-key <key>] [--list-models] [--approve|--no-approve] [--mode interactive|print|json|rpc] [--print] [--continue | --session <path|project-id> | --fork <path|project-id> | --no-session] [--session-dir <dir>] [--name <label>] [prompt] [@files...]\n--tools <read,bash,edit,write,grep,find,ls> selects tools (grep/find/ls are opt-in); --exclude-tools <names> removes tools; --no-tools disables defaults.\nProviders and static model metadata may be configured in $PISHARP_AGENT_DIR/models.json. Credentials are read from environment or private auth.json; --api-key is runtime-only.\nOffline credential status: pisharp auth check --provider <id> [--model <configured-exact-id>] [--local]; never prints secrets.\nStandalone private HTML: pisharp --export <PiSharp-session-file> [output.html]; never overwrites.\n--local uses http://192.168.0.97:8000/v1 and Qwen3.8-27B-GGUF (no API key required).\nInteractive: /model, /models, /thinking, /scoped-models, /login, /logout, /tree, /branch, /fork, /clone, /new, /sessions, /resume, /delete-session, /compact, /export, /name, /session, /trust, /reload, /quit.");
     return;
 }
 using var catalogHttp = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
@@ -373,11 +373,15 @@ if (cli.Mode == "json")
     var protocol = new JsonEventMode(Console.Out);
     await protocol.HeaderAsync(conversation);
     if (string.IsNullOrWhiteSpace(prompt) && Console.IsInputRedirected) prompt = await Console.In.ReadToEndAsync();
-    if (string.IsNullOrWhiteSpace(prompt)) { Console.Error.WriteLine("A prompt is required in JSON mode."); Environment.ExitCode = 2; }
+    if (string.IsNullOrWhiteSpace(prompt) && (cli.FileArguments?.Count ?? 0) == 0) { Console.Error.WriteLine("A prompt is required in JSON mode."); Environment.ExitCode = 2; }
     else
     {
         string? expanded = null;
-        try { expanded = await resources.ResolveInputAsync(prompt); }
+        try
+        {
+            expanded = await resources.ResolveInputAsync(prompt);
+            expanded = await CliFileArguments.AppendTextFilesAsync(expanded, cli.FileArguments, Environment.CurrentDirectory);
+        }
         catch (Exception e) when (e is ArgumentException or IOException)
         {
             await protocol.RejectAsync(e.Message);
@@ -393,12 +397,19 @@ if (cli.Mode == "json")
 if (print)
 {
     if (string.IsNullOrWhiteSpace(prompt) && Console.IsInputRedirected) prompt = await Console.In.ReadToEndAsync();
+    try { prompt = await CliFileArguments.AppendTextFilesAsync(prompt, cli.FileArguments, Environment.CurrentDirectory); }
+    catch (Exception e) when (e is IOException or ArgumentException) { Console.Error.WriteLine(e.Message); Environment.ExitCode = 1; return; }
     if (string.IsNullOrWhiteSpace(prompt)) { Console.Error.WriteLine("A prompt is required in print mode."); Environment.ExitCode = 2; }
     else await Run(prompt);
 }
 else
 {
-    if (!string.IsNullOrWhiteSpace(prompt)) await Run(prompt);
+    if (!string.IsNullOrWhiteSpace(prompt) || (cli.FileArguments?.Count ?? 0) > 0)
+    {
+        try { prompt = await CliFileArguments.AppendTextFilesAsync(prompt, cli.FileArguments, Environment.CurrentDirectory); }
+        catch (Exception e) when (e is IOException or ArgumentException) { Console.Error.WriteLine(e.Message); Environment.ExitCode = 1; return; }
+        await Run(prompt);
+    }
     while (true)
     {
         var line = editor!.ReadLine();
