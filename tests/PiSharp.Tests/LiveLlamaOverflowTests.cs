@@ -10,6 +10,36 @@ namespace PiSharp.Tests;
 public sealed class LiveLlamaOverflowTests
 {
     [Fact]
+    public async Task ActualLlamaServerReadsFileAndContinuesAfterToolResult()
+    {
+        var endpointText = Environment.GetEnvironmentVariable("PISHARP_TEST_LLAMA_ENDPOINT");
+        if (string.IsNullOrWhiteSpace(endpointText)) return; // Explicit live opt-in only.
+        var endpoint = new Uri(endpointText, UriKind.Absolute);
+        var modelId = Environment.GetEnvironmentVariable("PISHARP_TEST_LLAMA_MODEL") ?? ConnectionSettings.LocalModel;
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-live-tool-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(cwd, "live-fixture.txt"), "PISHARP_LIVE_TOOL_SENTINEL");
+            using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(90));
+            var conversation = new ConversationSession(cwd, modelId, null);
+            var run = await ConversationRun.OpenAsync(new PiAgent(ProviderChatClientFactory.Create(Select(endpoint, modelId)),
+                new CodingTools(cwd), selectedTools: ["read"]), conversation);
+            var events = new List<AgentLifecycleEvent>();
+            await foreach (var item in run.RunEventsAsync(
+                "Call read once with path live-fixture.txt. After the result, reply briefly. Do not call other tools.", deadline.Token)) events.Add(item);
+            Assert.Contains(events, item => item.Type == "turn_completed");
+            Assert.DoesNotContain(events, item => item.Type == "turn_failed");
+            Assert.Contains(conversation.ActiveMessages().SelectMany(message => message.Contents).OfType<FunctionCallContent>(),
+                call => call.Name == "read");
+            Assert.Contains(conversation.ActiveMessages().SelectMany(message => message.Contents).OfType<FunctionResultContent>(),
+                result => result.Result?.ToString()?.Contains("PISHARP_LIVE_TOOL_SENTINEL", StringComparison.Ordinal) == true);
+            Assert.True(events.Count(item => item.Type == "model_request_started") >= 2);
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Fact]
     public async Task ActualLlamaServerContextOverflowRetriesWithSummaryAndPreservesRawHistory()
     {
         var endpointText = Environment.GetEnvironmentVariable("PISHARP_TEST_LLAMA_ENDPOINT");
@@ -23,13 +53,10 @@ public sealed class LiveLlamaOverflowTests
         // With the configured Qwen3.8-27B-GGUF server at 179200 tokens, this fixture
         // was measured at 190052 prompt tokens (HTTP 400 exceed_context_size_error).
         var raw = string.Concat(Enumerable.Repeat("ping ", 190_000));
-        var model = new ModelDescriptor(modelId, modelId, null, "fixture", Provider: "fixture", Api: "openai-completions");
-        var profile = new ProviderProfile("fixture", "fixture", endpoint, true, false, null, null, [model]);
-        var selection = new ModelSelection(profile, model, "not-needed", true, "fixture");
         var conversation = new ConversationSession(Path.GetTempPath(), modelId, null);
         conversation.Append(new ChatMessage(ChatRole.User, raw));
         conversation.Append(new ChatMessage(ChatRole.Assistant, "Previous turn finished."));
-        var run = await ConversationRun.OpenAsync(new PiAgent(ProviderChatClientFactory.Create(selection),
+        var run = await ConversationRun.OpenAsync(new PiAgent(ProviderChatClientFactory.Create(Select(endpoint, modelId)),
             new CodingTools(Path.GetTempPath()), noTools: true), conversation,
             autoCompaction: new AutoCompactionPolicy(1_200_000, 1000));
         var events = new List<AgentLifecycleEvent>();
@@ -44,5 +71,12 @@ public sealed class LiveLlamaOverflowTests
         Assert.Equal(raw, conversation.ActiveMessages()[0].Text);
         Assert.DoesNotContain(conversation.Tree.ActivePath(), node => node.Type == "compaction");
         Assert.Contains(conversation.Tree.ActivePath(), node => node.Type == "context_projection");
+    }
+
+    private static ModelSelection Select(Uri endpoint, string modelId)
+    {
+        var model = new ModelDescriptor(modelId, modelId, null, "fixture", Provider: "fixture", Api: "openai-completions");
+        var profile = new ProviderProfile("fixture", "fixture", endpoint, true, false, null, null, [model]);
+        return new ModelSelection(profile, model, "not-needed", true, "fixture");
     }
 }
