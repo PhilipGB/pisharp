@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text;
 using PiSharp.Runtime;
 using PiSharp.Runtime.Tools;
 
@@ -81,6 +82,41 @@ public sealed class SearchToolsTests
             Assert.Contains("visible.txt:1: match-value", matches);
             Assert.Contains("sub/kept.txt:1: match-value", matches);
             Assert.DoesNotContain("ignored.txt", matches);
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
+    public async Task GrepByteLimitKeepsCompleteHeadLinesAndUsesByteNotice()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-grep-limit-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            var lines = Enumerable.Range(1, 120).Select(index => $"hit-{index:D3} {new string('x', 480)}");
+            await File.WriteAllLinesAsync(Path.Combine(root, "large.txt"), lines);
+            var output = await new SearchTools(root).Grep("hit", limit: 200);
+            Assert.Contains("large.txt:1: hit-001", output);
+            Assert.Contains("50.0KB limit reached", output);
+            Assert.DoesNotContain("200 matches limit reached", output);
+            Assert.DoesNotContain("hit-120", output);
+            var body = output.Split("\n\n[", 2)[0];
+            Assert.True(Encoding.UTF8.GetByteCount(body) <= 50 * 1024);
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
+    public async Task GrepLongLinesUsePinnedTruncationMarker()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-grep-line-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(root, "large.txt"), "long-match" + new string('x', 600));
+            var output = await new SearchTools(root).Grep("long-match");
+            Assert.Contains("... [truncated]", output);
+            Assert.Contains("Some lines truncated to 500 chars. Use read tool to see full lines", output);
         }
         finally { Directory.Delete(root, recursive: true); }
     }

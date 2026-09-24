@@ -84,8 +84,7 @@ public sealed class SearchTools(string workingDirectory)
         }
         catch (ArgumentException error) { throw new ToolFailureException($"Invalid search pattern: {error.Message}", inner: error); }
         var matches = new List<string>();
-        var bytes = 0;
-        var hitLimit = false;
+        var matchLimitReached = false;
         var truncated = false;
         foreach (var file in await SearchInventory.EnumerateAsync(root, cancellationToken))
         {
@@ -105,31 +104,46 @@ public sealed class SearchTools(string workingDirectory)
                 try { isMatch = regex.IsMatch(lines[index]); }
                 catch (RegexMatchTimeoutException error) { throw new ToolFailureException("Search regex timed out.", inner: error); }
                 if (!isMatch) continue;
-                if (matches.Count >= max) { hitLimit = true; break; }
+                if (matches.Count >= max) { matchLimitReached = true; break; }
                 var block = new StringBuilder();
                 for (var current = Math.Max(0, index - context); current <= Math.Min(lines.Length - 1, index + context); current++)
                 {
                     var line = lines[current];
-                    if (line.Length > 500) { line = line[..500] + "..."; truncated = true; }
+                    if (line.Length > 500) { line = line[..500] + "... [truncated]"; truncated = true; }
                     if (block.Length > 0) block.Append('\n');
                     block.Append(relative).Append(current == index ? ':' : '-').Append(current + 1)
                         .Append(current == index ? ": " : "- ").Append(line);
                 }
-                var text = block.ToString();
-                var nextBytes = Encoding.UTF8.GetByteCount(text) + (matches.Count == 0 ? 0 : 1);
-                if (bytes + nextBytes > MaxBytes) { hitLimit = true; break; }
-                bytes += nextBytes;
-                matches.Add(text);
+                matches.Add(block.ToString());
+                if (matches.Count >= max) { matchLimitReached = true; break; }
             }
-            if (hitLimit) break;
+            if (matchLimitReached) break;
         }
         if (matches.Count == 0) return "No matches found";
-        var result = string.Join('\n', matches);
+        var (result, bytesTruncated) = TruncateHead(string.Join('\n', matches), MaxBytes);
         var notices = new List<string>();
-        if (hitLimit || matches.Count >= max) notices.Add($"{max} matches limit reached. Use limit={max * 2} for more, or refine pattern");
+        if (matchLimitReached) notices.Add($"{max} matches limit reached. Use limit={max * 2} for more, or refine pattern");
+        if (bytesTruncated) notices.Add("50.0KB limit reached");
         if (truncated) notices.Add("Some lines truncated to 500 chars. Use read tool to see full lines");
         if (notices.Count > 0) result += "\n\n[" + string.Join(". ", notices) + "]";
         return result;
+    }
+
+    private static (string Content, bool Truncated) TruncateHead(string content, int maxBytes)
+    {
+        if (Encoding.UTF8.GetByteCount(content) <= maxBytes) return (content, false);
+        var lines = content.Split('\n');
+        if (lines[^1].Length == 0 && content.EndsWith('\n')) lines = lines[..^1];
+        var output = new List<string>();
+        var bytes = 0;
+        for (var index = 0; index < lines.Length; index++)
+        {
+            var lineBytes = Encoding.UTF8.GetByteCount(lines[index]) + (index > 0 ? 1 : 0);
+            if (bytes + lineBytes > maxBytes) break;
+            output.Add(lines[index]);
+            bytes += lineBytes;
+        }
+        return (string.Join('\n', output), true);
     }
 
     private static Regex GlobRegex(string pattern)
