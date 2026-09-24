@@ -102,7 +102,7 @@ public sealed class ProviderModelRuntime
         if (provider.ApiKeyEnvironment is not null && !string.IsNullOrWhiteSpace(_environment(provider.ApiKeyEnvironment)))
             return (_environment(provider.ApiKeyEnvironment)!, true, provider.ApiKeyEnvironment);
         return provider.AuthRequired ? ("not-configured", false, "authentication required") :
-            (_environment("PISHARP_API_KEY") ?? "not-needed", true, _environment("PISHARP_API_KEY") is null ? "not required" : "PISHARP_API_KEY");
+            ("not-needed", true, "not required");
     }
 
     public async Task<IReadOnlyList<ModelDescriptor>> ListModelsAsync(string? providerId = null,

@@ -121,6 +121,27 @@ public sealed class ProviderModelRuntimeTests
         finally { Directory.Delete(root, true); }
     }
 
+    [Fact]
+    public async Task AnonymousCustomProviderDoesNotBorrowLocalEnvironmentKey()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-provider-anonymous-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(root, "models.json"), """
+                {"providers":{"anonymous":{"baseUrl":"https://fixture.test/v1","authHeader":false,"models":[{"id":"fixture-model"}]}}}
+                """);
+            using var http = new HttpClient(new ModelHandler());
+            var runtime = await ProviderModelRuntime.CreateAsync(root, false,
+                name => name == "PISHARP_API_KEY" ? "local-only-secret" : null, http);
+            var selection = await runtime.ResolveAsync("anonymous", "fixture-model");
+            Assert.True(selection.Authenticated);
+            Assert.Equal("not-needed", selection.ApiKey);
+            Assert.Equal("not required", selection.AuthSource);
+            Assert.NotEqual("local-only-secret", selection.Connection.ApiKey);
+        }
+        finally { Directory.Delete(root, true); }
+    }
     [Theory]
     [InlineData("openai", "PISHARP_FIXTURE_KEY")]
     [InlineData("custom", "OPENAI_API_KEY")]
