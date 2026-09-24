@@ -2,7 +2,7 @@ namespace PiSharp.Cli;
 
 public sealed record CliArguments(bool Help, bool Local, bool Print, bool Continue, bool NoSession, string? SessionPath, string Prompt,
     IReadOnlyList<string>? Tools, IReadOnlyList<string>? ExcludeTools, bool NoTools, string Mode, bool? ProjectTrustOverride = null, string? SessionDirectory = null, bool ListModels = false, string? ModelOverride = null, string? SessionName = null, string? ForkSource = null,
-    string? Provider = null, IReadOnlyList<string>? ScopedModels = null, string? Thinking = null, string? ApiKey = null, IReadOnlyList<string>? FileArguments = null)
+    string? Provider = null, IReadOnlyList<string>? ScopedModels = null, string? Thinking = null, string? ApiKey = null, IReadOnlyList<string>? FileArguments = null, string? SystemPrompt = null, IReadOnlyList<string>? AppendSystemPrompts = null)
 {
     private static IReadOnlyList<string> ParseToolNames(string[] arguments, ref int index, string flag)
     {
@@ -15,7 +15,8 @@ public sealed record CliArguments(bool Help, bool Local, bool Print, bool Contin
         bool help = false, local = false, print = false, resume = false, noSession = false, noTools = false, afterSeparator = false, listModels = false;
         bool? trust = null;
         string? sessionPath = null, sessionDirectory = null, modelOverride = null, sessionName = null, forkSource = null;
-        string? provider = null, thinking = null, apiKey = null;
+        string? provider = null, thinking = null, apiKey = null, systemPrompt = null;
+        var appendSystemPrompts = new List<string>();
         var mode = "interactive";
         IReadOnlyList<string>? tools = null, excludeTools = null, scopedModels = null;
         var prompt = new List<string>();
@@ -68,6 +69,16 @@ public sealed record CliArguments(bool Help, bool Local, bool Print, bool Contin
                 case "--models":
                     scopedModels = ParseToolNames(arguments, ref i, "--models");
                     break;
+                case "--system-prompt":
+                    if (++i >= arguments.Length || string.IsNullOrWhiteSpace(arguments[i]) || arguments[i].StartsWith('-'))
+                        throw new ArgumentException("--system-prompt requires text or a file path.");
+                    systemPrompt = arguments[i];
+                    break;
+                case "--append-system-prompt":
+                    if (++i >= arguments.Length || string.IsNullOrWhiteSpace(arguments[i]) || arguments[i].StartsWith('-'))
+                        throw new ArgumentException("--append-system-prompt requires text or a file path.");
+                    appendSystemPrompts.Add(arguments[i]);
+                    break;
                 case "--thinking":
                     if (++i >= arguments.Length || !ThinkingLevels.IsValid(arguments[i]))
                         throw new ArgumentException("--thinking requires off, minimal, low, medium, high, or xhigh.");
@@ -117,6 +128,6 @@ public sealed record CliArguments(bool Help, bool Local, bool Print, bool Contin
         if (local && provider is not null && !provider.Equals("local", StringComparison.OrdinalIgnoreCase))
             throw new ArgumentException("--local cannot be combined with a provider other than local.");
         return new CliArguments(help, local, print, resume, noSession, sessionPath, string.Join(" ", prompt), tools, excludeTools, noTools, mode, trust, sessionDirectory, listModels, modelOverride, sessionName, forkSource,
-            provider, scopedModels, thinking, apiKey, fileArguments);
+            provider, scopedModels, thinking, apiKey, fileArguments, systemPrompt, appendSystemPrompts);
     }
 }
