@@ -235,6 +235,10 @@ public sealed class ProviderModelRuntime
             ContextLength = discovered.ContextLength ?? configured?.ContextLength,
             Reasoning = discovered.Reasoning ?? configured?.Reasoning,
             Pricing = discovered.Pricing ?? configured?.Pricing,
+            Name = discovered.Name ?? configured?.Name,
+            MaxOutputTokens = discovered.MaxOutputTokens ?? configured?.MaxOutputTokens,
+            Input = discovered.Input ?? configured?.Input,
+            Api = discovered.Api ?? configured?.Api,
             Available = true,
             UnavailableReason = null
         };
@@ -273,7 +277,9 @@ public sealed class ProviderModelRuntime
                     if (model.ValueKind != JsonValueKind.Object || string.IsNullOrWhiteSpace(String(model, "id")))
                         throw new InvalidDataException($"Provider '{item.Name}' has an invalid model.");
                     models.Add(new(String(model, "id")!, item.Name, PositiveInt(model, "contextWindow") ?? PositiveInt(model, "context_length"),
-                        "configured", Boolean(model, "reasoning"), ParsePricing(model), item.Name));
+                        "configured", Boolean(model, "reasoning"), ParsePricing(model), item.Name,
+                        Name: String(model, "name"), MaxOutputTokens: PositiveInt(model, "maxTokens") ?? PositiveInt(model, "max_tokens"),
+                        Input: ParseInputs(model), Api: String(model, "api")));
                 }
             var existing = providers.GetValueOrDefault(item.Name);
             var endpoint = ParseEndpoint(baseUrl, $"models.json provider '{item.Name}' baseUrl");
@@ -296,6 +302,17 @@ public sealed class ProviderModelRuntime
         child.ValueKind == JsonValueKind.String ? child.GetString() : null;
     private static bool? Boolean(JsonElement value, string property) => value.TryGetProperty(property, out var child) &&
         child.ValueKind is JsonValueKind.True or JsonValueKind.False ? child.GetBoolean() : null;
+    private static IReadOnlyList<string>? ParseInputs(JsonElement model)
+    {
+        if (!model.TryGetProperty("input", out var input)) return null;
+        if (input.ValueKind != JsonValueKind.Array) throw new InvalidDataException("Model input must be an array of text/image modalities.");
+        var modalities = input.EnumerateArray().Select(item => item.ValueKind == JsonValueKind.String ? item.GetString() : null)
+            .ToArray();
+        if (modalities.Any(value => value is not ("text" or "image")))
+            throw new InvalidDataException("Model input modalities must be text or image.");
+        return modalities.Cast<string>().Distinct(StringComparer.Ordinal).ToArray();
+    }
+
     private static int? PositiveInt(JsonElement value, string property) => value.TryGetProperty(property, out var child) &&
         child.TryGetInt32(out var number) && number > 0 ? number : null;
 

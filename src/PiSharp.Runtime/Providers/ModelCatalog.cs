@@ -7,7 +7,8 @@ namespace PiSharp.Runtime.Providers;
 
 public sealed record ModelDescriptor(string Id, string? Owner, int? ContextLength, string? Status,
     bool? Reasoning = null, ModelPricing? Pricing = null, string? Provider = null,
-    bool Available = true, string? UnavailableReason = null);
+    bool Available = true, string? UnavailableReason = null, string? Name = null,
+    int? MaxOutputTokens = null, IReadOnlyList<string>? Input = null, string? Api = null);
 
 /// <summary>Discover OpenAI-compatible model IDs without coupling model metadata to a specific SDK.</summary>
 public static class ModelCatalog
@@ -49,9 +50,30 @@ public static class ModelCatalog
                 StringProperty(state, "value") : null;
             var reasoning = item.TryGetProperty("reasoning", out var thinking) &&
                 thinking.ValueKind is JsonValueKind.True or JsonValueKind.False ? thinking.GetBoolean() : (bool?)null;
-            models.Add(new(id, StringProperty(item, "owned_by"), context, status, reasoning, ParsePricing(item)));
+            var maxOutput = PositiveInt(item, "max_tokens") ?? PositiveInt(item, "max_output_tokens");
+            var input = ParseInputs(item);
+            var api = StringProperty(item, "api");
+            models.Add(new(id, StringProperty(item, "owned_by"), context, status, reasoning, ParsePricing(item),
+                Name: StringProperty(item, "name"), MaxOutputTokens: maxOutput, Input: input, Api: api));
         }
         return models;
+    }
+
+    private static int? PositiveInt(JsonElement parent, string property) =>
+        parent.TryGetProperty(property, out var value) && value.TryGetInt32(out var number) && number > 0 ? number : null;
+
+    private static IReadOnlyList<string>? ParseInputs(JsonElement model)
+    {
+        if (!model.TryGetProperty("input", out var input))
+        {
+            if (!model.TryGetProperty("architecture", out var architecture) || architecture.ValueKind != JsonValueKind.Object ||
+                !architecture.TryGetProperty("input_modalities", out input)) return null;
+        }
+        if (input.ValueKind != JsonValueKind.Array) return null;
+        var modalities = input.EnumerateArray().Where(item => item.ValueKind == JsonValueKind.String)
+            .Select(item => item.GetString()).OfType<string>().Where(value => value is "text" or "image")
+            .Distinct(StringComparer.Ordinal).ToArray();
+        return modalities.Length == 0 ? null : modalities;
     }
 
     private static ModelPricing? ParsePricing(JsonElement model)

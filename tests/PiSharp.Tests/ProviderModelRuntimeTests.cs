@@ -15,7 +15,7 @@ public sealed class ProviderModelRuntimeTests
         {
             await File.WriteAllTextAsync(Path.Combine(root, "models.json"), """
                 {"providers":{"custom":{"baseUrl":"https://fixture.test/v1","apiKeyEnv":"PISHARP_API_KEY",
-                 "models":[{"id":"reasoner","contextWindow":4096,"reasoning":true,"cost":{"input":1,"output":3}}]}}}
+                 "models":[{"id":"reasoner","name":"Reasoner One","contextWindow":4096,"maxTokens":8192,"reasoning":true,"input":["text","image"],"api":"openai-completions","cost":{"input":1,"output":3}}]}}}
                 """);
             using var handler = new ModelHandler();
             using var http = new HttpClient(handler);
@@ -28,6 +28,10 @@ public sealed class ProviderModelRuntimeTests
             Assert.Equal("reasoner", selection.Model.Id);
             Assert.True(selection.Model.Reasoning);
             Assert.Equal(4096, selection.Model.ContextLength);
+            Assert.Equal("Reasoner One", selection.Model.Name);
+            Assert.Equal(8192, selection.Model.MaxOutputTokens);
+            Assert.Equal(["text", "image"], selection.Model.Input);
+            Assert.Equal("openai-completions", selection.Model.Api);
             Assert.Equal(1m, selection.Model.Pricing!.Input);
             Assert.Equal("local-secret", selection.ApiKey);
             Assert.Equal("https://fixture.test/v1/models", handler.Url);

@@ -28,6 +28,8 @@ After each significant change: add/update tests and parity evidence, run focused
 
 ## Completed in this continuation
 
+- Expanded the provider model descriptor with model name, API identifier, declared input modalities, and max output tokens; load these from local catalogues (including OpenRouter `architecture.input_modalities`) and configured `models.json`, and preserve configured fallback metadata when the live endpoint omits it. Unit fixtures added. This metadata is descriptive only: native provider request adapters and image transport remain open.
+- Revalidated with format verification, warning-as-error build, and all 130 tests after metadata changes.
 - Added CLI positional `@file` processing for text inputs across print, JSON, and initial interactive prompts: UTF-8 with BOM stripping, XML-safe absolute file names, empty-file skipping, tilde expansion, missing-file diagnostics, and explicit binary/image rejection. Parser and behavior tests pass; upstream Pi uses true image attachments, so this is a text-only partial.
 - Validation after this change: `dotnet format PiSharp.slnx --verify-no-changes`, `dotnet build PiSharp.slnx --warnaserror`, and `dotnet test PiSharp.slnx` pass (130/130).
 - Refreshed upstream baseline from the prior pin to `8676a0dcd8f9f6bca78835e63c8cd31493c4154d`; delta touches model/provider and image/classifier infrastructure, catalog protocol, Typesafe System One, provider composition and clipboard/X11 behavior.
