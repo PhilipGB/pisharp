@@ -1,6 +1,5 @@
 using System.Globalization;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 using PiSharp.Runtime.Providers;
 using PiSharp.Runtime.Sessions;
 
@@ -227,8 +226,33 @@ public sealed class ProviderModelRuntime
 
     private static bool GlobMatches(string pattern, string value)
     {
-        var expression = "^" + Regex.Escape(pattern).Replace("\\*", ".*").Replace("\\?", ".") + "$";
-        return Regex.IsMatch(value, expression, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        // Greedy wildcard matching avoids catastrophic regex backtracking for multi-star patterns.
+        var index = 0;
+        var cursor = 0;
+        var star = -1;
+        var retry = 0;
+        while (cursor < value.Length)
+        {
+            if (index < pattern.Length && (pattern[index] == '?' ||
+                char.ToUpperInvariant(pattern[index]) == char.ToUpperInvariant(value[cursor])))
+            {
+                index++;
+                cursor++;
+            }
+            else if (index < pattern.Length && pattern[index] == '*')
+            {
+                star = index++;
+                retry = cursor;
+            }
+            else if (star >= 0)
+            {
+                index = star + 1;
+                cursor = ++retry;
+            }
+            else return false;
+        }
+        while (index < pattern.Length && pattern[index] == '*') index++;
+        return index == pattern.Length;
     }
 
     private static ModelDescriptor Merge(ProviderProfile provider, ModelDescriptor discovered)

@@ -34,6 +34,7 @@ After each significant change: add/update tests and parity evidence, run focused
 
 ## Completed in this continuation
 
+- Model scope wildcard matching (`*`, `?`, case-insensitive) now uses greedy wildcard matching rather than exponential regex backtracking; local scope fixture covers provider prefixes and a many-star rejection. Upstream scope semantics remain unverified.
 - Configured provider `models.json` now has a 1MB read cap and rejects case-insensitive duplicate provider identities, invalid positive-integer metadata and OAuth declarations without an actual refresh adapter; local invalid-config fixtures. Continue auditing config schema/locks and provider auth parity.
 - Stored OAuth credentials are now rejected for API-key-only providers instead of passed as raw bearer tokens or silently replaced by ambient API keys. Local credential-boundary test; genuine provider OAuth adapters and refresh remain outstanding.
 - OpenAI-compatible model catalog parsing ignores malformed optional numeric metadata without aborting valid sibling entries; deterministic fixture. This is resilience evidence only, not provider parity.

@@ -109,6 +109,12 @@ public sealed class ProviderModelRuntimeTests
             Assert.Equal("https://fixture.test/v1/models", handler.Url);
             Assert.Equal("Bearer local-secret", handler.Authorization);
             Assert.DoesNotContain("unrelated-secret", handler.Authorization!);
+            runtime.SetScope(["CUSTOM/r?asoner"]);
+            Assert.Equal("reasoner", (await runtime.ResolveAsync("custom", "reasoner")).Model.Id);
+            runtime.SetScope(["r*o?er"]);
+            Assert.Equal("reasoner", (await runtime.ResolveAsync("custom", "reasoner")).Model.Id);
+            runtime.SetScope([string.Concat(Enumerable.Repeat("r*", 400)) + "z"]);
+            Assert.Empty(await runtime.ListModelsAsync("custom"));
             runtime.SetScope(["custom/other-*"]);
             await Assert.ThrowsAsync<ArgumentException>(() => runtime.ResolveAsync("custom", "reasoner"));
         }
