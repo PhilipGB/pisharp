@@ -34,6 +34,7 @@ After each significant change: add/update tests and parity evidence, run focused
 
 ## Completed in this continuation
 
+- `--offline` and truthy `PI_OFFLINE` now suppress dynamic OpenAI-compatible `/models` HTTP reads for discovery/listing while using configured/built-in models; a local fake HTTP fixture shows no catalog request and fuzzy configured selection, and subprocess fixtures verify both CLI and environment forms with an unreachable endpoint. This does not block inference traffic, auth refresh (not implemented), or establish upstream offline parity.
 - CLI trust aliases `-a`/`-na` and upstream `--mode text` now parse; text maps to existing TTY-sensitive interactive/print lifecycle, not a Pi protocol match. Parser conflict tests only; mode behavior and Pi CLI differential remain open.
 - CLI `-h/--help` and `-v/--version` work without reading invalid settings (subprocess fixture), and `-p`/`-c` aliases parse; version reports PiSharp assembly version rather than Pi's version. Other CLI flags, resume picker, and mode equivalence remain open.
 - CLI `--no-skills`/`-ns` and `--no-prompt-templates`/`-np` independently skip user/trusted-project discovery and remain disabled on reload. Local parser/catalog tests verify command/context removal and skipped oversized templates; an HTTP CLI process fixture compares provider request content with discovery enabled versus both disabled. Upstream explicit-path semantics and differential evidence remain open.

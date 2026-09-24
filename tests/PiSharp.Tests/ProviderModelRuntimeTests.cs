@@ -7,6 +7,28 @@ namespace PiSharp.Tests;
 public sealed class ProviderModelRuntimeTests
 {
     [Fact]
+    public async Task OfflineCatalogUsesConfiguredModelsWithoutNetworkButAllowsProviderSelection()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-offline-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(root, "models.json"), """
+                {"providers":{"fixture":{"baseUrl":"https://fixture.test/v1","models":[{"id":"example","contextWindow":4096},{"id":"second"}]}}}
+                """);
+            using var handler = new ModelHandler();
+            using var http = new HttpClient(handler);
+            var runtime = await ProviderModelRuntime.CreateAsync(root, false, _ => null, http, offline: true);
+            var models = await runtime.ListModelsAsync("fixture");
+            Assert.Equal(2, models.Count);
+            Assert.Equal("example", (await runtime.ResolveAsync("fixture", "exam")).Model.Id);
+            Assert.Equal(4096, models[0].ContextLength);
+            Assert.Null(handler.Url);
+            Assert.True(CliArguments.Parse(["--offline"]).Offline);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+    [Fact]
     public async Task OpenRouterUsesItsOwnCredentialAndOpenAiCompatibleEndpoint()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-openrouter-" + Guid.NewGuid().ToString("N"));

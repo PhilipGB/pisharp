@@ -25,16 +25,18 @@ public sealed class ProviderModelRuntime
     private readonly Func<string, string?> _environment;
     private readonly HttpClient _http;
     private readonly string? _runtimeApiKey;
+    private readonly bool _offline;
     private IReadOnlyList<string> _scope;
 
     private ProviderModelRuntime(Dictionary<string, ProviderProfile> providers, AuthStorage auth,
-        Func<string, string?> environment, HttpClient http, string? runtimeApiKey, IReadOnlyList<string>? scope)
+        Func<string, string?> environment, HttpClient http, string? runtimeApiKey, IReadOnlyList<string>? scope, bool offline)
     {
         _providers = providers;
         _auth = auth;
         _environment = environment;
         _http = http;
         _runtimeApiKey = runtimeApiKey;
+        _offline = offline;
         _scope = scope ?? [];
     }
 
@@ -43,7 +45,7 @@ public sealed class ProviderModelRuntime
 
     public static async Task<ProviderModelRuntime> CreateAsync(string agentDirectory, bool includeLocal,
         Func<string, string?> environment, HttpClient http, string? runtimeApiKey = null,
-        IReadOnlyList<string>? scope = null, CancellationToken cancellationToken = default)
+        IReadOnlyList<string>? scope = null, CancellationToken cancellationToken = default, bool offline = false)
     {
         var providers = new Dictionary<string, ProviderProfile>(StringComparer.OrdinalIgnoreCase)
         {
@@ -71,7 +73,7 @@ public sealed class ProviderModelRuntime
             catch (JsonException error) { throw new InvalidDataException("Invalid models.json JSON.", error); }
         }
         var authPath = environment("PISHARP_AUTH_PATH") ?? Path.Combine(agentDirectory, "auth.json");
-        return new ProviderModelRuntime(providers, new AuthStorage(authPath), environment, http, runtimeApiKey, scope);
+        return new ProviderModelRuntime(providers, new AuthStorage(authPath), environment, http, runtimeApiKey, scope, offline);
     }
 
     public ProviderProfile GetProvider(string id) => _providers.TryGetValue(id, out var provider) ? provider :
@@ -122,6 +124,11 @@ public sealed class ProviderModelRuntime
                     UnavailableReason = auth.Source,
                     Status = model.Status ?? "authentication required"
                 }));
+                continue;
+            }
+            if (_offline)
+            {
+                result.AddRange(provider.Models.Select(model => model with { Provider = provider.Id }));
                 continue;
             }
             try
