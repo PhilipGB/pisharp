@@ -12,36 +12,40 @@ public sealed class ConversationSession
     public string Id { get; }
     public string WorkingDirectory { get; }
     public string Model { get; private set; }
+    public string? Provider { get; private set; }
     public string? Endpoint { get; private set; }
     public string? Name { get; private set; }
     public ConversationTree Tree { get; }
 
-    public ConversationSession(string workingDirectory, string model, string? endpoint)
-        : this(Guid.NewGuid().ToString("N"), Path.GetFullPath(workingDirectory), model, endpoint, null, new ConversationTree()) { }
+    public ConversationSession(string workingDirectory, string model, string? endpoint, string? provider = null)
+        : this(Guid.NewGuid().ToString("N"), Path.GetFullPath(workingDirectory), model, endpoint, provider, null, new ConversationTree()) { }
 
-    private ConversationSession(string id, string cwd, string model, string? endpoint, string? name, ConversationTree tree)
+    private ConversationSession(string id, string cwd, string model, string? endpoint, string? provider, string? name, ConversationTree tree)
     {
         Id = id;
         WorkingDirectory = cwd;
         Model = model;
+        Provider = provider;
         Endpoint = endpoint;
         Name = name;
         Tree = tree;
     }
 
     public void Rename(string? name) => Name = name;
-    public void SelectModel(string model, string? endpoint)
+    public void SelectModel(string model, string? endpoint, string? provider = null)
     {
         if (string.IsNullOrWhiteSpace(model)) throw new ArgumentException("Model ID cannot be empty.", nameof(model));
         Model = model;
+        Provider = provider;
         Endpoint = endpoint;
-        Tree.Append("model_change", JsonSerializer.SerializeToElement(new { model, endpoint }));
+        Tree.Append("model_change", JsonSerializer.SerializeToElement(new { model, provider, endpoint }));
     }
 
     /// <summary>Rollback a model change that failed before becoming authoritative.</summary>
-    public void RevertModel(string model, string? endpoint, string? previousHead)
+    public void RevertModel(string model, string? endpoint, string? previousHead, string? provider = null)
     {
         Model = model;
+        Provider = provider;
         Endpoint = endpoint;
         Tree.Select(previousHead);
     }
@@ -204,14 +208,14 @@ public sealed class ConversationSession
         if (Tree.ActivePath().SkipWhile(node => node.Id != id).Any(node => node.Type == "model_change"))
             throw new InvalidOperationException("Forking across a model change requires per-branch provider selection.");
         var previous = Tree.ClonePath(entry.ParentId);
-        return (new ConversationSession(Guid.NewGuid().ToString("N"), WorkingDirectory, Model, Endpoint, Name, previous), message.Text);
+        return (new ConversationSession(Guid.NewGuid().ToString("N"), WorkingDirectory, Model, Endpoint, Provider, Name, previous), message.Text);
     }
 
-    public ConversationSession Fork() => new(Guid.NewGuid().ToString("N"), WorkingDirectory, Model, Endpoint, Name, Tree.CloneActivePath());
+    public ConversationSession Fork() => new(Guid.NewGuid().ToString("N"), WorkingDirectory, Model, Endpoint, Provider, Name, Tree.CloneActivePath());
 
     public string ToJson()
     {
-        var document = new Document(FormatVersion, Id, WorkingDirectory, Model, Endpoint, Name, Tree.HeadId, Tree.Entries.ToArray());
+        var document = new Document(FormatVersion, Id, WorkingDirectory, Model, Endpoint, Name, Tree.HeadId, Tree.Entries.ToArray(), Provider);
         return JsonSerializer.Serialize(document);
     }
 
@@ -255,7 +259,7 @@ public sealed class ConversationSession
                 throw new InvalidDataException($"Invalid compaction boundary at {node.Id}.");
         }
         tree.Select(document.HeadId); // An explicit null selection is distinct from the last appended entry.
-        return new ConversationSession(document.Id, document.WorkingDirectory, document.Model, document.Endpoint, document.Name, tree);
+        return new ConversationSession(document.Id, document.WorkingDirectory, document.Model, document.Endpoint, document.Provider, document.Name, tree);
     }
 
     private static void ValidateUsage(UsageRecord usage, string id)
@@ -290,5 +294,5 @@ public sealed class ConversationSession
     private sealed record ChatRecord(JsonElement Message, ToolError[]? Errors);
     private sealed record ToolError(int Index, string Type, string Message);
     private sealed record Document(int Version, string Id, string WorkingDirectory, string Model, string? Endpoint,
-        string? Name, string? HeadId, ConversationNode[] Entries);
+        string? Name, string? HeadId, ConversationNode[] Entries, string? Provider = null);
 }

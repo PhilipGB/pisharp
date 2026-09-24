@@ -69,6 +69,20 @@ class ControllerTests(unittest.TestCase):
         finally:
             first.close()
 
+    def test_quota_error_stops_immediately_without_exhausting_ledger(self):
+        self.assertEqual(4, self.controller("limit").run())
+        self.assertEqual(["first"], self.log.read_text().splitlines())
+        state = json.loads((self.runtime / "state.json").read_text())
+        self.assertEqual("first", state["active_task"])
+        self.assertIn("usage limit", state["stop_reason"])
+        self.assertEqual(0, state["attempts"]["first"])
+        self.assertFalse(state["completed"])
+
+    def test_other_provider_error_stops_without_dispatching_next_task(self):
+        self.assertEqual(4, self.controller("model-error").run())
+        self.assertEqual(["first"], self.log.read_text().splitlines())
+        self.assertIn("Provider unavailable", json.loads((self.runtime / "state.json").read_text())["stop_reason"])
+
     def test_missing_original_plan_blocks_final_completion(self):
         ledger = json.loads(self.ledger.read_text())
         ledger["plan_received"] = False

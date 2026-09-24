@@ -62,6 +62,14 @@ def git_head(repo):
     return subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=repo, text=True).strip()
 
 
+class ExternalLimitError(RuntimeError):
+    """Provider refused work due to an authentication, quota, or spending constraint."""
+
+
+class ProviderRunError(RuntimeError):
+    """A completed RPC run had an unsuccessful assistant response."""
+
+
 class RpcWorker:
     def __init__(self, command, cwd, lock_fd):
         self.process = subprocess.Popen(command, cwd=cwd, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
@@ -98,6 +106,7 @@ class RpcWorker:
         self.process.stdin.flush()
         end = time.monotonic() + timeout
         accepted = False
+        provider_error = None
         while time.monotonic() < end:
             try:
                 record = self.records.get(timeout=min(1, max(0.01, end - time.monotonic())))
@@ -109,7 +118,16 @@ class RpcWorker:
                 if record.get("success") is not True:
                     raise RuntimeError("RPC prompt rejected: " + str(record.get("error", "unknown error")))
                 accepted = True
+            elif record.get("type") == "message_end":
+                message = record.get("message") or {}
+                if message.get("role") == "assistant" and message.get("stopReason") in ("error", "aborted"):
+                    provider_error = str(message.get("errorMessage") or message.get("stopReason"))[:400]
             elif record.get("type") == "agent_settled" and accepted:
+                if provider_error:
+                    if any(word in provider_error.lower() for word in
+                           ("usage limit", "quota", "insufficient_quota", "billing", "spending limit", "authentication", "unauthorized")):
+                        raise ExternalLimitError("Provider constraint: " + provider_error)
+                    raise ProviderRunError("Provider failed: " + provider_error)
                 return
             elif record.get("type") in ("worker_eof", "protocol_error"):
                 raise RuntimeError(f"Worker stream ended or invalid: {self.errors[-2:]}")
@@ -249,6 +267,21 @@ class Controller:
                         # Don't submit the same unchanged prompt repeatedly; select another task.
                         self.state["attempts"][identifier] = self.max_attempts
                         self.state["active_task"] = None
+                except ExternalLimitError as error:
+                    self.state["stop_reason"] = str(error)
+                    self.state["progress"].append({"task": identifier, "event": "external_limit", "error": str(error)})
+                    self.state["active_task"] = identifier
+                    self.state["attempts"][identifier] -= 1  # No implementation work was performed.
+                    self.save()
+                    return 4
+
+                except ProviderRunError as error:
+                    self.state["stop_reason"] = str(error)
+                    self.state["progress"].append({"task": identifier, "event": "provider_failure", "error": str(error)})
+                    self.state["active_task"] = identifier
+                    self.state["attempts"][identifier] -= 1
+                    self.save()
+                    return 4
                 except (RuntimeError, TimeoutError, BrokenPipeError) as error:
                     self.state["progress"].append({"task": identifier, "event": "failure", "error": str(error)[:400]})
                     self.worker.close()

@@ -260,8 +260,15 @@
         "unavailable models and auth failures shown; don't log keys",
         "Verify through application workflow and compare docs/models.md, docs/providers.md; packages/coding-agent/src/core/model-, auth-storage.ts; provider adapters and capability-based selectors"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "Partial: src/PiSharp.Cli/{ProviderModelRuntime,AuthStorage,ThinkingLevels,CliArguments,Program}.cs selects configured OpenAI-compatible endpoints, adds model flags and interactive commands, and stores private credentials.",
+        "Partial: src/PiSharp.Runtime/{Providers/ModelCatalog,Sessions/ConversationSession,PiAgent}.cs records provider/model metadata, persists the provider ID, and passes reasoning options to MAF."
+      ],
+      "evidence": [
+        "tests/PiSharp.Tests/ProviderModelRuntimeTests.cs: deterministic custom endpoint key isolation, configured metadata and fuzzy lookup, no /models request for exact IDs, private credential restart/symlink/permission checks, and CLI missing-auth rejection.",
+        "tests/PiSharp.Tests/CrashRecoveryProcessTests.cs: a prompt reaches an endpoint with no /models route and checkpoints its tool outcome; existing startup-model conflict process test remains passing.",
+        "dotnet format --verify-no-changes and warning-as-error build passed; 123/123 deterministic PiSharp tests plus 10/10 controller fixture tests passed on 2026-09-24. Full provider/OAuth/PTY behaviour remains unverified."
+      ],
       "dependencies": []
     },
     {

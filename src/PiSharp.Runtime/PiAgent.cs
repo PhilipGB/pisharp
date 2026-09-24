@@ -17,7 +17,8 @@ public sealed class PiAgent
     private int _providerRequestIndex;
 
     public PiAgent(IChatClient client, CodingTools tools, IReadOnlyList<string>? selectedTools = null, IReadOnlyList<string>? excludedTools = null, bool noTools = false, string? contextInstructions = null, string? systemPrompt = null, string? appendSystemPrompt = null,
-        IReadOnlyCollection<AIFunction>? extensionTools = null, ProviderRetryPolicy? retryPolicy = null)
+        IReadOnlyCollection<AIFunction>? extensionTools = null, ProviderRetryPolicy? retryPolicy = null,
+        ReasoningOptions? reasoning = null)
     {
         _summarizer = new ChatClientAgent(client, new ChatClientAgentOptions
         {
@@ -43,7 +44,8 @@ public sealed class PiAgent
                 ChatOptions = new ChatOptions
                 {
                     Instructions = (systemPrompt ?? "You are PiSharp, a coding agent. Inspect files before modifying them when tools are available. Use only the tools provided for this run.") + "\n\n" + (appendSystemPrompt ?? "") + "\n\n" + (contextInstructions ?? ""),
-                    Tools = builtin.Concat(external).Select(tool => tool is AIFunction function ? new DurableToolFunction(function, () => _active, value => _events?.Invoke(value)) : tool).Cast<AITool>().ToArray()
+                    Tools = builtin.Concat(external).Select(tool => tool is AIFunction function ? new DurableToolFunction(function, () => _active, value => _events?.Invoke(value)) : tool).Cast<AITool>().ToArray(),
+                    Reasoning = reasoning
                 }
             });
     }

@@ -20,41 +20,46 @@ catch (ArgumentException e)
 }
 if (cli.Help)
 {
-    Console.WriteLine("PiSharp (incomplete implementation)\nUsage: pisharp [--local] [--approve|--no-approve] [--mode interactive|print|json|rpc] [--print] [--continue | --session <path|project-id> | --fork <path|project-id> | --no-session] [--session-dir <dir>] [--list-models] [--model <id>] [--name <label>] [prompt]\n--tools <read,bash,edit,write,grep,find,ls> selects tools (grep/find/ls are opt-in); --exclude-tools <names> removes tools; --no-tools disables defaults.\n--local uses http://192.168.0.97:8000/v1 and Qwen3.8-27B-GGUF (no API key required).\nOverride with PISHARP_BASE_URL, PISHARP_MODEL, PISHARP_API_KEY. OPENAI_API_KEY is used only for OpenAI. Context limits and per-million-token prices may be supplied with PISHARP_CONTEXT_WINDOW_TOKENS, PISHARP_CONTEXT_RESERVE_TOKENS, PISHARP_INPUT_COST_PER_MILLION, PISHARP_OUTPUT_COST_PER_MILLION, and PISHARP_CACHED_INPUT_COST_PER_MILLION.\nInteractive: /tree, /branch <id>, /fork, /clone, /new, /sessions [filter], /resume <id>, /delete-session <id>, /compact, /export [path], /name <label>, /model <id>, /models, /session, /trust yes|no|forget, /reload, /quit; Ctrl+C interrupts.");
+    Console.WriteLine("PiSharp (incomplete implementation)\nUsage: pisharp [--local | --provider <id>] [--model <id>] [--models <globs>] [--thinking <level>] [--api-key <key>] [--list-models] [--approve|--no-approve] [--mode interactive|print|json|rpc] [--print] [--continue | --session <path|project-id> | --fork <path|project-id> | --no-session] [--session-dir <dir>] [--name <label>] [prompt]\n--tools <read,bash,edit,write,grep,find,ls> selects tools (grep/find/ls are opt-in); --exclude-tools <names> removes tools; --no-tools disables defaults.\nProviders and static model metadata may be configured in $PISHARP_AGENT_DIR/models.json. Credentials are read from environment or private auth.json; --api-key is runtime-only.\n--local uses http://192.168.0.97:8000/v1 and Qwen3.8-27B-GGUF (no API key required).\nInteractive: /model, /models, /thinking, /scoped-models, /login, /logout, /tree, /branch, /fork, /clone, /new, /sessions, /resume, /delete-session, /compact, /export, /name, /session, /trust, /reload, /quit.");
     return;
 }
+var agentDirectory = Environment.GetEnvironmentVariable("PISHARP_AGENT_DIR") ??
+    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".pisharp", "agent");
+using var catalogHttp = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
+ProviderModelRuntime modelRuntime;
+ModelSelection selection;
 ConnectionSettings connection;
+var thinking = cli.Thinking ?? "off";
 try
 {
-    connection = ConnectionSettings.Resolve(cli.Local, Environment.GetEnvironmentVariable);
-    if (cli.ModelOverride is not null) connection = connection with { Model = cli.ModelOverride };
+    modelRuntime = await ProviderModelRuntime.CreateAsync(agentDirectory, cli.Local,
+        Environment.GetEnvironmentVariable, catalogHttp, cli.ApiKey, cli.ScopedModels);
+    selection = await modelRuntime.ResolveAsync(cli.Provider ?? (cli.Local ? "local" : null), cli.ModelOverride);
+    thinking = ThinkingLevels.ValidateForModel(thinking, selection.Model.Reasoning);
+    connection = selection.Connection;
 }
-catch (ArgumentException e)
+catch (Exception error) when (error is ArgumentException or InvalidOperationException or InvalidDataException or IOException or System.Text.Json.JsonException)
 {
-    Console.Error.WriteLine(e.Message);
+    Console.Error.WriteLine(error.Message);
     Environment.ExitCode = 2;
     return;
 }
-
-using var catalogHttp = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
 async Task<IReadOnlyList<ModelDescriptor>> GetModelsAsync(CancellationToken token = default) =>
-    await ModelCatalog.ListAsync(catalogHttp, connection.Endpoint, connection.ApiKey, token);
+    await modelRuntime.ListModelsAsync(cli.Provider, token);
 if (cli.ListModels)
 {
-    try
-    {
-        foreach (var model in await GetModelsAsync()) Console.WriteLine($"{model.Id}\t{model.Status ?? ""}\t{model.ContextLength?.ToString() ?? ""}");
-    }
-    catch (Exception error) when (error is HttpRequestException or TaskCanceledException or InvalidDataException or System.Text.Json.JsonException)
-    { Console.Error.WriteLine($"Could not list models: {error.Message}"); Environment.ExitCode = 1; }
+    foreach (var model in await GetModelsAsync())
+        Console.WriteLine($"{model.Provider}/{model.Id}\t{(model.Available ? model.Status ?? "available" : model.UnavailableReason ?? "unavailable")}\t{model.ContextLength?.ToString() ?? ""}");
     return;
 }
-var options = new OpenAIClientOptions();
-if (connection.Endpoint is not null) options.Endpoint = connection.Endpoint;
-var client = new OpenAIClient(new ApiKeyCredential(connection.ApiKey), options);
+OpenAIClient CreateClient(ModelSelection selected)
+{
+    var options = new OpenAIClientOptions();
+    if (selected.Connection.Endpoint is not null) options.Endpoint = selected.Connection.Endpoint;
+    return new OpenAIClient(new ApiKeyCredential(selected.ApiKey), options);
+}
+var client = CreateClient(selection);
 IChatClient chat = client.GetChatClient(connection.Model).AsIChatClient();
-var agentDirectory = Environment.GetEnvironmentVariable("PISHARP_AGENT_DIR") ??
-    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".pisharp", "agent");
 var trustStore = new ProjectTrust(agentDirectory);
 bool trusted;
 string instructions;
@@ -82,7 +87,8 @@ PiAgent agent;
 try
 {
     agent = new PiAgent(chat, new CodingTools(Environment.CurrentDirectory), cli.Tools, cli.ExcludeTools, cli.NoTools,
-    instructions, prompts.System, prompts.Append, extensionLease.Current.Registration.Tools);
+    instructions, prompts.System, prompts.Append, extensionLease.Current.Registration.Tools,
+    reasoning: ThinkingLevels.ToOptions(thinking));
 }
 catch (ArgumentException e)
 {
@@ -97,7 +103,9 @@ ModelPricing? modelPricing;
 try
 {
     contextPolicy = AutoCompactionPolicy.FromEnvironment(Environment.GetEnvironmentVariable);
-    modelPricing = ModelPricing.FromEnvironment(Environment.GetEnvironmentVariable);
+    if (contextPolicy is null && selection.Model.ContextLength is int contextWindow)
+        contextPolicy = new AutoCompactionPolicy(contextWindow, Math.Min(16_384, contextWindow / 4));
+    modelPricing = ModelPricing.FromEnvironment(Environment.GetEnvironmentVariable) ?? selection.Model.Pricing;
 }
 catch (ArgumentException error) { Console.Error.WriteLine(error.Message); Environment.ExitCode = 2; return; }
 Task<ConversationRun> OpenRunAsync(PiAgent runningAgent, ConversationSession session, string? path) =>
@@ -122,17 +130,30 @@ try
     else
         conversation = sessionPath is not null && File.Exists(sessionPath)
             ? await store.LoadAsync(sessionPath)
-            : new ConversationSession(Environment.CurrentDirectory, connection.Model, connection.Endpoint?.ToString());
-    if (conversation.Endpoint != connection.Endpoint?.ToString())
-        throw new InvalidDataException("Session endpoint differs from the current connection. Set PISHARP_BASE_URL to the saved endpoint first.");
-    if (conversation.Model != connection.Model)
+            : new ConversationSession(Environment.CurrentDirectory, connection.Model, connection.Endpoint?.ToString(), selection.Provider.Id);
+    var explicitConnection = cli.Local || cli.Provider is not null || cli.ModelOverride is not null ||
+        Environment.GetEnvironmentVariable("PISHARP_MODEL") is not null || Environment.GetEnvironmentVariable("PISHARP_BASE_URL") is not null;
+    var savedProvider = conversation.Provider ?? modelRuntime.Providers.FirstOrDefault(item =>
+        string.Equals(item.Endpoint.ToString().TrimEnd('/'), conversation.Endpoint?.TrimEnd('/'), StringComparison.OrdinalIgnoreCase))?.Id ??
+        (conversation.Endpoint is null ? "openai" : null);
+    if (savedProvider is null)
+        throw new InvalidDataException("Session provider cannot be resolved from models.json or the saved endpoint.");
+    if (explicitConnection && (conversation.Model != connection.Model || conversation.Endpoint != connection.Endpoint?.ToString() ||
+        conversation.Provider is not null && !conversation.Provider.Equals(selection.Provider.Id, StringComparison.OrdinalIgnoreCase)))
+        throw new InvalidDataException("Requested provider/model conflicts with the saved session model or endpoint. Open it without explicit model flags and use /model after opening.");
+    if (!explicitConnection && (conversation.Model != connection.Model || conversation.Endpoint != connection.Endpoint?.ToString() ||
+        !savedProvider.Equals(selection.Provider.Id, StringComparison.OrdinalIgnoreCase)))
     {
-        if (Environment.GetEnvironmentVariable("PISHARP_MODEL") is not null || cli.ModelOverride is not null)
-            throw new InvalidDataException("Requested model conflicts with the saved session model. Open it without --model/PISHARP_MODEL and use /model after opening.");
-        connection = connection with { Model = conversation.Model };
+        selection = await modelRuntime.ResolveAsync(savedProvider, conversation.Model);
+        connection = selection.Connection;
+        thinking = ThinkingLevels.ValidateForModel(thinking, selection.Model.Reasoning);
+        client = CreateClient(selection);
+        contextPolicy = AutoCompactionPolicy.FromEnvironment(Environment.GetEnvironmentVariable) ??
+            (selection.Model.ContextLength is int savedWindow ? new AutoCompactionPolicy(savedWindow, Math.Min(16_384, savedWindow / 4)) : null);
+        modelPricing = ModelPricing.FromEnvironment(Environment.GetEnvironmentVariable) ?? selection.Model.Pricing;
         agent = new PiAgent(client.GetChatClient(connection.Model).AsIChatClient(),
             new CodingTools(Environment.CurrentDirectory), cli.Tools, cli.ExcludeTools, cli.NoTools, instructions, prompts.System, prompts.Append,
-            extensionLease.Current.Registration.Tools);
+            extensionLease.Current.Registration.Tools, reasoning: ThinkingLevels.ToOptions(thinking));
     }
     if (cli.SessionName is not null) conversation.Rename(cli.SessionName);
     if (!cli.NoSession) sessionPath ??= store.NewPath(conversation);
@@ -149,11 +170,17 @@ catch (Exception e) when (e is IOException or InvalidDataException or Unauthoriz
 }
 bool print = cli.Print || cli.Mode == "print" || Console.IsInputRedirected || Console.IsOutputRedirected;
 var prompt = cli.Prompt;
+if (!selection.Authenticated && (print || cli.Mode is "json" or "rpc" || !string.IsNullOrWhiteSpace(prompt)))
+{
+    Console.Error.WriteLine($"Provider '{selection.Provider.Id}' is not authenticated. Use /login {selection.Provider.Id} in an interactive terminal or configure {selection.Provider.ApiKeyEnvironment ?? "a credential"}.");
+    Environment.ExitCode = 2;
+    return;
+}
 TerminalEditor? editor = !print && cli.Mode is not ("json" or "rpc") ? new TerminalEditor(() =>
     resources.Skills.Select(item => "/skill:" + item.Name)
         .Concat(resources.Prompts.Select(item => "/" + item.Name))
         .Concat(extensionLease.Current.Registration.Commands.Keys.Select(name => "/" + name)).ToArray()) : null;
-if (editor is not null) Console.WriteLine($"PiSharp · {connection.Model} · {Environment.CurrentDirectory}\n/tree · /branch · /fork · /new · /name · /model · /session · /trust · /reload · /quit · Escape interrupts; Enter steers; Alt+Enter follows up\n");
+if (editor is not null) Console.WriteLine($"PiSharp · {selection.Provider.Id}/{connection.Model} · thinking {thinking} · {Environment.CurrentDirectory}\n/model · /thinking · /scoped-models · /login · /logout · /tree · /fork · /new · /session · /quit · Escape interrupts; Enter steers; Alt+Enter follows up\n");
 CancellationTokenSource? activeRun = null;
 Console.CancelKeyPress += (_, e) => { e.Cancel = true; activeRun?.Cancel(); };
 
@@ -235,6 +262,52 @@ async Task Run(string input)
     }
 }
 
+async Task ReplaceModelRuntime(ModelSelection nextSelection, string nextThinking, bool recordModelChange,
+    bool requireAuthenticated = true)
+{
+    if (requireAuthenticated && !nextSelection.Authenticated)
+        throw new InvalidOperationException($"Provider '{nextSelection.Provider.Id}' is not authenticated. Use /login {nextSelection.Provider.Id}.");
+    nextThinking = ThinkingLevels.ValidateForModel(nextThinking, nextSelection.Model.Reasoning);
+    var nextConnection = nextSelection.Connection;
+    var nextClient = CreateClient(nextSelection);
+    var nextPolicy = AutoCompactionPolicy.FromEnvironment(Environment.GetEnvironmentVariable) ??
+        (nextSelection.Model.ContextLength is int window ? new AutoCompactionPolicy(window, Math.Min(16_384, window / 4)) : null);
+    var nextPricing = ModelPricing.FromEnvironment(Environment.GetEnvironmentVariable) ?? nextSelection.Model.Pricing;
+    var nextAgent = new PiAgent(nextClient.GetChatClient(nextConnection.Model).AsIChatClient(),
+        new CodingTools(Environment.CurrentDirectory), cli.Tools, cli.ExcludeTools, cli.NoTools,
+        instructions, prompts.System, prompts.Append, extensionLease.Current.Registration.Tools,
+        reasoning: ThinkingLevels.ToOptions(nextThinking));
+    var previousHead = conversation.Tree.HeadId;
+    var previousSelection = selection;
+    var previousConnection = connection;
+    var previousPolicy = contextPolicy;
+    var previousPricing = modelPricing;
+    try
+    {
+        if (recordModelChange)
+            conversation.SelectModel(nextConnection.Model, nextConnection.Endpoint?.ToString(), nextSelection.Provider.Id);
+        contextPolicy = nextPolicy;
+        modelPricing = nextPricing;
+        var nextRun = await OpenRunAsync(nextAgent, conversation, sessionPath);
+        if (sessionPath is not null) await store.SaveAsync(conversation, sessionPath);
+        selection = nextSelection;
+        connection = nextConnection;
+        client = nextClient;
+        agent = nextAgent;
+        conversationRun = nextRun;
+        thinking = nextThinking;
+    }
+    catch
+    {
+        contextPolicy = previousPolicy;
+        modelPricing = previousPricing;
+        if (recordModelChange)
+            conversation.RevertModel(previousConnection.Model, previousConnection.Endpoint?.ToString(), previousHead,
+                previousSelection.Provider.Id);
+        throw;
+    }
+}
+
 async Task ReloadResources()
 {
     var nextResources = await ResourceCatalog.LoadAsync(Environment.CurrentDirectory, agentDirectory, trusted);
@@ -246,7 +319,8 @@ async Task ReloadResources()
     {
         var nextAgent = new PiAgent(client.GetChatClient(connection.Model).AsIChatClient(),
             new CodingTools(Environment.CurrentDirectory), cli.Tools, cli.ExcludeTools, cli.NoTools,
-            nextContext, nextPrompts.System, nextPrompts.Append, nextExtensions.Registration.Tools);
+            nextContext, nextPrompts.System, nextPrompts.Append, nextExtensions.Registration.Tools,
+            reasoning: ThinkingLevels.ToOptions(thinking));
         var path = sessionPath;
         var nextRun = await OpenRunAsync(nextAgent, conversation, path);
         extensionLease.Replace(nextExtensions);
@@ -257,6 +331,23 @@ async Task ReloadResources()
         conversationRun = nextRun;
     }
     catch { nextExtensions.Dispose(); throw; }
+}
+string? ReadSecret()
+{
+    if (Console.IsInputRedirected) return Console.ReadLine();
+    var value = new System.Text.StringBuilder();
+    while (true)
+    {
+        var key = Console.ReadKey(intercept: true);
+        if (key.Key == ConsoleKey.Enter) { Console.Error.WriteLine(); return value.ToString(); }
+        if (key.Key is ConsoleKey.Escape) { Console.Error.WriteLine(); return null; }
+        if (key.Key == ConsoleKey.Backspace)
+        {
+            if (value.Length > 0) value.Length--;
+            continue;
+        }
+        if (!char.IsControl(key.KeyChar)) value.Append(key.KeyChar);
+    }
 }
 if (cli.Mode == "rpc")
 {
@@ -341,8 +432,9 @@ else
                         if (listing.Path == sessionPath) { Console.WriteLine("Already in this session."); break; }
                         if (sessionPath is not null) await store.SaveAsync(conversation, sessionPath);
                         var resumedConversation = await store.LoadAsync(listing.Path);
-                        if (resumedConversation.Model != connection.Model || resumedConversation.Endpoint != connection.Endpoint?.ToString())
-                            throw new InvalidOperationException("Session uses another model or endpoint; open it directly with --session.");
+                        if (resumedConversation.Model != connection.Model || resumedConversation.Endpoint != connection.Endpoint?.ToString() ||
+                            resumedConversation.Provider is not null && !resumedConversation.Provider.Equals(selection.Provider.Id, StringComparison.OrdinalIgnoreCase))
+                            throw new InvalidOperationException("Session uses another provider, model, or endpoint; open it directly with --session.");
                         var resumedRun = await OpenRunAsync(agent, resumedConversation, listing.Path);
                         conversation = resumedConversation;
                         conversationRun = resumedRun;
@@ -350,9 +442,52 @@ else
                         Console.WriteLine($"Resumed {conversation.Id[..12]} · {conversation.Name ?? "(unnamed)"}");
                         break;
                     case "/models":
-                        foreach (var model in (await GetModelsAsync()).Where(item =>
-                            string.IsNullOrEmpty(argument) || item.Id.Contains(argument, StringComparison.OrdinalIgnoreCase)))
-                            Console.WriteLine($"{model.Id}{(model.Status is null ? "" : " · " + model.Status)}{(model.ContextLength is null ? "" : " · " + model.ContextLength + " tokens")}");
+                        foreach (var model in (await GetModelsAsync()).Where(item => string.IsNullOrEmpty(argument) ||
+                            item.Id.Contains(argument, StringComparison.OrdinalIgnoreCase) ||
+                            (item.Provider?.Contains(argument, StringComparison.OrdinalIgnoreCase) ?? false)))
+                            Console.WriteLine($"{model.Provider}/{model.Id} · {(model.Available ? model.Status ?? "available" : model.UnavailableReason ?? "unavailable")}" +
+                                $"{(model.Reasoning == true ? " · reasoning" : "")}{(model.ContextLength is null ? "" : " · " + model.ContextLength + " tokens")}");
+                        break;
+                    case "/scoped-models":
+                        if (argument.Length > 0)
+                            modelRuntime.SetScope(argument.Split([',', ' '], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+                        Console.WriteLine(modelRuntime.Scope.Count == 0 ? "Scoped models: all" :
+                            "Scoped models: " + string.Join(", ", modelRuntime.Scope));
+                        foreach (var scoped in await GetModelsAsync())
+                            Console.WriteLine($"  {scoped.Provider}/{scoped.Id}{(scoped.Available ? "" : " · unavailable")}");
+                        break;
+                    case "/thinking":
+                        if (argument.Length == 0)
+                        {
+                            Console.WriteLine($"Thinking: {thinking}; available: " +
+                                (selection.Model.Reasoning == true ? string.Join(", ", ThinkingLevels.All) : "off"));
+                            break;
+                        }
+                        await ReplaceModelRuntime(selection, argument, recordModelChange: false);
+                        Console.WriteLine($"Thinking: {thinking}");
+                        break;
+                    case "/login":
+                        var loginParts = argument.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                        var loginProvider = loginParts.ElementAtOrDefault(0) ?? selection.Provider.Id;
+                        var loginType = loginParts.ElementAtOrDefault(1) ?? "api-key";
+                        if (loginParts.Length > 2 || loginType is not ("api-key" or "oauth"))
+                            throw new ArgumentException("Use /login [provider] [api-key|oauth]. The secret is prompted and must not be included in the command.");
+                        Console.Error.Write($"{(loginType == "oauth" ? "OAuth access token" : "API key")} for {loginProvider}: ");
+                        var secret = ReadSecret();
+                        if (string.IsNullOrWhiteSpace(secret)) throw new ArgumentException("Credential cannot be empty.");
+                        if (loginType == "oauth") await modelRuntime.LoginOAuthAsync(loginProvider, secret);
+                        else await modelRuntime.LoginApiKeyAsync(loginProvider, secret);
+                        Console.WriteLine($"Authenticated {loginProvider} with {loginType}; credential value was not displayed.");
+                        if (loginProvider.Equals(selection.Provider.Id, StringComparison.OrdinalIgnoreCase))
+                            await ReplaceModelRuntime(await modelRuntime.ResolveAsync(selection.Provider.Id, selection.Model.Id), thinking, false);
+                        break;
+                    case "/logout":
+                        var logoutProvider = argument.Length == 0 ? selection.Provider.Id : argument;
+                        var removed = await modelRuntime.LogoutAsync(logoutProvider);
+                        Console.WriteLine(removed ? $"Logged out {logoutProvider}." : $"No stored credential for {logoutProvider}.");
+                        if (logoutProvider.Equals(selection.Provider.Id, StringComparison.OrdinalIgnoreCase))
+                            await ReplaceModelRuntime(await modelRuntime.ResolveAsync(selection.Provider.Id, selection.Model.Id),
+                                thinking, false, requireAuthenticated: false);
                         break;
                     case "/compact":
                         Console.WriteLine(await conversationRun.CompactAsync(argument) ? "Context compacted; full history retained." :
@@ -405,21 +540,15 @@ else
                         Console.WriteLine("Project resources reloaded.");
                         break;
                     case "/model":
-                        if (string.IsNullOrWhiteSpace(argument)) throw new ArgumentException("Specify a model ID.");
-                        var nextAgent = new PiAgent(client.GetChatClient(argument).AsIChatClient(),
-                            new CodingTools(Environment.CurrentDirectory), cli.Tools, cli.ExcludeTools, cli.NoTools, instructions, prompts.System, prompts.Append, extensionLease.Current.Registration.Tools);
-                        var previousHead = conversation.Tree.HeadId;
-                        try
+                        if (string.IsNullOrWhiteSpace(argument))
                         {
-                            conversation.SelectModel(argument, connection.Endpoint?.ToString());
-                            var nextRun = await OpenRunAsync(nextAgent, conversation, sessionPath);
-                            if (sessionPath is not null) await store.SaveAsync(conversation, sessionPath);
-                            agent = nextAgent;
-                            conversationRun = nextRun;
-                            connection = connection with { Model = argument };
-                            Console.WriteLine($"Model: {argument}");
+                            Console.WriteLine($"Model: {selection.Provider.Id}/{selection.Model.Id} · thinking {thinking} · auth {selection.AuthSource}");
+                            break;
                         }
-                        catch { conversation.RevertModel(connection.Model, connection.Endpoint?.ToString(), previousHead); throw; }
+                        var nextSelection = await modelRuntime.ResolveAsync(null, argument);
+                        var compatibleThinking = nextSelection.Model.Reasoning == true ? thinking : "off";
+                        await ReplaceModelRuntime(nextSelection, compatibleThinking, recordModelChange: true);
+                        Console.WriteLine($"Model: {selection.Provider.Id}/{selection.Model.Id} · thinking {thinking}");
                         break;
                     case "/fork":
                         var forkable = conversation.ForkableUserMessages();
@@ -447,7 +576,7 @@ else
                     case "/clone":
                         if (sessionPath is not null) await store.SaveAsync(conversation, sessionPath);
                         conversation = command == "/clone" ? conversation.Fork()
-                            : new ConversationSession(Environment.CurrentDirectory, connection.Model, connection.Endpoint?.ToString());
+                            : new ConversationSession(Environment.CurrentDirectory, connection.Model, connection.Endpoint?.ToString(), selection.Provider.Id);
                         sessionPath = cli.NoSession ? null : store.NewPath(conversation);
                         var newPath = sessionPath;
                         conversationRun = await OpenRunAsync(agent, conversation, newPath);

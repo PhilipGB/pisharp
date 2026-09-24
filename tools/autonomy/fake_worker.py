@@ -14,6 +14,12 @@ for line in sys.stdin:
     if mode == "crash-once" and not log.with_suffix(".restarted").exists():
         log.with_suffix(".restarted").touch()
         sys.exit(23)
+    if mode in ("limit", "model-error"):
+        detail = "Codex error: The usage limit has been reached" if mode == "limit" else "Provider unavailable"
+        print(json.dumps({"type": "message_end", "message": {"role": "assistant",
+            "stopReason": "error", "errorMessage": detail}}), flush=True)
+        print(json.dumps({"type": "agent_settled"}), flush=True)
+        continue
     if mode != "never-update":
         value = json.loads(ledger.read_text())
         task = next(t for t in value["tasks"] if t["id"] == task_id)

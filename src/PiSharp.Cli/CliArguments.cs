@@ -1,7 +1,8 @@
 namespace PiSharp.Cli;
 
 public sealed record CliArguments(bool Help, bool Local, bool Print, bool Continue, bool NoSession, string? SessionPath, string Prompt,
-    IReadOnlyList<string>? Tools, IReadOnlyList<string>? ExcludeTools, bool NoTools, string Mode, bool? ProjectTrustOverride = null, string? SessionDirectory = null, bool ListModels = false, string? ModelOverride = null, string? SessionName = null, string? ForkSource = null)
+    IReadOnlyList<string>? Tools, IReadOnlyList<string>? ExcludeTools, bool NoTools, string Mode, bool? ProjectTrustOverride = null, string? SessionDirectory = null, bool ListModels = false, string? ModelOverride = null, string? SessionName = null, string? ForkSource = null,
+    string? Provider = null, IReadOnlyList<string>? ScopedModels = null, string? Thinking = null, string? ApiKey = null)
 {
     private static IReadOnlyList<string> ParseToolNames(string[] arguments, ref int index, string flag)
     {
@@ -14,8 +15,9 @@ public sealed record CliArguments(bool Help, bool Local, bool Print, bool Contin
         bool help = false, local = false, print = false, resume = false, noSession = false, noTools = false, afterSeparator = false, listModels = false;
         bool? trust = null;
         string? sessionPath = null, sessionDirectory = null, modelOverride = null, sessionName = null, forkSource = null;
+        string? provider = null, thinking = null, apiKey = null;
         var mode = "interactive";
-        IReadOnlyList<string>? tools = null, excludeTools = null;
+        IReadOnlyList<string>? tools = null, excludeTools = null, scopedModels = null;
         var prompt = new List<string>();
         for (var i = 0; i < arguments.Length; i++)
         {
@@ -57,6 +59,24 @@ public sealed record CliArguments(bool Help, bool Local, bool Print, bool Contin
                         throw new ArgumentException("--model requires a model ID.");
                     modelOverride = arguments[i];
                     break;
+                case "--provider":
+                    if (++i >= arguments.Length || string.IsNullOrWhiteSpace(arguments[i]) || arguments[i].StartsWith('-'))
+                        throw new ArgumentException("--provider requires a provider ID.");
+                    provider = arguments[i];
+                    break;
+                case "--models":
+                    scopedModels = ParseToolNames(arguments, ref i, "--models");
+                    break;
+                case "--thinking":
+                    if (++i >= arguments.Length || !ThinkingLevels.IsValid(arguments[i]))
+                        throw new ArgumentException("--thinking requires off, minimal, low, medium, high, or xhigh.");
+                    thinking = arguments[i].ToLowerInvariant();
+                    break;
+                case "--api-key":
+                    if (++i >= arguments.Length || string.IsNullOrWhiteSpace(arguments[i]) || arguments[i].StartsWith('-'))
+                        throw new ArgumentException("--api-key requires a value.");
+                    apiKey = arguments[i];
+                    break;
                 case "--name":
                 case "-n":
                     if (++i >= arguments.Length || string.IsNullOrWhiteSpace(arguments[i]) || arguments[i].StartsWith('-'))
@@ -92,6 +112,9 @@ public sealed record CliArguments(bool Help, bool Local, bool Print, bool Contin
         if (mode == "rpc" && prompt.Count > 0) throw new ArgumentException("RPC mode reads commands from stdin, not positional prompts.");
         if (listModels && (prompt.Count > 0 || mode != "interactive" || print || resume || sessionPath is not null || noSession || sessionName is not null || forkSource is not null))
             throw new ArgumentException("--list-models cannot be combined with a prompt, mode or session operation.");
-        return new CliArguments(help, local, print, resume, noSession, sessionPath, string.Join(" ", prompt), tools, excludeTools, noTools, mode, trust, sessionDirectory, listModels, modelOverride, sessionName, forkSource);
+        if (local && provider is not null && !provider.Equals("local", StringComparison.OrdinalIgnoreCase))
+            throw new ArgumentException("--local cannot be combined with a provider other than local.");
+        return new CliArguments(help, local, print, resume, noSession, sessionPath, string.Join(" ", prompt), tools, excludeTools, noTools, mode, trust, sessionDirectory, listModels, modelOverride, sessionName, forkSource,
+            provider, scopedModels, thinking, apiKey);
     }
 }

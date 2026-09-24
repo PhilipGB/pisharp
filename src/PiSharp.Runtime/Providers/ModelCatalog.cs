@@ -6,7 +6,8 @@ using PiSharp.Runtime.Sessions;
 namespace PiSharp.Runtime.Providers;
 
 public sealed record ModelDescriptor(string Id, string? Owner, int? ContextLength, string? Status,
-    bool? Reasoning = null, ModelPricing? Pricing = null);
+    bool? Reasoning = null, ModelPricing? Pricing = null, string? Provider = null,
+    bool Available = true, string? UnavailableReason = null);
 
 /// <summary>Discover OpenAI-compatible model IDs without coupling model metadata to a specific SDK.</summary>
 public static class ModelCatalog
