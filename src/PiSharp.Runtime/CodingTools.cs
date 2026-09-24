@@ -51,7 +51,8 @@ public sealed class CodingTools(string workingDirectory)
             var resolved = Resolve(path);
             if (new FileInfo(resolved).Length > 2 * 1024 * 1024)
                 return await StreamingTextReader.SelectAsync(resolved, path, offset, limit, cancellationToken);
-            var text = await File.ReadAllTextAsync(resolved, cancellationToken);
+            var bytes = await File.ReadAllBytesAsync(resolved, cancellationToken);
+            var text = Encoding.UTF8.GetString(bytes);
             return ReadTextPlanner.Select(text, path, offset, limit);
         }
         catch (ArgumentOutOfRangeException e) { throw new ToolFailureException(e.Message.Split('\n')[0], inner: e); }

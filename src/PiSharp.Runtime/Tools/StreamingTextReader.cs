@@ -22,10 +22,6 @@ internal static class StreamingTextReader
         long firstLength = 0;
         long selectedBytes = 0;
         bool lastEmpty = false;
-        var bom = new byte[3];
-        var bomCount = await stream.ReadAsync(bom, cancellationToken);
-        if (bomCount != 3 || bom[0] != 0xEF || bom[1] != 0xBB || bom[2] != 0xBF) stream.Position = 0;
-
         void FinishLine()
         {
             total++;

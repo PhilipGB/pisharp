@@ -40,4 +40,19 @@ public sealed class StreamingReadTests
         }
         finally { Directory.Delete(root, recursive: true); }
     }
+
+    [Fact]
+    public async Task LargeUtf8ReadPreservesBomLikePinnedNodeDecoder()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-read-bom-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            var text = "\uFEFF" + string.Concat(Enumerable.Repeat(new string('x', 1_300) + "\n", 1_700));
+            Assert.True(Encoding.UTF8.GetByteCount(text) > 2 * 1024 * 1024);
+            await File.WriteAllTextAsync(Path.Combine(root, "bom.txt"), text);
+            Assert.Equal(ReadTextPlanner.Select(text, "bom.txt"), await new CodingTools(root).Read("bom.txt"));
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
 }

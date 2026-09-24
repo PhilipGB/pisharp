@@ -1,3 +1,4 @@
+using System.Text;
 using PiSharp.Core;
 using PiSharp.Runtime;
 
@@ -29,6 +30,27 @@ public sealed class ReadTextConformanceTests
         {
             await File.WriteAllTextAsync(Path.Combine(directory, "input.txt"), lines);
             Assert.Equal(expected, await new CodingTools(directory).Read("input.txt"));
+        }
+        finally { Directory.Delete(directory, recursive: true); }
+    }
+
+    [Fact]
+    public async Task ReadDecodesUtf8BytesWithoutConsumingBomOrDetectingUtf16()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "pisharp-read-encoding-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        try
+        {
+            var tools = new CodingTools(directory);
+            var utf8Path = Path.Combine(directory, "utf8.txt");
+            var utf8 = Encoding.UTF8.GetBytes("\uFEFFalpha\nbeta");
+            await File.WriteAllBytesAsync(utf8Path, utf8);
+            Assert.Equal(Encoding.UTF8.GetString(utf8), await tools.Read("utf8.txt"));
+
+            var utf16Path = Path.Combine(directory, "utf16.txt");
+            var utf16 = Encoding.Unicode.GetPreamble().Concat(Encoding.Unicode.GetBytes("alpha\nbeta")).ToArray();
+            await File.WriteAllBytesAsync(utf16Path, utf16);
+            Assert.Equal(Encoding.UTF8.GetString(utf16), await tools.Read("utf16.txt"));
         }
         finally { Directory.Delete(directory, recursive: true); }
     }

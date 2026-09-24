@@ -332,8 +332,14 @@
         "out-of-range, missing file, cancellation",
         "Verify through application workflow and compare packages/coding-agent/src/core/tools/read.ts, truncate.ts; CodingTools.Read; unit + upstream fixtures"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "CodingTools.Read reads small files as bytes and decodes with Encoding.UTF8; StreamingTextReader retains byte zero and decodes selected lines as UTF-8. Both paths now preserve UTF-8 BOMs and do not auto-detect UTF-16 BOMs."
+      ],
+      "evidence": [
+        "Pinned read.ts uses Buffer.toString(\"utf-8\"). The current pin d5629e20489ccf770ed90b5a33941cb3b7ef24d0 and fetched upstream main 19a0361be89bf78ccf9bbaed9a496d6484759f67 have identical coding-agent core tool paths. A direct Node Buffer probe confirms BOM retention and UTF-8 decoding of UTF-16LE BOM bytes.",
+        "dotnet test tests/PiSharp.Tests/PiSharp.Tests.csproj --no-restore --filter FullyQualifiedName~ReadTextConformanceTests|FullyQualifiedName~StreamingReadTests => 9 passed. New fail-first cases cover small UTF-8 BOM/UTF-16 BOM files and a large streamed UTF-8 BOM file. Image attachments, image processing, exact details/errors and cancellation parity remain incomplete.",
+        "dotnet format PiSharp.slnx --verify-no-changes passed; dotnet build PiSharp.slnx --warnaserror succeeded with 0 warnings/errors; dotnet test PiSharp.slnx passed 297/297."
+      ],
       "dependencies": []
     },
     {
