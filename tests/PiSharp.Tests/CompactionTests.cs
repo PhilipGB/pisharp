@@ -287,6 +287,34 @@ public sealed class CompactionTests
     }
 
     [Fact]
+    public async Task ParallelToolCallBatchCutsOnlyAfterBothResultsAndRetainsRawHistory()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-parallel-cut-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(cwd, "first.txt"), new string('X', 4000));
+            await File.WriteAllTextAsync(Path.Combine(cwd, "second.txt"), new string('Y', 4000));
+            var conversation = new ConversationSession(cwd, "fixture", null);
+            var client = new ParallelToolBudgetClient();
+            var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(cwd)), conversation,
+                autoCompaction: new AutoCompactionPolicy(2700, 300));
+            var events = new List<AgentLifecycleEvent>();
+            await foreach (var item in run.RunEventsAsync("read both files")) events.Add(item);
+            Assert.Equal(2, client.Requests);
+            Assert.Equal(1, client.Summaries);
+            Assert.True(client.ContinuationSawSummaryWithoutOrphanedResults);
+            Assert.Single(events, item => item.Type == "context_compacted_in_flight");
+            var contents = conversation.ActiveMessages().SelectMany(message => message.Contents).ToArray();
+            Assert.Equal(2, contents.OfType<FunctionCallContent>().Count());
+            Assert.Equal(2, contents.OfType<FunctionResultContent>().Count());
+            Assert.Contains(contents.OfType<FunctionResultContent>(), result => result.Result?.ToString()?.Contains(new string('X', 4000), StringComparison.Ordinal) == true);
+            Assert.Contains(contents.OfType<FunctionResultContent>(), result => result.Result?.ToString()?.Contains(new string('Y', 4000), StringComparison.Ordinal) == true);
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Fact]
     public async Task OversizedSingleTurnSummarizesOnlyCompletedToolCycleWithoutReplacingHistory()
     {
         var cwd = Path.Combine(Path.GetTempPath(), "pisharp-split-turn-" + Guid.NewGuid().ToString("N"));
@@ -575,6 +603,41 @@ public sealed class CompactionTests
                 !snapshot.Any(message => message.Text == new string('P', 900));
             if (alwaysOverflow) throw new HttpRequestException(error, null, System.Net.HttpStatusCode.BadRequest);
             yield return new ChatResponseUpdate(ChatRole.Assistant, "done");
+            await Task.CompletedTask;
+        }
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
+    }
+
+    private sealed class ParallelToolBudgetClient : IChatClient
+    {
+        public int Requests { get; private set; }
+        public int Summaries { get; private set; }
+        public bool ContinuationSawSummaryWithoutOrphanedResults { get; private set; }
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+            CancellationToken cancellationToken = default)
+        {
+            Summaries++;
+            return Task.FromResult(new ChatResponse([new ChatMessage(ChatRole.Assistant, "Both files were read.")]));
+        }
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            Requests++;
+            if (Requests == 1)
+                yield return new ChatResponseUpdate(ChatRole.Assistant,
+                [
+                    new FunctionCallContent("first", "read", new Dictionary<string, object?> { ["path"] = "first.txt" }),
+                    new FunctionCallContent("second", "read", new Dictionary<string, object?> { ["path"] = "second.txt" })
+                ]);
+            else
+            {
+                var snapshot = messages.ToArray();
+                ContinuationSawSummaryWithoutOrphanedResults =
+                    snapshot.Any(message => message.Text.Contains("Both files were read.", StringComparison.Ordinal)) &&
+                    !snapshot.SelectMany(message => message.Contents).Any(content => content is FunctionCallContent or FunctionResultContent);
+                yield return new ChatResponseUpdate(ChatRole.Assistant, "done");
+            }
             await Task.CompletedTask;
         }
         public object? GetService(Type serviceType, object? serviceKey = null) => null;
