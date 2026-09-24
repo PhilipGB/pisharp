@@ -24,6 +24,28 @@ public sealed class TerminalInputTests
         Assert.Null(reader.Read().Key);
     }
 
+    [Theory]
+    [InlineData("\u001b]10;rgb:aaaa/bbbb/cccc\aX")]
+    [InlineData("\u001b]11;rgb:0000/1111/2222\u001b\\X")]
+    public void TerminalColorOscRepliesAreConsumedWithoutEditingTheDraft(string input)
+    {
+        var reader = new TerminalInput(new MemoryStream(Encoding.UTF8.GetBytes(input)));
+        var reply = reader.Read();
+        Assert.Null(reply.Key);
+        Assert.Null(reply.Text);
+        Assert.Equal('X', reader.Read().Key?.KeyChar);
+    }
+
+    [Fact]
+    public void TruncatedOscIsDiscardedAndOversizedOscIsRejected()
+    {
+        var truncated = new TerminalInput(new MemoryStream(Encoding.UTF8.GetBytes("\u001b]11;rgb:abcd")));
+        Assert.Null(truncated.Read().Text);
+        Assert.Null(truncated.Read().Key);
+        var oversized = new TerminalInput(new MemoryStream(Encoding.UTF8.GetBytes("\u001b]11;" + new string('x', 4096) + "\a")));
+        Assert.Throws<InvalidDataException>(() => oversized.Read());
+    }
+
     [Fact]
     public void ActiveRunKeysDecodeFollowUpDequeueAndRestorePendingDraft()
     {

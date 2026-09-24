@@ -45,6 +45,7 @@ public sealed class TerminalInput
     {
         if (!Available(40)) return Key(ConsoleKey.Escape);
         var second = ReadByte();
+        if (second == ']') return SkipOsc();
         if (second is '[' or 'O')
         {
             var sequence = new StringBuilder();
@@ -79,6 +80,22 @@ public sealed class TerminalInput
             return new(new ConsoleKeyInfo(key.KeyChar, key.Key, key.Modifiers.HasFlag(ConsoleModifiers.Shift), true,
                 key.Modifiers.HasFlag(ConsoleModifiers.Control)), null);
         return plain;
+    }
+
+    // OSC terminal replies (including color queries 10/11) end in BEL or ST (ESC \\).
+    // They are not keystrokes; never insert their payload into the editable draft.
+    private TerminalInputEvent SkipOsc()
+    {
+        var escape = false;
+        for (var i = 0; i < 4096 && Available(60); i++)
+        {
+            var value = ReadByte();
+            if (value < 0 || value == 7 || (escape && value == '\\')) return new(null, null);
+            escape = value == 27;
+        }
+        if (Available(0)) throw new InvalidDataException("Terminal OSC reply exceeds 4096 bytes.");
+        // A truncated reply is not user input; discard it rather than terminating the editor.
+        return new(null, null);
     }
 
     private TerminalInputEvent Paste()

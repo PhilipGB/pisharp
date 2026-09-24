@@ -400,8 +400,12 @@
         "restore terminal on exit/crash",
         "Verify through application workflow and compare docs/tui.md, docs/terminal-setup.md; packages/tui/src/tui.ts, tui-alt-screen.ts; packages/coding-agent/src/modes/interactive/; VT renderer, pseudo-terminal snapshots"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "src/PiSharp.Cli/Tui/TerminalInput.cs: bounded OSC sequences terminated by BEL or ST are consumed instead of inserted as editor text; incomplete replies are ignored, oversized replies are rejected. No color query or parsing yet."
+      ],
+      "evidence": [
+        "TerminalInputTests.TerminalColorOscRepliesAreConsumedWithoutEditingTheDraft and TruncatedOscIsDiscardedAndOversizedOscIsRejected: synthetic OSC 10/11 BEL/ST, incomplete and oversized fixtures; no PTY or pinned Pi differential."
+      ],
       "dependencies": []
     },
     {
