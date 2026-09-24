@@ -17,7 +17,9 @@ public sealed class ProviderChatClientFactoryTests
         Assert.Equal("openai-completions", ProviderChatClientFactory.ResolveProtocol(Selection("openrouter", "https://openrouter.ai/api/v1")));
         Assert.Equal("openai-completions", ProviderChatClientFactory.ResolveProtocol(Selection("mistral", "https://api.mistral.ai/v1")));
         Assert.Equal("openai-responses", ProviderChatClientFactory.ResolveProtocol(Selection("custom", "http://localhost:1234/v1", "openai-responses")));
-        Assert.Throws<NotSupportedException>(() => ProviderChatClientFactory.ResolveProtocol(Selection("custom", "http://localhost:1234/v1", "anthropic-messages")));
+        Assert.Equal("anthropic-messages", ProviderChatClientFactory.ResolveProtocol(Selection("anthropic", "https://api.anthropic.com")));
+        Assert.Equal("anthropic-messages", ProviderChatClientFactory.ResolveProtocol(Selection("custom", "http://localhost:1234", "anthropic-messages")));
+        Assert.Throws<NotSupportedException>(() => ProviderChatClientFactory.ResolveProtocol(Selection("custom", "http://localhost:1234/v1", "google-generative-ai")));
         Assert.Throws<InvalidOperationException>(() => ProviderChatClientFactory.ResolveProtocol(Selection("openai", "https://untrusted.test/v1")));
     }
 
@@ -202,6 +204,97 @@ public sealed class ProviderChatClientFactoryTests
     }
 
     [Fact]
+    public async Task AnthropicMessagesUsesNativeHeadersAndBody()
+    {
+        using var listener = new HttpListener();
+        using var reservation = new TcpListener(IPAddress.Loopback, 0);
+        reservation.Start();
+        var port = ((IPEndPoint)reservation.LocalEndpoint).Port;
+        reservation.Stop();
+        listener.Prefixes.Add($"http://127.0.0.1:{port}/");
+        listener.Start();
+        var server = Task.Run(async () =>
+        {
+            var request = await listener.GetContextAsync();
+            Assert.Equal("/v1/messages", request.Request.Url?.AbsolutePath);
+            Assert.Equal("fixture-key", request.Request.Headers["x-api-key"]);
+            Assert.Null(request.Request.Headers["Authorization"]);
+            Assert.NotNull(request.Request.Headers["anthropic-version"]);
+            using var reader = new StreamReader(request.Request.InputStream);
+            using var body = System.Text.Json.JsonDocument.Parse(await reader.ReadToEndAsync());
+            Assert.Equal("fixture-model", body.RootElement.GetProperty("model").GetString());
+            Assert.Equal("hello", body.RootElement.GetProperty("messages")[0].GetProperty("content")[0]
+                .GetProperty("text").GetString());
+            request.Response.ContentType = "application/json";
+            await using var writer = new StreamWriter(request.Response.OutputStream);
+            await writer.WriteAsync("""
+                {"id":"msg_fixture","type":"message","role":"assistant","model":"fixture-model","content":[{"type":"text","text":"native reply"}],"stop_reason":"end_turn","stop_sequence":null,"usage":{"input_tokens":5,"output_tokens":2}}
+                """);
+            await writer.FlushAsync();
+            request.Response.Close();
+        });
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var response = await ProviderChatClientFactory.Create(Selection("fixture", $"http://127.0.0.1:{port}", "anthropic-messages"))
+            .GetResponseAsync([new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User, "hello")],
+                cancellationToken: deadline.Token);
+        await server.WaitAsync(deadline.Token);
+        Assert.Equal("native reply", response.Text);
+        Assert.Equal(5, response.Usage?.InputTokenCount);
+    }
+
+    [Fact]
+    public async Task AnthropicMessagesStreamsTextAndUsage()
+    {
+        using var listener = new HttpListener();
+        using var reservation = new TcpListener(IPAddress.Loopback, 0);
+        reservation.Start();
+        var port = ((IPEndPoint)reservation.LocalEndpoint).Port;
+        reservation.Stop();
+        listener.Prefixes.Add($"http://127.0.0.1:{port}/");
+        listener.Start();
+        var server = Task.Run(async () =>
+        {
+            var request = await listener.GetContextAsync();
+            Assert.Equal("/v1/messages", request.Request.Url?.AbsolutePath);
+            using var reader = new StreamReader(request.Request.InputStream);
+            using var body = System.Text.Json.JsonDocument.Parse(await reader.ReadToEndAsync());
+            Assert.True(body.RootElement.GetProperty("stream").GetBoolean());
+            request.Response.ContentType = "text/event-stream";
+            await using var writer = new StreamWriter(request.Response.OutputStream);
+            await writer.WriteAsync("""
+                event: message_start
+                data: {"type":"message_start","message":{"id":"msg_1","type":"message","role":"assistant","model":"fixture-model","content":[],"stop_reason":null,"stop_sequence":null,"usage":{"input_tokens":4,"output_tokens":0}}}
+
+                event: content_block_start
+                data: {"type":"content_block_start","index":0,"content_block":{"type":"text","text":""}}
+
+                event: content_block_delta
+                data: {"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"streamed"}}
+
+                event: content_block_stop
+                data: {"type":"content_block_stop","index":0}
+
+                event: message_delta
+                data: {"type":"message_delta","delta":{"stop_reason":"end_turn","stop_sequence":null},"usage":{"output_tokens":2}}
+
+                event: message_stop
+                data: {"type":"message_stop"}
+
+                """);
+            await writer.FlushAsync();
+            request.Response.Close();
+        });
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var agent = new PiAgent(ProviderChatClientFactory.Create(Selection("fixture", $"http://127.0.0.1:{port}", "anthropic-messages")),
+            new CodingTools(Path.GetTempPath()));
+        var session = await agent.CreateSessionAsync(deadline.Token);
+        var text = "";
+        await foreach (var update in agent.RunStreamingAsync("hello", session, deadline.Token)) text += update.Text;
+        await server.WaitAsync(deadline.Token);
+        Assert.Equal("streamed", text);
+    }
+
+    [Fact]
     public async Task UnsupportedConfiguredApiFailsBeforeProviderRequestWithoutStackTrace()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-api-" + Guid.NewGuid().ToString("N"));
@@ -210,7 +303,7 @@ public sealed class ProviderChatClientFactoryTests
         try
         {
             await File.WriteAllTextAsync(Path.Combine(agent, "models.json"), """
-                {"providers":{"fixture":{"baseUrl":"http://127.0.0.1:1/v1","authHeader":false,"models":[{"id":"demo","api":"anthropic-messages"}]}}}
+                {"providers":{"fixture":{"baseUrl":"http://127.0.0.1:1/v1","authHeader":false,"models":[{"id":"demo","api":"google-generative-ai"}]}}}
                 """);
             var start = new System.Diagnostics.ProcessStartInfo("dotnet")
             {
@@ -228,7 +321,7 @@ public sealed class ProviderChatClientFactoryTests
             await process.WaitForExitAsync(timeout.Token);
             Assert.Equal(2, process.ExitCode);
             Assert.Equal("", await stdout);
-            Assert.Contains("unsupported API 'anthropic-messages'", await stderr);
+            Assert.Contains("unsupported API 'google-generative-ai'", await stderr);
             Assert.DoesNotContain("Unhandled exception", await stderr);
         }
         finally { Directory.Delete(root, true); }

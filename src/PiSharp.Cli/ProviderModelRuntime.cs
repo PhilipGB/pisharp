@@ -117,10 +117,9 @@ public sealed class ProviderModelRuntime
                 }));
                 continue;
             }
-            // xAI publishes a versioned model catalogue rather than relying on an
-            // OpenAI-compatible /models endpoint. Do not mislabel a usable model as
-            // unavailable merely because that optional endpoint is missing.
-            if (_offline || provider.Id == "xai")
+            // Neither xAI nor Anthropic uses the OpenAI-compatible /models endpoint here.
+            // Report the configured static catalogue rather than probe with the wrong protocol.
+            if (_offline || provider.Id is "xai" or "anthropic")
             {
                 result.AddRange(provider.Models.Select(model => model with { Provider = provider.Id }));
                 continue;

@@ -101,6 +101,31 @@ public sealed class ProviderModelRuntimeTests
     }
 
     [Fact]
+    public async Task AnthropicUsesItsOwnCredentialAndStaticMessagesCatalog()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-anthropic-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            using var handler = new ModelHandler();
+            using var http = new HttpClient(handler);
+            var runtime = await ProviderModelRuntime.CreateAsync(root, false,
+                name => name switch { "ANTHROPIC_API_KEY" => "anthropic-secret", "OPENAI_API_KEY" => "openai-secret", _ => null }, http);
+            var selection = await runtime.ResolveAsync("anthropic", null);
+            Assert.Equal("claude-sonnet-4-6", selection.Model.Id);
+            Assert.Equal("anthropic-secret", selection.ApiKey);
+            Assert.Equal("ANTHROPIC_API_KEY", selection.AuthSource);
+            Assert.Equal("anthropic-messages", ProviderChatClientFactory.ResolveProtocol(selection));
+            Assert.Equal(new Uri("https://api.anthropic.com"), selection.Provider.Endpoint);
+            Assert.Null(selection.Model.Pricing);
+            Assert.NotEqual("openai-secret", selection.ApiKey);
+            Assert.Single(await runtime.ListModelsAsync("anthropic"));
+            Assert.Null(handler.Url);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [Fact]
     public async Task XaiUsesResponsesApiAndIsolatedCredentialAndPinnedModelMetadata()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-xai-" + Guid.NewGuid().ToString("N"));
@@ -254,6 +279,7 @@ public sealed class ProviderModelRuntimeTests
         finally { Directory.Delete(root, true); }
     }
     [Theory]
+    [InlineData("anthropic", "PISHARP_FIXTURE_KEY")]
     [InlineData("openai", "PISHARP_FIXTURE_KEY")]
     [InlineData("custom", "OPENAI_API_KEY")]
     public async Task CustomEndpointCannotBorrowOpenAiIdentityOrEnvironment(string provider, string keyVariable)

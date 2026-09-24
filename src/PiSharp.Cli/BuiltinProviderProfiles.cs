@@ -31,6 +31,10 @@ internal static class BuiltinProviderProfiles
                 "OPENROUTER_API_KEY", null, [new(environment("PISHARP_OPENROUTER_MODEL") ?? "openai/gpt-4o-mini", "openrouter", null, "catalog default", false, Provider: "openrouter")]),
             ["mistral"] = new("mistral", "Mistral", new Uri("https://api.mistral.ai/v1"), true, false,
                 "MISTRAL_API_KEY", null, [new(environment("PISHARP_MISTRAL_MODEL") ?? "mistral-small-latest", "mistral", null, "catalog default", false, Provider: "mistral")]),
+            ["anthropic"] = new("anthropic", "Anthropic", new Uri("https://api.anthropic.com"), true, false,
+                "ANTHROPIC_API_KEY", null,
+                [new(environment("PISHARP_ANTHROPIC_MODEL") ?? "claude-sonnet-4-6", "anthropic", null,
+                    "configured", Provider: "anthropic", Api: "anthropic-messages")]),
             ["xai"] = new("xai", "xAI", new Uri("https://api.x.ai/v1"), true, false,
                 "XAI_API_KEY", null, xaiModels)
         };
