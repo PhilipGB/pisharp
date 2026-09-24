@@ -1,4 +1,4 @@
-# Detailed reference interface inventory — baseline 7c696c00 (no executable delta from 8676a0dc)
+# Detailed reference interface inventory — interfaces originally inventoried at 7c696c00 (current pin d5629e20; delta not fully audited)
 
 Supplement to the authoritative [feature matrix](feature-matrix.md). These are *interfaces*, not claims of implementation. Default status for every item listed here is **Not started** unless the matrix explicitly records an in-progress subset. No item is Verified by its appearance in this file. Each group requires contract/error/PTY scenarios before verification. Source references below use `packages/coding-agent/docs/` unless qualified otherwise. Installed Pi reports version `0.87.1`; pinned checkout builds the same version, but the commit hash is the reproducible target.
 
@@ -11,7 +11,7 @@ Supplement to the authoritative [feature matrix](feature-matrix.md). These are *
 | Context | `/compact [instructions]` | Summarize with cut-point, keep original branch; surface summary failure | In progress: manual whole-turn model-context compaction, raw tree preserved; tests cover persistence, repeated summaries, inactive malformed branch and failure rollback. Opt-in pre-prompt approximate auto budget has deterministic provider tests; automatic between-tool-call budget, exact token accounting, split-turn and overflow recovery remain |
 | Output/share | `/copy`, `/export [path]`, `/share`, `/bug [description]` | Clipboard/export or upload, user confirms sensitive content; upload error offers export | In progress: standalone private escaped HTML `/export` tested with inactive branches, tool failures, cancellation and PTY; no JSONL export, clipboard/share/report |
 | Runtime | `/trust`, `/reload`, `/hotkeys`, `/changelog`, `/quit` | Trust persistence, resource reload without stale handlers, interactive help and clean terminal exit | `/quit`, `/trust yes|no|forget`, `/reload` implemented in basic CLI; PTY tests cover only baseline interactions |
-| Dynamic | template names, `/skill:name`, extension-registered commands | Loaded resource commands discoverable and completable; missing resource error | Not started; resource lifecycle tests |
+| Dynamic | template names, `/skill:name`, extension-registered commands | Loaded resource commands discoverable and completable; missing resource error | In progress: explicit/discovered skills and templates expand in terminal/print/JSON/RPC, completion and RPC `get_commands` list resources; native extension terminal commands are loaded separately. No full Pi dynamic-command lifecycle, RPC extension-command discovery or upstream differential. |
 
 ## CLI (`cli.md` and `src/cli/`)
 

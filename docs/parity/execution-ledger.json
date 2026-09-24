@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "plan_received": false,
-  "source_note": "Original plan was announced after a heading but not appended. Conservative provisional inventory from pinned upstream feature matrix and detailed inventory; never treat as complete until reconciled with the missing plan and audited upstream.",
-  "baseline": "earendil-works/pi@a7d17e39aaa0091c7573d0790714751956f10bd1",
+  "source_note": "Original plan was announced after a heading but not appended. Conservative provisional inventory from pinned upstream feature matrix and detailed inventory; never treat as complete until reconciled with the missing plan and audited upstream. Targeted 2026-09-24 correction reclassified multimodal, dynamic/interactive command, implemented RPC and partial key rows from not_started with local evidence; remaining empty entries still need verification.",
+  "baseline": "earendil-works/pi@d5629e20489ccf770ed90b5a33941cb3b7ef24d0",
   "required_ids": [
     "feature-agent-multi-turn-and-streaming",
     "feature-agent-steering-follow-up-concurrent-tools",
@@ -272,7 +272,8 @@
         "ProviderModelRuntimeTests.CustomEndpointCannotBorrowOpenAiIdentityOrEnvironment rejects models.json redirects of the built-in openai identity and explicit OPENAI_API_KEY bindings on custom endpoints before any network call; official OpenAI endpoint detection also requires HTTPS, port 443 and /v1 rather than host alone.",
         "Earlier recovery checkpoint: dotnet format --verify-no-changes and warning-as-error build passed; 123/123 deterministic PiSharp tests plus 10/10 controller fixtures passed on 2026-09-24. Full provider/OAuth/PTY behaviour was unverified.",
         "Post-recovery workflow checkpoint: dotnet format --verify-no-changes, dotnet build --warnaserror, dotnet test --no-build (125/125), and 10/10 supervisor fixture tests passed; full provider/OAuth parity remains unverified.",
-        "After provider-identity isolation: dotnet format --verify-no-changes, warning-as-error build, and full deterministic suite passed (128/128); no live hosted-provider call was made."
+        "After provider-identity isolation: dotnet format --verify-no-changes, warning-as-error build, and full deterministic suite passed (128/128); no live hosted-provider call was made.",
+        "tests/PiSharp.Tests/ProviderChatClientFactoryTests.cs: protocol selection for OpenAI Responses vs compatible Completions, unsupported API refusal and loopback Responses SSE request; src/PiSharp.Cli/{ProviderChatClientFactory,StatelessResponsesChatClient}.cs keeps canonical MAF history. No hosted provider or OAuth differential."
       ],
       "dependencies": []
     },
@@ -363,15 +364,22 @@
     {
       "id": "feature-multimodal-input-and-inline-images",
       "title": "Multimodal / input and inline images",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/feature-matrix.md:17",
       "acceptance": [
         "@image, clipboard, read image, compatible terminal rendering",
         "reject unsupported image/provider safely",
-        "Verify through application workflow and compare docs/usage.md; packages/coding-agent/src/utils/image-process.ts; packages/tui/src/terminal-image.ts; DataContent, terminal capability checks"
+        "Verify through application workflow and compare docs/usage.md; packages/coding-agent/src/utils/image-process.ts; packages/tui/src/terminal-image.ts; DataContent, terminal capability checks",
+        "Remaining: resize/normalization, clipboard/editor paste, image-capable read, terminal rendering, broad provider-specific transport, classifier/image model APIs and upstream differential evidence."
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "src/PiSharp.Cli/CliFileArguments.cs: positional @file PNG/JPEG/GIF/WebP signature/size validation and DataContent; src/PiSharp.Cli/Program.cs: model modality refusal and prompt assembly",
+        "src/PiSharp.Runtime/Sessions/ObservedChatClient.cs: images.blockImages provider-boundary filtering while retaining canonical session images"
+      ],
+      "evidence": [
+        "tests/PiSharp.Tests/MultimodalRuntimeTests.cs: fake-provider image request and session round-trip/blocking",
+        "tests/PiSharp.Tests/ToolSelectionTests.cs: positional image and invalid-signature CLI file argument fixtures"
+      ],
       "dependencies": []
     },
     {
@@ -573,85 +581,117 @@
     {
       "id": "commands-model-auth",
       "title": "Interactive commands: /settings, /model [provider/model], /thinking [level], /scoped-models, /login [provider], /logout, /llama",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:9",
       "acceptance": [
         "Select/filter/cycle models, clamp thinking to capabilities, persist settings/auth without leaking secrets, retry router disconnect",
         "Not started; selectors, settings and provider fixtures",
-        "Verify command results, errors and PTY workflows"
+        "Verify command results, errors and PTY workflows",
+        "Remaining: /settings, /llama, OAuth, complete provider-specific model selector and upstream differential."
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "src/PiSharp.Cli/Program.cs: /model, /models, /thinking, /scoped-models, /login, /logout; src/PiSharp.Cli/ProviderModelRuntime.cs: compatible model selection"
+      ],
+      "evidence": [
+        "tests/PiSharp.Tests/ProviderModelRuntimeTests.cs: model/auth PTY and HTTP-process fixtures"
+      ],
       "dependencies": []
     },
     {
       "id": "commands-session",
       "title": "Interactive commands: /new, /resume, /name [name], /session, /tree, /fork, /clone, /import <path>",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:10",
       "acceptance": [
         "Prompt history tree, project association, rename/delete picker, clone vs fork, invalid import recovery",
         "In progress: /sessions, /resume <id|name>, basic clone, branch selection and PTY session test; no interactive picker, trash or import; metadata search and confirmation-gated permanent deletion tested under PTY; /fork <id> copies prior active path and seeds an editable draft with unit and PTY evidence",
-        "Verify command results, errors and PTY workflows"
+        "Verify command results, errors and PTY workflows",
+        "Remaining: Pi JSONL /import, pickers, trash, full fork and upstream differential."
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "src/PiSharp.Cli/Program.cs: /new, /resume, /name, /session, /tree, /fork, /clone and /sessions"
+      ],
+      "evidence": [
+        "tests/PiSharp.Tests/TerminalPtyTests.cs: session resume/clone/fork interactions; tests/PiSharp.Tests/ConversationSessionTests.cs: canonical session persistence"
+      ],
       "dependencies": []
     },
     {
       "id": "commands-context",
       "title": "Interactive commands: /compact [instructions]",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:11",
       "acceptance": [
         "Summarize with cut-point, keep original branch; surface summary failure",
         "In progress: manual whole-turn model-context compaction, raw tree preserved; tests cover persistence, repeated summaries, inactive malformed branch and failure rollback. Opt-in pre-prompt approximate auto budget has deterministic provider tests; automatic between-tool-call budget, exact token accounting, split-turn and overflow recovery remain",
-        "Verify command results, errors and PTY workflows"
+        "Verify command results, errors and PTY workflows",
+        "Remaining: cut-point/split-turn fidelity, in-tool-loop/overflow compaction, differential."
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "src/PiSharp.Cli/Program.cs: /compact; src/PiSharp.Runtime/Sessions/ConversationRun.cs: compaction checkpoint"
+      ],
+      "evidence": [
+        "tests/PiSharp.Tests/CompactionTests.cs: summary, preserved raw branch and failure rollback"
+      ],
       "dependencies": []
     },
     {
       "id": "commands-output-share",
       "title": "Interactive commands: /copy, /export [path], /share, /bug [description]",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:12",
       "acceptance": [
         "Clipboard/export or upload, user confirms sensitive content; upload error offers export",
         "In progress: standalone private escaped HTML /export tested with inactive branches, tool failures, cancellation and PTY; no JSONL export, clipboard/share/report",
-        "Verify command results, errors and PTY workflows"
+        "Verify command results, errors and PTY workflows",
+        "Remaining: /copy, /share, /bug, Pi viewer/JSONL and upstream differential."
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "src/PiSharp.Cli/Program.cs: /export; src/PiSharp.Runtime/Sessions/SessionExport.cs: private HTML writer"
+      ],
+      "evidence": [
+        "tests/PiSharp.Tests/SessionExportTests.cs: escaping, branch, failure and no-overwrite fixtures; tests/PiSharp.Tests/TerminalPtyTests.cs: export fixture"
+      ],
       "dependencies": []
     },
     {
       "id": "commands-runtime",
       "title": "Interactive commands: /trust, /reload, /hotkeys, /changelog, /quit",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:13",
       "acceptance": [
         "Trust persistence, resource reload without stale handlers, interactive help and clean terminal exit",
         "/quit, /trust yes|no|forget, /reload implemented in basic CLI; PTY tests cover only baseline interactions",
-        "Verify command results, errors and PTY workflows"
+        "Verify command results, errors and PTY workflows",
+        "Remaining: /hotkeys, /changelog, comprehensive reload/PTY and differential."
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "src/PiSharp.Cli/Program.cs: /trust yes|no|forget, /reload, /quit"
+      ],
+      "evidence": [
+        "tests/PiSharp.Tests/ProjectTrustTests.cs: trust and reload fixtures; tests/PiSharp.Tests/TerminalPtyTests.cs: terminal lifecycle"
+      ],
       "dependencies": []
     },
     {
       "id": "commands-dynamic",
       "title": "Interactive commands: template names, /skill:name, extension-registered commands",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:14",
       "acceptance": [
         "Loaded resource commands discoverable and completable; missing resource error",
-        "Not started; resource lifecycle tests",
-        "Verify command results, errors and PTY workflows"
+        "In progress: discovered and explicit skill/template commands, native terminal extension commands, and RPC get_commands for resources; lifecycle and Pi differential remain open",
+        "Verify command results, errors and PTY workflows",
+        "Remaining: complete Pi dynamic lifecycle and metadata, resource reload/diagnostic parity, extension commands in RPC discovery, upstream differential evidence."
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "src/PiSharp.Runtime/Resources/ResourceCatalog.cs: discovered/explicit skills and prompt templates, dynamic expansion",
+        "src/PiSharp.Cli/Program.cs: /skill:name, template and native extension terminal command dispatch; src/PiSharp.Cli/Protocols/RpcMode.cs: get_commands for discovered skills/templates"
+      ],
+      "evidence": [
+        "tests/PiSharp.Tests/ResourceCatalogTests.cs: resource discovery, explicit paths, expansion and precedence",
+        "tests/PiSharp.Tests/ExtensionCatalogTests.cs: native extension command fixture; tests/PiSharp.Tests/RpcModeTests.cs: get_commands"
+      ],
       "dependencies": []
     },
     {
@@ -770,66 +810,91 @@
     {
       "id": "rpc-prompt",
       "title": "RPC / event: prompt",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:33",
       "acceptance": [
         "Implement prompt using shared canonical runtime with correlated responses/event ordering",
-        "Test protocol through RPC process, including failures and cancellation"
+        "Test protocol through RPC process, including failures and cancellation",
+        "Remaining: Pi wire-compatible payloads, lifecycle/error semantics and pinned process differential."
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "src/PiSharp.Cli/Protocols/RpcMode.cs: partial prompt operation (PiSharp wire format)"
+      ],
+      "evidence": [
+        "tests/PiSharp.Tests/RpcModeTests.cs: local protocol/command fixtures (coverage varies by operation)"
+      ],
       "dependencies": []
     },
     {
       "id": "rpc-steer",
       "title": "RPC / event: steer",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:33",
       "acceptance": [
         "Implement steer using shared canonical runtime with correlated responses/event ordering",
-        "Test protocol through RPC process, including failures and cancellation"
+        "Test protocol through RPC process, including failures and cancellation",
+        "Remaining: Pi wire-compatible payloads, lifecycle/error semantics and pinned process differential."
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "src/PiSharp.Cli/Protocols/RpcMode.cs: partial steer operation (PiSharp wire format)"
+      ],
+      "evidence": [
+        "tests/PiSharp.Tests/RpcModeTests.cs: local protocol/command fixtures (coverage varies by operation)"
+      ],
       "dependencies": []
     },
     {
       "id": "rpc-follow-up",
       "title": "RPC / event: follow_up",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:33",
       "acceptance": [
         "Implement follow_up using shared canonical runtime with correlated responses/event ordering",
-        "Test protocol through RPC process, including failures and cancellation"
+        "Test protocol through RPC process, including failures and cancellation",
+        "Remaining: Pi wire-compatible payloads, lifecycle/error semantics and pinned process differential."
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "src/PiSharp.Cli/Protocols/RpcMode.cs: partial follow_up operation (PiSharp wire format)"
+      ],
+      "evidence": [
+        "tests/PiSharp.Tests/RpcModeTests.cs: local protocol/command fixtures (coverage varies by operation)"
+      ],
       "dependencies": []
     },
     {
       "id": "rpc-abort",
       "title": "RPC / event: abort",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:33",
       "acceptance": [
         "Implement abort using shared canonical runtime with correlated responses/event ordering",
-        "Test protocol through RPC process, including failures and cancellation"
+        "Test protocol through RPC process, including failures and cancellation",
+        "Remaining: Pi wire-compatible payloads, lifecycle/error semantics and pinned process differential."
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "src/PiSharp.Cli/Protocols/RpcMode.cs: partial abort operation (PiSharp wire format)"
+      ],
+      "evidence": [
+        "tests/PiSharp.Tests/RpcModeTests.cs: local protocol/command fixtures (coverage varies by operation)"
+      ],
       "dependencies": []
     },
     {
       "id": "rpc-clear-queue",
       "title": "RPC / event: clear_queue",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:33",
       "acceptance": [
         "Implement clear_queue using shared canonical runtime with correlated responses/event ordering",
-        "Test protocol through RPC process, including failures and cancellation"
+        "Test protocol through RPC process, including failures and cancellation",
+        "Remaining: Pi wire-compatible payloads, lifecycle/error semantics and pinned process differential."
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "src/PiSharp.Cli/Protocols/RpcMode.cs: partial clear_queue operation (PiSharp wire format)"
+      ],
+      "evidence": [
+        "tests/PiSharp.Tests/RpcModeTests.cs: local protocol/command fixtures (coverage varies by operation)"
+      ],
       "dependencies": []
     },
     {
@@ -848,27 +913,37 @@
     {
       "id": "rpc-get-state",
       "title": "RPC / event: get_state",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:34",
       "acceptance": [
         "Implement get_state using shared canonical runtime with correlated responses/event ordering",
-        "Test protocol through RPC process, including failures and cancellation"
+        "Test protocol through RPC process, including failures and cancellation",
+        "Remaining: Pi wire-compatible payloads, lifecycle/error semantics and pinned process differential."
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "src/PiSharp.Cli/Protocols/RpcMode.cs: partial get_state operation (PiSharp wire format)"
+      ],
+      "evidence": [
+        "tests/PiSharp.Tests/RpcModeTests.cs: local protocol/command fixtures (coverage varies by operation)"
+      ],
       "dependencies": []
     },
     {
       "id": "rpc-get-messages",
       "title": "RPC / event: get_messages",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:34",
       "acceptance": [
         "Implement get_messages using shared canonical runtime with correlated responses/event ordering",
-        "Test protocol through RPC process, including failures and cancellation"
+        "Test protocol through RPC process, including failures and cancellation",
+        "Remaining: Pi wire-compatible payloads, lifecycle/error semantics and pinned process differential."
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "src/PiSharp.Cli/Protocols/RpcMode.cs: partial get_messages operation (PiSharp wire format)"
+      ],
+      "evidence": [
+        "tests/PiSharp.Tests/RpcModeTests.cs: local protocol/command fixtures (coverage varies by operation)"
+      ],
       "dependencies": []
     },
     {
@@ -900,14 +975,19 @@
     {
       "id": "rpc-get-available-models",
       "title": "RPC / event: get_available_models",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:34",
       "acceptance": [
         "Implement get_available_models using shared canonical runtime with correlated responses/event ordering",
-        "Test protocol through RPC process, including failures and cancellation"
+        "Test protocol through RPC process, including failures and cancellation",
+        "Remaining: Pi wire-compatible payloads, lifecycle/error semantics and pinned process differential."
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "src/PiSharp.Cli/Protocols/RpcMode.cs: partial get_available_models operation (PiSharp wire format)"
+      ],
+      "evidence": [
+        "tests/PiSharp.Tests/RpcModeTests.cs: local protocol/command fixtures (coverage varies by operation)"
+      ],
       "dependencies": []
     },
     {
@@ -978,14 +1058,19 @@
     {
       "id": "rpc-compact",
       "title": "RPC / event: compact",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:35",
       "acceptance": [
         "Implement compact using shared canonical runtime with correlated responses/event ordering",
-        "Test protocol through RPC process, including failures and cancellation"
+        "Test protocol through RPC process, including failures and cancellation",
+        "Remaining: Pi wire-compatible payloads, lifecycle/error semantics and pinned process differential."
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "src/PiSharp.Cli/Protocols/RpcMode.cs: partial compact operation (PiSharp wire format)"
+      ],
+      "evidence": [
+        "tests/PiSharp.Tests/RpcModeTests.cs: local protocol/command fixtures (coverage varies by operation)"
+      ],
       "dependencies": []
     },
     {
@@ -1056,27 +1141,37 @@
     {
       "id": "rpc-get-session-stats",
       "title": "RPC / event: get_session_stats",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:36",
       "acceptance": [
         "Implement get_session_stats using shared canonical runtime with correlated responses/event ordering",
-        "Test protocol through RPC process, including failures and cancellation"
+        "Test protocol through RPC process, including failures and cancellation",
+        "Remaining: Pi wire-compatible payloads, lifecycle/error semantics and pinned process differential."
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "src/PiSharp.Cli/Protocols/RpcMode.cs: partial get_session_stats operation (PiSharp wire format)"
+      ],
+      "evidence": [
+        "tests/PiSharp.Tests/RpcModeTests.cs: local protocol/command fixtures (coverage varies by operation)"
+      ],
       "dependencies": []
     },
     {
       "id": "rpc-export-html",
       "title": "RPC / event: export_html",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:36",
       "acceptance": [
         "Implement export_html using shared canonical runtime with correlated responses/event ordering",
-        "Test protocol through RPC process, including failures and cancellation"
+        "Test protocol through RPC process, including failures and cancellation",
+        "Remaining: Pi wire-compatible payloads, lifecycle/error semantics and pinned process differential."
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "src/PiSharp.Cli/Protocols/RpcMode.cs: partial export_html operation (PiSharp wire format)"
+      ],
+      "evidence": [
+        "tests/PiSharp.Tests/RpcModeTests.cs: local protocol/command fixtures (coverage varies by operation)"
+      ],
       "dependencies": []
     },
     {
@@ -1134,66 +1229,91 @@
     {
       "id": "rpc-get-entries",
       "title": "RPC / event: get_entries",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:37",
       "acceptance": [
         "Implement get_entries using shared canonical runtime with correlated responses/event ordering",
-        "Test protocol through RPC process, including failures and cancellation"
+        "Test protocol through RPC process, including failures and cancellation",
+        "Remaining: Pi wire-compatible payloads, lifecycle/error semantics and pinned process differential."
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "src/PiSharp.Cli/Protocols/RpcMode.cs: partial get_entries operation (PiSharp wire format)"
+      ],
+      "evidence": [
+        "tests/PiSharp.Tests/RpcModeTests.cs: local protocol/command fixtures (coverage varies by operation)"
+      ],
       "dependencies": []
     },
     {
       "id": "rpc-get-tree",
       "title": "RPC / event: get_tree",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:37",
       "acceptance": [
         "Implement get_tree using shared canonical runtime with correlated responses/event ordering",
-        "Test protocol through RPC process, including failures and cancellation"
+        "Test protocol through RPC process, including failures and cancellation",
+        "Remaining: Pi wire-compatible payloads, lifecycle/error semantics and pinned process differential."
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "src/PiSharp.Cli/Protocols/RpcMode.cs: partial get_tree operation (PiSharp wire format)"
+      ],
+      "evidence": [
+        "tests/PiSharp.Tests/RpcModeTests.cs: local protocol/command fixtures (coverage varies by operation)"
+      ],
       "dependencies": []
     },
     {
       "id": "rpc-get-last-assistant-text",
       "title": "RPC / event: get_last_assistant_text",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:37",
       "acceptance": [
         "Implement get_last_assistant_text using shared canonical runtime with correlated responses/event ordering",
-        "Test protocol through RPC process, including failures and cancellation"
+        "Test protocol through RPC process, including failures and cancellation",
+        "Remaining: Pi wire-compatible payloads, lifecycle/error semantics and pinned process differential."
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "src/PiSharp.Cli/Protocols/RpcMode.cs: partial get_last_assistant_text operation (PiSharp wire format)"
+      ],
+      "evidence": [
+        "tests/PiSharp.Tests/RpcModeTests.cs: local protocol/command fixtures (coverage varies by operation)"
+      ],
       "dependencies": []
     },
     {
       "id": "rpc-set-session-name",
       "title": "RPC / event: set_session_name",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:37",
       "acceptance": [
         "Implement set_session_name using shared canonical runtime with correlated responses/event ordering",
-        "Test protocol through RPC process, including failures and cancellation"
+        "Test protocol through RPC process, including failures and cancellation",
+        "Remaining: Pi wire-compatible payloads, lifecycle/error semantics and pinned process differential."
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "src/PiSharp.Cli/Protocols/RpcMode.cs: partial set_session_name operation (PiSharp wire format)"
+      ],
+      "evidence": [
+        "tests/PiSharp.Tests/RpcModeTests.cs: local protocol/command fixtures (coverage varies by operation)"
+      ],
       "dependencies": []
     },
     {
       "id": "rpc-get-commands",
       "title": "RPC / event: get_commands",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:37",
       "acceptance": [
         "Implement get_commands using shared canonical runtime with correlated responses/event ordering",
-        "Test protocol through RPC process, including failures and cancellation"
+        "Test protocol through RPC process, including failures and cancellation",
+        "Remaining: Pi wire-compatible payloads, lifecycle/error semantics and pinned process differential."
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "src/PiSharp.Cli/Protocols/RpcMode.cs: partial get_commands operation (PiSharp wire format)"
+      ],
+      "evidence": [
+        "tests/PiSharp.Tests/RpcModeTests.cs: local protocol/command fixtures (coverage varies by operation)"
+      ],
       "dependencies": []
     },
     {
@@ -1303,53 +1423,73 @@
     {
       "id": "keys-editor-movement-history",
       "title": "Terminal keys: Up/Down, Left/Right, Ctrl+B/F, Alt/Ctrl+arrows, Alt+B/F, Home/End, Ctrl+A/E, PageUp/Down, Ctrl+], Ctrl+Alt+]",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:46",
       "acceptance": [
         "Unicode widths, visual lines vs history, selection",
-        "Test in PTY including configurable bindings and widget precedence"
+        "Test in PTY including configurable bindings and widget precedence",
+        "Remaining: configurable keys, full movement/selection and upstream PTY differential."
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "src/PiSharp.Cli/Tui/EditorBuffer.cs: basic cursor and history navigation"
+      ],
+      "evidence": [
+        "tests/PiSharp.Tests/EditorBufferTests.cs; tests/PiSharp.Tests/TerminalPtyTests.cs: limited editor input"
+      ],
       "dependencies": []
     },
     {
       "id": "keys-editor-mutation",
       "title": "Terminal keys: Backspace, Delete/Ctrl+D, Ctrl+W/Alt+Backspace, Alt+D/Delete, Ctrl+U/K, Ctrl+Y, Alt+Y, Ctrl+-",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:47",
       "acceptance": [
         "Kill ring, undo, cursor/selection integrity",
-        "Test in PTY including configurable bindings and widget precedence"
+        "Test in PTY including configurable bindings and widget precedence",
+        "Remaining: kill ring, undo, selection and keybindings config."
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "src/PiSharp.Cli/Tui/EditorBuffer.cs: basic deletion and word editing"
+      ],
+      "evidence": [
+        "tests/PiSharp.Tests/EditorBufferTests.cs: local editor mutations"
+      ],
       "dependencies": []
     },
     {
       "id": "keys-editor-input",
       "title": "Terminal keys: Enter submit, Shift+Enter/Ctrl+J newline, Tab completion, Ctrl+C copy, bracketed paste, Ctrl+G external editor, Ctrl+V image",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:48",
       "acceptance": [
         "Paste multiline, file @ and slash completion, clipboard type",
-        "Test in PTY including configurable bindings and widget precedence"
+        "Test in PTY including configurable bindings and widget precedence",
+        "Remaining: clipboard image paste, external editor, configurable shortcuts and upstream differential."
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "src/PiSharp.Cli/Tui/EditorBuffer.cs and terminal input: submit, multiline, completion, bracketed paste"
+      ],
+      "evidence": [
+        "tests/PiSharp.Tests/EditorCompletionTests.cs; tests/PiSharp.Tests/TerminalInputTests.cs; tests/PiSharp.Tests/TerminalPtyTests.cs"
+      ],
       "dependencies": []
     },
     {
       "id": "keys-app-control",
       "title": "Terminal keys: Esc abort, Ctrl+C clear/exit, Ctrl+D exit empty, Ctrl+Z suspend, double Esc tree/fork",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:49",
       "acceptance": [
         "Stop tool process tree, restore raw mode on exit/suspend",
-        "Test in PTY including configurable bindings and widget precedence"
+        "Test in PTY including configurable bindings and widget precedence",
+        "Remaining: suspend, double Esc and full Pi context/action configuration."
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "src/PiSharp.Cli/Program.cs and Tui: Esc/Ctrl+C abort/clear and Ctrl+D exit"
+      ],
+      "evidence": [
+        "tests/PiSharp.Tests/TerminalPtyTests.cs: terminal clear/exit and abort fixtures"
+      ],
       "dependencies": []
     },
     {
@@ -1368,14 +1508,19 @@
     {
       "id": "keys-queue-session",
       "title": "Terminal keys: Alt+Enter follow-up, Alt+Up dequeue, session Ctrl+P/S/N/R/D/Backspace picker controls",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:51",
       "acceptance": [
         "Steering vs follow-up ordering and queue restore",
-        "Test in PTY including configurable bindings and widget precedence"
+        "Test in PTY including configurable bindings and widget precedence",
+        "Remaining: session picker shortcuts, configurable action maps and differential."
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "src/PiSharp.Cli/Program.cs: Alt+Enter follow-up and Alt+Up dequeue"
+      ],
+      "evidence": [
+        "tests/PiSharp.Tests/TerminalPtyTests.cs: interactive queue fixture; tests/PiSharp.Tests/AgentLifecycleTests.cs: queue ordering"
+      ],
       "dependencies": []
     },
     {

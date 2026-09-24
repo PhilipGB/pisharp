@@ -1,6 +1,4 @@
-using System.ClientModel;
 using Microsoft.Extensions.AI;
-using OpenAI;
 using PiSharp.Cli;
 using PiSharp.Runtime;
 using PiSharp.Runtime.Sessions;
@@ -95,14 +93,7 @@ if (cli.ListModels)
         Console.WriteLine($"{model.Provider}/{model.Id}\t{(model.Available ? model.Status ?? "available" : model.UnavailableReason ?? "unavailable")}\t{model.ContextLength?.ToString() ?? ""}");
     return;
 }
-OpenAIClient CreateClient(ModelSelection selected)
-{
-    var options = new OpenAIClientOptions();
-    if (selected.Connection.Endpoint is not null) options.Endpoint = selected.Connection.Endpoint;
-    return new OpenAIClient(new ApiKeyCredential(selected.ApiKey), options);
-}
-var client = CreateClient(selection);
-IChatClient chat = client.GetChatClient(connection.Model).AsIChatClient();
+IChatClient chat = ProviderChatClientFactory.Create(selection);
 string instructions;
 (string? System, string? Append) prompts;
 ResourceCatalog resources;
@@ -188,10 +179,10 @@ try
         selection = await modelRuntime.ResolveAsync(savedProvider, conversation.Model);
         connection = selection.Connection;
         thinking = ThinkingLevels.ValidateForModel(thinking, selection.Model.Reasoning);
-        client = CreateClient(selection);
+        chat = ProviderChatClientFactory.Create(selection);
         contextPolicy = userSettings.ResolveCompaction(selection.Model.ContextLength, Environment.GetEnvironmentVariable, $"{selection.Provider.Id}/{selection.Model.Id}");
         modelPricing = ModelPricing.FromEnvironment(Environment.GetEnvironmentVariable) ?? selection.Model.Pricing;
-        agent = new PiAgent(client.GetChatClient(connection.Model).AsIChatClient(),
+        agent = new PiAgent(chat,
             new CodingTools(Environment.CurrentDirectory), cli.Tools, cli.ExcludeTools, cli.NoTools, instructions, prompts.System, prompts.Append,
             extensionLease.Current.Registration.Tools, reasoning: ThinkingLevels.ToOptions(thinking), blockImages: userSettings.BlockImages == true, noBuiltinTools: cli.NoBuiltinTools);
     }
@@ -326,10 +317,10 @@ async Task ReplaceModelRuntime(ModelSelection nextSelection, string nextThinking
         throw new InvalidOperationException($"Provider '{nextSelection.Provider.Id}' is not authenticated. Use /login {nextSelection.Provider.Id}.");
     nextThinking = ThinkingLevels.ValidateForModel(nextThinking, nextSelection.Model.Reasoning);
     var nextConnection = nextSelection.Connection;
-    var nextClient = CreateClient(nextSelection);
+    var nextChat = ProviderChatClientFactory.Create(nextSelection);
     var nextPolicy = userSettings.ResolveCompaction(nextSelection.Model.ContextLength, Environment.GetEnvironmentVariable, $"{nextSelection.Provider.Id}/{nextSelection.Model.Id}");
     var nextPricing = ModelPricing.FromEnvironment(Environment.GetEnvironmentVariable) ?? nextSelection.Model.Pricing;
-    var nextAgent = new PiAgent(nextClient.GetChatClient(nextConnection.Model).AsIChatClient(),
+    var nextAgent = new PiAgent(nextChat,
         new CodingTools(Environment.CurrentDirectory), cli.Tools, cli.ExcludeTools, cli.NoTools,
         instructions, prompts.System, prompts.Append, extensionLease.Current.Registration.Tools,
         reasoning: ThinkingLevels.ToOptions(nextThinking), blockImages: userSettings.BlockImages == true, noBuiltinTools: cli.NoBuiltinTools);
@@ -348,7 +339,7 @@ async Task ReplaceModelRuntime(ModelSelection nextSelection, string nextThinking
         if (sessionPath is not null) await store.SaveAsync(conversation, sessionPath);
         selection = nextSelection;
         connection = nextConnection;
-        client = nextClient;
+        chat = nextChat;
         agent = nextAgent;
         conversationRun = nextRun;
         thinking = nextThinking;
@@ -377,7 +368,7 @@ async Task ReloadResources()
         additionalPaths: cli.ExtensionPaths);
     try
     {
-        var nextAgent = new PiAgent(client.GetChatClient(connection.Model).AsIChatClient(),
+        var nextAgent = new PiAgent(chat,
             new CodingTools(Environment.CurrentDirectory), cli.Tools, cli.ExcludeTools, cli.NoTools,
             nextContext, nextPrompts.System, nextPrompts.Append, nextExtensions.Registration.Tools,
             reasoning: ThinkingLevels.ToOptions(thinking), blockImages: userSettings.BlockImages == true, noBuiltinTools: cli.NoBuiltinTools);

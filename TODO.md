@@ -2,11 +2,11 @@
 
 **Goal:** provide Pi's capabilities in an idiomatic C#/.NET implementation, with behavioral and differential evidence; do not claim parity while material gaps remain. Pi Packages are the only consciously excluded ecosystem feature unless audit shows they affect core capability.
 
-**Pinned upstream:** `earendil-works/pi@a7d17e39aaa0091c7573d0790714751956f10bd1` (freshly fetched `main` on 2026-09-24). Previous pin: `7c696c00f34cf773c86d33093de8d5711994c5e4` (earlier baseline `002fc8385268300ca91a5fc95f935c2afbbdac02`). Latest delta adds Jev image classifier via OpenRouter and Cloudflare Workers AI, factoring System One shared provider logic and updating tests. Unified image/classifier APIs and these new adapters remain unimplemented. Refresh again before any final parity claim.
+**Pinned upstream:** `earendil-works/pi@d5629e20489ccf770ed90b5a33941cb3b7ef24d0` (fetched `main` 2026-09-24). Previous pin: `a7d17e39aaa0091c7573d0790714751956f10bd1`; earlier `7c696c00f34cf773c86d33093de8d5711994c5e4`. The delta adds TUI color values and theme styling helpers, OSC 10/11 foreground/background replies, wrapper-aware `@` path autocomplete and durable execution changes. Track these in TUI/theme work; Jev classifier/OpenRouter/Cloudflare/System One from the previous pin remains open. Refresh again before final parity claim.
 
 ## Current state and audit evidence
 
-Repository `main` was clean at the latest checkpoint (`ef8c071da` pushed). Format verification, warnings-as-errors build and all 221 local tests passed at that checkpoint; this is not differential parity evidence. Tracking describes partial implementations, but the ledger still contains stale statuses; reconcile it against code/tests before relying on statuses. There is no evidence for full feature parity. In particular the README explicitly calls out absent OAuth, wide provider semantics, Pi JSONL, full TUI, broad settings/keybindings, comprehensive multimodal support, rich resources/extensions and Pi-compatible RPC.
+Repository `main` was clean at resumed head `50c45c658`; the earlier `ef8c071da` checkpoint passed format, warnings-as-errors build and all 221 local tests; newer commits need fresh verification. Tracking is partial: targeted stale multimodal, command, key and RPC rows have now been reclassified with local evidence, not upstream differential verification. Further empty ledger rows still require evidence review. There is no evidence for full feature parity. In particular the README explicitly calls out absent OAuth, wide provider semantics, Pi JSONL, full TUI, broad settings/keybindings, comprehensive multimodal support, rich resources/extensions and Pi-compatible RPC.
 
 ## Highest-priority actionable work (continue in order, reprioritize as evidence dictates)
 
@@ -29,12 +29,17 @@ After each significant change: add/update tests and parity evidence, run focused
 ## Immediate discovered tasks
 
 - Finish compaction: dynamic automatic compaction inside tool loops, upstream differential evidence; current user/trusted-project compaction settings govern pre-prompt compaction only.
-- Reconcile stale ledger entries per implementation/test (the ledger's `verified` agent row denotes local evidence, not upstream differential verification). Preserve honest states.
+- Continue targeted ledger reconciliation beyond the corrected multimodal/dynamic/interactive/RPC/key subsets (the ledger's `verified` agent row denotes local evidence, not upstream differential verification). Preserve honest states.
 - Existing `defaultProjectTrust` and four compaction settings ledger entries now carry scoped implementation/evidence notes rather than empty arrays; in-loop compaction and upstream differential requirements remain open.
 - Five implemented settings ledger entries (`defaultProvider`, `defaultModel`, `defaultThinkingLevel`, `defaultTools`, `sessionDir`) reclassified in-progress with UserSettings tests and trust-boundary process evidence; schema/reload/upstream differential acceptance remains open.
 - Ledger `cli-sessions` reclassified from not-started to in-progress with concrete CLI/PTY references; `cli-resources` now records explicit-path and trust evidence. Continue remaining empty ledger entries rather than inferring verification.
 - Stale ledger CLI tools/resources/runtime groups reclassified in-progress based on concrete CLI parser/runtime and process tests; remaining flags in those groups are explicitly absent. Continue auditing every ledger item instead of treating groups as verified.
 
+- Reconciliation checkpoint: reclassified multimodal, dynamic/interactive command, implemented RPC and partial keyboard rows with concrete code/tests and explicit remaining gaps; no row was promoted to Verified. README's extension-path contradiction corrected. More empty ledger entries still need scoped reconciliation, not a new large audit.
+- CI investigation: `.github/workflows/ci.yml` still has push/PR triggers, but repository Actions permissions API returned `enabled: false`; re-enabled Actions via repository API on 2026-09-24. The last successful run was `d0dea1e5c` (before newer commits); verify a current `main` run after the next push rather than claiming CI success yet.
+- Provider architecture in progress: `ProviderChatClientFactory` selects OpenAI Responses instead of assuming Chat Completions for every provider, while retaining compatible adapters for OpenRouter/Mistral/custom and a configured Responses opt-in. `StatelessResponsesChatClient` discards provider-owned conversation IDs to preserve MAF canonical history. Loopback SSE and protocol-selection fixtures pass; no broad hosted provider/auth parity, Responses usage/reasoning/tool/image differential or OAuth yet.
+- Current checkpoint validation: `dotnet format PiSharp.slnx --verify-no-changes --no-restore`, `dotnet build PiSharp.slnx --warnaserror --no-restore` and `dotnet test PiSharp.slnx --no-build --no-restore` pass (223/223). These are local tests, not full provider or pinned Pi differential evidence.
+- Updated TUI/theme TODO: cover color-value schema/styling helpers, OSC 10/11 foreground/background parsing, terminal true-color behaviour, and `@` path completion after wrappers/backticks against refreshed pin; inspect durable delta separately for relevant crash/recovery changes.
 ## Completed in this continuation
 
 - `--list-models` now ignores `enabledModels` and explicit `--models` selection scopes so the full configured catalog remains discoverable (offline CLI fixture). Model catalog completeness and pinned Pi process differential remain open.
