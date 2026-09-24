@@ -46,7 +46,8 @@ public sealed class OfflineCatalogProcessTests
             else
             {
                 Assert.Contains("fixture/static-only\tconfigured\t8192", await output);
-                Assert.DoesNotContain("omit-me", await output);
+                if (settingScope) Assert.Contains("fixture/omit-me", await output);
+                else Assert.DoesNotContain("omit-me", await output);
             }
             Assert.Equal("STATIC", CliArguments.Parse(["--list-models", "STATIC"]).ListModelsFilter);
             Assert.Null(CliArguments.Parse(["--list-models", "--offline"]).ListModelsFilter);

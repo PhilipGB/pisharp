@@ -1494,7 +1494,7 @@
         "User/trusted-project enabledModels validates up to 128 bounded model patterns and supplies CLI scope unless --models is present. Empty project array overrides user scope. PiSharp currently restricts startup model selection by scope; pinned Pi's cycling-oriented scope and initial selection semantics are not fully reproduced."
       ],
       "evidence": [
-        "UserSettingsTests.EnabledModelsUsesUserAndTrustedProjectPatternsBelowCliScope verifies precedence and invalid values; OfflineCatalogProcessTests covers a scoped offline process list. Upstream thinking suffixes, cycling order, reload and full differential remain open."
+        "UserSettingsTests.EnabledModelsUsesUserAndTrustedProjectPatternsBelowCliScope verifies precedence and invalid values; OfflineCatalogProcessTests confirms offline --list-models ignores an enabledModels selection scope and lists both configured models. Upstream thinking suffixes, cycling order, reload and full differential remain open."
       ],
       "dependencies": []
     },

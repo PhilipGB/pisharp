@@ -6,7 +6,7 @@
 
 ## Current state and audit evidence
 
-Repository `main` was clean at the latest checkpoint (`74446ba60` pushed). Format verification, warnings-as-errors build and all 199 local tests pass; this is not differential parity evidence. Tracking describes partial implementations, but the ledger still contains stale statuses; reconcile it against code/tests before relying on statuses. There is no evidence for full feature parity. In particular the README explicitly calls out absent OAuth, wide provider semantics, Pi JSONL, full TUI, broad settings/keybindings, comprehensive multimodal support, rich resources/extensions and Pi-compatible RPC.
+Repository `main` was clean at the latest checkpoint (`ef8c071da` pushed). Format verification, warnings-as-errors build and all 221 local tests passed at that checkpoint; this is not differential parity evidence. Tracking describes partial implementations, but the ledger still contains stale statuses; reconcile it against code/tests before relying on statuses. There is no evidence for full feature parity. In particular the README explicitly calls out absent OAuth, wide provider semantics, Pi JSONL, full TUI, broad settings/keybindings, comprehensive multimodal support, rich resources/extensions and Pi-compatible RPC.
 
 ## Highest-priority actionable work (continue in order, reprioritize as evidence dictates)
 
@@ -37,6 +37,7 @@ After each significant change: add/update tests and parity evidence, run focused
 
 ## Completed in this continuation
 
+- `--list-models` now ignores `enabledModels` and explicit `--models` selection scopes so the full configured catalog remains discoverable (offline CLI fixture). Model catalog completeness and pinned Pi process differential remain open.
 - Bounded user/trusted-project `enabledModels` arrays now supply model scope unless `--models` overrides (empty project array clears it). Unit validation/overlay and offline CLI subprocess tests pass. PiSharp scope currently restricts model resolution; pinned Pi's cycling-focused selection/thinking suffix/order and full project-setting semantics still need reconciliation.
 - `settings.json` `quietStartup` hides the PiSharp terminal banner and `--verbose` overrides it; boolean/overlay tests plus a Linux PTY fixture confirm both paths. Pinned Pi uses the same controls for more notices and a different TUI; no full startup/reload differential yet.
 - `settings.json` now validates `hideThinkingBlock` (default visible), merges trusted-project override, and suppresses interactive stderr reasoning deltas while leaving history/events intact. Local parse/overlay/invalid tests only; pinned Pi renders a collapsible thinking block in its full TUI, and no PTY rendering/reload differential exists.

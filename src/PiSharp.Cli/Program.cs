@@ -69,7 +69,7 @@ var thinking = cli.Thinking ?? "off";
 try
 {
     modelRuntime = await ProviderModelRuntime.CreateAsync(agentDirectory, cli.Local || userSettings.DefaultProvider == "local",
-        Environment.GetEnvironmentVariable, catalogHttp, cli.ApiKey, cli.ScopedModels,
+        Environment.GetEnvironmentVariable, catalogHttp, cli.ApiKey, cli.ListModels ? null : cli.ScopedModels,
         offline: cli.Offline || Environment.GetEnvironmentVariable("PI_OFFLINE") is { } offlineFlag &&
             offlineFlag.ToLowerInvariant() is "1" or "true" or "yes");
     selection = await modelRuntime.ResolveAsync(cli.Provider ?? (cli.Local ? "local" : null), cli.ModelOverride);
