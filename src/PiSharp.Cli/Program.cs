@@ -86,8 +86,7 @@ async Task<IReadOnlyList<ModelDescriptor>> GetModelsAsync(CancellationToken toke
     await modelRuntime.ListModelsAsync(cli.Provider, token);
 if (cli.ListModels)
 {
-    foreach (var model in (await GetModelsAsync()).Where(model => cli.ListModelsFilter is null ||
-        $"{model.Provider} {model.Id}".Contains(cli.ListModelsFilter, StringComparison.OrdinalIgnoreCase)))
+    foreach (var model in (await GetModelsAsync()).Where(model => CliModelFilter.Matches(cli.ListModelsFilter, model.Provider, model.Id)))
         Console.WriteLine($"{model.Provider}/{model.Id}\t{(model.Available ? model.Status ?? "available" : model.UnavailableReason ?? "unavailable")}\t{model.ContextLength?.ToString() ?? ""}");
     return;
 }
