@@ -122,6 +122,23 @@ public sealed class ProviderModelRuntimeTests
     }
 
     [Fact]
+    public async Task BuiltInLocalProviderStillUsesItsExplicitEnvironmentKey()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-provider-local-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            using var http = new HttpClient(new ModelHandler());
+            var runtime = await ProviderModelRuntime.CreateAsync(root, true,
+                name => name == "PISHARP_API_KEY" ? "local-only-secret" : null, http);
+            var selection = await runtime.ResolveAsync("local", ConnectionSettings.LocalModel);
+            Assert.True(selection.Authenticated);
+            Assert.Equal("local-only-secret", selection.ApiKey);
+            Assert.Equal("PISHARP_API_KEY", selection.AuthSource);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+    [Fact]
     public async Task AnonymousCustomProviderDoesNotBorrowLocalEnvironmentKey()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-provider-anonymous-" + Guid.NewGuid().ToString("N"));
