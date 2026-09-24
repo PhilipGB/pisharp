@@ -18,7 +18,7 @@ public sealed class PiAgent
 
     public PiAgent(IChatClient client, CodingTools tools, IReadOnlyList<string>? selectedTools = null, IReadOnlyList<string>? excludedTools = null, bool noTools = false, string? contextInstructions = null, string? systemPrompt = null, string? appendSystemPrompt = null,
         IReadOnlyCollection<AIFunction>? extensionTools = null, ProviderRetryPolicy? retryPolicy = null,
-        ReasoningOptions? reasoning = null, bool blockImages = false)
+        ReasoningOptions? reasoning = null, bool blockImages = false, bool noBuiltinTools = false)
     {
         _summarizer = new ChatClientAgent(client, new ChatClientAgentOptions
         {
@@ -29,7 +29,7 @@ public sealed class PiAgent
             }
         });
         var added = extensionTools?.ToArray() ?? [];
-        var builtin = tools.Create(selectedTools?.Where(name => added.All(tool => tool.Name != name)).ToArray(), excludedTools, noTools);
+        var builtin = tools.Create(selectedTools?.Where(name => added.All(tool => tool.Name != name)).ToArray(), excludedTools, noTools || noBuiltinTools);
         var external = added.Where(tool => (selectedTools?.Contains(tool.Name) ?? !noTools) &&
             excludedTools?.Contains(tool.Name) != true).Cast<AITool>().ToArray();
         if (added.Any(tool => new[] { "read", "bash", "edit", "write", "grep", "find", "ls" }.Contains(tool.Name, StringComparer.Ordinal)) ||

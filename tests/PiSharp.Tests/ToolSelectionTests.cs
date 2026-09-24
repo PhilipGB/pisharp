@@ -87,6 +87,16 @@ public sealed class ToolSelectionTests
         var empty = new PiAgent(provider, tools, noTools: true);
         await foreach (var _ in empty.RunStreamingAsync("no tools", await empty.CreateSessionAsync())) { }
         Assert.Empty(provider.ToolNames);
+        var extension = Microsoft.Extensions.AI.AIFunctionFactory.Create(() => "ok", name: "custom");
+        var extensionOnly = new PiAgent(provider, tools, extensionTools: [extension], noBuiltinTools: true);
+        await foreach (var _ in extensionOnly.RunStreamingAsync("extension only", await extensionOnly.CreateSessionAsync())) { }
+        Assert.Equal(["custom"], provider.ToolNames);
+        var allowBuiltin = new PiAgent(provider, tools, selectedTools: ["read"], noBuiltinTools: true);
+        await foreach (var _ in allowBuiltin.RunStreamingAsync("explicit builtin", await allowBuiltin.CreateSessionAsync())) { }
+        Assert.Equal(["read"], provider.ToolNames);
+        var excluded = new PiAgent(provider, tools, excludedTools: ["custom"], extensionTools: [extension], noBuiltinTools: true);
+        await foreach (var _ in excluded.RunStreamingAsync("excluded extension", await excluded.CreateSessionAsync())) { }
+        Assert.Empty(provider.ToolNames);
     }
 
     private sealed class ToolCaptureClient : Microsoft.Extensions.AI.IChatClient
@@ -113,6 +123,8 @@ public sealed class ToolSelectionTests
         Assert.Equal(["ls"], args.ExcludeTools);
         Assert.Equal("--no-tools", args.Prompt);
         Assert.True(CliArguments.Parse(["--no-tools"]).NoTools);
+        Assert.True(CliArguments.Parse(["--no-builtin-tools"]).NoBuiltinTools);
+        Assert.True(CliArguments.Parse(["-nbt", "--tools", "read"]).NoBuiltinTools);
         Assert.Throws<ArgumentException>(() => CliArguments.Parse(["--tools"]));
     }
 }
