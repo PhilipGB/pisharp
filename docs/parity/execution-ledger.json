@@ -1763,14 +1763,18 @@
     {
       "id": "settings-quietstartup",
       "title": "Setting: quietStartup",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:63",
       "acceptance": [
         "Support quietStartup with upstream type/default and user/trusted-project precedence",
         "Test malformed settings, trust boundaries, reload and startup behaviour"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "User/trusted-project quietStartup boolean suppresses PiSharp terminal startup banner; --verbose overrides it. Pinned Pi also gates additional notices on these values; those notices and full TUI remain absent."
+      ],
+      "evidence": [
+        "QuietStartupTests covers validation, trusted overlay and Linux PTY output with/without --verbose. No pinned Pi PTY differential or reload/settings UI evidence."
+      ],
       "dependencies": []
     },
     {

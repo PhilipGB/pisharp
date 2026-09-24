@@ -2,7 +2,7 @@ namespace PiSharp.Cli;
 
 public sealed record CliArguments(bool Help, bool Local, bool Print, bool Continue, bool NoSession, string? SessionPath, string Prompt,
     IReadOnlyList<string>? Tools, IReadOnlyList<string>? ExcludeTools, bool NoTools, string Mode, bool? ProjectTrustOverride = null, string? SessionDirectory = null, bool ListModels = false, string? ModelOverride = null, string? SessionName = null, string? ForkSource = null,
-    string? Provider = null, IReadOnlyList<string>? ScopedModels = null, string? Thinking = null, string? ApiKey = null, IReadOnlyList<string>? FileArguments = null, string? SystemPrompt = null, IReadOnlyList<string>? AppendSystemPrompts = null, bool NoContextFiles = false, bool NoBuiltinTools = false, bool NoExtensions = false, bool NoSkills = false, bool NoPromptTemplates = false, bool Version = false, bool Offline = false, IReadOnlyList<string>? SkillPaths = null, IReadOnlyList<string>? PromptTemplatePaths = null, IReadOnlyList<string>? ExtensionPaths = null, string? ListModelsFilter = null)
+    string? Provider = null, IReadOnlyList<string>? ScopedModels = null, string? Thinking = null, string? ApiKey = null, IReadOnlyList<string>? FileArguments = null, string? SystemPrompt = null, IReadOnlyList<string>? AppendSystemPrompts = null, bool NoContextFiles = false, bool NoBuiltinTools = false, bool NoExtensions = false, bool NoSkills = false, bool NoPromptTemplates = false, bool Version = false, bool Offline = false, IReadOnlyList<string>? SkillPaths = null, IReadOnlyList<string>? PromptTemplatePaths = null, IReadOnlyList<string>? ExtensionPaths = null, string? ListModelsFilter = null, bool Verbose = false)
 {
     private static IReadOnlyList<string> ParseToolNames(string[] arguments, ref int index, string flag)
     {
@@ -12,7 +12,7 @@ public sealed record CliArguments(bool Help, bool Local, bool Print, bool Contin
 
     public static CliArguments Parse(string[] arguments)
     {
-        bool help = false, local = false, print = false, resume = false, noSession = false, noTools = false, afterSeparator = false, listModels = false, noContextFiles = false, noBuiltinTools = false, noExtensions = false, noSkills = false, noPromptTemplates = false, version = false, offline = false;
+        bool help = false, local = false, print = false, resume = false, noSession = false, noTools = false, afterSeparator = false, listModels = false, noContextFiles = false, noBuiltinTools = false, noExtensions = false, noSkills = false, noPromptTemplates = false, version = false, offline = false, verbose = false;
         bool? trust = null;
         string? sessionPath = null, sessionDirectory = null, modelOverride = null, sessionName = null, forkSource = null;
         string? provider = null, thinking = null, apiKey = null, systemPrompt = null, listModelsFilter = null;
@@ -46,6 +46,7 @@ public sealed record CliArguments(bool Help, bool Local, bool Print, bool Contin
                     break;
                 case "--print": case "-p": print = true; break;
                 case "--offline": offline = true; break;
+                case "--verbose": verbose = true; break;
                 case "--list-models":
                     listModels = true;
                     if (i + 1 < arguments.Length && !arguments[i + 1].StartsWith('-') && !arguments[i + 1].StartsWith('@'))
@@ -152,6 +153,6 @@ public sealed record CliArguments(bool Help, bool Local, bool Print, bool Contin
         if (local && provider is not null && !provider.Equals("local", StringComparison.OrdinalIgnoreCase))
             throw new ArgumentException("--local cannot be combined with a provider other than local.");
         return new CliArguments(help, local, print, resume, noSession, sessionPath, string.Join(" ", prompt), tools, excludeTools, noTools, mode, trust, sessionDirectory, listModels, modelOverride, sessionName, forkSource,
-            provider, scopedModels, thinking, apiKey, fileArguments, systemPrompt, appendSystemPrompts, noContextFiles, noBuiltinTools, noExtensions, noSkills, noPromptTemplates, version, offline, skillPaths, promptTemplatePaths, extensionPaths, listModelsFilter);
+            provider, scopedModels, thinking, apiKey, fileArguments, systemPrompt, appendSystemPrompts, noContextFiles, noBuiltinTools, noExtensions, noSkills, noPromptTemplates, version, offline, skillPaths, promptTemplatePaths, extensionPaths, listModelsFilter, verbose);
     }
 }

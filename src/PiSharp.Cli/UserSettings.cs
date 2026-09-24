@@ -66,7 +66,7 @@ public sealed record CompactionSettings(bool? Enabled = null, int? ReserveTokens
 /// <summary>Validated non-secret settings subset for the user and trusted project scopes.</summary>
 public sealed record UserSettings(string? DefaultProvider = null, string? DefaultModel = null,
     string? DefaultThinkingLevel = null, IReadOnlyList<string>? DefaultTools = null, string? SessionDirectory = null,
-    CompactionSettings? Compaction = null, bool? BlockImages = null, string? DefaultProjectTrust = null, bool? HideThinkingBlock = null)
+    CompactionSettings? Compaction = null, bool? BlockImages = null, string? DefaultProjectTrust = null, bool? HideThinkingBlock = null, bool? QuietStartup = null)
 {
     public static async Task<UserSettings> LoadAsync(string agentDirectory, Func<string, string?> environment,
         CancellationToken cancellationToken = default)
@@ -82,11 +82,18 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         string? provider = null, model = null, thinking = null, sessionDirectory = null, defaultTrust = null;
         IReadOnlyList<string>? tools = null;
         CompactionSettings? compaction = null;
-        bool? blockImages = null, hideThinkingBlock = null;
+        bool? blockImages = null, hideThinkingBlock = null, quietStartup = null;
         var seen = new HashSet<string>(StringComparer.Ordinal);
         foreach (var property in document.RootElement.EnumerateObject())
         {
             if (!seen.Add(property.Name)) throw new InvalidDataException($"settings.json contains duplicate property '{property.Name}'.");
+            if (property.Name == "quietStartup")
+            {
+                if (property.Value.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
+                    throw new InvalidDataException("settings.json quietStartup must be a boolean.");
+                quietStartup = property.Value.GetBoolean();
+                continue;
+            }
             if (property.Name == "hideThinkingBlock")
             {
                 if (property.Value.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
@@ -150,7 +157,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
                 default: throw new InvalidDataException($"settings.json contains unsupported property '{property.Name}'.");
             }
         }
-        return new(provider, model, thinking, tools, sessionDirectory, compaction, blockImages, defaultTrust, hideThinkingBlock);
+        return new(provider, model, thinking, tools, sessionDirectory, compaction, blockImages, defaultTrust, hideThinkingBlock, quietStartup);
     }
 
     /// <summary>Overlay a trusted project's explicitly specified defaults; nested compaction values merge.</summary>
@@ -167,7 +174,8 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
             MergeOverrides(Compaction?.ModelOverrides, project.Compaction.ModelOverrides)),
         project.BlockImages ?? BlockImages,
         DefaultProjectTrust,
-        project.HideThinkingBlock ?? HideThinkingBlock);
+        project.HideThinkingBlock ?? HideThinkingBlock,
+        project.QuietStartup ?? QuietStartup);
 
     private static IReadOnlyDictionary<string, CompactionSettings>? MergeOverrides(
         IReadOnlyDictionary<string, CompactionSettings>? global, IReadOnlyDictionary<string, CompactionSettings>? project)
