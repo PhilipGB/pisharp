@@ -227,39 +227,8 @@ public sealed class ProviderModelRuntime
     {
         var all = models.ToArray();
         if (_scope.Count == 0) return all;
-        return all.Where(model => _scope.Any(pattern => GlobMatches(pattern,
-            $"{model.Provider}/{model.Id}") || GlobMatches(pattern, model.Id))).ToArray();
-    }
-
-    private static bool GlobMatches(string pattern, string value)
-    {
-        // Greedy wildcard matching avoids catastrophic regex backtracking for multi-star patterns.
-        var index = 0;
-        var cursor = 0;
-        var star = -1;
-        var retry = 0;
-        while (cursor < value.Length)
-        {
-            if (index < pattern.Length && (pattern[index] == '?' ||
-                char.ToUpperInvariant(pattern[index]) == char.ToUpperInvariant(value[cursor])))
-            {
-                index++;
-                cursor++;
-            }
-            else if (index < pattern.Length && pattern[index] == '*')
-            {
-                star = index++;
-                retry = cursor;
-            }
-            else if (star >= 0)
-            {
-                index = star + 1;
-                cursor = ++retry;
-            }
-            else return false;
-        }
-        while (index < pattern.Length && pattern[index] == '*') index++;
-        return index == pattern.Length;
+        return all.Where(model => _scope.Any(pattern => ModelScopeGlob.Matches(pattern,
+            $"{model.Provider}/{model.Id}") || ModelScopeGlob.Matches(pattern, model.Id))).ToArray();
     }
 
     private static ModelDescriptor Merge(ProviderProfile provider, ModelDescriptor discovered)

@@ -135,6 +135,8 @@ public sealed class ProviderModelRuntimeTests
             Assert.Equal("reasoner", (await runtime.ResolveAsync("custom", "reasoner")).Model.Id);
             runtime.SetScope(["r*o?er"]);
             Assert.Equal("reasoner", (await runtime.ResolveAsync("custom", "reasoner")).Model.Id);
+            runtime.SetScope(["custom/r[ea]asoner"]);
+            Assert.Equal("reasoner", (await runtime.ResolveAsync("custom", "reasoner")).Model.Id);
             runtime.SetScope([string.Concat(Enumerable.Repeat("r*", 400)) + "z"]);
             Assert.Empty(await runtime.ListModelsAsync("custom"));
             runtime.SetScope(["custom/other-*"]);
