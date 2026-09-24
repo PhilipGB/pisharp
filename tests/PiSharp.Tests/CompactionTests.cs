@@ -205,6 +205,35 @@ public sealed class CompactionTests
     }
 
     [Fact]
+    public async Task NewSteeringBoundaryInvalidatesInFlightSummaryCache()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-loop-steering-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(cwd, "output.txt"), new string('Z', 1400));
+            await File.WriteAllTextAsync(Path.Combine(cwd, "small.txt"), "small result");
+            var conversation = new ConversationSession(cwd, "fixture", null);
+            conversation.Append(new ChatMessage(ChatRole.User, new string('A', 900)));
+            conversation.Append(new ChatMessage(ChatRole.Assistant, "previous answer"));
+            ConversationRun? run = null;
+            var client = new ToolLoopBudgetClient
+            {
+                RepeatRead = true,
+                OnFirstSummary = () => Assert.True(run!.TrySteer("explain the second result"))
+            };
+            run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(cwd)), conversation,
+                autoCompaction: new AutoCompactionPolicy(2300, 300));
+            await foreach (var _ in run.RunEventsAsync("read both files")) { }
+            Assert.Equal(3, client.Requests);
+            Assert.Equal(2, client.Summaries);
+            Assert.True(client.ContinuationSawSteering);
+            Assert.Contains(conversation.ActiveMessages(), message => message.Text.Contains("explain the second result", StringComparison.Ordinal));
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Fact]
     public async Task OversizedSingleTurnSummarizesOnlyCompletedToolCycleWithoutReplacingHistory()
     {
         var cwd = Path.Combine(Path.GetTempPath(), "pisharp-split-turn-" + Guid.NewGuid().ToString("N"));
@@ -503,13 +532,16 @@ public sealed class CompactionTests
         public bool FailSummary { get; init; }
         public bool ContinuationSawSummaryAndToolResult { get; private set; }
         public bool RepeatRead { get; init; }
+        public Action? OnFirstSummary { get; init; }
         public bool ContinuationSawSummaryWithoutRawToolResult { get; private set; }
+        public bool ContinuationSawSteering { get; private set; }
         public bool SawRecoveryNotice { get; private set; }
         public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
             CancellationToken cancellationToken = default)
         {
             Summaries++;
             if (FailSummary) throw new IOException("summarizer unavailable");
+            if (Summaries == 1) OnFirstSummary?.Invoke();
             return Task.FromResult(new ChatResponse([new ChatMessage(ChatRole.Assistant, "Previous question answered.")])
             {
                 Usage = new UsageDetails { InputTokenCount = 40, OutputTokenCount = 8, TotalTokenCount = 48 }
@@ -529,6 +561,7 @@ public sealed class CompactionTests
             {
                 var snapshot = messages.ToArray();
                 SawRecoveryNotice = snapshot.Any(message => message.Text.Contains("Recovery notice", StringComparison.Ordinal));
+                ContinuationSawSteering = snapshot.Any(message => message.Text.Contains("explain the second result", StringComparison.Ordinal));
                 ContinuationSawSummaryWithoutRawToolResult = snapshot.Any(message => message.Text.Contains("Previous question answered.", StringComparison.Ordinal)) &&
                     !snapshot.SelectMany(message => message.Contents).OfType<FunctionResultContent>().Any();
                 ContinuationSawSummaryAndToolResult = snapshot.Any(message => message.Text.Contains("Previous question answered.", StringComparison.Ordinal)) &&
