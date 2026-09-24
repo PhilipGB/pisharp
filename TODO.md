@@ -2,7 +2,7 @@
 
 **Goal:** provide Pi's capabilities in an idiomatic C#/.NET implementation, with behavioral and differential evidence; do not claim parity while material gaps remain. Pi Packages are the only consciously excluded ecosystem feature unless audit shows they affect core capability.
 
-**Pinned upstream:** `earendil-works/pi@7c696c00f34cf773c86d33093de8d5711994c5e4` (fetched from current `main` on 2026-09-24). Previous pin: `8676a0dcd8f9f6bca78835e63c8cd31493c4154d` (earlier baseline `002fc8385268300ca91a5fc95f935c2afbbdac02`). The latest delta is one Pico5 immutable revision design documentation commit, with no executable capability change. Earlier provider/model/image changes remain unimplemented as described below.
+**Pinned upstream:** `earendil-works/pi@a7d17e39aaa0091c7573d0790714751956f10bd1` (freshly fetched `main` on 2026-09-24). Previous pin: `7c696c00f34cf773c86d33093de8d5711994c5e4` (earlier baseline `002fc8385268300ca91a5fc95f935c2afbbdac02`). Latest delta adds Jev image classifier via OpenRouter and Cloudflare Workers AI, factoring System One shared provider logic and updating tests. Unified image/classifier APIs and these new adapters remain unimplemented. Refresh again before any final parity claim.
 
 ## Current state and audit evidence
 
@@ -34,6 +34,7 @@ After each significant change: add/update tests and parity evidence, run focused
 
 ## Completed in this continuation
 
+- OpenAI-compatible model catalog parsing ignores malformed optional numeric metadata without aborting valid sibling entries; deterministic fixture. This is resilience evidence only, not provider parity.
 - CLI `--no-context-files`/`-nc` skips AGENTS/CLAUDE loading at startup and reload without disabling unrelated resources; process test verifies oversized project context is not read. Full resource CLI parity remains open.
 - CLI `--system-prompt` and repeatable `--append-system-prompt` now resolve UTF-8 files or literals, override discovered sources, and refresh files on reload. Local CLI parsing/resource precedence tests pass; process and upstream differential evidence remain open.
 - User-only `defaultProjectTrust` now resolves after explicit/stored decisions and before trusted-project settings are read; invalid/project-scope values fail closed. Local trust precedence and config validation fixtures pass. Project trust remains permission gating, not a sandbox.

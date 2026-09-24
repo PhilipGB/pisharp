@@ -71,6 +71,18 @@ public sealed class ModelCatalogTests
         await Assert.ThrowsAsync<InvalidDataException>(() => ModelCatalog.ListAsync(malformed, null, "key"));
     }
 
+    [Fact]
+    public async Task UnexpectedNumericMetadataIsIgnoredWithoutAbortingCatalog()
+    {
+        using var http = new HttpClient(new FixtureHandler("""
+            {"data":[{"id":"one","max_tokens":"2048","max_output_tokens":null,"cost":{"input":2,"output":4,"tiers":[{"inputTokensAbove":"bad","input":3,"output":5}]}},{"id":"two","context_length":4096}]}
+            """));
+        var models = await ModelCatalog.ListAsync(http, new Uri("https://models.test/v1"), "token");
+        Assert.Equal(2, models.Count);
+        Assert.Null(models[0].MaxOutputTokens);
+        Assert.Null(models[0].Pricing!.Tiers);
+        Assert.Equal(4096, models[1].ContextLength);
+    }
     private sealed class FixtureHandler(string json) : HttpMessageHandler
     {
         public string? Url { get; private set; }

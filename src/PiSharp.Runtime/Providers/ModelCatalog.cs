@@ -60,7 +60,8 @@ public static class ModelCatalog
     }
 
     private static int? PositiveInt(JsonElement parent, string property) =>
-        parent.TryGetProperty(property, out var value) && value.TryGetInt32(out var number) && number > 0 ? number : null;
+        parent.TryGetProperty(property, out var value) && value.ValueKind == JsonValueKind.Number &&
+        value.TryGetInt32(out var number) && number > 0 ? number : null;
 
     private static IReadOnlyList<string>? ParseInputs(JsonElement model)
     {
