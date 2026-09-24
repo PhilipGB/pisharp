@@ -359,9 +359,10 @@ public sealed class ProviderModelRuntimeTests
     }
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task ConfiguredProviderStreamsThroughCliWithoutCatalogOrCloudCredential(bool promptOverrides)
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    public async Task ConfiguredProviderStreamsThroughCliWithoutCatalogOrCloudCredential(bool promptOverrides, bool pipedInput)
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-provider-http-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(root);
@@ -382,6 +383,7 @@ public sealed class ProviderModelRuntimeTests
                 await File.WriteAllTextAsync(Path.Combine(root, "custom-system.txt"), "CUSTOM_SYSTEM_SENTINEL");
                 await File.WriteAllTextAsync(Path.Combine(root, "custom-append.txt"), "CUSTOM_APPEND_FILE_SENTINEL");
             }
+            if (pipedInput) await File.WriteAllTextAsync(Path.Combine(root, "fixture.txt"), "FILE_SENTINEL");
             var server = Task.Run(async () =>
             {
                 var request = await listener.GetContextAsync().WaitAsync(timeout.Token);
@@ -404,7 +406,8 @@ public sealed class ProviderModelRuntimeTests
             {
                 WorkingDirectory = root,
                 RedirectStandardOutput = true,
-                RedirectStandardError = true
+                RedirectStandardError = true,
+                RedirectStandardInput = pipedInput
             };
             foreach (var argument in new[] { typeof(CliArguments).Assembly.Location, "--provider", "fixture", "--model", "fixture-model", "--no-session", "--no-tools", "--print", "provider workflow" })
                 start.ArgumentList.Add(argument);
@@ -413,6 +416,7 @@ public sealed class ProviderModelRuntimeTests
                 foreach (var argument in new[] { "--system-prompt", "custom-system.txt", "--append-system-prompt", "custom-append.txt", "--append-system-prompt", "CUSTOM_APPEND_LITERAL_SENTINEL" })
                     start.ArgumentList.Add(argument);
             }
+            if (pipedInput) start.ArgumentList.Add("@fixture.txt");
             foreach (var name in new[] { "PISHARP_API_KEY", "PISHARP_BASE_URL", "PISHARP_AUTH_PATH", "PISHARP_MODELS_PATH", "PISHARP_MODEL" })
                 start.Environment.Remove(name);
             start.Environment["OPENAI_API_KEY"] = "unrelated-openai-key";
@@ -420,6 +424,11 @@ public sealed class ProviderModelRuntimeTests
             using var process = System.Diagnostics.Process.Start(start)!;
             try
             {
+                if (pipedInput)
+                {
+                    await process.StandardInput.WriteAsync("  PIPE_PREFIX_ \n");
+                    process.StandardInput.Close();
+                }
                 var stdout = process.StandardOutput.ReadToEndAsync();
                 var stderr = process.StandardError.ReadToEndAsync();
                 await process.WaitForExitAsync(timeout.Token);
@@ -432,6 +441,13 @@ public sealed class ProviderModelRuntimeTests
                 Assert.DoesNotContain("unrelated-openai-key", request.authorization!);
                 Assert.Contains("provider workflow", request.body);
                 Assert.Contains("fixture-model", request.body);
+                if (pipedInput)
+                {
+                    var pipedAt = request.body.IndexOf("PIPE_PREFIX_", StringComparison.Ordinal);
+                    var fileAt = request.body.IndexOf("FILE_SENTINEL", StringComparison.Ordinal);
+                    var promptAt = request.body.IndexOf("provider workflow", StringComparison.Ordinal);
+                    Assert.True(pipedAt >= 0 && fileAt > pipedAt && promptAt > fileAt, "stdin, @file and prompt must reach the provider in that order");
+                }
                 if (promptOverrides)
                 {
                     Assert.Contains("CUSTOM_SYSTEM_SENTINEL", request.body);

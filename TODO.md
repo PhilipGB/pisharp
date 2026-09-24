@@ -34,6 +34,7 @@ After each significant change: add/update tests and parity evidence, run focused
 
 ## Completed in this continuation
 
+- CLI now reads trimmed redirected stdin even when a positional prompt is present (except RPC), prepending it before @file content and prompt, matching pinned Pi `main.ts`/`cli/initial-message.ts` composition; local HTTP subprocess asserts actual provider message order. No broad input-mode differential or stdin size bound yet.
 - Anonymous configured providers no longer borrow `PISHARP_API_KEY` implicitly from the local endpoint; only explicit `apiKeyEnv` or provider-specific keys can select a secret. Local auth/connection isolation tests also preserve explicit local-endpoint key use. Broader provider credential precedence and process evidence remain open.
 - Bounded OpenAI-compatible `/models` parsing now deduplicates via an ordinal set rather than quadratic scans; 8k-entry fixture preserves first occurrence and all distinct IDs. Local scalability only; remote catalog protocol still absent.
 - Model scope wildcard matching (`*`, `?`, case-insensitive) now uses greedy wildcard matching rather than exponential regex backtracking; local scope fixture covers provider prefixes and a many-star rejection. Upstream scope semantics remain unverified.

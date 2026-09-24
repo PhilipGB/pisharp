@@ -195,6 +195,9 @@ catch (Exception e) when (e is IOException or InvalidDataException or Unauthoriz
 }
 bool print = cli.Print || cli.Mode == "print" || Console.IsInputRedirected || Console.IsOutputRedirected;
 var prompt = cli.Prompt;
+// Pi combines trimmed piped input before @file content and the positional prompt.
+// RPC owns stdin as a command stream and must not consume it here.
+var stdinContent = cli.Mode != "rpc" && Console.IsInputRedirected ? (await Console.In.ReadToEndAsync()).Trim() : "";
 if (!selection.Authenticated && (print || cli.Mode is "json" or "rpc" || !string.IsNullOrWhiteSpace(prompt)))
 {
     Console.Error.WriteLine($"Provider '{selection.Provider.Id}' is not authenticated. Use /login {selection.Provider.Id} in an interactive terminal or configure {selection.Provider.ApiKeyEnvironment ?? "a credential"}.");
@@ -391,8 +394,7 @@ if (cli.Mode == "json")
 {
     var protocol = new JsonEventMode(Console.Out);
     await protocol.HeaderAsync(conversation);
-    if (string.IsNullOrWhiteSpace(prompt) && Console.IsInputRedirected) prompt = await Console.In.ReadToEndAsync();
-    if (string.IsNullOrWhiteSpace(prompt) && (cli.FileArguments?.Count ?? 0) == 0) { Console.Error.WriteLine("A prompt is required in JSON mode."); Environment.ExitCode = 2; }
+    if (string.IsNullOrWhiteSpace(stdinContent + prompt) && (cli.FileArguments?.Count ?? 0) == 0) { Console.Error.WriteLine("A prompt is required in JSON mode."); Environment.ExitCode = 2; }
     else
     {
         CliFileArguments.PromptFiles? expanded = null;
@@ -400,6 +402,7 @@ if (cli.Mode == "json")
         {
             var resolved = await resources.ResolveInputAsync(prompt);
             expanded = await CliFileArguments.ProcessFilesAsync(resolved, cli.FileArguments, Environment.CurrentDirectory);
+            expanded = expanded with { Text = stdinContent + expanded.Text };
         }
         catch (Exception e) when (e is ArgumentException or IOException)
         {
@@ -425,10 +428,10 @@ if (cli.Mode == "json")
 }
 if (print)
 {
-    if (string.IsNullOrWhiteSpace(prompt) && Console.IsInputRedirected) prompt = await Console.In.ReadToEndAsync();
     CliFileArguments.PromptFiles promptFiles;
     try { promptFiles = await CliFileArguments.ProcessFilesAsync(prompt, cli.FileArguments, Environment.CurrentDirectory); }
     catch (Exception e) when (e is IOException or ArgumentException) { Console.Error.WriteLine(e.Message); Environment.ExitCode = 1; return; }
+    promptFiles = promptFiles with { Text = stdinContent + promptFiles.Text };
     if (string.IsNullOrWhiteSpace(promptFiles.Text) && promptFiles.Images.Count == 0) { Console.Error.WriteLine("A prompt is required in print mode."); Environment.ExitCode = 2; }
     else await Run(promptFiles.Text, promptFiles.Images);
 }
