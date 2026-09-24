@@ -1,6 +1,6 @@
 namespace PiSharp.Cli;
 
-/// <summary>Offline credential-status command. It never retrieves or prints a credential value.</summary>
+/// <summary>Offline credential status and explicitly requested API-key output; never log credentials.</summary>
 public static class AuthStatusCommand
 {
     public static async Task<int> RunAsync(string[] arguments, string agentDirectory,
@@ -8,8 +8,9 @@ public static class AuthStatusCommand
     {
         try
         {
-            if (arguments.Length == 0 || arguments[0] != "check")
-                throw new ArgumentException("Use auth check --provider <id> [--model <configured-exact-id>]. Credential printing is not supported.");
+            if (arguments.Length == 0 || arguments[0] is not ("check" or "print-api-key"))
+                throw new ArgumentException("Use auth check or auth print-api-key --provider <id> [--model <configured-exact-id>].");
+            var printing = arguments[0] == "print-api-key";
             string? providerId = null, modelId = null;
             var local = false;
             for (var i = 1; i < arguments.Length; i++)
@@ -25,7 +26,7 @@ public static class AuthStatusCommand
                         modelId = arguments[i];
                         break;
                     case "--local": local = true; break;
-                    default: throw new ArgumentException("Use auth check --provider <id> [--model <configured-exact-id>] [--local]. Credential printing is not supported.");
+                    default: throw new ArgumentException("Use auth check or auth print-api-key --provider <id> [--model <configured-exact-id>] [--local].");
                 }
             }
             if (string.IsNullOrWhiteSpace(providerId)) throw new ArgumentException("auth check requires --provider <id>.");
@@ -36,7 +37,17 @@ public static class AuthStatusCommand
             if (modelId is not null && (string.IsNullOrWhiteSpace(modelId) ||
                 !provider.Models.Any(model => model.Id.Equals(modelId, StringComparison.OrdinalIgnoreCase))))
                 throw new ArgumentException($"Model '{modelId}' is not configured for provider '{provider.Id}'; auth check does not contact a model catalog.");
-            var (_, authenticated, source) = await runtime.ResolveAuthAsync(provider.Id);
+            var (key, authenticated, source) = await runtime.ResolveAuthAsync(provider.Id);
+            if (printing)
+            {
+                if (!authenticated || source == "not required" || source == "stored OAuth")
+                {
+                    await error.WriteLineAsync("No API key is available for the requested provider.");
+                    return 1;
+                }
+                await output.WriteLineAsync(key);
+                return 0;
+            }
             await output.WriteLineAsync($"{provider.Id}{(modelId is null ? "" : "/" + modelId)}: " +
                 $"{(authenticated ? "credential available" : "not authenticated")} ({source}). No provider connection was attempted.");
             return authenticated ? 0 : 1;

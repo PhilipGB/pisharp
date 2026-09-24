@@ -16,7 +16,7 @@ public sealed class AuthStatusCommandTests
             Directory.CreateDirectory(agentDirectory);
             await File.WriteAllTextAsync(Path.Combine(agentDirectory, "models.json"), """
                 {"providers":{"fixture":{"baseUrl":"http://127.0.0.1:1/v1","apiKeyEnv":"PISHARP_FIXTURE_KEY",
-                 "models":[{"id":"fixture-model"}]}}}
+                 "models":[{"id":"fixture-model"}]},"empty":{"baseUrl":"http://127.0.0.1:1/v1","apiKeyEnv":"PISHARP_MISSING_KEY","models":[{"id":"empty-model"}]}}}
                 """);
             async Task<(int ExitCode, string Output, string Error)> Run(params string[] args)
             {
@@ -29,7 +29,7 @@ public sealed class AuthStatusCommandTests
                 start.ArgumentList.Add(typeof(CliArguments).Assembly.Location);
                 start.ArgumentList.Add("auth");
                 foreach (var arg in args) start.ArgumentList.Add(arg);
-                foreach (var name in new[] { "PISHARP_FIXTURE_KEY", "PISHARP_BASE_URL", "PISHARP_API_KEY", "PISHARP_MODELS_PATH", "PISHARP_AUTH_PATH" })
+                foreach (var name in new[] { "PISHARP_FIXTURE_KEY", "PISHARP_MISSING_KEY", "PISHARP_BASE_URL", "PISHARP_API_KEY", "PISHARP_MODELS_PATH", "PISHARP_AUTH_PATH" })
                     start.Environment.Remove(name);
                 start.Environment["OPENAI_API_KEY"] = "unrelated-openai-key";
                 start.Environment["PISHARP_AGENT_DIR"] = agentDirectory;
@@ -51,6 +51,14 @@ public sealed class AuthStatusCommandTests
             Assert.Contains("No provider connection was attempted", present.Output);
             Assert.DoesNotContain("fixture-auth-check-secret", present.Output + present.Error);
             Assert.DoesNotContain("unrelated-openai-key", present.Output + present.Error);
+            var revealed = await Run("print-api-key", "--provider", "fixture", "--model", "fixture-model");
+            Assert.Equal(0, revealed.ExitCode);
+            Assert.Equal("fixture-auth-check-secret", revealed.Output.Trim());
+            Assert.Empty(revealed.Error);
+            var absent = await Run("print-api-key", "--provider", "empty");
+            Assert.Equal(1, absent.ExitCode);
+            Assert.DoesNotContain("unrelated-openai-key", absent.Output + absent.Error);
+            Assert.Equal(2, (await Run("print-bearer-token", "--provider", "fixture")).ExitCode);
             Assert.Equal(2, (await Run("check", "--provider", "fixture", "--credentials")).ExitCode);
             Assert.Equal(2, (await Run("check", "--provider", "fixture", "--model", "other")).ExitCode);
             Assert.Empty(Directory.EnumerateFiles(root, "*.session.json", SearchOption.AllDirectories));

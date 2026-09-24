@@ -33,6 +33,7 @@ After each significant change: add/update tests and parity evidence, run focused
 
 ## Completed in this continuation
 
+- Implemented explicit offline `auth print-api-key --provider` for stored/configured/environment API keys only, stdout-only on success; missing/OAuth credentials never printed. Process test proves explicit retrieval, no cross-provider key leakage, and failure on missing key. OAuth bearer printing/refresh, default-model selection and Pi auth protocol remain open.
 - Exact `provider/model` compaction reserve/recent overrides now merge across user/trusted-project scopes with explicit env window/reserve precedence; malformed entries fail closed and model-switch paths resolve policies. Differential provider-token accuracy remains unverified.
 - `compaction.keepRecentTokens` selects recent whole user turns (including tool call/results), with settings validation and preserved raw history; local budget/rollback tests pass. This is a conservative heuristic rather than upstream tokenizer-exact retention. In-loop compaction and differential token accounting remain open.
 - Image setting `images.blockImages` has local provider-boundary and history-retention evidence; still verify tool-result image filtering and upstream differential; resumed session provider-boundary filtering is locally tested. `autoResize` and image tool/clipboard/terminal support remain open.
