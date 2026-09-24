@@ -212,7 +212,14 @@ bool print = cli.Print || cli.Mode == "print" || Console.IsInputRedirected || Co
 var prompt = cli.Prompt;
 // Pi combines trimmed piped input before @file content and the positional prompt.
 // RPC owns stdin as a command stream and must not consume it here.
-var stdinContent = cli.Mode != "rpc" && Console.IsInputRedirected ? (await Console.In.ReadToEndAsync()).Trim() : "";
+string stdinContent;
+try { stdinContent = cli.Mode != "rpc" && Console.IsInputRedirected ? await CliStdin.ReadAsync(Console.In) : ""; }
+catch (InvalidDataException error)
+{
+    Console.Error.WriteLine(error.Message);
+    Environment.ExitCode = 2;
+    return;
+}
 if (!selection.Authenticated && (print || cli.Mode is "json" or "rpc" || !string.IsNullOrWhiteSpace(prompt)))
 {
     Console.Error.WriteLine($"Provider '{selection.Provider.Id}' is not authenticated. Use /login {selection.Provider.Id} in an interactive terminal or configure {selection.Provider.ApiKeyEnvironment ?? "a credential"}.");
