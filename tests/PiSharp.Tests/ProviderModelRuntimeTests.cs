@@ -137,6 +137,38 @@ public sealed class ProviderModelRuntimeTests
         finally { Directory.Delete(root, true); }
     }
 
+    [Theory]
+    [InlineData("{\"providers\":{\"fixture\":{\"baseUrl\":\"https://fixture.test/v1\",\"models\":[{\"id\":\"a\",\"maxTokens\":\"bad\"}]}}}", "maxTokens")]
+    [InlineData("{\"providers\":{\"fixture\":{\"baseUrl\":\"https://fixture.test/v1\",\"oauth\":true}}}", "OAuth")]
+    [InlineData("{\"providers\":{\"fixture\":{\"baseUrl\":\"https://fixture.test/v1\"},\"FIXTURE\":{\"baseUrl\":\"https://other.test/v1\"}}}", "duplicate")]
+    public async Task InvalidConfiguredProviderCannotSilentlyChangeCredentialIdentity(string json, string expected)
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-provider-invalid-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(root, "models.json"), json);
+            using var http = new HttpClient(new ModelHandler());
+            var error = await Assert.ThrowsAsync<InvalidDataException>(() => ProviderModelRuntime.CreateAsync(root, false, _ => null, http));
+            Assert.Contains(expected, error.Message, StringComparison.OrdinalIgnoreCase);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [Fact]
+    public async Task OversizedProviderConfigFailsBeforeParsing()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-provider-large-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(root, "models.json"), new string('x', 1024 * 1024 + 1));
+            using var http = new HttpClient(new ModelHandler());
+            var error = await Assert.ThrowsAsync<InvalidDataException>(() => ProviderModelRuntime.CreateAsync(root, false, _ => null, http));
+            Assert.Contains("1MB", error.Message);
+        }
+        finally { Directory.Delete(root, true); }
+    }
     [Fact]
     public async Task PrivateCredentialsSurviveRestartAndRejectSymlinksAndPublicFiles()
     {

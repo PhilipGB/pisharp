@@ -34,6 +34,7 @@ After each significant change: add/update tests and parity evidence, run focused
 
 ## Completed in this continuation
 
+- Configured provider `models.json` now has a 1MB read cap and rejects case-insensitive duplicate provider identities, invalid positive-integer metadata and OAuth declarations without an actual refresh adapter; local invalid-config fixtures. Continue auditing config schema/locks and provider auth parity.
 - Stored OAuth credentials are now rejected for API-key-only providers instead of passed as raw bearer tokens or silently replaced by ambient API keys. Local credential-boundary test; genuine provider OAuth adapters and refresh remain outstanding.
 - OpenAI-compatible model catalog parsing ignores malformed optional numeric metadata without aborting valid sibling entries; deterministic fixture. This is resilience evidence only, not provider parity.
 - CLI `--no-context-files`/`-nc` skips AGENTS/CLAUDE loading at startup and reload without disabling unrelated resources; process test verifies oversized project context is not read. Full resource CLI parity remains open.

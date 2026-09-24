@@ -266,12 +266,22 @@ public sealed class ProviderModelRuntime
         CancellationToken cancellationToken)
     {
         await using var stream = File.OpenRead(path);
-        using var document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
+        const int maxBytes = 1024 * 1024;
+        if (stream.Length > maxBytes) throw new InvalidDataException("models.json exceeds 1MB.");
+        var buffer = new byte[maxBytes + 1];
+        var length = 0;
+        int read;
+        while (length < buffer.Length && (read = await stream.ReadAsync(buffer.AsMemory(length), cancellationToken)) > 0)
+            length += read;
+        if (length > maxBytes) throw new InvalidDataException("models.json exceeds 1MB.");
+        using var document = JsonDocument.Parse(buffer.AsMemory(0, length));
         if (document.RootElement.ValueKind != JsonValueKind.Object ||
             !document.RootElement.TryGetProperty("providers", out var configured) || configured.ValueKind != JsonValueKind.Object)
             throw new InvalidDataException("models.json must contain a providers object.");
+        var seenProviders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var item in configured.EnumerateObject())
         {
+            if (!seenProviders.Add(item.Name)) throw new InvalidDataException("models.json contains duplicate provider IDs.");
             if (item.Value.ValueKind != JsonValueKind.Object) throw new InvalidDataException($"Provider '{item.Name}' must be an object.");
             var value = item.Value;
             var baseUrl = String(value, "baseUrl") ?? providers.GetValueOrDefault(item.Name)?.Endpoint.ToString();
@@ -297,9 +307,10 @@ public sealed class ProviderModelRuntime
             if (!IsOfficialOpenAiEndpoint(endpoint) && apiKeyEnvironment?.Equals("OPENAI_API_KEY", StringComparison.OrdinalIgnoreCase) == true)
                 throw new InvalidDataException("A custom endpoint cannot use OPENAI_API_KEY; configure a provider-specific credential.");
             var authHeader = Boolean(value, "authHeader") ?? true;
-            var oauth = value.TryGetProperty("oauth", out var oauthValue) && oauthValue.ValueKind is not JsonValueKind.Null and not JsonValueKind.False;
+            if (value.TryGetProperty("oauth", out var oauthValue) && oauthValue.ValueKind is not JsonValueKind.Null and not JsonValueKind.False)
+                throw new InvalidDataException("models.json cannot enable OAuth without a provider-specific refresh adapter.");
             providers[item.Name] = new(item.Name, String(value, "name") ?? existing?.Name ?? item.Name,
-                endpoint, authHeader, oauth, apiKeyEnvironment,
+                endpoint, authHeader, false, apiKeyEnvironment,
                 String(value, "apiKey"), models.Count == 0 ? existing?.Models ?? [] : models);
         }
     }
@@ -319,8 +330,13 @@ public sealed class ProviderModelRuntime
         return modalities.Cast<string>().Distinct(StringComparer.Ordinal).ToArray();
     }
 
-    private static int? PositiveInt(JsonElement value, string property) => value.TryGetProperty(property, out var child) &&
-        child.TryGetInt32(out var number) && number > 0 ? number : null;
+    private static int? PositiveInt(JsonElement value, string property)
+    {
+        if (!value.TryGetProperty(property, out var child)) return null;
+        if (child.ValueKind != JsonValueKind.Number || !child.TryGetInt32(out var number) || number <= 0)
+            throw new InvalidDataException($"models.json {property} must be a positive integer.");
+        return number;
+    }
 
     private static ModelPricing? ParsePricing(JsonElement model)
     {
