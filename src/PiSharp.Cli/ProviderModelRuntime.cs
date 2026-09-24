@@ -49,7 +49,9 @@ public sealed class ProviderModelRuntime
         var providers = new Dictionary<string, ProviderProfile>(StringComparer.OrdinalIgnoreCase)
         {
             ["openai"] = new("openai", "OpenAI", new Uri("https://api.openai.com/v1"), true, false,
-                "OPENAI_API_KEY", null, [new(environment("PISHARP_MODEL") ?? "gpt-4o-mini", "openai", null, "catalog default", false, Provider: "openai")])
+                "OPENAI_API_KEY", null, [new(environment("PISHARP_MODEL") ?? "gpt-4o-mini", "openai", null, "catalog default", false, Provider: "openai")]),
+            ["openrouter"] = new("openrouter", "OpenRouter", new Uri("https://openrouter.ai/api/v1"), true, false,
+                "OPENROUTER_API_KEY", null, [new(environment("PISHARP_OPENROUTER_MODEL") ?? "openai/gpt-4o-mini", "openrouter", null, "catalog default", false, Provider: "openrouter")])
         };
         var configuredEndpoint = environment("PISHARP_BASE_URL");
         if (includeLocal || configuredEndpoint is not null)

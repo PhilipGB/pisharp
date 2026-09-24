@@ -7,6 +7,31 @@ namespace PiSharp.Tests;
 public sealed class ProviderModelRuntimeTests
 {
     [Fact]
+    public async Task OpenRouterUsesItsOwnCredentialAndOpenAiCompatibleEndpoint()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-openrouter-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            using var http = new HttpClient(new ModelHandler());
+            var environment = new Dictionary<string, string>
+            {
+                ["OPENAI_API_KEY"] = "must-not-cross-provider-boundary",
+                ["OPENROUTER_API_KEY"] = "openrouter-test-key"
+            };
+            var runtime = await ProviderModelRuntime.CreateAsync(root, false,
+                name => environment.GetValueOrDefault(name), http);
+            var selection = await runtime.ResolveAsync("openrouter", "openai/gpt-4o-mini");
+            Assert.Equal("openrouter", selection.Provider.Id);
+            Assert.Equal("openai/gpt-4o-mini", selection.Model.Id);
+            Assert.Equal("openrouter-test-key", selection.ApiKey);
+            Assert.Equal(new Uri("https://openrouter.ai/api/v1"), selection.Connection.Endpoint);
+            Assert.DoesNotContain("must-not-cross-provider-boundary", selection.ApiKey);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [Fact]
     public async Task CustomCatalogSelectsExactOrUnambiguousModelAndNeverSendsCloudKey()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-provider-" + Guid.NewGuid().ToString("N"));
