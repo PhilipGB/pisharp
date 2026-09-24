@@ -1,3 +1,5 @@
+using System.ClientModel;
+
 namespace PiSharp.Runtime.Sessions;
 
 /// <summary>Opt-in retry policy for a provider request that failed before producing any output.</summary>
@@ -18,5 +20,13 @@ public sealed record ProviderRetryPolicy
     }
 
     internal bool CanRetry(Exception error, int retries, bool producedOutput) =>
-        !producedOutput && retries < MaxRetries && error is HttpRequestException or IOException or TimeoutException;
+        !producedOutput && retries < MaxRetries && (error switch
+        {
+            ClientResultException result => IsTransientStatus(result.Status),
+            HttpRequestException request => request.StatusCode is null || IsTransientStatus((int)request.StatusCode.Value),
+            IOException or TimeoutException => true,
+            _ => false
+        });
+
+    private static bool IsTransientStatus(int status) => status is 0 or 408 or 409 or 429 || status >= 500;
 }

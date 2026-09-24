@@ -221,6 +221,27 @@ public sealed class AgentLifecycleTests
         Assert.Equal("partial", interrupted.Payload.GetProperty("partialText").GetString());
     }
 
+    [Theory]
+    [InlineData(400, false)]
+    [InlineData(401, false)]
+    [InlineData(403, false)]
+    [InlineData(408, true)]
+    [InlineData(409, true)]
+    [InlineData(429, true)]
+    [InlineData(503, true)]
+    public async Task HttpStatusRetryIsLimitedToTransientFailures(int status, bool retry)
+    {
+        var client = new HttpStatusClient((System.Net.HttpStatusCode)status);
+        var session = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(Path.GetTempPath()),
+            retryPolicy: new ProviderRetryPolicy(maxRetries: 1)), session);
+        var events = new List<AgentLifecycleEvent>();
+        await foreach (var item in run.RunEventsAsync("hello")) events.Add(item);
+        Assert.Equal(retry ? 2 : 1, client.Requests);
+        Assert.Equal(retry, events.Any(item => item.Type == "model_retry_scheduled"));
+        Assert.Equal(retry, events.Any(item => item.Type == "turn_completed"));
+    }
+
     [Fact]
     public async Task ProviderFailureNeverProducesSuccessfulCompletion()
     {
@@ -408,6 +429,24 @@ public sealed class AgentLifecycleTests
         public void Dispose() { }
     }
 
+    private sealed class HttpStatusClient(System.Net.HttpStatusCode status) : IChatClient
+    {
+        public int Requests { get; private set; }
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            if (++Requests == 1)
+            {
+                await Task.Yield();
+                throw new HttpRequestException("provider status", null, status);
+            }
+            yield return new ChatResponseUpdate(ChatRole.Assistant, "ok");
+        }
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
+    }
     private sealed class RetryQueueClient : IChatClient
     {
         public int Requests { get; private set; }

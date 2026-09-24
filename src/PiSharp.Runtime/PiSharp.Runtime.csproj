@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
     <ProjectReference Include="..\PiSharp.Core\PiSharp.Core.csproj" />
@@ -6,6 +6,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Agents.AI" Version="1.21.0" />
+    <PackageReference Include="System.ClientModel" Version="1.14.0" />
   </ItemGroup>
 
   <PropertyGroup>
