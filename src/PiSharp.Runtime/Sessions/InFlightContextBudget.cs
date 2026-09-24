@@ -47,6 +47,8 @@ internal sealed class InFlightContextBudget(
             throw new InvalidOperationException("Tool-loop context exceeds the configured budget; recent whole turns leave nothing safe to summarize.");
 
         var older = messages.Skip(users[0]).Take(boundary - users[0]).ToArray();
+        if (!HasBalancedToolCalls(messages, users[0], boundary))
+            throw new InvalidOperationException("Tool-loop context cannot summarize an incomplete or mismatched tool call/result graph.");
         var prefix = CacheKey(older);
         var cached = prefix is not null && string.Equals(prefix, _cachedPrefix, StringComparison.Ordinal);
         string summaryText;
@@ -70,6 +72,20 @@ internal sealed class InFlightContextBudget(
             _cachedSummary = prefix is null ? null : summaryText;
         }
         return projected;
+    }
+
+    private static bool HasBalancedToolCalls(IReadOnlyList<ChatMessage> messages, int start, int end)
+    {
+        var pending = new HashSet<string>(StringComparer.Ordinal);
+        var used = new HashSet<string>(StringComparer.Ordinal);
+        for (var i = start; i < end; i++)
+        {
+            foreach (var call in messages[i].Contents.OfType<FunctionCallContent>())
+                if (string.IsNullOrEmpty(call.CallId) || !used.Add(call.CallId) || !pending.Add(call.CallId)) return false;
+            foreach (var result in messages[i].Contents.OfType<FunctionResultContent>())
+                if (!pending.Remove(result.CallId)) return false;
+        }
+        return pending.Count == 0;
     }
 
     private static int CompletedToolBoundary(IReadOnlyList<ChatMessage> messages, int start)

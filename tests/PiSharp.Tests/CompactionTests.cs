@@ -446,6 +446,41 @@ public sealed class CompactionTests
         if (recover) Assert.Single(conversation.ActiveMessages(), message => message.Text == "new prompt");
     }
 
+    [Theory]
+    [InlineData("missing-result")]
+    [InlineData("unknown-result")]
+    [InlineData("duplicate-call")]
+    public async Task OverflowProjectionRefusesMalformedEarlierToolGraph(string graph)
+    {
+        var conversation = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        conversation.Append(new ChatMessage(ChatRole.User, new string('P', 900)));
+        if (graph is "missing-result" or "duplicate-call")
+            conversation.Append(new ChatMessage(ChatRole.Assistant,
+                [new FunctionCallContent("orphan", "read", new Dictionary<string, object?> { ["path"] = "missing.txt" })]));
+        if (graph == "unknown-result")
+            conversation.Append(new ChatMessage(ChatRole.Tool, [new FunctionResultContent("orphan", "result")]));
+        if (graph == "duplicate-call")
+        {
+            conversation.Append(new ChatMessage(ChatRole.Tool, [new FunctionResultContent("orphan", "result")]));
+            conversation.Append(new ChatMessage(ChatRole.Assistant,
+                [new FunctionCallContent("orphan", "read", new Dictionary<string, object?> { ["path"] = "missing.txt" })]));
+            conversation.Append(new ChatMessage(ChatRole.Tool, [new FunctionResultContent("orphan", "result")]));
+        }
+        var client = new OverflowBudgetClient("context_length_exceeded", afterContent: false);
+        var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(Path.GetTempPath()), noTools: true), conversation,
+            autoCompaction: new AutoCompactionPolicy(4000, 500));
+        var events = new List<AgentLifecycleEvent>();
+        await foreach (var item in run.RunEventsAsync("new prompt")) events.Add(item);
+
+        Assert.Equal(1, client.Requests);
+        Assert.Equal(0, client.Summaries);
+        Assert.DoesNotContain(events, item => item.Type == "model_context_overflow_recovery");
+        Assert.Contains(events, item => item.Type == "turn_failed");
+        Assert.Contains(conversation.ActiveMessages().SelectMany(message => message.Contents),
+            content => graph == "unknown-result" ? content is FunctionResultContent { CallId: "orphan" } :
+                content is FunctionCallContent { CallId: "orphan" });
+    }
+
     [Fact]
     public async Task RepeatedProviderOverflowStopsAfterOneRecoveryAttempt()
     {
