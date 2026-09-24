@@ -204,8 +204,10 @@ public sealed class CompactionTests
         finally { Directory.Delete(cwd, recursive: true); }
     }
 
-    [Fact]
-    public async Task OversizedPrefixIsNotRetainedAsInFlightSummaryCacheKey()
+    [Theory]
+    [InlineData(70_000, 1)]
+    [InlineData(1_100_000, 2)]
+    public async Task LargePrefixReusesOnlyBoundedFingerprint(int historySize, int summaries)
     {
         var cwd = Path.Combine(Path.GetTempPath(), "pisharp-large-prefix-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(cwd);
@@ -214,7 +216,7 @@ public sealed class CompactionTests
             await File.WriteAllTextAsync(Path.Combine(cwd, "output.txt"), new string('Z', 1400));
             await File.WriteAllTextAsync(Path.Combine(cwd, "small.txt"), "small result");
             var conversation = new ConversationSession(cwd, "fixture", null);
-            conversation.Append(new ChatMessage(ChatRole.User, new string('A', 70_000)));
+            conversation.Append(new ChatMessage(ChatRole.User, new string('A', historySize)));
             conversation.Append(new ChatMessage(ChatRole.Assistant, "previous answer"));
             var trigger = AutoCompactionPolicy.Estimate(conversation.ContextMessages(), "read both files") + 300;
             var client = new ToolLoopBudgetClient { RepeatRead = true };
@@ -222,9 +224,9 @@ public sealed class CompactionTests
                 autoCompaction: new AutoCompactionPolicy(trigger + 300, 300));
             await foreach (var _ in run.RunEventsAsync("read both files")) { }
             Assert.Equal(3, client.Requests);
-            Assert.Equal(2, client.Summaries);
+            Assert.Equal(summaries, client.Summaries);
             Assert.True(client.ContinuationSawSummaryAndToolResult);
-            Assert.Contains(conversation.ActiveMessages(), message => message.Text == new string('A', 70_000));
+            Assert.Contains(conversation.ActiveMessages(), message => message.Text == new string('A', historySize));
         }
         finally { Directory.Delete(cwd, recursive: true); }
     }

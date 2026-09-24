@@ -8,8 +8,8 @@ internal sealed class InFlightContextBudget(
     Func<IReadOnlyList<ChatMessage>, CancellationToken, Task<PiAgent.CompactionSummary>> summarize,
     Func<PiAgent.CompactionSummary, CancellationToken, Task> onSummary)
 {
-    // Only reuse a summary when the exact serialized earlier-turn prefix is unchanged.
-    // Cap the cache key: large or changing histories are re-summarized rather than retained in memory.
+    // Fingerprint serialized earlier turns without retaining their raw content in the cache.
+    // Fail closed to a fresh summary when one message or the aggregate is too large to fingerprint.
     private string? _cachedPrefix;
     private string? _cachedSummary;
 
@@ -91,13 +91,19 @@ internal sealed class InFlightContextBudget(
 
     private static string? CacheKey(IReadOnlyList<ChatMessage> messages)
     {
-        var key = new System.Text.StringBuilder();
+        using var hash = System.Security.Cryptography.IncrementalHash.CreateHash(
+            System.Security.Cryptography.HashAlgorithmName.SHA256);
+        var total = 0;
+        Span<byte> length = stackalloc byte[sizeof(int)];
         foreach (var message in messages)
         {
-            var json = System.Text.Json.JsonSerializer.Serialize(message, AIJsonUtilities.DefaultOptions);
-            if (key.Length + json.Length + 12 > 64 * 1024) return null;
-            key.Append(json.Length).Append(':').Append(json);
+            var json = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(message, AIJsonUtilities.DefaultOptions);
+            if (json.Length > 1024 * 1024 || total + (long)json.Length > 16 * 1024 * 1024) return null;
+            total += json.Length;
+            System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(length, json.Length);
+            hash.AppendData(length);
+            hash.AppendData(json);
         }
-        return key.ToString();
+        return Convert.ToHexString(hash.GetHashAndReset());
     }
 }
