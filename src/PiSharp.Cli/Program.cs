@@ -36,9 +36,27 @@ if (cli.Help)
     Console.WriteLine("PiSharp (incomplete implementation)\nUsage: pisharp [--local | --provider <id>] [--model <id>] [--models <globs>] [--thinking <level>] [--api-key <key>] [--list-models] [--approve|--no-approve] [--mode interactive|print|json|rpc] [--print] [--continue | --session <path|project-id> | --fork <path|project-id> | --no-session] [--session-dir <dir>] [--name <label>] [prompt] [@files...]\n--tools <read,bash,edit,write,grep,find,ls> selects tools (grep/find/ls are opt-in); --exclude-tools <names> removes tools; --no-tools disables defaults.\nProviders and static model metadata may be configured in $PISHARP_AGENT_DIR/models.json. Credentials are read from environment or private auth.json; --api-key is runtime-only.\nOffline credential status: pisharp auth check --provider <id> [--model <configured-exact-id>] [--local]; never prints secrets.\nStandalone private HTML: pisharp --export <PiSharp-session-file> [output.html]; never overwrites.\n--local uses http://192.168.0.97:8000/v1 and Qwen3.8-27B-GGUF (no API key required).\nInteractive: /model, /models, /thinking, /scoped-models, /login, /logout, /tree, /branch, /fork, /clone, /new, /sessions, /resume, /delete-session, /compact, /export, /name, /session, /trust, /reload, /quit.");
     return;
 }
+var trustStore = new ProjectTrust(agentDirectory);
+bool trusted;
+try
+{
+    trusted = await trustStore.ResolveAsync(Environment.CurrentDirectory, cli.ProjectTrustOverride,
+        cli.Mode == "interactive" && !cli.Print && !Console.IsInputRedirected && !Console.IsOutputRedirected, Console.In, Console.Error);
+}
+catch (Exception error) when (error is not OperationCanceledException)
+{
+    Console.Error.WriteLine($"Could not resolve project trust: {error.Message}");
+    Environment.ExitCode = 2;
+    return;
+}
 UserSettings userSettings;
-try { userSettings = await UserSettings.LoadAsync(agentDirectory, Environment.GetEnvironmentVariable); }
-catch (Exception error) when (error is IOException or System.Text.Json.JsonException or ArgumentException)
+try
+{
+    userSettings = await UserSettings.LoadAsync(agentDirectory, Environment.GetEnvironmentVariable);
+    if (trusted)
+        userSettings = userSettings.Overlay(await UserSettings.LoadProjectAsync(Environment.CurrentDirectory));
+}
+catch (Exception error) when (error is IOException or InvalidDataException or System.Text.Json.JsonException or ArgumentException)
 {
     Console.Error.WriteLine(error.Message);
     Environment.ExitCode = 2;
@@ -81,16 +99,12 @@ OpenAIClient CreateClient(ModelSelection selected)
 }
 var client = CreateClient(selection);
 IChatClient chat = client.GetChatClient(connection.Model).AsIChatClient();
-var trustStore = new ProjectTrust(agentDirectory);
-bool trusted;
 string instructions;
 (string? System, string? Append) prompts;
 ResourceCatalog resources;
 ExtensionCatalog extensions;
 try
 {
-    trusted = await trustStore.ResolveAsync(Environment.CurrentDirectory, cli.ProjectTrustOverride,
-        cli.Mode == "interactive" && !cli.Print && !Console.IsInputRedirected && !Console.IsOutputRedirected, Console.In, Console.Error);
     prompts = await ProjectPrompts.LoadAsync(Environment.CurrentDirectory, agentDirectory, trusted);
     instructions = await ContextInstructions.LoadAsync(Environment.CurrentDirectory, agentDirectory);
     resources = await ResourceCatalog.LoadAsync(Environment.CurrentDirectory, agentDirectory, trusted);
@@ -123,9 +137,7 @@ AutoCompactionPolicy? contextPolicy;
 ModelPricing? modelPricing;
 try
 {
-    contextPolicy = AutoCompactionPolicy.FromEnvironment(Environment.GetEnvironmentVariable);
-    if (contextPolicy is null && selection.Model.ContextLength is int contextWindow)
-        contextPolicy = new AutoCompactionPolicy(contextWindow, Math.Min(16_384, contextWindow / 4));
+    contextPolicy = userSettings.ResolveCompaction(selection.Model.ContextLength, Environment.GetEnvironmentVariable);
     modelPricing = ModelPricing.FromEnvironment(Environment.GetEnvironmentVariable) ?? selection.Model.Pricing;
 }
 catch (ArgumentException error) { Console.Error.WriteLine(error.Message); Environment.ExitCode = 2; return; }
@@ -169,8 +181,7 @@ try
         connection = selection.Connection;
         thinking = ThinkingLevels.ValidateForModel(thinking, selection.Model.Reasoning);
         client = CreateClient(selection);
-        contextPolicy = AutoCompactionPolicy.FromEnvironment(Environment.GetEnvironmentVariable) ??
-            (selection.Model.ContextLength is int savedWindow ? new AutoCompactionPolicy(savedWindow, Math.Min(16_384, savedWindow / 4)) : null);
+        contextPolicy = userSettings.ResolveCompaction(selection.Model.ContextLength, Environment.GetEnvironmentVariable);
         modelPricing = ModelPricing.FromEnvironment(Environment.GetEnvironmentVariable) ?? selection.Model.Pricing;
         agent = new PiAgent(client.GetChatClient(connection.Model).AsIChatClient(),
             new CodingTools(Environment.CurrentDirectory), cli.Tools, cli.ExcludeTools, cli.NoTools, instructions, prompts.System, prompts.Append,

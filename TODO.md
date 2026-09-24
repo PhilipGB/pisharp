@@ -2,11 +2,11 @@
 
 **Goal:** provide Pi's capabilities in an idiomatic C#/.NET implementation, with behavioral and differential evidence; do not claim parity while material gaps remain. Pi Packages are the only consciously excluded ecosystem feature unless audit shows they affect core capability.
 
-**Pinned upstream:** `earendil-works/pi@8676a0dcd8f9f6bca78835e63c8cd31493c4154d` (fetched from current `main` on 2026-05-24). Previous pin: `002fc8385268300ca91a5fc95f935c2afbbdac02`. Delta includes provider composition/catalog protocol, unified image/classifier model infrastructure, Typesafe System One, model type metadata, clipboard behavior and X11 image capability changes; these are incorporated into the gaps below.
+**Pinned upstream:** `earendil-works/pi@7c696c00f34cf773c86d33093de8d5711994c5e4` (fetched from current `main` on 2026-09-24). Previous pin: `8676a0dcd8f9f6bca78835e63c8cd31493c4154d` (earlier baseline `002fc8385268300ca91a5fc95f935c2afbbdac02`). The latest delta is one Pico5 immutable revision design documentation commit, with no executable capability change. Earlier provider/model/image changes remain unimplemented as described below.
 
 ## Current state and audit evidence
 
-Repository `main` at `8c7dd71` is clean at start. Read `README.md`, `docs/parity/feature-matrix.md`, `docs/parity/detailed-inventory.md`, `docs/parity/execution-ledger.json`, and `docs/continuation.md`. Tracking is broadly accurate about substantial existing partial implementations, but README and matrix describe many live features while the ledger contains stale `not_started` statuses; reconcile it against code/tests before relying on statuses. There is no evidence for full feature parity. In particular the README explicitly calls out absent OAuth, wide provider semantics, Pi JSONL, full TUI, broad settings/keybindings, comprehensive multimodal support, rich resources/extensions and Pi-compatible RPC.
+Repository `main` at `bde134e08` was clean at start. Read `README.md`, `docs/parity/feature-matrix.md`, `docs/parity/detailed-inventory.md`, `docs/parity/execution-ledger.json`, and `docs/continuation.md`. Tracking is broadly accurate about substantial existing partial implementations, but README and matrix describe many live features while the ledger contains stale `not_started` statuses; reconcile it against code/tests before relying on statuses. There is no evidence for full feature parity. In particular the README explicitly calls out absent OAuth, wide provider semantics, Pi JSONL, full TUI, broad settings/keybindings, comprehensive multimodal support, rich resources/extensions and Pi-compatible RPC.
 
 ## Highest-priority actionable work (continue in order, reprioritize as evidence dictates)
 
@@ -26,8 +26,14 @@ Repository `main` at `8c7dd71` is clean at start. Read `README.md`, `docs/parity
 
 After each significant change: add/update tests and parity evidence, run focused tests, update this file and parity docs, commit coherent changes and push if established; then immediately select the next unresolved item. Never claim behavioral verification from code presence alone. Preserve exact upstream SHA for fixtures. No voluntary pause while actionable work remains.
 
+## Immediate discovered tasks
+
+- Finish compaction settings: `keepRecentTokens` and per-model overrides, dynamic automatic compaction inside tool loops, upstream differential evidence; current user/trusted-project `enabled` and `reserveTokens` govern pre-prompt compaction only.
+- Reconcile stale ledger entries per implementation/test (the ledger's `verified` agent row denotes local evidence, not upstream differential verification). Preserve honest states.
+
 ## Completed in this continuation
 
+- Added validated user `compaction.enabled` and `compaction.reserveTokens` with explicit context environment override, known-model context budget, malformed/duplicate rejection and local tests. Trusted-project settings now overlay the validated subset after trust resolution; untrusted project JSON is never read. Pre-prompt only, no upstream differential proof; process trust fixture and local precedence fixtures added.
 - Expanded the provider model descriptor with model name, API identifier, declared input modalities, and max output tokens; load these from local catalogues (including OpenRouter `architecture.input_modalities`) and configured `models.json`, and preserve configured fallback metadata when the live endpoint omits it. Unit fixtures added. This metadata is descriptive only: native provider request adapters and image transport remain open.
 - Added Pi-style request-wide model pricing tiers to catalog/model cost metadata and usage accounting. The highest threshold strictly below input-token count applies rates to the full request; local catalog parsing and cost arithmetic tests cover below/above threshold behavior. Provider cache-write token counts from `UsageDetails.AdditionalCounts` and cache-write rates are accounted for at both base and tier prices; unrecognized additional usage keys remain ignored.
 - Revalidated with format verification, warning-as-error build, and all 131 tests after provider metadata/pricing changes.

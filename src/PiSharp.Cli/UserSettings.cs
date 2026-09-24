@@ -1,10 +1,53 @@
 using System.Text.Json;
+using PiSharp.Runtime.Sessions;
 
 namespace PiSharp.Cli;
 
-/// <summary>Validated, non-secret user defaults. Project settings are intentionally not loaded yet.</summary>
+/// <summary>Validated pre-prompt compaction defaults; raw session history is never discarded.</summary>
+public sealed record CompactionSettings(bool? Enabled = null, int? ReserveTokens = null)
+{
+    public static CompactionSettings Parse(JsonElement value)
+    {
+        if (value.ValueKind != JsonValueKind.Object)
+            throw new InvalidDataException("settings.json compaction must be an object.");
+        bool? enabled = null;
+        int? reserve = null;
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var property in value.EnumerateObject())
+        {
+            if (!seen.Add(property.Name))
+                throw new InvalidDataException($"settings.json compaction contains duplicate property '{property.Name}'.");
+            switch (property.Name)
+            {
+                case "enabled" when property.Value.ValueKind is JsonValueKind.True or JsonValueKind.False:
+                    enabled = property.Value.GetBoolean();
+                    break;
+                case "reserveTokens" when property.Value.ValueKind == JsonValueKind.Number &&
+                    property.Value.TryGetInt32(out var tokens) && tokens >= 0:
+                    reserve = tokens;
+                    break;
+                default:
+                    throw new InvalidDataException($"settings.json compaction.{property.Name} is unsupported or invalid.");
+            }
+        }
+        return new(enabled, reserve);
+    }
+
+    public AutoCompactionPolicy? Resolve(int? contextWindow, Func<string, string?> environment)
+    {
+        var explicitPolicy = AutoCompactionPolicy.FromEnvironment(environment);
+        if (explicitPolicy is not null) return explicitPolicy;
+        if (Enabled == false || contextWindow is null) return null;
+        var policy = new AutoCompactionPolicy(contextWindow.Value,
+            ReserveTokens ?? Math.Min(16_384, contextWindow.Value / 4));
+        _ = policy.TriggerTokens;
+        return policy;
+    }
+}
+/// <summary>Validated non-secret settings subset for the user and trusted project scopes.</summary>
 public sealed record UserSettings(string? DefaultProvider = null, string? DefaultModel = null,
-    string? DefaultThinkingLevel = null, IReadOnlyList<string>? DefaultTools = null, string? SessionDirectory = null)
+    string? DefaultThinkingLevel = null, IReadOnlyList<string>? DefaultTools = null, string? SessionDirectory = null,
+    CompactionSettings? Compaction = null)
 {
     public static async Task<UserSettings> LoadAsync(string agentDirectory, Func<string, string?> environment,
         CancellationToken cancellationToken = default)
@@ -19,10 +62,16 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
             throw new InvalidDataException("settings.json must contain a JSON object.");
         string? provider = null, model = null, thinking = null, sessionDirectory = null;
         IReadOnlyList<string>? tools = null;
+        CompactionSettings? compaction = null;
         var seen = new HashSet<string>(StringComparer.Ordinal);
         foreach (var property in document.RootElement.EnumerateObject())
         {
             if (!seen.Add(property.Name)) throw new InvalidDataException($"settings.json contains duplicate property '{property.Name}'.");
+            if (property.Name == "compaction")
+            {
+                compaction = CompactionSettings.Parse(property.Value);
+                continue;
+            }
             if (property.Name == "defaultTools")
             {
                 if (property.Value.ValueKind != JsonValueKind.Array)
@@ -55,9 +104,24 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
                 default: throw new InvalidDataException($"settings.json contains unsupported property '{property.Name}'.");
             }
         }
-        return new(provider, model, thinking, tools, sessionDirectory);
+        return new(provider, model, thinking, tools, sessionDirectory, compaction);
     }
 
+    /// <summary>Overlay a trusted project's explicitly specified defaults; nested compaction values merge.</summary>
+    public UserSettings Overlay(UserSettings project) => new(
+        project.DefaultProvider ?? DefaultProvider,
+        project.DefaultModel ?? DefaultModel,
+        project.DefaultThinkingLevel ?? DefaultThinkingLevel,
+        project.DefaultTools ?? DefaultTools,
+        project.SessionDirectory ?? SessionDirectory,
+        project.Compaction is null ? Compaction : new CompactionSettings(
+            project.Compaction.Enabled ?? Compaction?.Enabled,
+            project.Compaction.ReserveTokens ?? Compaction?.ReserveTokens));
+
+    public static Task<UserSettings> LoadProjectAsync(string workingDirectory, CancellationToken cancellationToken = default) =>
+        LoadAsync(workingDirectory, _ => Path.Combine(workingDirectory, ".pi", "settings.json"), cancellationToken);
+    public AutoCompactionPolicy? ResolveCompaction(int? contextWindow, Func<string, string?> environment) =>
+        (Compaction ?? new CompactionSettings()).Resolve(contextWindow, environment);
     public CliArguments ApplyDefaults(CliArguments cli, Func<string, string?> environment, bool preserveSessionModel = false)
     {
         var useLocal = cli.Local || (!preserveSessionModel && cli.Provider is null && DefaultProvider == "local");

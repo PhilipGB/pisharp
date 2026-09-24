@@ -2,7 +2,7 @@
   "schema": 1,
   "plan_received": false,
   "source_note": "Original plan was announced after a heading but not appended. Conservative provisional inventory from pinned upstream feature matrix and detailed inventory; never treat as complete until reconciled with the missing plan and audited upstream.",
-  "baseline": "earendil-works/pi@8676a0dcd8f9f6bca78835e63c8cd31493c4154d",
+  "baseline": "earendil-works/pi@7c696c00f34cf773c86d33093de8d5711994c5e4",
   "required_ids": [
     "feature-agent-multi-turn-and-streaming",
     "feature-agent-steering-follow-up-concurrent-tools",
@@ -1620,7 +1620,7 @@
     {
       "id": "settings-compaction-enabled",
       "title": "Setting: compaction.enabled",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:62",
       "acceptance": [
         "Support compaction.enabled with upstream type/default and user/trusted-project precedence",
@@ -1633,7 +1633,7 @@
     {
       "id": "settings-compaction-reservetokens",
       "title": "Setting: compaction.reserveTokens",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:62",
       "acceptance": [
         "Support compaction.reserveTokens with upstream type/default and user/trusted-project precedence",

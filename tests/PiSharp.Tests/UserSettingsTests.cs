@@ -44,6 +44,63 @@ public sealed class UserSettingsTests
         finally { Directory.Delete(root, true); }
     }
 
+    [Fact]
+    public async Task CompactionSettingsApplyToKnownModelAndExplicitEnvironmentWins()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-compaction-settings-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(root, "settings.json"),
+                "{\"compaction\":{\"enabled\":true,\"reserveTokens\":2048}}");
+            var settings = await UserSettings.LoadAsync(root, _ => null);
+            Assert.Null(settings.ResolveCompaction(null, _ => null));
+            Assert.Equal(7952, settings.ResolveCompaction(10000, _ => null)!.TriggerTokens);
+            Assert.Equal(4000, settings.ResolveCompaction(10000, name => name switch
+            {
+                "PISHARP_CONTEXT_WINDOW_TOKENS" => "5000",
+                "PISHARP_CONTEXT_RESERVE_TOKENS" => "1000",
+                _ => null
+            })!.TriggerTokens);
+            await File.WriteAllTextAsync(Path.Combine(root, "settings.json"), "{\"compaction\":{\"enabled\":false}}");
+            var disabled = await UserSettings.LoadAsync(root, _ => null);
+            Assert.Null(disabled.ResolveCompaction(10000, _ => null));
+            Assert.Equal(4000, disabled.ResolveCompaction(10000, name => name switch
+            {
+                "PISHARP_CONTEXT_WINDOW_TOKENS" => "5000",
+                "PISHARP_CONTEXT_RESERVE_TOKENS" => "1000",
+                _ => null
+            })!.TriggerTokens);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [Fact]
+    public async Task TrustedProjectSettingsOverlayUserDefaultsWithoutDiscardingNestedCompaction()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-project-settings-" + Guid.NewGuid().ToString("N"));
+        var agent = Path.Combine(root, "agent");
+        var project = Path.Combine(root, "project");
+        Directory.CreateDirectory(agent);
+        Directory.CreateDirectory(Path.Combine(project, ".pi"));
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(agent, "settings.json"),
+                "{\"defaultProvider\":\"mistral\",\"defaultTools\":[\"read\"],\"compaction\":{\"enabled\":false,\"reserveTokens\":1000}}");
+            await File.WriteAllTextAsync(Path.Combine(project, ".pi", "settings.json"),
+                "{\"defaultProvider\":\"openrouter\",\"compaction\":{\"enabled\":true}}");
+            var global = await UserSettings.LoadAsync(agent, _ => null);
+            Assert.Null(global.ResolveCompaction(10000, _ => null));
+            var merged = global.Overlay(await UserSettings.LoadProjectAsync(project));
+            Assert.Equal("openrouter", merged.DefaultProvider);
+            Assert.Equal(["read"], merged.DefaultTools);
+            Assert.Equal(9000, merged.ResolveCompaction(10000, _ => null)!.TriggerTokens);
+            await File.WriteAllTextAsync(Path.Combine(project, ".pi", "settings.json"), "{\"compaction\":{\"reserveTokens\":2000}}");
+            Assert.Null(global.Overlay(await UserSettings.LoadProjectAsync(project)).ResolveCompaction(10000, _ => null));
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
     [Theory]
     [InlineData("{\"defaultThinkingLevel\":\"ultra\"}")]
     [InlineData("{\"unknown\":\"value\"}")]
@@ -52,6 +109,11 @@ public sealed class UserSettingsTests
     [InlineData("{\"defaultTools\":[\"unknown\"]}")]
     [InlineData("{\"defaultTools\":[\"read\",\"read\"]}")]
     [InlineData("{\"defaultModel\":\"a\",\"defaultModel\":\"b\"}")]
+    [InlineData("{\"compaction\":{\"enabled\":\"false\"}}")]
+    [InlineData("{\"compaction\":{\"reserveTokens\":-1}}")]
+    [InlineData("{\"compaction\":{\"reserveTokens\":2,\"reserveTokens\":3}}")]
+    [InlineData("{\"compaction\":{\"keepRecentTokens\":50}}")]
+    [InlineData("{\"compaction\":[]}")]
     public async Task InvalidSettingsFailClosed(string json)
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-settings-invalid-" + Guid.NewGuid().ToString("N"));
