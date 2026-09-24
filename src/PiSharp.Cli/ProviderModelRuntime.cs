@@ -311,11 +311,14 @@ public sealed class ProviderModelRuntime
             var baseUrl = String(value, "baseUrl") ?? providers.GetValueOrDefault(item.Name)?.Endpoint.ToString();
             if (baseUrl is null) throw new InvalidDataException($"Provider '{item.Name}' requires baseUrl.");
             var models = new List<ModelDescriptor>();
+            var seenModels = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             if (value.TryGetProperty("models", out var array) && array.ValueKind == JsonValueKind.Array)
                 foreach (var model in array.EnumerateArray())
                 {
                     if (model.ValueKind != JsonValueKind.Object || string.IsNullOrWhiteSpace(String(model, "id")))
                         throw new InvalidDataException($"Provider '{item.Name}' has an invalid model.");
+                    if (!seenModels.Add(String(model, "id")!))
+                        throw new InvalidDataException($"Provider '{item.Name}' has duplicate model IDs.");
                     models.Add(new(String(model, "id")!, item.Name, PositiveInt(model, "contextWindow") ?? PositiveInt(model, "context_length"),
                         "configured", Boolean(model, "reasoning"), ParsePricing(model), item.Name,
                         Name: String(model, "name"), MaxOutputTokens: PositiveInt(model, "maxTokens") ?? PositiveInt(model, "max_tokens"),

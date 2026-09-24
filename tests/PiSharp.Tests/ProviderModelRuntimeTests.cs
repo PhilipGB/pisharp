@@ -145,6 +145,7 @@ public sealed class ProviderModelRuntimeTests
 
     [Theory]
     [InlineData("{\"providers\":{\"fixture\":{\"baseUrl\":\"https://fixture.test/v1\",\"models\":[{\"id\":\"a\",\"maxTokens\":\"bad\"}]}}}", "maxTokens")]
+    [InlineData("{\"providers\":{\"fixture\":{\"baseUrl\":\"https://fixture.test/v1\",\"models\":[{\"id\":\"A\"},{\"id\":\"a\"}]}}}", "duplicate model")]
     [InlineData("{\"providers\":{\"fixture\":{\"baseUrl\":\"https://fixture.test/v1\",\"oauth\":true}}}", "OAuth")]
     [InlineData("{\"providers\":{\"fixture\":{\"baseUrl\":\"https://fixture.test/v1\"},\"FIXTURE\":{\"baseUrl\":\"https://other.test/v1\"}}}", "duplicate")]
     public async Task InvalidConfiguredProviderCannotSilentlyChangeCredentialIdentity(string json, string expected)
