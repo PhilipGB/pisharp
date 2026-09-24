@@ -37,6 +37,7 @@ After each significant change: add/update tests and parity evidence, run focused
 
 ## Completed in this continuation
 
+- Bounded user/trusted-project `enabledModels` arrays now supply model scope unless `--models` overrides (empty project array clears it). Unit validation/overlay and offline CLI subprocess tests pass. PiSharp scope currently restricts model resolution; pinned Pi's cycling-focused selection/thinking suffix/order and full project-setting semantics still need reconciliation.
 - `settings.json` `quietStartup` hides the PiSharp terminal banner and `--verbose` overrides it; boolean/overlay tests plus a Linux PTY fixture confirm both paths. Pinned Pi uses the same controls for more notices and a different TUI; no full startup/reload differential yet.
 - `settings.json` now validates `hideThinkingBlock` (default visible), merges trusted-project override, and suppresses interactive stderr reasoning deltas while leaving history/events intact. Local parse/overlay/invalid tests only; pinned Pi renders a collapsible thinking block in its full TUI, and no PTY rendering/reload differential exists.
 - Scoped model patterns now distinguish `*` from cross-segment `**`, match simple bracket ranges/negation and avoid hidden segments, with a pinned minimatch Node differential slice (`docs/parity/model-scope-globs.md`) plus C# integration tests. Brace/extglob/escape semantics, thinking suffixes, ordering and full CLI parity remain open.

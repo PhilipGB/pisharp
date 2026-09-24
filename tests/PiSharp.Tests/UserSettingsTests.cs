@@ -45,6 +45,30 @@ public sealed class UserSettingsTests
     }
 
     [Fact]
+    public async Task EnabledModelsUsesUserAndTrustedProjectPatternsBelowCliScope()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-enabled-models-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(Path.Combine(root, ".pi"));
+        try
+        {
+            var path = Path.Combine(root, "settings.json");
+            await File.WriteAllTextAsync(path, """
+                {"enabledModels":["fixture/st*"]}
+                """);
+            var user = await UserSettings.LoadAsync(root, _ => null);
+            Assert.Equal(["fixture/st*"], user.ApplyDefaults(CliArguments.Parse([]), _ => null).ScopedModels);
+            Assert.Equal(["cli/*"], user.ApplyDefaults(CliArguments.Parse(["--models", "cli/*"]), _ => null).ScopedModels);
+            await File.WriteAllTextAsync(Path.Combine(root, ".pi", "settings.json"), "{\"enabledModels\":[]}");
+            Assert.Empty(user.Overlay(await UserSettings.LoadProjectAsync(root)).EnabledModels!);
+            foreach (var invalid in new[] { "null", "[1]", "[\"\"]", "[\"same\",\"same\"]", "[\" leading\"]" })
+            {
+                await File.WriteAllTextAsync(path, "{\"enabledModels\":" + invalid + "}");
+                await Assert.ThrowsAsync<InvalidDataException>(() => UserSettings.LoadAsync(root, _ => null));
+            }
+        }
+        finally { Directory.Delete(root, true); }
+    }
+    [Fact]
     public async Task CompactionSettingsApplyToKnownModelAndExplicitEnvironmentWins()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-compaction-settings-" + Guid.NewGuid().ToString("N"));

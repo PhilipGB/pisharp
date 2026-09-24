@@ -6,10 +6,11 @@ namespace PiSharp.Tests;
 public sealed class OfflineCatalogProcessTests
 {
     [Theory]
-    [InlineData(false, "STATIC")]
-    [InlineData(true, "STATIC")]
-    [InlineData(false, "missing")]
-    public async Task OfflineListModelsUsesStaticMetadataWithoutReachingUnavailableEndpoint(bool viaEnvironment, string pattern)
+    [InlineData(false, "STATIC", false)]
+    [InlineData(true, "STATIC", false)]
+    [InlineData(false, "missing", false)]
+    [InlineData(false, "fixture", true)]
+    public async Task OfflineListModelsUsesStaticMetadataWithoutReachingUnavailableEndpoint(bool viaEnvironment, string pattern, bool settingScope)
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-offline-process-" + Guid.NewGuid().ToString("N"));
         var agent = Path.Combine(root, "agent");
@@ -18,6 +19,9 @@ public sealed class OfflineCatalogProcessTests
         {
             await File.WriteAllTextAsync(Path.Combine(agent, "models.json"), """
                 {"providers":{"fixture":{"baseUrl":"http://127.0.0.1:1/v1","authHeader":false,"models":[{"id":"static-only","contextWindow":8192},{"id":"omit-me"}]}}}
+                """);
+            if (settingScope) await File.WriteAllTextAsync(Path.Combine(agent, "settings.json"), """
+                {"enabledModels":["fixture/static-only"]}
                 """);
             var start = new ProcessStartInfo("dotnet")
             {

@@ -1484,14 +1484,18 @@
     {
       "id": "settings-enabledmodels",
       "title": "Setting: enabledModels",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:61",
       "acceptance": [
         "Support enabledModels with upstream type/default and user/trusted-project precedence",
         "Test malformed settings, trust boundaries, reload and startup behaviour"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "User/trusted-project enabledModels validates up to 128 bounded model patterns and supplies CLI scope unless --models is present. Empty project array overrides user scope. PiSharp currently restricts startup model selection by scope; pinned Pi's cycling-oriented scope and initial selection semantics are not fully reproduced."
+      ],
+      "evidence": [
+        "UserSettingsTests.EnabledModelsUsesUserAndTrustedProjectPatternsBelowCliScope verifies precedence and invalid values; OfflineCatalogProcessTests covers a scoped offline process list. Upstream thinking suffixes, cycling order, reload and full differential remain open."
+      ],
       "dependencies": []
     },
     {

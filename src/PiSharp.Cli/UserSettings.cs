@@ -66,7 +66,7 @@ public sealed record CompactionSettings(bool? Enabled = null, int? ReserveTokens
 /// <summary>Validated non-secret settings subset for the user and trusted project scopes.</summary>
 public sealed record UserSettings(string? DefaultProvider = null, string? DefaultModel = null,
     string? DefaultThinkingLevel = null, IReadOnlyList<string>? DefaultTools = null, string? SessionDirectory = null,
-    CompactionSettings? Compaction = null, bool? BlockImages = null, string? DefaultProjectTrust = null, bool? HideThinkingBlock = null, bool? QuietStartup = null)
+    CompactionSettings? Compaction = null, bool? BlockImages = null, string? DefaultProjectTrust = null, bool? HideThinkingBlock = null, bool? QuietStartup = null, IReadOnlyList<string>? EnabledModels = null)
 {
     public static async Task<UserSettings> LoadAsync(string agentDirectory, Func<string, string?> environment,
         CancellationToken cancellationToken = default)
@@ -80,7 +80,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         if (document.RootElement.ValueKind != JsonValueKind.Object)
             throw new InvalidDataException("settings.json must contain a JSON object.");
         string? provider = null, model = null, thinking = null, sessionDirectory = null, defaultTrust = null;
-        IReadOnlyList<string>? tools = null;
+        IReadOnlyList<string>? tools = null, enabledModels = null;
         CompactionSettings? compaction = null;
         bool? blockImages = null, hideThinkingBlock = null, quietStartup = null;
         var seen = new HashSet<string>(StringComparer.Ordinal);
@@ -120,6 +120,22 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
                 compaction = CompactionSettings.Parse(property.Value);
                 continue;
             }
+            if (property.Name == "enabledModels")
+            {
+                if (property.Value.ValueKind != JsonValueKind.Array || property.Value.GetArrayLength() > 128)
+                    throw new InvalidDataException("settings.json enabledModels must be an array of at most 128 patterns.");
+                var patterns = new List<string>();
+                foreach (var item in property.Value.EnumerateArray())
+                {
+                    if (item.ValueKind != JsonValueKind.String || item.GetString() is not { } pattern ||
+                        string.IsNullOrWhiteSpace(pattern) || pattern.Length > 512 || pattern != pattern.Trim() ||
+                        patterns.Contains(pattern, StringComparer.Ordinal))
+                        throw new InvalidDataException("settings.json enabledModels contains an invalid or duplicate pattern.");
+                    patterns.Add(pattern);
+                }
+                enabledModels = patterns;
+                continue;
+            }
             if (property.Name == "defaultTools")
             {
                 if (property.Value.ValueKind != JsonValueKind.Array)
@@ -157,7 +173,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
                 default: throw new InvalidDataException($"settings.json contains unsupported property '{property.Name}'.");
             }
         }
-        return new(provider, model, thinking, tools, sessionDirectory, compaction, blockImages, defaultTrust, hideThinkingBlock, quietStartup);
+        return new(provider, model, thinking, tools, sessionDirectory, compaction, blockImages, defaultTrust, hideThinkingBlock, quietStartup, enabledModels);
     }
 
     /// <summary>Overlay a trusted project's explicitly specified defaults; nested compaction values merge.</summary>
@@ -175,7 +191,8 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         project.BlockImages ?? BlockImages,
         DefaultProjectTrust,
         project.HideThinkingBlock ?? HideThinkingBlock,
-        project.QuietStartup ?? QuietStartup);
+        project.QuietStartup ?? QuietStartup,
+        project.EnabledModels ?? EnabledModels);
 
     private static IReadOnlyDictionary<string, CompactionSettings>? MergeOverrides(
         IReadOnlyDictionary<string, CompactionSettings>? global, IReadOnlyDictionary<string, CompactionSettings>? project)
@@ -216,6 +233,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
             Local = useLocal,
             ModelOverride = cli.ModelOverride ?? (!useLocal && !preserveSessionModel && environment(modelEnvironment) is null ? DefaultModel : null),
             Thinking = cli.Thinking ?? DefaultThinkingLevel,
+            ScopedModels = cli.ScopedModels ?? EnabledModels,
             Tools = cli.Tools ?? (!cli.NoTools ? DefaultTools : null)
         };
     }

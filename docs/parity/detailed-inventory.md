@@ -54,7 +54,7 @@ All actions in this table are **Not started**, except the line REPL's process-le
 
 ## Settings inventory (`settings.md`, `configuration.md`, `security.md`)
 
-User settings `<agent-dir>/settings.json`, trusted project `.pi/settings.json`, keybindings, `models.json` and `auth.json` have distinct trust/precedence rules. In progress: validated user/trusted-project subset for provider/model/thinking/tools/session defaults, pre-prompt compaction, user-only project-trust default, `images.blockImages`, `hideThinkingBlock` (terminal stderr reasoning suppression only) and `quietStartup` (banner suppression; `--verbose` override, Linux PTY fixture). User settings load before trust, project settings only after trust; bounded size and duplicate/unknown-key checks have local tests. Remaining types/defaults, settings UI/reload and upstream behavioral differential are open; consult the ledger per item.
+User settings `<agent-dir>/settings.json`, trusted project `.pi/settings.json`, keybindings, `models.json` and `auth.json` have distinct trust/precedence rules. In progress: validated user/trusted-project subset for provider/model/thinking/tools/session defaults, `enabledModels` scope (offline subprocess fixture; cycling semantics differ), pre-prompt compaction, user-only project-trust default, `images.blockImages`, `hideThinkingBlock` (terminal stderr reasoning suppression only) and `quietStartup` (banner suppression; `--verbose` override, Linux PTY fixture). User settings load before trust, project settings only after trust; bounded size and duplicate/unknown-key checks have local tests. Remaining types/defaults, settings UI/reload and upstream behavioral differential are open; consult the ledger per item.
 
 | Group | Settings |
 |---|---|
