@@ -15,7 +15,7 @@ public sealed class ProjectSettingsProcessTests
         try
         {
             await File.WriteAllTextAsync(Path.Combine(root, ".pi", "settings.json"), "{\"compaction\":{\"reserveTokens\":-1}}");
-            async Task<(int Code, string Error)> Run(string? trust)
+            async Task<(int Code, string Error)> Run(string? trust, params string[] extraFlags)
             {
                 var start = new ProcessStartInfo("dotnet")
                 {
@@ -25,6 +25,7 @@ public sealed class ProjectSettingsProcessTests
                 };
                 start.ArgumentList.Add(typeof(CliArguments).Assembly.Location);
                 if (trust is not null) start.ArgumentList.Add(trust);
+                foreach (var flag in extraFlags) start.ArgumentList.Add(flag);
                 foreach (var arg in new[] { "--provider", "openai", "--model", "gpt-4o-mini", "--no-session", "--no-tools", "--print", "hello" })
                     start.ArgumentList.Add(arg);
                 start.Environment["PISHARP_AGENT_DIR"] = agent;
@@ -54,6 +55,14 @@ public sealed class ProjectSettingsProcessTests
             Assert.Equal(2, defaultDenied.Code);
             Assert.Contains("not authenticated", defaultDenied.Error);
             Assert.DoesNotContain("compaction", defaultDenied.Error);
+            await File.WriteAllTextAsync(Path.Combine(root, "AGENTS.md"), new string('A', 65537));
+            var contextFailure = await Run("--no-approve");
+            Assert.Equal(2, contextFailure.Code);
+            Assert.Contains("exceeds", contextFailure.Error);
+            var ignoredContext = await Run("--no-approve", "--no-context-files");
+            Assert.Equal(2, ignoredContext.Code);
+            Assert.Contains("not authenticated", ignoredContext.Error);
+            Assert.DoesNotContain("exceeds", ignoredContext.Error);
         }
         finally { Directory.Delete(root, true); }
     }

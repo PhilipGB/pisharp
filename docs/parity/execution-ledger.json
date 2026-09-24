@@ -705,7 +705,7 @@
     {
       "id": "cli-tools",
       "title": "CLI flags: -t/--tools, -xt/--exclude-tools, -nbt/--no-builtin-tools, -nt/--no-tools",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:23",
       "acceptance": [
         "Tool presence changes for next request; invalid names reported",
@@ -718,7 +718,7 @@
     {
       "id": "cli-resources",
       "title": "CLI flags: -e/--extension, -ne/--no-extensions, --skill, -ns/--no-skills, --prompt-template, -np/--no-prompt-templates, --theme, --use-theme, --no-themes, -nc/--no-context-files",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:24",
       "acceptance": [
         "Local paths, trust, discovery and explicit override precedence",
@@ -731,7 +731,7 @@
     {
       "id": "cli-runtime",
       "title": "CLI flags: --system-prompt, --append-system-prompt, --tui-mode, --verbose, -a/--approve, -na/--no-approve, --offline",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:25",
       "acceptance": [
         "Per-invocation overrides, trust for project resources, no accidental network activity",

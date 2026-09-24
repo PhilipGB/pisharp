@@ -30,9 +30,11 @@ After each significant change: add/update tests and parity evidence, run focused
 
 - Finish compaction: dynamic automatic compaction inside tool loops, upstream differential evidence; current user/trusted-project compaction settings govern pre-prompt compaction only.
 - Reconcile stale ledger entries per implementation/test (the ledger's `verified` agent row denotes local evidence, not upstream differential verification). Preserve honest states.
+- Stale ledger CLI tools/resources/runtime groups reclassified in-progress based on concrete CLI parser/runtime and process tests; remaining flags in those groups are explicitly absent. Continue auditing every ledger item instead of treating groups as verified.
 
 ## Completed in this continuation
 
+- CLI `--no-context-files`/`-nc` skips AGENTS/CLAUDE loading at startup and reload without disabling unrelated resources; process test verifies oversized project context is not read. Full resource CLI parity remains open.
 - CLI `--system-prompt` and repeatable `--append-system-prompt` now resolve UTF-8 files or literals, override discovered sources, and refresh files on reload. Local CLI parsing/resource precedence tests pass; process and upstream differential evidence remain open.
 - User-only `defaultProjectTrust` now resolves after explicit/stored decisions and before trusted-project settings are read; invalid/project-scope values fail closed. Local trust precedence and config validation fixtures pass. Project trust remains permission gating, not a sandbox.
 - Implemented explicit offline `auth print-api-key --provider` for stored/configured/environment API keys only, stdout-only on success; missing/OAuth credentials never printed. Process test proves explicit retrieval, no cross-provider key leakage, and failure on missing key. OAuth bearer printing/refresh, default-model selection and Pi auth protocol remain open.
