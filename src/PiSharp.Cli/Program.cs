@@ -195,7 +195,7 @@ if (editor is not null) Console.WriteLine($"PiSharp · {selection.Provider.Id}/{
 CancellationTokenSource? activeRun = null;
 Console.CancelKeyPress += (_, e) => { e.Cancel = true; activeRun?.Cancel(); };
 
-async Task Run(string input)
+async Task Run(string input, IReadOnlyList<DataContent>? images = null)
 {
     using var runCancel = new CancellationTokenSource();
     activeRun = runCancel;
@@ -207,8 +207,13 @@ async Task Run(string input)
     {
         if (!selection.Authenticated)
             throw new InvalidOperationException($"Provider '{selection.Provider.Id}' is not authenticated. Use /login {selection.Provider.Id} before sending a prompt.");
+        if (images is { Count: > 0 } && selection.Model.Input is { } modalities &&
+            !modalities.Contains("image", StringComparer.Ordinal))
+            throw new InvalidOperationException($"Model '{selection.Model.Id}' is not declared image-capable; refusing to send image attachments.");
         var expanded = await resources.ResolveInputAsync(input, runCancel.Token);
-        await foreach (var update in conversationRun.RunEventsAsync(expanded, runCancel.Token))
+        var contents = new List<AIContent> { new TextContent(expanded) };
+        if (images is not null) contents.AddRange(images);
+        await foreach (var update in conversationRun.RunEventsAsync(new ChatMessage(ChatRole.User, contents), expanded, runCancel.Token))
         {
             switch (update.Type)
             {
@@ -376,23 +381,28 @@ if (cli.Mode == "json")
     if (string.IsNullOrWhiteSpace(prompt) && (cli.FileArguments?.Count ?? 0) == 0) { Console.Error.WriteLine("A prompt is required in JSON mode."); Environment.ExitCode = 2; }
     else
     {
-        string? expanded = null;
+        CliFileArguments.PromptFiles? expanded = null;
         try
         {
-            expanded = await resources.ResolveInputAsync(prompt);
-            expanded = await CliFileArguments.AppendTextFilesAsync(expanded, cli.FileArguments, Environment.CurrentDirectory);
+            var resolved = await resources.ResolveInputAsync(prompt);
+            expanded = await CliFileArguments.ProcessFilesAsync(resolved, cli.FileArguments, Environment.CurrentDirectory);
         }
         catch (Exception e) when (e is ArgumentException or IOException)
         {
             await protocol.RejectAsync(e.Message);
             Environment.ExitCode = 1;
         }
-        if (expanded is not null && string.IsNullOrWhiteSpace(expanded))
+        if (expanded is not null && string.IsNullOrWhiteSpace(expanded.Text) && expanded.Images.Count == 0)
         {
             await protocol.RejectAsync("A nonempty prompt is required.");
             Environment.ExitCode = 2;
         }
-        else if (expanded is not null && !await protocol.RunAsync(conversationRun, expanded)) Environment.ExitCode = 1;
+        else if (expanded is not null)
+        {
+            var contents = new List<AIContent> { new TextContent(expanded.Text) };
+            contents.AddRange(expanded.Images);
+            if (!await protocol.RunAsync(conversationRun, new ChatMessage(ChatRole.User, contents), expanded.Text)) Environment.ExitCode = 1;
+        }
         if (sessionPath is not null)
             try { await store.SaveAsync(conversation, sessionPath); }
             catch (Exception e) { Console.Error.WriteLine($"Could not save session: {e.Message}"); Environment.ExitCode = 1; }
@@ -402,18 +412,21 @@ if (cli.Mode == "json")
 if (print)
 {
     if (string.IsNullOrWhiteSpace(prompt) && Console.IsInputRedirected) prompt = await Console.In.ReadToEndAsync();
-    try { prompt = await CliFileArguments.AppendTextFilesAsync(prompt, cli.FileArguments, Environment.CurrentDirectory); }
+    CliFileArguments.PromptFiles promptFiles;
+    try { promptFiles = await CliFileArguments.ProcessFilesAsync(prompt, cli.FileArguments, Environment.CurrentDirectory); }
     catch (Exception e) when (e is IOException or ArgumentException) { Console.Error.WriteLine(e.Message); Environment.ExitCode = 1; return; }
-    if (string.IsNullOrWhiteSpace(prompt)) { Console.Error.WriteLine("A prompt is required in print mode."); Environment.ExitCode = 2; }
-    else await Run(prompt);
+    if (string.IsNullOrWhiteSpace(promptFiles.Text) && promptFiles.Images.Count == 0) { Console.Error.WriteLine("A prompt is required in print mode."); Environment.ExitCode = 2; }
+    else await Run(promptFiles.Text, promptFiles.Images);
 }
 else
 {
     if (!string.IsNullOrWhiteSpace(prompt) || (cli.FileArguments?.Count ?? 0) > 0)
     {
-        try { prompt = await CliFileArguments.AppendTextFilesAsync(prompt, cli.FileArguments, Environment.CurrentDirectory); }
+        CliFileArguments.PromptFiles promptFiles;
+        try { promptFiles = await CliFileArguments.ProcessFilesAsync(prompt, cli.FileArguments, Environment.CurrentDirectory); }
         catch (Exception e) when (e is IOException or ArgumentException) { Console.Error.WriteLine(e.Message); Environment.ExitCode = 1; return; }
-        if (!string.IsNullOrWhiteSpace(prompt)) await Run(prompt);
+        if (!string.IsNullOrWhiteSpace(promptFiles.Text) || promptFiles.Images.Count > 0)
+            await Run(promptFiles.Text, promptFiles.Images);
     }
     while (true)
     {

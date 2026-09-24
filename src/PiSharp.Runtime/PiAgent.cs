@@ -95,9 +95,17 @@ public sealed class PiAgent
 
 
     public IAsyncEnumerable<AgentResponseUpdate> RunStreamingAsync(string prompt, AgentSession session,
+        CancellationToken cancellationToken = default) => RunStreamingAsync(new ChatMessage(ChatRole.User, prompt), session, cancellationToken);
+
+    public IAsyncEnumerable<AgentResponseUpdate> RunStreamingAsync(ChatMessage prompt, AgentSession session,
         CancellationToken cancellationToken = default) => RunStreamingDurableAsync(prompt, session, cancellationToken, null);
 
-    internal async IAsyncEnumerable<AgentResponseUpdate> RunStreamingDurableAsync(string prompt, AgentSession session,
+    internal IAsyncEnumerable<AgentResponseUpdate> RunStreamingDurableAsync(string prompt, AgentSession session,
+        CancellationToken cancellationToken, DurableExecution? durable, Action<AgentLifecycleEvent>? onEvent = null,
+        Func<IReadOnlyList<ChatMessage>>? takeSteering = null) =>
+        RunStreamingDurableAsync(new ChatMessage(ChatRole.User, prompt), session, cancellationToken, durable, onEvent, takeSteering);
+
+    internal async IAsyncEnumerable<AgentResponseUpdate> RunStreamingDurableAsync(ChatMessage prompt, AgentSession session,
         [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken, DurableExecution? durable,
         Action<AgentLifecycleEvent>? onEvent = null, Func<IReadOnlyList<ChatMessage>>? takeSteering = null)
     {

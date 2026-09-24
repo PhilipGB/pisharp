@@ -24,10 +24,14 @@ public sealed class JsonEventMode(JsonLineWriter output)
         await output.EmitAsync(new { type = "event", format = "pisharp", data = new AgentLifecycleEvent("agent_settled") });
     }
 
-    public async Task<bool> RunAsync(ConversationRun run, string prompt, CancellationToken cancellationToken = default)
+    public Task<bool> RunAsync(ConversationRun run, string prompt, CancellationToken cancellationToken = default) =>
+        RunAsync(run, new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User, prompt), prompt, cancellationToken);
+
+    public async Task<bool> RunAsync(ConversationRun run, Microsoft.Extensions.AI.ChatMessage prompt,
+        string displayText, CancellationToken cancellationToken = default)
     {
         var succeeded = false;
-        await foreach (var item in run.RunEventsAsync(prompt, cancellationToken))
+        await foreach (var item in run.RunEventsAsync(prompt, displayText, cancellationToken))
         {
             // A canceled run must still report its interruption and settlement to consumers.
             await output.EmitAsync(new { type = "event", format = "pisharp", data = item }, CancellationToken.None);

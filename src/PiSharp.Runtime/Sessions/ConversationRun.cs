@@ -98,7 +98,10 @@ public sealed class ConversationRun
     /// <summary>Authoritative ordered lifecycle, including actual model and tool boundaries.
     /// Queued prompts are additional turns in the same run. No completion is emitted when execution
     /// fails. Disposing the stream aborts the current turn and leaves unstarted prompts queued.</summary>
-    public async IAsyncEnumerable<AgentLifecycleEvent> RunEventsAsync(string prompt,
+    public IAsyncEnumerable<AgentLifecycleEvent> RunEventsAsync(string prompt,
+        CancellationToken cancellationToken = default) => RunEventsAsync(new ChatMessage(ChatRole.User, prompt), prompt, cancellationToken);
+
+    public async IAsyncEnumerable<AgentLifecycleEvent> RunEventsAsync(ChatMessage promptMessage, string promptText,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         var channel = Channel.CreateBounded<AgentLifecycleEvent>(new BoundedChannelOptions(256)
@@ -117,10 +120,13 @@ public sealed class ConversationRun
             try
             {
                 owner = BeginPromptLoop(Publish);
-                string? current = prompt;
+                string? current = promptText;
+                var firstTurn = true;
                 while (current is not null)
                 {
-                    await foreach (var update in RunStreamingAsync(current, linked.Token, value =>
+                    var currentMessage = firstTurn ? promptMessage : new ChatMessage(ChatRole.User, current);
+                    firstTurn = false;
+                    await foreach (var update in RunStreamingAsync(currentMessage, current, linked.Token, value =>
                     {
                         if (value.Type == "prompt_accepted") accepted = true;
                         Publish(value);
@@ -280,7 +286,11 @@ public sealed class ConversationRun
         finally { _gate.Release(); }
     }
 
-    public async IAsyncEnumerable<AgentResponseUpdate> RunStreamingAsync(string prompt,
+    public IAsyncEnumerable<AgentResponseUpdate> RunStreamingAsync(string prompt,
+        CancellationToken cancellationToken = default, Action<AgentLifecycleEvent>? onEvent = null) =>
+        RunStreamingAsync(new ChatMessage(ChatRole.User, prompt), prompt, cancellationToken, onEvent);
+
+    public async IAsyncEnumerable<AgentResponseUpdate> RunStreamingAsync(ChatMessage promptMessage, string prompt,
         [EnumeratorCancellation] CancellationToken cancellationToken = default,
         Action<AgentLifecycleEvent>? onEvent = null)
     {
@@ -309,7 +319,7 @@ public sealed class ConversationRun
             }
             accepted = true;
             onEvent?.Invoke(new("prompt_accepted", Text: prompt));
-            await foreach (var update in _agent.RunStreamingDurableAsync(prompt, _execution, cancellationToken, durable,
+            await foreach (var update in _agent.RunStreamingDurableAsync(promptMessage, _execution, cancellationToken, durable,
                 onEvent, TakeSteeringForProvider))
             {
                 if (!string.IsNullOrEmpty(update.Text))
