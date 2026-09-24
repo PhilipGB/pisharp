@@ -1,3 +1,4 @@
+using System.ClientModel;
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.AI;
 
@@ -7,12 +8,14 @@ namespace PiSharp.Runtime.Sessions;
 internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycleEvent> publish,
     ProviderRetryPolicy retryPolicy, Func<IEnumerable<ChatMessage>, IReadOnlyList<ChatMessage>> takeSteering,
     bool blockImages = false,
-    Func<IReadOnlyList<ChatMessage>, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? projectContext = null) : DelegatingChatClient(inner)
+    Func<IReadOnlyList<ChatMessage>, bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? projectContext = null) : DelegatingChatClient(inner)
 {
     public override async Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages,
         ChatOptions? options = null, CancellationToken cancellationToken = default)
     {
-        var requestMessages = await PrepareRequestAsync(messages, cancellationToken);
+        var original = WithSteering(messages).ToArray();
+        var requestMessages = await PrepareRequestAsync(original, force: false, cancellationToken);
+        var overflowRecovered = false;
         for (var retries = 0; ; retries++)
         {
             publish(new("model_request_started"));
@@ -26,6 +29,12 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
             catch (Exception error)
             {
                 publish(new("model_request_failed", Error: error.Message));
+                if (!overflowRecovered && await RecoverOverflowAsync(original, error, cancellationToken) is { } shorter)
+                {
+                    requestMessages = shorter;
+                    overflowRecovered = true;
+                    continue;
+                }
                 if (!retryPolicy.CanRetry(error, retries, producedOutput: false)) throw;
                 publish(new("model_retry_scheduled", Text: $"{retries + 1}/{retryPolicy.MaxRetries}", Error: error.Message));
                 if (retryPolicy.Delay > TimeSpan.Zero) await Task.Delay(retryPolicy.Delay, cancellationToken);
@@ -36,7 +45,9 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
     public override async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
         ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        var requestMessages = await PrepareRequestAsync(messages, cancellationToken);
+        var original = WithSteering(messages).ToArray();
+        var requestMessages = await PrepareRequestAsync(original, force: false, cancellationToken);
+        var overflowRecovered = false;
         for (var retries = 0; ; retries++)
         {
             publish(new("model_request_started"));
@@ -72,17 +83,51 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
             }
 
             publish(new("model_request_failed", Error: failure.Message));
+            if (!producedOutput && !overflowRecovered &&
+                await RecoverOverflowAsync(original, failure, cancellationToken) is { } shorter)
+            {
+                requestMessages = shorter;
+                overflowRecovered = true;
+                continue;
+            }
             if (!retryPolicy.CanRetry(failure, retries, producedOutput)) throw failure;
             publish(new("model_retry_scheduled", Text: $"{retries + 1}/{retryPolicy.MaxRetries}", Error: failure.Message));
             if (retryPolicy.Delay > TimeSpan.Zero) await Task.Delay(retryPolicy.Delay, cancellationToken);
         }
     }
 
-    private async Task<IReadOnlyList<ChatMessage>> PrepareRequestAsync(IEnumerable<ChatMessage> messages, CancellationToken cancellationToken)
+    private async Task<IReadOnlyList<ChatMessage>> PrepareRequestAsync(IReadOnlyList<ChatMessage> messages, bool force, CancellationToken cancellationToken)
     {
-        var withSteering = WithSteering(messages).ToArray();
-        var projected = projectContext is null ? withSteering : await projectContext(withSteering, cancellationToken);
+        var projected = projectContext is null ? messages : await projectContext(messages, force, cancellationToken);
         return FilterImages(projected).ToArray();
+    }
+
+    private async Task<IReadOnlyList<ChatMessage>?> RecoverOverflowAsync(IReadOnlyList<ChatMessage> original,
+        Exception error, CancellationToken cancellationToken)
+    {
+        if (projectContext is null || !IsContextOverflow(error)) return null;
+        var compacted = await projectContext(original, true, cancellationToken);
+        if (ReferenceEquals(compacted, original)) return null;
+        publish(new("model_context_overflow_recovery", Text: "Retrying the model request once with a shortened context."));
+        return FilterImages(compacted).ToArray();
+    }
+
+    private static bool IsContextOverflow(Exception error)
+    {
+        var status = error switch
+        {
+            ClientResultException result => result.Status,
+            HttpRequestException request => (int?)request.StatusCode,
+            _ => null
+        };
+        if (status is not (400 or 413)) return false;
+        var message = error.Message;
+        if (message.Contains("rate limit", StringComparison.OrdinalIgnoreCase) ||
+            message.Contains("too many requests", StringComparison.OrdinalIgnoreCase)) return false;
+        return message.Contains("context_length_exceeded", StringComparison.OrdinalIgnoreCase) ||
+            message.Contains("context length exceeded", StringComparison.OrdinalIgnoreCase) ||
+            message.Contains("exceeds the context window", StringComparison.OrdinalIgnoreCase) ||
+            message.Contains("exceeds the available context size", StringComparison.OrdinalIgnoreCase);
     }
 
     // Filter at the final provider boundary, including persisted history and subsequent tool-loop requests.

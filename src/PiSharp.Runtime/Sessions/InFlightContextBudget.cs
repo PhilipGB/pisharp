@@ -8,9 +8,9 @@ internal sealed class InFlightContextBudget(
     Func<IReadOnlyList<ChatMessage>, CancellationToken, Task<PiAgent.CompactionSummary>> summarize,
     Func<PiAgent.CompactionSummary, CancellationToken, Task> onSummary)
 {
-    public async Task<IReadOnlyList<ChatMessage>> ProjectAsync(IReadOnlyList<ChatMessage> messages, CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<ChatMessage>> ProjectAsync(IReadOnlyList<ChatMessage> messages, bool force, CancellationToken cancellationToken)
     {
-        if (AutoCompactionPolicy.Estimate(messages, "") <= policy.TriggerTokens) return messages;
+        if (!force && AutoCompactionPolicy.Estimate(messages, "") <= policy.TriggerTokens) return messages;
 
         // Whole user turns are indivisible: a tool call and its results cannot be separated.
         var users = Enumerable.Range(0, messages.Count).Where(i => messages[i].Role == ChatRole.User).ToArray();

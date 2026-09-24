@@ -241,6 +241,49 @@ public sealed class CompactionTests
         finally { Directory.Delete(cwd, recursive: true); }
     }
 
+    [Theory]
+    [InlineData("Your input exceeds the context window of this model", false, true)]
+    [InlineData("the request exceeds the available context size, try increasing it", false, true)]
+    [InlineData("rate limit: too many requests; context_length_exceeded", false, false)]
+    [InlineData("Your input exceeds the context window of this model", true, false)]
+    public async Task ProviderOverflowRetriesOnceOnlyBeforeContentWithShortenedRequest(string error, bool afterContent, bool recover)
+    {
+        var conversation = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        conversation.Append(new ChatMessage(ChatRole.User, new string('P', 900)));
+        conversation.Append(new ChatMessage(ChatRole.Assistant, "previous answer"));
+        var client = new OverflowBudgetClient(error, afterContent);
+        var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(Path.GetTempPath()), noTools: true), conversation,
+            autoCompaction: new AutoCompactionPolicy(4000, 500));
+        var events = new List<AgentLifecycleEvent>();
+        await foreach (var item in run.RunEventsAsync("new prompt")) events.Add(item);
+
+        Assert.Equal(recover ? 2 : 1, client.Requests);
+        Assert.Equal(recover ? 1 : 0, client.Summaries);
+        Assert.Equal(recover, client.RetrySawSummaryWithoutOldRawUser);
+        Assert.Equal(recover, events.Any(item => item.Type == "model_context_overflow_recovery"));
+        Assert.Contains(events, item => item.Type == (recover ? "turn_completed" : "turn_failed"));
+        Assert.Equal(900, conversation.ActiveMessages()[0].Text.Length);
+        Assert.DoesNotContain(conversation.Tree.ActivePath(), node => node.Type == "compaction");
+        if (recover) Assert.Single(conversation.ActiveMessages(), message => message.Text == "new prompt");
+    }
+
+    [Fact]
+    public async Task RepeatedProviderOverflowStopsAfterOneRecoveryAttempt()
+    {
+        var conversation = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        conversation.Append(new ChatMessage(ChatRole.User, new string('P', 900)));
+        conversation.Append(new ChatMessage(ChatRole.Assistant, "previous answer"));
+        var client = new OverflowBudgetClient("context_length_exceeded", afterContent: false, alwaysOverflow: true);
+        var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(Path.GetTempPath()), noTools: true), conversation,
+            autoCompaction: new AutoCompactionPolicy(4000, 500));
+        var events = new List<AgentLifecycleEvent>();
+        await foreach (var item in run.RunEventsAsync("new prompt")) events.Add(item);
+        Assert.Equal(2, client.Requests);
+        Assert.Equal(1, client.Summaries);
+        Assert.Contains(events, item => item.Type == "turn_failed");
+        Assert.Single(events, item => item.Type == "model_context_overflow_recovery");
+    }
+
     [Fact]
     public void AutoBudgetIsDisabledWithoutKnownContextWindowAndRejectsInvalidLimits()
     {
@@ -366,6 +409,40 @@ public sealed class CompactionTests
         conversation.Append(new ChatMessage(ChatRole.User, "second"));
         conversation.Append(new ChatMessage(ChatRole.Assistant, "answer two"));
         return conversation;
+    }
+
+    private sealed class OverflowBudgetClient(string error, bool afterContent, bool alwaysOverflow = false) : IChatClient
+    {
+        public int Requests { get; private set; }
+        public int Summaries { get; private set; }
+        public bool RetrySawSummaryWithoutOldRawUser { get; private set; }
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+            CancellationToken cancellationToken = default)
+        {
+            Summaries++;
+            return Task.FromResult(new ChatResponse([new ChatMessage(ChatRole.Assistant, "Earlier context summary")])
+            {
+                Usage = new UsageDetails { InputTokenCount = 20, OutputTokenCount = 5, TotalTokenCount = 25 }
+            });
+        }
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            Requests++;
+            if (Requests == 1)
+            {
+                if (afterContent) yield return new ChatResponseUpdate(ChatRole.Assistant, "partial output");
+                throw new HttpRequestException(error, null, System.Net.HttpStatusCode.BadRequest);
+            }
+            var snapshot = messages.ToArray();
+            RetrySawSummaryWithoutOldRawUser = snapshot.Any(message => message.Text.Contains("Earlier context summary", StringComparison.Ordinal)) &&
+                !snapshot.Any(message => message.Text == new string('P', 900));
+            if (alwaysOverflow) throw new HttpRequestException(error, null, System.Net.HttpStatusCode.BadRequest);
+            yield return new ChatResponseUpdate(ChatRole.Assistant, "done");
+            await Task.CompletedTask;
+        }
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
     }
 
     private sealed class ToolLoopBudgetClient : IChatClient

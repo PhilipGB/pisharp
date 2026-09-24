@@ -13,7 +13,7 @@ public sealed class PiAgent
     private DurableExecution? _active;
     private Action<AgentLifecycleEvent>? _events;
     private Func<IReadOnlyList<ChatMessage>>? _takeSteering;
-    private Func<IReadOnlyList<ChatMessage>, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? _projectContext;
+    private Func<IReadOnlyList<ChatMessage>, bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? _projectContext;
     private readonly List<(ChatMessage Message, string? AfterCallId)> _injectedSteering = [];
     private int _providerRequestIndex;
 
@@ -62,10 +62,10 @@ public sealed class PiAgent
         return steering;
     }
 
-    private Task<IReadOnlyList<ChatMessage>> ProjectForRequestAsync(IReadOnlyList<ChatMessage> messages, CancellationToken token) =>
-        // The pre-prompt policy owns the first request; this guard runs only at tool-loop continuations.
-        _providerRequestIndex > 1 && _projectContext is { } project
-            ? project(messages, token) : Task.FromResult(messages);
+    private Task<IReadOnlyList<ChatMessage>> ProjectForRequestAsync(IReadOnlyList<ChatMessage> messages, bool force, CancellationToken token) =>
+        // The pre-prompt policy owns the first request; only a pre-content overflow can force it.
+        (force || _providerRequestIndex > 1) && _projectContext is { } project
+            ? project(messages, force, token) : Task.FromResult(messages);
 
     public async Task<CompactionSummary> SummarizeAsync(IReadOnlyList<ChatMessage> messages, string? focus,
         CancellationToken cancellationToken = default)
@@ -109,13 +109,13 @@ public sealed class PiAgent
     internal IAsyncEnumerable<AgentResponseUpdate> RunStreamingDurableAsync(string prompt, AgentSession session,
         CancellationToken cancellationToken, DurableExecution? durable, Action<AgentLifecycleEvent>? onEvent = null,
         Func<IReadOnlyList<ChatMessage>>? takeSteering = null,
-        Func<IReadOnlyList<ChatMessage>, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? projectContext = null) =>
+        Func<IReadOnlyList<ChatMessage>, bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? projectContext = null) =>
         RunStreamingDurableAsync(new ChatMessage(ChatRole.User, prompt), session, cancellationToken, durable, onEvent, takeSteering, projectContext);
 
     internal async IAsyncEnumerable<AgentResponseUpdate> RunStreamingDurableAsync(ChatMessage prompt, AgentSession session,
         [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken, DurableExecution? durable,
         Action<AgentLifecycleEvent>? onEvent = null, Func<IReadOnlyList<ChatMessage>>? takeSteering = null,
-        Func<IReadOnlyList<ChatMessage>, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? projectContext = null)
+        Func<IReadOnlyList<ChatMessage>, bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? projectContext = null)
     {
         await _runGate.WaitAsync(cancellationToken);
         try
