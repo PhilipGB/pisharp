@@ -205,7 +205,31 @@ public sealed class CompactionTests
     }
 
     [Fact]
-    public async Task ToolContinuationRefusesOversizedSingleTurnWithoutCallingModelAgain()
+    public async Task OversizedSingleTurnSummarizesOnlyCompletedToolCycleWithoutReplacingHistory()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-split-turn-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(cwd, "output.txt"), new string('Z', 4000));
+            var conversation = new ConversationSession(cwd, "fixture", null);
+            var client = new ToolLoopBudgetClient();
+            var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(cwd)), conversation,
+                autoCompaction: new AutoCompactionPolicy(2700, 300));
+            var events = new List<AgentLifecycleEvent>();
+            await foreach (var item in run.RunEventsAsync("read output.txt")) events.Add(item);
+            Assert.Equal(2, client.Requests);
+            Assert.Equal(1, client.Summaries);
+            Assert.True(client.ContinuationSawSummaryWithoutRawToolResult);
+            Assert.Single(events, item => item.Type == "context_compacted_in_flight");
+            Assert.Contains(conversation.ActiveMessages().SelectMany(message => message.Contents)
+                .OfType<FunctionResultContent>(), result => result.Result?.ToString()?.Contains(new string('Z', 4000), StringComparison.Ordinal) == true);
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Fact]
+    public async Task ToolContinuationSummaryFailureForOversizedSingleTurnDoesNotReplayTool()
     {
         var cwd = Path.Combine(Path.GetTempPath(), "pisharp-loop-budget-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(cwd);
@@ -216,15 +240,15 @@ public sealed class CompactionTests
             var store = new ConversationStore(cwd, Path.Combine(cwd, "sessions"));
             var path = store.NewPath(conversation);
             await store.SaveAsync(conversation, path);
-            var client = new ToolLoopBudgetClient();
+            var client = new ToolLoopBudgetClient { FailSummary = true };
             var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(cwd)), conversation,
                 save: token => store.SaveAsync(conversation, path, token),
                 autoCompaction: new AutoCompactionPolicy(2700, 300));
             var events = new List<AgentLifecycleEvent>();
             await foreach (var item in run.RunEventsAsync("read output.txt")) events.Add(item);
             Assert.Equal(1, client.Requests);
-            Assert.Equal(0, client.Summaries);
-            Assert.Contains(events, item => item.Type == "turn_failed" && item.Error!.Contains("no completed user turn", StringComparison.Ordinal));
+            Assert.Equal(1, client.Summaries);
+            Assert.Contains(events, item => item.Type == "turn_failed" && item.Error!.Contains("summarizer unavailable", StringComparison.Ordinal));
             var reloaded = await store.LoadAsync(path);
             Assert.Contains(reloaded.Tree.ActivePath(), node => node.Type == "tool_outcome");
             Assert.Contains(reloaded.Tree.ActivePath(), node => node.Type == "run_finished" &&
@@ -479,6 +503,7 @@ public sealed class CompactionTests
         public bool FailSummary { get; init; }
         public bool ContinuationSawSummaryAndToolResult { get; private set; }
         public bool RepeatRead { get; init; }
+        public bool ContinuationSawSummaryWithoutRawToolResult { get; private set; }
         public bool SawRecoveryNotice { get; private set; }
         public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
             CancellationToken cancellationToken = default)
@@ -504,6 +529,8 @@ public sealed class CompactionTests
             {
                 var snapshot = messages.ToArray();
                 SawRecoveryNotice = snapshot.Any(message => message.Text.Contains("Recovery notice", StringComparison.Ordinal));
+                ContinuationSawSummaryWithoutRawToolResult = snapshot.Any(message => message.Text.Contains("Previous question answered.", StringComparison.Ordinal)) &&
+                    !snapshot.SelectMany(message => message.Contents).OfType<FunctionResultContent>().Any();
                 ContinuationSawSummaryAndToolResult = snapshot.Any(message => message.Text.Contains("Previous question answered.", StringComparison.Ordinal)) &&
                     snapshot.SelectMany(message => message.Contents).OfType<FunctionResultContent>()
                         .Any(result => result.Result?.ToString()?.Contains(new string('Z', 1400), StringComparison.Ordinal) == true) &&
