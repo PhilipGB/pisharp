@@ -96,6 +96,173 @@ public sealed class ProviderModelRuntimeTests
         finally { Directory.Delete(root, true); }
     }
 
+    [Fact]
+    public async Task InteractiveLoginAndLogoutNeverSendUnauthenticatedPromptsOrEchoSecret()
+    {
+        if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-provider-pty-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            var agentDirectory = Path.Combine(root, "agent");
+            Directory.CreateDirectory(agentDirectory);
+            await File.WriteAllTextAsync(Path.Combine(agentDirectory, "models.json"), """
+                {"providers":{"fixture":{"baseUrl":"http://127.0.0.1:1/v1","apiKeyEnv":"PISHARP_FIXTURE_KEY",
+                 "models":[{"id":"fixture-model","reasoning":false},{"id":"fixture-alt","reasoning":false}]}}}
+                """);
+            var start = new System.Diagnostics.ProcessStartInfo("/usr/bin/script")
+            {
+                WorkingDirectory = root,
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+            start.ArgumentList.Add("-q");
+            start.ArgumentList.Add("-e");
+            start.ArgumentList.Add("-c");
+            start.ArgumentList.Add($"dotnet '{typeof(CliArguments).Assembly.Location}' --provider fixture --no-tools --session-dir '{root}/sessions'");
+            start.ArgumentList.Add("/dev/null");
+            foreach (var name in new[] { "PISHARP_FIXTURE_KEY", "OPENAI_API_KEY", "PISHARP_API_KEY", "PISHARP_BASE_URL", "PISHARP_AUTH_PATH", "PISHARP_MODELS_PATH" })
+                start.Environment.Remove(name);
+            start.Environment["PISHARP_AGENT_DIR"] = agentDirectory;
+            using var process = System.Diagnostics.Process.Start(start)!;
+            var output = new StringBuilder();
+            var draining = Task.Run(async () =>
+            {
+                var buffer = new char[1024];
+                int count;
+                while ((count = await process.StandardOutput.ReadAsync(buffer)) > 0)
+                    lock (output) output.Append(buffer, 0, count);
+            });
+            var stderr = process.StandardError.ReadToEndAsync();
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+            async Task WaitFor(string text)
+            {
+                while (true)
+                {
+                    lock (output) if (output.ToString().Contains(text, StringComparison.Ordinal)) return;
+                    await Task.Delay(20, timeout.Token);
+                }
+            }
+            try
+            {
+                await process.StandardInput.WriteAsync("before-login\n/login fixture oauth\n/login fixture api-key\n");
+                await process.StandardInput.FlushAsync();
+                await WaitFor("API key for fixture:");
+                await process.StandardInput.WriteAsync("fixture-secret-not-for-transcript\n");
+                await process.StandardInput.FlushAsync();
+                await WaitFor("Authenticated fixture with api-key");
+                await process.StandardInput.WriteAsync("/model fixture/fixture-alt\n/thinking high\n/model\n/logout\nafter-logout\n/quit\n");
+                process.StandardInput.Close();
+                await process.WaitForExitAsync(timeout.Token);
+                await draining;
+                var transcript = output.ToString();
+                Assert.Equal(1, process.ExitCode); // Rejected prompts are failures, not successful inference.
+                Assert.Contains("browser authorization is not implemented", transcript);
+                Assert.Contains("Authenticated fixture with api-key", transcript);
+                Assert.Contains("Model: fixture/fixture-alt", transcript);
+                Assert.Contains("does not advertise reasoning support", transcript);
+                Assert.Contains("Logged out fixture", transcript);
+                Assert.Equal(2, transcript.Split("is not authenticated. Use /login", StringSplitOptions.None).Length - 1);
+                Assert.DoesNotContain("fixture-secret-not-for-transcript", transcript);
+                Assert.DoesNotContain("Connection refused", transcript);
+                Assert.DoesNotContain("fixture-secret-not-for-transcript", await stderr);
+                var store = new PiSharp.Runtime.Sessions.ConversationStore(root, Path.Combine(root, "sessions"));
+                var session = await store.LoadAsync(Assert.Single(Directory.GetFiles(store.DirectoryPath, "*.session.json")));
+                Assert.Empty(session.ActiveMessages());
+                Assert.Equal("fixture-alt", session.Model);
+                Assert.Equal("fixture", session.Provider);
+                Assert.Null(await new AuthStorage(Path.Combine(agentDirectory, "auth.json")).ReadAsync("fixture"));
+            }
+            catch
+            {
+                if (!process.HasExited) process.Kill(entireProcessTree: true);
+                throw;
+            }
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [Fact]
+    public async Task ConfiguredProviderStreamsThroughCliWithoutCatalogOrCloudCredential()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-provider-http-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        using var reservation = new System.Net.Sockets.TcpListener(IPAddress.Loopback, 0);
+        reservation.Start();
+        var port = ((IPEndPoint)reservation.LocalEndpoint).Port;
+        reservation.Stop();
+        using var listener = new HttpListener();
+        listener.Prefixes.Add($"http://127.0.0.1:{port}/");
+        listener.Start();
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+        try
+        {
+            var agentDirectory = Path.Combine(root, "agent");
+            Directory.CreateDirectory(agentDirectory);
+            await File.WriteAllTextAsync(Path.Combine(agentDirectory, "models.json"), """
+                {"providers":{"fixture":{"baseUrl":"http://127.0.0.1:PORT/v1","models":[{"id":"fixture-model"}]}}}
+                """.Replace("PORT", port.ToString(System.Globalization.CultureInfo.InvariantCulture), StringComparison.Ordinal));
+            await new AuthStorage(Path.Combine(agentDirectory, "auth.json")).StoreApiKeyAsync("fixture", "fixture-only-key");
+            var server = Task.Run(async () =>
+            {
+                var request = await listener.GetContextAsync().WaitAsync(timeout.Token);
+                var path = request.Request.RawUrl;
+                var authorization = request.Request.Headers["Authorization"];
+                using var input = new StreamReader(request.Request.InputStream);
+                var body = await input.ReadToEndAsync(timeout.Token);
+                request.Response.ContentType = "text/event-stream";
+                await using (var writer = new StreamWriter(request.Response.OutputStream))
+                {
+                    await writer.WriteAsync("data: {\"id\":\"chatcmpl-test\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"fixture-model\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"PROVIDER_FLOW_OK\"},\"finish_reason\":null}]}\n\n");
+                    await writer.WriteAsync("data: {\"id\":\"chatcmpl-test\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"fixture-model\",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"stop\"}]}\n\n");
+                    await writer.WriteAsync("data: [DONE]\n\n");
+                    await writer.FlushAsync(timeout.Token);
+                }
+                request.Response.Close();
+                return (path, authorization, body);
+            }, timeout.Token);
+            var start = new System.Diagnostics.ProcessStartInfo("dotnet")
+            {
+                WorkingDirectory = root,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+            foreach (var argument in new[] { typeof(CliArguments).Assembly.Location, "--provider", "fixture", "--model", "fixture-model", "--no-session", "--no-tools", "--print", "provider workflow" })
+                start.ArgumentList.Add(argument);
+            foreach (var name in new[] { "PISHARP_API_KEY", "PISHARP_BASE_URL", "PISHARP_AUTH_PATH", "PISHARP_MODELS_PATH", "PISHARP_MODEL" })
+                start.Environment.Remove(name);
+            start.Environment["OPENAI_API_KEY"] = "unrelated-openai-key";
+            start.Environment["PISHARP_AGENT_DIR"] = agentDirectory;
+            using var process = System.Diagnostics.Process.Start(start)!;
+            try
+            {
+                var stdout = process.StandardOutput.ReadToEndAsync();
+                var stderr = process.StandardError.ReadToEndAsync();
+                await process.WaitForExitAsync(timeout.Token);
+                var request = await server.WaitAsync(timeout.Token);
+                Assert.Equal(0, process.ExitCode);
+                Assert.Equal("PROVIDER_FLOW_OK\n", await stdout);
+                Assert.Equal("", await stderr);
+                Assert.StartsWith("/v1/chat/completions", request.path);
+                Assert.Equal("Bearer fixture-only-key", request.authorization);
+                Assert.DoesNotContain("unrelated-openai-key", request.authorization!);
+                Assert.Contains("provider workflow", request.body);
+                Assert.Contains("fixture-model", request.body);
+            }
+            finally
+            {
+                if (!process.HasExited) { process.Kill(entireProcessTree: true); await process.WaitForExitAsync(CancellationToken.None); }
+            }
+        }
+        finally
+        {
+            timeout.Cancel();
+            listener.Stop();
+            Directory.Delete(root, true);
+        }
+    }
+
     private sealed class ModelHandler : HttpMessageHandler
     {
         public string? Url { get; private set; }

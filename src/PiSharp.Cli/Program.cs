@@ -194,6 +194,8 @@ async Task Run(string input)
     var started = false;
     try
     {
+        if (!selection.Authenticated)
+            throw new InvalidOperationException($"Provider '{selection.Provider.Id}' is not authenticated. Use /login {selection.Provider.Id} before sending a prompt.");
         var expanded = await resources.ResolveInputAsync(input, runCancel.Token);
         await foreach (var update in conversationRun.RunEventsAsync(expanded, runCancel.Token))
         {
@@ -472,6 +474,9 @@ else
                         var loginType = loginParts.ElementAtOrDefault(1) ?? "api-key";
                         if (loginParts.Length > 2 || loginType is not ("api-key" or "oauth"))
                             throw new ArgumentException("Use /login [provider] [api-key|oauth]. The secret is prompted and must not be included in the command.");
+                        var loginProfile = modelRuntime.GetProvider(loginProvider);
+                        if (loginType == "oauth" && !loginProfile.OAuthSupported)
+                            throw new InvalidOperationException($"Provider '{loginProvider}' has no configured OAuth adapter; browser authorization is not implemented.");
                         Console.Error.Write($"{(loginType == "oauth" ? "OAuth access token" : "API key")} for {loginProvider}: ");
                         var secret = ReadSecret();
                         if (string.IsNullOrWhiteSpace(secret)) throw new ArgumentException("Credential cannot be empty.");
