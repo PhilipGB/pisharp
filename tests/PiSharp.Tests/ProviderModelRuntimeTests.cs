@@ -281,8 +281,10 @@ public sealed class ProviderModelRuntimeTests
         finally { Directory.Delete(root, true); }
     }
 
-    [Fact]
-    public async Task ConfiguredProviderStreamsThroughCliWithoutCatalogOrCloudCredential()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ConfiguredProviderStreamsThroughCliWithoutCatalogOrCloudCredential(bool promptOverrides)
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-provider-http-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(root);
@@ -296,6 +298,13 @@ public sealed class ProviderModelRuntimeTests
                 {"providers":{"fixture":{"baseUrl":"http://127.0.0.1:PORT/v1","models":[{"id":"fixture-model"}]}}}
                 """.Replace("PORT", port.ToString(System.Globalization.CultureInfo.InvariantCulture), StringComparison.Ordinal));
             await new AuthStorage(Path.Combine(agentDirectory, "auth.json")).StoreApiKeyAsync("fixture", "fixture-only-key");
+            if (promptOverrides)
+            {
+                await File.WriteAllTextAsync(Path.Combine(agentDirectory, "SYSTEM.md"), "DISCOVERED_SYSTEM_SENTINEL");
+                await File.WriteAllTextAsync(Path.Combine(agentDirectory, "APPEND_SYSTEM.md"), "DISCOVERED_APPEND_SENTINEL");
+                await File.WriteAllTextAsync(Path.Combine(root, "custom-system.txt"), "CUSTOM_SYSTEM_SENTINEL");
+                await File.WriteAllTextAsync(Path.Combine(root, "custom-append.txt"), "CUSTOM_APPEND_FILE_SENTINEL");
+            }
             var server = Task.Run(async () =>
             {
                 var request = await listener.GetContextAsync().WaitAsync(timeout.Token);
@@ -322,6 +331,11 @@ public sealed class ProviderModelRuntimeTests
             };
             foreach (var argument in new[] { typeof(CliArguments).Assembly.Location, "--provider", "fixture", "--model", "fixture-model", "--no-session", "--no-tools", "--print", "provider workflow" })
                 start.ArgumentList.Add(argument);
+            if (promptOverrides)
+            {
+                foreach (var argument in new[] { "--system-prompt", "custom-system.txt", "--append-system-prompt", "custom-append.txt", "--append-system-prompt", "CUSTOM_APPEND_LITERAL_SENTINEL" })
+                    start.ArgumentList.Add(argument);
+            }
             foreach (var name in new[] { "PISHARP_API_KEY", "PISHARP_BASE_URL", "PISHARP_AUTH_PATH", "PISHARP_MODELS_PATH", "PISHARP_MODEL" })
                 start.Environment.Remove(name);
             start.Environment["OPENAI_API_KEY"] = "unrelated-openai-key";
@@ -341,6 +355,14 @@ public sealed class ProviderModelRuntimeTests
                 Assert.DoesNotContain("unrelated-openai-key", request.authorization!);
                 Assert.Contains("provider workflow", request.body);
                 Assert.Contains("fixture-model", request.body);
+                if (promptOverrides)
+                {
+                    Assert.Contains("CUSTOM_SYSTEM_SENTINEL", request.body);
+                    Assert.Contains("CUSTOM_APPEND_FILE_SENTINEL", request.body);
+                    Assert.Contains("CUSTOM_APPEND_LITERAL_SENTINEL", request.body);
+                    Assert.DoesNotContain("DISCOVERED_SYSTEM_SENTINEL", request.body);
+                    Assert.DoesNotContain("DISCOVERED_APPEND_SENTINEL", request.body);
+                }
             }
             finally
             {
