@@ -17,7 +17,7 @@ public sealed class CodingTools(string workingDirectory)
     {
         var available = new Dictionary<string, AITool>(StringComparer.Ordinal)
         {
-            ["read"] = AIFunctionFactory.Create(Read, name: "read"),
+            ["read"] = AIFunctionFactory.Create(ReadForTool, name: "read"),
             ["bash"] = AIFunctionFactory.Create(Bash, name: "bash"),
             ["edit"] = AIFunctionFactory.Create(EditBatch, name: "edit"),
             ["write"] = AIFunctionFactory.Create(Write, name: "write"),
@@ -43,17 +43,46 @@ public sealed class CodingTools(string workingDirectory)
         [Description("Path relative to the working directory or absolute path.")] string path,
         [Description("First line to read, starting at 1.")] int offset = 1,
         [Description("Maximum number of lines to return.")] int? limit = null,
+        CancellationToken cancellationToken = default) =>
+        (await ReadCoreAsync(path, offset, limit, cancellationToken)).Text;
+
+    [Description("Read text files and images (JPEG, PNG, GIF, WebP, BMP). Text output is limited to 2000 lines or 50KB. Use offset and limit to continue.")]
+    private async Task<object> ReadForTool(
+        [Description("Path relative to the working directory or absolute path.")] string path,
+        [Description("First line to read, starting at 1.")] int offset = 1,
+        [Description("Maximum number of lines to return.")] int? limit = null,
         CancellationToken cancellationToken = default)
     {
-        if (offset < 1 || limit is <= 0) throw new ToolFailureException("offset and limit must be positive.");
+        var output = await ReadCoreAsync(path, offset, limit, cancellationToken);
+        return output.ImageDataBase64 is null ? output.Text : output;
+    }
+
+    private async Task<ReadToolOutput> ReadCoreAsync(string path, int offset, int? limit, CancellationToken cancellationToken)
+    {
         try
         {
             var resolved = Resolve(path);
-            if (new FileInfo(resolved).Length > 2 * 1024 * 1024)
-                return await StreamingTextReader.SelectAsync(resolved, path, offset, limit, cancellationToken);
-            var bytes = await File.ReadAllBytesAsync(resolved, cancellationToken);
-            var text = Encoding.UTF8.GetString(bytes);
-            return ReadTextPlanner.Select(text, path, offset, limit);
+            const int maxImageBytes = 20 * 1024 * 1024;
+            await using var stream = new FileStream(resolved, FileMode.Open, FileAccess.Read, FileShare.Read,
+                bufferSize: 4096, FileOptions.Asynchronous | FileOptions.SequentialScan);
+            var length = stream.Length;
+            var mimeType = await ReadImageDetector.DetectAsync(stream, cancellationToken);
+            if (mimeType is not null)
+            {
+                if (length > maxImageBytes)
+                    return new ReadToolOutput($"Read image file [{mimeType}]\n[Image omitted: could not be resized below the inline image size limit.]");
+                var bytes = new byte[checked((int)length)];
+                await stream.ReadExactlyAsync(bytes, cancellationToken);
+                return await Task.Run(() => ReadImageProcessor.Process(bytes, mimeType, cancellationToken), cancellationToken);
+            }
+            if (offset < 1 || limit is <= 0) throw new ToolFailureException("offset and limit must be positive.");
+            if (length > 2 * 1024 * 1024)
+                return new ReadToolOutput(await StreamingTextReader.SelectAsync(resolved, path, offset, limit, cancellationToken));
+            var content = new byte[checked((int)length)];
+            stream.Position = 0;
+            await stream.ReadExactlyAsync(content, cancellationToken);
+            var text = Encoding.UTF8.GetString(content);
+            return new ReadToolOutput(ReadTextPlanner.Select(text, path, offset, limit));
         }
         catch (ArgumentOutOfRangeException e) { throw new ToolFailureException(e.Message.Split('\n')[0], inner: e); }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)

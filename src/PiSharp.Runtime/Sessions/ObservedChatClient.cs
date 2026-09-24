@@ -1,6 +1,8 @@
 using System.ClientModel;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 using Microsoft.Extensions.AI;
+using PiSharp.Runtime.Tools;
 
 namespace PiSharp.Runtime.Sessions;
 
@@ -8,7 +10,8 @@ namespace PiSharp.Runtime.Sessions;
 internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycleEvent> publish,
     ProviderRetryPolicy retryPolicy, Func<IEnumerable<ChatMessage>, IReadOnlyList<ChatMessage>> takeSteering,
     bool blockImages = false,
-    Func<IReadOnlyList<ChatMessage>, bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? projectContext = null) : DelegatingChatClient(inner)
+    Func<IReadOnlyList<ChatMessage>, bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? projectContext = null,
+    bool supportsImages = true) : DelegatingChatClient(inner)
 {
     public override async Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages,
         ChatOptions? options = null, CancellationToken cancellationToken = default)
@@ -99,7 +102,7 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
     private async Task<IReadOnlyList<ChatMessage>> PrepareRequestAsync(IReadOnlyList<ChatMessage> messages, bool force, CancellationToken cancellationToken)
     {
         var projected = projectContext is null ? messages : await projectContext(messages, force, cancellationToken);
-        return FilterImages(projected).ToArray();
+        return FilterImages(AttachReadImages(projected)).ToArray();
     }
 
     private async Task<IReadOnlyList<ChatMessage>?> RecoverOverflowAsync(IReadOnlyList<ChatMessage> original,
@@ -109,7 +112,127 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
         var compacted = await projectContext(original, true, cancellationToken);
         if (ReferenceEquals(compacted, original)) return null;
         publish(new("model_context_overflow_recovery", Text: "Retrying the model request once with a shortened context."));
-        return FilterImages(compacted).ToArray();
+        return FilterImages(AttachReadImages(compacted)).ToArray();
+    }
+
+    // Keep the persisted function result intact. Provider clients see its text plus image content
+    // in a following user message, matching Pi's image-bearing tool result on the wire.
+    private IReadOnlyList<ChatMessage> AttachReadImages(IReadOnlyList<ChatMessage> messages) =>
+        ExpandReadImages(messages, supportsImages);
+
+    internal static IReadOnlyList<ChatMessage> NormalizeReadImagesForHistory(IReadOnlyList<ChatMessage> messages) =>
+        ExpandReadImages(messages, supportsImages: true);
+
+    private static IReadOnlyList<ChatMessage> ExpandReadImages(IReadOnlyList<ChatMessage> messages, bool supportsImages)
+    {
+        var expanded = new List<ChatMessage>(messages.Count);
+        var index = 0;
+        while (index < messages.Count)
+        {
+            if (messages[index].Role != ChatRole.Tool)
+            {
+                expanded.Add(messages[index++]);
+                continue;
+            }
+
+            var attachments = new List<AIContent>();
+            while (index < messages.Count && messages[index].Role == ChatRole.Tool)
+            {
+                var message = messages[index++];
+                var contents = new List<AIContent>(message.Contents.Count);
+                var replaced = false;
+                foreach (var content in message.Contents)
+                {
+                    if (content is not FunctionResultContent result || !TryGetReadOutput(result.Result, out var output))
+                    {
+                        contents.Add(content);
+                        continue;
+                    }
+
+                    replaced = true;
+                    var resultText = output.Text;
+                    if (output.ImageMimeType is not null || output.ImageDataBase64 is not null)
+                    {
+                        if (!supportsImages)
+                            resultText += "\n[Current model does not support images. The image will be omitted from this request.]";
+                        else if (TryCreateImage(output, out var image))
+                            attachments.Add(image);
+                        else
+                            resultText += "\n[Image content is unavailable.]";
+                    }
+                    var replacement = new FunctionResultContent(result.CallId, resultText) { Exception = result.Exception };
+                    contents.Add(replacement);
+                }
+
+                expanded.Add(replaced ? new ChatMessage(message.Role, contents) : message);
+            }
+
+            if (attachments.Count > 0)
+                expanded.Add(new ChatMessage(ChatRole.User,
+                    [new TextContent("Attached image(s) from tool result:"), .. attachments]));
+        }
+        return expanded;
+    }
+
+    private static bool TryGetReadOutput(object? value, out ReadToolOutput output)
+    {
+        if (value is ReadToolOutput typed)
+        {
+            output = typed;
+            return true;
+        }
+        if (value is JsonElement json && TryReadOutput(json, out output)) return true;
+        if (value is string serialized)
+        {
+            try
+            {
+                using var document = JsonDocument.Parse(serialized);
+                if (TryReadOutput(document.RootElement, out output)) return true;
+            }
+            catch (JsonException) { }
+        }
+        output = null!;
+        return false;
+    }
+
+    private static bool TryReadOutput(JsonElement value, out ReadToolOutput output)
+    {
+        output = null!;
+        if (value.ValueKind != JsonValueKind.Object || !TryGetString(value, nameof(ReadToolOutput.Text), out var text) || text is null) return false;
+        TryGetString(value, nameof(ReadToolOutput.ImageMimeType), out var mimeType);
+        TryGetString(value, nameof(ReadToolOutput.ImageDataBase64), out var imageData);
+        if (mimeType is null && imageData is null) return false;
+        output = new ReadToolOutput(text, mimeType, imageData);
+        return true;
+    }
+
+    private static bool TryGetString(JsonElement value, string property, out string? text)
+    {
+        foreach (var item in value.EnumerateObject())
+        {
+            if (item.Name.Equals(property, StringComparison.OrdinalIgnoreCase) && item.Value.ValueKind == JsonValueKind.String)
+            {
+                text = item.Value.GetString();
+                return true;
+            }
+        }
+        text = null;
+        return false;
+    }
+
+    private static bool TryCreateImage(ReadToolOutput output, out DataContent image)
+    {
+        image = null!;
+        if (output.ImageMimeType is not ("image/jpeg" or "image/png" or "image/gif" or "image/webp") ||
+            output.ImageDataBase64 is not { Length: > 0 } encoded || encoded.Length >= ReadImageProcessor.MaxBase64Bytes) return false;
+        try
+        {
+            var bytes = Convert.FromBase64String(encoded);
+            if (((long)bytes.Length + 2) / 3 * 4 >= ReadImageProcessor.MaxBase64Bytes) return false;
+            image = new DataContent(bytes, output.ImageMimeType);
+            return true;
+        }
+        catch (FormatException) { return false; }
     }
 
     private static bool IsContextOverflow(Exception error)
@@ -140,18 +263,20 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
     // Never mutate the canonical messages: disabled images remain available if settings change later.
     private IEnumerable<ChatMessage> FilterImages(IEnumerable<ChatMessage> messages)
     {
-        if (!blockImages) return messages;
+        if (!blockImages && supportsImages) return messages;
         return messages.Select(message =>
         {
             if (message.Role != ChatRole.User && message.Role != ChatRole.Tool ||
                 !message.Contents.OfType<DataContent>().Any(IsImage)) return message;
+            var notice = blockImages ? "Image reading is disabled." :
+                "Current model does not support images. The image will be omitted from this request.";
             var contents = new List<AIContent>();
             foreach (var content in message.Contents)
             {
                 if (content is DataContent data && IsImage(data))
                 {
-                    if (contents.LastOrDefault() is not TextContent { Text: "Image reading is disabled." })
-                        contents.Add(new TextContent("Image reading is disabled."));
+                    if (contents.LastOrDefault() is not TextContent previous || previous.Text != notice)
+                        contents.Add(new TextContent(notice));
                 }
                 else contents.Add(content);
             }

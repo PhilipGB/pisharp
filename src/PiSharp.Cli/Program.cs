@@ -129,7 +129,8 @@ try
 {
     agent = new PiAgent(chat, new CodingTools(Environment.CurrentDirectory), cli.Tools, cli.ExcludeTools, cli.NoTools,
     instructions, prompts.System, prompts.Append, extensionLease.Current.Registration.Tools,
-    reasoning: ThinkingLevels.ToOptions(thinking), blockImages: userSettings.BlockImages == true, noBuiltinTools: cli.NoBuiltinTools);
+    reasoning: ThinkingLevels.ToOptions(thinking), blockImages: userSettings.BlockImages == true, noBuiltinTools: cli.NoBuiltinTools,
+    supportsImages: selection.Model.Input?.Contains("image", StringComparer.Ordinal) != false);
 }
 catch (ArgumentException e)
 {
@@ -191,7 +192,8 @@ try
         modelPricing = ModelPricing.FromEnvironment(Environment.GetEnvironmentVariable) ?? selection.Model.Pricing;
         agent = new PiAgent(chat,
             new CodingTools(Environment.CurrentDirectory), cli.Tools, cli.ExcludeTools, cli.NoTools, instructions, prompts.System, prompts.Append,
-            extensionLease.Current.Registration.Tools, reasoning: ThinkingLevels.ToOptions(thinking), blockImages: userSettings.BlockImages == true, noBuiltinTools: cli.NoBuiltinTools);
+            extensionLease.Current.Registration.Tools, reasoning: ThinkingLevels.ToOptions(thinking), blockImages: userSettings.BlockImages == true, noBuiltinTools: cli.NoBuiltinTools,
+            supportsImages: selection.Model.Input?.Contains("image", StringComparer.Ordinal) != false);
     }
     if (cli.SessionName is not null) conversation.Rename(cli.SessionName);
     if (!cli.NoSession) sessionPath ??= store.NewPath(conversation);
@@ -330,7 +332,8 @@ async Task ReplaceModelRuntime(ModelSelection nextSelection, string nextThinking
     var nextAgent = new PiAgent(nextChat,
         new CodingTools(Environment.CurrentDirectory), cli.Tools, cli.ExcludeTools, cli.NoTools,
         instructions, prompts.System, prompts.Append, extensionLease.Current.Registration.Tools,
-        reasoning: ThinkingLevels.ToOptions(nextThinking), blockImages: userSettings.BlockImages == true, noBuiltinTools: cli.NoBuiltinTools);
+        reasoning: ThinkingLevels.ToOptions(nextThinking), blockImages: userSettings.BlockImages == true, noBuiltinTools: cli.NoBuiltinTools,
+        supportsImages: nextSelection.Model.Input?.Contains("image", StringComparer.Ordinal) != false);
     var previousHead = conversation.Tree.HeadId;
     var previousSelection = selection;
     var previousConnection = connection;
@@ -378,7 +381,8 @@ async Task ReloadResources()
         var nextAgent = new PiAgent(chat,
             new CodingTools(Environment.CurrentDirectory), cli.Tools, cli.ExcludeTools, cli.NoTools,
             nextContext, nextPrompts.System, nextPrompts.Append, nextExtensions.Registration.Tools,
-            reasoning: ThinkingLevels.ToOptions(thinking), blockImages: userSettings.BlockImages == true, noBuiltinTools: cli.NoBuiltinTools);
+            reasoning: ThinkingLevels.ToOptions(thinking), blockImages: userSettings.BlockImages == true, noBuiltinTools: cli.NoBuiltinTools,
+            supportsImages: selection.Model.Input?.Contains("image", StringComparer.Ordinal) != false);
         var path = sessionPath;
         var nextRun = await OpenRunAsync(nextAgent, conversation, path);
         extensionLease.Replace(nextExtensions);

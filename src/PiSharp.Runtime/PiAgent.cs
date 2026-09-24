@@ -19,7 +19,7 @@ public sealed class PiAgent
 
     public PiAgent(IChatClient client, CodingTools tools, IReadOnlyList<string>? selectedTools = null, IReadOnlyList<string>? excludedTools = null, bool noTools = false, string? contextInstructions = null, string? systemPrompt = null, string? appendSystemPrompt = null,
         IReadOnlyCollection<AIFunction>? extensionTools = null, ProviderRetryPolicy? retryPolicy = null,
-        ReasoningOptions? reasoning = null, bool blockImages = false, bool noBuiltinTools = false)
+        ReasoningOptions? reasoning = null, bool blockImages = false, bool noBuiltinTools = false, bool supportsImages = true)
     {
         _summarizer = new ChatClientAgent(client, new ChatClientAgentOptions
         {
@@ -37,7 +37,7 @@ public sealed class PiAgent
             builtin.Concat(external).GroupBy(tool => tool.Name, StringComparer.Ordinal).Any(group => group.Count() > 1))
             throw new ArgumentException("Extension tool conflicts with a built-in tool name.");
         _agent = new ChatClientAgent(new ObservedChatClient(client, value => _events?.Invoke(value),
-            retryPolicy ?? ProviderRetryPolicy.Default, TakeSteeringForRequest, blockImages, ProjectForRequestAsync), new ChatClientAgentOptions
+            retryPolicy ?? ProviderRetryPolicy.Default, TakeSteeringForRequest, blockImages, ProjectForRequestAsync, supportsImages), new ChatClientAgentOptions
             {
                 Name = "PiSharp",
                 ChatHistoryProvider = _history,
@@ -142,7 +142,11 @@ public sealed class PiAgent
                 await foreach (var update in _agent.RunStreamingAsync(prompt, session: session, cancellationToken: cancellationToken))
                     yield return update;
             }
-            finally { PersistInjectedSteering(session); }
+            finally
+            {
+                PersistInjectedSteering(session);
+                _history.SetMessages(session, ObservedChatClient.NormalizeReadImagesForHistory(_history.GetMessages(session)).ToList());
+            }
         }
         finally { _projectContext = null; _takeSteering = null; _events = null; _active = null; _runGate.Release(); }
     }

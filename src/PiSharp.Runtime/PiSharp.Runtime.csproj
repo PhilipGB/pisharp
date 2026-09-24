@@ -8,6 +8,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Agents.AI" Version="1.21.0" />
     <PackageReference Include="System.ClientModel" Version="1.14.0" />
+    <PackageReference Include="SkiaSharp" Version="4.151.1" />
   </ItemGroup>
 
   <PropertyGroup>

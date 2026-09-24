@@ -333,12 +333,14 @@
         "Verify through application workflow and compare packages/coding-agent/src/core/tools/read.ts, truncate.ts; CodingTools.Read; unit + upstream fixtures"
       ],
       "implementation": [
-        "CodingTools.Read reads small files as bytes and decodes with Encoding.UTF8; StreamingTextReader retains byte zero and decodes selected lines as UTF-8. Both paths now preserve UTF-8 BOMs and do not auto-detect UTF-16 BOMs."
+        "CodingTools.Read reads small files as bytes and decodes with Encoding.UTF8; StreamingTextReader retains byte zero and decodes selected lines as UTF-8. Both paths preserve UTF-8 BOMs and do not auto-detect UTF-16 BOMs.",
+        "ReadImageDetector follows the pinned MIME sniff boundaries for JPEG/JPEG-LS, static PNG/APNG, GIF, WebP and BMP. ReadImageProcessor validates decoded input, converts BMP to PNG, preserves small supported bytes, and resizes to 2000x2000 / 4.5 MiB base64 bounds using Skia cubic sampling. The real MAF read function returns a serializable image result; ObservedChatClient presents tool text plus image DataContent to supported provider requests, and PiAgent normalizes persisted history to a text result plus user DataContent. Program passes model image capability; text-only and images.blockImages requests omit binary provider content while retaining canonical images."
       ],
       "evidence": [
-        "Pinned read.ts uses Buffer.toString(\"utf-8\"). The current pin d5629e20489ccf770ed90b5a33941cb3b7ef24d0 and fetched upstream main 19a0361be89bf78ccf9bbaed9a496d6484759f67 have identical coding-agent core tool paths. A direct Node Buffer probe confirms BOM retention and UTF-8 decoding of UTF-16LE BOM bytes.",
-        "dotnet test tests/PiSharp.Tests/PiSharp.Tests.csproj --no-restore --filter FullyQualifiedName~ReadTextConformanceTests|FullyQualifiedName~StreamingReadTests => 9 passed. New fail-first cases cover small UTF-8 BOM/UTF-16 BOM files and a large streamed UTF-8 BOM file. Image attachments, image processing, exact details/errors and cancellation parity remain incomplete.",
-        "dotnet format PiSharp.slnx --verify-no-changes passed; dotnet build PiSharp.slnx --warnaserror succeeded with 0 warnings/errors; dotnet test PiSharp.slnx passed 297/297."
+        "Pinned read.ts uses Buffer.toString(\"utf-8\"); pinned mime.ts uses a 4100-byte sniff, excludes JPEG-LS/APNG, and recognizes GIF, WebP and validated BMP headers. Pin d5629e20489ccf770ed90b5a33941cb3b7ef24d0 and fetched main b2bd111f2d46eed1a4689c32f30fde6306498827 have identical read, MIME and image-processing paths and tests. A direct Node Buffer probe confirms BOM retention and UTF-8 decoding of UTF-16LE BOM bytes.",
+        "ReadTextConformanceTests and StreamingReadTests passed 9/9: small UTF-8 BOM/UTF-16 BOM files, large streamed UTF-8 BOM, line and byte bounds. ReadImageProcessorTests and ReadImageToolTests passed 10/10: valid passthrough, dimension resize and coordinate hint, BMP conversion, corrupt-image omission, pre-cancellation, metadata dimension rejection before decode, MIME boundaries, both local OpenAI APIs, session save/reload, text-only filtering and images.blockImages. A 1200x1200 high-entropy PNG above the inline base64 ceiling reaches each provider as a decodable JPEG below the ceiling.",
+        "Remaining image differences: Skia cubic sampling vs Pi Lanczos3, no EXIF orientation or model-specific resize profiles, 20 MiB source and 32 megapixel resource caps, unverified oversized animated-image transformations, broader filesystem/error behavior and no pinned image request/result differential.",
+        "Current validation: dotnet format PiSharp.slnx --verify-no-changes --no-restore passed; dotnet build PiSharp.slnx -c Release --warnaserror --no-restore succeeded with 0 warnings/errors; dotnet test PiSharp.slnx -c Release --no-build --no-restore passed 307/307 with 0 skipped; focused read/image tests passed 10/10. CI has not run for these uncommitted changes."
       ],
       "dependencies": []
     },
@@ -407,15 +409,15 @@
         "@image, clipboard, read image, compatible terminal rendering",
         "reject unsupported image/provider safely",
         "Verify through application workflow and compare docs/usage.md; packages/coding-agent/src/utils/image-process.ts; packages/tui/src/terminal-image.ts; DataContent, terminal capability checks",
-        "Remaining: resize/normalization, clipboard/editor paste, image-capable read, terminal rendering, broad provider-specific transport, classifier/image model APIs and upstream differential evidence."
+        "Remaining: clipboard/editor paste, terminal image rendering, broad provider-specific transport, model-specific image limits, and pinned image request/result differential evidence."
       ],
       "implementation": [
         "src/PiSharp.Cli/CliFileArguments.cs: positional @file PNG/JPEG/GIF/WebP signature/size validation and DataContent; src/PiSharp.Cli/Program.cs: model modality refusal and prompt assembly",
-        "src/PiSharp.Runtime/Sessions/ObservedChatClient.cs: images.blockImages provider-boundary filtering while retaining canonical session images"
+        "src/PiSharp.Runtime/Sessions/ObservedChatClient.cs: read-image attachment expansion plus images.blockImages provider-boundary filtering while retaining canonical session images; src/PiSharp.Runtime/Tools/ReadImageProcessor.cs: SkiaSharp decode, BMP conversion and bounded resize"
       ],
       "evidence": [
         "tests/PiSharp.Tests/MultimodalRuntimeTests.cs: fake-provider image request and session round-trip/blocking; tests/PiSharp.Tests/ProviderChatClientFactoryTests.cs: loopback Responses request transports PNG DataContent as input_image data URL, not plain text",
-        "tests/PiSharp.Tests/ToolSelectionTests.cs: positional image and invalid-signature CLI file argument fixtures"
+        "tests/PiSharp.Tests/ToolSelectionTests.cs: positional image and invalid-signature CLI file argument fixtures; tests/PiSharp.Tests/ReadImageProcessorTests.cs and ReadImageToolTests.cs: conversion, resize, provider size, loopback transport, persistence and filtering"
       ],
       "dependencies": []
     },

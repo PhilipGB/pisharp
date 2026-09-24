@@ -6,14 +6,14 @@
 
 ## Baseline
 
-- PiSharp started from clean `main` at `1520f311196fdbd6a3f2eae07f09bc3f80e55353`. Its latest Linux CI run succeeded: [run 36053525565](https://github.com/PhilipGB/pisharp/actions/runs/36053525565), 2026-09-24.
-- Pinned Pi: `earendil-works/pi@d5629e20489ccf770ed90b5a33941cb3b7ef24d0`. Current upstream `main` fetched as `19a0361be89bf78ccf9bbaed9a496d6484759f67`; coding-agent tool sources and tests are unchanged since the pin. Refresh before final audit and before major capability families when relevant.
-- Current local changes are uncommitted. `dotnet format PiSharp.slnx --verify-no-changes` passed; `dotnet build PiSharp.slnx --warnaserror` passed with 0 warnings/errors; `dotnet test PiSharp.slnx` passed 297/297. The focused read tests passed 9/9. CI has not run for these edits.
+- PiSharp started from clean `main` at `1520f311196fdbd6a3f2eae07f09bc3f80e55353`. The latest successful Linux CI run before this image slice is [run 36059356140](https://github.com/PhilipGB/pisharp/actions/runs/36059356140), for `e15f051d989ada94ccd54bb3ae7535b20c2a0c9f` on 2026-09-24.
+- Pinned Pi: `earendil-works/pi@d5629e20489ccf770ed90b5a33941cb3b7ef24d0`. Refreshed upstream `main` as `b2bd111f2d46eed1a4689c32f30fde6306498827`; pinned/current read, MIME, and image processing sources and tests are unchanged. Refresh before the final audit and relevant capability families.
+- Current image-read changes are uncommitted. `dotnet format PiSharp.slnx --verify-no-changes --no-restore` passed; the Release warnings-as-errors build passed with 0 warnings/errors; the Release suite passed 307/307 with 0 skipped; focused read/image tests passed 10/10. CI has not run for these edits.
 
 ## Priorities
 
 1. **Coding tools (active):** complete `read`, `bash`, `edit`, `write`, `grep`, `find`, and `ls` contracts using upstream implementation/tests, deterministic local cases, pinned differentials, and real agent turns. Once major behavior is covered, move on rather than polishing obscure edge cases.
-   - `read`: small and streamed text paths now decode UTF-8 consistently, preserve BOMs, and avoid UTF-16 BOM auto-detection. Focused tests pass. Still open: image detection/processing and image content through the model loop, exact metadata/errors/cancellation, and broader edge-case differentials.
+   - `read`: small and streamed text paths decode UTF-8 consistently, preserve BOMs, and avoid UTF-16 BOM auto-detection. Image processing now decodes and validates, converts BMP to PNG, resizes to 2000×2000 / 4.5 MiB base64 limits, and sends inline content through local Responses and Chat Completions tool turns; high-entropy provider payload tests cover the byte limit and session reload. Still open: EXIF orientation, Lanczos3 equivalence, model-specific resize profiles, files over 20 MiB, animated-image transformations, exact metadata/errors, broader filesystem/cancellation cases, and pinned image request/result differentials.
    - `bash`: high priority. Still open: live output, exact result/events, stdout/stderr behavior, full-output retention, process tree cleanup, and broad PTY/agent-turn evidence.
    - `edit`, `write`, `grep`, `find`, `ls`: compare remaining matching, encoding, symlink, permission, atomicity, glob/ignore, truncation, ordering, cancellation and result details against Pi. Existing local coverage is narrow.
    - Acceptance gate: all seven tools' major externally visible behavior is covered and remaining differences are evidenced; then begin the real TUI.
@@ -31,4 +31,4 @@
 
 ## Immediate next action
 
-Implement Pi-compatible image reads through the real MAF tool loop. First verify how the installed `FunctionResultContent` and OpenAI/llama adapters carry image content; then add a deterministic agent-turn fixture proving the next supported multimodal request contains the image and persisted history remains usable. Continue with image processing/format coverage and then the `bash` contract.
+Commit and push this validated read slice; retain its evidenced image differences for final audit. Then start `bash` live-output/result/event parity with process-group, cancellation, truncation and agent-turn fixtures. Add deterministic comparisons and keep the active matrix/ledger aligned.
