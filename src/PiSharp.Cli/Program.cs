@@ -93,7 +93,14 @@ if (cli.ListModels)
         Console.WriteLine($"{model.Provider}/{model.Id}\t{(model.Available ? model.Status ?? "available" : model.UnavailableReason ?? "unavailable")}\t{model.ContextLength?.ToString() ?? ""}");
     return;
 }
-IChatClient chat = ProviderChatClientFactory.Create(selection);
+IChatClient chat;
+try { chat = ProviderChatClientFactory.Create(selection); }
+catch (Exception error) when (error is NotSupportedException or InvalidOperationException)
+{
+    Console.Error.WriteLine(error.Message);
+    Environment.ExitCode = 2;
+    return;
+}
 string instructions;
 (string? System, string? Append) prompts;
 ResourceCatalog resources;

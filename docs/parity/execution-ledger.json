@@ -273,7 +273,7 @@
         "Earlier recovery checkpoint: dotnet format --verify-no-changes and warning-as-error build passed; 123/123 deterministic PiSharp tests plus 10/10 controller fixtures passed on 2026-09-24. Full provider/OAuth/PTY behaviour was unverified.",
         "Post-recovery workflow checkpoint: dotnet format --verify-no-changes, dotnet build --warnaserror, dotnet test --no-build (125/125), and 10/10 supervisor fixture tests passed; full provider/OAuth parity remains unverified.",
         "After provider-identity isolation: dotnet format --verify-no-changes, warning-as-error build, and full deterministic suite passed (128/128); no live hosted-provider call was made.",
-        "tests/PiSharp.Tests/ProviderChatClientFactoryTests.cs: protocol selection for OpenAI Responses vs compatible Completions, unsupported API refusal and loopback Responses SSE request; src/PiSharp.Cli/{ProviderChatClientFactory,StatelessResponsesChatClient}.cs keeps canonical MAF history. No hosted provider or OAuth differential."
+        "tests/PiSharp.Tests/ProviderChatClientFactoryTests.cs: protocol selection for OpenAI Responses vs compatible Completions, unsupported API refusal, loopback Responses SSE request, nonstream usage and stateless history, function-call/tool-result continuation without previous_response_id, and subprocess unsupported-API refusal; src/PiSharp.Cli/{ProviderChatClientFactory,StatelessResponsesChatClient}.cs keeps canonical MAF history. No hosted provider or OAuth differential."
       ],
       "dependencies": []
     },
