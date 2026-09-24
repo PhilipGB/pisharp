@@ -692,14 +692,18 @@
     {
       "id": "cli-sessions",
       "title": "CLI flags: -c/--continue, -r/--resume, --session, --session-id, --fork, --session-dir, --no-session, -n/--name",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:22",
       "acceptance": [
         "Project grouping, exact/partial IDs and incompatibility checks",
         "Test parsed flags, conflict/recovery and process behaviour"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "Partial: src/PiSharp.Cli/CliArguments.cs and Program.cs implement --continue, --session, --session-dir, --no-session, --fork and --name, with project-local session catalog lookup. -r resume picker and --session-id are absent."
+      ],
+      "evidence": [
+        "tests/PiSharp.Tests/{CliProcessTests,TerminalPtyTests,ProviderModelRuntimeTests}.cs include process startup selection, fork and model conflict fixtures; docs/parity/detailed-inventory.md records the remaining interoperability and picker gaps. This does not prove Pi session equivalence."
+      ],
       "dependencies": []
     },
     {
@@ -724,8 +728,12 @@
         "Local paths, trust, discovery and explicit override precedence",
         "Test parsed flags, conflict/recovery and process behaviour"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "Partial: CLI and resource/extension loaders accept repeatable explicit skill, prompt-template, and .NET extension paths even with corresponding discovery disabled; project auto-discovery is trust-gated. Themes and Pi extension APIs remain absent."
+      ],
+      "evidence": [
+        "tests/PiSharp.Tests/{ResourceCatalogTests,ExtensionCatalogTests,ProviderModelRuntimeTests}.cs exercise duplicate precedence, opt-in paths, HTTP provider request content and PTY extension command behavior. Upstream package resolution and trust diagnostics still differ."
+      ],
       "dependencies": []
     },
     {
