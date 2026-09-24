@@ -387,7 +387,12 @@ if (cli.Mode == "json")
             await protocol.RejectAsync(e.Message);
             Environment.ExitCode = 1;
         }
-        if (expanded is not null && !await protocol.RunAsync(conversationRun, expanded)) Environment.ExitCode = 1;
+        if (expanded is not null && string.IsNullOrWhiteSpace(expanded))
+        {
+            await protocol.RejectAsync("A nonempty prompt is required.");
+            Environment.ExitCode = 2;
+        }
+        else if (expanded is not null && !await protocol.RunAsync(conversationRun, expanded)) Environment.ExitCode = 1;
         if (sessionPath is not null)
             try { await store.SaveAsync(conversation, sessionPath); }
             catch (Exception e) { Console.Error.WriteLine($"Could not save session: {e.Message}"); Environment.ExitCode = 1; }
@@ -408,7 +413,7 @@ else
     {
         try { prompt = await CliFileArguments.AppendTextFilesAsync(prompt, cli.FileArguments, Environment.CurrentDirectory); }
         catch (Exception e) when (e is IOException or ArgumentException) { Console.Error.WriteLine(e.Message); Environment.ExitCode = 1; return; }
-        await Run(prompt);
+        if (!string.IsNullOrWhiteSpace(prompt)) await Run(prompt);
     }
     while (true)
     {

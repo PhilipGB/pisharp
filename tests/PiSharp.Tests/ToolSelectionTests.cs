@@ -44,8 +44,10 @@ public sealed class ToolSelectionTests
             var cli = CliArguments.Parse(["--print", "Explain", "@source & notes.txt"]);
             Assert.Equal(["source & notes.txt"], cli.FileArguments);
             var prompt = await CliFileArguments.AppendTextFilesAsync(cli.Prompt, cli.FileArguments, root);
-            Assert.Equal($"<file name=\"{System.Security.SecurityElement.Escape(path)}\">\\nImportant source\\n</file>\\n\\nExplain".Replace("\\n", "\n"), prompt);
+            Assert.Equal($"<file name=\"{System.Security.SecurityElement.Escape(path)}\">\nImportant source\n</file>\n\nExplain", prompt);
             await Assert.ThrowsAsync<FileNotFoundException>(() => CliFileArguments.AppendTextFilesAsync("", ["missing.txt"], root));
+            await File.WriteAllTextAsync(Path.Combine(root, "empty"), "");
+            Assert.Equal("", await CliFileArguments.AppendTextFilesAsync("", ["empty"], root));
             await File.WriteAllBytesAsync(Path.Combine(root, "binary"), [0xff, 0x00]);
             await Assert.ThrowsAsync<InvalidDataException>(() => CliFileArguments.AppendTextFilesAsync("", ["binary"], root));
         }
