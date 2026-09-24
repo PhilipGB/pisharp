@@ -65,6 +65,10 @@ public sealed class ProjectTrustTests
             Assert.Throws<ArgumentException>(() => CliArguments.Parse(["--approve", "--no-approve"]));
             Assert.True(CliArguments.Parse(["--approve"]).ProjectTrustOverride);
             Assert.False(CliArguments.Parse(["--no-approve"]).ProjectTrustOverride);
+            Assert.True(CliArguments.Parse(["-a"]).ProjectTrustOverride);
+            Assert.False(CliArguments.Parse(["-na"]).ProjectTrustOverride);
+            Assert.Throws<ArgumentException>(() => CliArguments.Parse(["-a", "-na"]));
+            Assert.Equal("interactive", CliArguments.Parse(["--mode", "text"]).Mode);
         }
         finally { Directory.Delete(root, recursive: true); }
     }

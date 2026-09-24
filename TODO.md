@@ -34,6 +34,7 @@ After each significant change: add/update tests and parity evidence, run focused
 
 ## Completed in this continuation
 
+- CLI trust aliases `-a`/`-na` and upstream `--mode text` now parse; text maps to existing TTY-sensitive interactive/print lifecycle, not a Pi protocol match. Parser conflict tests only; mode behavior and Pi CLI differential remain open.
 - CLI `-h/--help` and `-v/--version` work without reading invalid settings (subprocess fixture), and `-p`/`-c` aliases parse; version reports PiSharp assembly version rather than Pi's version. Other CLI flags, resume picker, and mode equivalence remain open.
 - CLI `--no-skills`/`-ns` and `--no-prompt-templates`/`-np` independently skip user/trusted-project discovery and remain disabled on reload. Local parser/catalog tests verify command/context removal and skipped oversized templates; upstream explicit-path semantics and process evidence remain open.
 - CLI `--no-extensions`/`-ne` now skips user/project DLL discovery at startup and reload; loader and PTY tests show trusted project commands are disabled; other resource discovery remains wired independently. Upstream explicit `-e` path semantics and full extension parity remain open.

@@ -32,10 +32,12 @@ public sealed record CliArguments(bool Help, bool Local, bool Print, bool Contin
                 case "--version": case "-v": version = true; break;
                 case "--local": local = true; break;
                 case "--approve":
+                case "-a":
                     if (trust == false) throw new ArgumentException("--approve conflicts with --no-approve.");
                     trust = true;
                     break;
                 case "--no-approve":
+                case "-na":
                     if (trust == true) throw new ArgumentException("--no-approve conflicts with --approve.");
                     trust = false;
                     break;
@@ -58,9 +60,9 @@ public sealed record CliArguments(bool Help, bool Local, bool Print, bool Contin
                     excludeTools = ParseToolNames(arguments, ref i, arg);
                     break;
                 case "--mode":
-                    if (++i >= arguments.Length || arguments[i] is not ("json" or "print" or "interactive" or "rpc"))
-                        throw new ArgumentException("--mode supports interactive, print, json, or rpc.");
-                    mode = arguments[i];
+                    if (++i >= arguments.Length || arguments[i] is not ("json" or "print" or "interactive" or "text" or "rpc"))
+                        throw new ArgumentException("--mode supports text, interactive, print, json, or rpc.");
+                    mode = arguments[i] == "text" ? "interactive" : arguments[i];
                     break;
                 case "--model":
                     if (++i >= arguments.Length || string.IsNullOrWhiteSpace(arguments[i]) || arguments[i].StartsWith('-'))
