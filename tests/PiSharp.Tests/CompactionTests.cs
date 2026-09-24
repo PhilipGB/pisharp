@@ -377,6 +377,9 @@ public sealed class CompactionTests
     [Theory]
     [InlineData("Your input exceeds the context window of this model", false, true)]
     [InlineData("the request exceeds the available context size, try increasing it", false, true)]
+    [InlineData("400 `prompt too long; exceeded max context length by 100918 tokens`", false, true)]
+    [InlineData("400 Input length (265330) exceeds model's maximum context length (262144).", false, true)]
+    [InlineData("400 model runner crashed", false, false)]
     [InlineData("rate limit: too many requests; context_length_exceeded", false, false)]
     [InlineData("Your input exceeds the context window of this model", true, false)]
     public async Task ProviderOverflowRetriesOnceOnlyBeforeContentWithShortenedRequest(string error, bool afterContent, bool recover)

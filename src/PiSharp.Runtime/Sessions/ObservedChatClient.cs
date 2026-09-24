@@ -127,7 +127,13 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
         return message.Contains("context_length_exceeded", StringComparison.OrdinalIgnoreCase) ||
             message.Contains("context length exceeded", StringComparison.OrdinalIgnoreCase) ||
             message.Contains("exceeds the context window", StringComparison.OrdinalIgnoreCase) ||
-            message.Contains("exceeds the available context size", StringComparison.OrdinalIgnoreCase);
+            message.Contains("exceeds the available context size", StringComparison.OrdinalIgnoreCase) ||
+            System.Text.RegularExpressions.Regex.IsMatch(message,
+                @"exceeds (?:the )?(?:model'?s )?maximum context length(?: of [\d,]+ tokens?|\s*\([\d,]+\))",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(100)) ||
+            System.Text.RegularExpressions.Regex.IsMatch(message,
+                @"prompt too long; exceeded (?:max )?context length",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(100));
     }
 
     // Filter at the final provider boundary, including persisted history and subsequent tool-loop requests.
