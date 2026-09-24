@@ -9,7 +9,7 @@ internal sealed class InFlightContextBudget(
     Func<PiAgent.CompactionSummary, CancellationToken, Task> onSummary)
 {
     // Fingerprint serialized earlier turns without retaining their raw content in the cache.
-    // Fail closed to a fresh summary when one message or the aggregate is too large to fingerprint.
+    // Stream each message into a capped hash; never materialize its whole JSON solely for caching.
     private string? _cachedPrefix;
     private string? _cachedSummary;
 
@@ -107,19 +107,49 @@ internal sealed class InFlightContextBudget(
 
     private static string? CacheKey(IReadOnlyList<ChatMessage> messages)
     {
+        const int maxMessageBytes = 1024 * 1024;
+        const int maxTotalBytes = 16 * maxMessageBytes;
         using var hash = System.Security.Cryptography.IncrementalHash.CreateHash(
             System.Security.Cryptography.HashAlgorithmName.SHA256);
         var total = 0;
         Span<byte> length = stackalloc byte[sizeof(int)];
         foreach (var message in messages)
         {
-            var json = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(message, AIJsonUtilities.DefaultOptions);
-            if (json.Length > 1024 * 1024 || total + (long)json.Length > 16 * 1024 * 1024) return null;
-            total += json.Length;
-            System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(length, json.Length);
+            if (total == maxTotalBytes) return null;
+            using var messageHash = System.Security.Cryptography.IncrementalHash.CreateHash(
+                System.Security.Cryptography.HashAlgorithmName.SHA256);
+            using var sink = new BoundedHashStream(messageHash, Math.Min(maxMessageBytes, maxTotalBytes - total));
+            try { System.Text.Json.JsonSerializer.Serialize(sink, message, AIJsonUtilities.DefaultOptions); }
+            catch (FingerprintLimitExceededException) { return null; }
+            total += sink.LengthWritten;
+            // Length-frame a digest of each message; do not retain or copy its serialized bytes.
+            System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(length, sink.LengthWritten);
             hash.AppendData(length);
-            hash.AppendData(json);
+            hash.AppendData(messageHash.GetHashAndReset());
         }
         return Convert.ToHexString(hash.GetHashAndReset());
+    }
+
+    private sealed class FingerprintLimitExceededException : IOException;
+
+    private sealed class BoundedHashStream(System.Security.Cryptography.IncrementalHash hash, int limit) : Stream
+    {
+        public int LengthWritten { get; private set; }
+        public override bool CanRead => false;
+        public override bool CanSeek => false;
+        public override bool CanWrite => true;
+        public override long Length => LengthWritten;
+        public override long Position { get => LengthWritten; set => throw new NotSupportedException(); }
+        public override void Flush() { }
+        public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        public override void SetLength(long value) => throw new NotSupportedException();
+        public override void Write(byte[] buffer, int offset, int count) => Write(buffer.AsSpan(offset, count));
+        public override void Write(ReadOnlySpan<byte> buffer)
+        {
+            if (buffer.Length > limit - LengthWritten) throw new FingerprintLimitExceededException();
+            hash.AppendData(buffer);
+            LengthWritten += buffer.Length;
+        }
     }
 }

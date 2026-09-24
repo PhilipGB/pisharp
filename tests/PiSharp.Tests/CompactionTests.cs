@@ -231,8 +231,10 @@ public sealed class CompactionTests
         finally { Directory.Delete(cwd, recursive: true); }
     }
 
-    [Fact]
-    public async Task AggregatePrefixAboveSixteenMegabytesBypassesSummaryCache()
+    [Theory]
+    [InlineData(17, 1)]
+    [InlineData(18, 2)]
+    public async Task AggregatePrefixCapControlsSummaryReuse(int turnCount, int expectedSummaries)
     {
         var cwd = Path.Combine(Path.GetTempPath(), "pisharp-aggregate-prefix-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(cwd);
@@ -242,7 +244,7 @@ public sealed class CompactionTests
             await File.WriteAllTextAsync(Path.Combine(cwd, "small.txt"), "small result");
             var conversation = new ConversationSession(cwd, "fixture", null);
             var largeTurn = new string('A', 950_000);
-            for (var i = 0; i < 18; i++)
+            for (var i = 0; i < turnCount; i++)
                 conversation.Append(new ChatMessage(ChatRole.User, largeTurn + i));
             var trigger = AutoCompactionPolicy.Estimate(conversation.ContextMessages(), "read both files") + 300;
             var client = new ToolLoopBudgetClient { RepeatRead = true };
@@ -250,9 +252,9 @@ public sealed class CompactionTests
                 autoCompaction: new AutoCompactionPolicy(trigger + 300, 300));
             await foreach (var _ in run.RunEventsAsync("read both files")) { }
             Assert.Equal(3, client.Requests);
-            Assert.Equal(2, client.Summaries);
+            Assert.Equal(expectedSummaries, client.Summaries);
             Assert.True(client.ContinuationSawSummaryAndToolResult);
-            Assert.Equal(18, conversation.ActiveMessages().Count(message => message.Role == ChatRole.User && message.Text.Length > 900_000));
+            Assert.Equal(turnCount, conversation.ActiveMessages().Count(message => message.Role == ChatRole.User && message.Text.Length > 900_000));
         }
         finally { Directory.Delete(cwd, recursive: true); }
     }
