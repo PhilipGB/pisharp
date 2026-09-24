@@ -120,4 +120,31 @@ public sealed class SearchToolsTests
         }
         finally { Directory.Delete(root, recursive: true); }
     }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task FindIncludesMatchingEmptyDirectories(bool initializeGitRepository)
+    {
+        if (initializeGitRepository && !OperatingSystem.IsLinux()) return;
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-find-empty-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            if (initializeGitRepository)
+            {
+                using var git = Process.Start(new ProcessStartInfo("git")
+                {
+                    WorkingDirectory = root,
+                    ArgumentList = { "init", "-q" }
+                });
+                Assert.NotNull(git);
+                await git.WaitForExitAsync();
+                Assert.Equal(0, git.ExitCode);
+            }
+            Directory.CreateDirectory(Path.Combine(root, "empty.txt"));
+            Assert.Equal("empty.txt/", await new SearchTools(root).Find("*.txt"));
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
 }

@@ -10,7 +10,8 @@ internal static class SearchInventory
 
     private sealed record IgnoreRule(string BaseDirectory, Regex Pattern, bool Negated, bool DirectoryOnly);
 
-    public static async Task<IReadOnlyList<string>> EnumerateAsync(string root, CancellationToken cancellationToken)
+    public static async Task<IReadOnlyList<string>> EnumerateAsync(string root, CancellationToken cancellationToken,
+        bool includeDirectories = false)
     {
         if (File.Exists(root)) return [root];
         if (!Directory.Exists(root)) throw new ToolFailureException($"Path not found: {root}");
@@ -43,7 +44,12 @@ internal static class SearchInventory
                 await git.WaitForExitAsync(cancellationToken);
                 await error;
                 if (reachedLimit) throw new ToolFailureException("Search exceeds 20000 files; narrow the search path.");
-                if (git.ExitCode == 0) return results;
+                if (git.ExitCode == 0)
+                {
+                    if (includeDirectories)
+                        results.AddRange(await EnumerateDirectoriesAsync(root, MaxEntries - results.Count, cancellationToken));
+                    return results;
+                }
             }
             finally
             {
@@ -80,6 +86,7 @@ internal static class SearchInventory
                     {
                         if (Path.GetFileName(entry) is ".git" or "node_modules" ||
                             File.GetAttributes(entry).HasFlag(FileAttributes.ReparsePoint)) continue;
+                        if (includeDirectories) files.Add(entry);
                         pending.Push((entry, rules));
                     }
                     else if (File.Exists(entry)) files.Add(entry);
@@ -89,6 +96,41 @@ internal static class SearchInventory
         }
         if (files.Count >= MaxEntries) throw new ToolFailureException("Search exceeds 20000 files; narrow the search path.");
         return files;
+    }
+
+    private static async Task<IReadOnlyList<string>> EnumerateDirectoriesAsync(string root, int maxEntries,
+        CancellationToken cancellationToken)
+    {
+        var directories = new List<string>();
+        var pending = new Stack<(string Directory, IReadOnlyList<IgnoreRule> Rules)>();
+        pending.Push((root, []));
+        while (pending.TryPop(out var item) && directories.Count < maxEntries)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var rules = new List<IgnoreRule>(item.Rules);
+            rules.AddRange(ReadIgnoreRules(item.Directory));
+            IEnumerable<string> entries;
+            try { entries = Directory.EnumerateDirectories(item.Directory).ToArray(); }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException) { continue; }
+            foreach (var entry in entries)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                try
+                {
+                    if (IsIgnored(entry, isDirectory: true, rules) ||
+                        Path.GetFileName(entry) is ".git" or "node_modules" ||
+                        File.GetAttributes(entry).HasFlag(FileAttributes.ReparsePoint)) continue;
+                    if (directories.Count >= maxEntries)
+                        throw new ToolFailureException("Search exceeds 20000 files; narrow the search path.");
+                    directories.Add(entry);
+                    pending.Push((entry, rules));
+                }
+                catch (Exception error) when (error is IOException or UnauthorizedAccessException) { }
+            }
+        }
+        if (maxEntries > 0 && directories.Count >= maxEntries)
+            throw new ToolFailureException("Search exceeds 20000 files; narrow the search path.");
+        return directories;
     }
 
     private static IReadOnlyList<IgnoreRule> ReadIgnoreRules(string directory)

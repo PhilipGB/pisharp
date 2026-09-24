@@ -23,12 +23,14 @@ public sealed class SearchTools(string workingDirectory)
         Regex regex;
         try { regex = GlobRegex(pattern); }
         catch (ArgumentException error) { throw new ToolFailureException($"Invalid glob pattern: {error.Message}", inner: error); }
-        var files = await SearchInventory.EnumerateAsync(root, cancellationToken);
+        var files = await SearchInventory.EnumerateAsync(root, cancellationToken, includeDirectories: true);
         var candidates = new HashSet<string>(StringComparer.Ordinal);
         foreach (var file in files)
         {
             var relative = Path.GetRelativePath(root, file).Replace('\\', '/');
-            if (regex.IsMatch(pattern.Contains('/') ? relative : Path.GetFileName(relative))) candidates.Add(relative);
+            var isDirectory = Directory.Exists(file);
+            if (regex.IsMatch(pattern.Contains('/') ? relative : Path.GetFileName(relative)))
+                candidates.Add(isDirectory ? relative + "/" : relative);
             // fd includes matching directories. Synthesize ancestors of the discovered files.
             var dir = Path.GetDirectoryName(relative)?.Replace('\\', '/');
             while (!string.IsNullOrEmpty(dir) && dir != ".")
