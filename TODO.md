@@ -34,6 +34,7 @@ After each significant change: add/update tests and parity evidence, run focused
 
 ## Completed in this continuation
 
+- Stored OAuth credentials are now rejected for API-key-only providers instead of passed as raw bearer tokens or silently replaced by ambient API keys. Local credential-boundary test; genuine provider OAuth adapters and refresh remain outstanding.
 - OpenAI-compatible model catalog parsing ignores malformed optional numeric metadata without aborting valid sibling entries; deterministic fixture. This is resilience evidence only, not provider parity.
 - CLI `--no-context-files`/`-nc` skips AGENTS/CLAUDE loading at startup and reload without disabling unrelated resources; process test verifies oversized project context is not read. Full resource CLI parity remains open.
 - CLI `--system-prompt` and repeatable `--append-system-prompt` now resolve UTF-8 files or literals, override discovered sources, and refresh files on reload. Local CLI parsing/resource precedence tests pass; process and upstream differential evidence remain open.

@@ -91,11 +91,13 @@ public sealed class ProviderModelRuntime
         if (useRuntimeOverride && !string.IsNullOrWhiteSpace(_runtimeApiKey))
             return (_runtimeApiKey, true, "command line");
         var stored = await _auth.ReadAsync(provider.Id, cancellationToken);
-        if (!string.IsNullOrWhiteSpace(stored?.Secret))
+        if (stored is not null)
         {
-            if (stored.Type == "oauth" && stored.Expires is long expiry && expiry <= DateTimeOffset.UtcNow.ToUnixTimeMilliseconds())
-                return ("not-configured", false, "stored OAuth token expired");
-            return (stored.Secret!, true, stored.Type == "oauth" ? "stored OAuth" : "stored API key");
+            // A stored credential owns the provider: never fall back to ambient credentials or
+            // send a bearer token through an API-key-only adapter (Pi resolves OAuth via its handler).
+            if (stored.Type == "oauth")
+                return ("not-configured", false, provider.OAuthSupported ? "OAuth adapter unavailable" : "OAuth unsupported for provider");
+            return (stored.Key!, true, "stored API key");
         }
         if (!string.IsNullOrWhiteSpace(provider.ConfiguredApiKey)) return (provider.ConfiguredApiKey, true, "models.json");
         if (provider.ApiKeyEnvironment is not null && !string.IsNullOrWhiteSpace(_environment(provider.ApiKeyEnvironment)))

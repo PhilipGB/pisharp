@@ -32,6 +32,28 @@ public sealed class ProviderModelRuntimeTests
     }
 
     [Fact]
+    public async Task StoredOAuthCannotLeakToApiKeyOnlyProviderOrFallBackToEnvironment()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-oauth-isolation-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            await new AuthStorage(Path.Combine(root, "auth.json")).StoreOAuthAsync("openai", "oauth-secret");
+            using var handler = new ModelHandler();
+            using var http = new HttpClient(handler);
+            var runtime = await ProviderModelRuntime.CreateAsync(root, false,
+                name => name == "OPENAI_API_KEY" ? "environment-key" : null, http);
+            var selection = await runtime.ResolveAsync("openai", "gpt-4o-mini");
+            Assert.False(selection.Authenticated);
+            Assert.False(selection.Model.Available);
+            Assert.Contains("OAuth unsupported", selection.AuthSource);
+            Assert.Null(handler.Authorization);
+            Assert.NotEqual("oauth-secret", selection.ApiKey);
+            Assert.NotEqual("environment-key", selection.ApiKey);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+    [Fact]
     public async Task MistralUsesItsOwnCredentialAndDocumentedOpenAiCompatibleEndpoint()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-mistral-" + Guid.NewGuid().ToString("N"));
