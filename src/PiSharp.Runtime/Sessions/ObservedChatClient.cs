@@ -53,8 +53,10 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
                     catch (OperationCanceledException) { ended = true; publish(new("model_request_interrupted")); throw; }
                     catch (Exception error) { failure = error; break; }
                     if (!next) break;
-                    producedOutput = true;
                     var update = enumerator.Current;
+                    // A role/model/response-id SSE envelope has no content and must not
+                    // suppress a safe retry before the provider emits text, reasoning or tools.
+                    producedOutput |= update.Contents is { Count: > 0 } || !string.IsNullOrEmpty(update.Text);
                     if (!string.IsNullOrEmpty(update.Text)) publish(new("model_text_delta", Text: update.Text));
                     yield return update;
                 }

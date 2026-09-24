@@ -243,6 +243,22 @@ public sealed class AgentLifecycleTests
     }
 
     [Fact]
+    public async Task MetadataOnlyProviderUpdateDoesNotBlockSafeRetry()
+    {
+        var client = new MetadataFailureClient();
+        var session = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(Path.GetTempPath()),
+            retryPolicy: new ProviderRetryPolicy(maxRetries: 1)), session);
+        var events = new List<AgentLifecycleEvent>();
+        await foreach (var item in run.RunEventsAsync("hello")) events.Add(item);
+        Assert.Equal(2, client.Requests);
+        Assert.Single(events, item => item.Type == "model_retry_scheduled");
+        Assert.Single(events, item => item.Type == "turn_completed");
+        Assert.Single(session.ActiveMessages(), item => item.Role == ChatRole.Assistant);
+        Assert.Equal("ok", session.ActiveMessages().Last(item => item.Role == ChatRole.Assistant).Text);
+    }
+
+    [Fact]
     public async Task ProviderFailureNeverProducesSuccessfulCompletion()
     {
         var cwd = Path.GetTempPath();
@@ -429,6 +445,25 @@ public sealed class AgentLifecycleTests
         public void Dispose() { }
     }
 
+    private sealed class MetadataFailureClient : IChatClient
+    {
+        public int Requests { get; private set; }
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            if (++Requests == 1)
+            {
+                yield return new ChatResponseUpdate(ChatRole.Assistant, []);
+                await Task.Yield();
+                throw new IOException("failed before content");
+            }
+            yield return new ChatResponseUpdate(ChatRole.Assistant, "ok");
+        }
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
+    }
     private sealed class HttpStatusClient(System.Net.HttpStatusCode status) : IChatClient
     {
         public int Requests { get; private set; }
