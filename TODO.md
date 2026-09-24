@@ -6,7 +6,7 @@
 
 ## Current state and audit evidence
 
-Repository `main` was clean at the latest checkpoint (`bc58ac7fa` pushed). Format verification, warnings-as-errors build and all 190 local tests pass; this is not differential parity evidence. Tracking describes partial implementations, but the ledger still contains stale statuses; reconcile it against code/tests before relying on statuses. There is no evidence for full feature parity. In particular the README explicitly calls out absent OAuth, wide provider semantics, Pi JSONL, full TUI, broad settings/keybindings, comprehensive multimodal support, rich resources/extensions and Pi-compatible RPC.
+Repository `main` was clean at the latest checkpoint (`58548cd3f` pushed). Format verification, warnings-as-errors build and all 190 local tests pass; this is not differential parity evidence. Tracking describes partial implementations, but the ledger still contains stale statuses; reconcile it against code/tests before relying on statuses. There is no evidence for full feature parity. In particular the README explicitly calls out absent OAuth, wide provider semantics, Pi JSONL, full TUI, broad settings/keybindings, comprehensive multimodal support, rich resources/extensions and Pi-compatible RPC.
 
 ## Highest-priority actionable work (continue in order, reprioritize as evidence dictates)
 
