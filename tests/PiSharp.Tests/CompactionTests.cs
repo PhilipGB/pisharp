@@ -205,6 +205,31 @@ public sealed class CompactionTests
     }
 
     [Fact]
+    public async Task OversizedPrefixIsNotRetainedAsInFlightSummaryCacheKey()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-large-prefix-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(cwd, "output.txt"), new string('Z', 1400));
+            await File.WriteAllTextAsync(Path.Combine(cwd, "small.txt"), "small result");
+            var conversation = new ConversationSession(cwd, "fixture", null);
+            conversation.Append(new ChatMessage(ChatRole.User, new string('A', 70_000)));
+            conversation.Append(new ChatMessage(ChatRole.Assistant, "previous answer"));
+            var trigger = AutoCompactionPolicy.Estimate(conversation.ContextMessages(), "read both files") + 300;
+            var client = new ToolLoopBudgetClient { RepeatRead = true };
+            var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(cwd)), conversation,
+                autoCompaction: new AutoCompactionPolicy(trigger + 300, 300));
+            await foreach (var _ in run.RunEventsAsync("read both files")) { }
+            Assert.Equal(3, client.Requests);
+            Assert.Equal(2, client.Summaries);
+            Assert.True(client.ContinuationSawSummaryAndToolResult);
+            Assert.Contains(conversation.ActiveMessages(), message => message.Text == new string('A', 70_000));
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Fact]
     public async Task NewSteeringBoundaryInvalidatesInFlightSummaryCache()
     {
         var cwd = Path.Combine(Path.GetTempPath(), "pisharp-loop-steering-" + Guid.NewGuid().ToString("N"));
