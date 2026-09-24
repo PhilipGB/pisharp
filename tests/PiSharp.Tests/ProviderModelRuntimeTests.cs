@@ -359,10 +359,12 @@ public sealed class ProviderModelRuntimeTests
     }
 
     [Theory]
-    [InlineData(false, false)]
-    [InlineData(true, false)]
-    [InlineData(false, true)]
-    public async Task ConfiguredProviderStreamsThroughCliWithoutCatalogOrCloudCredential(bool promptOverrides, bool pipedInput)
+    [InlineData(false, false, false, false)]
+    [InlineData(true, false, false, false)]
+    [InlineData(false, true, false, false)]
+    [InlineData(false, false, true, false)]
+    [InlineData(false, false, true, true)]
+    public async Task ConfiguredProviderStreamsThroughCliWithoutCatalogOrCloudCredential(bool promptOverrides, bool pipedInput, bool resourceFixture, bool disableResources)
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-provider-http-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(root);
@@ -384,6 +386,14 @@ public sealed class ProviderModelRuntimeTests
                 await File.WriteAllTextAsync(Path.Combine(root, "custom-append.txt"), "CUSTOM_APPEND_FILE_SENTINEL");
             }
             if (pipedInput) await File.WriteAllTextAsync(Path.Combine(root, "fixture.txt"), "FILE_SENTINEL");
+            if (resourceFixture)
+            {
+                var skill = Path.Combine(agentDirectory, "skills", "fixture-guide");
+                Directory.CreateDirectory(skill);
+                Directory.CreateDirectory(Path.Combine(agentDirectory, "prompts"));
+                await File.WriteAllTextAsync(Path.Combine(skill, "SKILL.md"), "---\nname: fixture-guide\ndescription: SKILL_DESCRIPTION_SENTINEL\n---\nINSTRUCTIONS_SENTINEL");
+                await File.WriteAllTextAsync(Path.Combine(agentDirectory, "prompts", "review.md"), "EXPANDED_TEMPLATE_SENTINEL $1");
+            }
             var server = Task.Run(async () =>
             {
                 var request = await listener.GetContextAsync().WaitAsync(timeout.Token);
@@ -409,7 +419,7 @@ public sealed class ProviderModelRuntimeTests
                 RedirectStandardError = true,
                 RedirectStandardInput = pipedInput
             };
-            foreach (var argument in new[] { typeof(CliArguments).Assembly.Location, "--provider", "fixture", "--model", "fixture-model", "--no-session", "--no-tools", "--print", "provider workflow" })
+            foreach (var argument in new[] { typeof(CliArguments).Assembly.Location, "--provider", "fixture", "--model", "fixture-model", "--no-session", "--no-tools", "--print", resourceFixture ? "/review value" : "provider workflow" })
                 start.ArgumentList.Add(argument);
             if (promptOverrides)
             {
@@ -417,6 +427,11 @@ public sealed class ProviderModelRuntimeTests
                     start.ArgumentList.Add(argument);
             }
             if (pipedInput) start.ArgumentList.Add("@fixture.txt");
+            if (disableResources)
+            {
+                start.ArgumentList.Add("--no-skills");
+                start.ArgumentList.Add("--no-prompt-templates");
+            }
             foreach (var name in new[] { "PISHARP_API_KEY", "PISHARP_BASE_URL", "PISHARP_AUTH_PATH", "PISHARP_MODELS_PATH", "PISHARP_MODEL" })
                 start.Environment.Remove(name);
             start.Environment["OPENAI_API_KEY"] = "unrelated-openai-key";
@@ -439,8 +454,14 @@ public sealed class ProviderModelRuntimeTests
                 Assert.StartsWith("/v1/chat/completions", request.path);
                 Assert.Equal("Bearer fixture-only-key", request.authorization);
                 Assert.DoesNotContain("unrelated-openai-key", request.authorization!);
-                Assert.Contains("provider workflow", request.body);
+                if (!resourceFixture) Assert.Contains("provider workflow", request.body);
                 Assert.Contains("fixture-model", request.body);
+                if (resourceFixture)
+                {
+                    Assert.Equal(!disableResources, request.body.Contains("SKILL_DESCRIPTION_SENTINEL", StringComparison.Ordinal));
+                    Assert.Equal(!disableResources, request.body.Contains("EXPANDED_TEMPLATE_SENTINEL value", StringComparison.Ordinal));
+                    if (disableResources) Assert.Contains("/review value", request.body);
+                }
                 if (pipedInput)
                 {
                     var pipedAt = request.body.IndexOf("PIPE_PREFIX_", StringComparison.Ordinal);
