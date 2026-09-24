@@ -15,7 +15,7 @@ public sealed class ResourceCatalog
     private ResourceCatalog(List<SkillResource> skills, List<PromptResource> prompts) => (Skills, Prompts) = (skills, prompts);
 
     public static async Task<ResourceCatalog> LoadAsync(string cwd, string agentDirectory, bool trusted,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default, bool discoverSkills = true, bool discoverPrompts = true)
     {
         var skills = new List<SkillResource>();
         var prompts = new List<PromptResource>();
@@ -31,7 +31,7 @@ public sealed class ResourceCatalog
             skillRoots.Add(Path.Combine(cwd, ".agents", "skills"));
             promptRoots.Add(Path.Combine(cwd, ".pi", "prompts"));
         }
-        foreach (var root in skillRoots.Distinct(StringComparer.Ordinal))
+        foreach (var root in discoverSkills ? skillRoots.Distinct(StringComparer.Ordinal) : [])
         {
             if (!Directory.Exists(root)) continue;
             foreach (var path in Directory.EnumerateFiles(root, "SKILL.md", SearchOption.AllDirectories)
@@ -46,7 +46,7 @@ public sealed class ResourceCatalog
                 skills.Add(new(name, description, path, metadata.GetValueOrDefault("disable-model-invocation") == "true"));
             }
         }
-        foreach (var root in promptRoots.Distinct(StringComparer.Ordinal))
+        foreach (var root in discoverPrompts ? promptRoots.Distinct(StringComparer.Ordinal) : [])
         {
             if (!Directory.Exists(root)) continue;
             foreach (var path in Directory.EnumerateFiles(root, "*.md", SearchOption.TopDirectoryOnly)

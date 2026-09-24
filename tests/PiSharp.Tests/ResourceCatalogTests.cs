@@ -33,6 +33,19 @@ public sealed class ResourceCatalogTests
             Assert.Contains("Use references/guide.md", await untrusted.ResolveInputAsync("/skill:unit-guide focus"));
             Assert.Equal("ordinary text", await untrusted.ResolveInputAsync("ordinary text"));
             await Assert.ThrowsAsync<ArgumentException>(() => untrusted.ResolveInputAsync("/skill:project-secret"));
+            Assert.True(PiSharp.Cli.CliArguments.Parse(["-ns"]).NoSkills);
+            Assert.True(PiSharp.Cli.CliArguments.Parse(["--no-skills"]).NoSkills);
+            Assert.True(PiSharp.Cli.CliArguments.Parse(["-np"]).NoPromptTemplates);
+            Assert.True(PiSharp.Cli.CliArguments.Parse(["--no-prompt-templates"]).NoPromptTemplates);
+            var withoutSkills = await ResourceCatalog.LoadAsync(project, agent, true, discoverSkills: false);
+            Assert.Empty(withoutSkills.Skills);
+            Assert.Empty(withoutSkills.SystemInstructions());
+            Assert.NotEmpty(withoutSkills.Prompts);
+            await Assert.ThrowsAsync<ArgumentException>(() => withoutSkills.ResolveInputAsync("/skill:unit-guide"));
+            var withoutPrompts = await ResourceCatalog.LoadAsync(project, agent, true, discoverPrompts: false);
+            Assert.Empty(withoutPrompts.Prompts);
+            Assert.Equal("/review x", await withoutPrompts.ResolveInputAsync("/review x"));
+            Assert.NotEmpty(withoutPrompts.Skills);
             var trusted = await ResourceCatalog.LoadAsync(project, agent, true);
             Assert.Contains(trusted.Skills, skill => skill.Name == "project-secret");
             Assert.DoesNotContain("project-secret", trusted.SystemInstructions());
@@ -53,6 +66,8 @@ public sealed class ResourceCatalogTests
         {
             await File.WriteAllBytesAsync(path, new byte[64 * 1024 + 1]);
             await Assert.ThrowsAsync<InvalidDataException>(() => ResourceCatalog.LoadAsync(root, root, false));
+            var ignored = await ResourceCatalog.LoadAsync(root, root, false, discoverPrompts: false);
+            Assert.Empty(ignored.Prompts);
             await File.WriteAllBytesAsync(path, [0xC3, 0x28]);
             await Assert.ThrowsAsync<System.Text.DecoderFallbackException>(() => ResourceCatalog.LoadAsync(root, root, false));
         }
