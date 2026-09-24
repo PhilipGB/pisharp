@@ -354,8 +354,15 @@
         "filesystem failures and cancellation serialize same-file mutations",
         "Verify through application workflow and compare packages/coding-agent/src/core/tools/write.ts, file-mutation-queue.ts; CodingTools.Write; atomic-write/mode/symlink tests"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "src/PiSharp.Runtime/CodingTools.cs serializes same-path writes through FileMutationQueue and returns Pi's `Successfully wrote to {path}` result text.",
+        "src/PiSharp.Runtime/Tools/AtomicFileWriter.cs creates parent directories, writes a same-directory temporary file, follows existing symlinks, preserves existing Linux mode and atomically replaces the target; new Linux files are private (`0600`).",
+        "Known differences from Pi's direct fs/promises write: replacement is atomic rather than in-place, new-file mode differs from Node's platform default, filesystem errors are prefixed with `Error writing`, cancellation can leave an existing target unchanged, and replacing a hard-linked path does not update its other hard links."
+      ],
+      "evidence": [
+        "Pinned and refreshed Pi write.ts return `Successfully wrote to {path}` with undefined details and call recursive mkdir followed by fsWriteFile; the inspected write and file-mutation-queue sources are unchanged between d5629e20489ccf770ed90b5a33941cb3b7ef24d0 and b2bd111f2d46eed1a4689c32f30fde6306498827.",
+        "tests/PiSharp.Tests/CodingToolsTests.cs: WriteReadAndEditResolveAgainstWorkingDirectory checks nested creation and exact result text; AtomicWritePreservesTargetOnCancellationAndFollowsSymlinks checks private mode, cancellation, symlink target and existing mode preservation. EditConformanceTests.ConcurrentMutationsDoNotOverwriteEachOther exercises the shared mutation queue."
+      ],
       "dependencies": []
     },
     {

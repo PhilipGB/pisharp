@@ -37,7 +37,11 @@ public sealed class CodingToolsTests : IDisposable
         var tools = new CodingTools(_dir);
         await tools.Write("actual.txt", "before");
         var actual = Path.Combine(_dir, "actual.txt");
-        if (OperatingSystem.IsLinux()) File.SetUnixFileMode(actual, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        if (OperatingSystem.IsLinux())
+        {
+            Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite, File.GetUnixFileMode(actual));
+            File.SetUnixFileMode(actual, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        }
         using (var cancelled = new CancellationTokenSource())
         {
             cancelled.Cancel();
