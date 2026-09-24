@@ -269,8 +269,10 @@
         "tests/PiSharp.Tests/CrashRecoveryProcessTests.cs: a prompt reaches an endpoint with no /models route and checkpoints its tool outcome; existing startup-model conflict process test remains passing.",
         "tests/PiSharp.Tests/ProviderModelRuntimeTests.cs: Linux PTY sends a prompt before login and after logout (both rejected without model requests or chat history), rejects unsupported OAuth before requesting a token, enters an API key without echoing it, switches a saved model, and rejects thinking unsupported by that model.",
         "The configured-provider process fixture executes one complete MAF streaming HTTP chat turn against a credential-free loopback server: exact model selection makes no /models request; the stored fixture key, not OPENAI_API_KEY, is the only Authorization bearer. This does not verify a hosted provider or OAuth.",
+        "ProviderModelRuntimeTests.CustomEndpointCannotBorrowOpenAiIdentityOrEnvironment rejects models.json redirects of the built-in openai identity and explicit OPENAI_API_KEY bindings on custom endpoints before any network call; official OpenAI endpoint detection also requires HTTPS, port 443 and /v1 rather than host alone.",
         "Earlier recovery checkpoint: dotnet format --verify-no-changes and warning-as-error build passed; 123/123 deterministic PiSharp tests plus 10/10 controller fixtures passed on 2026-09-24. Full provider/OAuth/PTY behaviour was unverified.",
-        "Post-recovery workflow checkpoint: dotnet format --verify-no-changes, dotnet build --warnaserror, dotnet test --no-build (125/125), and 10/10 supervisor fixture tests passed; full provider/OAuth parity remains unverified."
+        "Post-recovery workflow checkpoint: dotnet format --verify-no-changes, dotnet build --warnaserror, dotnet test --no-build (125/125), and 10/10 supervisor fixture tests passed; full provider/OAuth parity remains unverified.",
+        "After provider-identity isolation: dotnet format --verify-no-changes, warning-as-error build, and full deterministic suite passed (128/128); no live hosted-provider call was made."
       ],
       "dependencies": []
     },

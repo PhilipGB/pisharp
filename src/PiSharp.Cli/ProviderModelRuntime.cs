@@ -14,7 +14,7 @@ public sealed record ModelSelection(ProviderProfile Provider, ModelDescriptor Mo
     bool Authenticated, string AuthSource)
 {
     public ConnectionSettings Connection => new(Model.Id,
-        Provider.Endpoint.Host.Equals("api.openai.com", StringComparison.OrdinalIgnoreCase) ? null : Provider.Endpoint,
+        ProviderModelRuntime.IsOfficialOpenAiEndpoint(Provider.Endpoint) ? null : Provider.Endpoint,
         ApiKey);
 }
 
@@ -122,7 +122,7 @@ public sealed class ProviderModelRuntime
             try
             {
                 var discovered = await ModelCatalog.ListAsync(_http,
-                    provider.Endpoint.Host.Equals("api.openai.com", StringComparison.OrdinalIgnoreCase) ? null : provider.Endpoint,
+                    IsOfficialOpenAiEndpoint(provider.Endpoint) ? null : provider.Endpoint,
                     auth.Key, cancellationToken);
                 var merged = discovered.Select(model => Merge(provider, model)).ToList();
                 foreach (var configured in provider.Models.Where(model => merged.All(item => item.Id != model.Id)))
@@ -240,6 +240,10 @@ public sealed class ProviderModelRuntime
         };
     }
 
+    internal static bool IsOfficialOpenAiEndpoint(Uri endpoint) => endpoint.Scheme == Uri.UriSchemeHttps &&
+        endpoint.Host.Equals("api.openai.com", StringComparison.OrdinalIgnoreCase) && endpoint.Port == 443 &&
+        endpoint.AbsolutePath.TrimEnd('/').Equals("/v1", StringComparison.Ordinal) &&
+        string.IsNullOrEmpty(endpoint.Query) && string.IsNullOrEmpty(endpoint.Fragment);
     private static Uri ParseEndpoint(string text, string source)
     {
         if (!Uri.TryCreate(text, UriKind.Absolute, out var endpoint) || endpoint.Scheme is not ("http" or "https") ||
@@ -272,11 +276,18 @@ public sealed class ProviderModelRuntime
                         "configured", Boolean(model, "reasoning"), ParsePricing(model), item.Name));
                 }
             var existing = providers.GetValueOrDefault(item.Name);
+            var endpoint = ParseEndpoint(baseUrl, $"models.json provider '{item.Name}' baseUrl");
+            // The built-in OpenAI identity owns credentials from auth.json and OPENAI_API_KEY.
+            // Overriding its endpoint, or naming that env var for another endpoint, leaks them.
+            if (item.Name.Equals("openai", StringComparison.OrdinalIgnoreCase) && !IsOfficialOpenAiEndpoint(endpoint))
+                throw new InvalidDataException("The built-in openai provider cannot use a custom endpoint; choose a new provider ID and its own credentials.");
+            var apiKeyEnvironment = String(value, "apiKeyEnv") ?? existing?.ApiKeyEnvironment;
+            if (!IsOfficialOpenAiEndpoint(endpoint) && apiKeyEnvironment?.Equals("OPENAI_API_KEY", StringComparison.OrdinalIgnoreCase) == true)
+                throw new InvalidDataException("A custom endpoint cannot use OPENAI_API_KEY; configure a provider-specific credential.");
             var authHeader = Boolean(value, "authHeader") ?? true;
             var oauth = value.TryGetProperty("oauth", out var oauthValue) && oauthValue.ValueKind is not JsonValueKind.Null and not JsonValueKind.False;
             providers[item.Name] = new(item.Name, String(value, "name") ?? existing?.Name ?? item.Name,
-                ParseEndpoint(baseUrl, $"models.json provider '{item.Name}' baseUrl"), authHeader,
-                oauth, String(value, "apiKeyEnv") ?? existing?.ApiKeyEnvironment,
+                endpoint, authHeader, oauth, apiKeyEnvironment,
                 String(value, "apiKey"), models.Count == 0 ? existing?.Models ?? [] : models);
         }
     }

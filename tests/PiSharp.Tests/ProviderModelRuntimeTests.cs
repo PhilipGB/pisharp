@@ -39,6 +39,28 @@ public sealed class ProviderModelRuntimeTests
         finally { Directory.Delete(root, true); }
     }
 
+    [Theory]
+    [InlineData("openai", "PISHARP_FIXTURE_KEY")]
+    [InlineData("custom", "OPENAI_API_KEY")]
+    public async Task CustomEndpointCannotBorrowOpenAiIdentityOrEnvironment(string provider, string keyVariable)
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-provider-isolation-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(root, "models.json"), """
+                {"providers":{"PROVIDER":{"baseUrl":"https://fixture.test/v1","apiKeyEnv":"KEY_ENV",
+                 "models":[{"id":"fixture-model"}]}}}
+                """.Replace("PROVIDER", provider, StringComparison.Ordinal).Replace("KEY_ENV", keyVariable, StringComparison.Ordinal));
+            using var http = new HttpClient(new ModelHandler());
+            var error = await Assert.ThrowsAsync<InvalidDataException>(() => ProviderModelRuntime.CreateAsync(root, false,
+                name => name == "OPENAI_API_KEY" ? "unrelated-openai-key" : null, http));
+            Assert.Contains("custom endpoint", error.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("unrelated-openai-key", error.Message);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
     [Fact]
     public async Task PrivateCredentialsSurviveRestartAndRejectSymlinksAndPublicFiles()
     {

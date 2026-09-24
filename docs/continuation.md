@@ -30,6 +30,10 @@ A Linux PTY fixture now covers `/login` with hidden API-key entry, a configured 
 
 A separate offline `pisharp auth check --provider <id> [--model <configured-exact-id>] [--local]` now reports local credential presence/source (exit 0/1/2) without provider requests, credential values, sessions or project-resource loading. A separate CLI-process fixture checks absent and private stored keys, rejection of credential printing and model mismatches, and isolation from `OPENAI_API_KEY`. This is **not** Pi's hosted-provider readiness/refresh check; `cli-auth` remains in progress.
 
+A security regression test now forbids `models.json` from redirecting the built-in `openai` provider (including its stored credential) to a custom endpoint or binding `OPENAI_API_KEY` to any nonofficial endpoint; official endpoint detection requires HTTPS on port 443 with `/v1`. Separate provider IDs with separate credentials remain the supported custom-endpoint path.
+
+At this checkpoint, format verification and warning-as-error build passed, and 128/128 credential-free PiSharp tests passed. The provider and CLI-auth ledger rows remain in progress; the original plan is still absent and the Codex supervisor remains stopped on its genuine usage limit.
+
 ## Remaining priority
 
 1. Audit pending checkpoint validity across all branches, corrupted and network-filesystem stores, provider switching and migration policy. Add process-kill tests at more boundaries; unknown side effects are not replayed. Shared `ConversationRun.RunEventsAsync` now drives terminal, JSON, RPC and .NET callers with actual provider/tool boundaries and failure vs completion ordering; improve terminal session controls and queue semantics; lifecycle event channel now bounds pending records to 256 and stalls the provider on slow consumers, with disposal cancellation tested.
