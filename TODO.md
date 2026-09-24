@@ -34,6 +34,7 @@ After each significant change: add/update tests and parity evidence, run focused
 
 ## Completed in this continuation
 
+- Repeatable `--skill <path>` and `--prompt-template <path>` select explicit files/directories even with automatic discovery disabled; the same paths reload. Bounded parsing, fail-closed missing paths, local untrusted-project fixture and HTTP provider-process request evidence; upstream path resolution/diagnostics/precedence and explicit-extension paths remain open.
 - `--offline` and truthy `PI_OFFLINE` now suppress dynamic OpenAI-compatible `/models` HTTP reads for discovery/listing while using configured/built-in models; a local fake HTTP fixture shows no catalog request and fuzzy configured selection, and subprocess fixtures verify both CLI and environment forms with an unreachable endpoint. This does not block inference traffic, auth refresh (not implemented), or establish upstream offline parity.
 - CLI trust aliases `-a`/`-na` and upstream `--mode text` now parse; text maps to existing TTY-sensitive interactive/print lifecycle, not a Pi protocol match. Parser conflict tests only; mode behavior and Pi CLI differential remain open.
 - CLI `-h/--help` and `-v/--version` work without reading invalid settings (subprocess fixture), and `-p`/`-c` aliases parse; version reports PiSharp assembly version rather than Pi's version. Other CLI flags, resume picker, and mode equivalence remain open.

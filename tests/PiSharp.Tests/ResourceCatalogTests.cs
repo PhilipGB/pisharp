@@ -46,6 +46,19 @@ public sealed class ResourceCatalogTests
             Assert.Empty(withoutPrompts.Prompts);
             Assert.Equal("/review x", await withoutPrompts.ResolveInputAsync("/review x"));
             Assert.NotEmpty(withoutPrompts.Skills);
+            var explicitFlags = PiSharp.Cli.CliArguments.Parse(["--no-skills", "--no-prompt-templates",
+                "--skill", Path.Combine(projectSkill, "SKILL.md"), "--prompt-template", Path.Combine(agent, "prompts", "review.md")]);
+            var explicitResources = await ResourceCatalog.LoadAsync(project, agent, false,
+                discoverSkills: !explicitFlags.NoSkills, discoverPrompts: !explicitFlags.NoPromptTemplates,
+                additionalSkills: explicitFlags.SkillPaths, additionalPrompts: explicitFlags.PromptTemplatePaths);
+            Assert.Single(explicitResources.Skills);
+            Assert.Equal("project-secret", explicitResources.Skills[0].Name);
+            Assert.Single(explicitResources.Prompts);
+            Assert.Contains("Review value", await explicitResources.ResolveInputAsync("/review value"));
+            Assert.Equal("Run a script", (await explicitResources.InvokeSkillAsync("project-secret", "")).Split('\n')[1]);
+            await Assert.ThrowsAsync<FileNotFoundException>(() => ResourceCatalog.LoadAsync(project, agent, false,
+                discoverSkills: false, additionalSkills: ["missing-skill"]));
+            Assert.Throws<ArgumentException>(() => PiSharp.Cli.CliArguments.Parse(["--skill"]));
             var trusted = await ResourceCatalog.LoadAsync(project, agent, true);
             Assert.Contains(trusted.Skills, skill => skill.Name == "project-secret");
             Assert.DoesNotContain("project-secret", trusted.SystemInstructions());

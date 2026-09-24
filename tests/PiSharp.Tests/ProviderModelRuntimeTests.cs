@@ -381,12 +381,13 @@ public sealed class ProviderModelRuntimeTests
     }
 
     [Theory]
-    [InlineData(false, false, false, false)]
-    [InlineData(true, false, false, false)]
-    [InlineData(false, true, false, false)]
-    [InlineData(false, false, true, false)]
-    [InlineData(false, false, true, true)]
-    public async Task ConfiguredProviderStreamsThroughCliWithoutCatalogOrCloudCredential(bool promptOverrides, bool pipedInput, bool resourceFixture, bool disableResources)
+    [InlineData(false, false, false, false, false)]
+    [InlineData(true, false, false, false, false)]
+    [InlineData(false, true, false, false, false)]
+    [InlineData(false, false, true, false, false)]
+    [InlineData(false, false, true, true, false)]
+    [InlineData(false, false, true, true, true)]
+    public async Task ConfiguredProviderStreamsThroughCliWithoutCatalogOrCloudCredential(bool promptOverrides, bool pipedInput, bool resourceFixture, bool disableResources, bool explicitResources)
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-provider-http-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(root);
@@ -454,6 +455,12 @@ public sealed class ProviderModelRuntimeTests
                 start.ArgumentList.Add("--no-skills");
                 start.ArgumentList.Add("--no-prompt-templates");
             }
+            if (explicitResources)
+            {
+                foreach (var argument in new[] { "--skill", Path.Combine(agentDirectory, "skills", "fixture-guide", "SKILL.md"),
+                    "--prompt-template", Path.Combine(agentDirectory, "prompts", "review.md") })
+                    start.ArgumentList.Add(argument);
+            }
             foreach (var name in new[] { "PISHARP_API_KEY", "PISHARP_BASE_URL", "PISHARP_AUTH_PATH", "PISHARP_MODELS_PATH", "PISHARP_MODEL" })
                 start.Environment.Remove(name);
             start.Environment["OPENAI_API_KEY"] = "unrelated-openai-key";
@@ -480,9 +487,9 @@ public sealed class ProviderModelRuntimeTests
                 Assert.Contains("fixture-model", request.body);
                 if (resourceFixture)
                 {
-                    Assert.Equal(!disableResources, request.body.Contains("SKILL_DESCRIPTION_SENTINEL", StringComparison.Ordinal));
-                    Assert.Equal(!disableResources, request.body.Contains("EXPANDED_TEMPLATE_SENTINEL value", StringComparison.Ordinal));
-                    if (disableResources) Assert.Contains("/review value", request.body);
+                    Assert.Equal(!disableResources || explicitResources, request.body.Contains("SKILL_DESCRIPTION_SENTINEL", StringComparison.Ordinal));
+                    Assert.Equal(!disableResources || explicitResources, request.body.Contains("EXPANDED_TEMPLATE_SENTINEL value", StringComparison.Ordinal));
+                    if (disableResources && !explicitResources) Assert.Contains("/review value", request.body);
                 }
                 if (pipedInput)
                 {

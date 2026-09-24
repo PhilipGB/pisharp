@@ -6,7 +6,7 @@ namespace PiSharp.Runtime.Resources;
 public sealed record SkillResource(string Name, string Description, string Path, bool ExplicitOnly);
 public sealed record PromptResource(string Name, string Description, string Template, string Path);
 
-/// <summary>Discovers bounded user resources; project resources are never inspected without trust.</summary>
+/// <summary>Discovers bounded user resources; project auto-discovery requires trust, while explicit paths are caller-selected.</summary>
 public sealed class ResourceCatalog
 {
     public IReadOnlyList<SkillResource> Skills { get; }
@@ -15,7 +15,8 @@ public sealed class ResourceCatalog
     private ResourceCatalog(List<SkillResource> skills, List<PromptResource> prompts) => (Skills, Prompts) = (skills, prompts);
 
     public static async Task<ResourceCatalog> LoadAsync(string cwd, string agentDirectory, bool trusted,
-        CancellationToken cancellationToken = default, bool discoverSkills = true, bool discoverPrompts = true)
+        CancellationToken cancellationToken = default, bool discoverSkills = true, bool discoverPrompts = true,
+        IReadOnlyList<string>? additionalSkills = null, IReadOnlyList<string>? additionalPrompts = null)
     {
         var skills = new List<SkillResource>();
         var prompts = new List<PromptResource>();
@@ -31,12 +32,20 @@ public sealed class ResourceCatalog
             skillRoots.Add(Path.Combine(cwd, ".agents", "skills"));
             promptRoots.Add(Path.Combine(cwd, ".pi", "prompts"));
         }
-        foreach (var root in discoverSkills ? skillRoots.Distinct(StringComparer.Ordinal) : [])
+        foreach (var root in (discoverSkills ? skillRoots : []).Concat(additionalSkills ?? []).Distinct(StringComparer.Ordinal))
         {
-            if (!Directory.Exists(root)) continue;
-            foreach (var path in Directory.EnumerateFiles(root, "SKILL.md", SearchOption.AllDirectories)
-                .Order(StringComparer.Ordinal).Take(1000))
+            var selected = Path.GetFullPath(root, cwd);
+            if (!Directory.Exists(selected) && !File.Exists(selected))
             {
+                if ((additionalSkills ?? []).Contains(root)) throw new FileNotFoundException("Explicit skill path does not exist.", selected);
+                continue;
+            }
+            IEnumerable<string> paths = File.Exists(selected) ? [selected] : Directory.EnumerateFiles(selected, "SKILL.md", SearchOption.AllDirectories)
+                .Order(StringComparer.Ordinal).Take(1000);
+            foreach (var path in paths)
+            {
+                if (!Path.GetFileName(path).Equals("SKILL.md", StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidDataException("Explicit skill file must be named SKILL.md.");
                 cancellationToken.ThrowIfCancellationRequested();
                 var (metadata, _) = Parse(await ReadBoundedAsync(path, cancellationToken));
                 if (!metadata.TryGetValue("name", out var name) ||
@@ -46,12 +55,20 @@ public sealed class ResourceCatalog
                 skills.Add(new(name, description, path, metadata.GetValueOrDefault("disable-model-invocation") == "true"));
             }
         }
-        foreach (var root in discoverPrompts ? promptRoots.Distinct(StringComparer.Ordinal) : [])
+        foreach (var root in (discoverPrompts ? promptRoots : []).Concat(additionalPrompts ?? []).Distinct(StringComparer.Ordinal))
         {
-            if (!Directory.Exists(root)) continue;
-            foreach (var path in Directory.EnumerateFiles(root, "*.md", SearchOption.TopDirectoryOnly)
-                .Order(StringComparer.Ordinal).Take(1000))
+            var selected = Path.GetFullPath(root, cwd);
+            if (!Directory.Exists(selected) && !File.Exists(selected))
             {
+                if ((additionalPrompts ?? []).Contains(root)) throw new FileNotFoundException("Explicit prompt template path does not exist.", selected);
+                continue;
+            }
+            IEnumerable<string> paths = File.Exists(selected) ? [selected] : Directory.EnumerateFiles(selected, "*.md", SearchOption.TopDirectoryOnly)
+                .Order(StringComparer.Ordinal).Take(1000);
+            foreach (var path in paths)
+            {
+                if (!Path.GetExtension(path).Equals(".md", StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidDataException("Explicit prompt template must be a .md file.");
                 cancellationToken.ThrowIfCancellationRequested();
                 var name = Path.GetFileNameWithoutExtension(path);
                 if (!Regex.IsMatch(name, "^[a-zA-Z0-9_-]+$", RegexOptions.CultureInvariant) ||
