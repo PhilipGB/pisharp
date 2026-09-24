@@ -108,7 +108,9 @@ public static class ModelCatalog
             TryNonnegativeDecimal(pricing, "completion", out output))
         {
             decimal? cached = TryNonnegativeDecimal(pricing, "input_cache_read", out var cachedPerToken) ? cachedPerToken * 1_000_000m : null;
-            return new ModelPricing(input * 1_000_000m, output * 1_000_000m, cached);
+            decimal? cachedWrite = TryNonnegativeDecimal(pricing, "input_cache_write", out var cachedWritePerToken)
+                ? cachedWritePerToken * 1_000_000m : null;
+            return new ModelPricing(input * 1_000_000m, output * 1_000_000m, cached, CachedWrite: cachedWrite);
         }
         return null;
     }
