@@ -320,7 +320,8 @@ public sealed class CompactionTests
         var client = new ToolLoopBudgetClient();
         var agent = new PiAgent(client, new CodingTools(Path.GetTempPath()));
         var messages = Enumerable.Range(0, 60).Select(i =>
-            new ChatMessage(ChatRole.User, new string('A', 1900) + (i == 59 ? " LATEST_MARKER" : $" {i}"))).ToArray();
+            new ChatMessage(ChatRole.User, new string('A', i == 59 ? 1_100_000 : 1900) +
+                (i == 59 ? " LATEST_MARKER" : $" {i}"))).ToArray();
         await agent.SummarizeAsync(messages, null);
         Assert.Contains("LATEST_MARKER", client.LastSummaryRequest);
         Assert.Contains("Earlier conversation omitted", client.LastSummaryRequest);

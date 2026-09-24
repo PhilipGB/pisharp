@@ -78,11 +78,9 @@ public sealed class PiAgent
         for (var i = messages.Count - 1; i >= 0; i--)
         {
             var message = messages[i];
-            var text = System.Text.Json.JsonSerializer.Serialize(message, AIJsonUtilities.DefaultOptions);
-            // Preserve the end of large tool results as well as their beginning: the
-            // latest outcome is often a trailing error or status marker.
-            if (text.Length > 2000)
-                text = text[..900] + $" [omitted {text.Length - 1800} characters] " + text[^900..];
+            // Preserve the start and end of large tool results without allocating their
+            // entire JSON representation solely to build a short summary request.
+            var text = SummaryTranscriptExcerpt.Serialize(message);
             var line = $"[{message.Role}]: {text}{Environment.NewLine}";
             if (length + line.Length > 64 * 1024 - 128) break;
             excerpts.Push(line);
