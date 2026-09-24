@@ -390,6 +390,53 @@ public sealed class ProviderChatClientFactoryTests
         Assert.Equal("seen", response.Text);
     }
 
+    [Theory]
+    [InlineData("claude-sonnet-4-6", "adaptive")]
+    [InlineData("claude-opus-4-6", "adaptive")]
+    [InlineData("claude-haiku-4-5", "enabled")]
+    public async Task AnthropicReasoningUsesPinnedModelThinkingMode(string modelId, string expectedType)
+    {
+        using var listener = new HttpListener();
+        using var reservation = new TcpListener(IPAddress.Loopback, 0);
+        reservation.Start();
+        var port = ((IPEndPoint)reservation.LocalEndpoint).Port;
+        reservation.Stop();
+        listener.Prefixes.Add($"http://127.0.0.1:{port}/");
+        listener.Start();
+        string? thinkingType = null;
+        string? effort = null;
+        long? budgetTokens = null;
+        var server = Task.Run(async () =>
+        {
+            var request = await listener.GetContextAsync();
+            using var reader = new StreamReader(request.Request.InputStream);
+            using var body = System.Text.Json.JsonDocument.Parse(await reader.ReadToEndAsync());
+            thinkingType = body.RootElement.TryGetProperty("thinking", out var thinking) &&
+                thinking.TryGetProperty("type", out var type) ? type.GetString() : null;
+            if (body.RootElement.TryGetProperty("output_config", out var output) && output.TryGetProperty("effort", out var value))
+                effort = value.GetString();
+            if (thinkingType == "enabled" && thinking.TryGetProperty("budget_tokens", out var budget))
+                budgetTokens = budget.GetInt64();
+            request.Response.ContentType = "application/json";
+            await using var writer = new StreamWriter(request.Response.OutputStream);
+            await writer.WriteAsync("""
+                {"id":"msg_reasoning","type":"message","role":"assistant","model":"fixture-model","content":[{"type":"text","text":"ok"}],"stop_reason":"end_turn","stop_sequence":null,"usage":{"input_tokens":4,"output_tokens":2}}
+                """);
+            await writer.FlushAsync();
+            request.Response.Close();
+        });
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var selection = Selection("fixture", $"http://127.0.0.1:{port}", "anthropic-messages");
+        var response = await ProviderChatClientFactory.Create(selection with { Model = selection.Model with { Id = modelId } })
+            .GetResponseAsync([new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User, "hello")],
+                new Microsoft.Extensions.AI.ChatOptions { Reasoning = ThinkingLevels.ToOptions("high") }, deadline.Token);
+        await server.WaitAsync(deadline.Token);
+        Assert.Equal(expectedType, thinkingType);
+        if (expectedType == "adaptive") Assert.Equal("high", effort);
+        else Assert.True(budgetTokens >= 1024);
+        Assert.Equal("ok", response.Text);
+    }
+
     [Fact]
     public async Task UnsupportedConfiguredApiFailsBeforeProviderRequestWithoutStackTrace()
     {
