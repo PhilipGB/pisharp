@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Text.Json;
 using PiSharp.Runtime.Providers;
 using PiSharp.Runtime.Sessions;
@@ -47,6 +46,7 @@ public sealed class ProviderModelRuntime
         Func<string, string?> environment, HttpClient http, string? runtimeApiKey = null,
         IReadOnlyList<string>? scope = null, CancellationToken cancellationToken = default, bool offline = false)
     {
+        var xaiModel = environment("PISHARP_XAI_MODEL") ?? "grok-4.3";
         var providers = new Dictionary<string, ProviderProfile>(StringComparer.OrdinalIgnoreCase)
         {
             ["openai"] = new("openai", "OpenAI", new Uri("https://api.openai.com/v1"), true, false,
@@ -54,12 +54,20 @@ public sealed class ProviderModelRuntime
             ["openrouter"] = new("openrouter", "OpenRouter", new Uri("https://openrouter.ai/api/v1"), true, false,
                 "OPENROUTER_API_KEY", null, [new(environment("PISHARP_OPENROUTER_MODEL") ?? "openai/gpt-4o-mini", "openrouter", null, "catalog default", false, Provider: "openrouter")]),
             ["mistral"] = new("mistral", "Mistral", new Uri("https://api.mistral.ai/v1"), true, false,
-                "MISTRAL_API_KEY", null, [new(environment("PISHARP_MISTRAL_MODEL") ?? "mistral-small-latest", "mistral", null, "catalog default", false, Provider: "mistral")])
+                "MISTRAL_API_KEY", null, [new(environment("PISHARP_MISTRAL_MODEL") ?? "mistral-small-latest", "mistral", null, "catalog default", false, Provider: "mistral")]),
+            ["xai"] = new("xai", "xAI", new Uri("https://api.x.ai/v1"), true, false,
+                "XAI_API_KEY", null, [new(xaiModel, "xai", xaiModel == "grok-4.3" ? 1000000 : null, "catalog default",
+                    xaiModel == "grok-4.3" ? true : null,
+                    xaiModel == "grok-4.3" ? new ModelPricing(1.25m, 2.5m, 0.2m,
+                        [new ModelPricingTier(200000, 2.5m, 5m, 0.4m, 0m)], 0m) : null,
+                    Provider: "xai", Name: xaiModel == "grok-4.3" ? "Grok 4.3" : null,
+                    MaxOutputTokens: xaiModel == "grok-4.3" ? 30000 : null,
+                    Input: xaiModel == "grok-4.3" ? ["text", "image"] : null, Api: "openai-responses")])
         };
         var configuredEndpoint = environment("PISHARP_BASE_URL");
         if (includeLocal || configuredEndpoint is not null)
         {
-            var endpoint = ParseEndpoint(configuredEndpoint ?? ConnectionSettings.LocalEndpoint, "PISHARP_BASE_URL");
+            var endpoint = ProviderProfileLoader.ParseEndpoint(configuredEndpoint ?? ConnectionSettings.LocalEndpoint, "PISHARP_BASE_URL");
             var id = includeLocal ? "local" : "custom";
             var model = environment("PISHARP_MODEL") ?? (includeLocal ? ConnectionSettings.LocalModel : "default");
             providers[id] = new(id, includeLocal ? "Local" : "Custom", endpoint, false, false,
@@ -69,7 +77,7 @@ public sealed class ProviderModelRuntime
         var modelsPath = environment("PISHARP_MODELS_PATH") ?? Path.Combine(agentDirectory, "models.json");
         if (File.Exists(modelsPath))
         {
-            try { await LoadConfiguredProvidersAsync(modelsPath, providers, cancellationToken); }
+            try { await ProviderProfileLoader.LoadConfiguredProvidersAsync(modelsPath, providers, cancellationToken); }
             catch (JsonException error) { throw new InvalidDataException("Invalid models.json JSON.", error); }
         }
         var authPath = environment("PISHARP_AUTH_PATH") ?? Path.Combine(agentDirectory, "auth.json");
@@ -254,124 +262,4 @@ public sealed class ProviderModelRuntime
         endpoint.Host.Equals("api.openai.com", StringComparison.OrdinalIgnoreCase) && endpoint.Port == 443 &&
         endpoint.AbsolutePath.TrimEnd('/').Equals("/v1", StringComparison.Ordinal) &&
         string.IsNullOrEmpty(endpoint.Query) && string.IsNullOrEmpty(endpoint.Fragment);
-    private static Uri ParseEndpoint(string text, string source)
-    {
-        if (!Uri.TryCreate(text, UriKind.Absolute, out var endpoint) || endpoint.Scheme is not ("http" or "https") ||
-            !string.IsNullOrEmpty(endpoint.UserInfo) || !string.IsNullOrEmpty(endpoint.Query) || !string.IsNullOrEmpty(endpoint.Fragment))
-            throw new ArgumentException($"{source} must be an absolute HTTP(S) URL.");
-        return endpoint;
-    }
-
-    private static async Task LoadConfiguredProvidersAsync(string path, Dictionary<string, ProviderProfile> providers,
-        CancellationToken cancellationToken)
-    {
-        await using var stream = File.OpenRead(path);
-        const int maxBytes = 1024 * 1024;
-        if (stream.Length > maxBytes) throw new InvalidDataException("models.json exceeds 1MB.");
-        var buffer = new byte[maxBytes + 1];
-        var length = 0;
-        int read;
-        while (length < buffer.Length && (read = await stream.ReadAsync(buffer.AsMemory(length), cancellationToken)) > 0)
-            length += read;
-        if (length > maxBytes) throw new InvalidDataException("models.json exceeds 1MB.");
-        using var document = JsonDocument.Parse(buffer.AsMemory(0, length));
-        if (document.RootElement.ValueKind != JsonValueKind.Object ||
-            !document.RootElement.TryGetProperty("providers", out var configured) || configured.ValueKind != JsonValueKind.Object)
-            throw new InvalidDataException("models.json must contain a providers object.");
-        var seenProviders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var item in configured.EnumerateObject())
-        {
-            if (!seenProviders.Add(item.Name)) throw new InvalidDataException("models.json contains duplicate provider IDs.");
-            if (item.Value.ValueKind != JsonValueKind.Object) throw new InvalidDataException($"Provider '{item.Name}' must be an object.");
-            var value = item.Value;
-            var baseUrl = String(value, "baseUrl") ?? providers.GetValueOrDefault(item.Name)?.Endpoint.ToString();
-            if (baseUrl is null) throw new InvalidDataException($"Provider '{item.Name}' requires baseUrl.");
-            var models = new List<ModelDescriptor>();
-            var seenModels = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            if (value.TryGetProperty("models", out var array) && array.ValueKind == JsonValueKind.Array)
-                foreach (var model in array.EnumerateArray())
-                {
-                    if (model.ValueKind != JsonValueKind.Object || string.IsNullOrWhiteSpace(String(model, "id")))
-                        throw new InvalidDataException($"Provider '{item.Name}' has an invalid model.");
-                    if (!seenModels.Add(String(model, "id")!))
-                        throw new InvalidDataException($"Provider '{item.Name}' has duplicate model IDs.");
-                    models.Add(new(String(model, "id")!, item.Name, PositiveInt(model, "contextWindow") ?? PositiveInt(model, "context_length"),
-                        "configured", Boolean(model, "reasoning"), ParsePricing(model), item.Name,
-                        Name: String(model, "name"), MaxOutputTokens: PositiveInt(model, "maxTokens") ?? PositiveInt(model, "max_tokens"),
-                        Input: ParseInputs(model), Api: String(model, "api")));
-                }
-            var existing = providers.GetValueOrDefault(item.Name);
-            var endpoint = ParseEndpoint(baseUrl, $"models.json provider '{item.Name}' baseUrl");
-            // The built-in OpenAI identity owns credentials from auth.json and OPENAI_API_KEY.
-            // Overriding its endpoint, or naming that env var for another endpoint, leaks them.
-            if (item.Name.Equals("openai", StringComparison.OrdinalIgnoreCase) && !IsOfficialOpenAiEndpoint(endpoint))
-                throw new InvalidDataException("The built-in openai provider cannot use a custom endpoint; choose a new provider ID and its own credentials.");
-            var apiKeyEnvironment = String(value, "apiKeyEnv") ?? existing?.ApiKeyEnvironment;
-            if (!IsOfficialOpenAiEndpoint(endpoint) && apiKeyEnvironment?.Equals("OPENAI_API_KEY", StringComparison.OrdinalIgnoreCase) == true)
-                throw new InvalidDataException("A custom endpoint cannot use OPENAI_API_KEY; configure a provider-specific credential.");
-            var authHeader = Boolean(value, "authHeader") ?? true;
-            if (value.TryGetProperty("oauth", out var oauthValue) && oauthValue.ValueKind is not JsonValueKind.Null and not JsonValueKind.False)
-                throw new InvalidDataException("models.json cannot enable OAuth without a provider-specific refresh adapter.");
-            providers[item.Name] = new(item.Name, String(value, "name") ?? existing?.Name ?? item.Name,
-                endpoint, authHeader, false, apiKeyEnvironment,
-                String(value, "apiKey"), models.Count == 0 ? existing?.Models ?? [] : models);
-        }
-    }
-
-    private static string? String(JsonElement value, string property) => value.TryGetProperty(property, out var child) &&
-        child.ValueKind == JsonValueKind.String ? child.GetString() : null;
-    private static bool? Boolean(JsonElement value, string property) => value.TryGetProperty(property, out var child) &&
-        child.ValueKind is JsonValueKind.True or JsonValueKind.False ? child.GetBoolean() : null;
-    private static IReadOnlyList<string>? ParseInputs(JsonElement model)
-    {
-        if (!model.TryGetProperty("input", out var input)) return null;
-        if (input.ValueKind != JsonValueKind.Array) throw new InvalidDataException("Model input must be an array of text/image modalities.");
-        var modalities = input.EnumerateArray().Select(item => item.ValueKind == JsonValueKind.String ? item.GetString() : null)
-            .ToArray();
-        if (modalities.Any(value => value is not ("text" or "image")))
-            throw new InvalidDataException("Model input modalities must be text or image.");
-        return modalities.Cast<string>().Distinct(StringComparer.Ordinal).ToArray();
-    }
-
-    private static int? PositiveInt(JsonElement value, string property)
-    {
-        if (!value.TryGetProperty(property, out var child)) return null;
-        if (child.ValueKind != JsonValueKind.Number || !child.TryGetInt32(out var number) || number <= 0)
-            throw new InvalidDataException($"models.json {property} must be a positive integer.");
-        return number;
-    }
-
-    private static ModelPricing? ParsePricing(JsonElement model)
-    {
-        if (!model.TryGetProperty("cost", out var cost) || cost.ValueKind != JsonValueKind.Object ||
-            !Decimal(cost, "input", out var input) || !Decimal(cost, "output", out var output)) return null;
-        IReadOnlyList<ModelPricingTier>? tiers = null;
-        if (cost.TryGetProperty("tiers", out var tierArray) && tierArray.ValueKind == JsonValueKind.Array)
-        {
-            var parsedTiers = new List<ModelPricingTier>();
-            foreach (var tier in tierArray.EnumerateArray())
-            {
-                if (tier.ValueKind != JsonValueKind.Object || PositiveInt(tier, "inputTokensAbove") is not int threshold ||
-                    !Decimal(tier, "input", out var tierInput) || !Decimal(tier, "output", out var tierOutput))
-                    throw new InvalidDataException("Configured model pricing tiers require positive inputTokensAbove and nonnegative input/output rates.");
-                parsedTiers.Add(new(threshold, tierInput, tierOutput, Decimal(tier, "cacheRead", out var tierCached) ? tierCached : null,
-                    Decimal(tier, "cacheWrite", out var tierCacheWrite) ? tierCacheWrite : null));
-            }
-            if (parsedTiers.Select(tier => tier.InputTokensAbove).Distinct().Count() != parsedTiers.Count)
-                throw new InvalidDataException("Configured model pricing tiers must have unique input thresholds.");
-            tiers = parsedTiers.OrderBy(tier => tier.InputTokensAbove).ToArray();
-        }
-        return new(input, output, Decimal(cost, "cacheRead", out var cached) ? cached : null, tiers,
-            Decimal(cost, "cacheWrite", out var cachedWrite) ? cachedWrite : null);
-    }
-
-    private static bool Decimal(JsonElement parent, string property, out decimal result)
-    {
-        result = 0;
-        if (!parent.TryGetProperty(property, out var value)) return false;
-        var parsed = value.ValueKind == JsonValueKind.Number ? value.TryGetDecimal(out result) :
-            value.ValueKind == JsonValueKind.String && decimal.TryParse(value.GetString(), NumberStyles.Float,
-                CultureInfo.InvariantCulture, out result);
-        return parsed && result >= 0;
-    }
 }

@@ -101,6 +101,65 @@ public sealed class ProviderModelRuntimeTests
     }
 
     [Fact]
+    public async Task XaiUsesResponsesApiAndIsolatedCredentialAndPinnedModelMetadata()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-xai-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            using var http = new HttpClient(new ModelHandler());
+            var runtime = await ProviderModelRuntime.CreateAsync(root, false,
+                name => name switch { "XAI_API_KEY" => "xai-secret", "OPENAI_API_KEY" => "openai-secret", _ => null }, http);
+            var selection = await runtime.ResolveAsync("xai", "grok-4.3");
+            Assert.Equal("xai-secret", selection.ApiKey);
+            Assert.Equal("XAI_API_KEY", selection.AuthSource);
+            Assert.Equal(new Uri("https://api.x.ai/v1"), selection.Connection.Endpoint);
+            Assert.Equal("openai-responses", ProviderChatClientFactory.ResolveProtocol(selection));
+            Assert.Equal(["text", "image"], selection.Model.Input);
+            Assert.Equal(1000000, selection.Model.ContextLength);
+            Assert.Equal(200000, selection.Model.Pricing!.Tiers![0].InputTokensAbove);
+            Assert.Equal(2.5m, selection.Model.Pricing.Tiers[0].Input);
+            Assert.NotEqual("openai-secret", selection.ApiKey);
+            var alternate = await ProviderModelRuntime.CreateAsync(root, false,
+                name => name == "PISHARP_XAI_MODEL" ? "grok-4.7" : null, http);
+            var overrideModel = (await alternate.ResolveAsync("xai", "grok-4.7")).Model;
+            Assert.Equal("openai-responses", overrideModel.Api);
+            Assert.Null(overrideModel.Pricing); // Never attach Grok 4.3 prices to a different model ID.
+            Assert.Null(overrideModel.ContextLength);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [Theory]
+    [InlineData("openrouter", "https://attacker.test/v1", null)]
+    [InlineData("mistral", "https://attacker.test/v1", null)]
+    [InlineData("xai", "https://attacker.test/v1", null)]
+    [InlineData("fixture", "https://attacker.test/v1", "OPENROUTER_API_KEY")]
+    [InlineData("fixture", "https://attacker.test/v1", "MISTRAL_API_KEY")]
+    [InlineData("fixture", "https://attacker.test/v1", "XAI_API_KEY")]
+    public async Task BuiltInCredentialCannotBeRedirectedOrBorrowed(string providerId, string endpoint, string? keyEnv)
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-provider-protect-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(root, "models.json"),
+                System.Text.Json.JsonSerializer.Serialize(new
+                {
+                    providers = new Dictionary<string, object>
+                    {
+                        [providerId] = new { baseUrl = endpoint, apiKeyEnv = keyEnv, models = new[] { new { id = "demo" } } }
+                    }
+                }));
+            using var http = new HttpClient(new ModelHandler());
+            var error = await Assert.ThrowsAsync<InvalidDataException>(() => ProviderModelRuntime.CreateAsync(root, false,
+                name => name.EndsWith("API_KEY", StringComparison.Ordinal) ? "secret-would-leak" : null, http));
+            Assert.DoesNotContain("secret-would-leak", error.Message);
+            Assert.Contains(keyEnv ?? "custom endpoint", error.Message, StringComparison.OrdinalIgnoreCase);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+    [Fact]
     public async Task CustomCatalogSelectsExactOrUnambiguousModelAndNeverSendsCloudKey()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-provider-" + Guid.NewGuid().ToString("N"));
