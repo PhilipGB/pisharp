@@ -357,6 +357,38 @@ public sealed class CompactionTests
     }
 
     [Fact]
+    public async Task MultiCycleParallelToolGraphSplitsOnlyAfterCompletedBatches()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-parallel-cycles-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(cwd, "first.txt"), new string('X', 4000));
+            await File.WriteAllTextAsync(Path.Combine(cwd, "second.txt"), new string('Y', 4000));
+            await File.WriteAllTextAsync(Path.Combine(cwd, "third.txt"), new string('Z', 4000));
+            var conversation = new ConversationSession(cwd, "fixture", null);
+            var client = new ParallelToolBudgetClient { RepeatRead = true };
+            var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(cwd)), conversation,
+                autoCompaction: new AutoCompactionPolicy(2700, 300));
+            var events = new List<AgentLifecycleEvent>();
+            await foreach (var item in run.RunEventsAsync("read all three files")) events.Add(item);
+            Assert.True(client.SecondRequestSawSummaryWithoutOrphans);
+            Assert.Equal(3, client.Requests);
+            Assert.Equal(2, client.Summaries);
+            Assert.True(client.ContinuationSawSummaryWithoutOrphanedResults);
+            Assert.Equal(2, events.Count(item => item.Type == "context_compacted_in_flight"));
+            Assert.Contains(events, item => item.Type == "turn_completed");
+            var contents = conversation.ActiveMessages().SelectMany(message => message.Contents).ToArray();
+            Assert.Equal(3, contents.OfType<FunctionCallContent>().Count());
+            Assert.Equal(3, contents.OfType<FunctionResultContent>().Count());
+            foreach (var marker in new[] { 'X', 'Y', 'Z' })
+                Assert.Contains(contents.OfType<FunctionResultContent>(), result =>
+                    result.Result?.ToString()?.Contains(new string(marker, 4000), StringComparison.Ordinal) == true);
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Fact]
     public async Task OversizedSingleTurnSummarizesOnlyCompletedToolCycleWithoutReplacingHistory()
     {
         var cwd = Path.Combine(Path.GetTempPath(), "pisharp-split-turn-" + Guid.NewGuid().ToString("N"));
@@ -710,6 +742,8 @@ public sealed class CompactionTests
         public int Requests { get; private set; }
         public int Summaries { get; private set; }
         public bool ContinuationSawSummaryWithoutOrphanedResults { get; private set; }
+        public bool RepeatRead { get; init; }
+        public bool SecondRequestSawSummaryWithoutOrphans { get; private set; }
         public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
             CancellationToken cancellationToken = default)
         {
@@ -726,6 +760,15 @@ public sealed class CompactionTests
                     new FunctionCallContent("first", "read", new Dictionary<string, object?> { ["path"] = "first.txt" }),
                     new FunctionCallContent("second", "read", new Dictionary<string, object?> { ["path"] = "second.txt" })
                 ]);
+            else if (Requests == 2 && RepeatRead)
+            {
+                var snapshot = messages.ToArray();
+                SecondRequestSawSummaryWithoutOrphans =
+                    snapshot.Any(message => message.Text.Contains("Both files were read.", StringComparison.Ordinal)) &&
+                    !snapshot.SelectMany(message => message.Contents).Any(content => content is FunctionCallContent or FunctionResultContent);
+                yield return new ChatResponseUpdate(ChatRole.Assistant,
+                    [new FunctionCallContent("third", "read", new Dictionary<string, object?> { ["path"] = "third.txt" })]);
+            }
             else
             {
                 var snapshot = messages.ToArray();
