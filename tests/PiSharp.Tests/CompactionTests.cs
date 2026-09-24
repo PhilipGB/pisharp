@@ -232,6 +232,32 @@ public sealed class CompactionTests
     }
 
     [Fact]
+    public async Task AggregatePrefixAboveSixteenMegabytesBypassesSummaryCache()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-aggregate-prefix-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(cwd, "output.txt"), new string('Z', 1400));
+            await File.WriteAllTextAsync(Path.Combine(cwd, "small.txt"), "small result");
+            var conversation = new ConversationSession(cwd, "fixture", null);
+            var largeTurn = new string('A', 950_000);
+            for (var i = 0; i < 18; i++)
+                conversation.Append(new ChatMessage(ChatRole.User, largeTurn + i));
+            var trigger = AutoCompactionPolicy.Estimate(conversation.ContextMessages(), "read both files") + 300;
+            var client = new ToolLoopBudgetClient { RepeatRead = true };
+            var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(cwd)), conversation,
+                autoCompaction: new AutoCompactionPolicy(trigger + 300, 300));
+            await foreach (var _ in run.RunEventsAsync("read both files")) { }
+            Assert.Equal(3, client.Requests);
+            Assert.Equal(2, client.Summaries);
+            Assert.True(client.ContinuationSawSummaryAndToolResult);
+            Assert.Equal(18, conversation.ActiveMessages().Count(message => message.Role == ChatRole.User && message.Text.Length > 900_000));
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Fact]
     public async Task NewSteeringBoundaryInvalidatesInFlightSummaryCache()
     {
         var cwd = Path.Combine(Path.GetTempPath(), "pisharp-loop-steering-" + Guid.NewGuid().ToString("N"));
