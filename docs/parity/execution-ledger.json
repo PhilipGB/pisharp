@@ -422,8 +422,15 @@
         "symlink/ignore and permission errors",
         "Verify through application workflow and compare packages/coding-agent/src/core/tools/{grep,find,ls}.ts; filesystem integration tests"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "src/PiSharp.Runtime/Tools/SearchInventory.cs uses `git ls-files --cached --others --exclude-standard` inside repositories and a bounded managed walk outside Git; that walk now reads nested `.gitignore` patterns with wildcard, anchoring, directory and negation support.",
+        "SearchTools.Grep/Find and DirectoryListingTool.List format match paths, context, entry limits and truncation notices. Managed traversal still differs from Pi's ripgrep/fd command behavior and does not load `.ignore`, `.fdignore`, or global excludes."
+      ],
+      "evidence": [
+        "Pinned Pi grep/find/ls sources and tools.test.ts at d5629e20489ccf770ed90b5a33941cb3b7ef24d0 are unchanged in refreshed main b2bd111f2d46eed1a4689c32f30fde6306498827. Pi tools.test.ts includes `.gitignore` filtering outside a Git repository; SearchToolsTests.GitIgnoreFiltersSearchResultsOutsideGitRepositories now covers wildcard plus negation for both find and grep.",
+        "SearchToolsTests pass 3/3: local glob/context/limit/errors, in-repository ignore handling, and outside-repository ignore handling. ToolSelectionTests.OptInLsMatchesPinnedAsciiListingAndLimit covers current pinned listing output and limits.",
+        "Final validation: full Release suite 318/318 with 0 skipped; warnings-as-errors build 0 warnings/errors; format verification passed. A concurrent full-test/format run had one transient HttpListener `Address already in use` failure (317 passed, 1 failed); the affected six-case provider fixture passed alone, then the full suite passed without the formatter running alongside it."
+      ],
       "dependencies": []
     },
     {

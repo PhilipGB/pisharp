@@ -47,12 +47,40 @@ public sealed class SearchToolsTests
             Assert.NotNull(git);
             await git.WaitForExitAsync();
             Assert.Equal(0, git.ExitCode);
-            await File.WriteAllTextAsync(Path.Combine(root, ".gitignore"), "ignored.txt\n");
+            await File.WriteAllTextAsync(Path.Combine(root, ".gitignore"), "*.txt\n!visible.txt\n");
             await File.WriteAllTextAsync(Path.Combine(root, "visible.txt"), "secret-value\n");
             await File.WriteAllTextAsync(Path.Combine(root, "ignored.txt"), "secret-value\n");
             var tools = new SearchTools(root);
             Assert.Equal("visible.txt", await tools.Find("*.txt"));
             Assert.Equal("visible.txt:1: secret-value", await tools.Grep("secret-value"));
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
+    public async Task GitIgnoreFiltersSearchResultsOutsideGitRepositories()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-ignore-search-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(root, ".gitignore"), "*.txt\n!visible.txt\n");
+            await File.WriteAllTextAsync(Path.Combine(root, "visible.txt"), "match-value\n");
+            await File.WriteAllTextAsync(Path.Combine(root, "ignored.txt"), "match-value\n");
+            var nested = Path.Combine(root, "sub");
+            Directory.CreateDirectory(nested);
+            await File.WriteAllTextAsync(Path.Combine(nested, ".gitignore"), "!kept.txt\n");
+            await File.WriteAllTextAsync(Path.Combine(nested, "kept.txt"), "match-value\n");
+            await File.WriteAllTextAsync(Path.Combine(nested, "ignored.txt"), "match-value\n");
+            var tools = new SearchTools(root);
+            var found = await tools.Find("**/*.txt");
+            Assert.Contains("visible.txt", found);
+            Assert.Contains("sub/kept.txt", found);
+            Assert.DoesNotContain("ignored.txt", found);
+            var matches = await tools.Grep("match-value");
+            Assert.Contains("visible.txt:1: match-value", matches);
+            Assert.Contains("sub/kept.txt:1: match-value", matches);
+            Assert.DoesNotContain("ignored.txt", matches);
         }
         finally { Directory.Delete(root, recursive: true); }
     }
