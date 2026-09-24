@@ -30,6 +30,7 @@ After each significant change: add/update tests and parity evidence, run focused
 
 - Finish compaction: dynamic automatic compaction inside tool loops, upstream differential evidence; current user/trusted-project compaction settings govern pre-prompt compaction only.
 - Reconcile stale ledger entries per implementation/test (the ledger's `verified` agent row denotes local evidence, not upstream differential verification). Preserve honest states.
+- Five implemented settings ledger entries (`defaultProvider`, `defaultModel`, `defaultThinkingLevel`, `defaultTools`, `sessionDir`) reclassified in-progress with UserSettings tests and trust-boundary process evidence; schema/reload/upstream differential acceptance remains open.
 - Ledger `cli-sessions` reclassified from not-started to in-progress with concrete CLI/PTY references; `cli-resources` now records explicit-path and trust evidence. Continue remaining empty ledger entries rather than inferring verification.
 - Stale ledger CLI tools/resources/runtime groups reclassified in-progress based on concrete CLI parser/runtime and process tests; remaining flags in those groups are explicitly absent. Continue auditing every ledger item instead of treating groups as verified.
 

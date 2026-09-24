@@ -1407,40 +1407,52 @@
     {
       "id": "settings-defaultprovider",
       "title": "Setting: defaultProvider",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:61",
       "acceptance": [
         "Support defaultProvider with upstream type/default and user/trusted-project precedence",
         "Test malformed settings, trust boundaries, reload and startup behaviour"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "Partial: src/PiSharp.Cli/UserSettings.cs validates defaultProvider in user settings and trusted project overlays; CLI/runtime wiring applies selected defaults, with Pi schema and reload parity still open."
+      ],
+      "evidence": [
+        "tests/PiSharp.Tests/UserSettingsTests.cs covers defaults, override precedence, trusted overlays and malformed values; tests/PiSharp.Tests/ProjectSettingsProcessTests.cs covers trust boundary in a CLI process. No upstream differential evidence."
+      ],
       "dependencies": []
     },
     {
       "id": "settings-defaultmodel",
       "title": "Setting: defaultModel",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:61",
       "acceptance": [
         "Support defaultModel with upstream type/default and user/trusted-project precedence",
         "Test malformed settings, trust boundaries, reload and startup behaviour"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "Partial: src/PiSharp.Cli/UserSettings.cs validates defaultModel in user settings and trusted project overlays; CLI/runtime wiring applies selected defaults, with Pi schema and reload parity still open."
+      ],
+      "evidence": [
+        "tests/PiSharp.Tests/UserSettingsTests.cs covers defaults, override precedence, trusted overlays and malformed values; tests/PiSharp.Tests/ProjectSettingsProcessTests.cs covers trust boundary in a CLI process. No upstream differential evidence."
+      ],
       "dependencies": []
     },
     {
       "id": "settings-defaultthinkinglevel",
       "title": "Setting: defaultThinkingLevel",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:61",
       "acceptance": [
         "Support defaultThinkingLevel with upstream type/default and user/trusted-project precedence",
         "Test malformed settings, trust boundaries, reload and startup behaviour"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "Partial: src/PiSharp.Cli/UserSettings.cs validates defaultThinkingLevel in user settings and trusted project overlays; CLI/runtime wiring applies selected defaults, with Pi schema and reload parity still open."
+      ],
+      "evidence": [
+        "tests/PiSharp.Tests/UserSettingsTests.cs covers defaults, override precedence, trusted overlays and malformed values; tests/PiSharp.Tests/ProjectSettingsProcessTests.cs covers trust boundary in a CLI process. No upstream differential evidence."
+      ],
       "dependencies": []
     },
     {
@@ -1602,27 +1614,35 @@
     {
       "id": "settings-defaulttools",
       "title": "Setting: defaultTools",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:62",
       "acceptance": [
         "Support defaultTools with upstream type/default and user/trusted-project precedence",
         "Test malformed settings, trust boundaries, reload and startup behaviour"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "Partial: src/PiSharp.Cli/UserSettings.cs validates defaultTools in user settings and trusted project overlays; CLI/runtime wiring applies selected defaults, with Pi schema and reload parity still open."
+      ],
+      "evidence": [
+        "tests/PiSharp.Tests/UserSettingsTests.cs covers defaults, override precedence, trusted overlays and malformed values; tests/PiSharp.Tests/ProjectSettingsProcessTests.cs covers trust boundary in a CLI process. No upstream differential evidence."
+      ],
       "dependencies": []
     },
     {
       "id": "settings-sessiondir",
       "title": "Setting: sessionDir",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:62",
       "acceptance": [
         "Support sessionDir with upstream type/default and user/trusted-project precedence",
         "Test malformed settings, trust boundaries, reload and startup behaviour"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "Partial: src/PiSharp.Cli/UserSettings.cs validates sessionDir in user settings and trusted project overlays; CLI/runtime wiring applies selected defaults, with Pi schema and reload parity still open."
+      ],
+      "evidence": [
+        "tests/PiSharp.Tests/UserSettingsTests.cs covers defaults, override precedence, trusted overlays and malformed values; tests/PiSharp.Tests/ProjectSettingsProcessTests.cs covers trust boundary in a CLI process. No upstream differential evidence."
+      ],
       "dependencies": []
     },
     {
