@@ -34,6 +34,7 @@ After each significant change: add/update tests and parity evidence, run focused
 
 ## Completed in this continuation
 
+- `--list-models [pattern]` now consumes the optional next nonflag/non-@ token and filters case-insensitively on provider plus ID (CLI subprocess with unavailable endpoint and two static models). Pinned Pi uses TUI fuzzy matching and a richer model table; both remain different.
 - Explicit skill/template resource paths now take precedence over discovered same-name resources, with collision fixtures. Pinned `resource-loader.ts` merges CLI sources before enabled discovery and `skills.ts` keeps first winner; broader package-resolution/diagnostics semantics remain open.
 - Repeatable `-e`/`--extension <path>` selects .NET DLLs or directories independently of `--no-extensions`, including on reload; a local isolated-load fixture and Linux PTY fixture prove explicitly selected untrusted-project code executes only when requested. Paths are full-trust code, not Pi TypeScript extensions. Broad extension API parity and upstream path semantics remain open.
 - Repeatable `--skill <path>` and `--prompt-template <path>` select explicit files/directories even with automatic discovery disabled; the same paths reload. Bounded parsing, fail-closed missing paths, local untrusted-project fixture and HTTP provider-process request evidence; upstream path resolution/diagnostics/precedence remain open.

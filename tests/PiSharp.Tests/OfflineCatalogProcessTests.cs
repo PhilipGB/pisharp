@@ -16,7 +16,7 @@ public sealed class OfflineCatalogProcessTests
         try
         {
             await File.WriteAllTextAsync(Path.Combine(agent, "models.json"), """
-                {"providers":{"fixture":{"baseUrl":"http://127.0.0.1:1/v1","authHeader":false,"models":[{"id":"static-only","contextWindow":8192}]}}}
+                {"providers":{"fixture":{"baseUrl":"http://127.0.0.1:1/v1","authHeader":false,"models":[{"id":"static-only","contextWindow":8192},{"id":"omit-me"}]}}}
                 """);
             var start = new ProcessStartInfo("dotnet")
             {
@@ -24,7 +24,7 @@ public sealed class OfflineCatalogProcessTests
                 RedirectStandardOutput = true,
                 RedirectStandardError = true
             };
-            foreach (var argument in new[] { typeof(CliArguments).Assembly.Location, "--provider", "fixture", "--list-models" })
+            foreach (var argument in new[] { typeof(CliArguments).Assembly.Location, "--provider", "fixture", "--list-models", "STATIC" })
                 start.ArgumentList.Add(argument);
             if (viaEnvironment) start.Environment["PI_OFFLINE"] = "yes";
             else { start.Environment.Remove("PI_OFFLINE"); start.ArgumentList.Add("--offline"); }
@@ -37,6 +37,9 @@ public sealed class OfflineCatalogProcessTests
             Assert.Equal(0, process.ExitCode);
             Assert.Equal("", await errors);
             Assert.Contains("fixture/static-only\tconfigured\t8192", await output);
+            Assert.DoesNotContain("omit-me", await output);
+            Assert.Equal("STATIC", CliArguments.Parse(["--list-models", "STATIC"]).ListModelsFilter);
+            Assert.Null(CliArguments.Parse(["--list-models", "--offline"]).ListModelsFilter);
         }
         finally { Directory.Delete(root, true); }
     }
