@@ -178,6 +178,33 @@ public sealed class CompactionTests
     }
 
     [Fact]
+    public async Task RepeatedToolLoopIterationsReuseUnchangedEarlierTurnSummary()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-loop-cache-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(cwd, "output.txt"), new string('Z', 1400));
+            await File.WriteAllTextAsync(Path.Combine(cwd, "small.txt"), "small result");
+            var conversation = new ConversationSession(cwd, "fixture", null);
+            conversation.Append(new ChatMessage(ChatRole.User, new string('A', 900)));
+            conversation.Append(new ChatMessage(ChatRole.Assistant, "previous answer"));
+            var client = new ToolLoopBudgetClient { RepeatRead = true };
+            var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(cwd)), conversation,
+                autoCompaction: new AutoCompactionPolicy(2300, 300));
+            var events = new List<AgentLifecycleEvent>();
+            await foreach (var item in run.RunEventsAsync("read both files")) events.Add(item);
+            Assert.True(client.Requests == 3, string.Join(" | ", events.Select(item => $"{item.Type}: {item.Error}")));
+            Assert.Equal(1, client.Summaries);
+            Assert.True(client.ContinuationSawSummaryAndToolResult);
+            Assert.Single(events, item => item.Type == "context_compacted_in_flight");
+            Assert.Equal(2, conversation.ActiveMessages().SelectMany(message => message.Contents)
+                .OfType<FunctionResultContent>().Count());
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Fact]
     public async Task ToolContinuationRefusesOversizedSingleTurnWithoutCallingModelAgain()
     {
         var cwd = Path.Combine(Path.GetTempPath(), "pisharp-loop-budget-" + Guid.NewGuid().ToString("N"));
@@ -451,6 +478,7 @@ public sealed class CompactionTests
         public int Summaries { get; private set; }
         public bool FailSummary { get; init; }
         public bool ContinuationSawSummaryAndToolResult { get; private set; }
+        public bool RepeatRead { get; init; }
         public bool SawRecoveryNotice { get; private set; }
         public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
             CancellationToken cancellationToken = default)
@@ -469,6 +497,9 @@ public sealed class CompactionTests
             if (Requests == 1)
                 yield return new ChatResponseUpdate(ChatRole.Assistant,
                     [new FunctionCallContent("read-1", "read", new Dictionary<string, object?> { ["path"] = "output.txt" })]);
+            else if (Requests == 2 && RepeatRead)
+                yield return new ChatResponseUpdate(ChatRole.Assistant,
+                    [new FunctionCallContent("read-2", "read", new Dictionary<string, object?> { ["path"] = "small.txt" })]);
             else
             {
                 var snapshot = messages.ToArray();
