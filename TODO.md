@@ -6,7 +6,7 @@
 
 ## Current state and audit evidence
 
-Repository `main` at `bde134e08` was clean at start. Read `README.md`, `docs/parity/feature-matrix.md`, `docs/parity/detailed-inventory.md`, `docs/parity/execution-ledger.json`, and `docs/continuation.md`. Tracking is broadly accurate about substantial existing partial implementations, but README and matrix describe many live features while the ledger contains stale `not_started` statuses; reconcile it against code/tests before relying on statuses. There is no evidence for full feature parity. In particular the README explicitly calls out absent OAuth, wide provider semantics, Pi JSONL, full TUI, broad settings/keybindings, comprehensive multimodal support, rich resources/extensions and Pi-compatible RPC.
+Repository `main` was clean at the latest checkpoint (`d224bfc56` pushed). Format verification, warnings-as-errors build and all 180 local tests pass; this is not differential parity evidence. Tracking describes partial implementations, but the ledger still contains stale statuses; reconcile it against code/tests before relying on statuses. There is no evidence for full feature parity. In particular the README explicitly calls out absent OAuth, wide provider semantics, Pi JSONL, full TUI, broad settings/keybindings, comprehensive multimodal support, rich resources/extensions and Pi-compatible RPC.
 
 ## Highest-priority actionable work (continue in order, reprioritize as evidence dictates)
 
