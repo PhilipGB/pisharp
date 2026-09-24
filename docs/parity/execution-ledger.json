@@ -733,14 +733,19 @@
     {
       "id": "cli-auth",
       "title": "CLI flags: auth check, auth print-api-key, auth print-bearer-token",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:26",
       "acceptance": [
         "Provider/model resolution, status/exit code, credential output only on explicit request",
         "Test parsed flags, conflict/recovery and process behaviour"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "Partial: src/PiSharp.Cli/AuthStatusCommand.cs and Program.cs implement a credential-metadata-only auth check with explicit provider and optional exact configured model; this code exits before loading project resources or sessions. Printing keys/tokens is not implemented."
+      ],
+      "evidence": [
+        "tests/PiSharp.Tests/AuthStatusCommandTests.cs exercises separate CLI processes for missing and stored credentials, unrelated OPENAI_API_KEY isolation, no provider connection or session creation, and rejection of --credentials and unknown model ID. Result codes are 0 available, 1 missing, 2 invalid; this does not verify hosted acceptance or OAuth refresh.",
+        "dotnet format PiSharp.slnx --verify-no-changes --no-restore and warning-as-error build passed; dotnet test PiSharp.slnx --no-build => 126 passed, 0 failed (including the auth-check process fixture)."
+      ],
       "dependencies": []
     },
     {
