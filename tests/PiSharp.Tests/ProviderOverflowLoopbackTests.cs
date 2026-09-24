@@ -83,7 +83,7 @@ public sealed class ProviderOverflowLoopbackTests
             var bodies = new List<string>();
             var server = Task.Run(async () =>
             {
-                for (var i = 0; i < 2; i++)
+                for (var i = 0; i < 3; i++)
                 {
                     var request = await listener.GetContextAsync().WaitAsync(deadline.Token);
                     Assert.Equal("/v1/chat/completions", request.Request.Url?.AbsolutePath);
@@ -97,10 +97,16 @@ public sealed class ProviderOverflowLoopbackTests
                         await writer.WriteAsync("data: {\"id\":\"chatcmpl_tool\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"fixture-model\",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"tool_calls\"}]}\n\n");
                         await writer.WriteAsync("data: [DONE]\n\n");
                     }
-                    else
+                    else if (i == 1)
                     {
                         await writer.WriteAsync("data: {\"id\":\"chatcmpl_partial\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"fixture-model\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"partial\"},\"finish_reason\":null}]}\n\n");
                         await writer.WriteAsync("data: {malformed-json}\n\n");
+                    }
+                    else
+                    {
+                        await writer.WriteAsync("data: {\"id\":\"chatcmpl_recovered\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"fixture-model\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"recovered\"},\"finish_reason\":null}]}\n\n");
+                        await writer.WriteAsync("data: {\"id\":\"chatcmpl_recovered\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"fixture-model\",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"stop\"}]}\n\n");
+                        await writer.WriteAsync("data: [DONE]\n\n");
                     }
                     await writer.FlushAsync(deadline.Token);
                     request.Response.Close();
@@ -119,8 +125,6 @@ public sealed class ProviderOverflowLoopbackTests
                 save: token => store.SaveAsync(conversation, path, token));
             var events = new List<AgentLifecycleEvent>();
             await foreach (var item in run.RunEventsAsync("write the file", deadline.Token)) events.Add(item);
-            await server.WaitAsync(deadline.Token);
-
             Assert.Equal(2, bodies.Count);
             Assert.Contains("call-1", bodies[1]);
             Assert.Equal("made", await File.ReadAllTextAsync(Path.Combine(cwd, "result.txt"), deadline.Token));
@@ -139,6 +143,19 @@ public sealed class ProviderOverflowLoopbackTests
             Assert.True(persisted.RecoverIncomplete());
             Assert.False(persisted.RecoverIncomplete());
             Assert.Contains("No tool outcome is unknown", persisted.ActiveMessages().Last().Text);
+            var resumed = await ConversationRun.OpenAsync(new PiAgent(ProviderChatClientFactory.Create(selection),
+                new CodingTools(cwd), retryPolicy: new ProviderRetryPolicy(maxRetries: 2)), persisted,
+                save: token => store.SaveAsync(persisted, path, token));
+            var continuation = new List<AgentLifecycleEvent>();
+            await foreach (var item in resumed.RunEventsAsync("continue without rewriting", deadline.Token)) continuation.Add(item);
+            await server.WaitAsync(deadline.Token);
+            Assert.Equal(3, bodies.Count);
+            Assert.Contains("No tool outcome is unknown", bodies[2]);
+            Assert.Contains(continuation, item => item.Type == "turn_completed");
+            Assert.DoesNotContain(continuation, item => item.Type == "tool_execution_started");
+            Assert.Equal("made", await File.ReadAllTextAsync(Path.Combine(cwd, "result.txt"), deadline.Token));
+            Assert.Single(persisted.Tree.Entries, entry => entry.Type == "tool_intent");
+            Assert.Single(persisted.Tree.Entries, entry => entry.Type == "tool_outcome");
         }
         finally { Directory.Delete(cwd, recursive: true); }
     }
