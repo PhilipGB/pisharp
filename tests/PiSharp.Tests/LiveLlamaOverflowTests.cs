@@ -40,6 +40,30 @@ public sealed class LiveLlamaOverflowTests
     }
 
     [Fact]
+    public async Task ActualLlamaServerCancellationAfterTextDoesNotReplayRequest()
+    {
+        var endpointText = Environment.GetEnvironmentVariable("PISHARP_TEST_LLAMA_ENDPOINT");
+        if (string.IsNullOrWhiteSpace(endpointText)) return;
+        var endpoint = new Uri(endpointText, UriKind.Absolute);
+        var modelId = Environment.GetEnvironmentVariable("PISHARP_TEST_LLAMA_MODEL") ?? ConnectionSettings.LocalModel;
+        using var cancel = new CancellationTokenSource(TimeSpan.FromSeconds(90));
+        var conversation = new ConversationSession(Path.GetTempPath(), modelId, null);
+        var run = await ConversationRun.OpenAsync(new PiAgent(ProviderChatClientFactory.Create(Select(endpoint, modelId)),
+            new CodingTools(Path.GetTempPath()), noTools: true), conversation);
+        var events = new List<AgentLifecycleEvent>();
+        await foreach (var item in run.RunEventsAsync(
+            "Write a long numbered list of 1000 lines; begin immediately with line 1 and do not summarize.", cancel.Token))
+        {
+            events.Add(item);
+            if (item.Type == "model_text_delta") cancel.Cancel();
+        }
+        Assert.Contains(events, item => item.Type == "model_text_delta");
+        Assert.Contains(events, item => item.Type == "turn_interrupted");
+        Assert.Single(events, item => item.Type == "model_request_started");
+        Assert.DoesNotContain(events, item => item.Type is "model_retry_scheduled" or "model_context_overflow_recovery" or "turn_completed");
+    }
+
+    [Fact]
     public async Task ActualLlamaServerRecoversOverflowAfterToolWithoutRepeatingSideEffect()
     {
         var endpointText = Environment.GetEnvironmentVariable("PISHARP_TEST_LLAMA_ENDPOINT");
