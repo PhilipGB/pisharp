@@ -210,13 +210,7 @@ public sealed class ProviderModelRuntimeTests
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-provider-http-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(root);
-        using var reservation = new System.Net.Sockets.TcpListener(IPAddress.Loopback, 0);
-        reservation.Start();
-        var port = ((IPEndPoint)reservation.LocalEndpoint).Port;
-        reservation.Stop();
-        using var listener = new HttpListener();
-        listener.Prefixes.Add($"http://127.0.0.1:{port}/");
-        listener.Start();
+        using var listener = StartLoopbackListener(out var port);
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
         try
         {
@@ -283,6 +277,29 @@ public sealed class ProviderModelRuntimeTests
             listener.Stop();
             Directory.Delete(root, true);
         }
+    }
+
+    private static HttpListener StartLoopbackListener(out int port)
+    {
+        for (var attempt = 0; attempt < 10; attempt++)
+        {
+            using var reservation = new System.Net.Sockets.TcpListener(IPAddress.Loopback, 0);
+            reservation.Start();
+            port = ((IPEndPoint)reservation.LocalEndpoint).Port;
+            reservation.Stop();
+            var listener = new HttpListener();
+            listener.Prefixes.Add($"http://127.0.0.1:{port}/");
+            try
+            {
+                listener.Start();
+                return listener;
+            }
+            catch (HttpListenerException)
+            {
+                try { listener.Close(); } catch (HttpListenerException) { }
+            }
+        }
+        throw new InvalidOperationException("Could not reserve a loopback port for the provider fixture.");
     }
 
     private sealed class ModelHandler : HttpMessageHandler

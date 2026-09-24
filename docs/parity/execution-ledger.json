@@ -2,7 +2,7 @@
   "schema": 1,
   "plan_received": false,
   "source_note": "Original plan was announced after a heading but not appended. Conservative provisional inventory from pinned upstream feature matrix and detailed inventory; never treat as complete until reconciled with the missing plan and audited upstream.",
-  "baseline": "earendil-works/pi@002fc8385268300ca91a5fc95f935c2afbbdac02",
+  "baseline": "earendil-works/pi@8676a0dcd8f9f6bca78835e63c8cd31493c4154d",
   "required_ids": [
     "feature-agent-multi-turn-and-streaming",
     "feature-agent-steering-follow-up-concurrent-tools",

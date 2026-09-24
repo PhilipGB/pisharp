@@ -1,6 +1,6 @@
 # PiSharp parity inventory (work in progress)
 
-Pinned reference: `earendil-works/pi@002fc8385268300ca91a5fc95f935c2afbbdac02` (checked out at `/tmp/pisharp-upstream` during baseline; not vendored). Paths below are relative to that commit; `docs/` abbreviates `packages/coding-agent/docs/`. Status **Implemented** means only a local implementation exists; **Verified** requires upstream differential evidence. No feature is Verified yet. See [detailed interface inventory](detailed-inventory.md) for commands, flags, settings, shortcuts and RPC operations. This is not yet a complete source-level audit; expand each row into exact contracts before marking Verified.
+Pinned reference: `earendil-works/pi@8676a0dcd8f9f6bca78835e63c8cd31493c4154d` (fetched current main 2026-05-24; not vendored). Paths below are relative to that commit; `docs/` abbreviates `packages/coding-agent/docs/`. Status **Implemented** means only a local implementation exists; **Verified** requires upstream differential evidence. No feature is Verified yet. See [detailed interface inventory](detailed-inventory.md) for commands, flags, settings, shortcuts and RPC operations. This is not yet a complete source-level audit; expand each row into exact contracts before marking Verified.
 
 | Category / feature | Upstream documentation / source | Observable behaviour / interface | Error, cancellation, recovery | PiSharp plan / tests | Status / differences |
 |---|---|---|---|---|---|
@@ -32,7 +32,7 @@ Pinned reference: `earendil-works/pi@002fc8385268300ca91a5fc95f935c2afbbdac02` (
 
 ## Evidence log
 
-- Upstream checkout: `git rev-parse HEAD` = `002fc8385268300ca91a5fc95f935c2afbbdac02`.
+- Upstream checkout: `git rev-parse FETCH_HEAD` = `8676a0dcd8f9f6bca78835e63c8cd31493c4154d` (refreshed from current main 2026-05-24). Compared to previous pin `002fc8385268300ca91a5fc95f935c2afbbdac02`, relevant changes include provider/model composition and catalog protocol, unified image/classifier model infrastructure, Typesafe System One, model metadata/pricing, clipboard/X11 image handling; audit and implementation remain outstanding.
 - Upstream baseline: after `npm ci --ignore-scripts`, `npm run hydrate:model-data` and `npm run build:offline`, `npx vitest run packages/coding-agent/test/tools.test.ts --reporter=dot` passed 84/84 at the pinned checkout. This establishes a runnable upstream baseline, **not** differential parity evidence.
 - Captured pinned CLI version/help baseline: [`fixtures/cli-baseline.md`](fixtures/cli-baseline.md). Not yet a PiSharp comparison.
 - Pinned edit-planner fixtures and narrowly matched tests: [fixtures/edit-baseline.md](fixtures/edit-baseline.md). Do not infer full tool parity.

@@ -1,4 +1,4 @@
-# Detailed reference interface inventory — baseline 002fc838
+# Detailed reference interface inventory — baseline 8676a0dc
 
 Supplement to the authoritative [feature matrix](feature-matrix.md). These are *interfaces*, not claims of implementation. Default status for every item listed here is **Not started** unless the matrix explicitly records an in-progress subset. No item is Verified by its appearance in this file. Each group requires contract/error/PTY scenarios before verification. Source references below use `packages/coding-agent/docs/` unless qualified otherwise. Installed Pi reports version `0.87.1`; pinned checkout builds the same version, but the commit hash is the reproducible target.
 
