@@ -1,23 +1,23 @@
 # PiSharp capability parity
 
-**Goal:** implement Pi's in-scope capabilities idiomatically in C#/.NET with behavioral and differential evidence. Pi Packages remain excluded unless needed for a core capability.
+**Goal:** implement Pi’s in-scope capabilities idiomatically in C#/.NET with behavioral and differential evidence. Pi Packages remain excluded unless needed for a core capability.
 
 **Stop condition:** a full audit against current Pi `main` finds no material in-scope gaps and required validation/differential evidence passes.
 
 ## Current checkpoint
 
-- Latest exact-head Linux CI is green at `e3b1df8f7d07d73dce0187650ff8b9c3829ecb10`; run [36167157807](https://github.com/PhilipGB/pisharp/actions/runs/36167157807) passed format, warnings-as-errors build and all 480 tests. The latest code change is `17d682c2d7206a052b8a65ca24cf9c514166e39e`; local format, build and all 480 tests also pass there.
-- Durable Pi parity baseline remains `b3487650f6378f1b0d1643dd254445ceb4a98035`. Current Pi `main` was fetched and confirmed at `d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31`; current Kitty sizing minimizes cell distortion while respecting image width/height limits and placement rows.
-- TUI includes Markdig AST rendering, shared display-cell wrapping, transcript state/viewport/search, a screen compositor, reusable picker host, mouse routing, editor history/selection/undo, searchable path completion and bounded clipboard image paste. Major TUI parity remains incomplete.
+- Exact code head `ff301f231d80b0ec81f093cf8d09d5b5b45b821c` is pushed. Linux CI run [36172481288](https://github.com/PhilipGB/pisharp/actions/runs/36172481288) passed restore, format verification, warnings-as-errors build, and all 491 tests.
+- Durable Pi parity baseline remains `b3487650f6378f1b0d1643dd254445ceb4a98035`. Current Pi `main` was refreshed to `d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31` before terminal-image work; this is scoped image evidence, not a full upstream audit.
+- Interactive prompt and read-tool images render through bounded Kitty/iTerm2 presentation with safe fallbacks, Pi #8938 sizing, transcript-safe markers, and cleanup. Partial viewport images use text fallback; cell dimensions use the 9x18 default.
 
-## What still prevents parity
+## What prevents parity
 
-- TUI/multimodal: Kitty/iTerm image rendering and fallback, full theme tokens/settings, extension UI, remaining mouse/editor behavior, syntax highlighting and Pi math layout.
+- TUI: theme tokens/settings, extension renderers, remaining mouse/editor behavior, syntax highlighting and Pi math layout; image cropping and terminal cell-size probing.
 - Sessions: Pi JSONL import/export/interoperability, crash recovery and concurrent access semantics.
-- RPC/JSON/SDK: Pi wire-compatible framing, commands, events and process behavior.
-- Resources/extensions, provider/auth breadth, remaining multimodal behavior and the final current-main audit remain incomplete. See the parity matrix and execution ledger.
+- RPC/JSON/SDK: Pi-compatible framing, commands, events and process behavior.
+- Settings/resources/extensions, multimodal breadth, provider/auth coverage and the full current-main audit remain incomplete. See the parity matrix and execution ledger.
 
 ## Priority and next action
 
-1. Implement terminal image presentation as a focused component: capability detection, validated image dimensions, aspect-preserving Kitty/iTerm sizing, transcript-safe reserved rows and fallback text. Use current Pi `d6af72e` renderer and tests as the scoped reference; add deterministic renderer/compositor tests and PTY evidence.
-2. Continue the TUI acceptance gate through themes, extension presentation and material mouse/editor flows. Once major visible workflows have process coverage, record small residuals and move to Pi JSONL session interoperability, then RPC/JSON/SDK and remaining parity areas.
+1. Refresh current Pi `main`; inspect terminal color/theme code, theme discovery/settings, and tests. Implement theme tokens and theme discovery, selection and reload across Markdown, status, tools, overlays and pickers. Keep the TUI gate open for extension presentation and representative PTY/process evidence.
+2. Continue with Pi JSONL session interoperability, RPC/JSON/SDK, settings/resources/extensions, remaining multimodal behavior, provider/auth breadth and the final current-main audit.
