@@ -9,7 +9,7 @@ internal static class TerminalTranscriptViewport
     private const int MaximumScrollOffset = 60_000;
 
     public static List<string> WrapWindow(string text, int width, int maxRows, int scrollOffset,
-        out int actualScrollOffset)
+        out int actualScrollOffset, out int firstVisualRow)
     {
         var capacity = Math.Max(1, maxRows + Math.Clamp(scrollOffset, 0, MaximumScrollOffset));
         var rows = new Queue<string>(capacity);
@@ -25,6 +25,7 @@ internal static class TerminalTranscriptViewport
         actualScrollOffset = Math.Min(scrollOffset, Math.Max(0, totalRows - maxRows));
         var end = rows.Count - actualScrollOffset;
         var start = Math.Max(0, end - maxRows);
+        firstVisualRow = totalRows - rows.Count + start;
         return rows.Skip(start).Take(end - start).ToList();
     }
 

@@ -23,6 +23,12 @@ internal sealed class TerminalSelectionList<T>
     private string _query = "";
     private int _selectedIndex;
     private int _lastHeight = 24;
+    private int _optionLineStart = -1;
+    private int _optionStartIndex;
+    private int _optionLineCount;
+    private int? _mousePressedIndex;
+    private int _mousePressColumn;
+    private int _mousePressRow;
 
     public TerminalSelectionList(string title, IReadOnlyList<TerminalSelectionOption<T>> allOptions,
         string? selectedKey = null, IReadOnlyList<TerminalSelectionOption<T>>? scopedOptions = null,
@@ -51,9 +57,36 @@ internal sealed class TerminalSelectionList<T>
         }
     }
 
-    public TerminalSelectionAction HandleInput(TerminalInputEvent input)
+    public TerminalSelectionAction HandleInput(TerminalInputEvent input, int? mouseContentLine = null)
     {
         ArgumentNullException.ThrowIfNull(input);
+        if (input.Mouse is { } mouse)
+        {
+            var delta = mouse.WheelScrollDelta;
+            if (delta != 0 && _filteredOptions.Count > 0)
+            {
+                _selectedIndex = Math.Clamp(_selectedIndex - delta, 0, _filteredOptions.Count - 1);
+                _mousePressedIndex = null;
+                return TerminalSelectionAction.Continue;
+            }
+            if (mouse.IsRelease)
+            {
+                var action = _mousePressedIndex is { } pressed &&
+                    mouse.Column == _mousePressColumn && mouse.Row == _mousePressRow
+                    ? AcceptMouseSelection(pressed)
+                    : TerminalSelectionAction.Continue;
+                _mousePressedIndex = null;
+                return action;
+            }
+            if (!mouse.IsMotion && (mouse.Button & 3) == 0)
+            {
+                _mousePressedIndex = OptionIndexAt(mouseContentLine);
+                _mousePressColumn = mouse.Column;
+                _mousePressRow = mouse.Row;
+                if (_mousePressedIndex is { } selected) _selectedIndex = selected;
+            }
+            return TerminalSelectionAction.Continue;
+        }
         if (input.Key is { } key)
         {
             if (key.Key == ConsoleKey.Escape || key.Key == ConsoleKey.C && key.Modifiers.HasFlag(ConsoleModifiers.Control))
@@ -96,6 +129,8 @@ internal sealed class TerminalSelectionList<T>
         lines.Add(new string('-', Math.Min(width, Math.Max(1, TerminalTextLayout.Width(_title)))));
 
         var visibleCount = VisibleItemCount(height);
+        _optionLineStart = -1;
+        _optionLineCount = 0;
         if (_filteredOptions.Count == 0)
         {
             lines.Add(_emptyMessage);
@@ -104,6 +139,9 @@ internal sealed class TerminalSelectionList<T>
         {
             var start = Math.Max(0, Math.Min(_selectedIndex - visibleCount / 2, _filteredOptions.Count - visibleCount));
             var end = Math.Min(start + visibleCount, _filteredOptions.Count);
+            _optionLineStart = lines.Count;
+            _optionStartIndex = start;
+            _optionLineCount = end - start;
             for (var index = start; index < end; index++)
             {
                 var option = _filteredOptions[index];
@@ -123,6 +161,20 @@ internal sealed class TerminalSelectionList<T>
             : "↑↓ move · type to filter · Enter select · Esc close");
         var maximumContentLines = Math.Max(1, height - 2);
         return lines.Take(maximumContentLines).Select(line => TerminalTranscriptViewport.Clip(line, width)).ToArray();
+    }
+
+    private int? OptionIndexAt(int? contentLine)
+    {
+        if (contentLine is not { } line || _optionLineStart < 0) return null;
+        var index = line - _optionLineStart;
+        return index >= 0 && index < _optionLineCount ? _optionStartIndex + index : null;
+    }
+
+    private TerminalSelectionAction AcceptMouseSelection(int index)
+    {
+        if (index < 0 || index >= _filteredOptions.Count) return TerminalSelectionAction.Continue;
+        _selectedIndex = index;
+        return TerminalSelectionAction.Accept;
     }
 
     private void ToggleScope()

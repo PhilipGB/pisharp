@@ -14,6 +14,7 @@ public sealed class TerminalScreen : IDisposable
     private readonly TerminalTranscriptBuffer _transcript = new();
     private readonly ScreenWriter _out;
     private readonly ScreenWriter _error;
+    private readonly TranscriptSelectionController _selection = new();
     private TextWriter? _installedOut;
     private TextWriter? _installedError;
     private string _editorText = "";
@@ -40,12 +41,13 @@ public sealed class TerminalScreen : IDisposable
         _error = new(this, isError: true);
         try
         {
-            _originalOut.Write("\u001b[?1049h\u001b[?25l");
+            _originalOut.Write("\u001b[?1049h\u001b[?25l" + TerminalMouseMode.Enable);
             lock (_gate) RenderLocked();
         }
         catch
         {
-            _originalOut.Write("\u001b[?25h\u001b[?1049l");
+            _originalOut.Write(TerminalMouseMode.Disable + "\u001b[?25h\u001b[?1049l");
+            _originalOut.Flush();
             _active = false;
             throw;
         }
@@ -56,6 +58,10 @@ public sealed class TerminalScreen : IDisposable
     public bool IsActive => _active;
     internal int TerminalWidth => Columns();
     internal int TerminalHeight => Rows();
+    internal string? SelectedText
+    {
+        get { lock (_gate) return _selection.SelectedText; }
+    }
 
     public void Activate()
     {
@@ -75,7 +81,7 @@ public sealed class TerminalScreen : IDisposable
         lock (_gate)
         {
             if (!_active || _suspended) return;
-            _originalOut.Write("\u001b[?25h\u001b[?1049l");
+            _originalOut.Write(TerminalMouseMode.Disable + "\u001b[?25h\u001b[?1049l");
             _originalOut.Flush();
             _suspended = true;
         }
@@ -86,7 +92,7 @@ public sealed class TerminalScreen : IDisposable
         lock (_gate)
         {
             if (!_active || !_suspended) return;
-            _originalOut.Write("\u001b[?1049h\u001b[?25l");
+            _originalOut.Write("\u001b[?1049h\u001b[?25l" + TerminalMouseMode.Enable);
             _suspended = false;
             RenderLocked();
         }
@@ -187,6 +193,23 @@ public sealed class TerminalScreen : IDisposable
         }
     }
 
+    internal bool HandleMouse(TerminalMouseEvent mouse)
+    {
+        lock (_gate)
+        {
+            if (!_active || _suspended) return false;
+            if (mouse.IsWheel)
+            {
+                var delta = mouse.WheelScrollDelta;
+                if (delta != 0) SetScrollOffsetLocked(_scrollOffset + delta);
+                return false;
+            }
+            var result = _selection.HandleMouse(mouse, _transcriptScreenStart, _transcriptHeight);
+            if (result.Changed) RenderLocked();
+            return result.Copy;
+        }
+    }
+
     internal TranscriptSearchState SearchTranscript(string query, int direction = 0)
     {
         ArgumentNullException.ThrowIfNull(query);
@@ -270,7 +293,8 @@ public sealed class TerminalScreen : IDisposable
                 if (ReferenceEquals(Console.Out, _installedOut)) Console.SetOut(_originalOut);
                 if (ReferenceEquals(Console.Error, _installedError)) Console.SetError(_originalError);
             }
-            _originalOut.Write("\u001b[?25h\u001b[?1049l");
+            _originalOut.Write(TerminalMouseMode.Disable + "\u001b[?25h\u001b[?1049l");
+            _originalOut.Flush();
             captured = _transcript.CaptureSnapshot();
             truncated = _transcript.CaptureTruncated;
         }
@@ -290,6 +314,8 @@ public sealed class TerminalScreen : IDisposable
 
     private int _lastColumns;
     private int _lastRows;
+    private int _transcriptScreenStart;
+    private int _transcriptHeight;
 
     private void Append(string value, bool isError)
     {
@@ -328,11 +354,15 @@ public sealed class TerminalScreen : IDisposable
             }
         }
         var transcriptRows = TerminalTranscriptViewport.WrapWindow(visibleTranscript, transcriptWidth,
-            transcriptHeight, _scrollOffset, out _scrollOffset);
+            transcriptHeight, _scrollOffset, out _scrollOffset, out var firstVisualRow);
         var screenRows = Enumerable.Repeat("", height).ToArray();
         var transcriptStart = _scrollOffset > 0 ? 0 : transcriptHeight - transcriptRows.Count;
+        _transcriptScreenStart = transcriptStart;
+        _transcriptHeight = transcriptHeight;
+        _selection.SetVisibleRows(transcriptRows, firstVisualRow);
+        var displayedTranscriptRows = _selection.HighlightVisibleRows();
         for (var index = 0; index < transcriptRows.Count; index++)
-            screenRows[transcriptStart + index] = transcriptRows[index];
+            screenRows[transcriptStart + index] = displayedTranscriptRows[index];
         var editorStart = transcriptHeight + editorHeight - editor.Rows.Count;
         for (var index = 0; index < editor.Rows.Count; index++)
             screenRows[editorStart + index] = editor.Rows[index];

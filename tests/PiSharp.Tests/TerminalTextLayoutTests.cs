@@ -87,6 +87,27 @@ public sealed class TerminalTextLayoutTests
         Assert.All(belLines.Take(belLines.Count - 1), line => Assert.EndsWith(belClose + "\u001b[0m", line));
     }
 
+    [Fact]
+    public void SelectionUsesDisplayCellsAndReappliesInverseAfterContentResets()
+    {
+        const string styled = "\u001b[31ma\u001b[0m界e\u0301";
+
+        Assert.Equal("a界e\u0301", TerminalTextLayout.StripFormatting(styled));
+        Assert.Equal((1, 3), TerminalTextLayout.CellRangeAt(styled, 2));
+        Assert.Equal("界", TerminalTextLayout.SliceCells(styled, 1, 3));
+        var highlighted = TerminalTextLayout.HighlightCells(styled, 1, 3);
+        Assert.Contains("\u001b[7m界\u001b[27m", highlighted);
+
+        var resetInsideSelection = TerminalTextLayout.HighlightCells("\u001b[31mal\u001b[0mpha", 1, 4);
+        Assert.Contains("l\u001b[0m\u001b[7mph\u001b[27m", resetInsideSelection);
+
+        const string family = "👩‍👩‍👧‍👦";
+        var graphemeLine = "x" + family + "e\u0301";
+        Assert.Equal((1, 3), TerminalTextLayout.CellRangeAt(graphemeLine, 2));
+        Assert.Equal(family, TerminalTextLayout.SliceCells(graphemeLine, 1, 3));
+        Assert.Equal((3, 4), TerminalTextLayout.CellRangeAt(graphemeLine, 3));
+    }
+
     private static string StripTerminalSequences(string text)
     {
         var output = new System.Text.StringBuilder(text.Length);

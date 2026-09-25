@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -58,6 +59,7 @@ public sealed class TerminalInput
             }
             var code = sequence.ToString();
             if (code == "200~") return Paste();
+            if (TryDecodeSgrMouse(code, out var mouse)) return new(null, null, mouse);
             if (TryDecodeModifiedKey(code, out var modifiedKey)) return Key(modifiedKey.Key, modifiedKey.KeyChar,
                 modifiedKey.Modifiers.HasFlag(ConsoleModifiers.Shift), modifiedKey.Modifiers.HasFlag(ConsoleModifiers.Alt),
                 modifiedKey.Modifiers.HasFlag(ConsoleModifiers.Control));
@@ -85,6 +87,21 @@ public sealed class TerminalInput
             return new(new ConsoleKeyInfo(key.KeyChar, key.Key, key.Modifiers.HasFlag(ConsoleModifiers.Shift), true,
                 key.Modifiers.HasFlag(ConsoleModifiers.Control)), null);
         return plain;
+    }
+
+    private static bool TryDecodeSgrMouse(string code, out TerminalMouseEvent mouse)
+    {
+        mouse = default;
+        if (code.Length < 6 || code[0] != '<' || code[^1] is not ('M' or 'm')) return false;
+        var fields = code.AsSpan(1, code.Length - 2).ToString().Split(';');
+        if (fields.Length != 3 ||
+            !int.TryParse(fields[0], NumberStyles.None, CultureInfo.InvariantCulture, out var button) ||
+            !int.TryParse(fields[1], NumberStyles.None, CultureInfo.InvariantCulture, out var column) ||
+            !int.TryParse(fields[2], NumberStyles.None, CultureInfo.InvariantCulture, out var row) ||
+            button < 0 || column < 1 || row < 1)
+            return false;
+        mouse = new(button, column, row, code[^1] == 'm');
+        return true;
     }
 
     private static bool TryDecodeModifiedKey(string code, out ConsoleKeyInfo key)
@@ -275,7 +292,27 @@ public sealed class TerminalInput
     private static extern nint read(int fd, [Out] byte[] buffer, nuint count);
 }
 
-public sealed record TerminalInputEvent(ConsoleKeyInfo? Key, string? Text);
+public sealed record TerminalInputEvent(ConsoleKeyInfo? Key, string? Text, TerminalMouseEvent? Mouse = null);
+
+/// <summary>SGR mouse report coordinates are one-based terminal columns and rows.</summary>
+public readonly record struct TerminalMouseEvent(int Button, int Column, int Row, bool IsRelease)
+{
+    public bool IsMotion => (Button & 32) != 0;
+    public bool IsWheel => (Button & 64) != 0;
+
+    /// <summary>Positive values move the transcript toward earlier rows; horizontal wheel events are ignored.</summary>
+    public int WheelScrollDelta
+    {
+        get
+        {
+            if (!IsWheel) return 0;
+            var direction = Button & 3;
+            if (direction is not (0 or 1)) return 0;
+            var lines = (Button & 8) != 0 ? 5 : 1;
+            return direction == 0 ? lines : -lines;
+        }
+    }
+}
 
 /// <summary>Restores tty state after exceptions, EOF and normal exit. Only used with an attached terminal.</summary>
 internal sealed class TerminalMode : IDisposable

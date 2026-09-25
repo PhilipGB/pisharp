@@ -27,11 +27,11 @@ Only actions shown by `/hotkeys` are recognized. Unknown action names are ignore
 | `app.model.cycleForward` | Ctrl+P | Switch to the next available model in the current catalogue scope |
 | `app.model.cycleBackward` | Ctrl+Shift+P, Alt+P | Switch to the previous available model; Windows and WSL use Alt+P |
 | `app.tools.expand` | Ctrl+O | Expand or collapse active-run tool output |
-| `app.message.copy` | Ctrl+X | Copy the latest assistant text (`/copy` runs the same action) |
+| `app.message.copy` | Ctrl+X | Copy the active transcript selection, falling back to latest assistant text (`/copy` runs the same action) |
 | `app.clipboard.pasteImage` | Ctrl+V; Alt+V on Windows | Paste clipboard text into the editor; clipboard images are not supported yet |
 | `app.message.followUp` | Alt+Enter; Ctrl+Q on Windows and WSL | Queue a follow-up message during a run |
 | `app.message.dequeue` | Alt+Up; Alt+Q on Windows and WSL | Restore queued messages during a run |
 
 The model selector opens from Ctrl+L or `/model`; it supports fuzzy filtering and Tab switches between all models and the configured scope. The thinking, selector and model cycling actions run at the idle prompt and preserve the current draft. A model switch is saved in the active session. On terminals that do not report Ctrl+Shift+P separately, use its Alt+P alias or assign another key. PiSharp decodes common modified CSI-u character sequences, but does not negotiate the Kitty keyboard protocol.
 
-Editor actions take precedence over application actions when a user binds both to the same key, so a custom Ctrl+X submit binding works alongside the default copy shortcut. During a run, the active transcript handles its own scroll and search actions before editor input. `/hotkeys` lists the full implemented subset; session navigation/settings dialogs, scoped-model configuration, thinking visibility, selection-based copy, and broader Pi conflict handling remain open.
+Editor actions take precedence over application actions when a user binds both to the same key, so a custom Ctrl+X submit binding works alongside the default copy shortcut. During a run, the active transcript handles its own scroll and search actions before editor input. `/hotkeys` lists the full implemented subset; session navigation/settings dialogs, scoped-model configuration, thinking visibility, editor-native selection, and broader Pi conflict handling remain open. SGR mouse wheel events scroll the transcript and picker lists; transcript drag selection copies the selected text on release, and modal option rows accept clicks.

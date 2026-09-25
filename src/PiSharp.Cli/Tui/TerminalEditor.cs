@@ -108,6 +108,12 @@ public sealed class TerminalEditor
         Action abort, CancellationToken cancellationToken = default,
         Func<string, Task>? dispatchApplicationAction = null)
     {
+        if (next.Mouse is { } mouse)
+        {
+            if (_screen?.HandleMouse(mouse) == true && dispatchApplicationAction is not null)
+                await dispatchApplicationAction("app.message.copy");
+            return true;
+        }
         if (_searchingTranscript)
         {
             if (next.Key is { } searchKey && _keymap.Matches("app.tools.expand", searchKey))
@@ -278,6 +284,12 @@ public sealed class TerminalEditor
             while (true)
             {
                 var next = _input.Read();
+                if (next.Mouse is { } mouse)
+                {
+                    if (_screen?.HandleMouse(mouse) == true)
+                        await dispatchApplicationAction("app.message.copy");
+                    continue;
+                }
                 if (next.Key is null && next.Text is null)
                 {
                     ClearLine();

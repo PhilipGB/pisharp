@@ -7,6 +7,8 @@ namespace PiSharp.Cli.Tui;
 internal static class TerminalTextLayout
 {
     private const string SgrReset = "\u001b[0m";
+    private const string SelectionOn = "\u001b[7m";
+    private const string SelectionOff = "\u001b[27m";
 
     public static int Width(string text)
     {
@@ -146,6 +148,120 @@ internal static class TerminalTextLayout
         return lines;
     }
 
+    public static string StripFormatting(string text)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        var output = new StringBuilder(text.Length);
+        for (var offset = 0; offset < text.Length;)
+        {
+            if (TryReadEscape(text, offset, out var length, out _, out _))
+            {
+                offset += length;
+                continue;
+            }
+            var element = StringInfo.GetNextTextElement(text, offset);
+            output.Append(Sanitize(element));
+            offset += element.Length;
+        }
+        return output.ToString();
+    }
+
+    public static (int Start, int End) CellRangeAt(string text, int cell)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        cell = Math.Max(0, cell);
+        var used = 0;
+        for (var offset = 0; offset < text.Length;)
+        {
+            if (TryReadEscape(text, offset, out var length, out _, out _))
+            {
+                offset += length;
+                continue;
+            }
+            if (text[offset] is '\r' or '\n') break;
+            var element = StringInfo.GetNextTextElement(text, offset);
+            var width = Math.Max(0, TerminalCells.Width(Sanitize(element)));
+            if (width > 0 && cell < used + width) return (used, used + width);
+            used += width;
+            offset += element.Length;
+        }
+        return (used, used);
+    }
+
+    public static string SliceCells(string text, int startCell, int endCell)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        startCell = Math.Max(0, startCell);
+        endCell = Math.Max(startCell, endCell);
+        var output = new StringBuilder(text.Length);
+        var used = 0;
+        for (var offset = 0; offset < text.Length;)
+        {
+            if (TryReadEscape(text, offset, out var length, out _, out _))
+            {
+                offset += length;
+                continue;
+            }
+            if (text[offset] is '\r' or '\n') break;
+            var element = StringInfo.GetNextTextElement(text, offset);
+            var safe = Sanitize(element);
+            var width = Math.Max(0, TerminalCells.Width(safe));
+            if (width > 0 && used < endCell && used + width > startCell) output.Append(safe);
+            used += width;
+            offset += element.Length;
+        }
+        return output.ToString();
+    }
+
+    public static string HighlightCells(string text, int startCell, int endCell)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        startCell = Math.Max(0, startCell);
+        endCell = Math.Max(startCell, endCell);
+        if (startCell == endCell) return text;
+
+        var output = new StringBuilder(text.Length + 16);
+        var used = 0;
+        var highlighting = false;
+        for (var offset = 0; offset < text.Length;)
+        {
+            if (TryReadEscape(text, offset, out var length, out var kind, out var payload))
+            {
+                var sequence = text.Substring(offset, length);
+                output.Append(sequence);
+                if (highlighting && kind == EscapeKind.Sgr &&
+                    (ResetsSgr(payload) || DisablesInverse(payload)))
+                    output.Append(SelectionOn);
+                offset += length;
+                continue;
+            }
+            if (text[offset] is '\r' or '\n')
+            {
+                output.Append(text[offset++]);
+                continue;
+            }
+            var element = StringInfo.GetNextTextElement(text, offset);
+            var safe = Sanitize(element);
+            var width = Math.Max(0, TerminalCells.Width(safe));
+            var isSelected = width > 0 && used < endCell && used + width > startCell;
+            if (isSelected && !highlighting)
+            {
+                output.Append(SelectionOn);
+                highlighting = true;
+            }
+            output.Append(safe);
+            used += width;
+            if (highlighting && used >= endCell)
+            {
+                output.Append(SelectionOff);
+                highlighting = false;
+            }
+            offset += element.Length;
+        }
+        if (highlighting) output.Append(SelectionOff);
+        return output.ToString();
+    }
+
     private static string Sanitize(string element)
     {
         var output = new StringBuilder(element.Length);
@@ -201,6 +317,8 @@ internal static class TerminalTextLayout
             if (parameter.Length == 0 || parameter == "0") return true;
         return false;
     }
+
+    private static bool DisablesInverse(string payload) => payload.Split(';').Contains("27", StringComparer.Ordinal);
 
     private static string HyperlinkTarget(string payload)
     {

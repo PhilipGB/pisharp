@@ -25,6 +25,26 @@ public sealed class TerminalInputTests
     }
 
     [Fact]
+    public void DecodesSgrMouseCoordinatesMotionReleaseAndWheelDirection()
+    {
+        var reader = new TerminalInput(new MemoryStream(Encoding.UTF8.GetBytes(
+            "\u001b[<0;4;2M\u001b[<32;5;3M\u001b[<3;5;3m\u001b[<72;7;1M\u001b[<67;7;1M")));
+
+        var press = reader.Read().Mouse!.Value;
+        Assert.Equal((4, 2), (press.Column, press.Row));
+        Assert.False(press.IsRelease);
+        Assert.False(press.IsMotion);
+
+        var motion = reader.Read().Mouse!.Value;
+        Assert.True(motion.IsMotion);
+        Assert.Equal((5, 3), (motion.Column, motion.Row));
+
+        Assert.True(reader.Read().Mouse!.Value.IsRelease);
+        Assert.Equal(5, reader.Read().Mouse!.Value.WheelScrollDelta);
+        Assert.Equal(0, reader.Read().Mouse!.Value.WheelScrollDelta); // horizontal wheel
+    }
+
+    [Fact]
     public void DecodesModifiedCursorAndPageKeysForConfigurableBindings()
     {
         var reader = new TerminalInput(new MemoryStream(Encoding.UTF8.GetBytes(

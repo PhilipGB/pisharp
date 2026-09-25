@@ -6,18 +6,19 @@
 
 ## Current state
 
-- Latest known-good committed head: `33b6ef7c323f01f7623d097da2464be91bab06bf`; Linux CI run [36145493341](https://github.com/PhilipGB/pisharp/actions/runs/36145493341) passed format verification, warnings-as-errors build and all 438 tests.
+- Latest known-good committed head: `b27a4b7bb8b3e9333a398e770b9e1801c675da46`; Linux CI run [36150182304](https://github.com/PhilipGB/pisharp/actions/runs/36150182304) passed format verification, warnings-as-errors build and all 447 tests.
 - The external-editor slice is committed: Ctrl+G launches the configured editor from a private temporary directory/file, supports trusted user/project `externalEditor` settings, and suspends/restores alternate-screen and raw terminal modes. A fork-picker PTY readiness race was fixed in `33b6ef7`; exact-head Linux CI passes 438/438.
-- Text clipboard paste (Ctrl+V; Alt+V on Windows), copy-last-assistant (Ctrl+X and `/copy`), platform helpers and remote/headless OSC 52 were committed/pushed as `d331d7d`. Its exact-head CI passed format/build but found a race in the existing Bash test helper: `/proc/<pid>/stat` disappeared between `File.Exists` and reading it. The working-tree helper fix passes format, warnings-as-errors build and 447/447 tests; follow-up exact-head CI is pending.
+- Text clipboard paste/copy, bounded Linux/macOS/Windows helpers and remote/headless OSC 52 are committed as `d331d7d`; `b27a4b7` fixes the procfs race in the Bash process-tree test helper without weakening its assertion.
+- Working tree adds SGR mouse-wheel transcript/list scrolling, drag selection and copy, picker option clicks, terminal-cell/grapheme mapping and mouse-mode restoration. Focused tests pass 31/31; format, warnings-as-errors build and the full suite pass locally (452/452); exact-head CI is pending.
 - Pi reference: `earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035`, refreshed 2026-09-25. Material deltas since `5fd446ca1843682e8da3fec4ceb71c42f56fbace` are classified in `docs/continuation.md`.
 
 ## What still prevents parity
 
-- TUI: remaining settings schema and editor controls; transcript/editor selection and selection copy, clipboard image paste, WSL clipboard interop, fuller history/completion, mouse, themes, terminal images and extension UI; remaining Markdown dialect and rendering behavior.
+- TUI: editor-native selection, image clipboard paste, WSL clipboard interop, fuller history/completion, double/triple-click selection and drag auto-scroll, mouse-aware extension widgets, themes, terminal images and extension UI; remaining Markdown dialect and rendering behavior.
 - Pi JSONL/session interoperability and Pi-compatible RPC/JSON/SDK remain major gaps.
 - Resources/extensions, multimodal behavior, provider/auth breadth and the final current-upstream audit remain incomplete. See the feature matrix and detailed inventory.
 
 ## Priority and next action
 
-1. Commit and push the `/proc` disappearance race fix, then restore green exact-head Linux CI.
-2. Continue the TUI gaps with transcript/editor selection and mouse interactions; then close the remaining major TUI capabilities before sessions, RPC/JSON/SDK, settings/resources/extensions, multimodal and provider/auth breadth. Refresh Pi before terminal-image/theme work, materially changed capability families and the final audit.
+1. Commit/push the mouse interaction slice and verify exact-head Linux CI; then complete editor-native selection/history/completion and representative PTY coverage before deciding whether the TUI acceptance gate is met.
+2. Continue with session interoperability, RPC/JSON/SDK, settings/resources/extensions, multimodal and provider/auth breadth. Refresh Pi before terminal-image/theme work, materially changed capability families and the final audit.

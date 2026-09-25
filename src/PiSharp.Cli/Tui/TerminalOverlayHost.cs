@@ -16,10 +16,15 @@ internal sealed class TerminalOverlayHost(TerminalInput input)
             while (screen.IsActive)
             {
                 screen.RefreshIfResized();
-                screen.SetOverlay(list.Render(screen.TerminalWidth, screen.TerminalHeight));
+                var content = list.Render(screen.TerminalWidth, screen.TerminalHeight);
+                screen.SetOverlay(content);
                 var next = input.Read();
-                if (next.Key is null && next.Text is null) return null;
-                var action = list.HandleInput(next);
+                if (next.Key is null && next.Text is null && next.Mouse is null) return null;
+                var mouseContentLine = next.Mouse is { } mouse
+                    ? TerminalOverlayLayout.ContentLineAt(content, screen.TerminalWidth, screen.TerminalHeight,
+                        mouse.Column, mouse.Row)
+                    : null;
+                var action = list.HandleInput(next, mouseContentLine);
                 if (action == TerminalSelectionAction.Accept) return list.Selected;
                 if (action == TerminalSelectionAction.Cancel) return null;
             }

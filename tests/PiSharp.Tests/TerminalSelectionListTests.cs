@@ -109,6 +109,34 @@ public sealed class TerminalSelectionListTests
         Assert.Contains("draft stays intact", output.ToString());
     }
 
+    [Fact]
+    public void MouseWheelAndClickSelectAnOverlayOption()
+    {
+        const int width = 60;
+        const int height = 16;
+        var options = new[]
+        {
+            new TerminalSelectionOption<string>("alpha", "alpha", "alpha"),
+            new TerminalSelectionOption<string>("beta", "beta", "beta")
+        };
+        var list = new TerminalSelectionList<string>("Choose", options, "alpha");
+        var content = list.Render(width, height);
+        var column = width / 2;
+        var betaLine = content.Select((line, index) => (line, index))
+            .Single(item => item.line.EndsWith("beta", StringComparison.Ordinal)).index;
+        var betaRow = Enumerable.Range(1, height).Single(row =>
+            TerminalOverlayLayout.ContentLineAt(content, width, height, column, row) == betaLine);
+        using var inputStream = new MemoryStream(Encoding.UTF8.GetBytes(
+            $"\u001b[<65;{column};1M\u001b[<0;{column};{betaRow}M\u001b[<3;{column};{betaRow}m"));
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        using var screen = new TerminalScreen(output, error, () => width, () => height);
+
+        var result = new TerminalOverlayHost(new TerminalInput(inputStream)).Select(screen, "Choose", options, "alpha");
+
+        Assert.Equal("beta", result?.Option.Value);
+    }
+
     private static TerminalInputEvent Key(ConsoleKey key, char character = '\0', bool control = false) =>
         new(new ConsoleKeyInfo(character, key, false, false, control), null);
 }
