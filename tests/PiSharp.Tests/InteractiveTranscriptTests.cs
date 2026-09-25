@@ -114,7 +114,7 @@ public sealed class InteractiveTranscriptTests
 
         transcript.Render(new("model_text_delta", Text: "# Hea"));
         Assert.Contains("Hea", StripSgr(output.ToString()));
-        transcript.Render(new("model_text_delta", Text: "ding\n\n**bold** and `code` [docs](https://example.test) ~~removed~~\nvariable foo_bar\n> quoted\n- item\n- [ ] pending\n- [X] complete\n```csharp\nvar answer = 42;\n```"));
+        transcript.Render(new("model_text_delta", Text: "ding\n\n**bold** and `code` [docs](https://example.test) ~~removed~~\nvariable foo_bar\n> quoted\n- item\n- [ ] pending\n- [X] complete\n\n| Name | Count |\n| :--- | ---: |\n| Widget | 2 |\n```csharp\nvar answer = 42;\n```"));
         transcript.FinishTurn();
         screen.Dispose();
 
@@ -131,8 +131,58 @@ public sealed class InteractiveTranscriptTests
         Assert.Contains("• [ ] pending", visible);
         Assert.Contains("• [x] complete", visible);
         Assert.Contains("\u001b[9mremoved\u001b[29m", output.ToString());
+        var tableStart = visible.LastIndexOf("┌─", StringComparison.Ordinal);
+        var tableEnd = visible.LastIndexOf("└─", StringComparison.Ordinal);
+        Assert.True(tableStart >= 0 && tableEnd > tableStart);
+        var table = visible[tableStart..tableEnd];
+        Assert.Contains("Count", table);
+        Assert.Contains("Widget", table);
         Assert.Contains("var answer = 42;", visible);
         Assert.DoesNotContain("```", visible);
+    }
+
+    [Fact]
+    public void ActiveScreenWrapsGfmTableCellsToAvailableWidth()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        var screen = new TerminalScreen(output, error, () => 40, () => 30);
+        var transcript = new InteractiveTranscript(screen.Output, screen.Error, screen: screen);
+        transcript.Render(new("model_text_delta", Text: "| Name | Description |\n| --- | --- |\n| `A|B` | thisisaverylongunbrokentablecellvalue |\n| Escaped | left\\|right |\n| Trailing | ends\\|"));
+        transcript.FinishTurn();
+        screen.Dispose();
+
+        var visible = StripSgr(output.ToString());
+        var tableStart = visible.LastIndexOf("┌─", StringComparison.Ordinal);
+        var tableEnd = visible.LastIndexOf("└─", StringComparison.Ordinal);
+        Assert.True(tableStart >= 0 && tableEnd > tableStart);
+        var tableLines = visible[tableStart..tableEnd].Split('\n')
+            .Where(line => line.StartsWith("┌", StringComparison.Ordinal) || line.StartsWith("├", StringComparison.Ordinal) ||
+                line.StartsWith("│", StringComparison.Ordinal));
+        Assert.All(tableLines, line => Assert.True(line.Length <= 39, $"Table row exceeded the terminal width: {line}"));
+        var tableContent = new string(visible[tableStart..tableEnd].Where(char.IsLetterOrDigit).ToArray());
+        Assert.Contains("thisisaverylongunbrokentablecellvalue", tableContent);
+        Assert.Contains("A|B", visible[tableStart..tableEnd]);
+        Assert.Contains("left|right", visible[tableStart..tableEnd]);
+        Assert.Contains("ends|", visible[tableStart..tableEnd]);
+    }
+
+    [Fact]
+    public void ActiveScreenKeepsGfmSourceWhenUnbrokenTableCellCannotFit()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        var screen = new TerminalScreen(output, error, () => 12, () => 20);
+        var transcript = new InteractiveTranscript(screen.Output, screen.Error, screen: screen);
+        const string markdown = "| A | B |\n| --- | --- |\n| anunbrokencellthatisfartoolong | x |";
+        transcript.Render(new("model_text_delta", Text: markdown));
+        transcript.FinishTurn();
+        screen.Dispose();
+
+        var visible = StripSgr(output.ToString());
+        Assert.True(visible.Contains("| anunbrokencellthatisfartoolong | x |", StringComparison.Ordinal),
+            $"Expected the source Markdown after fallback, got: {visible.Replace("\r", "<CR>", StringComparison.Ordinal).Replace("\n", "<LF>", StringComparison.Ordinal)}");
+        Assert.DoesNotContain("┌─", visible);
     }
 
     private static string StripSgr(string text) => Regex.Replace(text, "\\u001b\\[[0-9;]*m", "");

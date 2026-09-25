@@ -95,7 +95,7 @@ public sealed class TerminalScreen : IDisposable
     internal void SetAssistantText(string markdown)
     {
         ArgumentNullException.ThrowIfNull(markdown);
-        var rendered = TerminalMarkdownRenderer.Render(TerminalSafeText.Normalize(markdown));
+        var rendered = TerminalMarkdownRenderer.Render(TerminalSafeText.Normalize(markdown), Math.Max(1, Columns() - 1));
         lock (_gate)
         {
             if (!_active) return;
@@ -107,7 +107,7 @@ public sealed class TerminalScreen : IDisposable
     internal void CommitAssistantText(string markdown)
     {
         ArgumentNullException.ThrowIfNull(markdown);
-        var rendered = TerminalMarkdownRenderer.Render(TerminalSafeText.Normalize(markdown));
+        var rendered = TerminalMarkdownRenderer.Render(TerminalSafeText.Normalize(markdown), Math.Max(1, Columns() - 1));
         lock (_gate)
         {
             if (!_active) return;
