@@ -30,6 +30,7 @@ public sealed class EditorKeymap
         ["app.interrupt"] = new("Cancel or abort", ["escape"]),
         ["app.clear"] = new("Clear editor", ["ctrl+c"]),
         ["app.exit"] = new("Exit when editor is empty", ["ctrl+d"]),
+        ["app.tools.expand"] = new("Expand or collapse tool output", ["ctrl+o"]),
         ["app.message.followUp"] = new("Queue a follow-up message", IsWindowsBindings() ? ["ctrl+q"] : ["alt+enter"]),
         ["app.message.dequeue"] = new("Restore queued messages", IsWindowsBindings() ? ["alt+q"] : ["alt+up"]),
         ["tui.altScreen.pageUp"] = new("Scroll transcript up one page", ["pageup"]),

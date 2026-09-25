@@ -15,7 +15,8 @@ public sealed class EditorKeymapTests
                 {
                   "tui.input.submit": "ctrl+x",
                   "tui.input.newLine": [],
-                  "tui.editor.cursorLeft": ["ctrl+h", "alt+left"]
+                  "tui.editor.cursorLeft": ["ctrl+h", "alt+left"],
+                  "app.tools.expand": "ctrl+y"
                 }
                 """);
             var keymap = new EditorKeymap(directory);
@@ -25,6 +26,8 @@ public sealed class EditorKeymapTests
             Assert.False(keymap.Matches("tui.input.newLine", Key(ConsoleKey.J, ConsoleModifiers.Control)));
             Assert.True(keymap.Matches("tui.editor.cursorLeft", Key(ConsoleKey.H, ConsoleModifiers.Control)));
             Assert.True(keymap.Matches("tui.editor.cursorLeft", Key(ConsoleKey.LeftArrow, ConsoleModifiers.Alt)));
+            Assert.False(keymap.Matches("app.tools.expand", Key(ConsoleKey.O, ConsoleModifiers.Control)));
+            Assert.True(keymap.Matches("app.tools.expand", Key(ConsoleKey.Y, ConsoleModifiers.Control)));
             Assert.Contains("disabled", keymap.FormatHotkeys());
         }
         finally { Directory.Delete(directory, recursive: true); }
@@ -110,11 +113,14 @@ public sealed class EditorKeymapTests
     {
         var keymap = new EditorKeymap();
         var searchInput = new TerminalInput(new MemoryStream([6]));
+        var toolOutputInput = new TerminalInput(new MemoryStream([15]));
         var pageInput = new TerminalInput(new MemoryStream("\u001b[5~"u8.ToArray()));
 
         Assert.True(searchInput.TryRead(0, out var search));
+        Assert.True(toolOutputInput.TryRead(0, out var toolOutput));
         Assert.True(pageInput.TryRead(0, out var page));
         Assert.True(keymap.Matches("tui.altScreen.search", search.Key!.Value));
+        Assert.True(keymap.Matches("app.tools.expand", toolOutput.Key!.Value));
         Assert.True(keymap.Matches("tui.altScreen.pageUp", page.Key!.Value));
     }
 

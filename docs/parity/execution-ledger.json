@@ -486,11 +486,13 @@
       "implementation": [
         "src/PiSharp.Cli/Tui/TerminalInput.cs: bounded OSC sequences terminated by BEL or ST are consumed instead of inserted as editor text; incomplete replies are ignored, oversized replies are rejected. No color query or parsing yet.",
         "src/PiSharp.Cli/Tui/TerminalScreen.cs: active-run alternate-screen compositor now supports bounded transcript scrolling and rendered-text search with highlighted/cycling matches; src/PiSharp.Cli/Tui/TerminalEditor.cs preserves and restores the follow-up draft when search closes.",
-        "src/PiSharp.Cli/Tui/TerminalInput.cs: standard CSI PageUp/PageDown sequences decode alongside the existing modified-key forms."
+        "src/PiSharp.Cli/Tui/TerminalInput.cs: standard CSI PageUp/PageDown sequences decode alongside the existing modified-key forms.",
+        "src/PiSharp.Cli/Tui/TerminalScreen.cs and InteractiveTranscript.cs: completed tool-result text is retained as a bounded screen segment and collapsed to ten lines by default; Ctrl+O toggles all retained and future results. Full text is captured for stderr scrollback replay after the active screen closes, subject to the existing 4 MB restore cap and 1 MB active-transcript cap."
       ],
       "evidence": [
         "TerminalInputTests.TerminalColorOscRepliesAreConsumedWithoutEditingTheDraft and TruncatedOscIsDiscardedAndOversizedOscIsRejected: synthetic OSC 10/11 BEL/ST, incomplete and oversized fixtures; no PTY or pinned Pi differential.",
-        "TerminalScreenTests and EditorKeymapTests cover scroll bounds, search highlighting/cycling/draft restoration and terminal input decoding; focused screen/keymap tests pass 11/11, format verification passes, warnings-as-errors Release build reports 0 warnings/errors, and full Release suite passes 399/399 with 0 skipped. Linux CI and pinned Pi workflow differentials remain pending."
+        "TerminalScreenTests and EditorKeymapTests cover scroll bounds, search highlighting/cycling/draft restoration and terminal input decoding; focused screen/keymap tests pass 11/11, format verification passes, warnings-as-errors Release build reports 0 warnings/errors, and full Release suite passes 399/399 with 0 skipped. Linux CI run 36110122578 passed for the search slice; this tool-output expansion slice is pending CI and pinned Pi workflow differentials remain open.",
+        "TerminalScreenTests.ActiveToolResultsCollapseAfterTenLinesAndExpandWithCtrlO verifies preview, expansion, and full stderr restoration for a bounded result; focused TUI tests pass 18/18, format verification passes, the warnings-as-errors Release build reports 0 warnings/errors, and the full Release suite passes 400/400 with 0 skipped. Linux CI for this slice is pending; streamed Bash updates remain visible and are not collapsed."
       ],
       "dependencies": []
     },
@@ -511,15 +513,19 @@
     {
       "id": "feature-tui-keybindings-display-controls",
       "title": "TUI / keybindings, display controls",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/feature-matrix.md:20",
       "acceptance": [
         "configurable keybindings.json, Ctrl+L/P/T/O, Shift+Tab, Alt+Up, session shortcuts",
         "conflicting keys resolved by context",
         "Verify through application workflow and compare docs/keybindings.md; packages/coding-agent/src/core/keybindings.ts; key map and interaction tests"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "src/PiSharp.Cli/Tui/EditorKeymap.cs and TerminalEditor.cs: configurable app.tools.expand defaults to Ctrl+O and toggles active-run tool output while retaining state across turns."
+      ],
+      "evidence": [
+        "EditorKeymapTests decodes Ctrl+O from terminal input and verifies user keymap replacement; TerminalScreenTests verifies collapsed/expanded tool results. Focused TUI tests pass 18/18 and the Release suite passes 400/400 with 0 skipped; format verification and warnings-as-errors build pass. Linux CI is pending."
+      ],
       "dependencies": []
     },
     {
@@ -2262,8 +2268,14 @@
         "Support images.blockImages with upstream type/default and user/trusted-project precedence",
         "Test malformed settings, trust boundaries, reload and startup behaviour"
       ],
-      "implementation": ["src/PiSharp.Cli/UserSettings.cs: validated user/trusted-project boolean overlay", "src/PiSharp.Runtime/Sessions/ObservedChatClient.cs: filter each provider request without changing canonical history"],
-      "evidence": ["tests/PiSharp.Tests/UserSettingsTests.cs: precedence and malformed JSON", "tests/PiSharp.Tests/MultimodalRuntimeTests.cs: two turns, restored history; tool-result and reload evidence outstanding"],
+      "implementation": [
+        "src/PiSharp.Cli/UserSettings.cs: validated user/trusted-project boolean overlay",
+        "src/PiSharp.Runtime/Sessions/ObservedChatClient.cs: filter each provider request without changing canonical history"
+      ],
+      "evidence": [
+        "tests/PiSharp.Tests/UserSettingsTests.cs: precedence and malformed JSON",
+        "tests/PiSharp.Tests/MultimodalRuntimeTests.cs: two turns, restored history; tool-result and reload evidence outstanding"
+      ],
       "dependencies": []
     },
     {

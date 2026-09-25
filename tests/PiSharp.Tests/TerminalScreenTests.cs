@@ -142,4 +142,33 @@ public sealed class TerminalScreenTests
         Assert.Equal("draft to keep", editor.Draft);
         Assert.False(aborted);
     }
+
+    [Fact]
+    public async Task ActiveToolResultsCollapseAfterTenLinesAndExpandWithCtrlO()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        var screen = new TerminalScreen(output, error, () => 100, () => 30);
+        var transcript = new InteractiveTranscript(screen.Output, screen.Error, screen: screen);
+        var result = string.Join('\n', Enumerable.Range(1, 12).Select(line => $"line {line}"));
+        transcript.Render(new("tool_execution_finished", Tool: "grep", Text: result));
+        var collapsedFrame = output.ToString();
+        var editor = new TerminalEditor();
+        editor.AttachScreen(screen);
+        var expandedFrameStart = output.GetStringBuilder().Length;
+
+        await editor.HandleActiveInputAsync(
+            new(new ConsoleKeyInfo('\0', ConsoleKey.O, shift: false, alt: false, control: true), null),
+            (_, _, _) => Task.FromResult(true), () => [], () => { });
+        var expandedFrame = output.ToString()[expandedFrameStart..];
+        screen.Dispose();
+
+        Assert.Contains("line 1", collapsedFrame);
+        Assert.Contains("line 10", collapsedFrame);
+        Assert.Contains("2 more lines; tool output collapsed", collapsedFrame);
+        Assert.DoesNotContain("line 11", collapsedFrame);
+        Assert.Contains("line 11", expandedFrame);
+        Assert.Contains("line 12", expandedFrame);
+        Assert.Contains("line 12", error.ToString());
+    }
 }

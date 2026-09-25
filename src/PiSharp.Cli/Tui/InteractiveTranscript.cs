@@ -107,7 +107,9 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
             var result = update.IsError == true ? update.Error : update.Text;
             if (update.Tool == "bash" && result is not null)
                 result = ShellOutputNormalizer.NormalizeComplete(result);
-            status.WriteLine($"← {(result is null ? update.IsError == true ? "tool failed" : "completed" : Safe(result))}");
+            var rendered = $"← {(result is null ? update.IsError == true ? "tool failed" : "completed" : Safe(result))}{Environment.NewLine}";
+            if (screen is null) status.Write(rendered);
+            else screen.AppendToolResult(rendered);
         }
 
         if (update.Details is not null && ToolDetailsSummary.TryFormat(update.Details, out var summary))

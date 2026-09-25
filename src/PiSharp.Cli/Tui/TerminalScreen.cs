@@ -7,16 +7,18 @@ namespace PiSharp.Cli.Tui;
 public sealed class TerminalScreen : IDisposable
 {
     private const int MaxScreenTranscriptCharacters = 1_000_000;
+    private const int MaxScreenTranscriptSegments = 10_000;
     private const int MaxRestoredTranscriptCharacters = 4_000_000;
     private const int MaxTranscriptScrollOffset = 60_000;
     private const int MaxTranscriptSearchMatches = 10_000;
+    private const int MaxToolResultPreviewLines = 10;
     private readonly object _gate = new();
     private readonly TextWriter _originalOut;
     private readonly TextWriter _originalError;
     private readonly Func<int> _getColumns;
     private readonly Func<int> _getRows;
     private readonly List<CapturedChunk> _captured = [];
-    private readonly StringBuilder _transcript = new();
+    private readonly List<TranscriptSegment> _transcript = [];
     private readonly ScreenWriter _out;
     private readonly ScreenWriter _error;
     private TextWriter? _installedOut;
@@ -29,8 +31,10 @@ public sealed class TerminalScreen : IDisposable
     private int _searchSelection;
     private int _searchMatchCount;
     private bool _searchHasMoreMatches;
+    private bool _toolResultsExpanded;
     private string _footer = "Enter steers · follow-up queues · Escape aborts";
     private int _capturedCharacters;
+    private int _transcriptCharacters;
     private bool _captureTruncated;
     private bool _activated;
     private volatile bool _active = true;
@@ -111,8 +115,7 @@ public sealed class TerminalScreen : IDisposable
             if (rendered.Length > 0)
             {
                 Capture(rendered, isError: false);
-                _transcript.Append(rendered);
-                TrimTranscriptLocked();
+                AppendTranscriptLocked(rendered);
             }
             RenderLocked();
         }
@@ -195,6 +198,40 @@ public sealed class TerminalScreen : IDisposable
         }
     }
 
+    internal void AppendToolResult(string text)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        var safe = TerminalSafeText.Normalize(text);
+        lock (_gate)
+        {
+            if (!_active || safe.Length == 0) return;
+            Capture(safe, isError: true);
+            AppendTranscriptLocked(safe, isToolResult: true);
+            RenderLocked();
+        }
+    }
+
+    internal bool ToggleToolResultsExpanded()
+    {
+        lock (_gate)
+        {
+            if (!_active) return _toolResultsExpanded;
+            _toolResultsExpanded = !_toolResultsExpanded;
+            RenderLocked();
+            return _toolResultsExpanded;
+        }
+    }
+
+    internal void SetToolResultsExpanded(bool expanded)
+    {
+        lock (_gate)
+        {
+            if (!_active || _toolResultsExpanded == expanded) return;
+            _toolResultsExpanded = expanded;
+            RenderLocked();
+        }
+    }
+
     private void SetScrollOffsetLocked(int value)
     {
         _scrollOffset = Math.Clamp(value, 0, MaxTranscriptScrollOffset);
@@ -250,18 +287,51 @@ public sealed class TerminalScreen : IDisposable
         {
             if (!_active || safe.Length == 0) return;
             Capture(safe, isError);
-            _transcript.Append(safe);
-            TrimTranscriptLocked();
+            AppendTranscriptLocked(safe);
             RenderLocked();
         }
     }
 
+    private void AppendTranscriptLocked(string text, bool isToolResult = false)
+    {
+        if (text.Length == 0) return;
+        if (!isToolResult && _transcript.Count > 0 && !_transcript[^1].IsToolResult)
+            _transcript[^1].Text.Append(text);
+        else
+            _transcript.Add(new(isToolResult, new StringBuilder(text), isToolResult ? PreviewToolResult(text) : null));
+        _transcriptCharacters += text.Length;
+        TrimTranscriptLocked();
+    }
+
     private void TrimTranscriptLocked()
     {
-        if (_transcript.Length <= MaxScreenTranscriptCharacters) return;
-        var excess = _transcript.Length - MaxScreenTranscriptCharacters;
-        var trim = _transcript.ToString(excess, Math.Min(MaxScreenTranscriptCharacters, 64 * 1024)).IndexOf('\n');
-        _transcript.Remove(0, trim < 0 ? excess : excess + trim + 1);
+        var excess = _transcriptCharacters - MaxScreenTranscriptCharacters;
+        while (excess > 0 && _transcript.Count > 0)
+        {
+            var first = _transcript[0];
+            if (first.Text.Length <= excess)
+            {
+                excess -= first.Text.Length;
+                _transcriptCharacters -= first.Text.Length;
+                _transcript.RemoveAt(0);
+                continue;
+            }
+
+            var remove = excess;
+            var lookLength = Math.Min(first.Text.Length - remove, 64 * 1024);
+            var trim = first.Text.ToString(remove, lookLength).IndexOf('\n');
+            if (trim >= 0) remove += trim + 1;
+            first.Text.Remove(0, remove);
+            if (first.IsToolResult) first.CollapsedPreview = PreviewToolResult(first.Text.ToString());
+            _transcriptCharacters -= remove;
+            break;
+        }
+
+        while (_transcript.Count > MaxScreenTranscriptSegments)
+        {
+            _transcriptCharacters -= _transcript[0].Text.Length;
+            _transcript.RemoveAt(0);
+        }
     }
 
     private void Capture(string safe, bool isError)
@@ -284,6 +354,29 @@ public sealed class TerminalScreen : IDisposable
         _capturedCharacters += safe.Length;
     }
 
+    private string GetTranscriptTextLocked()
+    {
+        var output = new StringBuilder(_transcriptCharacters);
+        foreach (var segment in _transcript)
+        {
+            output.Append(segment.IsToolResult && !_toolResultsExpanded
+                ? segment.CollapsedPreview
+                : segment.Text.ToString());
+        }
+        return output.ToString();
+    }
+
+    private static string PreviewToolResult(string text)
+    {
+        var endsWithNewline = text.EndsWith('\n');
+        var lines = text.Split('\n');
+        var visibleLines = lines.Length - (endsWithNewline ? 1 : 0);
+        if (visibleLines <= MaxToolResultPreviewLines) return text;
+        var remaining = visibleLines - MaxToolResultPreviewLines;
+        var preview = string.Join('\n', lines.Take(MaxToolResultPreviewLines));
+        return $"{preview}\n... ({remaining} more lines; tool output collapsed){(endsWithNewline ? "\n" : "")}";
+    }
+
     private void RenderLocked()
     {
         var columns = _lastColumns = Columns();
@@ -292,7 +385,7 @@ public sealed class TerminalScreen : IDisposable
         var footerHeight = height > 2 ? 1 : 0;
         var transcriptHeight = Math.Max(1, height - editorHeight - footerHeight);
         var editor = EditorViewport.Layout(_editorText, _editorCursor, columns, editorHeight);
-        var transcriptText = _transcript.ToString() + _liveAssistant;
+        var transcriptText = GetTranscriptTextLocked() + _liveAssistant;
         var transcriptWidth = Math.Max(1, columns - 1);
         var visibleTranscript = transcriptText;
         if (_searchQuery.Length > 0)
@@ -568,6 +661,12 @@ public sealed class TerminalScreen : IDisposable
 
     private sealed record SearchProjection(string Text, int[] RawOffsets);
     private readonly record struct SearchMatch(int TextStart, int RawStart, int RawEnd);
+    private sealed class TranscriptSegment(bool isToolResult, StringBuilder text, string? collapsedPreview)
+    {
+        public bool IsToolResult { get; } = isToolResult;
+        public StringBuilder Text { get; } = text;
+        public string? CollapsedPreview { get; set; } = collapsedPreview;
+    }
 
     private sealed class ScreenWriter(TerminalScreen screen, bool isError) : TextWriter
     {

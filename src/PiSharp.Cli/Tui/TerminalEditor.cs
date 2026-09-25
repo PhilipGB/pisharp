@@ -3,7 +3,7 @@ namespace PiSharp.Cli.Tui;
 /// <summary>Normal-screen terminal editor. Leaves transcript in the terminal scrollback.</summary>
 public sealed class TerminalEditor
 {
-    private const string ActiveRunFooter = "Enter steers · follow-up queues · Escape aborts · Alt+Up restores queued input";
+    private const string ActiveRunFooter = "Enter steers · follow-up queues · Escape aborts · Alt+Up restores queued input · Ctrl+O tools";
     private readonly EditorBuffer _buffer;
     private TerminalInput? _input;
     private readonly EditorCompletion _completion;
@@ -13,6 +13,7 @@ public sealed class TerminalEditor
     private string _savedDraft = "";
     private int _savedCursor;
     private string _lastSearchQuery = "";
+    private bool _toolResultsExpanded;
     public TerminalEditor(Func<IReadOnlyList<string>>? commands = null, string? agentDirectory = null)
     {
         _completion = new(Environment.CurrentDirectory, commands);
@@ -31,7 +32,11 @@ public sealed class TerminalEditor
     public void AttachScreen(TerminalScreen? screen)
     {
         _screen = screen;
-        if (screen is not null) screen.SetEditor(_buffer.Text, _buffer.Cursor);
+        if (screen is not null)
+        {
+            screen.SetToolResultsExpanded(_toolResultsExpanded);
+            screen.SetEditor(_buffer.Text, _buffer.Cursor);
+        }
     }
 
     /// <summary>Seed the next editable prompt after a session fork; never submits it automatically.</summary>
@@ -83,7 +88,15 @@ public sealed class TerminalEditor
         Func<string, bool, CancellationToken, Task<bool>> queue, Func<IReadOnlyList<string>> clearQueue,
         Action abort, CancellationToken cancellationToken = default)
     {
-        if (_searchingTranscript) return HandleTranscriptSearchInput(next);
+        if (_searchingTranscript)
+        {
+            if (next.Key is { } searchKey && _keymap.Matches("app.tools.expand", searchKey))
+            {
+                ToggleToolResults();
+                return true;
+            }
+            return HandleTranscriptSearchInput(next);
+        }
         if (next.Key is { } key && (_keymap.Matches("app.interrupt", key) || _keymap.Matches("app.clear", key)))
         {
             RestorePending(clearQueue());
@@ -100,6 +113,11 @@ public sealed class TerminalEditor
             if (_keymap.Matches("tui.altScreen.search", screenKey))
             {
                 StartTranscriptSearch();
+                return true;
+            }
+            if (_keymap.Matches("app.tools.expand", screenKey))
+            {
+                ToggleToolResults();
                 return true;
             }
             if (_keymap.Matches("tui.altScreen.pageUp", screenKey))
@@ -143,6 +161,14 @@ public sealed class TerminalEditor
         }
         _ = next.Text is not null ? _buffer.InsertText(next.Text) : _buffer.Handle(next.Key!.Value);
         return true;
+    }
+
+    private void ToggleToolResults()
+    {
+        if (_screen is not { IsActive: true } screen) return;
+        _toolResultsExpanded = screen.ToggleToolResultsExpanded();
+        if (_searchingTranscript) UpdateTranscriptSearch();
+        else screen.SetFooter($"{ActiveRunFooter} · Tool output {(_toolResultsExpanded ? "expanded" : "collapsed")}");
     }
 
     private void StartTranscriptSearch()
