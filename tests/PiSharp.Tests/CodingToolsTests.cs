@@ -151,6 +151,28 @@ public sealed class CodingToolsTests : IDisposable
     }
 
     [Fact]
+    public async Task BashTimeoutRetainsFullTruncatedOutputAndReportsItsPath()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        var outputReady = Path.Combine(_dir, "timeout-output-ready");
+        var command = $"seq 1 3000; touch {ProcessTestHelpers.ShellQuote(outputReady)}; while :; do :; done";
+        var execution = new CodingTools(_dir).Bash(command, timeout: 1.5);
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        var outputWritten = ProcessTestHelpers.WaitForFileAsync(outputReady, deadline.Token);
+        var timedOut = Assert.ThrowsAsync<ToolFailureException>(() => execution);
+        await Task.WhenAll(outputWritten, timedOut);
+
+        var error = await timedOut;
+        Assert.Contains("Command timed out after 1.5 seconds", error.Message);
+        Assert.Contains("[Showing lines 1001-3000 of 3000. Full output: ", error.Message);
+        var pathMatch = System.Text.RegularExpressions.Regex.Match(error.Message, @"Full output: ([^\]\n]+)");
+        Assert.True(pathMatch.Success, error.Message);
+        var fullOutputPath = pathMatch.Groups[1].Value;
+        Assert.Contains("1\n2\n3\n", await File.ReadAllTextAsync(fullOutputPath));
+        Assert.EndsWith("2998\n2999\n3000\n", await File.ReadAllTextAsync(fullOutputPath));
+    }
+
+    [Fact]
     public void DirectBashUpdatesArePublishedImmediatelyWithoutCoalescing()
     {
         var updates = new List<string>();
