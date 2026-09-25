@@ -535,6 +535,14 @@ public sealed class RpcModeTests
         Assert.Equal(["discard follow"], clear.RootElement.GetProperty("data").GetProperty("followUp")
             .EnumerateArray().Select(item => item.GetString()));
         Assert.Contains(output.Lines(), line => line.Contains("queue_update", StringComparison.Ordinal));
+        foreach (var (id, command) in new[] { ("follow", "follow_up"), ("steer", "steer") })
+        {
+            using var response = JsonDocument.Parse(Assert.Single(output.Lines(), line =>
+                line.Contains($"\"id\":\"{id}\"", StringComparison.Ordinal) &&
+                line.Contains($"\"command\":\"{command}\"", StringComparison.Ordinal)));
+            Assert.True(response.RootElement.GetProperty("success").GetBoolean());
+            Assert.Equal("queued", response.RootElement.GetProperty("data").GetProperty("disposition").GetString());
+        }
     }
 
     [Fact]

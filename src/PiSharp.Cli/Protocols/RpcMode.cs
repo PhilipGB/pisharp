@@ -297,7 +297,8 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                             catch (Exception error) when (error is ArgumentException or IOException)
                             { await RespondAsync(id, type, false, error.Message); break; }
                             var added = type == "steer" ? run.TrySteer(queuedExpanded) : run.TryFollowUp(queuedExpanded);
-                            await RespondAsync(id, type, added, added ? null : "The active run is already settling.");
+                            await RespondQueuedInputAsync(id, type, added,
+                                added ? null : "The active run is already settling.");
                             break;
                         case "clear_queue":
                             var pending = run.ClearPendingPrompts();
@@ -498,6 +499,11 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
 
     private Task RespondAsync(JsonElement? id, string command, bool success, string? error = null) =>
         _writer.EmitAsync(new { id, type = "response", command, success, error });
+
+    private Task RespondQueuedInputAsync(JsonElement? id, string command, bool success, string? error = null) =>
+        success
+            ? _writer.EmitAsync(new { id, type = "response", command, success = true, data = new { disposition = "queued" } })
+            : RespondAsync(id, command, false, error);
 
     private Task RespondPromptAsync(JsonElement? id, bool success, string? disposition = null, string? error = null) =>
         success

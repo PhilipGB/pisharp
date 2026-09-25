@@ -1044,13 +1044,14 @@
       "acceptance": [
         "Implement steer using shared canonical runtime with correlated responses/event ordering",
         "Test protocol through RPC process, including failures and cancellation",
-        "Remaining: Pi wire-compatible payloads, lifecycle/error semantics and pinned process differential."
+        "Remaining: idle queuing behavior, Pi wire-compatible events/payloads and pinned RPC process differential."
       ],
       "implementation": [
-        "src/PiSharp.Cli/Protocols/RpcMode.cs: partial steer operation (PiSharp wire format)"
+        "src/PiSharp.Cli/Protocols/RpcMode.cs: steer queues into the canonical active run and returns Pi-shaped success data with disposition queued; failed/settling queues return a correlated error."
       ],
       "evidence": [
-        "tests/PiSharp.Tests/RpcModeTests.cs: local protocol/command fixtures (coverage varies by operation)"
+        "RpcModeTests.RpcSteeringFollowUpAndClearQueueExposeDistinctPendingInput verifies separate steering/follow-up queue contents and that both successful responses contain data.disposition=queued; existing lifecycle tests verify delivery order and persistence.",
+        "Focused RpcModeTests pass 18/18. Format verification and warnings-as-errors build pass; full local suite passes 530/530 with 0 skipped on the pre-commit working tree. Full Pi RPC compatibility and idle queue behavior remain open."
       ],
       "dependencies": []
     },
@@ -1062,13 +1063,14 @@
       "acceptance": [
         "Implement follow_up using shared canonical runtime with correlated responses/event ordering",
         "Test protocol through RPC process, including failures and cancellation",
-        "Remaining: Pi wire-compatible payloads, lifecycle/error semantics and pinned process differential."
+        "Remaining: idle queuing behavior, Pi wire-compatible events/payloads and pinned RPC process differential."
       ],
       "implementation": [
-        "src/PiSharp.Cli/Protocols/RpcMode.cs: partial follow_up operation (PiSharp wire format)"
+        "src/PiSharp.Cli/Protocols/RpcMode.cs: follow_up queues into the canonical active run and returns Pi-shaped success data with disposition queued; failed/settling queues return a correlated error."
       ],
       "evidence": [
-        "tests/PiSharp.Tests/RpcModeTests.cs: local protocol/command fixtures (coverage varies by operation)"
+        "RpcModeTests.RpcSteeringFollowUpAndClearQueueExposeDistinctPendingInput verifies separate steering/follow-up queue contents and that both successful responses contain data.disposition=queued; existing lifecycle tests verify delivery order and persistence.",
+        "Focused RpcModeTests pass 18/18. Format verification and warnings-as-errors build pass; full local suite passes 530/530 with 0 skipped on the pre-commit working tree. Full Pi RPC compatibility and idle queue behavior remain open."
       ],
       "dependencies": []
     },
