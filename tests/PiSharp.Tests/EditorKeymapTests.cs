@@ -69,6 +69,41 @@ public sealed class EditorKeymapTests
     }
 
     [Fact]
+    public void PromptHistoryAndUndoUseConfigurableNamedEditorActions()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "pisharp-keymap-history-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        try
+        {
+            File.WriteAllText(Path.Combine(directory, "keybindings.json"), """
+                {
+                  "tui.editor.historyPrevious": "ctrl+h",
+                  "tui.editor.historyNext": "ctrl+n",
+                  "tui.editor.undo": "ctrl+z"
+                }
+                """);
+            var keymap = new EditorKeymap(directory);
+            var editor = new EditorBuffer(keymap);
+            editor.SetText("history item");
+            Assert.True(editor.TrySubmit(out _));
+            editor.Clear();
+            editor.SetText("draft");
+
+            Assert.True(keymap.Matches("tui.editor.historyPrevious", Key(ConsoleKey.H, ConsoleModifiers.Control)));
+            Assert.True(keymap.Matches("tui.editor.historyNext", Key(ConsoleKey.N, ConsoleModifiers.Control)));
+            Assert.Equal(EditorAction.Render, editor.Handle(Key(ConsoleKey.H, ConsoleModifiers.Control)));
+            Assert.Equal("history item", editor.Text);
+            Assert.Equal(EditorAction.Render, editor.Handle(Key(ConsoleKey.N, ConsoleModifiers.Control)));
+            Assert.Equal("draft", editor.Text);
+            editor.Handle(new ConsoleKeyInfo('x', ConsoleKey.X, false, false, false));
+            Assert.Equal(EditorAction.Render, editor.Handle(Key(ConsoleKey.Z, ConsoleModifiers.Control)));
+            Assert.Equal("draft", editor.Text);
+            Assert.Contains("Undo the last editor change (tui.editor.undo)", keymap.FormatHotkeys());
+        }
+        finally { Directory.Delete(directory, recursive: true); }
+    }
+
+    [Fact]
     public async Task EditorBindingTakesPrecedenceOverApplicationShortcutInTheEditorContext()
     {
         var directory = Path.Combine(Path.GetTempPath(), "pisharp-keymap-context-" + Guid.NewGuid().ToString("N"));

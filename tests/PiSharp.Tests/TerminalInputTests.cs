@@ -45,6 +45,17 @@ public sealed class TerminalInputTests
     }
 
     [Fact]
+    public void DecodesCtrlMinusUndoBindingFromKittyCsiU()
+    {
+        var reader = new TerminalInput(new MemoryStream(Encoding.UTF8.GetBytes("\u001b[45;5u")));
+
+        var key = reader.Read().Key!.Value;
+
+        Assert.Equal(ConsoleKey.OemMinus, key.Key);
+        Assert.True(key.Modifiers.HasFlag(ConsoleModifiers.Control));
+    }
+
+    [Fact]
     public void DecodesModifiedCursorAndPageKeysForConfigurableBindings()
     {
         var reader = new TerminalInput(new MemoryStream(Encoding.UTF8.GetBytes(
