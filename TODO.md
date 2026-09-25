@@ -6,7 +6,7 @@
 
 ## Current checkpoint
 
-- Main is green at `17d682c2d7206a052b8a65ca24cf9c514166e39e`; Linux CI run [36166108417](https://github.com/PhilipGB/pisharp/actions/runs/36166108417) passed format, warnings-as-errors build and all 480 tests. Local format, build and 480 tests pass on the same commit.
+- Latest exact-head Linux CI is green at `e3b1df8f7d07d73dce0187650ff8b9c3829ecb10`; run [36167157807](https://github.com/PhilipGB/pisharp/actions/runs/36167157807) passed format, warnings-as-errors build and all 480 tests. The latest code change is `17d682c2d7206a052b8a65ca24cf9c514166e39e`; local format, build and all 480 tests also pass there.
 - Durable Pi parity baseline remains `b3487650f6378f1b0d1643dd254445ceb4a98035`. Current Pi `main` was fetched and confirmed at `d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31`; current Kitty sizing minimizes cell distortion while respecting image width/height limits and placement rows.
 - TUI includes Markdig AST rendering, shared display-cell wrapping, transcript state/viewport/search, a screen compositor, reusable picker host, mouse routing, editor history/selection/undo, searchable path completion and bounded clipboard image paste. Major TUI parity remains incomplete.
 
