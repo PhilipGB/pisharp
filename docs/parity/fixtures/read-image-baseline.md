@@ -1,6 +1,6 @@
 # Pinned `read` image behavior
 
-Reference: `earendil-works/pi@d5629e20489ccf770ed90b5a33941cb3b7ef24d0`, `packages/coding-agent/src/core/tools/read.ts` and `src/utils/{mime,image-process,image-resize-core,image-convert}.ts`. These paths are unchanged at refreshed `main` `b2bd111f2d46eed1a4689c32f30fde6306498827`.
+Reference: `earendil-works/pi@d5629e20489ccf770ed90b5a33941cb3b7ef24d0`, `packages/coding-agent/src/core/tools/read.ts` and `src/utils/{mime,image-process,image-resize-core,image-convert}.ts`. These paths are unchanged at refreshed `main` `5fd446ca1843682e8da3fec4ceb71c42f56fbace`.
 
 ## Pinned contract
 

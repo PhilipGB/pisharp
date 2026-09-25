@@ -1,6 +1,8 @@
 using System.Runtime.ExceptionServices;
 using Microsoft.Extensions.AI;
+using PiSharp.Core;
 using PiSharp.Runtime;
+using PiSharp.Runtime.Tools;
 
 namespace PiSharp.Runtime.Sessions;
 
@@ -37,14 +39,17 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
                 else context.Remove(CodingTools.BashOutputContextKey);
             }
         }
-        try { if (execution is not null) await execution.EndToolAsync(id, value, failure); }
+        var hasEditOutput = EditToolOutput.TryRead(value, out var editOutput);
+        var resultText = hasEditOutput ? editOutput.Text : value?.ToString();
+        try { if (execution is not null) await execution.EndToolAsync(id, resultText, failure); }
         catch (Exception error)
         {
             publish(new("tool_outcome_unknown", Tool: Name, OperationId: id, IsError: true, Error: error.Message));
             throw;
         }
-        publish(new("tool_execution_finished", Text: value?.ToString(), Tool: Name, OperationId: id,
-            IsError: failure is not null, Error: failure?.Message));
+        publish(new("tool_execution_finished", Text: resultText, Tool: Name, OperationId: id,
+            IsError: failure is not null, Error: failure?.Message,
+            Details: hasEditOutput ? editOutput.Details() : null));
         if (failure is not null) ExceptionDispatchInfo.Capture(failure).Throw();
         return value;
     }

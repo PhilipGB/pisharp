@@ -5,11 +5,15 @@ namespace PiSharp.Core;
 
 /// <summary>One replacement, matched against the same original file as all other replacements.</summary>
 public sealed record TextEdit(string OldText, string NewText);
+public sealed record FileEditPlan(string OriginalContent, string NewContent);
 
 /// <summary>Pure edit planning. Validation happens before any file is modified.</summary>
 public static class FileEdits
 {
-    public static string Apply(string source, IReadOnlyList<TextEdit> edits, string path)
+    public static string Apply(string source, IReadOnlyList<TextEdit> edits, string path) =>
+        Plan(source, edits, path).NewContent;
+
+    public static FileEditPlan Plan(string source, IReadOnlyList<TextEdit> edits, string path)
     {
         if (edits.Count == 0) throw new ArgumentException("Edit tool input is invalid. edits must contain at least one replacement.");
         var original = NormalizeLf(source);
@@ -59,7 +63,7 @@ public static class FileEdits
             throw new ArgumentException(edits.Count == 1
                 ? $"No changes made to {path}. The replacement produced identical content. This might indicate an issue with special characters or the text not existing as expected."
                 : $"No changes made to {path}. The replacements produced identical content.");
-        return changed;
+        return new FileEditPlan(original, changed);
     }
 
     private static string NormalizeLf(string text) => text.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n');

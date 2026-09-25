@@ -118,12 +118,13 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
     // Keep the persisted function result intact. Provider clients see its text plus image content
     // in a following user message, matching Pi's image-bearing tool result on the wire.
     private IReadOnlyList<ChatMessage> AttachReadImages(IReadOnlyList<ChatMessage> messages) =>
-        ExpandReadImages(messages, supportsImages);
+        ExpandReadImages(messages, supportsImages, flattenEditResults: true);
 
     internal static IReadOnlyList<ChatMessage> NormalizeReadImagesForHistory(IReadOnlyList<ChatMessage> messages) =>
-        ExpandReadImages(messages, supportsImages: true);
+        ExpandReadImages(messages, supportsImages: true, flattenEditResults: false);
 
-    private static IReadOnlyList<ChatMessage> ExpandReadImages(IReadOnlyList<ChatMessage> messages, bool supportsImages)
+    private static IReadOnlyList<ChatMessage> ExpandReadImages(IReadOnlyList<ChatMessage> messages, bool supportsImages,
+        bool flattenEditResults)
     {
         var expanded = new List<ChatMessage>(messages.Count);
         var index = 0;
@@ -143,25 +144,31 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
                 var replaced = false;
                 foreach (var content in message.Contents)
                 {
-                    if (content is not FunctionResultContent result || !TryGetReadOutput(result.Result, out var output))
+                    if (content is FunctionResultContent result && TryGetReadOutput(result.Result, out var output))
                     {
-                        contents.Add(content);
+                        replaced = true;
+                        var resultText = output.Text;
+                        if (output.ImageMimeType is not null || output.ImageDataBase64 is not null)
+                        {
+                            if (!supportsImages)
+                                resultText += "\n[Current model does not support images. The image will be omitted from this request.]";
+                            else if (TryCreateImage(output, out var image))
+                                attachments.Add(image);
+                            else
+                                resultText += "\n[Image content is unavailable.]";
+                        }
+                        contents.Add(new FunctionResultContent(result.CallId, resultText) { Exception = result.Exception });
                         continue;
                     }
 
-                    replaced = true;
-                    var resultText = output.Text;
-                    if (output.ImageMimeType is not null || output.ImageDataBase64 is not null)
+                    if (flattenEditResults && content is FunctionResultContent editResult &&
+                        EditToolOutput.TryRead(editResult.Result, out var editOutput))
                     {
-                        if (!supportsImages)
-                            resultText += "\n[Current model does not support images. The image will be omitted from this request.]";
-                        else if (TryCreateImage(output, out var image))
-                            attachments.Add(image);
-                        else
-                            resultText += "\n[Image content is unavailable.]";
+                        replaced = true;
+                        contents.Add(new FunctionResultContent(editResult.CallId, editOutput.Text)
+                        { Exception = editResult.Exception });
                     }
-                    var replacement = new FunctionResultContent(result.CallId, resultText) { Exception = result.Exception };
-                    contents.Add(replacement);
+                    else contents.Add(content);
                 }
 
                 expanded.Add(replaced ? new ChatMessage(message.Role, contents) : message);

@@ -40,7 +40,7 @@ public sealed class CodingTools
         {
             ["read"] = AIFunctionFactory.Create(ReadForTool, name: "read"),
             ["bash"] = AIFunctionFactory.Create(BashForTool, name: "bash"),
-            ["edit"] = AIFunctionFactory.Create(EditBatch, name: "edit"),
+            ["edit"] = AIFunctionFactory.Create(EditForTool, name: "edit"),
             ["write"] = AIFunctionFactory.Create(Write, name: "write"),
             ["grep"] = AIFunctionFactory.Create(new SearchTools(_cwd).Grep, name: "grep"),
             ["find"] = AIFunctionFactory.Create(new SearchTools(_cwd).Find, name: "find"),
@@ -181,11 +181,17 @@ public sealed class CodingTools
     public Task<string> Edit(string path, string oldText, string newText, CancellationToken cancellationToken = default) =>
         EditBatch(path, [new TextEdit(oldText, newText)], cancellationToken);
 
+    public async Task<string> EditBatch(string path, List<TextEdit> edits, CancellationToken cancellationToken = default) =>
+        (await EditBatchWithDetails(path, edits, cancellationToken)).Text;
+
     [Description("Edit a file with multiple exact, unique, nonoverlapping replacements matched against its original contents.")]
-    public async Task<string> EditBatch(
+    private Task<EditToolOutput> EditForTool(
         [Description("Path relative to the working directory or absolute path.")] string path,
         [Description("One or more oldText/newText blocks; each oldText must match uniquely in the original file.")] List<TextEdit> edits,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default) => EditBatchWithDetails(path, edits, cancellationToken);
+
+    private async Task<EditToolOutput> EditBatchWithDetails(string path, List<TextEdit> edits,
+        CancellationToken cancellationToken)
     {
         if (edits is null || edits.Count == 0) throw new ToolFailureException("Edit tool input is invalid. edits must contain at least one replacement.");
         try
@@ -207,12 +213,14 @@ public sealed class CodingTools
                 var source = new UTF8Encoding(false, true).GetString(bytes, bom ? 3 : 0, bytes.Length - (bom ? 3 : 0));
                 var lf = source.IndexOf('\n');
                 var ending = lf > 0 && source[lf - 1] == '\r' ? "\r\n" : "\n";
-                var modified = FileEdits.Apply(source, edits, path);
-                var restored = ending == "\r\n" ? modified.Replace("\n", "\r\n", StringComparison.Ordinal) : modified;
+                var plan = FileEdits.Plan(source, edits, path);
+                var restored = ending == "\r\n" ? plan.NewContent.Replace("\n", "\r\n", StringComparison.Ordinal) : plan.NewContent;
                 var payload = Encoding.UTF8.GetBytes(restored);
                 if (bom) payload = [0xEF, 0xBB, 0xBF, .. payload];
+                var details = FileEditDiff.Create(path, plan.OriginalContent, plan.NewContent);
                 await AtomicFileWriter.ReplaceAsync(absolute, payload, cancellationToken);
-                return $"Successfully replaced {edits.Count} block(s) in {path}.";
+                return new EditToolOutput($"Successfully replaced {edits.Count} block(s) in {path}.",
+                    details.Diff, details.Patch, details.FirstChangedLine);
             }, cancellationToken);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException or DecoderFallbackException)

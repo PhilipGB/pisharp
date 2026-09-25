@@ -16,4 +16,8 @@ edits[0] and edits[1] overlap in sample.txt. Merge them into one edit or target 
 
 Additional pinned outputs: `one\r\ntwo\n` with old `one\ntwo`, new `three\nfour` produces `three\nfour\n` **after LF normalization**; `a a` with old `a` produces `Found 2 occurrences of the text in sample.txt. The text must be unique. Please provide more context to make it unique.`
 
-`tests/PiSharp.Tests/EditConformanceTests.cs` compares only these pure planning results and a few local filesystem effects. The tool's full schema, diff/patch, errors, fuzzy Unicode edge cases and terminal rendering are **not** Verified.
+## Renderer details
+
+Node `generateDiffString` and `generateUnifiedPatch` outputs from `packages/coding-agent/src/core/tools/edit-diff.ts` at the revision above are encoded as exact expectations in `EditConformanceTests.cs`. Cases cover replacement formatting and no-final-newline markers; line numbering and context; leading insertion and deletion; empty-file addition/removal headers; duplicate-line tie ordering; and separated hunks with omitted display context. The tested upstream `edit.ts`, `edit-diff.ts`, and `tools.test.ts` files are unchanged at pinned `d5629e20489ccf770ed90b5a33941cb3b7ef24d0` and refreshed main `5fd446ca1843682e8da3fec4ceb71c42f56fbace`.
+
+The MAF edit turn test also verifies that the provider sees only the success text, lifecycle events carry `diff`/`patch`/`firstChangedLine`, and the structured result survives conversation save/reload. The full tool schema, permission/error details, broader filesystem/cancellation behavior and terminal rendering remain **not verified**.
