@@ -108,7 +108,6 @@ public sealed class CrashRecoveryProcessTests
         finally
         {
             timeout.Cancel();
-            listener.Stop();
             try { await server; } catch (Exception e) when (e is OperationCanceledException or HttpListenerException or ObjectDisposedException) { }
             Directory.Delete(root, recursive: true);
         }
