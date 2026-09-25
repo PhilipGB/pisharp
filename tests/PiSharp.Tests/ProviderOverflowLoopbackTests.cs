@@ -165,19 +165,7 @@ public sealed class ProviderOverflowLoopbackTests
     [InlineData("openai-completions")]
     public async Task RealSdkRecoversPreContentHttpOverflowWithoutReplacingCanonicalHistory(string api)
     {
-        using var listener = new HttpListener();
-        var port = 0;
-        for (var attempt = 0; attempt < 10; attempt++)
-        {
-            using var reservation = new TcpListener(IPAddress.Loopback, 0);
-            reservation.Start();
-            port = ((IPEndPoint)reservation.LocalEndpoint).Port;
-            reservation.Stop();
-            listener.Prefixes.Clear();
-            listener.Prefixes.Add($"http://127.0.0.1:{port}/");
-            try { listener.Start(); break; }
-            catch (HttpListenerException) when (attempt < 9) { }
-        }
+        using var listener = StartLoopbackListener(out var port);
         using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(12));
         var bodies = new List<string>();
         var server = Task.Run(async () =>
@@ -244,5 +232,32 @@ public sealed class ProviderOverflowLoopbackTests
         Assert.DoesNotContain(new string('P', 900), bodies[2]);
         Assert.Equal(900, conversation.ActiveMessages()[0].Text.Length);
         Assert.Contains(conversation.ActiveMessages(), message => message.Text == "done");
+    }
+
+    private static HttpListener StartLoopbackListener(out int port)
+    {
+        for (var attempt = 0; attempt < 10; attempt++)
+        {
+            using var reservation = new TcpListener(IPAddress.Loopback, 0);
+            reservation.Start();
+            var candidatePort = ((IPEndPoint)reservation.LocalEndpoint).Port;
+            reservation.Stop();
+
+            var listener = new HttpListener();
+            listener.Prefixes.Add($"http://127.0.0.1:{candidatePort}/");
+            try
+            {
+                listener.Start();
+                port = candidatePort;
+                return listener;
+            }
+            catch (HttpListenerException)
+            {
+                listener.Close();
+                if (attempt == 9) throw;
+            }
+        }
+
+        throw new InvalidOperationException("Could not reserve a loopback port for the provider fixture.");
     }
 }
