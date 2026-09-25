@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using PiSharp.Cli;
+using SkiaSharp;
 
 namespace PiSharp.Tests;
 
@@ -403,6 +404,105 @@ public sealed class TerminalPtyTests
     }
 
     [Fact]
+    public async Task ClipboardImagePasteInsertsPrivateImagePathThroughLinuxPty()
+    {
+        if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-clipboard-image-pty-" + Guid.NewGuid().ToString("N"));
+        var agent = Path.Combine(cwd, "agent");
+        var bin = Path.Combine(cwd, "bin");
+        Directory.CreateDirectory(agent);
+        Directory.CreateDirectory(bin);
+        string? pastedImagePath = null;
+        try
+        {
+            var png = CreatePng();
+            var pngPath = Path.Combine(cwd, "fixture.png");
+            await File.WriteAllBytesAsync(pngPath, png);
+            var readCommand = Path.Combine(bin, "wl-paste");
+            await File.WriteAllTextAsync(readCommand,
+                $"#!/bin/sh\nif [ \"$1\" = \"--list-types\" ]; then printf 'image/png\\n'; else /bin/cat '{pngPath}'; fi\n");
+            File.SetUnixFileMode(readCommand, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+
+            var assembly = typeof(CliArguments).Assembly.Location;
+            var start = new ProcessStartInfo("/usr/bin/script")
+            {
+                WorkingDirectory = cwd,
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                ArgumentList = { "-q", "-e", "-c", $"stty rows 24 cols 80; dotnet '{assembly}' --provider openai --no-tools --no-session --offline", "/dev/null" }
+            };
+            foreach (var name in new[] { "OPENAI_API_KEY", "PISHARP_API_KEY", "PISHARP_BASE_URL", "PISHARP_AUTH_PATH", "PISHARP_MODELS_PATH" })
+                start.Environment.Remove(name);
+            start.Environment["PISHARP_AGENT_DIR"] = agent;
+            start.Environment["WAYLAND_DISPLAY"] = "wayland-0";
+            start.Environment["PATH"] = bin + Path.PathSeparator + Environment.GetEnvironmentVariable("PATH");
+            using var process = Process.Start(start);
+            Assert.NotNull(process);
+
+            var outputBuilder = new System.Text.StringBuilder();
+            var outputLock = new object();
+            var inputReady = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var imagePathRendered = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var stdout = Task.Run(async () =>
+            {
+                var buffer = new char[1024];
+                while (true)
+                {
+                    var count = await process.StandardOutput.ReadAsync(buffer);
+                    if (count == 0) break;
+                    lock (outputLock)
+                    {
+                        outputBuilder.Append(buffer, 0, count);
+                        var output = outputBuilder.ToString();
+                        if (output.Contains("\u001b[?2004h", StringComparison.Ordinal)) inputReady.TrySetResult();
+                        var match = System.Text.RegularExpressions.Regex.Match(output, @"pisharp-clipboard-[0-9a-f]{32}\.png");
+                        if (match.Success)
+                        {
+                            pastedImagePath = Path.Combine(Path.GetTempPath(), match.Value);
+                            imagePathRendered.TrySetResult(pastedImagePath);
+                        }
+                    }
+                }
+                lock (outputLock) return outputBuilder.ToString();
+            });
+            var stderr = process.StandardError.ReadToEndAsync();
+            try
+            {
+                using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(25));
+                await inputReady.Task.WaitAsync(timeout.Token);
+                await process.StandardInput.WriteAsync("\u0016");
+                await process.StandardInput.FlushAsync();
+                pastedImagePath = await imagePathRendered.Task.WaitAsync(timeout.Token);
+                Assert.Equal(png, await File.ReadAllBytesAsync(pastedImagePath));
+                if (!OperatingSystem.IsWindows())
+                    Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite, File.GetUnixFileMode(pastedImagePath));
+                await process.StandardInput.WriteAsync("/quit\r");
+                process.StandardInput.Close();
+                await process.WaitForExitAsync(timeout.Token);
+                var output = await stdout;
+
+                Assert.Equal(0, process.ExitCode);
+                Assert.Contains(Path.GetFileName(pastedImagePath), output);
+                Assert.DoesNotContain("Shortcut action failed:", output);
+                Assert.DoesNotContain("Error:", await stderr);
+            }
+            catch
+            {
+                if (!process.HasExited) process.Kill(entireProcessTree: true);
+                await process.WaitForExitAsync();
+                await stdout;
+                throw;
+            }
+        }
+        finally
+        {
+            if (pastedImagePath is not null) File.Delete(pastedImagePath);
+            Directory.Delete(cwd, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task ExternalEditorSuspendsAndRestoresTheTerminalThroughLinuxPty()
     {
         if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
@@ -772,5 +872,14 @@ public sealed class TerminalPtyTests
             Assert.DoesNotContain("Agent error", await stderr);
         }
         finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    private static byte[] CreatePng()
+    {
+        using var bitmap = new SKBitmap(new SKImageInfo(2, 2, SKColorType.Rgba8888, SKAlphaType.Premul));
+        bitmap.Erase(SKColors.CornflowerBlue);
+        using var image = SKImage.FromBitmap(bitmap);
+        using var data = image.Encode(SKEncodedImageFormat.Png, 100);
+        return data.ToArray();
     }
 }

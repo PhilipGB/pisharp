@@ -15,7 +15,7 @@ public sealed class EditorKeymapTests
         Assert.Equal("app.message.copy", keymap.MatchIdleApplicationAction(Key(ConsoleKey.X, ConsoleModifiers.Control)));
         Assert.Equal("app.clipboard.pasteImage", keymap.MatchIdleApplicationAction(paste));
         Assert.Contains("Copy selection or last assistant message (app.message.copy)", keymap.FormatHotkeys());
-        Assert.Contains("Paste clipboard text (image support pending) (app.clipboard.pasteImage)", keymap.FormatHotkeys());
+        Assert.Contains("Paste clipboard image or text (app.clipboard.pasteImage)", keymap.FormatHotkeys());
     }
 
     [Fact]

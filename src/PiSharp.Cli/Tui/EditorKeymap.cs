@@ -50,7 +50,7 @@ public sealed class EditorKeymap
         ["app.model.select"] = new("Open model selector", ["ctrl+l"]),
         ["app.editor.external"] = new("Open external editor", ["ctrl+g"]),
         ["app.message.copy"] = new("Copy selection or last assistant message", ["ctrl+x"]),
-        ["app.clipboard.pasteImage"] = new("Paste clipboard text (image support pending)", IsWindowsBindings() ? ["alt+v"] : ["ctrl+v"]),
+        ["app.clipboard.pasteImage"] = new("Paste clipboard image or text", IsWindowsBindings() ? ["alt+v"] : ["ctrl+v"]),
         ["app.settings.open"] = new("Open settings", []),
         ["app.session.resume"] = new("Open session selector", []),
         ["app.session.fork"] = new("Open fork selector", []),

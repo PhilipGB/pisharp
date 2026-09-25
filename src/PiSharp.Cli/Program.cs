@@ -489,6 +489,17 @@ async Task PasteClipboardTextAsync()
     if (!string.IsNullOrEmpty(text)) editor?.InsertTextAtCursor(text);
 }
 
+async Task PasteClipboardImageAsync()
+{
+    var image = await terminalClipboard.ReadImageAsync();
+    if (image is not null)
+    {
+        editor?.InsertTextAtCursor(await ClipboardImageStore.SaveAsync(image));
+        return;
+    }
+    await PasteClipboardTextAsync();
+}
+
 async Task HandleEditorApplicationAction(string action)
 {
     try
@@ -524,7 +535,7 @@ async Task HandleEditorApplicationAction(string action)
                 await CopyLastAssistantAsync();
                 break;
             case "app.clipboard.pasteImage":
-                await PasteClipboardTextAsync();
+                await PasteClipboardImageAsync();
                 break;
             case "app.session.resume":
                 await SelectSessionAsync();

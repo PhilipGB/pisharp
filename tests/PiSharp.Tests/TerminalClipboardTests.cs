@@ -1,5 +1,6 @@
 using System.Text;
 using PiSharp.Cli.Tui;
+using SkiaSharp;
 
 namespace PiSharp.Tests;
 
@@ -95,10 +96,154 @@ public sealed class TerminalClipboardTests
         Assert.Equal("clip", windowsCommands.Invocations[1].Command);
     }
 
+    [Fact]
+    public async Task WaylandImageReadPrefersPngAndReturnsValidatedImageBytes()
+    {
+        var png = CreatePng();
+        var commands = new FakeCommands((name, arguments, _) => name == "wl-paste"
+            ? arguments.SequenceEqual(["--list-types"])
+                ? new(0, Encoding.UTF8.GetBytes("text/plain\nimage/jpeg\nimage/png\n"))
+                : new(0, png)
+            : new(1, []));
+        var clipboard = new TerminalClipboard(commands, Env(("WAYLAND_DISPLAY", "wayland-0")), platform: ClipboardPlatform.Linux);
+
+        var image = await clipboard.ReadImageAsync();
+
+        Assert.Equal("image/png", image?.MimeType);
+        Assert.Equal(png, image?.Bytes);
+        Assert.Equal(["wl-paste", "wl-paste"], commands.Invocations.Select(call => call.Command));
+        Assert.Equal(["--list-types"], commands.Invocations[0].Arguments);
+        Assert.Equal(["--type", "image/png", "--no-newline"], commands.Invocations[1].Arguments);
+    }
+
+    [Fact]
+    public async Task WaylandClipboardWithoutImageDoesNotUseStaleX11Image()
+    {
+        var commands = new FakeCommands((name, _, _) => name == "wl-paste"
+            ? new(0, Encoding.UTF8.GetBytes("text/plain\n"))
+            : new(0, CreatePng()));
+        var clipboard = new TerminalClipboard(commands,
+            Env(("WAYLAND_DISPLAY", "wayland-0"), ("DISPLAY", ":0")), platform: ClipboardPlatform.Linux);
+
+        Assert.Null(await clipboard.ReadImageAsync());
+        Assert.Equal(["wl-paste"], commands.Invocations.Select(call => call.Command));
+    }
+
+    [Fact]
+    public async Task WaylandCommandFailureFallsBackToX11Image()
+    {
+        var png = CreatePng();
+        var commands = new FakeCommands((name, arguments, _) => name switch
+        {
+            "wl-paste" => new(1, []),
+            "xclip" when arguments.Contains("TARGETS") => new(0, Encoding.UTF8.GetBytes("text/plain\nimage/png\n")),
+            "xclip" => new(0, png),
+            _ => null
+        });
+        var clipboard = new TerminalClipboard(commands,
+            Env(("WAYLAND_DISPLAY", "wayland-0"), ("DISPLAY", ":0")), platform: ClipboardPlatform.Linux);
+
+        var image = await clipboard.ReadImageAsync();
+
+        Assert.Equal("image/png", image?.MimeType);
+        Assert.Equal(png, image?.Bytes);
+        Assert.Equal(["wl-paste", "xclip", "xclip"], commands.Invocations.Select(call => call.Command));
+    }
+
+    [Fact]
+    public async Task WslClipboardConvertsAdvertisedBmpToPng()
+    {
+        var commands = new FakeCommands((name, arguments, _) => name == "wl-paste"
+            ? arguments.Contains("--list-types")
+                ? new(0, Encoding.UTF8.GetBytes("image/bmp\n"))
+                : new(0, CreateBmp())
+            : null);
+        var clipboard = new TerminalClipboard(commands, Env(("WSL_DISTRO_NAME", "Ubuntu")), platform: ClipboardPlatform.Linux);
+
+        var image = await clipboard.ReadImageAsync();
+
+        Assert.Equal("image/png", image?.MimeType);
+        Assert.True(image!.Bytes.AsSpan().StartsWith(new byte[] { 0x89, 0x50, 0x4e, 0x47 }));
+    }
+
+    [Fact]
+    public async Task WslClipboardFallsBackToPowerShellAndEscapesWindowsPath()
+    {
+        var png = CreatePng();
+        string? linuxPath = null;
+        var commands = new FakeCommands((name, arguments, _) =>
+        {
+            switch (name)
+            {
+                case "wl-paste":
+                case "xclip":
+                    return new(1, []);
+                case "wslpath":
+                    linuxPath = arguments[1];
+                    return new(0, Encoding.UTF8.GetBytes("C:\\Users\\O'Hare\\clip.png\n"));
+                case "powershell.exe":
+                    Assert.Contains("$path = 'C:\\Users\\O''Hare\\clip.png'", arguments[3]);
+                    File.WriteAllBytes(linuxPath!, png);
+                    return new(0, Encoding.UTF8.GetBytes("ok\n"));
+                default:
+                    return null;
+            }
+        });
+        var clipboard = new TerminalClipboard(commands, Env(("WSL_DISTRO_NAME", "Ubuntu")), platform: ClipboardPlatform.Linux);
+
+        var image = await clipboard.ReadImageAsync();
+
+        Assert.Equal("image/png", image?.MimeType);
+        Assert.Equal(png, image?.Bytes);
+        Assert.Equal(["wl-paste", "xclip", "wslpath", "powershell.exe"],
+            commands.Invocations.Select(call => call.Command));
+    }
+
+    [Fact]
+    public async Task ClipboardImageStoreWritesPrivateImageFile()
+    {
+        var bytes = CreatePng();
+        var path = await ClipboardImageStore.SaveAsync(new TerminalClipboardImage(bytes, "image/png"));
+        try
+        {
+            Assert.EndsWith(".png", path);
+            Assert.Equal(bytes, await File.ReadAllBytesAsync(path));
+            if (!OperatingSystem.IsWindows())
+                Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite, File.GetUnixFileMode(path));
+        }
+        finally { File.Delete(path); }
+    }
+
     private static Func<string, string?> Env(params (string Name, string Value)[] values)
     {
         var map = values.ToDictionary(value => value.Name, value => value.Value, StringComparer.Ordinal);
         return name => map.GetValueOrDefault(name);
+    }
+
+    private static byte[] CreatePng()
+    {
+        using var bitmap = new SKBitmap(new SKImageInfo(2, 2, SKColorType.Rgba8888, SKAlphaType.Premul));
+        bitmap.Erase(SKColors.CornflowerBlue);
+        using var image = SKImage.FromBitmap(bitmap);
+        using var data = image.Encode(SKEncodedImageFormat.Png, 100);
+        return data.ToArray();
+    }
+
+    private static byte[] CreateBmp()
+    {
+        var bytes = new byte[58];
+        bytes[0] = (byte)'B';
+        bytes[1] = (byte)'M';
+        BitConverter.GetBytes((uint)bytes.Length).CopyTo(bytes, 2);
+        BitConverter.GetBytes((uint)54).CopyTo(bytes, 10);
+        BitConverter.GetBytes((uint)40).CopyTo(bytes, 14);
+        BitConverter.GetBytes(1).CopyTo(bytes, 18);
+        BitConverter.GetBytes(1).CopyTo(bytes, 22);
+        BitConverter.GetBytes((ushort)1).CopyTo(bytes, 26);
+        BitConverter.GetBytes((ushort)24).CopyTo(bytes, 28);
+        BitConverter.GetBytes((uint)4).CopyTo(bytes, 34);
+        bytes[56] = 0xff;
+        return bytes;
     }
 
     private sealed class FakeCommands(Func<string, IReadOnlyList<string>, string?, ClipboardCommandResult?> result) : IClipboardCommandRunner
