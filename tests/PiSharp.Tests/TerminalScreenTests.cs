@@ -207,6 +207,40 @@ public sealed class TerminalScreenTests
     }
 
     [Fact]
+    public async Task KeyboardSelectionHighlightsPromptAndIsAvailableToCopyAction()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        using var screen = new TerminalScreen(output, error, () => 40, () => 9);
+        var editor = new TerminalEditor();
+        editor.Prefill("select me");
+        editor.AttachScreen(screen);
+
+        await editor.HandleActiveInputAsync(Key(ConsoleKey.LeftArrow, ConsoleModifiers.Shift), Queue, Clear, Abort);
+        await editor.HandleActiveInputAsync(Key(ConsoleKey.LeftArrow, ConsoleModifiers.Shift), Queue, Clear, Abort);
+        editor.AttachScreen(screen);
+
+        Assert.Equal("me", screen.SelectedText);
+        Assert.Contains("\u001b[7m", output.ToString());
+        var copied = new List<string?>();
+        await editor.HandleActiveInputAsync(Key(ConsoleKey.X, ConsoleModifiers.Control), Queue, Clear, Abort,
+            dispatchApplicationAction: action =>
+            {
+                Assert.Equal("app.message.copy", action);
+                copied.Add(screen.SelectedText);
+                return Task.CompletedTask;
+            });
+        Assert.Equal(["me"], copied);
+
+        static TerminalInputEvent Key(ConsoleKey key, ConsoleModifiers modifiers) =>
+            new(new ConsoleKeyInfo('\0', key, modifiers.HasFlag(ConsoleModifiers.Shift),
+                modifiers.HasFlag(ConsoleModifiers.Alt), modifiers.HasFlag(ConsoleModifiers.Control)), null);
+        static Task<bool> Queue(string text, bool followUp, CancellationToken token) => Task.FromResult(true);
+        static IReadOnlyList<string> Clear() => [];
+        static void Abort() { }
+    }
+
+    [Fact]
     public void MouseTrackingIsDisabledBeforeSuspendingAndLeavingTheAlternateScreen()
     {
         using var output = new StringWriter();

@@ -45,6 +45,48 @@ public sealed class EditorBufferTests
     }
 
     [Fact]
+    public void KeyboardSelectionMovesByGraphemeAndPlainMovementCollapsesIt()
+    {
+        var editor = new EditorBuffer();
+        editor.SetText("a😀e\u0301b");
+
+        Assert.Equal(EditorAction.Render, editor.Handle(Key('\0', ConsoleKey.LeftArrow, ConsoleModifiers.Shift)));
+        Assert.Equal("b", editor.SelectedText);
+        editor.Handle(Key('\0', ConsoleKey.LeftArrow, ConsoleModifiers.Shift));
+        editor.Handle(Key('\0', ConsoleKey.LeftArrow, ConsoleModifiers.Shift));
+        Assert.Equal("😀e\u0301b", editor.SelectedText);
+        Assert.Equal(EditorAction.Render, editor.Handle(Key('\0', ConsoleKey.LeftArrow)));
+        Assert.Null(editor.SelectedText);
+        Assert.Equal(1, editor.Cursor);
+    }
+
+    [Fact]
+    public void TypingAndDeletingReplaceKeyboardSelectionAndUndoRestoresIt()
+    {
+        var editor = new EditorBuffer();
+        editor.SetText("hello", 2);
+        editor.Handle(Key('\0', ConsoleKey.RightArrow, ConsoleModifiers.Shift));
+        editor.Handle(Key('\0', ConsoleKey.RightArrow, ConsoleModifiers.Shift));
+
+        Assert.Equal("ll", editor.SelectedText);
+        Assert.Equal(EditorAction.Render, editor.Handle(Key('X', ConsoleKey.X)));
+        Assert.Equal("heXo", editor.Text);
+        Assert.Null(editor.SelectedText);
+        Assert.Equal(EditorAction.Render, editor.Handle(Key('-', ConsoleKey.OemMinus, ConsoleModifiers.Control)));
+        Assert.Equal("hello", editor.Text);
+        Assert.Equal(4, editor.Cursor);
+        Assert.Equal("ll", editor.SelectedText);
+
+        editor.SetCursor(2);
+        editor.Handle(Key('\0', ConsoleKey.RightArrow, ConsoleModifiers.Shift));
+        editor.Handle(Key('\0', ConsoleKey.RightArrow, ConsoleModifiers.Shift));
+        Assert.Equal(EditorAction.Render, editor.Handle(Key('\0', ConsoleKey.Backspace)));
+        Assert.Equal("heo", editor.Text);
+        editor.Handle(Key('-', ConsoleKey.OemMinus, ConsoleModifiers.Control));
+        Assert.Equal("hello", editor.Text);
+    }
+
+    [Fact]
     public void AltEnterInsertsLineRatherThanSubmitting()
     {
         var editor = new EditorBuffer();

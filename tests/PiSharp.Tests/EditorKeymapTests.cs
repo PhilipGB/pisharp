@@ -14,7 +14,7 @@ public sealed class EditorKeymapTests
 
         Assert.Equal("app.message.copy", keymap.MatchIdleApplicationAction(Key(ConsoleKey.X, ConsoleModifiers.Control)));
         Assert.Equal("app.clipboard.pasteImage", keymap.MatchIdleApplicationAction(paste));
-        Assert.Contains("Copy last assistant message (app.message.copy)", keymap.FormatHotkeys());
+        Assert.Contains("Copy selection or last assistant message (app.message.copy)", keymap.FormatHotkeys());
         Assert.Contains("Paste clipboard text (image support pending) (app.clipboard.pasteImage)", keymap.FormatHotkeys());
     }
 
@@ -99,6 +99,27 @@ public sealed class EditorKeymapTests
             Assert.Equal(EditorAction.Render, editor.Handle(Key(ConsoleKey.Z, ConsoleModifiers.Control)));
             Assert.Equal("draft", editor.Text);
             Assert.Contains("Undo the last editor change (tui.editor.undo)", keymap.FormatHotkeys());
+        }
+        finally { Directory.Delete(directory, recursive: true); }
+    }
+
+    [Fact]
+    public void PromptSelectionUsesConfigurableNamedEditorActions()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "pisharp-keymap-selection-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        try
+        {
+            File.WriteAllText(Path.Combine(directory, "keybindings.json"), "{ \"tui.editor.selectLeft\": \"ctrl+h\" }");
+            var keymap = new EditorKeymap(directory);
+            var editor = new EditorBuffer(keymap);
+            editor.SetText("draft");
+
+            Assert.True(keymap.Matches("tui.editor.selectLeft", Key(ConsoleKey.H, ConsoleModifiers.Control)));
+            Assert.True(keymap.MatchesEditorAction(Key(ConsoleKey.H, ConsoleModifiers.Control)));
+            Assert.True(keymap.Matches("tui.editor.selectRight", Key(ConsoleKey.RightArrow, ConsoleModifiers.Shift)));
+            Assert.Equal(EditorAction.Render, editor.Handle(Key(ConsoleKey.H, ConsoleModifiers.Control)));
+            Assert.Equal("t", editor.SelectedText);
         }
         finally { Directory.Delete(directory, recursive: true); }
     }

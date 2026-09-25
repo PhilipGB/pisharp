@@ -1,6 +1,7 @@
 namespace PiSharp.Cli.Tui;
 
-internal readonly record struct TerminalMouseResult(bool Changed = false, bool Copy = false, int? EditorCursorOffset = null);
+internal readonly record struct TerminalMouseResult(bool Changed = false, bool Copy = false,
+    int? EditorCursorOffset = null, bool ClearEditorSelection = false);
 
 /// <summary>Routes terminal mouse gestures to transcript selection or the prompt editor.</summary>
 internal sealed class TerminalMouseRouter
@@ -33,9 +34,20 @@ internal sealed class TerminalMouseRouter
 
     public IReadOnlyList<string> HighlightTranscript() => _transcript.HighlightVisibleRows();
 
-    public void SetEditor(string text, EditorViewport.Frame frame, int screenStart)
+    public void SetEditor(string text, EditorViewport.Frame frame, int screenStart,
+        int? selectionStart = null, int? selectionEnd = null)
     {
         _editor.SetFrame(text, frame);
+        _editor.SetBufferSelection(selectionStart, selectionEnd);
+        if (selectionStart is { } start && selectionEnd is { } end && start < end)
+        {
+            _transcript.Clear();
+            _selectionTarget = Target.Editor;
+        }
+        else if (_selectionTarget == Target.Editor && _editor.SelectedText is null && _dragTarget != Target.Editor)
+        {
+            _selectionTarget = Target.None;
+        }
         _editorFrame = frame;
         _editorScreenStart = screenStart;
         _editorHeight = frame.Rows.Count;
@@ -73,7 +85,7 @@ internal sealed class TerminalMouseRouter
             if (!_editor.Begin(editorRow, cell)) return default;
             _transcript.Clear();
             _selectionTarget = _dragTarget = Target.Editor;
-            return new(Changed: true);
+            return new(Changed: true, ClearEditorSelection: true);
         }
 
         if (ContainsTranscript(row))

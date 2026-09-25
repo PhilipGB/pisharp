@@ -22,6 +22,8 @@ public sealed class TerminalScreen : IDisposable
     private string _liveAssistant = "";
     private readonly TranscriptSearchController _search = new();
     private int _editorCursor;
+    private int? _editorSelectionStart;
+    private int? _editorSelectionEnd;
     private int _scrollOffset;
     private string _footer = "Enter steers · follow-up queues · Escape aborts";
     private IReadOnlyList<string>? _overlay;
@@ -100,7 +102,7 @@ public sealed class TerminalScreen : IDisposable
         }
     }
 
-    public void SetEditor(string text, int cursor)
+    public void SetEditor(string text, int cursor, int? selectionStart = null, int? selectionEnd = null)
     {
         ArgumentNullException.ThrowIfNull(text);
         lock (_gate)
@@ -108,6 +110,18 @@ public sealed class TerminalScreen : IDisposable
             if (!_active) return;
             _editorText = text;
             _editorCursor = Math.Clamp(cursor, 0, text.Length);
+            _editorSelectionStart = null;
+            _editorSelectionEnd = null;
+            if (selectionStart is { } start && selectionEnd is { } end && start < end)
+            {
+                var boundedStart = Math.Clamp(start, 0, text.Length);
+                var boundedEnd = Math.Clamp(end, 0, text.Length);
+                if (boundedStart < boundedEnd)
+                {
+                    _editorSelectionStart = boundedStart;
+                    _editorSelectionEnd = boundedEnd;
+                }
+            }
             RenderLocked();
         }
     }
@@ -332,7 +346,8 @@ public sealed class TerminalScreen : IDisposable
     private void RenderLocked()
     {
         if (!_active || _suspended) return;
-        var frame = _compositor.Compose(_editorText, _editorCursor, GetTranscriptTextLocked() + _liveAssistant,
+        var frame = _compositor.Compose(_editorText, _editorCursor, _editorSelectionStart, _editorSelectionEnd,
+            GetTranscriptTextLocked() + _liveAssistant,
             _footer, _overlay, _scrollOffset, Columns(), Rows(), _search, _mouse);
         _scrollOffset = frame.ScrollOffset;
         _lastColumns = frame.Columns;

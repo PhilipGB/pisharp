@@ -6,7 +6,8 @@ internal sealed class TerminalScreenCompositor(TextWriter output)
     internal sealed record Frame(IReadOnlyList<string> Rows, int CursorRow, int CursorColumn,
         int ScrollOffset, int Columns, int Height);
 
-    public Frame Compose(string editorText, int editorCursor, string transcriptText, string footer,
+    public Frame Compose(string editorText, int editorCursor, int? editorSelectionStart, int? editorSelectionEnd,
+        string transcriptText, string footer,
         IReadOnlyList<string>? overlay, int scrollOffset, int columns, int height,
         TranscriptSearchController search, TerminalMouseRouter mouse)
     {
@@ -35,7 +36,7 @@ internal sealed class TerminalScreenCompositor(TextWriter output)
             rows[transcriptStart + index] = displayedTranscriptRows[index];
 
         var editorStart = transcriptHeight + editorHeight - editor.Rows.Count;
-        mouse.SetEditor(editorText, editor, editorStart);
+        mouse.SetEditor(editorText, editor, editorStart, editorSelectionStart, editorSelectionEnd);
         var displayedEditorRows = mouse.HighlightEditor();
         for (var index = 0; index < editor.Rows.Count; index++)
             rows[editorStart + index] = editor.Rows[index][..2] + displayedEditorRows[index];

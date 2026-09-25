@@ -81,6 +81,20 @@ public sealed class TerminalInputTests
             Assert.Equal("app.model.cycleBackward", new EditorKeymap().MatchIdleApplicationAction(controlShiftP));
     }
 
+    [Fact]
+    public void DecodedShiftArrowExtendsPromptSelection()
+    {
+        var reader = new TerminalInput(new MemoryStream(Encoding.UTF8.GetBytes("\u001b[1;2D")));
+        var key = reader.Read().Key!.Value;
+        var editor = new EditorBuffer();
+        editor.SetText("draft");
+
+        Assert.Equal(ConsoleKey.LeftArrow, key.Key);
+        Assert.True(key.Modifiers.HasFlag(ConsoleModifiers.Shift));
+        Assert.Equal(EditorAction.Render, editor.Handle(key));
+        Assert.Equal("t", editor.SelectedText);
+    }
+
     [Theory]
     [InlineData("\u001b]10;rgb:aaaa/bbbb/cccc\aX")]
     [InlineData("\u001b]11;rgb:0000/1111/2222\u001b\\X")]

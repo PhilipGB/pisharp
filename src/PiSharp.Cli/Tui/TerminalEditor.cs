@@ -35,7 +35,7 @@ public sealed class TerminalEditor
         if (screen is not null)
         {
             screen.SetToolResultsExpanded(_toolResultsExpanded);
-            screen.SetEditor(_buffer.Text, _buffer.Cursor);
+            screen.SetEditor(_buffer.Text, _buffer.Cursor, _buffer.SelectionStart, _buffer.SelectionEnd);
         }
     }
 
@@ -111,6 +111,11 @@ public sealed class TerminalEditor
         if (next.Mouse is { } mouse)
         {
             var result = _screen?.HandleMouse(mouse) ?? default;
+            if (result.ClearEditorSelection)
+            {
+                _buffer.ClearSelection();
+                Render();
+            }
             if (result.EditorCursorOffset is { } cursor)
             {
                 _buffer.SetCursor(cursor);
@@ -415,7 +420,7 @@ public sealed class TerminalEditor
     {
         if (_screen is { IsActive: true })
         {
-            _screen.SetEditor(_buffer.Text, _buffer.Cursor);
+            _screen.SetEditor(_buffer.Text, _buffer.Cursor, _buffer.SelectionStart, _buffer.SelectionEnd);
             return;
         }
         var width = Console.WindowWidth > 0 ? Console.WindowWidth : 80;

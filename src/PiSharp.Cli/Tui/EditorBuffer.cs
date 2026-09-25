@@ -5,7 +5,7 @@ namespace PiSharp.Cli.Tui;
 /// <summary>Testable editor state, independent of console rendering and model execution.</summary>
 public sealed class EditorBuffer
 {
-    private sealed record Snapshot(string Text, int Cursor);
+    private sealed record Snapshot(string Text, int Cursor, int? SelectionAnchor);
 
     private readonly List<string> _history = [];
     private readonly List<Snapshot> _undo = [];
@@ -14,6 +14,7 @@ public sealed class EditorBuffer
     private int _historyIndex;
     private string _draft = "";
     private int _draftCursor;
+    private int? _selectionAnchor;
     private int? _preferredColumn;
     private bool _coalesceTypedWord;
 
@@ -21,13 +22,17 @@ public sealed class EditorBuffer
 
     public string Text => _text;
     public int Cursor { get; private set; }
+    public int? SelectionStart => _selectionAnchor is { } anchor && anchor != Cursor ? Math.Min(anchor, Cursor) : null;
+    public int? SelectionEnd => _selectionAnchor is { } anchor && anchor != Cursor ? Math.Max(anchor, Cursor) : null;
+    public string? SelectedText => SelectionStart is { } start && SelectionEnd is { } end ? _text[start..end] : null;
     public IReadOnlyList<string> History => _history;
 
     public EditorAction Handle(ConsoleKeyInfo key)
     {
         var control = key.Modifiers.HasFlag(ConsoleModifiers.Control);
         var alt = key.Modifiers.HasFlag(ConsoleModifiers.Alt);
-        var vertical = _keymap.Matches("tui.editor.cursorUp", key) || _keymap.Matches("tui.editor.cursorDown", key);
+        var vertical = _keymap.Matches("tui.editor.cursorUp", key) || _keymap.Matches("tui.editor.cursorDown", key) ||
+            _keymap.Matches("tui.editor.selectUp", key) || _keymap.Matches("tui.editor.selectDown", key);
         var printable = !control && !alt && !char.IsControl(key.KeyChar);
         if (!printable) _coalesceTypedWord = false;
         if (!vertical) _preferredColumn = null;
@@ -48,19 +53,28 @@ public sealed class EditorBuffer
         if (_keymap.Matches("tui.editor.undo", key)) return Undo();
         if (_keymap.Matches("tui.editor.historyPrevious", key)) return NavigateHistory(-1);
         if (_keymap.Matches("tui.editor.historyNext", key)) return NavigateHistory(1);
+        if (_keymap.Matches("tui.editor.selectUp", key)) return MoveVertical(-1, extendSelection: true);
+        if (_keymap.Matches("tui.editor.selectDown", key)) return MoveVertical(1, extendSelection: true);
         if (_keymap.Matches("tui.editor.cursorUp", key)) return MoveVertical(-1);
         if (_keymap.Matches("tui.editor.cursorDown", key)) return MoveVertical(1);
 
-        if (_keymap.Matches("tui.editor.cursorLeft", key)) Cursor = PreviousBoundary(Cursor);
-        else if (_keymap.Matches("tui.editor.cursorRight", key)) Cursor = NextBoundary(Cursor);
-        else if (_keymap.Matches("tui.editor.cursorWordLeft", key)) Cursor = MoveWordLeft(Cursor);
-        else if (_keymap.Matches("tui.editor.cursorWordRight", key)) Cursor = MoveWordRight(Cursor);
-        else if (_keymap.Matches("tui.editor.cursorLineStart", key)) Cursor = LineStart(Cursor);
-        else if (_keymap.Matches("tui.editor.cursorLineEnd", key)) Cursor = LineEnd(Cursor);
-        else if (_keymap.Matches("tui.editor.deleteCharBackward", key) && Cursor > 0)
-            DeleteRange(PreviousBoundary(Cursor), Cursor);
-        else if (_keymap.Matches("tui.editor.deleteCharForward", key) && Cursor < _text.Length)
-            DeleteRange(Cursor, NextBoundary(Cursor));
+        if (_keymap.Matches("tui.editor.selectLeft", key)) return ExtendSelection(PreviousBoundary(Cursor));
+        if (_keymap.Matches("tui.editor.selectRight", key)) return ExtendSelection(NextBoundary(Cursor));
+        if (_keymap.Matches("tui.editor.selectWordLeft", key)) return ExtendSelection(MoveWordLeft(Cursor));
+        if (_keymap.Matches("tui.editor.selectWordRight", key)) return ExtendSelection(MoveWordRight(Cursor));
+        if (_keymap.Matches("tui.editor.selectLineStart", key)) return ExtendSelection(LineStart(Cursor));
+        if (_keymap.Matches("tui.editor.selectLineEnd", key)) return ExtendSelection(LineEnd(Cursor));
+
+        if (_keymap.Matches("tui.editor.cursorLeft", key)) MoveCursor(SelectionStart ?? PreviousBoundary(Cursor));
+        else if (_keymap.Matches("tui.editor.cursorRight", key)) MoveCursor(SelectionEnd ?? NextBoundary(Cursor));
+        else if (_keymap.Matches("tui.editor.cursorWordLeft", key)) MoveCursor(SelectionStart ?? MoveWordLeft(Cursor));
+        else if (_keymap.Matches("tui.editor.cursorWordRight", key)) MoveCursor(SelectionEnd ?? MoveWordRight(Cursor));
+        else if (_keymap.Matches("tui.editor.cursorLineStart", key)) MoveCursor(LineStart(Cursor));
+        else if (_keymap.Matches("tui.editor.cursorLineEnd", key)) MoveCursor(LineEnd(Cursor));
+        else if (_keymap.Matches("tui.editor.deleteCharBackward", key))
+            DeleteRange(SelectionStart ?? PreviousBoundary(Cursor), SelectionEnd ?? Cursor);
+        else if (_keymap.Matches("tui.editor.deleteCharForward", key))
+            DeleteRange(SelectionStart ?? Cursor, SelectionEnd ?? NextBoundary(Cursor));
         else if (_keymap.Matches("tui.editor.deleteWordBackward", key))
             DeleteRange(MoveWordLeft(Cursor), Cursor);
         else if (_keymap.Matches("tui.editor.deleteWordForward", key))
@@ -97,6 +111,7 @@ public sealed class EditorBuffer
         _undo.Clear();
         _coalesceTypedWord = false;
         _preferredColumn = null;
+        ClearSelection();
         return true;
     }
 
@@ -110,6 +125,7 @@ public sealed class EditorBuffer
         _undo.Clear();
         _coalesceTypedWord = false;
         _preferredColumn = null;
+        ClearSelection();
     }
 
     public void Replace(int start, int length, string replacement)
@@ -121,6 +137,7 @@ public sealed class EditorBuffer
         PushUndoSnapshot();
         _text = _text.Remove(start, length).Insert(start, replacement);
         Cursor = start + replacement.Length;
+        ClearSelection();
         ExitHistoryBrowsing();
         RememberDraft();
         _coalesceTypedWord = false;
@@ -134,6 +151,7 @@ public sealed class EditorBuffer
         if (!string.Equals(_text, text, StringComparison.Ordinal)) PushUndoSnapshot();
         _text = text;
         Cursor = nextCursor;
+        ClearSelection();
         ExitHistoryBrowsing();
         RememberDraft();
         _coalesceTypedWord = false;
@@ -146,6 +164,7 @@ public sealed class EditorBuffer
             cursor != _text.Length && !StringInfo.ParseCombiningCharacters(_text).Contains(cursor))
             throw new ArgumentOutOfRangeException(nameof(cursor), "Cursor must be at a grapheme boundary in the editor text.");
         Cursor = cursor;
+        ClearSelection();
         ExitHistoryBrowsing();
         RememberDraft();
         _coalesceTypedWord = false;
@@ -181,6 +200,7 @@ public sealed class EditorBuffer
                 _historyIndex = _history.Count;
                 _text = _draft;
                 Cursor = _draftCursor;
+                ClearSelection();
                 _preferredColumn = null;
                 _coalesceTypedWord = false;
                 return EditorAction.Render;
@@ -190,12 +210,13 @@ public sealed class EditorBuffer
 
         _text = _history[_historyIndex];
         Cursor = direction < 0 ? 0 : _text.Length;
+        ClearSelection();
         _preferredColumn = null;
         _coalesceTypedWord = false;
         return EditorAction.Render;
     }
 
-    private EditorAction MoveVertical(int direction)
+    private EditorAction MoveVertical(int direction, bool extendSelection = false)
     {
         var currentStart = LineStart(Cursor);
         var currentEnd = LineEnd(Cursor);
@@ -206,14 +227,26 @@ public sealed class EditorBuffer
                 var preferred = _preferredColumn ?? Cursor - currentStart;
                 var previousEnd = currentStart - 1;
                 var previousStart = LineStart(previousEnd);
-                Cursor = SnapToBoundary(previousStart + Math.Min(preferred, previousEnd - previousStart));
+                SetCursor(SnapToBoundary(previousStart + Math.Min(preferred, previousEnd - previousStart)), extendSelection);
                 _preferredColumn = preferred;
                 return EditorAction.Render;
+            }
+
+            if (extendSelection)
+            {
+                if (Cursor > currentStart)
+                {
+                    SetCursor(currentStart, extendSelection: true);
+                    _preferredColumn = null;
+                    return EditorAction.Render;
+                }
+                return EditorAction.None;
             }
 
             if (_historyIndex < _history.Count || _text.Length == 0 || Cursor == currentStart)
                 return NavigateHistory(-1);
             Cursor = currentStart;
+            ClearSelection();
             _preferredColumn = null;
             return EditorAction.Render;
         }
@@ -223,15 +256,27 @@ public sealed class EditorBuffer
             var preferred = _preferredColumn ?? Cursor - currentStart;
             var nextStart = currentEnd + 1;
             var nextEnd = LineEnd(nextStart);
-            Cursor = SnapToBoundary(nextStart + Math.Min(preferred, nextEnd - nextStart));
+            SetCursor(SnapToBoundary(nextStart + Math.Min(preferred, nextEnd - nextStart)), extendSelection);
             _preferredColumn = preferred;
             return EditorAction.Render;
+        }
+
+        if (extendSelection)
+        {
+            if (Cursor < currentEnd)
+            {
+                SetCursor(currentEnd, extendSelection: true);
+                _preferredColumn = null;
+                return EditorAction.Render;
+            }
+            return EditorAction.None;
         }
 
         if (_historyIndex < _history.Count) return NavigateHistory(1);
         if (Cursor < currentEnd)
         {
             Cursor = currentEnd;
+            ClearSelection();
             _preferredColumn = null;
             return EditorAction.Render;
         }
@@ -245,6 +290,7 @@ public sealed class EditorBuffer
         _undo.RemoveAt(_undo.Count - 1);
         _text = snapshot.Text;
         Cursor = snapshot.Cursor;
+        _selectionAnchor = snapshot.SelectionAnchor;
         _historyIndex = _history.Count;
         RememberDraft();
         _coalesceTypedWord = false;
@@ -256,9 +302,12 @@ public sealed class EditorBuffer
     {
         if (string.IsNullOrEmpty(text)) return;
         ExitHistoryBrowsing();
-        if (string.IsNullOrWhiteSpace(text) || !_coalesceTypedWord) PushUndoSnapshot();
-        _text = _text.Insert(Cursor, text);
-        Cursor += text.Length;
+        var start = SelectionStart ?? Cursor;
+        var end = SelectionEnd ?? Cursor;
+        if (start != end || string.IsNullOrWhiteSpace(text) || !_coalesceTypedWord) PushUndoSnapshot();
+        _text = _text.Remove(start, end - start).Insert(start, text);
+        Cursor = start + text.Length;
+        ClearSelection();
         RememberDraft();
         _coalesceTypedWord = text != "\n";
         _preferredColumn = null;
@@ -269,8 +318,11 @@ public sealed class EditorBuffer
         if (string.IsNullOrEmpty(text)) return;
         ExitHistoryBrowsing();
         PushUndoSnapshot();
-        _text = _text.Insert(Cursor, text);
-        Cursor += text.Length;
+        var start = SelectionStart ?? Cursor;
+        var end = SelectionEnd ?? Cursor;
+        _text = _text.Remove(start, end - start).Insert(start, text);
+        Cursor = start + text.Length;
+        ClearSelection();
         RememberDraft();
         _coalesceTypedWord = false;
         _preferredColumn = null;
@@ -278,10 +330,16 @@ public sealed class EditorBuffer
 
     private void DeleteRange(int start, int end)
     {
+        if (SelectionStart is { } selectionStart && SelectionEnd is { } selectionEnd)
+        {
+            start = selectionStart;
+            end = selectionEnd;
+        }
         if (start >= end) return;
         PushUndoSnapshot();
         _text = _text.Remove(start, end - start);
         Cursor = start;
+        ClearSelection();
         ExitHistoryBrowsing();
         RememberDraft();
         _coalesceTypedWord = false;
@@ -290,11 +348,37 @@ public sealed class EditorBuffer
 
     private void PushUndoSnapshot()
     {
-        if (_undo.Count > 0 && _undo[^1].Text == _text && _undo[^1].Cursor == Cursor) return;
-        _undo.Add(new(_text, Cursor));
+        if (_undo.Count > 0 && _undo[^1].Text == _text && _undo[^1].Cursor == Cursor &&
+            _undo[^1].SelectionAnchor == _selectionAnchor) return;
+        _undo.Add(new(_text, Cursor, _selectionAnchor));
     }
 
     private void ExitHistoryBrowsing() => _historyIndex = _history.Count;
+
+    public void ClearSelection() => _selectionAnchor = null;
+
+    private EditorAction ExtendSelection(int cursor)
+    {
+        SetCursor(cursor, extendSelection: true);
+        return EditorAction.Render;
+    }
+
+    private void MoveCursor(int cursor) => SetCursor(cursor, extendSelection: false);
+
+    private void SetCursor(int cursor, bool extendSelection)
+    {
+        if (extendSelection)
+        {
+            _selectionAnchor ??= Cursor;
+            Cursor = cursor;
+            if (_selectionAnchor == Cursor) _selectionAnchor = null;
+        }
+        else
+        {
+            Cursor = cursor;
+            ClearSelection();
+        }
+    }
 
     private void RememberDraft()
     {

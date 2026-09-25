@@ -480,7 +480,7 @@ async Task CopyLastAssistantAsync()
         .LastOrDefault(message => message.Role == ChatRole.Assistant)?.Text?.Trim();
     if (string.IsNullOrEmpty(text)) throw new InvalidOperationException("No selected text or agent messages to copy yet.");
     await terminalClipboard.CopyTextAsync(text);
-    Console.WriteLine(selected is null ? "Copied last agent message to clipboard" : "Copied selected transcript text to clipboard");
+    Console.WriteLine(selected is null ? "Copied last agent message to clipboard" : "Copied selected text to clipboard");
 }
 
 async Task PasteClipboardTextAsync()
