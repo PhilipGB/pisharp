@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using PiSharp.Runtime.Providers;
 using PiSharp.Runtime.Tools;
 using SkiaSharp;
 
@@ -29,6 +30,24 @@ public sealed class ReadImageProcessorTests
         Assert.Equal((2000, 17), (resized!.Width, resized.Height));
         Assert.Contains("[Image: original 2400x20, displayed at 2000x17. Multiply coordinates by 1.20 to map to original image.]", output.Text);
         Assert.True(output.ImageDataBase64!.Length < ReadImageProcessor.MaxBase64Bytes);
+    }
+
+    [Fact]
+    public void ModelResizeProfileControlsDimensionsPayloadLimitAndJpegQuality()
+    {
+        var bytes = CreateNoisePng(600, 400);
+        const int maxBytes = 100_000;
+        var lowQuality = ReadImageProcessor.Process(bytes, "image/png", resizeOptions:
+            new ModelImageResizeOptions(MaxWidth: 300, MaxHeight: 200, MaxBytes: maxBytes, JpegQuality: 20));
+        var higherQuality = ReadImageProcessor.Process(bytes, "image/png", resizeOptions:
+            new ModelImageResizeOptions(MaxWidth: 300, MaxHeight: 200, MaxBytes: maxBytes, JpegQuality: 80));
+
+        using var resized = SKBitmap.Decode(Convert.FromBase64String(lowQuality.ImageDataBase64!));
+        Assert.Equal("image/jpeg", lowQuality.ImageMimeType);
+        Assert.Equal((300, 200), (resized!.Width, resized.Height));
+        Assert.Equal(maxBytes, lowQuality.MaxBase64Bytes);
+        Assert.True(lowQuality.ImageDataBase64!.Length < maxBytes);
+        Assert.True(lowQuality.ImageDataBase64.Length < higherQuality.ImageDataBase64!.Length);
     }
 
     [Fact]
@@ -96,5 +115,17 @@ public sealed class ReadImageProcessorTests
         BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan(26), 1);
         BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan(28), 24);
         return bytes;
+    }
+
+    private static byte[] CreateNoisePng(int width, int height)
+    {
+        var random = new Random(481516);
+        using var bitmap = new SKBitmap(new SKImageInfo(width, height, SKColorType.Rgba8888, SKAlphaType.Premul));
+        for (var y = 0; y < height; y++)
+            for (var x = 0; x < width; x++)
+                bitmap.SetPixel(x, y, new SKColor((byte)random.Next(256), (byte)random.Next(256), (byte)random.Next(256)));
+        using var image = SKImage.FromBitmap(bitmap);
+        using var data = image.Encode(SKEncodedImageFormat.Png, 100);
+        return data.ToArray();
     }
 }

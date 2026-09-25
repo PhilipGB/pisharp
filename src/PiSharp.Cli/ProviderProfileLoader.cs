@@ -55,7 +55,9 @@ internal static class ProviderProfileLoader
                     models.Add(new(String(model, "id")!, canonicalId, PositiveInt(model, "contextWindow") ?? PositiveInt(model, "context_length"),
                         "configured", Boolean(model, "reasoning"), ParsePricing(model), canonicalId,
                         Name: String(model, "name"), MaxOutputTokens: PositiveInt(model, "maxTokens") ?? PositiveInt(model, "max_tokens"),
-                        Input: ParseInputs(model), Api: String(model, "api")));
+                        Input: ParseInputs(model), Api: String(model, "api"),
+                        InputLimits: ModelInputLimitsParser.Parse(model,
+                            $"models.json provider '{item.Name}' model '{String(model, "id")}'", strict: true)));
                 }
             var existing = providers.GetValueOrDefault(item.Name);
             var endpoint = ParseEndpoint(baseUrl, $"models.json provider '{item.Name}' baseUrl");

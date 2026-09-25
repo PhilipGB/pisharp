@@ -8,7 +8,8 @@ namespace PiSharp.Runtime.Providers;
 public sealed record ModelDescriptor(string Id, string? Owner, int? ContextLength, string? Status,
     bool? Reasoning = null, ModelPricing? Pricing = null, string? Provider = null,
     bool Available = true, string? UnavailableReason = null, string? Name = null,
-    int? MaxOutputTokens = null, IReadOnlyList<string>? Input = null, string? Api = null);
+    int? MaxOutputTokens = null, IReadOnlyList<string>? Input = null, string? Api = null,
+    ModelInputLimits? InputLimits = null);
 
 /// <summary>Discover OpenAI-compatible model IDs without coupling model metadata to a specific SDK.</summary>
 public static class ModelCatalog
@@ -55,7 +56,8 @@ public static class ModelCatalog
             var input = ParseInputs(item);
             var api = StringProperty(item, "api");
             models.Add(new(id, StringProperty(item, "owned_by"), context, status, reasoning, ParsePricing(item),
-                Name: StringProperty(item, "name"), MaxOutputTokens: maxOutput, Input: input, Api: api));
+                Name: StringProperty(item, "name"), MaxOutputTokens: maxOutput, Input: input, Api: api,
+                InputLimits: ModelInputLimitsParser.Parse(item, $"Model '{id}'", strict: false)));
         }
         return models;
     }

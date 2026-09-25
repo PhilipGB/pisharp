@@ -55,6 +55,7 @@ public sealed class ReadImageToolTests
             var largeImage = CreateHighEntropyPng(1200, 1200);
             Assert.True(largeImage.Length < 20 * 1024 * 1024);
             Assert.True(Base64Length(largeImage.Length) >= ReadImageProcessor.MaxBase64Bytes);
+            Assert.True(Base64Length(largeImage.Length) < 8_000_000);
             await File.WriteAllBytesAsync(Path.Combine(root, "large.png"), largeImage);
 
             using var listener = new HttpListener();
@@ -101,12 +102,14 @@ public sealed class ReadImageToolTests
             var selection = new ModelSelection(
                 new ProviderProfile("fixture", "Fixture", new Uri(endpoint), true, false, "FIXTURE_API_KEY", null, []),
                 new ModelDescriptor("fixture-model", "fixture", null, "fixture", Provider: "fixture", Api: api,
-                    Input: ["text", "image"]),
+                    Input: ["text", "image"], InputLimits: new ModelInputLimits(new ModelImageInputLimits(
+                        new ModelImageResizeOptions(MaxBytes: 8_000_000)))),
                 "fixture-key", false, "test");
+            CodingTools CreateTools() => new(root, imageResizeOptions: selection.Model.InputLimits?.Images?.Resize);
             var store = new ConversationStore(root, Path.Combine(root, "sessions"));
             var conversation = new ConversationSession(root, "fixture-model", endpoint, "fixture");
             var path = store.NewPath(conversation);
-            var run = await ConversationRun.OpenAsync(new PiAgent(ProviderChatClientFactory.Create(selection), new CodingTools(root)),
+            var run = await ConversationRun.OpenAsync(new PiAgent(ProviderChatClientFactory.Create(selection), CreateTools()),
                 conversation, save: token => store.SaveAsync(conversation, path, token));
             var firstTurn = "";
             await foreach (var update in run.RunStreamingAsync("inspect artwork", deadline.Token)) firstTurn += update.Text;
@@ -121,25 +124,25 @@ public sealed class ReadImageToolTests
                 ? storedJson.GetString() : storedResult.Result as string;
             Assert.Equal("Read image file [image/png]", storedText);
             Assert.Equal(image, savedMessages.SelectMany(message => message.Contents).OfType<DataContent>().Single().Data.ToArray());
-            var resumed = await ConversationRun.OpenAsync(new PiAgent(ProviderChatClientFactory.Create(selection), new CodingTools(root)), loaded);
+            var resumed = await ConversationRun.OpenAsync(new PiAgent(ProviderChatClientFactory.Create(selection), CreateTools()), loaded);
             var secondTurn = "";
             await foreach (var update in resumed.RunStreamingAsync("describe the image again", deadline.Token)) secondTurn += update.Text;
             Assert.Equal("seen 2", secondTurn);
 
             var textOnlySelection = selection with { Model = selection.Model with { Input = ["text"] } };
             var textOnlyRun = await ConversationRun.OpenAsync(new PiAgent(ProviderChatClientFactory.Create(textOnlySelection),
-                new CodingTools(root), supportsImages: false), loaded);
+                CreateTools(), supportsImages: false), loaded);
             var thirdTurn = "";
             await foreach (var update in textOnlyRun.RunStreamingAsync("continue with a text only model", deadline.Token)) thirdTurn += update.Text;
             Assert.Equal("seen 3", thirdTurn);
 
             var blockedRun = await ConversationRun.OpenAsync(new PiAgent(ProviderChatClientFactory.Create(selection),
-                new CodingTools(root), blockImages: true), loaded);
+                CreateTools(), blockImages: true), loaded);
             var fourthTurn = "";
             await foreach (var update in blockedRun.RunStreamingAsync("continue with images blocked", deadline.Token)) fourthTurn += update.Text;
             Assert.Equal("seen 4", fourthTurn);
 
-            var largeAgent = new PiAgent(ProviderChatClientFactory.Create(selection), new CodingTools(root));
+            var largeAgent = new PiAgent(ProviderChatClientFactory.Create(selection), CreateTools());
             var largeSession = await largeAgent.CreateSessionAsync(deadline.Token);
             var largeTurn = "";
             await foreach (var update in largeAgent.RunStreamingAsync("inspect the large image", largeSession, deadline.Token))
@@ -158,7 +161,7 @@ public sealed class ReadImageToolTests
             Assert.DoesNotContain("input_image", blockedBody, StringComparison.Ordinal);
             Assert.DoesNotContain("image_url", blockedBody, StringComparison.Ordinal);
             Assert.Contains("Image reading is disabled.", blockedBody, StringComparison.Ordinal);
-            AssertResponseImageBelowLimit(requests[6].RootElement);
+            AssertResponseContainsImage(requests[6].RootElement, largeImage);
         }
         finally { Directory.Delete(root, recursive: true); }
     }
@@ -217,19 +220,6 @@ public sealed class ReadImageToolTests
     private static void AssertResponseContainsImage(JsonElement body, byte[] image)
     {
         Assert.Equal("data:image/png;base64," + Convert.ToBase64String(image), GetResponseImageDataUrl(body));
-    }
-
-    private static void AssertResponseImageBelowLimit(JsonElement body)
-    {
-        var dataUrl = GetResponseImageDataUrl(body);
-        var separator = dataUrl.IndexOf(',');
-        Assert.True(separator > 0);
-        Assert.StartsWith("data:image/jpeg;base64,", dataUrl, StringComparison.Ordinal);
-        var encoded = dataUrl[(separator + 1)..];
-        Assert.True(encoded.Length < ReadImageProcessor.MaxBase64Bytes);
-        using var decoded = SKBitmap.Decode(Convert.FromBase64String(encoded));
-        Assert.NotNull(decoded);
-        Assert.Equal((1200, 1200), (decoded!.Width, decoded.Height));
     }
 
     private static string GetResponseImageDataUrl(JsonElement body)

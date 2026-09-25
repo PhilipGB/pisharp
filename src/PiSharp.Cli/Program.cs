@@ -127,7 +127,8 @@ using var extensionLease = new ExtensionLease(extensions);
 PiAgent agent;
 try
 {
-    agent = new PiAgent(chat, new CodingTools(Environment.CurrentDirectory, userSettings.ShellPath), cli.Tools, cli.ExcludeTools, cli.NoTools,
+    agent = new PiAgent(chat, new CodingTools(Environment.CurrentDirectory, userSettings.ShellPath,
+        selection.Model.InputLimits?.Images?.Resize), cli.Tools, cli.ExcludeTools, cli.NoTools,
     instructions, prompts.System, prompts.Append, extensionLease.Current.Registration.Tools,
     reasoning: ThinkingLevels.ToOptions(thinking), blockImages: userSettings.BlockImages == true, noBuiltinTools: cli.NoBuiltinTools,
     supportsImages: selection.Model.Input?.Contains("image", StringComparer.Ordinal) != false);
@@ -193,7 +194,8 @@ try
         contextPolicy = userSettings.ResolveCompaction(selection.Model.ContextLength, Environment.GetEnvironmentVariable, $"{selection.Provider.Id}/{selection.Model.Id}");
         modelPricing = ModelPricing.FromEnvironment(Environment.GetEnvironmentVariable) ?? selection.Model.Pricing;
         agent = new PiAgent(chat,
-            new CodingTools(Environment.CurrentDirectory, userSettings.ShellPath), cli.Tools, cli.ExcludeTools, cli.NoTools, instructions, prompts.System, prompts.Append,
+            new CodingTools(Environment.CurrentDirectory, userSettings.ShellPath,
+                selection.Model.InputLimits?.Images?.Resize), cli.Tools, cli.ExcludeTools, cli.NoTools, instructions, prompts.System, prompts.Append,
             extensionLease.Current.Registration.Tools, reasoning: ThinkingLevels.ToOptions(thinking), blockImages: userSettings.BlockImages == true, noBuiltinTools: cli.NoBuiltinTools,
             supportsImages: selection.Model.Input?.Contains("image", StringComparer.Ordinal) != false);
     }
@@ -362,7 +364,8 @@ async Task ReplaceModelRuntime(ModelSelection nextSelection, string nextThinking
     var nextPolicy = userSettings.ResolveCompaction(nextSelection.Model.ContextLength, Environment.GetEnvironmentVariable, $"{nextSelection.Provider.Id}/{nextSelection.Model.Id}");
     var nextPricing = ModelPricing.FromEnvironment(Environment.GetEnvironmentVariable) ?? nextSelection.Model.Pricing;
     var nextAgent = new PiAgent(nextChat,
-        new CodingTools(Environment.CurrentDirectory, userSettings.ShellPath), cli.Tools, cli.ExcludeTools, cli.NoTools,
+        new CodingTools(Environment.CurrentDirectory, userSettings.ShellPath,
+            nextSelection.Model.InputLimits?.Images?.Resize), cli.Tools, cli.ExcludeTools, cli.NoTools,
         instructions, prompts.System, prompts.Append, extensionLease.Current.Registration.Tools,
         reasoning: ThinkingLevels.ToOptions(nextThinking), blockImages: userSettings.BlockImages == true, noBuiltinTools: cli.NoBuiltinTools,
         supportsImages: nextSelection.Model.Input?.Contains("image", StringComparer.Ordinal) != false);
@@ -411,7 +414,8 @@ async Task ReloadResources()
     try
     {
         var nextAgent = new PiAgent(chat,
-            new CodingTools(Environment.CurrentDirectory, userSettings.ShellPath), cli.Tools, cli.ExcludeTools, cli.NoTools,
+            new CodingTools(Environment.CurrentDirectory, userSettings.ShellPath,
+                selection.Model.InputLimits?.Images?.Resize), cli.Tools, cli.ExcludeTools, cli.NoTools,
             nextContext, nextPrompts.System, nextPrompts.Append, nextExtensions.Registration.Tools,
             reasoning: ThinkingLevels.ToOptions(thinking), blockImages: userSettings.BlockImages == true, noBuiltinTools: cli.NoBuiltinTools,
             supportsImages: selection.Model.Input?.Contains("image", StringComparer.Ordinal) != false);

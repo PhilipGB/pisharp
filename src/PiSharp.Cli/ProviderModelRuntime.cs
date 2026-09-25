@@ -238,6 +238,7 @@ public sealed class ProviderModelRuntime
             MaxOutputTokens = discovered.MaxOutputTokens ?? configured?.MaxOutputTokens,
             Input = discovered.Input ?? configured?.Input,
             Api = discovered.Api ?? configured?.Api,
+            InputLimits = ModelInputLimits.Merge(configured?.InputLimits, discovered.InputLimits),
             Available = true,
             UnavailableReason = null
         };

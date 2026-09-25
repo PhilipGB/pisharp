@@ -7,6 +7,7 @@ using System.Text;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using PiSharp.Core;
+using PiSharp.Runtime.Providers;
 using PiSharp.Runtime.Tools;
 
 namespace PiSharp.Runtime;
@@ -21,13 +22,16 @@ public sealed class CodingTools
         ["PI_SESSION_ID", "PI_SESSION_FILE", "PI_PROVIDER", "PI_MODEL", "PI_REASONING_LEVEL"];
     private readonly string _cwd;
     private readonly string? _shellPath;
+    private readonly ModelImageResizeOptions? _imageResizeOptions;
     private readonly ConcurrentDictionary<Guid, CancellationTokenSource> _runningBash = new();
     private static readonly FileMutationQueue s_mutations = new();
 
-    public CodingTools(string workingDirectory, string? shellPath = null)
+    public CodingTools(string workingDirectory, string? shellPath = null,
+        ModelImageResizeOptions? imageResizeOptions = null)
     {
         _cwd = Path.GetFullPath(workingDirectory);
         _shellPath = shellPath;
+        _imageResizeOptions = imageResizeOptions;
     }
 
     public IList<AITool> Create(IReadOnlyList<string>? requested = null, IReadOnlyList<string>? excluded = null, bool noTools = false)
@@ -113,7 +117,7 @@ public sealed class CodingTools
                     return new ReadToolOutput($"Read image file [{mimeType}]\n[Image omitted: could not be resized below the inline image size limit.]");
                 var bytes = new byte[checked((int)length)];
                 await stream.ReadExactlyAsync(bytes, cancellationToken);
-                return await Task.Run(() => ReadImageProcessor.Process(bytes, mimeType, cancellationToken), cancellationToken);
+                return await Task.Run(() => ReadImageProcessor.Process(bytes, mimeType, cancellationToken, _imageResizeOptions), cancellationToken);
             }
             if (offset < 1 || limit is <= 0) throw new ToolFailureException("offset and limit must be positive.");
             if (length > 2 * 1024 * 1024)

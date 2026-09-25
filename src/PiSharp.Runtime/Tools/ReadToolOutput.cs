@@ -2,7 +2,8 @@ using System.Buffers.Binary;
 
 namespace PiSharp.Runtime.Tools;
 
-internal sealed record ReadToolOutput(string Text, string? ImageMimeType = null, string? ImageDataBase64 = null)
+internal sealed record ReadToolOutput(string Text, string? ImageMimeType = null, string? ImageDataBase64 = null,
+    int? MaxBase64Bytes = null)
 {
     public override string ToString() => Text;
 }

@@ -11,7 +11,7 @@ public sealed class ModelCatalogTests
     public async Task CustomModelDiscoveryUsesOnlyExplicitEndpointKeyAndParsesCapabilities()
     {
         var handler = new FixtureHandler("""
-            {"data":[{"id":"local-one","name":"Local One","owned_by":"llamacpp","status":{"value":"loaded"},"context_length":16384,"max_tokens":2048,"input":["text","image"],"api":"openai-completions"},{"id":"local-one"},{"id":"local-two","context_length":-1}]}
+            {"data":[{"id":"local-one","name":"Local One","owned_by":"llamacpp","status":{"value":"loaded"},"context_length":16384,"max_tokens":2048,"input":["text","image"],"api":"openai-completions","inputLimits":{"images":{"resize":{"maxWidth":1568,"maxHeight":1024,"maxBytes":524288,"jpegQuality":75}}}},{"id":"local-one"},{"id":"local-two","context_length":-1}]}
             """);
         using var http = new HttpClient(handler);
         var settings = ConnectionSettings.Resolve(true, name => name switch
@@ -31,6 +31,7 @@ public sealed class ModelCatalogTests
         Assert.Equal(2048, models[0].MaxOutputTokens);
         Assert.Equal(["text", "image"], models[0].Input);
         Assert.Equal("openai-completions", models[0].Api);
+        Assert.Equal(new ModelImageResizeOptions(1568, 1024, 524288, 75), models[0].InputLimits?.Images?.Resize);
         Assert.Null(models[1].ContextLength);
         Assert.DoesNotContain("unrelated-cloud-secret", handler.Authorization!);
     }
@@ -75,13 +76,14 @@ public sealed class ModelCatalogTests
     public async Task UnexpectedNumericMetadataIsIgnoredWithoutAbortingCatalog()
     {
         using var http = new HttpClient(new FixtureHandler("""
-            {"data":[{"id":"one","max_tokens":"2048","max_output_tokens":null,"cost":{"input":2,"output":4,"tiers":[{"inputTokensAbove":"bad","input":3,"output":5}]}},{"id":"two","context_length":4096}]}
+            {"data":[{"id":"one","max_tokens":"2048","max_output_tokens":null,"cost":{"input":2,"output":4,"tiers":[{"inputTokensAbove":"bad","input":3,"output":5}]}},{"id":"two","context_length":4096},{"id":"bad-limits","inputLimits":{"images":{"resize":{"maxWidth":"bad"}}}}]}
             """));
         var models = await ModelCatalog.ListAsync(http, new Uri("https://models.test/v1"), "token");
-        Assert.Equal(2, models.Count);
+        Assert.Equal(3, models.Count);
         Assert.Null(models[0].MaxOutputTokens);
         Assert.Null(models[0].Pricing!.Tiers);
         Assert.Equal(4096, models[1].ContextLength);
+        Assert.Null(models[2].InputLimits);
     }
     [Fact]
     public async Task LargeCatalogRetainsFirstDuplicateAndAllDistinctIds()

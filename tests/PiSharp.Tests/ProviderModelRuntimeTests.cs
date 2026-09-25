@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text;
 using PiSharp.Cli;
+using PiSharp.Runtime.Providers;
 
 namespace PiSharp.Tests;
 
@@ -14,7 +15,7 @@ public sealed class ProviderModelRuntimeTests
         try
         {
             await File.WriteAllTextAsync(Path.Combine(root, "models.json"), """
-                {"providers":{"fixture":{"baseUrl":"https://fixture.test/v1","models":[{"id":"example","contextWindow":4096},{"id":"second"}]}}}
+                {"providers":{"fixture":{"baseUrl":"https://fixture.test/v1","models":[{"id":"example","contextWindow":4096,"inputLimits":{"images":{"resize":{"maxWidth":1568,"maxBytes":524288,"jpegQuality":75}}}},{"id":"second"}]}}}
                 """);
             using var handler = new ModelHandler();
             using var http = new HttpClient(handler);
@@ -23,6 +24,7 @@ public sealed class ProviderModelRuntimeTests
             Assert.Equal(2, models.Count);
             Assert.Equal("example", (await runtime.ResolveAsync("fixture", "exam")).Model.Id);
             Assert.Equal(4096, models[0].ContextLength);
+            Assert.Equal(new ModelImageResizeOptions(1568, null, 524288, 75), models[0].InputLimits?.Images?.Resize);
             Assert.Null(handler.Url);
             Assert.True(CliArguments.Parse(["--offline"]).Offline);
         }
@@ -245,9 +247,11 @@ public sealed class ProviderModelRuntimeTests
         {
             await File.WriteAllTextAsync(Path.Combine(root, "models.json"), """
                 {"providers":{"custom":{"baseUrl":"https://fixture.test/v1","apiKeyEnv":"PISHARP_API_KEY",
-                 "models":[{"id":"reasoner","name":"Reasoner One","contextWindow":4096,"maxTokens":8192,"reasoning":true,"input":["text","image"],"api":"openai-completions","cost":{"input":1,"output":3}}]}}}
+                 "models":[{"id":"reasoner","name":"Reasoner One","contextWindow":4096,"maxTokens":8192,"reasoning":true,"input":["text","image"],"api":"openai-completions","cost":{"input":1,"output":3},"inputLimits":{"images":{"resize":{"maxWidth":1568,"maxBytes":524288,"jpegQuality":75}}}}]}}}
                 """);
-            using var handler = new ModelHandler();
+            using var handler = new ModelHandler("""
+                {"data":[{"id":"reasoner","reasoning":true,"inputLimits":{"images":{"resize":{"maxWidth":800,"maxHeight":900,"maxBytes":400000,"jpegQuality":50}}}}]}
+                """);
             using var http = new HttpClient(handler);
             var environment = new Dictionary<string, string> { ["OPENAI_API_KEY"] = "unrelated-secret", ["PISHARP_API_KEY"] = "local-secret" };
             var runtime = await ProviderModelRuntime.CreateAsync(root, false, name => environment.GetValueOrDefault(name), http);
@@ -261,6 +265,7 @@ public sealed class ProviderModelRuntimeTests
             Assert.Equal("Reasoner One", selection.Model.Name);
             Assert.Equal(8192, selection.Model.MaxOutputTokens);
             Assert.Equal(["text", "image"], selection.Model.Input);
+            Assert.Equal(new ModelImageResizeOptions(1568, 900, 524288, 75), selection.Model.InputLimits?.Images?.Resize);
             Assert.Equal("openai-completions", selection.Model.Api);
             Assert.Equal(1m, selection.Model.Pricing!.Input);
             Assert.Equal("local-secret", selection.ApiKey);
@@ -344,6 +349,8 @@ public sealed class ProviderModelRuntimeTests
 
     [Theory]
     [InlineData("{\"providers\":{\"fixture\":{\"baseUrl\":\"https://fixture.test/v1\",\"models\":[{\"id\":\"a\",\"maxTokens\":\"bad\"}]}}}", "maxTokens")]
+    [InlineData("{\"providers\":{\"fixture\":{\"baseUrl\":\"https://fixture.test/v1\",\"models\":[{\"id\":\"a\",\"inputLimits\":{\"images\":{\"resize\":{\"maxWidth\":0}}}}]}}}", "resize")]
+    [InlineData("{\"providers\":{\"fixture\":{\"baseUrl\":\"https://fixture.test/v1\",\"models\":[{\"id\":\"a\",\"inputLimits\":{\"images\":{\"resize\":{\"jpegQuality\":0}}}}]}}}", "resize")]
     [InlineData("{\"providers\":{\"fixture\":{\"baseUrl\":\"https://fixture.test/v1\",\"models\":[{\"id\":\"A\"},{\"id\":\"a\"}]}}}", "duplicate model")]
     [InlineData("{\"providers\":{\"fixture\":{\"baseUrl\":\"https://fixture.test/v1\",\"oauth\":true}}}", "OAuth")]
     [InlineData("{\"providers\":{\"fixture\":{\"baseUrl\":\"https://fixture.test/v1\"},\"FIXTURE\":{\"baseUrl\":\"https://other.test/v1\"}}}", "duplicate")]
@@ -684,7 +691,7 @@ public sealed class ProviderModelRuntimeTests
         throw new InvalidOperationException("Could not reserve a loopback port for the provider fixture.");
     }
 
-    private sealed class ModelHandler : HttpMessageHandler
+    private sealed class ModelHandler(string response = """{"data":[{"id":"reasoner","reasoning":true}]}""") : HttpMessageHandler
     {
         public string? Url { get; private set; }
         public string? Authorization { get; private set; }
@@ -694,7 +701,7 @@ public sealed class ProviderModelRuntimeTests
             Authorization = request.Headers.Authorization?.ToString();
             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
             {
-                Content = new StringContent("""{"data":[{"id":"reasoner","reasoning":true}]}""", Encoding.UTF8, "application/json")
+                Content = new StringContent(response, Encoding.UTF8, "application/json")
             });
         }
     }

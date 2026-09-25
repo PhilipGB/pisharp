@@ -202,7 +202,8 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
         TryGetString(value, nameof(ReadToolOutput.ImageMimeType), out var mimeType);
         TryGetString(value, nameof(ReadToolOutput.ImageDataBase64), out var imageData);
         if (mimeType is null && imageData is null) return false;
-        output = new ReadToolOutput(text, mimeType, imageData);
+        output = new ReadToolOutput(text, mimeType, imageData,
+            TryGetInt32(value, nameof(ReadToolOutput.MaxBase64Bytes)));
         return true;
     }
 
@@ -220,15 +221,25 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
         return false;
     }
 
+    private static int? TryGetInt32(JsonElement value, string property)
+    {
+        foreach (var item in value.EnumerateObject())
+            if (item.Name.Equals(property, StringComparison.OrdinalIgnoreCase) &&
+                item.Value.ValueKind == JsonValueKind.Number && item.Value.TryGetInt32(out var number))
+                return number;
+        return null;
+    }
+
     private static bool TryCreateImage(ReadToolOutput output, out DataContent image)
     {
         image = null!;
+        var maxBase64Bytes = output.MaxBase64Bytes ?? ReadImageProcessor.MaxBase64Bytes;
         if (output.ImageMimeType is not ("image/jpeg" or "image/png" or "image/gif" or "image/webp") ||
-            output.ImageDataBase64 is not { Length: > 0 } encoded || encoded.Length >= ReadImageProcessor.MaxBase64Bytes) return false;
+            output.ImageDataBase64 is not { Length: > 0 } encoded || maxBase64Bytes <= 0 || encoded.Length >= maxBase64Bytes) return false;
         try
         {
             var bytes = Convert.FromBase64String(encoded);
-            if (((long)bytes.Length + 2) / 3 * 4 >= ReadImageProcessor.MaxBase64Bytes) return false;
+            if (((long)bytes.Length + 2) / 3 * 4 >= maxBase64Bytes) return false;
             image = new DataContent(bytes, output.ImageMimeType);
             return true;
         }

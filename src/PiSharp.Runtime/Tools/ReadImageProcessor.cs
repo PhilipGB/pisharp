@@ -1,4 +1,5 @@
 using System.Globalization;
+using PiSharp.Runtime.Providers;
 using SkiaSharp;
 
 namespace PiSharp.Runtime.Tools;
@@ -7,13 +8,17 @@ internal static class ReadImageProcessor
 {
     private const int MaxDimension = 2000;
     internal const int MaxBase64Bytes = 4_718_592;
-    private static readonly int[] s_jpegQualities = [80, 85, 70, 55, 40];
     private static readonly SKSamplingOptions s_sampling = new(new SKCubicResampler(0, 0.5f));
 
-    public static ReadToolOutput Process(byte[] input, string sourceMimeType, CancellationToken cancellationToken = default)
+    public static ReadToolOutput Process(byte[] input, string sourceMimeType,
+        CancellationToken cancellationToken = default, ModelImageResizeOptions? resizeOptions = null)
     {
         var normalizedMimeType = NormalizeMimeType(sourceMimeType);
         var convertedFrom = normalizedMimeType is null ? sourceMimeType : null;
+        var maxWidth = resizeOptions?.MaxWidth ?? MaxDimension;
+        var maxHeight = resizeOptions?.MaxHeight ?? MaxDimension;
+        var maxBase64Bytes = resizeOptions?.MaxBytes ?? MaxBase64Bytes;
+        var jpegQualities = new[] { resizeOptions?.JpegQuality ?? 80, 85, 70, 55, 40 }.Distinct().ToArray();
         try
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -39,12 +44,12 @@ internal static class ReadImageProcessor
             var originalWidth = original.Width;
             var originalHeight = original.Height;
             var payloadLength = Base64Length(imageBytes.Length);
-            var wasResized = originalWidth > MaxDimension || originalHeight > MaxDimension || payloadLength >= MaxBase64Bytes;
+            var wasResized = originalWidth > maxWidth || originalHeight > maxHeight || payloadLength >= maxBase64Bytes;
             if (!wasResized)
                 return CreateOutput(imageBytes, imageMimeType, originalWidth, originalHeight, originalWidth, originalHeight,
-                    wasResized: false, convertedFrom);
+                    wasResized: false, convertedFrom, maxBase64Bytes);
 
-            var (width, height) = Fit(originalWidth, originalHeight, MaxDimension, MaxDimension);
+            var (width, height) = Fit(originalWidth, originalHeight, maxWidth, maxHeight);
             while (true)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -55,15 +60,17 @@ internal static class ReadImageProcessor
                 {
                     var png = Encode(target, SKEncodedImageFormat.Png, 100);
                     cancellationToken.ThrowIfCancellationRequested();
-                    if (png is not null && Base64Length(png.Length) < MaxBase64Bytes)
-                        return CreateOutput(png, "image/png", originalWidth, originalHeight, width, height, true, convertedFrom);
+                    if (png is not null && Base64Length(png.Length) < maxBase64Bytes)
+                        return CreateOutput(png, "image/png", originalWidth, originalHeight, width, height, true,
+                            convertedFrom, maxBase64Bytes);
 
-                    foreach (var quality in s_jpegQualities)
+                    foreach (var quality in jpegQualities)
                     {
                         var jpeg = Encode(target, SKEncodedImageFormat.Jpeg, quality);
                         cancellationToken.ThrowIfCancellationRequested();
-                        if (jpeg is not null && Base64Length(jpeg.Length) < MaxBase64Bytes)
-                            return CreateOutput(jpeg, "image/jpeg", originalWidth, originalHeight, width, height, true, convertedFrom);
+                        if (jpeg is not null && Base64Length(jpeg.Length) < maxBase64Bytes)
+                            return CreateOutput(jpeg, "image/jpeg", originalWidth, originalHeight, width, height, true,
+                                convertedFrom, maxBase64Bytes);
                     }
                 }
 
@@ -84,7 +91,7 @@ internal static class ReadImageProcessor
     }
 
     private static ReadToolOutput CreateOutput(byte[] bytes, string mimeType, int originalWidth, int originalHeight,
-        int width, int height, bool wasResized, string? convertedFrom)
+        int width, int height, bool wasResized, string? convertedFrom, int maxBase64Bytes)
     {
         var hints = new List<string>(2);
         if (convertedFrom is not null && convertedFrom != mimeType)
@@ -95,7 +102,7 @@ internal static class ReadImageProcessor
             hints.Add($"[Image: original {originalWidth}x{originalHeight}, displayed at {width}x{height}. Multiply coordinates by {scale.ToString("F2", CultureInfo.InvariantCulture)} to map to original image.]");
         }
         var text = $"Read image file [{mimeType}]" + (hints.Count == 0 ? "" : "\n" + string.Join("\n", hints));
-        return new ReadToolOutput(text, mimeType, Convert.ToBase64String(bytes));
+        return new ReadToolOutput(text, mimeType, Convert.ToBase64String(bytes), maxBase64Bytes);
     }
 
     private static ReadToolOutput Omitted(string mimeType, bool conversionFailed, bool resizeFailed = false)
