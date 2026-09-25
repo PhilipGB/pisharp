@@ -270,12 +270,7 @@ internal static class TerminalMarkdownRenderer
     }
 
     private static int TableTextWidth(string text)
-    {
-        var width = 0;
-        var elements = StringInfo.GetTextElementEnumerator(text);
-        while (elements.MoveNext()) width += TerminalCells.Width((string)elements.Current);
-        return width;
-    }
+        => TerminalTextLayout.Width(text);
 
     private static IReadOnlyList<string> RenderTableRow(string[] cells, int[] widths,
         TableAlignment[] alignments, bool isHeader)
@@ -306,27 +301,7 @@ internal static class TerminalMarkdownRenderer
     }
 
     private static IReadOnlyList<string> WrapTableCell(string text, int width)
-    {
-        var lines = new List<string>();
-        var line = new StringBuilder();
-        var used = 0;
-        var elements = StringInfo.GetTextElementEnumerator(text);
-        while (elements.MoveNext())
-        {
-            var element = (string)elements.Current;
-            var elementWidth = TerminalCells.Width(element);
-            if (used > 0 && used + elementWidth > width)
-            {
-                lines.Add(line.ToString());
-                line.Clear();
-                used = 0;
-            }
-            line.Append(element);
-            used += elementWidth;
-        }
-        if (line.Length > 0 || lines.Count == 0) lines.Add(line.ToString());
-        return lines;
-    }
+        => TerminalTextLayout.Wrap(text, width);
 
     private enum TableAlignment { Left, Center, Right }
 

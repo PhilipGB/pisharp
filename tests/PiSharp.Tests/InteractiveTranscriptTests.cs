@@ -156,15 +156,45 @@ public sealed class InteractiveTranscriptTests
         var tableStart = visible.LastIndexOf("┌─", StringComparison.Ordinal);
         var tableEnd = visible.LastIndexOf("└─", StringComparison.Ordinal);
         Assert.True(tableStart >= 0 && tableEnd > tableStart);
-        var tableLines = visible[tableStart..tableEnd].Split('\n')
+        var tableLines = visible[tableStart..(tableEnd + 1)].Split('\n')
             .Where(line => line.StartsWith("┌", StringComparison.Ordinal) || line.StartsWith("├", StringComparison.Ordinal) ||
-                line.StartsWith("│", StringComparison.Ordinal));
-        Assert.All(tableLines, line => Assert.True(line.Length <= 39, $"Table row exceeded the terminal width: {line}"));
+                line.StartsWith("│", StringComparison.Ordinal) || line.StartsWith("└", StringComparison.Ordinal));
+        Assert.All(tableLines, line => Assert.True(TerminalTextLayout.Width(line) <= 39,
+            $"Table row exceeded the terminal width: {line}"));
         var tableContent = new string(visible[tableStart..tableEnd].Where(char.IsLetterOrDigit).ToArray());
         Assert.Contains("thisisaverylongunbrokentablecellvalue", tableContent);
         Assert.Contains("A|B", visible[tableStart..tableEnd]);
         Assert.Contains("left|right", visible[tableStart..tableEnd]);
         Assert.Contains("ends|", visible[tableStart..tableEnd]);
+    }
+
+    [Fact]
+    public void ActiveScreenWrapsTableCellsByTerminalCellsWithoutSplittingGraphemes()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        var screen = new TerminalScreen(output, error, () => 20, () => 30);
+        var transcript = new InteractiveTranscript(screen.Output, screen.Error, screen: screen);
+        const string family = "👩‍👩‍👧‍👦";
+        var markdown = $"| Name | Description |\n| --- | --- |\n| CJK | 界e\u0301{family}unbrokenvalue |";
+        transcript.Render(new("model_text_delta", Text: markdown));
+        transcript.FinishTurn();
+        screen.Dispose();
+
+        var visible = StripSgr(output.ToString());
+        var tableStart = visible.LastIndexOf("┌─", StringComparison.Ordinal);
+        var tableEnd = visible.LastIndexOf("└─", StringComparison.Ordinal);
+        Assert.True(tableStart >= 0 && tableEnd > tableStart);
+        var tableLines = visible[tableStart..(tableEnd + 1)].Split('\n')
+            .Where(line => line.StartsWith("┌", StringComparison.Ordinal) || line.StartsWith("├", StringComparison.Ordinal) ||
+                line.StartsWith("│", StringComparison.Ordinal) || line.StartsWith("└", StringComparison.Ordinal));
+        Assert.NotEmpty(tableLines);
+        Assert.All(tableLines, line => Assert.True(TerminalTextLayout.Width(line) <= 20,
+            $"Table row exceeded the terminal width in cells: {line}"));
+        var tableContent = new string(visible[tableStart..tableEnd].Where(char.IsLetterOrDigit).ToArray());
+        Assert.Contains("界e\u0301", visible);
+        Assert.Contains(family, visible);
+        Assert.Contains("unbrokenvalue", tableContent);
     }
 
     [Fact]

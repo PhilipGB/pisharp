@@ -54,28 +54,3 @@ public static class EditorViewport
             (first + offset == 0 ? "❯ " : "│ ") + row).ToArray(), cursorRow - first, cursorColumn);
     }
 }
-
-/// <summary>Approximate POSIX terminal display width by grapheme cluster, including CJK and emoji joins.</summary>
-internal static class TerminalCells
-{
-    public static int Width(string element)
-    {
-        var width = 0;
-        foreach (var rune in element.EnumerateRunes())
-        {
-            var value = rune.Value;
-            var category = Rune.GetUnicodeCategory(rune);
-            if (value is 0x200D or 0xFE0E or 0xFE0F || category is UnicodeCategory.NonSpacingMark or
-                UnicodeCategory.EnclosingMark or UnicodeCategory.SpacingCombiningMark or UnicodeCategory.Format)
-                continue;
-            var wide = value is >= 0x1100 and <= 0x115F or 0x2329 or 0x232A or
-                >= 0x2E80 and <= 0xA4CF or >= 0xAC00 and <= 0xD7A3 or
-                >= 0xF900 and <= 0xFAFF or >= 0xFE10 and <= 0xFE19 or
-                >= 0xFE30 and <= 0xFE6F or >= 0xFF01 and <= 0xFF60 or
-                >= 0xFFE0 and <= 0xFFE6 or >= 0x1F000 and <= 0x1FAFF or
-                >= 0x20000 and <= 0x3FFFD;
-            width = Math.Max(width, wide ? 2 : 1);
-        }
-        return element.Contains('\uFE0F') ? Math.Max(width, 2) : width;
-    }
-}

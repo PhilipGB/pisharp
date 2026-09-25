@@ -453,37 +453,7 @@ public sealed class TerminalScreen : IDisposable
             totalRows++;
         }
 
-        foreach (var line in text.Split('\n'))
-        {
-            if (line.Length == 0)
-            {
-                Add("");
-                continue;
-            }
-            var current = new StringBuilder();
-            var used = 0;
-            for (var offset = 0; offset < line.Length;)
-            {
-                if (TryReadSgr(line, offset, out var sequenceLength))
-                {
-                    current.Append(line, offset, sequenceLength);
-                    offset += sequenceLength;
-                    continue;
-                }
-                var element = StringInfo.GetNextTextElement(line, offset);
-                var cells = Math.Max(0, TerminalCells.Width(element));
-                if (used + cells > width && current.Length > 0)
-                {
-                    Add(current + "\u001b[0m");
-                    current.Clear();
-                    used = 0;
-                }
-                current.Append(element);
-                used += cells;
-                offset += element.Length;
-            }
-            Add(current + "\u001b[0m");
-        }
+        foreach (var line in TerminalTextLayout.Wrap(text, width)) Add(line);
         actualScrollOffset = Math.Min(scrollOffset, Math.Max(0, totalRows - maxRows));
         var end = rows.Count - actualScrollOffset;
         var start = Math.Max(0, end - maxRows);

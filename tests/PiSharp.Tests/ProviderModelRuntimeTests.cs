@@ -7,6 +7,8 @@ namespace PiSharp.Tests;
 
 public sealed class ProviderModelRuntimeTests
 {
+    private static readonly object LoopbackListenerStartLock = new();
+
     [Fact]
     public async Task OfflineCatalogUsesConfiguredModelsWithoutNetworkButAllowsProviderSelection()
     {
@@ -670,22 +672,25 @@ public sealed class ProviderModelRuntimeTests
 
     private static HttpListener StartLoopbackListener(out int port)
     {
-        for (var attempt = 0; attempt < 10; attempt++)
+        lock (LoopbackListenerStartLock)
         {
-            using var reservation = new System.Net.Sockets.TcpListener(IPAddress.Loopback, 0);
-            reservation.Start();
-            port = ((IPEndPoint)reservation.LocalEndpoint).Port;
-            reservation.Stop();
-            var listener = new HttpListener();
-            listener.Prefixes.Add($"http://127.0.0.1:{port}/");
-            try
+            for (var attempt = 0; attempt < 10; attempt++)
             {
-                listener.Start();
-                return listener;
-            }
-            catch (HttpListenerException)
-            {
-                try { listener.Close(); } catch (HttpListenerException) { }
+                using var reservation = new System.Net.Sockets.TcpListener(IPAddress.Loopback, 0);
+                reservation.Start();
+                port = ((IPEndPoint)reservation.LocalEndpoint).Port;
+                reservation.Stop();
+                var listener = new HttpListener();
+                listener.Prefixes.Add($"http://127.0.0.1:{port}/");
+                try
+                {
+                    listener.Start();
+                    return listener;
+                }
+                catch (HttpListenerException)
+                {
+                    try { listener.Close(); } catch (HttpListenerException) { }
+                }
             }
         }
         throw new InvalidOperationException("Could not reserve a loopback port for the provider fixture.");

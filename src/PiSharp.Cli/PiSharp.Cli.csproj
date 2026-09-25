@@ -15,6 +15,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\PiSharp.Runtime\PiSharp.Runtime.csproj" />
+    <InternalsVisibleTo Include="PiSharp.Tests" />
   </ItemGroup>
 
 </Project>
