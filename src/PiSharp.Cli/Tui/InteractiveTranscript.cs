@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using Microsoft.Extensions.AI;
 using PiSharp.Runtime;
 using PiSharp.Runtime.Extensions;
 using PiSharp.Runtime.Sessions;
@@ -18,6 +19,63 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
 
     public bool HasAssistantOutput { get; private set; }
     public int ExitCode { get; private set; }
+
+    public void LoadHistory(ConversationSession session)
+    {
+        ArgumentNullException.ThrowIfNull(session);
+        if (!interactive || screen is null) return;
+
+        var toolNames = new Dictionary<string, string>(StringComparer.Ordinal);
+        screen.ReplaceTranscript(target =>
+        {
+            foreach (var message in session.ActiveMessages())
+            {
+                if (message.Role == ChatRole.User)
+                {
+                    target.AppendUserMessage(MessageText(message), message.Contents.OfType<DataContent>().ToArray());
+                    continue;
+                }
+                if (message.Role == ChatRole.Assistant)
+                {
+                    foreach (var content in message.Contents)
+                    {
+                        if (content is TextContent text && text.Text.Length > 0)
+                            target.CommitAssistantText(text.Text);
+                        else if (content is FunctionCallContent call)
+                        {
+                            toolNames[call.CallId] = call.Name;
+                            var update = new AgentLifecycleEvent("tool_execution_started", Tool: call.Name,
+                                OperationId: call.CallId)
+                            {
+                                ToolArguments = call.Arguments is { } arguments
+                                    ? new Dictionary<string, object?>(arguments, StringComparer.Ordinal) : null
+                            };
+                            target.AppendToolCall(_toolPresentation.RenderCall(update));
+                            if (call.Exception is not null)
+                            {
+                                var failed = new AgentLifecycleEvent("tool_execution_finished", Tool: call.Name,
+                                    OperationId: call.CallId, IsError: true, Error: call.Exception.Message);
+                                target.AppendToolResult(_toolPresentation.RenderResult(failed, isError: true));
+                            }
+                        }
+                    }
+                    continue;
+                }
+                if (message.Role != ChatRole.Tool) continue;
+                foreach (var result in message.Contents.OfType<FunctionResultContent>())
+                {
+                    var images = result.Result is IReadOnlyList<AIContent> parts
+                        ? parts.OfType<DataContent>().ToArray() : [];
+                    var name = toolNames.GetValueOrDefault(result.CallId, "tool");
+                    var failed = result.Exception is not null;
+                    var update = new AgentLifecycleEvent("tool_execution_finished", Text: ToolResultText(result.Result),
+                        Tool: name, OperationId: result.CallId, IsError: failed,
+                        Error: result.Exception?.Message, Details: result.Result);
+                    target.AppendToolResult(_toolPresentation.RenderResult(update, failed), images);
+                }
+            }
+        });
+    }
 
     public void Render(AgentLifecycleEvent update)
     {
@@ -79,6 +137,22 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
         if (screen is null || _assistantMarkdown.Length == 0) return;
         screen.CommitAssistantText(_assistantMarkdown.ToString());
         _assistantMarkdown.Clear();
+    }
+
+    private static string MessageText(ChatMessage message) =>
+        string.Concat(message.Contents.OfType<TextContent>().Select(content => content.Text));
+
+    private static string ToolResultText(object? result)
+    {
+        if (result is null) return "";
+        if (result is string text) return text;
+        if (result is IEnumerable<AIContent> content)
+            return string.Concat(content.OfType<TextContent>().Select(item => item.Text));
+        try { return JsonSerializer.Serialize(result); }
+        catch (Exception error) when (error is JsonException or NotSupportedException or InvalidOperationException)
+        {
+            return result.ToString() ?? "";
+        }
     }
 
     private void WriteBashUpdate(AgentLifecycleEvent update)

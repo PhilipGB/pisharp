@@ -39,6 +39,7 @@ public sealed class TerminalScreen : IDisposable
     private bool _activated;
     private bool _suspended;
     private volatile bool _active = true;
+    private int _deferRender;
 
     public TerminalScreen(TextWriter originalOut, TextWriter originalError,
         Func<int>? getColumns = null, Func<int>? getRows = null)
@@ -160,6 +161,33 @@ public sealed class TerminalScreen : IDisposable
                 }
             }
             RenderLocked();
+        }
+    }
+
+    internal void ReplaceTranscript(Action<TerminalScreen> appendHistory)
+    {
+        ArgumentNullException.ThrowIfNull(appendHistory);
+        lock (_gate)
+        {
+            if (!_active) return;
+            var cleanup = _images.CleanupControlSequence();
+            if (cleanup.Length > 0) _originalOut.Write(cleanup);
+            _transcript.Clear();
+            _images.Clear();
+            _lastImagePruneRevision = -1;
+            _search.Clear();
+            _mouse.Clear();
+            _scrollOffset = 0;
+            _liveAssistant = "";
+            _liveAssistantSource = "";
+            _overlay = null;
+            _deferRender++;
+            try { appendHistory(this); }
+            finally
+            {
+                _deferRender--;
+                RenderLocked();
+            }
         }
     }
 
@@ -542,7 +570,7 @@ public sealed class TerminalScreen : IDisposable
 
     private void RenderLocked()
     {
-        if (!_active || _suspended) return;
+        if (!_active || _suspended || _deferRender > 0) return;
         var columns = Columns();
         var rows = Rows();
         var editorHeight = Math.Clamp(rows / 3, 1, Math.Max(1, rows - 2));

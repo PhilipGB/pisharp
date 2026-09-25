@@ -16,12 +16,14 @@ public sealed class ConversationSession
     public string? Provider { get; private set; }
     public string? Endpoint { get; private set; }
     public string? Name { get; private set; }
+    internal JsonElement? PiJsonlHeader { get; }
     public ConversationTree Tree { get; }
 
     public ConversationSession(string workingDirectory, string model, string? endpoint, string? provider = null)
         : this(Guid.NewGuid().ToString("N"), Path.GetFullPath(workingDirectory), model, endpoint, provider, null, new ConversationTree()) { }
 
-    private ConversationSession(string id, string cwd, string model, string? endpoint, string? provider, string? name, ConversationTree tree)
+    private ConversationSession(string id, string cwd, string model, string? endpoint, string? provider, string? name,
+        ConversationTree tree, JsonElement? piJsonlHeader = null)
     {
         Id = id;
         WorkingDirectory = cwd;
@@ -30,7 +32,32 @@ public sealed class ConversationSession
         Endpoint = endpoint;
         Name = name;
         Tree = tree;
+        PiJsonlHeader = piJsonlHeader?.Clone();
     }
+
+    internal static ConversationSession FromPiJsonl(string id, string cwd, string model, string? provider, string? name,
+        ConversationTree tree, JsonElement header) =>
+        new(id, cwd, model, null, provider, name, tree, header);
+
+    internal static ConversationNode ImportedPiMessage(string id, string? parentId, DateTimeOffset timestamp,
+        ChatMessage message, JsonElement originalEntry)
+    {
+        var errors = message.Contents.Select((content, index) => new { content, index })
+            .Where(item => item.content is FunctionResultContent { Exception: not null } or FunctionCallContent { Exception: not null })
+            .Select(item => new ToolError(item.index, item.content is FunctionResultContent ? "result" : "call",
+                item.content is FunctionResultContent result ? result.Exception!.Message : ((FunctionCallContent)item.content).Exception!.Message))
+            .ToArray();
+        return new(id, parentId, "chat", JsonSerializer.SerializeToElement(new ChatRecord(
+            JsonSerializer.SerializeToElement(message, AIJsonUtilities.DefaultOptions), errors, originalEntry.Clone())), timestamp);
+    }
+
+    internal static JsonElement? PiEntryFromChatPayload(JsonElement payload) =>
+        payload.ValueKind == JsonValueKind.Object && payload.TryGetProperty("PiEntry", out var entry) &&
+        entry.ValueKind == JsonValueKind.Object ? entry.Clone() : null;
+
+    internal static JsonElement? PiEntryFromBashPayload(JsonElement payload) =>
+        payload.ValueKind == JsonValueKind.Object && payload.TryGetProperty("piOriginalEntry", out var entry) &&
+        entry.ValueKind == JsonValueKind.Object ? entry.Clone() : null;
 
     public void Rename(string? name) => Name = name;
     public void SelectModel(string model, string? endpoint, string? provider = null)
@@ -111,14 +138,33 @@ public sealed class ConversationSession
     {
         var path = Tree.ActivePath();
         var compactAt = path.ToList().FindLastIndex(node => node.Type == "compaction");
-        if (compactAt < 0) return ActiveMessages();
-        var compact = path[compactAt].Payload;
-        var kept = compact.GetProperty("firstKeptEntryId").GetString();
-        var from = path.ToList().FindIndex(node => node.Id == kept);
-        if (from < 0 || from >= compactAt) throw new InvalidDataException("Invalid compaction boundary.");
-        var context = new List<ChatMessage> { new(ChatRole.User,
-            "[Summary of earlier conversation; original turns remain in session history.]\n" + compact.GetProperty("summary").GetString()) };
-        context.AddRange(path.Skip(from).Select(ContextMessageForNode).Where(message => message is not null).Cast<ChatMessage>());
+        var from = 0;
+        var context = new List<ChatMessage>();
+        if (compactAt >= 0)
+        {
+            var compact = path[compactAt].Payload;
+            var kept = compact.GetProperty("firstKeptEntryId").GetString();
+            from = path.ToList().FindIndex(node => node.Id == kept);
+            var piBoundary = PiJsonlSessionInterchange.OriginalEntry(path[compactAt]) is not null;
+            if (from < 0 || from >= compactAt || !piBoundary && ContextMessageForNode(path[from])?.Role != ChatRole.User)
+                throw new InvalidDataException("Invalid compaction boundary.");
+            if (PiJsonlSessionInterchange.CompactionSystemMessage(path[compactAt]) is { } systemMessage)
+                context.Add(systemMessage);
+            context.Add(new ChatMessage(ChatRole.User,
+                "[Summary of earlier conversation; original turns remain in session history.]\n" + compact.GetProperty("summary").GetString()));
+        }
+        var edits = new Dictionary<string, JsonElement>(StringComparer.Ordinal);
+        foreach (var node in path.Skip(from))
+            if (PiJsonlSessionInterchange.TryGetContextEdit(node, out var targetId, out var replacement))
+                edits[targetId] = replacement;
+        foreach (var node in path.Skip(from))
+        {
+            var message = ContextMessageForNode(node);
+            if (message is null) continue;
+            if (edits.TryGetValue(node.Id, out var replacement))
+                message = PiJsonlSessionInterchange.ApplyContextEdit(node, message, replacement);
+            if (message is not null) context.Add(message);
+        }
         return context;
     }
 
@@ -183,6 +229,8 @@ public sealed class ConversationSession
     private static ChatMessage? ContextMessageForNode(ConversationNode node)
     {
         if (node.Type == "chat") return Restore(node.Payload, node.Id);
+        if (node.Type is "custom_message" or "branch_summary")
+            return PiJsonlSessionInterchange.ImportedContextMessage(node);
         if (node.Type != "bash_execution") return null;
         var execution = RestoreBashExecution(node.Payload, node.Id);
         return execution.ExcludeFromContext ? null : BashExecutionContextMessage(execution);
@@ -290,7 +338,8 @@ public sealed class ConversationSession
 
     public string ToJson()
     {
-        var document = new Document(FormatVersion, Id, WorkingDirectory, Model, Endpoint, Name, Tree.HeadId, Tree.Entries.ToArray(), Provider);
+        var document = new Document(FormatVersion, Id, WorkingDirectory, Model, Endpoint, Name, Tree.HeadId,
+            Tree.Entries.ToArray(), Provider, PiJsonlHeader);
         return JsonSerializer.Serialize(document);
     }
 
@@ -334,11 +383,12 @@ public sealed class ConversationSession
             var boundary = path.ToList().FindIndex(entry => entry.Id == kept.GetString());
             var previous = path.ToList().FindLastIndex(entry => entry.Type == "compaction");
             if (boundary <= previous || boundary >= path.Count ||
-                ContextMessageForNode(path[boundary])?.Role != ChatRole.User)
+                PiJsonlSessionInterchange.OriginalEntry(node) is null && ContextMessageForNode(path[boundary])?.Role != ChatRole.User)
                 throw new InvalidDataException($"Invalid compaction boundary at {node.Id}.");
         }
         tree.Select(document.HeadId); // An explicit null selection is distinct from the last appended entry.
-        return new ConversationSession(document.Id, document.WorkingDirectory, document.Model, document.Endpoint, document.Provider, document.Name, tree);
+        return new ConversationSession(document.Id, document.WorkingDirectory, document.Model, document.Endpoint,
+            document.Provider, document.Name, tree, document.PiHeader);
     }
 
     private static void ValidateUsage(UsageRecord usage, string id)
@@ -370,8 +420,8 @@ public sealed class ConversationSession
 
     public sealed record CompactionPlan(string FirstKeptEntryId, IReadOnlyList<ChatMessage> MessagesToSummarize);
 
-    private sealed record ChatRecord(JsonElement Message, ToolError[]? Errors);
+    private sealed record ChatRecord(JsonElement Message, ToolError[]? Errors, JsonElement? PiEntry = null);
     private sealed record ToolError(int Index, string Type, string Message);
     private sealed record Document(int Version, string Id, string WorkingDirectory, string Model, string? Endpoint,
-        string? Name, string? HeadId, ConversationNode[] Entries, string? Provider = null);
+        string? Name, string? HeadId, ConversationNode[] Entries, string? Provider = null, JsonElement? PiHeader = null);
 }

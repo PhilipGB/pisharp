@@ -36,7 +36,7 @@ if (cli.Version)
 }
 if (cli.Help)
 {
-    Console.WriteLine("PiSharp (incomplete implementation)\nUsage: pisharp [--local | --provider <id>] [--model <id>] [--models <globs>] [--thinking <level>] [--api-key <key>] [--list-models [pattern]] [--system-prompt <text|file>] [--append-system-prompt <text|file>] [--no-context-files] [--no-extensions] [-e|--extension <path>] [--no-skills] [--skill <path>] [--no-prompt-templates] [--prompt-template <path>] [--offline] [--verbose] [-a|--approve|-na|--no-approve] [--mode text|interactive|print|json|rpc] [-p|--print] [-h|--help] [-v|--version] [-c|--continue | --session <path|project-id> | --fork <path|project-id> | --no-session] [--session-dir <dir>] [--name <label>] [prompt] [@files...]\n--tools <read,bash,edit,write,grep,find,ls> selects tools (grep/find/ls are opt-in); --exclude-tools <names> removes tools; --no-tools disables defaults (including extension tools); --no-builtin-tools disables only default built-ins.\nProviders and static model metadata may be configured in $PISHARP_AGENT_DIR/models.json. Credentials are read from environment or private auth.json; --api-key is runtime-only.\nOffline credential status: pisharp auth check --provider <id> [--model <configured-exact-id>] [--local]; explicit pisharp auth print-api-key --provider <id> prints an API key to stdout.\nStandalone private HTML: pisharp --export <PiSharp-session-file> [output.html]; never overwrites.\n--local uses http://192.168.0.97:8000/v1 and Qwen3.8-27B-GGUF (no API key required).\nInteractive: /model, /models, /settings, /thinking, /scoped-models, /login, /logout, /tree, /branch, /fork, /clone, /new, /sessions, /resume, /delete-session, /compact, /copy, /export, /name, /session, /trust, /reload, /hotkeys, /quit.");
+    Console.WriteLine("PiSharp (incomplete implementation)\nUsage: pisharp [--local | --provider <id>] [--model <id>] [--models <globs>] [--thinking <level>] [--api-key <key>] [--list-models [pattern]] [--system-prompt <text|file>] [--append-system-prompt <text|file>] [--no-context-files] [--no-extensions] [-e|--extension <path>] [--no-skills] [--skill <path>] [--no-prompt-templates] [--prompt-template <path>] [--offline] [--verbose] [-a|--approve|-na|--no-approve] [--mode text|interactive|print|json|rpc] [-p|--print] [-h|--help] [-v|--version] [-c|--continue | --session <path|project-id> | --fork <path|project-id> | --no-session] [--session-dir <dir>] [--name <label>] [prompt] [@files...]\n--tools <read,bash,edit,write,grep,find,ls> selects tools (grep/find/ls are opt-in); --exclude-tools <names> removes tools; --no-tools disables defaults (including extension tools); --no-builtin-tools disables only default built-ins.\nProviders and static model metadata may be configured in $PISHARP_AGENT_DIR/models.json. Credentials are read from environment or private auth.json; --api-key is runtime-only.\nOffline credential status: pisharp auth check --provider <id> [--model <configured-exact-id>] [--local]; explicit pisharp auth print-api-key --provider <id> prints an API key to stdout.\nStandalone private HTML: pisharp --export <PiSharp-session-file> [output.html]; never overwrites.\n--local uses http://192.168.0.97:8000/v1 and Qwen3.8-27B-GGUF (no API key required).\nInteractive: /model, /models, /settings, /thinking, /scoped-models, /login, /logout, /tree, /branch, /fork, /clone, /new, /sessions, /resume, /delete-session, /compact, /copy, /export, /export-jsonl, /import, /name, /session, /trust, /reload, /hotkeys, /quit.");
     return;
 }
 var trustStore = new ProjectTrust(agentDirectory);
@@ -147,6 +147,30 @@ catch (ArgumentException e)
 }
 var store = new ConversationStore(Environment.CurrentDirectory, cli.SessionDirectory ??
     Environment.GetEnvironmentVariable("PISHARP_SESSION_DIR") ?? userSettings.SessionDirectory);
+ConversationSession ImportPiSessionFile(string path)
+{
+    var file = new FileInfo(path);
+    if (!file.Exists) throw new FileNotFoundException("Pi session file was not found.", path);
+    if (file.Length > 128L * 1024 * 1024) throw new InvalidDataException("Pi session exceeds the 128 MiB import limit.");
+    var imported = PiJsonlSessionInterchange.Import(File.ReadAllText(path));
+    var workingDirectoryComparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+    if (!Path.GetFullPath(imported.WorkingDirectory).Equals(Path.GetFullPath(Environment.CurrentDirectory), workingDirectoryComparison))
+        throw new InvalidDataException($"Pi session working directory '{imported.WorkingDirectory}' differs from this project. Start PiSharp there before importing.");
+    if (!Directory.Exists(imported.WorkingDirectory))
+        throw new InvalidDataException($"Pi session working directory does not exist: {imported.WorkingDirectory}");
+    return imported;
+}
+string? NewImportedSessionPath(ConversationSession imported)
+{
+    if (cli.NoSession) return null;
+    var path = store.NewPath(imported);
+    const string extension = ".session.json";
+    var stem = Path.GetFileName(path)[..^extension.Length];
+    var directory = Path.GetDirectoryName(path)!;
+    for (var suffix = 1; File.Exists(path); suffix++)
+        path = Path.Combine(directory, $"{stem}-{suffix}{extension}");
+    return path;
+}
 AutoCompactionPolicy? contextPolicy;
 ModelPricing? modelPricing;
 try
@@ -161,7 +185,8 @@ Task<ConversationRun> OpenRunAsync(PiAgent runningAgent, ConversationSession ses
         token => store.SaveAsync(session, path, token), autoCompaction: contextPolicy, pricing: modelPricing,
         sessionFile: path, provider: runProvider ?? selection.Provider.Id, reasoningLevel: reasoningLevel ?? thinking);
 var sessionPath = cli.NoSession || cli.ForkSource is not null ? null : cli.SessionPath is not null &&
-    (cli.SessionPath.Contains(Path.DirectorySeparatorChar) || cli.SessionPath.EndsWith(".session.json", StringComparison.Ordinal))
+    (cli.SessionPath.Contains(Path.DirectorySeparatorChar) || cli.SessionPath.EndsWith(".session.json", StringComparison.Ordinal) ||
+        cli.SessionPath.EndsWith(".jsonl", StringComparison.OrdinalIgnoreCase))
     ? Path.GetFullPath(cli.SessionPath) : cli.Continue ? store.MostRecentPath() : null;
 ConversationSession conversation;
 ConversationRun conversationRun;
@@ -171,15 +196,29 @@ try
         sessionPath = SessionCatalog.Resolve(await SessionCatalog.ListAsync(store), cli.SessionPath).Path;
     if (cli.ForkSource is not null)
     {
-        var sourcePath = cli.ForkSource.Contains(Path.DirectorySeparatorChar) || cli.ForkSource.EndsWith(".session.json", StringComparison.Ordinal)
+        var sourcePath = cli.ForkSource.Contains(Path.DirectorySeparatorChar) || cli.ForkSource.EndsWith(".session.json", StringComparison.Ordinal) ||
+            cli.ForkSource.EndsWith(".jsonl", StringComparison.OrdinalIgnoreCase)
             ? Path.GetFullPath(cli.ForkSource)
             : SessionCatalog.Resolve(await SessionCatalog.ListAsync(store), cli.ForkSource).Path;
-        conversation = (await store.LoadAsync(sourcePath)).Fork();
+        conversation = sourcePath.EndsWith(".jsonl", StringComparison.OrdinalIgnoreCase)
+            ? ImportPiSessionFile(sourcePath).Fork()
+            : (await store.LoadAsync(sourcePath)).Fork();
+    }
+    else if (sessionPath is not null && sessionPath.EndsWith(".jsonl", StringComparison.OrdinalIgnoreCase))
+    {
+        conversation = ImportPiSessionFile(sessionPath);
+        sessionPath = store.NewPath(conversation);
+        await store.SaveAsync(conversation, sessionPath);
     }
     else
         conversation = sessionPath is not null && File.Exists(sessionPath)
             ? await store.LoadAsync(sessionPath)
             : new ConversationSession(Environment.CurrentDirectory, connection.Model, connection.Endpoint?.ToString(), selection.Provider.Id);
+    if (conversation.Model == "unknown")
+    {
+        conversation.SelectModel(connection.Model, connection.Endpoint?.ToString(), selection.Provider.Id);
+        if (sessionPath is not null) await store.SaveAsync(conversation, sessionPath);
+    }
     var explicitConnection = cli.Local || cli.Provider is not null || cli.ModelOverride is not null ||
         Environment.GetEnvironmentVariable("PISHARP_MODEL") is not null || Environment.GetEnvironmentVariable("PISHARP_BASE_URL") is not null;
     var savedProvider = conversation.Provider ?? modelRuntime.Providers.FirstOrDefault(item =>
@@ -259,6 +298,16 @@ terminalScreen?.SetThemeResolver((foreground, background) =>
     ResolveConfiguredTheme(userSettings.Theme, foreground, background));
 terminalScreen?.Activate();
 editor?.AttachScreen(terminalScreen);
+void LoadSessionTranscript()
+{
+    if (terminalScreen is null) return;
+    var history = new InteractiveTranscript(Console.Out, Console.Error, interactive: true,
+        hideThinking: userSettings.HideThinkingBlock == true, screen: terminalScreen,
+        toolRenderer: name => extensionLease.Current.Registration.GetToolRenderer(name),
+        workingDirectory: conversation.WorkingDirectory);
+    history.LoadHistory(conversation);
+}
+LoadSessionTranscript();
 var terminalClipboard = new TerminalClipboard(writeTerminalControl: value =>
 {
     if (terminalScreen is { IsActive: true }) terminalScreen.WriteControl(value);
@@ -415,6 +464,7 @@ async Task ResumeSessionAsync(SessionListing listing)
     conversation = resumedConversation;
     conversationRun = resumedRun;
     sessionPath = listing.Path;
+    LoadSessionTranscript();
     Console.WriteLine($"Resumed {conversation.Id[..12]} · {conversation.Name ?? "(unnamed)"}");
 }
 
@@ -443,6 +493,7 @@ async Task ForkFromUserAsync(string id)
     conversation = forked;
     sessionPath = forkPath;
     conversationRun = forkRun;
+    LoadSessionTranscript();
     editor?.Prefill(draft);
     Console.WriteLine($"Forked {candidates[0].Id[..12]} to {forkPath ?? "(ephemeral)"}. Edit and submit the draft prompt.");
 }
@@ -748,6 +799,56 @@ else
                         await SessionExport.ExportHtmlAsync(conversation, exportPath);
                         Console.WriteLine($"Exported private HTML to {exportPath}. Review before sharing.");
                         break;
+                    case "/export-jsonl":
+                        var jsonlPath = argument.Length == 0
+                            ? Path.Combine(Environment.CurrentDirectory, $"pisharp-{conversation.Id[..12]}.jsonl")
+                            : Path.GetFullPath(SessionPathArgument.Parse(argument));
+                        await PiJsonlSessionInterchange.ExportToFileAsync(conversation, jsonlPath);
+                        Console.WriteLine($"Exported private Pi JSONL to {jsonlPath}.");
+                        break;
+                    case "/import":
+                        if (argument.Length == 0) throw new ArgumentException("Usage: /import <path.jsonl>");
+                        var inputPath = Path.GetFullPath(SessionPathArgument.Parse(argument));
+                        Console.WriteLine($"Replace the active session with {TerminalSafeText.Normalize(inputPath)}? Type import to confirm:");
+                        var importConfirmation = await editor.ReadLineAsync(HandleEditorApplicationAction, enableApplicationActions: false);
+                        if (importConfirmation?.Trim() != "import")
+                        {
+                            Console.WriteLine("Import cancelled.");
+                            break;
+                        }
+                        var imported = ImportPiSessionFile(inputPath);
+                        var importedSelection = imported.Model == "unknown" ? selection :
+                            await modelRuntime.ResolveAsync(imported.Provider, imported.Model, includeOutOfScope: true);
+                        var importedThinking = PiJsonlSessionInterchange.GetThinkingLevel(imported) ?? thinking;
+                        importedThinking = ThinkingLevels.ValidateForModel(importedThinking, importedSelection.Model.Reasoning);
+                        if (imported.Model == "unknown")
+                            imported.SelectModel(importedSelection.Model.Id, importedSelection.Connection.Endpoint?.ToString(), importedSelection.Provider.Id);
+                        if (sessionPath is not null) await store.SaveAsync(conversation, sessionPath);
+                        var previousConversation = conversation;
+                        var previousPath = sessionPath;
+                        var previousRun = conversationRun;
+                        var importedPath = NewImportedSessionPath(imported);
+                        if (importedPath is not null) await store.SaveAsync(imported, importedPath);
+                        conversation = imported;
+                        sessionPath = importedPath;
+                        try
+                        {
+                            if (importedSelection.Provider.Id != selection.Provider.Id || importedSelection.Model.Id != selection.Model.Id ||
+                                importedThinking != thinking)
+                                await ReplaceModelRuntime(importedSelection, importedThinking, recordModelChange: false);
+                            else conversationRun = await OpenRunAsync(agent, conversation, sessionPath);
+                        }
+                        catch
+                        {
+                            conversation = previousConversation;
+                            sessionPath = previousPath;
+                            conversationRun = previousRun;
+                            if (importedPath is not null && File.Exists(importedPath)) File.Delete(importedPath);
+                            throw;
+                        }
+                        LoadSessionTranscript();
+                        Console.WriteLine($"Imported Pi session {conversation.Id} · {conversation.ActiveMessages().Count} active messages · {sessionPath ?? "(ephemeral)"}");
+                        break;
                     case "/sessions":
                         var listings = SessionCatalog.Search(await SessionCatalog.ListAsync(store), argument);
                         foreach (var item in listings)
@@ -841,6 +942,7 @@ else
                         if (argument.Length == 0 || matches.Length != 1) throw new ArgumentException("Specify a unique entry id prefix from /tree.");
                         await conversationRun.SelectAsync(matches[0].Id);
                         if (sessionPath is not null) await store.SaveAsync(conversation, sessionPath);
+                        LoadSessionTranscript();
                         Console.WriteLine($"Selected {matches[0].Id[..12]}");
                         break;
                     case "/name":
@@ -914,6 +1016,7 @@ else
                         var newPath = sessionPath;
                         conversationRun = await OpenRunAsync(agent, conversation, newPath);
                         if (sessionPath is not null) await store.SaveAsync(conversation, sessionPath);
+                        LoadSessionTranscript();
                         Console.WriteLine($"{command[1..]}: {sessionPath ?? "(ephemeral)"}");
                         break;
                     default:

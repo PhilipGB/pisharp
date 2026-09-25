@@ -116,6 +116,16 @@ internal sealed class TerminalTranscriptBuffer
 
     public void SetExpanded(bool expanded) => IsExpanded = expanded;
 
+    public void Clear()
+    {
+        _captured.Clear();
+        _segments.Clear();
+        _capturedCharacters = 0;
+        _transcriptCharacters = 0;
+        _captureTruncated = false;
+        Revision++;
+    }
+
     public IReadOnlyList<CapturedChunk> CaptureSnapshot() => _captured
         .Select(chunk => new CapturedChunk(chunk.IsError, chunk.Text.ToString())).ToArray();
 

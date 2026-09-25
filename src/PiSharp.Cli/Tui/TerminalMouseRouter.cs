@@ -25,6 +25,14 @@ internal sealed class TerminalMouseRouter
         _ => null
     };
 
+    public void Clear()
+    {
+        _transcript.Clear();
+        _editor.Clear();
+        _selectionTarget = Target.None;
+        _dragTarget = Target.None;
+    }
+
     public void SetTranscript(IReadOnlyList<string> rows, int firstVisualRow, int screenStart, int height)
     {
         _transcript.SetVisibleRows(rows, firstVisualRow);

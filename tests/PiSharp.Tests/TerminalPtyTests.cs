@@ -181,6 +181,151 @@ public sealed class TerminalPtyTests
     }
 
     [Fact]
+    public async Task PiJsonlImportConfirmsAndSwitchesTheActiveSessionThroughLinuxPty()
+    {
+        if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-pi-import-pty-" + Guid.NewGuid().ToString("N"));
+        var agent = Path.Combine(cwd, "agent");
+        Directory.CreateDirectory(agent);
+        Process? process = null;
+        try
+        {
+            const string importedId = "pi-import-pty";
+            var sourcePath = Path.Combine(cwd, "pi session with spaces.jsonl");
+            var exportPath = Path.Combine(cwd, "round trip export.jsonl");
+            var jsonl = $$$$"""
+                {"type":"session","version":3,"id":"{{{{importedId}}}}","timestamp":"2025-01-01T00:00:00Z","cwd":"{{{{cwd}}}}"}
+                {"type":"message","id":"user-entry","parentId":null,"timestamp":"2025-01-01T00:00:01Z","message":{"role":"user","content":"imported context from Pi","timestamp":1735689601000}}
+                """;
+            await File.WriteAllTextAsync(sourcePath, jsonl);
+            var store = new PiSharp.Runtime.Sessions.ConversationStore(cwd, Path.Combine(cwd, "sessions"));
+            var start = new ProcessStartInfo("/usr/bin/script")
+            {
+                WorkingDirectory = cwd,
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                ArgumentList = { "-q", "-e", "-c", $"stty rows 24 cols 80; exec dotnet {ShellQuote(typeof(CliArguments).Assembly.Location)} --local --offline --session-dir {ShellQuote(store.DirectoryPath)} --no-tools", "/dev/null" }
+            };
+            start.Environment["PISHARP_AGENT_DIR"] = agent;
+            process = Process.Start(start);
+            Assert.NotNull(process);
+            var output = new StringBuilder();
+            var promptReady = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var retryPromptReady = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var cancelledReady = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var importReady = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var exportReady = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            const string confirmationPrompt = "Type import to confirm:";
+            var drain = Task.Run(async () =>
+            {
+                var buffer = new char[1024];
+                int count;
+                while ((count = await process.StandardOutput.ReadAsync(buffer)) > 0)
+                {
+                    lock (output)
+                    {
+                        output.Append(buffer, 0, count);
+                        var captured = output.ToString();
+                        var promptIndex = captured.LastIndexOf(confirmationPrompt, StringComparison.Ordinal);
+                        var cancelledIndex = captured.LastIndexOf("Import cancelled.", StringComparison.Ordinal);
+                        if (promptIndex >= 0) promptReady.TrySetResult();
+                        if (cancelledIndex >= 0 && promptIndex > cancelledIndex) retryPromptReady.TrySetResult();
+                        if (cancelledIndex >= 0) cancelledReady.TrySetResult();
+                        if (captured.Contains($"Imported Pi session {importedId}", StringComparison.Ordinal)) importReady.TrySetResult();
+                        if (captured.Contains("Exported private Pi JSONL to", StringComparison.Ordinal)) exportReady.TrySetResult();
+                    }
+                }
+            });
+            var stderr = process.StandardError.ReadToEndAsync();
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+            await process.StandardInput.WriteAsync($"/import \"{sourcePath}\"\n");
+            await process.StandardInput.FlushAsync();
+            try
+            {
+                await promptReady.Task.WaitAsync(timeout.Token);
+                await process.StandardInput.WriteAsync("cancel\n");
+                await process.StandardInput.FlushAsync();
+                await cancelledReady.Task.WaitAsync(timeout.Token);
+                Assert.DoesNotContain(await PiSharp.Runtime.Sessions.SessionCatalog.ListAsync(store),
+                    session => session.Id == importedId);
+                await process.StandardInput.WriteAsync($"/import \"{sourcePath}\"\n");
+                await retryPromptReady.Task.WaitAsync(timeout.Token);
+                await process.StandardInput.WriteAsync("import\n");
+                await process.StandardInput.FlushAsync();
+                await importReady.Task.WaitAsync(timeout.Token);
+                await process.StandardInput.WriteAsync($"/export-jsonl \"{exportPath}\"\n");
+                await process.StandardInput.FlushAsync();
+                await exportReady.Task.WaitAsync(timeout.Token);
+                await process.StandardInput.WriteAsync("/session\n/quit\n");
+                await process.StandardInput.FlushAsync();
+                process.StandardInput.Close();
+                await process.WaitForExitAsync(timeout.Token);
+                await drain;
+            }
+            catch (OperationCanceledException error)
+            {
+                if (!process.HasExited) process.Kill(entireProcessTree: true);
+                await drain;
+                string diagnostic;
+                lock (output) diagnostic = output.ToString();
+                throw new TimeoutException($"Pi JSONL import PTY did not reach the expected state. stdout:\n{diagnostic}\nstderr:\n{await stderr}", error);
+            }
+
+            string terminalOutput;
+            lock (output) terminalOutput = output.ToString();
+            var saved = Assert.Single(await PiSharp.Runtime.Sessions.SessionCatalog.ListAsync(store),
+                session => session.Id == importedId);
+            var imported = await store.LoadAsync(saved.Path);
+            Assert.Equal(0, process.ExitCode);
+            Assert.Contains("Type import to confirm:", terminalOutput);
+            Assert.Contains("Import cancelled.", terminalOutput);
+            Assert.Contains("Exported private Pi JSONL to", terminalOutput);
+            Assert.Contains($"Imported Pi session {importedId}", terminalOutput);
+            Assert.Contains("› imported context from Pi", terminalOutput);
+            Assert.Contains(importedId, terminalOutput);
+            Assert.Contains("imported context from Pi", imported.ActiveMessages().Select(message => message.Text));
+            var exported = PiSharp.Runtime.Sessions.PiJsonlSessionInterchange.Import(await File.ReadAllTextAsync(exportPath));
+            Assert.Equal(importedId, exported.Id);
+            Assert.Contains("imported context from Pi", exported.ActiveMessages().Select(message => message.Text));
+            Assert.DoesNotContain("Session error:", terminalOutput);
+            Assert.DoesNotContain("Agent error:", await stderr);
+
+            var startupStore = new PiSharp.Runtime.Sessions.ConversationStore(cwd, Path.Combine(cwd, "startup-sessions"));
+            var startup = new ProcessStartInfo("/usr/bin/script")
+            {
+                WorkingDirectory = cwd,
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                ArgumentList = { "-q", "-e", "-c", $"stty rows 24 cols 80; exec dotnet {ShellQuote(typeof(CliArguments).Assembly.Location)} --local --offline --session {ShellQuote(sourcePath)} --session-dir {ShellQuote(startupStore.DirectoryPath)} --no-tools", "/dev/null" }
+            };
+            startup.Environment["PISHARP_AGENT_DIR"] = agent;
+            process = Process.Start(startup);
+            Assert.NotNull(process);
+            var startupOutput = process.StandardOutput.ReadToEndAsync();
+            var startupError = process.StandardError.ReadToEndAsync();
+            await process.StandardInput.WriteAsync("/session\n/quit\n");
+            process.StandardInput.Close();
+            await process.WaitForExitAsync(timeout.Token);
+            var startupText = await startupOutput;
+            var startupSession = Assert.Single(await PiSharp.Runtime.Sessions.SessionCatalog.ListAsync(startupStore),
+                session => session.Id == importedId);
+            Assert.Equal(0, process.ExitCode);
+            Assert.Contains(importedId, startupText);
+            Assert.Contains("› imported context from Pi", startupText);
+            Assert.DoesNotContain("Could not open session:", startupText);
+            Assert.DoesNotContain("Agent error:", await startupError);
+            Assert.Equal(importedId, (await startupStore.LoadAsync(startupSession.Path)).Id);
+        }
+        finally
+        {
+            if (process is { HasExited: false }) process.Kill(entireProcessTree: true);
+            Directory.Delete(cwd, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task ForkFromEarlierUserTurnPreservesSourceAndSeedsEditableDraft()
     {
         if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;

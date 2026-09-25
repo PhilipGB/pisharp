@@ -22,7 +22,7 @@ public sealed class ExtensionRegistration
     private static readonly HashSet<string> s_reserved = new(StringComparer.Ordinal)
     {
         "tree", "branch", "fork", "clone", "new", "sessions", "resume", "name", "model", "models",
-        "compact", "export", "session", "trust", "reload", "quit", "exit"
+        "compact", "export", "export-jsonl", "import", "session", "trust", "reload", "quit", "exit"
     };
     private readonly Dictionary<string, AIFunction> _tools = new(StringComparer.Ordinal);
     private readonly Dictionary<string, PiSharpToolRenderer> _toolRenderers = new(StringComparer.Ordinal);
