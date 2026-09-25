@@ -110,7 +110,12 @@ public sealed class EditorBuffer
         Cursor = start + replacement.Length;
     }
 
-    public void SetText(string text) { _text = text; Cursor = text.Length; }
+    public void SetText(string text, int? cursor = null)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        _text = text;
+        Cursor = Math.Clamp(cursor ?? text.Length, 0, text.Length);
+    }
 
     private void Insert(string text) { _text = _text.Insert(Cursor, text); Cursor += text.Length; }
 

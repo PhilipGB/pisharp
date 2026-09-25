@@ -105,6 +105,19 @@ public sealed class EditorKeymapTests
         finally { Directory.Delete(directory, recursive: true); }
     }
 
+    [Fact]
+    public void ActiveScreenSearchAndPagingBindingsDecodeFromTerminalInput()
+    {
+        var keymap = new EditorKeymap();
+        var searchInput = new TerminalInput(new MemoryStream([6]));
+        var pageInput = new TerminalInput(new MemoryStream("\u001b[5~"u8.ToArray()));
+
+        Assert.True(searchInput.TryRead(0, out var search));
+        Assert.True(pageInput.TryRead(0, out var page));
+        Assert.True(keymap.Matches("tui.altScreen.search", search.Key!.Value));
+        Assert.True(keymap.Matches("tui.altScreen.pageUp", page.Key!.Value));
+    }
+
     private static ConsoleKeyInfo Key(ConsoleKey key, ConsoleModifiers modifiers = 0) => new('\0', key,
         modifiers.HasFlag(ConsoleModifiers.Shift), modifiers.HasFlag(ConsoleModifiers.Alt),
         modifiers.HasFlag(ConsoleModifiers.Control));

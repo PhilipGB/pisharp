@@ -101,4 +101,45 @@ public sealed class TerminalScreenTests
         Assert.Contains("message 29", bottomFrame);
         Assert.DoesNotContain("message 00", bottomFrame);
     }
+
+    [Fact]
+    public async Task ActiveEditorSearchHighlightsMatchesAndRestoresItsDraftOnEscape()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        var screen = new TerminalScreen(output, error, () => 100, () => 12);
+        screen.Output.Write("needle first result\nother output\nneedle second result\n");
+        var editor = new TerminalEditor();
+        editor.Prefill("draft to keep");
+        editor.AttachScreen(screen);
+        var aborted = false;
+        Task<bool> Queue(string text, bool followUp, CancellationToken token) => Task.FromResult(true);
+        IReadOnlyList<string> ClearQueue() => [];
+        void Abort() => aborted = true;
+
+        await editor.HandleActiveInputAsync(
+            new(new ConsoleKeyInfo('\0', ConsoleKey.F, shift: true, alt: false, control: true), null), Queue, ClearQueue, Abort);
+        editor.AttachScreen(screen);
+        var searchStart = output.GetStringBuilder().Length;
+        await editor.HandleActiveInputAsync(new(null, "needle"), Queue, ClearQueue, Abort);
+        editor.AttachScreen(screen);
+        var searchFrame = output.ToString()[searchStart..];
+        var nextStart = output.GetStringBuilder().Length;
+        await editor.HandleActiveInputAsync(new(new ConsoleKeyInfo('\n', ConsoleKey.Enter, false, false, false), null), Queue, ClearQueue, Abort);
+        editor.AttachScreen(screen);
+        var nextFrame = output.ToString()[nextStart..];
+        var closeStart = output.GetStringBuilder().Length;
+        await editor.HandleActiveInputAsync(new(new ConsoleKeyInfo('\0', ConsoleKey.Escape, false, false, false), null), Queue, ClearQueue, Abort);
+        editor.AttachScreen(screen);
+        var closeFrame = output.ToString()[closeStart..];
+        screen.Dispose();
+
+        Assert.Contains("1/2", searchFrame);
+        Assert.Contains("\u001b[7;1mneedle", searchFrame);
+        Assert.Contains("2/2", nextFrame);
+        Assert.Contains("\u001b[7;1mneedle", nextFrame);
+        Assert.DoesNotContain("\u001b[7m", closeFrame);
+        Assert.Equal("draft to keep", editor.Draft);
+        Assert.False(aborted);
+    }
 }

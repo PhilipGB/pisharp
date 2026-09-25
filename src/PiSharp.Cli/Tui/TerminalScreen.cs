@@ -9,6 +9,7 @@ public sealed class TerminalScreen : IDisposable
     private const int MaxScreenTranscriptCharacters = 1_000_000;
     private const int MaxRestoredTranscriptCharacters = 4_000_000;
     private const int MaxTranscriptScrollOffset = 60_000;
+    private const int MaxTranscriptSearchMatches = 10_000;
     private readonly object _gate = new();
     private readonly TextWriter _originalOut;
     private readonly TextWriter _originalError;
@@ -22,8 +23,12 @@ public sealed class TerminalScreen : IDisposable
     private TextWriter? _installedError;
     private string _editorText = "";
     private string _liveAssistant = "";
+    private string _searchQuery = "";
     private int _editorCursor;
     private int _scrollOffset;
+    private int _searchSelection;
+    private int _searchMatchCount;
+    private bool _searchHasMoreMatches;
     private string _footer = "Enter steers · follow-up queues · Escape aborts";
     private int _capturedCharacters;
     private bool _captureTruncated;
@@ -161,6 +166,35 @@ public sealed class TerminalScreen : IDisposable
         }
     }
 
+    internal TranscriptSearchState SearchTranscript(string query, int direction = 0)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        query = TerminalSafeText.Normalize(query);
+        lock (_gate)
+        {
+            if (!_active) return default;
+            if (!query.Equals(_searchQuery, StringComparison.Ordinal)) _searchSelection = 0;
+            else if (direction != 0 && _searchMatchCount > 0)
+                _searchSelection = ((_searchSelection + direction) % _searchMatchCount + _searchMatchCount) % _searchMatchCount;
+            _searchQuery = query;
+            RenderLocked();
+            return new(_searchMatchCount, _searchMatchCount == 0 ? 0 : _searchSelection + 1, _searchHasMoreMatches);
+        }
+    }
+
+    internal void ClearTranscriptSearch()
+    {
+        lock (_gate)
+        {
+            if (!_active || _searchQuery.Length == 0) return;
+            _searchQuery = "";
+            _searchSelection = 0;
+            _searchMatchCount = 0;
+            _searchHasMoreMatches = false;
+            RenderLocked();
+        }
+    }
+
     private void SetScrollOffsetLocked(int value)
     {
         _scrollOffset = Math.Clamp(value, 0, MaxTranscriptScrollOffset);
@@ -258,10 +292,38 @@ public sealed class TerminalScreen : IDisposable
         var footerHeight = height > 2 ? 1 : 0;
         var transcriptHeight = Math.Max(1, height - editorHeight - footerHeight);
         var editor = EditorViewport.Layout(_editorText, _editorCursor, columns, editorHeight);
-        var transcriptRows = WrapWindow(_transcript.ToString() + _liveAssistant, Math.Max(1, columns - 1),
-            transcriptHeight, _scrollOffset, out _scrollOffset);
+        var transcriptText = _transcript.ToString() + _liveAssistant;
+        var transcriptWidth = Math.Max(1, columns - 1);
+        var visibleTranscript = transcriptText;
+        if (_searchQuery.Length > 0)
+        {
+            var projection = CreateSearchProjection(transcriptText);
+            var matches = FindSearchMatches(projection, _searchQuery, out _searchHasMoreMatches);
+            _searchMatchCount = matches.Count;
+            if (matches.Count > 0)
+            {
+                _searchSelection = Math.Clamp(_searchSelection, 0, matches.Count - 1);
+                var selected = matches[_searchSelection];
+                var totalRows = CountVisualRows(projection.Text, transcriptWidth);
+                var selectedRow = VisualRowAt(projection.Text, selected.TextStart, transcriptWidth);
+                var startRow = Math.Clamp(selectedRow - transcriptHeight / 2, 0, Math.Max(0, totalRows - transcriptHeight));
+                _scrollOffset = Math.Clamp(totalRows - Math.Min(totalRows, startRow + transcriptHeight), 0, MaxTranscriptScrollOffset);
+                visibleTranscript = HighlightSearchMatches(transcriptText, matches, _searchSelection);
+            }
+            else
+            {
+                _searchSelection = 0;
+                _searchHasMoreMatches = false;
+            }
+        }
+        else
+        {
+            _searchMatchCount = 0;
+            _searchHasMoreMatches = false;
+        }
+        var transcriptRows = WrapWindow(visibleTranscript, transcriptWidth, transcriptHeight, _scrollOffset, out _scrollOffset);
         var screenRows = Enumerable.Repeat("", height).ToArray();
-        var transcriptStart = transcriptHeight - transcriptRows.Count;
+        var transcriptStart = _scrollOffset > 0 ? 0 : transcriptHeight - transcriptRows.Count;
         for (var index = 0; index < transcriptRows.Count; index++)
             screenRows[transcriptStart + index] = transcriptRows[index];
         var editorStart = transcriptHeight + editorHeight - editor.Rows.Count;
@@ -347,6 +409,117 @@ public sealed class TerminalScreen : IDisposable
         return true;
     }
 
+    private static SearchProjection CreateSearchProjection(string text)
+    {
+        var visible = new StringBuilder(text.Length);
+        var rawOffsets = new List<int>(text.Length + 1);
+        for (var offset = 0; offset < text.Length;)
+        {
+            if (TryReadSgr(text, offset, out var sequenceLength))
+            {
+                offset += sequenceLength;
+                continue;
+            }
+            var element = StringInfo.GetNextTextElement(text, offset);
+            for (var index = 0; index < element.Length; index++) rawOffsets.Add(offset + index);
+            visible.Append(element);
+            offset += element.Length;
+        }
+        rawOffsets.Add(text.Length);
+        return new(visible.ToString(), rawOffsets.ToArray());
+    }
+
+    private static List<SearchMatch> FindSearchMatches(SearchProjection projection, string query, out bool hasMore)
+    {
+        var matches = new List<SearchMatch>();
+        hasMore = false;
+        var cursor = 0;
+        while (cursor <= projection.Text.Length - query.Length)
+        {
+            var start = projection.Text.IndexOf(query, cursor, StringComparison.OrdinalIgnoreCase);
+            if (start < 0) break;
+            if (matches.Count == MaxTranscriptSearchMatches)
+            {
+                hasMore = true;
+                break;
+            }
+            var end = start + query.Length;
+            matches.Add(new(start, projection.RawOffsets[start], projection.RawOffsets[end]));
+            cursor = Math.Max(start + 1, end);
+        }
+        return matches;
+    }
+
+    private static string HighlightSearchMatches(string text, IReadOnlyList<SearchMatch> matches, int selected)
+    {
+        var output = new StringBuilder(text.Length + matches.Count * 12);
+        var cursor = 0;
+        for (var index = 0; index < matches.Count; index++)
+        {
+            var match = matches[index];
+            output.Append(text, cursor, match.RawStart - cursor);
+            output.Append(index == selected ? "\u001b[7;1m" : "\u001b[7m")
+                .Append(text, match.RawStart, match.RawEnd - match.RawStart)
+                .Append("\u001b[27m");
+            cursor = match.RawEnd;
+        }
+        output.Append(text, cursor, text.Length - cursor);
+        return output.ToString();
+    }
+
+    private static int CountVisualRows(string text, int width)
+    {
+        var rows = 1;
+        var used = 0;
+        for (var offset = 0; offset < text.Length;)
+        {
+            if (text[offset] == '\n')
+            {
+                rows++;
+                used = 0;
+                offset++;
+                continue;
+            }
+            var element = StringInfo.GetNextTextElement(text, offset);
+            var cells = Math.Max(0, TerminalCells.Width(element));
+            if (used + cells > width && used > 0)
+            {
+                rows++;
+                used = 0;
+            }
+            used += cells;
+            offset += element.Length;
+        }
+        return rows;
+    }
+
+    private static int VisualRowAt(string text, int index, int width)
+    {
+        var row = 0;
+        var used = 0;
+        for (var offset = 0; offset < index;)
+        {
+            if (text[offset] == '\n')
+            {
+                row++;
+                used = 0;
+                offset++;
+                continue;
+            }
+            var element = StringInfo.GetNextTextElement(text, offset);
+            if (offset + element.Length > index) return row;
+            var cells = Math.Max(0, TerminalCells.Width(element));
+            if (used + cells > width && used > 0)
+            {
+                row++;
+                used = 0;
+            }
+            used += cells;
+            offset += element.Length;
+        }
+        return row;
+    }
+
     private static string Clip(string value, int width)
     {
         var result = new StringBuilder();
@@ -393,6 +566,9 @@ public sealed class TerminalScreen : IDisposable
         public StringBuilder Text { get; } = text;
     }
 
+    private sealed record SearchProjection(string Text, int[] RawOffsets);
+    private readonly record struct SearchMatch(int TextStart, int RawStart, int RawEnd);
+
     private sealed class ScreenWriter(TerminalScreen screen, bool isError) : TextWriter
     {
         public override Encoding Encoding => Encoding.UTF8;
@@ -407,3 +583,5 @@ public sealed class TerminalScreen : IDisposable
         public override void Flush() { }
     }
 }
+
+internal readonly record struct TranscriptSearchState(int MatchCount, int SelectedMatch, bool HasMoreMatches);

@@ -69,6 +69,8 @@ public sealed class TerminalInput
                 "D" => Key(ConsoleKey.LeftArrow),
                 "H" or "1~" or "7~" => Key(ConsoleKey.Home),
                 "F" or "4~" or "8~" => Key(ConsoleKey.End),
+                "5~" => Key(ConsoleKey.PageUp),
+                "6~" => Key(ConsoleKey.PageDown),
                 "3~" => Key(ConsoleKey.Delete),
                 "Z" => Key(ConsoleKey.Tab, '\t', shift: true),
                 "13;3u" or "13;3~" => Key(ConsoleKey.Enter, '\n', alt: true),

@@ -484,10 +484,13 @@
         "Verify through application workflow and compare docs/tui.md, docs/terminal-setup.md; packages/tui/src/tui.ts, tui-alt-screen.ts; packages/coding-agent/src/modes/interactive/; VT renderer, pseudo-terminal snapshots"
       ],
       "implementation": [
-        "src/PiSharp.Cli/Tui/TerminalInput.cs: bounded OSC sequences terminated by BEL or ST are consumed instead of inserted as editor text; incomplete replies are ignored, oversized replies are rejected. No color query or parsing yet."
+        "src/PiSharp.Cli/Tui/TerminalInput.cs: bounded OSC sequences terminated by BEL or ST are consumed instead of inserted as editor text; incomplete replies are ignored, oversized replies are rejected. No color query or parsing yet.",
+        "src/PiSharp.Cli/Tui/TerminalScreen.cs: active-run alternate-screen compositor now supports bounded transcript scrolling and rendered-text search with highlighted/cycling matches; src/PiSharp.Cli/Tui/TerminalEditor.cs preserves and restores the follow-up draft when search closes.",
+        "src/PiSharp.Cli/Tui/TerminalInput.cs: standard CSI PageUp/PageDown sequences decode alongside the existing modified-key forms."
       ],
       "evidence": [
-        "TerminalInputTests.TerminalColorOscRepliesAreConsumedWithoutEditingTheDraft and TruncatedOscIsDiscardedAndOversizedOscIsRejected: synthetic OSC 10/11 BEL/ST, incomplete and oversized fixtures; no PTY or pinned Pi differential."
+        "TerminalInputTests.TerminalColorOscRepliesAreConsumedWithoutEditingTheDraft and TruncatedOscIsDiscardedAndOversizedOscIsRejected: synthetic OSC 10/11 BEL/ST, incomplete and oversized fixtures; no PTY or pinned Pi differential.",
+        "TerminalScreenTests and EditorKeymapTests cover scroll bounds, search highlighting/cycling/draft restoration and terminal input decoding; focused screen/keymap tests pass 11/11, format verification passes, warnings-as-errors Release build reports 0 warnings/errors, and full Release suite passes 399/399 with 0 skipped. Linux CI and pinned Pi workflow differentials remain pending."
       ],
       "dependencies": []
     },
@@ -1651,14 +1654,18 @@
     {
       "id": "keys-fullscreen",
       "title": "Terminal keys: PageUp/Down, Home/End, Ctrl+Shift+Up/Down, Ctrl+Shift+F search, Enter/Shift+Enter search navigation, Esc close",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:53",
       "acceptance": [
         "Resize, scrolling, focus and screen restoration",
         "Test in PTY including configurable bindings and widget precedence"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "src/PiSharp.Cli/Tui/EditorKeymap.cs, TerminalInput.cs and TerminalEditor.cs: active-run PageUp/PageDown/Home/End scrolling, Ctrl+F search fallback, Enter/Shift+Enter cycling and Escape close; search takes precedence over editor actions while active. Search indexes at most 10,000 matches and restores the queued follow-up draft."
+      ],
+      "evidence": [
+        "tests/PiSharp.Tests/TerminalScreenTests.cs and EditorKeymapTests.cs cover search highlights/cycling/draft restoration, page-key decoding and editor action precedence; 11/11 focused tests and 399/399 Release tests pass with 0 skipped. Standard and modified CSI paging forms are decoded. Ctrl+Shift+Up/Down, active-run PTY coverage and pinned Pi workflow comparison remain open."
+      ],
       "dependencies": []
     },
     {

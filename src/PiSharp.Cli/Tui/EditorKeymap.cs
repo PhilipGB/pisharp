@@ -35,7 +35,11 @@ public sealed class EditorKeymap
         ["tui.altScreen.pageUp"] = new("Scroll transcript up one page", ["pageup"]),
         ["tui.altScreen.pageDown"] = new("Scroll transcript down one page", ["pagedown"]),
         ["tui.altScreen.top"] = new("Scroll to the start of the transcript", ["home"]),
-        ["tui.altScreen.bottom"] = new("Return to the live transcript", ["end"])
+        ["tui.altScreen.bottom"] = new("Return to the live transcript", ["end"]),
+        ["tui.altScreen.search"] = new("Search the rendered transcript", IsWindowsBindings() ? ["ctrl+f"] : ["ctrl+shift+f", "ctrl+f"]),
+        ["tui.altScreen.searchNext"] = new("Select the next transcript search match", ["enter", "ctrl+g"]),
+        ["tui.altScreen.searchPrevious"] = new("Select the previous transcript search match", ["shift+enter", "ctrl+shift+g"]),
+        ["tui.altScreen.searchClose"] = new("Close transcript search", ["escape"])
     };
 
     private readonly string? _path;

@@ -3,11 +3,16 @@ namespace PiSharp.Cli.Tui;
 /// <summary>Normal-screen terminal editor. Leaves transcript in the terminal scrollback.</summary>
 public sealed class TerminalEditor
 {
+    private const string ActiveRunFooter = "Enter steers · follow-up queues · Escape aborts · Alt+Up restores queued input";
     private readonly EditorBuffer _buffer;
     private TerminalInput? _input;
     private readonly EditorCompletion _completion;
     private readonly EditorKeymap _keymap;
     private TerminalScreen? _screen;
+    private bool _searchingTranscript;
+    private string _savedDraft = "";
+    private int _savedCursor;
+    private string _lastSearchQuery = "";
     public TerminalEditor(Func<IReadOnlyList<string>>? commands = null, string? agentDirectory = null)
     {
         _completion = new(Environment.CurrentDirectory, commands);
@@ -51,7 +56,7 @@ public sealed class TerminalEditor
             Console.TreatControlCAsInput = true;
             using var mode = TerminalMode.Enter(_screen);
             _input ??= TerminalInput.OpenConsole();
-            _screen?.SetFooter("Enter steers · follow-up queues · Escape aborts · Alt+Up restores queued input");
+            _screen?.SetFooter(ActiveRunFooter);
             Render();
             while (!cancellationToken.IsCancellationRequested)
             {
@@ -67,6 +72,7 @@ public sealed class TerminalEditor
         }
         finally
         {
+            if (_searchingTranscript) CloseTranscriptSearch();
             ClearLine();
             Console.TreatControlCAsInput = previous;
         }
@@ -77,6 +83,7 @@ public sealed class TerminalEditor
         Func<string, bool, CancellationToken, Task<bool>> queue, Func<IReadOnlyList<string>> clearQueue,
         Action abort, CancellationToken cancellationToken = default)
     {
+        if (_searchingTranscript) return HandleTranscriptSearchInput(next);
         if (next.Key is { } key && (_keymap.Matches("app.interrupt", key) || _keymap.Matches("app.clear", key)))
         {
             RestorePending(clearQueue());
@@ -90,6 +97,11 @@ public sealed class TerminalEditor
         }
         if (next.Key is { } screenKey && _screen is { IsActive: true } screen)
         {
+            if (_keymap.Matches("tui.altScreen.search", screenKey))
+            {
+                StartTranscriptSearch();
+                return true;
+            }
             if (_keymap.Matches("tui.altScreen.pageUp", screenKey))
             {
                 screen.ScrollPage(up: true);
@@ -131,6 +143,67 @@ public sealed class TerminalEditor
         }
         _ = next.Text is not null ? _buffer.InsertText(next.Text) : _buffer.Handle(next.Key!.Value);
         return true;
+    }
+
+    private void StartTranscriptSearch()
+    {
+        if (_screen is not { IsActive: true }) return;
+        _savedDraft = _buffer.Text;
+        _savedCursor = _buffer.Cursor;
+        _buffer.SetText(_lastSearchQuery);
+        _searchingTranscript = true;
+        UpdateTranscriptSearch();
+    }
+
+    private bool HandleTranscriptSearchInput(TerminalInputEvent next)
+    {
+        if (_screen is not { IsActive: true })
+        {
+            CloseTranscriptSearch();
+            return true;
+        }
+        if (next.Key is { } key)
+        {
+            if (_keymap.Matches("tui.altScreen.searchClose", key) || _keymap.Matches("app.interrupt", key))
+            {
+                CloseTranscriptSearch();
+                return true;
+            }
+            if (_keymap.Matches("tui.altScreen.searchNext", key))
+            {
+                UpdateTranscriptSearch(direction: 1);
+                return true;
+            }
+            if (_keymap.Matches("tui.altScreen.searchPrevious", key))
+            {
+                UpdateTranscriptSearch(direction: -1);
+                return true;
+            }
+        }
+
+        if (next.Text is not null) _buffer.InsertText(next.Text);
+        else if (next.Key is { } editKey) _ = _buffer.Handle(editKey);
+        UpdateTranscriptSearch();
+        return true;
+    }
+
+    private void UpdateTranscriptSearch(int direction = 0)
+    {
+        if (_screen is not { IsActive: true } screen) return;
+        var query = _buffer.Text;
+        var state = screen.SearchTranscript(query, direction);
+        var count = state.HasMoreMatches ? $"{state.MatchCount}+" : state.MatchCount.ToString();
+        var status = query.Length == 0 ? "type to search" : state.MatchCount == 0 ? "no matches" : $"{state.SelectedMatch}/{count}";
+        screen.SetFooter($"Search: {query} · {status} · Enter next · Shift+Enter previous · Escape close");
+    }
+
+    private void CloseTranscriptSearch()
+    {
+        _lastSearchQuery = _buffer.Text;
+        _searchingTranscript = false;
+        _buffer.SetText(_savedDraft, _savedCursor);
+        _screen?.ClearTranscriptSearch();
+        _screen?.SetFooter(ActiveRunFooter);
     }
 
     public string? ReadLine()
