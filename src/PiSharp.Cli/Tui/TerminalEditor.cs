@@ -263,6 +263,24 @@ public sealed class TerminalEditor
                     Console.WriteLine();
                     return null;
                 }
+                if (enableApplicationActions && next.Key is { } externalEditorKey &&
+                    _keymap.MatchIdleApplicationAction(externalEditorKey) is { } externalAction && externalAction == "app.editor.external")
+                {
+                    ClearLine();
+                    mode.Suspend();
+                    try
+                    {
+                        _screen?.Suspend();
+                        await dispatchApplicationAction(externalAction);
+                    }
+                    finally
+                    {
+                        try { _screen?.Resume(); }
+                        finally { mode.Resume(); }
+                    }
+                    Render();
+                    continue;
+                }
                 if (enableApplicationActions && next.Key is { } applicationKey &&
                     await HandleApplicationShortcutAsync(applicationKey, dispatchApplicationAction, ClearLine))
                 {

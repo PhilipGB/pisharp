@@ -524,10 +524,12 @@
         "Verify through application workflow and compare docs/keybindings.md; packages/tui/src/editor-component.ts, autocomplete.ts, terminal.ts; editor state machine + PTY tests"
       ],
       "implementation": [
-        "Tab completion supports slash-command prefixes and relative or absolute filesystem path tokens. Path suggestions order directories first, expose dotfiles when their prefix begins with a dot, quote names containing whitespace, preserve explicit relative prefixes, support open wrappers and CJK punctuation token boundaries, and compute common prefixes without splitting Unicode grapheme clusters. Selection, clipboard, external editor, image paste and complete upstream autocomplete behavior remain open."
+        "Tab completion supports slash-command prefixes and relative/absolute path tokens. Suggestions order directories first, show dotfiles after an explicit dot prefix, quote whitespace, preserve path wrappers and prefixes, recognize CJK punctuation boundaries, and compute common prefixes without splitting grapheme clusters.",
+        "Ctrl+G (`app.editor.external`) runs a configured external editor against a prompt file in a private temporary directory. Command selection is trusted user/project `externalEditor`, then VISUAL, EDITOR and platform default; the alternate screen and raw terminal mode are suspended around the process and restored afterward. Editor selection, clipboard, image paste and full upstream autocomplete remain open."
       ],
       "evidence": [
-        "EditorCompletionTests covers slash ambiguity/unique completion, nested and wrapped paths, CJK punctuation boundaries, hidden-file prefixing, quoted directory continuation without duplicate quotes, emoji-safe common prefix, and directory-first results. Focused 4/4 tests and full format/build/test (431/431) pass locally; the commit and exact-head Linux CI are pending."
+        "EditorCompletionTests covers slash ambiguity/unique completion, nested and wrapped paths, CJK punctuation, hidden-file prefixing, quoted directory continuation, emoji-safe common prefixes and directory-first results. Exact commit f87caad457353056712bff08c03c90ae3585a3db passed Linux CI run 36141556326: format, warnings-as-errors build and all 431 tests.",
+        "Pi b3487650f6378f1b0d1643dd254445ceb4a98035 external-editor source/tests establish command precedence, private temporary-directory lifecycle, success/failure behavior and prompt text normalization. ExternalEditorTests, UserSettingsTests, UserSettingsWriterTests, EditorKeymapTests and Linux TerminalPtyTests cover PiSharp command parsing, mode 0700 directory/mode 0600 prompt, cleanup, settings precedence/persistence, configurable Ctrl+G and terminal restoration; focused tests passed 9/9. Format verification, warnings-as-errors build and full test suite passed locally (438/438, 0 skipped); exact-head CI pending."
       ],
       "dependencies": []
     },
@@ -1625,13 +1627,14 @@
       "acceptance": [
         "Paste multiline, file @ and slash completion, clipboard type",
         "Test in PTY including configurable bindings and widget precedence",
-        "Remaining: clipboard image paste, external editor, configurable shortcuts and upstream differential."
+        "Remaining: clipboard image paste, selection and upstream differential."
       ],
       "implementation": [
-        "src/PiSharp.Cli/Tui/EditorBuffer.cs and terminal input: submit, multiline, completion, bracketed paste"
+        "src/PiSharp.Cli/Tui/EditorBuffer.cs and terminal input: submit, multiline, completion, bracketed paste and configurable editor bindings.",
+        "Ctrl+G external editor action uses a private temporary prompt file and restores alternate-screen/raw terminal state around the child process."
       ],
       "evidence": [
-        "tests/PiSharp.Tests/EditorCompletionTests.cs; tests/PiSharp.Tests/TerminalInputTests.cs; tests/PiSharp.Tests/TerminalPtyTests.cs"
+        "EditorCompletionTests, TerminalInputTests and TerminalPtyTests cover editor input and completion; ExternalEditorTests and Linux PTY cover Ctrl+G child-process handoff and terminal restoration."
       ],
       "dependencies": []
     },
@@ -1882,14 +1885,18 @@
     {
       "id": "settings-externaleditor",
       "title": "Setting: externalEditor",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:61",
       "acceptance": [
         "Support externalEditor with upstream type/default and user/trusted-project precedence",
         "Test malformed settings, trust boundaries, reload and startup behaviour"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "Partial: optional externalEditor command loads from user and trusted project settings and is editable through /settings. Launch precedence is setting, VISUAL, EDITOR, then nano/notepad. Command parsing avoids a shell; the prompt file is inside a private temporary directory and removed after the child exits."
+      ],
+      "evidence": [
+        "Pi b3487650f6378f1b0d1643dd254445ceb4a98035 core/settings-manager.ts and settings-manager.test.ts define command precedence; external-editor.ts and external-editor.test.ts define the private directory, cleanup and failure behavior. PiSharp UserSettingsTests and UserSettingsWriterTests cover scope precedence and persistence; TerminalPtyTests covers interactive /settings save and child-process screen/raw-mode restoration. Focused tests passed 9/9; format/build and full test suite pass 438/438 locally, with exact-head CI pending."
+      ],
       "dependencies": []
     },
     {

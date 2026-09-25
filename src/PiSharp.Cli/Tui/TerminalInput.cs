@@ -284,6 +284,8 @@ internal sealed class TerminalMode : IDisposable
     private readonly string _original;
     private readonly TerminalScreen? _screen;
     private readonly bool _ownsMode;
+    private bool _suspended;
+    private bool _disposed;
     private TerminalMode(string original, TerminalScreen? screen, bool ownsMode)
     {
         _original = original;
@@ -314,12 +316,46 @@ internal sealed class TerminalMode : IDisposable
             s_depth.Value = Math.Max(0, s_depth.Value - 1);
             return;
         }
+        if (_disposed) return;
         try { WriteControl(_screen, "\u001b[?2004l"); }
         finally
         {
-            try { Stty(_original); }
-            finally { s_depth.Value = 0; }
+            try { if (!_suspended) Stty(_original); }
+            finally
+            {
+                s_depth.Value = 0;
+                _disposed = true;
+            }
         }
+    }
+
+    public void Suspend()
+    {
+        if (!_ownsMode || _disposed || _suspended) return;
+        WriteControl(_screen, "\u001b[?2004l");
+        try { Stty(_original); }
+        catch
+        {
+            WriteControl(_screen, "\u001b[?2004h");
+            throw;
+        }
+        s_depth.Value = 0;
+        _suspended = true;
+    }
+
+    public void Resume()
+    {
+        if (!_ownsMode || _disposed || !_suspended) return;
+        Stty(_original);
+        Stty("-icanon", "-echo", "-isig", "min", "1", "time", "0");
+        try { WriteControl(_screen, "\u001b[?2004h"); }
+        catch
+        {
+            Stty(_original);
+            throw;
+        }
+        s_depth.Value = 1;
+        _suspended = false;
     }
 
     private static void WriteControl(TerminalScreen? screen, string value)

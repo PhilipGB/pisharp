@@ -66,7 +66,7 @@ public sealed record CompactionSettings(bool? Enabled = null, int? ReserveTokens
 /// <summary>Validated non-secret settings subset for the user and trusted project scopes.</summary>
 public sealed record UserSettings(string? DefaultProvider = null, string? DefaultModel = null,
     string? DefaultThinkingLevel = null, IReadOnlyList<string>? DefaultTools = null, string? SessionDirectory = null,
-    CompactionSettings? Compaction = null, bool? BlockImages = null, string? DefaultProjectTrust = null, bool? HideThinkingBlock = null, bool? QuietStartup = null, IReadOnlyList<string>? EnabledModels = null, string? ShellPath = null)
+    CompactionSettings? Compaction = null, bool? BlockImages = null, string? DefaultProjectTrust = null, bool? HideThinkingBlock = null, bool? QuietStartup = null, IReadOnlyList<string>? EnabledModels = null, string? ShellPath = null, string? ExternalEditor = null)
 {
     public static async Task<UserSettings> LoadAsync(string agentDirectory, Func<string, string?> environment,
         CancellationToken cancellationToken = default)
@@ -79,7 +79,8 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         using var document = JsonDocument.Parse(bytes, new JsonDocumentOptions { MaxDepth = 16 });
         if (document.RootElement.ValueKind != JsonValueKind.Object)
             throw new InvalidDataException("settings.json must contain a JSON object.");
-        string? provider = null, model = null, thinking = null, sessionDirectory = null, defaultTrust = null, shellPath = null;
+        string? provider = null, model = null, thinking = null, sessionDirectory = null, defaultTrust = null, shellPath = null,
+            externalEditor = null;
         IReadOnlyList<string>? tools = null, enabledModels = null;
         CompactionSettings? compaction = null;
         bool? blockImages = null, hideThinkingBlock = null, quietStartup = null;
@@ -166,6 +167,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
                 case "defaultModel": model = Validate(value, property.Name, 256); break;
                 case "sessionDir": sessionDirectory = Validate(value, property.Name, 1024); break;
                 case "shellPath": shellPath = Validate(value, property.Name, 1024); break;
+                case "externalEditor": externalEditor = Validate(value, property.Name, 4096); break;
                 case "defaultThinkingLevel":
                     thinking = Validate(value, property.Name, 16)?.ToLowerInvariant();
                     if (!ThinkingLevels.IsValid(thinking))
@@ -174,7 +176,8 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
                 default: throw new InvalidDataException($"settings.json contains unsupported property '{property.Name}'.");
             }
         }
-        return new(provider, model, thinking, tools, sessionDirectory, compaction, blockImages, defaultTrust, hideThinkingBlock, quietStartup, enabledModels, shellPath);
+        return new(provider, model, thinking, tools, sessionDirectory, compaction, blockImages, defaultTrust, hideThinkingBlock,
+            quietStartup, enabledModels, shellPath, externalEditor);
     }
 
     public static string GetSettingsPath(string agentDirectory, Func<string, string?> environment) =>
@@ -197,7 +200,8 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         project.HideThinkingBlock ?? HideThinkingBlock,
         project.QuietStartup ?? QuietStartup,
         project.EnabledModels ?? EnabledModels,
-        project.ShellPath ?? ShellPath);
+        project.ShellPath ?? ShellPath,
+        project.ExternalEditor ?? ExternalEditor);
 
     private static IReadOnlyDictionary<string, CompactionSettings>? MergeOverrides(
         IReadOnlyDictionary<string, CompactionSettings>? global, IReadOnlyDictionary<string, CompactionSettings>? project)

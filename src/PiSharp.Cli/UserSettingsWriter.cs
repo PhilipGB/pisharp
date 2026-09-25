@@ -51,6 +51,7 @@ internal static class UserSettingsWriter
                 value is null or "true" or "false",
             "defaultProjectTrust" when userScope => value is null or "ask" or "always" or "never",
             "defaultThinkingLevel" => value is null || ThinkingLevels.IsValid(value),
+            "externalEditor" => value is null || value.Length is > 0 and <= 4096 && value == value.Trim() && !value.Any(char.IsControl),
             _ => false
         };
         if (!valid) throw new ArgumentException($"'{setting}' is not an editable setting or has an invalid value.", nameof(value));

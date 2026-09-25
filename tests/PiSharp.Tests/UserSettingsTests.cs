@@ -96,6 +96,31 @@ public sealed class UserSettingsTests
         }
         finally { Directory.Delete(root, true); }
     }
+
+    [Fact]
+    public async Task ExternalEditorLoadsFromUserAndTrustedProjectSettings()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-editor-settings-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(Path.Combine(root, ".pi"));
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(root, "settings.json"), "{\"externalEditor\":\"code --wait\"}");
+            var user = await UserSettings.LoadAsync(root, _ => null);
+            Assert.Equal("code --wait", user.ExternalEditor);
+            Assert.Equal("code --wait", user.Overlay(await UserSettings.LoadProjectAsync(root)).ExternalEditor);
+
+            await File.WriteAllTextAsync(Path.Combine(root, ".pi", "settings.json"), "{\"externalEditor\":\"vim -f\"}");
+            Assert.Equal("vim -f", user.Overlay(await UserSettings.LoadProjectAsync(root)).ExternalEditor);
+
+            foreach (var invalid in new[] { "null", "1", "\"\"", "\" leading\"" })
+            {
+                await File.WriteAllTextAsync(Path.Combine(root, "settings.json"), "{\"externalEditor\":" + invalid + "}");
+                await Assert.ThrowsAsync<InvalidDataException>(() => UserSettings.LoadAsync(root, _ => null));
+            }
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
     [Fact]
     public async Task CompactionSettingsApplyToKnownModelAndExplicitEnvironmentWins()
     {

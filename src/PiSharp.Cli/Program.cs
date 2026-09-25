@@ -491,6 +491,13 @@ async Task HandleEditorApplicationAction(string action)
             case "app.settings.open":
                 await SelectSettingsAsync();
                 break;
+            case "app.editor.external":
+                var editorCommand = ExternalEditor.ResolveCommand(userSettings.ExternalEditor, Environment.GetEnvironmentVariable);
+                Console.WriteLine($"Launching external editor: {editorCommand}");
+                var result = await ExternalEditor.EditAsync(editor?.Draft ?? "", editorCommand);
+                if (result.Success) editor?.Prefill(result.Content);
+                else Console.Error.WriteLine($"External editor exited with status {result.ExitCode}; the draft was preserved.");
+                break;
             case "app.session.resume":
                 await SelectSessionAsync();
                 break;

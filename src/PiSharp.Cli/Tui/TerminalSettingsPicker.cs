@@ -11,6 +11,7 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor)
     [
         new("defaultProjectTrust", "Default project trust", "Fallback decision for protected project resources.", UserOnly: true),
         new("defaultThinkingLevel", "Default thinking level", "Initial thinking level unless overridden by --thinking."),
+        new("externalEditor", "External editor", "Command that edits the prompt file; blank uses VISUAL or EDITOR."),
         new("hideThinkingBlock", "Hide thinking", "Hide reasoning blocks in the interactive transcript."),
         new("images.blockImages", "Block images", "Replace provider-bound images with text while preserving saved history."),
         new("compaction.enabled", "Automatic compaction", "Summarize older whole turns before a prompt when the context budget is known."),
@@ -57,6 +58,21 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor)
 
             if (selected.Option.Value is not { } setting) return;
             var currentValue = GetValue(currentSettings, setting.Id);
+            if (setting.Id == "externalEditor")
+            {
+                Console.WriteLine($"External editor command [{DisplayValue(currentValue)}]; leave blank to use VISUAL/EDITOR or the default:");
+                var entered = await editor.ReadLineAsync(_ => Task.CompletedTask, enableApplicationActions: false);
+                if (entered is null) return;
+                var command = string.IsNullOrWhiteSpace(entered) ? null : entered.Trim();
+                if (!string.Equals(command, currentValue, StringComparison.Ordinal))
+                {
+                    var savedSettings = await save(scope.Value, setting.Id, command);
+                    userSettings = savedSettings.User;
+                    projectSettings = savedSettings.Project;
+                }
+                selectedKey = setting.Id;
+                continue;
+            }
             var valueOptions = Values(setting).Select(value => new TerminalSelectionOption<string?>(
                 value.Key, value.Value, value.Label, value.Description)).ToArray();
             var choice = editor.ShowSelectionList($"{setting.Label} · {DisplayValue(currentValue)}", valueOptions,
@@ -91,6 +107,7 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor)
     {
         "defaultProjectTrust" => settings.DefaultProjectTrust,
         "defaultThinkingLevel" => settings.DefaultThinkingLevel,
+        "externalEditor" => settings.ExternalEditor,
         "hideThinkingBlock" => settings.HideThinkingBlock?.ToString().ToLowerInvariant(),
         "images.blockImages" => settings.BlockImages?.ToString().ToLowerInvariant(),
         "compaction.enabled" => settings.Compaction?.Enabled?.ToString().ToLowerInvariant(),

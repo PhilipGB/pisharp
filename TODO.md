@@ -6,17 +6,17 @@
 
 ## Current state
 
-- Latest known-good committed head: `3a587ebb95e6b51a227838ecd3735c04995f3bb9`; Linux CI run [36139848340](https://github.com/PhilipGB/pisharp/actions/runs/36139848340) passed format verification, warnings-as-errors build and all 429 tests.
-- The current uncommitted editor-completion slice adds Pi-style path token handling, quoted directory continuation, wrapper and CJK boundaries, hidden-file prefixing and grapheme-safe common prefixes. Focused tests pass 4/4 and full local format/build/test passes 431/431; commit and exact-head CI are pending.
+- Latest known-good committed head: `f87caad457353056712bff08c03c90ae3585a3db`; Linux CI run [36141556326](https://github.com/PhilipGB/pisharp/actions/runs/36141556326) passed format verification, warnings-as-errors build and all 431 tests.
+- The current uncommitted editor slice adds Ctrl+G external-editor handoff through a private temporary directory/file, trusted user/project setting support and alternate-screen/raw-mode suspend/restore. Focused tests pass 9/9; format verification and warnings-as-errors build pass; the full suite passes 438/438 with 0 skips. Commit and exact-head CI are pending.
 - Pi reference: `earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035`, refreshed 2026-09-25. Material deltas since `5fd446ca1843682e8da3fec4ceb71c42f56fbace` are classified in `docs/continuation.md`.
 
 ## What still prevents parity
 
-- TUI: remaining settings schema and editor controls; editor selection, clipboard, external editor and fuller history/completion; cross-project session controls; wider context-aware keybindings; mouse/selection; themes, terminal images and extension UI; remaining Markdown dialect and rendering behavior.
+- TUI: remaining settings schema and editor controls; editor selection, clipboard, image paste and fuller history/completion; cross-project session controls; wider context-aware keybindings; mouse/selection; themes, terminal images and extension UI; remaining Markdown dialect and rendering behavior.
 - Pi JSONL/session interoperability and Pi-compatible RPC/JSON/SDK remain major gaps.
 - Resources/extensions, multimodal behavior, provider/auth breadth and the final current-upstream audit remain incomplete. See the feature matrix and detailed inventory.
 
 ## Priority and next action
 
-1. Commit and push the locally validated path-completion slice, then inspect exact-head Linux CI.
-2. Continue the TUI editor/application gaps, starting with external-editor behavior and editor selection; proceed to sessions, RPC/JSON/SDK, settings/resources/extensions, multimodal and provider/auth breadth after the TUI acceptance gate. Refresh Pi before terminal-image/theme work, materially changed capability families and the final audit.
+1. Finish format/build/full-suite validation for the external-editor slice, then commit, push and inspect exact-head Linux CI.
+2. Continue the TUI editor/application gaps with selection and clipboard, then close the remaining major TUI capabilities before sessions, RPC/JSON/SDK, settings/resources/extensions, multimodal and provider/auth breadth. Refresh Pi before terminal-image/theme work, materially changed capability families and the final audit.

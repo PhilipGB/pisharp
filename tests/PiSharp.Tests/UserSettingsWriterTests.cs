@@ -61,10 +61,14 @@ public sealed class UserSettingsWriterTests
             var path = Path.Combine(root, ".pi", "settings.json");
             await UserSettingsWriter.SetAsync(path, "compaction.enabled", "true", userScope: false);
             await UserSettingsWriter.SetAsync(path, "defaultThinkingLevel", "high", userScope: false);
+            await UserSettingsWriter.SetAsync(path, "externalEditor", "code --wait", userScope: false);
 
             var settings = await UserSettings.LoadProjectAsync(root);
             Assert.True(settings.Compaction?.Enabled);
             Assert.Equal("high", settings.DefaultThinkingLevel);
+            Assert.Equal("code --wait", settings.ExternalEditor);
+            await Assert.ThrowsAsync<ArgumentException>(() =>
+                UserSettingsWriter.SetAsync(path, "externalEditor", " bad ", userScope: false));
         }
         finally { Directory.Delete(root, recursive: true); }
     }

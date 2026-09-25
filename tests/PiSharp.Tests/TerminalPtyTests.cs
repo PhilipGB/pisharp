@@ -199,6 +199,8 @@ public sealed class TerminalPtyTests
             var outputBuilder = new System.Text.StringBuilder();
             var outputLock = new object();
             var saved = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var editorPrompt = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var externalEditorSaved = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var closed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var stdout = Task.Run(async () =>
             {
@@ -212,6 +214,8 @@ public sealed class TerminalPtyTests
                         outputBuilder.Append(buffer, 0, count);
                         var current = outputBuilder.ToString();
                         if (current.Contains("Saved user setting hideThinkingBlock = true.", StringComparison.Ordinal)) saved.TrySetResult();
+                        if (current.Contains("External editor command [", StringComparison.Ordinal)) editorPrompt.TrySetResult();
+                        if (current.Contains("Saved user setting externalEditor = code --wait.", StringComparison.Ordinal)) externalEditorSaved.TrySetResult();
                         if (current.Contains("Settings closed.", StringComparison.Ordinal)) closed.TrySetResult();
                     }
                 }
@@ -221,6 +225,12 @@ public sealed class TerminalPtyTests
             await process.StandardInput.WriteAsync("/settings\n\nHide thinking\nEnabled\n");
             await process.StandardInput.FlushAsync();
             await saved.Task.WaitAsync(TimeSpan.FromSeconds(12));
+            await process.StandardInput.WriteAsync("\u001b[A\n");
+            await process.StandardInput.FlushAsync();
+            await editorPrompt.Task.WaitAsync(TimeSpan.FromSeconds(12));
+            await process.StandardInput.WriteAsync("code --wait\n");
+            await process.StandardInput.FlushAsync();
+            await externalEditorSaved.Task.WaitAsync(TimeSpan.FromSeconds(12));
             await process.StandardInput.WriteAsync("\u001b");
             await process.StandardInput.FlushAsync();
             await closed.Task.WaitAsync(TimeSpan.FromSeconds(12));
@@ -239,7 +249,56 @@ public sealed class TerminalPtyTests
             Assert.DoesNotContain("Exception:", await stderr);
             var settings = await PiSharp.Cli.UserSettings.LoadAsync(agent, _ => null);
             Assert.True(settings.HideThinkingBlock);
+            Assert.Equal("code --wait", settings.ExternalEditor);
             Assert.Equal(2048, settings.Compaction?.ReserveTokens);
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Fact]
+    public async Task ExternalEditorSuspendsAndRestoresTheTerminalThroughLinuxPty()
+    {
+        if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-external-editor-pty-" + Guid.NewGuid().ToString("N"));
+        var agent = Path.Combine(cwd, "agent");
+        Directory.CreateDirectory(agent);
+        try
+        {
+            var editorScript = Path.Combine(cwd, "fake external editor.sh");
+            await File.WriteAllTextAsync(editorScript, "#!/bin/sh\nprintf '/quit' > \"$1\"\n");
+            File.SetUnixFileMode(editorScript, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+            var store = new PiSharp.Runtime.Sessions.ConversationStore(cwd, Path.Combine(cwd, "sessions"));
+            var assembly = typeof(CliArguments).Assembly.Location;
+            var start = new ProcessStartInfo("/usr/bin/script")
+            {
+                WorkingDirectory = cwd,
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                ArgumentList = { "-q", "-e", "-c", $"stty rows 24 cols 80; dotnet '{assembly}' --local --session-dir '{store.DirectoryPath}' --no-tools", "/dev/null" }
+            };
+            start.Environment["PISHARP_AGENT_DIR"] = agent;
+            start.Environment["VISUAL"] = $"/bin/sh \"{editorScript}\"";
+            using var process = Process.Start(start);
+            Assert.NotNull(process);
+            var stdout = process.StandardOutput.ReadToEndAsync();
+            var stderr = process.StandardError.ReadToEndAsync();
+            await process.StandardInput.WriteAsync("\u0007\n");
+            await process.StandardInput.FlushAsync();
+            process.StandardInput.Close();
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(12));
+            try { await process.WaitForExitAsync(timeout.Token); }
+            catch (OperationCanceledException) { process.Kill(entireProcessTree: true); throw; }
+            var output = await stdout;
+
+            Assert.Equal(0, process.ExitCode);
+            Assert.Contains("Launching external editor:", output);
+            Assert.Contains("❯ /quit", output);
+            Assert.True(output.Split("\u001b[?1049l", StringSplitOptions.None).Length >= 3,
+                "the alternate screen should be left for the editor and restored before shutdown");
+            Assert.DoesNotContain("Shortcut action failed:", output);
+            Assert.DoesNotContain("Agent error:", output);
+            Assert.DoesNotContain("Exception:", await stderr);
         }
         finally { Directory.Delete(cwd, recursive: true); }
     }

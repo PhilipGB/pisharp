@@ -24,6 +24,7 @@ public sealed class TerminalScreen : IDisposable
     private string _footer = "Enter steers · follow-up queues · Escape aborts";
     private IReadOnlyList<string>? _overlay;
     private bool _activated;
+    private bool _suspended;
     private volatile bool _active = true;
 
     public TerminalScreen(TextWriter originalOut, TextWriter originalError,
@@ -66,6 +67,28 @@ public sealed class TerminalScreen : IDisposable
             _installedOut = Console.Out;
             _installedError = Console.Error;
             _activated = true;
+        }
+    }
+
+    internal void Suspend()
+    {
+        lock (_gate)
+        {
+            if (!_active || _suspended) return;
+            _originalOut.Write("\u001b[?25h\u001b[?1049l");
+            _originalOut.Flush();
+            _suspended = true;
+        }
+    }
+
+    internal void Resume()
+    {
+        lock (_gate)
+        {
+            if (!_active || !_suspended) return;
+            _originalOut.Write("\u001b[?1049h\u001b[?25l");
+            _suspended = false;
+            RenderLocked();
         }
     }
 
@@ -283,6 +306,7 @@ public sealed class TerminalScreen : IDisposable
 
     private void RenderLocked()
     {
+        if (!_active || _suspended) return;
         var columns = _lastColumns = Columns();
         var height = _lastRows = Rows();
         var editorHeight = Math.Clamp(height / 3, 1, Math.Max(1, height - 2));
