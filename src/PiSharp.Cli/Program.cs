@@ -355,6 +355,7 @@ async Task ReplaceModelRuntime(ModelSelection nextSelection, string nextThinking
 }
 
 var terminalModelPicker = editor is null ? null : new TerminalModelPicker(modelRuntime, editor);
+var terminalSessionPicker = editor is null ? null : new TerminalSessionPicker(store, editor);
 async Task SelectModelAsync()
 {
     if (terminalModelPicker is null) return;
@@ -363,6 +364,37 @@ async Task SelectModelAsync()
     var nextThinking = nextSelection.Model.Reasoning == true ? thinking : "off";
     await ReplaceModelRuntime(nextSelection, nextThinking, recordModelChange: true);
     Console.WriteLine($"Model: {selection.Provider.Id}/{selection.Model.Id} · thinking {thinking}");
+}
+
+async Task ResumeSessionAsync(SessionListing listing)
+{
+    if (listing.Path == sessionPath)
+    {
+        Console.WriteLine("Already in this session.");
+        return;
+    }
+    if (sessionPath is not null) await store.SaveAsync(conversation, sessionPath);
+    var resumedConversation = await store.LoadAsync(listing.Path);
+    if (resumedConversation.Model != connection.Model || resumedConversation.Endpoint != connection.Endpoint?.ToString() ||
+        resumedConversation.Provider is not null && !resumedConversation.Provider.Equals(selection.Provider.Id, StringComparison.OrdinalIgnoreCase))
+        throw new InvalidOperationException("Session uses another provider, model, or endpoint; open it directly with --session.");
+    var resumedRun = await OpenRunAsync(agent, resumedConversation, listing.Path);
+    conversation = resumedConversation;
+    conversationRun = resumedRun;
+    sessionPath = listing.Path;
+    Console.WriteLine($"Resumed {conversation.Id[..12]} · {conversation.Name ?? "(unnamed)"}");
+}
+
+async Task SelectSessionAsync()
+{
+    if (cli.NoSession) throw new InvalidOperationException("Cannot resume in --no-session mode.");
+    if (terminalSessionPicker is null)
+    {
+        Console.WriteLine("Use /sessions, then /resume <ID-prefix|exact-name> in interactive mode.");
+        return;
+    }
+    var listing = await terminalSessionPicker.ShowAsync(sessionPath);
+    if (listing is not null) await ResumeSessionAsync(listing);
 }
 
 async Task HandleEditorApplicationAction(string action)
@@ -385,6 +417,9 @@ async Task HandleEditorApplicationAction(string action)
                 break;
             case "app.model.select":
                 await SelectModelAsync();
+                break;
+            case "app.session.resume":
+                await SelectSessionAsync();
                 break;
             case "app.model.cycleForward":
             case "app.model.cycleBackward":
@@ -573,19 +608,8 @@ else
                         break;
                     case "/resume":
                         if (cli.NoSession) throw new InvalidOperationException("Cannot resume in --no-session mode.");
-                        if (argument.Length == 0) { Console.WriteLine("Use /sessions, then /resume <ID-prefix|exact-name>."); break; }
-                        var listing = SessionCatalog.Resolve(await SessionCatalog.ListAsync(store), argument);
-                        if (listing.Path == sessionPath) { Console.WriteLine("Already in this session."); break; }
-                        if (sessionPath is not null) await store.SaveAsync(conversation, sessionPath);
-                        var resumedConversation = await store.LoadAsync(listing.Path);
-                        if (resumedConversation.Model != connection.Model || resumedConversation.Endpoint != connection.Endpoint?.ToString() ||
-                            resumedConversation.Provider is not null && !resumedConversation.Provider.Equals(selection.Provider.Id, StringComparison.OrdinalIgnoreCase))
-                            throw new InvalidOperationException("Session uses another provider, model, or endpoint; open it directly with --session.");
-                        var resumedRun = await OpenRunAsync(agent, resumedConversation, listing.Path);
-                        conversation = resumedConversation;
-                        conversationRun = resumedRun;
-                        sessionPath = listing.Path;
-                        Console.WriteLine($"Resumed {conversation.Id[..12]} · {conversation.Name ?? "(unnamed)"}");
+                        if (argument.Length == 0) await SelectSessionAsync();
+                        else await ResumeSessionAsync(SessionCatalog.Resolve(await SessionCatalog.ListAsync(store), argument));
                         break;
                     case "/models":
                         foreach (var model in (await GetModelsAsync()).Where(item => string.IsNullOrEmpty(argument) ||

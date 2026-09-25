@@ -177,6 +177,31 @@ public sealed class EditorKeymapTests
         Assert.Contains("Open model selector (app.model.select)", editor.Hotkeys);
     }
 
+    [Fact]
+    public async Task SessionSelectorShortcutCanBeConfiguredAndPreservesTheEditorDraft()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "pisharp-keymap-session-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        try
+        {
+            File.WriteAllText(Path.Combine(directory, "keybindings.json"), "{ \"app.session.resume\": \"ctrl+r\" }");
+            var editor = new TerminalEditor(agentDirectory: directory);
+            editor.Prefill("keep this draft");
+            string? dispatched = null;
+
+            Assert.True(await editor.HandleApplicationShortcutAsync(Key(ConsoleKey.R, ConsoleModifiers.Control), action =>
+            {
+                dispatched = action;
+                return Task.CompletedTask;
+            }));
+
+            Assert.Equal("app.session.resume", dispatched);
+            Assert.Equal("keep this draft", editor.Draft);
+            Assert.Contains("Open session selector (app.session.resume)", editor.Hotkeys);
+        }
+        finally { Directory.Delete(directory, recursive: true); }
+    }
+
     private static ConsoleKeyInfo Key(ConsoleKey key, ConsoleModifiers modifiers = 0) => new('\0', key,
         modifiers.HasFlag(ConsoleModifiers.Shift), modifiers.HasFlag(ConsoleModifiers.Alt),
         modifiers.HasFlag(ConsoleModifiers.Control));

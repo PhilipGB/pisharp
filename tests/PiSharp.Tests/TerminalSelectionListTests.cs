@@ -65,6 +65,17 @@ public sealed class TerminalSelectionListTests
     }
 
     [Fact]
+    public void EmptySessionListStaysOpenUntilExplicitCancellation()
+    {
+        var list = new TerminalSelectionList<string>("Resume session", [], emptyMessage: "No saved sessions");
+
+        Assert.Null(list.Selected);
+        Assert.Contains("No saved sessions", string.Join('\n', list.Render(50, 14)));
+        Assert.Equal(TerminalSelectionAction.Continue, list.HandleInput(Key(ConsoleKey.Enter, '\n')));
+        Assert.Equal(TerminalSelectionAction.Cancel, list.HandleInput(Key(ConsoleKey.Escape)));
+    }
+
+    [Fact]
     public void OverlayHostSelectsFromStreamAndSanitizesUntrustedLabels()
     {
         using var output = new StringWriter();

@@ -13,6 +13,7 @@ public sealed class TerminalPtyTests
         Directory.CreateDirectory(cwd);
         try
         {
+            var store = new PiSharp.Runtime.Sessions.ConversationStore(cwd, Path.Combine(cwd, "sessions"));
             var assembly = typeof(CliArguments).Assembly.Location;
             var start = new ProcessStartInfo("/usr/bin/script")
             {
@@ -20,20 +21,26 @@ public sealed class TerminalPtyTests
                 RedirectStandardInput = true,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
-                ArgumentList = { "-q", "-e", "-c", $"dotnet '{assembly}' --local --session-dir '{cwd}/sessions' --no-tools", "/dev/null" }
+                ArgumentList = { "-q", "-e", "-c", $"stty rows 24 cols 80; dotnet '{assembly}' --local --session-dir '{cwd}/sessions' --no-tools", "/dev/null" }
             };
             using var process = Process.Start(start);
             Assert.NotNull(process);
             var stdout = process.StandardOutput.ReadToEndAsync();
             var stderr = process.StandardError.ReadToEndAsync();
-            await process.StandardInput.WriteAsync($"/name first\n/new\n/name second\n/sessions\n/resume first\n/session\n/export {cwd}/export.html\n/clone\n/session\n/quit\n");
+            await process.StandardInput.WriteAsync($"/name first\n/new\n/name second\n/sessions\n/resume first\n/resume\nsecond\n/session\n/export {cwd}/export.html\n/clone\n/session\n/quit\n");
             process.StandardInput.Close();
             using var limit = new CancellationTokenSource(TimeSpan.FromSeconds(12));
             try { await process.WaitForExitAsync(limit.Token); }
             catch (OperationCanceledException) { process.Kill(entireProcessTree: true); throw; }
             var output = await stdout;
+            var secondIds = (await PiSharp.Runtime.Sessions.SessionCatalog.ListAsync(store))
+                .Where(session => session.Name == "second").Select(session => session.Id[..12]).ToHashSet();
+            var resumedIds = System.Text.RegularExpressions.Regex.Matches(output, @"Resumed ([a-f0-9]{12})")
+                .Select(match => match.Groups[1].Value).ToArray();
             Assert.Equal(0, process.ExitCode);
             Assert.Contains("Resumed", output);
+            Assert.Contains("Resume session", output);
+            Assert.Contains(resumedIds, id => secondIds.Contains(id));
             Assert.Contains("clone:", output);
             Assert.Contains("Exported private HTML", output);
             Assert.Contains("PiSharp session", await File.ReadAllTextAsync(Path.Combine(cwd, "export.html")));
