@@ -356,6 +356,7 @@ async Task ReplaceModelRuntime(ModelSelection nextSelection, string nextThinking
 
 var terminalModelPicker = editor is null ? null : new TerminalModelPicker(modelRuntime, editor);
 var terminalSessionPicker = editor is null ? null : new TerminalSessionPicker(store, editor);
+var terminalForkPicker = editor is null ? null : new TerminalForkPicker(editor);
 async Task SelectModelAsync()
 {
     if (terminalModelPicker is null) return;
@@ -397,6 +398,42 @@ async Task SelectSessionAsync()
     if (listing is not null) await ResumeSessionAsync(listing);
 }
 
+async Task ForkFromUserAsync(string id)
+{
+    var candidates = conversation.ForkableUserMessages()
+        .Where(item => item.Id.StartsWith(id, StringComparison.Ordinal)).ToArray();
+    if (candidates.Length != 1) throw new ArgumentException("Specify a unique user message id prefix from /fork.");
+    var (forked, draft) = conversation.ForkAtUser(candidates[0].Id);
+    if (sessionPath is not null) await store.SaveAsync(conversation, sessionPath);
+    var forkPath = cli.NoSession ? null : store.NewPath(forked);
+    var forkRun = await OpenRunAsync(agent, forked, forkPath);
+    if (forkPath is not null) await store.SaveAsync(forked, forkPath);
+    conversation = forked;
+    sessionPath = forkPath;
+    conversationRun = forkRun;
+    editor?.Prefill(draft);
+    Console.WriteLine($"Forked {candidates[0].Id[..12]} to {forkPath ?? "(ephemeral)"}. Edit and submit the draft prompt.");
+}
+
+async Task SelectForkAsync()
+{
+    var forkable = conversation.ForkableUserMessages();
+    if (forkable.Count == 0)
+    {
+        Console.WriteLine("No text-only user messages on this branch.");
+        return;
+    }
+    if (terminalForkPicker is null)
+    {
+        foreach (var item in forkable)
+            Console.WriteLine($"{item.Id[..12]} · {new string(item.Text.Replace('\n', ' ').Take(90).Select(c => char.IsControl(c) ? ' ' : c).ToArray())}");
+        Console.WriteLine("Use /fork <user-message-id> to edit a copy of its prompt in a new session.");
+        return;
+    }
+    var selected = terminalForkPicker.Show(forkable);
+    if (selected is { } message) await ForkFromUserAsync(message.Id);
+}
+
 async Task HandleEditorApplicationAction(string action)
 {
     try
@@ -420,6 +457,9 @@ async Task HandleEditorApplicationAction(string action)
                 break;
             case "app.session.resume":
                 await SelectSessionAsync();
+                break;
+            case "app.session.fork":
+                await SelectForkAsync();
                 break;
             case "app.model.cycleForward":
             case "app.model.cycleBackward":
@@ -728,26 +768,12 @@ else
                         Console.WriteLine($"Model: {selection.Provider.Id}/{selection.Model.Id} · thinking {thinking}");
                         break;
                     case "/fork":
-                        var forkable = conversation.ForkableUserMessages();
                         if (argument.Length == 0)
                         {
-                            foreach (var item in forkable)
-                                Console.WriteLine($"{item.Id[..12]} · {new string(item.Text.Replace('\n', ' ').Take(90).Select(c => char.IsControl(c) ? ' ' : c).ToArray())}");
-                            Console.WriteLine(forkable.Count == 0 ? "No text-only user messages on this branch." : "Use /fork <user-message-id> to edit a copy of its prompt in a new session.");
+                            await SelectForkAsync();
                             break;
                         }
-                        var candidates = forkable.Where(item => item.Id.StartsWith(argument, StringComparison.Ordinal)).ToArray();
-                        if (candidates.Length != 1) throw new ArgumentException("Specify a unique user message id prefix from /fork.");
-                        var (forked, draft) = conversation.ForkAtUser(candidates[0].Id);
-                        if (sessionPath is not null) await store.SaveAsync(conversation, sessionPath);
-                        var forkPath = cli.NoSession ? null : store.NewPath(forked);
-                        var forkRun = await OpenRunAsync(agent, forked, forkPath);
-                        if (forkPath is not null) await store.SaveAsync(forked, forkPath);
-                        conversation = forked;
-                        sessionPath = forkPath;
-                        conversationRun = forkRun;
-                        editor.Prefill(draft);
-                        Console.WriteLine($"Forked {candidates[0].Id[..12]} to {forkPath ?? "(ephemeral)"}. Edit and submit the draft prompt.");
+                        await ForkFromUserAsync(argument);
                         break;
                     case "/new":
                     case "/clone":

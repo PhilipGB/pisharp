@@ -6,17 +6,17 @@
 
 ## Current state
 
-- Latest exact-head Linux CI: `37eff5a9c7a15c5b12e8ff948fa53714046a2fda`, run [36134474053](https://github.com/PhilipGB/pisharp/actions/runs/36134474053), passed format, warnings-as-errors build and all 423 tests.
-- The TUI has a persistent idle alternate-screen shell, shared searchable overlay/list, and all/scoped model picker. `/resume` now opens a searchable project-session picker; direct `/resume <id|name>` remains supported, and `app.session.resume` is configurable with no default key. Cross-project session scope and full Pi selector controls remain gaps.
-- Pi baseline: `earendil-works/pi@49681e1b71c9c32cdfbf45c21f8e3cb3a8c8629d`, fetched 2026-09-25. Current Pi source was checked for session-selector behavior.
+- Latest code CI checkpoint: `37eff5a9c7a15c5b12e8ff948fa53714046a2fda`, Linux run [36134474053](https://github.com/PhilipGB/pisharp/actions/runs/36134474053), format/build/all 423 tests passed. Docs checkpoint `2582c1f74a8940d6cdf604bcfe42272bdc252d9f` also passed exact-head Linux CI run [36134783838](https://github.com/PhilipGB/pisharp/actions/runs/36134783838).
+- Fork-picker slice is implemented in the working tree: no-argument `/fork` opens the shared searchable overlay, preselects the newest active-branch user message, seeds the selected prompt for editing, and keeps `/fork <id>` plus configurable `app.session.fork`. Focused tests pass 3/3; format, warnings-as-errors build and all 424 tests pass locally. Commit and exact-head CI are pending.
+- Pi baseline: `earendil-works/pi@49681e1b71c9c32cdfbf45c21f8e3cb3a8c8629d`, fetched 2026-09-25.
 
 ## What still prevents parity
 
-- TUI gaps: cross-project session scope and full session/fork/settings pickers; editor selection, clipboard and external editor; broader context-aware keybindings; mouse/selection; themes, terminal images and extension UI; Markdown LaTeX layout, syntax highlighting and wider dialect behavior.
+- TUI: settings picker; cross-project session scope and full session controls; editor selection, clipboard, external editor, history and completion; wider context-aware keybindings; mouse/selection; themes, terminal images and extension UI; LaTeX layout, syntax highlighting and wider Markdown dialect behavior.
 - Pi JSONL/session interoperability and Pi-compatible RPC/JSON/SDK remain major gaps.
-- Settings/resources/extensions, multimodal behavior, provider/auth breadth and a current full differential audit remain incomplete. See the feature matrix and detailed inventory.
+- Settings/resources/extensions, multimodal behavior, provider/auth breadth and the final current-upstream audit remain incomplete. See the feature matrix and detailed inventory.
 
 ## Priority and next action
 
-1. Finish TUI application workflows through the shared picker host, starting with a fork picker; then close the editor and application keybinding gaps. Keep model fuzzy-ranking and project-only session scope differences explicit.
+1. Commit and inspect CI for the fork-picker slice. Then continue through the shared TUI overlay with `/settings`, and close the editor/application interaction gaps without reworking completed agent/tool areas.
 2. Complete the TUI acceptance gate, then proceed through session interoperability, RPC/JSON/SDK, settings/resources/extensions, multimodal and provider/auth breadth. Refresh Pi before image/theme work, materially changed capability families and final audit.

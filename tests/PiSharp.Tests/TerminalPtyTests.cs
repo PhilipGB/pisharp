@@ -80,7 +80,7 @@ public sealed class TerminalPtyTests
             Assert.NotNull(process);
             var stdout = process.StandardOutput.ReadToEndAsync();
             var stderr = process.StandardError.ReadToEndAsync();
-            await process.StandardInput.WriteAsync($"/fork\n/fork {userId[..12]}\n");
+            await process.StandardInput.WriteAsync($"/fork {userId[..12]}\n");
             await process.StandardInput.FlushAsync();
             using (var forkReady = new CancellationTokenSource(TimeSpan.FromSeconds(12)))
             {
@@ -106,6 +106,68 @@ public sealed class TerminalPtyTests
             var fork = await store.LoadAsync(Assert.Single(paths));
             Assert.Empty(fork.ActiveMessages());
             Assert.Equal("forked", fork.Name);
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Fact]
+    public async Task ForkPickerSearchesUserMessagesAndSeedsSelectedPromptThroughLinuxPty()
+    {
+        if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-fork-picker-pty-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        try
+        {
+            var store = new PiSharp.Runtime.Sessions.ConversationStore(cwd, Path.Combine(cwd, "sessions"));
+            var original = new PiSharp.Runtime.Sessions.ConversationSession(cwd, ConnectionSettings.LocalModel,
+                new Uri(ConnectionSettings.LocalEndpoint).ToString());
+            original.Append(new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User, "base context"));
+            original.Append(new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.Assistant, "base answer"));
+            original.Append(new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User, "draft to change"));
+            var selectedId = original.Tree.HeadId!;
+            original.Append(new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.Assistant, "later answer"));
+            var sourcePath = store.NewPath(original);
+            await store.SaveAsync(original, sourcePath);
+            var assembly = typeof(CliArguments).Assembly.Location;
+            var start = new ProcessStartInfo("/usr/bin/script")
+            {
+                WorkingDirectory = cwd,
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                ArgumentList = { "-q", "-e", "-c", $"stty rows 24 cols 80; dotnet '{assembly}' --local --session '{sourcePath}' --session-dir '{store.DirectoryPath}' --no-tools", "/dev/null" }
+            };
+            using var process = Process.Start(start);
+            Assert.NotNull(process);
+            var stdout = process.StandardOutput.ReadToEndAsync();
+            var stderr = process.StandardError.ReadToEndAsync();
+            await process.StandardInput.WriteAsync("/fork\ndraft to change\n");
+            await process.StandardInput.FlushAsync();
+            using (var forkReady = new CancellationTokenSource(TimeSpan.FromSeconds(12)))
+            {
+                while (Directory.EnumerateFiles(store.DirectoryPath, "*.session.json").Count() < 2)
+                    await Task.Delay(30, forkReady.Token);
+            }
+            await process.StandardInput.WriteAsync("\u0015/name forked\n/quit\n");
+            process.StandardInput.Close();
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(12));
+            try { await process.WaitForExitAsync(timeout.Token); }
+            catch (OperationCanceledException) { process.Kill(entireProcessTree: true); throw; }
+            var output = await stdout;
+            Assert.Equal(0, process.ExitCode);
+            Assert.Contains("Fork from message", output);
+            Assert.Contains("draft to change", output);
+            Assert.Contains("Forked " + selectedId[..12], output);
+            Assert.Contains("Name: forked", output);
+            Assert.DoesNotContain("Session error:", output);
+            Assert.DoesNotContain("Agent error:", await stderr);
+            var source = await store.LoadAsync(sourcePath);
+            Assert.Equal(["base context", "base answer", "draft to change", "later answer"],
+                source.ActiveMessages().Select(message => message.Text));
+            var paths = Directory.EnumerateFiles(store.DirectoryPath, "*.session.json").Where(path => path != sourcePath).ToArray();
+            var fork = await store.LoadAsync(Assert.Single(paths));
+            Assert.Equal("forked", fork.Name);
+            Assert.Equal(["base context", "base answer"], fork.ActiveMessages().Select(message => message.Text));
         }
         finally { Directory.Delete(cwd, recursive: true); }
     }

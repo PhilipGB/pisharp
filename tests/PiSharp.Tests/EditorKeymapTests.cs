@@ -184,20 +184,27 @@ public sealed class EditorKeymapTests
         Directory.CreateDirectory(directory);
         try
         {
-            File.WriteAllText(Path.Combine(directory, "keybindings.json"), "{ \"app.session.resume\": \"ctrl+r\" }");
+            File.WriteAllText(Path.Combine(directory, "keybindings.json"),
+                "{ \"app.session.resume\": \"ctrl+r\", \"app.session.fork\": \"ctrl+shift+g\" }");
             var editor = new TerminalEditor(agentDirectory: directory);
             editor.Prefill("keep this draft");
-            string? dispatched = null;
+            var dispatched = new List<string>();
 
             Assert.True(await editor.HandleApplicationShortcutAsync(Key(ConsoleKey.R, ConsoleModifiers.Control), action =>
             {
-                dispatched = action;
+                dispatched.Add(action);
+                return Task.CompletedTask;
+            }));
+            Assert.True(await editor.HandleApplicationShortcutAsync(Key(ConsoleKey.G, ConsoleModifiers.Control | ConsoleModifiers.Shift), action =>
+            {
+                dispatched.Add(action);
                 return Task.CompletedTask;
             }));
 
-            Assert.Equal("app.session.resume", dispatched);
+            Assert.Equal(["app.session.resume", "app.session.fork"], dispatched);
             Assert.Equal("keep this draft", editor.Draft);
             Assert.Contains("Open session selector (app.session.resume)", editor.Hotkeys);
+            Assert.Contains("Open fork selector (app.session.fork)", editor.Hotkeys);
         }
         finally { Directory.Delete(directory, recursive: true); }
     }
