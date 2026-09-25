@@ -422,4 +422,30 @@ public sealed class SearchToolsTests
         }
         finally { Directory.Delete(root, recursive: true); }
     }
+
+    [Fact]
+    public async Task GitSearchPreservesNewlinesInFileNames()
+    {
+        if (!OperatingSystem.IsLinux()) return;
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-search-newline-path-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            using var git = Process.Start(new ProcessStartInfo("git")
+            {
+                WorkingDirectory = root,
+                ArgumentList = { "init", "-q" }
+            });
+            Assert.NotNull(git);
+            await git.WaitForExitAsync();
+            Assert.Equal(0, git.ExitCode);
+
+            var fileName = "line\nbreak.txt";
+            await File.WriteAllTextAsync(Path.Combine(root, fileName), "match-value\n");
+            var tools = new SearchTools(root);
+            Assert.Equal(fileName, await tools.Find("*.txt"));
+            Assert.Equal($"{fileName}:1: match-value", await tools.Grep("match-value"));
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
 }

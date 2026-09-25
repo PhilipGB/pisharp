@@ -48,7 +48,7 @@ internal static class SearchInventory
                     WorkingDirectory = root,
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
-                    ArgumentList = { "ls-files", "--cached", "--others" }
+                    ArgumentList = { "ls-files", "--cached", "--others", "-z" }
                 }
             };
             git.Start();
@@ -57,17 +57,40 @@ internal static class SearchInventory
                 var error = git.StandardError.ReadToEndAsync(cancellationToken);
                 var results = new List<string>();
                 var reachedLimit = false;
-                while (await git.StandardOutput.ReadLineAsync(cancellationToken) is { } relative)
+                var pathBuffer = new char[4096];
+                var relativePath = new System.Text.StringBuilder();
+                bool AddCandidate(string relative)
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
                     var file = Path.GetFullPath(relative, root);
                     if (File.Exists(file) && !File.GetAttributes(file).HasFlag(FileAttributes.ReparsePoint) &&
                         !IsIgnored(file, isDirectory: false, RulesForDirectory(Path.GetDirectoryName(file)!)))
                     {
-                        if (results.Count >= MaxEntries) { reachedLimit = true; break; }
+                        if (results.Count >= MaxEntries) return true;
                         results.Add(file);
                     }
+                    return false;
                 }
+                while (!reachedLimit)
+                {
+                    var count = await git.StandardOutput.ReadAsync(pathBuffer.AsMemory(), cancellationToken);
+                    if (count == 0) break;
+                    for (var index = 0; index < count; index++)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        if (pathBuffer[index] == '\0')
+                        {
+                            if (AddCandidate(relativePath.ToString()))
+                            {
+                                reachedLimit = true;
+                                break;
+                            }
+                            relativePath.Clear();
+                        }
+                        else relativePath.Append(pathBuffer[index]);
+                    }
+                }
+                if (!reachedLimit && relativePath.Length > 0)
+                    reachedLimit = AddCandidate(relativePath.ToString());
                 if (reachedLimit) git.Kill(entireProcessTree: true);
                 await git.WaitForExitAsync(cancellationToken);
                 await error;
