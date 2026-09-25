@@ -58,6 +58,9 @@ public sealed class TerminalInput
             }
             var code = sequence.ToString();
             if (code == "200~") return Paste();
+            if (TryDecodeModifiedKey(code, out var modifiedKey)) return Key(modifiedKey.Key, modifiedKey.KeyChar,
+                modifiedKey.Modifiers.HasFlag(ConsoleModifiers.Shift), modifiedKey.Modifiers.HasFlag(ConsoleModifiers.Alt),
+                modifiedKey.Modifiers.HasFlag(ConsoleModifiers.Control));
             return code switch
             {
                 "A" => Key(ConsoleKey.UpArrow),
@@ -80,6 +83,38 @@ public sealed class TerminalInput
             return new(new ConsoleKeyInfo(key.KeyChar, key.Key, key.Modifiers.HasFlag(ConsoleModifiers.Shift), true,
                 key.Modifiers.HasFlag(ConsoleModifiers.Control)), null);
         return plain;
+    }
+
+    private static bool TryDecodeModifiedKey(string code, out ConsoleKeyInfo key)
+    {
+        key = default;
+        if (code.Length < 4 || code[^1] is not ('A' or 'B' or 'C' or 'D' or 'H' or 'F' or '~')) return false;
+        var separator = code.LastIndexOf(';');
+        if (separator <= 0 || !int.TryParse(code.AsSpan(0, separator), out var keyCode) ||
+            !int.TryParse(code.AsSpan(separator + 1, code.Length - separator - 2), out var modifierCode) || modifierCode < 2)
+            return false;
+        var modifierBits = modifierCode - 1;
+        if ((modifierBits & ~7) != 0) return false;
+        var consoleKey = code[^1] switch
+        {
+            'A' => ConsoleKey.UpArrow,
+            'B' => ConsoleKey.DownArrow,
+            'C' => ConsoleKey.RightArrow,
+            'D' => ConsoleKey.LeftArrow,
+            'H' => ConsoleKey.Home,
+            'F' => ConsoleKey.End,
+            '~' when keyCode is 1 or 7 => ConsoleKey.Home,
+            '~' when keyCode == 2 => ConsoleKey.Insert,
+            '~' when keyCode == 3 => ConsoleKey.Delete,
+            '~' when keyCode is 4 or 8 => ConsoleKey.End,
+            '~' when keyCode == 5 => ConsoleKey.PageUp,
+            '~' when keyCode == 6 => ConsoleKey.PageDown,
+            _ => ConsoleKey.NoName
+        };
+        if (consoleKey == ConsoleKey.NoName) return false;
+        key = new ConsoleKeyInfo('\0', consoleKey, (modifierBits & 1) != 0,
+            (modifierBits & 2) != 0, (modifierBits & 4) != 0);
+        return true;
     }
 
     // OSC terminal replies (including color queries 10/11) end in BEL or ST (ESC \\).
@@ -130,7 +165,13 @@ public sealed class TerminalInput
         if (value is 8 or 127) return Key(ConsoleKey.Backspace, '\b');
         if (value == 9) return Key(ConsoleKey.Tab, '\t');
         if (value < 32) return Key((ConsoleKey)(ConsoleKey.A + value - 1), (char)value, control: true);
-        if (value < 128) return Key(char.IsLetter((char)value) ? (ConsoleKey)char.ToUpperInvariant((char)value) : ConsoleKey.NoName, (char)value);
+        if (value < 128)
+        {
+            var character = (char)value;
+            return TryMapAsciiKey(character, out var key, out var shift)
+                ? Key(key, character, shift: shift)
+                : Key(ConsoleKey.NoName, character);
+        }
         var length = value < 0xE0 ? 2 : value < 0xF0 ? 3 : 4;
         var bytes = new byte[length];
         bytes[0] = (byte)value;
@@ -141,6 +182,59 @@ public sealed class TerminalInput
             bytes[i] = (byte)next;
         }
         return new(null, Encoding.UTF8.GetString(bytes));
+    }
+
+    private static bool TryMapAsciiKey(char character, out ConsoleKey key, out bool shift)
+    {
+        shift = false;
+        if (char.IsAsciiLetter(character))
+        {
+            key = (ConsoleKey)char.ToUpperInvariant(character);
+            shift = char.IsUpper(character);
+            return true;
+        }
+        if (char.IsAsciiDigit(character))
+        {
+            key = (ConsoleKey)((int)ConsoleKey.D0 + character - '0');
+            return true;
+        }
+        (key, shift) = character switch
+        {
+            ' ' => (ConsoleKey.Spacebar, false),
+            '`' => (ConsoleKey.Oem3, false),
+            '~' => (ConsoleKey.Oem3, true),
+            '-' => (ConsoleKey.OemMinus, false),
+            '_' => (ConsoleKey.OemMinus, true),
+            '=' => (ConsoleKey.OemPlus, false),
+            '+' => (ConsoleKey.OemPlus, true),
+            '[' => (ConsoleKey.Oem4, false),
+            '{' => (ConsoleKey.Oem4, true),
+            ']' => (ConsoleKey.Oem6, false),
+            '}' => (ConsoleKey.Oem6, true),
+            '\\' => (ConsoleKey.Oem5, false),
+            '|' => (ConsoleKey.Oem5, true),
+            ';' => (ConsoleKey.Oem1, false),
+            ':' => (ConsoleKey.Oem1, true),
+            '\'' => (ConsoleKey.Oem7, false),
+            ',' => (ConsoleKey.OemComma, false),
+            '<' => (ConsoleKey.OemComma, true),
+            '.' => (ConsoleKey.OemPeriod, false),
+            '>' => (ConsoleKey.OemPeriod, true),
+            '/' => (ConsoleKey.Oem2, false),
+            '?' => (ConsoleKey.Oem2, true),
+            '!' => (ConsoleKey.D1, true),
+            '@' => (ConsoleKey.D2, true),
+            '#' => (ConsoleKey.D3, true),
+            '$' => (ConsoleKey.D4, true),
+            '%' => (ConsoleKey.D5, true),
+            '^' => (ConsoleKey.D6, true),
+            '&' => (ConsoleKey.D7, true),
+            '*' => (ConsoleKey.D8, true),
+            '(' => (ConsoleKey.D9, true),
+            ')' => (ConsoleKey.D0, true),
+            _ => (ConsoleKey.NoName, false)
+        };
+        return key != ConsoleKey.NoName;
     }
 
     private bool Available(int milliseconds)

@@ -6,9 +6,12 @@ namespace PiSharp.Cli.Tui;
 public sealed class EditorBuffer
 {
     private readonly List<string> _history = [];
+    private readonly EditorKeymap _keymap;
     private string _text = "";
     private int _historyIndex;
     private string _draft = "";
+
+    public EditorBuffer(EditorKeymap? keymap = null) => _keymap = keymap ?? new EditorKeymap();
 
     public string Text => _text;
     public int Cursor { get; private set; }
@@ -18,53 +21,62 @@ public sealed class EditorBuffer
     {
         var control = key.Modifiers.HasFlag(ConsoleModifiers.Control);
         var alt = key.Modifiers.HasFlag(ConsoleModifiers.Alt);
-        if (key.Key == ConsoleKey.Enter)
+        if (_keymap.Matches("tui.input.newLine", key) || key.Key == ConsoleKey.Enter && alt)
         {
-            if (alt || key.Modifiers.HasFlag(ConsoleModifiers.Shift)) { Insert("\n"); return EditorAction.Render; }
-            return TrySubmit(out _) ? EditorAction.Submit : EditorAction.None;
+            Insert("\n");
+            return EditorAction.Render;
         }
-        if (control && key.Key == ConsoleKey.J) { Insert("\n"); return EditorAction.Render; }
-        if (control && key.Key == ConsoleKey.C) { Clear(); return EditorAction.Cancel; }
-        if (control && key.Key == ConsoleKey.D && _text.Length == 0) return EditorAction.Exit;
-        if (key.Key == ConsoleKey.Escape) { Clear(); return EditorAction.Cancel; }
-        if (key.Key == ConsoleKey.UpArrow) return Navigate(-1);
-        if (key.Key == ConsoleKey.DownArrow) return Navigate(1);
-        if (key.Key == ConsoleKey.LeftArrow || (control && key.Key == ConsoleKey.B)) Cursor = PreviousBoundary(Cursor);
-        else if (key.Key == ConsoleKey.RightArrow || (control && key.Key == ConsoleKey.F)) Cursor = NextBoundary(Cursor);
-        else if (key.Key == ConsoleKey.Home || (control && key.Key == ConsoleKey.A)) Cursor = _text.LastIndexOf('\n', Math.Max(0, Cursor - 1)) + 1;
-        else if (key.Key == ConsoleKey.End || (control && key.Key == ConsoleKey.E))
+        if (_keymap.Matches("tui.input.submit", key))
+            return TrySubmit(out _) ? EditorAction.Submit : EditorAction.None;
+        if (_keymap.Matches("app.interrupt", key) || _keymap.Matches("app.clear", key))
+        {
+            Clear();
+            return EditorAction.Cancel;
+        }
+        if (_keymap.Matches("app.exit", key) && _text.Length == 0) return EditorAction.Exit;
+        if (_keymap.Matches("tui.editor.cursorUp", key)) return Navigate(-1);
+        if (_keymap.Matches("tui.editor.cursorDown", key)) return Navigate(1);
+        if (_keymap.Matches("tui.editor.cursorLeft", key)) Cursor = PreviousBoundary(Cursor);
+        else if (_keymap.Matches("tui.editor.cursorRight", key)) Cursor = NextBoundary(Cursor);
+        else if (_keymap.Matches("tui.editor.cursorWordLeft", key)) Cursor = MoveWordLeft(Cursor);
+        else if (_keymap.Matches("tui.editor.cursorWordRight", key)) Cursor = MoveWordRight(Cursor);
+        else if (_keymap.Matches("tui.editor.cursorLineStart", key)) Cursor = _text.LastIndexOf('\n', Math.Max(0, Cursor - 1)) + 1;
+        else if (_keymap.Matches("tui.editor.cursorLineEnd", key))
         {
             var end = _text.IndexOf('\n', Cursor);
             Cursor = end < 0 ? _text.Length : end;
         }
-        else if (key.Key == ConsoleKey.Backspace && Cursor > 0)
+        else if (_keymap.Matches("tui.editor.deleteCharBackward", key) && Cursor > 0)
         {
             var begin = PreviousBoundary(Cursor);
             _text = _text.Remove(begin, Cursor - begin);
             Cursor = begin;
         }
-        else if (key.Key == ConsoleKey.Delete && Cursor < _text.Length)
+        else if (_keymap.Matches("tui.editor.deleteCharForward", key) && Cursor < _text.Length)
             _text = _text.Remove(Cursor, NextBoundary(Cursor) - Cursor);
-        else if (control && key.Key == ConsoleKey.W)
+        else if (_keymap.Matches("tui.editor.deleteWordBackward", key))
         {
-            var begin = Cursor;
-            while (begin > 0 && char.IsWhiteSpace(_text[begin - 1])) begin--;
-            while (begin > 0 && !char.IsWhiteSpace(_text[begin - 1])) begin--;
+            var begin = MoveWordLeft(Cursor);
             _text = _text.Remove(begin, Cursor - begin);
             Cursor = begin;
         }
-        else if (control && key.Key == ConsoleKey.U)
+        else if (_keymap.Matches("tui.editor.deleteWordForward", key))
+        {
+            var end = MoveWordRight(Cursor);
+            _text = _text.Remove(Cursor, end - Cursor);
+        }
+        else if (_keymap.Matches("tui.editor.deleteToLineStart", key))
         {
             var begin = _text.LastIndexOf('\n', Math.Max(0, Cursor - 1)) + 1;
             _text = _text.Remove(begin, Cursor - begin);
             Cursor = begin;
         }
-        else if (control && key.Key == ConsoleKey.K)
+        else if (_keymap.Matches("tui.editor.deleteToLineEnd", key))
         {
             var end = _text.IndexOf('\n', Cursor);
             _text = _text.Remove(Cursor, (end < 0 ? _text.Length : end) - Cursor);
         }
-        else if (key.Key == ConsoleKey.Tab) Insert("    ");
+        else if (_keymap.Matches("tui.input.tab", key)) Insert("    ");
         else if (!control && !alt && !char.IsControl(key.KeyChar)) Insert(key.KeyChar.ToString());
         else return EditorAction.None;
         return EditorAction.Render;
@@ -122,6 +134,40 @@ public sealed class EditorBuffer
     {
         var starts = StringInfo.ParseCombiningCharacters(_text);
         return starts.FirstOrDefault(position => position > index, _text.Length);
+    }
+
+    private int MoveWordLeft(int index)
+    {
+        while (index > 0)
+        {
+            var previous = PreviousBoundary(index);
+            if (!string.IsNullOrWhiteSpace(_text[previous..index])) break;
+            index = previous;
+        }
+        while (index > 0)
+        {
+            var previous = PreviousBoundary(index);
+            if (string.IsNullOrWhiteSpace(_text[previous..index])) break;
+            index = previous;
+        }
+        return index;
+    }
+
+    private int MoveWordRight(int index)
+    {
+        while (index < _text.Length)
+        {
+            var next = NextBoundary(index);
+            if (string.IsNullOrWhiteSpace(_text[index..next])) break;
+            index = next;
+        }
+        while (index < _text.Length)
+        {
+            var next = NextBoundary(index);
+            if (!string.IsNullOrWhiteSpace(_text[index..next])) break;
+            index = next;
+        }
+        return index;
     }
 }
 

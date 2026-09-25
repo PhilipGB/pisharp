@@ -289,4 +289,45 @@ public sealed class TerminalPtyTests
         }
         finally { Directory.Delete(cwd, recursive: true); }
     }
+
+    [Fact]
+    public async Task ConfiguredSubmitBindingAndHotkeysCommandWorkThroughLinuxPty()
+    {
+        if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-hotkeys-pty-" + Guid.NewGuid().ToString("N"));
+        var agentDirectory = Path.Combine(cwd, "agent");
+        Directory.CreateDirectory(agentDirectory);
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(agentDirectory, "keybindings.json"), """
+                { "tui.input.submit": "ctrl+x" }
+                """);
+            var assembly = typeof(CliArguments).Assembly.Location;
+            var start = new ProcessStartInfo("/usr/bin/script")
+            {
+                WorkingDirectory = cwd,
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                ArgumentList = { "-q", "-e", "-c", $"dotnet '{assembly}' --local --no-session --no-tools", "/dev/null" }
+            };
+            start.Environment["PISHARP_AGENT_DIR"] = agentDirectory;
+            using var process = Process.Start(start);
+            Assert.NotNull(process);
+            var stdout = process.StandardOutput.ReadToEndAsync();
+            var stderr = process.StandardError.ReadToEndAsync();
+            await process.StandardInput.WriteAsync("/hotkeys\u0018/quit\u0018");
+            process.StandardInput.Close();
+            using var limit = new CancellationTokenSource(TimeSpan.FromSeconds(12));
+            try { await process.WaitForExitAsync(limit.Token); }
+            catch (OperationCanceledException) { process.Kill(entireProcessTree: true); throw; }
+
+            var output = await stdout;
+            Assert.Equal(0, process.ExitCode);
+            Assert.Contains("ctrl+x", output);
+            Assert.Contains("Submit input (tui.input.submit)", output);
+            Assert.DoesNotContain("Agent error", await stderr);
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
+    }
 }

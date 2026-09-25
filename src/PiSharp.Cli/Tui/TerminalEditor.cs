@@ -3,15 +3,24 @@ namespace PiSharp.Cli.Tui;
 /// <summary>Normal-screen terminal editor. Leaves transcript in the terminal scrollback.</summary>
 public sealed class TerminalEditor
 {
-    private readonly EditorBuffer _buffer = new();
+    private readonly EditorBuffer _buffer;
     private TerminalInput? _input;
     private readonly EditorCompletion _completion;
-    public TerminalEditor(Func<IReadOnlyList<string>>? commands = null) => _completion = new(Environment.CurrentDirectory, commands);
+    private readonly EditorKeymap _keymap;
+    public TerminalEditor(Func<IReadOnlyList<string>>? commands = null, string? agentDirectory = null)
+    {
+        _completion = new(Environment.CurrentDirectory, commands);
+        _keymap = new(agentDirectory);
+        _buffer = new(_keymap);
+    }
     private const string Prompt = "❯ ";
     private int _renderedRows;
     private int _cursorRow;
 
     public string Draft => _buffer.Text;
+    public string Hotkeys => _keymap.FormatHotkeys();
+
+    public void ReloadKeybindings() => _keymap.Reload();
 
     /// <summary>Seed the next editable prompt after a session fork; never submits it automatically.</summary>
     public void Prefill(string text) => _buffer.SetText(text);
@@ -59,31 +68,34 @@ public sealed class TerminalEditor
         Func<string, bool, CancellationToken, Task<bool>> queue, Func<IReadOnlyList<string>> clearQueue,
         Action abort, CancellationToken cancellationToken = default)
     {
-        if (next.Key is { Key: ConsoleKey.Escape } ||
-            next.Key is { Key: ConsoleKey.C, Modifiers: var modifiers } && modifiers.HasFlag(ConsoleModifiers.Control))
+        if (next.Key is { } key && (_keymap.Matches("app.interrupt", key) || _keymap.Matches("app.clear", key)))
         {
             RestorePending(clearQueue());
             abort();
             return false;
         }
-        if (next.Key is { Key: ConsoleKey.UpArrow, Modifiers: var upModifiers } &&
-            upModifiers.HasFlag(ConsoleModifiers.Alt))
+        if (next.Key is { } dequeueKey && _keymap.Matches("app.message.dequeue", dequeueKey))
         {
             RestorePending(clearQueue());
             return true;
         }
-        if (next.Key is { Key: ConsoleKey.Enter } enter)
+        if (next.Key is { } inputKey)
         {
-            if (enter.Modifiers.HasFlag(ConsoleModifiers.Shift))
+            if (_keymap.Matches("tui.input.newLine", inputKey) ||
+                inputKey.Key == ConsoleKey.Enter && inputKey.Modifiers.HasFlag(ConsoleModifiers.Alt) &&
+                !_keymap.Matches("app.message.followUp", inputKey))
             {
-                _ = _buffer.Handle(enter);
+                _ = _buffer.Handle(inputKey);
                 return true;
             }
-            if (!_buffer.TrySubmit(out var text)) return true;
-            var followUp = enter.Modifiers.HasFlag(ConsoleModifiers.Alt);
-            _buffer.Clear();
-            if (!await queue(text, followUp, cancellationToken)) RestorePending([text]);
-            return true;
+            var followUp = _keymap.Matches("app.message.followUp", inputKey);
+            if (followUp || _keymap.Matches("tui.input.submit", inputKey))
+            {
+                if (!_buffer.TrySubmit(out var text)) return true;
+                _buffer.Clear();
+                if (!await queue(text, followUp, cancellationToken)) RestorePending([text]);
+                return true;
+            }
         }
         _ = next.Text is not null ? _buffer.InsertText(next.Text) : _buffer.Handle(next.Key!.Value);
         return true;
@@ -107,7 +119,7 @@ public sealed class TerminalEditor
                     Console.WriteLine();
                     return null;
                 }
-                if (next.Key is { Key: ConsoleKey.Tab, Modifiers: ConsoleModifiers.None })
+                if (next.Key is { } tabKey && _keymap.Matches("tui.input.tab", tabKey))
                 {
                     try
                     {

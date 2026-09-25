@@ -24,6 +24,23 @@ public sealed class TerminalInputTests
         Assert.Null(reader.Read().Key);
     }
 
+    [Fact]
+    public void DecodesModifiedCursorAndPageKeysForConfigurableBindings()
+    {
+        var reader = new TerminalInput(new MemoryStream(Encoding.UTF8.GetBytes(
+            "\u001b[1;5D\u001b[1;3C\u001b[6;2~")));
+
+        var controlLeft = reader.Read().Key!.Value;
+        Assert.Equal(ConsoleKey.LeftArrow, controlLeft.Key);
+        Assert.True(controlLeft.Modifiers.HasFlag(ConsoleModifiers.Control));
+        var altRight = reader.Read().Key!.Value;
+        Assert.Equal(ConsoleKey.RightArrow, altRight.Key);
+        Assert.True(altRight.Modifiers.HasFlag(ConsoleModifiers.Alt));
+        var shiftPageDown = reader.Read().Key!.Value;
+        Assert.Equal(ConsoleKey.PageDown, shiftPageDown.Key);
+        Assert.True(shiftPageDown.Modifiers.HasFlag(ConsoleModifiers.Shift));
+    }
+
     [Theory]
     [InlineData("\u001b]10;rgb:aaaa/bbbb/cccc\aX")]
     [InlineData("\u001b]11;rgb:0000/1111/2222\u001b\\X")]
