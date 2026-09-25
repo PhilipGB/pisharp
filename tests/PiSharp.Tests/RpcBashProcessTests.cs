@@ -7,6 +7,60 @@ namespace PiSharp.Tests;
 public sealed class RpcBashProcessTests
 {
     [Fact]
+    public async Task RpcProcessRoutesBashThroughAnExplicitlyLoadedExtension()
+    {
+        if (!OperatingSystem.IsLinux()) return;
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-rpc-user-bash-process-" + Guid.NewGuid().ToString("N"));
+        var agent = Path.Combine(root, "agent");
+        Directory.CreateDirectory(agent);
+        Process? process = null;
+        try
+        {
+            var start = new ProcessStartInfo("dotnet")
+            {
+                WorkingDirectory = root,
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+            start.ArgumentList.Add(typeof(CliArguments).Assembly.Location);
+            foreach (var argument in new[] { "--mode", "rpc", "--local", "--offline", "--no-session", "-e", typeof(FixtureExtension).Assembly.Location })
+                start.ArgumentList.Add(argument);
+            start.Environment["PISHARP_AGENT_DIR"] = agent;
+            process = Process.Start(start)!;
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+            var stderr = process.StandardError.ReadToEndAsync();
+            await WriteCommandAsync(process, new { id = "extension-bash", type = "bash", command = "fixture-bash" }, timeout.Token);
+            var lines = new List<string>();
+            await ReadResponsesAsync(process, ["extension-bash"], lines, timeout.Token);
+            process.StandardInput.Close();
+            await process.WaitForExitAsync(timeout.Token);
+
+            Assert.Equal(0, process.ExitCode);
+            Assert.Equal("", await stderr.WaitAsync(timeout.Token));
+            using var response = JsonDocument.Parse(Assert.Single(lines, line =>
+                line.Contains("\"id\":\"extension-bash\"", StringComparison.Ordinal) &&
+                line.Contains("\"command\":\"bash\"", StringComparison.Ordinal)));
+            Assert.True(response.RootElement.GetProperty("success").GetBoolean());
+            Assert.Equal("extension: bash", response.RootElement.GetProperty("data").GetProperty("output").GetString());
+            using var update = JsonDocument.Parse(Assert.Single(lines, line =>
+                line.Contains("bash_execution_update", StringComparison.Ordinal)));
+            Assert.Equal("extension-bash", update.RootElement.GetProperty("data").GetProperty("OperationId").GetString());
+            Assert.Equal("extension: bash update", update.RootElement.GetProperty("data").GetProperty("Text").GetString());
+        }
+        finally
+        {
+            if (process is { HasExited: false })
+            {
+                process.Kill(entireProcessTree: true);
+                await process.WaitForExitAsync();
+            }
+            process?.Dispose();
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task RpcProcessReturnsBashResultsAndHandlesAbortBash()
     {
         if (!OperatingSystem.IsLinux()) return;

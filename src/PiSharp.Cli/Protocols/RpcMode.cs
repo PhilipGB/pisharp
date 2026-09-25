@@ -3,13 +3,16 @@ using System.Text.Json;
 using Microsoft.Extensions.AI;
 using PiSharp.Runtime.Sessions;
 using PiSharp.Runtime.Providers;
+using PiSharp.Runtime.Extensions;
+using PiSharp.Runtime.Tools;
 
 namespace PiSharp.Cli.Protocols;
 
 /// <summary>Experimental subset of Pi RPC. Unsupported commands return errors, never false success.</summary>
 public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun run,
     Func<CancellationToken, Task>? save = null, PiSharp.Runtime.Resources.ResourceCatalog? resources = null,
-    Func<CancellationToken, Task<IReadOnlyList<ModelDescriptor>>>? discoverModels = null)
+    Func<CancellationToken, Task<IReadOnlyList<ModelDescriptor>>>? discoverModels = null,
+    ExtensionRegistration? extensions = null)
 {
     private readonly JsonLineWriter _writer = new(output);
     private readonly ConcurrentDictionary<Guid, BashOperation> _bashOperations = new();
@@ -377,8 +380,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
         try
         {
             var correlationId = GetCorrelationId(id);
-            var result = await run.ExecuteBashAsync(command,
-                delta => EmitBashUpdateAsync(correlationId, delta).GetAwaiter().GetResult(), operation.Cancellation.Token);
+            var result = await ExecuteUserBashAsync(correlationId, command, excludeFromContext, operation.Cancellation.Token);
             var recordedNow = run.RecordBashResult(command, result, excludeFromContext);
             if (recordedNow && save is not null) await save(CancellationToken.None);
             var data = new Dictionary<string, object?>
@@ -401,6 +403,39 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
             _bashOperations.TryRemove(key, out _);
             operation.Cancellation.Dispose();
         }
+    }
+
+    private async Task<BashExecutionResult> ExecuteUserBashAsync(string? correlationId, string command,
+        bool excludeFromContext, CancellationToken cancellationToken)
+    {
+        if (extensions is not null)
+        {
+            var context = new UserBashContext(command, excludeFromContext, run.Conversation.WorkingDirectory,
+                delta => EmitBashUpdateAsync(correlationId, delta));
+            foreach (var handler in extensions.UserBashHandlers)
+            {
+                try
+                {
+                    if (await handler(context, cancellationToken) is { } result) return result;
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    break;
+                }
+                catch (Exception error)
+                {
+                    await _writer.EmitAsync(new
+                    {
+                        type = "event",
+                        format = "pisharp",
+                        data = new AgentLifecycleEvent("extension_error", OperationId: correlationId, Error: error.Message)
+                    }, CancellationToken.None);
+                }
+            }
+        }
+
+        return await run.ExecuteBashAsync(command,
+            delta => EmitBashUpdateAsync(correlationId, delta).GetAwaiter().GetResult(), cancellationToken);
     }
 
     private Task EmitBashUpdateAsync(string? id, string delta) => _writer.EmitAsync(new

@@ -4,7 +4,9 @@ using System.Threading.Channels;
 using Microsoft.Extensions.AI;
 using PiSharp.Cli.Protocols;
 using PiSharp.Runtime;
+using PiSharp.Runtime.Extensions;
 using PiSharp.Runtime.Sessions;
+using PiSharp.Runtime.Tools;
 
 namespace PiSharp.Tests;
 
@@ -119,6 +121,153 @@ public sealed class RpcModeTests
             Assert.Contains("stderr-marker", streamed.ToString());
             var responseIndex = Array.FindIndex(lines, line => line.Contains("\"command\":\"bash\"", StringComparison.Ordinal));
             Assert.All(updateIndices, index => Assert.True(index < responseIndex));
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
+    public async Task UserBashHandlerCanStreamAndReplaceDirectBash()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-rpc-user-bash-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        var shellMarker = Path.Combine(root, "shell-ran");
+        try
+        {
+            var channel = Channel.CreateUnbounded<string>();
+            using var output = new LockedWriter();
+            var run = await ConversationRun.OpenAsync(new PiAgent(new StubClient(), new CodingTools(root)),
+                new ConversationSession(root, "fixture", null));
+            var extensions = new ExtensionRegistration();
+            var handlerCalls = 0;
+            extensions.AddUserBashHandler(async (request, _) =>
+            {
+                Interlocked.Increment(ref handlerCalls);
+                Assert.Equal($"touch {ProcessTestHelpers.ShellQuote(shellMarker)}", request.Command);
+                Assert.True(request.ExcludeFromContext);
+                Assert.Equal(root, request.WorkingDirectory);
+                await request.EmitUpdateAsync("extension-first");
+                await request.EmitUpdateAsync("extension-second");
+                return new BashExecutionResult("extension-result", "extension-result", 23, false, true, null);
+            });
+            var serving = new RpcMode(new CommandReader(channel.Reader), output, run, extensions: extensions).ServeAsync();
+            var command = $"touch {ProcessTestHelpers.ShellQuote(shellMarker)}";
+            channel.Writer.TryWrite(JsonSerializer.Serialize(new
+            {
+                id = "user-bash",
+                type = "bash",
+                command,
+                excludeFromContext = true
+            }));
+            await WaitForAsync(output, "\"id\":\"user-bash\",\"type\":\"response\",\"command\":\"bash\"");
+            channel.Writer.Complete();
+            await serving.WaitAsync(TimeSpan.FromSeconds(5));
+
+            Assert.Equal(1, handlerCalls);
+            Assert.False(File.Exists(shellMarker));
+            var lines = output.Lines();
+            using var response = JsonDocument.Parse(Assert.Single(lines, line =>
+                line.Contains("\"id\":\"user-bash\"", StringComparison.Ordinal) &&
+                line.Contains("\"command\":\"bash\"", StringComparison.Ordinal)));
+            var data = response.RootElement.GetProperty("data");
+            Assert.True(response.RootElement.GetProperty("success").GetBoolean());
+            Assert.Equal("extension-result", data.GetProperty("output").GetString());
+            Assert.Equal(23, data.GetProperty("exitCode").GetInt32());
+            Assert.True(data.GetProperty("truncated").GetBoolean());
+            var updateTexts = lines.Where(line => line.Contains("bash_execution_update", StringComparison.Ordinal))
+                .Select(line => JsonDocument.Parse(line))
+                .Select(document =>
+                {
+                    using (document)
+                    {
+                        Assert.Equal("user-bash", document.RootElement.GetProperty("data").GetProperty("OperationId").GetString());
+                        return document.RootElement.GetProperty("data").GetProperty("Text").GetString()!;
+                    }
+                }).ToArray();
+            Assert.Equal(["extension-first", "extension-second"], updateTexts);
+            var entry = Assert.Single(run.Conversation.Tree.ActivePath(), item => item.Type == "bash_execution");
+            Assert.Equal("extension-result", entry.Payload.GetProperty("output").GetString());
+            Assert.True(entry.Payload.GetProperty("excludeFromContext").GetBoolean());
+            Assert.Empty(run.Conversation.ContextMessages());
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
+    public async Task FailedAndDeclinedUserBashHandlersFallThroughToTheShell()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-rpc-user-bash-fallback-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            var channel = Channel.CreateUnbounded<string>();
+            using var output = new LockedWriter();
+            var run = await ConversationRun.OpenAsync(new PiAgent(new StubClient(), new CodingTools(root)),
+                new ConversationSession(root, "fixture", null));
+            var extensions = new ExtensionRegistration();
+            extensions.AddUserBashHandler((_, _) =>
+                Task.FromException<BashExecutionResult?>(new InvalidOperationException("extension failed")));
+            extensions.AddUserBashHandler((_, _) => Task.FromResult<BashExecutionResult?>(null));
+            var serving = new RpcMode(new CommandReader(channel.Reader), output, run, extensions: extensions).ServeAsync();
+            channel.Writer.TryWrite("{\"id\":\"user-bash-fallback\",\"type\":\"bash\",\"command\":\"printf shell-fallback\"}");
+            await WaitForAsync(output, "\"id\":\"user-bash-fallback\",\"type\":\"response\",\"command\":\"bash\"");
+            channel.Writer.Complete();
+            await serving.WaitAsync(TimeSpan.FromSeconds(5));
+
+            var lines = output.Lines();
+            using var error = JsonDocument.Parse(Assert.Single(lines, line =>
+                line.Contains("extension_error", StringComparison.Ordinal)));
+            Assert.Equal("user-bash-fallback", error.RootElement.GetProperty("data").GetProperty("OperationId").GetString());
+            Assert.Equal("extension failed", error.RootElement.GetProperty("data").GetProperty("Error").GetString());
+            using var response = JsonDocument.Parse(Assert.Single(lines, line =>
+                line.Contains("\"id\":\"user-bash-fallback\"", StringComparison.Ordinal) &&
+                line.Contains("\"command\":\"bash\"", StringComparison.Ordinal)));
+            Assert.Equal("shell-fallback", response.RootElement.GetProperty("data").GetProperty("output").GetString());
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
+    public async Task AbortBashCancelsAnActiveUserBashHandler()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-rpc-user-bash-abort-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        var shellMarker = Path.Combine(root, "shell-ran");
+        try
+        {
+            var channel = Channel.CreateUnbounded<string>();
+            using var output = new LockedWriter();
+            var run = await ConversationRun.OpenAsync(new PiAgent(new StubClient(), new CodingTools(root)),
+                new ConversationSession(root, "fixture", null));
+            var enteredHandler = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var extensions = new ExtensionRegistration();
+            extensions.AddUserBashHandler(async (_, cancellationToken) =>
+            {
+                enteredHandler.TrySetResult();
+                await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+                return null;
+            });
+            var serving = new RpcMode(new CommandReader(channel.Reader), output, run, extensions: extensions).ServeAsync();
+            channel.Writer.TryWrite(JsonSerializer.Serialize(new
+            {
+                id = "user-bash-abort",
+                type = "bash",
+                command = $"touch {ProcessTestHelpers.ShellQuote(shellMarker)}"
+            }));
+            await enteredHandler.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            channel.Writer.TryWrite("{\"id\":\"abort-user-bash\",\"type\":\"abort_bash\"}");
+            await WaitForAsync(output, "\"command\":\"abort_bash\"");
+            await WaitForAsync(output, "\"id\":\"user-bash-abort\",\"type\":\"response\",\"command\":\"bash\"");
+            channel.Writer.Complete();
+            await serving.WaitAsync(TimeSpan.FromSeconds(5));
+
+            Assert.False(File.Exists(shellMarker));
+            using var response = JsonDocument.Parse(Assert.Single(output.Lines(), line =>
+                line.Contains("\"id\":\"user-bash-abort\"", StringComparison.Ordinal) &&
+                line.Contains("\"command\":\"bash\"", StringComparison.Ordinal)));
+            var data = response.RootElement.GetProperty("data");
+            Assert.True(data.GetProperty("cancelled").GetBoolean());
+            Assert.False(data.TryGetProperty("exitCode", out _));
         }
         finally { Directory.Delete(root, recursive: true); }
     }

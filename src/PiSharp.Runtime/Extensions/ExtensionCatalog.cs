@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Runtime.Loader;
 using Microsoft.Extensions.AI;
+using PiSharp.Runtime.Tools;
 
 namespace PiSharp.Runtime.Extensions;
 
@@ -9,6 +10,12 @@ public interface IPiSharpExtension
 {
     void Configure(ExtensionRegistration registration);
 }
+
+/// <summary>Direct RPC Bash request offered to loaded native extensions.</summary>
+public sealed record UserBashContext(string Command, bool ExcludeFromContext, string WorkingDirectory,
+    Func<string, Task> EmitUpdateAsync);
+
+public delegate Task<BashExecutionResult?> UserBashHandler(UserBashContext context, CancellationToken cancellationToken);
 
 public sealed class ExtensionRegistration
 {
@@ -19,8 +26,10 @@ public sealed class ExtensionRegistration
     };
     private readonly Dictionary<string, AIFunction> _tools = new(StringComparer.Ordinal);
     private readonly Dictionary<string, Func<string, CancellationToken, Task<string>>> _commands = new(StringComparer.Ordinal);
+    private readonly List<UserBashHandler> _userBashHandlers = [];
     public IReadOnlyCollection<AIFunction> Tools => _tools.Values;
     public IReadOnlyDictionary<string, Func<string, CancellationToken, Task<string>>> Commands => _commands;
+    public IReadOnlyList<UserBashHandler> UserBashHandlers => _userBashHandlers;
 
     public void AddTool(AIFunction tool)
     {
@@ -35,6 +44,13 @@ public sealed class ExtensionRegistration
             throw new ArgumentException("Extension command names must be alphanumeric, '_' or '-'.", nameof(name));
         if (s_reserved.Contains(name) || !_commands.TryAdd(name, handler))
             throw new ArgumentException($"Reserved or duplicate extension command: {name}");
+    }
+
+    /// <summary>Registers a handler for direct RPC Bash. Return null to let the next handler or shell run.</summary>
+    public void AddUserBashHandler(UserBashHandler handler)
+    {
+        ArgumentNullException.ThrowIfNull(handler);
+        _userBashHandlers.Add(handler);
     }
 }
 

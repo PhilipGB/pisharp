@@ -6,6 +6,7 @@ using PiSharp.Cli;
 using PiSharp.Runtime;
 using PiSharp.Runtime.Extensions;
 using PiSharp.Runtime.Sessions;
+using PiSharp.Runtime.Tools;
 
 namespace PiSharp.Tests;
 
@@ -22,10 +23,14 @@ public sealed class ExtensionCatalogTests
         {
             File.Copy(typeof(FixtureExtension).Assembly.Location, Path.Combine(project, "fixture.dll"));
             using (var untrusted = ExtensionCatalog.Load(agent, cwd, false))
+            {
                 Assert.Empty(untrusted.Registration.Tools);
+                Assert.Empty(untrusted.Registration.UserBashHandlers);
+            }
             using (var trusted = ExtensionCatalog.Load(agent, cwd, true))
             {
                 Assert.Equal("echo_ext", Assert.Single(trusted.Registration.Tools).Name);
+                Assert.Single(trusted.Registration.UserBashHandlers);
                 Assert.Equal("extension: hello", await trusted.Registration.Commands["fixture"]("hello", CancellationToken.None));
                 var client = new ExtensionClient();
                 var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(cwd),
@@ -43,6 +48,7 @@ public sealed class ExtensionCatalogTests
             {
                 Assert.Empty(disabled.Registration.Tools);
                 Assert.Empty(disabled.Registration.Commands);
+                Assert.Empty(disabled.Registration.UserBashHandlers);
             }
             var flags = CliArguments.Parse(["-ne", "-e", Path.Combine(project, "fixture.dll")]);
             using (var explicitOnly = ExtensionCatalog.Load(agent, cwd, false, discover: !flags.NoExtensions,
@@ -156,6 +162,12 @@ public sealed class FixtureExtension : IPiSharpExtension
     {
         registration.AddTool(AIFunctionFactory.Create(Echo, name: "echo_ext"));
         registration.AddCommand("fixture", (argument, _) => Task.FromResult("extension: " + argument));
+        registration.AddUserBashHandler(async (request, _) =>
+        {
+            if (request.Command != "fixture-bash") return null;
+            await request.EmitUpdateAsync("extension: bash update");
+            return new BashExecutionResult("extension: bash", "extension: bash", 0, false, false, null);
+        });
     }
 
     [Description("Echo a value through the native extension fixture.")]

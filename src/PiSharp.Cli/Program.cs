@@ -446,7 +446,8 @@ string? ReadSecret()
 if (cli.Mode == "rpc")
 {
     await new RpcMode(Console.In, Console.Out, conversationRun, sessionPath is null ? null :
-        cancellationToken => store.SaveAsync(conversation, sessionPath, cancellationToken), resources, GetModelsAsync).ServeAsync();
+        cancellationToken => store.SaveAsync(conversation, sessionPath, cancellationToken), resources, GetModelsAsync,
+        extensionLease.Current.Registration).ServeAsync();
     return;
 }
 if (cli.Mode == "json")
