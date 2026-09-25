@@ -88,7 +88,7 @@ public sealed class SearchTools(string workingDirectory)
         var matches = new List<string>();
         var matchLimitReached = false;
         var truncated = false;
-        foreach (var file in await SearchInventory.EnumerateAsync(root, cancellationToken))
+        foreach (var file in await SearchInventory.EnumerateAsync(root, cancellationToken, includeRgIgnore: true))
         {
             cancellationToken.ThrowIfCancellationRequested();
             var relative = (File.Exists(root) ? Path.GetFileName(file) : Path.GetRelativePath(root, file)).Replace('\\', '/');

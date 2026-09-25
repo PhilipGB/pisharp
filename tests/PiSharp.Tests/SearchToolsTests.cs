@@ -158,12 +158,95 @@ public sealed class SearchToolsTests
             await File.WriteAllTextAsync(Path.Combine(root, ".gitignore"), "*.txt\n");
             await File.WriteAllTextAsync(Path.Combine(root, ".ignore"), "!shared.txt\n");
             await File.WriteAllTextAsync(Path.Combine(root, ".fdignore"), "!find-only.txt\n");
+            await File.WriteAllTextAsync(Path.Combine(root, ".rgignore"), "!grep-only.txt\n");
             await File.WriteAllTextAsync(Path.Combine(root, "shared.txt"), "match-value\n");
             await File.WriteAllTextAsync(Path.Combine(root, "find-only.txt"), "match-value\n");
+            await File.WriteAllTextAsync(Path.Combine(root, "grep-only.txt"), "match-value\n");
             await File.WriteAllTextAsync(Path.Combine(root, "ignored.txt"), "match-value\n");
             var tools = new SearchTools(root);
             Assert.Equal("find-only.txt\nshared.txt", await tools.Find("*.txt"));
-            Assert.Equal("shared.txt:1: match-value", await tools.Grep("match-value"));
+            Assert.Equal("shared.txt:1: match-value\ngrep-only.txt:1: match-value", await tools.Grep("match-value"));
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
+    public async Task GrepAndFindRespectTheirSpecificIgnoreFilesInsideGit()
+    {
+        if (!OperatingSystem.IsLinux()) return;
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-ignore-git-specific-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            using var init = Process.Start(new ProcessStartInfo("git")
+            {
+                WorkingDirectory = root,
+                ArgumentList = { "init", "-q" }
+            });
+            Assert.NotNull(init);
+            await init.WaitForExitAsync();
+            Assert.Equal(0, init.ExitCode);
+
+            await File.WriteAllTextAsync(Path.Combine(root, ".gitignore"), "git-ignored.txt\nstaged-git.txt\n");
+            await File.WriteAllTextAsync(Path.Combine(root, ".ignore"), "ignore-only.txt\nstaged-ignore.txt\n");
+            await File.WriteAllTextAsync(Path.Combine(root, ".rgignore"), "rg-only.txt\nstaged-rg.txt\n");
+            await File.WriteAllTextAsync(Path.Combine(root, ".fdignore"), "fd-only.txt\nstaged-fd.txt\n");
+            foreach (var file in new[]
+                     {
+                         "git-ignored.txt", "ignore-only.txt", "rg-only.txt", "fd-only.txt", "visible.txt",
+                         "staged-git.txt", "staged-ignore.txt", "staged-rg.txt", "staged-fd.txt"
+                     })
+                await File.WriteAllTextAsync(Path.Combine(root, file), "match-value\n");
+
+            using var add = Process.Start(new ProcessStartInfo("git")
+            {
+                WorkingDirectory = root,
+                ArgumentList = { "add", "-f", "staged-git.txt", "staged-ignore.txt", "staged-rg.txt", "staged-fd.txt" }
+            });
+            Assert.NotNull(add);
+            await add.WaitForExitAsync();
+            Assert.Equal(0, add.ExitCode);
+
+            var tools = new SearchTools(root);
+            Assert.Equal("rg-only.txt\nstaged-rg.txt\nvisible.txt", await tools.Find("*.txt"));
+            var grep = await tools.Grep("match-value");
+            var grepPaths = grep.Split('\n').Select(line => line[..line.IndexOf(':')]).Order(StringComparer.Ordinal);
+            Assert.Equal(["fd-only.txt", "staged-fd.txt", "visible.txt"], grepPaths);
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
+    public async Task GitSearchRootInheritsIgnoreFilesFromRepositoryAncestors()
+    {
+        if (!OperatingSystem.IsLinux()) return;
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-ignore-git-parent-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            using var init = Process.Start(new ProcessStartInfo("git")
+            {
+                WorkingDirectory = root,
+                ArgumentList = { "init", "-q" }
+            });
+            Assert.NotNull(init);
+            await init.WaitForExitAsync();
+            Assert.Equal(0, init.ExitCode);
+
+            await File.WriteAllTextAsync(Path.Combine(root, ".gitignore"), "sub/git-parent.txt\n");
+            await File.WriteAllTextAsync(Path.Combine(root, ".ignore"), "sub/ignore-parent.txt\n");
+            await File.WriteAllTextAsync(Path.Combine(root, ".rgignore"), "sub/rg-parent.txt\n");
+            await File.WriteAllTextAsync(Path.Combine(root, ".fdignore"), "sub/fd-parent.txt\n");
+            var subdirectory = Path.Combine(root, "sub");
+            Directory.CreateDirectory(subdirectory);
+            foreach (var file in new[] { "git-parent.txt", "ignore-parent.txt", "rg-parent.txt", "fd-parent.txt", "visible.txt" })
+                await File.WriteAllTextAsync(Path.Combine(subdirectory, file), "match-value\n");
+
+            var tools = new SearchTools(subdirectory);
+            Assert.Equal("rg-parent.txt\nvisible.txt", await tools.Find("*.txt"));
+            var grepPaths = (await tools.Grep("match-value")).Split('\n')
+                .Select(line => line[..line.IndexOf(':')]).Order(StringComparer.Ordinal);
+            Assert.Equal(["fd-parent.txt", "visible.txt"], grepPaths);
         }
         finally { Directory.Delete(root, recursive: true); }
     }
