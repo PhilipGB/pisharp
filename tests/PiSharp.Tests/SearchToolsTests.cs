@@ -413,12 +413,27 @@ public sealed class SearchToolsTests
         {
             await File.WriteAllTextAsync(Path.Combine(root, "file-a.txt"), "match-value\n");
             await File.WriteAllTextAsync(Path.Combine(root, "file-b.log"), "match-value\n");
+            await File.WriteAllTextAsync(Path.Combine(root, "file-b.txt"), "match-value\n");
             await File.WriteAllTextAsync(Path.Combine(root, "file-c.txt"), "match-value\n");
+            await File.WriteAllTextAsync(Path.Combine(root, "file-,.txt"), "match-value\n");
+            await File.WriteAllTextAsync(Path.Combine(root, "file-].txt"), "match-value\n");
 
             var tools = new SearchTools(root);
-            Assert.Equal("file-a.txt\nfile-b.log", await tools.Find("file-[ab].{txt,log}"));
-            Assert.Equal("file-a.txt:1: match-value\nfile-b.log:1: match-value",
-                await tools.Grep("match-value", glob: "file-[ab].{txt,log}"));
+            Assert.Equal("file-a.txt\nfile-b.log\nfile-b.txt", await tools.Find("file-[ab].{txt,log}"));
+            var braceMatches = (await tools.Grep("match-value", glob: "file-[ab].{txt,log}"))
+                .Split('\n').Order(StringComparer.Ordinal);
+            Assert.Equal([
+                "file-a.txt:1: match-value", "file-b.log:1: match-value", "file-b.txt:1: match-value"
+            ], braceMatches);
+            Assert.Equal("file-].txt", await tools.Find("file-[]].txt"));
+            Assert.Equal("file-].txt:1: match-value", await tools.Grep("match-value", glob: "file-[]].txt"));
+            var classInsideAlternative = "file-,.txt\nfile-a.txt\nfile-b.txt\nfile-c.txt";
+            Assert.Equal(classInsideAlternative, await tools.Find("file-{[a,b],c}.txt"));
+            var classMatches = (await tools.Grep("match-value", glob: "file-{[a,b],c}.txt"))
+                .Split('\n').Order(StringComparer.Ordinal);
+            var expectedClassMatches = classInsideAlternative.Split('\n')
+                .Select(path => $"{path}:1: match-value").Order(StringComparer.Ordinal);
+            Assert.Equal(expectedClassMatches, classMatches);
         }
         finally { Directory.Delete(root, recursive: true); }
     }

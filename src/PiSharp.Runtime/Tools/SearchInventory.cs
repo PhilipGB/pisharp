@@ -478,11 +478,9 @@ internal static class SearchInventory
                 result.Append(')');
                 index = braceEnd;
             }
-            else if (current == '[' && pattern.IndexOf(']', index + 1) is var close && close > index + 1)
+            else if (current == '[' && TryGetCharacterClass(pattern, index, out var close))
             {
-                var characterClass = pattern[(index + 1)..close];
-                if (characterClass[0] == '!') characterClass = "^" + characterClass[1..];
-                result.Append('[').Append(characterClass).Append(']');
+                result.Append(CharacterClassRegex(pattern, index, close));
                 index = close;
             }
             else result.Append(Regex.Escape(current.ToString()));
@@ -502,6 +500,11 @@ internal static class SearchInventory
             if (pattern[index] == '\\' && index + 1 < pattern.Length)
             {
                 index++;
+                continue;
+            }
+            if (pattern[index] == '[' && TryGetCharacterClass(pattern, index, out var classEnd))
+            {
+                index = classEnd;
                 continue;
             }
             if (pattern[index] == '{') depth++;
@@ -528,5 +531,60 @@ internal static class SearchInventory
         parts.Add(pattern[start..braceEnd]);
         alternatives = parts;
         return true;
+    }
+
+    private static bool TryGetCharacterClass(string pattern, int openIndex, out int closeIndex)
+    {
+        closeIndex = -1;
+        var index = openIndex + 1;
+        if (index >= pattern.Length) return false;
+        if (pattern[index] is '!' or '^') index++;
+        if (index < pattern.Length && pattern[index] == ']') index++;
+
+        for (; index < pattern.Length; index++)
+        {
+            if (pattern[index] == '\\' && index + 1 < pattern.Length)
+            {
+                index++;
+                continue;
+            }
+            if (pattern[index] == ']')
+            {
+                closeIndex = index;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static string CharacterClassRegex(string pattern, int openIndex, int closeIndex)
+    {
+        var cursor = openIndex + 1;
+        var negated = pattern[cursor] is '!' or '^';
+        if (negated) cursor++;
+        var result = new System.Text.StringBuilder("[");
+        if (negated) result.Append('^');
+        if (cursor < closeIndex && pattern[cursor] == ']')
+        {
+            result.Append("\\]");
+            cursor++;
+        }
+
+        while (cursor < closeIndex)
+        {
+            var current = pattern[cursor++];
+            if (current == '\\' && cursor < closeIndex)
+            {
+                current = pattern[cursor++];
+                if (current is '-' or '[' or ']' or '^' or '\\') result.Append('\\');
+                result.Append(current);
+            }
+            else
+            {
+                if (current is '[' or ']') result.Append('\\');
+                result.Append(current);
+            }
+        }
+        return result.Append(']').ToString();
     }
 }
