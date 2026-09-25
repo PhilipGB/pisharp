@@ -60,6 +60,12 @@ public sealed class ConversationSession
         entry.ValueKind == JsonValueKind.Object ? entry.Clone() : null;
 
     public void Rename(string? name) => Name = name;
+    public void AppendThinkingLevelChange(string level)
+    {
+        if (string.IsNullOrWhiteSpace(level)) throw new ArgumentException("Thinking level cannot be empty.", nameof(level));
+        Tree.Append("thinking_level_change", JsonSerializer.SerializeToElement(new { thinkingLevel = level }));
+    }
+
     public void SelectModel(string model, string? endpoint, string? provider = null)
     {
         if (string.IsNullOrWhiteSpace(model)) throw new ArgumentException("Model ID cannot be empty.", nameof(model));

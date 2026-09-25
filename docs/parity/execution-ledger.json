@@ -1134,10 +1134,13 @@
         "Remaining: Pi wire-compatible payloads, lifecycle/error semantics and pinned process differential."
       ],
       "implementation": [
-        "src/PiSharp.Cli/Protocols/RpcMode.cs: partial get_state operation (PiSharp wire format)"
+        "src/PiSharp.Cli/Protocols/RpcMode.cs: partial get_state operation (PiSharp wire format)",
+        "src/PiSharp.Cli/Protocols/RpcMode.cs: get_state now includes the active thinkingLevel."
       ],
       "evidence": [
-        "tests/PiSharp.Tests/RpcModeTests.cs: local protocol/command fixtures (coverage varies by operation)"
+        "tests/PiSharp.Tests/RpcModeTests.cs: local protocol/command fixtures (coverage varies by operation)",
+        "RpcModelProcessTests.RpcModelAndThinkingCommandsSelectAndCycleTheRunningRuntime verifies off/max state after runtime changes; RpcModelProcessTests.RpcStartupRestoresThinkingLevelFromTheSelectedSessionBranch verifies startup restores the persisted branch level.",
+        "Current local working tree: dotnet format PiSharp.slnx --verify-no-changes --no-restore passed; dotnet build PiSharp.slnx --warnaserror succeeded with 0 warnings/errors; dotnet test PiSharp.slnx passed 535/535 (0 failed, 0 skipped). Exact committed-head CI is pending."
       ],
       "dependencies": []
     },
@@ -1175,7 +1178,7 @@
       "evidence": [
         "Compared the exact request fields, exact catalog-ID lookup, correlated failure, and provider/id success payload with current Pi main d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 in packages/coding-agent/src/modes/rpc/{rpc-types.ts,rpc-mode.ts,rpc-client.ts}.",
         "RpcModeTests.SetModelReplacesTheRuntimeForSubsequentRpcCommands verifies response fields, changed runtime state, endpoint and one model_change entry.",
-        "RpcModelProcessTests.RpcModelCommandsSelectAndCycleTheRunningProviderRuntime drives the CLI RPC process through successful model replacement and later cycle selection, exact catalog rejection and unchanged-state follow-up.",
+        "RpcModelProcessTests.RpcModelAndThinkingCommandsSelectAndCycleTheRunningRuntime drives the CLI RPC process through successful model replacement and later cycle selection, exact catalog rejection and unchanged-state follow-up.",
         "dotnet format PiSharp.slnx --verify-no-changes --no-restore; dotnet build PiSharp.slnx --warnaserror; dotnet test PiSharp.slnx => format passed, 0 build warnings/errors, 533 passed, 0 failed, 0 skipped.",
         "Exact commit 2683df75dbf4cac7e4b004e8d9546fbd3338093b passed Linux CI run 36193142003: format, warnings-as-errors build, and test suite."
       ],
@@ -1196,7 +1199,7 @@
       ],
       "evidence": [
         "Compared null/result shapes and {model,thinkingLevel,isScoped} response with current Pi main d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 packages/coding-agent/src/modes/rpc/{rpc-types.ts,rpc-mode.ts,rpc-client.ts} and core/agent-session.ts.",
-        "RpcModelProcessTests.RpcModelCommandsSelectAndCycleTheRunningProviderRuntime verifies wraparound selection, response fields and following get_state model.",
+        "RpcModelProcessTests.RpcModelAndThinkingCommandsSelectAndCycleTheRunningRuntime verifies wraparound selection, response fields and following get_state model.",
         "RpcModeTests.CycleModelReturnsNullWhenOnlyOneModelIsAvailable verifies the null response without attempting runtime replacement.",
         "Exact commit 94805a8206306ae5aab166cbb523c8af786489b3 passed Linux CI run 36194265892: format, warnings-as-errors build, and test suite.",
         "Still open: Pi per-model thinking defaults, model-change thinking event ordering, scoped catalog edge cases, cancellation and full wire differential."
@@ -1224,40 +1227,60 @@
     {
       "id": "rpc-set-thinking-level",
       "title": "RPC / event: set_thinking_level",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:34",
       "acceptance": [
         "Implement set_thinking_level using shared canonical runtime with correlated responses/event ordering",
         "Test protocol through RPC process, including failures and cancellation"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "src/PiSharp.Cli/Protocols/RpcMode.cs: idle-only command accepts a named level and returns success without data.",
+        "src/PiSharp.Cli/Program.cs: validates and normalizes levels, clamps models without reasoning to off, rebuilds the MAF runtime, and persists a thinking_level_change on the active branch.",
+        "src/PiSharp.Runtime/Sessions/ConversationSession.cs and PiJsonlSessionInterchange.cs: persist thinking changes and export them as Pi JSONL records."
+      ],
+      "evidence": [
+        "Compared current Pi main d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 RPC types/mode and agent-session behavior for accepted level names, branch entries and response shape.",
+        "RpcModelProcessTests.RpcModelAndThinkingCommandsSelectAndCycleTheRunningRuntime verifies unsupported-model clamping, max selection, state, and persisted entry; PiJsonlSessionInterchangeTests.ThinkingLevelChangesPersistAndRoundTripAsPiEntries verifies Pi v3 JSONL export/import.",
+        "Current local working tree: dotnet format PiSharp.slnx --verify-no-changes --no-restore passed; dotnet build PiSharp.slnx --warnaserror succeeded with 0 warnings/errors; dotnet test PiSharp.slnx passed 535/535 (0 failed, 0 skipped). Exact committed-head CI is pending.",
+        "Compared current Pi RPC at d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31: Pi accepts this while a run is active and emits thinking_level_changed; PiSharp currently rejects it while busy and has not normalized that event."
+      ],
       "dependencies": []
     },
     {
       "id": "rpc-cycle-thinking-level",
       "title": "RPC / event: cycle_thinking_level",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:34",
       "acceptance": [
         "Implement cycle_thinking_level using shared canonical runtime with correlated responses/event ordering",
         "Test protocol through RPC process, including failures and cancellation"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "src/PiSharp.Cli/Protocols/RpcMode.cs: idle-only command cycles available levels, returns {level}, and returns null when the active model lacks reasoning support."
+      ],
+      "evidence": [
+        "RpcModelProcessTests.RpcModelAndThinkingCommandsSelectAndCycleTheRunningRuntime verifies the unsupported-model null result and wrap from max to off for a reasoning-capable model.",
+        "Current local working tree: dotnet format PiSharp.slnx --verify-no-changes --no-restore passed; dotnet build PiSharp.slnx --warnaserror succeeded with 0 warnings/errors; dotnet test PiSharp.slnx passed 535/535 (0 failed, 0 skipped). Exact committed-head CI is pending."
+      ],
       "dependencies": []
     },
     {
       "id": "rpc-get-available-thinking-levels",
       "title": "RPC / event: get_available_thinking_levels",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:34",
       "acceptance": [
         "Implement get_available_thinking_levels using shared canonical runtime with correlated responses/event ordering",
         "Test protocol through RPC process, including failures and cancellation"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "src/PiSharp.Cli/ThinkingLevels.cs and Program.cs: expose off-only for models without reasoning and the local seven-level list otherwise; logical max maps to M.E.AI ExtraHigh.",
+        "src/PiSharp.Cli/Protocols/RpcMode.cs: returns {levels} for get_available_thinking_levels."
+      ],
+      "evidence": [
+        "RpcModelProcessTests.RpcModelAndThinkingCommandsSelectAndCycleTheRunningRuntime verifies the exact seven-level response for a reasoning model.",
+        "Current local working tree: dotnet format PiSharp.slnx --verify-no-changes --no-restore passed; dotnet build PiSharp.slnx --warnaserror succeeded with 0 warnings/errors; dotnet test PiSharp.slnx passed 535/535 (0 failed, 0 skipped). Exact committed-head CI is pending."
+      ],
       "dependencies": []
     },
     {

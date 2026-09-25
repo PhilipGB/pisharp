@@ -221,6 +221,9 @@ try
     }
     var explicitConnection = cli.Local || cli.Provider is not null || cli.ModelOverride is not null ||
         Environment.GetEnvironmentVariable("PISHARP_MODEL") is not null || Environment.GetEnvironmentVariable("PISHARP_BASE_URL") is not null;
+    var savedThinking = !explicitConnection && cli.Thinking is null
+        ? PiJsonlSessionInterchange.GetThinkingLevel(conversation) : null;
+    if (savedThinking is not null) thinking = savedThinking;
     var savedProvider = conversation.Provider ?? modelRuntime.Providers.FirstOrDefault(item =>
         string.Equals(item.Endpoint.ToString().TrimEnd('/'), conversation.Endpoint?.TrimEnd('/'), StringComparison.OrdinalIgnoreCase))?.Id ??
         (conversation.Endpoint is null ? "openai" : null);
@@ -230,7 +233,7 @@ try
         conversation.Provider is not null && !conversation.Provider.Equals(selection.Provider.Id, StringComparison.OrdinalIgnoreCase)))
         throw new InvalidDataException("Requested provider/model conflicts with the saved session model or endpoint. Open it without explicit model flags and use /model after opening.");
     if (!explicitConnection && (conversation.Model != connection.Model || conversation.Endpoint != connection.Endpoint?.ToString() ||
-        !savedProvider.Equals(selection.Provider.Id, StringComparison.OrdinalIgnoreCase)))
+        !savedProvider.Equals(selection.Provider.Id, StringComparison.OrdinalIgnoreCase) || savedThinking is not null))
     {
         selection = await modelRuntime.ResolveAsync(savedProvider, conversation.Model);
         connection = selection.Connection;
@@ -413,6 +416,8 @@ async Task ReplaceModelRuntime(ModelSelection nextSelection, string nextThinking
     {
         if (recordModelChange)
             conversation.SelectModel(nextConnection.Model, nextConnection.Endpoint?.ToString(), nextSelection.Provider.Id);
+        if (!nextThinking.Equals(thinking, StringComparison.Ordinal))
+            conversation.AppendThinkingLevelChange(nextThinking);
         contextPolicy = nextPolicy;
         modelPricing = nextPricing;
         var nextRun = await OpenRunAsync(nextAgent, conversation, sessionPath, nextSelection.Provider.Id, nextThinking);
@@ -431,6 +436,7 @@ async Task ReplaceModelRuntime(ModelSelection nextSelection, string nextThinking
         if (recordModelChange)
             conversation.RevertModel(previousConnection.Model, previousConnection.Endpoint?.ToString(), previousHead,
                 previousSelection.Provider.Id);
+        else conversation.Tree.Select(previousHead);
         throw;
     }
 }
@@ -447,6 +453,16 @@ async Task<ModelDescriptor> SelectRpcModelAsync(ModelDescriptor model, Cancellat
     var nextThinking = model.Reasoning == true ? thinking : "off";
     await ReplaceModelRuntime(nextSelection, nextThinking, recordModelChange: true);
     return selection.Model;
+}
+
+async Task<string> SetRpcThinkingLevelAsync(string level, CancellationToken token)
+{
+    token.ThrowIfCancellationRequested();
+    var normalized = ThinkingLevels.Normalize(level);
+    var nextThinking = selection.Model.Reasoning == true ? normalized : "off";
+    if (nextThinking.Equals(thinking, StringComparison.Ordinal)) return thinking;
+    await ReplaceModelRuntime(selection, nextThinking, recordModelChange: false);
+    return thinking;
 }
 
 var terminalModelPicker = editor is null ? null : new TerminalModelPicker(modelRuntime, editor);
@@ -738,7 +754,9 @@ if (cli.Mode == "rpc")
         cancellationToken => store.SaveAsync(conversation, sessionPath, cancellationToken), resources, GetRpcModelsAsync,
         extensionLease.Current.Registration, () => selection.Authenticated ? null :
             $"Provider '{selection.Provider.Id}' is not authenticated. Use /login {selection.Provider.Id} or configure {selection.Provider.ApiKeyEnvironment ?? "a credential"}.",
-        SelectRpcModelAsync, () => conversationRun, () => thinking, () => modelRuntime.Scope.Count > 0).ServeAsync();
+        SelectRpcModelAsync, () => conversationRun, () => thinking, () => modelRuntime.Scope.Count > 0,
+        SetRpcThinkingLevelAsync, () => ThinkingLevels.AvailableForModel(selection.Model.Reasoning),
+        () => selection.Model.Reasoning == true).ServeAsync();
     return;
 }
 if (cli.Mode == "json")

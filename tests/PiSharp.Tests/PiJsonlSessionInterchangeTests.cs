@@ -159,6 +159,20 @@ public sealed class PiJsonlSessionInterchangeTests
     }
 
     [Fact]
+    public void ThinkingLevelChangesPersistAndRoundTripAsPiEntries()
+    {
+        var session = new ConversationSession(Path.GetTempPath(), "fixture-model", null, "fixture");
+        session.AppendThinkingLevelChange("max");
+
+        Assert.Equal("max", PiJsonlSessionInterchange.GetThinkingLevel(session));
+        var exported = PiJsonlSessionInterchange.Export(session);
+        using var change = JsonDocument.Parse(exported.Split('\n', StringSplitOptions.RemoveEmptyEntries)
+            .Single(line => line.Contains("thinking_level_change", StringComparison.Ordinal)));
+        Assert.Equal("max", change.RootElement.GetProperty("thinkingLevel").GetString());
+        Assert.Equal("max", PiJsonlSessionInterchange.GetThinkingLevel(PiJsonlSessionInterchange.Import(exported)));
+    }
+
+    [Fact]
     public void MalformedLinesAreSkippedAndInvalidSessionHeadersFailClosed()
     {
         var cwd = Path.GetFullPath(Path.GetTempPath());

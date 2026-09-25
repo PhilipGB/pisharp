@@ -197,7 +197,8 @@ public static class PiJsonlSessionInterchange
     {
         ArgumentNullException.ThrowIfNull(session);
         return session.Tree.ActivePath().Where(node => node.Type == "thinking_level_change")
-            .Select(node => OriginalEntry(node) is { } entry ? StringProperty(entry, "thinkingLevel") : null)
+            .Select(node => StringProperty(node.Payload, "thinkingLevel") ??
+                (OriginalEntry(node) is { } entry ? StringProperty(entry, "thinkingLevel") : null))
             .LastOrDefault(level => level is not null);
     }
 
@@ -462,6 +463,13 @@ public static class PiJsonlSessionInterchange
                 ["provider"] = StringProperty(node.Payload, "provider"),
                 ["modelId"] = StringProperty(node.Payload, "model"),
                 ["endpoint"] = StringProperty(node.Payload, "endpoint")
+            };
+        if (node.Type == "thinking_level_change")
+            return new JsonObject
+            {
+                ["type"] = "thinking_level_change",
+                ["thinkingLevel"] = StringProperty(node.Payload, "thinkingLevel") ??
+                    throw new InvalidDataException($"Missing thinking level at {node.Id}.")
             };
         return new JsonObject
         {

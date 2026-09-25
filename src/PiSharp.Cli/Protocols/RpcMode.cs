@@ -15,7 +15,9 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
     ExtensionRegistration? extensions = null, Func<string?>? promptPreflight = null,
     Func<ModelDescriptor, CancellationToken, Task<ModelDescriptor>>? setModel = null,
     Func<ConversationRun>? getCurrentRun = null, Func<string?>? getThinkingLevel = null,
-    Func<bool>? isModelScoped = null)
+    Func<bool>? isModelScoped = null,
+    Func<string, CancellationToken, Task<string>>? setThinkingLevel = null,
+    Func<IReadOnlyList<string>>? getAvailableThinkingLevels = null, Func<bool>? supportsThinking = null)
 {
     private readonly JsonLineWriter _writer = new(output);
     private readonly ConcurrentDictionary<Guid, BashOperation> _bashOperations = new();
@@ -139,6 +141,65 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                             catch (Exception error) when (error is not OperationCanceledException)
                             { await RespondAsync(id, type, false, error.Message); }
                             break;
+                        case "set_thinking_level":
+                            if (busy) { await RespondAsync(id, type, false, "Wait until the active prompt settles."); break; }
+                            if (!root.TryGetProperty("level", out var requestedLevel) || requestedLevel.ValueKind != JsonValueKind.String ||
+                                string.IsNullOrWhiteSpace(requestedLevel.GetString()))
+                            { await RespondAsync(id, type, false, "A thinking level is required."); break; }
+                            if (setThinkingLevel is null) { await RespondAsync(id, type, false, "Thinking-level selection is unavailable."); break; }
+                            try
+                            {
+                                await setThinkingLevel(requestedLevel.GetString()!, cancellationToken);
+                                await RespondAsync(id, type, true);
+                            }
+                            catch (Exception error) when (error is not OperationCanceledException)
+                            { await RespondAsync(id, type, false, error.Message); }
+                            break;
+                        case "cycle_thinking_level":
+                            if (busy) { await RespondAsync(id, type, false, "Wait until the active prompt settles."); break; }
+                            if (supportsThinking?.Invoke() != true)
+                            {
+                                await _writer.EmitAsync(new { id, type = "response", command = type, success = true, data = (object?)null }, cancellationToken);
+                                break;
+                            }
+                            if (setThinkingLevel is null || getAvailableThinkingLevels is null)
+                            { await RespondAsync(id, type, false, "Thinking-level selection is unavailable."); break; }
+                            try
+                            {
+                                var levels = getAvailableThinkingLevels();
+                                if (levels.Count == 0)
+                                {
+                                    await _writer.EmitAsync(new { id, type = "response", command = type, success = true, data = (object?)null }, cancellationToken);
+                                    break;
+                                }
+                                var currentLevel = getThinkingLevel?.Invoke() ?? "off";
+                                var currentIndex = Array.IndexOf(levels.ToArray(), currentLevel);
+                                var nextLevel = levels[(currentIndex + 1 + levels.Count) % levels.Count];
+                                var selectedLevel = await setThinkingLevel(nextLevel, cancellationToken);
+                                await _writer.EmitAsync(new
+                                {
+                                    id,
+                                    type = "response",
+                                    command = type,
+                                    success = true,
+                                    data = new { level = selectedLevel }
+                                }, cancellationToken);
+                            }
+                            catch (Exception error) when (error is not OperationCanceledException)
+                            { await RespondAsync(id, type, false, error.Message); }
+                            break;
+                        case "get_available_thinking_levels":
+                            if (getAvailableThinkingLevels is null)
+                            { await RespondAsync(id, type, false, "Thinking-level discovery is unavailable."); break; }
+                            await _writer.EmitAsync(new
+                            {
+                                id,
+                                type = "response",
+                                command = type,
+                                success = true,
+                                data = new { levels = getAvailableThinkingLevels() }
+                            }, cancellationToken);
+                            break;
                         case "compact":
                             if (busy) { await RespondAsync(id, type, false, "Wait until the active prompt settles."); break; }
                             if (root.TryGetProperty("instructions", out var focus) && focus.ValueKind != JsonValueKind.String)
@@ -176,6 +237,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                                 data = new
                                 {
                                     model = CurrentRun.Conversation.Model,
+                                    thinkingLevel = getThinkingLevel?.Invoke() ?? "off",
                                     isStreaming = busy,
                                     sessionId = CurrentRun.Conversation.Id,
                                     sessionName = CurrentRun.Conversation.Name,
