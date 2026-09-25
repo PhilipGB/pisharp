@@ -50,6 +50,20 @@ public sealed class CodingTools
 
     private string Resolve(string path) => Path.GetFullPath(path, _cwd);
 
+    private static string? FindBlockingFileAncestor(string path)
+    {
+        var current = Path.GetFullPath(path);
+        while (true)
+        {
+            if (File.Exists(current)) return current;
+            var parent = Path.GetDirectoryName(current);
+            if (parent is null || string.Equals(parent, current,
+                    OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))
+                return null;
+            current = parent;
+        }
+    }
+
     private static async Task<byte[]> ReadEditableFileAsync(string path, CancellationToken cancellationToken)
     {
         await using var stream = new FileStream(path, FileMode.Open, FileAccess.ReadWrite,
@@ -118,16 +132,37 @@ public sealed class CodingTools
         [Description("Complete file contents.")] string content,
         CancellationToken cancellationToken = default)
     {
+        var absolute = Resolve(path);
+        var parent = Path.GetDirectoryName(absolute)!;
         try
         {
-            var absolute = Resolve(path);
             return await s_mutations.RunAsync(absolute, async () =>
             {
+                if (FindBlockingFileAncestor(parent) is { } blockingFile)
+                {
+                    var pathIsFile = string.Equals(blockingFile, parent,
+                        OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+                    var code = pathIsFile ? "EEXIST" : "ENOTDIR";
+                    var description = pathIsFile ? "file already exists" : "not a directory";
+                    throw new ToolFailureException($"{code}: {description}, mkdir '{parent}'");
+                }
+                try { Directory.CreateDirectory(parent); }
+                catch (UnauthorizedAccessException error)
+                {
+                    throw new ToolFailureException($"EACCES: permission denied, mkdir '{parent}'", inner: error);
+                }
+                if (Directory.Exists(absolute))
+                    throw new ToolFailureException($"EISDIR: illegal operation on a directory, open '{absolute}'");
+
                 await AtomicFileWriter.ReplaceAsync(absolute, Encoding.UTF8.GetBytes(content), cancellationToken);
                 return $"Successfully wrote to {path}";
             }, cancellationToken);
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        catch (UnauthorizedAccessException error)
+        {
+            throw new ToolFailureException($"EACCES: permission denied, open '{absolute}'", inner: error);
+        }
+        catch (IOException e)
         {
             throw new ToolFailureException($"Error writing {path}: {e.Message}", inner: e);
         }

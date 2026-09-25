@@ -22,6 +22,61 @@ public sealed class CodingToolsTests : IDisposable
     }
 
     [Fact]
+    public async Task WriteToDirectoryUsesNodeEisdirError()
+    {
+        if (!OperatingSystem.IsLinux()) return;
+        var directory = Path.Combine(_dir, "target-directory");
+        Directory.CreateDirectory(directory);
+
+        var error = await Assert.ThrowsAsync<ToolFailureException>(() => new CodingTools(_dir).Write("target-directory", "content"));
+        Assert.Equal($"EISDIR: illegal operation on a directory, open '{directory}'", error.Message);
+    }
+
+    [Fact]
+    public async Task WriteUnderFileParentsUsesNodeEexistAndEnotdirErrors()
+    {
+        if (!OperatingSystem.IsLinux()) return;
+        var file = Path.Combine(_dir, "parent-file");
+        await File.WriteAllTextAsync(file, "existing");
+
+        var directError = await Assert.ThrowsAsync<ToolFailureException>(() =>
+            new CodingTools(_dir).Write("parent-file/child.txt", "content"));
+        Assert.Equal($"EEXIST: file already exists, mkdir '{file}'", directError.Message);
+
+        var nestedParent = Path.Combine(file, "child");
+        var nestedError = await Assert.ThrowsAsync<ToolFailureException>(() =>
+            new CodingTools(_dir).Write("parent-file/child/grandchild.txt", "content"));
+        Assert.Equal($"ENOTDIR: not a directory, mkdir '{nestedParent}'", nestedError.Message);
+        Assert.Equal("existing", await File.ReadAllTextAsync(file));
+    }
+
+    [Fact]
+    public async Task WritePermissionDeniedUsesNodeEaccesError()
+    {
+        if (!OperatingSystem.IsLinux()) return;
+        var directory = Path.Combine(_dir, "private-write-dir");
+        Directory.CreateDirectory(directory);
+        var path = Path.Combine(directory, "file.txt");
+        try
+        {
+            File.SetUnixFileMode(directory, UnixFileMode.None);
+            try
+            {
+                await using var probe = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.None);
+                return;
+            }
+            catch (UnauthorizedAccessException) { }
+
+            var error = await Assert.ThrowsAsync<ToolFailureException>(() => new CodingTools(_dir).Write("private-write-dir/file.txt", "content"));
+            Assert.Equal($"EACCES: permission denied, open '{path}'", error.Message);
+        }
+        finally
+        {
+            File.SetUnixFileMode(directory, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        }
+    }
+
+    [Fact]
     public async Task EditFailsWithoutMutatingWhenAmbiguousOrAbsent()
     {
         var tools = new CodingTools(_dir);
