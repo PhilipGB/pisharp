@@ -384,4 +384,23 @@ public sealed class SearchToolsTests
         }
         finally { Directory.Delete(root, recursive: true); }
     }
+
+    [Fact]
+    public async Task IgnorePatternsTrimUnescapedTrailingSpacesAndKeepEscapedSpaces()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-search-ignore-spaces-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(root, ".gitignore"), "ignored.txt   \nliteral-space.txt\\ \n");
+            await File.WriteAllTextAsync(Path.Combine(root, "ignored.txt"), "match-value\n");
+            await File.WriteAllTextAsync(Path.Combine(root, "literal-space.txt "), "match-value\n");
+            await File.WriteAllTextAsync(Path.Combine(root, "visible.txt"), "match-value\n");
+
+            var tools = new SearchTools(root);
+            Assert.Equal("visible.txt", await tools.Find("*.txt*"));
+            Assert.Equal("visible.txt:1: match-value", await tools.Grep("match-value"));
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
 }

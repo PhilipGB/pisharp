@@ -285,7 +285,7 @@ internal static class SearchInventory
         var rules = new List<IgnoreRule>();
         foreach (var rawLine in lines)
         {
-            var line = rawLine;
+            var line = TrimUnescapedTrailingSpaces(rawLine);
             if (line.Length == 0 || line[0] == '#') continue;
 
             var negated = line[0] == '!';
@@ -310,6 +310,19 @@ internal static class SearchInventory
             rules.Add(new IgnoreRule(baseDirectory, pattern, negated, directoryOnly));
         }
         return rules;
+    }
+
+    private static string TrimUnescapedTrailingSpaces(string line)
+    {
+        var end = line.Length;
+        while (end > 0 && line[end - 1] == ' ')
+        {
+            var backslashes = 0;
+            for (var index = end - 2; index >= 0 && line[index] == '\\'; index--) backslashes++;
+            if (backslashes % 2 == 1) break;
+            end--;
+        }
+        return end == line.Length ? line : line[..end];
     }
 
     private static bool IsIgnored(string path, bool isDirectory, IReadOnlyList<IgnoreRule> rules)
