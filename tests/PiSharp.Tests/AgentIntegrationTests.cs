@@ -204,6 +204,64 @@ public sealed class AgentIntegrationTests
         }
     }
 
+    [Fact]
+    public async Task AbortedBashToolRetainsTruncationNoticeAndFullOutputPath()
+    {
+        if (!OperatingSystem.IsLinux()) return;
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-bash-abort-truncated-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        var release = Path.Combine(cwd, "release");
+        var command = $"seq 1 3000; while [ ! -e {ProcessTestHelpers.ShellQuote(release)} ]; do :; done";
+        using var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var events = new List<AgentLifecycleEvent>();
+        var lastOutput = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        string? fullOutputPath = null;
+        Task? collecting = null;
+        try
+        {
+            var client = new BashCommandClient(command);
+            var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(cwd)),
+                new ConversationSession(cwd, "fixture", null));
+            collecting = Task.Run(async () =>
+            {
+                await foreach (var item in run.RunEventsAsync("produce truncated output", cancellation.Token))
+                {
+                    events.Add(item);
+                    if (item.Type == "tool_execution_update" && item.Text?.Contains("3000", StringComparison.Ordinal) == true)
+                        lastOutput.TrySetResult();
+                }
+            });
+
+            await lastOutput.Task.WaitAsync(TimeSpan.FromSeconds(5), cancellation.Token);
+            run.AbortBash();
+            await collecting.WaitAsync(TimeSpan.FromSeconds(5));
+
+            var completed = Assert.Single(events, item => item.Type == "tool_execution_finished" && item.Tool == "bash");
+            Assert.True(completed.IsError);
+            Assert.Contains("Command aborted", completed.Error);
+            Assert.Contains("[Showing lines 1001-3000 of 3000. Full output: ", completed.Error);
+            var pathMatch = System.Text.RegularExpressions.Regex.Match(completed.Error!, @"Full output: ([^\]\n]+)");
+            Assert.True(pathMatch.Success, completed.Error);
+            fullOutputPath = pathMatch.Groups[1].Value;
+            var fullOutput = await File.ReadAllTextAsync(fullOutputPath);
+            Assert.StartsWith("1\n2\n3\n", fullOutput);
+            Assert.EndsWith("2998\n2999\n3000\n", fullOutput);
+            Assert.Equal("agent_settled", events[^1].Type);
+        }
+        finally
+        {
+            File.WriteAllText(release, "release");
+            cancellation.Cancel();
+            if (collecting is not null)
+            {
+                try { await collecting.WaitAsync(TimeSpan.FromSeconds(5)); }
+                catch (Exception error) when (error is OperationCanceledException or TimeoutException) { }
+            }
+            if (fullOutputPath is not null && File.Exists(fullOutputPath)) File.Delete(fullOutputPath);
+            Directory.Delete(cwd, recursive: true);
+        }
+    }
+
     private sealed class FailureContinuationClient : IChatClient
     {
         public bool SawFailure { get; private set; }
