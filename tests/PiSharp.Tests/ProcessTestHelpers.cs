@@ -30,7 +30,10 @@ internal static class ProcessTestHelpers
         {
             var path = $"/proc/{processId}/stat";
             if (!File.Exists(path)) return true;
-            var stat = File.ReadAllText(path);
+            string stat;
+            try { stat = File.ReadAllText(path); }
+            // The process can exit after File.Exists succeeds but before procfs opens the stat file.
+            catch (IOException) when (!File.Exists(path)) { return true; }
             var close = stat.LastIndexOf(')');
             return close >= 0 && stat.AsSpan(close + 2).StartsWith("Z ", StringComparison.Ordinal);
         }, TimeSpan.FromSeconds(5)), $"Process {processId} did not exit.");

@@ -474,7 +474,7 @@
         "tests/PiSharp.Tests/MultimodalRuntimeTests.cs: fake-provider image request and session round-trip/blocking; tests/PiSharp.Tests/ProviderChatClientFactoryTests.cs: loopback Responses request transports PNG DataContent as input_image data URL, not plain text",
         "tests/PiSharp.Tests/ToolSelectionTests.cs: positional image and invalid-signature CLI file argument fixtures; tests/PiSharp.Tests/ReadImageProcessorTests.cs and ReadImageToolTests.cs: conversion, resize, provider size, loopback transport, persistence and filtering",
         "TerminalClipboardTests cover successful empty Wayland reads, X11 fallback, OS helper selection, remote/headless OSC 52, Unicode text and the size limit; TerminalPtyTests.ClipboardShortcutsPasteTextAndCopyLastAssistantThroughLinuxPty covers clipboard text insertion.",
-        "Working-tree validation after this slice: dotnet format PiSharp.slnx --verify-no-changes passed; dotnet build PiSharp.slnx --warnaserror succeeded with 0 warnings/errors; dotnet test PiSharp.slnx passed 447/447 with 0 skipped. Exact-head Linux CI for this uncommitted state is pending."
+        "Commit d331d7d714a5548add83b19c40d0f84da4efba7c passed local format, warnings-as-errors build and 447/447 tests, but Linux CI run 36149550761 failed one existing BashCancellationAndTimeoutKillTheProcessGroup test because /proc/<pid>/stat disappeared between File.Exists and ReadAllText. The process-tree assertion remains intact; ProcessTestHelpers now treats procfs disappearance during the read as process exit, and the working tree passes format, build and all 447 tests. Follow-up exact-head CI is pending."
       ],
       "dependencies": []
     },
@@ -535,7 +535,7 @@
         "Pi b3487650f6378f1b0d1643dd254445ceb4a98035 external-editor source/tests establish command precedence, private temporary-directory lifecycle, success/failure behavior and prompt text normalization. ExternalEditorTests, UserSettingsTests, UserSettingsWriterTests, EditorKeymapTests and Linux TerminalPtyTests cover PiSharp command parsing, mode 0700 directory/mode 0600 prompt, cleanup, settings precedence/persistence, configurable Ctrl+G and terminal restoration; focused tests passed 9/9. Format verification, warnings-as-errors build and full test suite passed locally (438/438, 0 skipped); exact-head Linux CI run 36144181596 failed the separate fork-picker PTY exit wait; the test synchronization fix and rerun status are recorded in follow-up evidence.",
         "Follow-up commit 33b6ef7c323f01f7623d097da2464be91bab06bf fixes the fork-picker PTY readiness race by synchronizing on rendered draft text; exact-head Linux CI run 36145493341 passes format, warnings-as-errors build and all 438 tests.",
         "TerminalClipboardTests, EditorKeymapTests and TerminalPtyTests.ClipboardShortcutsPasteTextAndCopyLastAssistantThroughLinuxPty cover platform clipboard helpers, Ctrl+X copy, Ctrl+V paste, /copy, PTY input readiness and custom editor-action precedence when Ctrl+X is also configured for submit.",
-        "Working-tree validation after this slice: dotnet format PiSharp.slnx --verify-no-changes passed; dotnet build PiSharp.slnx --warnaserror succeeded with 0 warnings/errors; dotnet test PiSharp.slnx passed 447/447 with 0 skipped. Exact-head Linux CI for this uncommitted state is pending."
+        "Commit d331d7d714a5548add83b19c40d0f84da4efba7c passed local format, warnings-as-errors build and 447/447 tests, but Linux CI run 36149550761 failed one existing BashCancellationAndTimeoutKillTheProcessGroup test because /proc/<pid>/stat disappeared between File.Exists and ReadAllText. The process-tree assertion remains intact; ProcessTestHelpers now treats procfs disappearance during the read as process exit, and the working tree passes format, build and all 447 tests. Follow-up exact-head CI is pending."
       ],
       "dependencies": []
     },
@@ -562,7 +562,7 @@
         "EditorKeymapTests.SessionSelectorShortcutCanBeConfiguredAndPreservesTheEditorDraft verifies ctrl+r user binding dispatch and draft preservation. Format verification, warnings-as-errors build and all 423 tests passed in Linux CI run 36134474053 on exact commit 37eff5a9c7a15c5b12e8ff948fa53714046a2fda.",
         "EditorKeymapTests.SessionSelectorShortcutCanBeConfiguredAndPreservesTheEditorDraft verifies configurable app.session.fork dispatch and draft retention; TerminalPtyTests.ForkPickerSearchesUserMessagesAndSeedsSelectedPromptThroughLinuxPty verifies the command flow. The focused tests pass 3/3; full local format, warnings-as-errors build and 424/424 tests pass; exact-head commit ba25c8adbc861e0dece4372bf4c7f97424014fe1 passed Linux CI run 36136775710.",
         "EditorKeymapTests.ClipboardCopyAndPasteUseContextualPiApplicationActions and EditorBindingTakesPrecedenceOverApplicationShortcutInTheEditorContext cover names/defaults and a configured Ctrl+X submit collision; TerminalPtyTests covers the full clipboard keyboard and /copy flow.",
-        "Working-tree validation after this slice: dotnet format PiSharp.slnx --verify-no-changes passed; dotnet build PiSharp.slnx --warnaserror succeeded with 0 warnings/errors; dotnet test PiSharp.slnx passed 447/447 with 0 skipped. Exact-head Linux CI for this uncommitted state is pending."
+        "Commit d331d7d714a5548add83b19c40d0f84da4efba7c passed local format, warnings-as-errors build and 447/447 tests, but Linux CI run 36149550761 failed one existing BashCancellationAndTimeoutKillTheProcessGroup test because /proc/<pid>/stat disappeared between File.Exists and ReadAllText. The process-tree assertion remains intact; ProcessTestHelpers now treats procfs disappearance during the read as process exit, and the working tree passes format, build and all 447 tests. Follow-up exact-head CI is pending."
       ],
       "dependencies": []
     },
@@ -808,7 +808,7 @@
       "evidence": [
         "tests/PiSharp.Tests/SessionExportTests.cs: escaping, branch, failure and no-overwrite fixtures; tests/PiSharp.Tests/TerminalPtyTests.cs: export fixture",
         "TerminalPtyTests.ClipboardShortcutsPasteTextAndCopyLastAssistantThroughLinuxPty seeds assistant text, pastes clipboard text, exercises Ctrl+X and /copy, and verifies the copied bytes with a fake Wayland clipboard helper.",
-        "Working-tree validation after this slice: dotnet format PiSharp.slnx --verify-no-changes passed; dotnet build PiSharp.slnx --warnaserror succeeded with 0 warnings/errors; dotnet test PiSharp.slnx passed 447/447 with 0 skipped. Exact-head Linux CI for this uncommitted state is pending."
+        "Commit d331d7d714a5548add83b19c40d0f84da4efba7c passed local format, warnings-as-errors build and 447/447 tests, but Linux CI run 36149550761 failed one existing BashCancellationAndTimeoutKillTheProcessGroup test because /proc/<pid>/stat disappeared between File.Exists and ReadAllText. The process-tree assertion remains intact; ProcessTestHelpers now treats procfs disappearance during the read as process exit, and the working tree passes format, build and all 447 tests. Follow-up exact-head CI is pending."
       ],
       "dependencies": []
     },
