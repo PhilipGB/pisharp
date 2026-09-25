@@ -12,6 +12,7 @@ internal static class TerminalMarkdownRenderer
     private static readonly Regex Heading = new("^ {0,3}#{1,6}[ \\t]+(.+?)\\s*#*\\s*$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
     private static readonly Regex Quote = new("^ {0,3}> ?(.*)$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
     private static readonly Regex ListItem = new("^(?<indent>[ \\t]*)(?<marker>[-+*]|[0-9]{1,9}[.)])[ \\t]+(?<text>.*)$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+    private static readonly Regex TaskListItem = new("^\\[(?<checked>[ xX])\\][ \\t]+(?<text>.*)$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
     private static readonly Regex HorizontalRule = new("^ {0,3}(?:(?:\\*\\s*){3,}|(?:-\\s*){3,}|(?:_\\s*){3,})$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
     private static readonly Regex Inline = new(
         "(?<image>!\\[(?<imageText>[^\\]]*)\\]\\((?<imageUrl>[^)\\s]+)(?:\\s+[\\\"'][^\\\"']*[\\\"'])?\\))" +
@@ -75,8 +76,12 @@ internal static class TerminalMarkdownRenderer
                 {
                     var indent = item.Groups["indent"].Value.Replace("\t", "  ", StringComparison.Ordinal);
                     var marker = item.Groups["marker"].Value;
+                    var itemText = item.Groups["text"].Value;
+                    var task = TaskListItem.Match(itemText);
+                    var taskMarker = task.Success ? $"[{(task.Groups["checked"].Value is "x" or "X" ? "x" : " ")}] " : "";
+                    if (task.Success) itemText = task.Groups["text"].Value;
                     output.Append(indent).Append(char.IsAsciiDigit(marker[0]) ? marker : "•").Append(' ')
-                        .Append(RenderInline(item.Groups["text"].Value));
+                        .Append(taskMarker).Append(RenderInline(itemText));
                 }
                 else
                 {

@@ -114,7 +114,7 @@ public sealed class InteractiveTranscriptTests
 
         transcript.Render(new("model_text_delta", Text: "# Hea"));
         Assert.Contains("Hea", StripSgr(output.ToString()));
-        transcript.Render(new("model_text_delta", Text: "ding\n\n**bold** and `code` [docs](https://example.test)\nvariable foo_bar\n> quoted\n- item\n```csharp\nvar answer = 42;\n```"));
+        transcript.Render(new("model_text_delta", Text: "ding\n\n**bold** and `code` [docs](https://example.test) ~~removed~~\nvariable foo_bar\n> quoted\n- item\n- [ ] pending\n- [X] complete\n```csharp\nvar answer = 42;\n```"));
         transcript.FinishTurn();
         screen.Dispose();
 
@@ -124,9 +124,13 @@ public sealed class InteractiveTranscriptTests
         Assert.Contains("bold and code", visible);
         Assert.Contains("docs", visible);
         Assert.Contains("https://example.test", visible);
+        Assert.Contains("removed", visible);
         Assert.Contains("foo_bar", visible);
         Assert.Contains("│ quoted", visible);
         Assert.Contains("• item", visible);
+        Assert.Contains("• [ ] pending", visible);
+        Assert.Contains("• [x] complete", visible);
+        Assert.Contains("\u001b[9mremoved\u001b[29m", output.ToString());
         Assert.Contains("var answer = 42;", visible);
         Assert.DoesNotContain("```", visible);
     }
