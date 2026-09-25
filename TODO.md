@@ -6,9 +6,9 @@
 
 ## Baseline
 
-- PiSharp started from clean `main` at `1520f311196fdbd6a3f2eae07f09bc3f80e55353`. The latest successful Linux CI run is [run 36093864217](https://github.com/PhilipGB/pisharp/actions/runs/36093864217), for `9a1bc4c28fb32feefc53599bed3fadaa0b0b36e6` on 2026-09-25; it verifies timeout truncation status and the readable full-output path. Earlier Bash context-exclusion run 36088036527, symlink traversal run 36086599003, and nested Git repository traversal run 36086078007 also passed. Earlier run 36076266399 failed one grep test because it assumed filesystem enumeration order; the sorted-path assertion passed in later CI.
+- Current PiSharp `main` includes selected-model `read` image resize profiles in commit `f882b25adf591b5fc433e0f5be31066e9c90c6c9`. Linux CI [run 36096847111](https://github.com/PhilipGB/pisharp/actions/runs/36096847111) passed for that commit on 2026-09-25, including format verification, the warnings-as-errors build and all 363 tests.
 - Pinned Pi: `earendil-works/pi@d5629e20489ccf770ed90b5a33941cb3b7ef24d0`. Refreshed upstream `main` as `5fd446ca1843682e8da3fec4ceb71c42f56fbace`; pinned/current read, MIME, and image processing sources and tests are unchanged. Refresh before the final audit and relevant capability families.
-- Read/image processing is committed at `8b109ecac49d1c88df852186c52006553d6231e9`; its Release suite passed 307/307 with 0 skipped, focused read/image tests passed 10/10, and the linked Linux CI run succeeded. Image differences remain listed in the matrix and fixture notes.
+- The selected model's optional image resize metadata now flows from configured/discovered catalogs to the `read` processor and provider boundary. Focused tests passed 51/51; the Release suite passed 363/363 with 0 skipped. Remaining `read` differences are listed in the matrix and final-audit notes.
 
 ## Priorities
 
