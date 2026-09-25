@@ -362,7 +362,7 @@
       "evidence": [
         "Pinned and refreshed Pi write.ts return `Successfully wrote to {path}` with undefined details and call recursive mkdir followed by fsWriteFile; the inspected write and file-mutation-queue sources are unchanged between d5629e20489ccf770ed90b5a33941cb3b7ef24d0 and 5fd446ca1843682e8da3fec4ceb71c42f56fbace.",
         "tests/PiSharp.Tests/CodingToolsTests.cs: WriteReadAndEditResolveAgainstWorkingDirectory checks nested creation and exact result text; WriteToDirectoryUsesNodeEisdirError checks EISDIR; WritePermissionDeniedUsesNodeEaccesError checks denied-open EACCES; WriteUnderFileParentsUsesNodeEexistAndEnotdirErrors checks EEXIST and ENOTDIR; AtomicWritePreservesTargetOnCancellationAndFollowsSymlinks checks private mode, cancellation, symlink target and existing mode preservation; FileMutationQueueSerializesExistingTargetsThroughDirectorySymlinks uses a deterministic barrier to prove aliases share a lock. CodingToolsTests pass 19/19. A direct Node v24.21 probe confirmed the Linux error strings.",
-        "Current local validation: format verification passed; Release warnings-as-errors build succeeded with 0 warnings/errors; Release suite passed 375/375 with 0 skipped. Edit commit CI run 36098970353 passed; this write change is awaiting CI after push."
+        "Current local validation: format verification passed; Release warnings-as-errors build succeeded with 0 warnings/errors; Release suite passed 375/375 with 0 skipped. Edit commit CI run 36098970353 passed; write queue fix af68552a1 passed Linux CI run 36099478186."
       ],
       "dependencies": []
     },
