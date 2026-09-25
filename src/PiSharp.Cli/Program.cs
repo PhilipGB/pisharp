@@ -245,8 +245,8 @@ async Task Run(string input, IReadOnlyList<DataContent>? images = null)
     using var monitorStop = new CancellationTokenSource();
     var monitor = Task.CompletedTask;
     var monitorStarted = false;
-    var started = false;
-    var liveBash = new Dictionary<string, ShellOutputNormalizer>(StringComparer.Ordinal);
+    var transcript = new InteractiveTranscript(Console.Out, Console.Error, interactive: !print,
+        hideThinking: userSettings.HideThinkingBlock == true);
     try
     {
         if (!selection.Authenticated)
@@ -259,84 +259,30 @@ async Task Run(string input, IReadOnlyList<DataContent>? images = null)
         if (images is not null) contents.AddRange(images);
         await foreach (var update in conversationRun.RunEventsAsync(new ChatMessage(ChatRole.User, contents), expanded, runCancel.Token))
         {
-            switch (update.Type)
+            if (update.Type == "prompt_accepted" && editor is not null && !monitorStarted)
             {
-                case "prompt_accepted" when editor is not null && !monitorStarted:
-                    monitorStarted = true;
-                    monitor = editor.MonitorRunAsync(async (text, followUp, token) =>
+                monitorStarted = true;
+                monitor = editor.MonitorRunAsync(async (text, followUp, token) =>
+                {
+                    try
                     {
-                        try
-                        {
-                            var queued = await resources.ResolveInputAsync(text, token);
-                            var accepted = followUp ? conversationRun.TryFollowUp(queued) : conversationRun.TrySteer(queued);
-                            if (accepted) Console.Error.WriteLine(followUp ? "Queued follow-up." : "Queued steering message.");
-                            return accepted;
-                        }
-                        catch (Exception error) when (error is ArgumentException or IOException)
-                        {
-                            Console.Error.WriteLine($"Could not queue input: {error.Message}");
-                            return false;
-                        }
-                    }, () => conversationRun.ClearPendingPrompts().InDeliveryOrder, runCancel.Cancel, monitorStop.Token);
-                    break;
-                case "model_text_delta" when !string.IsNullOrEmpty(update.Text):
-                    Console.Write(update.Text);
-                    started = true;
-                    break;
-                case "reasoning_delta" when !print && userSettings.HideThinkingBlock != true && !string.IsNullOrEmpty(update.Text):
-                    Console.Error.Write(update.Text);
-                    break;
-                case "usage" when !print && !string.IsNullOrEmpty(update.Text):
-                    Console.Error.WriteLine($"\nUsage: {update.Text}");
-                    break;
-                case "context_compacted" when !print:
-                    Console.Error.WriteLine(update.Text);
-                    break;
-                case "tool_execution_started" when !print:
-                    Console.Error.WriteLine($"\n→ {update.Tool} ({update.OperationId})");
-                    break;
-                case "tool_execution_update" when !print && update.Tool == "bash" && !string.IsNullOrEmpty(update.Text):
-                    var displayText = update.Text;
-                    if (update.OperationId is { } updateId)
-                    {
-                        if (!liveBash.TryGetValue(updateId, out var normalizer))
-                            liveBash.Add(updateId, normalizer = new ShellOutputNormalizer());
-                        displayText = normalizer.Append(update.Text.AsSpan());
+                        var queued = await resources.ResolveInputAsync(text, token);
+                        var accepted = followUp ? conversationRun.TryFollowUp(queued) : conversationRun.TrySteer(queued);
+                        if (accepted) Console.Error.WriteLine(followUp ? "Queued follow-up." : "Queued steering message.");
+                        return accepted;
                     }
-                    else displayText = ShellOutputNormalizer.NormalizeComplete(update.Text);
-                    if (displayText.Length != 0) Console.Error.Write(displayText);
-                    break;
-                case "tool_execution_finished" when !print:
-                    if (update.Tool == "bash" && update.OperationId is { } finishedId &&
-                        liveBash.Remove(finishedId, out var displayNormalizer))
+                    catch (Exception error) when (error is ArgumentException or IOException)
                     {
-                        var trailing = displayNormalizer.Finish();
-                        if (trailing.Length != 0) Console.Error.Write(trailing);
-                        Console.Error.WriteLine();
-                        var status = update.Error;
-                        var statusStart = status?.LastIndexOf("\n\nCommand ", StringComparison.Ordinal) ?? -1;
-                        if (statusStart >= 0) status = status![(statusStart + 2)..];
-                        if (status is not null) status = ShellOutputNormalizer.NormalizeComplete(status);
-                        Console.Error.WriteLine($"← {(update.IsError == true ? status ?? "bash failed" : "bash completed")}");
+                        Console.Error.WriteLine($"Could not queue input: {error.Message}");
+                        return false;
                     }
-                    else
-                    {
-                        var status = update.IsError == true ? update.Error : update.Text;
-                        if (update.Tool == "bash" && status is not null)
-                            status = ShellOutputNormalizer.NormalizeComplete(status);
-                        Console.Error.WriteLine($"← {status}");
-                    }
-                    break;
-                case "turn_failed" or "prompt_rejected":
-                    Console.Error.WriteLine($"Agent error: {update.Error ?? update.Type}");
-                    Environment.ExitCode = 1;
-                    break;
-                case "turn_interrupted":
-                    Console.Error.WriteLine("Interrupted.");
-                    break;
+                }, () => conversationRun.ClearPendingPrompts().InDeliveryOrder, runCancel.Cancel, monitorStop.Token);
+                continue;
             }
+            transcript.Render(update);
+            Environment.ExitCode = Math.Max(Environment.ExitCode, transcript.ExitCode);
         }
-        if (started) Console.WriteLine();
+        transcript.FinishTurn();
     }
     catch (OperationCanceledException) { Console.Error.WriteLine("Interrupted."); }
     catch (Exception ex) { Console.Error.WriteLine($"Agent error: {ex.Message}"); Environment.ExitCode = 1; }
