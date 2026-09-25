@@ -1176,7 +1176,8 @@
         "Compared the exact request fields, exact catalog-ID lookup, correlated failure, and provider/id success payload with current Pi main d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 in packages/coding-agent/src/modes/rpc/{rpc-types.ts,rpc-mode.ts,rpc-client.ts}.",
         "RpcModeTests.SetModelReplacesTheRuntimeForSubsequentRpcCommands verifies response fields, changed runtime state, endpoint and one model_change entry.",
         "RpcModelProcessTests.RpcSetModelReplacesTheRunningProviderRuntime drives the CLI RPC process through successful model replacement, exact catalog rejection and unchanged-state follow-up.",
-        "dotnet format PiSharp.slnx --verify-no-changes --no-restore; dotnet build PiSharp.slnx --warnaserror; dotnet test PiSharp.slnx => format passed, 0 build warnings/errors, 532 passed, 0 failed, 0 skipped."
+        "dotnet format PiSharp.slnx --verify-no-changes --no-restore; dotnet build PiSharp.slnx --warnaserror; dotnet test PiSharp.slnx => format passed, 0 build warnings/errors, 532 passed, 0 failed, 0 skipped.",
+        "Exact commit 2683df75dbf4cac7e4b004e8d9546fbd3338093b passed Linux CI run 36193142003: format, warnings-as-errors build, and test suite."
       ],
       "dependencies": []
     },
