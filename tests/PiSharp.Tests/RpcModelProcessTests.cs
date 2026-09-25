@@ -130,13 +130,14 @@ public sealed class RpcModelProcessTests
             }, timeout.Token);
             await WriteCommandAsync(process, new { id = "thinking-levels", type = "get_available_thinking_levels" }, timeout.Token);
             await WriteCommandAsync(process, new { id = "set-max", type = "set_thinking_level", level = "max" }, timeout.Token);
+            await WriteCommandAsync(process, new { id = "set-max-again", type = "set_thinking_level", level = "max" }, timeout.Token);
             await WriteCommandAsync(process, new { id = "state-max", type = "get_state" }, timeout.Token);
             await WriteCommandAsync(process, new { id = "thinking-entries", type = "get_entries" }, timeout.Token);
             await WriteCommandAsync(process, new { id = "cycle-thinking", type = "cycle_thinking_level" }, timeout.Token);
             await WriteCommandAsync(process, new { id = "state-off", type = "get_state" }, timeout.Token);
             var lines = await ReadResponsesAsync(process,
                 ["switch", "cycle", "unknown", "state", "unsupported-thinking", "cycle-no-thinking", "reasoning-model",
-                    "thinking-levels", "set-max", "state-max", "thinking-entries", "cycle-thinking", "state-off"], timeout.Token);
+                    "thinking-levels", "set-max", "set-max-again", "state-max", "thinking-entries", "cycle-thinking", "state-off"], timeout.Token);
             process.StandardInput.Close();
             await process.WaitForExitAsync(timeout.Token);
 
@@ -180,6 +181,28 @@ public sealed class RpcModelProcessTests
                 line.Contains("\"id\":\"set-max\"", StringComparison.Ordinal)));
             Assert.True(setMax.RootElement.GetProperty("success").GetBoolean());
             Assert.False(setMax.RootElement.TryGetProperty("data", out _));
+            using var setMaxAgain = JsonDocument.Parse(Assert.Single(lines, line =>
+                line.Contains("\"id\":\"set-max-again\"", StringComparison.Ordinal)));
+            Assert.True(setMaxAgain.RootElement.GetProperty("success").GetBoolean());
+            var thinkingEvents = lines.Where(line => line.Contains("\"type\":\"thinking_level_changed\"", StringComparison.Ordinal))
+                .Select(line => JsonDocument.Parse(line)).ToArray();
+            try
+            {
+                Assert.Equal(["max", "off"], thinkingEvents.Select(item => item.RootElement.GetProperty("level").GetString()));
+                Assert.All(thinkingEvents, item => Assert.Equal(["type", "level"],
+                    item.RootElement.EnumerateObject().Select(property => property.Name)));
+                var maxEventIndex = lines.FindIndex(line => line.Contains("\"type\":\"thinking_level_changed\"", StringComparison.Ordinal) &&
+                    line.Contains("\"level\":\"max\"", StringComparison.Ordinal));
+                var setMaxResponseIndex = lines.FindIndex(line => line.Contains("\"id\":\"set-max\"", StringComparison.Ordinal));
+                var setMaxAgainResponseIndex = lines.FindIndex(line => line.Contains("\"id\":\"set-max-again\"", StringComparison.Ordinal));
+                Assert.True(maxEventIndex >= 0 && maxEventIndex < setMaxResponseIndex);
+                Assert.True(setMaxAgainResponseIndex > setMaxResponseIndex);
+                var offEventIndex = lines.FindIndex(line => line.Contains("\"type\":\"thinking_level_changed\"", StringComparison.Ordinal) &&
+                    line.Contains("\"level\":\"off\"", StringComparison.Ordinal));
+                var cycleResponseIndex = lines.FindIndex(line => line.Contains("\"id\":\"cycle-thinking\"", StringComparison.Ordinal));
+                Assert.True(offEventIndex >= 0 && offEventIndex < cycleResponseIndex);
+            }
+            finally { foreach (var item in thinkingEvents) item.Dispose(); }
             using var maxState = JsonDocument.Parse(Assert.Single(lines, line =>
                 line.Contains("\"id\":\"state-max\"", StringComparison.Ordinal)));
             Assert.Equal("max", maxState.RootElement.GetProperty("data").GetProperty("thinkingLevel").GetString());

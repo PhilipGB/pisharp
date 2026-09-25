@@ -149,7 +149,10 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                             if (setThinkingLevel is null) { await RespondAsync(id, type, false, "Thinking-level selection is unavailable."); break; }
                             try
                             {
-                                await setThinkingLevel(requestedLevel.GetString()!, cancellationToken);
+                                var previousLevel = getThinkingLevel?.Invoke();
+                                var selectedLevel = await setThinkingLevel(requestedLevel.GetString()!, cancellationToken);
+                                if (!string.Equals(previousLevel, selectedLevel, StringComparison.Ordinal))
+                                    await EmitThinkingLevelChangedAsync(selectedLevel, cancellationToken);
                                 await RespondAsync(id, type, true);
                             }
                             catch (Exception error) when (error is not OperationCanceledException)
@@ -176,6 +179,8 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                                 var currentIndex = Array.IndexOf(levels.ToArray(), currentLevel);
                                 var nextLevel = levels[(currentIndex + 1 + levels.Count) % levels.Count];
                                 var selectedLevel = await setThinkingLevel(nextLevel, cancellationToken);
+                                if (!string.Equals(currentLevel, selectedLevel, StringComparison.Ordinal))
+                                    await EmitThinkingLevelChangedAsync(selectedLevel, cancellationToken);
                                 await _writer.EmitAsync(new
                                 {
                                     id,
@@ -542,6 +547,9 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
             else await _writer.EmitAsync(new { type = "error", error = error.Message }, CancellationToken.None);
         }
     }
+
+    private Task EmitThinkingLevelChangedAsync(string level, CancellationToken cancellationToken) =>
+        _writer.EmitAsync(new { type = "thinking_level_changed", level }, cancellationToken);
 
     private void StartBash(JsonElement? id, string command, bool excludeFromContext, CancellationToken cancellationToken)
     {

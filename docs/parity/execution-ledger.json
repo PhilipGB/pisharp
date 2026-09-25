@@ -1241,7 +1241,7 @@
       "evidence": [
         "Compared current Pi main d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 RPC types/mode and agent-session behavior for accepted level names, branch entries and response shape.",
         "RpcModelProcessTests.RpcModelAndThinkingCommandsSelectAndCycleTheRunningRuntime verifies unsupported-model clamping, max selection, state, and persisted entry; PiJsonlSessionInterchangeTests.ThinkingLevelChangesPersistAndRoundTripAsPiEntries verifies Pi v3 JSONL export/import.",
-        "Compared current Pi RPC at d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31: Pi accepts this while a run is active and emits thinking_level_changed; PiSharp currently rejects it while busy and has not normalized that event.",
+        "Compared current Pi RPC at d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31: Pi accepts this while a run is active; PiSharp emits the Pi-shaped event before the response for idle changes but still rejects the command while busy.",
         "Exact commit 1bb382e3f1002b2191afb1b30b24b128d2140aa8 passed Linux CI run 36196277855: format passed, warnings-as-errors build passed with 0 warnings/errors, and all 535 tests passed (0 failed, 0 skipped)."
       ],
       "dependencies": []
@@ -1681,14 +1681,21 @@
     {
       "id": "rpc-thinking-level-changed",
       "title": "RPC / event: thinking_level_changed",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:38",
       "acceptance": [
         "Implement thinking_level_changed using shared canonical runtime with correlated responses/event ordering",
         "Test protocol through RPC process, including failures and cancellation"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "src/PiSharp.Cli/Protocols/RpcMode.cs: emits top-level {type, level} before successful set/cycle responses only when the effective level changes."
+      ],
+      "evidence": [
+        "Compared current Pi main d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 packages/coding-agent/src/modes/rpc/rpc-mode.ts and core/agent-session.ts: session level changes synchronously emit thinking_level_changed before the RPC success response.",
+        "RpcModelProcessTests.RpcModelAndThinkingCommandsSelectAndCycleTheRunningRuntime verifies the exact top-level event fields, set/cycle ordering before responses, and no duplicate event when setting the current level.",
+        "Focused local RPC/process tests: dotnet test tests/PiSharp.Tests/PiSharp.Tests.csproj --filter FullyQualifiedName~RpcModeTests|FullyQualifiedName~RpcModelProcessTests --no-restore => 22 passed, 0 failed, 0 skipped.",
+        "Current local working tree: focused RPC/process tests passed 22/22; dotnet format PiSharp.slnx --verify-no-changes --no-restore passed; dotnet build PiSharp.slnx --warnaserror succeeded with 0 warnings/errors; dotnet test PiSharp.slnx passed 535/535 (0 failed, 0 skipped). Exact source-head CI is pending."
+      ],
       "dependencies": []
     },
     {
