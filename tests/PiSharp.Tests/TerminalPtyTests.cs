@@ -139,25 +139,49 @@ public sealed class TerminalPtyTests
             };
             using var process = Process.Start(start);
             Assert.NotNull(process);
-            var stdout = process.StandardOutput.ReadToEndAsync();
+            var outputBuilder = new System.Text.StringBuilder();
+            var outputLock = new object();
+            var promptReady = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var selectedIdPrefix = selectedId[..12];
+            var stdout = Task.Run(async () =>
+            {
+                var buffer = new char[1024];
+                while (true)
+                {
+                    var count = await process.StandardOutput.ReadAsync(buffer);
+                    if (count == 0) break;
+                    lock (outputLock)
+                    {
+                        outputBuilder.Append(buffer, 0, count);
+                        var current = outputBuilder.ToString();
+                        var forkStatus = current.LastIndexOf($"Forked {selectedIdPrefix}", StringComparison.Ordinal);
+                        if (forkStatus >= 0 && current.IndexOf("draft to change", forkStatus, StringComparison.Ordinal) >= 0)
+                            promptReady.TrySetResult();
+                    }
+                }
+                lock (outputLock) return outputBuilder.ToString();
+            });
             var stderr = process.StandardError.ReadToEndAsync();
             await process.StandardInput.WriteAsync("/fork\ndraft to change\n");
             await process.StandardInput.FlushAsync();
-            using (var forkReady = new CancellationTokenSource(TimeSpan.FromSeconds(12)))
-            {
-                while (Directory.EnumerateFiles(store.DirectoryPath, "*.session.json").Count() < 2)
-                    await Task.Delay(30, forkReady.Token);
-            }
+            await promptReady.Task.WaitAsync(TimeSpan.FromSeconds(12));
             await process.StandardInput.WriteAsync("\u0015/name forked\n/quit\n");
+            await process.StandardInput.FlushAsync();
             process.StandardInput.Close();
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(12));
             try { await process.WaitForExitAsync(timeout.Token); }
-            catch (OperationCanceledException) { process.Kill(entireProcessTree: true); throw; }
+            catch (OperationCanceledException)
+            {
+                process.Kill(entireProcessTree: true);
+                await process.WaitForExitAsync();
+                var diagnostic = await stdout;
+                throw new TimeoutException($"Fork picker session did not close after /quit. Output tail:\n{new string(diagnostic.TakeLast(3000).ToArray())}");
+            }
             var output = await stdout;
             Assert.Equal(0, process.ExitCode);
             Assert.Contains("Fork from message", output);
             Assert.Contains("draft to change", output);
-            Assert.Contains("Forked " + selectedId[..12], output);
+            Assert.Contains("Forked " + selectedIdPrefix, output);
             Assert.Contains("Name: forked", output);
             Assert.DoesNotContain("Session error:", output);
             Assert.DoesNotContain("Agent error:", await stderr);
