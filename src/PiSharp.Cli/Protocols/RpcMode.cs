@@ -11,10 +11,11 @@ namespace PiSharp.Cli.Protocols;
 /// <summary>Experimental subset of Pi RPC. Unsupported commands return errors, never false success.</summary>
 public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun run,
     Func<CancellationToken, Task>? save = null, PiSharp.Runtime.Resources.ResourceCatalog? resources = null,
-    Func<CancellationToken, Task<IReadOnlyList<ModelDescriptor>>>? discoverModels = null,
+    Func<string?, CancellationToken, Task<IReadOnlyList<ModelDescriptor>>>? discoverModels = null,
     ExtensionRegistration? extensions = null, Func<string?>? promptPreflight = null,
-    Func<string, string, CancellationToken, Task<ModelDescriptor>>? setModel = null,
-    Func<ConversationRun>? getCurrentRun = null)
+    Func<ModelDescriptor, CancellationToken, Task<ModelDescriptor>>? setModel = null,
+    Func<ConversationRun>? getCurrentRun = null, Func<string?>? getThinkingLevel = null,
+    Func<bool>? isModelScoped = null)
 {
     private readonly JsonLineWriter _writer = new(output);
     private readonly ConcurrentDictionary<Guid, BashOperation> _bashOperations = new();
@@ -54,7 +55,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                             if (discoverModels is null) { await RespondAsync(id, type, false, "Model discovery is unavailable."); break; }
                             try
                             {
-                                var models = await discoverModels(cancellationToken);
+                                var models = await discoverModels(null, cancellationToken);
                                 await _writer.EmitAsync(new
                                 {
                                     id,
@@ -74,9 +75,21 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                                 modelId.ValueKind != JsonValueKind.String || string.IsNullOrWhiteSpace(modelId.GetString()))
                             { await RespondAsync(id, type, false, "A provider and modelId are required."); break; }
                             if (setModel is null) { await RespondAsync(id, type, false, "Model selection is unavailable."); break; }
+                            if (discoverModels is null) { await RespondAsync(id, type, false, "Model discovery is unavailable."); break; }
                             try
                             {
-                                var selectedModel = await setModel(modelProvider.GetString()!, modelId.GetString()!, cancellationToken);
+                                var requestedProvider = modelProvider.GetString()!;
+                                var requestedModelId = modelId.GetString()!;
+                                var models = await discoverModels(requestedProvider, cancellationToken);
+                                var candidate = models.FirstOrDefault(model =>
+                                    model.Provider?.Equals(requestedProvider, StringComparison.Ordinal) == true &&
+                                    model.Id.Equals(requestedModelId, StringComparison.Ordinal));
+                                if (candidate is null)
+                                {
+                                    await RespondAsync(id, type, false, $"Model not found: {requestedProvider}/{requestedModelId}");
+                                    break;
+                                }
+                                var selectedModel = await setModel(candidate, cancellationToken);
                                 await _writer.EmitAsync(new
                                 {
                                     id,
@@ -84,6 +97,43 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                                     command = type,
                                     success = true,
                                     data = new { provider = selectedModel.Provider, id = selectedModel.Id }
+                                }, cancellationToken);
+                            }
+                            catch (Exception error) when (error is not OperationCanceledException)
+                            { await RespondAsync(id, type, false, error.Message); }
+                            break;
+                        case "cycle_model":
+                            if (busy) { await RespondAsync(id, type, false, "Wait until the active prompt settles."); break; }
+                            if (discoverModels is null) { await RespondAsync(id, type, false, "Model discovery is unavailable."); break; }
+                            try
+                            {
+                                var models = (await discoverModels(null, cancellationToken))
+                                    .Where(model => model.Available && !string.IsNullOrWhiteSpace(model.Provider)).ToArray();
+                                if (models.Length <= 1)
+                                {
+                                    await _writer.EmitAsync(new { id, type = "response", command = type, success = true, data = (object?)null }, cancellationToken);
+                                    break;
+                                }
+                                if (setModel is null) { await RespondAsync(id, type, false, "Model selection is unavailable."); break; }
+                                var current = CurrentRun.Conversation;
+                                var currentIndex = Array.FindIndex(models, model =>
+                                    model.Provider?.Equals(current.Provider, StringComparison.Ordinal) == true &&
+                                    model.Id.Equals(current.Model, StringComparison.Ordinal));
+                                if (currentIndex < 0) currentIndex = 0;
+                                var candidate = models[(currentIndex + 1) % models.Length];
+                                var selectedModel = await setModel(candidate, cancellationToken);
+                                await _writer.EmitAsync(new
+                                {
+                                    id,
+                                    type = "response",
+                                    command = type,
+                                    success = true,
+                                    data = new
+                                    {
+                                        model = new { provider = selectedModel.Provider, id = selectedModel.Id },
+                                        thinkingLevel = getThinkingLevel?.Invoke() ?? "off",
+                                        isScoped = isModelScoped?.Invoke() ?? false
+                                    }
                                 }, cancellationToken);
                             }
                             catch (Exception error) when (error is not OperationCanceledException)

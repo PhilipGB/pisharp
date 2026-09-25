@@ -102,12 +102,14 @@ public sealed class RpcModeTests
         var session = new ConversationSession(Path.GetTempPath(), "fixture-model", "http://old.test/v1", "fixture");
         var currentRun = await ConversationRun.OpenAsync(new PiAgent(new StubClient(), new CodingTools(Path.GetTempPath())), session);
         var service = new RpcMode(new CommandReader(channel.Reader), output, currentRun,
-            setModel: async (provider, modelId, token) =>
+            discoverModels: (_, _) => Task.FromResult<IReadOnlyList<ModelDescriptor>>(
+                [new ModelDescriptor("fixture-next", "fixture", 8192, "configured", Provider: "fixture")]),
+            setModel: async (model, token) =>
             {
-                session.SelectModel(modelId, "http://new.test/v1", provider);
+                session.SelectModel(model.Id, "http://new.test/v1", model.Provider);
                 currentRun = await ConversationRun.OpenAsync(
                     new PiAgent(new StubClient(), new CodingTools(Path.GetTempPath())), session, token);
-                return new ModelDescriptor(modelId, "fixture", 8192, "configured", Provider: provider);
+                return model;
             },
             getCurrentRun: () => currentRun);
         var serving = service.ServeAsync();
@@ -127,6 +129,28 @@ public sealed class RpcModeTests
         Assert.Equal("fixture-next", state.RootElement.GetProperty("data").GetProperty("model").GetString());
         Assert.Equal("http://new.test/v1", currentRun.Conversation.Endpoint);
         Assert.Single(session.Tree.Entries, entry => entry.Type == "model_change");
+    }
+
+    [Fact]
+    public async Task CycleModelReturnsNullWhenOnlyOneModelIsAvailable()
+    {
+        var channel = Channel.CreateUnbounded<string>();
+        using var output = new LockedWriter();
+        var session = new ConversationSession(Path.GetTempPath(), "fixture-model", "http://fixture.test/v1", "fixture");
+        var run = await ConversationRun.OpenAsync(new PiAgent(new StubClient(), new CodingTools(Path.GetTempPath())), session);
+        var service = new RpcMode(new CommandReader(channel.Reader), output, run,
+            discoverModels: (_, _) => Task.FromResult<IReadOnlyList<ModelDescriptor>>(
+                [new ModelDescriptor("fixture-model", "fixture", 8192, "configured", Provider: "fixture")]));
+        var serving = service.ServeAsync();
+        channel.Writer.TryWrite("{\"id\":\"cycle\",\"type\":\"cycle_model\"}");
+        await WaitForAsync(output, "\"id\":\"cycle\"");
+        channel.Writer.Complete();
+        await serving.WaitAsync(TimeSpan.FromSeconds(5));
+
+        using var response = JsonDocument.Parse(Assert.Single(output.Lines(), line =>
+            line.Contains("\"id\":\"cycle\"", StringComparison.Ordinal)));
+        Assert.True(response.RootElement.GetProperty("success").GetBoolean());
+        Assert.Equal(JsonValueKind.Null, response.RootElement.GetProperty("data").ValueKind);
     }
 
     [Fact]
@@ -696,7 +720,7 @@ public sealed class RpcModeTests
         var run = await ConversationRun.OpenAsync(new PiAgent(new StubClient(), new CodingTools(Path.GetTempPath())),
             new ConversationSession(Path.GetTempPath(), "fixture", null));
         var serving = new RpcMode(new CommandReader(channel.Reader), output, run,
-            discoverModels: _ => Task.FromResult<IReadOnlyList<PiSharp.Runtime.Providers.ModelDescriptor>>(
+            discoverModels: (_, _) => Task.FromResult<IReadOnlyList<PiSharp.Runtime.Providers.ModelDescriptor>>(
                 [new("model-one", "fixture", 4096, "loaded")])).ServeAsync();
         channel.Writer.TryWrite("{\"id\":5,\"type\":\"get_available_models\"}");
         channel.Writer.Complete();

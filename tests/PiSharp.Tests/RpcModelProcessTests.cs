@@ -7,7 +7,7 @@ namespace PiSharp.Tests;
 public sealed class RpcModelProcessTests
 {
     [Fact]
-    public async Task RpcSetModelReplacesTheRunningProviderRuntime()
+    public async Task RpcModelCommandsSelectAndCycleTheRunningProviderRuntime()
     {
         if (!OperatingSystem.IsLinux()) return;
         var root = Path.Combine(Path.GetTempPath(), "pisharp-rpc-model-process-" + Guid.NewGuid().ToString("N"));
@@ -46,13 +46,18 @@ public sealed class RpcModelProcessTests
             }, timeout.Token);
             await WriteCommandAsync(process, new
             {
+                id = "cycle",
+                type = "cycle_model"
+            }, timeout.Token);
+            await WriteCommandAsync(process, new
+            {
                 id = "unknown",
                 type = "set_model",
                 provider = "fixture",
                 modelId = "not-configured"
             }, timeout.Token);
             await WriteCommandAsync(process, new { id = "state", type = "get_state" }, timeout.Token);
-            var lines = await ReadResponsesAsync(process, ["switch", "unknown", "state"], timeout.Token);
+            var lines = await ReadResponsesAsync(process, ["switch", "cycle", "unknown", "state"], timeout.Token);
             process.StandardInput.Close();
             await process.WaitForExitAsync(timeout.Token);
 
@@ -63,13 +68,21 @@ public sealed class RpcModelProcessTests
             Assert.True(switched.RootElement.GetProperty("success").GetBoolean());
             Assert.Equal("fixture-next", switched.RootElement.GetProperty("data").GetProperty("id").GetString());
             Assert.Equal("fixture", switched.RootElement.GetProperty("data").GetProperty("provider").GetString());
+            using var cycled = JsonDocument.Parse(Assert.Single(lines, line =>
+                line.Contains("\"id\":\"cycle\"", StringComparison.Ordinal)));
+            Assert.True(cycled.RootElement.GetProperty("success").GetBoolean());
+            var cycleData = cycled.RootElement.GetProperty("data");
+            Assert.Equal("fixture-model", cycleData.GetProperty("model").GetProperty("id").GetString());
+            Assert.Equal("fixture", cycleData.GetProperty("model").GetProperty("provider").GetString());
+            Assert.Equal("off", cycleData.GetProperty("thinkingLevel").GetString());
+            Assert.False(cycleData.GetProperty("isScoped").GetBoolean());
             using var unknown = JsonDocument.Parse(Assert.Single(lines, line =>
                 line.Contains("\"id\":\"unknown\"", StringComparison.Ordinal)));
             Assert.False(unknown.RootElement.GetProperty("success").GetBoolean());
             Assert.Contains("Model not found: fixture/not-configured", unknown.RootElement.GetProperty("error").GetString());
             using var state = JsonDocument.Parse(Assert.Single(lines, line =>
                 line.Contains("\"id\":\"state\"", StringComparison.Ordinal)));
-            Assert.Equal("fixture-next", state.RootElement.GetProperty("data").GetProperty("model").GetString());
+            Assert.Equal("fixture-model", state.RootElement.GetProperty("data").GetProperty("model").GetString());
             Assert.DoesNotContain(lines, line => line.Contains("\"type\":\"error\"", StringComparison.Ordinal));
         }
         finally

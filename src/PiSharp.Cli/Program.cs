@@ -435,6 +435,20 @@ async Task ReplaceModelRuntime(ModelSelection nextSelection, string nextThinking
     }
 }
 
+Task<IReadOnlyList<ModelDescriptor>> GetRpcModelsAsync(string? providerId, CancellationToken token) =>
+    modelRuntime.ListModelsAsync(providerId, token);
+
+async Task<ModelDescriptor> SelectRpcModelAsync(ModelDescriptor model, CancellationToken token)
+{
+    var providerId = model.Provider ?? throw new InvalidOperationException("The model catalogue did not identify the selected provider.");
+    var provider = modelRuntime.GetProvider(providerId);
+    var auth = await modelRuntime.ResolveAuthAsync(providerId, useRuntimeOverride: true, token);
+    var nextSelection = new ModelSelection(provider, model, auth.Key, auth.Authenticated, auth.Source);
+    var nextThinking = model.Reasoning == true ? thinking : "off";
+    await ReplaceModelRuntime(nextSelection, nextThinking, recordModelChange: true);
+    return selection.Model;
+}
+
 var terminalModelPicker = editor is null ? null : new TerminalModelPicker(modelRuntime, editor);
 var terminalSessionPicker = editor is null ? null : new TerminalSessionPicker(store, editor);
 var terminalForkPicker = editor is null ? null : new TerminalForkPicker(editor);
@@ -721,19 +735,10 @@ string? ReadSecret()
 if (cli.Mode == "rpc")
 {
     await new RpcMode(Console.In, Console.Out, conversationRun, sessionPath is null ? null :
-        cancellationToken => store.SaveAsync(conversation, sessionPath, cancellationToken), resources, GetModelsAsync,
+        cancellationToken => store.SaveAsync(conversation, sessionPath, cancellationToken), resources, GetRpcModelsAsync,
         extensionLease.Current.Registration, () => selection.Authenticated ? null :
             $"Provider '{selection.Provider.Id}' is not authenticated. Use /login {selection.Provider.Id} or configure {selection.Provider.ApiKeyEnvironment ?? "a credential"}.",
-        async (providerId, modelId, token) =>
-        {
-            var availableModels = await modelRuntime.ListModelsAsync(providerId, token);
-            if (!availableModels.Any(model => model.Id.Equals(modelId, StringComparison.Ordinal)))
-                throw new ArgumentException($"Model not found: {providerId}/{modelId}");
-            var next = await modelRuntime.ResolveAsync(providerId, modelId, token);
-            var nextThinking = next.Model.Reasoning == true ? thinking : "off";
-            await ReplaceModelRuntime(next, nextThinking, recordModelChange: true);
-            return selection.Model;
-        }, () => conversationRun).ServeAsync();
+        SelectRpcModelAsync, () => conversationRun, () => thinking, () => modelRuntime.Scope.Count > 0).ServeAsync();
     return;
 }
 if (cli.Mode == "json")
