@@ -6,9 +6,9 @@
 
 ## Current state
 
-- Latest known-green PiSharp `main`: `1714e9857733b02bb3c84e3cb14f0799464b924a`; Linux CI [36127077490](https://github.com/PhilipGB/pisharp/actions/runs/36127077490) passed format, warnings-as-errors build and all 416 tests.
+- Current `main`: `ee11e9362e0f252242bb4e65f307aef696b059db`. Linux CI [36131321918](https://github.com/PhilipGB/pisharp/actions/runs/36131321918) passed format, warnings-as-errors build and all 421 tests; duplicate run [36131320885](https://github.com/PhilipGB/pisharp/actions/runs/36131320885) failed in provider-fixture teardown with a parallel listener port-reuse race. The working-tree fix removes a redundant explicit `Stop`; follow-up exact-head CI is pending.
 - Pi baseline: `earendil-works/pi@49681e1b71c9c32cdfbf45c21f8e3cb3a8c8629d`, fetched 2026-09-25. Pi 0.87.1 uses Marked 18.0.11 tokenization and terminal-cell-aware grapheme wrapping.
-- Local TUI work adds a persistent idle alternate-screen shell, reusable searchable overlay/list, and an all/scoped model picker via Ctrl+L or `/model`. Format, warnings-as-errors build and the full suite pass locally (421/421); exact-head Linux CI is pending.
+- The current TUI slice adds a persistent idle alternate-screen shell, reusable searchable overlay/list, and an all/scoped model picker via Ctrl+L or `/model`. The listener-teardown fix and full local validation pass (421/421); follow-up exact-head CI is pending.
 
 ## What still prevents parity
 

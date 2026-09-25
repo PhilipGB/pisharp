@@ -671,7 +671,6 @@ public sealed class ProviderModelRuntimeTests
         finally
         {
             timeout.Cancel();
-            listener.Stop();
             Directory.Delete(root, true);
         }
     }
