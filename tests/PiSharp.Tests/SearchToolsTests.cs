@@ -362,4 +362,26 @@ public sealed class SearchToolsTests
         }
         finally { Directory.Delete(root, recursive: true); }
     }
+
+    [Fact]
+    public async Task IgnorePatternsSupportBraceAlternatives()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-search-ignore-braces-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(root, ".gitignore"), "*.{tmp,cache}\n");
+            await File.WriteAllTextAsync(Path.Combine(root, "ignored.tmp"), "match-value\n");
+            await File.WriteAllTextAsync(Path.Combine(root, "ignored.cache"), "match-value\n");
+            await File.WriteAllTextAsync(Path.Combine(root, "visible.log"), "match-value\n");
+            await File.WriteAllTextAsync(Path.Combine(root, "kept.txt"), "match-value\n");
+
+            var tools = new SearchTools(root);
+            Assert.Equal("visible.log", await tools.Find("*.log"));
+            var grepPaths = (await tools.Grep("match-value")).Split('\n')
+                .Select(line => line[..line.IndexOf(':')]).Order(StringComparer.Ordinal);
+            Assert.Equal(["kept.txt", "visible.log"], grepPaths);
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
 }

@@ -405,6 +405,17 @@ internal static class SearchInventory
                 else result.Append("[^/]*");
             }
             else if (current == '?') result.Append("[^/]");
+            else if (current == '{' && TryGetBraceAlternatives(pattern, index, out var braceEnd, out var alternatives))
+            {
+                result.Append("(?:");
+                for (var alternativeIndex = 0; alternativeIndex < alternatives.Count; alternativeIndex++)
+                {
+                    if (alternativeIndex > 0) result.Append('|');
+                    result.Append(IgnoreGlobRegex(alternatives[alternativeIndex]));
+                }
+                result.Append(')');
+                index = braceEnd;
+            }
             else if (current == '[' && pattern.IndexOf(']', index + 1) is var close && close > index + 1)
             {
                 var characterClass = pattern[(index + 1)..close];
@@ -415,5 +426,45 @@ internal static class SearchInventory
             else result.Append(Regex.Escape(current.ToString()));
         }
         return result.ToString();
+    }
+
+    private static bool TryGetBraceAlternatives(string pattern, int openIndex, out int braceEnd,
+        out IReadOnlyList<string> alternatives)
+    {
+        braceEnd = -1;
+        alternatives = [];
+        var separators = new List<int>();
+        var depth = 0;
+        for (var index = openIndex + 1; index < pattern.Length; index++)
+        {
+            if (pattern[index] == '\\' && index + 1 < pattern.Length)
+            {
+                index++;
+                continue;
+            }
+            if (pattern[index] == '{') depth++;
+            else if (pattern[index] == '}')
+            {
+                if (depth == 0)
+                {
+                    braceEnd = index;
+                    break;
+                }
+                depth--;
+            }
+            else if (pattern[index] == ',' && depth == 0) separators.Add(index);
+        }
+
+        if (braceEnd < 0 || separators.Count == 0) return false;
+        var parts = new List<string>(separators.Count + 1);
+        var start = openIndex + 1;
+        foreach (var separator in separators)
+        {
+            parts.Add(pattern[start..separator]);
+            start = separator + 1;
+        }
+        parts.Add(pattern[start..braceEnd]);
+        alternatives = parts;
+        return true;
     }
 }
