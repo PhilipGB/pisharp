@@ -8,11 +8,17 @@ internal static class SearchInventory
 {
     private const int MaxEntries = 20_000;
 
-    private sealed record IgnoreRule(string BaseDirectory, Regex Pattern, bool Negated, bool DirectoryOnly);
+    internal enum IgnoreRuleSource { Global, Repository, Application }
+    private static readonly IgnoreRuleSource[] IgnoreRulePrecedence =
+        [IgnoreRuleSource.Global, IgnoreRuleSource.Repository, IgnoreRuleSource.Application];
+
+    internal sealed record IgnoreRule(string BaseDirectory, Regex Pattern, bool Negated, bool DirectoryOnly,
+        IgnoreRuleSource Source);
 
     public static async Task<IReadOnlyList<string>> EnumerateAsync(string root, CancellationToken cancellationToken,
         bool includeDirectories = false, bool includeFdIgnore = false, bool includeRgIgnore = false,
-        string? ignoreBaseDirectory = null, string? fdGlobalIgnorePath = null)
+        string? ignoreBaseDirectory = null, string? fdGlobalIgnorePath = null,
+        IReadOnlyList<IgnoreRule>? inheritedApplicationRules = null)
     {
         root = Path.GetFullPath(root);
         if (File.Exists(root)) return [root];
@@ -34,6 +40,8 @@ internal static class SearchInventory
                 rules.AddRange(RulesForDirectory(parent));
             else
                 rules.AddRange(baseRules);
+            if (PathsEqual(directory, repositoryRoot) && inheritedApplicationRules is not null)
+                rules.AddRange(inheritedApplicationRules);
             rules.AddRange(ReadIgnoreRules(directory, includeFdIgnore, includeRgIgnore));
             rulesByDirectory[directory] = rules;
             return rules;
@@ -101,16 +109,31 @@ internal static class SearchInventory
                 if (reachedLimit) throw new ToolFailureException("Search exceeds 20000 files; narrow the search path.");
                 if (git.ExitCode == 0)
                 {
-                    if (includeDirectories)
+                    var parent = Path.GetDirectoryName(root);
+                    IReadOnlyList<IgnoreRule> inheritedRules = parent is not null && IsPathWithin(repositoryRoot, parent)
+                        ? RulesForDirectory(parent)
+                        : baseRules;
+                    if (inheritedApplicationRules is not null)
+                        inheritedRules = inheritedRules.Concat(inheritedApplicationRules).ToArray();
+                    var directories = await EnumerateDirectoriesAsync(root, MaxEntries - results.Count,
+                        includeFdIgnore, includeRgIgnore, inheritedRules, cancellationToken);
+                    if (includeDirectories) results.AddRange(directories);
+
+                    foreach (var nestedRepository in directories.Where(HasGitMarker)
+                                 .Where(directory => !HasRepositoryAncestorBetween(root, directory)))
                     {
-                        var parent = Path.GetDirectoryName(root);
-                        IReadOnlyList<IgnoreRule> inheritedRules = parent is not null && IsPathWithin(repositoryRoot, parent)
-                            ? RulesForDirectory(parent)
-                            : baseRules;
-                        results.AddRange(await EnumerateDirectoriesAsync(root, MaxEntries - results.Count,
-                            includeFdIgnore, includeRgIgnore, inheritedRules, cancellationToken));
+                        cancellationToken.ThrowIfCancellationRequested();
+                        var nestedResults = await EnumerateAsync(nestedRepository, cancellationToken, includeDirectories,
+                            includeFdIgnore, includeRgIgnore, ignoreBaseDirectory, fdGlobalIgnorePath,
+                            RulesForDirectory(Path.GetDirectoryName(nestedRepository)!)
+                                .Where(rule => rule.Source == IgnoreRuleSource.Application).ToArray());
+                        if (results.Count + nestedResults.Count > MaxEntries)
+                            throw new ToolFailureException("Search exceeds 20000 files; narrow the search path.");
+                        results.AddRange(nestedResults);
                     }
-                    return results;
+
+                    var comparer = OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
+                    return results.Distinct(comparer).ToArray();
                 }
             }
             finally
@@ -151,7 +174,7 @@ internal static class SearchInventory
                     if (IsIgnored(entry, isDirectory, rules)) continue;
                     if (isDirectory)
                     {
-                        if (Path.GetFileName(entry) is ".git" or "node_modules" ||
+                        if (Path.GetFileName(entry) is ".git" ||
                             File.GetAttributes(entry).HasFlag(FileAttributes.ReparsePoint)) continue;
                         if (includeDirectories) files.Add(entry);
                         pending.Push((entry, rules));
@@ -186,7 +209,7 @@ internal static class SearchInventory
                 try
                 {
                     if (IsIgnored(entry, isDirectory: true, rules) ||
-                        Path.GetFileName(entry) is ".git" or "node_modules" ||
+                        Path.GetFileName(entry) is ".git" ||
                         File.GetAttributes(entry).HasFlag(FileAttributes.ReparsePoint)) continue;
                     if (directories.Count >= maxEntries)
                         throw new ToolFailureException("Search exceeds 20000 files; narrow the search path.");
@@ -211,14 +234,16 @@ internal static class SearchInventory
         {
             var globalFdIgnoreFile = fdGlobalIgnorePath ?? GetGlobalFdIgnoreFile();
             if (globalFdIgnoreFile is not null)
-                rules.AddRange(ReadIgnoreFile(globalFdIgnoreFile, ignoreBaseDirectory));
+                rules.AddRange(ReadIgnoreFile(globalFdIgnoreFile, ignoreBaseDirectory, IgnoreRuleSource.Global));
         }
         var globalIgnoreFile = await GetGitGlobalIgnoreFileAsync(workingDirectory, cancellationToken);
-        if (globalIgnoreFile is not null) rules.AddRange(ReadIgnoreFile(globalIgnoreFile, baseDirectory));
+        if (globalIgnoreFile is not null)
+            rules.AddRange(ReadIgnoreFile(globalIgnoreFile, baseDirectory, IgnoreRuleSource.Global));
         if (hasRepository)
         {
             var infoExcludeFile = await GetGitInfoExcludeFileAsync(repositoryRoot, cancellationToken);
-            if (infoExcludeFile is not null) rules.AddRange(ReadIgnoreFile(infoExcludeFile, repositoryRoot));
+            if (infoExcludeFile is not null)
+                rules.AddRange(ReadIgnoreFile(infoExcludeFile, repositoryRoot, IgnoreRuleSource.Repository));
         }
         return rules;
     }
@@ -300,15 +325,17 @@ internal static class SearchInventory
     private static IReadOnlyList<IgnoreRule> ReadIgnoreRules(string directory, bool includeFdIgnore, bool includeRgIgnore)
     {
         var rules = new List<IgnoreRule>();
-        string[] ignoreFiles = includeFdIgnore
-            ? [".gitignore", ".ignore", ".fdignore"]
-            : includeRgIgnore ? [".gitignore", ".ignore", ".rgignore"] : [".gitignore", ".ignore"];
-        foreach (var ignoreFile in ignoreFiles)
-            rules.AddRange(ReadIgnoreFile(Path.Combine(directory, ignoreFile), directory));
+        rules.AddRange(ReadIgnoreFile(Path.Combine(directory, ".gitignore"), directory, IgnoreRuleSource.Repository));
+        rules.AddRange(ReadIgnoreFile(Path.Combine(directory, ".ignore"), directory, IgnoreRuleSource.Application));
+        if (includeFdIgnore)
+            rules.AddRange(ReadIgnoreFile(Path.Combine(directory, ".fdignore"), directory, IgnoreRuleSource.Application));
+        if (includeRgIgnore)
+            rules.AddRange(ReadIgnoreFile(Path.Combine(directory, ".rgignore"), directory, IgnoreRuleSource.Application));
         return rules;
     }
 
-    private static IReadOnlyList<IgnoreRule> ReadIgnoreFile(string filePath, string baseDirectory)
+    private static IReadOnlyList<IgnoreRule> ReadIgnoreFile(string filePath, string baseDirectory,
+        IgnoreRuleSource source)
     {
         string[] lines;
         try { lines = File.ReadAllLines(filePath); }
@@ -339,7 +366,7 @@ internal static class SearchInventory
                     TimeSpan.FromSeconds(1));
             }
             catch (ArgumentException) { continue; }
-            rules.Add(new IgnoreRule(baseDirectory, pattern, negated, directoryOnly));
+            rules.Add(new IgnoreRule(baseDirectory, pattern, negated, directoryOnly, source));
         }
         return rules;
     }
@@ -374,18 +401,22 @@ internal static class SearchInventory
     private static bool IsPathIgnored(string path, bool isDirectory, IReadOnlyList<IgnoreRule> rules)
     {
         var ignored = false;
-        foreach (var rule in rules)
+        foreach (var source in IgnoreRulePrecedence)
         {
-            var relativeToRule = Path.GetRelativePath(rule.BaseDirectory, path).Replace('\\', '/');
-            if (relativeToRule == ".." || relativeToRule.StartsWith("../", StringComparison.Ordinal)) continue;
-            var parts = relativeToRule.Split('/', StringSplitOptions.RemoveEmptyEntries);
-            var candidate = "";
-            for (var index = 0; index < parts.Length; index++)
+            foreach (var rule in rules)
             {
-                candidate = candidate.Length == 0 ? parts[index] : candidate + "/" + parts[index];
-                var candidateIsDirectory = index < parts.Length - 1 || isDirectory;
-                if (rule.DirectoryOnly && !candidateIsDirectory) continue;
-                if (rule.Pattern.IsMatch(candidate)) ignored = !rule.Negated;
+                if (rule.Source != source) continue;
+                var relativeToRule = Path.GetRelativePath(rule.BaseDirectory, path).Replace('\\', '/');
+                if (relativeToRule == ".." || relativeToRule.StartsWith("../", StringComparison.Ordinal)) continue;
+                var parts = relativeToRule.Split('/', StringSplitOptions.RemoveEmptyEntries);
+                var candidate = "";
+                for (var index = 0; index < parts.Length; index++)
+                {
+                    candidate = candidate.Length == 0 ? parts[index] : candidate + "/" + parts[index];
+                    var candidateIsDirectory = index < parts.Length - 1 || isDirectory;
+                    if (rule.DirectoryOnly && !candidateIsDirectory) continue;
+                    if (rule.Pattern.IsMatch(candidate)) ignored = !rule.Negated;
+                }
             }
         }
         return ignored;
@@ -407,6 +438,19 @@ internal static class SearchInventory
     {
         var gitMarker = Path.Combine(directory, ".git");
         return Directory.Exists(gitMarker) || File.Exists(gitMarker);
+    }
+
+    private static bool HasRepositoryAncestorBetween(string root, string directory)
+    {
+        var current = Path.GetDirectoryName(directory);
+        while (current is not null && !PathsEqual(current, root) && IsPathWithin(root, current))
+        {
+            if (HasGitMarker(current)) return true;
+            var parent = Path.GetDirectoryName(current);
+            if (parent is null || PathsEqual(parent, current)) break;
+            current = parent;
+        }
+        return false;
     }
 
     private static bool IsPathWithin(string root, string path)

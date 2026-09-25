@@ -19,9 +19,14 @@ public sealed class SearchToolsTests
             await File.WriteAllTextAsync(Path.Combine(root, "alpha.cs"), "before\nmatch-one\nafter\n");
             await File.WriteAllTextAsync(Path.Combine(root, "sub", "test.cs"), "match-two\n");
             await File.WriteAllTextAsync(Path.Combine(root, "node_modules", "ignored.cs"), "match-three\n");
+            await File.WriteAllTextAsync(Path.Combine(root, ".ignore"), "!node_modules/\n!node_modules/**\n");
+            await File.WriteAllTextAsync(Path.Combine(root, ".fdignore"), "!node_modules/\n!node_modules/**\n");
             var tools = new SearchTools(root);
-            Assert.Equal("alpha.cs\nsub/test.cs", await tools.Find("**/*.cs"));
-            Assert.Equal("alpha.cs:2: match-one\nsub/test.cs:1: match-two", await tools.Grep("match", glob: "*.cs"));
+            Assert.Equal("alpha.cs\nnode_modules/ignored.cs\nsub/test.cs", await tools.Find("**/*.cs"));
+            var grepLines = (await tools.Grep("match", glob: "*.cs")).Split('\n').Order(StringComparer.Ordinal);
+            Assert.Equal([
+                "alpha.cs:2: match-one", "node_modules/ignored.cs:1: match-three", "sub/test.cs:1: match-two"
+            ], grepLines);
             Assert.Contains("alpha.cs-1- before\nalpha.cs:2: match-one\nalpha.cs-3- after",
                 await tools.Grep("match-one", glob: "*.cs", context: 1));
             Assert.Contains("1 matches limit reached", await tools.Grep("match", glob: "*.cs", limit: 1));
@@ -54,6 +59,58 @@ public sealed class SearchToolsTests
             var tools = new SearchTools(root);
             Assert.Equal("visible.txt", await tools.Find("*.txt"));
             Assert.Equal("visible.txt:1: secret-value", await tools.Grep("secret-value"));
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
+    public async Task GitSearchTraversesNestedRepositoriesWithTheirOwnIgnoreRules()
+    {
+        if (!OperatingSystem.IsLinux()) return;
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-nested-git-search-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        var nested = Path.Combine(root, "nested");
+        var deeper = Path.Combine(nested, "deeper");
+        Directory.CreateDirectory(deeper);
+        try
+        {
+            foreach (var directory in new[] { root, nested, deeper })
+            {
+                using var git = Process.Start(new ProcessStartInfo("git")
+                {
+                    WorkingDirectory = directory,
+                    ArgumentList = { "init", "-q" }
+                });
+                Assert.NotNull(git);
+                await git.WaitForExitAsync();
+                Assert.Equal(0, git.ExitCode);
+            }
+
+            await File.WriteAllTextAsync(Path.Combine(root, ".gitignore"), "nested/outer-ignored.txt\n");
+            await File.WriteAllTextAsync(Path.Combine(root, ".fdignore"), "nested/**/find-ignored.txt\n");
+            await File.WriteAllTextAsync(Path.Combine(root, ".rgignore"), "nested/**/grep-ignored.txt\n");
+            await File.WriteAllTextAsync(Path.Combine(nested, ".gitignore"), "inner-ignored.txt\ndeeper/deeper-parent-ignored.txt\n");
+            await File.WriteAllTextAsync(Path.Combine(deeper, ".gitignore"), "deep-ignored.txt\n");
+            await File.WriteAllTextAsync(Path.Combine(nested, "visible.txt"), "needle\n");
+            await File.WriteAllTextAsync(Path.Combine(nested, "outer-ignored.txt"), "needle\n");
+            await File.WriteAllTextAsync(Path.Combine(nested, "inner-ignored.txt"), "needle\n");
+            await File.WriteAllTextAsync(Path.Combine(nested, "find-ignored.txt"), "needle\n");
+            await File.WriteAllTextAsync(Path.Combine(nested, "grep-ignored.txt"), "needle\n");
+            await File.WriteAllTextAsync(Path.Combine(deeper, "visible.txt"), "needle\n");
+            await File.WriteAllTextAsync(Path.Combine(deeper, "deeper-parent-ignored.txt"), "needle\n");
+            await File.WriteAllTextAsync(Path.Combine(deeper, "deep-ignored.txt"), "needle\n");
+            await File.WriteAllTextAsync(Path.Combine(deeper, "find-ignored.txt"), "needle\n");
+            await File.WriteAllTextAsync(Path.Combine(deeper, "grep-ignored.txt"), "needle\n");
+
+            var tools = new SearchTools(root);
+            Assert.Equal("nested/deeper/deeper-parent-ignored.txt\nnested/deeper/grep-ignored.txt\nnested/deeper/visible.txt\nnested/grep-ignored.txt\nnested/outer-ignored.txt\nnested/visible.txt",
+                await tools.Find("*.txt"));
+            var grepPaths = (await tools.Grep("needle")).Split('\n')
+                .Select(line => line[..line.IndexOf(':')]).Order(StringComparer.Ordinal);
+            Assert.Equal([
+                "nested/deeper/deeper-parent-ignored.txt", "nested/deeper/find-ignored.txt", "nested/deeper/visible.txt",
+                "nested/find-ignored.txt", "nested/outer-ignored.txt", "nested/visible.txt"
+            ], grepPaths);
         }
         finally { Directory.Delete(root, recursive: true); }
     }
