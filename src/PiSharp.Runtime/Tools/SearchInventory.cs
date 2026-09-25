@@ -3,7 +3,7 @@ using System.Text.RegularExpressions;
 
 namespace PiSharp.Runtime.Tools;
 
-/// <summary>Bounded file discovery; Git handles tracked/untracked ignore rules when available.</summary>
+/// <summary>Bounded file discovery with managed ignore-rule handling.</summary>
 internal static class SearchInventory
 {
     private const int MaxEntries = 20_000;
@@ -13,8 +13,30 @@ internal static class SearchInventory
     public static async Task<IReadOnlyList<string>> EnumerateAsync(string root, CancellationToken cancellationToken,
         bool includeDirectories = false, bool includeFdIgnore = false, bool includeRgIgnore = false)
     {
+        root = Path.GetFullPath(root);
         if (File.Exists(root)) return [root];
         if (!Directory.Exists(root)) throw new ToolFailureException($"Path not found: {root}");
+
+        var repositoryRoot = FindGitRoot(root);
+        var hasRepository = HasGitMarker(repositoryRoot);
+        var baseRules = await ReadBaseIgnoreRulesAsync(root, repositoryRoot, hasRepository, cancellationToken);
+        var rulesByDirectory = new Dictionary<string, IReadOnlyList<IgnoreRule>>(
+            OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
+        IReadOnlyList<IgnoreRule> RulesForDirectory(string directory)
+        {
+            directory = Path.GetFullPath(directory);
+            if (rulesByDirectory.TryGetValue(directory, out var cached)) return cached;
+            var rules = new List<IgnoreRule>();
+            if (!PathsEqual(directory, repositoryRoot) && Path.GetDirectoryName(directory) is { } parent &&
+                IsPathWithin(repositoryRoot, parent))
+                rules.AddRange(RulesForDirectory(parent));
+            else
+                rules.AddRange(baseRules);
+            rules.AddRange(ReadIgnoreRules(directory, includeFdIgnore, includeRgIgnore));
+            rulesByDirectory[directory] = rules;
+            return rules;
+        }
+
         try
         {
             using var git = new Process
@@ -24,21 +46,25 @@ internal static class SearchInventory
                     WorkingDirectory = root,
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
-                    ArgumentList = { "ls-files", "--cached", "--others", "--exclude-standard" }
+                    ArgumentList = { "ls-files", "--cached", "--others" }
                 }
             };
             git.Start();
             try
             {
                 var error = git.StandardError.ReadToEndAsync(cancellationToken);
-                var listedFiles = new List<string>();
+                var results = new List<string>();
                 var reachedLimit = false;
                 while (await git.StandardOutput.ReadLineAsync(cancellationToken) is { } relative)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
-                    if (listedFiles.Count >= MaxEntries) { reachedLimit = true; break; }
                     var file = Path.GetFullPath(relative, root);
-                    if (File.Exists(file) && !File.GetAttributes(file).HasFlag(FileAttributes.ReparsePoint)) listedFiles.Add(file);
+                    if (File.Exists(file) && !File.GetAttributes(file).HasFlag(FileAttributes.ReparsePoint) &&
+                        !IsIgnored(file, isDirectory: false, RulesForDirectory(Path.GetDirectoryName(file)!)))
+                    {
+                        if (results.Count >= MaxEntries) { reachedLimit = true; break; }
+                        results.Add(file);
+                    }
                 }
                 if (reachedLimit) git.Kill(entireProcessTree: true);
                 await git.WaitForExitAsync(cancellationToken);
@@ -46,34 +72,12 @@ internal static class SearchInventory
                 if (reachedLimit) throw new ToolFailureException("Search exceeds 20000 files; narrow the search path.");
                 if (git.ExitCode == 0)
                 {
-                    var repositoryRoot = FindGitRoot(root);
-                    var rulesByDirectory = new Dictionary<string, IReadOnlyList<IgnoreRule>>(
-                        OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
-                    IReadOnlyList<IgnoreRule> RulesForDirectory(string directory)
-                    {
-                        directory = Path.GetFullPath(directory);
-                        if (rulesByDirectory.TryGetValue(directory, out var cached)) return cached;
-                        var rules = new List<IgnoreRule>();
-                        if (!PathsEqual(directory, repositoryRoot) && Path.GetDirectoryName(directory) is { } parent &&
-                            IsPathWithin(repositoryRoot, parent))
-                            rules.AddRange(RulesForDirectory(parent));
-                        rules.AddRange(ReadIgnoreRules(directory, includeFdIgnore, includeRgIgnore));
-                        rulesByDirectory[directory] = rules;
-                        return rules;
-                    }
-
-                    var results = new List<string>(listedFiles.Count);
-                    foreach (var file in listedFiles)
-                    {
-                        var directory = Path.GetDirectoryName(file)!;
-                        if (!IsIgnored(file, isDirectory: false, RulesForDirectory(directory))) results.Add(file);
-                    }
                     if (includeDirectories)
                     {
                         var parent = Path.GetDirectoryName(root);
                         IReadOnlyList<IgnoreRule> inheritedRules = parent is not null && IsPathWithin(repositoryRoot, parent)
                             ? RulesForDirectory(parent)
-                            : [];
+                            : baseRules;
                         results.AddRange(await EnumerateDirectoriesAsync(root, MaxEntries - results.Count,
                             includeFdIgnore, includeRgIgnore, inheritedRules, cancellationToken));
                     }
@@ -93,7 +97,7 @@ internal static class SearchInventory
         // Outside Git, walk without traversing symlinked directories or common dependency trees.
         var files = new List<string>();
         var pending = new Stack<(string Directory, IReadOnlyList<IgnoreRule> Rules)>();
-        pending.Push((root, []));
+        pending.Push((root, baseRules));
         while (pending.TryPop(out var item) && files.Count < MaxEntries)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -163,6 +167,83 @@ internal static class SearchInventory
         return directories;
     }
 
+    private static async Task<IReadOnlyList<IgnoreRule>> ReadBaseIgnoreRulesAsync(string workingDirectory,
+        string repositoryRoot, bool hasRepository, CancellationToken cancellationToken)
+    {
+        var rules = new List<IgnoreRule>();
+        var baseDirectory = hasRepository ? repositoryRoot : workingDirectory;
+        var globalIgnoreFile = await GetGitGlobalIgnoreFileAsync(workingDirectory, cancellationToken);
+        if (globalIgnoreFile is not null) rules.AddRange(ReadIgnoreFile(globalIgnoreFile, baseDirectory));
+        if (hasRepository)
+        {
+            var infoExcludeFile = await GetGitInfoExcludeFileAsync(repositoryRoot, cancellationToken);
+            if (infoExcludeFile is not null) rules.AddRange(ReadIgnoreFile(infoExcludeFile, repositoryRoot));
+        }
+        return rules;
+    }
+
+    private static async Task<string?> GetGitGlobalIgnoreFileAsync(string workingDirectory,
+        CancellationToken cancellationToken)
+    {
+        var configuredPath = await RunGitOutputAsync(workingDirectory, ["config", "--path", "--get", "core.excludesFile"],
+            cancellationToken);
+        if (!string.IsNullOrEmpty(configuredPath))
+            return Path.GetFullPath(configuredPath, workingDirectory);
+
+        var configRoot = Environment.GetEnvironmentVariable("XDG_CONFIG_HOME");
+        if (string.IsNullOrEmpty(configRoot))
+        {
+            var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            if (string.IsNullOrEmpty(home)) return null;
+            configRoot = Path.Combine(home, ".config");
+        }
+        return Path.Combine(Path.GetFullPath(configRoot), "git", "ignore");
+    }
+
+    private static async Task<string?> GetGitInfoExcludeFileAsync(string repositoryRoot,
+        CancellationToken cancellationToken)
+    {
+        var path = await RunGitOutputAsync(repositoryRoot, ["rev-parse", "--git-path", "info/exclude"],
+            cancellationToken);
+        return string.IsNullOrEmpty(path) ? null : Path.GetFullPath(path, repositoryRoot);
+    }
+
+    private static async Task<string?> RunGitOutputAsync(string workingDirectory, IReadOnlyList<string> arguments,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            using var git = new Process
+            {
+                StartInfo = new ProcessStartInfo("git")
+                {
+                    WorkingDirectory = workingDirectory,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true
+                }
+            };
+            foreach (var argument in arguments) git.StartInfo.ArgumentList.Add(argument);
+            if (!git.Start()) return null;
+            try
+            {
+                var output = git.StandardOutput.ReadToEndAsync(cancellationToken);
+                var error = git.StandardError.ReadToEndAsync(cancellationToken);
+                await git.WaitForExitAsync(cancellationToken);
+                await error;
+                return git.ExitCode == 0 ? (await output).TrimEnd('\r', '\n') : null;
+            }
+            finally
+            {
+                if (!git.HasExited)
+                {
+                    git.Kill(entireProcessTree: true);
+                    await git.WaitForExitAsync(CancellationToken.None);
+                }
+            }
+        }
+        catch (System.ComponentModel.Win32Exception) { return null; }
+    }
+
     private static IReadOnlyList<IgnoreRule> ReadIgnoreRules(string directory, bool includeFdIgnore, bool includeRgIgnore)
     {
         var rules = new List<IgnoreRule>();
@@ -170,37 +251,42 @@ internal static class SearchInventory
             ? [".gitignore", ".ignore", ".fdignore"]
             : includeRgIgnore ? [".gitignore", ".ignore", ".rgignore"] : [".gitignore", ".ignore"];
         foreach (var ignoreFile in ignoreFiles)
+            rules.AddRange(ReadIgnoreFile(Path.Combine(directory, ignoreFile), directory));
+        return rules;
+    }
+
+    private static IReadOnlyList<IgnoreRule> ReadIgnoreFile(string filePath, string baseDirectory)
+    {
+        string[] lines;
+        try { lines = File.ReadAllLines(filePath); }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException) { return []; }
+
+        var rules = new List<IgnoreRule>();
+        foreach (var rawLine in lines)
         {
-            string[] lines;
-            try { lines = File.ReadAllLines(Path.Combine(directory, ignoreFile)); }
-            catch (Exception error) when (error is IOException or UnauthorizedAccessException) { continue; }
+            var line = rawLine;
+            if (line.Length == 0 || line[0] == '#') continue;
 
-            foreach (var rawLine in lines)
+            var negated = line[0] == '!';
+            if (negated) line = line[1..];
+            if (line.Length == 0) continue;
+
+            var directoryOnly = line.EndsWith('/');
+            if (directoryOnly) line = line[..^1];
+            var anchored = line.StartsWith("/", StringComparison.Ordinal);
+            if (anchored) line = line[1..];
+            if (line.Length == 0) continue;
+
+            var hasSlash = line.Contains('/');
+            var prefix = anchored || hasSlash ? "^" : "(?:^|/)";
+            Regex pattern;
+            try
             {
-                var line = rawLine;
-                if (line.Length == 0 || line[0] == '#') continue;
-
-                var negated = line[0] == '!';
-                if (negated) line = line[1..];
-                if (line.Length == 0) continue;
-
-                var directoryOnly = line.EndsWith('/');
-                if (directoryOnly) line = line[..^1];
-                var anchored = line.StartsWith("/", StringComparison.Ordinal);
-                if (anchored) line = line[1..];
-                if (line.Length == 0) continue;
-
-                var hasSlash = line.Contains('/');
-                var prefix = anchored || hasSlash ? "^" : "(?:^|/)";
-                Regex pattern;
-                try
-                {
-                    pattern = new Regex(prefix + IgnoreGlobRegex(line) + "$", RegexOptions.CultureInvariant,
-                        TimeSpan.FromSeconds(1));
-                }
-                catch (ArgumentException) { continue; }
-                rules.Add(new IgnoreRule(directory, pattern, negated, directoryOnly));
+                pattern = new Regex(prefix + IgnoreGlobRegex(line) + "$", RegexOptions.CultureInvariant,
+                    TimeSpan.FromSeconds(1));
             }
+            catch (ArgumentException) { continue; }
+            rules.Add(new IgnoreRule(baseDirectory, pattern, negated, directoryOnly));
         }
         return rules;
     }
@@ -244,12 +330,17 @@ internal static class SearchInventory
         var current = Path.GetFullPath(directory);
         while (true)
         {
-            var gitMarker = Path.Combine(current, ".git");
-            if (Directory.Exists(gitMarker) || File.Exists(gitMarker)) return current;
+            if (HasGitMarker(current)) return current;
             var parent = Path.GetDirectoryName(current);
             if (parent is null || PathsEqual(parent, current)) return directory;
             current = parent;
         }
+    }
+
+    private static bool HasGitMarker(string directory)
+    {
+        var gitMarker = Path.Combine(directory, ".git");
+        return Directory.Exists(gitMarker) || File.Exists(gitMarker);
     }
 
     private static bool IsPathWithin(string root, string path)

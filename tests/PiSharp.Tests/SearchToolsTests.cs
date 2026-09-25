@@ -165,7 +165,9 @@ public sealed class SearchToolsTests
             await File.WriteAllTextAsync(Path.Combine(root, "ignored.txt"), "match-value\n");
             var tools = new SearchTools(root);
             Assert.Equal("find-only.txt\nshared.txt", await tools.Find("*.txt"));
-            Assert.Equal("shared.txt:1: match-value\ngrep-only.txt:1: match-value", await tools.Grep("match-value"));
+            var grepPaths = (await tools.Grep("match-value")).Split('\n')
+                .Select(line => line[..line.IndexOf(':')]).Order(StringComparer.Ordinal);
+            Assert.Equal(["grep-only.txt", "shared.txt"], grepPaths);
         }
         finally { Directory.Delete(root, recursive: true); }
     }
@@ -247,6 +249,93 @@ public sealed class SearchToolsTests
             var grepPaths = (await tools.Grep("match-value")).Split('\n')
                 .Select(line => line[..line.IndexOf(':')]).Order(StringComparer.Ordinal);
             Assert.Equal(["fd-parent.txt", "visible.txt"], grepPaths);
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
+    public async Task HigherPriorityIgnoreFilesCanRestoreGitIgnoredFiles()
+    {
+        if (!OperatingSystem.IsLinux()) return;
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-ignore-git-restore-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            using var init = Process.Start(new ProcessStartInfo("git")
+            {
+                WorkingDirectory = root,
+                ArgumentList = { "init", "-q" }
+            });
+            Assert.NotNull(init);
+            await init.WaitForExitAsync();
+            Assert.Equal(0, init.ExitCode);
+
+            await File.WriteAllTextAsync(Path.Combine(root, ".gitignore"), "rescued.txt\n");
+            await File.WriteAllTextAsync(Path.Combine(root, ".ignore"), "!rescued.txt\n");
+            await File.WriteAllTextAsync(Path.Combine(root, "rescued.txt"), "match-value\n");
+            await File.WriteAllTextAsync(Path.Combine(root, "visible.txt"), "match-value\n");
+
+            var tools = new SearchTools(root);
+            Assert.Equal("rescued.txt\nvisible.txt", await tools.Find("*.txt"));
+            Assert.Contains("rescued.txt:1: match-value", await tools.Grep("match-value"));
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
+    public async Task GitLocalAndGlobalExcludesFilterUntrackedAndStagedFiles()
+    {
+        if (!OperatingSystem.IsLinux()) return;
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-search-git-excludes-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            using var init = Process.Start(new ProcessStartInfo("git")
+            {
+                WorkingDirectory = root,
+                ArgumentList = { "init", "-q" }
+            });
+            Assert.NotNull(init);
+            await init.WaitForExitAsync();
+            Assert.Equal(0, init.ExitCode);
+
+            var globalIgnore = Path.Combine(root, "global-excludes");
+            await File.WriteAllTextAsync(globalIgnore,
+                "global-untracked.txt\nstaged-global.txt\nglobal-rescued.txt\n");
+            using var configure = Process.Start(new ProcessStartInfo("git")
+            {
+                WorkingDirectory = root,
+                ArgumentList = { "config", "--local", "core.excludesFile", globalIgnore }
+            });
+            Assert.NotNull(configure);
+            await configure.WaitForExitAsync();
+            Assert.Equal(0, configure.ExitCode);
+
+            var infoExclude = Path.Combine(root, ".git", "info", "exclude");
+            await File.AppendAllTextAsync(infoExclude,
+                "local-untracked.txt\nstaged-local.txt\nlocal-rescued.txt\n");
+            await File.WriteAllTextAsync(Path.Combine(root, ".ignore"), "!global-rescued.txt\n!local-rescued.txt\n");
+            foreach (var file in new[]
+                     {
+                         "global-untracked.txt", "staged-global.txt", "global-rescued.txt", "local-untracked.txt",
+                         "staged-local.txt", "local-rescued.txt", "visible.txt"
+                     })
+                await File.WriteAllTextAsync(Path.Combine(root, file), "match-value\n");
+
+            using var add = Process.Start(new ProcessStartInfo("git")
+            {
+                WorkingDirectory = root,
+                ArgumentList = { "add", "-f", "staged-global.txt", "staged-local.txt" }
+            });
+            Assert.NotNull(add);
+            await add.WaitForExitAsync();
+            Assert.Equal(0, add.ExitCode);
+
+            var tools = new SearchTools(root);
+            Assert.Equal("global-rescued.txt\nlocal-rescued.txt\nvisible.txt", await tools.Find("*.txt"));
+            var grepPaths = (await tools.Grep("match-value")).Split('\n')
+                .Select(line => line[..line.IndexOf(':')]).Order(StringComparer.Ordinal);
+            Assert.Equal(["global-rescued.txt", "local-rescued.txt", "visible.txt"], grepPaths);
         }
         finally { Directory.Delete(root, recursive: true); }
     }
