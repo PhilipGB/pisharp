@@ -6,8 +6,8 @@
 
 ## Current state
 
-- Latest exact-head Linux CI: `2b8673c9514efc17bb0789e79ab18d53dcc75ff6`, run [36132634038](https://github.com/PhilipGB/pisharp/actions/runs/36132634038), passed format, warnings-as-errors build and 421 tests.
-- The current uncommitted session-picker slice passes `dotnet format --verify-no-changes`, warnings-as-errors build and 423/423 tests, including a Linux PTY flow; exact-head CI is pending. `/resume` opens a searchable project-session picker; direct `/resume <id|name>` remains supported, and `app.session.resume` is configurable with no default key.
+- Latest exact-head Linux CI: `37eff5a9c7a15c5b12e8ff948fa53714046a2fda`, run [36134474053](https://github.com/PhilipGB/pisharp/actions/runs/36134474053), passed format, warnings-as-errors build and all 423 tests.
+- The TUI has a persistent idle alternate-screen shell, shared searchable overlay/list, and all/scoped model picker. `/resume` now opens a searchable project-session picker; direct `/resume <id|name>` remains supported, and `app.session.resume` is configurable with no default key. Cross-project session scope and full Pi selector controls remain gaps.
 - Pi baseline: `earendil-works/pi@49681e1b71c9c32cdfbf45c21f8e3cb3a8c8629d`, fetched 2026-09-25. Current Pi source was checked for session-selector behavior.
 
 ## What still prevents parity
