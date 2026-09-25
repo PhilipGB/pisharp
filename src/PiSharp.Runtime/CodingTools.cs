@@ -232,12 +232,13 @@ public sealed class CodingTools
 
     /// <summary>Execute bash in the configured working directory, returning the bounded combined output.</summary>
     public Task<string> Bash(string command, double? timeout = null, CancellationToken cancellationToken = default) =>
-        BashToolAsync(command, timeout, onUpdate: null, cancellationToken);
+        BashToolAsync(command, timeout, onUpdate: null, cancellationToken, normalizeOutput: true);
 
     /// <summary>Execute bash and return the process result without converting a nonzero exit to a tool failure.</summary>
     public Task<BashExecutionResult> ExecuteBashAsync(string command, Action<string>? onUpdate = null,
         CancellationToken cancellationToken = default) =>
-        BashCoreAsync(command, timeout: null, onUpdate, cancellationToken, returnCancellationResult: true);
+        BashCoreAsync(command, timeout: null, onUpdate, cancellationToken, returnCancellationResult: true,
+            normalizeOutput: true);
 
     public void AbortBash()
     {
@@ -249,10 +250,11 @@ public sealed class CodingTools
     }
 
     private async Task<string> BashToolAsync(string command, double? timeout, Action<string>? onUpdate,
-        CancellationToken cancellationToken, IReadOnlyDictionary<string, string?>? sessionEnvironment = null)
+        CancellationToken cancellationToken, IReadOnlyDictionary<string, string?>? sessionEnvironment = null,
+        bool normalizeOutput = false)
     {
         var result = await BashCoreAsync(command, timeout, onUpdate, cancellationToken, returnCancellationResult: false,
-            sessionEnvironment);
+            sessionEnvironment, normalizeOutput);
         if (result.ExitCode is { } exitCode && exitCode != 0)
             throw new ToolFailureException($"Command exited with code {exitCode}", result.DisplayOutput, exitCode);
         return result.DisplayOutput;
@@ -260,7 +262,7 @@ public sealed class CodingTools
 
     private async Task<BashExecutionResult> BashCoreAsync(string command, double? timeout, Action<string>? onUpdate,
         CancellationToken cancellationToken, bool returnCancellationResult,
-        IReadOnlyDictionary<string, string?>? sessionEnvironment = null)
+        IReadOnlyDictionary<string, string?>? sessionEnvironment = null, bool normalizeOutput = false)
     {
         if (timeout.HasValue && (!double.IsFinite(timeout.Value) || timeout.Value <= 0))
             throw new ToolFailureException("Invalid timeout: must be a finite number of seconds");
@@ -280,7 +282,7 @@ public sealed class CodingTools
             StartInfo = CreateStartInfo(shell, command, _cwd, out var processGroup, sessionEnvironment)
         };
         using var pumpStop = new CancellationTokenSource();
-        await using var output = new ShellOutputBuffer();
+        await using var output = new ShellOutputBuffer(normalizeOutput);
         using var updates = new BashOutputUpdates(onUpdate);
         long lastOutputTicks = Stopwatch.GetTimestamp();
         var started = false;

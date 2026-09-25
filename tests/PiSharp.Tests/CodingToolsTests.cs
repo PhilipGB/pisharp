@@ -224,6 +224,43 @@ public sealed class CodingToolsTests : IDisposable
         Assert.Equal("", await output.AppendAsync(new byte[] { 0xF0, 0x9F }));
         Assert.Equal("A€�", await output.FinishAsync());
     }
+
+    [Fact]
+    public async Task DirectBashOutputNormalizesAnsiBinaryControlsAndCarriageReturnsAcrossChunks()
+    {
+        const string expected = "red\nlinkbyte�";
+        var result = await new CodingTools(_dir).ExecuteBashAsync(
+            "printf '\\033[31mred\\033[0m\\r\\n\\033]8;;https://example.invalid\\alink\\033]8;;\\a\\001byte\\377'");
+        Assert.Equal(expected, result.Output);
+
+        await using var output = new ShellOutputBuffer(normalizeOutput: true);
+        await output.AppendAsync(Encoding.UTF8.GetBytes("\u001b[31"));
+        await output.AppendAsync(Encoding.UTF8.GetBytes("mred\u001b[0m\r\n\u001b]8;;https://example.invalid"));
+        await output.AppendAsync(Encoding.UTF8.GetBytes("\alink\u001b]8;;\a\u0001byte"));
+        await output.AppendAsync(new byte[] { 0xff });
+        Assert.Equal(expected, await output.FinishAsync());
+
+        string? fullOutputPath = null;
+        try
+        {
+            await using var spill = new ShellOutputBuffer(normalizeOutput: true);
+            var ansiOnly = string.Concat(Enumerable.Repeat("\u001b[31m", 11_000));
+            await spill.AppendAsync(Encoding.UTF8.GetBytes(ansiOnly));
+            await spill.AppendAsync(Encoding.UTF8.GetBytes("red"));
+            await spill.AppendAsync(new byte[] { 0xe2 });
+            var spilled = await spill.FinishWithMetadataAsync();
+            var path = spilled.FullOutputPath ?? throw new InvalidOperationException("Expected a spill file.");
+            fullOutputPath = path;
+            Assert.False(spilled.Truncated);
+            Assert.Equal("red�", spilled.Output);
+            Assert.Equal("red�", await File.ReadAllTextAsync(path));
+        }
+        finally
+        {
+            if (fullOutputPath is not null && File.Exists(fullOutputPath)) File.Delete(fullOutputPath);
+        }
+    }
+
     [Fact]
     public async Task BashBoundsOutputAndRetainsPrivateCompleteLog()
     {

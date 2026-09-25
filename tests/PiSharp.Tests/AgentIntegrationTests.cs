@@ -28,6 +28,23 @@ public sealed class AgentIntegrationTests
     }
 
     [Fact]
+    public async Task BashToolPreservesTerminalSequencesInModelContext()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-bash-raw-output-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        try
+        {
+            var client = new BashCommandClient("printf '\\033[31mraw\\033[0m\\r'");
+            var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(cwd)),
+                new ConversationSession(cwd, "fixture-model", null, "fixture-provider"));
+            await foreach (var _ in run.RunEventsAsync("preserve raw shell output")) { }
+
+            Assert.Equal("\u001b[31mraw\u001b[0m\r", client.ToolResult);
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Fact]
     public async Task ModelToolCallWritesFileAndContinuesStreaming()
     {
         var dir = Path.Combine(Path.GetTempPath(), "pisharp-agent-" + Guid.NewGuid());

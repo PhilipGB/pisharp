@@ -40,7 +40,7 @@ public sealed class RpcBashProcessTests
             {
                 id = "process-bash",
                 type = "bash",
-                command = "printf process-stdout; printf process-stderr >&2; printf 'env:%s|%s|%s|%s|%s' \"${PI_SESSION_ID-unset}\" \"${PI_SESSION_FILE-unset}\" \"${PI_PROVIDER-unset}\" \"${PI_MODEL-unset}\" \"${PI_REASONING_LEVEL-unset}\"; exit 7",
+                command = "printf process-stdout; printf process-stderr >&2; printf '\\033[31mrpc-ansi\\033[0m\\r'; printf 'env:%s|%s|%s|%s|%s' \"${PI_SESSION_ID-unset}\" \"${PI_SESSION_FILE-unset}\" \"${PI_PROVIDER-unset}\" \"${PI_MODEL-unset}\" \"${PI_REASONING_LEVEL-unset}\"; exit 7",
                 excludeFromContext = true
             }, timeout.Token);
             await ReadResponsesAsync(process, ["process-bash"], firstLines, timeout.Token);
@@ -53,6 +53,10 @@ public sealed class RpcBashProcessTests
                 Assert.Equal(7, data.GetProperty("exitCode").GetInt32());
                 Assert.Contains("process-stdout", data.GetProperty("output").GetString());
                 Assert.Contains("process-stderr", data.GetProperty("output").GetString());
+                Assert.Contains("rpc-ansi", data.GetProperty("output").GetString());
+                var output = data.GetProperty("output").GetString()!;
+                Assert.True(!output.Contains("\u001b", StringComparison.Ordinal),
+                    $"Output bytes: {Convert.ToHexString(System.Text.Encoding.UTF8.GetBytes(output))}");
                 Assert.Contains("env:unset|unset|unset|unset|unset", data.GetProperty("output").GetString());
             }
             var updates = firstLines.Where(line => line.Contains("bash_execution_update", StringComparison.Ordinal)).ToArray();

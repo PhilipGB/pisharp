@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\PiSharp.Core\PiSharp.Core.csproj" />
+    <InternalsVisibleTo Include="PiSharp.Cli" />
     <InternalsVisibleTo Include="PiSharp.Tests" />
   </ItemGroup>
 

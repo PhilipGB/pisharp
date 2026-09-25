@@ -14,6 +14,7 @@ public sealed class ShellOutputBuffer : IAsyncDisposable
     private readonly MemoryStream _prefix = new();
     private readonly StringBuilder _tail = new();
     private readonly Decoder _decoder = new UTF8Encoding(false).GetDecoder();
+    private readonly ShellOutputNormalizer? _normalizer;
     private FileStream? _full;
     private string? _fullPath;
     private long _rawBytes;
@@ -23,6 +24,12 @@ public sealed class ShellOutputBuffer : IAsyncDisposable
     private bool _endsWithNewline;
     private bool _decoderFlushed;
 
+    /// <param name="normalizeOutput">Strip terminal escapes, binary controls and carriage returns for direct Bash execution.</param>
+    public ShellOutputBuffer(bool normalizeOutput = false)
+    {
+        if (normalizeOutput) _normalizer = new ShellOutputNormalizer();
+    }
+
     /// <summary>Appends raw bytes and returns only newly decoded UTF-8 text.</summary>
     public async Task<string> AppendAsync(ReadOnlyMemory<byte> data, CancellationToken cancellationToken = default,
         Action<string>? onDecoded = null)
@@ -31,6 +38,11 @@ public sealed class ShellOutputBuffer : IAsyncDisposable
         try
         {
             if (_decoderFlushed) throw new InvalidOperationException("Cannot append after the output decoder has been flushed.");
+            var chars = new char[Encoding.UTF8.GetMaxCharCount(data.Length)];
+            var count = _decoder.GetChars(data.Span, chars, flush: false);
+            var decoded = _normalizer is null ? new string(chars, 0, count) : _normalizer.Append(chars.AsSpan(0, count));
+            ReadOnlyMemory<byte> stored = _normalizer is null ? data : Encoding.UTF8.GetBytes(decoded);
+
             if (_full is null && _rawBytes + data.Length > MaxBytes)
             {
                 _fullPath = Path.Combine(Path.GetTempPath(), "pi-bash-" + Guid.NewGuid().ToString("N") + ".log");
@@ -38,13 +50,11 @@ public sealed class ShellOutputBuffer : IAsyncDisposable
                 _prefix.Position = 0;
                 await _prefix.CopyToAsync(_full, cancellationToken);
             }
-            if (_full is null) await _prefix.WriteAsync(data, cancellationToken);
-            else await _full.WriteAsync(data, cancellationToken);
+            if (_full is null) await _prefix.WriteAsync(stored, cancellationToken);
+            else await _full.WriteAsync(stored, cancellationToken);
             _rawBytes += data.Length;
 
-            var chars = new char[Encoding.UTF8.GetMaxCharCount(data.Length)];
-            var count = _decoder.GetChars(data.Span, chars, flush: false);
-            var decoded = AppendDecoded(chars, count);
+            decoded = AppendDecoded(decoded.AsSpan(), decoded.Length);
             onDecoded?.Invoke(decoded);
             return decoded;
         }
@@ -61,7 +71,15 @@ public sealed class ShellOutputBuffer : IAsyncDisposable
             _decoderFlushed = true;
             var chars = new char[4];
             var count = _decoder.GetChars(ReadOnlySpan<byte>.Empty, chars, flush: true);
-            return AppendDecoded(chars, count);
+            var decoded = _normalizer is null ? new string(chars, 0, count) :
+                _normalizer.Append(chars.AsSpan(0, count)) + _normalizer.Finish();
+            if (_normalizer is not null && decoded.Length != 0)
+            {
+                var stored = Encoding.UTF8.GetBytes(decoded);
+                if (_full is null) await _prefix.WriteAsync(stored);
+                else await _full.WriteAsync(stored);
+            }
+            return AppendDecoded(decoded.AsSpan(), decoded.Length);
         }
         finally { _gate.Release(); }
     }
@@ -76,7 +94,7 @@ public sealed class ShellOutputBuffer : IAsyncDisposable
         {
             if (_full is not null) await _full.FlushAsync();
             var totalLines = TotalLines;
-            var truncated = _full is not null || totalLines > MaxLines || _decodedBytes > MaxBytes;
+            var truncated = totalLines > MaxLines || _decodedBytes > MaxBytes;
             string content;
             string displayOutput;
             int shownLines, shownBytes;
@@ -113,7 +131,7 @@ public sealed class ShellOutputBuffer : IAsyncDisposable
                     displayOutput += $"\n\n[Showing lines {startLine}-{totalLines} of {totalLines} ({FormatSize(MaxBytes)} limit). Full output: {_fullPath}]";
             }
             if (displayOutput.Length == 0) displayOutput = "(no output)";
-            return new(content, displayOutput, truncated, truncated ? _fullPath : null);
+            return new(content, displayOutput, truncated, _fullPath);
         }
         finally { _gate.Release(); }
     }

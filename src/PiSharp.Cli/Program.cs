@@ -244,7 +244,7 @@ async Task Run(string input, IReadOnlyList<DataContent>? images = null)
     var monitor = Task.CompletedTask;
     var monitorStarted = false;
     var started = false;
-    var liveBash = new HashSet<string>(StringComparer.Ordinal);
+    var liveBash = new Dictionary<string, ShellOutputNormalizer>(StringComparer.Ordinal);
     try
     {
         if (!selection.Authenticated)
@@ -294,19 +294,36 @@ async Task Run(string input, IReadOnlyList<DataContent>? images = null)
                     Console.Error.WriteLine($"\n→ {update.Tool} ({update.OperationId})");
                     break;
                 case "tool_execution_update" when !print && update.Tool == "bash" && !string.IsNullOrEmpty(update.Text):
-                    if (update.OperationId is not null) liveBash.Add(update.OperationId);
-                    Console.Error.Write(update.Text);
+                    var displayText = update.Text;
+                    if (update.OperationId is { } updateId)
+                    {
+                        if (!liveBash.TryGetValue(updateId, out var normalizer))
+                            liveBash.Add(updateId, normalizer = new ShellOutputNormalizer());
+                        displayText = normalizer.Append(update.Text.AsSpan());
+                    }
+                    else displayText = ShellOutputNormalizer.NormalizeComplete(update.Text);
+                    if (displayText.Length != 0) Console.Error.Write(displayText);
                     break;
                 case "tool_execution_finished" when !print:
-                    if (update.Tool == "bash" && update.OperationId is not null && liveBash.Remove(update.OperationId))
+                    if (update.Tool == "bash" && update.OperationId is { } finishedId &&
+                        liveBash.Remove(finishedId, out var displayNormalizer))
                     {
+                        var trailing = displayNormalizer.Finish();
+                        if (trailing.Length != 0) Console.Error.Write(trailing);
                         Console.Error.WriteLine();
                         var status = update.Error;
                         var statusStart = status?.LastIndexOf("\n\nCommand ", StringComparison.Ordinal) ?? -1;
                         if (statusStart >= 0) status = status![(statusStart + 2)..];
+                        if (status is not null) status = ShellOutputNormalizer.NormalizeComplete(status);
                         Console.Error.WriteLine($"← {(update.IsError == true ? status ?? "bash failed" : "bash completed")}");
                     }
-                    else Console.Error.WriteLine($"← {(update.IsError == true ? update.Error : update.Text)}");
+                    else
+                    {
+                        var status = update.IsError == true ? update.Error : update.Text;
+                        if (update.Tool == "bash" && status is not null)
+                            status = ShellOutputNormalizer.NormalizeComplete(status);
+                        Console.Error.WriteLine($"← {status}");
+                    }
                     break;
                 case "turn_failed" or "prompt_rejected":
                     Console.Error.WriteLine($"Agent error: {update.Error ?? update.Type}");
