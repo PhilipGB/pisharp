@@ -530,7 +530,7 @@
       ],
       "evidence": [
         "EditorKeymapTests decodes Ctrl+O from terminal input and verifies user keymap replacement; TerminalScreenTests verifies collapsed/expanded tool results. Focused TUI tests pass 18/18 and the Release suite passes 400/400 with 0 skipped; format verification and warnings-as-errors build pass. Linux CI run 36111858689 passed.",
-        "EditorKeymapTests.ApplicationCycleShortcutsDispatchAndPreserveTheEditorDraft and TerminalInputTests.DecodesModifiedCursorAndPageKeysForConfigurableBindings cover dispatch, draft preservation, and Ctrl+Shift+P CSI-u decoding. Focused keymap/input tests pass 16/16; including InteractiveTranscriptTests, the focused run passes 24/24. Format verification passes, the warnings-as-errors Release build reports 0 warnings/errors, and the full Release suite passes 403/403 with 0 skipped. Linux CI for the shortcut slice is pending."
+        "EditorKeymapTests.ApplicationCycleShortcutsDispatchAndPreserveTheEditorDraft and TerminalInputTests.DecodesModifiedCursorAndPageKeysForConfigurableBindings cover dispatch, draft preservation, and Ctrl+Shift+P CSI-u decoding. Focused keymap/input tests pass 16/16; including InteractiveTranscriptTests, the focused run passes 24/24. Format verification passes, the warnings-as-errors Release build reports 0 warnings/errors, the full Release suite passes 403/403 with 0 skipped, and Linux CI run 36116327139 passed."
       ],
       "dependencies": []
     },
