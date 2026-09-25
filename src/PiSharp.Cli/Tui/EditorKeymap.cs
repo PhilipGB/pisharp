@@ -40,6 +40,8 @@ public sealed class EditorKeymap
         ["tui.editor.deleteWordForward"] = new("Delete next word", ["alt+d", "alt+delete"]),
         ["tui.editor.deleteToLineStart"] = new("Delete to line start", ["ctrl+u"]),
         ["tui.editor.deleteToLineEnd"] = new("Delete to line end", ["ctrl+k"]),
+        ["tui.editor.yank"] = new("Yank last killed text", ["ctrl+y"]),
+        ["tui.editor.yankPop"] = new("Cycle to the previous killed text", ["alt+y"]),
         ["app.interrupt"] = new("Cancel or abort", ["escape"]),
         ["app.clear"] = new("Clear editor", ["ctrl+c"]),
         ["app.exit"] = new("Exit when editor is empty", ["ctrl+d"]),

@@ -125,6 +125,33 @@ public sealed class EditorKeymapTests
     }
 
     [Fact]
+    public void KillRingActionsUsePiBindingsAndRemainConfigurable()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "pisharp-keymap-yank-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        try
+        {
+            var defaults = new EditorKeymap();
+            Assert.True(defaults.Matches("tui.editor.yank", Key(ConsoleKey.Y, ConsoleModifiers.Control)));
+            Assert.True(defaults.Matches("tui.editor.yankPop", Key(ConsoleKey.Y, ConsoleModifiers.Alt)));
+
+            File.WriteAllText(Path.Combine(directory, "keybindings.json"),
+                "{ \"tui.editor.yank\": \"ctrl+shift+y\", \"tui.editor.yankPop\": \"ctrl+alt+y\" }");
+            var keymap = new EditorKeymap(directory);
+            var editor = new EditorBuffer(keymap);
+            editor.SetText("killed text");
+            editor.Handle(Key(ConsoleKey.W, ConsoleModifiers.Control));
+            editor.SetText("");
+
+            Assert.False(keymap.Matches("tui.editor.yank", Key(ConsoleKey.Y, ConsoleModifiers.Control)));
+            Assert.Equal(EditorAction.Render, editor.Handle(Key(ConsoleKey.Y, ConsoleModifiers.Control | ConsoleModifiers.Shift)));
+            Assert.Equal("text", editor.Text);
+            Assert.Contains("Cycle to the previous killed text (tui.editor.yankPop)", keymap.FormatHotkeys());
+        }
+        finally { Directory.Delete(directory, recursive: true); }
+    }
+
+    [Fact]
     public async Task EditorBindingTakesPrecedenceOverApplicationShortcutInTheEditorContext()
     {
         var directory = Path.Combine(Path.GetTempPath(), "pisharp-keymap-context-" + Guid.NewGuid().ToString("N"));

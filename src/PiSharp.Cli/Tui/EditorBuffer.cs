@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text;
 
 namespace PiSharp.Cli.Tui;
 
@@ -6,10 +7,13 @@ namespace PiSharp.Cli.Tui;
 public sealed class EditorBuffer
 {
     private sealed record Snapshot(string Text, int Cursor, int? SelectionAnchor);
+    private enum LastEditAction { None, Kill, Yank }
+    private enum KillDirection { Backward, Forward }
 
     private readonly List<string> _history = [];
     private readonly List<Snapshot> _undo = [];
     private readonly EditorKeymap _keymap;
+    private readonly EditorKillRing _killRing = new();
     private string _text = "";
     private int _historyIndex;
     private string _draft = "";
@@ -17,6 +21,8 @@ public sealed class EditorBuffer
     private int? _selectionAnchor;
     private int? _preferredColumn;
     private bool _coalesceTypedWord;
+    private LastEditAction _lastEditAction;
+    private string? _lastYankedText;
 
     public EditorBuffer(EditorKeymap? keymap = null) => _keymap = keymap ?? new EditorKeymap();
 
@@ -33,6 +39,12 @@ public sealed class EditorBuffer
         var alt = key.Modifiers.HasFlag(ConsoleModifiers.Alt);
         var vertical = _keymap.Matches("tui.editor.cursorUp", key) || _keymap.Matches("tui.editor.cursorDown", key) ||
             _keymap.Matches("tui.editor.selectUp", key) || _keymap.Matches("tui.editor.selectDown", key);
+        var kill = _keymap.Matches("tui.editor.deleteWordBackward", key) ||
+            _keymap.Matches("tui.editor.deleteWordForward", key) ||
+            _keymap.Matches("tui.editor.deleteToLineStart", key) ||
+            _keymap.Matches("tui.editor.deleteToLineEnd", key);
+        var yank = _keymap.Matches("tui.editor.yank", key) || _keymap.Matches("tui.editor.yankPop", key);
+        if (!kill && !yank) BreakKillYankChain();
         var printable = !control && !alt && !char.IsControl(key.KeyChar);
         if (!printable) _coalesceTypedWord = false;
         if (!vertical) _preferredColumn = null;
@@ -51,6 +63,8 @@ public sealed class EditorBuffer
         }
         if (_keymap.Matches("app.exit", key) && _text.Length == 0) return EditorAction.Exit;
         if (_keymap.Matches("tui.editor.undo", key)) return Undo();
+        if (_keymap.Matches("tui.editor.yank", key)) return Yank();
+        if (_keymap.Matches("tui.editor.yankPop", key)) return YankPop();
         if (_keymap.Matches("tui.editor.historyPrevious", key)) return NavigateHistory(-1);
         if (_keymap.Matches("tui.editor.historyNext", key)) return NavigateHistory(1);
         if (_keymap.Matches("tui.editor.selectUp", key)) return MoveVertical(-1, extendSelection: true);
@@ -76,13 +90,13 @@ public sealed class EditorBuffer
         else if (_keymap.Matches("tui.editor.deleteCharForward", key))
             DeleteRange(SelectionStart ?? Cursor, SelectionEnd ?? NextBoundary(Cursor));
         else if (_keymap.Matches("tui.editor.deleteWordBackward", key))
-            DeleteRange(MoveWordLeft(Cursor), Cursor);
+            DeleteWordBackward();
         else if (_keymap.Matches("tui.editor.deleteWordForward", key))
-            DeleteRange(Cursor, MoveWordRight(Cursor));
+            DeleteWordForward();
         else if (_keymap.Matches("tui.editor.deleteToLineStart", key))
-            DeleteRange(LineStart(Cursor), Cursor);
+            DeleteToLineStart();
         else if (_keymap.Matches("tui.editor.deleteToLineEnd", key))
-            DeleteRange(Cursor, LineEnd(Cursor));
+            DeleteToLineEnd();
         else if (_keymap.Matches("tui.input.tab", key))
             InsertAtomic("    ");
         else if (printable)
@@ -99,6 +113,7 @@ public sealed class EditorBuffer
             .Where(c => c is '\n' or '\t' || !char.IsControl(c)).ToArray());
         if (safe.Length == 0) return EditorAction.None;
         InsertAtomic(safe);
+        BreakKillYankChain();
         return EditorAction.Render;
     }
 
@@ -112,6 +127,7 @@ public sealed class EditorBuffer
         _coalesceTypedWord = false;
         _preferredColumn = null;
         ClearSelection();
+        BreakKillYankChain();
         return true;
     }
 
@@ -126,6 +142,7 @@ public sealed class EditorBuffer
         _coalesceTypedWord = false;
         _preferredColumn = null;
         ClearSelection();
+        BreakKillYankChain();
     }
 
     public void Replace(int start, int length, string replacement)
@@ -142,6 +159,7 @@ public sealed class EditorBuffer
         RememberDraft();
         _coalesceTypedWord = false;
         _preferredColumn = null;
+        BreakKillYankChain();
     }
 
     public void SetText(string text, int? cursor = null)
@@ -156,6 +174,7 @@ public sealed class EditorBuffer
         RememberDraft();
         _coalesceTypedWord = false;
         _preferredColumn = null;
+        BreakKillYankChain();
     }
 
     public void SetCursor(int cursor)
@@ -169,6 +188,7 @@ public sealed class EditorBuffer
         RememberDraft();
         _coalesceTypedWord = false;
         _preferredColumn = null;
+        BreakKillYankChain();
     }
 
     private void AddHistory(string text)
@@ -329,6 +349,9 @@ public sealed class EditorBuffer
     }
 
     private void DeleteRange(int start, int end)
+        => DeleteRange(start, end, killDirection: null);
+
+    private void DeleteRange(int start, int end, KillDirection? killDirection)
     {
         if (SelectionStart is { } selectionStart && SelectionEnd is { } selectionEnd)
         {
@@ -337,6 +360,13 @@ public sealed class EditorBuffer
         }
         if (start >= end) return;
         PushUndoSnapshot();
+        if (killDirection is { } direction)
+        {
+            _killRing.Push(_text[start..end], prepend: direction == KillDirection.Backward,
+                accumulate: _lastEditAction == LastEditAction.Kill);
+            _lastEditAction = LastEditAction.Kill;
+            _lastYankedText = null;
+        }
         _text = _text.Remove(start, end - start);
         Cursor = start;
         ClearSelection();
@@ -344,6 +374,113 @@ public sealed class EditorBuffer
         RememberDraft();
         _coalesceTypedWord = false;
         _preferredColumn = null;
+    }
+
+    private void DeleteWordBackward()
+    {
+        if (SelectionStart is { } selectionStart && SelectionEnd is { } selectionEnd)
+        {
+            DeleteRange(selectionStart, selectionEnd, KillDirection.Backward);
+            return;
+        }
+
+        var lineStart = LineStart(Cursor);
+        if (Cursor == lineStart && lineStart > 0)
+            DeleteRange(lineStart - 1, lineStart, KillDirection.Backward);
+        else
+            DeleteRange(MoveWordLeft(Cursor), Cursor, KillDirection.Backward);
+    }
+
+    private void DeleteWordForward()
+    {
+        if (SelectionStart is { } selectionStart && SelectionEnd is { } selectionEnd)
+        {
+            DeleteRange(selectionStart, selectionEnd, KillDirection.Forward);
+            return;
+        }
+
+        var lineEnd = LineEnd(Cursor);
+        if (Cursor == lineEnd && lineEnd < _text.Length)
+            DeleteRange(lineEnd, lineEnd + 1, KillDirection.Forward);
+        else
+            DeleteRange(Cursor, MoveWordRight(Cursor), KillDirection.Forward);
+    }
+
+    private void DeleteToLineStart()
+    {
+        if (SelectionStart is { } selectionStart && SelectionEnd is { } selectionEnd)
+        {
+            DeleteRange(selectionStart, selectionEnd, KillDirection.Backward);
+            return;
+        }
+
+        var lineStart = LineStart(Cursor);
+        if (Cursor > lineStart)
+            DeleteRange(lineStart, Cursor, KillDirection.Backward);
+        else if (lineStart > 0)
+            DeleteRange(lineStart - 1, lineStart, KillDirection.Backward);
+    }
+
+    private void DeleteToLineEnd()
+    {
+        if (SelectionStart is { } selectionStart && SelectionEnd is { } selectionEnd)
+        {
+            DeleteRange(selectionStart, selectionEnd, KillDirection.Forward);
+            return;
+        }
+
+        var lineEnd = LineEnd(Cursor);
+        if (Cursor < lineEnd)
+            DeleteRange(Cursor, lineEnd, KillDirection.Forward);
+        else if (lineEnd < _text.Length)
+            DeleteRange(lineEnd, lineEnd + 1, KillDirection.Forward);
+    }
+
+    private EditorAction Yank()
+    {
+        if (_killRing.Peek() is not { } text) return EditorAction.None;
+        PushUndoSnapshot();
+        var start = SelectionStart ?? Cursor;
+        var end = SelectionEnd ?? Cursor;
+        _text = _text.Remove(start, end - start).Insert(start, text);
+        Cursor = start + text.Length;
+        ClearSelection();
+        ExitHistoryBrowsing();
+        RememberDraft();
+        _coalesceTypedWord = false;
+        _preferredColumn = null;
+        _lastEditAction = LastEditAction.Yank;
+        _lastYankedText = text;
+        return EditorAction.Render;
+    }
+
+    private EditorAction YankPop()
+    {
+        if (_lastEditAction != LastEditAction.Yank || _killRing.Count <= 1 || _lastYankedText is not { Length: > 0 } previous)
+            return EditorAction.None;
+
+        var start = Cursor - previous.Length;
+        if (start < 0 || !string.Equals(_text[start..Cursor], previous, StringComparison.Ordinal))
+            return EditorAction.None;
+        PushUndoSnapshot();
+        _killRing.Rotate();
+        var text = _killRing.Peek()!;
+        _text = _text.Remove(start, previous.Length).Insert(start, text);
+        Cursor = start + text.Length;
+        ClearSelection();
+        ExitHistoryBrowsing();
+        RememberDraft();
+        _coalesceTypedWord = false;
+        _preferredColumn = null;
+        _lastEditAction = LastEditAction.Yank;
+        _lastYankedText = text;
+        return EditorAction.Render;
+    }
+
+    private void BreakKillYankChain()
+    {
+        _lastEditAction = LastEditAction.None;
+        _lastYankedText = null;
     }
 
     private void PushUndoSnapshot()
@@ -421,16 +558,23 @@ public sealed class EditorBuffer
 
     private int MoveWordLeft(int index)
     {
-        while (index > 0)
+        var lineStart = LineStart(index);
+        if (index == lineStart && lineStart > 0) return lineStart - 1;
+
+        while (index > lineStart)
         {
             var previous = PreviousBoundary(index);
             if (!string.IsNullOrWhiteSpace(_text[previous..index])) break;
             index = previous;
         }
-        while (index > 0)
+        if (index == lineStart) return index;
+
+        var word = IsWordElement(_text[PreviousBoundary(index)..index]);
+        while (index > lineStart)
         {
             var previous = PreviousBoundary(index);
-            if (string.IsNullOrWhiteSpace(_text[previous..index])) break;
+            var element = _text[previous..index];
+            if (string.IsNullOrWhiteSpace(element) || IsWordElement(element) != word) break;
             index = previous;
         }
         return index;
@@ -438,20 +582,33 @@ public sealed class EditorBuffer
 
     private int MoveWordRight(int index)
     {
-        while (index < _text.Length)
-        {
-            var next = NextBoundary(index);
-            if (string.IsNullOrWhiteSpace(_text[index..next])) break;
-            index = next;
-        }
-        while (index < _text.Length)
+        var lineEnd = LineEnd(index);
+        if (index == lineEnd && lineEnd < _text.Length) return lineEnd + 1;
+
+        while (index < lineEnd)
         {
             var next = NextBoundary(index);
             if (!string.IsNullOrWhiteSpace(_text[index..next])) break;
             index = next;
         }
+        if (index >= lineEnd) return lineEnd;
+
+        var word = IsWordElement(_text[index..NextBoundary(index)]);
+        while (index < lineEnd)
+        {
+            var next = NextBoundary(index);
+            var element = _text[index..next];
+            if (string.IsNullOrWhiteSpace(element) || IsWordElement(element) != word) break;
+            index = next;
+        }
         return index;
     }
+
+    private static bool IsWordElement(string element) => element.EnumerateRunes().Any(rune =>
+    {
+        var category = Rune.GetUnicodeCategory(rune);
+        return Rune.IsLetterOrDigit(rune) || category == UnicodeCategory.ConnectorPunctuation;
+    });
 }
 
 public enum EditorAction { None, Render, Submit, Cancel, Exit }

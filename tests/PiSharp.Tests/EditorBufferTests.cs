@@ -87,6 +87,85 @@ public sealed class EditorBufferTests
     }
 
     [Fact]
+    public void ConsecutiveWordAndLineKillsAccumulateForYank()
+    {
+        var editor = new EditorBuffer();
+        editor.SetText("one two three");
+        editor.Handle(Key('\0', ConsoleKey.W, ConsoleModifiers.Control));
+        editor.Handle(Key('\0', ConsoleKey.W, ConsoleModifiers.Control));
+        editor.Handle(Key('\0', ConsoleKey.W, ConsoleModifiers.Control));
+        Assert.Equal("", editor.Text);
+        Assert.Equal(EditorAction.Render, editor.Handle(Key('\0', ConsoleKey.Y, ConsoleModifiers.Control)));
+        Assert.Equal("one two three", editor.Text);
+
+        editor.SetText("hello world");
+        editor.Handle(Key('\0', ConsoleKey.A, ConsoleModifiers.Control));
+        editor.Handle(Key('\0', ConsoleKey.K, ConsoleModifiers.Control));
+        Assert.Equal("", editor.Text);
+        editor.Handle(Key('\0', ConsoleKey.Y, ConsoleModifiers.Control));
+        Assert.Equal("hello world", editor.Text);
+    }
+
+    [Fact]
+    public void YankPopRotatesKillRingAndStopsAfterAnotherEditorAction()
+    {
+        var editor = new EditorBuffer();
+        foreach (var text in new[] { "first", "second", "third" })
+        {
+            editor.SetText(text);
+            editor.Handle(Key('\0', ConsoleKey.W, ConsoleModifiers.Control));
+        }
+        editor.SetText("");
+
+        editor.Handle(Key('\0', ConsoleKey.Y, ConsoleModifiers.Control));
+        Assert.Equal("third", editor.Text);
+        editor.Handle(Key('y', ConsoleKey.Y, ConsoleModifiers.Alt));
+        Assert.Equal("second", editor.Text);
+        editor.Handle(Key('y', ConsoleKey.Y, ConsoleModifiers.Alt));
+        Assert.Equal("first", editor.Text);
+        editor.Handle(Key('y', ConsoleKey.Y, ConsoleModifiers.Alt));
+        Assert.Equal("third", editor.Text);
+
+        editor.Handle(Key('x', ConsoleKey.X));
+        Assert.Equal(EditorAction.None, editor.Handle(Key('y', ConsoleKey.Y, ConsoleModifiers.Alt)));
+        Assert.Equal("thirdx", editor.Text);
+    }
+
+    [Fact]
+    public void BackwardLineKillsAccumulateNewlinesAndWordMovementStopsAtWordBoundaries()
+    {
+        var editor = new EditorBuffer();
+        editor.SetText("A\nB\nC");
+        for (var index = 0; index < 5; index++) editor.Handle(Key('\0', ConsoleKey.U, ConsoleModifiers.Control));
+        Assert.Equal("", editor.Text);
+        editor.Handle(Key('\0', ConsoleKey.Y, ConsoleModifiers.Control));
+        Assert.Equal("A\nB\nC", editor.Text);
+
+        editor.SetText("hello world");
+        editor.Handle(Key('\0', ConsoleKey.A, ConsoleModifiers.Control));
+        editor.Handle(Key('\0', ConsoleKey.RightArrow, ConsoleModifiers.Control));
+        Assert.Equal(5, editor.Cursor);
+        editor.Handle(Key('\0', ConsoleKey.RightArrow, ConsoleModifiers.Control));
+        Assert.Equal("hello world".Length, editor.Cursor);
+    }
+
+    [Fact]
+    public void ForwardWordKillsAccumulateAndUndoRevertsAYank()
+    {
+        var editor = new EditorBuffer();
+        editor.SetText("hello world test");
+        editor.Handle(Key('\0', ConsoleKey.A, ConsoleModifiers.Control));
+        editor.Handle(Key('d', ConsoleKey.D, ConsoleModifiers.Alt));
+        editor.Handle(Key('d', ConsoleKey.D, ConsoleModifiers.Alt));
+        editor.Handle(Key('d', ConsoleKey.D, ConsoleModifiers.Alt));
+        Assert.Equal("", editor.Text);
+        editor.Handle(Key('\0', ConsoleKey.Y, ConsoleModifiers.Control));
+        Assert.Equal("hello world test", editor.Text);
+        Assert.Equal(EditorAction.Render, editor.Handle(Key('-', ConsoleKey.OemMinus, ConsoleModifiers.Control)));
+        Assert.Equal("", editor.Text);
+    }
+
+    [Fact]
     public void AltEnterInsertsLineRatherThanSubmitting()
     {
         var editor = new EditorBuffer();
