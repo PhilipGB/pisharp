@@ -10,7 +10,7 @@ The current upstream pin is earendil-works/pi@49681e1b71c9c32cdfbf45c21f8e3cb3a8
 
 PiSharp uses a canonical C# session model and Microsoft Agent Framework for the provider/tool loop. Its session and RPC formats are PiSharp-specific and do not establish Pi JSONL or RPC compatibility. Coding tools have substantial local evidence with remaining gaps recorded in TODO.md and the matrix.
 
-The active TUI currently has a normal-screen editor and a bounded alternate-screen transcript/editor/footer during model activity. A cell-aware shared wrapping slice is under implementation. The Markdown renderer is still handwritten and must move to a mature CommonMark/GFM parser plus a separate terminal renderer. Idle application surface, editor/keybinding breadth, mouse/selection, themes, images, pickers and extension UI remain incomplete.
+The active TUI currently has a normal-screen editor and a bounded alternate-screen transcript/editor/footer during model activity. Commit `5d3d7f09019967b0e3a40ab3da0a4f3ff5e385b3` adds shared terminal-cell-aware wrapping; Linux CI run 36123165224 passed on that exact commit. The Markdown renderer is still handwritten and is the next implementation slice: move it to a mature CommonMark/GFM parser plus a separate terminal renderer. Idle application surface, editor/keybinding breadth, mouse/selection, themes, images, pickers and extension UI remain incomplete.
 
 ## Resume
 
