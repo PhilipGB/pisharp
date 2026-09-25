@@ -136,6 +136,21 @@ public sealed class CodingToolsTests : IDisposable
     }
 
     [Fact]
+    public async Task BashSignalTerminationUsesShellExitCodesAndPreservesPartialOutput()
+    {
+        if (OperatingSystem.IsWindows() || !File.Exists("/bin/bash")) return;
+        var tools = new CodingTools(_dir, "/bin/bash");
+        foreach (var (signal, exitCode) in new[] { ("KILL", 137), ("TERM", 143) })
+        {
+            var error = await Assert.ThrowsAsync<ToolFailureException>(() =>
+                tools.Bash($"printf 'before-kill\\n'; kill -{signal} $$"));
+            Assert.Equal(exitCode, error.ExitCode);
+            Assert.Contains("before-kill", error.Message);
+            Assert.EndsWith($"Command exited with code {exitCode}", error.Message);
+        }
+    }
+
+    [Fact]
     public void DirectBashUpdatesArePublishedImmediatelyWithoutCoalescing()
     {
         var updates = new List<string>();
