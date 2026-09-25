@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 using Microsoft.Extensions.AI;
 using PiSharp.Runtime;
 using PiSharp.Runtime.Sessions;
@@ -58,6 +59,9 @@ public sealed class AgentLifecycleTests
             var secondModel = names.FindIndex(firstModel + 1, item => item == "model_request_started");
             Assert.Equal("prompt_accepted", names[0]);
             Assert.True(firstModel > 0 && call > firstModel && outcome > call && secondModel > outcome);
+            var started = Assert.Single(events, item => item.Type == "tool_execution_started");
+            Assert.Equal("result.txt", started.ToolArguments?["path"]);
+            Assert.DoesNotContain("ToolArguments", JsonSerializer.Serialize(started));
             Assert.Contains(events, item => item.Type == "model_text_delta" && item.Text == "done");
             Assert.Equal(["turn_completed", "agent_run_completed", "agent_settled"], names.TakeLast(3));
             Assert.Equal("made", await File.ReadAllTextAsync(Path.Combine(cwd, "result.txt")));

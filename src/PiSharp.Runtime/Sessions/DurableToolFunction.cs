@@ -15,7 +15,11 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
         var execution = current();
         var id = execution is null ? Guid.NewGuid().ToString("N") :
             await execution.StartToolAsync(Name, arguments, cancellationToken);
-        publish(new("tool_execution_started", Tool: Name, OperationId: id));
+        var displayArguments = arguments.ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal);
+        publish(new AgentLifecycleEvent("tool_execution_started", Tool: Name, OperationId: id)
+        {
+            ToolArguments = displayArguments
+        });
         object? value = null;
         Exception? failure = null;
         IDictionary<object, object?>? context = null;

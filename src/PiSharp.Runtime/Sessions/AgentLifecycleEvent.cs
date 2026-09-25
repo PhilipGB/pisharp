@@ -8,4 +8,8 @@ public sealed record AgentLifecycleEvent(string Type, string? Text = null, strin
     long? InputTokens = null, long? OutputTokens = null, long? CachedInputTokens = null,
     long? ReasoningTokens = null, long? TotalTokens = null, decimal? Cost = null,
     long? CachedWriteTokens = null,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] object? Details = null);
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] object? Details = null)
+{
+    [JsonIgnore]
+    public IReadOnlyDictionary<string, object?>? ToolArguments { get; init; }
+}

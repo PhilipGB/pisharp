@@ -41,7 +41,9 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
                 status.WriteLine(Safe(update.Text));
                 break;
             case "tool_execution_started" when interactive:
-                status.WriteLine($"\n→ {Safe(update.Tool ?? "tool")}{(update.OperationId is null ? "" : $" ({Safe(update.OperationId)})")}");
+                var summary = ToolCallSummary.Format(update.Tool, update.ToolArguments);
+                status.WriteLine($"\n→ {Safe(update.Tool ?? "tool")}{(summary is null ? "" : $" · {Safe(summary)}")}" +
+                    (update.OperationId is null ? "" : $" ({Safe(update.OperationId)})"));
                 break;
             case "tool_execution_update" when interactive && update.Tool == "bash" && !string.IsNullOrEmpty(update.Text):
                 WriteBashUpdate(update);

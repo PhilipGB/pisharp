@@ -51,6 +51,28 @@ public sealed class InteractiveTranscriptTests
     }
 
     [Fact]
+    public void ToolCallSummariesShowSafeBuiltInArgumentsAndFilterControls()
+    {
+        using var output = new StringWriter();
+        using var status = new StringWriter();
+        var transcript = new InteractiveTranscript(output, status);
+
+        transcript.Render(new AgentLifecycleEvent("tool_execution_started", Tool: "bash", OperationId: "call-1")
+        {
+            ToolArguments = new Dictionary<string, object?> { ["command"] = "git status\u001b[2J\n--short", ["token"] = "private" }
+        });
+        transcript.Render(new AgentLifecycleEvent("tool_execution_started", Tool: "write")
+        {
+            ToolArguments = new Dictionary<string, object?> { ["path"] = "notes.txt", ["content"] = "private file content" }
+        });
+
+        Assert.Contains("→ bash · command: git status[2J --short (call-1)", status.ToString());
+        Assert.Contains("→ write · path: notes.txt", status.ToString());
+        Assert.DoesNotContain("private", status.ToString());
+        Assert.DoesNotContain('\u001b', status.ToString());
+    }
+
+    [Fact]
     public void StructuredSearchRecordsAreSummarizedAndThinkingCanBeHidden()
     {
         using var output = new StringWriter();
