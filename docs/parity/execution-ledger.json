@@ -1051,7 +1051,7 @@
       ],
       "evidence": [
         "RpcModeTests.RpcSteeringFollowUpAndClearQueueExposeDistinctPendingInput verifies separate steering/follow-up queue contents and that both successful responses contain data.disposition=queued; existing lifecycle tests verify delivery order and persistence.",
-        "Focused RpcModeTests pass 18/18. Format verification and warnings-as-errors build pass; full local suite passes 530/530 with 0 skipped on the pre-commit working tree. Full Pi RPC compatibility and idle queue behavior remain open."
+        "Focused RpcModeTests pass 18/18. Exact commit 036f194c0145f4d274fe871c386352097a372fc0 passed Linux CI run 36191653440 with format verification, warnings-as-errors build and all 530 tests (0 failed, 0 skipped). Full Pi RPC compatibility and idle queue behavior remain open."
       ],
       "dependencies": []
     },
@@ -1070,7 +1070,7 @@
       ],
       "evidence": [
         "RpcModeTests.RpcSteeringFollowUpAndClearQueueExposeDistinctPendingInput verifies separate steering/follow-up queue contents and that both successful responses contain data.disposition=queued; existing lifecycle tests verify delivery order and persistence.",
-        "Focused RpcModeTests pass 18/18. Format verification and warnings-as-errors build pass; full local suite passes 530/530 with 0 skipped on the pre-commit working tree. Full Pi RPC compatibility and idle queue behavior remain open."
+        "Focused RpcModeTests pass 18/18. Exact commit 036f194c0145f4d274fe871c386352097a372fc0 passed Linux CI run 36191653440 with format verification, warnings-as-errors build and all 530 tests (0 failed, 0 skipped). Full Pi RPC compatibility and idle queue behavior remain open."
       ],
       "dependencies": []
     },

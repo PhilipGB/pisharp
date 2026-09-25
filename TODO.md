@@ -6,7 +6,7 @@
 
 ## Current checkpoint
 
-- Implementation head `ca38cfda9c1920135d85a15ac39de6b765b62575` is pushed. Linux CI run [36190927716](https://github.com/PhilipGB/pisharp/actions/runs/36190927716) passed format verification, warnings-as-errors build, and all 530 tests (0 failed, 0 skipped). Local focused RPC/process tests passed 26/26.
+- Implementation head `036f194c0145f4d274fe871c386352097a372fc0` is pushed. Linux CI run [36191653440](https://github.com/PhilipGB/pisharp/actions/runs/36191653440) passed format verification, warnings-as-errors build, and all 530 tests (0 failed, 0 skipped). Local focused RPC tests passed 18/18.
 - Durable Pi parity baseline remains `b3487650f6378f1b0d1643dd254445ceb4a98035`; current Pi `main` was refreshed to `d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31` for scoped image, theme, session and RPC inspection. This is not a full audit.
 - Pi JSONL v1-v3 import and v3 export now preserve branches, active head, context edits, compactions and unknown entries; startup `--session`, `/import` and `/export-jsonl` are covered. Import currently requires the source CWD to equal the running project directory.
 - The TUI has a persistent active/idle screen, Markdig AST rendering, shared cell-aware wrapping, transcript scrolling/search, modal pickers, mouse selection, themes, image output and safe extension tool renderers. Recorded residuals and the broader TUI differential remain open.
@@ -19,5 +19,5 @@
 
 ## Priority and next action
 
-1. Continue Pi RPC parity: add direct `steer`/`follow_up` disposition responses, then implement and differentially validate Pi event payload normalization and the remaining command surface.
+1. Continue Pi RPC parity with model/session controls: implement `set_model` and runtime replacement safely, then add model cycling and thinking-level commands before tackling Pi event payload normalization.
 2. Continue sessions/interoperability, settings/resources/extensions, multimodal and provider/auth breadth. Carry the recorded TUI residuals into the final audit; avoid broad TUI polish without a material capability gap or differential.
