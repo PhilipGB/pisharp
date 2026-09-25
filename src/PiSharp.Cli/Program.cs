@@ -249,7 +249,7 @@ async Task Run(string input, IReadOnlyList<DataContent>? images = null)
     var monitor = Task.CompletedTask;
     var monitorStarted = false;
     var transcript = new InteractiveTranscript(Console.Out, Console.Error, interactive: !print,
-        hideThinking: userSettings.HideThinkingBlock == true);
+        hideThinking: userSettings.HideThinkingBlock == true, screen: terminalScreen);
     try
     {
         if (!selection.Authenticated)

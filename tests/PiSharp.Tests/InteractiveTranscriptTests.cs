@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using PiSharp.Cli.Tui;
 using PiSharp.Runtime.Sessions;
 
@@ -80,6 +81,35 @@ public sealed class InteractiveTranscriptTests
         Assert.Equal("Agent error: offline" + Environment.NewLine, status.ToString());
         Assert.Equal(1, transcript.ExitCode);
     }
+
+    [Fact]
+    public void ActiveScreenRendersStreamingMarkdownAndCommitsReadableScrollback()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        var screen = new TerminalScreen(output, error, () => 64, () => 12);
+        var transcript = new InteractiveTranscript(screen.Output, screen.Error, screen: screen);
+
+        transcript.Render(new("model_text_delta", Text: "# Hea"));
+        Assert.Contains("Hea", StripSgr(output.ToString()));
+        transcript.Render(new("model_text_delta", Text: "ding\n\n**bold** and `code` [docs](https://example.test)\nvariable foo_bar\n> quoted\n- item\n```csharp\nvar answer = 42;\n```"));
+        transcript.FinishTurn();
+        screen.Dispose();
+
+        var visible = StripSgr(output.ToString());
+        Assert.Contains("Heading", visible);
+        Assert.DoesNotContain("# Heading", visible);
+        Assert.Contains("bold and code", visible);
+        Assert.Contains("docs", visible);
+        Assert.Contains("https://example.test", visible);
+        Assert.Contains("foo_bar", visible);
+        Assert.Contains("│ quoted", visible);
+        Assert.Contains("• item", visible);
+        Assert.Contains("var answer = 42;", visible);
+        Assert.DoesNotContain("```", visible);
+    }
+
+    private static string StripSgr(string text) => Regex.Replace(text, "\\u001b\\[[0-9;]*m", "");
 
     private sealed record SearchDetails(int? ResultLimitReached = null, int? EntryLimitReached = null);
 }

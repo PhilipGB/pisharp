@@ -7,9 +7,10 @@ namespace PiSharp.Cli.Tui;
 
 /// <summary>Renders agent lifecycle events as normal-screen transcript output.</summary>
 public sealed class InteractiveTranscript(TextWriter output, TextWriter status, bool interactive = true,
-    bool hideThinking = false)
+    bool hideThinking = false, TerminalScreen? screen = null)
 {
     private readonly Dictionary<string, ShellOutputNormalizer> _liveBash = new(StringComparer.Ordinal);
+    private readonly StringBuilder _assistantMarkdown = new();
 
     public bool HasAssistantOutput { get; private set; }
     public int ExitCode { get; private set; }
@@ -17,10 +18,17 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
     public void Render(AgentLifecycleEvent update)
     {
         ArgumentNullException.ThrowIfNull(update);
+        if (update.Type != "model_text_delta") CommitAssistantText();
         switch (update.Type)
         {
             case "model_text_delta" when !string.IsNullOrEmpty(update.Text):
-                output.Write(Safe(update.Text));
+                var assistantText = Safe(update.Text);
+                if (screen is null) output.Write(assistantText);
+                else
+                {
+                    _assistantMarkdown.Append(assistantText);
+                    screen.SetAssistantText(_assistantMarkdown.ToString());
+                }
                 HasAssistantOutput = true;
                 break;
             case "reasoning_delta" when interactive && !hideThinking && !string.IsNullOrEmpty(update.Text):
@@ -53,9 +61,17 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
 
     public void FinishTurn()
     {
+        CommitAssistantText();
         if (!HasAssistantOutput) return;
         output.WriteLine();
         HasAssistantOutput = false;
+    }
+
+    private void CommitAssistantText()
+    {
+        if (screen is null || _assistantMarkdown.Length == 0) return;
+        screen.CommitAssistantText(_assistantMarkdown.ToString());
+        _assistantMarkdown.Clear();
     }
 
     private void WriteBashUpdate(AgentLifecycleEvent update)

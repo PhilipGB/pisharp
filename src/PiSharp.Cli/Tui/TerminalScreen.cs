@@ -20,6 +20,7 @@ public sealed class TerminalScreen : IDisposable
     private TextWriter? _installedOut;
     private TextWriter? _installedError;
     private string _editorText = "";
+    private string _liveAssistant = "";
     private int _editorCursor;
     private string _footer = "Enter steers · follow-up queues · Escape aborts";
     private int _capturedCharacters;
@@ -76,6 +77,36 @@ public sealed class TerminalScreen : IDisposable
             if (!_active) return;
             _editorText = text;
             _editorCursor = Math.Clamp(cursor, 0, text.Length);
+            RenderLocked();
+        }
+    }
+
+    internal void SetAssistantText(string markdown)
+    {
+        ArgumentNullException.ThrowIfNull(markdown);
+        var rendered = TerminalMarkdownRenderer.Render(TerminalSafeText.Normalize(markdown));
+        lock (_gate)
+        {
+            if (!_active) return;
+            _liveAssistant = rendered;
+            RenderLocked();
+        }
+    }
+
+    internal void CommitAssistantText(string markdown)
+    {
+        ArgumentNullException.ThrowIfNull(markdown);
+        var rendered = TerminalMarkdownRenderer.Render(TerminalSafeText.Normalize(markdown));
+        lock (_gate)
+        {
+            if (!_active) return;
+            _liveAssistant = "";
+            if (rendered.Length > 0)
+            {
+                Capture(rendered, isError: false);
+                _transcript.Append(rendered);
+                TrimTranscriptLocked();
+            }
             RenderLocked();
         }
     }
@@ -149,14 +180,17 @@ public sealed class TerminalScreen : IDisposable
             if (!_active || safe.Length == 0) return;
             Capture(safe, isError);
             _transcript.Append(safe);
-            if (_transcript.Length > MaxScreenTranscriptCharacters)
-            {
-                var excess = _transcript.Length - MaxScreenTranscriptCharacters;
-                var trim = _transcript.ToString(excess, Math.Min(MaxScreenTranscriptCharacters, 64 * 1024)).IndexOf('\n');
-                _transcript.Remove(0, trim < 0 ? excess : excess + trim + 1);
-            }
+            TrimTranscriptLocked();
             RenderLocked();
         }
+    }
+
+    private void TrimTranscriptLocked()
+    {
+        if (_transcript.Length <= MaxScreenTranscriptCharacters) return;
+        var excess = _transcript.Length - MaxScreenTranscriptCharacters;
+        var trim = _transcript.ToString(excess, Math.Min(MaxScreenTranscriptCharacters, 64 * 1024)).IndexOf('\n');
+        _transcript.Remove(0, trim < 0 ? excess : excess + trim + 1);
     }
 
     private void Capture(string safe, bool isError)
@@ -187,7 +221,7 @@ public sealed class TerminalScreen : IDisposable
         var footerHeight = height > 2 ? 1 : 0;
         var transcriptHeight = Math.Max(1, height - editorHeight - footerHeight);
         var editor = EditorViewport.Layout(_editorText, _editorCursor, columns, editorHeight);
-        var transcriptRows = WrapTail(_transcript.ToString(), Math.Max(1, columns - 1), transcriptHeight);
+        var transcriptRows = WrapTail(_transcript.ToString() + _liveAssistant, Math.Max(1, columns - 1), transcriptHeight);
         var screenRows = Enumerable.Repeat("", height).ToArray();
         var transcriptStart = transcriptHeight - transcriptRows.Count;
         for (var index = 0; index < transcriptRows.Count; index++)
@@ -201,6 +235,7 @@ public sealed class TerminalScreen : IDisposable
         for (var index = 0; index < screenRows.Length; index++)
         {
             _originalOut.Write(screenRows[index]);
+            _originalOut.Write("\u001b[0m");
             _originalOut.Write("\u001b[K");
             if (index < screenRows.Length - 1) _originalOut.Write("\r\n");
         }
@@ -227,23 +262,41 @@ public sealed class TerminalScreen : IDisposable
             }
             var current = new StringBuilder();
             var used = 0;
-            var elements = StringInfo.GetTextElementEnumerator(line);
-            while (elements.MoveNext())
+            for (var offset = 0; offset < line.Length;)
             {
-                var element = (string)elements.Current;
-                var cells = Math.Max(0, TerminalCells.Width(element));
-                if (used + cells > width)
+                if (TryReadSgr(line, offset, out var sequenceLength))
                 {
-                    Add(current.ToString());
+                    current.Append(line, offset, sequenceLength);
+                    offset += sequenceLength;
+                    continue;
+                }
+                var element = StringInfo.GetNextTextElement(line, offset);
+                var cells = Math.Max(0, TerminalCells.Width(element));
+                if (used + cells > width && current.Length > 0)
+                {
+                    Add(current + "\u001b[0m");
                     current.Clear();
                     used = 0;
                 }
                 current.Append(element);
                 used += cells;
+                offset += element.Length;
             }
-            Add(current.ToString());
+            Add(current + "\u001b[0m");
         }
         return rows.ToList();
+    }
+
+    private static bool TryReadSgr(string text, int offset, out int length)
+    {
+        length = 0;
+        if (offset + 2 >= text.Length || text[offset] != '\u001b' || text[offset + 1] != '[') return false;
+        var end = text.IndexOf('m', offset + 2);
+        if (end < 0) return false;
+        for (var index = offset + 2; index < end; index++)
+            if (text[index] is not (>= '0' and <= '9') and not ';') return false;
+        length = end - offset + 1;
+        return true;
     }
 
     private static string Clip(string value, int width)
