@@ -723,7 +723,17 @@ if (cli.Mode == "rpc")
     await new RpcMode(Console.In, Console.Out, conversationRun, sessionPath is null ? null :
         cancellationToken => store.SaveAsync(conversation, sessionPath, cancellationToken), resources, GetModelsAsync,
         extensionLease.Current.Registration, () => selection.Authenticated ? null :
-            $"Provider '{selection.Provider.Id}' is not authenticated. Use /login {selection.Provider.Id} or configure {selection.Provider.ApiKeyEnvironment ?? "a credential"}.").ServeAsync();
+            $"Provider '{selection.Provider.Id}' is not authenticated. Use /login {selection.Provider.Id} or configure {selection.Provider.ApiKeyEnvironment ?? "a credential"}.",
+        async (providerId, modelId, token) =>
+        {
+            var availableModels = await modelRuntime.ListModelsAsync(providerId, token);
+            if (!availableModels.Any(model => model.Id.Equals(modelId, StringComparison.Ordinal)))
+                throw new ArgumentException($"Model not found: {providerId}/{modelId}");
+            var next = await modelRuntime.ResolveAsync(providerId, modelId, token);
+            var nextThinking = next.Model.Reasoning == true ? thinking : "off";
+            await ReplaceModelRuntime(next, nextThinking, recordModelChange: true);
+            return selection.Model;
+        }, () => conversationRun).ServeAsync();
     return;
 }
 if (cli.Mode == "json")

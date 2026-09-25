@@ -12,12 +12,15 @@ namespace PiSharp.Cli.Protocols;
 public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun run,
     Func<CancellationToken, Task>? save = null, PiSharp.Runtime.Resources.ResourceCatalog? resources = null,
     Func<CancellationToken, Task<IReadOnlyList<ModelDescriptor>>>? discoverModels = null,
-    ExtensionRegistration? extensions = null, Func<string?>? promptPreflight = null)
+    ExtensionRegistration? extensions = null, Func<string?>? promptPreflight = null,
+    Func<string, string, CancellationToken, Task<ModelDescriptor>>? setModel = null,
+    Func<ConversationRun>? getCurrentRun = null)
 {
     private readonly JsonLineWriter _writer = new(output);
     private readonly ConcurrentDictionary<Guid, BashOperation> _bashOperations = new();
     private CancellationTokenSource? _abort;
     private Task? _active;
+    private ConversationRun CurrentRun => getCurrentRun?.Invoke() ?? run;
 
     public async Task ServeAsync(CancellationToken cancellationToken = default)
     {
@@ -64,13 +67,35 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                             catch (Exception error) when (error is HttpRequestException or InvalidDataException or JsonException or TaskCanceledException)
                             { await RespondAsync(id, type, false, error.Message); }
                             break;
+                        case "set_model":
+                            if (busy) { await RespondAsync(id, type, false, "Wait until the active prompt settles."); break; }
+                            if (!root.TryGetProperty("provider", out var modelProvider) || modelProvider.ValueKind != JsonValueKind.String ||
+                                string.IsNullOrWhiteSpace(modelProvider.GetString()) || !root.TryGetProperty("modelId", out var modelId) ||
+                                modelId.ValueKind != JsonValueKind.String || string.IsNullOrWhiteSpace(modelId.GetString()))
+                            { await RespondAsync(id, type, false, "A provider and modelId are required."); break; }
+                            if (setModel is null) { await RespondAsync(id, type, false, "Model selection is unavailable."); break; }
+                            try
+                            {
+                                var selectedModel = await setModel(modelProvider.GetString()!, modelId.GetString()!, cancellationToken);
+                                await _writer.EmitAsync(new
+                                {
+                                    id,
+                                    type = "response",
+                                    command = type,
+                                    success = true,
+                                    data = new { provider = selectedModel.Provider, id = selectedModel.Id }
+                                }, cancellationToken);
+                            }
+                            catch (Exception error) when (error is not OperationCanceledException)
+                            { await RespondAsync(id, type, false, error.Message); }
+                            break;
                         case "compact":
                             if (busy) { await RespondAsync(id, type, false, "Wait until the active prompt settles."); break; }
                             if (root.TryGetProperty("instructions", out var focus) && focus.ValueKind != JsonValueKind.String)
                             { await RespondAsync(id, type, false, "Instructions must be text."); break; }
                             try
                             {
-                                var compacted = await run.CompactAsync(root.TryGetProperty("instructions", out focus) ? focus.GetString() : null, cancellationToken);
+                                var compacted = await CurrentRun.CompactAsync(root.TryGetProperty("instructions", out focus) ? focus.GetString() : null, cancellationToken);
                                 await _writer.EmitAsync(new { id, type = "response", command = type, success = true, data = new { compacted } }, cancellationToken);
                             }
                             catch (Exception error) when (error is not OperationCanceledException)
@@ -91,7 +116,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                             }, cancellationToken);
                             break;
                         case "get_state":
-                            var queue = run.GetPendingPrompts();
+                            var queue = CurrentRun.GetPendingPrompts();
                             await _writer.EmitAsync(new
                             {
                                 id,
@@ -100,11 +125,11 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                                 success = true,
                                 data = new
                                 {
-                                    model = run.Conversation.Model,
+                                    model = CurrentRun.Conversation.Model,
                                     isStreaming = busy,
-                                    sessionId = run.Conversation.Id,
-                                    sessionName = run.Conversation.Name,
-                                    messageCount = run.Conversation.ActiveMessages().Count,
+                                    sessionId = CurrentRun.Conversation.Id,
+                                    sessionName = CurrentRun.Conversation.Name,
+                                    messageCount = CurrentRun.Conversation.ActiveMessages().Count,
                                     steering = queue.Steering,
                                     followUp = queue.FollowUp,
                                     format = "pisharp",
@@ -120,9 +145,9 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                             try
                             {
                                 var path = Path.GetFullPath(root.TryGetProperty("outputPath", out outputPath)
-                                    ? outputPath.GetString()! : Path.Combine(run.Conversation.WorkingDirectory,
-                                        $"pisharp-{run.Conversation.Id[..12]}.html"));
-                                await SessionExport.ExportHtmlAsync(run.Conversation, path, cancellationToken);
+                                    ? outputPath.GetString()! : Path.Combine(CurrentRun.Conversation.WorkingDirectory,
+                                        $"pisharp-{CurrentRun.Conversation.Id[..12]}.html"));
+                                await SessionExport.ExportHtmlAsync(CurrentRun.Conversation, path, cancellationToken);
                                 await _writer.EmitAsync(new
                                 {
                                     id,
@@ -143,7 +168,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                                 type = "response",
                                 command = type,
                                 success = true,
-                                data = SessionStatistics.Calculate(run.Conversation)
+                                data = SessionStatistics.Calculate(CurrentRun.Conversation)
                             }, cancellationToken);
                             break;
                         case "get_messages":
@@ -156,7 +181,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                                 success = true,
                                 data = new
                                 {
-                                    messages = run.Conversation.ActiveMessages().Select(message =>
+                                    messages = CurrentRun.Conversation.ActiveMessages().Select(message =>
                                     JsonSerializer.SerializeToElement(message, AIJsonUtilities.DefaultOptions)).ToArray()
                                 }
                             }, cancellationToken);
@@ -171,14 +196,14 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                                 success = true,
                                 data = new
                                 {
-                                    text = run.Conversation.ActiveMessages().LastOrDefault(message =>
+                                    text = CurrentRun.Conversation.ActiveMessages().LastOrDefault(message =>
                                     message.Role == ChatRole.Assistant)?.Text
                                 }
                             }, cancellationToken);
                             break;
                         case "get_entries":
                             if (busy) { await RespondAsync(id, type, false, "Wait until the active prompt settles."); break; }
-                            var entries = run.Conversation.Tree.Entries;
+                            var entries = CurrentRun.Conversation.Tree.Entries;
                             var index = -1;
                             if (root.TryGetProperty("since", out var since))
                             {
@@ -196,7 +221,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                                 {
                                     format = "pisharp",
                                     entries = entries.Skip(index + 1).ToArray(),
-                                    leafId = run.Conversation.Tree.HeadId
+                                    leafId = CurrentRun.Conversation.Tree.HeadId
                                 }
                             }, cancellationToken);
                             break;
@@ -208,18 +233,18 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                                 type = "response",
                                 command = type,
                                 success = true,
-                                data = new { format = "pisharp", tree = BuildTree(run.Conversation), leafId = run.Conversation.Tree.HeadId }
+                                data = new { format = "pisharp", tree = BuildTree(CurrentRun.Conversation), leafId = CurrentRun.Conversation.Tree.HeadId }
                             }, cancellationToken);
                             break;
                         case "set_session_name":
                             if (busy) { await RespondAsync(id, type, false, "Wait until the active prompt settles."); break; }
                             if (!root.TryGetProperty("name", out var name) || name.ValueKind != JsonValueKind.String)
                             { await RespondAsync(id, type, false, "A string name is required."); break; }
-                            var oldName = run.Conversation.Name;
-                            run.Conversation.Rename(name.GetString());
+                            var oldName = CurrentRun.Conversation.Name;
+                            CurrentRun.Conversation.Rename(name.GetString());
                             try { if (save is not null) await save(cancellationToken); }
                             catch (Exception error)
-                            { run.Conversation.Rename(oldName); await RespondAsync(id, type, false, error.Message); break; }
+                            { CurrentRun.Conversation.Rename(oldName); await RespondAsync(id, type, false, error.Message); break; }
                             await RespondAsync(id, type, true);
                             break;
                         case "prompt":
@@ -251,7 +276,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                                     break;
                                 }
                                 var queued = promptStreamingBehavior == "steer"
-                                    ? run.TrySteer(expanded) : run.TryFollowUp(expanded);
+                                    ? CurrentRun.TrySteer(expanded) : CurrentRun.TryFollowUp(expanded);
                                 await RespondPromptAsync(id, queued, queued ? "queued" : null,
                                     queued ? null : "The active run is already settling; submit the prompt again.");
                                 break;
@@ -275,7 +300,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                             StartBash(id, bashCommand.GetString()!, excludeFromContext.ValueKind == JsonValueKind.True, cancellationToken);
                             break;
                         case "abort_bash":
-                            run.AbortBash();
+                            CurrentRun.AbortBash();
                             foreach (var operation in _bashOperations.Values)
                             {
                                 try { operation.Cancellation.Cancel(); }
@@ -296,12 +321,12 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                             }
                             catch (Exception error) when (error is ArgumentException or IOException)
                             { await RespondAsync(id, type, false, error.Message); break; }
-                            var added = type == "steer" ? run.TrySteer(queuedExpanded) : run.TryFollowUp(queuedExpanded);
+                            var added = type == "steer" ? CurrentRun.TrySteer(queuedExpanded) : CurrentRun.TryFollowUp(queuedExpanded);
                             await RespondQueuedInputAsync(id, type, added,
                                 added ? null : "The active run is already settling.");
                             break;
                         case "clear_queue":
-                            var pending = run.ClearPendingPrompts();
+                            var pending = CurrentRun.ClearPendingPrompts();
                             await _writer.EmitAsync(new
                             {
                                 id,
@@ -421,7 +446,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
         {
             var correlationId = GetCorrelationId(id);
             var result = await ExecuteUserBashAsync(correlationId, command, excludeFromContext, operation.Cancellation.Token);
-            var recordedNow = run.RecordBashResult(command, result, excludeFromContext);
+            var recordedNow = CurrentRun.RecordBashResult(command, result, excludeFromContext);
             if (recordedNow && save is not null) await save(CancellationToken.None);
             var data = new Dictionary<string, object?>
             {
@@ -450,7 +475,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
     {
         if (extensions is not null)
         {
-            var context = new UserBashContext(command, excludeFromContext, run.Conversation.WorkingDirectory,
+            var context = new UserBashContext(command, excludeFromContext, CurrentRun.Conversation.WorkingDirectory,
                 delta => EmitBashUpdateAsync(correlationId, delta));
             foreach (var handler in extensions.UserBashHandlers)
             {
@@ -474,7 +499,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
             }
         }
 
-        return await run.ExecuteBashAsync(command,
+        return await CurrentRun.ExecuteBashAsync(command,
             delta => EmitBashUpdateAsync(correlationId, delta).GetAwaiter().GetResult(), cancellationToken);
     }
 

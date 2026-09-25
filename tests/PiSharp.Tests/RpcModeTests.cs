@@ -5,6 +5,7 @@ using Microsoft.Extensions.AI;
 using PiSharp.Cli.Protocols;
 using PiSharp.Runtime;
 using PiSharp.Runtime.Extensions;
+using PiSharp.Runtime.Providers;
 using PiSharp.Runtime.Sessions;
 using PiSharp.Runtime.Tools;
 
@@ -91,6 +92,41 @@ public sealed class RpcModeTests
         Assert.Equal("Provider 'fixture' is not authenticated.", response.RootElement.GetProperty("error").GetString());
         Assert.DoesNotContain(lines, line => line.Contains("\"type\":\"error\"", StringComparison.Ordinal));
         Assert.DoesNotContain(lines, line => line.Contains("prompt_accepted", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task SetModelReplacesTheRuntimeForSubsequentRpcCommands()
+    {
+        var channel = Channel.CreateUnbounded<string>();
+        using var output = new LockedWriter();
+        var session = new ConversationSession(Path.GetTempPath(), "fixture-model", "http://old.test/v1", "fixture");
+        var currentRun = await ConversationRun.OpenAsync(new PiAgent(new StubClient(), new CodingTools(Path.GetTempPath())), session);
+        var service = new RpcMode(new CommandReader(channel.Reader), output, currentRun,
+            setModel: async (provider, modelId, token) =>
+            {
+                session.SelectModel(modelId, "http://new.test/v1", provider);
+                currentRun = await ConversationRun.OpenAsync(
+                    new PiAgent(new StubClient(), new CodingTools(Path.GetTempPath())), session, token);
+                return new ModelDescriptor(modelId, "fixture", 8192, "configured", Provider: provider);
+            },
+            getCurrentRun: () => currentRun);
+        var serving = service.ServeAsync();
+        channel.Writer.TryWrite("{\"id\":\"switch\",\"type\":\"set_model\",\"provider\":\"fixture\",\"modelId\":\"fixture-next\"}");
+        channel.Writer.TryWrite("{\"id\":\"state\",\"type\":\"get_state\"}");
+        await WaitForAsync(output, "\"id\":\"state\"");
+        channel.Writer.Complete();
+        await serving.WaitAsync(TimeSpan.FromSeconds(5));
+
+        using var switched = JsonDocument.Parse(Assert.Single(output.Lines(), line =>
+            line.Contains("\"id\":\"switch\"", StringComparison.Ordinal)));
+        Assert.True(switched.RootElement.GetProperty("success").GetBoolean());
+        Assert.Equal("fixture-next", switched.RootElement.GetProperty("data").GetProperty("id").GetString());
+        Assert.Equal("fixture", switched.RootElement.GetProperty("data").GetProperty("provider").GetString());
+        using var state = JsonDocument.Parse(Assert.Single(output.Lines(), line =>
+            line.Contains("\"id\":\"state\"", StringComparison.Ordinal)));
+        Assert.Equal("fixture-next", state.RootElement.GetProperty("data").GetProperty("model").GetString());
+        Assert.Equal("http://new.test/v1", currentRun.Conversation.Endpoint);
+        Assert.Single(session.Tree.Entries, entry => entry.Type == "model_change");
     }
 
     [Fact]

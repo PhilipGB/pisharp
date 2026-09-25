@@ -1162,14 +1162,22 @@
     {
       "id": "rpc-set-model",
       "title": "RPC / event: set_model",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:34",
       "acceptance": [
-        "Implement set_model using shared canonical runtime with correlated responses/event ordering",
-        "Test protocol through RPC process, including failures and cancellation"
+        "Implement set_model using shared canonical runtime with correlated responses and Pi provider/model fields",
+        "Test runtime replacement, unknown-model failure and process-level behavior; cancellation and broader Pi wire differential remain open"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "src/PiSharp.Cli/Protocols/RpcMode.cs: idle-only set_model command returns lower-camel provider/id data",
+        "src/PiSharp.Cli/Program.cs: catalog validation, authenticated model resolution, runtime replacement and canonical session model-change recording"
+      ],
+      "evidence": [
+        "Compared the exact request fields, exact catalog-ID lookup, correlated failure, and provider/id success payload with current Pi main d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 in packages/coding-agent/src/modes/rpc/{rpc-types.ts,rpc-mode.ts,rpc-client.ts}.",
+        "RpcModeTests.SetModelReplacesTheRuntimeForSubsequentRpcCommands verifies response fields, changed runtime state, endpoint and one model_change entry.",
+        "RpcModelProcessTests.RpcSetModelReplacesTheRunningProviderRuntime drives the CLI RPC process through successful model replacement, exact catalog rejection and unchanged-state follow-up.",
+        "dotnet format PiSharp.slnx --verify-no-changes --no-restore; dotnet build PiSharp.slnx --warnaserror; dotnet test PiSharp.slnx => format passed, 0 build warnings/errors, 532 passed, 0 failed, 0 skipped."
+      ],
       "dependencies": []
     },
     {
