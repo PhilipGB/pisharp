@@ -13,9 +13,22 @@ internal sealed class RpcEventWriter(JsonLineWriter output)
         Func<AgentLifecycleEvent, Task>? observeEvent = null)
     {
         var succeeded = false;
+        var accepted = false;
         await foreach (var item in run.RunEventsAsync(prompt, cancellationToken))
         {
             if (observeEvent is not null) await observeEvent(item);
+            if (item.Type == "prompt_accepted")
+            {
+                if (!accepted) await output.EmitAsync(new { type = "agent_start" }, CancellationToken.None);
+                accepted = true;
+                continue;
+            }
+            if (item.Type == "prompt_rejected") continue;
+            if (item.Type == "agent_settled")
+            {
+                if (accepted) await output.EmitAsync(new { type = "agent_settled" }, CancellationToken.None);
+                continue;
+            }
             if (Project(item) is { } record) await output.EmitAsync(record, CancellationToken.None);
             if (item.Type == "agent_run_completed") succeeded = true;
         }
@@ -24,9 +37,8 @@ internal sealed class RpcEventWriter(JsonLineWriter output)
 
     private static object? Project(AgentLifecycleEvent item) => item.Type switch
     {
-        "prompt_queued" => null,
+        "prompt_queued" or "prompt_accepted" or "prompt_rejected" or "agent_settled" => null,
         "queue_update" => ProjectQueueUpdate(item),
-        "agent_settled" => new { type = "agent_settled" },
         _ => new { type = "event", format = "pisharp", data = item }
     };
 

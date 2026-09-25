@@ -44,12 +44,15 @@ public sealed class RpcModeTests
                 e.RootElement.GetProperty("id").GetString() == "prompt-1");
             Assert.Equal("started", promptResponse.RootElement.GetProperty("data").GetProperty("disposition").GetString());
             var responseIndex = Array.FindIndex(output.Lines(), line => line.Contains("\"id\":\"prompt-1\"", StringComparison.Ordinal));
-            var acceptedIndex = Array.FindIndex(output.Lines(), line => line.Contains("\"prompt_accepted\"", StringComparison.Ordinal));
-            Assert.True(responseIndex >= 0 && acceptedIndex > responseIndex);
+            var start = Assert.Single(events, e => e.RootElement.GetProperty("type").GetString() == "agent_start");
+            Assert.Equal(["type"], start.RootElement.EnumerateObject().Select(property => property.Name));
+            var startIndex = Array.FindIndex(output.Lines(), line => line.Contains("\"type\":\"agent_start\"", StringComparison.Ordinal));
+            Assert.True(responseIndex >= 0 && startIndex > responseIndex);
             var settled = Assert.Single(events, e => e.RootElement.GetProperty("type").GetString() == "agent_settled");
             Assert.Equal(["type"], settled.RootElement.EnumerateObject().Select(property => property.Name));
             var settledIndex = Array.FindIndex(output.Lines(), line => line.Contains("\"type\":\"agent_settled\"", StringComparison.Ordinal));
-            Assert.True(settledIndex > responseIndex);
+            Assert.True(settledIndex > startIndex);
+            Assert.DoesNotContain(output.Lines(), line => line.Contains("prompt_accepted", StringComparison.Ordinal));
             Assert.Contains(events, e => e.RootElement.GetProperty("type").GetString() == "response" &&
                 e.RootElement.GetProperty("id").GetString() == "unknown" && !e.RootElement.GetProperty("success").GetBoolean());
             Assert.Contains(events, e => e.RootElement.GetProperty("type").GetString() == "response" &&
@@ -92,6 +95,7 @@ public sealed class RpcModeTests
         using var response = JsonDocument.Parse(Assert.Single(lines, line =>
             line.Contains("\"id\":\"preflight\"", StringComparison.Ordinal) && line.Contains("\"type\":\"response\"", StringComparison.Ordinal)));
         Assert.False(response.RootElement.GetProperty("success").GetBoolean());
+        Assert.Single(lines);
         Assert.Equal("prompt", response.RootElement.GetProperty("command").GetString());
         Assert.Equal("Provider 'fixture' is not authenticated.", response.RootElement.GetProperty("error").GetString());
         Assert.DoesNotContain(lines, line => line.Contains("\"type\":\"error\"", StringComparison.Ordinal));
@@ -158,7 +162,7 @@ public sealed class RpcModeTests
     }
 
     [Fact]
-    public async Task RuntimePreflightFailureReturnsCorrelatedErrorBeforeRejectedEvent()
+    public async Task RuntimePreflightFailureReturnsOnlyCorrelatedErrorWithoutStartingAnAgentRun()
     {
         var channel = Channel.CreateUnbounded<string>();
         using var output = new LockedWriter();
@@ -174,8 +178,8 @@ public sealed class RpcModeTests
 
         var lines = output.Lines();
         var responseIndex = Array.FindIndex(lines, line => line.Contains("\"id\":\"compact-failed\"", StringComparison.Ordinal));
-        var rejectedIndex = Array.FindIndex(lines, line => line.Contains("prompt_rejected", StringComparison.Ordinal));
-        Assert.True(responseIndex >= 0 && rejectedIndex > responseIndex);
+        Assert.True(responseIndex >= 0);
+        Assert.Single(lines);
         using var response = JsonDocument.Parse(lines[responseIndex]);
         Assert.False(response.RootElement.GetProperty("success").GetBoolean());
         Assert.Contains("Estimated context still exceeds", response.RootElement.GetProperty("error").GetString());
@@ -559,6 +563,10 @@ public sealed class RpcModeTests
             Assert.Equal("queued", queued.RootElement.GetProperty("data").GetProperty("disposition").GetString());
             Assert.False(missingBehavior.RootElement.GetProperty("success").GetBoolean());
             var lines = output.Lines();
+            Assert.Equal(1, lines.Count(line => line.Contains("\"type\":\"agent_start\"", StringComparison.Ordinal)));
+            var agentStartIndex = Array.FindIndex(lines, line => line.Contains("\"type\":\"agent_start\"", StringComparison.Ordinal));
+            var agentSettledIndex = Array.FindIndex(lines, line => line.Contains("\"type\":\"agent_settled\"", StringComparison.Ordinal));
+            Assert.True(agentStartIndex >= 0 && agentSettledIndex > agentStartIndex);
             Assert.Contains(lines, line => line.Contains("\"type\":\"queue_update\"", StringComparison.Ordinal) &&
                 line.Contains("\"followUp\":[\"two\"]", StringComparison.Ordinal));
             Assert.DoesNotContain(lines, line => line.Contains("prompt_queued", StringComparison.Ordinal));

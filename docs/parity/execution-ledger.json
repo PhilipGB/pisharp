@@ -1597,11 +1597,13 @@
         "Test protocol through RPC process, including failures and cancellation"
       ],
       "implementation": [
-        "src/PiSharp.Cli/Protocols/RpcEventWriter.cs: locally projects the runtime's agent_settled boundary to Pi's top-level {type} event; agent_start and agent_end are not yet represented."
+        "src/PiSharp.Cli/Protocols/RpcEventWriter.cs: projects first prompt_accepted to Pi's top-level {type: agent_start}, emits one payload-free agent_settled after accepted work drains, and suppresses both for preflight rejection; agent_end is not yet represented."
       ],
       "evidence": [
         "Compared current Pi main d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 packages/coding-agent/src/core/agent-session.ts and modes/rpc/rpc-mode.ts: agent_settled is emitted as a payload-free top-level event after agent work settles.",
-        "RpcModeTests.AcceptsPromptThenEmitsEventsAndSupportsSubsequentStateQueries verifies the top-level event contains exactly type=agent_settled and occurs after the prompt response; focused image/RPC tests passed 24/24, dotnet format PiSharp.slnx --verify-no-changes --no-restore passed, dotnet build PiSharp.slnx --no-restore --warnaserror succeeded with 0 warnings/errors, and dotnet test PiSharp.slnx --no-restore passed 535/535. Exact-head CI is pending."
+        "Compared current Pi main d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 packages/coding-agent/src/modes/rpc/rpc-mode.ts and core/agent-session.ts: successful preflight responds before agent_start; rejected preflight does not start a run; queue work settles once after the accepted run.",
+        "RpcModeTests.AcceptsPromptThenEmitsEventsAndSupportsSubsequentStateQueries asserts exact payload-free agent_start/agent_settled shapes and response/start/settled order; PromptReceivedDuringStreamingQueuesAnotherTurnBeforeSettlement asserts one start for queued turns; preflight-failure tests assert only the correlated response.",
+        "Local validation: focused RPC/process tests passed 22/22; dotnet format PiSharp.slnx --verify-no-changes --no-restore passed; dotnet build PiSharp.slnx --no-restore --warnaserror succeeded with 0 warnings/errors; dotnet test PiSharp.slnx --no-restore passed 535/535. Exact-head CI is pending."
       ],
       "dependencies": []
     },
