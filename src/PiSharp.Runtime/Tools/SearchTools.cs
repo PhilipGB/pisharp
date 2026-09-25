@@ -117,6 +117,7 @@ public sealed class SearchTools(string workingDirectory)
                 throw SearchInventory.PermissionDenied("rg", file, error);
             }
             catch (Exception error) when (error is IOException or DecoderFallbackException) { continue; }
+            if (lines.Any(line => line.Contains('\0'))) continue;
             for (var index = 0; index < lines.Length; index++)
             {
                 cancellationToken.ThrowIfCancellationRequested();

@@ -215,6 +215,24 @@ public sealed class SearchToolsTests
         finally { Directory.Delete(root, recursive: true); }
     }
 
+    [Fact]
+    public async Task GrepSkipsNulBinaryFilesLikeRipgrep()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-grep-binary-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(root, "same-line.bin"), "needle\0tail\nneedle after binary\n");
+            await File.WriteAllTextAsync(Path.Combine(root, "later-line.bin"), "needle before binary\nbinary\0line\nneedle after binary\n");
+            await File.WriteAllTextAsync(Path.Combine(root, "plain.txt"), "needle plain text\n");
+
+            var output = await new SearchTools(root).Grep("needle");
+            Assert.Equal(["plain.txt:1: needle plain text"],
+                output.Split('\n').Order(StringComparer.Ordinal));
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
