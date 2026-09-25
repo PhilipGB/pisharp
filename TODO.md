@@ -1,24 +1,23 @@
 # PiSharp capability parity — durable execution state
 
-**Goal:** implement Pi's in-scope capabilities idiomatically in C#/.NET with behavioural and differential evidence. Pi Packages are excluded unless required for a core capability.
+**Goal:** implement Pi's in-scope capabilities idiomatically in C#/.NET with behavioral and differential evidence. Pi Packages are excluded unless required for a core capability.
 
 **Stop condition:** a full audit against current Pi main finds no material in-scope gaps and required validation/differential evidence passes.
 
 ## Current state
 
-- PiSharp main was clean at d52a237 on entry. Linux CI run 36116615450 passed there: format, warnings-as-errors build, and 403/403 tests.
-- Current upstream pin: earendil-works/pi@49681e1b71c9c32cdfbf45c21f8e3cb3a8c8629d, refreshed 2026-09-25. Current Pi TUI is 0.87.1 and uses Marked 18.0.11 tokens; its wrapping helper counts terminal cells, preserves ANSI state, and breaks long tokens by grapheme.
-- The failed CI head 6473cc710e64c43551c0b49e0d610991de1664f9 was reproduced in an isolated worktree: ActiveScreenWrapsGfmTableCellsToAvailableWidth fails because a long cell causes source-Markdown fallback. Current main's follow-up table fix passes, but did not provide a reusable wrapping primitive.
-- Latest known-good PiSharp main: `5d3d7f09019967b0e3a40ab3da0a4f3ff5e385b3`. Linux CI [run 36123165224](https://github.com/PhilipGB/pisharp/actions/runs/36123165224) passed format verification, the warnings-as-errors build, and the full suite. Local full suite passed 410/410; focused wrapping tests passed 9/9. The shared terminal-cell wrapper now hard-wraps long tokens and covers ANSI/OSC 8 state, combining marks, CJK, emoji/graphemes, and table borders/padding. The test-only provider HTTP listener reservation/start window is serialized to prevent parallel fixture port collisions.
+- Latest known-good PiSharp main: `ff4254c4168dcfee1d16868c93fb7778bc64e0dd`; Linux CI run [36123407896](https://github.com/PhilipGB/pisharp/actions/runs/36123407896) passed. The long-token GFM table-width failure is fixed by shared terminal-cell-aware wrapping.
+- Current Pi pin: `earendil-works/pi@49681e1b71c9c32cdfbf45c21f8e3cb3a8c8629d`, refreshed 2026-09-25. Pi 0.87.1 uses Marked 18.0.11 tokenization and ANSI-aware grapheme wrapping.
+- The current uncommitted slice adopts Markdig 1.3.2 AST parsing with separate terminal renderers, and splits transcript buffer, viewport and search state out of `TerminalScreen`. Local format verification and warnings-as-errors build pass; the full suite passes 416/416. Exact-head Linux CI is pending.
 
 ## What still prevents parity
 
-- TUI architecture and breadth: Markdown still uses a handwritten regex parser; idle full-screen application, overlays/pickers, selection/mouse, complete editor/keybindings, themes, images, and extension UI are incomplete.
+- TUI breadth remains the active priority: idle full-screen application, reusable overlays/pickers, editor/keybinding completion, mouse/selection, themes, images and extension UI. Markdown still differs from Pi in full dialect coverage, LaTeX layout, syntax highlighting and streaming edge cases.
 - Pi JSONL/session interoperability and Pi-compatible RPC/SDK remain major gaps.
-- Settings/resources/extensions, multimodal handling, provider/auth breadth, and final differential audit remain incomplete. See the feature matrix and detailed inventory for per-surface evidence and residuals.
+- Settings/resources/extensions, multimodal handling, provider/auth breadth and a current full differential audit remain incomplete. See the feature matrix and detailed inventory for evidence and residuals.
 
 ## Priority and next action
 
-1. Replace the Markdown regex grammar with Markdig CommonMark/GFM parsing and a separate PiSharp AST-to-terminal renderer. Preserve streaming, safe output, existing behavior, and cell-width layout.
-2. Refactor screen state/layout/lifecycle and continue the TUI acceptance work, prioritizing externally visible app/picker/editor gaps.
-3. Then move to sessions/interoperability and Pi RPC/JSON/SDK before remaining settings, resources, multimodal and provider breadth.
+1. Commit the validated Markdig and transcript-component slice, then confirm Linux CI on that exact head.
+2. Continue TUI acceptance work with a reusable overlay/list host and idle application surface, then model/scoped-model and session pickers; favor externally visible capability gaps.
+3. Continue through session interoperability and RPC/JSON/SDK, then settings/resources/extensions, multimodal and provider/auth breadth. Refresh Pi before image/theme work and before the final audit.
