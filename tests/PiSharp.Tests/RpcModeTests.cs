@@ -76,6 +76,8 @@ public sealed class RpcModeTests
 
             channel.Writer.TryWrite("{\"id\":\"bash-1\",\"type\":\"bash\",\"command\":\"printf stdout-marker; printf stderr-marker >&2; exit 7\"}");
             await WaitForAsync(output, "\"command\":\"bash\"");
+            channel.Writer.TryWrite("{\"id\":\"after-bash\",\"type\":\"prompt\",\"message\":\"continue\"}");
+            await WaitForAsync(output, "agent_settled");
             channel.Writer.Complete();
             await serving.WaitAsync(TimeSpan.FromSeconds(5));
 
@@ -90,8 +92,16 @@ public sealed class RpcModeTests
             Assert.False(result.GetProperty("cancelled").GetBoolean());
             Assert.False(result.GetProperty("truncated").GetBoolean());
             Assert.False(result.TryGetProperty("fullOutputPath", out _));
-            Assert.Contains("Ran `printf stdout-marker; printf stderr-marker >&2; exit 7`",
-                Assert.Single(run.Conversation.ActiveMessages()).Text);
+            Assert.Contains(run.Conversation.ContextMessages(), message =>
+                message.Text.Contains("Ran `printf stdout-marker; printf stderr-marker >&2; exit 7`", StringComparison.Ordinal));
+            Assert.Contains(run.Conversation.ContextMessages(), message => message.Text.Contains("continue", StringComparison.Ordinal));
+            var bashEntry = Assert.Single(run.Conversation.Tree.ActivePath(), entry => entry.Type == "bash_execution");
+            Assert.False(bashEntry.Payload.GetProperty("excludeFromContext").GetBoolean());
+            var restored = ConversationSession.Parse(run.Conversation.ToJson());
+            Assert.False(Assert.Single(restored.Tree.ActivePath(), entry => entry.Type == "bash_execution")
+                .Payload.GetProperty("excludeFromContext").GetBoolean());
+            Assert.Contains(restored.ContextMessages(), message =>
+                message.Text.Contains("Ran `printf stdout-marker; printf stderr-marker >&2; exit 7`", StringComparison.Ordinal));
 
             var updateIndices = lines.Select((line, index) => (line, index))
                 .Where(item => item.line.Contains("bash_execution_update", StringComparison.Ordinal))
@@ -109,6 +119,52 @@ public sealed class RpcModeTests
             Assert.Contains("stderr-marker", streamed.ToString());
             var responseIndex = Array.FindIndex(lines, line => line.Contains("\"command\":\"bash\"", StringComparison.Ordinal));
             Assert.All(updateIndices, index => Assert.True(index < responseIndex));
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
+    public async Task BashCommandCanPersistResultWithoutAddingItToModelContext()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-rpc-bash-excluded-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            var channel = Channel.CreateUnbounded<string>();
+            using var output = new LockedWriter();
+            var session = new ConversationSession(root, "fixture", null);
+            var run = await ConversationRun.OpenAsync(new PiAgent(new StubClient(), new CodingTools(root)), session);
+            var serving = new RpcMode(new CommandReader(channel.Reader), output, run).ServeAsync();
+
+            channel.Writer.TryWrite("{\"id\":\"bash-excluded\",\"type\":\"bash\",\"command\":\"printf excluded-marker\",\"excludeFromContext\":true}");
+            await WaitForAsync(output, "\"command\":\"bash\"");
+            using (var response = JsonDocument.Parse(Assert.Single(output.Lines(), line =>
+                       line.Contains("\"id\":\"bash-excluded\"", StringComparison.Ordinal))))
+            {
+                Assert.True(response.RootElement.GetProperty("success").GetBoolean());
+                Assert.Equal("excluded-marker", response.RootElement.GetProperty("data").GetProperty("output").GetString());
+            }
+
+            Assert.Empty(session.ContextMessages());
+            var bashEntry = Assert.Single(session.Tree.ActivePath(), entry => entry.Type == "bash_execution");
+            Assert.True(bashEntry.Payload.GetProperty("excludeFromContext").GetBoolean());
+            var restored = ConversationSession.Parse(session.ToJson());
+            Assert.Empty(restored.ContextMessages());
+            var restoredBashEntry = Assert.Single(restored.Tree.ActivePath(), entry => entry.Type == "bash_execution");
+            Assert.True(restoredBashEntry.Payload.GetProperty("excludeFromContext").GetBoolean());
+            Assert.Equal("excluded-marker", restoredBashEntry.Payload.GetProperty("output").GetString());
+
+            channel.Writer.Complete();
+            await serving.WaitAsync(TimeSpan.FromSeconds(5));
+
+            var restoredRun = await ConversationRun.OpenAsync(new PiAgent(new StubClient(), new CodingTools(root)), restored);
+            var events = new List<AgentLifecycleEvent>();
+            await foreach (var item in restoredRun.RunEventsAsync("continue")) events.Add(item);
+            Assert.Equal("agent_settled", events[^1].Type);
+            Assert.DoesNotContain(restored.ContextMessages(), message =>
+                message.Text.Contains("excluded-marker", StringComparison.Ordinal));
+            Assert.Contains(restored.ContextMessages(), message => message.Text.Contains("continue", StringComparison.Ordinal));
         }
         finally { Directory.Delete(root, recursive: true); }
     }

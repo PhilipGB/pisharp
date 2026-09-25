@@ -22,6 +22,20 @@ public sealed class ConversationSessionTests
     }
 
     [Fact]
+    public void MalformedBashExecutionOnInactiveBranchCannotBeLoaded()
+    {
+        var session = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        session.Append(new ChatMessage(ChatRole.User, "root"));
+        var root = session.Tree.HeadId;
+        session.AppendBashExecution(new BashExecutionRecord("printf output", "output", 0, false, false, null, true));
+        session.Tree.Select(root);
+        var document = System.Text.Json.Nodes.JsonNode.Parse(session.ToJson())!;
+        document["Entries"]![1]!["Payload"]!["cancelled"] = "false";
+        Assert.Contains("Invalid Bash execution", Assert.Throws<InvalidDataException>(() =>
+            ConversationSession.Parse(document.ToJsonString())).Message);
+    }
+
+    [Fact]
     public void InvalidCheckpointOnInactiveBranchFailsClosed()
     {
         var session = new ConversationSession(Path.GetTempPath(), "fixture", null);

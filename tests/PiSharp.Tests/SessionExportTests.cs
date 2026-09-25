@@ -22,6 +22,8 @@ public sealed class SessionExportTests
             conversation.Append(new ChatMessage(ChatRole.Assistant, "branch-b"));
             conversation.Append(new ChatMessage(ChatRole.Tool,
                 [new FunctionResultContent("x", "failed result") { Exception = new ToolFailureException("boom <bad>") }]));
+            conversation.AppendBashExecution(new BashExecutionRecord("printf <secret>", "<script>bash-output</script>",
+                7, false, true, "/tmp/full-output.log", true));
             var target = Path.Combine(cwd, "export.html");
             await SessionExport.ExportHtmlAsync(conversation, target);
             var html = await File.ReadAllTextAsync(target);
@@ -32,6 +34,10 @@ public sealed class SessionExportTests
             Assert.Contains("branch-b", html);
             Assert.Contains("Tool failure:", html);
             Assert.Contains("boom &lt;bad&gt;", html);
+            Assert.Contains("Bash execution", html);
+            Assert.Contains("printf &lt;secret&gt;", html);
+            Assert.Contains("&lt;script&gt;bash-output&lt;/script&gt;", html);
+            Assert.Contains("Excluded from context: True", html);
             if (OperatingSystem.IsLinux())
                 Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite, File.GetUnixFileMode(target));
             await Assert.ThrowsAsync<IOException>(() => SessionExport.ExportHtmlAsync(conversation, target));

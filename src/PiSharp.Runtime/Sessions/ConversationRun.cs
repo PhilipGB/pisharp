@@ -19,7 +19,7 @@ public sealed class ConversationRun
     private readonly object _promptQueueGate = new();
     private readonly Queue<string> _steeringQueue = new();
     private readonly Queue<string> _followUpQueue = new();
-    private readonly Queue<ChatMessage> _pendingBashMessages = new();
+    private readonly Queue<BashExecutionRecord> _pendingBashExecutions = new();
     private object? _promptLoopOwner;
     private Action<AgentLifecycleEvent>? _promptQueueEvents;
     private AgentSession _execution;
@@ -148,7 +148,7 @@ public sealed class ConversationRun
                                     Publish(UsageEvent(UsageRecord.Create(Conversation.Model, "model", usage.Details, _pricing)));
                             }
                     }
-                    FlushPendingBashMessages();
+                    FlushPendingBashExecutions();
                     Publish(new("turn_completed"));
                     current = TakeQueuedPromptOrClose(owner);
                 }
@@ -233,46 +233,47 @@ public sealed class ConversationRun
         lock (_promptQueueGate)
         {
             if (!ReferenceEquals(_promptLoopOwner, owner)) return;
-            FlushPendingBashMessagesUnsafe();
+            FlushPendingBashExecutionsUnsafe();
             _promptLoopOwner = null;
             _promptQueueEvents = null;
         }
     }
 
-    public bool RecordBashResult(string command, BashExecutionResult result)
+    public bool RecordBashResult(string command, BashExecutionResult result, bool excludeFromContext = false)
     {
-        var text = $"Ran `{command}`\n" + (result.Output.Length == 0 ? "(no output)" : $"```\n{result.Output}\n```");
-        if (result.Cancelled) text += "\n\n(command cancelled)";
-        else if (result.ExitCode is { } exitCode && exitCode != 0) text += $"\n\nCommand exited with code {exitCode}";
-        if (result.Truncated && result.FullOutputPath is { } fullOutputPath)
-            text += $"\n\n[Output truncated. Full output: {fullOutputPath}]";
-        var message = new ChatMessage(ChatRole.User, text);
+        ArgumentNullException.ThrowIfNull(command);
+        ArgumentNullException.ThrowIfNull(result);
+        var execution = new BashExecutionRecord(command, result.Output, result.ExitCode, result.Cancelled,
+            result.Truncated, result.FullOutputPath, excludeFromContext);
         lock (_promptQueueGate)
         {
             if (_promptLoopOwner is not null)
             {
-                _pendingBashMessages.Enqueue(message);
+                _pendingBashExecutions.Enqueue(execution);
                 return false;
             }
-            AppendBashMessage(message);
+            AppendBashExecution(execution);
             return true;
         }
     }
 
-    private void FlushPendingBashMessages()
+    private void FlushPendingBashExecutions()
     {
-        lock (_promptQueueGate) FlushPendingBashMessagesUnsafe();
+        lock (_promptQueueGate) FlushPendingBashExecutionsUnsafe();
     }
 
-    private void FlushPendingBashMessagesUnsafe()
+    private void FlushPendingBashExecutionsUnsafe()
     {
-        while (_pendingBashMessages.TryDequeue(out var message)) AppendBashMessage(message);
+        while (_pendingBashExecutions.TryDequeue(out var execution)) AppendBashExecution(execution);
     }
 
-    private void AppendBashMessage(ChatMessage message)
+    private void AppendBashExecution(BashExecutionRecord execution)
     {
-        Conversation.Append(message);
+        Conversation.AppendBashExecution(execution);
+        if (execution.ExcludeFromContext) return;
+        var message = ConversationSession.BashExecutionContextMessage(execution);
         _agent.AppendToHistory(_execution, message);
+        _historyCount++;
     }
 
     /// <summary>Manually summarize completed earlier turns; no raw session messages are removed.</summary>

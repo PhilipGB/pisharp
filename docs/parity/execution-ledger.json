@@ -401,15 +401,15 @@
         "src/PiSharp.Runtime/ShellOutputBuffer.cs keeps a UTF-8 decoded tail within the 2000-line/50KiB limits, flushes incomplete final UTF-8, retains a private complete-output file when truncated, and exposes structured tail/truncation metadata for direct RPC results.",
         "src/PiSharp.Runtime/BashOutputUpdates.cs coalesces bounded text deltas at 100ms; DurableToolFunction publishes correlated tool_execution_update lifecycle events; Program.cs prints those deltas during interactive runs without repeating successful output.",
         "src/PiSharp.Cli/UserSettings.cs and Program.cs carry shellPath from user or trusted-project settings through agent creation and replacement.",
-        "PiAgent.ExecuteBashAsync and ConversationRun.ExecuteBashAsync route direct RPC commands through the same CodingTools instance; ConversationRun records results into canonical chat context and defers concurrent records until the active turn ends."
+        "PiAgent.ExecuteBashAsync and ConversationRun.ExecuteBashAsync route direct RPC commands through the same CodingTools instance; ConversationRun persists a distinct bash_execution record and defers concurrent records until the active turn ends. Nonexcluded results project into MAF history and context; excluded results remain durable but never enter provider context."
       ],
       "evidence": [
         "Pinned Pi d5629e20489ccf770ed90b5a33941cb3b7ef24d0 and refreshed current main b2bd111f2d46eed1a4689c32f30fde6306498827 use the same Bash update throttle, platform shell resolution and rearmed 100ms post-exit stdio idle grace in the inspected source paths.",
         "CodingToolsTests cover cwd, inherited environment, custom shell selection, both output streams, nonzero exit, timeout/cancellation process-group cleanup, 2000-line and single-line 50KiB truncation, exact private full-output retention, incomplete UTF-8 flush and a child that writes after the parent shell exits.",
         "AgentIntegrationTests.BashEmitsOutputUpdatesBeforeTheShellCompletes uses a release-file barrier to prove a real tool update arrives before command completion; JsonEventModeTests.LiveBashOutputIsSerializedAsToolExecutionUpdateEvents checks event data and order on the JSONL path.",
         "UserSettingsTests.ShellPathLoadsFromUserSettingsAndTrustedProjectOverlay checks malformed values and user/project precedence.",
-        "CodingToolsTests pass 14/14. The four direct RPC Bash tests pass 4/4, including the CLI process fixture; dotnet test PiSharp.slnx -c Release --no-restore => 343 passed, 0 failed, 0 skipped; dotnet build PiSharp.slnx -c Release --warnaserror --no-restore => 0 warnings/errors; dotnet format PiSharp.slnx --verify-no-changes --no-restore => passed.",
-        "Still open: Pi session-derived PI_* environment injection, excludeFromContext, ANSI/binary/CR normalization, exact pinned result/error details, Pi RPC event shape, PTY presentation, cross-platform signal/tree behavior, and broader settings reload parity."
+        "CodingToolsTests pass 14/14. Four RpcMode direct Bash tests and the CLI process fixture pass; dotnet test PiSharp.slnx -c Release --no-restore => 349 passed, 0 failed, 0 skipped; dotnet build PiSharp.slnx -c Release --no-restore -warnaserror => 0 warnings/errors; dotnet format PiSharp.slnx --verify-no-changes --no-restore => passed.",
+        "Still open: Pi session-derived PI_* environment injection, ANSI/binary/CR normalization, exact pinned result/error details, Pi RPC event shape, PTY presentation, cross-platform signal/tree behavior, and broader settings reload parity."
       ],
       "dependencies": []
     },
@@ -430,7 +430,7 @@
       "evidence": [
         "Pinned Pi grep/find/ls sources and tools.test.ts at d5629e20489ccf770ed90b5a33941cb3b7ef24d0 are unchanged in refreshed main b2bd111f2d46eed1a4689c32f30fde6306498827. Pinned find.ts passes `--hidden`, uses Git-aware ignore behavior inside repositories, and documents that parent `.gitignore` rules stop at nested repository boundaries; pinned grep.ts passes `--hidden`. Pi tools.test.ts includes `.gitignore` filtering outside a Git repository; SearchToolsTests.GitIgnoreFiltersSearchResultsOutsideGitRepositories covers wildcard plus negation for both find and grep.",
         "SearchToolsTests pass 23/23: nested ignore handling outside Git and from repository ancestors, nested and nested-within-nested Git repository traversal, parent `.gitignore` boundary behavior, inherited `.fdignore`/`.rgignore` behavior, local ignore rules at each nested root, `.rgignore`/`.fdignore` distinctions, higher-priority rules restoring Git-ignored paths, `.git/info/exclude` and `core.excludesFile` filtering including staged files, low-priority global fd ignore, brace alternatives, escaped and unescaped trailing spaces, find and grep query glob alternatives and character classes (including leading literal `]` and commas within a class), newline filenames, unignored `node_modules`, inside/outside Git symlink entries for find and symlink exclusion for grep, unreadable files and directories in and outside Git, grep truncation, and empty matching directories. ToolSelectionTests.OptInLsMatchesPinnedAsciiListingAndLimit covers current pinned listing output and limits.",
-        "Current local validation for the nested repository and symlink slices: full Release suite 346/346 with 0 skipped; format verification passed; warnings-as-errors build succeeded with 0 warnings/errors. Latest successful Linux CI before the symlink slice is run 36086078007 for commit eaa0499fb2c1daf0eac0712d37451c0179138b90. Earlier run 36076266399 failed an order-dependent grep assertion, fixed and passed in run 36077862952."
+        "Nested repository and symlink coverage passed in CI run 36086599003 for commit 7fcc1b957124f386e7546ac317cc893b3ecf11d0, following nested repository CI run 36086078007 for eaa0499fb2c1daf0eac0712d37451c0179138b90. The current local full Release suite passes 349/349 with 0 skipped; format verification passed; warnings-as-errors build succeeded with 0 warnings/errors. Earlier run 36076266399 failed an order-dependent grep assertion, fixed and passed in run 36077862952."
       ],
       "dependencies": []
     },
@@ -1200,10 +1200,12 @@
       ],
       "implementation": [
         "RpcMode accepts bash requests, validates command input, runs them asynchronously through ConversationRun and the shared CodingTools instance, emits request-correlated bash_execution_update events, and returns output, exitCode, cancelled, truncated and optional fullOutputPath fields.",
-        "ConversationRun records direct shell output into model context and defers records until an active provider turn settles; excludeFromContext=true is explicitly rejected."
+        "ConversationRun persists each direct shell result as a bash_execution entry, projects default results into context, omits excludeFromContext=true results from provider messages, and flushes deferred entries into history after the active turn settles."
       ],
       "evidence": [
-        "RpcModeTests.BashCommandStreamsCorrelatedOutputAndReturnsStructuredExitResult verifies combined stdout/stderr, exitCode 7, correlated updates before response, and persisted context.",
+        "RpcModeTests.BashCommandStreamsCorrelatedOutputAndReturnsStructuredExitResult verifies combined stdout/stderr, exitCode 7, correlated updates before response, default context projection and follow-up history consistency.",
+        "RpcModeTests.BashCommandCanPersistResultWithoutAddingItToModelContext verifies exclusion across JSON restore and a restored follow-up prompt; RpcBashProcessTests verifies get_entries retains the entry while get_messages omits it.",
+        "ConversationSessionTests, CompactionTests and SessionExportTests verify malformed inactive execution rejection, recent context retention across compaction, and escaped HTML export of execution details.",
         "RpcModeTests.BashCommandReturnsTailAndPrivateFullOutputMetadataWhenTruncated verifies the last 2000 lines, truncated flag and private complete log path.",
         "RpcBashProcessTests.RpcProcessReturnsBashResultsAndHandlesAbortBash runs the actual CLI RPC process and checks the structured nonzero result and event correlation."
       ],

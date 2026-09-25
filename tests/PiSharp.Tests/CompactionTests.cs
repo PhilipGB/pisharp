@@ -9,6 +9,29 @@ namespace PiSharp.Tests;
 public sealed class CompactionTests
 {
     [Fact]
+    public void CompactionKeepsProjectedBashEntriesInTheRecentContext()
+    {
+        var conversation = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        conversation.Append(new ChatMessage(ChatRole.User, "first"));
+        conversation.Append(new ChatMessage(ChatRole.Assistant, "first answer"));
+        conversation.Append(new ChatMessage(ChatRole.User, "second"));
+        conversation.Append(new ChatMessage(ChatRole.Assistant, "second answer"));
+        conversation.AppendBashExecution(new BashExecutionRecord("printf retained", "retained output", 0,
+            false, false, null, false));
+
+        var bashEntry = conversation.Tree.ActivePath().Last(entry => entry.Type == "bash_execution");
+        var plan = Assert.IsType<ConversationSession.CompactionPlan>(conversation.PrepareCompaction());
+        Assert.Equal(bashEntry.Id, plan.FirstKeptEntryId);
+        Assert.DoesNotContain(plan.MessagesToSummarize, message => message.Text.Contains("retained output", StringComparison.Ordinal));
+        conversation.AppendCompaction(plan, "Summary of first turn");
+
+        Assert.Equal(2, conversation.ContextMessages().Count);
+        Assert.Contains(conversation.ContextMessages(), message => message.Text.Contains("retained output", StringComparison.Ordinal));
+        Assert.Contains(ConversationSession.Parse(conversation.ToJson()).ContextMessages(), message =>
+            message.Text.Contains("retained output", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task ManualCompactionPreservesHistoryAndRestoresShortContextAfterRestartAndBranch()
     {
         var cwd = Path.Combine(Path.GetTempPath(), "pisharp-compact-" + Guid.NewGuid().ToString("N"));

@@ -56,6 +56,19 @@ public static class SessionExport
                             if (failure is not null) await Line($"<strong>Tool failure:</strong><pre>{Html(failure)}</pre>");
                         }
                     }
+                    else if (node.Type == "bash_execution")
+                    {
+                        await Line("<h2>Bash execution</h2>");
+                        await Line($"<p><strong>Command:</strong> {Html(node.Payload.GetProperty("command").GetString())}</p>");
+                        await Line($"<pre>{Html(node.Payload.GetProperty("output").GetString())}</pre>");
+                        var exitCode = node.Payload.GetProperty("exitCode");
+                        var fullOutputPath = node.Payload.GetProperty("fullOutputPath");
+                        await Line($"<small>Exit code: {Html(exitCode.ValueKind == JsonValueKind.Null ? "not reported" : exitCode.ToString())} · " +
+                            $"Cancelled: {Html(node.Payload.GetProperty("cancelled").GetBoolean().ToString())} · " +
+                            $"Truncated: {Html(node.Payload.GetProperty("truncated").GetBoolean().ToString())} · " +
+                            $"Excluded from context: {Html(node.Payload.GetProperty("excludeFromContext").GetBoolean().ToString())}" +
+                            (fullOutputPath.ValueKind == JsonValueKind.String ? $" · Full output: {Html(fullOutputPath.GetString())}" : "") + "</small>");
+                    }
                     else if (node.Type == "compaction")
                         await Line($"<h2>Context summary</h2><pre>{Html(node.Payload.GetProperty("summary").GetString())}</pre>");
                     else if (node.Type == "run_recovered")

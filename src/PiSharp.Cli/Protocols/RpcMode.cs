@@ -249,9 +249,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                             if (root.TryGetProperty("excludeFromContext", out var excludeFromContext) &&
                                 excludeFromContext.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
                             { await RespondAsync(id, type, false, "excludeFromContext must be a boolean."); break; }
-                            if (excludeFromContext.ValueKind == JsonValueKind.True)
-                            { await RespondAsync(id, type, false, "excludeFromContext is not supported."); break; }
-                            StartBash(id, bashCommand.GetString()!, cancellationToken);
+                            StartBash(id, bashCommand.GetString()!, excludeFromContext.ValueKind == JsonValueKind.True, cancellationToken);
                             break;
                         case "abort_bash":
                             run.AbortBash();
@@ -365,22 +363,23 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
         }
     }
 
-    private void StartBash(JsonElement? id, string command, CancellationToken cancellationToken)
+    private void StartBash(JsonElement? id, string command, bool excludeFromContext, CancellationToken cancellationToken)
     {
         var key = Guid.NewGuid();
         var operation = new BashOperation(CancellationTokenSource.CreateLinkedTokenSource(cancellationToken));
         if (!_bashOperations.TryAdd(key, operation)) throw new InvalidOperationException("Could not register the bash operation.");
-        _ = ExecuteBashAsync(key, operation, id, command);
+        _ = ExecuteBashAsync(key, operation, id, command, excludeFromContext);
     }
 
-    private async Task ExecuteBashAsync(Guid key, BashOperation operation, JsonElement? id, string command)
+    private async Task ExecuteBashAsync(Guid key, BashOperation operation, JsonElement? id, string command,
+        bool excludeFromContext)
     {
         try
         {
             var correlationId = GetCorrelationId(id);
             var result = await run.ExecuteBashAsync(command,
                 delta => EmitBashUpdateAsync(correlationId, delta).GetAwaiter().GetResult(), operation.Cancellation.Token);
-            var recordedNow = run.RecordBashResult(command, result);
+            var recordedNow = run.RecordBashResult(command, result, excludeFromContext);
             if (recordedNow && save is not null) await save(CancellationToken.None);
             var data = new Dictionary<string, object?>
             {

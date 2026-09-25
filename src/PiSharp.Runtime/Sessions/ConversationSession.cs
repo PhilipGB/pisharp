@@ -9,6 +9,7 @@ namespace PiSharp.Runtime.Sessions;
 public sealed class ConversationSession
 {
     public const int FormatVersion = 2;
+    private static readonly JsonSerializerOptions BashExecutionJsonOptions = new(JsonSerializerDefaults.Web);
     public string Id { get; }
     public string WorkingDirectory { get; }
     public string Model { get; private set; }
@@ -63,9 +64,18 @@ public sealed class ConversationSession
             JsonSerializer.SerializeToElement(message, AIJsonUtilities.DefaultOptions), errors)));
     }
 
+    public void AppendBashExecution(BashExecutionRecord execution)
+    {
+        ArgumentNullException.ThrowIfNull(execution);
+        if (execution.Command is null || execution.Output is null)
+            throw new InvalidDataException("A Bash execution requires a command and output.");
+        Tree.Append("bash_execution", JsonSerializer.SerializeToElement(execution, BashExecutionJsonOptions));
+    }
+
     public List<ChatMessage> ActiveMessages() => Tree.ActivePath()
-        .Where(node => node.Type == "chat")
-        .Select(node => Restore(node.Payload, node.Id))
+        .Select(ContextMessageForNode)
+        .Where(message => message is not null)
+        .Cast<ChatMessage>()
         .ToList();
 
     /// <summary>Persist provider billing metadata without adding it to model context.</summary>
@@ -108,7 +118,7 @@ public sealed class ConversationSession
         if (from < 0 || from >= compactAt) throw new InvalidDataException("Invalid compaction boundary.");
         var context = new List<ChatMessage> { new(ChatRole.User,
             "[Summary of earlier conversation; original turns remain in session history.]\n" + compact.GetProperty("summary").GetString()) };
-        context.AddRange(path.Skip(from).Where(node => node.Type == "chat").Select(node => Restore(node.Payload, node.Id)));
+        context.AddRange(path.Skip(from).Select(ContextMessageForNode).Where(message => message is not null).Cast<ChatMessage>());
         return context;
     }
 
@@ -121,29 +131,29 @@ public sealed class ConversationSession
             node.Id == path[compactAt].Payload.GetProperty("firstKeptEntryId").GetString());
         if (keepRecentTokens < 0) throw new ArgumentOutOfRangeException(nameof(keepRecentTokens));
         // Select a user-turn boundary backwards; every tool call and result in a turn stays together.
-        var latestUser = path.ToList().FindLastIndex(node => node.Type == "chat" &&
-            Restore(node.Payload, node.Id).Role == ChatRole.User);
+        var latestUser = path.ToList().FindLastIndex(node => ContextMessageForNode(node)?.Role == ChatRole.User);
         if (latestUser <= first) return null;
         var boundary = latestUser;
         if (keepRecentTokens is int minimum)
         {
             long estimated = 0;
             var turns = path.Skip(first).Select((node, index) => (node, index: index + first))
-                .Where(item => item.node.Type == "chat" && Restore(item.node.Payload, item.node.Id).Role == ChatRole.User)
+                .Where(item => ContextMessageForNode(item.node)?.Role == ChatRole.User)
                 .Select(item => item.index).ToArray();
             for (var i = turns.Length - 1; i >= 0; i--)
             {
                 var start = turns[i];
                 var end = i + 1 < turns.Length ? turns[i + 1] : path.Count;
-                foreach (var node in path.Skip(start).Take(end - start).Where(node => node.Type == "chat"))
-                    estimated += AutoCompactionPolicy.Estimate([Restore(node.Payload, node.Id)], "") - 512;
+                foreach (var message in path.Skip(start).Take(end - start).Select(ContextMessageForNode)
+                             .Where(message => message is not null).Cast<ChatMessage>())
+                    estimated += AutoCompactionPolicy.Estimate([message], "") - 512;
                 boundary = start;
                 if (estimated >= minimum) break;
             }
         }
         if (boundary <= first) return null;
         var context = ContextMessages();
-        var keptCount = path.Skip(boundary).Count(node => node.Type == "chat");
+        var keptCount = path.Skip(boundary).Count(node => ContextMessageForNode(node) is not null);
         return new CompactionPlan(path[boundary].Id, context.Take(context.Count - keptCount).ToArray());
     }
 
@@ -158,6 +168,46 @@ public sealed class ConversationSession
 
     internal static ChatMessage RestoreEntry(ConversationNode entry) => entry.Type == "chat"
         ? Restore(entry.Payload, entry.Id) : throw new ArgumentException("Not a chat entry.", nameof(entry));
+
+    internal static ChatMessage BashExecutionContextMessage(BashExecutionRecord execution)
+    {
+        var text = $"Ran `{execution.Command}`\n" +
+            (execution.Output.Length == 0 ? "(no output)" : $"```\n{execution.Output}\n```");
+        if (execution.Cancelled) text += "\n\n(command cancelled)";
+        else if (execution.ExitCode is { } exitCode && exitCode != 0) text += $"\n\nCommand exited with code {exitCode}";
+        if (execution.Truncated && execution.FullOutputPath is { } fullOutputPath)
+            text += $"\n\n[Output truncated. Full output: {fullOutputPath}]";
+        return new ChatMessage(ChatRole.User, text);
+    }
+
+    private static ChatMessage? ContextMessageForNode(ConversationNode node)
+    {
+        if (node.Type == "chat") return Restore(node.Payload, node.Id);
+        if (node.Type != "bash_execution") return null;
+        var execution = RestoreBashExecution(node.Payload, node.Id);
+        return execution.ExcludeFromContext ? null : BashExecutionContextMessage(execution);
+    }
+
+    private static BashExecutionRecord RestoreBashExecution(JsonElement payload, string id)
+    {
+        if (!payload.TryGetProperty("command", out var command) || command.ValueKind != JsonValueKind.String ||
+            command.GetString() is null ||
+            !payload.TryGetProperty("output", out var output) || output.ValueKind != JsonValueKind.String ||
+            !payload.TryGetProperty("exitCode", out var exitCode) ||
+            (exitCode.ValueKind is not (JsonValueKind.Null or JsonValueKind.Number) ||
+                exitCode.ValueKind == JsonValueKind.Number && !exitCode.TryGetInt32(out _)) ||
+            !payload.TryGetProperty("cancelled", out var cancelled) || cancelled.ValueKind is not (JsonValueKind.True or JsonValueKind.False) ||
+            !payload.TryGetProperty("truncated", out var truncated) || truncated.ValueKind is not (JsonValueKind.True or JsonValueKind.False) ||
+            !payload.TryGetProperty("fullOutputPath", out var fullOutputPath) ||
+                (fullOutputPath.ValueKind is not (JsonValueKind.Null or JsonValueKind.String)) ||
+            !payload.TryGetProperty("excludeFromContext", out var excludeFromContext) ||
+                excludeFromContext.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
+            throw new InvalidDataException($"Invalid Bash execution at {id}.");
+        var execution = payload.Deserialize<BashExecutionRecord>(BashExecutionJsonOptions);
+        if (execution is null)
+            throw new InvalidDataException($"Invalid Bash execution at {id}.");
+        return execution;
+    }
 
     private static ChatMessage Restore(JsonElement payload, string id)
     {
@@ -252,6 +302,8 @@ public sealed class ConversationSession
             throw new InvalidDataException("Unsupported or incomplete session document.");
         if (document.Entries.Any(entry => entry.Type == "chat" && entry.Payload.ValueKind != JsonValueKind.Object))
             throw new InvalidDataException("Session contains an invalid chat entry.");
+        if (document.Entries.Any(entry => entry.Type == "bash_execution" && entry.Payload.ValueKind != JsonValueKind.Object))
+            throw new InvalidDataException("Session contains an invalid Bash execution entry.");
         if (document.Version == 1 && document.Entries.Any(entry => entry.Type == "chat" &&
             (entry.Payload.Deserialize<ChatMessage>(AIJsonUtilities.DefaultOptions)?.Contents.Any(content =>
                 content is FunctionCallContent or FunctionResultContent) ?? false)))
@@ -264,6 +316,8 @@ public sealed class ConversationSession
         foreach (var entry in entries) ValidateCheckpoint(entry);
         // Validate every branch, not merely the currently selected path.
         foreach (var entry in entries.Where(entry => entry.Type == "chat")) _ = Restore(entry.Payload, entry.Id);
+        foreach (var entry in entries.Where(entry => entry.Type == "bash_execution"))
+            _ = RestoreBashExecution(entry.Payload, entry.Id);
         foreach (var entry in entries.Where(entry => entry.Type == "usage"))
             ValidateUsage(entry.Payload.Deserialize<UsageRecord>() ??
                 throw new InvalidDataException($"Invalid usage record at {entry.Id}."), entry.Id);
@@ -279,8 +333,8 @@ public sealed class ConversationSession
             var path = tree.ActivePath();
             var boundary = path.ToList().FindIndex(entry => entry.Id == kept.GetString());
             var previous = path.ToList().FindLastIndex(entry => entry.Type == "compaction");
-            if (boundary <= previous || boundary >= path.Count || path[boundary].Type != "chat" ||
-                Restore(path[boundary].Payload, path[boundary].Id).Role != ChatRole.User)
+            if (boundary <= previous || boundary >= path.Count ||
+                ContextMessageForNode(path[boundary])?.Role != ChatRole.User)
                 throw new InvalidDataException($"Invalid compaction boundary at {node.Id}.");
         }
         tree.Select(document.HeadId); // An explicit null selection is distinct from the last appended entry.

@@ -38,7 +38,8 @@ public sealed class RpcBashProcessTests
             {
                 id = "process-bash",
                 type = "bash",
-                command = "printf process-stdout; printf process-stderr >&2; exit 7"
+                command = "printf process-stdout; printf process-stderr >&2; exit 7",
+                excludeFromContext = true
             }, timeout.Token);
             await ReadResponsesAsync(process, ["process-bash"], firstLines, timeout.Token);
 
@@ -58,6 +59,22 @@ public sealed class RpcBashProcessTests
                 using var update = JsonDocument.Parse(line);
                 Assert.Equal("process-bash", update.RootElement.GetProperty("data").GetProperty("OperationId").GetString());
             }
+
+            await WriteCommandAsync(process, new { id = "process-entries", type = "get_entries" }, timeout.Token);
+            await WriteCommandAsync(process, new { id = "process-messages", type = "get_messages" }, timeout.Token);
+            var inspectionLines = new List<string>();
+            await ReadResponsesAsync(process, ["process-entries", "process-messages"], inspectionLines, timeout.Token);
+            using (var response = JsonDocument.Parse(Assert.Single(inspectionLines, line =>
+                line.Contains("\"id\":\"process-entries\"", StringComparison.Ordinal))))
+            {
+                var entry = Assert.Single(response.RootElement.GetProperty("data").GetProperty("entries").EnumerateArray());
+                Assert.Equal("bash_execution", entry.GetProperty("Type").GetString());
+                Assert.True(entry.GetProperty("Payload").GetProperty("excludeFromContext").GetBoolean());
+                Assert.Contains("process-stdout", entry.GetProperty("Payload").GetProperty("output").GetString());
+            }
+            using (var response = JsonDocument.Parse(Assert.Single(inspectionLines, line =>
+                line.Contains("\"id\":\"process-messages\"", StringComparison.Ordinal))))
+                Assert.Empty(response.RootElement.GetProperty("data").GetProperty("messages").EnumerateArray());
 
             var command = $"touch {ProcessTestHelpers.ShellQuote(started)}; while [ ! -e {ProcessTestHelpers.ShellQuote(released)} ]; do :; done; touch {ProcessTestHelpers.ShellQuote(finished)}";
             await WriteCommandAsync(process, new { id = "process-aborted-bash", type = "bash", command }, timeout.Token);
