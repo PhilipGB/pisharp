@@ -134,6 +134,18 @@ public sealed class TerminalEditor
             }
             return HandleTranscriptSearchInput(next);
         }
+        if (next.Key is { } completionKey && _keymap.Matches("tui.input.tab", completionKey))
+        {
+            try
+            {
+                CompleteInput(completionKey);
+            }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException or ArgumentException)
+            {
+                Console.Error.WriteLine($"Completion unavailable: {error.Message}");
+            }
+            return true;
+        }
         if (next.Key is { } key && (_keymap.Matches("app.interrupt", key) || _keymap.Matches("app.clear", key)))
         {
             RestorePending(clearQueue());
@@ -342,16 +354,7 @@ public sealed class TerminalEditor
                 {
                     try
                     {
-                        var matches = _completion.Complete(_buffer);
-                        if (matches.Count == 0) _buffer.Handle(next.Key.Value);
-                        else if (matches.Count > 1)
-                        {
-                            ClearLine();
-                            Console.WriteLine();
-                            Console.WriteLine(string.Join("  ", matches.Take(10).Select(match =>
-                                new string(match.Select(c => char.IsControl(c) ? ' ' : c).ToArray()))) +
-                                (matches.Count > 10 ? "  …" : ""));
-                        }
+                        CompleteInput(tabKey);
                     }
                     catch (Exception error) when (error is IOException or UnauthorizedAccessException or ArgumentException)
                     {
@@ -394,6 +397,32 @@ public sealed class TerminalEditor
         beforeDispatch?.Invoke();
         await dispatch(action);
         return true;
+    }
+
+    private void CompleteInput(ConsoleKeyInfo key)
+    {
+        var matches = _completion.Complete(_buffer);
+        if (matches.Count == 0)
+        {
+            _buffer.Handle(key);
+            return;
+        }
+        if (matches.Count == 1) return;
+
+        if (_screen is { IsActive: true })
+        {
+            var options = matches.Select((match, index) => new TerminalSelectionOption<string>(
+                index.ToString(), match, match)).ToArray();
+            var selected = ShowSelectionList("Complete input", options, emptyMessage: "No matching completions");
+            if (selected is not null) _completion.ApplySelected(_buffer, selected.Option.Value);
+            return;
+        }
+
+        ClearLine();
+        Console.WriteLine();
+        Console.WriteLine(string.Join("  ", matches.Take(10).Select(match =>
+            new string(match.Select(c => char.IsControl(c) ? ' ' : c).ToArray()))) +
+            (matches.Count > 10 ? "  …" : ""));
     }
 
     private void ClearLine()

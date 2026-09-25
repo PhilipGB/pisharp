@@ -27,7 +27,7 @@ public sealed class EditorCompletion(string workingDirectory, Func<IReadOnlyList
         "/hotkeys",
         "/quit"
     ];
-    private static readonly string s_cjkPunctuation = "，．：；！？（）［］｛｝“”‘’…—、。";
+    private static readonly string s_cjkPunctuation = "，．：；！？（）［］｛｝“”‘’…—、。「」『』《》〈〉【】〔〕〖〗〘〙〚〛〝〞";
     private static readonly IReadOnlyDictionary<char, char> s_pathWrappers = new Dictionary<char, char>
     {
         ['('] = ')',
@@ -59,7 +59,6 @@ public sealed class EditorCompletion(string workingDirectory, Func<IReadOnlyList
         var fragment = before[fragmentStart..];
         var hasAtPrefix = fragment.StartsWith('@');
         var quoted = fragment.StartsWith("\"", StringComparison.Ordinal) || fragment.StartsWith("@\"", StringComparison.Ordinal);
-        if (!hasAtPrefix && !quoted && fragment.Length == 0) return [];
 
         var path = fragment;
         if (hasAtPrefix) path = path[1..];
@@ -67,6 +66,29 @@ public sealed class EditorCompletion(string workingDirectory, Func<IReadOnlyList
         var hasExistingClosingQuote = buffer.Cursor < buffer.Text.Length && buffer.Text[buffer.Cursor] == '"';
         var matchesForPath = GetPathCompletions(path, hasAtPrefix, quoted);
         return Apply(buffer, fragmentStart, fragment, matchesForPath, hasExistingClosingQuote);
+    }
+
+    public void ApplySelected(EditorBuffer buffer, string completion)
+    {
+        ArgumentNullException.ThrowIfNull(buffer);
+        ArgumentNullException.ThrowIfNull(completion);
+        var before = buffer.Text[..buffer.Cursor];
+        var start = FindTokenStart(before);
+        if (start == 0 && before[start..].StartsWith('/'))
+        {
+            var slashFragment = before[start..];
+            Apply(buffer, start, slashFragment, [completion]);
+            return;
+        }
+
+        var wrapperStart = start;
+        while (wrapperStart < before.Length && s_pathWrappers.TryGetValue(before[wrapperStart], out var closing) &&
+            before.IndexOf(closing, wrapperStart + 1) < 0)
+            wrapperStart++;
+        var fragmentStart = wrapperStart;
+        var fragment = before[fragmentStart..];
+        var hasExistingClosingQuote = buffer.Cursor < buffer.Text.Length && buffer.Text[buffer.Cursor] == '"';
+        Apply(buffer, fragmentStart, fragment, [completion], hasExistingClosingQuote);
     }
 
     private static int FindTokenStart(string before)
@@ -128,7 +150,7 @@ public sealed class EditorCompletion(string workingDirectory, Func<IReadOnlyList
                 var name = Path.GetFileName(entry);
                 if (name.Any(char.IsControl)) continue;
                 if (!name.StartsWith(namePrefix, StringComparison.OrdinalIgnoreCase)) continue;
-                if (!namePrefix.StartsWith('.') && name.StartsWith(".", StringComparison.Ordinal)) continue;
+                if (name == ".git") continue;
                 var isDirectory = Directory.Exists(entry);
                 var displayParent = parent.Replace('\\', '/');
                 var displayPath = displayParent + name + (isDirectory ? "/" : "");

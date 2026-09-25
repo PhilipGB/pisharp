@@ -20,13 +20,35 @@ public sealed class EditorCompletionTests
     }
 
     [Fact]
-    public void PathCompletionIsRelativeAndHidesDotfilesByDefault()
+    public void EmptyPromptCanChooseAPathCompletion()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-complete-empty-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(Path.Combine(root, "docs"));
+        File.WriteAllText(Path.Combine(root, "notes.txt"), "x");
+        try
+        {
+            var completion = new EditorCompletion(root);
+            var buffer = new EditorBuffer();
+
+            var matches = completion.Complete(buffer);
+            Assert.Equal(["docs/", "notes.txt"], matches);
+            Assert.Equal("", buffer.Text);
+            completion.ApplySelected(buffer, "notes.txt");
+            Assert.Equal("notes.txt", buffer.Text);
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
+    public void PathCompletionIncludesHiddenEntriesExceptGit()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-complete-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(root);
         try
         {
             Directory.CreateDirectory(Path.Combine(root, "docs"));
+            Directory.CreateDirectory(Path.Combine(root, ".pi"));
+            Directory.CreateDirectory(Path.Combine(root, ".git"));
             File.WriteAllText(Path.Combine(root, "data.txt"), "x");
             File.WriteAllText(Path.Combine(root, ".secret"), "x");
             var completion = new EditorCompletion(root);
@@ -35,10 +57,10 @@ public sealed class EditorCompletionTests
             Assert.Equal(["@docs/"], completion.Complete(buffer));
             Assert.Equal("look @docs/", buffer.Text);
             buffer.SetText("@.");
-            Assert.Equal(["@.secret"], completion.Complete(buffer));
+            Assert.Equal(["@.pi/", "@.secret"], completion.Complete(buffer));
             buffer.SetText("@");
-            Assert.Equal(["@docs/", "@data.txt"], completion.Complete(buffer));
-            Assert.DoesNotContain("@.secret", completion.Complete(buffer));
+            Assert.Equal(["@.pi/", "@docs/", "@.secret", "@data.txt"], completion.Complete(buffer));
+            Assert.DoesNotContain("@.git/", completion.Complete(buffer));
         }
         finally { Directory.Delete(root, recursive: true); }
     }
@@ -66,6 +88,10 @@ public sealed class EditorCompletionTests
             buffer.SetText("查看，@文档/说");
             Assert.Equal(["@文档/说明.md"], completion.Complete(buffer));
             Assert.Equal("查看，@文档/说明.md", buffer.Text);
+
+            buffer.SetText("查看『@文档/说");
+            Assert.Equal(["@文档/说明.md"], completion.Complete(buffer));
+            Assert.Equal("查看『@文档/说明.md", buffer.Text);
 
             buffer.SetText("([slug]/pa");
             Assert.Equal(["[slug]/page.tsx"], completion.Complete(buffer));

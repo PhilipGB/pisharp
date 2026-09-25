@@ -638,6 +638,102 @@ public sealed class TerminalPtyTests
     }
 
     [Fact]
+    public async Task FileCompletionPickerAppliesTheSelectedAtPathThroughLinuxPty()
+    {
+        if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-completion-pty-" + Guid.NewGuid().ToString("N"));
+        var agentDirectory = Path.Combine(cwd, "agent");
+        Directory.CreateDirectory(agentDirectory);
+        Directory.CreateDirectory(Path.Combine(cwd, "docs"));
+        await File.WriteAllTextAsync(Path.Combine(cwd, "notes.txt"), "fixture");
+        try
+        {
+            var assembly = typeof(CliArguments).Assembly.Location;
+            var start = new ProcessStartInfo("/usr/bin/script")
+            {
+                WorkingDirectory = cwd,
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                ArgumentList = { "-q", "-e", "-c", $"stty rows 24 cols 80; dotnet '{assembly}' --provider openai --no-tools --no-session --offline", "/dev/null" }
+            };
+            foreach (var name in new[] { "OPENAI_API_KEY", "PISHARP_API_KEY", "PISHARP_BASE_URL", "PISHARP_AUTH_PATH", "PISHARP_MODELS_PATH" })
+                start.Environment.Remove(name);
+            start.Environment["PISHARP_AGENT_DIR"] = agentDirectory;
+            using var process = Process.Start(start);
+            Assert.NotNull(process);
+
+            var outputBuilder = new System.Text.StringBuilder();
+            var outputLock = new object();
+            var inputReady = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var completionPicker = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var selectedPath = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var blankPrompt = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var stdout = Task.Run(async () =>
+            {
+                var buffer = new char[1024];
+                while (true)
+                {
+                    var count = await process.StandardOutput.ReadAsync(buffer);
+                    if (count == 0) break;
+                    lock (outputLock)
+                    {
+                        outputBuilder.Append(buffer, 0, count);
+                        var output = outputBuilder.ToString();
+                        if (output.Contains("\u001b[?2004h", StringComparison.Ordinal)) inputReady.TrySetResult();
+                        if (output.Contains("Complete input", StringComparison.Ordinal)) completionPicker.TrySetResult();
+                        if (output.Contains("❯ @notes.txt", StringComparison.Ordinal)) selectedPath.TrySetResult();
+                        var frameStart = output.LastIndexOf("\u001b[?2026h\u001b[2J\u001b[H", StringComparison.Ordinal);
+                        if (selectedPath.Task.IsCompleted && frameStart >= 0)
+                        {
+                            var frame = output[(frameStart + "\u001b[?2026h\u001b[2J\u001b[H".Length)..];
+                            if (frame.Contains("❯ ", StringComparison.Ordinal) && !frame.Contains("@notes.txt", StringComparison.Ordinal))
+                                blankPrompt.TrySetResult();
+                        }
+                    }
+                }
+                lock (outputLock) return outputBuilder.ToString();
+            });
+            var stderr = process.StandardError.ReadToEndAsync();
+            try
+            {
+                using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(25));
+                await inputReady.Task.WaitAsync(timeout.Token);
+                await process.StandardInput.WriteAsync("@\t");
+                await process.StandardInput.FlushAsync();
+                await completionPicker.Task.WaitAsync(timeout.Token);
+                await process.StandardInput.WriteAsync("\u001b[B\u001b[B\r");
+                await process.StandardInput.FlushAsync();
+                try { await selectedPath.Task.WaitAsync(TimeSpan.FromSeconds(12)); }
+                catch (TimeoutException error)
+                {
+                    lock (outputLock) throw new TimeoutException("The editor did not render the selected @ path.\n" + outputBuilder, error);
+                }
+                await process.StandardInput.WriteAsync("\u001b");
+                await process.StandardInput.FlushAsync();
+                await blankPrompt.Task.WaitAsync(timeout.Token);
+                await process.StandardInput.WriteAsync("/quit\r");
+                process.StandardInput.Close();
+                await process.WaitForExitAsync(timeout.Token);
+                var output = await stdout;
+
+                Assert.Equal(0, process.ExitCode);
+                Assert.Contains("Complete input", output);
+                Assert.Contains("❯ @notes.txt", output);
+                Assert.Contains("❯ ", output);
+                Assert.DoesNotContain("Completion unavailable", output);
+                Assert.DoesNotContain("Error:", await stderr);
+            }
+            catch
+            {
+                if (!process.HasExited) process.Kill(entireProcessTree: true);
+                throw;
+            }
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Fact]
     public async Task ConfiguredSubmitBindingAndHotkeysCommandWorkThroughLinuxPty()
     {
         if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
