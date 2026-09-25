@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
@@ -17,6 +18,7 @@ public sealed class CodingTools
     private static readonly TimeSpan s_stdioIdleGrace = TimeSpan.FromMilliseconds(100);
     private readonly string _cwd;
     private readonly string? _shellPath;
+    private readonly ConcurrentDictionary<Guid, CancellationTokenSource> _runningBash = new();
     private static readonly FileMutationQueue s_mutations = new();
 
     public CodingTools(string workingDirectory, string? shellPath = null)
@@ -222,15 +224,38 @@ public sealed class CodingTools
         Action<string>? onUpdate = null;
         if (arguments?.Context?.TryGetValue(BashOutputContextKey, out var value) == true)
             onUpdate = value as Action<string>;
-        return BashCoreAsync(command, timeout, onUpdate, cancellationToken);
+        return BashToolAsync(command, timeout, onUpdate, cancellationToken);
     }
 
     /// <summary>Execute bash in the configured working directory, returning the bounded combined output.</summary>
     public Task<string> Bash(string command, double? timeout = null, CancellationToken cancellationToken = default) =>
-        BashCoreAsync(command, timeout, onUpdate: null, cancellationToken);
+        BashToolAsync(command, timeout, onUpdate: null, cancellationToken);
 
-    private async Task<string> BashCoreAsync(string command, double? timeout, Action<string>? onUpdate,
+    /// <summary>Execute bash and return the process result without converting a nonzero exit to a tool failure.</summary>
+    public Task<BashExecutionResult> ExecuteBashAsync(string command, Action<string>? onUpdate = null,
+        CancellationToken cancellationToken = default) =>
+        BashCoreAsync(command, timeout: null, onUpdate, cancellationToken, returnCancellationResult: true);
+
+    public void AbortBash()
+    {
+        foreach (var cancellation in _runningBash.Values)
+        {
+            try { cancellation.Cancel(); }
+            catch (ObjectDisposedException) { }
+        }
+    }
+
+    private async Task<string> BashToolAsync(string command, double? timeout, Action<string>? onUpdate,
         CancellationToken cancellationToken)
+    {
+        var result = await BashCoreAsync(command, timeout, onUpdate, cancellationToken, returnCancellationResult: false);
+        if (result.ExitCode is { } exitCode && exitCode != 0)
+            throw new ToolFailureException($"Command exited with code {exitCode}", result.DisplayOutput, exitCode);
+        return result.DisplayOutput;
+    }
+
+    private async Task<BashExecutionResult> BashCoreAsync(string command, double? timeout, Action<string>? onUpdate,
+        CancellationToken cancellationToken, bool returnCancellationResult)
     {
         if (timeout.HasValue && (!double.IsFinite(timeout.Value) || timeout.Value <= 0))
             throw new ToolFailureException("Invalid timeout: must be a finite number of seconds");
@@ -240,8 +265,11 @@ public sealed class CodingTools
             throw new ToolFailureException($"Working directory does not exist: {_cwd}\nCannot execute bash commands.");
 
         var shell = ResolveShell(_shellPath, _cwd);
+        var operationId = Guid.NewGuid();
+        using var abortSource = new CancellationTokenSource();
+        _runningBash[operationId] = abortSource;
         using var timeoutSource = new CancellationTokenSource();
-        using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutSource.Token);
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutSource.Token, abortSource.Token);
         using var process = new Process { StartInfo = CreateStartInfo(shell, command, _cwd, out var processGroup) };
         using var pumpStop = new CancellationTokenSource();
         await using var output = new ShellOutputBuffer();
@@ -267,10 +295,10 @@ public sealed class CodingTools
             var finalDecoded = await output.FlushDecoderAsync();
             updates.Append(finalDecoded);
             updates.Complete();
-            var result = await output.FinishAsync();
-            if (process.ExitCode != 0)
-                throw new ToolFailureException($"Command exited with code {process.ExitCode}", result, process.ExitCode);
-            return result;
+            var result = await output.FinishWithMetadataAsync();
+            var cancelled = returnCancellationResult && (cancellationToken.IsCancellationRequested || abortSource.IsCancellationRequested);
+            return new(result.Output, result.DisplayOutput, cancelled ? null : process.ExitCode, cancelled,
+                result.Truncated, result.FullOutputPath);
         }
         catch (OperationCanceledException) when (started)
         {
@@ -279,12 +307,25 @@ public sealed class CodingTools
             await StopPumpsAsync(process, stdout, stderr, pumpStop);
             var finalDecoded = await output.FlushDecoderAsync();
             updates.Append(finalDecoded);
+            var result = await output.FinishWithMetadataAsync();
             updates.Complete();
-            var result = await output.FinishAsync();
-            if (cancellationToken.IsCancellationRequested)
-                throw new OperationCanceledException(result == "(no output)" ? "Command aborted" : $"{result}\n\nCommand aborted", cancellationToken);
+            if (cancellationToken.IsCancellationRequested || abortSource.IsCancellationRequested)
+            {
+                if (returnCancellationResult)
+                    return new(result.Output, result.DisplayOutput, null, true, result.Truncated, result.FullOutputPath);
+                var abortToken = cancellationToken.IsCancellationRequested ? cancellationToken : abortSource.Token;
+                throw new OperationCanceledException(result.DisplayOutput == "(no output)" ? "Command aborted" :
+                    $"{result.DisplayOutput}\n\nCommand aborted", abortToken);
+            }
             var seconds = timeout!.Value.ToString("0.################", CultureInfo.InvariantCulture);
-            throw new ToolFailureException($"Command timed out after {seconds} seconds", result);
+            throw new ToolFailureException($"Command timed out after {seconds} seconds", result.DisplayOutput);
+        }
+        catch (OperationCanceledException) when (!started && returnCancellationResult &&
+            (cancellationToken.IsCancellationRequested || abortSource.IsCancellationRequested))
+        {
+            var result = await output.FinishWithMetadataAsync();
+            updates.Complete();
+            return new(result.Output, result.DisplayOutput, null, true, result.Truncated, result.FullOutputPath);
         }
         catch (Exception e) when (e is IOException or System.ComponentModel.Win32Exception)
         {
@@ -298,6 +339,7 @@ public sealed class CodingTools
         }
         finally
         {
+            _runningBash.TryRemove(operationId, out _);
             if (started && (!process.HasExited || stdout is { IsCompleted: false } || stderr is { IsCompleted: false }))
             {
                 KillProcessTree(process, processGroup);

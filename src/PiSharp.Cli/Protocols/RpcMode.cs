@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Text.Json;
 using Microsoft.Extensions.AI;
 using PiSharp.Runtime.Sessions;
@@ -11,6 +12,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
     Func<CancellationToken, Task<IReadOnlyList<ModelDescriptor>>>? discoverModels = null)
 {
     private readonly JsonLineWriter _writer = new(output);
+    private readonly ConcurrentDictionary<Guid, BashOperation> _bashOperations = new();
     private CancellationTokenSource? _abort;
     private Task? _active;
 
@@ -241,6 +243,25 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                             await RespondAsync(id, type, true);
                             _active = ExecuteAsync(expanded, _abort.Token);
                             break;
+                        case "bash":
+                            if (!root.TryGetProperty("command", out var bashCommand) || bashCommand.ValueKind != JsonValueKind.String)
+                            { await RespondAsync(id, type, false, "A string command is required."); break; }
+                            if (root.TryGetProperty("excludeFromContext", out var excludeFromContext) &&
+                                excludeFromContext.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
+                            { await RespondAsync(id, type, false, "excludeFromContext must be a boolean."); break; }
+                            if (excludeFromContext.ValueKind == JsonValueKind.True)
+                            { await RespondAsync(id, type, false, "excludeFromContext is not supported."); break; }
+                            StartBash(id, bashCommand.GetString()!, cancellationToken);
+                            break;
+                        case "abort_bash":
+                            run.AbortBash();
+                            foreach (var operation in _bashOperations.Values)
+                            {
+                                try { operation.Cancellation.Cancel(); }
+                                catch (ObjectDisposedException) { }
+                            }
+                            await RespondAsync(id, type, true);
+                            break;
                         case "steer":
                         case "follow_up":
                             if (!busy) { await RespondAsync(id, type, false, "There is no active run to queue input for."); break; }
@@ -281,6 +302,14 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
         }
         finally
         {
+            foreach (var operation in _bashOperations.Values)
+            {
+                try { operation.Cancellation.Cancel(); }
+                catch (ObjectDisposedException) { }
+            }
+            var bashOperations = _bashOperations.Values.ToArray();
+            if (bashOperations.Length > 0)
+                await Task.WhenAll(bashOperations.Select(operation => operation.Completed.Task));
             if (_active is { IsCompleted: false })
             {
                 _abort?.Cancel();
@@ -334,6 +363,64 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
         {
             await _writer.EmitAsync(new { type = "error", error = error.Message }, CancellationToken.None);
         }
+    }
+
+    private void StartBash(JsonElement? id, string command, CancellationToken cancellationToken)
+    {
+        var key = Guid.NewGuid();
+        var operation = new BashOperation(CancellationTokenSource.CreateLinkedTokenSource(cancellationToken));
+        if (!_bashOperations.TryAdd(key, operation)) throw new InvalidOperationException("Could not register the bash operation.");
+        _ = ExecuteBashAsync(key, operation, id, command);
+    }
+
+    private async Task ExecuteBashAsync(Guid key, BashOperation operation, JsonElement? id, string command)
+    {
+        try
+        {
+            var correlationId = GetCorrelationId(id);
+            var result = await run.ExecuteBashAsync(command,
+                delta => EmitBashUpdateAsync(correlationId, delta).GetAwaiter().GetResult(), operation.Cancellation.Token);
+            var recordedNow = run.RecordBashResult(command, result);
+            if (recordedNow && save is not null) await save(CancellationToken.None);
+            var data = new Dictionary<string, object?>
+            {
+                ["output"] = result.Output,
+                ["cancelled"] = result.Cancelled,
+                ["truncated"] = result.Truncated
+            };
+            if (result.ExitCode is { } exitCode) data["exitCode"] = exitCode;
+            if (result.FullOutputPath is not null) data["fullOutputPath"] = result.FullOutputPath;
+            await _writer.EmitAsync(new { id, type = "response", command = "bash", success = true, data });
+        }
+        catch (Exception error)
+        {
+            await RespondAsync(id, "bash", false, error.Message);
+        }
+        finally
+        {
+            operation.Completed.TrySetResult();
+            _bashOperations.TryRemove(key, out _);
+            operation.Cancellation.Dispose();
+        }
+    }
+
+    private Task EmitBashUpdateAsync(string? id, string delta) => _writer.EmitAsync(new
+    {
+        type = "event",
+        format = "pisharp",
+        data = new AgentLifecycleEvent("bash_execution_update", Text: delta, Tool: "bash", OperationId: id)
+    });
+
+    private static string? GetCorrelationId(JsonElement? id)
+    {
+        if (id is not { } value || value.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined) return null;
+        return value.ValueKind == JsonValueKind.String ? value.GetString() : value.GetRawText();
+    }
+
+    private sealed class BashOperation(CancellationTokenSource cancellation)
+    {
+        public CancellationTokenSource Cancellation { get; } = cancellation;
+        public TaskCompletionSource Completed { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
     }
 
     private Task RespondAsync(JsonElement? id, string command, bool success, string? error = null) =>

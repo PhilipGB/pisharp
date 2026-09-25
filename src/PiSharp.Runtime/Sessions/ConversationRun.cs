@@ -4,6 +4,7 @@ using System.Threading.Channels;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using PiSharp.Core;
+using PiSharp.Runtime.Tools;
 
 namespace PiSharp.Runtime.Sessions;
 
@@ -18,6 +19,7 @@ public sealed class ConversationRun
     private readonly object _promptQueueGate = new();
     private readonly Queue<string> _steeringQueue = new();
     private readonly Queue<string> _followUpQueue = new();
+    private readonly Queue<ChatMessage> _pendingBashMessages = new();
     private object? _promptLoopOwner;
     private Action<AgentLifecycleEvent>? _promptQueueEvents;
     private AgentSession _execution;
@@ -91,6 +93,11 @@ public sealed class ConversationRun
         get { lock (_promptQueueGate) return _steeringQueue.Count + _followUpQueue.Count; }
     }
 
+    public Task<BashExecutionResult> ExecuteBashAsync(string command, Action<string>? onUpdate = null,
+        CancellationToken cancellationToken = default) => _agent.ExecuteBashAsync(command, onUpdate, cancellationToken);
+
+    public void AbortBash() => _agent.AbortBash();
+
     private PendingPrompts SnapshotQueues() => new(_steeringQueue.ToArray(), _followUpQueue.ToArray());
     private static AgentLifecycleEvent QueueEvent(PendingPrompts pending) => new("queue_update",
         Text: JsonSerializer.Serialize(new { steering = pending.Steering, followUp = pending.FollowUp }));
@@ -141,6 +148,7 @@ public sealed class ConversationRun
                                     Publish(UsageEvent(UsageRecord.Create(Conversation.Model, "model", usage.Details, _pricing)));
                             }
                     }
+                    FlushPendingBashMessages();
                     Publish(new("turn_completed"));
                     current = TakeQueuedPromptOrClose(owner);
                 }
@@ -225,9 +233,46 @@ public sealed class ConversationRun
         lock (_promptQueueGate)
         {
             if (!ReferenceEquals(_promptLoopOwner, owner)) return;
+            FlushPendingBashMessagesUnsafe();
             _promptLoopOwner = null;
             _promptQueueEvents = null;
         }
+    }
+
+    public bool RecordBashResult(string command, BashExecutionResult result)
+    {
+        var text = $"Ran `{command}`\n" + (result.Output.Length == 0 ? "(no output)" : $"```\n{result.Output}\n```");
+        if (result.Cancelled) text += "\n\n(command cancelled)";
+        else if (result.ExitCode is { } exitCode && exitCode != 0) text += $"\n\nCommand exited with code {exitCode}";
+        if (result.Truncated && result.FullOutputPath is { } fullOutputPath)
+            text += $"\n\n[Output truncated. Full output: {fullOutputPath}]";
+        var message = new ChatMessage(ChatRole.User, text);
+        lock (_promptQueueGate)
+        {
+            if (_promptLoopOwner is not null)
+            {
+                _pendingBashMessages.Enqueue(message);
+                return false;
+            }
+            AppendBashMessage(message);
+            return true;
+        }
+    }
+
+    private void FlushPendingBashMessages()
+    {
+        lock (_promptQueueGate) FlushPendingBashMessagesUnsafe();
+    }
+
+    private void FlushPendingBashMessagesUnsafe()
+    {
+        while (_pendingBashMessages.TryDequeue(out var message)) AppendBashMessage(message);
+    }
+
+    private void AppendBashMessage(ChatMessage message)
+    {
+        Conversation.Append(message);
+        _agent.AppendToHistory(_execution, message);
     }
 
     /// <summary>Manually summarize completed earlier turns; no raw session messages are removed.</summary>

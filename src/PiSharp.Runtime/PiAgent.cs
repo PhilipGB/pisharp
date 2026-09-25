@@ -1,12 +1,14 @@
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using PiSharp.Runtime.Sessions;
+using PiSharp.Runtime.Tools;
 namespace PiSharp.Runtime;
 
 /// <summary>One shared streaming runtime for terminal and one-shot invocation.</summary>
 public sealed class PiAgent
 {
     private readonly InMemoryChatHistoryProvider _history = new();
+    private readonly CodingTools _codingTools;
     private readonly ChatClientAgent _agent;
     private readonly ChatClientAgent _summarizer;
     private readonly SemaphoreSlim _runGate = new(1, 1);
@@ -21,6 +23,7 @@ public sealed class PiAgent
         IReadOnlyCollection<AIFunction>? extensionTools = null, ProviderRetryPolicy? retryPolicy = null,
         ReasoningOptions? reasoning = null, bool blockImages = false, bool noBuiltinTools = false, bool supportsImages = true)
     {
+        _codingTools = tools;
         _summarizer = new ChatClientAgent(client, new ChatClientAgentOptions
         {
             Name = "PiSharpCompaction",
@@ -101,7 +104,19 @@ public sealed class PiAgent
     public async Task<AgentSession> CreateSessionAsync(CancellationToken cancellationToken = default) =>
         await _agent.CreateSessionAsync(cancellationToken);
 
+    public Task<BashExecutionResult> ExecuteBashAsync(string command, Action<string>? onUpdate = null,
+        CancellationToken cancellationToken = default) => _codingTools.ExecuteBashAsync(command, onUpdate, cancellationToken);
+
+    public void AbortBash() => _codingTools.AbortBash();
+
     public IReadOnlyList<ChatMessage> GetHistory(AgentSession session) => _history.GetMessages(session).ToArray();
+
+    public void AppendToHistory(AgentSession session, ChatMessage message)
+    {
+        var messages = _history.GetMessages(session).ToList();
+        messages.Add(message);
+        _history.SetMessages(session, messages);
+    }
 
     public async Task<AgentSession> RestoreHistoryAsync(IEnumerable<ChatMessage> messages, CancellationToken cancellationToken = default)
     {

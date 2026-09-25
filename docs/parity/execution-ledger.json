@@ -398,17 +398,18 @@
       ],
       "implementation": [
         "src/PiSharp.Runtime/CodingTools.cs resolves bash by platform, accepts configured shell paths, inherits the process environment, sets cwd, drains stdout and stderr concurrently, validates finite seconds, and kills the process group/tree on timeout or cancellation.",
-        "src/PiSharp.Runtime/ShellOutputBuffer.cs keeps a UTF-8 decoded tail within the 2000-line/50KiB limits, flushes incomplete final UTF-8, and retains a private complete-output file when truncated.",
+        "src/PiSharp.Runtime/ShellOutputBuffer.cs keeps a UTF-8 decoded tail within the 2000-line/50KiB limits, flushes incomplete final UTF-8, retains a private complete-output file when truncated, and exposes structured tail/truncation metadata for direct RPC results.",
         "src/PiSharp.Runtime/BashOutputUpdates.cs coalesces bounded text deltas at 100ms; DurableToolFunction publishes correlated tool_execution_update lifecycle events; Program.cs prints those deltas during interactive runs without repeating successful output.",
-        "src/PiSharp.Cli/UserSettings.cs and Program.cs carry shellPath from user or trusted-project settings through agent creation and replacement."
+        "src/PiSharp.Cli/UserSettings.cs and Program.cs carry shellPath from user or trusted-project settings through agent creation and replacement.",
+        "PiAgent.ExecuteBashAsync and ConversationRun.ExecuteBashAsync route direct RPC commands through the same CodingTools instance; ConversationRun records results into canonical chat context and defers concurrent records until the active turn ends."
       ],
       "evidence": [
         "Pinned Pi d5629e20489ccf770ed90b5a33941cb3b7ef24d0 and refreshed current main b2bd111f2d46eed1a4689c32f30fde6306498827 use the same Bash update throttle, platform shell resolution and rearmed 100ms post-exit stdio idle grace in the inspected source paths.",
         "CodingToolsTests cover cwd, inherited environment, custom shell selection, both output streams, nonzero exit, timeout/cancellation process-group cleanup, 2000-line and single-line 50KiB truncation, exact private full-output retention, incomplete UTF-8 flush and a child that writes after the parent shell exits.",
         "AgentIntegrationTests.BashEmitsOutputUpdatesBeforeTheShellCompletes uses a release-file barrier to prove a real tool update arrives before command completion; JsonEventModeTests.LiveBashOutputIsSerializedAsToolExecutionUpdateEvents checks event data and order on the JSONL path.",
         "UserSettingsTests.ShellPathLoadsFromUserSettingsAndTrustedProjectOverlay checks malformed values and user/project precedence.",
-        "Focused Bash tests => 13 passed, 0 failed, 0 skipped. dotnet test PiSharp.slnx -c Release --no-restore => 314 passed, 0 failed, 0 skipped; dotnet build PiSharp.slnx -c Release --warnaserror --no-restore => 0 warnings/errors; dotnet format PiSharp.slnx --verify-no-changes --no-restore => passed.",
-        "Still open: Pi session-derived PI_* environment injection, exact pinned result/error/truncation differentials, direct RPC-wire and PTY presentation fixtures, cross-platform signal/tree behavior, and broader settings reload parity."
+        "CodingToolsTests pass 14/14. The four direct RPC Bash tests pass 4/4, including the CLI process fixture; dotnet test PiSharp.slnx -c Release --no-restore => 343 passed, 0 failed, 0 skipped; dotnet build PiSharp.slnx -c Release --warnaserror --no-restore => 0 warnings/errors; dotnet format PiSharp.slnx --verify-no-changes --no-restore => passed.",
+        "Still open: Pi session-derived PI_* environment injection, excludeFromContext, ANSI/binary/CR normalization, exact pinned result/error details, Pi RPC event shape, PTY presentation, cross-platform signal/tree behavior, and broader settings reload parity."
       ],
       "dependencies": []
     },
@@ -1191,27 +1192,40 @@
     {
       "id": "rpc-bash",
       "title": "RPC / event: bash",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:36",
       "acceptance": [
         "Implement bash using shared canonical runtime with correlated responses/event ordering",
         "Test protocol through RPC process, including failures and cancellation"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "RpcMode accepts bash requests, validates command input, runs them asynchronously through ConversationRun and the shared CodingTools instance, emits request-correlated bash_execution_update events, and returns output, exitCode, cancelled, truncated and optional fullOutputPath fields.",
+        "ConversationRun records direct shell output into model context and defers records until an active provider turn settles; excludeFromContext=true is explicitly rejected."
+      ],
+      "evidence": [
+        "RpcModeTests.BashCommandStreamsCorrelatedOutputAndReturnsStructuredExitResult verifies combined stdout/stderr, exitCode 7, correlated updates before response, and persisted context.",
+        "RpcModeTests.BashCommandReturnsTailAndPrivateFullOutputMetadataWhenTruncated verifies the last 2000 lines, truncated flag and private complete log path.",
+        "RpcBashProcessTests.RpcProcessReturnsBashResultsAndHandlesAbortBash runs the actual CLI RPC process and checks the structured nonzero result and event correlation."
+      ],
       "dependencies": []
     },
     {
       "id": "rpc-abort-bash",
       "title": "RPC / event: abort_bash",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:36",
       "acceptance": [
         "Implement abort_bash using shared canonical runtime with correlated responses/event ordering",
         "Test protocol through RPC process, including failures and cancellation"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "RpcMode tracks concurrent direct Bash operations and abort_bash cancels all active operations through their shared execution tokens; server shutdown also cancels and drains them."
+      ],
+      "evidence": [
+        "CodingToolsTests.AbortBashCancelsToolAndDirectExecutionsOnTheSharedRunner verifies one abort cancels both direct execution and a model-tool invocation through the shared runner.",
+        "RpcModeTests.AbortBashCancelsTheActiveRpcCommandAndReturnsCancelledResult uses a file barrier to verify cancellation, omitted exitCode and a persisted cancellation marker.",
+        "RpcBashProcessTests.RpcProcessReturnsBashResultsAndHandlesAbortBash verifies abort_bash and the cancelled bash response through the actual CLI process."
+      ],
       "dependencies": []
     },
     {

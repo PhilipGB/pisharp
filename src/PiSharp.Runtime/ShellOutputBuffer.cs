@@ -3,6 +3,8 @@ using System.Text;
 
 namespace PiSharp.Runtime;
 
+public sealed record ShellOutputResult(string Output, string DisplayOutput, bool Truncated, string? FullOutputPath);
+
 /// <summary>Captures command output with a bounded in-memory tail; spills full output to a private temp file.</summary>
 public sealed class ShellOutputBuffer : IAsyncDisposable
 {
@@ -64,7 +66,9 @@ public sealed class ShellOutputBuffer : IAsyncDisposable
         finally { _gate.Release(); }
     }
 
-    public async Task<string> FinishAsync()
+    public async Task<string> FinishAsync() => (await FinishWithMetadataAsync()).DisplayOutput;
+
+    public async Task<ShellOutputResult> FinishWithMetadataAsync()
     {
         await FlushDecoderAsync();
         await _gate.WaitAsync();
@@ -73,18 +77,20 @@ public sealed class ShellOutputBuffer : IAsyncDisposable
             if (_full is not null) await _full.FlushAsync();
             var totalLines = TotalLines;
             var truncated = _full is not null || totalLines > MaxLines || _decodedBytes > MaxBytes;
-            string suffix;
+            string content;
+            string displayOutput;
             int shownLines, shownBytes;
             bool partialLastLine;
             if (truncated)
-                suffix = SelectTail(_tail.ToString(), out shownLines, out shownBytes, out partialLastLine);
+                content = SelectTail(_tail.ToString(), out shownLines, out shownBytes, out partialLastLine);
             else
             {
-                suffix = _tail.ToString();
+                content = _tail.ToString();
                 shownLines = totalLines;
                 shownBytes = (int)_decodedBytes;
                 partialLastLine = false;
             }
+            displayOutput = content;
             if (truncated)
             {
                 if (_full is null)
@@ -99,14 +105,15 @@ public sealed class ShellOutputBuffer : IAsyncDisposable
                 {
                     var lineBytes = LastLineBytes;
                     var shown = FormatSize(shownBytes);
-                    suffix += $"\n\n[Showing last {shown} of line {totalLines} (line is {FormatSize(lineBytes)}). Full output: {_fullPath}]";
+                    displayOutput += $"\n\n[Showing last {shown} of line {totalLines} (line is {FormatSize(lineBytes)}). Full output: {_fullPath}]";
                 }
                 else if (shownLines >= MaxLines && shownBytes <= MaxBytes)
-                    suffix += $"\n\n[Showing lines {startLine}-{totalLines} of {totalLines}. Full output: {_fullPath}]";
+                    displayOutput += $"\n\n[Showing lines {startLine}-{totalLines} of {totalLines}. Full output: {_fullPath}]";
                 else
-                    suffix += $"\n\n[Showing lines {startLine}-{totalLines} of {totalLines} ({FormatSize(MaxBytes)} limit). Full output: {_fullPath}]";
+                    displayOutput += $"\n\n[Showing lines {startLine}-{totalLines} of {totalLines} ({FormatSize(MaxBytes)} limit). Full output: {_fullPath}]";
             }
-            return suffix.Length == 0 ? "(no output)" : suffix;
+            if (displayOutput.Length == 0) displayOutput = "(no output)";
+            return new(content, displayOutput, truncated, truncated ? _fullPath : null);
         }
         finally { _gate.Release(); }
     }

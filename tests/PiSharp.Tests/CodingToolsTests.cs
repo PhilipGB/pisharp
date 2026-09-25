@@ -162,6 +162,24 @@ public sealed class CodingToolsTests : IDisposable
     }
 
     [Fact]
+    public async Task AbortBashCancelsToolAndDirectExecutionsOnTheSharedRunner()
+    {
+        if (!OperatingSystem.IsLinux()) return;
+        var tools = new CodingTools(_dir);
+        var directStarted = Path.Combine(_dir, "direct-started");
+        var toolStarted = Path.Combine(_dir, "tool-started");
+        var release = Path.Combine(_dir, "release");
+        var direct = tools.ExecuteBashAsync($"touch {ProcessTestHelpers.ShellQuote(directStarted)}; while [ ! -e {ProcessTestHelpers.ShellQuote(release)} ]; do :; done");
+        var tool = tools.Bash($"touch {ProcessTestHelpers.ShellQuote(toolStarted)}; while [ ! -e {ProcessTestHelpers.ShellQuote(release)} ]; do :; done");
+        await Task.WhenAll(ProcessTestHelpers.WaitForFileAsync(directStarted), ProcessTestHelpers.WaitForFileAsync(toolStarted));
+
+        tools.AbortBash();
+
+        Assert.True((await direct).Cancelled);
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => tool);
+    }
+
+    [Fact]
     public async Task BashHonorsShellPathAndRejectsInvalidTimeoutsAndWorkingDirectories()
     {
         if (OperatingSystem.IsWindows() || !File.Exists("/bin/sh")) return;

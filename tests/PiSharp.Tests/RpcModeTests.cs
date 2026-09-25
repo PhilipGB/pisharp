@@ -61,6 +61,139 @@ public sealed class RpcModeTests
     }
 
     [Fact]
+    public async Task BashCommandStreamsCorrelatedOutputAndReturnsStructuredExitResult()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-rpc-bash-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            var channel = Channel.CreateUnbounded<string>();
+            using var output = new LockedWriter();
+            var run = await ConversationRun.OpenAsync(new PiAgent(new StubClient(), new CodingTools(root)),
+                new ConversationSession(root, "fixture", null));
+            var serving = new RpcMode(new CommandReader(channel.Reader), output, run).ServeAsync();
+
+            channel.Writer.TryWrite("{\"id\":\"bash-1\",\"type\":\"bash\",\"command\":\"printf stdout-marker; printf stderr-marker >&2; exit 7\"}");
+            await WaitForAsync(output, "\"command\":\"bash\"");
+            channel.Writer.Complete();
+            await serving.WaitAsync(TimeSpan.FromSeconds(5));
+
+            var lines = output.Lines();
+            using var response = JsonDocument.Parse(Assert.Single(lines, line => line.Contains("\"command\":\"bash\"", StringComparison.Ordinal)));
+            var result = response.RootElement.GetProperty("data");
+            Assert.Equal("bash-1", response.RootElement.GetProperty("id").GetString());
+            Assert.True(response.RootElement.GetProperty("success").GetBoolean());
+            Assert.Contains("stdout-marker", result.GetProperty("output").GetString());
+            Assert.Contains("stderr-marker", result.GetProperty("output").GetString());
+            Assert.Equal(7, result.GetProperty("exitCode").GetInt32());
+            Assert.False(result.GetProperty("cancelled").GetBoolean());
+            Assert.False(result.GetProperty("truncated").GetBoolean());
+            Assert.False(result.TryGetProperty("fullOutputPath", out _));
+            Assert.Contains("Ran `printf stdout-marker; printf stderr-marker >&2; exit 7`",
+                Assert.Single(run.Conversation.ActiveMessages()).Text);
+
+            var updateIndices = lines.Select((line, index) => (line, index))
+                .Where(item => item.line.Contains("bash_execution_update", StringComparison.Ordinal))
+                .Select(item => item.index).ToArray();
+            Assert.NotEmpty(updateIndices);
+            var streamed = new System.Text.StringBuilder();
+            foreach (var index in updateIndices)
+            {
+                using var update = JsonDocument.Parse(lines[index]);
+                var eventData = update.RootElement.GetProperty("data");
+                Assert.Equal("bash-1", eventData.GetProperty("OperationId").GetString());
+                streamed.Append(eventData.GetProperty("Text").GetString());
+            }
+            Assert.Contains("stdout-marker", streamed.ToString());
+            Assert.Contains("stderr-marker", streamed.ToString());
+            var responseIndex = Array.FindIndex(lines, line => line.Contains("\"command\":\"bash\"", StringComparison.Ordinal));
+            Assert.All(updateIndices, index => Assert.True(index < responseIndex));
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
+    public async Task AbortBashCancelsTheActiveRpcCommandAndReturnsCancelledResult()
+    {
+        if (!OperatingSystem.IsLinux()) return;
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-rpc-abort-bash-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        var started = Path.Combine(root, "started");
+        var released = Path.Combine(root, "released");
+        var finished = Path.Combine(root, "finished");
+        try
+        {
+            var channel = Channel.CreateUnbounded<string>();
+            using var output = new LockedWriter();
+            var run = await ConversationRun.OpenAsync(new PiAgent(new StubClient(), new CodingTools(root)),
+                new ConversationSession(root, "fixture", null));
+            var serving = new RpcMode(new CommandReader(channel.Reader), output, run).ServeAsync();
+            var command = $"touch {ProcessTestHelpers.ShellQuote(started)}; while [ ! -e {ProcessTestHelpers.ShellQuote(released)} ]; do :; done; touch {ProcessTestHelpers.ShellQuote(finished)}";
+            channel.Writer.TryWrite(JsonSerializer.Serialize(new { id = "bash-running", type = "bash", command }));
+            await ProcessTestHelpers.WaitForFileAsync(started);
+            channel.Writer.TryWrite("{\"id\":\"abort-1\",\"type\":\"abort_bash\"}");
+            await WaitForAsync(output, "\"command\":\"abort_bash\"");
+            await WaitForAsync(output, "\"id\":\"bash-running\"");
+            channel.Writer.Complete();
+            await serving.WaitAsync(TimeSpan.FromSeconds(5));
+
+            using var abort = JsonDocument.Parse(Assert.Single(output.Lines(), line => line.Contains("\"command\":\"abort_bash\"", StringComparison.Ordinal)));
+            Assert.True(abort.RootElement.GetProperty("success").GetBoolean());
+            using var response = JsonDocument.Parse(Assert.Single(output.Lines(), line => line.Contains("\"command\":\"bash\"", StringComparison.Ordinal)));
+            var result = response.RootElement.GetProperty("data");
+            Assert.True(response.RootElement.GetProperty("success").GetBoolean());
+            Assert.True(result.GetProperty("cancelled").GetBoolean());
+            Assert.False(result.TryGetProperty("exitCode", out _));
+            Assert.False(File.Exists(finished));
+            Assert.Contains("(command cancelled)", Assert.Single(run.Conversation.ActiveMessages()).Text);
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
+    public async Task BashCommandReturnsTailAndPrivateFullOutputMetadataWhenTruncated()
+    {
+        if (!OperatingSystem.IsLinux()) return;
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-rpc-bash-truncated-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        string? fullOutputPath = null;
+        try
+        {
+            var channel = Channel.CreateUnbounded<string>();
+            using var output = new LockedWriter();
+            var run = await ConversationRun.OpenAsync(new PiAgent(new StubClient(), new CodingTools(root)),
+                new ConversationSession(root, "fixture", null));
+            var serving = new RpcMode(new CommandReader(channel.Reader), output, run).ServeAsync();
+            channel.Writer.TryWrite("{\"id\":\"bash-truncated\",\"type\":\"bash\",\"command\":\"seq 1 3000\"}");
+            await WaitForAsync(output, "\"command\":\"bash\"");
+            channel.Writer.Complete();
+            await serving.WaitAsync(TimeSpan.FromSeconds(5));
+
+            using var response = JsonDocument.Parse(Assert.Single(output.Lines(), line =>
+                line.Contains("\"id\":\"bash-truncated\"", StringComparison.Ordinal) && line.Contains("\"command\":\"bash\"", StringComparison.Ordinal)));
+            var result = response.RootElement.GetProperty("data");
+            Assert.True(result.GetProperty("truncated").GetBoolean());
+            var text = result.GetProperty("output").GetString()!;
+            Assert.StartsWith("1001\n1002\n", text);
+            Assert.EndsWith("2999\n3000", text);
+            Assert.DoesNotContain("Full output:", text);
+            fullOutputPath = result.GetProperty("fullOutputPath").GetString();
+            Assert.NotNull(fullOutputPath);
+            Assert.Contains("1\n2\n", await File.ReadAllTextAsync(fullOutputPath));
+            Assert.Contains("2999\n3000", await File.ReadAllTextAsync(fullOutputPath));
+            Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite,
+                File.GetUnixFileMode(fullOutputPath) & (UnixFileMode.UserRead | UnixFileMode.UserWrite |
+                    UnixFileMode.GroupRead | UnixFileMode.OtherRead | UnixFileMode.GroupWrite | UnixFileMode.OtherWrite));
+        }
+        finally
+        {
+            if (fullOutputPath is not null && File.Exists(fullOutputPath)) File.Delete(fullOutputPath);
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task PromptReceivedDuringStreamingQueuesAnotherTurnBeforeSettlement()
     {
         var channel = Channel.CreateUnbounded<string>();
