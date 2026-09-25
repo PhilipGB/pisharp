@@ -523,8 +523,12 @@
         "escape/ctrl+c semantics, Unicode widths",
         "Verify through application workflow and compare docs/keybindings.md; packages/tui/src/editor-component.ts, autocomplete.ts, terminal.ts; editor state machine + PTY tests"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "Tab completion supports slash-command prefixes and relative or absolute filesystem path tokens. Path suggestions order directories first, expose dotfiles when their prefix begins with a dot, quote names containing whitespace, preserve explicit relative prefixes, support open wrappers and CJK punctuation token boundaries, and compute common prefixes without splitting Unicode grapheme clusters. Selection, clipboard, external editor, image paste and complete upstream autocomplete behavior remain open."
+      ],
+      "evidence": [
+        "EditorCompletionTests covers slash ambiguity/unique completion, nested and wrapped paths, CJK punctuation boundaries, hidden-file prefixing, quoted directory continuation without duplicate quotes, emoji-safe common prefix, and directory-first results. Focused 4/4 tests and full format/build/test (431/431) pass locally; the commit and exact-head Linux CI are pending."
+      ],
       "dependencies": []
     },
     {
