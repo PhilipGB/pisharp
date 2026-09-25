@@ -597,10 +597,16 @@
       "acceptance": [
         "--continue, --session, --no-session, /new, /resume, /name, auto-save; project grouping",
         "malformed/partial writes surfaced, recover history",
-        "Verify through application workflow and compare docs/sessions.md, docs/session-format.md; packages/coding-agent/src/core/session-manager.ts; PiSharp-specific application-owned ConversationSession, ConversationRun, private atomic ConversationStore"
+        "Verify through application workflow and compare docs/session-format.md and packages/coding-agent/src/core/session-manager.ts; PiSharp-specific ConversationSession, ConversationRun and private atomic ConversationStore"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "src/PiSharp.Runtime/Sessions/PiJsonlSessionInterchange.cs: bounded Pi v1-v3 import and v3 export; migrates v1 links/compaction indexes and v1/v2 hookMessage roles; retains original records and maps messages, tool calls/results, images, Bash, compaction, context edits, model changes and session metadata.",
+        "src/PiSharp.Cli/Program.cs and src/PiSharp.Cli/SessionPathArgument.cs: confirmed /import, /export-jsonl and .jsonl startup --session handling. Import currently requires an existing Pi CWD equal to the running project directory."
+      ],
+      "evidence": [
+        "PiJsonlSessionInterchangeTests cover v1/v2 migrations, v3 branch/context-edit/compaction round trips, raw record retention, active-head restoration, malformed headers, private no-overwrite export and cancelled-write cleanup. TerminalPtyTests cover import confirmation/cancel/retry, startup --session, transcript restoration and JSONL export.",
+        "Implementation commit 2a10535814e102d17ba4aaefc8bf3512a0a87432 passed focused session/PTY tests, format verification, warnings-as-errors build and all 526 tests; exact-head Linux CI run 36188382176 passed format, build and all 526 tests (0 failed, 0 skipped). Current Pi d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 v1-v3 migration and import sources/tests were inspected; broad session-manager parity is not verified."
+      ],
       "dependencies": []
     },
     {
@@ -611,14 +617,17 @@
       "acceptance": [
         "/tree, /fork, /clone, /import, /export, active branch context",
         "navigating never deletes other branches",
-        "Verify through application workflow and compare docs/sessions.md; packages/coding-agent/src/core/session-manager.ts, session-export.ts; persisted selected-branch tests with tool calls, failures and restart"
+        "Verify through application workflow and compare docs/session-format.md and packages/coding-agent/src/core/session-manager.ts, session-export.ts; persisted selected-branch tests with tool calls, failures and restart"
       ],
       "implementation": [
         "src/PiSharp.Cli/Tui/TerminalForkPicker.cs: adapts the shared searchable list to active-branch forkable user messages, preselects the newest message, and bounds preview/search text.",
-        "src/PiSharp.Cli/Program.cs: no-argument /fork and configurable app.session.fork route selected messages through the same fork path as direct /fork <id>; the selected prompt remains editable."
+        "src/PiSharp.Cli/Program.cs: no-argument /fork and configurable app.session.fork route selected messages through the same fork path as direct /fork <id>; the selected prompt remains editable.",
+        "src/PiSharp.Runtime/Sessions/PiJsonlSessionInterchange.cs: exports all PiSharp branches parent-first and adds a session_info anchor when required to restore the selected head in Pi.",
+        "src/PiSharp.Cli/Program.cs: confirmed /import <path.jsonl> replaces the active session after validation; /export-jsonl [path] writes a create-new file with user-only Unix permissions."
       ],
       "evidence": [
-        "TerminalPtyTests.ForkPickerSearchesUserMessagesAndSeedsSelectedPromptThroughLinuxPty verifies searchable active-branch selection, selected prompt prefill, source preservation and the fork prefix; TerminalPtyTests.ForkFromEarlierUserTurnPreservesSourceAndSeedsEditableDraft verifies direct-ID selection; EditorKeymapTests.SessionSelectorShortcutCanBeConfiguredAndPreservesTheEditorDraft covers configurable app.session.fork dispatch and draft retention. Focused tests pass 3/3. Format verification passes, warnings-as-errors build reports 0 warnings/errors, and dotnet test PiSharp.slnx passes 424/424 with 0 skipped in the validated local working tree; exact-head commit ba25c8adbc861e0dece4372bf4c7f97424014fe1 passed Linux CI run 36136775710."
+        "TerminalPtyTests.ForkPickerSearchesUserMessagesAndSeedsSelectedPromptThroughLinuxPty verifies searchable active-branch selection, selected prompt prefill, source preservation and the fork prefix; TerminalPtyTests.ForkFromEarlierUserTurnPreservesSourceAndSeedsEditableDraft verifies direct-ID selection; EditorKeymapTests.SessionSelectorShortcutCanBeConfiguredAndPreservesTheEditorDraft covers configurable app.session.fork dispatch and draft retention. Focused tests pass 3/3. Format verification passes, warnings-as-errors build reports 0 warnings/errors, and dotnet test PiSharp.slnx passes 424/424 with 0 skipped in the validated local working tree; exact-head commit ba25c8adbc861e0dece4372bf4c7f97424014fe1 passed Linux CI run 36136775710.",
+        "PiJsonlSessionInterchangeTests.CurrentPiV3ImportPreservesBranchesContextEditsCompactionAndOriginalRecords round-trips inactive branches and the selected head. TerminalPtyTests.PiJsonlImportConfirmsAndSwitchesTheActiveSessionThroughLinuxPty covers confirmation and session switching; TerminalPtyTests covers export and visible imported transcript. Exact commit 2a10535814e102d17ba4aaefc8bf3512a0a87432 passed Linux CI run 36188382176 with all 526 tests; same-CWD restriction and broader Pi session lifecycle/differentials remain open."
       ],
       "dependencies": []
     },
@@ -788,19 +797,21 @@
       "source": "docs/parity/detailed-inventory.md:10",
       "acceptance": [
         "Prompt history tree, project association, rename/delete picker, clone vs fork, invalid import recovery",
-        "In progress: /sessions, direct /resume <id|name> and a searchable project-scoped no-argument /resume picker, basic clone, branch selection and PTY session test; no-argument /fork now opens a searchable active-branch user-message picker with newest message preselected, while direct /fork <id> remains; cross-project picker scope, rename/sort/path/trash controls and Pi JSONL import remain open; metadata search and confirmation-gated permanent deletion have PTY/unit evidence",
+        "In progress: /sessions, direct /resume <id|name>, project-scoped resume picker, clone, branch selection, searchable fork picker, confirmed Pi JSONL import and v3 export have deterministic coverage; import currently requires matching project CWD. Cross-project picker scope, rename/sort/path/trash controls remain open; metadata search and confirmation-gated permanent deletion have PTY/unit evidence",
         "Verify command results, errors and PTY workflows",
-        "Remaining: Pi JSONL /import, cross-project/session-tree picker controls, trash and upstream session differential."
+        "Remaining: cross-project import/workspace switching, cross-project/session-tree picker controls, trash and upstream session differential."
       ],
       "implementation": [
         "src/PiSharp.Cli/Program.cs: /new, /resume, /name, /session, /tree, /fork, /clone and /sessions",
         "src/PiSharp.Cli/Tui/TerminalSessionPicker.cs: reusable overlay displays project sessions with current marker and searches name, ID, model and path; /resume direct resolution now shares the same switch routine.",
-        "src/PiSharp.Cli/Tui/TerminalForkPicker.cs and Program.cs: searchable no-argument /fork selector with newest active-branch user message selected; direct ID fork uses the same fork routine."
+        "src/PiSharp.Cli/Tui/TerminalForkPicker.cs and Program.cs: searchable no-argument /fork selector with newest active-branch user message selected; direct ID fork uses the same fork routine.",
+        "src/PiSharp.Cli/Program.cs: /import <path.jsonl> confirms before replacing active session and /export-jsonl [path] writes Pi v3 JSONL; imported history is rendered immediately."
       ],
       "evidence": [
         "tests/PiSharp.Tests/TerminalPtyTests.cs: session resume/clone/fork interactions; tests/PiSharp.Tests/ConversationSessionTests.cs: canonical session persistence",
         "TerminalPtyTests.SessionDiscoveryResumeAndCloneWorkThroughLinuxPty verifies direct ID/name resume then project-picker search and selection through a Linux PTY; TerminalSelectionListTests.EmptySessionListStaysOpenUntilExplicitCancellation covers the no-results state. Format verification, warnings-as-errors build and all 423 tests passed in Linux CI run 36134474053 on exact commit 37eff5a9c7a15c5b12e8ff948fa53714046a2fda.",
-        "TerminalPtyTests.ForkPickerSearchesUserMessagesAndSeedsSelectedPromptThroughLinuxPty verifies searchable active-branch selection, selected prompt prefill, source preservation and the fork prefix; TerminalPtyTests.ForkFromEarlierUserTurnPreservesSourceAndSeedsEditableDraft verifies direct-ID selection; EditorKeymapTests.SessionSelectorShortcutCanBeConfiguredAndPreservesTheEditorDraft covers configurable app.session.fork dispatch and draft retention. Focused tests pass 3/3. Format verification passes, warnings-as-errors build reports 0 warnings/errors, and dotnet test PiSharp.slnx passes 424/424 with 0 skipped in the validated local working tree; exact-head commit ba25c8adbc861e0dece4372bf4c7f97424014fe1 passed Linux CI run 36136775710."
+        "TerminalPtyTests.ForkPickerSearchesUserMessagesAndSeedsSelectedPromptThroughLinuxPty verifies searchable active-branch selection, selected prompt prefill, source preservation and the fork prefix; TerminalPtyTests.ForkFromEarlierUserTurnPreservesSourceAndSeedsEditableDraft verifies direct-ID selection; EditorKeymapTests.SessionSelectorShortcutCanBeConfiguredAndPreservesTheEditorDraft covers configurable app.session.fork dispatch and draft retention. Focused tests pass 3/3. Format verification passes, warnings-as-errors build reports 0 warnings/errors, and dotnet test PiSharp.slnx passes 424/424 with 0 skipped in the validated local working tree; exact-head commit ba25c8adbc861e0dece4372bf4c7f97424014fe1 passed Linux CI run 36136775710.",
+        "TerminalPtyTests.PiJsonlImportConfirmsAndSwitchesTheActiveSessionThroughLinuxPty covers confirm, cancel/retry and imported transcript behavior. Session interchange round-trip/migration tests and exact-head Linux CI run 36188382176 passed on commit 2a10535814e102d17ba4aaefc8bf3512a0a87432; 526 tests passed, 0 failed, 0 skipped."
       ],
       "dependencies": []
     },
@@ -825,23 +836,25 @@
     },
     {
       "id": "commands-output-share",
-      "title": "Interactive commands: /copy, /export [path], /share, /bug [description]",
+      "title": "Interactive commands: /copy, /export [path], /export-jsonl [path], /share, /bug [description]",
       "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:12",
       "acceptance": [
         "Clipboard/export or upload, user confirms sensitive content; upload error offers export",
-        "In progress: /copy and Ctrl+X copy the latest assistant text; standalone private escaped HTML /export is tested with inactive branches, tool failures, cancellation and PTY. JSONL export, selection copy, /share and /bug remain open.",
+        "In progress: /copy and Ctrl+X copy latest/selected text; private escaped HTML /export is tested with inactive branches, failures, cancellation and PTY. /export-jsonl writes Pi v3 JSONL without overwriting; /share and /bug remain open.",
         "Verify command results, errors and PTY workflows",
-        "Remaining: selection copy, /share, /bug, Pi viewer/JSONL and upstream differential."
+        "Remaining: /share, /bug, Pi viewer and upstream export differential."
       ],
       "implementation": [
         "src/PiSharp.Cli/Program.cs: /export; src/PiSharp.Runtime/Sessions/SessionExport.cs: private HTML writer",
-        "src/PiSharp.Cli/Program.cs: /copy copies the latest active-branch assistant text to the system clipboard and reports helper errors; Ctrl+X dispatches the same named action."
+        "src/PiSharp.Cli/Program.cs: /copy copies the latest active-branch assistant text to the system clipboard and reports helper errors; Ctrl+X dispatches the same named action.",
+        "src/PiSharp.Cli/Program.cs and src/PiSharp.Runtime/Sessions/PiJsonlSessionInterchange.cs: /export-jsonl [path] writes a Pi v3 session tree without replacing existing files (user-only file mode on Unix)."
       ],
       "evidence": [
         "tests/PiSharp.Tests/SessionExportTests.cs: escaping, branch, failure and no-overwrite fixtures; tests/PiSharp.Tests/TerminalPtyTests.cs: export fixture",
         "TerminalPtyTests.ClipboardShortcutsPasteTextAndCopyLastAssistantThroughLinuxPty seeds assistant text, pastes clipboard text, exercises Ctrl+X and /copy, and verifies the copied bytes with a fake Wayland clipboard helper.",
-        "Commit d331d7d714a5548add83b19c40d0f84da4efba7c passed local format, warnings-as-errors build and 447/447 tests, but Linux CI run 36149550761 failed one existing BashCancellationAndTimeoutKillTheProcessGroup test because /proc/<pid>/stat disappeared between File.Exists and ReadAllText. The process-tree assertion remains intact; ProcessTestHelpers now treats procfs disappearance during the read as process exit, and the working tree passes format, build and all 447 tests. Follow-up exact-head CI is pending. Follow-up commit b27a4b7bb8b3e9333a398e770b9e1801c675da46 updates ProcessTestHelpers to treat procfs disappearance after File.Exists as process exit while preserving the process-tree assertion; exact-head Linux CI run 36150182304 passed format verification, warnings-as-errors build and all 447 tests."
+        "Commit d331d7d714a5548add83b19c40d0f84da4efba7c passed local format, warnings-as-errors build and 447/447 tests, but Linux CI run 36149550761 failed one existing BashCancellationAndTimeoutKillTheProcessGroup test because /proc/<pid>/stat disappeared between File.Exists and ReadAllText. The process-tree assertion remains intact; ProcessTestHelpers now treats procfs disappearance during the read as process exit, and the working tree passes format, build and all 447 tests. Follow-up exact-head CI is pending. Follow-up commit b27a4b7bb8b3e9333a398e770b9e1801c675da46 updates ProcessTestHelpers to treat procfs disappearance after File.Exists as process exit while preserving the process-tree assertion; exact-head Linux CI run 36150182304 passed format verification, warnings-as-errors build and all 447 tests.",
+        "PiJsonlSessionInterchangeTests cover all-branch v3 export, active-head restoration, exclusive file creation and cancellation cleanup; TerminalPtyTests covers /export-jsonl. Exact implementation commit 2a10535814e102d17ba4aaefc8bf3512a0a87432 passed Linux CI run 36188382176 with all 526 tests."
       ],
       "dependencies": []
     },
@@ -930,10 +943,12 @@
         "Test parsed flags, conflict/recovery and process behaviour"
       ],
       "implementation": [
-        "Partial: src/PiSharp.Cli/CliArguments.cs and Program.cs implement --continue, --session, --session-dir, --no-session, --fork and --name, with project-local session catalog lookup. -r resume picker and --session-id are absent."
+        "Partial: src/PiSharp.Cli/CliArguments.cs and Program.cs implement --continue, --session, --session-dir, --no-session, --fork and --name, with project-local session catalog lookup. -r resume picker and --session-id are absent.",
+        "Startup --session also accepts Pi .jsonl files, migrates v1-v3 through PiJsonlSessionInterchange and restores visible transcript history; import requires the session CWD to equal the current project."
       ],
       "evidence": [
-        "tests/PiSharp.Tests/{CliProcessTests,TerminalPtyTests,ProviderModelRuntimeTests}.cs include process startup selection, fork and model conflict fixtures; docs/parity/detailed-inventory.md records the remaining interoperability and picker gaps. This does not prove Pi session equivalence."
+        "tests/PiSharp.Tests/{CliProcessTests,TerminalPtyTests,ProviderModelRuntimeTests}.cs include process startup selection, fork and model conflict fixtures; docs/parity/detailed-inventory.md records the remaining interoperability and picker gaps. This does not prove Pi session equivalence.",
+        "SessionPathArgumentTests and TerminalPtyTests cover .jsonl path arguments and startup import; exact implementation commit 2a10535814e102d17ba4aaefc8bf3512a0a87432 passed Linux CI run 36188382176 with 526 tests and no skips."
       ],
       "dependencies": []
     },
