@@ -99,7 +99,7 @@ public sealed class ProviderModelRuntime
     }
 
     public async Task<IReadOnlyList<ModelDescriptor>> ListModelsAsync(string? providerId = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default, bool includeOutOfScope = false)
     {
         var providers = providerId is null ? Providers : [GetProvider(providerId)];
         var result = new List<ModelDescriptor>();
@@ -146,11 +146,11 @@ public sealed class ProviderModelRuntime
                 }));
             }
         }
-        return ApplyScope(result);
+        return includeOutOfScope ? result : ApplyScope(result);
     }
 
     public async Task<ModelSelection> ResolveAsync(string? providerId, string? modelReference,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default, bool includeOutOfScope = false)
     {
         ProviderProfile? explicitProvider = providerId is null ? null : GetProvider(providerId);
         var inferredReference = modelReference?.Trim();
@@ -170,16 +170,17 @@ public sealed class ProviderModelRuntime
         if (string.IsNullOrWhiteSpace(reference)) throw new InvalidOperationException($"Provider '{explicitProvider.Id}' has no models.");
         // An explicitly configured exact ID is usable without /models: many compatible servers
         // do not implement that endpoint, and it must not consume a prompt's first response.
-        var configured = ApplyScope(explicitProvider.Models).Where(item =>
+        var configured = (includeOutOfScope ? explicitProvider.Models : ApplyScope(explicitProvider.Models)).Where(item =>
             item.Id.Equals(reference, StringComparison.OrdinalIgnoreCase)).ToArray();
-        var models = configured.Length == 1 ? configured : await ListModelsAsync(explicitProvider.Id, cancellationToken);
+        var models = configured.Length == 1 ? configured :
+            await ListModelsAsync(explicitProvider.Id, cancellationToken, includeOutOfScope);
         var matches = models.Where(item => item.Id.Equals(reference, StringComparison.OrdinalIgnoreCase)).ToArray();
         if (matches.Length == 0)
             matches = models.Where(item => item.Id.Contains(reference, StringComparison.OrdinalIgnoreCase) ||
                 (item.Owner?.Contains(reference, StringComparison.OrdinalIgnoreCase) ?? false)).ToArray();
         if (matches.Length > 1)
             throw new ArgumentException($"Model '{reference}' is ambiguous: {string.Join(", ", matches.Select(item => explicitProvider.Id + "/" + item.Id))}.");
-        if (matches.Length == 0 && _scope.Count > 0)
+        if (matches.Length == 0 && _scope.Count > 0 && !includeOutOfScope)
             throw new ArgumentException($"Model '{explicitProvider.Id}/{reference}' is outside the --models scope.");
         var model = matches.Length == 1 ? matches[0] : new ModelDescriptor(reference, explicitProvider.Id, null,
             "custom model ID", Provider: explicitProvider.Id);

@@ -284,6 +284,9 @@ public sealed class ProviderModelRuntimeTests
             Assert.Empty(await runtime.ListModelsAsync("custom"));
             runtime.SetScope(["custom/other-*"]);
             await Assert.ThrowsAsync<ArgumentException>(() => runtime.ResolveAsync("custom", "reasoner"));
+            Assert.Equal("reasoner", Assert.Single(await runtime.ListModelsAsync("custom", includeOutOfScope: true)).Id);
+            var selectedOutsideScope = await runtime.ResolveAsync("custom", "reasoner", includeOutOfScope: true);
+            Assert.Equal("reasoner", selectedOutsideScope.Model.Id);
         }
         finally { Directory.Delete(root, true); }
     }
@@ -465,7 +468,7 @@ public sealed class ProviderModelRuntimeTests
             start.ArgumentList.Add("-q");
             start.ArgumentList.Add("-e");
             start.ArgumentList.Add("-c");
-            start.ArgumentList.Add($"dotnet '{typeof(CliArguments).Assembly.Location}' --provider fixture --no-tools --session-dir '{root}/sessions'");
+            start.ArgumentList.Add($"stty rows 24 cols 80; exec dotnet '{typeof(CliArguments).Assembly.Location}' --provider fixture --no-tools --offline --session-dir '{root}/sessions'");
             start.ArgumentList.Add("/dev/null");
             foreach (var name in new[] { "PISHARP_FIXTURE_KEY", "OPENAI_API_KEY", "PISHARP_API_KEY", "PISHARP_BASE_URL", "PISHARP_AUTH_PATH", "PISHARP_MODELS_PATH" })
                 start.Environment.Remove(name);
@@ -497,7 +500,7 @@ public sealed class ProviderModelRuntimeTests
                 await process.StandardInput.WriteAsync("fixture-secret-not-for-transcript\n");
                 await process.StandardInput.FlushAsync();
                 await WaitFor("Authenticated fixture with api-key");
-                await process.StandardInput.WriteAsync("/model fixture/fixture-alt\n/thinking high\n/model\n/logout\nafter-logout\n/quit\n");
+                await process.StandardInput.WriteAsync("/model fixture/fixture-alt\n/thinking high\n/model\n\u001b[B\u001b[A\r/logout\nafter-logout\n/quit\n");
                 process.StandardInput.Close();
                 await process.WaitForExitAsync(timeout.Token);
                 await draining;
@@ -508,7 +511,10 @@ public sealed class ProviderModelRuntimeTests
                 Assert.Contains("Model: fixture/fixture-alt", transcript);
                 Assert.Contains("does not advertise reasoning support", transcript);
                 Assert.Contains("Logged out fixture", transcript);
-                Assert.Equal(2, transcript.Split("is not authenticated. Use /login", StringSplitOptions.None).Length - 1);
+                var restoreBoundary = transcript.LastIndexOf("\u001b[?1049l", StringComparison.Ordinal);
+                Assert.True(restoreBoundary >= 0, "The interactive screen was not restored.");
+                var restoredScrollback = transcript[(restoreBoundary + "\u001b[?1049l".Length)..];
+                Assert.Equal(2, restoredScrollback.Split("is not authenticated. Use /login", StringSplitOptions.None).Length - 1);
                 Assert.DoesNotContain("fixture-secret-not-for-transcript", transcript);
                 Assert.DoesNotContain("Connection refused", transcript);
                 Assert.DoesNotContain("fixture-secret-not-for-transcript", await stderr);

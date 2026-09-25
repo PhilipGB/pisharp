@@ -234,6 +234,11 @@ TerminalEditor? editor = !print && cli.Mode is not ("json" or "rpc") ? new Termi
     resources.Skills.Select(item => "/skill:" + item.Name)
         .Concat(resources.Prompts.Select(item => "/" + item.Name))
         .Concat(extensionLease.Current.Registration.Commands.Keys.Select(name => "/" + name)).ToArray(), agentDirectory) : null;
+using var terminalScreen = editor is null ? null : new TerminalScreen(Console.Out, Console.Error);
+terminalScreen?.Activate();
+editor?.AttachScreen(terminalScreen);
+string IdleFooter() => $"{selection.Provider.Id}/{selection.Model.Id} · thinking {thinking} · Ctrl+L models · Ctrl+P cycle · Shift+Tab thinking · Enter send";
+terminalScreen?.SetFooter(IdleFooter());
 if (editor is not null && (cli.Verbose || userSettings.QuietStartup != true)) Console.WriteLine($"PiSharp · {selection.Provider.Id}/{connection.Model} · thinking {thinking} · {Environment.CurrentDirectory}\n/model · /thinking · /scoped-models · /login · /logout · /tree · /fork · /new · /session · /hotkeys · /quit · Escape interrupts; Enter steers; Alt+Enter follows up\n");
 CancellationTokenSource? activeRun = null;
 Console.CancelKeyPress += (_, e) => { e.Cancel = true; activeRun?.Cancel(); };
@@ -243,7 +248,6 @@ async Task Run(string input, IReadOnlyList<DataContent>? images = null)
     using var runCancel = new CancellationTokenSource();
     activeRun = runCancel;
     using var monitorStop = new CancellationTokenSource();
-    using var terminalScreen = editor is null ? null : new TerminalScreen(Console.Out, Console.Error);
     terminalScreen?.Activate();
     editor?.AttachScreen(terminalScreen);
     var monitor = Task.CompletedTask;
@@ -298,8 +302,8 @@ async Task Run(string input, IReadOnlyList<DataContent>? images = null)
         if (sessionPath is not null)
             try { await store.SaveAsync(conversation, sessionPath); }
             catch (Exception e) { Console.Error.WriteLine($"Could not save session: {e.Message}"); Environment.ExitCode = 1; }
-        editor?.AttachScreen(null);
         activeRun = null;
+        terminalScreen?.SetFooter(IdleFooter());
     }
 }
 
@@ -350,6 +354,17 @@ async Task ReplaceModelRuntime(ModelSelection nextSelection, string nextThinking
     }
 }
 
+var terminalModelPicker = editor is null ? null : new TerminalModelPicker(modelRuntime, editor);
+async Task SelectModelAsync()
+{
+    if (terminalModelPicker is null) return;
+    var nextSelection = await terminalModelPicker.ShowAsync(selection, cli.Provider);
+    if (nextSelection is null) return;
+    var nextThinking = nextSelection.Model.Reasoning == true ? thinking : "off";
+    await ReplaceModelRuntime(nextSelection, nextThinking, recordModelChange: true);
+    Console.WriteLine($"Model: {selection.Provider.Id}/{selection.Model.Id} · thinking {thinking}");
+}
+
 async Task HandleEditorApplicationAction(string action)
 {
     try
@@ -367,6 +382,9 @@ async Task HandleEditorApplicationAction(string action)
                 var nextThinking = ThinkingLevels.All[(thinkingIndex + 1 + ThinkingLevels.All.Count) % ThinkingLevels.All.Count];
                 await ReplaceModelRuntime(selection, nextThinking, recordModelChange: false);
                 Console.WriteLine($"Thinking level: {thinking}");
+                break;
+            case "app.model.select":
+                await SelectModelAsync();
                 break;
             case "app.model.cycleForward":
             case "app.model.cycleBackward":
@@ -401,6 +419,7 @@ async Task HandleEditorApplicationAction(string action)
     {
         Console.Error.WriteLine($"Shortcut action failed: {error.Message}");
     }
+    finally { terminalScreen?.SetFooter(IdleFooter()); }
 }
 
 async Task ReloadResources()
@@ -676,10 +695,10 @@ else
                     case "/model":
                         if (string.IsNullOrWhiteSpace(argument))
                         {
-                            Console.WriteLine($"Model: {selection.Provider.Id}/{selection.Model.Id} · thinking {thinking} · auth {selection.AuthSource}");
+                            await SelectModelAsync();
                             break;
                         }
-                        var nextSelection = await modelRuntime.ResolveAsync(null, argument);
+                        var nextSelection = await modelRuntime.ResolveAsync(null, argument, includeOutOfScope: true);
                         var compatibleThinking = nextSelection.Model.Reasoning == true ? thinking : "off";
                         await ReplaceModelRuntime(nextSelection, compatibleThinking, recordModelChange: true);
                         Console.WriteLine($"Model: {selection.Provider.Id}/{selection.Model.Id} · thinking {thinking}");
@@ -729,6 +748,7 @@ else
                 }
             }
             catch (Exception e) { Console.Error.WriteLine($"Session error: {e.Message}"); Environment.ExitCode = 1; }
+            terminalScreen?.SetFooter(IdleFooter());
             continue;
         }
         await Run(line);

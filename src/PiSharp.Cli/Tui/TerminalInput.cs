@@ -280,24 +280,46 @@ public sealed record TerminalInputEvent(ConsoleKeyInfo? Key, string? Text);
 /// <summary>Restores tty state after exceptions, EOF and normal exit. Only used with an attached terminal.</summary>
 internal sealed class TerminalMode : IDisposable
 {
+    private static readonly AsyncLocal<int> s_depth = new();
     private readonly string _original;
     private readonly TerminalScreen? _screen;
-    private TerminalMode(string original, TerminalScreen? screen) { _original = original; _screen = screen; }
+    private readonly bool _ownsMode;
+    private TerminalMode(string original, TerminalScreen? screen, bool ownsMode)
+    {
+        _original = original;
+        _screen = screen;
+        _ownsMode = ownsMode;
+    }
 
     public static TerminalMode Enter(TerminalScreen? screen = null)
     {
+        if (s_depth.Value > 0)
+        {
+            s_depth.Value++;
+            return new TerminalMode("", screen, ownsMode: false);
+        }
         var state = Stty("-g").Trim();
         if (string.IsNullOrEmpty(state)) throw new IOException("Could not read terminal settings.");
         Stty("-icanon", "-echo", "-isig", "min", "1", "time", "0");
         try { WriteControl(screen, "\u001b[?2004h"); }
         catch { Stty(state); throw; }
-        return new TerminalMode(state, screen);
+        s_depth.Value = 1;
+        return new TerminalMode(state, screen, ownsMode: true);
     }
 
     public void Dispose()
     {
-        WriteControl(_screen, "\u001b[?2004l");
-        Stty(_original);
+        if (!_ownsMode)
+        {
+            s_depth.Value = Math.Max(0, s_depth.Value - 1);
+            return;
+        }
+        try { WriteControl(_screen, "\u001b[?2004l"); }
+        finally
+        {
+            try { Stty(_original); }
+            finally { s_depth.Value = 0; }
+        }
     }
 
     private static void WriteControl(TerminalScreen? screen, string value)

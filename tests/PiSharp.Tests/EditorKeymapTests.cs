@@ -159,6 +159,24 @@ public sealed class EditorKeymapTests
             Key(ConsoleKey.P, ConsoleModifiers.Alt)));
     }
 
+    [Fact]
+    public async Task ModelSelectorShortcutIsNamedAndPreservesTheEditorDraft()
+    {
+        var editor = new TerminalEditor();
+        editor.Prefill("keep this draft");
+        string? dispatched = null;
+
+        Assert.True(await editor.HandleApplicationShortcutAsync(Key(ConsoleKey.L, ConsoleModifiers.Control), action =>
+        {
+            dispatched = action;
+            return Task.CompletedTask;
+        }));
+
+        Assert.Equal("app.model.select", dispatched);
+        Assert.Equal("keep this draft", editor.Draft);
+        Assert.Contains("Open model selector (app.model.select)", editor.Hotkeys);
+    }
+
     private static ConsoleKeyInfo Key(ConsoleKey key, ConsoleModifiers modifiers = 0) => new('\0', key,
         modifiers.HasFlag(ConsoleModifiers.Shift), modifiers.HasFlag(ConsoleModifiers.Alt),
         modifiers.HasFlag(ConsoleModifiers.Control));

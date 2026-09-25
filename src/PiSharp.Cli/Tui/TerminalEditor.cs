@@ -39,6 +39,18 @@ public sealed class TerminalEditor
         }
     }
 
+    internal TerminalSelection<T>? ShowSelectionList<T>(string title,
+        IReadOnlyList<TerminalSelectionOption<T>> options, string? selectedKey = null,
+        IReadOnlyList<TerminalSelectionOption<T>>? scopedOptions = null,
+        string allLabel = "All", string scopedLabel = "Scoped", string emptyMessage = "No matching items")
+    {
+        if (_screen is not { IsActive: true } screen) return null;
+        _input ??= TerminalInput.OpenConsole();
+        using var mode = TerminalMode.Enter(screen);
+        return new TerminalOverlayHost(_input).Select(screen, title, options, selectedKey, scopedOptions,
+            allLabel, scopedLabel, emptyMessage);
+    }
+
     /// <summary>Seed the next editable prompt after a session fork; never submits it automatically.</summary>
     public void Prefill(string text) => _buffer.SetText(text);
 
@@ -239,7 +251,7 @@ public sealed class TerminalEditor
         try
         {
             Console.TreatControlCAsInput = true;
-            using var mode = TerminalMode.Enter();
+            using var mode = TerminalMode.Enter(_screen);
             _input ??= TerminalInput.OpenConsole();
             Render();
             while (true)

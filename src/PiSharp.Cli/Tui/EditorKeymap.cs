@@ -7,7 +7,7 @@ public sealed class EditorKeymap
     private sealed record Definition(string Description, string[] DefaultKeys);
     private readonly record struct KeyStroke(ConsoleKey Key, ConsoleModifiers Modifiers);
     private sealed record BoundKey(KeyStroke Stroke, string Name);
-    private static readonly string[] IdleApplicationActions = ["app.thinking.cycle", "app.model.cycleForward", "app.model.cycleBackward"];
+    private static readonly string[] IdleApplicationActions = ["app.thinking.cycle", "app.model.cycleForward", "app.model.cycleBackward", "app.model.select"];
 
     private static readonly IReadOnlyDictionary<string, Definition> s_definitions = new Dictionary<string, Definition>(StringComparer.Ordinal)
     {
@@ -33,6 +33,7 @@ public sealed class EditorKeymap
         ["app.exit"] = new("Exit when editor is empty", ["ctrl+d"]),
         ["app.model.cycleForward"] = new("Cycle to next model", ["ctrl+p"]),
         ["app.model.cycleBackward"] = new("Cycle to previous model", IsWindowsBindings() ? ["alt+p"] : ["ctrl+shift+p", "alt+p"]),
+        ["app.model.select"] = new("Open model selector", ["ctrl+l"]),
         ["app.thinking.cycle"] = new("Cycle thinking level", ["shift+tab"]),
         ["app.tools.expand"] = new("Expand or collapse tool output", ["ctrl+o"]),
         ["app.message.followUp"] = new("Queue a follow-up message", IsWindowsBindings() ? ["ctrl+q"] : ["alt+enter"]),

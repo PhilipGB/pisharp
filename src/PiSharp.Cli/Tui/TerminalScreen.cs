@@ -22,6 +22,7 @@ public sealed class TerminalScreen : IDisposable
     private int _editorCursor;
     private int _scrollOffset;
     private string _footer = "Enter steers · follow-up queues · Escape aborts";
+    private IReadOnlyList<string>? _overlay;
     private bool _activated;
     private volatile bool _active = true;
 
@@ -52,6 +53,8 @@ public sealed class TerminalScreen : IDisposable
     public TextWriter Output => _out;
     public TextWriter Error => _error;
     public bool IsActive => _active;
+    internal int TerminalWidth => Columns();
+    internal int TerminalHeight => Rows();
 
     public void Activate()
     {
@@ -110,6 +113,16 @@ public sealed class TerminalScreen : IDisposable
         {
             if (!_active) return;
             _footer = TerminalSafeText.Normalize(text);
+            RenderLocked();
+        }
+    }
+
+    internal void SetOverlay(IReadOnlyList<string>? lines)
+    {
+        lock (_gate)
+        {
+            if (!_active) return;
+            _overlay = lines?.Select(line => TerminalSafeText.Normalize(line).Replace('\n', ' ')).ToArray();
             RenderLocked();
         }
     }
@@ -304,6 +317,7 @@ public sealed class TerminalScreen : IDisposable
             var footer = _scrollOffset == 0 ? _footer : $"↑ {_scrollOffset} rows · live output follows at bottom · {_footer}";
             screenRows[^1] = TerminalTranscriptViewport.Clip(footer, columns - 1);
         }
+        if (_overlay is { } overlay) TerminalOverlayLayout.Apply(screenRows, overlay, columns);
 
         _originalOut.Write("\u001b[?2026h\u001b[2J\u001b[H");
         for (var index = 0; index < screenRows.Length; index++)
