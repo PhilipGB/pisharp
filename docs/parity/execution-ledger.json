@@ -1198,6 +1198,7 @@
         "Compared null/result shapes and {model,thinkingLevel,isScoped} response with current Pi main d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 packages/coding-agent/src/modes/rpc/{rpc-types.ts,rpc-mode.ts,rpc-client.ts} and core/agent-session.ts.",
         "RpcModelProcessTests.RpcModelCommandsSelectAndCycleTheRunningProviderRuntime verifies wraparound selection, response fields and following get_state model.",
         "RpcModeTests.CycleModelReturnsNullWhenOnlyOneModelIsAvailable verifies the null response without attempting runtime replacement.",
+        "Exact commit 94805a8206306ae5aab166cbb523c8af786489b3 passed Linux CI run 36194265892: format, warnings-as-errors build, and test suite.",
         "Still open: Pi per-model thinking defaults, model-change thinking event ordering, scoped catalog edge cases, cancellation and full wire differential."
       ],
       "dependencies": []
