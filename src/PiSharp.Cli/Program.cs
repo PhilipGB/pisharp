@@ -279,6 +279,7 @@ async Task Run(string input, IReadOnlyList<DataContent>? images = null)
         {
             if (update.Type == "prompt_accepted" && editor is not null && !monitorStarted)
             {
+                transcript.Render(update);
                 monitorStarted = true;
                 monitor = editor.MonitorRunAsync(async (text, followUp, token) =>
                 {

@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Microsoft.Extensions.AI;
 
 namespace PiSharp.Runtime.Sessions;
 
@@ -12,4 +13,7 @@ public sealed record AgentLifecycleEvent(string Type, string? Text = null, strin
 {
     [JsonIgnore]
     public IReadOnlyDictionary<string, object?>? ToolArguments { get; init; }
+
+    [JsonIgnore]
+    public IReadOnlyList<DataContent>? Images { get; init; }
 }

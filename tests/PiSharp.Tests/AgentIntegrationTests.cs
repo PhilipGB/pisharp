@@ -1,12 +1,53 @@
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 using Microsoft.Extensions.AI;
 using PiSharp.Runtime;
 using PiSharp.Runtime.Sessions;
+using SkiaSharp;
 
 namespace PiSharp.Tests;
 
 public sealed class AgentIntegrationTests
 {
+    [Fact]
+    public async Task ReadImageToolLifecycleExposesValidatedImageInProcessOnly()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-read-image-event-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        try
+        {
+            var imageBytes = CreateImage(12, 8);
+            await File.WriteAllBytesAsync(Path.Combine(cwd, "fixture.png"), imageBytes);
+            var client = new ReadImageClient();
+            var conversation = new ConversationSession(cwd, "fixture", null);
+            var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(cwd)), conversation);
+            var promptImageBytes = CreateImage(6, 9);
+            var prompt = new ChatMessage(ChatRole.User,
+                [new TextContent("inspect fixture.png"), new DataContent(promptImageBytes, "image/png")]);
+            var events = new List<AgentLifecycleEvent>();
+            await foreach (var update in run.RunEventsAsync(prompt, "inspect fixture.png")) events.Add(update);
+
+            var accepted = Assert.Single(events, update => update.Type == "prompt_accepted");
+            var finished = Assert.Single(events, update => update.Type == "tool_execution_finished" && update.Tool == "read");
+            var promptImage = Assert.Single(accepted.Images!);
+            var image = Assert.Single(finished.Images!);
+            var promptSerialized = JsonSerializer.Serialize(accepted);
+            var serialized = JsonSerializer.Serialize(finished);
+
+            Assert.Equal(promptImageBytes, promptImage.Data.ToArray());
+            Assert.DoesNotContain("Images", promptSerialized);
+            Assert.DoesNotContain(Convert.ToBase64String(promptImageBytes), promptSerialized);
+            Assert.Equal("image/png", image.MediaType);
+            Assert.Equal(imageBytes, image.Data.ToArray());
+            Assert.Equal("Read image file [image/png]", finished.Text);
+            Assert.DoesNotContain(Convert.ToBase64String(imageBytes), finished.Text);
+            Assert.DoesNotContain("Images", serialized);
+            Assert.DoesNotContain(Convert.ToBase64String(imageBytes), serialized);
+            Assert.True(client.SawImage);
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
+    }
+
     [Fact]
     public async Task BashToolReceivesCurrentConversationAndRunMetadata()
     {
@@ -91,6 +132,39 @@ public sealed class AgentIntegrationTests
             Assert.Equal(2, conversation.ActiveMessages().SelectMany(message => message.Contents).OfType<FunctionResultContent>().Count());
         }
         finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    private sealed class ReadImageClient : IChatClient
+    {
+        private int _requests;
+        public bool SawImage { get; private set; }
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            if (Interlocked.Increment(ref _requests) == 1)
+                yield return new ChatResponseUpdate(ChatRole.Assistant,
+                    [new FunctionCallContent("read-image", "read", new Dictionary<string, object?> { ["path"] = "fixture.png" })]);
+            else
+            {
+                SawImage = messages.SelectMany(message => message.Contents).OfType<DataContent>()
+                    .Any(image => image.MediaType == "image/png");
+                yield return new ChatResponseUpdate(ChatRole.Assistant, "done");
+            }
+            await Task.CompletedTask;
+        }
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
+    }
+
+    private static byte[] CreateImage(int width, int height)
+    {
+        using var bitmap = new SKBitmap(new SKImageInfo(width, height, SKColorType.Rgba8888, SKAlphaType.Premul));
+        bitmap.Erase(SKColors.CornflowerBlue);
+        using var image = SKImage.FromBitmap(bitmap);
+        using var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
+        return encoded.ToArray();
     }
 
     private sealed class TwoToolsClient : IChatClient

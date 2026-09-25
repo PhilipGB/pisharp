@@ -50,9 +50,14 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
             publish(new("tool_outcome_unknown", Tool: Name, OperationId: id, IsError: true, Error: error.Message));
             throw;
         }
+        IReadOnlyList<Microsoft.Extensions.AI.DataContent>? toolImages =
+            ReadToolOutput.TryRead(value, out var readOutput) && readOutput.TryCreateImageContent(out var image) ? [image] : null;
         publish(new("tool_execution_finished", Text: resultText, Tool: Name, OperationId: id,
             IsError: failure is not null, Error: failure?.Message,
-            Details: hasStructuredOutput ? details : null));
+            Details: hasStructuredOutput ? details : null)
+        {
+            Images = toolImages
+        });
         if (failure is not null) ExceptionDispatchInfo.Capture(failure).Throw();
         return value;
     }

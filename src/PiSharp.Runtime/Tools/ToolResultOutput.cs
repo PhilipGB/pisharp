@@ -7,6 +7,12 @@ internal static class ToolResultOutput
 {
     public static bool TryRead(object? value, out string text, out object? details)
     {
+        if (ReadToolOutput.TryRead(value, out var readOutput))
+        {
+            text = readOutput.Text;
+            details = null;
+            return true;
+        }
         if (value is IStructuredToolOutput structured)
         {
             text = structured.Text;

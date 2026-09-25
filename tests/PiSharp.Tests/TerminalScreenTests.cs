@@ -1,4 +1,8 @@
+using System.Text.Json;
+using Microsoft.Extensions.AI;
 using PiSharp.Cli.Tui;
+using PiSharp.Runtime.Sessions;
+using SkiaSharp;
 
 namespace PiSharp.Tests;
 
@@ -331,5 +335,85 @@ public sealed class TerminalScreenTests
         Assert.Contains("line 11", expandedFrame);
         Assert.Contains("line 12", expandedFrame);
         Assert.Contains("line 12", error.ToString());
+    }
+
+    [Fact]
+    public void ToolImageRendersAsKittyRowsOnlyWhenExpandedAndStaysOutOfCapturedText()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        var renderer = new TerminalImageRenderer(name => name == "KITTY_WINDOW_ID" ? "2" : null);
+        var screen = new TerminalScreen(output, error, () => 80, () => 24, renderer);
+        var transcript = new InteractiveTranscript(screen.Output, screen.Error, screen: screen);
+        var imageBytes = CreateImage(10, 40);
+        var update = new AgentLifecycleEvent("tool_execution_finished", Tool: "read", Text: "Read image file [image/png]")
+        {
+            Images = [new DataContent(imageBytes, "image/png")]
+        };
+        var serialized = JsonSerializer.Serialize(update);
+
+        transcript.Render(update);
+        var collapsed = output.ToString();
+        screen.ToggleToolResultsExpanded();
+        var expanded = output.ToString();
+        screen.SetFooter("next frame");
+        var redrawn = output.ToString();
+        var suspendStart = output.GetStringBuilder().Length;
+        screen.Suspend();
+        var suspended = output.ToString()[suspendStart..];
+        var resumeStart = output.GetStringBuilder().Length;
+        screen.Resume();
+        var resumed = output.ToString()[resumeStart..];
+        screen.Dispose();
+
+        Assert.DoesNotContain("Images", serialized);
+        Assert.DoesNotContain("\u001b_Ga=T", collapsed);
+        Assert.Contains("[Image: [image/png] 10x40]", collapsed);
+        Assert.Contains("\u001b_Ga=T", expanded);
+        Assert.DoesNotContain("psimg-", expanded);
+        Assert.Contains("\u001b_Ga=p", redrawn);
+        Assert.Contains("\u001b_Ga=d,d=a", suspended);
+        Assert.True(suspended.IndexOf("\u001b_Ga=d,d=a", StringComparison.Ordinal) <
+            suspended.IndexOf("\u001b[?25h\u001b[?1049l", StringComparison.Ordinal));
+        Assert.Contains("\u001b_Ga=p", resumed);
+        Assert.Contains("\u001b_Ga=d,d=A", output.ToString());
+        Assert.Contains("[Image: [image/png] 10x40]", error.ToString());
+        Assert.DoesNotContain(Convert.ToBase64String(imageBytes), error.ToString());
+    }
+
+    [Fact]
+    public void AcceptedPromptRendersUserTextAndImageInTranscriptWithoutSerializingImage()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        var screen = new TerminalScreen(output, error, () => 80, () => 24,
+            new TerminalImageRenderer(name => name == "KITTY_WINDOW_ID" ? "2" : null));
+        var transcript = new InteractiveTranscript(screen.Output, screen.Error, screen: screen);
+        var imageBytes = CreateImage(12, 7);
+        var update = new AgentLifecycleEvent("prompt_accepted", Text: "inspect this")
+        {
+            Images = [new DataContent(imageBytes, "image/png")]
+        };
+
+        transcript.Render(update);
+        var rendered = output.ToString();
+        var serialized = JsonSerializer.Serialize(update);
+        screen.Dispose();
+
+        Assert.Contains("› inspect this", rendered);
+        Assert.Contains("\u001b_Ga=T", rendered);
+        Assert.DoesNotContain("psimg-", rendered);
+        Assert.DoesNotContain("Images", serialized);
+        Assert.DoesNotContain(Convert.ToBase64String(imageBytes), serialized);
+        Assert.Contains("[Image: [image/png] 12x7]", output.ToString());
+    }
+
+    private static byte[] CreateImage(int width, int height)
+    {
+        using var bitmap = new SKBitmap(new SKImageInfo(width, height, SKColorType.Rgba8888, SKAlphaType.Premul));
+        bitmap.Erase(SKColors.CornflowerBlue);
+        using var image = SKImage.FromBitmap(bitmap);
+        using var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
+        return encoded.ToArray();
     }
 }

@@ -1,8 +1,19 @@
 namespace PiSharp.Cli.Tui;
 
 /// <summary>Builds complete terminal frames from transcript, editor, footer and overlay state.</summary>
-internal sealed class TerminalScreenCompositor(TextWriter output)
+internal sealed class TerminalScreenCompositor
 {
+    private readonly TextWriter _output;
+    private readonly TerminalImageRenderer _images;
+
+    public TerminalScreenCompositor(TextWriter output, TerminalImageRenderer images)
+    {
+        ArgumentNullException.ThrowIfNull(output);
+        ArgumentNullException.ThrowIfNull(images);
+        _output = output;
+        _images = images;
+    }
+
     internal sealed record Frame(IReadOnlyList<string> Rows, int CursorRow, int CursorColumn,
         int ScrollOffset, int Columns, int Height);
 
@@ -53,15 +64,17 @@ internal sealed class TerminalScreenCompositor(TextWriter output)
 
     public void Render(Frame frame)
     {
-        output.Write("\u001b[?2026h\u001b[2J\u001b[H");
+        var rendered = _images.PrepareFrame(frame.Rows);
+        _output.Write("\u001b[?2026h");
+        if (rendered.Preamble.Length > 0) _output.Write(rendered.Preamble);
+        _output.Write("\u001b[2J\u001b[H");
         for (var index = 0; index < frame.Rows.Count; index++)
         {
-            output.Write(frame.Rows[index]);
-            output.Write("\u001b[0m");
-            output.Write("\u001b[K");
-            if (index < frame.Rows.Count - 1) output.Write("\r\n");
+            _output.Write($"\u001b[{index + 1};1H");
+            _output.Write(rendered.Rows[index]);
+            _output.Write("\u001b[0m");
         }
-        output.Write($"\u001b[{frame.CursorRow + 1};{Math.Clamp(frame.CursorColumn, 1, frame.Columns)}H\u001b[?25h\u001b[?2026l");
-        output.Flush();
+        _output.Write($"\u001b[{frame.CursorRow + 1};{Math.Clamp(frame.CursorColumn, 1, frame.Columns)}H\u001b[?25h\u001b[?2026l");
+        _output.Flush();
     }
 }

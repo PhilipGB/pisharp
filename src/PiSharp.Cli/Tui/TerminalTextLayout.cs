@@ -17,6 +17,11 @@ internal static class TerminalTextLayout
         var current = 0;
         for (var offset = 0; offset < text.Length;)
         {
+            if (TerminalImageRenderer.TryReadMarker(text, offset, out var markerLength, out _, out _))
+            {
+                offset += markerLength;
+                continue;
+            }
             if (TryReadEscape(text, offset, out var length, out _, out _))
             {
                 offset += length;
@@ -91,6 +96,12 @@ internal static class TerminalTextLayout
 
         for (var offset = 0; offset < text.Length;)
         {
+            if (TerminalImageRenderer.TryReadMarker(text, offset, out var markerLength, out _, out _))
+            {
+                line.Append(text, offset, markerLength);
+                offset += markerLength;
+                continue;
+            }
             if (TryReadEscape(text, offset, out var length, out var kind, out var payload))
             {
                 var sequence = text.Substring(offset, length);
@@ -154,6 +165,11 @@ internal static class TerminalTextLayout
         var output = new StringBuilder(text.Length);
         for (var offset = 0; offset < text.Length;)
         {
+            if (TerminalImageRenderer.TryReadMarker(text, offset, out var markerLength, out _, out _))
+            {
+                offset += markerLength;
+                continue;
+            }
             if (TryReadEscape(text, offset, out var length, out _, out _))
             {
                 offset += length;
@@ -173,6 +189,11 @@ internal static class TerminalTextLayout
         var used = 0;
         for (var offset = 0; offset < text.Length;)
         {
+            if (TerminalImageRenderer.TryReadMarker(text, offset, out var markerLength, out _, out _))
+            {
+                offset += markerLength;
+                continue;
+            }
             if (TryReadEscape(text, offset, out var length, out _, out _))
             {
                 offset += length;
@@ -197,6 +218,11 @@ internal static class TerminalTextLayout
         var used = 0;
         for (var offset = 0; offset < text.Length;)
         {
+            if (TerminalImageRenderer.TryReadMarker(text, offset, out var markerLength, out _, out _))
+            {
+                offset += markerLength;
+                continue;
+            }
             if (TryReadEscape(text, offset, out var length, out _, out _))
             {
                 offset += length;
@@ -225,6 +251,12 @@ internal static class TerminalTextLayout
         var highlighting = false;
         for (var offset = 0; offset < text.Length;)
         {
+            if (TerminalImageRenderer.TryReadMarker(text, offset, out var markerLength, out _, out _))
+            {
+                output.Append(text, offset, markerLength);
+                offset += markerLength;
+                continue;
+            }
             if (TryReadEscape(text, offset, out var length, out var kind, out var payload))
             {
                 var sequence = text.Substring(offset, length);

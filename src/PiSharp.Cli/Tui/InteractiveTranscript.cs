@@ -21,6 +21,9 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
         if (update.Type != "model_text_delta") CommitAssistantText();
         switch (update.Type)
         {
+            case "prompt_accepted" when interactive && screen is not null:
+                screen.AppendUserMessage(Safe(update.Text ?? ""), update.Images);
+                break;
             case "model_text_delta" when !string.IsNullOrEmpty(update.Text):
                 var assistantText = Safe(update.Text);
                 if (screen is null) output.Write(assistantText);
@@ -109,7 +112,7 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
                 result = ShellOutputNormalizer.NormalizeComplete(result);
             var rendered = $"← {(result is null ? update.IsError == true ? "tool failed" : "completed" : Safe(result))}{Environment.NewLine}";
             if (screen is null) status.Write(rendered);
-            else screen.AppendToolResult(rendered);
+            else screen.AppendToolResult(rendered, update.Images);
         }
 
         if (update.Details is not null && ToolDetailsSummary.TryFormat(update.Details, out var summary))

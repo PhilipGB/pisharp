@@ -35,6 +35,11 @@ internal static class TerminalTranscriptViewport
         var used = 0;
         for (var offset = 0; offset < text.Length;)
         {
+            if (TerminalImageRenderer.TryReadMarker(text, offset, out var markerLength, out _, out _))
+            {
+                offset += markerLength;
+                continue;
+            }
             if (text[offset] == '\n')
             {
                 rows++;
@@ -61,6 +66,11 @@ internal static class TerminalTranscriptViewport
         var used = 0;
         for (var offset = 0; offset < index;)
         {
+            if (TerminalImageRenderer.TryReadMarker(text, offset, out var markerLength, out _, out _))
+            {
+                offset += markerLength;
+                continue;
+            }
             if (text[offset] == '\n')
             {
                 row++;

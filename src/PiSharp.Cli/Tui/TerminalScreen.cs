@@ -1,4 +1,5 @@
 using System.Text;
+using Microsoft.Extensions.AI;
 
 namespace PiSharp.Cli.Tui;
 
@@ -12,6 +13,7 @@ public sealed class TerminalScreen : IDisposable
     private readonly Func<int> _getColumns;
     private readonly Func<int> _getRows;
     private readonly TerminalTranscriptBuffer _transcript = new();
+    private readonly TerminalImageRenderer _images;
     private readonly TerminalScreenCompositor _compositor;
     private readonly ScreenWriter _out;
     private readonly ScreenWriter _error;
@@ -25,6 +27,7 @@ public sealed class TerminalScreen : IDisposable
     private int? _editorSelectionStart;
     private int? _editorSelectionEnd;
     private int _scrollOffset;
+    private int _lastImagePruneRevision = -1;
     private string _footer = "Enter steers · follow-up queues · Escape aborts";
     private IReadOnlyList<string>? _overlay;
     private bool _activated;
@@ -33,14 +36,22 @@ public sealed class TerminalScreen : IDisposable
 
     public TerminalScreen(TextWriter originalOut, TextWriter originalError,
         Func<int>? getColumns = null, Func<int>? getRows = null)
+        : this(originalOut, originalError, getColumns, getRows, new TerminalImageRenderer())
+    {
+    }
+
+    internal TerminalScreen(TextWriter originalOut, TextWriter originalError,
+        Func<int>? getColumns, Func<int>? getRows, TerminalImageRenderer imageRenderer)
     {
         ArgumentNullException.ThrowIfNull(originalOut);
         ArgumentNullException.ThrowIfNull(originalError);
+        ArgumentNullException.ThrowIfNull(imageRenderer);
         _originalOut = originalOut;
         _originalError = originalError;
+        _images = imageRenderer;
         _getColumns = getColumns ?? ReadColumns;
         _getRows = getRows ?? ReadRows;
-        _compositor = new(_originalOut);
+        _compositor = new(_originalOut, _images);
         _out = new(this, isError: false);
         _error = new(this, isError: true);
         try
@@ -85,7 +96,7 @@ public sealed class TerminalScreen : IDisposable
         lock (_gate)
         {
             if (!_active || _suspended) return;
-            _originalOut.Write(TerminalMouseMode.Disable + "\u001b[?25h\u001b[?1049l");
+            _originalOut.Write(_images.HidePlacements() + TerminalMouseMode.Disable + "\u001b[?25h\u001b[?1049l");
             _originalOut.Flush();
             _suspended = true;
         }
@@ -249,14 +260,60 @@ public sealed class TerminalScreen : IDisposable
         }
     }
 
-    internal void AppendToolResult(string text)
+    internal void AppendUserMessage(string text, IReadOnlyList<DataContent>? images = null)
     {
         ArgumentNullException.ThrowIfNull(text);
         var safe = TerminalSafeText.Normalize(text);
         lock (_gate)
         {
-            if (!_active || safe.Length == 0) return;
-            _transcript.Append(safe, isError: true, isToolResult: true);
+            if (!_active) return;
+            var activeText = new StringBuilder();
+            var capturedText = new StringBuilder();
+            if (safe.Length > 0)
+            {
+                foreach (var line in safe.Split('\n'))
+                {
+                    activeText.Append("› ").Append(line).Append(Environment.NewLine);
+                    capturedText.Append("› ").Append(line).Append(Environment.NewLine);
+                }
+            }
+            if (images is not null)
+            {
+                foreach (var image in images)
+                {
+                    var marker = _images.Register(image, out var fallback);
+                    activeText.Append(marker ?? fallback).Append(Environment.NewLine);
+                    capturedText.Append(fallback).Append(Environment.NewLine);
+                }
+            }
+            if (activeText.Length == 0) return;
+            _transcript.Append(activeText.ToString(), isError: false, capturedText: capturedText.ToString());
+            RenderLocked();
+        }
+    }
+
+    internal void AppendToolResult(string text, IReadOnlyList<DataContent>? images = null)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        var safe = TerminalSafeText.Normalize(text);
+        lock (_gate)
+        {
+            if (!_active) return;
+            var activeText = new StringBuilder(safe);
+            var capturedText = new StringBuilder(safe);
+            if (images is not null)
+            {
+                foreach (var image in images)
+                {
+                    var marker = _images.Register(image, out var fallback);
+                    activeText.Append(Environment.NewLine).Append(marker ?? fallback);
+                    capturedText.Append(Environment.NewLine).Append(fallback);
+                }
+            }
+            if (activeText.Length == 0) return;
+            var previewText = capturedText.ToString();
+            _transcript.Append(activeText.ToString(), isError: true, isToolResult: true,
+                previewText, collapsedPreviewText: previewText);
             RenderLocked();
         }
     }
@@ -309,7 +366,7 @@ public sealed class TerminalScreen : IDisposable
                 if (ReferenceEquals(Console.Out, _installedOut)) Console.SetOut(_originalOut);
                 if (ReferenceEquals(Console.Error, _installedError)) Console.SetError(_originalError);
             }
-            _originalOut.Write(TerminalMouseMode.Disable + "\u001b[?25h\u001b[?1049l");
+            _originalOut.Write(_images.CleanupControlSequence() + TerminalMouseMode.Disable + "\u001b[?25h\u001b[?1049l");
             _originalOut.Flush();
             captured = _transcript.CaptureSnapshot();
             truncated = _transcript.CaptureTruncated;
@@ -321,6 +378,7 @@ public sealed class TerminalScreen : IDisposable
             writer.Write(chunk.Text);
             writer.Flush();
         }
+        _images.Clear();
         if (truncated)
         {
             _originalError.WriteLine("Interactive transcript exceeded the scrollback restore limit; the active screen was still rendered in full.");
@@ -346,9 +404,20 @@ public sealed class TerminalScreen : IDisposable
     private void RenderLocked()
     {
         if (!_active || _suspended) return;
+        var columns = Columns();
+        var rows = Rows();
+        var editorHeight = Math.Clamp(rows / 3, 1, Math.Max(1, rows - 2));
+        var footerHeight = rows > 2 ? 1 : 0;
+        var transcriptHeight = Math.Max(1, rows - editorHeight - footerHeight);
+        if (_lastImagePruneRevision != _transcript.Revision)
+        {
+            _images.PruneUnreferenced(_transcript.GetRetainedText());
+            _lastImagePruneRevision = _transcript.Revision;
+        }
+        var transcript = _images.LayoutTranscript(GetTranscriptTextLocked() + _liveAssistant,
+            Math.Max(1, columns - 1), Math.Max(1, transcriptHeight - 2));
         var frame = _compositor.Compose(_editorText, _editorCursor, _editorSelectionStart, _editorSelectionEnd,
-            GetTranscriptTextLocked() + _liveAssistant,
-            _footer, _overlay, _scrollOffset, Columns(), Rows(), _search, _mouse);
+            transcript, _footer, _overlay, _scrollOffset, columns, rows, _search, _mouse);
         _scrollOffset = frame.ScrollOffset;
         _lastColumns = frame.Columns;
         _lastRows = frame.Height;

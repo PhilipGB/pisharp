@@ -1,6 +1,5 @@
 using System.ClientModel;
 using System.Runtime.CompilerServices;
-using System.Text.Json;
 using Microsoft.Extensions.AI;
 using PiSharp.Runtime.Tools;
 
@@ -182,76 +181,10 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
     }
 
     private static bool TryGetReadOutput(object? value, out ReadToolOutput output)
-    {
-        if (value is ReadToolOutput typed)
-        {
-            output = typed;
-            return true;
-        }
-        if (value is JsonElement json && TryReadOutput(json, out output)) return true;
-        if (value is string serialized)
-        {
-            try
-            {
-                using var document = JsonDocument.Parse(serialized);
-                if (TryReadOutput(document.RootElement, out output)) return true;
-            }
-            catch (JsonException) { }
-        }
-        output = null!;
-        return false;
-    }
-
-    private static bool TryReadOutput(JsonElement value, out ReadToolOutput output)
-    {
-        output = null!;
-        if (value.ValueKind != JsonValueKind.Object || !TryGetString(value, nameof(ReadToolOutput.Text), out var text) || text is null) return false;
-        TryGetString(value, nameof(ReadToolOutput.ImageMimeType), out var mimeType);
-        TryGetString(value, nameof(ReadToolOutput.ImageDataBase64), out var imageData);
-        if (mimeType is null && imageData is null) return false;
-        output = new ReadToolOutput(text, mimeType, imageData,
-            TryGetInt32(value, nameof(ReadToolOutput.MaxBase64Bytes)));
-        return true;
-    }
-
-    private static bool TryGetString(JsonElement value, string property, out string? text)
-    {
-        foreach (var item in value.EnumerateObject())
-        {
-            if (item.Name.Equals(property, StringComparison.OrdinalIgnoreCase) && item.Value.ValueKind == JsonValueKind.String)
-            {
-                text = item.Value.GetString();
-                return true;
-            }
-        }
-        text = null;
-        return false;
-    }
-
-    private static int? TryGetInt32(JsonElement value, string property)
-    {
-        foreach (var item in value.EnumerateObject())
-            if (item.Name.Equals(property, StringComparison.OrdinalIgnoreCase) &&
-                item.Value.ValueKind == JsonValueKind.Number && item.Value.TryGetInt32(out var number))
-                return number;
-        return null;
-    }
+        => ReadToolOutput.TryRead(value, out output);
 
     private static bool TryCreateImage(ReadToolOutput output, out DataContent image)
-    {
-        image = null!;
-        var maxBase64Bytes = output.MaxBase64Bytes ?? ReadImageProcessor.MaxBase64Bytes;
-        if (output.ImageMimeType is not ("image/jpeg" or "image/png" or "image/gif" or "image/webp") ||
-            output.ImageDataBase64 is not { Length: > 0 } encoded || maxBase64Bytes <= 0 || encoded.Length >= maxBase64Bytes) return false;
-        try
-        {
-            var bytes = Convert.FromBase64String(encoded);
-            if (((long)bytes.Length + 2) / 3 * 4 >= maxBase64Bytes) return false;
-            image = new DataContent(bytes, output.ImageMimeType);
-            return true;
-        }
-        catch (FormatException) { return false; }
-    }
+        => output.TryCreateImageContent(out image);
 
     private static bool IsContextOverflow(Exception error)
     {

@@ -383,7 +383,11 @@ public sealed class ConversationRun
                 started = true;
             }
             accepted = true;
-            onEvent?.Invoke(new("prompt_accepted", Text: prompt));
+            var promptImages = promptMessage.Contents?.OfType<DataContent>().ToArray();
+            onEvent?.Invoke(new("prompt_accepted", Text: prompt)
+            {
+                Images = promptImages is { Length: > 0 } ? promptImages : null
+            });
             var inFlightBudget = _autoCompaction is null ? null : new InFlightContextBudget(_autoCompaction,
                 (messages, token) => _agent.SummarizeAsync(messages, null, token),
                 async (summary, token) =>

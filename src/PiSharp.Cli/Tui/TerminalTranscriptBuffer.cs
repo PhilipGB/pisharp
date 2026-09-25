@@ -17,17 +17,21 @@ internal sealed class TerminalTranscriptBuffer
 
     public bool IsExpanded { get; private set; }
     public bool CaptureTruncated => _captureTruncated;
+    public int Revision { get; private set; }
 
-    public void Append(string text, bool isError, bool isToolResult = false)
+    public void Append(string text, bool isError, bool isToolResult = false,
+        string? capturedText = null, string? collapsedPreviewText = null)
     {
         if (text.Length == 0) return;
-        Capture(text, isError);
+        Capture(capturedText ?? text, isError);
         if (!isToolResult && _segments.Count > 0 && !_segments[^1].IsToolResult)
             _segments[^1].Text.Append(text);
         else
-            _segments.Add(new(isToolResult, new StringBuilder(text), isToolResult ? PreviewToolResult(text) : null));
+            _segments.Add(new(isToolResult, new StringBuilder(text),
+                isToolResult ? PreviewToolResult(collapsedPreviewText ?? text) : null));
         _transcriptCharacters += text.Length;
         TrimTranscript();
+        Revision++;
     }
 
     public string GetText()
@@ -35,6 +39,13 @@ internal sealed class TerminalTranscriptBuffer
         var output = new StringBuilder(_transcriptCharacters);
         foreach (var segment in _segments)
             output.Append(segment.IsToolResult && !IsExpanded ? segment.CollapsedPreview : segment.Text.ToString());
+        return output.ToString();
+    }
+
+    public string GetRetainedText()
+    {
+        var output = new StringBuilder(_transcriptCharacters);
+        foreach (var segment in _segments) output.Append(segment.Text);
         return output.ToString();
     }
 
