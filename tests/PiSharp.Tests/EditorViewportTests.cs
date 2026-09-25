@@ -60,4 +60,19 @@ public sealed class EditorViewportTests
         Assert.DoesNotContain('\u001b', string.Join("", frame.Rows));
         Assert.Throws<ArgumentOutOfRangeException>(() => EditorViewport.Layout("a", 2, 80, 8));
     }
+
+    [Fact]
+    public void RowMapsConvertTerminalCellsToGraphemeSafeSourceOffsetsAcrossWrapping()
+    {
+        var text = "a界e\u0301🙂z";
+        var frame = EditorViewport.Layout(text, text.Length, 8, 4);
+
+        Assert.Equal(["a界e\u0301", "🙂z"], frame.ContentRows);
+        Assert.Equal(0, frame.RowMaps[0].OffsetAt(0));
+        Assert.Equal(1, frame.RowMaps[0].OffsetAt(1));
+        Assert.Equal(2, frame.RowMaps[0].OffsetAt(3));
+        Assert.Equal(4, frame.RowMaps[1].OffsetAt(0));
+        Assert.Equal(text.Length, frame.RowMaps[1].OffsetAt(3));
+        Assert.Equal((4, 6), (frame.RowMaps[1].Cells[0].StartOffset, frame.RowMaps[1].Cells[0].EndOffset));
+    }
 }

@@ -150,6 +150,63 @@ public sealed class TerminalScreenTests
     }
 
     [Fact]
+    public async Task EditorMouseClickPlacesCursorAtGraphemeBoundary()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        using var screen = new TerminalScreen(output, error, () => 40, () => 9);
+        var editor = new TerminalEditor();
+        editor.Prefill("hello");
+        editor.AttachScreen(screen);
+
+        await editor.HandleActiveInputAsync(Mouse(0, 5, 8), Queue, Clear, Abort);
+        await editor.HandleActiveInputAsync(Mouse(0, 5, 8, release: true), Queue, Clear, Abort);
+        await editor.HandleActiveInputAsync(new(new ConsoleKeyInfo('X', ConsoleKey.X, false, false, false), null), Queue, Clear, Abort);
+
+        Assert.Equal("heXllo", editor.Draft);
+
+        static TerminalInputEvent Mouse(int button, int column, int row, bool release = false) =>
+            new(null, null, new(button, column, row, release));
+        static Task<bool> Queue(string text, bool followUp, CancellationToken token) => Task.FromResult(true);
+        static IReadOnlyList<string> Clear() => [];
+        static void Abort() { }
+    }
+
+    [Fact]
+    public async Task EditorMouseDragCopiesOriginalTextAcrossWrappedRowsWithoutMovingCursor()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        using var screen = new TerminalScreen(output, error, () => 20, () => 9);
+        var editor = new TerminalEditor();
+        const string draft = "hello🙂worldabcdefg";
+        editor.Prefill(draft);
+        editor.AttachScreen(screen);
+        var frame = EditorViewport.Layout(draft, draft.Length, 20, 3);
+        Assert.Equal(2, frame.Rows.Count);
+        var editorStart = 5 + 3 - frame.Rows.Count;
+        var copiedActions = new List<string>();
+        Task Dispatch(string action) { copiedActions.Add(action); return Task.CompletedTask; }
+
+        await editor.HandleActiveInputAsync(Mouse(0, 3, editorStart + 1), Queue, Clear, Abort);
+        await editor.HandleActiveInputAsync(Mouse(32, 4, editorStart + 2), Queue, Clear, Abort);
+        await editor.HandleActiveInputAsync(Mouse(0, 4, editorStart + 2, release: true), Queue, Clear, Abort,
+            dispatchApplicationAction: Dispatch);
+
+        Assert.Equal(draft, screen.SelectedText);
+        Assert.Equal(["app.message.copy"], copiedActions);
+        Assert.Equal(draft, editor.Draft);
+        await editor.HandleActiveInputAsync(new(new ConsoleKeyInfo('X', ConsoleKey.X, false, false, false), null), Queue, Clear, Abort);
+        Assert.Equal(draft + "X", editor.Draft);
+
+        static TerminalInputEvent Mouse(int button, int column, int row, bool release = false) =>
+            new(null, null, new(button, column, row, release));
+        static Task<bool> Queue(string text, bool followUp, CancellationToken token) => Task.FromResult(true);
+        static IReadOnlyList<string> Clear() => [];
+        static void Abort() { }
+    }
+
+    [Fact]
     public void MouseTrackingIsDisabledBeforeSuspendingAndLeavingTheAlternateScreen()
     {
         using var output = new StringWriter();

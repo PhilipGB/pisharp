@@ -110,7 +110,13 @@ public sealed class TerminalEditor
     {
         if (next.Mouse is { } mouse)
         {
-            if (_screen?.HandleMouse(mouse) == true && dispatchApplicationAction is not null)
+            var result = _screen?.HandleMouse(mouse) ?? default;
+            if (result.EditorCursorOffset is { } cursor)
+            {
+                _buffer.SetCursor(cursor);
+                Render();
+            }
+            if (result.Copy && dispatchApplicationAction is not null)
                 await dispatchApplicationAction("app.message.copy");
             return true;
         }
@@ -286,7 +292,13 @@ public sealed class TerminalEditor
                 var next = _input.Read();
                 if (next.Mouse is { } mouse)
                 {
-                    if (_screen?.HandleMouse(mouse) == true)
+                    var result = _screen?.HandleMouse(mouse) ?? default;
+                    if (result.EditorCursorOffset is { } cursor)
+                    {
+                        _buffer.SetCursor(cursor);
+                        Render();
+                    }
+                    if (result.Copy)
                         await dispatchApplicationAction("app.message.copy");
                     continue;
                 }

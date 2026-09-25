@@ -117,6 +117,16 @@ public sealed class EditorBuffer
         Cursor = Math.Clamp(cursor ?? text.Length, 0, text.Length);
     }
 
+    public void SetCursor(int cursor)
+    {
+        if (cursor < 0 || cursor > _text.Length ||
+            cursor != _text.Length && !StringInfo.ParseCombiningCharacters(_text).Contains(cursor))
+            throw new ArgumentOutOfRangeException(nameof(cursor), "Cursor must be at a grapheme boundary in the editor text.");
+        Cursor = cursor;
+        _historyIndex = _history.Count;
+        _draft = _text;
+    }
+
     private void Insert(string text) { _text = _text.Insert(Cursor, text); Cursor += text.Length; }
 
     private EditorAction Navigate(int direction)

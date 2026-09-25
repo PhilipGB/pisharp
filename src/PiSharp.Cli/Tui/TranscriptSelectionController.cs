@@ -14,6 +14,15 @@ internal sealed class TranscriptSelectionController
 
     public string? SelectedText { get; private set; }
 
+    public void Clear()
+    {
+        _anchor = null;
+        _focus = null;
+        _dragging = false;
+        _hasSelection = false;
+        SelectedText = null;
+    }
+
     public void SetVisibleRows(IReadOnlyList<string> rows, int firstVisualRow)
     {
         _visibleRows = rows;

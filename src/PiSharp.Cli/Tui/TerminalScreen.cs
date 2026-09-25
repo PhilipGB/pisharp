@@ -14,7 +14,7 @@ public sealed class TerminalScreen : IDisposable
     private readonly TerminalTranscriptBuffer _transcript = new();
     private readonly ScreenWriter _out;
     private readonly ScreenWriter _error;
-    private readonly TranscriptSelectionController _selection = new();
+    private readonly TerminalMouseRouter _mouse = new();
     private TextWriter? _installedOut;
     private TextWriter? _installedError;
     private string _editorText = "";
@@ -60,7 +60,7 @@ public sealed class TerminalScreen : IDisposable
     internal int TerminalHeight => Rows();
     internal string? SelectedText
     {
-        get { lock (_gate) return _selection.SelectedText; }
+        get { lock (_gate) return _mouse.SelectedText; }
     }
 
     public void Activate()
@@ -193,20 +193,20 @@ public sealed class TerminalScreen : IDisposable
         }
     }
 
-    internal bool HandleMouse(TerminalMouseEvent mouse)
+    internal TerminalMouseResult HandleMouse(TerminalMouseEvent mouse)
     {
         lock (_gate)
         {
-            if (!_active || _suspended) return false;
+            if (!_active || _suspended) return default;
             if (mouse.IsWheel)
             {
                 var delta = mouse.WheelScrollDelta;
                 if (delta != 0) SetScrollOffsetLocked(_scrollOffset + delta);
-                return false;
+                return new(delta != 0);
             }
-            var result = _selection.HandleMouse(mouse, _transcriptScreenStart, _transcriptHeight);
+            var result = _mouse.Handle(mouse);
             if (result.Changed) RenderLocked();
-            return result.Copy;
+            return result;
         }
     }
 
@@ -314,9 +314,6 @@ public sealed class TerminalScreen : IDisposable
 
     private int _lastColumns;
     private int _lastRows;
-    private int _transcriptScreenStart;
-    private int _transcriptHeight;
-
     private void Append(string value, bool isError)
     {
         var safe = TerminalSafeText.Normalize(value);
@@ -357,15 +354,15 @@ public sealed class TerminalScreen : IDisposable
             transcriptHeight, _scrollOffset, out _scrollOffset, out var firstVisualRow);
         var screenRows = Enumerable.Repeat("", height).ToArray();
         var transcriptStart = _scrollOffset > 0 ? 0 : transcriptHeight - transcriptRows.Count;
-        _transcriptScreenStart = transcriptStart;
-        _transcriptHeight = transcriptHeight;
-        _selection.SetVisibleRows(transcriptRows, firstVisualRow);
-        var displayedTranscriptRows = _selection.HighlightVisibleRows();
+        _mouse.SetTranscript(transcriptRows, firstVisualRow, transcriptStart, transcriptHeight);
+        var displayedTranscriptRows = _mouse.HighlightTranscript();
         for (var index = 0; index < transcriptRows.Count; index++)
             screenRows[transcriptStart + index] = displayedTranscriptRows[index];
         var editorStart = transcriptHeight + editorHeight - editor.Rows.Count;
+        _mouse.SetEditor(_editorText, editor, editorStart);
+        var displayedEditorRows = _mouse.HighlightEditor();
         for (var index = 0; index < editor.Rows.Count; index++)
-            screenRows[editorStart + index] = editor.Rows[index];
+            screenRows[editorStart + index] = editor.Rows[index][..2] + displayedEditorRows[index];
         if (footerHeight > 0)
         {
             var footer = _scrollOffset == 0 ? _footer : $"↑ {_scrollOffset} rows · live output follows at bottom · {_footer}";
