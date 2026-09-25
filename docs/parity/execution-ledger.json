@@ -1603,7 +1603,8 @@
         "Compared current Pi main d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 packages/coding-agent/src/core/agent-session.ts and modes/rpc/rpc-mode.ts: agent_settled is emitted as a payload-free top-level event after agent work settles.",
         "Compared current Pi main d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 packages/coding-agent/src/modes/rpc/rpc-mode.ts and core/agent-session.ts: successful preflight responds before agent_start; rejected preflight does not start a run; queue work settles once after the accepted run.",
         "RpcModeTests.AcceptsPromptThenEmitsEventsAndSupportsSubsequentStateQueries asserts exact payload-free agent_start/agent_settled shapes and response/start/settled order; PromptReceivedDuringStreamingQueuesAnotherTurnBeforeSettlement asserts one start for queued turns; preflight-failure tests assert only the correlated response.",
-        "Local validation: focused RPC/process tests passed 22/22; dotnet format PiSharp.slnx --verify-no-changes --no-restore passed; dotnet build PiSharp.slnx --no-restore --warnaserror succeeded with 0 warnings/errors; dotnet test PiSharp.slnx --no-restore passed 535/535. Exact-head CI is pending."
+        "Linux CI run 36199106854 on exact source head 18940ed3e16f16f0c783a894fd01151fb5897b25 passed format verification, warnings-as-errors build with 0 warnings/errors, and all 535 tests (0 failed, 0 skipped).",
+        "Focused RPC/process tests passed 22/22; current Pi main remote and local checkout both remain d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31."
       ],
       "dependencies": []
     },
