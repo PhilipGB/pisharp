@@ -12,6 +12,7 @@ public sealed class TerminalScreen : IDisposable
     private readonly Func<int> _getColumns;
     private readonly Func<int> _getRows;
     private readonly TerminalTranscriptBuffer _transcript = new();
+    private readonly TerminalScreenCompositor _compositor;
     private readonly ScreenWriter _out;
     private readonly ScreenWriter _error;
     private readonly TerminalMouseRouter _mouse = new();
@@ -37,6 +38,7 @@ public sealed class TerminalScreen : IDisposable
         _originalError = originalError;
         _getColumns = getColumns ?? ReadColumns;
         _getRows = getRows ?? ReadRows;
+        _compositor = new(_originalOut);
         _out = new(this, isError: false);
         _error = new(this, isError: true);
         try
@@ -330,57 +332,12 @@ public sealed class TerminalScreen : IDisposable
     private void RenderLocked()
     {
         if (!_active || _suspended) return;
-        var columns = _lastColumns = Columns();
-        var height = _lastRows = Rows();
-        var editorHeight = Math.Clamp(height / 3, 1, Math.Max(1, height - 2));
-        var footerHeight = height > 2 ? 1 : 0;
-        var transcriptHeight = Math.Max(1, height - editorHeight - footerHeight);
-        var editor = EditorViewport.Layout(_editorText, _editorCursor, columns, editorHeight);
-        var transcriptText = GetTranscriptTextLocked() + _liveAssistant;
-        var transcriptWidth = Math.Max(1, columns - 1);
-        var visibleTranscript = transcriptText;
-        var search = _search.Highlight(transcriptText);
-        if (_search.Query.Length > 0)
-        {
-            if (search.MatchCount > 0)
-            {
-                var totalRows = TerminalTranscriptViewport.CountVisualRows(transcriptText, transcriptWidth);
-                var selectedRow = TerminalTranscriptViewport.VisualRowAt(transcriptText, search.SelectedTextStart, transcriptWidth);
-                _scrollOffset = TerminalTranscriptViewport.ScrollOffsetToShow(totalRows, selectedRow, transcriptHeight);
-                visibleTranscript = search.HighlightedText;
-            }
-        }
-        var transcriptRows = TerminalTranscriptViewport.WrapWindow(visibleTranscript, transcriptWidth,
-            transcriptHeight, _scrollOffset, out _scrollOffset, out var firstVisualRow);
-        var screenRows = Enumerable.Repeat("", height).ToArray();
-        var transcriptStart = _scrollOffset > 0 ? 0 : transcriptHeight - transcriptRows.Count;
-        _mouse.SetTranscript(transcriptRows, firstVisualRow, transcriptStart, transcriptHeight);
-        var displayedTranscriptRows = _mouse.HighlightTranscript();
-        for (var index = 0; index < transcriptRows.Count; index++)
-            screenRows[transcriptStart + index] = displayedTranscriptRows[index];
-        var editorStart = transcriptHeight + editorHeight - editor.Rows.Count;
-        _mouse.SetEditor(_editorText, editor, editorStart);
-        var displayedEditorRows = _mouse.HighlightEditor();
-        for (var index = 0; index < editor.Rows.Count; index++)
-            screenRows[editorStart + index] = editor.Rows[index][..2] + displayedEditorRows[index];
-        if (footerHeight > 0)
-        {
-            var footer = _scrollOffset == 0 ? _footer : $"↑ {_scrollOffset} rows · live output follows at bottom · {_footer}";
-            screenRows[^1] = TerminalTranscriptViewport.Clip(footer, columns - 1);
-        }
-        if (_overlay is { } overlay) TerminalOverlayLayout.Apply(screenRows, overlay, columns);
-
-        _originalOut.Write("\u001b[?2026h\u001b[2J\u001b[H");
-        for (var index = 0; index < screenRows.Length; index++)
-        {
-            _originalOut.Write(screenRows[index]);
-            _originalOut.Write("\u001b[0m");
-            _originalOut.Write("\u001b[K");
-            if (index < screenRows.Length - 1) _originalOut.Write("\r\n");
-        }
-        var cursorRow = editorStart + editor.CursorRow + 1;
-        _originalOut.Write($"\u001b[{cursorRow};{Math.Clamp(editor.CursorColumn, 1, columns)}H\u001b[?25h\u001b[?2026l");
-        _originalOut.Flush();
+        var frame = _compositor.Compose(_editorText, _editorCursor, GetTranscriptTextLocked() + _liveAssistant,
+            _footer, _overlay, _scrollOffset, Columns(), Rows(), _search, _mouse);
+        _scrollOffset = frame.ScrollOffset;
+        _lastColumns = frame.Columns;
+        _lastRows = frame.Height;
+        _compositor.Render(frame);
     }
 
     private int Columns()
