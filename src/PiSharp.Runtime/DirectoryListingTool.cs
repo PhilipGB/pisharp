@@ -1,5 +1,4 @@
 using System.ComponentModel;
-using System.Text;
 using PiSharp.Runtime.Tools;
 
 namespace PiSharp.Runtime;
@@ -11,7 +10,14 @@ public sealed class DirectoryListingTool(string workingDirectory)
     private const int MaxBytes = 50 * 1024;
 
     [Description("List directory contents, including dotfiles. Entries are sorted case-insensitively; directories end in '/'.")]
-    public Task<string> List(
+    public async Task<string> List(
+        [Description("Directory to list (default current directory). ")] string? path = null,
+        [Description("Maximum number of entries (default 500). ")] int? limit = null,
+        CancellationToken cancellationToken = default) =>
+        (await ListForTool(path, limit, cancellationToken)).Text;
+
+    [Description("List directory contents, including dotfiles. Entries are sorted case-insensitively; directories end in '/'.")]
+    internal Task<SearchToolOutput> ListForTool(
         [Description("Directory to list (default current directory). ")] string? path = null,
         [Description("Maximum number of entries (default 500). ")] int? limit = null,
         CancellationToken cancellationToken = default)
@@ -39,22 +45,16 @@ public sealed class DirectoryListingTool(string workingDirectory)
                 }
                 catch (IOException) { /* Entry vanished while listing. */ }
             }
-            if (results.Count == 0) return Task.FromResult("(empty directory)");
-            var output = new List<string>();
-            var bytes = 0;
-            foreach (var entry in results)
-            {
-                var next = Encoding.UTF8.GetByteCount(entry) + (output.Count == 0 ? 0 : 1);
-                if (bytes + next > MaxBytes) break;
-                output.Add(entry);
-                bytes += next;
-            }
+            if (results.Count == 0) return Task.FromResult(new SearchToolOutput("(empty directory)"));
+            var (output, truncation) = ToolOutputTruncator.TruncateHead(string.Join('\n', results), MaxBytes);
             var notices = new List<string>();
-            if (names.Length > count) notices.Add($"{count} entries limit reached. Use limit={count * 2} for more");
-            if (output.Count < results.Count) notices.Add("50.0KB limit reached");
-            var text = string.Join('\n', output);
-            if (notices.Count > 0) text += "\n\n[" + string.Join(". ", notices) + "]";
-            return Task.FromResult(text);
+            var entryLimitReached = names.Length > count;
+            if (entryLimitReached) notices.Add($"{count} entries limit reached. Use limit={count * 2} for more");
+            if (truncation is not null) notices.Add("50.0KB limit reached");
+            var text = notices.Count > 0 ? output + "\n\n[" + string.Join(". ", notices) + "]" : output;
+            object? details = entryLimitReached || truncation is not null
+                ? new LsToolDetails(truncation, entryLimitReached ? count : null) : null;
+            return Task.FromResult(new SearchToolOutput(text, details));
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException)
         {

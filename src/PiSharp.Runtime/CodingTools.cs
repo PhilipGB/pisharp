@@ -36,15 +36,17 @@ public sealed class CodingTools
 
     public IList<AITool> Create(IReadOnlyList<string>? requested = null, IReadOnlyList<string>? excluded = null, bool noTools = false)
     {
+        var search = new SearchTools(_cwd);
+        var listing = new DirectoryListingTool(_cwd);
         var available = new Dictionary<string, AITool>(StringComparer.Ordinal)
         {
             ["read"] = AIFunctionFactory.Create(ReadForTool, name: "read"),
             ["bash"] = AIFunctionFactory.Create(BashForTool, name: "bash"),
             ["edit"] = AIFunctionFactory.Create(EditForTool, name: "edit"),
             ["write"] = AIFunctionFactory.Create(Write, name: "write"),
-            ["grep"] = AIFunctionFactory.Create(new SearchTools(_cwd).Grep, name: "grep"),
-            ["find"] = AIFunctionFactory.Create(new SearchTools(_cwd).Find, name: "find"),
-            ["ls"] = AIFunctionFactory.Create(new DirectoryListingTool(_cwd).List, name: "ls")
+            ["grep"] = AIFunctionFactory.Create(search.GrepForTool, name: "grep"),
+            ["find"] = AIFunctionFactory.Create(search.FindForTool, name: "find"),
+            ["ls"] = AIFunctionFactory.Create(listing.ListForTool, name: "ls")
         };
         var names = requested ?? (noTools ? [] : ["read", "bash", "edit", "write"]);
         var disabled = excluded is null ? null : new HashSet<string>(excluded, StringComparer.Ordinal);

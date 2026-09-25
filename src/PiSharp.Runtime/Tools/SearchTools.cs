@@ -13,6 +13,14 @@ public sealed class SearchTools(string workingDirectory)
     [Description("Find files and directories matching a glob pattern. Paths are relative to the search root. Respects Git ignore rules inside a repository.")]
     public async Task<string> Find(
         [Description("Glob pattern, e.g. '*.cs' or 'src/**/*.cs'.")] string pattern,
+        [Description("Search directory (defaults to current working directory). ")] string? path = null,
+        [Description("Maximum results (default 1000). ")] int? limit = null,
+        CancellationToken cancellationToken = default) =>
+        (await FindForTool(pattern, path, limit, cancellationToken)).Text;
+
+    [Description("Find files and directories matching a glob pattern. Paths are relative to the search root. Respects Git ignore rules inside a repository.")]
+    internal async Task<SearchToolOutput> FindForTool(
+        [Description("Glob pattern, e.g. '*.cs' or 'src/**/*.cs'.")] string pattern,
         [Description("Search directory (defaults to current working directory).")] string? path = null,
         [Description("Maximum results (default 1000).")] int? limit = null,
         CancellationToken cancellationToken = default)
@@ -41,29 +49,34 @@ public sealed class SearchTools(string workingDirectory)
                 dir = Path.GetDirectoryName(dir)?.Replace('\\', '/');
             }
         }
-        var output = new StringBuilder();
-        var count = 0;
-        var limited = false;
-        var bytesLimited = false;
-        foreach (var candidate in candidates.Order(StringComparer.Ordinal))
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            if (count >= max) { limited = true; break; }
-            var bytes = Encoding.UTF8.GetByteCount(candidate) + (count == 0 ? 0 : 1);
-            if (Encoding.UTF8.GetByteCount(output.ToString()) + bytes > MaxBytes) { bytesLimited = true; break; }
-            if (count++ > 0) output.Append('\n');
-            output.Append(candidate);
-        }
-        if (count == 0) return "No files found matching pattern";
+        cancellationToken.ThrowIfCancellationRequested();
+        var ordered = candidates.Order(StringComparer.Ordinal).ToArray();
+        if (ordered.Length == 0) return new SearchToolOutput("No files found matching pattern");
+        var resultLimitReached = ordered.Length >= max;
+        var rawOutput = string.Join('\n', ordered.Take(max));
+        var (output, truncation) = ToolOutputTruncator.TruncateHead(rawOutput, MaxBytes);
         var notices = new List<string>();
-        if (limited || count >= max) notices.Add($"{max} results limit reached. Use limit={max * 2} for more, or refine pattern");
-        if (bytesLimited) notices.Add("50.0KB limit reached");
-        if (notices.Count > 0) output.Append("\n\n[").Append(string.Join(". ", notices)).Append(']');
-        return output.ToString();
+        if (resultLimitReached) notices.Add($"{max} results limit reached. Use limit={max * 2} for more, or refine pattern");
+        if (truncation is not null) notices.Add("50.0KB limit reached");
+        var text = notices.Count > 0 ? output + "\n\n[" + string.Join(". ", notices) + "]" : output;
+        return new SearchToolOutput(text, resultLimitReached || truncation is not null
+            ? new FindToolDetails(truncation, resultLimitReached ? max : null) : null);
     }
 
     [Description("Search file contents with a regex or literal string. Returns matching lines with file paths and line numbers. Respects Git ignore rules in repositories.")]
     public async Task<string> Grep(
+        [Description("Regex or literal pattern to search.")] string pattern,
+        [Description("Search directory or file (default working directory). ")] string? path = null,
+        [Description("Filter files by glob, e.g. '*.cs'.")] string? glob = null,
+        [Description("Case-insensitive match (default false). ")] bool ignoreCase = false,
+        [Description("Interpret pattern literally (default false). ")] bool literal = false,
+        [Description("Number of surrounding lines (default 0). ")] int context = 0,
+        [Description("Maximum matches (default 100). ")] int? limit = null,
+        CancellationToken cancellationToken = default) =>
+        (await GrepForTool(pattern, path, glob, ignoreCase, literal, context, limit, cancellationToken)).Text;
+
+    [Description("Search file contents with a regex or literal string. Returns matching lines with file paths and line numbers. Respects Git ignore rules in repositories.")]
+    internal async Task<SearchToolOutput> GrepForTool(
         [Description("Regex or literal pattern to search.")] string pattern,
         [Description("Search directory or file (default working directory).")] string? path = null,
         [Description("Filter files by glob, e.g. '*.cs'.")] string? glob = null,
@@ -126,31 +139,16 @@ public sealed class SearchTools(string workingDirectory)
             }
             if (matchLimitReached) break;
         }
-        if (matches.Count == 0) return "No matches found";
-        var (result, bytesTruncated) = TruncateHead(string.Join('\n', matches), MaxBytes);
+        if (matches.Count == 0) return new SearchToolOutput("No matches found");
+        var (result, truncation) = ToolOutputTruncator.TruncateHead(string.Join('\n', matches), MaxBytes);
         var notices = new List<string>();
         if (matchLimitReached) notices.Add($"{max} matches limit reached. Use limit={max * 2} for more, or refine pattern");
-        if (bytesTruncated) notices.Add("50.0KB limit reached");
+        if (truncation is not null) notices.Add("50.0KB limit reached");
         if (truncated) notices.Add("Some lines truncated to 500 chars. Use read tool to see full lines");
-        if (notices.Count > 0) result += "\n\n[" + string.Join(". ", notices) + "]";
-        return result;
-    }
-
-    private static (string Content, bool Truncated) TruncateHead(string content, int maxBytes)
-    {
-        if (Encoding.UTF8.GetByteCount(content) <= maxBytes) return (content, false);
-        var lines = content.Split('\n');
-        if (lines[^1].Length == 0 && content.EndsWith('\n')) lines = lines[..^1];
-        var output = new List<string>();
-        var bytes = 0;
-        for (var index = 0; index < lines.Length; index++)
-        {
-            var lineBytes = Encoding.UTF8.GetByteCount(lines[index]) + (index > 0 ? 1 : 0);
-            if (bytes + lineBytes > maxBytes) break;
-            output.Add(lines[index]);
-            bytes += lineBytes;
-        }
-        return (string.Join('\n', output), true);
+        var text = notices.Count > 0 ? result + "\n\n[" + string.Join(". ", notices) + "]" : result;
+        object? details = truncation is null && !matchLimitReached && !truncated ? null
+            : new GrepToolDetails(truncation, matchLimitReached ? max : null, truncated ? true : null);
+        return new SearchToolOutput(text, details);
     }
 
     private static Regex GlobRegex(string pattern)

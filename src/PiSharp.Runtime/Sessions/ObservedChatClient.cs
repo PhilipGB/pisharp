@@ -118,13 +118,13 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
     // Keep the persisted function result intact. Provider clients see its text plus image content
     // in a following user message, matching Pi's image-bearing tool result on the wire.
     private IReadOnlyList<ChatMessage> AttachReadImages(IReadOnlyList<ChatMessage> messages) =>
-        ExpandReadImages(messages, supportsImages, flattenEditResults: true);
+        ExpandReadImages(messages, supportsImages, flattenStructuredResults: true);
 
     internal static IReadOnlyList<ChatMessage> NormalizeReadImagesForHistory(IReadOnlyList<ChatMessage> messages) =>
-        ExpandReadImages(messages, supportsImages: true, flattenEditResults: false);
+        ExpandReadImages(messages, supportsImages: true, flattenStructuredResults: false);
 
     private static IReadOnlyList<ChatMessage> ExpandReadImages(IReadOnlyList<ChatMessage> messages, bool supportsImages,
-        bool flattenEditResults)
+        bool flattenStructuredResults)
     {
         var expanded = new List<ChatMessage>(messages.Count);
         var index = 0;
@@ -161,12 +161,12 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
                         continue;
                     }
 
-                    if (flattenEditResults && content is FunctionResultContent editResult &&
-                        EditToolOutput.TryRead(editResult.Result, out var editOutput))
+                    if (flattenStructuredResults && content is FunctionResultContent structuredResult &&
+                        ToolResultOutput.TryRead(structuredResult.Result, out var structuredText, out _))
                     {
                         replaced = true;
-                        contents.Add(new FunctionResultContent(editResult.CallId, editOutput.Text)
-                        { Exception = editResult.Exception });
+                        contents.Add(new FunctionResultContent(structuredResult.CallId, structuredText)
+                        { Exception = structuredResult.Exception });
                     }
                     else contents.Add(content);
                 }
