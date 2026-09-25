@@ -39,6 +39,12 @@ public sealed class RpcModeTests
         {
             Assert.Contains(events, e => e.RootElement.GetProperty("type").GetString() == "response" &&
                 e.RootElement.GetProperty("id").GetString() == "prompt-1" && e.RootElement.GetProperty("success").GetBoolean());
+            var promptResponse = Assert.Single(events, e => e.RootElement.GetProperty("type").GetString() == "response" &&
+                e.RootElement.GetProperty("id").GetString() == "prompt-1");
+            Assert.Equal("started", promptResponse.RootElement.GetProperty("data").GetProperty("disposition").GetString());
+            var responseIndex = Array.FindIndex(output.Lines(), line => line.Contains("\"id\":\"prompt-1\"", StringComparison.Ordinal));
+            var acceptedIndex = Array.FindIndex(output.Lines(), line => line.Contains("\"prompt_accepted\"", StringComparison.Ordinal));
+            Assert.True(responseIndex >= 0 && acceptedIndex > responseIndex);
             Assert.Contains(events, e => e.RootElement.GetProperty("type").GetString() == "response" &&
                 e.RootElement.GetProperty("id").GetString() == "unknown" && !e.RootElement.GetProperty("success").GetBoolean());
             Assert.Contains(events, e => e.RootElement.GetProperty("type").GetString() == "response" &&
@@ -60,6 +66,56 @@ public sealed class RpcModeTests
             Assert.DoesNotContain(events, e => e.RootElement.GetProperty("type").GetString() == "session");
         }
         finally { foreach (var e in events) e.Dispose(); }
+    }
+
+    [Fact]
+    public async Task PromptPreflightFailureReturnsOneCorrelatedResponse()
+    {
+        var channel = Channel.CreateUnbounded<string>();
+        using var output = new LockedWriter();
+        var run = await ConversationRun.OpenAsync(new PiAgent(new StubClient(), new CodingTools(Path.GetTempPath())),
+            new ConversationSession(Path.GetTempPath(), "fixture", null));
+        var service = new RpcMode(new CommandReader(channel.Reader), output, run,
+            promptPreflight: () => "Provider 'fixture' is not authenticated.");
+        var serving = service.ServeAsync();
+        channel.Writer.TryWrite("{\"id\":\"preflight\",\"type\":\"prompt\",\"message\":\"hello\"}");
+        await WaitForAsync(output, "\"id\":\"preflight\"");
+        channel.Writer.Complete();
+        await serving.WaitAsync(TimeSpan.FromSeconds(5));
+
+        var lines = output.Lines();
+        using var response = JsonDocument.Parse(Assert.Single(lines, line =>
+            line.Contains("\"id\":\"preflight\"", StringComparison.Ordinal) && line.Contains("\"type\":\"response\"", StringComparison.Ordinal)));
+        Assert.False(response.RootElement.GetProperty("success").GetBoolean());
+        Assert.Equal("prompt", response.RootElement.GetProperty("command").GetString());
+        Assert.Equal("Provider 'fixture' is not authenticated.", response.RootElement.GetProperty("error").GetString());
+        Assert.DoesNotContain(lines, line => line.Contains("\"type\":\"error\"", StringComparison.Ordinal));
+        Assert.DoesNotContain(lines, line => line.Contains("prompt_accepted", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task RuntimePreflightFailureReturnsCorrelatedErrorBeforeRejectedEvent()
+    {
+        var channel = Channel.CreateUnbounded<string>();
+        using var output = new LockedWriter();
+        var session = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        session.Append(new ChatMessage(ChatRole.Assistant, new string('x', 3000)));
+        var run = await ConversationRun.OpenAsync(new PiAgent(new SummaryFailureClient(), new CodingTools(Path.GetTempPath())),
+            session, autoCompaction: new AutoCompactionPolicy(1800, 300));
+        var serving = new RpcMode(new CommandReader(channel.Reader), output, run).ServeAsync();
+        channel.Writer.TryWrite("{\"id\":\"compact-failed\",\"type\":\"prompt\",\"message\":\"hello\"}");
+        await WaitForAsync(output, "\"id\":\"compact-failed\"");
+        channel.Writer.Complete();
+        await serving.WaitAsync(TimeSpan.FromSeconds(5));
+
+        var lines = output.Lines();
+        var responseIndex = Array.FindIndex(lines, line => line.Contains("\"id\":\"compact-failed\"", StringComparison.Ordinal));
+        var rejectedIndex = Array.FindIndex(lines, line => line.Contains("prompt_rejected", StringComparison.Ordinal));
+        Assert.True(responseIndex >= 0 && rejectedIndex > responseIndex);
+        using var response = JsonDocument.Parse(lines[responseIndex]);
+        Assert.False(response.RootElement.GetProperty("success").GetBoolean());
+        Assert.Contains("Estimated context still exceeds", response.RootElement.GetProperty("error").GetString());
+        Assert.DoesNotContain(lines, line => line.Contains("\"type\":\"error\"", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -410,7 +466,15 @@ public sealed class RpcModeTests
 
         channel.Writer.TryWrite("{\"id\":\"first\",\"type\":\"prompt\",\"message\":\"one\"}");
         await client.FirstRequestStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
-        channel.Writer.TryWrite("{\"id\":\"second\",\"type\":\"prompt\",\"message\":\"two\"}");
+        channel.Writer.TryWrite("{\"id\":\"missing-mode\",\"type\":\"prompt\",\"message\":\"two\"}");
+        await WaitForAsync(output, "\"id\":\"missing-mode\"");
+        using (var rejected = JsonDocument.Parse(Assert.Single(output.Lines(), line =>
+            line.Contains("\"id\":\"missing-mode\"", StringComparison.Ordinal))))
+        {
+            Assert.False(rejected.RootElement.GetProperty("success").GetBoolean());
+            Assert.Contains("streamingBehavior", rejected.RootElement.GetProperty("error").GetString());
+        }
+        channel.Writer.TryWrite("{\"id\":\"second\",\"type\":\"prompt\",\"message\":\"two\",\"streamingBehavior\":\"followUp\"}");
         await WaitForAsync(output, "\"id\":\"second\"");
         client.ReleaseFirstRequest.TrySetResult();
         await WaitForAsync(output, "agent_settled");
@@ -421,8 +485,15 @@ public sealed class RpcModeTests
             .Select(line => JsonDocument.Parse(line)).ToArray();
         try
         {
-            Assert.Equal(2, responses.Length);
-            Assert.All(responses, response => Assert.True(response.RootElement.GetProperty("success").GetBoolean()));
+            Assert.Equal(3, responses.Length);
+            var started = Assert.Single(responses, response => response.RootElement.GetProperty("id").GetString() == "first");
+            var queued = Assert.Single(responses, response => response.RootElement.GetProperty("id").GetString() == "second");
+            var missingBehavior = Assert.Single(responses, response => response.RootElement.GetProperty("id").GetString() == "missing-mode");
+            Assert.True(started.RootElement.GetProperty("success").GetBoolean());
+            Assert.Equal("started", started.RootElement.GetProperty("data").GetProperty("disposition").GetString());
+            Assert.True(queued.RootElement.GetProperty("success").GetBoolean());
+            Assert.Equal("queued", queued.RootElement.GetProperty("data").GetProperty("disposition").GetString());
+            Assert.False(missingBehavior.RootElement.GetProperty("success").GetBoolean());
             Assert.Contains(output.Lines(), line => line.Contains("prompt_queued", StringComparison.Ordinal));
             Assert.Equal(2, client.Requests);
             Assert.True(client.SecondRequestSawFirstTurn);
@@ -714,6 +785,22 @@ public sealed class RpcModeTests
         public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
             ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         { yield return new ChatResponseUpdate(ChatRole.Assistant, "reply"); await Task.CompletedTask; }
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
+    }
+
+    private sealed class SummaryFailureClient : IChatClient
+    {
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+            CancellationToken cancellationToken = default) =>
+            Task.FromException<ChatResponse>(new IOException("summary unavailable"));
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            await Task.CompletedTask;
+            if (cancellationToken.IsCancellationRequested) yield break;
+            throw new InvalidOperationException("A prompt was sent before preflight completed.");
+        }
         public object? GetService(Type serviceType, object? serviceKey = null) => null;
         public void Dispose() { }
     }

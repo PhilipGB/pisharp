@@ -1021,13 +1021,18 @@
       "acceptance": [
         "Implement prompt using shared canonical runtime with correlated responses/event ordering",
         "Test protocol through RPC process, including failures and cancellation",
-        "Remaining: Pi wire-compatible payloads, lifecycle/error semantics and pinned process differential."
+        "Remaining: Pi-compatible event/payload shape, extension-handled dispositions, broader error/cancellation semantics and pinned process differential."
       ],
       "implementation": [
-        "src/PiSharp.Cli/Protocols/RpcMode.cs: partial prompt operation (PiSharp wire format)"
+        "src/PiSharp.Cli/Protocols/RpcMode.cs: prompt success is sent once after prompt_accepted with disposition started; preflight failures are correlated to the command id; prompts during streaming require Pi streamingBehavior steer/followUp and return queued disposition.",
+        "src/PiSharp.Cli/Protocols/JsonEventMode.cs: observes lifecycle events before serializing them so the prompt response precedes prompt_accepted or prompt_rejected.",
+        "src/PiSharp.Cli/Program.cs: lets RPC start without credentials so missing-auth failures are returned to the requesting command instead of terminating the process.",
+        "src/PiSharp.Cli/Protocols/JsonLineWriter.cs: emits literal LF record terminators independently of TextWriter.NewLine."
       ],
       "evidence": [
-        "tests/PiSharp.Tests/RpcModeTests.cs: local protocol/command fixtures (coverage varies by operation)"
+        "RpcModeTests.PromptPreflightFailureReturnsOneCorrelatedResponse and RuntimePreflightFailureReturnsCorrelatedErrorBeforeRejectedEvent cover command and runtime-preflight failures; PromptReceivedDuringStreamingQueuesAnotherTurnBeforeSettlement checks started/queued dispositions and rejection without streamingBehavior.",
+        "RpcBashProcessTests.RpcProcessReturnsMissingCredentialsAsCorrelatedPromptPreflightFailure verifies the CLI remains alive for a subsequent get_state; JsonLineWriterTests.RecordsUseLiteralLfRegardlessOfTextWriterNewLine verifies LF framing and preserved U+2028/U+2029 JSON payload characters.",
+        "Focused RPC/process/JSON tests pass 26/26. Local dotnet format verification and warnings-as-errors build pass; full dotnet test passes 530/530 with 0 skipped on the pre-commit working tree. Pi current-main source and rpc-prompt-response-semantics.test.ts at d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 were inspected; this is narrow response-semantic evidence, not full RPC parity."
       ],
       "dependencies": []
     },

@@ -61,6 +61,65 @@ public sealed class RpcBashProcessTests
     }
 
     [Fact]
+    public async Task RpcProcessReturnsMissingCredentialsAsCorrelatedPromptPreflightFailure()
+    {
+        if (!OperatingSystem.IsLinux()) return;
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-rpc-prompt-preflight-" + Guid.NewGuid().ToString("N"));
+        var agent = Path.Combine(root, "agent");
+        Directory.CreateDirectory(agent);
+        Process? process = null;
+        try
+        {
+            var start = new ProcessStartInfo("dotnet")
+            {
+                WorkingDirectory = root,
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+            start.ArgumentList.Add(typeof(CliArguments).Assembly.Location);
+            foreach (var argument in new[] { "--mode", "rpc", "--offline", "--no-session" })
+                start.ArgumentList.Add(argument);
+            foreach (var name in new[] { "OPENAI_API_KEY", "PISHARP_API_KEY", "PISHARP_BASE_URL", "PISHARP_MODEL",
+                "PISHARP_AUTH_PATH", "PISHARP_MODELS_PATH", "PISHARP_SETTINGS_PATH" })
+                start.Environment.Remove(name);
+            start.Environment["PISHARP_AGENT_DIR"] = agent;
+            process = Process.Start(start)!;
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+            var stderr = process.StandardError.ReadToEndAsync();
+            await WriteCommandAsync(process, new { id = "unauthenticated", type = "prompt", message = "hello" }, timeout.Token);
+            await WriteCommandAsync(process, new { id = "state", type = "get_state" }, timeout.Token);
+            var lines = new List<string>();
+            await ReadResponsesAsync(process, ["unauthenticated", "state"], lines, timeout.Token);
+            process.StandardInput.Close();
+            await process.WaitForExitAsync(timeout.Token);
+
+            Assert.Equal(0, process.ExitCode);
+            Assert.Equal("", await stderr.WaitAsync(timeout.Token));
+            using var rejected = JsonDocument.Parse(Assert.Single(lines, line =>
+                line.Contains("\"id\":\"unauthenticated\"", StringComparison.Ordinal)));
+            Assert.Equal("prompt", rejected.RootElement.GetProperty("command").GetString());
+            Assert.False(rejected.RootElement.GetProperty("success").GetBoolean());
+            Assert.Contains("not authenticated", rejected.RootElement.GetProperty("error").GetString());
+            using var state = JsonDocument.Parse(Assert.Single(lines, line =>
+                line.Contains("\"id\":\"state\"", StringComparison.Ordinal)));
+            Assert.True(state.RootElement.GetProperty("success").GetBoolean());
+            Assert.False(state.RootElement.GetProperty("data").GetProperty("isStreaming").GetBoolean());
+            Assert.DoesNotContain(lines, line => line.Contains("\"type\":\"error\"", StringComparison.Ordinal));
+        }
+        finally
+        {
+            if (process is { HasExited: false })
+            {
+                process.Kill(entireProcessTree: true);
+                await process.WaitForExitAsync();
+            }
+            process?.Dispose();
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task RpcProcessReturnsBashResultsAndHandlesAbortBash()
     {
         if (!OperatingSystem.IsLinux()) return;

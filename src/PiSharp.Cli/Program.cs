@@ -269,7 +269,8 @@ catch (InvalidDataException error)
     Environment.ExitCode = 2;
     return;
 }
-if (!selection.Authenticated && (print || cli.Mode is "json" or "rpc" || !string.IsNullOrWhiteSpace(prompt)))
+if (!selection.Authenticated && cli.Mode != "rpc" &&
+    (print || cli.Mode == "json" || !string.IsNullOrWhiteSpace(prompt)))
 {
     Console.Error.WriteLine($"Provider '{selection.Provider.Id}' is not authenticated. Use /login {selection.Provider.Id} in an interactive terminal or configure {selection.Provider.ApiKeyEnvironment ?? "a credential"}.");
     Environment.ExitCode = 2;
@@ -721,7 +722,8 @@ if (cli.Mode == "rpc")
 {
     await new RpcMode(Console.In, Console.Out, conversationRun, sessionPath is null ? null :
         cancellationToken => store.SaveAsync(conversation, sessionPath, cancellationToken), resources, GetModelsAsync,
-        extensionLease.Current.Registration).ServeAsync();
+        extensionLease.Current.Registration, () => selection.Authenticated ? null :
+            $"Provider '{selection.Provider.Id}' is not authenticated. Use /login {selection.Provider.Id} or configure {selection.Provider.ApiKeyEnvironment ?? "a credential"}.").ServeAsync();
     return;
 }
 if (cli.Mode == "json")

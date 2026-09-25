@@ -13,7 +13,7 @@ public sealed class JsonLineWriter(TextWriter output)
         await _gate.WaitAsync(cancellationToken);
         try
         {
-            await output.WriteLineAsync(json);
+            await output.WriteAsync(json + '\n');
             await output.FlushAsync(cancellationToken);
         }
         finally { _gate.Release(); }

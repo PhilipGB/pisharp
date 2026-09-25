@@ -12,7 +12,7 @@ namespace PiSharp.Cli.Protocols;
 public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun run,
     Func<CancellationToken, Task>? save = null, PiSharp.Runtime.Resources.ResourceCatalog? resources = null,
     Func<CancellationToken, Task<IReadOnlyList<ModelDescriptor>>>? discoverModels = null,
-    ExtensionRegistration? extensions = null)
+    ExtensionRegistration? extensions = null, Func<string?>? promptPreflight = null)
 {
     private readonly JsonLineWriter _writer = new(output);
     private readonly ConcurrentDictionary<Guid, BashOperation> _bashOperations = new();
@@ -226,6 +226,14 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                             if (!root.TryGetProperty("message", out var message) || message.ValueKind != JsonValueKind.String ||
                                 string.IsNullOrWhiteSpace(message.GetString()) || root.TryGetProperty("images", out _))
                             { await RespondAsync(id, type, false, "A nonempty text message is required; images are not supported."); break; }
+                            string? promptStreamingBehavior = null;
+                            if (root.TryGetProperty("streamingBehavior", out var requestedBehavior))
+                            {
+                                if (requestedBehavior.ValueKind != JsonValueKind.String ||
+                                    requestedBehavior.GetString() is not ("steer" or "followUp"))
+                                { await RespondAsync(id, type, false, "streamingBehavior must be 'steer' or 'followUp'."); break; }
+                                promptStreamingBehavior = requestedBehavior.GetString();
+                            }
                             string expanded;
                             try
                             {
@@ -236,15 +244,27 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                             { await RespondAsync(id, type, false, error.Message); break; }
                             if (busy)
                             {
-                                var queued = run.TryQueuePrompt(expanded);
-                                await RespondAsync(id, type, queued, queued ? null :
-                                    "The active run is already settling; submit the prompt again.");
+                                if (promptStreamingBehavior is null)
+                                {
+                                    await RespondAsync(id, type, false,
+                                        "The active run requires streamingBehavior 'steer' or 'followUp'.");
+                                    break;
+                                }
+                                var queued = promptStreamingBehavior == "steer"
+                                    ? run.TrySteer(expanded) : run.TryFollowUp(expanded);
+                                await RespondPromptAsync(id, queued, queued ? "queued" : null,
+                                    queued ? null : "The active run is already settling; submit the prompt again.");
                                 break;
                             }
+                            string? preflightError;
+                            try { preflightError = promptPreflight?.Invoke(); }
+                            catch (Exception error)
+                            { await RespondAsync(id, type, false, error.Message); break; }
+                            if (!string.IsNullOrWhiteSpace(preflightError))
+                            { await RespondAsync(id, type, false, preflightError); break; }
                             _abort?.Dispose();
                             _abort = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-                            await RespondAsync(id, type, true);
-                            _active = ExecuteAsync(expanded, _abort.Token);
+                            _active = ExecuteAsync(id, expanded, _abort.Token);
                             break;
                         case "bash":
                             if (!root.TryGetProperty("command", out var bashCommand) || bashCommand.ValueKind != JsonValueKind.String)
@@ -353,16 +373,35 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
         public List<TreeNode> Children { get; } = [];
     }
 
-    private async Task ExecuteAsync(string message, CancellationToken token)
+    private async Task ExecuteAsync(JsonElement? id, string message, CancellationToken token)
     {
+        var responded = false;
         try
         {
-            await new JsonEventMode(_writer).RunAsync(run, message, token);
+            await new JsonEventMode(_writer).RunAsync(run, message, token, async item =>
+            {
+                if (responded) return;
+                if (item.Type == "prompt_accepted")
+                {
+                    responded = true;
+                    await RespondPromptAsync(id, true, "started");
+                }
+                else if (item.Type == "prompt_rejected")
+                {
+                    responded = true;
+                    await RespondPromptAsync(id, false, error: item.Error ?? "Prompt was rejected.");
+                }
+            });
             if (save is not null) await save(CancellationToken.None);
         }
         catch (Exception error)
         {
-            await _writer.EmitAsync(new { type = "error", error = error.Message }, CancellationToken.None);
+            if (!responded)
+            {
+                responded = true;
+                await RespondPromptAsync(id, false, error: error.Message);
+            }
+            else await _writer.EmitAsync(new { type = "error", error = error.Message }, CancellationToken.None);
         }
     }
 
@@ -459,4 +498,9 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
 
     private Task RespondAsync(JsonElement? id, string command, bool success, string? error = null) =>
         _writer.EmitAsync(new { id, type = "response", command, success, error });
+
+    private Task RespondPromptAsync(JsonElement? id, bool success, string? disposition = null, string? error = null) =>
+        success
+            ? _writer.EmitAsync(new { id, type = "response", command = "prompt", success = true, data = new { disposition } })
+            : RespondAsync(id, "prompt", false, error);
 }
