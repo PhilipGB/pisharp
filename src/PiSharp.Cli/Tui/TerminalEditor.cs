@@ -54,6 +54,12 @@ public sealed class TerminalEditor
     /// <summary>Seed the next editable prompt after a session fork; never submits it automatically.</summary>
     public void Prefill(string text) => _buffer.SetText(text);
 
+    public void InsertTextAtCursor(string text)
+    {
+        _buffer.InsertText(text);
+        Render();
+    }
+
     /// <summary>Return queued messages to the editor without discarding a draft typed during the run.</summary>
     public void RestorePending(IEnumerable<string> messages)
     {
@@ -65,7 +71,8 @@ public sealed class TerminalEditor
     /// <summary>Read active-run controls while provider output streams. Enter steers, Alt+Enter
     /// follows up, Alt+Up restores queued input, and Escape aborts after restoring queued input.</summary>
     public async Task MonitorRunAsync(Func<string, bool, CancellationToken, Task<bool>> queue,
-        Func<IReadOnlyList<string>> clearQueue, Action abort, CancellationToken cancellationToken)
+        Func<IReadOnlyList<string>> clearQueue, Action abort, CancellationToken cancellationToken,
+        Func<string, Task>? dispatchApplicationAction = null)
     {
         var previous = Console.TreatControlCAsInput;
         try
@@ -83,7 +90,7 @@ public sealed class TerminalEditor
                     await Task.Delay(10, CancellationToken.None);
                     continue;
                 }
-                if (!await HandleActiveInputAsync(next, queue, clearQueue, abort, cancellationToken)) break;
+                if (!await HandleActiveInputAsync(next, queue, clearQueue, abort, cancellationToken, dispatchApplicationAction)) break;
                 Render();
             }
         }
@@ -98,7 +105,8 @@ public sealed class TerminalEditor
     /// <summary>Apply one active-run key event. Exposed separately for deterministic input tests.</summary>
     public async Task<bool> HandleActiveInputAsync(TerminalInputEvent next,
         Func<string, bool, CancellationToken, Task<bool>> queue, Func<IReadOnlyList<string>> clearQueue,
-        Action abort, CancellationToken cancellationToken = default)
+        Action abort, CancellationToken cancellationToken = default,
+        Func<string, Task>? dispatchApplicationAction = null)
     {
         if (_searchingTranscript)
         {
@@ -150,6 +158,19 @@ public sealed class TerminalEditor
             if (_keymap.Matches("tui.altScreen.bottom", screenKey))
             {
                 screen.ScrollToBottom();
+                return true;
+            }
+        }
+        if (next.Key is { } clipboardKey && dispatchApplicationAction is not null && !_keymap.MatchesEditorAction(clipboardKey))
+        {
+            if (_keymap.Matches("app.message.copy", clipboardKey))
+            {
+                await dispatchApplicationAction("app.message.copy");
+                return true;
+            }
+            if (_keymap.Matches("app.clipboard.pasteImage", clipboardKey))
+            {
+                await dispatchApplicationAction("app.clipboard.pasteImage");
                 return true;
             }
         }
@@ -264,6 +285,7 @@ public sealed class TerminalEditor
                     return null;
                 }
                 if (enableApplicationActions && next.Key is { } externalEditorKey &&
+                    !_keymap.MatchesEditorAction(externalEditorKey) &&
                     _keymap.MatchIdleApplicationAction(externalEditorKey) is { } externalAction && externalAction == "app.editor.external")
                 {
                     ClearLine();
@@ -337,6 +359,7 @@ public sealed class TerminalEditor
         Action? beforeDispatch = null)
     {
         ArgumentNullException.ThrowIfNull(dispatch);
+        if (_keymap.MatchesEditorAction(key)) return false;
         var action = _keymap.MatchIdleApplicationAction(key);
         if (action is null) return false;
         beforeDispatch?.Invoke();

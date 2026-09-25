@@ -5,6 +5,20 @@ namespace PiSharp.Tests;
 public sealed class EditorKeymapTests
 {
     [Fact]
+    public void ClipboardCopyAndPasteUseContextualPiApplicationActions()
+    {
+        var keymap = new EditorKeymap();
+        var paste = OperatingSystem.IsWindows()
+            ? new ConsoleKeyInfo('v', ConsoleKey.V, shift: false, alt: true, control: false)
+            : new ConsoleKeyInfo('v', ConsoleKey.V, shift: false, alt: false, control: true);
+
+        Assert.Equal("app.message.copy", keymap.MatchIdleApplicationAction(Key(ConsoleKey.X, ConsoleModifiers.Control)));
+        Assert.Equal("app.clipboard.pasteImage", keymap.MatchIdleApplicationAction(paste));
+        Assert.Contains("Copy last assistant message (app.message.copy)", keymap.FormatHotkeys());
+        Assert.Contains("Paste clipboard text (image support pending) (app.clipboard.pasteImage)", keymap.FormatHotkeys());
+    }
+
+    [Fact]
     public void UserBindingsReplaceDefaultsAndAnEmptyListDisablesAnAction()
     {
         var directory = Path.Combine(Path.GetTempPath(), "pisharp-keymap-" + Guid.NewGuid().ToString("N"));
@@ -50,6 +64,31 @@ public sealed class EditorKeymapTests
             Assert.Equal(2, editor.Cursor);
             Assert.Equal(EditorAction.Submit, editor.Handle(Key(ConsoleKey.X, ConsoleModifiers.Control)));
             Assert.Equal("abc", Assert.Single(editor.History));
+        }
+        finally { Directory.Delete(directory, recursive: true); }
+    }
+
+    [Fact]
+    public async Task EditorBindingTakesPrecedenceOverApplicationShortcutInTheEditorContext()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "pisharp-keymap-context-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        try
+        {
+            File.WriteAllText(Path.Combine(directory, "keybindings.json"), "{ \"tui.input.submit\": \"ctrl+x\" }");
+            var editor = new TerminalEditor(agentDirectory: directory);
+            editor.Prefill("submit this draft");
+            var dispatched = false;
+
+            Assert.False(await editor.HandleApplicationShortcutAsync(Key(ConsoleKey.X, ConsoleModifiers.Control), _ =>
+            {
+                dispatched = true;
+                return Task.CompletedTask;
+            }));
+
+            Assert.False(dispatched);
+            Assert.Equal("submit this draft", editor.Draft);
+            Assert.Contains("Submit input (tui.input.submit)", editor.Hotkeys);
         }
         finally { Directory.Delete(directory, recursive: true); }
     }

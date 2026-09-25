@@ -36,7 +36,7 @@ if (cli.Version)
 }
 if (cli.Help)
 {
-    Console.WriteLine("PiSharp (incomplete implementation)\nUsage: pisharp [--local | --provider <id>] [--model <id>] [--models <globs>] [--thinking <level>] [--api-key <key>] [--list-models [pattern]] [--system-prompt <text|file>] [--append-system-prompt <text|file>] [--no-context-files] [--no-extensions] [-e|--extension <path>] [--no-skills] [--skill <path>] [--no-prompt-templates] [--prompt-template <path>] [--offline] [--verbose] [-a|--approve|-na|--no-approve] [--mode text|interactive|print|json|rpc] [-p|--print] [-h|--help] [-v|--version] [-c|--continue | --session <path|project-id> | --fork <path|project-id> | --no-session] [--session-dir <dir>] [--name <label>] [prompt] [@files...]\n--tools <read,bash,edit,write,grep,find,ls> selects tools (grep/find/ls are opt-in); --exclude-tools <names> removes tools; --no-tools disables defaults (including extension tools); --no-builtin-tools disables only default built-ins.\nProviders and static model metadata may be configured in $PISHARP_AGENT_DIR/models.json. Credentials are read from environment or private auth.json; --api-key is runtime-only.\nOffline credential status: pisharp auth check --provider <id> [--model <configured-exact-id>] [--local]; explicit pisharp auth print-api-key --provider <id> prints an API key to stdout.\nStandalone private HTML: pisharp --export <PiSharp-session-file> [output.html]; never overwrites.\n--local uses http://192.168.0.97:8000/v1 and Qwen3.8-27B-GGUF (no API key required).\nInteractive: /model, /models, /settings, /thinking, /scoped-models, /login, /logout, /tree, /branch, /fork, /clone, /new, /sessions, /resume, /delete-session, /compact, /export, /name, /session, /trust, /reload, /hotkeys, /quit.");
+    Console.WriteLine("PiSharp (incomplete implementation)\nUsage: pisharp [--local | --provider <id>] [--model <id>] [--models <globs>] [--thinking <level>] [--api-key <key>] [--list-models [pattern]] [--system-prompt <text|file>] [--append-system-prompt <text|file>] [--no-context-files] [--no-extensions] [-e|--extension <path>] [--no-skills] [--skill <path>] [--no-prompt-templates] [--prompt-template <path>] [--offline] [--verbose] [-a|--approve|-na|--no-approve] [--mode text|interactive|print|json|rpc] [-p|--print] [-h|--help] [-v|--version] [-c|--continue | --session <path|project-id> | --fork <path|project-id> | --no-session] [--session-dir <dir>] [--name <label>] [prompt] [@files...]\n--tools <read,bash,edit,write,grep,find,ls> selects tools (grep/find/ls are opt-in); --exclude-tools <names> removes tools; --no-tools disables defaults (including extension tools); --no-builtin-tools disables only default built-ins.\nProviders and static model metadata may be configured in $PISHARP_AGENT_DIR/models.json. Credentials are read from environment or private auth.json; --api-key is runtime-only.\nOffline credential status: pisharp auth check --provider <id> [--model <configured-exact-id>] [--local]; explicit pisharp auth print-api-key --provider <id> prints an API key to stdout.\nStandalone private HTML: pisharp --export <PiSharp-session-file> [output.html]; never overwrites.\n--local uses http://192.168.0.97:8000/v1 and Qwen3.8-27B-GGUF (no API key required).\nInteractive: /model, /models, /settings, /thinking, /scoped-models, /login, /logout, /tree, /branch, /fork, /clone, /new, /sessions, /resume, /delete-session, /compact, /copy, /export, /name, /session, /trust, /reload, /hotkeys, /quit.");
     return;
 }
 var trustStore = new ProjectTrust(agentDirectory);
@@ -243,6 +243,11 @@ TerminalEditor? editor = !print && cli.Mode is not ("json" or "rpc") ? new Termi
 using var terminalScreen = editor is null ? null : new TerminalScreen(Console.Out, Console.Error);
 terminalScreen?.Activate();
 editor?.AttachScreen(terminalScreen);
+var terminalClipboard = new TerminalClipboard(writeTerminalControl: value =>
+{
+    if (terminalScreen is { IsActive: true }) terminalScreen.WriteControl(value);
+    else Console.Write(value);
+});
 string IdleFooter() => $"{selection.Provider.Id}/{selection.Model.Id} · thinking {thinking} · Ctrl+L models · Ctrl+P cycle · Shift+Tab thinking · Enter send";
 terminalScreen?.SetFooter(IdleFooter());
 if (editor is not null && (cli.Verbose || userSettings.QuietStartup != true)) Console.WriteLine($"PiSharp · {selection.Provider.Id}/{connection.Model} · thinking {thinking} · {Environment.CurrentDirectory}\n/model · /settings · /thinking · /scoped-models · /login · /logout · /tree · /fork · /new · /session · /hotkeys · /quit · Escape interrupts; Enter steers; Alt+Enter follows up\n");
@@ -289,7 +294,8 @@ async Task Run(string input, IReadOnlyList<DataContent>? images = null)
                         Console.Error.WriteLine($"Could not queue input: {error.Message}");
                         return false;
                     }
-                }, () => conversationRun.ClearPendingPrompts().InDeliveryOrder, runCancel.Cancel, monitorStop.Token);
+                }, () => conversationRun.ClearPendingPrompts().InDeliveryOrder, runCancel.Cancel, monitorStop.Token,
+                    HandleEditorApplicationAction);
                 continue;
             }
             transcript.Render(update);
@@ -467,6 +473,21 @@ async Task SelectSettingsAsync()
     Console.WriteLine("Settings closed.");
 }
 
+async Task CopyLastAssistantAsync()
+{
+    var text = conversation.ActiveMessages()
+        .LastOrDefault(message => message.Role == ChatRole.Assistant)?.Text?.Trim();
+    if (string.IsNullOrWhiteSpace(text)) throw new InvalidOperationException("No agent messages to copy yet.");
+    await terminalClipboard.CopyTextAsync(text);
+    Console.WriteLine("Copied last agent message to clipboard");
+}
+
+async Task PasteClipboardTextAsync()
+{
+    var text = await terminalClipboard.ReadTextAsync();
+    if (!string.IsNullOrEmpty(text)) editor?.InsertTextAtCursor(text);
+}
+
 async Task HandleEditorApplicationAction(string action)
 {
     try
@@ -497,6 +518,12 @@ async Task HandleEditorApplicationAction(string action)
                 var result = await ExternalEditor.EditAsync(editor?.Draft ?? "", editorCommand);
                 if (result.Success) editor?.Prefill(result.Content);
                 else Console.Error.WriteLine($"External editor exited with status {result.ExitCode}; the draft was preserved.");
+                break;
+            case "app.message.copy":
+                await CopyLastAssistantAsync();
+                break;
+            case "app.clipboard.pasteImage":
+                await PasteClipboardTextAsync();
                 break;
             case "app.session.resume":
                 await SelectSessionAsync();
@@ -762,6 +789,10 @@ else
                     case "/compact":
                         Console.WriteLine(await conversationRun.CompactAsync(argument) ? "Context compacted; full history retained." :
                             "Nothing to compact (at least two completed user turns are required).");
+                        break;
+                    case "/copy":
+                        if (argument.Length != 0) throw new ArgumentException("/copy does not accept arguments.");
+                        await CopyLastAssistantAsync();
                         break;
                     case "/tree":
                         foreach (var node in conversation.Tree.Entries)

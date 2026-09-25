@@ -7,7 +7,7 @@ public sealed class EditorKeymap
     private sealed record Definition(string Description, string[] DefaultKeys);
     private readonly record struct KeyStroke(ConsoleKey Key, ConsoleModifiers Modifiers);
     private sealed record BoundKey(KeyStroke Stroke, string Name);
-    private static readonly string[] IdleApplicationActions = ["app.thinking.cycle", "app.model.cycleForward", "app.model.cycleBackward", "app.model.select", "app.editor.external", "app.settings.open", "app.session.fork", "app.session.resume"];
+    private static readonly string[] IdleApplicationActions = ["app.thinking.cycle", "app.model.cycleForward", "app.model.cycleBackward", "app.model.select", "app.editor.external", "app.message.copy", "app.clipboard.pasteImage", "app.settings.open", "app.session.fork", "app.session.resume"];
 
     private static readonly IReadOnlyDictionary<string, Definition> s_definitions = new Dictionary<string, Definition>(StringComparer.Ordinal)
     {
@@ -35,6 +35,8 @@ public sealed class EditorKeymap
         ["app.model.cycleBackward"] = new("Cycle to previous model", IsWindowsBindings() ? ["alt+p"] : ["ctrl+shift+p", "alt+p"]),
         ["app.model.select"] = new("Open model selector", ["ctrl+l"]),
         ["app.editor.external"] = new("Open external editor", ["ctrl+g"]),
+        ["app.message.copy"] = new("Copy last assistant message", ["ctrl+x"]),
+        ["app.clipboard.pasteImage"] = new("Paste clipboard text (image support pending)", IsWindowsBindings() ? ["alt+v"] : ["ctrl+v"]),
         ["app.settings.open"] = new("Open settings", []),
         ["app.session.resume"] = new("Open session selector", []),
         ["app.session.fork"] = new("Open fork selector", []),
@@ -71,6 +73,11 @@ public sealed class EditorKeymap
             if (Matches(action, key)) return action;
         return null;
     }
+
+    public bool MatchesEditorAction(ConsoleKeyInfo key) => _bindings.Any(pair =>
+        (pair.Key.StartsWith("tui.input.", StringComparison.Ordinal) ||
+         pair.Key.StartsWith("tui.editor.", StringComparison.Ordinal)) &&
+        pair.Value.Any(binding => binding.Stroke.Key == key.Key && binding.Stroke.Modifiers == key.Modifiers));
 
     public void Reload()
     {

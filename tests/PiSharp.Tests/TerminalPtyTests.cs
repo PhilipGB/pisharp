@@ -280,6 +280,129 @@ public sealed class TerminalPtyTests
     }
 
     [Fact]
+    public async Task ClipboardShortcutsPasteTextAndCopyLastAssistantThroughLinuxPty()
+    {
+        if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-clipboard-pty-" + Guid.NewGuid().ToString("N"));
+        var agent = Path.Combine(cwd, "agent");
+        var bin = Path.Combine(cwd, "bin");
+        Directory.CreateDirectory(agent);
+        Directory.CreateDirectory(bin);
+        try
+        {
+            var capture = Path.Combine(cwd, "clipboard.txt");
+            var readCommand = Path.Combine(bin, "wl-paste");
+            var writeCommand = Path.Combine(bin, "wl-copy");
+            await File.WriteAllTextAsync(readCommand, "#!/bin/sh\nprintf 'clipboard paste text'\n");
+            await File.WriteAllTextAsync(writeCommand, "#!/bin/sh\ncat > \"$PISHARP_CLIP_CAPTURE\"\n");
+            var mode = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute;
+            File.SetUnixFileMode(readCommand, mode);
+            File.SetUnixFileMode(writeCommand, mode);
+
+            var store = new PiSharp.Runtime.Sessions.ConversationStore(cwd, Path.Combine(cwd, "sessions"));
+            var conversation = new PiSharp.Runtime.Sessions.ConversationSession(cwd, ConnectionSettings.LocalModel,
+                new Uri(ConnectionSettings.LocalEndpoint).ToString());
+            conversation.Append(new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.Assistant, "assistant response to copy"));
+            var sessionPath = store.NewPath(conversation);
+            await store.SaveAsync(conversation, sessionPath);
+            var assembly = typeof(CliArguments).Assembly.Location;
+            var start = new ProcessStartInfo("/usr/bin/script")
+            {
+                WorkingDirectory = cwd,
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                ArgumentList = { "-q", "-e", "-c", $"stty rows 24 cols 80; dotnet '{assembly}' --local --session '{sessionPath}' --session-dir '{store.DirectoryPath}' --no-tools", "/dev/null" }
+            };
+            start.Environment["PISHARP_AGENT_DIR"] = agent;
+            start.Environment["PISHARP_CLIP_CAPTURE"] = capture;
+            start.Environment["WAYLAND_DISPLAY"] = "wayland-0";
+            start.Environment["PATH"] = bin + Path.PathSeparator + Environment.GetEnvironmentVariable("PATH");
+            using var process = Process.Start(start);
+            Assert.NotNull(process);
+            try
+            {
+                var outputBuilder = new System.Text.StringBuilder();
+                var outputLock = new object();
+                var inputReady = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                var pasteRendered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                var shortcutCopyCompleted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                var slashCopyCompleted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                var copyStatusEnd = 0;
+                var stdout = Task.Run(async () =>
+                {
+                    var buffer = new char[1024];
+                    while (true)
+                    {
+                        var count = await process.StandardOutput.ReadAsync(buffer);
+                        if (count == 0) break;
+                        lock (outputLock)
+                        {
+                            outputBuilder.Append(buffer, 0, count);
+                            var current = outputBuilder.ToString();
+                            if (current.Contains("\u001b[?2004h", StringComparison.Ordinal)) inputReady.TrySetResult();
+                            if (current.Contains("clipboard paste text", StringComparison.Ordinal)) pasteRendered.TrySetResult();
+                            var statusAt = current.IndexOf("Copied last agent message to clipboard", copyStatusEnd, StringComparison.Ordinal);
+                            if (statusAt >= 0)
+                            {
+                                copyStatusEnd = statusAt + "Copied last agent message to clipboard".Length;
+                                if (!shortcutCopyCompleted.Task.IsCompleted) shortcutCopyCompleted.TrySetResult();
+                                else slashCopyCompleted.TrySetResult();
+                            }
+                        }
+                    }
+                    lock (outputLock) return outputBuilder.ToString();
+                });
+                var stderr = process.StandardError.ReadToEndAsync();
+                using var readyTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(12));
+                await inputReady.Task.WaitAsync(readyTimeout.Token);
+                await process.StandardInput.WriteAsync("\u0016");
+                await process.StandardInput.FlushAsync();
+                try { await pasteRendered.Task.WaitAsync(TimeSpan.FromSeconds(12)); }
+                catch (TimeoutException)
+                {
+                    try { process.Kill(entireProcessTree: true); }
+                    catch (InvalidOperationException) { }
+                    await process.WaitForExitAsync();
+                    var partialOutput = await stdout;
+                    var outputTail = new string(partialOutput.TakeLast(3000).ToArray());
+                    throw new InvalidOperationException($"Clipboard paste was not rendered. stdout tail: {outputTail}; stderr: {await stderr}");
+                }
+                await process.StandardInput.WriteAsync("\u0015\u0018");
+                await process.StandardInput.FlushAsync();
+                await shortcutCopyCompleted.Task.WaitAsync(TimeSpan.FromSeconds(12));
+                await process.StandardInput.WriteAsync("/copy\n");
+                await process.StandardInput.FlushAsync();
+                await slashCopyCompleted.Task.WaitAsync(TimeSpan.FromSeconds(12));
+                await process.StandardInput.WriteAsync("/quit\n");
+                await process.StandardInput.FlushAsync();
+                process.StandardInput.Close();
+                using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(12));
+                try { await process.WaitForExitAsync(timeout.Token); }
+                catch (OperationCanceledException) { process.Kill(entireProcessTree: true); throw; }
+                var output = await stdout;
+
+                Assert.Equal(0, process.ExitCode);
+                Assert.Contains("clipboard paste text", output);
+                Assert.Contains("Copied last agent message to clipboard", output);
+                Assert.Equal("assistant response to copy", await File.ReadAllTextAsync(capture));
+                Assert.DoesNotContain("Shortcut action failed:", output);
+                Assert.DoesNotContain("Exception:", await stderr);
+            }
+            finally
+            {
+                if (!process.HasExited)
+                {
+                    try { process.Kill(entireProcessTree: true); }
+                    catch (InvalidOperationException) { }
+                    await process.WaitForExitAsync();
+                }
+            }
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Fact]
     public async Task ExternalEditorSuspendsAndRestoresTheTerminalThroughLinuxPty()
     {
         if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;

@@ -463,15 +463,18 @@
         "@image, clipboard, read image, compatible terminal rendering",
         "reject unsupported image/provider safely",
         "Verify through application workflow and compare docs/usage.md; packages/coding-agent/src/utils/image-process.ts; packages/tui/src/terminal-image.ts; DataContent, terminal capability checks",
-        "Remaining: clipboard/editor paste, terminal image rendering, broad provider-specific transport, model-specific image limits, and pinned image request/result differential evidence."
+        "Remaining: image clipboard/editor paste, WSL clipboard interop, terminal image rendering, broad provider-specific transport, model-specific image limits and pinned image request/result differential evidence."
       ],
       "implementation": [
         "src/PiSharp.Cli/CliFileArguments.cs: positional @file PNG/JPEG/GIF/WebP signature/size validation and DataContent; src/PiSharp.Cli/Program.cs: model modality refusal and prompt assembly",
-        "src/PiSharp.Runtime/Sessions/ObservedChatClient.cs: read-image attachment expansion plus images.blockImages provider-boundary filtering while retaining canonical session images; src/PiSharp.Runtime/Tools/ReadImageProcessor.cs: SkiaSharp decode, BMP conversion and bounded resize"
+        "src/PiSharp.Runtime/Sessions/ObservedChatClient.cs: read-image attachment expansion plus images.blockImages provider-boundary filtering while retaining canonical session images; src/PiSharp.Runtime/Tools/ReadImageProcessor.cs: SkiaSharp decode, BMP conversion and bounded resize",
+        "src/PiSharp.Cli/Tui/TerminalClipboard.cs and ClipboardCommandRunner.cs: bounded native text clipboard helpers for Linux Wayland/X11/Termux, macOS and Windows; remote/headless Linux copy falls back to size-limited OSC 52. Ctrl+V (Alt+V on Windows) pastes text. WSL clipboard interop and image clipboard paste remain open."
       ],
       "evidence": [
         "tests/PiSharp.Tests/MultimodalRuntimeTests.cs: fake-provider image request and session round-trip/blocking; tests/PiSharp.Tests/ProviderChatClientFactoryTests.cs: loopback Responses request transports PNG DataContent as input_image data URL, not plain text",
-        "tests/PiSharp.Tests/ToolSelectionTests.cs: positional image and invalid-signature CLI file argument fixtures; tests/PiSharp.Tests/ReadImageProcessorTests.cs and ReadImageToolTests.cs: conversion, resize, provider size, loopback transport, persistence and filtering"
+        "tests/PiSharp.Tests/ToolSelectionTests.cs: positional image and invalid-signature CLI file argument fixtures; tests/PiSharp.Tests/ReadImageProcessorTests.cs and ReadImageToolTests.cs: conversion, resize, provider size, loopback transport, persistence and filtering",
+        "TerminalClipboardTests cover successful empty Wayland reads, X11 fallback, OS helper selection, remote/headless OSC 52, Unicode text and the size limit; TerminalPtyTests.ClipboardShortcutsPasteTextAndCopyLastAssistantThroughLinuxPty covers clipboard text insertion.",
+        "Working-tree validation after this slice: dotnet format PiSharp.slnx --verify-no-changes passed; dotnet build PiSharp.slnx --warnaserror succeeded with 0 warnings/errors; dotnet test PiSharp.slnx passed 447/447 with 0 skipped. Exact-head Linux CI for this uncommitted state is pending."
       ],
       "dependencies": []
     },
@@ -525,12 +528,14 @@
       ],
       "implementation": [
         "Tab completion supports slash-command prefixes and relative/absolute path tokens. Suggestions order directories first, show dotfiles after an explicit dot prefix, quote whitespace, preserve path wrappers and prefixes, recognize CJK punctuation boundaries, and compute common prefixes without splitting grapheme clusters.",
-        "Ctrl+G (`app.editor.external`) runs a configured external editor against a prompt file in a private temporary directory. Command selection is trusted user/project `externalEditor`, then VISUAL, EDITOR and platform default; the alternate screen and raw terminal mode are suspended around the process and restored afterward. Editor selection, clipboard, image paste and full upstream autocomplete remain open."
+        "Ctrl+G (`app.editor.external`) runs a configured external editor against a prompt file in a private temporary directory. Command selection is trusted user/project `externalEditor`, then VISUAL, EDITOR and platform default; the alternate screen and raw terminal mode are suspended around the process and restored afterward. Editor selection, image clipboard paste, WSL clipboard interop and full upstream autocomplete remain open; text clipboard copy/paste is implemented through named actions."
       ],
       "evidence": [
         "EditorCompletionTests covers slash ambiguity/unique completion, nested and wrapped paths, CJK punctuation, hidden-file prefixing, quoted directory continuation, emoji-safe common prefixes and directory-first results. Exact commit f87caad457353056712bff08c03c90ae3585a3db passed Linux CI run 36141556326: format, warnings-as-errors build and all 431 tests.",
         "Pi b3487650f6378f1b0d1643dd254445ceb4a98035 external-editor source/tests establish command precedence, private temporary-directory lifecycle, success/failure behavior and prompt text normalization. ExternalEditorTests, UserSettingsTests, UserSettingsWriterTests, EditorKeymapTests and Linux TerminalPtyTests cover PiSharp command parsing, mode 0700 directory/mode 0600 prompt, cleanup, settings precedence/persistence, configurable Ctrl+G and terminal restoration; focused tests passed 9/9. Format verification, warnings-as-errors build and full test suite passed locally (438/438, 0 skipped); exact-head Linux CI run 36144181596 failed the separate fork-picker PTY exit wait; the test synchronization fix and rerun status are recorded in follow-up evidence.",
-        "The uncommitted fork-picker PTY synchronization fix waits until the selected draft is rendered in the next idle prompt before sending Ctrl+U/commands. This prevents the canonical TTY line discipline from consuming Ctrl+U before raw mode resumes. The focused PTY test passes three consecutive runs; format verification, warnings-as-errors build and the full suite pass locally (438/438, 0 skipped). New exact-head Linux CI is pending."
+        "Follow-up commit 33b6ef7c323f01f7623d097da2464be91bab06bf fixes the fork-picker PTY readiness race by synchronizing on rendered draft text; exact-head Linux CI run 36145493341 passes format, warnings-as-errors build and all 438 tests.",
+        "TerminalClipboardTests, EditorKeymapTests and TerminalPtyTests.ClipboardShortcutsPasteTextAndCopyLastAssistantThroughLinuxPty cover platform clipboard helpers, Ctrl+X copy, Ctrl+V paste, /copy, PTY input readiness and custom editor-action precedence when Ctrl+X is also configured for submit.",
+        "Working-tree validation after this slice: dotnet format PiSharp.slnx --verify-no-changes passed; dotnet build PiSharp.slnx --warnaserror succeeded with 0 warnings/errors; dotnet test PiSharp.slnx passed 447/447 with 0 skipped. Exact-head Linux CI for this uncommitted state is pending."
       ],
       "dependencies": []
     },
@@ -548,13 +553,16 @@
         "src/PiSharp.Cli/Tui/EditorKeymap.cs and TerminalEditor.cs: configurable app.tools.expand defaults to Ctrl+O and toggles active-run tool output while retaining state across turns.",
         "src/PiSharp.Cli/Tui/EditorKeymap.cs, TerminalEditor.cs, TerminalInput.cs and Program.cs: idle-prompt app.thinking.cycle (Shift+Tab) and app.model.cycleForward/backward (Ctrl+P, Ctrl+Shift+P with Alt+P fallback) dispatch through the existing model/thinking replacement path and preserve the draft; model selection is persisted. Common modified ASCII CSI-u input is decoded for Ctrl+Shift+P. No Kitty protocol negotiation yet.",
         "src/PiSharp.Cli/Tui/EditorKeymap.cs and Program.cs: configurable app.session.resume dispatches to the shared session picker and has no default binding.",
-        "src/PiSharp.Cli/Tui/EditorKeymap.cs and Program.cs: configurable app.session.fork opens the searchable active-branch user-message picker and has no default binding."
+        "src/PiSharp.Cli/Tui/EditorKeymap.cs and Program.cs: configurable app.session.fork opens the searchable active-branch user-message picker and has no default binding.",
+        "src/PiSharp.Cli/Tui/EditorKeymap.cs and TerminalEditor.cs: named app.message.copy and app.clipboard.pasteImage actions use Pi default bindings; editor actions take precedence over app shortcuts on collisions in idle and active-run input contexts."
       ],
       "evidence": [
         "EditorKeymapTests decodes Ctrl+O from terminal input and verifies user keymap replacement; TerminalScreenTests verifies collapsed/expanded tool results. Focused TUI tests pass 18/18 and the Release suite passes 400/400 with 0 skipped; format verification and warnings-as-errors build pass. Linux CI run 36111858689 passed.",
         "EditorKeymapTests.ApplicationCycleShortcutsDispatchAndPreserveTheEditorDraft and TerminalInputTests.DecodesModifiedCursorAndPageKeysForConfigurableBindings cover dispatch, draft preservation, and Ctrl+Shift+P CSI-u decoding. Focused keymap/input tests pass 16/16; including InteractiveTranscriptTests, the focused run passes 24/24. Format verification passes, the warnings-as-errors Release build reports 0 warnings/errors, the full Release suite passes 403/403 with 0 skipped, and Linux CI run 36116327139 passed.",
         "EditorKeymapTests.SessionSelectorShortcutCanBeConfiguredAndPreservesTheEditorDraft verifies ctrl+r user binding dispatch and draft preservation. Format verification, warnings-as-errors build and all 423 tests passed in Linux CI run 36134474053 on exact commit 37eff5a9c7a15c5b12e8ff948fa53714046a2fda.",
-        "EditorKeymapTests.SessionSelectorShortcutCanBeConfiguredAndPreservesTheEditorDraft verifies configurable app.session.fork dispatch and draft retention; TerminalPtyTests.ForkPickerSearchesUserMessagesAndSeedsSelectedPromptThroughLinuxPty verifies the command flow. The focused tests pass 3/3; full local format, warnings-as-errors build and 424/424 tests pass; exact-head commit ba25c8adbc861e0dece4372bf4c7f97424014fe1 passed Linux CI run 36136775710."
+        "EditorKeymapTests.SessionSelectorShortcutCanBeConfiguredAndPreservesTheEditorDraft verifies configurable app.session.fork dispatch and draft retention; TerminalPtyTests.ForkPickerSearchesUserMessagesAndSeedsSelectedPromptThroughLinuxPty verifies the command flow. The focused tests pass 3/3; full local format, warnings-as-errors build and 424/424 tests pass; exact-head commit ba25c8adbc861e0dece4372bf4c7f97424014fe1 passed Linux CI run 36136775710.",
+        "EditorKeymapTests.ClipboardCopyAndPasteUseContextualPiApplicationActions and EditorBindingTakesPrecedenceOverApplicationShortcutInTheEditorContext cover names/defaults and a configured Ctrl+X submit collision; TerminalPtyTests covers the full clipboard keyboard and /copy flow.",
+        "Working-tree validation after this slice: dotnet format PiSharp.slnx --verify-no-changes passed; dotnet build PiSharp.slnx --warnaserror succeeded with 0 warnings/errors; dotnet test PiSharp.slnx passed 447/447 with 0 skipped. Exact-head Linux CI for this uncommitted state is pending."
       ],
       "dependencies": []
     },
@@ -789,15 +797,18 @@
       "source": "docs/parity/detailed-inventory.md:12",
       "acceptance": [
         "Clipboard/export or upload, user confirms sensitive content; upload error offers export",
-        "In progress: standalone private escaped HTML /export tested with inactive branches, tool failures, cancellation and PTY; no JSONL export, clipboard/share/report",
+        "In progress: /copy and Ctrl+X copy the latest assistant text; standalone private escaped HTML /export is tested with inactive branches, tool failures, cancellation and PTY. JSONL export, selection copy, /share and /bug remain open.",
         "Verify command results, errors and PTY workflows",
-        "Remaining: /copy, /share, /bug, Pi viewer/JSONL and upstream differential."
+        "Remaining: selection copy, /share, /bug, Pi viewer/JSONL and upstream differential."
       ],
       "implementation": [
-        "src/PiSharp.Cli/Program.cs: /export; src/PiSharp.Runtime/Sessions/SessionExport.cs: private HTML writer"
+        "src/PiSharp.Cli/Program.cs: /export; src/PiSharp.Runtime/Sessions/SessionExport.cs: private HTML writer",
+        "src/PiSharp.Cli/Program.cs: /copy copies the latest active-branch assistant text to the system clipboard and reports helper errors; Ctrl+X dispatches the same named action."
       ],
       "evidence": [
-        "tests/PiSharp.Tests/SessionExportTests.cs: escaping, branch, failure and no-overwrite fixtures; tests/PiSharp.Tests/TerminalPtyTests.cs: export fixture"
+        "tests/PiSharp.Tests/SessionExportTests.cs: escaping, branch, failure and no-overwrite fixtures; tests/PiSharp.Tests/TerminalPtyTests.cs: export fixture",
+        "TerminalPtyTests.ClipboardShortcutsPasteTextAndCopyLastAssistantThroughLinuxPty seeds assistant text, pastes clipboard text, exercises Ctrl+X and /copy, and verifies the copied bytes with a fake Wayland clipboard helper.",
+        "Working-tree validation after this slice: dotnet format PiSharp.slnx --verify-no-changes passed; dotnet build PiSharp.slnx --warnaserror succeeded with 0 warnings/errors; dotnet test PiSharp.slnx passed 447/447 with 0 skipped. Exact-head Linux CI for this uncommitted state is pending."
       ],
       "dependencies": []
     },
@@ -1897,7 +1908,7 @@
       ],
       "evidence": [
         "Pi b3487650f6378f1b0d1643dd254445ceb4a98035 core/settings-manager.ts and settings-manager.test.ts define command precedence; external-editor.ts and external-editor.test.ts define the private directory, cleanup and failure behavior. PiSharp UserSettingsTests and UserSettingsWriterTests cover scope precedence and persistence; TerminalPtyTests covers interactive /settings save and child-process screen/raw-mode restoration. Focused tests passed 9/9; format/build and full test suite pass 438/438 locally, with exact-head Linux CI run 36144181596 failed the separate fork-picker PTY exit wait; the test synchronization fix and rerun status are recorded in follow-up evidence.",
-        "Linux CI run 36144181596 on commit 1f6f1df632fa98adfc06bcdc30f7f836aa465bac passed format/build and failed the fork-picker PTY exit wait; investigation found premature input during canonical mode. The current test fix synchronizes on rendering the new prompt draft and passes the PTY fixture three times plus the full 438-test local suite; new exact-head CI is pending."
+        "Follow-up commit 33b6ef7c323f01f7623d097da2464be91bab06bf fixes the fork-picker PTY readiness race by synchronizing on rendered draft text; exact-head Linux CI run 36145493341 passes format, warnings-as-errors build and all 438 tests."
       ],
       "dependencies": []
     },
