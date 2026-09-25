@@ -1032,7 +1032,7 @@
       "evidence": [
         "RpcModeTests.PromptPreflightFailureReturnsOneCorrelatedResponse and RuntimePreflightFailureReturnsCorrelatedErrorBeforeRejectedEvent cover command and runtime-preflight failures; PromptReceivedDuringStreamingQueuesAnotherTurnBeforeSettlement checks started/queued dispositions and rejection without streamingBehavior.",
         "RpcBashProcessTests.RpcProcessReturnsMissingCredentialsAsCorrelatedPromptPreflightFailure verifies the CLI remains alive for a subsequent get_state; JsonLineWriterTests.RecordsUseLiteralLfRegardlessOfTextWriterNewLine verifies LF framing and preserved U+2028/U+2029 JSON payload characters.",
-        "Focused RPC/process/JSON tests pass 26/26. Local dotnet format verification and warnings-as-errors build pass; full dotnet test passes 530/530 with 0 skipped on the pre-commit working tree. Pi current-main source and rpc-prompt-response-semantics.test.ts at d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 were inspected; this is narrow response-semantic evidence, not full RPC parity."
+        "Focused RPC/process/JSON tests pass 26/26. Exact implementation commit ca38cfda9c1920135d85a15ac39de6b765b62575 passed Linux CI run 36190927716 with format verification, warnings-as-errors build and all 530 tests (0 failed, 0 skipped). Pi current-main source and rpc-prompt-response-semantics.test.ts at d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 were inspected; this is narrow response-semantic evidence, not full RPC parity."
       ],
       "dependencies": []
     },
