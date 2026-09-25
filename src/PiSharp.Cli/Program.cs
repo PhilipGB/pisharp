@@ -36,20 +36,26 @@ if (cli.Version)
 }
 if (cli.Help)
 {
-    Console.WriteLine("PiSharp (incomplete implementation)\nUsage: pisharp [--local | --provider <id>] [--model <id>] [--models <globs>] [--thinking <level>] [--api-key <key>] [--list-models [pattern]] [--system-prompt <text|file>] [--append-system-prompt <text|file>] [--no-context-files] [--no-extensions] [-e|--extension <path>] [--no-skills] [--skill <path>] [--no-prompt-templates] [--prompt-template <path>] [--offline] [--verbose] [-a|--approve|-na|--no-approve] [--mode text|interactive|print|json|rpc] [-p|--print] [-h|--help] [-v|--version] [-c|--continue | --session <path|project-id> | --fork <path|project-id> | --no-session] [--session-dir <dir>] [--name <label>] [prompt] [@files...]\n--tools <read,bash,edit,write,grep,find,ls> selects tools (grep/find/ls are opt-in); --exclude-tools <names> removes tools; --no-tools disables defaults (including extension tools); --no-builtin-tools disables only default built-ins.\nProviders and static model metadata may be configured in $PISHARP_AGENT_DIR/models.json. Credentials are read from environment or private auth.json; --api-key is runtime-only.\nOffline credential status: pisharp auth check --provider <id> [--model <configured-exact-id>] [--local]; explicit pisharp auth print-api-key --provider <id> prints an API key to stdout.\nStandalone private HTML: pisharp --export <PiSharp-session-file> [output.html]; never overwrites.\n--local uses http://192.168.0.97:8000/v1 and Qwen3.8-27B-GGUF (no API key required).\nInteractive: /model, /models, /thinking, /scoped-models, /login, /logout, /tree, /branch, /fork, /clone, /new, /sessions, /resume, /delete-session, /compact, /export, /name, /session, /trust, /reload, /hotkeys, /quit.");
+    Console.WriteLine("PiSharp (incomplete implementation)\nUsage: pisharp [--local | --provider <id>] [--model <id>] [--models <globs>] [--thinking <level>] [--api-key <key>] [--list-models [pattern]] [--system-prompt <text|file>] [--append-system-prompt <text|file>] [--no-context-files] [--no-extensions] [-e|--extension <path>] [--no-skills] [--skill <path>] [--no-prompt-templates] [--prompt-template <path>] [--offline] [--verbose] [-a|--approve|-na|--no-approve] [--mode text|interactive|print|json|rpc] [-p|--print] [-h|--help] [-v|--version] [-c|--continue | --session <path|project-id> | --fork <path|project-id> | --no-session] [--session-dir <dir>] [--name <label>] [prompt] [@files...]\n--tools <read,bash,edit,write,grep,find,ls> selects tools (grep/find/ls are opt-in); --exclude-tools <names> removes tools; --no-tools disables defaults (including extension tools); --no-builtin-tools disables only default built-ins.\nProviders and static model metadata may be configured in $PISHARP_AGENT_DIR/models.json. Credentials are read from environment or private auth.json; --api-key is runtime-only.\nOffline credential status: pisharp auth check --provider <id> [--model <configured-exact-id>] [--local]; explicit pisharp auth print-api-key --provider <id> prints an API key to stdout.\nStandalone private HTML: pisharp --export <PiSharp-session-file> [output.html]; never overwrites.\n--local uses http://192.168.0.97:8000/v1 and Qwen3.8-27B-GGUF (no API key required).\nInteractive: /model, /models, /settings, /thinking, /scoped-models, /login, /logout, /tree, /branch, /fork, /clone, /new, /sessions, /resume, /delete-session, /compact, /export, /name, /session, /trust, /reload, /hotkeys, /quit.");
     return;
 }
 var trustStore = new ProjectTrust(agentDirectory);
 bool trusted;
+UserSettings baseUserSettings;
+UserSettings? projectSettings = null;
 UserSettings userSettings;
 try
 {
-    userSettings = await UserSettings.LoadAsync(agentDirectory, Environment.GetEnvironmentVariable);
+    baseUserSettings = await UserSettings.LoadAsync(agentDirectory, Environment.GetEnvironmentVariable);
+    userSettings = baseUserSettings;
     trusted = await trustStore.ResolveAsync(Environment.CurrentDirectory, cli.ProjectTrustOverride,
         cli.Mode == "interactive" && !cli.Print && !Console.IsInputRedirected && !Console.IsOutputRedirected, Console.In, Console.Error,
-        defaultProjectTrust: userSettings.DefaultProjectTrust ?? "ask");
+        defaultProjectTrust: baseUserSettings.DefaultProjectTrust ?? "ask");
     if (trusted)
-        userSettings = userSettings.Overlay(await UserSettings.LoadProjectAsync(Environment.CurrentDirectory));
+    {
+        projectSettings = await UserSettings.LoadProjectAsync(Environment.CurrentDirectory);
+        userSettings = baseUserSettings.Overlay(projectSettings);
+    }
 }
 catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidDataException or System.Text.Json.JsonException or ArgumentException)
 {
@@ -239,7 +245,7 @@ terminalScreen?.Activate();
 editor?.AttachScreen(terminalScreen);
 string IdleFooter() => $"{selection.Provider.Id}/{selection.Model.Id} · thinking {thinking} · Ctrl+L models · Ctrl+P cycle · Shift+Tab thinking · Enter send";
 terminalScreen?.SetFooter(IdleFooter());
-if (editor is not null && (cli.Verbose || userSettings.QuietStartup != true)) Console.WriteLine($"PiSharp · {selection.Provider.Id}/{connection.Model} · thinking {thinking} · {Environment.CurrentDirectory}\n/model · /thinking · /scoped-models · /login · /logout · /tree · /fork · /new · /session · /hotkeys · /quit · Escape interrupts; Enter steers; Alt+Enter follows up\n");
+if (editor is not null && (cli.Verbose || userSettings.QuietStartup != true)) Console.WriteLine($"PiSharp · {selection.Provider.Id}/{connection.Model} · thinking {thinking} · {Environment.CurrentDirectory}\n/model · /settings · /thinking · /scoped-models · /login · /logout · /tree · /fork · /new · /session · /hotkeys · /quit · Escape interrupts; Enter steers; Alt+Enter follows up\n");
 CancellationTokenSource? activeRun = null;
 Console.CancelKeyPress += (_, e) => { e.Cancel = true; activeRun?.Cancel(); };
 
@@ -357,6 +363,7 @@ async Task ReplaceModelRuntime(ModelSelection nextSelection, string nextThinking
 var terminalModelPicker = editor is null ? null : new TerminalModelPicker(modelRuntime, editor);
 var terminalSessionPicker = editor is null ? null : new TerminalSessionPicker(store, editor);
 var terminalForkPicker = editor is null ? null : new TerminalForkPicker(editor);
+var terminalSettingsPicker = editor is null ? null : new TerminalSettingsPicker(editor);
 async Task SelectModelAsync()
 {
     if (terminalModelPicker is null) return;
@@ -434,6 +441,32 @@ async Task SelectForkAsync()
     if (selected is { } message) await ForkFromUserAsync(message.Id);
 }
 
+async Task<(UserSettings User, UserSettings? Project)> SaveSettingAsync(bool projectScope, string setting, string? value)
+{
+    if (projectScope && !trusted)
+        throw new InvalidOperationException("Trust this project before editing its settings.");
+    var settingsPath = projectScope
+        ? Path.Combine(Environment.CurrentDirectory, ".pi", "settings.json")
+        : UserSettings.GetSettingsPath(agentDirectory, Environment.GetEnvironmentVariable);
+    await UserSettingsWriter.SetAsync(settingsPath, setting, value, userScope: !projectScope);
+    if (projectScope)
+        projectSettings = await UserSettings.LoadProjectAsync(Environment.CurrentDirectory);
+    else
+        baseUserSettings = await UserSettings.LoadAsync(agentDirectory, Environment.GetEnvironmentVariable);
+    userSettings = baseUserSettings.Overlay(projectSettings ?? new UserSettings());
+    if (setting is "images.blockImages" or "compaction.enabled")
+        await ReplaceModelRuntime(selection, thinking, recordModelChange: false);
+    Console.WriteLine($"Saved {(projectScope ? "project" : "user")} setting {setting} = {value ?? "(default)"}.");
+    return (baseUserSettings, projectSettings);
+}
+
+async Task SelectSettingsAsync()
+{
+    if (terminalSettingsPicker is null) return;
+    await terminalSettingsPicker.ShowAsync(baseUserSettings, projectSettings, SaveSettingAsync);
+    Console.WriteLine("Settings closed.");
+}
+
 async Task HandleEditorApplicationAction(string action)
 {
     try
@@ -454,6 +487,9 @@ async Task HandleEditorApplicationAction(string action)
                 break;
             case "app.model.select":
                 await SelectModelAsync();
+                break;
+            case "app.settings.open":
+                await SelectSettingsAsync();
                 break;
             case "app.session.resume":
                 await SelectSessionAsync();
@@ -499,6 +535,9 @@ async Task HandleEditorApplicationAction(string action)
 
 async Task ReloadResources()
 {
+    var nextBaseUserSettings = await UserSettings.LoadAsync(agentDirectory, Environment.GetEnvironmentVariable);
+    var nextProjectSettings = trusted ? await UserSettings.LoadProjectAsync(Environment.CurrentDirectory) : null;
+    var nextUserSettings = nextBaseUserSettings.Overlay(nextProjectSettings ?? new UserSettings());
     var nextResources = await ResourceCatalog.LoadAsync(Environment.CurrentDirectory, agentDirectory, trusted,
         discoverSkills: !cli.NoSkills, discoverPrompts: !cli.NoPromptTemplates,
         additionalSkills: cli.SkillPaths, additionalPrompts: cli.PromptTemplatePaths);
@@ -508,24 +547,35 @@ async Task ReloadResources()
         await ProjectPrompts.LoadAsync(Environment.CurrentDirectory, agentDirectory, trusted), Environment.CurrentDirectory);
     var nextExtensions = ExtensionCatalog.Load(agentDirectory, Environment.CurrentDirectory, trusted, discover: !cli.NoExtensions,
         additionalPaths: cli.ExtensionPaths);
+    var previousContextPolicy = contextPolicy;
     try
     {
         var nextAgent = new PiAgent(chat,
-            new CodingTools(Environment.CurrentDirectory, userSettings.ShellPath,
+            new CodingTools(Environment.CurrentDirectory, nextUserSettings.ShellPath,
                 selection.Model.InputLimits?.Images?.Resize), cli.Tools, cli.ExcludeTools, cli.NoTools,
             nextContext, nextPrompts.System, nextPrompts.Append, nextExtensions.Registration.Tools,
-            reasoning: ThinkingLevels.ToOptions(thinking), blockImages: userSettings.BlockImages == true, noBuiltinTools: cli.NoBuiltinTools,
+            reasoning: ThinkingLevels.ToOptions(thinking), blockImages: nextUserSettings.BlockImages == true, noBuiltinTools: cli.NoBuiltinTools,
             supportsImages: selection.Model.Input?.Contains("image", StringComparer.Ordinal) != false);
+        contextPolicy = nextUserSettings.ResolveCompaction(selection.Model.ContextLength, Environment.GetEnvironmentVariable,
+            $"{selection.Provider.Id}/{selection.Model.Id}");
         var path = sessionPath;
         var nextRun = await OpenRunAsync(nextAgent, conversation, path);
         extensionLease.Replace(nextExtensions);
+        baseUserSettings = nextBaseUserSettings;
+        projectSettings = nextProjectSettings;
+        userSettings = nextUserSettings;
         instructions = nextContext;
         resources = nextResources;
         prompts = nextPrompts;
         agent = nextAgent;
         conversationRun = nextRun;
     }
-    catch { nextExtensions.Dispose(); throw; }
+    catch
+    {
+        contextPolicy = previousContextPolicy;
+        nextExtensions.Dispose();
+        throw;
+    }
 }
 string? ReadSecret()
 {
@@ -755,6 +805,10 @@ else
                         break;
                     case "/hotkeys":
                         Console.WriteLine(editor.Hotkeys);
+                        break;
+                    case "/settings":
+                        if (argument.Length != 0) throw new ArgumentException("/settings does not accept arguments.");
+                        await SelectSettingsAsync();
                         break;
                     case "/model":
                         if (string.IsNullOrWhiteSpace(argument))

@@ -71,7 +71,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
     public static async Task<UserSettings> LoadAsync(string agentDirectory, Func<string, string?> environment,
         CancellationToken cancellationToken = default)
     {
-        var path = environment("PISHARP_SETTINGS_PATH") ?? Path.Combine(agentDirectory, "settings.json");
+        var path = GetSettingsPath(agentDirectory, environment);
         if (!File.Exists(path)) return new();
         var info = new FileInfo(path);
         if (info.Length > 64 * 1024) throw new InvalidDataException("settings.json exceeds 64KB.");
@@ -176,6 +176,9 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         }
         return new(provider, model, thinking, tools, sessionDirectory, compaction, blockImages, defaultTrust, hideThinkingBlock, quietStartup, enabledModels, shellPath);
     }
+
+    public static string GetSettingsPath(string agentDirectory, Func<string, string?> environment) =>
+        Path.GetFullPath(environment("PISHARP_SETTINGS_PATH") ?? Path.Combine(agentDirectory, "settings.json"));
 
     /// <summary>Overlay a trusted project's explicitly specified defaults; nested compaction values merge.</summary>
     public UserSettings Overlay(UserSettings project) => new(

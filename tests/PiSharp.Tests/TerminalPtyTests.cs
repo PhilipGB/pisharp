@@ -173,6 +173,78 @@ public sealed class TerminalPtyTests
     }
 
     [Fact]
+    public async Task SettingsPickerEditsUserScopeThroughLinuxPty()
+    {
+        if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-settings-picker-pty-" + Guid.NewGuid().ToString("N"));
+        var agent = Path.Combine(cwd, "agent");
+        Directory.CreateDirectory(agent);
+        try
+        {
+            var settingsPath = Path.Combine(agent, "settings.json");
+            await File.WriteAllTextAsync(settingsPath, "{\"compaction\":{\"reserveTokens\":2048}}\n");
+            var store = new PiSharp.Runtime.Sessions.ConversationStore(cwd, Path.Combine(cwd, "sessions"));
+            var assembly = typeof(CliArguments).Assembly.Location;
+            var start = new ProcessStartInfo("/usr/bin/script")
+            {
+                WorkingDirectory = cwd,
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                ArgumentList = { "-q", "-e", "-c", $"stty rows 24 cols 80; dotnet '{assembly}' --local --session-dir '{store.DirectoryPath}' --no-tools", "/dev/null" }
+            };
+            start.Environment["PISHARP_AGENT_DIR"] = agent;
+            using var process = Process.Start(start);
+            Assert.NotNull(process);
+            var outputBuilder = new System.Text.StringBuilder();
+            var outputLock = new object();
+            var saved = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var closed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var stdout = Task.Run(async () =>
+            {
+                var buffer = new char[1024];
+                while (true)
+                {
+                    var count = await process.StandardOutput.ReadAsync(buffer);
+                    if (count == 0) break;
+                    lock (outputLock)
+                    {
+                        outputBuilder.Append(buffer, 0, count);
+                        var current = outputBuilder.ToString();
+                        if (current.Contains("Saved user setting hideThinkingBlock = true.", StringComparison.Ordinal)) saved.TrySetResult();
+                        if (current.Contains("Settings closed.", StringComparison.Ordinal)) closed.TrySetResult();
+                    }
+                }
+                lock (outputLock) return outputBuilder.ToString();
+            });
+            var stderr = process.StandardError.ReadToEndAsync();
+            await process.StandardInput.WriteAsync("/settings\n\nHide thinking\nEnabled\n");
+            await process.StandardInput.FlushAsync();
+            await saved.Task.WaitAsync(TimeSpan.FromSeconds(12));
+            await process.StandardInput.WriteAsync("\u001b");
+            await process.StandardInput.FlushAsync();
+            await closed.Task.WaitAsync(TimeSpan.FromSeconds(12));
+            await process.StandardInput.WriteAsync("/quit\n");
+            await process.StandardInput.FlushAsync();
+            process.StandardInput.Close();
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(12));
+            try { await process.WaitForExitAsync(timeout.Token); }
+            catch (OperationCanceledException) { process.Kill(entireProcessTree: true); throw; }
+            var output = await stdout;
+            Assert.Equal(0, process.ExitCode);
+            Assert.Contains("Settings scope", output);
+            Assert.Contains("Hide thinking", output);
+            Assert.Contains("Saved user setting hideThinkingBlock = true", output);
+            Assert.DoesNotContain("Agent error:", output);
+            Assert.DoesNotContain("Exception:", await stderr);
+            var settings = await PiSharp.Cli.UserSettings.LoadAsync(agent, _ => null);
+            Assert.True(settings.HideThinkingBlock);
+            Assert.Equal(2048, settings.Compaction?.ReserveTokens);
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Fact]
     public async Task SessionSearchDeletionRequiresConfirmationAndPreservesActiveSession()
     {
         if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;

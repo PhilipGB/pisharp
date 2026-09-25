@@ -608,8 +608,12 @@
         "unknown/invalid input feedback",
         "Verify through application workflow and compare docs/slash-commands.md; packages/coding-agent/src/core/slash-commands.ts; command registry and dialog tests"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "The shared searchable overlay implements /settings for a deliberately bounded scalar subset in user and trusted-project scopes, with inherited values, atomic settings.json updates, /settings completion, and configurable app.settings.open. Image blocking and pre-prompt compaction replace the runtime immediately; the remaining Pi schema and controls are open."
+      ],
+      "evidence": [
+        "SettingsPickerEditsUserScopeThroughLinuxPty exercises selection, atomic persistence, Escape close and continued command handling. UserSettingsWriterTests cover user/project scope loading, preservation of unrelated settings, removal of overrides, private Linux file mode, and rejection of user-only project trust. EditorKeymapTests.SettingsPickerShortcutCanBeConfiguredAndPreservesTheEditorDraft covers action binding and draft retention. Focused 5-test run and full solution validation passed locally; exact-head CI pending."
+      ],
       "dependencies": []
     },
     {
@@ -1752,10 +1756,10 @@
         "Test malformed settings, trust boundaries, reload and startup behaviour"
       ],
       "implementation": [
-        "Partial: src/PiSharp.Cli/UserSettings.cs validates defaultThinkingLevel in user settings and trusted project overlays; CLI/runtime wiring applies selected defaults, with Pi schema and reload parity still open."
+        "Partial: validated user/trusted-project defaultThinkingLevel is editable in /settings with inherit/removal; its startup default applies on the next launch unless --thinking overrides it. Full settings schema and Pi reload behavior remain open."
       ],
       "evidence": [
-        "tests/PiSharp.Tests/UserSettingsTests.cs covers defaults, override precedence, trusted overlays and malformed values; tests/PiSharp.Tests/ProjectSettingsProcessTests.cs covers trust boundary in a CLI process. No upstream differential evidence."
+        "UserSettingsTests and ProjectSettingsProcessTests cover defaults, precedence, malformed values and trust. UserSettingsWriterTests covers supported user/project scope edits and preservation; TerminalPtyTests.SettingsPickerEditsUserScopeThroughLinuxPty covers interactive persistence. Focused settings slice passed 5/5; no upstream differential evidence."
       ],
       "dependencies": []
     },
@@ -1812,10 +1816,10 @@
         "Test malformed settings, trust boundaries, reload and startup behaviour"
       ],
       "implementation": [
-        "src/PiSharp.Cli/UserSettings.cs validates boolean user/trusted-project hideThinkingBlock (default visible) and Program.cs suppresses interactive stderr reasoning deltas when true. It does not remove model reasoning from history or machine events."
+        "src/PiSharp.Cli/UserSettings.cs validates boolean user/trusted-project hideThinkingBlock (default visible); /settings edits it through the shared overlay. New runs suppress interactive stderr reasoning deltas when true. It does not remove model reasoning from history or machine events."
       ],
       "evidence": [
-        "UserSettingsTests.HideThinkingBlockRequiresBooleanAndTrustedProjectCanOverrideDisplay verifies load, overlay, invalid type and duplicate rejection. No PTY render, reload, or pinned upstream differential evidence."
+        "UserSettingsTests.HideThinkingBlockRequiresBooleanAndTrustedProjectCanOverrideDisplay verifies load, overlay, invalid type and duplicate rejection; UserSettingsWriterTests verifies edits; TerminalPtyTests.SettingsPickerEditsUserScopeThroughLinuxPty verifies the UI save/close path. No rendered-reasoning or pinned upstream differential evidence."
       ],
       "dependencies": []
     },
@@ -1920,10 +1924,10 @@
         "Test malformed settings, trust boundaries, reload and startup behaviour"
       ],
       "implementation": [
-        "Partial: User-only defaultProjectTrust ask/always/never is loaded before project trust resolution; project settings cannot supply it and explicit/stored decisions prevail."
+        "Partial: User-only defaultProjectTrust ask/always/never is loaded before project trust resolution and editable in user-scope /settings; project settings cannot supply it and explicit/stored decisions prevail."
       ],
       "evidence": [
-        "UserSettingsTests.DefaultProjectTrustIsGlobalOnly, ProjectSettingsProcessTests.UntrustedProjectSettingsAreNeverParsedAndTrustedInvalidSettingsFailClosed, and ProjectTrustTests cover boundaries. No Pi differential."
+        "UserSettingsTests.DefaultProjectTrustIsGlobalOnly, ProjectSettingsProcessTests.UntrustedProjectSettingsAreNeverParsedAndTrustedInvalidSettingsFailClosed, ProjectTrustTests, and UserSettingsWriterTests cover boundaries and user-scope editing. No Pi differential."
       ],
       "dependencies": []
     },
@@ -1971,10 +1975,10 @@
         "Test malformed settings, trust boundaries, reload and startup behaviour"
       ],
       "implementation": [
-        "Partial: Validated enabled setting controls pre-prompt auto compaction only."
+        "Partial: Validated user/trusted-project enabled setting controls pre-prompt auto compaction only; /settings can edit it and swaps the run context policy immediately. In-loop/overflow compaction remains absent."
       ],
       "evidence": [
-        "UserSettingsTests.CompactionSettingsApplyToKnownModelAndExplicitEnvironmentWins and CompactionTests exercise opt-in/out and rollback; in-loop/overflow compaction absent."
+        "UserSettingsTests.CompactionSettingsApplyToKnownModelAndExplicitEnvironmentWins and CompactionTests exercise opt-in/out and rollback; UserSettingsWriterTests and TerminalPtyTests.SettingsPickerEditsUserScopeThroughLinuxPty cover editing/persistence. In-loop/overflow compaction absent."
       ],
       "dependencies": []
     },
@@ -2078,10 +2082,10 @@
         "Test malformed settings, trust boundaries, reload and startup behaviour"
       ],
       "implementation": [
-        "User/trusted-project quietStartup boolean suppresses PiSharp terminal startup banner; --verbose overrides it. Pinned Pi also gates additional notices on these values; those notices and full TUI remain absent."
+        "User/trusted-project quietStartup boolean suppresses PiSharp terminal startup banner; --verbose overrides it. /settings can edit this value for the next launch. Pinned Pi also gates additional notices on these values; those notices and full TUI remain absent."
       ],
       "evidence": [
-        "QuietStartupTests covers validation, trusted overlay and Linux PTY output with/without --verbose. No pinned Pi PTY differential or reload/settings UI evidence."
+        "QuietStartupTests covers validation, trusted overlay and Linux PTY output with/without --verbose; UserSettingsWriterTests covers value editing. No pinned Pi PTY differential."
       ],
       "dependencies": []
     },
@@ -2303,11 +2307,11 @@
         "Test malformed settings, trust boundaries, reload and startup behaviour"
       ],
       "implementation": [
-        "src/PiSharp.Cli/UserSettings.cs: validated user/trusted-project boolean overlay",
+        "src/PiSharp.Cli/UserSettings.cs: validated user/trusted-project boolean overlay; /settings edits it and rebuilds the active agent",
         "src/PiSharp.Runtime/Sessions/ObservedChatClient.cs: filter each provider request without changing canonical history"
       ],
       "evidence": [
-        "tests/PiSharp.Tests/UserSettingsTests.cs: precedence and malformed JSON",
+        "tests/PiSharp.Tests/UserSettingsTests.cs: precedence and malformed JSON; UserSettingsWriterTests and TerminalPtyTests.SettingsPickerEditsUserScopeThroughLinuxPty cover UI editing and persistence",
         "tests/PiSharp.Tests/MultimodalRuntimeTests.cs: two turns, restored history; tool-result and reload evidence outstanding"
       ],
       "dependencies": []

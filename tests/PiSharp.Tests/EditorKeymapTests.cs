@@ -178,6 +178,31 @@ public sealed class EditorKeymapTests
     }
 
     [Fact]
+    public async Task SettingsPickerShortcutCanBeConfiguredAndPreservesTheEditorDraft()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "pisharp-keymap-settings-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        try
+        {
+            File.WriteAllText(Path.Combine(directory, "keybindings.json"), "{ \"app.settings.open\": \"ctrl+shift+s\" }");
+            var editor = new TerminalEditor(agentDirectory: directory);
+            editor.Prefill("keep this draft");
+            string? dispatched = null;
+
+            Assert.True(await editor.HandleApplicationShortcutAsync(Key(ConsoleKey.S, ConsoleModifiers.Control | ConsoleModifiers.Shift), action =>
+            {
+                dispatched = action;
+                return Task.CompletedTask;
+            }));
+
+            Assert.Equal("app.settings.open", dispatched);
+            Assert.Equal("keep this draft", editor.Draft);
+            Assert.Contains("Open settings (app.settings.open)", editor.Hotkeys);
+        }
+        finally { Directory.Delete(directory, recursive: true); }
+    }
+
+    [Fact]
     public async Task SessionSelectorShortcutCanBeConfiguredAndPreservesTheEditorDraft()
     {
         var directory = Path.Combine(Path.GetTempPath(), "pisharp-keymap-session-" + Guid.NewGuid().ToString("N"));

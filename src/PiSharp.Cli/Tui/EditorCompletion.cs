@@ -4,7 +4,7 @@ namespace PiSharp.Cli.Tui;
 public sealed class EditorCompletion(string workingDirectory, Func<IReadOnlyList<string>>? dynamicCommands = null)
 {
     private static readonly string[] s_commands =
-    ["/tree", "/branch", "/fork", "/clone", "/new", "/sessions", "/resume", "/delete-session", "/name", "/model", "/models", "/compact", "/export", "/session", "/trust", "/reload", "/hotkeys", "/quit"];
+    ["/tree", "/branch", "/fork", "/clone", "/new", "/sessions", "/resume", "/delete-session", "/name", "/model", "/models", "/settings", "/compact", "/export", "/session", "/trust", "/reload", "/hotkeys", "/quit"];
     private readonly string _cwd = Path.GetFullPath(workingDirectory);
 
     public IReadOnlyList<string> Complete(EditorBuffer buffer)
