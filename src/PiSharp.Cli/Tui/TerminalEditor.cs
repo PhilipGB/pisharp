@@ -88,6 +88,29 @@ public sealed class TerminalEditor
             RestorePending(clearQueue());
             return true;
         }
+        if (next.Key is { } screenKey && _screen is { IsActive: true } screen)
+        {
+            if (_keymap.Matches("tui.altScreen.pageUp", screenKey))
+            {
+                screen.ScrollPage(up: true);
+                return true;
+            }
+            if (_keymap.Matches("tui.altScreen.pageDown", screenKey))
+            {
+                screen.ScrollPage(up: false);
+                return true;
+            }
+            if (_keymap.Matches("tui.altScreen.top", screenKey))
+            {
+                screen.ScrollToTop();
+                return true;
+            }
+            if (_keymap.Matches("tui.altScreen.bottom", screenKey))
+            {
+                screen.ScrollToBottom();
+                return true;
+            }
+        }
         if (next.Key is { } inputKey)
         {
             if (_keymap.Matches("tui.input.newLine", inputKey) ||

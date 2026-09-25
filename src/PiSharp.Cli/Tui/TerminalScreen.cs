@@ -8,6 +8,7 @@ public sealed class TerminalScreen : IDisposable
 {
     private const int MaxScreenTranscriptCharacters = 1_000_000;
     private const int MaxRestoredTranscriptCharacters = 4_000_000;
+    private const int MaxTranscriptScrollOffset = 60_000;
     private readonly object _gate = new();
     private readonly TextWriter _originalOut;
     private readonly TextWriter _originalError;
@@ -22,6 +23,7 @@ public sealed class TerminalScreen : IDisposable
     private string _editorText = "";
     private string _liveAssistant = "";
     private int _editorCursor;
+    private int _scrollOffset;
     private string _footer = "Enter steers · follow-up queues · Escape aborts";
     private int _capturedCharacters;
     private bool _captureTruncated;
@@ -130,6 +132,41 @@ public sealed class TerminalScreen : IDisposable
         }
     }
 
+    internal void ScrollPage(bool up)
+    {
+        lock (_gate)
+        {
+            if (!_active) return;
+            var pageRows = Math.Max(1, _lastRows * 2 / 3 - 2);
+            SetScrollOffsetLocked(_scrollOffset + (up ? pageRows : -pageRows));
+        }
+    }
+
+    internal void ScrollToTop()
+    {
+        lock (_gate)
+        {
+            if (!_active) return;
+            SetScrollOffsetLocked(MaxTranscriptScrollOffset);
+        }
+    }
+
+    internal void ScrollToBottom()
+    {
+        lock (_gate)
+        {
+            if (!_active || _scrollOffset == 0) return;
+            _scrollOffset = 0;
+            RenderLocked();
+        }
+    }
+
+    private void SetScrollOffsetLocked(int value)
+    {
+        _scrollOffset = Math.Clamp(value, 0, MaxTranscriptScrollOffset);
+        RenderLocked();
+    }
+
     internal void WriteControl(string value)
     {
         lock (_gate)
@@ -221,7 +258,8 @@ public sealed class TerminalScreen : IDisposable
         var footerHeight = height > 2 ? 1 : 0;
         var transcriptHeight = Math.Max(1, height - editorHeight - footerHeight);
         var editor = EditorViewport.Layout(_editorText, _editorCursor, columns, editorHeight);
-        var transcriptRows = WrapTail(_transcript.ToString() + _liveAssistant, Math.Max(1, columns - 1), transcriptHeight);
+        var transcriptRows = WrapWindow(_transcript.ToString() + _liveAssistant, Math.Max(1, columns - 1),
+            transcriptHeight, _scrollOffset, out _scrollOffset);
         var screenRows = Enumerable.Repeat("", height).ToArray();
         var transcriptStart = transcriptHeight - transcriptRows.Count;
         for (var index = 0; index < transcriptRows.Count; index++)
@@ -229,7 +267,11 @@ public sealed class TerminalScreen : IDisposable
         var editorStart = transcriptHeight + editorHeight - editor.Rows.Count;
         for (var index = 0; index < editor.Rows.Count; index++)
             screenRows[editorStart + index] = editor.Rows[index];
-        if (footerHeight > 0) screenRows[^1] = Clip(_footer, columns - 1);
+        if (footerHeight > 0)
+        {
+            var footer = _scrollOffset == 0 ? _footer : $"↑ {_scrollOffset} rows · live output follows at bottom · {_footer}";
+            screenRows[^1] = Clip(footer, columns - 1);
+        }
 
         _originalOut.Write("\u001b[?2026h\u001b[2J\u001b[H");
         for (var index = 0; index < screenRows.Length; index++)
@@ -244,13 +286,16 @@ public sealed class TerminalScreen : IDisposable
         _originalOut.Flush();
     }
 
-    private static List<string> WrapTail(string text, int width, int maxRows)
+    private static List<string> WrapWindow(string text, int width, int maxRows, int scrollOffset, out int actualScrollOffset)
     {
-        var rows = new Queue<string>(maxRows);
+        var capacity = Math.Max(1, maxRows + Math.Clamp(scrollOffset, 0, MaxTranscriptScrollOffset));
+        var rows = new Queue<string>(capacity);
+        var totalRows = 0;
         void Add(string value)
         {
-            if (rows.Count == maxRows) rows.Dequeue();
+            if (rows.Count == capacity) rows.Dequeue();
             rows.Enqueue(value);
+            totalRows++;
         }
 
         foreach (var line in text.Split('\n'))
@@ -284,7 +329,10 @@ public sealed class TerminalScreen : IDisposable
             }
             Add(current + "\u001b[0m");
         }
-        return rows.ToList();
+        actualScrollOffset = Math.Min(scrollOffset, Math.Max(0, totalRows - maxRows));
+        var end = rows.Count - actualScrollOffset;
+        var start = Math.Max(0, end - maxRows);
+        return rows.Skip(start).Take(end - start).ToList();
     }
 
     private static bool TryReadSgr(string text, int offset, out int length)

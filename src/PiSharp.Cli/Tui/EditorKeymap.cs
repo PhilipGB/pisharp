@@ -31,7 +31,11 @@ public sealed class EditorKeymap
         ["app.clear"] = new("Clear editor", ["ctrl+c"]),
         ["app.exit"] = new("Exit when editor is empty", ["ctrl+d"]),
         ["app.message.followUp"] = new("Queue a follow-up message", IsWindowsBindings() ? ["ctrl+q"] : ["alt+enter"]),
-        ["app.message.dequeue"] = new("Restore queued messages", IsWindowsBindings() ? ["alt+q"] : ["alt+up"])
+        ["app.message.dequeue"] = new("Restore queued messages", IsWindowsBindings() ? ["alt+q"] : ["alt+up"]),
+        ["tui.altScreen.pageUp"] = new("Scroll transcript up one page", ["pageup"]),
+        ["tui.altScreen.pageDown"] = new("Scroll transcript down one page", ["pagedown"]),
+        ["tui.altScreen.top"] = new("Scroll to the start of the transcript", ["home"]),
+        ["tui.altScreen.bottom"] = new("Return to the live transcript", ["end"])
     };
 
     private readonly string? _path;
