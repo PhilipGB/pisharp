@@ -26,20 +26,7 @@ public sealed class ProviderChatClientFactoryTests
     [Fact]
     public async Task ExplicitResponsesProtocolStreamsThroughResponsesEndpoint()
     {
-        using var listener = new HttpListener();
-        var port = 0;
-        // Start retries avoid a race between releasing the ephemeral port and binding HttpListener.
-        for (var attempt = 0; attempt < 10; attempt++)
-        {
-            using var reservation = new TcpListener(IPAddress.Loopback, 0);
-            reservation.Start();
-            port = ((IPEndPoint)reservation.LocalEndpoint).Port;
-            reservation.Stop();
-            listener.Prefixes.Clear();
-            listener.Prefixes.Add($"http://127.0.0.1:{port}/");
-            try { listener.Start(); break; }
-            catch (HttpListenerException) when (attempt < 9) { }
-        }
+        using var listener = StartLoopbackListener(out var port);
         var server = Task.Run(async () =>
         {
             var request = await listener.GetContextAsync();
@@ -68,19 +55,7 @@ public sealed class ProviderChatClientFactoryTests
     [Fact]
     public async Task ResponsesToolCallContinuesUsingCanonicalToolResult()
     {
-        using var listener = new HttpListener();
-        var port = 0;
-        for (var attempt = 0; attempt < 10; attempt++)
-        {
-            using var reservation = new TcpListener(IPAddress.Loopback, 0);
-            reservation.Start();
-            port = ((IPEndPoint)reservation.LocalEndpoint).Port;
-            reservation.Stop();
-            listener.Prefixes.Clear();
-            listener.Prefixes.Add($"http://127.0.0.1:{port}/");
-            try { listener.Start(); break; }
-            catch (HttpListenerException) when (attempt < 9) { }
-        }
+        using var listener = StartLoopbackListener(out var port);
         var requests = new List<string>();
         var server = Task.Run(async () =>
         {
@@ -122,19 +97,7 @@ public sealed class ProviderChatClientFactoryTests
     [Fact]
     public async Task ResponsesTransportSendsInlineImageAsImageContentNotText()
     {
-        using var listener = new HttpListener();
-        var port = 0;
-        for (var attempt = 0; attempt < 10; attempt++)
-        {
-            using var reservation = new TcpListener(IPAddress.Loopback, 0);
-            reservation.Start();
-            port = ((IPEndPoint)reservation.LocalEndpoint).Port;
-            reservation.Stop();
-            listener.Prefixes.Clear();
-            listener.Prefixes.Add($"http://127.0.0.1:{port}/");
-            try { listener.Start(); break; }
-            catch (HttpListenerException) when (attempt < 9) { }
-        }
+        using var listener = StartLoopbackListener(out var port);
         var png = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/bX8AAAAASUVORK5CYII=");
         var server = Task.Run(async () =>
         {
@@ -168,19 +131,7 @@ public sealed class ProviderChatClientFactoryTests
     [Fact]
     public async Task NonStreamingResponsesDoNotEnableProviderOwnedHistory()
     {
-        using var listener = new HttpListener();
-        var port = 0;
-        for (var attempt = 0; attempt < 10; attempt++)
-        {
-            using var reservation = new TcpListener(IPAddress.Loopback, 0);
-            reservation.Start();
-            port = ((IPEndPoint)reservation.LocalEndpoint).Port;
-            reservation.Stop();
-            listener.Prefixes.Clear();
-            listener.Prefixes.Add($"http://127.0.0.1:{port}/");
-            try { listener.Start(); break; }
-            catch (HttpListenerException) when (attempt < 9) { }
-        }
+        using var listener = StartLoopbackListener(out var port);
         var server = Task.Run(async () =>
         {
             var request = await listener.GetContextAsync();
@@ -206,13 +157,7 @@ public sealed class ProviderChatClientFactoryTests
     [Fact]
     public async Task AnthropicMessagesUsesNativeHeadersAndBody()
     {
-        using var listener = new HttpListener();
-        using var reservation = new TcpListener(IPAddress.Loopback, 0);
-        reservation.Start();
-        var port = ((IPEndPoint)reservation.LocalEndpoint).Port;
-        reservation.Stop();
-        listener.Prefixes.Add($"http://127.0.0.1:{port}/");
-        listener.Start();
+        using var listener = StartLoopbackListener(out var port);
         var server = Task.Run(async () =>
         {
             var request = await listener.GetContextAsync();
@@ -247,13 +192,7 @@ public sealed class ProviderChatClientFactoryTests
     [Fact]
     public async Task AnthropicMessagesStreamsTextAndUsage()
     {
-        using var listener = new HttpListener();
-        using var reservation = new TcpListener(IPAddress.Loopback, 0);
-        reservation.Start();
-        var port = ((IPEndPoint)reservation.LocalEndpoint).Port;
-        reservation.Stop();
-        listener.Prefixes.Add($"http://127.0.0.1:{port}/");
-        listener.Start();
+        using var listener = StartLoopbackListener(out var port);
         var server = Task.Run(async () =>
         {
             var request = await listener.GetContextAsync();
@@ -299,13 +238,7 @@ public sealed class ProviderChatClientFactoryTests
     [Fact]
     public async Task AnthropicToolUseContinuesWithToolResultOnNextMessagesRequest()
     {
-        using var listener = new HttpListener();
-        using var reservation = new TcpListener(IPAddress.Loopback, 0);
-        reservation.Start();
-        var port = ((IPEndPoint)reservation.LocalEndpoint).Port;
-        reservation.Stop();
-        listener.Prefixes.Add($"http://127.0.0.1:{port}/");
-        listener.Start();
+        using var listener = StartLoopbackListener(out var port);
         var bodies = new List<string>();
         var server = Task.Run(async () =>
         {
@@ -352,13 +285,7 @@ public sealed class ProviderChatClientFactoryTests
     [Fact]
     public async Task AnthropicMessagesSendsInlinePngAsNativeImageBlock()
     {
-        using var listener = new HttpListener();
-        using var reservation = new TcpListener(IPAddress.Loopback, 0);
-        reservation.Start();
-        var port = ((IPEndPoint)reservation.LocalEndpoint).Port;
-        reservation.Stop();
-        listener.Prefixes.Add($"http://127.0.0.1:{port}/");
-        listener.Start();
+        using var listener = StartLoopbackListener(out var port);
         var server = Task.Run(async () =>
         {
             var request = await listener.GetContextAsync();
@@ -396,13 +323,7 @@ public sealed class ProviderChatClientFactoryTests
     [InlineData("claude-haiku-4-5", "enabled")]
     public async Task AnthropicReasoningUsesPinnedModelThinkingMode(string modelId, string expectedType)
     {
-        using var listener = new HttpListener();
-        using var reservation = new TcpListener(IPAddress.Loopback, 0);
-        reservation.Start();
-        var port = ((IPEndPoint)reservation.LocalEndpoint).Port;
-        reservation.Stop();
-        listener.Prefixes.Add($"http://127.0.0.1:{port}/");
-        listener.Start();
+        using var listener = StartLoopbackListener(out var port);
         string? thinkingType = null;
         string? effort = null;
         long? budgetTokens = null;
@@ -469,6 +390,33 @@ public sealed class ProviderChatClientFactoryTests
         }
         finally { Directory.Delete(root, true); }
     }
+    private static HttpListener StartLoopbackListener(out int port)
+    {
+        for (var attempt = 0; attempt < 10; attempt++)
+        {
+            using var reservation = new TcpListener(IPAddress.Loopback, 0);
+            reservation.Start();
+            var candidatePort = ((IPEndPoint)reservation.LocalEndpoint).Port;
+            reservation.Stop();
+
+            var listener = new HttpListener();
+            listener.Prefixes.Add($"http://127.0.0.1:{candidatePort}/");
+            try
+            {
+                listener.Start();
+                port = candidatePort;
+                return listener;
+            }
+            catch (HttpListenerException)
+            {
+                listener.Close();
+                if (attempt == 9) throw;
+            }
+        }
+
+        throw new InvalidOperationException("Could not reserve a loopback port for the provider fixture.");
+    }
+
     private static ModelSelection Selection(string provider, string url, string? api = null)
     {
         var model = new ModelDescriptor("fixture-model", provider, null, "fixture", Provider: provider, Api: api);
