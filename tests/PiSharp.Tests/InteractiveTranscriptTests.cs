@@ -174,14 +174,13 @@ public sealed class InteractiveTranscriptTests
         using var error = new StringWriter();
         var screen = new TerminalScreen(output, error, () => 12, () => 20);
         var transcript = new InteractiveTranscript(screen.Output, screen.Error, screen: screen);
-        const string markdown = "| A | B |\n| --- | --- |\n| anunbrokencellthatisfartoolong | x |";
+        const string markdown = "| A | B | C | D |\n| --- | --- | --- | --- |\n| 界 | 界 | 界 | 界 |";
         transcript.Render(new("model_text_delta", Text: markdown));
         transcript.FinishTurn();
         screen.Dispose();
 
         var visible = StripSgr(output.ToString());
-        Assert.True(visible.Contains("| anunbrokencellthatisfartoolong | x |", StringComparison.Ordinal),
-            $"Expected the source Markdown after fallback, got: {visible.Replace("\r", "<CR>", StringComparison.Ordinal).Replace("\n", "<LF>", StringComparison.Ordinal)}");
+        Assert.Contains(markdown, visible);
         Assert.DoesNotContain("┌─", visible);
     }
 

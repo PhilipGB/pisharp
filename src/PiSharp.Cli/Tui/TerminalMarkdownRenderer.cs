@@ -264,22 +264,8 @@ internal static class TerminalMarkdownRenderer
     private static int MaxTableElementWidth(string text)
     {
         var maximum = 0;
-        var current = 0;
         var elements = StringInfo.GetTextElementEnumerator(text);
-        while (elements.MoveNext())
-        {
-            var element = (string)elements.Current;
-            if (element.Length > 0 && char.IsWhiteSpace(element, 0))
-            {
-                maximum = Math.Max(maximum, current);
-                current = 0;
-            }
-            else
-            {
-                current += TerminalCells.Width(element);
-            }
-        }
-        maximum = Math.Max(maximum, current);
+        while (elements.MoveNext()) maximum = Math.Max(maximum, TerminalCells.Width((string)elements.Current));
         return maximum;
     }
 
