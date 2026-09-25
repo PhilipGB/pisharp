@@ -8,7 +8,7 @@
 
 - Latest exact-head Linux CI: `ba25c8adbc861e0dece4372bf4c7f97424014fe1`, run [36136775710](https://github.com/PhilipGB/pisharp/actions/runs/36136775710), format verification, warnings-as-errors build and all 424 tests passed.
 - No-argument `/fork` opens the shared searchable overlay, preselects the newest active-branch user message, seeds the selected prompt for editing, and keeps `/fork <id>` plus configurable `app.session.fork`; focused PTY/keymap tests pass 3/3. Exact-head CI is green on `ba25c8a`.
-- Pi baseline: `earendil-works/pi@49681e1b71c9c32cdfbf45c21f8e3cb3a8c8629d`, fetched 2026-09-25.
+- Pi baseline refreshed to `earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035` on 2026-09-25. Since `5fd446ca1843682e8da3fec4ceb71c42f56fbace`: build moved to TypeScript 7/Node type stripping; Pi fixed RPC listener snapshot dispatch, full-file read `null` range display, per-ref temporary extension caches, and cursor visibility after overlays close on stop. The current SettingsSelector/SettingsList source and tests were inspected; its settings-list behavior is unchanged since the prior baseline.
 
 ## What still prevents parity
 

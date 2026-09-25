@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "plan_received": false,
-  "source_note": "Original plan was announced after a heading but not appended. Conservative provisional inventory from pinned upstream feature matrix and detailed inventory; never treat as complete until reconciled with the missing plan and audited upstream. Current Pi main was refreshed 2026-09-25 to 49681e1b71c9c32cdfbf45c21f8e3cb3a8c8629d. The reviewed TUI delta uses pi-tui 0.87.1 and Marked 18.0.11; Pi wraps ANSI-aware grapheme cells and breaks overlong tokens. Further provider, session, protocol, image, theme, autocomplete and extension deltas remain unaudited. Pi Packages remain excluded unless needed for a core capability.",
-  "baseline": "earendil-works/pi@49681e1b71c9c32cdfbf45c21f8e3cb3a8c8629d",
+  "source_note": "Original plan was announced after a heading but not appended. Conservative provisional inventory from pinned upstream feature matrix and detailed inventory; never treat as complete until reconciled with the missing plan and audited upstream. Current Pi main refreshed 2026-09-25 to b3487650f6378f1b0d1643dd254445ceb4a98035; prior parity baseline was 49681e1b71c9c32cdfbf45c21f8e3cb3a8c8629d, and the earlier current-main review was 5fd446ca1843682e8da3fec4ceb71c42f56fbace. Current deltas include TypeScript 7/Node type stripping, an overlay-close cursor-restoration fix, RPC listener snapshot dispatch, full-file read null-range rendering, and per-ref temporary extension cache paths; these are classified in docs/continuation.md. Current Pi SettingsSelectorComponent, SettingsList, and their tests were inspected. The reviewed TUI uses pi-tui 0.87.1 and Marked 18.0.11; Pi wraps ANSI-aware grapheme cells and breaks overlong tokens. Further provider, session, protocol, image, theme, autocomplete and extension deltas remain unaudited. Pi Packages remain excluded unless needed for a core capability.",
+  "baseline": "earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035",
   "required_ids": [
     "feature-agent-multi-turn-and-streaming",
     "feature-agent-steering-follow-up-concurrent-tools",

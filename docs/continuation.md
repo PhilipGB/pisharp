@@ -4,7 +4,7 @@ TODO.md is the concise durable handoff. The feature matrix, detailed inventory a
 
 ## Current reference
 
-The pinned reference is `earendil-works/pi@49681e1b71c9c32cdfbf45c21f8e3cb3a8c8629d`, fetched 2026-09-25. Pi's TUI is 0.87.1 and renders Marked 18.0.11 tokens. Refresh and reconcile this pin before terminal-image/theme work, materially changed capability families, and the final audit.
+The pinned reference is `earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035`, fetched 2026-09-25. Since the prior `5fd446ca1843682e8da3fec4ceb71c42f56fbace` review, Pi changed build tooling and fixed listener snapshot dispatch, full-file read null-range display, temporary extension cache paths per pinned ref, and terminal cursor restoration after overlay close on stop. SettingsSelectorComponent and SettingsList plus their current tests were inspected; they are unchanged since the prior parity baseline. The TUI is 0.87.1 and renders Marked 18.0.11 tokens. Refresh before terminal-image/theme work, materially changed capability families, and the final audit.
 
 ## Current implementation state
 
