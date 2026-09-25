@@ -226,6 +226,7 @@ public sealed class TerminalPtyTests
             var saved = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var editorPrompt = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var externalEditorSaved = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var themeSaved = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var closed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var stdout = Task.Run(async () =>
             {
@@ -241,6 +242,7 @@ public sealed class TerminalPtyTests
                         if (current.Contains("Saved user setting hideThinkingBlock = true.", StringComparison.Ordinal)) saved.TrySetResult();
                         if (current.Contains("External editor command [", StringComparison.Ordinal)) editorPrompt.TrySetResult();
                         if (current.Contains("Saved user setting externalEditor = code --wait.", StringComparison.Ordinal)) externalEditorSaved.TrySetResult();
+                        if (current.Contains("Saved user setting theme = light.", StringComparison.Ordinal)) themeSaved.TrySetResult();
                         if (current.Contains("Settings closed.", StringComparison.Ordinal)) closed.TrySetResult();
                     }
                 }
@@ -256,6 +258,9 @@ public sealed class TerminalPtyTests
             await process.StandardInput.WriteAsync("code --wait\n");
             await process.StandardInput.FlushAsync();
             await externalEditorSaved.Task.WaitAsync(TimeSpan.FromSeconds(12));
+            await process.StandardInput.WriteAsync("Theme\nlight\n");
+            await process.StandardInput.FlushAsync();
+            await themeSaved.Task.WaitAsync(TimeSpan.FromSeconds(12));
             await process.StandardInput.WriteAsync("\u001b");
             await process.StandardInput.FlushAsync();
             await closed.Task.WaitAsync(TimeSpan.FromSeconds(12));
@@ -274,6 +279,7 @@ public sealed class TerminalPtyTests
             Assert.DoesNotContain("Exception:", await stderr);
             var settings = await PiSharp.Cli.UserSettings.LoadAsync(agent, _ => null);
             Assert.True(settings.HideThinkingBlock);
+            Assert.Equal("light", settings.Theme);
             Assert.Equal("code --wait", settings.ExternalEditor);
             Assert.Equal(2048, settings.Compaction?.ReserveTokens);
         }

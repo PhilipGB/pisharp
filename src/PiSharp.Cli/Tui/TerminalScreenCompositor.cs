@@ -20,7 +20,7 @@ internal sealed class TerminalScreenCompositor
     public Frame Compose(string editorText, int editorCursor, int? editorSelectionStart, int? editorSelectionEnd,
         string transcriptText, string footer,
         IReadOnlyList<string>? overlay, int scrollOffset, int columns, int height,
-        TranscriptSearchController search, TerminalMouseRouter mouse)
+        TranscriptSearchController search, TerminalMouseRouter mouse, TerminalTheme? theme = null)
     {
         var editorHeight = Math.Clamp(height / 3, 1, Math.Max(1, height - 2));
         var footerHeight = height > 2 ? 1 : 0;
@@ -55,9 +55,9 @@ internal sealed class TerminalScreenCompositor
         if (footerHeight > 0)
         {
             var footerText = scrollOffset == 0 ? footer : $"↑ {scrollOffset} rows · live output follows at bottom · {footer}";
-            rows[^1] = TerminalTranscriptViewport.Clip(footerText, columns - 1);
+            rows[^1] = (theme ?? TerminalTheme.Default).Style("muted", TerminalTranscriptViewport.Clip(footerText, columns - 1));
         }
-        if (overlay is not null) TerminalOverlayLayout.Apply(rows, overlay, columns);
+        if (overlay is not null) TerminalOverlayLayout.Apply(rows, overlay, columns, theme ?? TerminalTheme.Default);
 
         return new(rows, editorStart + editor.CursorRow, editor.CursorColumn, scrollOffset, columns, height);
     }

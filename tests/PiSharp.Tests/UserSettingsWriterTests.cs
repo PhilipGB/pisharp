@@ -72,4 +72,28 @@ public sealed class UserSettingsWriterTests
         }
         finally { Directory.Delete(root, recursive: true); }
     }
+
+    [Fact]
+    public async Task ThemeSettingSupportsUserAndProjectOverrideAndValidatesThemePairs()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-theme-setting-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            var userPath = Path.Combine(root, "agent", "settings.json");
+            var projectPath = Path.Combine(root, "workspace", ".pi", "settings.json");
+            Directory.CreateDirectory(Path.GetDirectoryName(projectPath)!);
+            await UserSettingsWriter.SetAsync(userPath, "theme", "light/dark", userScope: true);
+            await UserSettingsWriter.SetAsync(projectPath, "theme", "ocean", userScope: false);
+
+            var user = await UserSettings.LoadAsync(root, _ => userPath);
+            var project = await UserSettings.LoadProjectAsync(Path.Combine(root, "workspace"));
+            Assert.Equal("light/dark", user.Theme);
+            Assert.Equal("ocean", project.Theme);
+            Assert.Equal("ocean", user.Overlay(project).Theme);
+            await Assert.ThrowsAsync<ArgumentException>(() =>
+                UserSettingsWriter.SetAsync(userPath, "theme", "light/dark/extra", userScope: true));
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
 }

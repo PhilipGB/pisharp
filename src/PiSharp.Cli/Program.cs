@@ -240,7 +240,23 @@ TerminalEditor? editor = !print && cli.Mode is not ("json" or "rpc") ? new Termi
     resources.Skills.Select(item => "/skill:" + item.Name)
         .Concat(resources.Prompts.Select(item => "/" + item.Name))
         .Concat(extensionLease.Current.Registration.Commands.Keys.Select(name => "/" + name)).ToArray(), agentDirectory) : null;
-using var terminalScreen = editor is null ? null : new TerminalScreen(Console.Out, Console.Error);
+var terminalThemeCatalog = new TerminalThemeCatalog(agentDirectory, trusted ? Environment.CurrentDirectory : null);
+TerminalTheme ResolveConfiguredTheme(string? themeSetting, TerminalTheme.Rgb? terminalForeground = null,
+    TerminalTheme.Rgb? terminalBackground = null)
+{
+    try { return terminalThemeCatalog.Resolve(themeSetting, terminalForeground, terminalBackground); }
+    catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidDataException or System.Text.Json.JsonException or ArgumentException or FormatException)
+    {
+        Console.Error.WriteLine($"Could not load theme '{themeSetting}': {error.Message}. Using terminal appearance defaults.");
+        return terminalThemeCatalog.Resolve(null, terminalForeground, terminalBackground);
+    }
+}
+var initialTerminalTheme = ResolveConfiguredTheme(userSettings.Theme);
+using var terminalScreen = editor is null ? null : new TerminalScreen(Console.Out, Console.Error,
+    getColumns: null, getRows: null, imageRenderer: new TerminalImageRenderer(), theme: initialTerminalTheme,
+    queryTerminalColors: !Console.IsInputRedirected && !Console.IsOutputRedirected);
+terminalScreen?.SetThemeResolver((foreground, background) =>
+    ResolveConfiguredTheme(userSettings.Theme, foreground, background));
 terminalScreen?.Activate();
 editor?.AttachScreen(terminalScreen);
 var terminalClipboard = new TerminalClipboard(writeTerminalControl: value =>
@@ -370,7 +386,7 @@ async Task ReplaceModelRuntime(ModelSelection nextSelection, string nextThinking
 var terminalModelPicker = editor is null ? null : new TerminalModelPicker(modelRuntime, editor);
 var terminalSessionPicker = editor is null ? null : new TerminalSessionPicker(store, editor);
 var terminalForkPicker = editor is null ? null : new TerminalForkPicker(editor);
-var terminalSettingsPicker = editor is null ? null : new TerminalSettingsPicker(editor);
+var terminalSettingsPicker = editor is null ? null : new TerminalSettingsPicker(editor, () => terminalThemeCatalog.GetAvailableNames());
 async Task SelectModelAsync()
 {
     if (terminalModelPicker is null) return;
@@ -463,6 +479,11 @@ async Task<(UserSettings User, UserSettings? Project)> SaveSettingAsync(bool pro
     userSettings = baseUserSettings.Overlay(projectSettings ?? new UserSettings());
     if (setting is "images.blockImages" or "compaction.enabled")
         await ReplaceModelRuntime(selection, thinking, recordModelChange: false);
+    if (setting == "theme")
+    {
+        terminalThemeCatalog = new TerminalThemeCatalog(agentDirectory, trusted ? Environment.CurrentDirectory : null);
+        terminalScreen?.SetTheme(ResolveConfiguredTheme(userSettings.Theme));
+    }
     Console.WriteLine($"Saved {(projectScope ? "project" : "user")} setting {setting} = {value ?? "(default)"}.");
     return (baseUserSettings, projectSettings);
 }
@@ -611,6 +632,8 @@ async Task ReloadResources()
         baseUserSettings = nextBaseUserSettings;
         projectSettings = nextProjectSettings;
         userSettings = nextUserSettings;
+        terminalThemeCatalog = new TerminalThemeCatalog(agentDirectory, trusted ? Environment.CurrentDirectory : null);
+        terminalScreen?.SetTheme(ResolveConfiguredTheme(nextUserSettings.Theme));
         instructions = nextContext;
         resources = nextResources;
         prompts = nextPrompts;
@@ -852,7 +875,7 @@ else
                     case "/reload":
                         await ReloadResources();
                         editor.ReloadKeybindings();
-                        Console.WriteLine("Project resources reloaded.");
+                        Console.WriteLine("Project resources and themes reloaded.");
                         break;
                     case "/hotkeys":
                         Console.WriteLine(editor.Hotkeys);

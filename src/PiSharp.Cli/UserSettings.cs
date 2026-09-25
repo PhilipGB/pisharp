@@ -66,7 +66,7 @@ public sealed record CompactionSettings(bool? Enabled = null, int? ReserveTokens
 /// <summary>Validated non-secret settings subset for the user and trusted project scopes.</summary>
 public sealed record UserSettings(string? DefaultProvider = null, string? DefaultModel = null,
     string? DefaultThinkingLevel = null, IReadOnlyList<string>? DefaultTools = null, string? SessionDirectory = null,
-    CompactionSettings? Compaction = null, bool? BlockImages = null, string? DefaultProjectTrust = null, bool? HideThinkingBlock = null, bool? QuietStartup = null, IReadOnlyList<string>? EnabledModels = null, string? ShellPath = null, string? ExternalEditor = null)
+    CompactionSettings? Compaction = null, bool? BlockImages = null, string? DefaultProjectTrust = null, bool? HideThinkingBlock = null, bool? QuietStartup = null, IReadOnlyList<string>? EnabledModels = null, string? ShellPath = null, string? ExternalEditor = null, string? Theme = null)
 {
     public static async Task<UserSettings> LoadAsync(string agentDirectory, Func<string, string?> environment,
         CancellationToken cancellationToken = default)
@@ -80,7 +80,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         if (document.RootElement.ValueKind != JsonValueKind.Object)
             throw new InvalidDataException("settings.json must contain a JSON object.");
         string? provider = null, model = null, thinking = null, sessionDirectory = null, defaultTrust = null, shellPath = null,
-            externalEditor = null;
+            externalEditor = null, theme = null;
         IReadOnlyList<string>? tools = null, enabledModels = null;
         CompactionSettings? compaction = null;
         bool? blockImages = null, hideThinkingBlock = null, quietStartup = null;
@@ -168,6 +168,11 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
                 case "sessionDir": sessionDirectory = Validate(value, property.Name, 1024); break;
                 case "shellPath": shellPath = Validate(value, property.Name, 1024); break;
                 case "externalEditor": externalEditor = Validate(value, property.Name, 4096); break;
+                case "theme":
+                    theme = Validate(value, property.Name, 128);
+                    if (theme is null || !IsValidThemeSetting(theme))
+                        throw new InvalidDataException("settings.json theme must be a theme name or a light/dark theme pair.");
+                    break;
                 case "defaultThinkingLevel":
                     thinking = Validate(value, property.Name, 16)?.ToLowerInvariant();
                     if (!ThinkingLevels.IsValid(thinking))
@@ -177,7 +182,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
             }
         }
         return new(provider, model, thinking, tools, sessionDirectory, compaction, blockImages, defaultTrust, hideThinkingBlock,
-            quietStartup, enabledModels, shellPath, externalEditor);
+            quietStartup, enabledModels, shellPath, externalEditor, theme);
     }
 
     public static string GetSettingsPath(string agentDirectory, Func<string, string?> environment) =>
@@ -201,7 +206,17 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         project.QuietStartup ?? QuietStartup,
         project.EnabledModels ?? EnabledModels,
         project.ShellPath ?? ShellPath,
-        project.ExternalEditor ?? ExternalEditor);
+        project.ExternalEditor ?? ExternalEditor,
+        project.Theme ?? Theme);
+
+    private static bool IsValidThemeSetting(string value)
+    {
+        if (value.Length is 0 or > 128 || value.Any(char.IsControl)) return false;
+        var separator = value.IndexOf('/');
+        if (separator < 0) return true;
+        if (value.IndexOf('/', separator + 1) >= 0) return false;
+        return !string.IsNullOrWhiteSpace(value[..separator]) && !string.IsNullOrWhiteSpace(value[(separator + 1)..]);
+    }
 
     private static IReadOnlyDictionary<string, CompactionSettings>? MergeOverrides(
         IReadOnlyDictionary<string, CompactionSettings>? global, IReadOnlyDictionary<string, CompactionSettings>? project)

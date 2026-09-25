@@ -51,10 +51,23 @@ internal static class UserSettingsWriter
                 value is null or "true" or "false",
             "defaultProjectTrust" when userScope => value is null or "ask" or "always" or "never",
             "defaultThinkingLevel" => value is null || ThinkingLevels.IsValid(value),
+            "theme" => value is null || IsValidThemeSetting(value),
             "externalEditor" => value is null || value.Length is > 0 and <= 4096 && value == value.Trim() && !value.Any(char.IsControl),
             _ => false
         };
         if (!valid) throw new ArgumentException($"'{setting}' is not an editable setting or has an invalid value.", nameof(value));
+    }
+
+    private static bool IsValidThemeSetting(string value)
+    {
+        if (value.Length > 128 || value.Any(char.IsControl)) return false;
+        var separator = value.IndexOf('/');
+        return separator switch
+        {
+            < 0 => !string.IsNullOrWhiteSpace(value),
+            _ when value.IndexOf('/', separator + 1) >= 0 => false,
+            _ => !string.IsNullOrWhiteSpace(value[..separator]) && !string.IsNullOrWhiteSpace(value[(separator + 1)..])
+        };
     }
 
     private static JsonNode? ParseValue(string? value) => value switch

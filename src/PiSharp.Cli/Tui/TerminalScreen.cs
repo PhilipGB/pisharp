@@ -15,6 +15,10 @@ public sealed class TerminalScreen : IDisposable
     private readonly TerminalTranscriptBuffer _transcript = new();
     private readonly TerminalImageRenderer _images;
     private readonly TerminalScreenCompositor _compositor;
+    private TerminalTheme _theme;
+    private TerminalTheme.Rgb? _terminalForeground;
+    private TerminalTheme.Rgb? _terminalBackground;
+    private Func<TerminalTheme.Rgb?, TerminalTheme.Rgb?, TerminalTheme>? _themeResolver;
     private readonly ScreenWriter _out;
     private readonly ScreenWriter _error;
     private readonly TerminalMouseRouter _mouse = new();
@@ -22,6 +26,7 @@ public sealed class TerminalScreen : IDisposable
     private TextWriter? _installedError;
     private string _editorText = "";
     private string _liveAssistant = "";
+    private string _liveAssistantSource = "";
     private readonly TranscriptSearchController _search = new();
     private int _editorCursor;
     private int? _editorSelectionStart;
@@ -36,19 +41,36 @@ public sealed class TerminalScreen : IDisposable
 
     public TerminalScreen(TextWriter originalOut, TextWriter originalError,
         Func<int>? getColumns = null, Func<int>? getRows = null)
-        : this(originalOut, originalError, getColumns, getRows, new TerminalImageRenderer())
+        : this(originalOut, originalError, getColumns, getRows, new TerminalImageRenderer(), TerminalTheme.Default)
     {
     }
 
     internal TerminalScreen(TextWriter originalOut, TextWriter originalError,
         Func<int>? getColumns, Func<int>? getRows, TerminalImageRenderer imageRenderer)
+        : this(originalOut, originalError, getColumns, getRows, imageRenderer, TerminalTheme.Default)
+    {
+    }
+
+    internal TerminalScreen(TextWriter originalOut, TextWriter originalError,
+        Func<int>? getColumns, Func<int>? getRows, TerminalImageRenderer imageRenderer, TerminalTheme theme)
+        : this(originalOut, originalError, getColumns, getRows, imageRenderer, theme, queryTerminalColors: false)
+    {
+    }
+
+    internal TerminalScreen(TextWriter originalOut, TextWriter originalError,
+        Func<int>? getColumns, Func<int>? getRows, TerminalImageRenderer imageRenderer, TerminalTheme theme,
+        bool queryTerminalColors)
     {
         ArgumentNullException.ThrowIfNull(originalOut);
         ArgumentNullException.ThrowIfNull(originalError);
         ArgumentNullException.ThrowIfNull(imageRenderer);
+        ArgumentNullException.ThrowIfNull(theme);
         _originalOut = originalOut;
         _originalError = originalError;
         _images = imageRenderer;
+        _theme = theme;
+        _terminalForeground = theme.TerminalForeground;
+        _terminalBackground = theme.TerminalBackground;
         _getColumns = getColumns ?? ReadColumns;
         _getRows = getRows ?? ReadRows;
         _compositor = new(_originalOut, _images);
@@ -56,7 +78,8 @@ public sealed class TerminalScreen : IDisposable
         _error = new(this, isError: true);
         try
         {
-            _originalOut.Write("\u001b[?1049h\u001b[?25l" + TerminalMouseMode.Enable);
+            _originalOut.Write("\u001b[?1049h\u001b[?25l" + TerminalMouseMode.Enable +
+                (queryTerminalColors ? "\u001b]10;?\u0007\u001b]11;?\u0007" : ""));
             lock (_gate) RenderLocked();
         }
         catch
@@ -140,11 +163,11 @@ public sealed class TerminalScreen : IDisposable
     internal void SetAssistantText(string markdown)
     {
         ArgumentNullException.ThrowIfNull(markdown);
-        var rendered = TerminalMarkdownRenderer.Render(TerminalSafeText.Normalize(markdown), Math.Max(1, Columns() - 1));
         lock (_gate)
         {
             if (!_active) return;
-            _liveAssistant = rendered;
+            _liveAssistantSource = TerminalSafeText.Normalize(markdown);
+            _liveAssistant = RenderMarkdown(_liveAssistantSource);
             RenderLocked();
         }
     }
@@ -152,12 +175,64 @@ public sealed class TerminalScreen : IDisposable
     internal void CommitAssistantText(string markdown)
     {
         ArgumentNullException.ThrowIfNull(markdown);
-        var rendered = TerminalMarkdownRenderer.Render(TerminalSafeText.Normalize(markdown), Math.Max(1, Columns() - 1));
         lock (_gate)
         {
             if (!_active) return;
+            var safe = TerminalSafeText.Normalize(markdown);
+            var rendered = RenderMarkdown(safe);
             _liveAssistant = "";
-            if (rendered.Length > 0) _transcript.Append(rendered, isError: false);
+            _liveAssistantSource = "";
+            _transcript.AppendMarkdown(safe, rendered, isError: false);
+            RenderLocked();
+        }
+    }
+
+    internal void SetTheme(TerminalTheme theme)
+    {
+        ArgumentNullException.ThrowIfNull(theme);
+        lock (_gate)
+        {
+            if (!_active) return;
+            _theme = theme.WithTerminalColors(_terminalForeground, _terminalBackground);
+            _transcript.ReRenderMarkdown(RenderMarkdown);
+            _liveAssistant = _liveAssistantSource.Length == 0 ? "" : RenderMarkdown(_liveAssistantSource);
+            RenderLocked();
+        }
+    }
+
+    internal void SetThemeResolver(Func<TerminalTheme.Rgb?, TerminalTheme.Rgb?, TerminalTheme> resolver)
+    {
+        ArgumentNullException.ThrowIfNull(resolver);
+        lock (_gate) _themeResolver = resolver;
+    }
+
+    internal void HandleTerminalColorResponse(TerminalColorResponse response)
+    {
+        lock (_gate)
+        {
+            if (!_active) return;
+            if (response.Slot == 10)
+            {
+                if (_terminalForeground == response.Color) return;
+                _terminalForeground = response.Color;
+            }
+            else
+            {
+                if (_terminalBackground == response.Color) return;
+                _terminalBackground = response.Color;
+            }
+
+            try
+            {
+                _theme = _themeResolver?.Invoke(_terminalForeground, _terminalBackground) ??
+                    _theme.WithTerminalColors(_terminalForeground, _terminalBackground);
+            }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidDataException or System.Text.Json.JsonException or ArgumentException or FormatException)
+            {
+                _theme = _theme.WithTerminalColors(_terminalForeground, _terminalBackground);
+            }
+            _transcript.ReRenderMarkdown(RenderMarkdown);
+            _liveAssistant = _liveAssistantSource.Length == 0 ? "" : RenderMarkdown(_liveAssistantSource);
             RenderLocked();
         }
     }
@@ -187,7 +262,15 @@ public sealed class TerminalScreen : IDisposable
     {
         lock (_gate)
         {
-            if (_active && (Columns() != _lastColumns || Rows() != _lastRows)) RenderLocked();
+            if (!_active) return;
+            var columns = Columns();
+            var rows = Rows();
+            if (_lastColumns != 0 && columns != _lastColumns)
+            {
+                _transcript.ReRenderMarkdown(RenderMarkdown);
+                _liveAssistant = _liveAssistantSource.Length == 0 ? "" : RenderMarkdown(_liveAssistantSource);
+            }
+            if (columns != _lastColumns || rows != _lastRows) RenderLocked();
         }
     }
 
@@ -401,6 +484,9 @@ public sealed class TerminalScreen : IDisposable
 
     private string GetTranscriptTextLocked() => _transcript.GetText();
 
+    private string RenderMarkdown(string markdown) =>
+        TerminalMarkdownRenderer.Render(markdown, Math.Max(1, Columns() - 1), _theme);
+
     private void RenderLocked()
     {
         if (!_active || _suspended) return;
@@ -417,7 +503,7 @@ public sealed class TerminalScreen : IDisposable
         var transcript = _images.LayoutTranscript(GetTranscriptTextLocked() + _liveAssistant,
             Math.Max(1, columns - 1), Math.Max(1, transcriptHeight - 2));
         var frame = _compositor.Compose(_editorText, _editorCursor, _editorSelectionStart, _editorSelectionEnd,
-            transcript, _footer, _overlay, _scrollOffset, columns, rows, _search, _mouse);
+            transcript, _footer, _overlay, _scrollOffset, columns, rows, _search, _mouse, _theme);
         _scrollOffset = frame.ScrollOffset;
         _lastColumns = frame.Columns;
         _lastRows = frame.Height;

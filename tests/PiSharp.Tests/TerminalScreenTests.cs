@@ -408,6 +408,50 @@ public sealed class TerminalScreenTests
         Assert.Contains("[Image: [image/png] 12x7]", output.ToString());
     }
 
+    [Fact]
+    public void ThemeChangeRendersPreviouslyCommittedMarkdownWithTheNewPalette()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        var light = TerminalThemeCatalog.LoadBuiltIn("light", TerminalColorMode.TrueColor);
+        var dark = TerminalThemeCatalog.LoadBuiltIn("dark", TerminalColorMode.TrueColor);
+        using var screen = new TerminalScreen(output, error, () => 80, () => 24, new TerminalImageRenderer(), light);
+
+        screen.CommitAssistantText("# Themed heading");
+        screen.SetTheme(dark);
+
+        var outputText = output.ToString();
+        var lastFrame = outputText.LastIndexOf("\u001b[2J\u001b[H", StringComparison.Ordinal);
+        Assert.True(lastFrame >= 0);
+        var currentFrame = outputText[lastFrame..];
+        Assert.Contains("\u001b[38;2;240;198;116m", currentFrame);
+        Assert.DoesNotContain("\u001b[38;2;154;115;38m", currentFrame);
+    }
+
+    [Fact]
+    public void ReportedTerminalBackgroundResolvesAutomaticThemePair()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-theme-report-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            var catalog = new TerminalThemeCatalog(root, environment: key => key == "COLORTERM" ? "truecolor" : null);
+            using var screen = new TerminalScreen(output, error, () => 80, () => 24, new TerminalImageRenderer(),
+                catalog.Resolve("light/dark"));
+            screen.SetThemeResolver((foreground, background) => catalog.Resolve("light/dark", foreground, background));
+            screen.CommitAssistantText("# Theme follows OSC 11");
+
+            screen.HandleTerminalColorResponse(new(11, new TerminalTheme.Rgb(255, 255, 255)));
+
+            var outputText = output.ToString();
+            var lastFrame = outputText.LastIndexOf("\u001b[2J\u001b[H", StringComparison.Ordinal);
+            Assert.Contains("\u001b[38;2;154;115;38m", outputText[lastFrame..]);
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
     private static byte[] CreateImage(int width, int height)
     {
         using var bitmap = new SKBitmap(new SKImageInfo(width, height, SKColorType.Rgba8888, SKAlphaType.Premul));

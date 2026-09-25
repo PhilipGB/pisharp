@@ -39,15 +39,26 @@ public sealed class TerminalEditor
         }
     }
 
+    private TerminalInput EnsureInput()
+    {
+        if (_input is not null) return _input;
+        _input = TerminalInput.OpenConsole();
+        _input.TerminalColorReceived += HandleTerminalColorResponse;
+        return _input;
+    }
+
+    private void HandleTerminalColorResponse(TerminalColorResponse response) =>
+        _screen?.HandleTerminalColorResponse(response);
+
     internal TerminalSelection<T>? ShowSelectionList<T>(string title,
         IReadOnlyList<TerminalSelectionOption<T>> options, string? selectedKey = null,
         IReadOnlyList<TerminalSelectionOption<T>>? scopedOptions = null,
         string allLabel = "All", string scopedLabel = "Scoped", string emptyMessage = "No matching items")
     {
         if (_screen is not { IsActive: true } screen) return null;
-        _input ??= TerminalInput.OpenConsole();
+        var input = EnsureInput();
         using var mode = TerminalMode.Enter(screen);
-        return new TerminalOverlayHost(_input).Select(screen, title, options, selectedKey, scopedOptions,
+        return new TerminalOverlayHost(input).Select(screen, title, options, selectedKey, scopedOptions,
             allLabel, scopedLabel, emptyMessage);
     }
 
@@ -79,12 +90,12 @@ public sealed class TerminalEditor
         {
             Console.TreatControlCAsInput = true;
             using var mode = TerminalMode.Enter(_screen);
-            _input ??= TerminalInput.OpenConsole();
+            var input = EnsureInput();
             _screen?.SetFooter(ActiveRunFooter);
             Render();
             while (!cancellationToken.IsCancellationRequested)
             {
-                if (!_input.TryRead(50, out var next))
+                if (!input.TryRead(50, out var next))
                 {
                     _screen?.RefreshIfResized();
                     await Task.Delay(10, CancellationToken.None);
@@ -302,11 +313,11 @@ public sealed class TerminalEditor
         {
             Console.TreatControlCAsInput = true;
             using var mode = TerminalMode.Enter(_screen);
-            _input ??= TerminalInput.OpenConsole();
+            var input = EnsureInput();
             Render();
             while (true)
             {
-                var next = _input.Read();
+                var next = input.Read();
                 if (next.Mouse is { } mouse)
                 {
                     var result = _screen?.HandleMouse(mouse) ?? default;

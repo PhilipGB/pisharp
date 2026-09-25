@@ -10,8 +10,9 @@ internal static class TerminalMarkdownInlineRenderer
 {
     private const string Reset = "\u001b[0m";
 
-    public static string Render(Inline? first, bool styled)
+    public static string Render(Inline? first, bool styled, TerminalTheme? theme = null)
     {
+        theme ??= TerminalTheme.Default;
         var output = new StringBuilder();
         for (var inline = first; inline is not null; inline = inline.NextSibling)
         {
@@ -21,7 +22,7 @@ internal static class TerminalMarkdownInlineRenderer
                     AppendVisible(output, literal.Content.ToString());
                     break;
                 case CodeInline code:
-                    AppendStyled(output, Visible(code.Content), styled ? "\u001b[33m" : "");
+                    AppendStyled(output, Visible(code.Content), styled ? theme.Fg("mdCode") : "");
                     break;
                 case MathInline math:
                     var (opening, closing) = math.Delimiter switch
@@ -31,7 +32,7 @@ internal static class TerminalMarkdownInlineRenderer
                         _ => (new string('$', Math.Max(1, math.DelimiterCount)),
                             new string('$', Math.Max(1, math.DelimiterCount)))
                     };
-                    AppendStyled(output, Visible(opening + math.Content.ToString() + closing), styled ? "\u001b[36m" : "");
+                    AppendStyled(output, Visible(opening + math.Content.ToString() + closing), styled ? theme.Fg("mdCode") : "");
                     break;
                 case TaskList task:
                     AppendVisible(output, task.Checked ? "[x]" : "[ ]");
@@ -40,10 +41,10 @@ internal static class TerminalMarkdownInlineRenderer
                     AppendVisible(output, autoLink.Url);
                     break;
                 case LinkInline link:
-                    RenderLink(output, link, styled);
+                    RenderLink(output, link, styled, theme);
                     break;
                 case EmphasisInline emphasis:
-                    RenderEmphasis(output, emphasis, styled);
+                    RenderEmphasis(output, emphasis, styled, theme);
                     break;
                 case LineBreakInline:
                     output.Append('\n');
@@ -55,7 +56,7 @@ internal static class TerminalMarkdownInlineRenderer
                     AppendVisible(output, entity.Transcoded.ToString());
                     break;
                 case ContainerInline container:
-                    output.Append(Render(container.FirstChild, styled));
+                    output.Append(Render(container.FirstChild, styled, theme));
                     break;
                 default:
                     AppendVisible(output, inline.ToString() ?? "");
@@ -72,23 +73,23 @@ internal static class TerminalMarkdownInlineRenderer
         return output.ToString();
     }
 
-    private static void RenderLink(StringBuilder output, LinkInline link, bool styled)
+    private static void RenderLink(StringBuilder output, LinkInline link, bool styled, TerminalTheme theme)
     {
-        var label = Render(link.FirstChild, styled);
+        var label = Render(link.FirstChild, styled, theme);
         var url = Visible(link.Url ?? "");
         if (link.IsImage)
         {
             output.Append("[image: ").Append(label).Append(']');
-            if (url.Length > 0) output.Append(" \u001b[2m(").Append(url).Append(")\u001b[0m");
+            if (url.Length > 0) output.Append(' ').Append(styled ? theme.Style("mdLinkUrl", $"({url})", dim: true) : $"({url})");
             return;
         }
 
-        AppendStyled(output, label, styled ? "\u001b[4;36m" : "");
+        AppendStyled(output, label, styled ? "\u001b[4m" + theme.Fg("mdLink") : "");
         if (url.Length > 0 && !string.Equals(label, url, StringComparison.Ordinal))
-            output.Append(" \u001b[2m(").Append(url).Append(")\u001b[0m");
+            output.Append(' ').Append(styled ? theme.Style("mdLinkUrl", $"({url})", dim: true) : $"({url})");
     }
 
-    private static void RenderEmphasis(StringBuilder output, EmphasisInline emphasis, bool styled)
+    private static void RenderEmphasis(StringBuilder output, EmphasisInline emphasis, bool styled, TerminalTheme theme)
     {
         var delimiter = emphasis.DelimiterChar;
         var count = emphasis.DelimiterCount;
@@ -98,7 +99,7 @@ internal static class TerminalMarkdownInlineRenderer
         var closing = !styled ? "" : delimiter == '~' && count >= 2
             ? "\u001b[29m"
             : count >= 2 ? "\u001b[22m" : "\u001b[23m";
-        output.Append(opening).Append(Render(emphasis.FirstChild, styled)).Append(closing);
+        output.Append(opening).Append(Render(emphasis.FirstChild, styled, theme)).Append(closing);
     }
 
     private static void AppendStyled(StringBuilder output, string text, string opening)

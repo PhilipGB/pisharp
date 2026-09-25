@@ -3,16 +3,14 @@ namespace PiSharp.Cli.Tui;
 /// <summary>Places modal content over the idle or active terminal compositor.</summary>
 internal static class TerminalOverlayLayout
 {
-    public static void Apply(string[] screenRows, IReadOnlyList<string> content, int columns)
+    public static void Apply(string[] screenRows, IReadOnlyList<string> content, int columns, TerminalTheme? theme = null)
     {
         if (screenRows.Length == 0 || content.Count == 0) return;
+        theme ??= TerminalTheme.Default;
         var (innerWidth, horizontalOffset, verticalOffset, skip, visibleFrameCount) =
             Geometry(content, columns, screenRows.Length);
         var cardWidth = innerWidth + 4;
-        var frame = new List<string>(content.Count + 2)
-        {
-            "+" + new string('-', innerWidth + 2) + "+"
-        };
+        var frame = new List<string>(content.Count + 2) { "+" + new string('-', innerWidth + 2) + "+" };
         foreach (var line in content)
         {
             var clipped = TerminalTranscriptViewport.Clip(line, innerWidth);
@@ -21,10 +19,25 @@ internal static class TerminalOverlayLayout
         }
         frame.Add("+" + new string('-', innerWidth + 2) + "+");
 
+        var firstFrameLine = skip;
         if (skip > 0 || frame.Count > visibleFrameCount)
             frame = frame.Skip(skip).Take(visibleFrameCount).ToList();
         for (var index = 0; index < frame.Count; index++)
-            screenRows[verticalOffset + index] = new string(' ', horizontalOffset) + "\u001b[7m" + frame[index] + "\u001b[0m";
+        {
+            var line = frame[index];
+            var absoluteFrameLine = firstFrameLine + index;
+            var isOuterBorder = absoluteFrameLine == 0 || absoluteFrameLine == content.Count + 1;
+            var inner = isOuterBorder ? line : line[2..^2];
+            if (absoluteFrameLine == 1) inner = theme.Style("accent", inner, bold: true);
+            else if (absoluteFrameLine > 0 && absoluteFrameLine <= content.Count &&
+                content[absoluteFrameLine - 1].StartsWith("> ", StringComparison.Ordinal))
+                inner = theme.Style("selectedBg", inner, background: true);
+            var rendered = isOuterBorder
+                ? theme.Style("borderAccent", inner)
+                : theme.Fg("border") + "| " + "\u001b[0m" + inner +
+                  "\u001b[0m" + theme.Fg("border") + " |\u001b[0m";
+            screenRows[verticalOffset + index] = new string(' ', horizontalOffset) + rendered;
+        }
     }
 
     public static int? ContentLineAt(IReadOnlyList<string> content, int columns, int rows, int column, int row)

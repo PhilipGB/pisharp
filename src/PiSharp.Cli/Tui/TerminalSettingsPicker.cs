@@ -3,14 +3,17 @@ using PiSharp.Cli;
 namespace PiSharp.Cli.Tui;
 
 /// <summary>Edits supported settings through the reusable searchable terminal selection overlay.</summary>
-internal sealed class TerminalSettingsPicker(TerminalEditor editor)
+internal sealed class TerminalSettingsPicker(TerminalEditor editor, Func<IReadOnlyList<string>>? themeNames = null)
 {
+    private readonly Func<IReadOnlyList<string>> _themeNames = themeNames ?? (() => ["dark", "light"]);
+
     private sealed record Setting(string Id, string Label, string Description, bool UserOnly = false);
 
     private static readonly Setting[] s_settings =
     [
         new("defaultProjectTrust", "Default project trust", "Fallback decision for protected project resources.", UserOnly: true),
         new("defaultThinkingLevel", "Default thinking level", "Initial thinking level unless overridden by --thinking."),
+        new("theme", "Theme", "Choose a terminal theme or follow the terminal appearance."),
         new("externalEditor", "External editor", "Command that edits the prompt file; blank uses VISUAL or EDITOR."),
         new("hideThinkingBlock", "Hide thinking", "Hide reasoning blocks in the interactive transcript."),
         new("images.blockImages", "Block images", "Replace provider-bound images with text while preserving saved history."),
@@ -73,7 +76,7 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor)
                 selectedKey = setting.Id;
                 continue;
             }
-            var valueOptions = Values(setting).Select(value => new TerminalSelectionOption<string?>(
+            var valueOptions = Values(setting, currentValue).Select(value => new TerminalSelectionOption<string?>(
                 value.Key, value.Value, value.Label, value.Description)).ToArray();
             var choice = editor.ShowSelectionList($"{setting.Label} · {DisplayValue(currentValue)}", valueOptions,
                 KeyForValue(currentValue), emptyMessage: "No values available");
@@ -107,6 +110,7 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor)
     {
         "defaultProjectTrust" => settings.DefaultProjectTrust,
         "defaultThinkingLevel" => settings.DefaultThinkingLevel,
+        "theme" => settings.Theme,
         "externalEditor" => settings.ExternalEditor,
         "hideThinkingBlock" => settings.HideThinkingBlock?.ToString().ToLowerInvariant(),
         "images.blockImages" => settings.BlockImages?.ToString().ToLowerInvariant(),
@@ -125,7 +129,7 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor)
 
     private static string KeyForValue(string? value) => value ?? "__inherit";
 
-    private static IReadOnlyList<(string Key, string? Value, string Label, string Description)> Values(Setting setting)
+    private IReadOnlyList<(string Key, string? Value, string Label, string Description)> Values(Setting setting, string? currentValue)
     {
         var values = new List<(string Key, string? Value, string Label, string Description)>
         {
@@ -140,6 +144,14 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor)
         else if (setting.Id == "defaultThinkingLevel")
         {
             values.AddRange(ThinkingLevels.All.Select(level => (level, (string?)level, level, $"Use {level} as the default thinking level.")));
+        }
+        else if (setting.Id == "theme")
+        {
+            values.Add(("light/dark", "light/dark", "Follow terminal appearance", "Use the light theme on light terminals and the dark theme on dark terminals."));
+            var available = _themeNames().ToHashSet(StringComparer.Ordinal);
+            if (currentValue is not null && !currentValue.Contains('/')) available.Add(currentValue);
+            values.AddRange(available.Order(StringComparer.Ordinal)
+                .Select(name => (name, (string?)name, name, $"Use the {name} color palette.")));
         }
         else
         {

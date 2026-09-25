@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "plan_received": false,
-  "source_note": "Original plan was announced after a heading but not appended. Conservative provisional inventory from pinned upstream feature matrix and detailed inventory; never treat as complete until reconciled with the missing plan and audited upstream. Current Pi main refreshed 2026-09-25 to b3487650f6378f1b0d1643dd254445ceb4a98035; prior parity baseline was 49681e1b71c9c32cdfbf45c21f8e3cb3a8c8629d, and the earlier current-main review was 5fd446ca1843682e8da3fec4ceb71c42f56fbace. Current deltas include TypeScript 7/Node type stripping, an overlay-close cursor-restoration fix, RPC listener snapshot dispatch, full-file read null-range rendering, and per-ref temporary extension cache paths; these are classified in docs/continuation.md. Current Pi SettingsSelectorComponent, SettingsList, and their tests were inspected. The reviewed TUI uses pi-tui 0.87.1 and Marked 18.0.11; Pi wraps ANSI-aware grapheme cells and breaks overlong tokens. Its pinned alt-screen implementation and tests cover SGR button-motion tracking, visible text drag selection/copy, wheel dispatch, grapheme snapping, and mouse-mode cleanup. Further provider, session, protocol, image, theme, autocomplete and extension deltas remain unaudited. Pi Packages remain excluded unless needed for a core capability.",
+  "source_note": "Original plan was announced after a heading but not appended. Conservative provisional inventory from pinned upstream feature matrix and detailed inventory; never treat as complete until reconciled with the missing plan and audited upstream. Current Pi main refreshed 2026-09-25 to b3487650f6378f1b0d1643dd254445ceb4a98035; prior parity baseline was 49681e1b71c9c32cdfbf45c21f8e3cb3a8c8629d, and the earlier current-main review was 5fd446ca1843682e8da3fec4ceb71c42f56fbace. Current deltas include TypeScript 7/Node type stripping, an overlay-close cursor-restoration fix, RPC listener snapshot dispatch, full-file read null-range rendering, and per-ref temporary extension cache paths; these are classified in docs/continuation.md. Current Pi SettingsSelectorComponent, SettingsList, and their tests were inspected. The reviewed TUI uses pi-tui 0.87.1 and Marked 18.0.11; Pi wraps ANSI-aware grapheme cells and breaks overlong tokens. Its pinned alt-screen implementation and tests cover SGR button-motion tracking, visible text drag selection/copy, wheel dispatch, grapheme snapping, and mouse-mode cleanup. Further provider, session, protocol, image, theme-CLI/search-path, autocomplete and extension deltas remain unaudited. Pi Packages remain excluded unless needed for a core capability.",
   "baseline": "earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035",
   "required_ids": [
     "feature-agent-multi-turn-and-streaming",
@@ -492,7 +492,7 @@
         "Verify through application workflow and compare docs/tui.md, docs/terminal-setup.md; packages/tui/src/tui.ts, tui-alt-screen.ts; packages/coding-agent/src/modes/interactive/; VT renderer, pseudo-terminal snapshots"
       ],
       "implementation": [
-        "src/PiSharp.Cli/Tui/TerminalInput.cs: bounded OSC sequences terminated by BEL or ST are consumed instead of inserted as editor text; incomplete replies are ignored, oversized replies are rejected. No color query or parsing yet.",
+        "src/PiSharp.Cli/Tui/TerminalInput.cs, TerminalColorResponse.cs and TerminalScreen.cs: bounded OSC 10/11 color replies are parsed as RGB foreground/background reports; attached TTY sessions issue the queries, use replies for light/dark pair resolution, and re-render on theme changes.",
         "src/PiSharp.Cli/Tui/TerminalScreen.cs: active-run alternate-screen compositor now supports bounded transcript scrolling and rendered-text search with highlighted/cycling matches; src/PiSharp.Cli/Tui/TerminalEditor.cs preserves and restores the follow-up draft when search closes.",
         "src/PiSharp.Cli/Tui/TerminalInput.cs: standard CSI PageUp/PageDown sequences decode alongside the existing modified-key forms.",
         "src/PiSharp.Cli/Tui/TerminalScreen.cs and InteractiveTranscript.cs: completed tool-result text is retained as a bounded screen segment and collapsed to ten lines by default; Ctrl+O toggles all retained and future results. Full text is captured for stderr scrollback replay after the active screen closes, subject to the existing 4 MB restore cap and 1 MB active-transcript cap.",
@@ -508,7 +508,9 @@
         "src/PiSharp.Cli/Tui/TranscriptSelectionController.cs and TerminalTextLayout.cs map rendered ANSI rows to terminal-cell/grapheme selection, produce copied text, and reapply inverse highlighting after embedded SGR resets; TerminalOverlayLayout.cs and TerminalSelectionList.cs route wheel input and visible option clicks through the shared picker.",
         "src/PiSharp.Cli/Tui/TerminalMouseRouter.cs routes transcript, prompt and overlay gestures; EditorViewport.RowMaps maps visible grapheme cells to UTF-16 source offsets, and EditorSelectionController preserves original wrapped prompt text on copy while click placement stays on grapheme boundaries.",
         "src/PiSharp.Cli/Tui/TerminalScreenCompositor.cs owns editor/transcript/footer row composition, overlay placement and ANSI frame output. TerminalScreen retains lifecycle and app state, and sends a complete frame to the compositor.",
-        "src/PiSharp.Cli/Tui/TerminalImageRenderer.cs and TerminalScreenCompositor.cs: render accepted prompt and read-tool images as bounded Kitty/iTerm2 blocks; text layout treats opaque row markers as zero width, compositor anchors every row explicitly after inline image protocols, and screen suspend/disposal restores Kitty placements/data."
+        "src/PiSharp.Cli/Tui/TerminalImageRenderer.cs and TerminalScreenCompositor.cs: render accepted prompt and read-tool images as bounded Kitty/iTerm2 blocks; text layout treats opaque row markers as zero width, compositor anchors every row explicitly after inline image protocols, and screen suspend/disposal restores Kitty placements/data.",
+        "src/PiSharp.Cli/Tui/TerminalTheme.cs and Themes/{dark,light}.json: Pi-shaped tokens, variables, OKLCH/hex/indexed colors, terminal default slots, appearance inference, and ANSI truecolor/256/no-color output; TerminalThemeCatalog discovers embedded, user, and trusted-project palettes.",
+        "Program.cs, UserSettings.cs, UserSettingsWriter.cs and TerminalSettingsPicker.cs: scalar theme selection follows user/trusted-project precedence, supports light/dark pairing, updates the active screen after saves, exposes discovered names in /settings, and refreshes the catalog on /reload; Markdown, footer and modal surfaces consume shared theme tokens."
       ],
       "evidence": [
         "TerminalInputTests.TerminalColorOscRepliesAreConsumedWithoutEditingTheDraft and TruncatedOscIsDiscardedAndOversizedOscIsRejected: synthetic OSC 10/11 BEL/ST, incomplete and oversized fixtures; no PTY or pinned Pi differential.",
@@ -524,7 +526,9 @@
         "TerminalInputTests.DecodesSgrMouseCoordinatesMotionReleaseAndWheelDirection, TerminalTextLayoutTests.SelectionUsesDisplayCellsAndReappliesInverseAfterContentResets, TerminalScreenTests.ActiveEditorUsesMouseWheelAndCopiesUnicodeTranscriptSelection and MouseTrackingIsDisabledBeforeSuspendingAndLeavingTheAlternateScreen, and TerminalSelectionListTests.MouseWheelAndClickSelectAnOverlayOption cover SGR parsing, transcript/list wheel scrolling, CJK and emoji cell mapping, ANSI-safe highlighting, copy dispatch, modal clicks and lifecycle cleanup. Focused tests pass 31/31, format verification passes, warnings-as-errors build reports 0 warnings/errors, and the full suite passes 452/452 locally. The implementation was compared against pinned Pi b3487650f6378f1b0d1643dd254445ceb4a98035 packages/tui/src/tui-alt-screen.ts and test/tui-alt-screen.test.ts. Exact commit 41235a19a7b058feb4dd46b024eb4e95035f420b passed Linux CI run 36153996965: format, warnings-as-errors build and all 452 tests. Word/line-click, drag-autoscroll and PTY mouse evidence remain open; prompt mouse behavior is covered by the following checkpoint.",
         "EditorViewportTests.RowMapsConvertTerminalCellsToGraphemeSafeSourceOffsetsAcrossWrapping and TerminalScreenTests.EditorMouseClickPlacesCursorAtGraphemeBoundary/EditorMouseDragCopiesOriginalTextAcrossWrappedRowsWithoutMovingCursor verify CJK, combining marks, emoji, grapheme-safe click placement, unwrapped source copy, unchanged draft and app.message.copy dispatch. Focused viewport/screen tests pass 16/16; local format verification, warnings-as-errors build and the full 455/455 suite pass. Exact code commit 1abedd5ccde6640d0105da04e592aea02072be1e passed Linux CI run 36155964704: format, warnings-as-errors build and all 455 tests. This is a deterministic synthetic input fixture, not PTY mouse evidence or a full upstream differential.",
         "TerminalScreenTests, EditorViewportTests and TerminalSelectionListTests pass 22/22 after the frame composition extraction. Local format verification, warnings-as-errors build and all 455 tests pass; exact commit 0d73b956ab42ad5760bca5eddff5f386608fdd62 passes Linux CI run 36156922067 with format, build and all 455 tests. Existing screen/scroll/search/picker fixtures exercise the composed output; this is a structural refactor, not new behavior evidence.",
-        "TerminalImageRendererTests, TerminalScreenTests and AgentIntegrationTests cover detection, fallback, width/height/aspect sizing including current Pi #8938 vectors, cache pruning, Kitty upload/replacement/cleanup, iTerm2 cursor placement, user/read image lifecycle and binary-free serialized events. Exact code commit ff301f231d80b0ec81f093cf8d09d5b5b45b821c passes local format verification, warnings-as-errors build and 491/491 tests; Linux CI run 36172481288 passed restore, format verification, warnings-as-errors build and all 491 tests on exact head. Partial viewport image cropping and terminal cell-pixel probing remain unverified."
+        "TerminalImageRendererTests, TerminalScreenTests and AgentIntegrationTests cover detection, fallback, width/height/aspect sizing including current Pi #8938 vectors, cache pruning, Kitty upload/replacement/cleanup, iTerm2 cursor placement, user/read image lifecycle and binary-free serialized events. Exact code commit ff301f231d80b0ec81f093cf8d09d5b5b45b821c passes local format verification, warnings-as-errors build and 491/491 tests; Linux CI run 36172481288 passed restore, format verification, warnings-as-errors build and all 491 tests on exact head. Partial viewport image cropping and terminal cell-pixel probing remain unverified.",
+        "TerminalThemeTests cover built-in token palettes, vars/OKLCH/indexed colors, invalid/circular values, user/project discovery and precedence, appearance pairing, NO_COLOR and terminal defaults; TerminalInputTests cover bounded OSC 10/11 replies; TerminalScreenTests cover palette refresh and OSC 11 pair selection; UserSettingsWriterTests cover user/project values and invalid pairs. TerminalPtyTests.SettingsPickerEditsUserScopeThroughLinuxPty selects light and confirms persistence. Focused theme/settings tests and the extended PTY test pass locally; no pinned Pi rendering differential or cross-terminal color probe yet.",
+        "Against current Pi main d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31, both embedded dark/light JSON palettes are semantically identical to packages/coding-agent/src/modes/interactive/theme/{dark,light}.json; theme-json.ts, theme-controller.ts, terminal-colors.ts, theme-selector.ts and their theme/color tests were inspected. This confirms current palette assets and parsing/selection protocol shape, not full rendered-output parity."
       ],
       "dependencies": []
     },
@@ -699,8 +703,13 @@
         "invalid metadata reported",
         "Verify through application workflow and compare docs/skills.md, docs/prompt-templates.md, docs/themes.md; packages/coding-agent/src/core/{skills,prompt-templates}.ts; loader and TUI tests"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "TerminalThemeCatalog discovers embedded dark/light palettes and JSON files from the agent themes directory and trusted project .pi/themes; theme names come from validated theme content and project files take precedence over user files.",
+        "TerminalSettingsPicker exposes discovered theme names and automatic light/dark pairing; /reload reconstructs discovery, while /settings writes the scalar theme to user or trusted project settings."
+      ],
+      "evidence": [
+        "TerminalThemeTests cover built-in/user/project discovery, content names, precedence, automatic appearance selection and malformed JSON skipping; Linux PTY settings flow selects a theme. CLI --theme/--use-theme/--no-themes and settings-defined search paths remain unimplemented."
+      ],
       "dependencies": []
     },
     {
@@ -2104,14 +2113,19 @@
     {
       "id": "settings-theme",
       "title": "Setting: theme",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:63",
       "acceptance": [
         "Support theme with upstream type/default and user/trusted-project precedence",
         "Test malformed settings, trust boundaries, reload and startup behaviour"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "UserSettings overlays a validated theme name or light/dark pair; project settings load only under existing project-trust policy. /settings offers scope-aware theme selection, persisted values replace the active screen palette, and /reload rediscovers theme files.",
+        "Attached TTY sessions query OSC 10/11 for terminal foreground/background and validate replies before using them for automatic appearance selection; truecolor, ANSI-256, NO_COLOR and terminal-default colors are represented."
+      ],
+      "evidence": [
+        "UserSettingsWriterTests.ThemeSettingSupportsUserAndProjectOverrideAndValidatesThemePairs covers setting validation and precedence; TerminalPtyTests.SettingsPickerEditsUserScopeThroughLinuxPty verifies interactive selection and persistence. TerminalScreenTests and TerminalThemeTests cover OSC-driven pair selection and palette parsing. This is local behavior evidence; pinned Pi settings/theme rendering differential and terminal-family probes remain open."
+      ],
       "dependencies": []
     },
     {

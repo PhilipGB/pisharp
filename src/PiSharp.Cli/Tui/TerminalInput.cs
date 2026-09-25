@@ -12,6 +12,8 @@ public sealed class TerminalInput
     private readonly Stream? _input;
     private readonly bool _standardInput;
 
+    internal event Action<TerminalColorResponse>? TerminalColorReceived;
+
     public TerminalInput(Stream input) => _input = input;
     private TerminalInput() => _standardInput = true;
     public static TerminalInput OpenConsole() => new();
@@ -46,7 +48,7 @@ public sealed class TerminalInput
     {
         if (!Available(40)) return Key(ConsoleKey.Escape);
         var second = ReadByte();
-        if (second == ']') return SkipOsc();
+        if (second == ']') return ReadOsc();
         if (second is '[' or 'O')
         {
             var sequence = new StringBuilder();
@@ -151,15 +153,22 @@ public sealed class TerminalInput
         return true;
     }
 
-    // OSC terminal replies (including color queries 10/11) end in BEL or ST (ESC \\).
-    // They are not keystrokes; never insert their payload into the editable draft.
-    private TerminalInputEvent SkipOsc()
+    // OSC replies end in BEL or ST (ESC \\). Only validated color reports escape the input parser.
+    private TerminalInputEvent ReadOsc()
     {
+        var payload = new StringBuilder();
         var escape = false;
         for (var i = 0; i < 4096 && Available(60); i++)
         {
             var value = ReadByte();
-            if (value < 0 || value == 7 || (escape && value == '\\')) return new(null, null);
+            if (value < 0) return new(null, null);
+            if (value == 7 || (escape && value == '\\'))
+            {
+                if (escape && payload.Length > 0 && payload[^1] == '\u001b') payload.Length--;
+                if (TerminalColorResponse.TryParse(payload.ToString(), out var color)) TerminalColorReceived?.Invoke(color);
+                return new(null, null);
+            }
+            payload.Append((char)value);
             escape = value == 27;
         }
         if (Available(0)) throw new InvalidDataException("Terminal OSC reply exceeds 4096 bytes.");

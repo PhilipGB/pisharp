@@ -24,12 +24,38 @@ internal sealed class TerminalTranscriptBuffer
     {
         if (text.Length == 0) return;
         Capture(capturedText ?? text, isError);
-        if (!isToolResult && _segments.Count > 0 && !_segments[^1].IsToolResult)
+        if (!isToolResult && _segments.Count > 0 && !_segments[^1].IsToolResult && _segments[^1].MarkdownSource is null)
             _segments[^1].Text.Append(text);
         else
             _segments.Add(new(isToolResult, new StringBuilder(text),
                 isToolResult ? PreviewToolResult(collapsedPreviewText ?? text) : null));
         _transcriptCharacters += text.Length;
+        TrimTranscript();
+        Revision++;
+    }
+
+    public void AppendMarkdown(string source, string rendered, bool isError)
+    {
+        if (rendered.Length == 0) return;
+        Capture(rendered, isError);
+        _segments.Add(new(false, new StringBuilder(rendered), null,
+            source.Length <= MaximumTranscriptCharacters ? source : null));
+        _transcriptCharacters += rendered.Length;
+        TrimTranscript();
+        Revision++;
+    }
+
+    public void ReRenderMarkdown(Func<string, string> render)
+    {
+        ArgumentNullException.ThrowIfNull(render);
+        foreach (var segment in _segments)
+        {
+            if (segment.MarkdownSource is not { } source) continue;
+            var previousLength = segment.Text.Length;
+            var next = render(source);
+            segment.Text.Clear().Append(next);
+            _transcriptCharacters += next.Length - previousLength;
+        }
         TrimTranscript();
         Revision++;
     }
@@ -79,6 +105,7 @@ internal sealed class TerminalTranscriptBuffer
             var trim = first.Text.ToString(remove, lookLength).IndexOf('\n');
             if (trim >= 0) remove += trim + 1;
             first.Text.Remove(0, remove);
+            first.MarkdownSource = null;
             if (first.IsToolResult) first.CollapsedPreview = PreviewToolResult(first.Text.ToString());
             _transcriptCharacters -= remove;
             break;
@@ -122,11 +149,13 @@ internal sealed class TerminalTranscriptBuffer
         return $"{preview}\n... ({remaining} more lines; tool output collapsed){(endsWithNewline ? "\n" : "")}";
     }
 
-    private sealed class TranscriptSegment(bool isToolResult, StringBuilder text, string? collapsedPreview)
+    private sealed class TranscriptSegment(bool isToolResult, StringBuilder text, string? collapsedPreview,
+        string? markdownSource = null)
     {
         public bool IsToolResult { get; } = isToolResult;
         public StringBuilder Text { get; } = text;
         public string? CollapsedPreview { get; set; } = collapsedPreview;
+        public string? MarkdownSource { get; set; } = markdownSource;
     }
 
     private sealed class CapturedChunkBuilder(bool isError, StringBuilder text)

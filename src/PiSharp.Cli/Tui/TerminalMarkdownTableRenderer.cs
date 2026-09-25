@@ -7,8 +7,9 @@ namespace PiSharp.Cli.Tui;
 /// <summary>Applies terminal-cell sizing and border layout to parsed pipe-table nodes.</summary>
 internal static class TerminalMarkdownTableRenderer
 {
-    public static string Render(Table table, string source, int availableWidth)
+    public static string Render(Table table, string source, int availableWidth, TerminalTheme? theme = null)
     {
+        theme ??= TerminalTheme.Default;
         var rows = table.OfType<TableRow>().ToList();
         if (rows.Count == 0) return "";
         var headerIndex = rows.FindIndex(row => row.IsHeader);
@@ -64,22 +65,22 @@ internal static class TerminalMarkdownTableRenderer
 
         var output = new List<string>
         {
-            $"┌─{string.Join("─┬─", widths.Select(value => new string('─', value)))}─┐"
+            theme.Style("mdCodeBlockBorder", $"┌─{string.Join("─┬─", widths.Select(value => new string('─', value)))}─┐")
         };
-        output.AddRange(RenderRow(header, widths, alignments, isHeader: true));
-        var separator = $"├─{string.Join("─┼─", widths.Select(value => new string('─', value)))}─┤";
+        output.AddRange(RenderRow(header, widths, alignments, isHeader: true, theme: theme));
+        var separator = theme.Style("mdCodeBlockBorder", $"├─{string.Join("─┼─", widths.Select(value => new string('─', value)))}─┤");
         output.Add(separator);
         for (var index = 0; index < dataRows.Length; index++)
         {
-            output.AddRange(RenderRow(dataRows[index], widths, alignments, isHeader: false));
+            output.AddRange(RenderRow(dataRows[index], widths, alignments, isHeader: false, theme: theme));
             if (index < dataRows.Length - 1) output.Add(separator);
         }
-        output.Add($"└─{string.Join("─┴─", widths.Select(value => new string('─', value)))}─┘");
+        output.Add(theme.Style("mdCodeBlockBorder", $"└─{string.Join("─┴─", widths.Select(value => new string('─', value)))}─┘"));
         return string.Join('\n', output);
     }
 
     private static string[] RowCells(TableRow row) => row.OfType<TableCell>()
-        .Select(cell => string.Join(' ', cell.OfType<ParagraphBlock>()
+            .Select(cell => string.Join(' ', cell.OfType<ParagraphBlock>()
             .Select(paragraph => TerminalMarkdownInlineRenderer.Render(paragraph.Inline?.FirstChild, styled: false))).Trim()).ToArray();
 
     private static string[] Normalize(string[] cells, int columns)
@@ -90,7 +91,7 @@ internal static class TerminalMarkdownTableRenderer
     }
 
     private static IReadOnlyList<string> RenderRow(string[] cells, int[] widths,
-        TableAlignment[] alignments, bool isHeader)
+        TableAlignment[] alignments, bool isHeader, TerminalTheme theme)
     {
         var wrapped = cells.Select((cell, index) => TerminalTextLayout.Wrap(cell, widths[index])).ToArray();
         var height = wrapped.Max(lines => lines.Count);
@@ -112,7 +113,7 @@ internal static class TerminalMarkdownTableRenderer
                 text = new string(' ', leftPadding) + text + new string(' ', rightPadding);
                 padded[column] = isHeader ? $"\u001b[1m{text}\u001b[22m" : text;
             }
-            output.Add($"│ {string.Join(" │ ", padded)} │");
+            output.Add(theme.Style("mdCodeBlockBorder", $"│ {string.Join(" │ ", padded)} │"));
         }
         return output;
     }

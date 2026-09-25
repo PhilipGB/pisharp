@@ -107,6 +107,25 @@ public sealed class TerminalInputTests
         Assert.Equal('X', reader.Read().Key?.KeyChar);
     }
 
+    [Theory]
+    [InlineData("\u001b]10;rgb:aaaa/bbbb/cccc\aX", 10, 170, 187, 204)]
+    [InlineData("\u001b]11;rgb:0000/1111/2222\u001b\\X", 11, 0, 17, 34)]
+    [InlineData("\u001b]10;#AABBCC\aX", 10, 170, 187, 204)]
+    public void EmitsValidatedTerminalColorReports(string input, int slot, byte red, byte green, byte blue)
+    {
+        var reader = new TerminalInput(new MemoryStream(Encoding.UTF8.GetBytes(input)));
+        TerminalColorResponse? response = null;
+        reader.TerminalColorReceived += value => response = value;
+
+        var report = reader.Read();
+
+        Assert.Null(report.Key);
+        Assert.Null(report.Text);
+        Assert.NotNull(response);
+        Assert.Equal(new TerminalColorResponse(slot, new TerminalTheme.Rgb(red, green, blue)), response!.Value);
+        Assert.Equal('X', reader.Read().Key?.KeyChar);
+    }
+
     [Fact]
     public void TruncatedOscIsDiscardedAndOversizedOscIsRejected()
     {
