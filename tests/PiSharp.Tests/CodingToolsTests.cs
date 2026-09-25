@@ -115,6 +115,51 @@ public sealed class CodingToolsTests : IDisposable
     }
 
     [Fact]
+    public async Task FileMutationQueueSerializesExistingTargetsThroughDirectorySymlinks()
+    {
+        if (!OperatingSystem.IsLinux()) return;
+
+        var actualDirectory = Path.Combine(_dir, "actual");
+        var aliasDirectory = Path.Combine(_dir, "alias");
+        Directory.CreateDirectory(actualDirectory);
+        Directory.CreateSymbolicLink(aliasDirectory, actualDirectory);
+        var actualPath = Path.Combine(actualDirectory, "shared.txt");
+        var aliasPath = Path.Combine(aliasDirectory, "shared.txt");
+        await File.WriteAllTextAsync(actualPath, "before");
+
+        var queue = new FileMutationQueue();
+        var firstStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseFirst = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var secondStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var first = queue.RunAsync(aliasPath, async () =>
+        {
+            firstStarted.SetResult();
+            await releaseFirst.Task;
+            return true;
+        }, CancellationToken.None);
+
+        try
+        {
+            await firstStarted.Task.WaitAsync(TimeSpan.FromSeconds(2));
+            var second = queue.RunAsync(actualPath, () =>
+            {
+                secondStarted.SetResult();
+                return Task.FromResult(true);
+            }, CancellationToken.None);
+
+            Assert.False(secondStarted.Task.IsCompleted);
+            releaseFirst.SetResult();
+            await Task.WhenAll(first, second).WaitAsync(TimeSpan.FromSeconds(2));
+            Assert.True(secondStarted.Task.IsCompleted);
+        }
+        finally
+        {
+            releaseFirst.TrySetResult();
+            await first;
+        }
+    }
+
+    [Fact]
     public async Task BashReportsExitAndCanTimeOut()
     {
         var tools = new CodingTools(_dir);
