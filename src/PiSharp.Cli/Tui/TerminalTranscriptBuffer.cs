@@ -24,7 +24,8 @@ internal sealed class TerminalTranscriptBuffer
     {
         if (text.Length == 0) return;
         Capture(capturedText ?? text, isError);
-        if (!isToolResult && _segments.Count > 0 && !_segments[^1].IsToolResult && _segments[^1].MarkdownSource is null)
+        if (!isToolResult && _segments.Count > 0 && !_segments[^1].IsToolResult &&
+            _segments[^1].MarkdownSource is null && _segments[^1].ThemeRenderer is null)
             _segments[^1].Text.Append(text);
         else
             _segments.Add(new(isToolResult, new StringBuilder(text),
@@ -45,6 +46,21 @@ internal sealed class TerminalTranscriptBuffer
         Revision++;
     }
 
+    public void AppendThemed(string rendered, bool isError, bool isToolResult,
+        Func<TerminalTheme, string> themeRenderer, string capturedText, string? collapsedPreviewText = null,
+        Func<TerminalTheme, string>? collapsedRenderer = null)
+    {
+        ArgumentNullException.ThrowIfNull(themeRenderer);
+        if (rendered.Length == 0) return;
+        Capture(capturedText, isError);
+        _segments.Add(new(isToolResult, new StringBuilder(rendered),
+            isToolResult ? PreviewToolResult(collapsedPreviewText ?? rendered) : null,
+            themeRenderer: themeRenderer, collapsedRenderer: collapsedRenderer));
+        _transcriptCharacters += rendered.Length;
+        TrimTranscript();
+        Revision++;
+    }
+
     public void ReRenderMarkdown(Func<string, string> render)
     {
         ArgumentNullException.ThrowIfNull(render);
@@ -54,6 +70,23 @@ internal sealed class TerminalTranscriptBuffer
             var previousLength = segment.Text.Length;
             var next = render(source);
             segment.Text.Clear().Append(next);
+            _transcriptCharacters += next.Length - previousLength;
+        }
+        TrimTranscript();
+        Revision++;
+    }
+
+    public void ReRenderToolViews(TerminalTheme theme)
+    {
+        ArgumentNullException.ThrowIfNull(theme);
+        foreach (var segment in _segments)
+        {
+            if (segment.ThemeRenderer is not { } render) continue;
+            var previousLength = segment.Text.Length;
+            var next = render(theme);
+            segment.Text.Clear().Append(next);
+            if (segment.IsToolResult)
+                segment.CollapsedPreview = PreviewToolResult(segment.CollapsedRenderer?.Invoke(theme) ?? next);
             _transcriptCharacters += next.Length - previousLength;
         }
         TrimTranscript();
@@ -106,6 +139,8 @@ internal sealed class TerminalTranscriptBuffer
             if (trim >= 0) remove += trim + 1;
             first.Text.Remove(0, remove);
             first.MarkdownSource = null;
+            first.ThemeRenderer = null;
+            first.CollapsedRenderer = null;
             if (first.IsToolResult) first.CollapsedPreview = PreviewToolResult(first.Text.ToString());
             _transcriptCharacters -= remove;
             break;
@@ -150,12 +185,15 @@ internal sealed class TerminalTranscriptBuffer
     }
 
     private sealed class TranscriptSegment(bool isToolResult, StringBuilder text, string? collapsedPreview,
-        string? markdownSource = null)
+        string? markdownSource = null, Func<TerminalTheme, string>? themeRenderer = null,
+        Func<TerminalTheme, string>? collapsedRenderer = null)
     {
         public bool IsToolResult { get; } = isToolResult;
         public StringBuilder Text { get; } = text;
         public string? CollapsedPreview { get; set; } = collapsedPreview;
         public string? MarkdownSource { get; set; } = markdownSource;
+        public Func<TerminalTheme, string>? ThemeRenderer { get; set; } = themeRenderer;
+        public Func<TerminalTheme, string>? CollapsedRenderer { get; set; } = collapsedRenderer;
     }
 
     private sealed class CapturedChunkBuilder(bool isError, StringBuilder text)

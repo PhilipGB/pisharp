@@ -1,5 +1,6 @@
 using System.Text;
 using Microsoft.Extensions.AI;
+using PiSharp.Runtime.Extensions;
 
 namespace PiSharp.Cli.Tui;
 
@@ -96,6 +97,8 @@ public sealed class TerminalScreen : IDisposable
     public bool IsActive => _active;
     internal int TerminalWidth => Columns();
     internal int TerminalHeight => Rows();
+    internal TerminalTheme CurrentTheme { get { lock (_gate) return _theme; } }
+    internal bool ToolResultsExpanded { get { lock (_gate) return _transcript.IsExpanded; } }
     internal string? SelectedText
     {
         get { lock (_gate) return _mouse.SelectedText; }
@@ -195,6 +198,7 @@ public sealed class TerminalScreen : IDisposable
             if (!_active) return;
             _theme = theme.WithTerminalColors(_terminalForeground, _terminalBackground);
             _transcript.ReRenderMarkdown(RenderMarkdown);
+            _transcript.ReRenderToolViews(_theme);
             _liveAssistant = _liveAssistantSource.Length == 0 ? "" : RenderMarkdown(_liveAssistantSource);
             RenderLocked();
         }
@@ -232,6 +236,7 @@ public sealed class TerminalScreen : IDisposable
                 _theme = _theme.WithTerminalColors(_terminalForeground, _terminalBackground);
             }
             _transcript.ReRenderMarkdown(RenderMarkdown);
+            _transcript.ReRenderToolViews(_theme);
             _liveAssistant = _liveAssistantSource.Length == 0 ? "" : RenderMarkdown(_liveAssistantSource);
             RenderLocked();
         }
@@ -400,6 +405,54 @@ public sealed class TerminalScreen : IDisposable
             RenderLocked();
         }
     }
+
+    internal void AppendToolCall(PiSharpToolRenderView view)
+    {
+        ArgumentNullException.ThrowIfNull(view);
+        lock (_gate)
+        {
+            if (!_active) return;
+            string Render(TerminalTheme theme) => Environment.NewLine +
+                EnsureTrailingNewline(TerminalToolPresentation.Render(view, theme));
+            var rendered = Render(_theme);
+            var captured = Environment.NewLine + EnsureTrailingNewline(TerminalToolPresentation.Render(view, theme: null));
+            _transcript.AppendThemed(rendered, isError: true, isToolResult: false, Render, captured);
+            RenderLocked();
+        }
+    }
+
+    internal void AppendToolResult(PiSharpToolRenderView view, IReadOnlyList<DataContent>? images = null)
+    {
+        ArgumentNullException.ThrowIfNull(view);
+        lock (_gate)
+        {
+            if (!_active) return;
+            var activeImageText = new StringBuilder();
+            var capturedImageText = new StringBuilder();
+            if (images is not null)
+            {
+                foreach (var image in images)
+                {
+                    var marker = _images.Register(image, out var fallback);
+                    activeImageText.Append(Environment.NewLine).Append(marker ?? fallback);
+                    capturedImageText.Append(Environment.NewLine).Append(fallback);
+                }
+            }
+            string Render(TerminalTheme theme) => EnsureTrailingNewline(
+                TerminalToolPresentation.Render(view, theme) + activeImageText);
+            string RenderCollapsed(TerminalTheme theme) => EnsureTrailingNewline(
+                TerminalToolPresentation.Render(view, theme) + capturedImageText);
+            var rendered = Render(_theme);
+            var captured = EnsureTrailingNewline(TerminalToolPresentation.Render(view, theme: null) + capturedImageText);
+            if (rendered.Length == 0) return;
+            _transcript.AppendThemed(rendered, isError: true, isToolResult: true, Render, captured,
+                collapsedPreviewText: RenderCollapsed(_theme), collapsedRenderer: RenderCollapsed);
+            RenderLocked();
+        }
+    }
+
+    private static string EnsureTrailingNewline(string text) =>
+        text.Length == 0 || text.EndsWith('\n') ? text : text + Environment.NewLine;
 
     internal bool ToggleToolResultsExpanded()
     {

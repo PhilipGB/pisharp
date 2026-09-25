@@ -1,4 +1,7 @@
 using System.Diagnostics;
+using System.Net;
+using System.Net.Sockets;
+using System.Text;
 using PiSharp.Cli;
 using SkiaSharp;
 
@@ -6,6 +9,131 @@ namespace PiSharp.Tests;
 
 public sealed class TerminalPtyTests
 {
+    [Fact]
+    public async Task ActiveRunStreamsExtensionToolThroughLinuxPtyAndRestoresTheTerminal()
+    {
+        if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-active-pty-" + Guid.NewGuid().ToString("N"));
+        var agent = Path.Combine(root, "agent");
+        Directory.CreateDirectory(agent);
+        using var listener = StartLoopbackListener(out var port);
+        var requests = new List<string>();
+        using var serverTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+        var server = Task.Run(async () =>
+        {
+            for (var index = 0; index < 2; index++)
+            {
+                var request = await listener.GetContextAsync().WaitAsync(serverTimeout.Token);
+                Assert.Equal("/v1/responses", request.Request.Url?.AbsolutePath);
+                Assert.Equal("Bearer pty-fixture-key", request.Request.Headers["Authorization"]);
+                using var reader = new StreamReader(request.Request.InputStream);
+                requests.Add(await reader.ReadToEndAsync(serverTimeout.Token));
+                request.Response.ContentType = "text/event-stream";
+                request.Response.KeepAlive = false;
+                await using var writer = new StreamWriter(request.Response.OutputStream);
+                await writer.WriteAsync($"data: {{\"type\":\"response.created\",\"response\":{{\"id\":\"resp_{index}\",\"object\":\"response\",\"created_at\":1,\"model\":\"fixture-model\",\"status\":\"in_progress\",\"output\":[]}}}}\n\n");
+                if (index == 0)
+                {
+                    await writer.WriteAsync("data: {\"type\":\"response.output_item.added\",\"output_index\":0,\"item\":{\"id\":\"fc_1\",\"type\":\"function_call\",\"call_id\":\"call_1\",\"name\":\"echo_ext\",\"arguments\":\"\"}}\n\n");
+                    await writer.WriteAsync("data: {\"type\":\"response.function_call_arguments.done\",\"output_index\":0,\"item_id\":\"fc_1\",\"arguments\":\"{\\\"value\\\":\\\"pty\\\"}\"}\n\n");
+                    await writer.WriteAsync("data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"id\":\"fc_1\",\"type\":\"function_call\",\"call_id\":\"call_1\",\"name\":\"echo_ext\",\"arguments\":\"{\\\"value\\\":\\\"pty\\\"}\"}}\n\n");
+                }
+                else
+                    await writer.WriteAsync("data: {\"type\":\"response.output_text.delta\",\"item_id\":\"msg_1\",\"output_index\":0,\"content_index\":0,\"delta\":\"PTY_REPLY_OK\"}\n\n");
+                await writer.WriteAsync($"data: {{\"type\":\"response.completed\",\"response\":{{\"id\":\"resp_{index}\",\"object\":\"response\",\"created_at\":1,\"model\":\"fixture-model\",\"status\":\"completed\",\"output\":[]}}}}\n\n");
+                await writer.WriteAsync("data: [DONE]\n\n");
+                await writer.FlushAsync();
+                request.Response.Close();
+            }
+        });
+
+        Process? process = null;
+        try
+        {
+            var models = """
+                {"providers":{"fixture":{"baseUrl":"http://127.0.0.1:PORT/v1","apiKeyEnv":"PISHARP_FIXTURE_KEY","models":[{"id":"fixture-model","api":"openai-responses"}]}}}
+                """.Replace("PORT", port.ToString(System.Globalization.CultureInfo.InvariantCulture), StringComparison.Ordinal);
+            await File.WriteAllTextAsync(Path.Combine(agent, "models.json"), models);
+            var start = new ProcessStartInfo("/usr/bin/script")
+            {
+                WorkingDirectory = root,
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+            start.ArgumentList.Add("-q");
+            start.ArgumentList.Add("-e");
+            start.ArgumentList.Add("-c");
+            start.ArgumentList.Add($"stty rows 24 cols 80; exec dotnet {ShellQuote(typeof(CliArguments).Assembly.Location)} --provider fixture --model fixture-model --no-session --offline --extension {ShellQuote(typeof(FixtureExtension).Assembly.Location)}");
+            start.ArgumentList.Add("/dev/null");
+            start.Environment["PISHARP_AGENT_DIR"] = agent;
+            start.Environment["PISHARP_FIXTURE_KEY"] = "pty-fixture-key";
+            process = Process.Start(start);
+            Assert.NotNull(process);
+
+            var output = new StringBuilder();
+            var idleAfterReply = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var drain = Task.Run(async () =>
+            {
+                var buffer = new char[1024];
+                int count;
+                while ((count = await process.StandardOutput.ReadAsync(buffer)) > 0)
+                {
+                    lock (output)
+                    {
+                        output.Append(buffer, 0, count);
+                        var captured = output.ToString();
+                        var replyAt = captured.IndexOf("PTY_REPLY_OK", StringComparison.Ordinal);
+                        const string idleFooter = "Ctrl+L models · Ctrl+P cycle";
+                        if (replyAt >= 0 && captured.IndexOf(idleFooter, replyAt + "PTY_REPLY_OK".Length,
+                                StringComparison.Ordinal) >= 0)
+                            idleAfterReply.TrySetResult();
+                    }
+                }
+            });
+            var stderr = process.StandardError.ReadToEndAsync();
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+            await process.StandardInput.WriteAsync("Use echo_ext with value pty.\n");
+            await process.StandardInput.FlushAsync();
+            try
+            {
+                await idleAfterReply.Task.WaitAsync(timeout.Token);
+                await process.StandardInput.WriteAsync("/quit\n");
+                await process.StandardInput.FlushAsync();
+                process.StandardInput.Close();
+                await process.WaitForExitAsync(timeout.Token);
+            }
+            catch (OperationCanceledException error)
+            {
+                process.Kill(entireProcessTree: true);
+                await drain;
+                string diagnostic;
+                lock (output) diagnostic = output.ToString();
+                throw new TimeoutException($"Active PTY failed to exit. stdout:\n{diagnostic}\nstderr:\n{await stderr}", error);
+            }
+            await drain;
+            await server.WaitAsync(timeout.Token);
+
+            string terminalOutput;
+            lock (output) terminalOutput = output.ToString();
+            Assert.Equal(0, process.ExitCode);
+            Assert.Contains("extension call: pty", terminalOutput);
+            Assert.Contains("extension result: pty / extension: pty", terminalOutput);
+            Assert.Contains("PTY_REPLY_OK", terminalOutput);
+            Assert.Contains("\u001b[?1049l", terminalOutput);
+            Assert.Contains("function_call_output", requests[1]);
+            Assert.Contains("extension: pty", requests[1]);
+            Assert.DoesNotContain("Agent error:", terminalOutput);
+            Assert.DoesNotContain("Unhandled exception", await stderr);
+        }
+        finally
+        {
+            if (process is { HasExited: false }) process.Kill(entireProcessTree: true);
+            await serverTimeout.CancelAsync();
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
     [Fact]
     public async Task SessionDiscoveryResumeAndCloneWorkThroughLinuxPty()
     {
@@ -879,6 +1007,33 @@ public sealed class TerminalPtyTests
         }
         finally { Directory.Delete(cwd, recursive: true); }
     }
+
+    private static HttpListener StartLoopbackListener(out int port)
+    {
+        for (var attempt = 0; attempt < 10; attempt++)
+        {
+            using var reservation = new TcpListener(IPAddress.Loopback, 0);
+            reservation.Start();
+            var candidatePort = ((IPEndPoint)reservation.LocalEndpoint).Port;
+            reservation.Stop();
+            var listener = new HttpListener();
+            listener.Prefixes.Add($"http://127.0.0.1:{candidatePort}/");
+            try
+            {
+                listener.Start();
+                port = candidatePort;
+                return listener;
+            }
+            catch (HttpListenerException)
+            {
+                listener.Close();
+                if (attempt == 9) throw;
+            }
+        }
+        throw new InvalidOperationException("Could not reserve loopback port for active TUI fixture.");
+    }
+
+    private static string ShellQuote(string value) => "'" + value.Replace("'", "'\\''", StringComparison.Ordinal) + "'";
 
     private static byte[] CreatePng()
     {

@@ -280,7 +280,9 @@ async Task Run(string input, IReadOnlyList<DataContent>? images = null)
     var monitor = Task.CompletedTask;
     var monitorStarted = false;
     var transcript = new InteractiveTranscript(Console.Out, Console.Error, interactive: !print,
-        hideThinking: userSettings.HideThinkingBlock == true, screen: terminalScreen);
+        hideThinking: userSettings.HideThinkingBlock == true, screen: terminalScreen,
+        toolRenderer: name => extensionLease.Current.Registration.GetToolRenderer(name),
+        workingDirectory: Environment.CurrentDirectory);
     try
     {
         if (!selection.Authenticated)

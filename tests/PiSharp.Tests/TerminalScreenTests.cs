@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Microsoft.Extensions.AI;
 using PiSharp.Cli.Tui;
+using PiSharp.Runtime.Extensions;
 using PiSharp.Runtime.Sessions;
 using SkiaSharp;
 
@@ -426,6 +427,38 @@ public sealed class TerminalScreenTests
         var currentFrame = outputText[lastFrame..];
         Assert.Contains("\u001b[38;2;240;198;116m", currentFrame);
         Assert.DoesNotContain("\u001b[38;2;154;115;38m", currentFrame);
+    }
+
+    [Fact]
+    public void ThemeChangeRendersStoredToolViewsWithTheNewPalette()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        var dark = TerminalThemeCatalog.LoadBuiltIn("dark", TerminalColorMode.TrueColor);
+        var light = TerminalThemeCatalog.LoadBuiltIn("light", TerminalColorMode.TrueColor);
+        using var screen = new TerminalScreen(output, error, () => 80, () => 24,
+            new TerminalImageRenderer(), dark);
+        var call = new PiSharpToolRenderView([new("custom tool", PiSharpToolTextStyle.Title, Bold: true)]);
+        var result = new PiSharpToolRenderView([new("custom result", PiSharpToolTextStyle.Accent)]);
+        var darkCall = TerminalToolPresentation.Render(call, dark);
+        var lightCall = TerminalToolPresentation.Render(call, light);
+        var lightResult = TerminalToolPresentation.Render(result, light);
+
+        screen.AppendToolCall(call);
+        screen.AppendToolResult(result);
+        var initial = output.ToString();
+        Assert.Contains(darkCall, initial);
+        Assert.DoesNotContain(lightCall, initial);
+
+        screen.SetTheme(light);
+
+        var outputText = output.ToString();
+        var lastFrame = outputText.LastIndexOf("\u001b[2J\u001b[H", StringComparison.Ordinal);
+        Assert.True(lastFrame >= 0);
+        var currentFrame = outputText[lastFrame..];
+        Assert.Contains(lightCall, currentFrame);
+        Assert.Contains(lightResult, currentFrame);
+        Assert.DoesNotContain(darkCall, currentFrame);
     }
 
     [Fact]

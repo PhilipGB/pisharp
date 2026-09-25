@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.AI;
 using PiSharp.Cli;
+using PiSharp.Cli.Tui;
 using PiSharp.Runtime;
 using PiSharp.Runtime.Extensions;
 using PiSharp.Runtime.Sessions;
@@ -30,15 +31,26 @@ public sealed class ExtensionCatalogTests
             using (var trusted = ExtensionCatalog.Load(agent, cwd, true))
             {
                 Assert.Equal("echo_ext", Assert.Single(trusted.Registration.Tools).Name);
+                Assert.NotNull(trusted.Registration.GetToolRenderer("echo_ext"));
                 Assert.Single(trusted.Registration.UserBashHandlers);
                 Assert.Equal("extension: hello", await trusted.Registration.Commands["fixture"]("hello", CancellationToken.None));
                 var client = new ExtensionClient();
                 var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(cwd),
                     extensionTools: trusted.Registration.Tools), new ConversationSession(cwd, "fixture", null));
+                using var transcriptOutput = new StringWriter();
+                using var transcriptStatus = new StringWriter();
+                var transcript = new InteractiveTranscript(transcriptOutput, transcriptStatus,
+                    toolRenderer: trusted.Registration.GetToolRenderer, workingDirectory: cwd);
                 var text = "";
-                await foreach (var update in run.RunStreamingAsync("invoke plugin")) text += update.Text;
+                await foreach (var update in run.RunEventsAsync("invoke plugin"))
+                {
+                    transcript.Render(update);
+                    if (update.Type == "model_text_delta") text += update.Text;
+                }
                 Assert.Equal("plugin done", text);
                 Assert.Equal("extension: tool", client.ToolResult);
+                Assert.Contains("extension call: tool", transcriptStatus.ToString());
+                Assert.Contains("extension result: tool / extension: tool", transcriptStatus.ToString());
             }
             Directory.CreateDirectory(Path.Combine(agent, "extensions"));
             File.Copy(typeof(FixtureExtension).Assembly.Location, Path.Combine(agent, "extensions", "fixture.dll"));
@@ -79,6 +91,21 @@ public sealed class ExtensionCatalogTests
         using var client = new ExtensionClient();
         Assert.Throws<ArgumentException>(() => new PiAgent(client, new CodingTools(Path.GetTempPath()),
             extensionTools: registration.Tools));
+    }
+
+    [Fact]
+    public void RegistrationStoresSafeCallAndResultRenderersByToolName()
+    {
+        var registration = new ExtensionRegistration();
+        var renderer = new PiSharpToolRenderer(
+            renderCall: (_, _) => PiSharpToolRenderView.FromText("custom call", PiSharpToolTextStyle.Title),
+            renderResult: (_, _) => PiSharpToolRenderView.FromText("custom result", PiSharpToolTextStyle.Success));
+        registration.AddTool(AIFunctionFactory.Create(FixtureExtension.Echo, name: "echo_ext"), renderer);
+
+        Assert.Same(renderer, registration.GetToolRenderer("echo_ext"));
+        Assert.Same(renderer, Assert.Single(registration.ToolRenderers).Value);
+        Assert.Null(registration.GetToolRenderer("unknown"));
+        Assert.Throws<ArgumentException>(() => new PiSharpToolRenderer());
     }
 
     [Fact]
@@ -160,7 +187,11 @@ public sealed class FixtureExtension : IPiSharpExtension
 {
     public void Configure(ExtensionRegistration registration)
     {
-        registration.AddTool(AIFunctionFactory.Create(Echo, name: "echo_ext"));
+        registration.AddTool(AIFunctionFactory.Create(Echo, name: "echo_ext"), new PiSharpToolRenderer(
+            renderCall: (arguments, _) => PiSharpToolRenderView.FromText(
+                "extension call: " + arguments["value"], PiSharpToolTextStyle.Accent),
+            renderResult: (result, context) => PiSharpToolRenderView.FromText(
+                $"extension result: {context.Arguments["value"]} / {result.Text}", PiSharpToolTextStyle.Success)));
         registration.AddCommand("fixture", (argument, _) => Task.FromResult("extension: " + argument));
         registration.AddUserBashHandler(async (request, _) =>
         {

@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using PiSharp.Cli.Tui;
+using PiSharp.Runtime.Extensions;
 using PiSharp.Runtime.Sessions;
 
 namespace PiSharp.Tests;
@@ -70,6 +71,89 @@ public sealed class InteractiveTranscriptTests
         Assert.Contains("→ write · path: notes.txt", status.ToString());
         Assert.DoesNotContain("private", status.ToString());
         Assert.DoesNotContain('\u001b', status.ToString());
+    }
+
+    [Fact]
+    public void ExtensionToolRenderersReceiveStableContextAndTheirTextIsTerminalSanitized()
+    {
+        using var output = new StringWriter();
+        using var status = new StringWriter();
+        var callSeen = false;
+        var resultSeen = false;
+        var renderer = new PiSharpToolRenderer(
+            renderCall: (arguments, context) =>
+            {
+                callSeen = context.ToolName == "custom" && context.ToolCallId == "operation-7" &&
+                    context.WorkingDirectory == "/workspace" && context.ExecutionStarted && context.ArgumentsComplete &&
+                    arguments["target"] as string == "file.txt";
+                return new([new("custom call\u001b[2J", PiSharpToolTextStyle.Accent)]);
+            },
+            renderResult: (result, context) =>
+            {
+                resultSeen = result.Text == "custom result" && context.IsError && context.ToolCallId == "operation-7";
+                return new([new("custom result", PiSharpToolTextStyle.Error, Bold: true)]);
+            });
+        var transcript = new InteractiveTranscript(output, status, toolRenderer: name => name == "custom" ? renderer : null,
+            workingDirectory: "/workspace");
+
+        transcript.Render(new AgentLifecycleEvent("tool_execution_started", Tool: "custom", OperationId: "operation-7")
+        {
+            ToolArguments = new Dictionary<string, object?> { ["target"] = "file.txt", ["secret"] = "not shown" }
+        });
+        transcript.Render(new("tool_execution_finished", Tool: "custom", OperationId: "operation-7",
+            Text: "custom result", IsError: true, Error: "failed"));
+
+        Assert.True(callSeen);
+        Assert.True(resultSeen);
+        Assert.Contains("custom call[2J", status.ToString());
+        Assert.Contains("custom result", status.ToString());
+        Assert.DoesNotContain("not shown", status.ToString());
+        Assert.DoesNotContain('\u001b', status.ToString());
+    }
+
+    [Fact]
+    public void ThrowingExtensionRenderersFallBackToSafeBuiltInViews()
+    {
+        using var output = new StringWriter();
+        using var status = new StringWriter();
+        var renderer = new PiSharpToolRenderer(
+            renderCall: (_, _) => throw new InvalidOperationException("renderer failed"),
+            renderResult: (_, _) => throw new InvalidOperationException("renderer failed"));
+        var transcript = new InteractiveTranscript(output, status, toolRenderer: _ => renderer);
+
+        transcript.Render(new AgentLifecycleEvent("tool_execution_started", Tool: "custom")
+        {
+            ToolArguments = new Dictionary<string, object?> { ["private"] = "do not show" }
+        });
+        transcript.Render(new("tool_execution_finished", Tool: "custom", Text: "safe output", IsError: true,
+            Error: "permission denied"));
+
+        Assert.Contains("→ custom", status.ToString());
+        Assert.Contains("← permission denied", status.ToString());
+        Assert.DoesNotContain("do not show", status.ToString());
+        Assert.DoesNotContain('\u001b', status.ToString());
+    }
+
+    [Fact]
+    public void StoredToolViewsRerenderWithTheNewThemeAndKeepPlainScrollback()
+    {
+        var dark = TerminalThemeCatalog.LoadBuiltIn("dark", TerminalColorMode.TrueColor);
+        var light = TerminalThemeCatalog.LoadBuiltIn("light", TerminalColorMode.TrueColor);
+        var view = new PiSharpToolRenderView([new("themed tool result", PiSharpToolTextStyle.Accent)]);
+        var darkOutput = TerminalToolPresentation.Render(view, dark) + Environment.NewLine;
+        var lightOutput = TerminalToolPresentation.Render(view, light) + Environment.NewLine;
+        var buffer = new TerminalTranscriptBuffer();
+
+        buffer.AppendThemed(darkOutput, isError: true, isToolResult: true,
+            themeRenderer: theme => TerminalToolPresentation.Render(view, theme) + Environment.NewLine,
+            capturedText: TerminalToolPresentation.Render(view, theme: null) + Environment.NewLine,
+            collapsedPreviewText: darkOutput);
+        buffer.ReRenderToolViews(light);
+
+        Assert.NotEqual(darkOutput, lightOutput);
+        Assert.Equal(lightOutput, buffer.GetRetainedText());
+        Assert.Equal(lightOutput, buffer.GetText());
+        Assert.DoesNotContain('\u001b', Assert.Single(buffer.CaptureSnapshot()).Text);
     }
 
     [Fact]

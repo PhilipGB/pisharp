@@ -1,16 +1,20 @@
 using System.Text;
 using System.Text.Json;
 using PiSharp.Runtime;
+using PiSharp.Runtime.Extensions;
 using PiSharp.Runtime.Sessions;
 
 namespace PiSharp.Cli.Tui;
 
 /// <summary>Renders agent lifecycle events as normal-screen transcript output.</summary>
 public sealed class InteractiveTranscript(TextWriter output, TextWriter status, bool interactive = true,
-    bool hideThinking = false, TerminalScreen? screen = null)
+    bool hideThinking = false, TerminalScreen? screen = null,
+    Func<string, PiSharpToolRenderer?>? toolRenderer = null, string? workingDirectory = null)
 {
     private readonly Dictionary<string, ShellOutputNormalizer> _liveBash = new(StringComparer.Ordinal);
     private readonly StringBuilder _assistantMarkdown = new();
+    private readonly TerminalToolPresentation _toolPresentation = new(toolRenderer,
+        workingDirectory ?? Environment.CurrentDirectory, () => screen?.ToolResultsExpanded ?? false);
 
     public bool HasAssistantOutput { get; private set; }
     public int ExitCode { get; private set; }
@@ -44,9 +48,7 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
                 status.WriteLine(Safe(update.Text));
                 break;
             case "tool_execution_started" when interactive:
-                var summary = ToolCallSummary.Format(update.Tool, update.ToolArguments);
-                status.WriteLine($"\n→ {Safe(update.Tool ?? "tool")}{(summary is null ? "" : $" · {Safe(summary)}")}" +
-                    (update.OperationId is null ? "" : $" ({Safe(update.OperationId)})"));
+                WriteToolCall(_toolPresentation.RenderCall(update));
                 break;
             case "tool_execution_update" when interactive && update.Tool == "bash" && !string.IsNullOrEmpty(update.Text):
                 WriteBashUpdate(update);
@@ -107,16 +109,21 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
         }
         else
         {
-            var result = update.IsError == true ? update.Error : update.Text;
-            if (update.Tool == "bash" && result is not null)
-                result = ShellOutputNormalizer.NormalizeComplete(result);
-            var rendered = $"← {(result is null ? update.IsError == true ? "tool failed" : "completed" : Safe(result))}{Environment.NewLine}";
-            if (screen is null) status.Write(rendered);
-            else screen.AppendToolResult(rendered, update.Images);
+            WriteToolResult(_toolPresentation.RenderResult(update, update.IsError == true), update.Images);
         }
+    }
 
-        if (update.Details is not null && ToolDetailsSummary.TryFormat(update.Details, out var summary))
-            status.WriteLine($"  {Safe(summary)}");
+    private void WriteToolCall(PiSharpToolRenderView view)
+    {
+        if (!interactive) return;
+        if (screen is null) status.WriteLine(Environment.NewLine + TerminalToolPresentation.Render(view, theme: null));
+        else screen.AppendToolCall(view);
+    }
+
+    private void WriteToolResult(PiSharpToolRenderView view, IReadOnlyList<Microsoft.Extensions.AI.DataContent>? images)
+    {
+        if (screen is null) status.WriteLine(TerminalToolPresentation.Render(view, theme: null));
+        else screen.AppendToolResult(view, images);
     }
 
     private string Safe(string value) => interactive ? TerminalSafeText.Normalize(value) : value;

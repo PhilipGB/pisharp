@@ -25,9 +25,11 @@ public sealed class ExtensionRegistration
         "compact", "export", "session", "trust", "reload", "quit", "exit"
     };
     private readonly Dictionary<string, AIFunction> _tools = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, PiSharpToolRenderer> _toolRenderers = new(StringComparer.Ordinal);
     private readonly Dictionary<string, Func<string, CancellationToken, Task<string>>> _commands = new(StringComparer.Ordinal);
     private readonly List<UserBashHandler> _userBashHandlers = [];
     public IReadOnlyCollection<AIFunction> Tools => _tools.Values;
+    public IReadOnlyDictionary<string, PiSharpToolRenderer> ToolRenderers => _toolRenderers;
     public IReadOnlyDictionary<string, Func<string, CancellationToken, Task<string>>> Commands => _commands;
     public IReadOnlyList<UserBashHandler> UserBashHandlers => _userBashHandlers;
 
@@ -36,6 +38,17 @@ public sealed class ExtensionRegistration
         ArgumentNullException.ThrowIfNull(tool);
         if (!_tools.TryAdd(tool.Name, tool)) throw new ArgumentException($"Duplicate extension tool: {tool.Name}");
     }
+
+    /// <summary>Registers an extension tool with optional safe terminal call/result renderers.</summary>
+    public void AddTool(AIFunction tool, PiSharpToolRenderer renderer)
+    {
+        ArgumentNullException.ThrowIfNull(renderer);
+        AddTool(tool);
+        _toolRenderers.Add(tool.Name, renderer);
+    }
+
+    public PiSharpToolRenderer? GetToolRenderer(string name) =>
+        _toolRenderers.TryGetValue(name, out var renderer) ? renderer : null;
 
     public void AddCommand(string name, Func<string, CancellationToken, Task<string>> handler)
     {
