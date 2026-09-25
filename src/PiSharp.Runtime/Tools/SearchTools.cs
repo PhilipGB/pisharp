@@ -99,7 +99,11 @@ public sealed class SearchTools(string workingDirectory)
                 throw new ToolFailureException($"File exceeds 10MB managed search limit: {relative}. Narrow the search path.");
             string[] lines;
             try { lines = (await File.ReadAllLinesAsync(file, cancellationToken)).Select(line => line.TrimEnd('\r')).ToArray(); }
-            catch (Exception error) when (error is IOException or UnauthorizedAccessException or DecoderFallbackException) { continue; }
+            catch (UnauthorizedAccessException error)
+            {
+                throw SearchInventory.PermissionDenied("rg", file, error);
+            }
+            catch (Exception error) when (error is IOException or DecoderFallbackException) { continue; }
             for (var index = 0; index < lines.Length; index++)
             {
                 cancellationToken.ThrowIfCancellationRequested();

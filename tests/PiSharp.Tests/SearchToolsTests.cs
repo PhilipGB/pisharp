@@ -448,4 +448,88 @@ public sealed class SearchToolsTests
         }
         finally { Directory.Delete(root, recursive: true); }
     }
+
+    [Fact]
+    public async Task GrepReportsUnreadableFilesLikeRipgrep()
+    {
+        if (!OperatingSystem.IsLinux()) return;
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-search-permission-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        var file = Path.Combine(root, "private.txt");
+        try
+        {
+            await File.WriteAllTextAsync(file, "needle\n");
+            File.SetUnixFileMode(file, UnixFileMode.None);
+
+            try { _ = File.ReadAllText(file); }
+            catch (UnauthorizedAccessException)
+            {
+                var error = await Assert.ThrowsAsync<ToolFailureException>(() => new SearchTools(root).Grep("needle"));
+                Assert.Equal($"rg: {file}: Permission denied (os error 13)", error.Message);
+                return;
+            }
+        }
+        finally
+        {
+            if (File.Exists(file)) File.SetUnixFileMode(file, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task GrepReportsUnreadableDirectoriesLikeRipgrep(bool initializeGitRepository)
+    {
+        if (!OperatingSystem.IsLinux()) return;
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-search-private-dir-" + Guid.NewGuid().ToString("N"));
+        var privateDirectory = Path.Combine(root, "private");
+        Directory.CreateDirectory(privateDirectory);
+        try
+        {
+            if (initializeGitRepository)
+            {
+                using var git = Process.Start(new ProcessStartInfo("git")
+                {
+                    WorkingDirectory = root,
+                    ArgumentList = { "init", "-q" }
+                });
+                Assert.NotNull(git);
+                await git.WaitForExitAsync();
+                Assert.Equal(0, git.ExitCode);
+            }
+
+            var file = Path.Combine(privateDirectory, "secret.txt");
+            await File.WriteAllTextAsync(file, "needle\n");
+            if (initializeGitRepository)
+            {
+                using var add = Process.Start(new ProcessStartInfo("git")
+                {
+                    WorkingDirectory = root,
+                    ArgumentList = { "add", "-f", "private/secret.txt" }
+                });
+                Assert.NotNull(add);
+                await add.WaitForExitAsync();
+                Assert.Equal(0, add.ExitCode);
+            }
+
+            File.SetUnixFileMode(privateDirectory, UnixFileMode.None);
+            try
+            {
+                _ = Directory.EnumerateFileSystemEntries(privateDirectory).ToArray();
+                return;
+            }
+            catch (UnauthorizedAccessException) { }
+
+            var error = await Assert.ThrowsAsync<ToolFailureException>(() => new SearchTools(root).Grep("needle"));
+            Assert.Equal($"rg: {privateDirectory}: Permission denied (os error 13)", error.Message);
+        }
+        finally
+        {
+            if (Directory.Exists(privateDirectory))
+                File.SetUnixFileMode(privateDirectory, UnixFileMode.UserRead | UnixFileMode.UserWrite |
+                    UnixFileMode.UserExecute);
+            Directory.Delete(root, recursive: true);
+        }
+    }
 }

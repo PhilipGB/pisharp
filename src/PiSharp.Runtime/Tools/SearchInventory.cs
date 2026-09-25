@@ -62,12 +62,16 @@ internal static class SearchInventory
                 bool AddCandidate(string relative)
                 {
                     var file = Path.GetFullPath(relative, root);
-                    if (File.Exists(file) && !File.GetAttributes(file).HasFlag(FileAttributes.ReparsePoint) &&
-                        !IsIgnored(file, isDirectory: false, RulesForDirectory(Path.GetDirectoryName(file)!)))
+                    var parent = Path.GetDirectoryName(file)!;
+                    if (IsIgnored(file, isDirectory: false, RulesForDirectory(parent))) return false;
+                    if (!File.Exists(file))
                     {
-                        if (results.Count >= MaxEntries) return true;
-                        results.Add(file);
+                        if (includeRgIgnore) ThrowIfParentIsInaccessible(parent);
+                        return false;
                     }
+                    if (File.GetAttributes(file).HasFlag(FileAttributes.ReparsePoint)) return false;
+                    if (results.Count >= MaxEntries) return true;
+                    results.Add(file);
                     return false;
                 }
                 while (!reachedLimit)
@@ -131,7 +135,12 @@ internal static class SearchInventory
             rules.AddRange(ReadIgnoreRules(directory, includeFdIgnore, includeRgIgnore));
             IEnumerable<string> entries;
             try { entries = Directory.EnumerateFileSystemEntries(directory).ToArray(); }
-            catch (Exception error) when (error is IOException or UnauthorizedAccessException) { continue; }
+            catch (UnauthorizedAccessException error)
+            {
+                if (includeRgIgnore) throw PermissionDenied("rg", directory, error);
+                continue;
+            }
+            catch (IOException) { continue; }
             foreach (var entry in entries)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -415,6 +424,23 @@ internal static class SearchInventory
 
     private static bool PathsEqual(string left, string right) => string.Equals(left, right,
         OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+
+    internal static ToolFailureException PermissionDenied(string tool, string path, Exception error)
+    {
+        var errorCode = OperatingSystem.IsWindows() ? 5 : 13;
+        return new ToolFailureException($"{tool}: {path}: Permission denied (os error {errorCode})", inner: error);
+    }
+
+    private static void ThrowIfParentIsInaccessible(string directory)
+    {
+        try
+        {
+            using var entries = Directory.EnumerateFileSystemEntries(directory).GetEnumerator();
+            _ = entries.MoveNext();
+        }
+        catch (UnauthorizedAccessException error) { throw PermissionDenied("rg", directory, error); }
+        catch (IOException) { }
+    }
 
     internal static string GlobRegex(string pattern)
     {
