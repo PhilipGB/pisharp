@@ -264,22 +264,29 @@ public sealed record TerminalInputEvent(ConsoleKeyInfo? Key, string? Text);
 internal sealed class TerminalMode : IDisposable
 {
     private readonly string _original;
-    private TerminalMode(string original) { _original = original; }
+    private readonly TerminalScreen? _screen;
+    private TerminalMode(string original, TerminalScreen? screen) { _original = original; _screen = screen; }
 
-    public static TerminalMode Enter()
+    public static TerminalMode Enter(TerminalScreen? screen = null)
     {
         var state = Stty("-g").Trim();
         if (string.IsNullOrEmpty(state)) throw new IOException("Could not read terminal settings.");
         Stty("-icanon", "-echo", "-isig", "min", "1", "time", "0");
-        try { Console.Write("\u001b[?2004h"); }
+        try { WriteControl(screen, "\u001b[?2004h"); }
         catch { Stty(state); throw; }
-        return new TerminalMode(state);
+        return new TerminalMode(state, screen);
     }
 
     public void Dispose()
     {
-        Console.Write("\u001b[?2004l");
+        WriteControl(_screen, "\u001b[?2004l");
         Stty(_original);
+    }
+
+    private static void WriteControl(TerminalScreen? screen, string value)
+    {
+        if (screen is { IsActive: true }) screen.WriteControl(value);
+        else Console.Write(value);
     }
 
     private static string Stty(params string[] args)

@@ -243,6 +243,9 @@ async Task Run(string input, IReadOnlyList<DataContent>? images = null)
     using var runCancel = new CancellationTokenSource();
     activeRun = runCancel;
     using var monitorStop = new CancellationTokenSource();
+    using var terminalScreen = editor is null ? null : new TerminalScreen(Console.Out, Console.Error);
+    terminalScreen?.Activate();
+    editor?.AttachScreen(terminalScreen);
     var monitor = Task.CompletedTask;
     var monitorStarted = false;
     var transcript = new InteractiveTranscript(Console.Out, Console.Error, interactive: !print,
@@ -295,6 +298,7 @@ async Task Run(string input, IReadOnlyList<DataContent>? images = null)
         if (sessionPath is not null)
             try { await store.SaveAsync(conversation, sessionPath); }
             catch (Exception e) { Console.Error.WriteLine($"Could not save session: {e.Message}"); Environment.ExitCode = 1; }
+        editor?.AttachScreen(null);
         activeRun = null;
     }
 }

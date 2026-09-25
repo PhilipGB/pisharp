@@ -1,0 +1,308 @@
+using System.Globalization;
+using System.Text;
+
+namespace PiSharp.Cli.Tui;
+
+/// <summary>Owns the active-run screen and composes transcript, status, and editor rows.</summary>
+public sealed class TerminalScreen : IDisposable
+{
+    private const int MaxScreenTranscriptCharacters = 1_000_000;
+    private const int MaxRestoredTranscriptCharacters = 4_000_000;
+    private readonly object _gate = new();
+    private readonly TextWriter _originalOut;
+    private readonly TextWriter _originalError;
+    private readonly Func<int> _getColumns;
+    private readonly Func<int> _getRows;
+    private readonly List<CapturedChunk> _captured = [];
+    private readonly StringBuilder _transcript = new();
+    private readonly ScreenWriter _out;
+    private readonly ScreenWriter _error;
+    private TextWriter? _installedOut;
+    private TextWriter? _installedError;
+    private string _editorText = "";
+    private int _editorCursor;
+    private string _footer = "Enter steers · follow-up queues · Escape aborts";
+    private int _capturedCharacters;
+    private bool _captureTruncated;
+    private bool _activated;
+    private volatile bool _active = true;
+
+    public TerminalScreen(TextWriter originalOut, TextWriter originalError,
+        Func<int>? getColumns = null, Func<int>? getRows = null)
+    {
+        ArgumentNullException.ThrowIfNull(originalOut);
+        ArgumentNullException.ThrowIfNull(originalError);
+        _originalOut = originalOut;
+        _originalError = originalError;
+        _getColumns = getColumns ?? ReadColumns;
+        _getRows = getRows ?? ReadRows;
+        _out = new(this, isError: false);
+        _error = new(this, isError: true);
+        try
+        {
+            _originalOut.Write("\u001b[?1049h\u001b[?25l");
+            lock (_gate) RenderLocked();
+        }
+        catch
+        {
+            _originalOut.Write("\u001b[?25h\u001b[?1049l");
+            _active = false;
+            throw;
+        }
+    }
+
+    public TextWriter Output => _out;
+    public TextWriter Error => _error;
+    public bool IsActive => _active;
+
+    public void Activate()
+    {
+        lock (_gate)
+        {
+            if (!_active || _activated) return;
+            Console.SetOut(_out);
+            Console.SetError(_error);
+            _installedOut = Console.Out;
+            _installedError = Console.Error;
+            _activated = true;
+        }
+    }
+
+    public void SetEditor(string text, int cursor)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        lock (_gate)
+        {
+            if (!_active) return;
+            _editorText = text;
+            _editorCursor = Math.Clamp(cursor, 0, text.Length);
+            RenderLocked();
+        }
+    }
+
+    public void SetFooter(string text)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        lock (_gate)
+        {
+            if (!_active) return;
+            _footer = TerminalSafeText.Normalize(text);
+            RenderLocked();
+        }
+    }
+
+    public void RefreshIfResized()
+    {
+        lock (_gate)
+        {
+            if (_active && (Columns() != _lastColumns || Rows() != _lastRows)) RenderLocked();
+        }
+    }
+
+    internal void WriteControl(string value)
+    {
+        lock (_gate)
+        {
+            if (_active) _originalOut.Write(value);
+        }
+    }
+
+    public void Dispose()
+    {
+        List<CapturedChunk> captured;
+        bool truncated;
+        lock (_gate)
+        {
+            if (!_active) return;
+            _active = false;
+            if (_activated)
+            {
+                if (ReferenceEquals(Console.Out, _installedOut)) Console.SetOut(_originalOut);
+                if (ReferenceEquals(Console.Error, _installedError)) Console.SetError(_originalError);
+            }
+            _originalOut.Write("\u001b[?25h\u001b[?1049l");
+            captured = _captured;
+            truncated = _captureTruncated;
+        }
+
+        foreach (var chunk in captured)
+        {
+            var writer = chunk.IsError ? _originalError : _originalOut;
+            writer.Write(chunk.Text.ToString());
+            writer.Flush();
+        }
+        if (truncated)
+        {
+            _originalError.WriteLine("Interactive transcript exceeded the scrollback restore limit; the active screen was still rendered in full.");
+            _originalError.Flush();
+        }
+    }
+
+    private int _lastColumns;
+    private int _lastRows;
+
+    private void Append(string value, bool isError)
+    {
+        var safe = TerminalSafeText.Normalize(value);
+        lock (_gate)
+        {
+            if (!_active || safe.Length == 0) return;
+            Capture(safe, isError);
+            _transcript.Append(safe);
+            if (_transcript.Length > MaxScreenTranscriptCharacters)
+            {
+                var excess = _transcript.Length - MaxScreenTranscriptCharacters;
+                var trim = _transcript.ToString(excess, Math.Min(MaxScreenTranscriptCharacters, 64 * 1024)).IndexOf('\n');
+                _transcript.Remove(0, trim < 0 ? excess : excess + trim + 1);
+            }
+            RenderLocked();
+        }
+    }
+
+    private void Capture(string safe, bool isError)
+    {
+        var remaining = MaxRestoredTranscriptCharacters - _capturedCharacters;
+        if (remaining <= 0)
+        {
+            _captureTruncated = true;
+            return;
+        }
+        if (safe.Length > remaining)
+        {
+            safe = safe[..remaining];
+            _captureTruncated = true;
+        }
+        if (_captured.Count > 0 && _captured[^1].IsError == isError)
+            _captured[^1].Text.Append(safe);
+        else
+            _captured.Add(new(isError, new StringBuilder(safe)));
+        _capturedCharacters += safe.Length;
+    }
+
+    private void RenderLocked()
+    {
+        var columns = _lastColumns = Columns();
+        var height = _lastRows = Rows();
+        var editorHeight = Math.Clamp(height / 3, 1, Math.Max(1, height - 2));
+        var footerHeight = height > 2 ? 1 : 0;
+        var transcriptHeight = Math.Max(1, height - editorHeight - footerHeight);
+        var editor = EditorViewport.Layout(_editorText, _editorCursor, columns, editorHeight);
+        var transcriptRows = WrapTail(_transcript.ToString(), Math.Max(1, columns - 1), transcriptHeight);
+        var screenRows = Enumerable.Repeat("", height).ToArray();
+        var transcriptStart = transcriptHeight - transcriptRows.Count;
+        for (var index = 0; index < transcriptRows.Count; index++)
+            screenRows[transcriptStart + index] = transcriptRows[index];
+        var editorStart = transcriptHeight + editorHeight - editor.Rows.Count;
+        for (var index = 0; index < editor.Rows.Count; index++)
+            screenRows[editorStart + index] = editor.Rows[index];
+        if (footerHeight > 0) screenRows[^1] = Clip(_footer, columns - 1);
+
+        _originalOut.Write("\u001b[?2026h\u001b[2J\u001b[H");
+        for (var index = 0; index < screenRows.Length; index++)
+        {
+            _originalOut.Write(screenRows[index]);
+            _originalOut.Write("\u001b[K");
+            if (index < screenRows.Length - 1) _originalOut.Write("\r\n");
+        }
+        var cursorRow = editorStart + editor.CursorRow + 1;
+        _originalOut.Write($"\u001b[{cursorRow};{Math.Clamp(editor.CursorColumn, 1, columns)}H\u001b[?25h\u001b[?2026l");
+        _originalOut.Flush();
+    }
+
+    private static List<string> WrapTail(string text, int width, int maxRows)
+    {
+        var rows = new Queue<string>(maxRows);
+        void Add(string value)
+        {
+            if (rows.Count == maxRows) rows.Dequeue();
+            rows.Enqueue(value);
+        }
+
+        foreach (var line in text.Split('\n'))
+        {
+            if (line.Length == 0)
+            {
+                Add("");
+                continue;
+            }
+            var current = new StringBuilder();
+            var used = 0;
+            var elements = StringInfo.GetTextElementEnumerator(line);
+            while (elements.MoveNext())
+            {
+                var element = (string)elements.Current;
+                var cells = Math.Max(0, TerminalCells.Width(element));
+                if (used + cells > width)
+                {
+                    Add(current.ToString());
+                    current.Clear();
+                    used = 0;
+                }
+                current.Append(element);
+                used += cells;
+            }
+            Add(current.ToString());
+        }
+        return rows.ToList();
+    }
+
+    private static string Clip(string value, int width)
+    {
+        var result = new StringBuilder();
+        var used = 0;
+        var elements = StringInfo.GetTextElementEnumerator(value);
+        while (elements.MoveNext())
+        {
+            var element = (string)elements.Current;
+            var cells = Math.Max(0, TerminalCells.Width(element));
+            if (used + cells > width) break;
+            result.Append(element);
+            used += cells;
+        }
+        return result.ToString();
+    }
+
+    private int Columns()
+    {
+        try { return Math.Clamp(_getColumns(), 20, 400); }
+        catch (IOException) { return 80; }
+    }
+
+    private int Rows()
+    {
+        try { return Math.Clamp(_getRows(), 3, 200); }
+        catch (IOException) { return 24; }
+    }
+
+    private static int ReadColumns()
+    {
+        try { return Console.WindowWidth; }
+        catch (IOException) { return 80; }
+    }
+
+    private static int ReadRows()
+    {
+        try { return Console.WindowHeight; }
+        catch (IOException) { return 24; }
+    }
+
+    private sealed class CapturedChunk(bool isError, StringBuilder text)
+    {
+        public bool IsError { get; } = isError;
+        public StringBuilder Text { get; } = text;
+    }
+
+    private sealed class ScreenWriter(TerminalScreen screen, bool isError) : TextWriter
+    {
+        public override Encoding Encoding => Encoding.UTF8;
+        public override void Write(char value) => screen.Append(value.ToString(), isError);
+        public override void Write(string? value)
+        {
+            if (value is not null) screen.Append(value, isError);
+        }
+        public override void Write(char[] buffer, int index, int count) => screen.Append(new string(buffer, index, count), isError);
+        public override void WriteLine() => screen.Append(Environment.NewLine, isError);
+        public override void WriteLine(string? value) => screen.Append((value ?? "") + Environment.NewLine, isError);
+        public override void Flush() { }
+    }
+}

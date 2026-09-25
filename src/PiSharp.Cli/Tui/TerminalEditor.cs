@@ -7,6 +7,7 @@ public sealed class TerminalEditor
     private TerminalInput? _input;
     private readonly EditorCompletion _completion;
     private readonly EditorKeymap _keymap;
+    private TerminalScreen? _screen;
     public TerminalEditor(Func<IReadOnlyList<string>>? commands = null, string? agentDirectory = null)
     {
         _completion = new(Environment.CurrentDirectory, commands);
@@ -21,6 +22,12 @@ public sealed class TerminalEditor
     public string Hotkeys => _keymap.FormatHotkeys();
 
     public void ReloadKeybindings() => _keymap.Reload();
+
+    public void AttachScreen(TerminalScreen? screen)
+    {
+        _screen = screen;
+        if (screen is not null) screen.SetEditor(_buffer.Text, _buffer.Cursor);
+    }
 
     /// <summary>Seed the next editable prompt after a session fork; never submits it automatically.</summary>
     public void Prefill(string text) => _buffer.SetText(text);
@@ -42,13 +49,15 @@ public sealed class TerminalEditor
         try
         {
             Console.TreatControlCAsInput = true;
-            using var mode = TerminalMode.Enter();
+            using var mode = TerminalMode.Enter(_screen);
             _input ??= TerminalInput.OpenConsole();
+            _screen?.SetFooter("Enter steers · follow-up queues · Escape aborts · Alt+Up restores queued input");
             Render();
             while (!cancellationToken.IsCancellationRequested)
             {
                 if (!_input.TryRead(50, out var next))
                 {
+                    _screen?.RefreshIfResized();
                     await Task.Delay(10, CancellationToken.None);
                     continue;
                 }
@@ -167,6 +176,11 @@ public sealed class TerminalEditor
 
     private void ClearLine()
     {
+        if (_screen is { IsActive: true })
+        {
+            _screen.SetEditor("", 0);
+            return;
+        }
         if (_renderedRows == 0) { Console.Write("\r\u001b[2K"); return; }
         if (_cursorRow > 0) Console.Write($"\u001b[{_cursorRow}A");
         for (var row = 0; row < _renderedRows; row++)
@@ -182,6 +196,11 @@ public sealed class TerminalEditor
 
     private void Render()
     {
+        if (_screen is { IsActive: true })
+        {
+            _screen.SetEditor(_buffer.Text, _buffer.Cursor);
+            return;
+        }
         var width = Console.WindowWidth > 0 ? Console.WindowWidth : 80;
         var height = Console.WindowHeight > 0 ? Console.WindowHeight : 24;
         var frame = EditorViewport.Layout(_buffer.Text, _buffer.Cursor, width, Math.Max(1, height / 3));

@@ -13,6 +13,13 @@ Supplement to the authoritative [feature matrix](feature-matrix.md). These are *
 | Runtime | `/trust`, `/reload`, `/hotkeys`, `/changelog`, `/quit` | Trust persistence, resource reload without stale handlers, interactive help and clean terminal exit | `/quit`, `/trust yes|no|forget`, `/reload` and `/hotkeys` are implemented; reload refreshes editor keybindings, and a Linux PTY test covers a configured Ctrl+X submit binding |
 | Dynamic | template names, `/skill:name`, extension-registered commands | Loaded resource commands discoverable and completable; missing resource error | In progress: explicit/discovered skills and templates expand in terminal/print/JSON/RPC, completion and RPC `get_commands` list resources; native extension terminal commands are loaded separately. No full Pi dynamic-command lifecycle, RPC extension-command discovery or upstream differential. |
 
+## Terminal UI (`docs/tui.md`, `docs/terminal-setup.md`, `packages/tui/src/`)
+
+| Surface | Pi interface | PiSharp status and evidence |
+|---|---|---|
+| Editor and input | Multiline editing, completion, history, paste, configurable bindings | Normal-screen editor has a bounded wrapped viewport, partial `/` and `@` completion, bracketed paste, and a configurable keybinding subset with `/hotkeys`; Linux PTY covers configured Ctrl+X submit. Selection, clipboard, external editor, complete history/completion and wider application shortcuts remain open |
+| Live turn screen | Transcript, editor, status/footer, normal or alternate screen, resize and scroll | Active turns use a bounded alternate-screen compositor; transcript and draft share redraw coordination, resize is polled, controls are filtered, and captured stdout/stderr are restored to scrollback after the run. Unit tests cover Unicode layout, resizing, control filtering and console-writer restoration. Markdown/code rendering, transcript scroll/search, mouse, full alternate-screen idle UI, crash restoration and a provider-backed active-run PTY fixture remain open |
+
 ## CLI (`cli.md` and `src/cli/`)
 
 | Group | Flags/interfaces | Required behaviour / recovery | Status |
