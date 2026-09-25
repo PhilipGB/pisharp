@@ -8,6 +8,26 @@ namespace PiSharp.Tests;
 public sealed class AgentIntegrationTests
 {
     [Fact]
+    public async Task BashToolReceivesCurrentConversationAndRunMetadata()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-bash-session-env-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        try
+        {
+            var conversation = new ConversationSession(cwd, "fixture-model", null, "fixture-provider");
+            var sessionFile = Path.Combine(cwd, "fixture.session.json");
+            var command = "printf '%s|%s|%s|%s|%s' \"$PI_SESSION_ID\" \"$PI_SESSION_FILE\" \"$PI_PROVIDER\" \"$PI_MODEL\" \"$PI_REASONING_LEVEL\"";
+            var client = new BashCommandClient(command);
+            var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(cwd)), conversation,
+                sessionFile: sessionFile, provider: "fixture-provider", reasoningLevel: "high");
+            await foreach (var _ in run.RunEventsAsync("inspect session environment")) { }
+
+            Assert.Equal($"{conversation.Id}|{sessionFile}|fixture-provider|fixture-model|high", client.ToolResult);
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Fact]
     public async Task ModelToolCallWritesFileAndContinuesStreaming()
     {
         var dir = Path.Combine(Path.GetTempPath(), "pisharp-agent-" + Guid.NewGuid());
@@ -187,6 +207,7 @@ public sealed class AgentIntegrationTests
     private sealed class BashCommandClient(string command) : IChatClient
     {
         private int _requests;
+        public string? ToolResult { get; private set; }
         public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
             CancellationToken cancellationToken = default) => throw new NotSupportedException();
         public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
@@ -195,7 +216,11 @@ public sealed class AgentIntegrationTests
             if (Interlocked.Increment(ref _requests) == 1)
                 yield return new ChatResponseUpdate(ChatRole.Assistant,
                     [new FunctionCallContent("bash-live", "bash", new Dictionary<string, object?> { ["command"] = command })]);
-            else yield return new ChatResponseUpdate(ChatRole.Assistant, "done");
+            else
+            {
+                ToolResult = messages.SelectMany(message => message.Contents).OfType<FunctionResultContent>().Single().Result?.ToString();
+                yield return new ChatResponseUpdate(ChatRole.Assistant, "done");
+            }
             await Task.CompletedTask;
         }
         public object? GetService(Type serviceType, object? serviceKey = null) => null;

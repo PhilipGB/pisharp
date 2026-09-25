@@ -148,9 +148,11 @@ try
     modelPricing = ModelPricing.FromEnvironment(Environment.GetEnvironmentVariable) ?? selection.Model.Pricing;
 }
 catch (ArgumentException error) { Console.Error.WriteLine(error.Message); Environment.ExitCode = 2; return; }
-Task<ConversationRun> OpenRunAsync(PiAgent runningAgent, ConversationSession session, string? path) =>
+Task<ConversationRun> OpenRunAsync(PiAgent runningAgent, ConversationSession session, string? path,
+    string? runProvider = null, string? reasoningLevel = null) =>
     ConversationRun.OpenAsync(runningAgent, session, save: path is null ? null :
-        token => store.SaveAsync(session, path, token), autoCompaction: contextPolicy, pricing: modelPricing);
+        token => store.SaveAsync(session, path, token), autoCompaction: contextPolicy, pricing: modelPricing,
+        sessionFile: path, provider: runProvider ?? selection.Provider.Id, reasoningLevel: reasoningLevel ?? thinking);
 var sessionPath = cli.NoSession || cli.ForkSource is not null ? null : cli.SessionPath is not null &&
     (cli.SessionPath.Contains(Path.DirectorySeparatorChar) || cli.SessionPath.EndsWith(".session.json", StringComparison.Ordinal))
     ? Path.GetFullPath(cli.SessionPath) : cli.Continue ? store.MostRecentPath() : null;
@@ -358,7 +360,7 @@ async Task ReplaceModelRuntime(ModelSelection nextSelection, string nextThinking
             conversation.SelectModel(nextConnection.Model, nextConnection.Endpoint?.ToString(), nextSelection.Provider.Id);
         contextPolicy = nextPolicy;
         modelPricing = nextPricing;
-        var nextRun = await OpenRunAsync(nextAgent, conversation, sessionPath);
+        var nextRun = await OpenRunAsync(nextAgent, conversation, sessionPath, nextSelection.Provider.Id, nextThinking);
         if (sessionPath is not null) await store.SaveAsync(conversation, sessionPath);
         selection = nextSelection;
         connection = nextConnection;

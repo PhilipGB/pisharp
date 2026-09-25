@@ -135,13 +135,16 @@ public sealed class PiAgent
     internal IAsyncEnumerable<AgentResponseUpdate> RunStreamingDurableAsync(string prompt, AgentSession session,
         CancellationToken cancellationToken, DurableExecution? durable, Action<AgentLifecycleEvent>? onEvent = null,
         Func<IReadOnlyList<ChatMessage>>? takeSteering = null,
-        Func<IReadOnlyList<ChatMessage>, bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? projectContext = null) =>
-        RunStreamingDurableAsync(new ChatMessage(ChatRole.User, prompt), session, cancellationToken, durable, onEvent, takeSteering, projectContext);
+        Func<IReadOnlyList<ChatMessage>, bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? projectContext = null,
+        IReadOnlyDictionary<string, string?>? bashSessionEnvironment = null) =>
+        RunStreamingDurableAsync(new ChatMessage(ChatRole.User, prompt), session, cancellationToken, durable, onEvent,
+            takeSteering, projectContext, bashSessionEnvironment);
 
     internal async IAsyncEnumerable<AgentResponseUpdate> RunStreamingDurableAsync(ChatMessage prompt, AgentSession session,
         [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken, DurableExecution? durable,
         Action<AgentLifecycleEvent>? onEvent = null, Func<IReadOnlyList<ChatMessage>>? takeSteering = null,
-        Func<IReadOnlyList<ChatMessage>, bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? projectContext = null)
+        Func<IReadOnlyList<ChatMessage>, bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? projectContext = null,
+        IReadOnlyDictionary<string, string?>? bashSessionEnvironment = null)
     {
         await _runGate.WaitAsync(cancellationToken);
         try
@@ -152,9 +155,17 @@ public sealed class PiAgent
             _projectContext = projectContext;
             _providerRequestIndex = 0;
             _injectedSteering.Clear();
+            AgentRunOptions? runOptions = null;
+            if (bashSessionEnvironment is { Count: > 0 })
+            {
+                var properties = new AdditionalPropertiesDictionary();
+                foreach (var (key, value) in bashSessionEnvironment)
+                    if (value is not null) properties[key] = value;
+                runOptions = new AgentRunOptions { AdditionalProperties = properties };
+            }
             try
             {
-                await foreach (var update in _agent.RunStreamingAsync(prompt, session: session, cancellationToken: cancellationToken))
+                await foreach (var update in _agent.RunStreamingAsync(prompt, session, runOptions, cancellationToken))
                     yield return update;
             }
             finally

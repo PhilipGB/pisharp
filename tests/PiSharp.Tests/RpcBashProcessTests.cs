@@ -30,6 +30,8 @@ public sealed class RpcBashProcessTests
             foreach (var argument in new[] { "--mode", "rpc", "--local", "--offline", "--no-session" })
                 start.ArgumentList.Add(argument);
             start.Environment["PISHARP_AGENT_DIR"] = agent;
+            foreach (var name in new[] { "PI_SESSION_ID", "PI_SESSION_FILE", "PI_PROVIDER", "PI_MODEL", "PI_REASONING_LEVEL" })
+                start.Environment[name] = "stale-session-value";
             process = Process.Start(start)!;
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
             var stderr = process.StandardError.ReadToEndAsync();
@@ -38,7 +40,7 @@ public sealed class RpcBashProcessTests
             {
                 id = "process-bash",
                 type = "bash",
-                command = "printf process-stdout; printf process-stderr >&2; exit 7",
+                command = "printf process-stdout; printf process-stderr >&2; printf 'env:%s|%s|%s|%s|%s' \"${PI_SESSION_ID-unset}\" \"${PI_SESSION_FILE-unset}\" \"${PI_PROVIDER-unset}\" \"${PI_MODEL-unset}\" \"${PI_REASONING_LEVEL-unset}\"; exit 7",
                 excludeFromContext = true
             }, timeout.Token);
             await ReadResponsesAsync(process, ["process-bash"], firstLines, timeout.Token);
@@ -51,6 +53,7 @@ public sealed class RpcBashProcessTests
                 Assert.Equal(7, data.GetProperty("exitCode").GetInt32());
                 Assert.Contains("process-stdout", data.GetProperty("output").GetString());
                 Assert.Contains("process-stderr", data.GetProperty("output").GetString());
+                Assert.Contains("env:unset|unset|unset|unset|unset", data.GetProperty("output").GetString());
             }
             var updates = firstLines.Where(line => line.Contains("bash_execution_update", StringComparison.Ordinal)).ToArray();
             Assert.NotEmpty(updates);

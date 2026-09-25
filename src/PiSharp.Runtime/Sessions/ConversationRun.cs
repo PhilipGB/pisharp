@@ -15,6 +15,9 @@ public sealed class ConversationRun
     private readonly Func<CancellationToken, Task>? _save;
     private readonly AutoCompactionPolicy? _autoCompaction;
     private readonly ModelPricing? _pricing;
+    private readonly string? _sessionFile;
+    private readonly string? _provider;
+    private readonly string? _reasoningLevel;
     private readonly SemaphoreSlim _gate = new(1, 1);
     private readonly object _promptQueueGate = new();
     private readonly Queue<string> _steeringQueue = new();
@@ -27,12 +30,16 @@ public sealed class ConversationRun
     public ConversationSession Conversation { get; }
 
     private ConversationRun(PiAgent agent, ConversationSession conversation, AgentSession execution, Func<CancellationToken, Task>? save,
-        AutoCompactionPolicy? autoCompaction, ModelPricing? pricing)
+        AutoCompactionPolicy? autoCompaction, ModelPricing? pricing, string? sessionFile, string? provider,
+        string? reasoningLevel)
     {
         _agent = agent;
         _save = save;
         _autoCompaction = autoCompaction;
         _pricing = pricing;
+        _sessionFile = sessionFile is null ? null : Path.GetFullPath(sessionFile);
+        _provider = provider;
+        _reasoningLevel = reasoningLevel;
         Conversation = conversation;
         _execution = execution;
         _historyCount = conversation.ContextMessages().Count;
@@ -40,12 +47,14 @@ public sealed class ConversationRun
 
     public static async Task<ConversationRun> OpenAsync(PiAgent agent, ConversationSession conversation,
         CancellationToken cancellationToken = default, Func<CancellationToken, Task>? save = null,
-        AutoCompactionPolicy? autoCompaction = null, ModelPricing? pricing = null)
+        AutoCompactionPolicy? autoCompaction = null, ModelPricing? pricing = null, string? sessionFile = null,
+        string? provider = null, string? reasoningLevel = null)
     {
         if (autoCompaction is not null) _ = autoCompaction.TriggerTokens;
         if (conversation.RecoverIncomplete() && save is not null) await save(cancellationToken);
         var execution = await agent.RestoreHistoryAsync(conversation.ContextMessages(), cancellationToken);
-        return new ConversationRun(agent, conversation, execution, save, autoCompaction, pricing);
+        return new ConversationRun(agent, conversation, execution, save, autoCompaction, pricing, sessionFile, provider,
+            reasoningLevel);
     }
 
     /// <summary>Queue guidance ahead of follow-up work on the active application run.</summary>
@@ -386,7 +395,8 @@ public sealed class ConversationRun
                     onEvent?.Invoke(new("context_compacted_in_flight", Text: "Continuation request summarized; canonical history was not changed."));
                 });
             await foreach (var update in _agent.RunStreamingDurableAsync(promptMessage, _execution, cancellationToken, durable,
-                onEvent, TakeSteeringForProvider, inFlightBudget is null ? null : inFlightBudget.ProjectAsync))
+                onEvent, TakeSteeringForProvider, inFlightBudget is null ? null : inFlightBudget.ProjectAsync,
+                CreateBashSessionEnvironment()))
             {
                 if (!string.IsNullOrEmpty(update.Text))
                 {
@@ -436,6 +446,20 @@ public sealed class ConversationRun
         if (measured is null) return AutoCompactionPolicy.Estimate(Conversation.ContextMessages(), prompt);
         var pending = (prompt.Length + 1L) / 2 + 64;
         return (int)Math.Min(int.MaxValue, measured.Value + pending);
+    }
+
+    private IReadOnlyDictionary<string, string?> CreateBashSessionEnvironment()
+    {
+        var environment = new Dictionary<string, string?>(StringComparer.Ordinal)
+        {
+            ["PI_SESSION_ID"] = Conversation.Id,
+            ["PI_MODEL"] = Conversation.Model
+        };
+        var provider = _provider ?? Conversation.Provider;
+        if (provider is not null) environment["PI_PROVIDER"] = provider;
+        if (_sessionFile is not null) environment["PI_SESSION_FILE"] = _sessionFile;
+        if (_reasoningLevel is not null) environment["PI_REASONING_LEVEL"] = _reasoningLevel;
+        return environment;
     }
 
     private static AgentLifecycleEvent UsageEvent(UsageRecord usage) => new("usage",

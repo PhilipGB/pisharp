@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text;
+using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using PiSharp.Core;
 using PiSharp.Runtime.Tools;
@@ -16,6 +17,8 @@ public sealed class CodingTools
     internal const string BashOutputContextKey = "PiSharp.Runtime.BashOutputUpdate";
     private const double MaxTimeoutSeconds = int.MaxValue / 1000d;
     private static readonly TimeSpan s_stdioIdleGrace = TimeSpan.FromMilliseconds(100);
+    private static readonly string[] s_piSessionEnvironmentNames =
+        ["PI_SESSION_ID", "PI_SESSION_FILE", "PI_PROVIDER", "PI_MODEL", "PI_REASONING_LEVEL"];
     private readonly string _cwd;
     private readonly string? _shellPath;
     private readonly ConcurrentDictionary<Guid, CancellationTokenSource> _runningBash = new();
@@ -214,7 +217,7 @@ public sealed class CodingTools
         }
     }
 
-    [Description("Execute a bash command in the current working directory. Returns stdout and stderr. Output is truncated to the last 2000 lines or 50KB, whichever is hit first. If truncated, full output is saved to a temp file. Optionally provide a timeout in seconds.")]
+    [Description("Execute a bash command in the current working directory. Returns stdout and stderr. Output is truncated to the last 2000 lines or 50KB, whichever is hit first. If truncated, full output is saved to a temp file. The shell receives PI_SESSION_ID, PI_SESSION_FILE when saved, PI_PROVIDER, PI_MODEL and PI_REASONING_LEVEL for the current run.")]
     private Task<string> BashForTool(
         [Description("Shell command to execute.")] string command,
         [Description("Optional timeout in seconds; no default timeout.")] double? timeout = null,
@@ -224,7 +227,7 @@ public sealed class CodingTools
         Action<string>? onUpdate = null;
         if (arguments?.Context?.TryGetValue(BashOutputContextKey, out var value) == true)
             onUpdate = value as Action<string>;
-        return BashToolAsync(command, timeout, onUpdate, cancellationToken);
+        return BashToolAsync(command, timeout, onUpdate, cancellationToken, CurrentBashSessionEnvironment());
     }
 
     /// <summary>Execute bash in the configured working directory, returning the bounded combined output.</summary>
@@ -246,16 +249,18 @@ public sealed class CodingTools
     }
 
     private async Task<string> BashToolAsync(string command, double? timeout, Action<string>? onUpdate,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken, IReadOnlyDictionary<string, string?>? sessionEnvironment = null)
     {
-        var result = await BashCoreAsync(command, timeout, onUpdate, cancellationToken, returnCancellationResult: false);
+        var result = await BashCoreAsync(command, timeout, onUpdate, cancellationToken, returnCancellationResult: false,
+            sessionEnvironment);
         if (result.ExitCode is { } exitCode && exitCode != 0)
             throw new ToolFailureException($"Command exited with code {exitCode}", result.DisplayOutput, exitCode);
         return result.DisplayOutput;
     }
 
     private async Task<BashExecutionResult> BashCoreAsync(string command, double? timeout, Action<string>? onUpdate,
-        CancellationToken cancellationToken, bool returnCancellationResult)
+        CancellationToken cancellationToken, bool returnCancellationResult,
+        IReadOnlyDictionary<string, string?>? sessionEnvironment = null)
     {
         if (timeout.HasValue && (!double.IsFinite(timeout.Value) || timeout.Value <= 0))
             throw new ToolFailureException("Invalid timeout: must be a finite number of seconds");
@@ -270,7 +275,10 @@ public sealed class CodingTools
         _runningBash[operationId] = abortSource;
         using var timeoutSource = new CancellationTokenSource();
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutSource.Token, abortSource.Token);
-        using var process = new Process { StartInfo = CreateStartInfo(shell, command, _cwd, out var processGroup) };
+        using var process = new Process
+        {
+            StartInfo = CreateStartInfo(shell, command, _cwd, out var processGroup, sessionEnvironment)
+        };
         using var pumpStop = new CancellationTokenSource();
         await using var output = new ShellOutputBuffer();
         using var updates = new BashOutputUpdates(onUpdate);
@@ -408,7 +416,7 @@ public sealed class CodingTools
     }
 
     private static ProcessStartInfo CreateStartInfo(string shell, string command, string workingDirectory,
-        out bool processGroup)
+        out bool processGroup, IReadOnlyDictionary<string, string?>? sessionEnvironment)
     {
         processGroup = false;
         var start = new ProcessStartInfo
@@ -439,7 +447,27 @@ public sealed class CodingTools
         if (!path.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries).Contains(appDirectory,
                 OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal))
             start.Environment[pathKey] = path.Length == 0 ? appDirectory : appDirectory + Path.PathSeparator + path;
+        foreach (var name in s_piSessionEnvironmentNames) start.Environment.Remove(name);
+        if (sessionEnvironment is not null)
+            foreach (var name in s_piSessionEnvironmentNames)
+                if (sessionEnvironment.TryGetValue(name, out var value) && value is not null)
+                    start.Environment[name] = value;
         return start;
+    }
+
+    private static IReadOnlyDictionary<string, string?>? CurrentBashSessionEnvironment()
+    {
+        AgentRunContext? context;
+        try { context = AIAgent.CurrentRunContext; }
+        catch (InvalidOperationException) { return null; }
+        if (context is null) return null;
+        var properties = context.RunOptions?.AdditionalProperties;
+        if (properties is null) return null;
+        var environment = new Dictionary<string, string?>(StringComparer.Ordinal);
+        foreach (var name in s_piSessionEnvironmentNames)
+            if (properties.TryGetValue(name, out var value) && value is string text)
+                environment[name] = text;
+        return environment;
     }
 
     private static string ResolveShell(string? customPath, string workingDirectory)
