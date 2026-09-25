@@ -6,7 +6,7 @@
 
 ## Current checkpoint
 
-- Latest exact known-good head `94805a8206306ae5aab166cbb523c8af786489b3` passed Linux CI [36194265892](https://github.com/PhilipGB/pisharp/actions/runs/36194265892): format, warnings-as-errors build, 533 tests (0 failed, 0 skipped). The current RPC thinking-control slice is locally validated (format, build, 535 tests) and awaits its source commit and exact-head CI.
+- Exact source head `1bb382e3f1002b2191afb1b30b24b128d2140aa8` passed Linux CI [36196277855](https://github.com/PhilipGB/pisharp/actions/runs/36196277855): format, warnings-as-errors build, 535 tests (0 failed, 0 skipped). Focused RPC/session tests passed 29/29.
 - Durable Pi parity baseline remains `b3487650f6378f1b0d1643dd254445ceb4a98035`; current Pi `main` was refreshed to `d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31` for scoped image, theme, session and RPC inspection. This is not a full audit.
 - Pi JSONL v1-v3 import and v3 export now preserve branches, active head, context edits, compactions and unknown entries; startup `--session`, `/import` and `/export-jsonl` are covered. Import currently requires the source CWD to equal the running project directory.
 - The TUI has a persistent active/idle screen, Markdig AST rendering, shared cell-aware wrapping, transcript scrolling/search, modal pickers, mouse selection, themes, image output and safe extension tool renderers. Recorded residuals and the broader TUI differential remain open.
@@ -19,5 +19,5 @@
 
 ## Priority and next action
 
-1. Commit and push the locally validated RPC thinking-control slice, confirm exact-head Linux CI, then continue RPC event payload normalization.
+1. Continue Pi RPC event normalization: emit top-level `thinking_level_changed` with Pi ordering and process evidence, then extend normalization across turn/message/tool/queue events.
 2. Continue sessions/interoperability, settings/resources/extensions, multimodal and provider/auth breadth. Carry the recorded TUI residuals into the final audit; avoid broad TUI polish without a material capability gap or differential.

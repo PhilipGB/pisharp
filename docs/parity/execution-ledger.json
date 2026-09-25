@@ -1140,7 +1140,7 @@
       "evidence": [
         "tests/PiSharp.Tests/RpcModeTests.cs: local protocol/command fixtures (coverage varies by operation)",
         "RpcModelProcessTests.RpcModelAndThinkingCommandsSelectAndCycleTheRunningRuntime verifies off/max state after runtime changes; RpcModelProcessTests.RpcStartupRestoresThinkingLevelFromTheSelectedSessionBranch verifies startup restores the persisted branch level.",
-        "Current local working tree: dotnet format PiSharp.slnx --verify-no-changes --no-restore passed; dotnet build PiSharp.slnx --warnaserror succeeded with 0 warnings/errors; dotnet test PiSharp.slnx passed 535/535 (0 failed, 0 skipped). Exact committed-head CI is pending."
+        "Exact commit 1bb382e3f1002b2191afb1b30b24b128d2140aa8 passed Linux CI run 36196277855: format passed, warnings-as-errors build passed with 0 warnings/errors, and all 535 tests passed (0 failed, 0 skipped)."
       ],
       "dependencies": []
     },
@@ -1241,8 +1241,8 @@
       "evidence": [
         "Compared current Pi main d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 RPC types/mode and agent-session behavior for accepted level names, branch entries and response shape.",
         "RpcModelProcessTests.RpcModelAndThinkingCommandsSelectAndCycleTheRunningRuntime verifies unsupported-model clamping, max selection, state, and persisted entry; PiJsonlSessionInterchangeTests.ThinkingLevelChangesPersistAndRoundTripAsPiEntries verifies Pi v3 JSONL export/import.",
-        "Current local working tree: dotnet format PiSharp.slnx --verify-no-changes --no-restore passed; dotnet build PiSharp.slnx --warnaserror succeeded with 0 warnings/errors; dotnet test PiSharp.slnx passed 535/535 (0 failed, 0 skipped). Exact committed-head CI is pending.",
-        "Compared current Pi RPC at d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31: Pi accepts this while a run is active and emits thinking_level_changed; PiSharp currently rejects it while busy and has not normalized that event."
+        "Compared current Pi RPC at d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31: Pi accepts this while a run is active and emits thinking_level_changed; PiSharp currently rejects it while busy and has not normalized that event.",
+        "Exact commit 1bb382e3f1002b2191afb1b30b24b128d2140aa8 passed Linux CI run 36196277855: format passed, warnings-as-errors build passed with 0 warnings/errors, and all 535 tests passed (0 failed, 0 skipped)."
       ],
       "dependencies": []
     },
@@ -1260,7 +1260,7 @@
       ],
       "evidence": [
         "RpcModelProcessTests.RpcModelAndThinkingCommandsSelectAndCycleTheRunningRuntime verifies the unsupported-model null result and wrap from max to off for a reasoning-capable model.",
-        "Current local working tree: dotnet format PiSharp.slnx --verify-no-changes --no-restore passed; dotnet build PiSharp.slnx --warnaserror succeeded with 0 warnings/errors; dotnet test PiSharp.slnx passed 535/535 (0 failed, 0 skipped). Exact committed-head CI is pending."
+        "Exact commit 1bb382e3f1002b2191afb1b30b24b128d2140aa8 passed Linux CI run 36196277855: format passed, warnings-as-errors build passed with 0 warnings/errors, and all 535 tests passed (0 failed, 0 skipped)."
       ],
       "dependencies": []
     },
@@ -1279,7 +1279,7 @@
       ],
       "evidence": [
         "RpcModelProcessTests.RpcModelAndThinkingCommandsSelectAndCycleTheRunningRuntime verifies the exact seven-level response for a reasoning model.",
-        "Current local working tree: dotnet format PiSharp.slnx --verify-no-changes --no-restore passed; dotnet build PiSharp.slnx --warnaserror succeeded with 0 warnings/errors; dotnet test PiSharp.slnx passed 535/535 (0 failed, 0 skipped). Exact committed-head CI is pending."
+        "Exact commit 1bb382e3f1002b2191afb1b30b24b128d2140aa8 passed Linux CI run 36196277855: format passed, warnings-as-errors build passed with 0 warnings/errors, and all 535 tests passed (0 failed, 0 skipped)."
       ],
       "dependencies": []
     },
