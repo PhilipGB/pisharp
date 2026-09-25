@@ -339,4 +339,27 @@ public sealed class SearchToolsTests
         }
         finally { Directory.Delete(root, recursive: true); }
     }
+
+    [Fact]
+    public async Task GlobalFdIgnoreHasLowerPrecedenceThanProjectFdIgnore()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-search-global-fdignore-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            var globalFdIgnore = Path.Combine(root, "global-fd-ignore");
+            await File.WriteAllTextAsync(globalFdIgnore, "*.tmp\n");
+            await File.WriteAllTextAsync(Path.Combine(root, ".fdignore"), "!keep.tmp\n");
+            await File.WriteAllTextAsync(Path.Combine(root, "ignored.tmp"), "ignore\n");
+            await File.WriteAllTextAsync(Path.Combine(root, "keep.tmp"), "keep\n");
+            await File.WriteAllTextAsync(Path.Combine(root, "also-ignored.tmp"), "ignore\n");
+
+            var files = await SearchInventory.EnumerateAsync(root, CancellationToken.None,
+                includeFdIgnore: true, ignoreBaseDirectory: root, fdGlobalIgnorePath: globalFdIgnore);
+            var temporaryFiles = files.Where(file => Path.GetExtension(file) == ".tmp")
+                .Select(Path.GetFileName).Order(StringComparer.Ordinal);
+            Assert.Equal(["keep.tmp"], temporaryFiles);
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
 }

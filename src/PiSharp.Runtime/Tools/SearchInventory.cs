@@ -11,7 +11,8 @@ internal static class SearchInventory
     private sealed record IgnoreRule(string BaseDirectory, Regex Pattern, bool Negated, bool DirectoryOnly);
 
     public static async Task<IReadOnlyList<string>> EnumerateAsync(string root, CancellationToken cancellationToken,
-        bool includeDirectories = false, bool includeFdIgnore = false, bool includeRgIgnore = false)
+        bool includeDirectories = false, bool includeFdIgnore = false, bool includeRgIgnore = false,
+        string? ignoreBaseDirectory = null, string? fdGlobalIgnorePath = null)
     {
         root = Path.GetFullPath(root);
         if (File.Exists(root)) return [root];
@@ -19,7 +20,8 @@ internal static class SearchInventory
 
         var repositoryRoot = FindGitRoot(root);
         var hasRepository = HasGitMarker(repositoryRoot);
-        var baseRules = await ReadBaseIgnoreRulesAsync(root, repositoryRoot, hasRepository, cancellationToken);
+        var baseRules = await ReadBaseIgnoreRulesAsync(root, repositoryRoot, hasRepository, includeFdIgnore,
+            Path.GetFullPath(ignoreBaseDirectory ?? root), fdGlobalIgnorePath, cancellationToken);
         var rulesByDirectory = new Dictionary<string, IReadOnlyList<IgnoreRule>>(
             OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
         IReadOnlyList<IgnoreRule> RulesForDirectory(string directory)
@@ -168,10 +170,17 @@ internal static class SearchInventory
     }
 
     private static async Task<IReadOnlyList<IgnoreRule>> ReadBaseIgnoreRulesAsync(string workingDirectory,
-        string repositoryRoot, bool hasRepository, CancellationToken cancellationToken)
+        string repositoryRoot, bool hasRepository, bool includeFdIgnore, string ignoreBaseDirectory,
+        string? fdGlobalIgnorePath, CancellationToken cancellationToken)
     {
         var rules = new List<IgnoreRule>();
         var baseDirectory = hasRepository ? repositoryRoot : workingDirectory;
+        if (includeFdIgnore)
+        {
+            var globalFdIgnoreFile = fdGlobalIgnorePath ?? GetGlobalFdIgnoreFile();
+            if (globalFdIgnoreFile is not null)
+                rules.AddRange(ReadIgnoreFile(globalFdIgnoreFile, ignoreBaseDirectory));
+        }
         var globalIgnoreFile = await GetGitGlobalIgnoreFileAsync(workingDirectory, cancellationToken);
         if (globalIgnoreFile is not null) rules.AddRange(ReadIgnoreFile(globalIgnoreFile, baseDirectory));
         if (hasRepository)
@@ -180,6 +189,18 @@ internal static class SearchInventory
             if (infoExcludeFile is not null) rules.AddRange(ReadIgnoreFile(infoExcludeFile, repositoryRoot));
         }
         return rules;
+    }
+
+    private static string? GetGlobalFdIgnoreFile()
+    {
+        var configRoot = Environment.GetEnvironmentVariable("XDG_CONFIG_HOME");
+        if (string.IsNullOrEmpty(configRoot))
+        {
+            var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            if (string.IsNullOrEmpty(home)) return null;
+            configRoot = Path.Combine(home, ".config");
+        }
+        return Path.Combine(Path.GetFullPath(configRoot), "fd", "ignore");
     }
 
     private static async Task<string?> GetGitGlobalIgnoreFileAsync(string workingDirectory,

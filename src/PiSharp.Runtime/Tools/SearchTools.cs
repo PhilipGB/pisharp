@@ -23,7 +23,8 @@ public sealed class SearchTools(string workingDirectory)
         Regex regex;
         try { regex = GlobRegex(pattern); }
         catch (ArgumentException error) { throw new ToolFailureException($"Invalid glob pattern: {error.Message}", inner: error); }
-        var files = await SearchInventory.EnumerateAsync(root, cancellationToken, includeDirectories: true, includeFdIgnore: true);
+        var files = await SearchInventory.EnumerateAsync(root, cancellationToken, includeDirectories: true,
+            includeFdIgnore: true, ignoreBaseDirectory: _cwd);
         var candidates = new HashSet<string>(StringComparer.Ordinal);
         foreach (var file in files)
         {
