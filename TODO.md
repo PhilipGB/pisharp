@@ -6,7 +6,7 @@
 
 ## Current checkpoint
 
-- Latest source head `d77dbe7590575539570d03ecf13ac1884907fab1` passed Linux CI [36197088261](https://github.com/PhilipGB/pisharp/actions/runs/36197088261): format, warnings-as-errors build, 535 tests (0 failed, 0 skipped). The queue-event projector passes focused RPC/process tests 22/22 and local format/build/full tests 535/535; exact source-head CI is pending.
+- Latest source head `24277bf3c5aa2f046183ef76d943dd7290f8fd9d` passed Linux CI [36197929103](https://github.com/PhilipGB/pisharp/actions/runs/36197929103): format, warnings-as-errors build with 0 warnings/errors, 535 tests (0 failed, 0 skipped). RPC/process tests cover direct Pi-shaped queue snapshots (22/22 focused).
 - Durable Pi parity baseline remains `b3487650f6378f1b0d1643dd254445ceb4a98035`; current Pi `main` was refreshed to `d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31` for scoped image, theme, session and RPC inspection. This is not a full audit.
 - Pi JSONL v1-v3 import and v3 export now preserve branches, active head, context edits, compactions and unknown entries; startup `--session`, `/import` and `/export-jsonl` are covered. Import currently requires the source CWD to equal the running project directory.
 - The TUI has a persistent active/idle screen, Markdig AST rendering, shared cell-aware wrapping, transcript scrolling/search, modal pickers, mouse selection, themes, image output and safe extension tool renderers. Recorded residuals and the broader TUI differential remain open.
@@ -19,5 +19,5 @@
 
 ## Priority and next action
 
-1. Commit and push the locally tested queue-event projection, confirm full validation and exact-head Linux CI, then normalize agent/turn/message/tool events.
+1. Normalize the next RPC lifecycle event against current Pi's event schema/tests, then continue agent/turn/message/tool events with process-level ordering assertions.
 2. Continue sessions/interoperability, settings/resources/extensions, multimodal and provider/auth breadth. Carry the recorded TUI residuals into the final audit; avoid broad TUI polish without a material capability gap or differential.
