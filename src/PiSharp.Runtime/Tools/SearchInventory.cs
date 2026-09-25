@@ -303,7 +303,7 @@ internal static class SearchInventory
             Regex pattern;
             try
             {
-                pattern = new Regex(prefix + IgnoreGlobRegex(line) + "$", RegexOptions.CultureInvariant,
+                pattern = new Regex(prefix + GlobRegex(line) + "$", RegexOptions.CultureInvariant,
                     TimeSpan.FromSeconds(1));
             }
             catch (ArgumentException) { continue; }
@@ -393,7 +393,7 @@ internal static class SearchInventory
     private static bool PathsEqual(string left, string right) => string.Equals(left, right,
         OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
 
-    private static string IgnoreGlobRegex(string pattern)
+    internal static string GlobRegex(string pattern)
     {
         var result = new System.Text.StringBuilder();
         for (var index = 0; index < pattern.Length; index++)
@@ -424,7 +424,7 @@ internal static class SearchInventory
                 for (var alternativeIndex = 0; alternativeIndex < alternatives.Count; alternativeIndex++)
                 {
                     if (alternativeIndex > 0) result.Append('|');
-                    result.Append(IgnoreGlobRegex(alternatives[alternativeIndex]));
+                    result.Append(GlobRegex(alternatives[alternativeIndex]));
                 }
                 result.Append(')');
                 index = braceEnd;

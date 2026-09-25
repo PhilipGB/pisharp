@@ -152,22 +152,7 @@ public sealed class SearchTools(string workingDirectory)
     private static Regex GlobRegex(string pattern)
     {
         if (string.IsNullOrWhiteSpace(pattern)) throw new ArgumentException("Pattern cannot be empty.");
-        var source = new StringBuilder("^");
-        for (var i = 0; i < pattern.Length; i++)
-        {
-            if (pattern[i] == '*')
-            {
-                if (i + 1 < pattern.Length && pattern[i + 1] == '*')
-                {
-                    i++;
-                    if (i + 1 < pattern.Length && pattern[i + 1] == '/') { source.Append("(?:.*/)?"); i++; }
-                    else source.Append(".*");
-                }
-                else source.Append("[^/]*");
-            }
-            else if (pattern[i] == '?') source.Append("[^/]");
-            else source.Append(Regex.Escape(pattern[i].ToString()));
-        }
-        return new Regex(source.Append('$').ToString(), RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1));
+        return new Regex("^" + SearchInventory.GlobRegex(pattern) + "$", RegexOptions.CultureInvariant,
+            TimeSpan.FromSeconds(1));
     }
 }

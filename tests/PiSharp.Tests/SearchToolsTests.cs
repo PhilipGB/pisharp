@@ -403,4 +403,23 @@ public sealed class SearchToolsTests
         }
         finally { Directory.Delete(root, recursive: true); }
     }
+
+    [Fact]
+    public async Task FindAndGrepGlobsSupportBraceAlternativesAndCharacterClasses()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-search-query-globs-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(root, "file-a.txt"), "match-value\n");
+            await File.WriteAllTextAsync(Path.Combine(root, "file-b.log"), "match-value\n");
+            await File.WriteAllTextAsync(Path.Combine(root, "file-c.txt"), "match-value\n");
+
+            var tools = new SearchTools(root);
+            Assert.Equal("file-a.txt\nfile-b.log", await tools.Find("file-[ab].{txt,log}"));
+            Assert.Equal("file-a.txt:1: match-value\nfile-b.log:1: match-value",
+                await tools.Grep("match-value", glob: "file-[ab].{txt,log}"));
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
 }
