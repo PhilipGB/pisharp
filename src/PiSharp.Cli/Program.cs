@@ -350,6 +350,59 @@ async Task ReplaceModelRuntime(ModelSelection nextSelection, string nextThinking
     }
 }
 
+async Task HandleEditorApplicationAction(string action)
+{
+    try
+    {
+        switch (action)
+        {
+            case "app.thinking.cycle":
+                if (selection.Model.Reasoning != true)
+                {
+                    Console.WriteLine("Current model does not support thinking.");
+                    return;
+                }
+                var thinkingIndex = Array.FindIndex(ThinkingLevels.All.ToArray(), level =>
+                    level.Equals(thinking, StringComparison.OrdinalIgnoreCase));
+                var nextThinking = ThinkingLevels.All[(thinkingIndex + 1 + ThinkingLevels.All.Count) % ThinkingLevels.All.Count];
+                await ReplaceModelRuntime(selection, nextThinking, recordModelChange: false);
+                Console.WriteLine($"Thinking level: {thinking}");
+                break;
+            case "app.model.cycleForward":
+            case "app.model.cycleBackward":
+                var models = (await GetModelsAsync()).Where(model => model.Available).ToArray();
+                if (models.Length == 0)
+                {
+                    Console.WriteLine("No available models in the current scope.");
+                    return;
+                }
+                if (models.Length == 1)
+                {
+                    Console.WriteLine(modelRuntime.Scope.Count > 0 ? "Only one model in scope." : "Only one model available.");
+                    return;
+                }
+                var currentIndex = Array.FindIndex(models, model =>
+                    model.Provider?.Equals(selection.Provider.Id, StringComparison.OrdinalIgnoreCase) == true &&
+                    model.Id.Equals(selection.Model.Id, StringComparison.OrdinalIgnoreCase));
+                if (currentIndex < 0) currentIndex = 0;
+                var direction = action == "app.model.cycleForward" ? 1 : -1;
+                var nextIndex = (currentIndex + direction + models.Length) % models.Length;
+                var nextModel = models[nextIndex];
+                if (string.IsNullOrWhiteSpace(nextModel.Provider))
+                    throw new InvalidOperationException("The model catalogue did not identify the selected provider.");
+                var nextSelection = await modelRuntime.ResolveAsync(nextModel.Provider, nextModel.Id);
+                var compatibleThinking = nextSelection.Model.Reasoning == true ? thinking : "off";
+                await ReplaceModelRuntime(nextSelection, compatibleThinking, recordModelChange: true);
+                Console.WriteLine($"Model: {selection.Provider.Id}/{selection.Model.Id} · thinking {thinking}");
+                break;
+        }
+    }
+    catch (Exception error)
+    {
+        Console.Error.WriteLine($"Shortcut action failed: {error.Message}");
+    }
+}
+
 async Task ReloadResources()
 {
     var nextResources = await ResourceCatalog.LoadAsync(Environment.CurrentDirectory, agentDirectory, trusted,
@@ -461,7 +514,7 @@ else
     }
     while (true)
     {
-        var line = editor!.ReadLine();
+        var line = await editor!.ReadLineAsync(HandleEditorApplicationAction);
         if (line is null || line.Trim() is "/quit" or "/exit") break;
         if (string.IsNullOrWhiteSpace(line)) continue;
         if (line.StartsWith('/'))
@@ -490,7 +543,8 @@ else
                         var victim = SessionCatalog.Resolve(await SessionCatalog.ListAsync(store), argument);
                         if (victim.Path == sessionPath) throw new InvalidOperationException("Switch sessions before deleting the active session.");
                         Console.WriteLine($"Delete {victim.Id[..12]} · {victim.Name ?? "(unnamed)"}? Type delete {victim.Id[..12]} to confirm:");
-                        if (editor.ReadLine()?.Trim() != "delete " + victim.Id[..12])
+                        var confirmation = await editor.ReadLineAsync(HandleEditorApplicationAction, enableApplicationActions: false);
+                        if (confirmation?.Trim() != "delete " + victim.Id[..12])
                         {
                             Console.WriteLine("Deletion cancelled.");
                             break;

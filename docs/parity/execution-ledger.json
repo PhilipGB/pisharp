@@ -496,7 +496,7 @@
         "TerminalScreenTests and EditorKeymapTests cover scroll bounds, search highlighting/cycling/draft restoration and terminal input decoding; focused screen/keymap tests pass 11/11, format verification passes, warnings-as-errors Release build reports 0 warnings/errors, and full Release suite passes 399/399 with 0 skipped. Linux CI run 36110122578 passed for the search slice; this tool-output expansion slice is pending CI and pinned Pi workflow differentials remain open.",
         "TerminalScreenTests.ActiveToolResultsCollapseAfterTenLinesAndExpandWithCtrlO verifies preview, expansion, and full stderr restoration for a bounded result; focused TUI tests pass 18/18, format verification passes, the warnings-as-errors Release build reports 0 warnings/errors, and the full Release suite passes 400/400 with 0 skipped. Linux CI run 36111858689 passed; streamed Bash updates remain visible and are not collapsed.",
         "InteractiveTranscriptTests.ActiveScreenRendersStreamingMarkdownAndCommitsReadableScrollback covers task markers and inline strikethrough in streamed assistant text; focused transcript tests pass 6/6, format verification passes, warnings-as-errors Release build reports 0 warnings/errors, and full Release suite passes 400/400 with 0 skipped. Linux CI run 36112384848 passed; pinned Pi workflow differential remains pending.",
-        "InteractiveTranscriptTests covers table alignment, width wrapping, inline-code pipes, escaped pipes, and narrow-terminal fallback. Focused transcript tests pass 8/8, format verification passes, warnings-as-errors Release build reports 0 warnings/errors, and the full Release suite passes 402/402 with 0 skipped. Linux CI is pending."
+        "InteractiveTranscriptTests covers table alignment, width wrapping, inline-code pipes, escaped pipes, and narrow-terminal fallback. Focused transcript tests pass 8/8, format verification passes, warnings-as-errors Release build reports 0 warnings/errors, and the full Release suite passes 402/402 with 0 skipped. Linux CI run 36114229696 passed."
       ],
       "dependencies": []
     },
@@ -525,10 +525,12 @@
         "Verify through application workflow and compare docs/keybindings.md; packages/coding-agent/src/core/keybindings.ts; key map and interaction tests"
       ],
       "implementation": [
-        "src/PiSharp.Cli/Tui/EditorKeymap.cs and TerminalEditor.cs: configurable app.tools.expand defaults to Ctrl+O and toggles active-run tool output while retaining state across turns."
+        "src/PiSharp.Cli/Tui/EditorKeymap.cs and TerminalEditor.cs: configurable app.tools.expand defaults to Ctrl+O and toggles active-run tool output while retaining state across turns.",
+        "src/PiSharp.Cli/Tui/EditorKeymap.cs, TerminalEditor.cs, TerminalInput.cs and Program.cs: idle-prompt app.thinking.cycle (Shift+Tab) and app.model.cycleForward/backward (Ctrl+P, Ctrl+Shift+P with Alt+P fallback) dispatch through the existing model/thinking replacement path and preserve the draft; model selection is persisted. Common modified ASCII CSI-u input is decoded for Ctrl+Shift+P. No Kitty protocol negotiation yet."
       ],
       "evidence": [
-        "EditorKeymapTests decodes Ctrl+O from terminal input and verifies user keymap replacement; TerminalScreenTests verifies collapsed/expanded tool results. Focused TUI tests pass 18/18 and the Release suite passes 400/400 with 0 skipped; format verification and warnings-as-errors build pass. Linux CI run 36111858689 passed."
+        "EditorKeymapTests decodes Ctrl+O from terminal input and verifies user keymap replacement; TerminalScreenTests verifies collapsed/expanded tool results. Focused TUI tests pass 18/18 and the Release suite passes 400/400 with 0 skipped; format verification and warnings-as-errors build pass. Linux CI run 36111858689 passed.",
+        "EditorKeymapTests.ApplicationCycleShortcutsDispatchAndPreserveTheEditorDraft and TerminalInputTests.DecodesModifiedCursorAndPageKeysForConfigurableBindings cover dispatch, draft preservation, and Ctrl+Shift+P CSI-u decoding. Focused keymap/input tests pass 16/16; including InteractiveTranscriptTests, the focused run passes 24/24. Format verification passes, the warnings-as-errors Release build reports 0 warnings/errors, and the full Release suite passes 403/403 with 0 skipped. Linux CI for the shortcut slice is pending."
       ],
       "dependencies": []
     },

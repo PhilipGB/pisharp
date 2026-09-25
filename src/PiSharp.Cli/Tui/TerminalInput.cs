@@ -90,6 +90,7 @@ public sealed class TerminalInput
     private static bool TryDecodeModifiedKey(string code, out ConsoleKeyInfo key)
     {
         key = default;
+        if (code.EndsWith('u') && TryDecodeModifiedAscii(code, out key)) return true;
         if (code.Length < 4 || code[^1] is not ('A' or 'B' or 'C' or 'D' or 'H' or 'F' or '~')) return false;
         var separator = code.LastIndexOf(';');
         if (separator <= 0 || !int.TryParse(code.AsSpan(0, separator), out var keyCode) ||
@@ -115,6 +116,20 @@ public sealed class TerminalInput
         };
         if (consoleKey == ConsoleKey.NoName) return false;
         key = new ConsoleKeyInfo('\0', consoleKey, (modifierBits & 1) != 0,
+            (modifierBits & 2) != 0, (modifierBits & 4) != 0);
+        return true;
+    }
+
+    private static bool TryDecodeModifiedAscii(string code, out ConsoleKeyInfo key)
+    {
+        key = default;
+        var separator = code.IndexOf(';');
+        if (separator <= 0 || !int.TryParse(code.AsSpan(0, separator), out var keyCode) || keyCode is < 32 or > 126 ||
+            !int.TryParse(code.AsSpan(separator + 1, code.Length - separator - 2), out var modifierCode) || modifierCode < 2)
+            return false;
+        var modifierBits = modifierCode - 1;
+        if ((modifierBits & ~7) != 0 || !TryMapAsciiKey((char)keyCode, out var consoleKey, out var shifted)) return false;
+        key = new ConsoleKeyInfo('\0', consoleKey, shifted || (modifierBits & 1) != 0,
             (modifierBits & 2) != 0, (modifierBits & 4) != 0);
         return true;
     }

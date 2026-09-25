@@ -124,6 +124,41 @@ public sealed class EditorKeymapTests
         Assert.True(keymap.Matches("tui.altScreen.pageUp", page.Key!.Value));
     }
 
+    [Fact]
+    public async Task ApplicationCycleShortcutsDispatchAndPreserveTheEditorDraft()
+    {
+        var editor = new TerminalEditor();
+        editor.Prefill("keep this draft");
+        var actions = new List<string>();
+
+        Assert.True(await editor.HandleApplicationShortcutAsync(Key(ConsoleKey.P, ConsoleModifiers.Control), action =>
+        {
+            actions.Add(action);
+            return Task.CompletedTask;
+        }));
+        Assert.True(await editor.HandleApplicationShortcutAsync(Key(ConsoleKey.Tab, ConsoleModifiers.Shift), action =>
+        {
+            actions.Add(action);
+            return Task.CompletedTask;
+        }));
+        var windowsBindings = OperatingSystem.IsWindows() || OperatingSystem.IsLinux() &&
+            (Environment.GetEnvironmentVariable("WSL_DISTRO_NAME") is not null ||
+             Environment.GetEnvironmentVariable("WSL_INTEROP") is not null);
+        var backwardKey = windowsBindings
+            ? Key(ConsoleKey.P, ConsoleModifiers.Alt)
+            : Key(ConsoleKey.P, ConsoleModifiers.Control | ConsoleModifiers.Shift);
+        Assert.True(await editor.HandleApplicationShortcutAsync(backwardKey, action =>
+        {
+            actions.Add(action);
+            return Task.CompletedTask;
+        }));
+
+        Assert.Equal(["app.model.cycleForward", "app.thinking.cycle", "app.model.cycleBackward"], actions);
+        Assert.Equal("keep this draft", editor.Draft);
+        Assert.Equal("app.model.cycleBackward", new EditorKeymap().MatchIdleApplicationAction(
+            Key(ConsoleKey.P, ConsoleModifiers.Alt)));
+    }
+
     private static ConsoleKeyInfo Key(ConsoleKey key, ConsoleModifiers modifiers = 0) => new('\0', key,
         modifiers.HasFlag(ConsoleModifiers.Shift), modifiers.HasFlag(ConsoleModifiers.Alt),
         modifiers.HasFlag(ConsoleModifiers.Control));

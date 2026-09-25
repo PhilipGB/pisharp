@@ -28,7 +28,7 @@ public sealed class TerminalInputTests
     public void DecodesModifiedCursorAndPageKeysForConfigurableBindings()
     {
         var reader = new TerminalInput(new MemoryStream(Encoding.UTF8.GetBytes(
-            "\u001b[1;5D\u001b[1;3C\u001b[6;2~")));
+            "\u001b[1;5D\u001b[1;3C\u001b[6;2~\u001b[112;6u")));
 
         var controlLeft = reader.Read().Key!.Value;
         Assert.Equal(ConsoleKey.LeftArrow, controlLeft.Key);
@@ -39,6 +39,15 @@ public sealed class TerminalInputTests
         var shiftPageDown = reader.Read().Key!.Value;
         Assert.Equal(ConsoleKey.PageDown, shiftPageDown.Key);
         Assert.True(shiftPageDown.Modifiers.HasFlag(ConsoleModifiers.Shift));
+        var controlShiftP = reader.Read().Key!.Value;
+        Assert.Equal(ConsoleKey.P, controlShiftP.Key);
+        Assert.True(controlShiftP.Modifiers.HasFlag(ConsoleModifiers.Control));
+        Assert.True(controlShiftP.Modifiers.HasFlag(ConsoleModifiers.Shift));
+        var windowsBindings = OperatingSystem.IsWindows() || OperatingSystem.IsLinux() &&
+            (Environment.GetEnvironmentVariable("WSL_DISTRO_NAME") is not null ||
+             Environment.GetEnvironmentVariable("WSL_INTEROP") is not null);
+        if (!windowsBindings)
+            Assert.Equal("app.model.cycleBackward", new EditorKeymap().MatchIdleApplicationAction(controlShiftP));
     }
 
     [Theory]

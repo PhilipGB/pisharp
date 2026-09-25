@@ -7,6 +7,7 @@ public sealed class EditorKeymap
     private sealed record Definition(string Description, string[] DefaultKeys);
     private readonly record struct KeyStroke(ConsoleKey Key, ConsoleModifiers Modifiers);
     private sealed record BoundKey(KeyStroke Stroke, string Name);
+    private static readonly string[] IdleApplicationActions = ["app.thinking.cycle", "app.model.cycleForward", "app.model.cycleBackward"];
 
     private static readonly IReadOnlyDictionary<string, Definition> s_definitions = new Dictionary<string, Definition>(StringComparer.Ordinal)
     {
@@ -30,6 +31,9 @@ public sealed class EditorKeymap
         ["app.interrupt"] = new("Cancel or abort", ["escape"]),
         ["app.clear"] = new("Clear editor", ["ctrl+c"]),
         ["app.exit"] = new("Exit when editor is empty", ["ctrl+d"]),
+        ["app.model.cycleForward"] = new("Cycle to next model", ["ctrl+p"]),
+        ["app.model.cycleBackward"] = new("Cycle to previous model", IsWindowsBindings() ? ["alt+p"] : ["ctrl+shift+p", "alt+p"]),
+        ["app.thinking.cycle"] = new("Cycle thinking level", ["shift+tab"]),
         ["app.tools.expand"] = new("Expand or collapse tool output", ["ctrl+o"]),
         ["app.message.followUp"] = new("Queue a follow-up message", IsWindowsBindings() ? ["ctrl+q"] : ["alt+enter"]),
         ["app.message.dequeue"] = new("Restore queued messages", IsWindowsBindings() ? ["alt+q"] : ["alt+up"]),
@@ -55,6 +59,13 @@ public sealed class EditorKeymap
     public bool Matches(string action, ConsoleKeyInfo key) =>
         _bindings.TryGetValue(action, out var bindings) && bindings.Any(binding =>
             binding.Stroke.Key == key.Key && binding.Stroke.Modifiers == key.Modifiers);
+
+    public string? MatchIdleApplicationAction(ConsoleKeyInfo key)
+    {
+        foreach (var action in IdleApplicationActions)
+            if (Matches(action, key)) return action;
+        return null;
+    }
 
     public void Reload()
     {

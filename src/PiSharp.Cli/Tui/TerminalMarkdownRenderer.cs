@@ -7,7 +7,7 @@ namespace PiSharp.Cli.Tui;
 /// <summary>Renders the streamed Markdown subset used in assistant transcript blocks.</summary>
 internal static class TerminalMarkdownRenderer
 {
-    private static readonly TimeSpan InlineMatchTimeout = TimeSpan.FromMilliseconds(100);
+    private static readonly TimeSpan InlineMatchTimeout = TimeSpan.FromMilliseconds(500);
     private static readonly Regex FenceStart = new("^ {0,3}(`{3,}|~{3,})(.*)$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
     private static readonly Regex FenceEnd = new("^ {0,3}(`{3,}|~{3,})[ \\t]*$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
     private static readonly Regex Heading = new("^ {0,3}#{1,6}[ \\t]+(.+?)\\s*#*\\s*$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
@@ -332,49 +332,51 @@ internal static class TerminalMarkdownRenderer
 
     private static string RenderInline(string text)
     {
-        MatchCollection matches;
-        try { matches = Inline.Matches(text); }
-        catch (RegexMatchTimeoutException) { return text; }
-        if (matches.Count == 0) return text;
-        var output = new StringBuilder(text.Length + 16);
-        var previous = 0;
-        foreach (Match match in matches)
+        try
         {
-            output.Append(text, previous, match.Index - previous);
-            if (match.Groups["image"].Success)
+            var matches = Inline.Matches(text);
+            if (matches.Count == 0) return text;
+            var output = new StringBuilder(text.Length + 16);
+            var previous = 0;
+            foreach (Match match in matches)
             {
-                output.Append("[image: ").Append(match.Groups["imageText"].Value).Append("] ")
-                    .Append("\u001b[2m(").Append(match.Groups["imageUrl"].Value).Append(")\u001b[0m");
+                output.Append(text, previous, match.Index - previous);
+                if (match.Groups["image"].Success)
+                {
+                    output.Append("[image: ").Append(match.Groups["imageText"].Value).Append("] ")
+                        .Append("\u001b[2m(").Append(match.Groups["imageUrl"].Value).Append(")\u001b[0m");
+                }
+                else if (match.Groups["link"].Success)
+                {
+                    output.Append("\u001b[4;36m").Append(match.Groups["linkText"].Value).Append("\u001b[0m ")
+                        .Append("\u001b[2m(").Append(match.Groups["linkUrl"].Value).Append(")\u001b[0m");
+                }
+                else if (match.Groups["code"].Success)
+                {
+                    output.Append("\u001b[33m").Append(match.Groups["codeText"].Value).Append("\u001b[0m");
+                }
+                else if (match.Groups["strong"].Success)
+                {
+                    var value = match.Value[2..^2];
+                    output.Append("\u001b[1m").Append(RenderInline(value)).Append("\u001b[22m");
+                }
+                else if (match.Groups["strike"].Success)
+                {
+                    output.Append("\u001b[9m").Append(RenderInline(match.Value[2..^2])).Append("\u001b[29m");
+                }
+                else if (match.Groups["emphasis"].Success)
+                {
+                    output.Append("\u001b[3m").Append(RenderInline(match.Value[1..^1])).Append("\u001b[23m");
+                }
+                else if (match.Groups["escape"].Success)
+                {
+                    output.Append(match.Value[1]);
+                }
+                previous = match.Index + match.Length;
             }
-            else if (match.Groups["link"].Success)
-            {
-                output.Append("\u001b[4;36m").Append(match.Groups["linkText"].Value).Append("\u001b[0m ")
-                    .Append("\u001b[2m(").Append(match.Groups["linkUrl"].Value).Append(")\u001b[0m");
-            }
-            else if (match.Groups["code"].Success)
-            {
-                output.Append("\u001b[33m").Append(match.Groups["codeText"].Value).Append("\u001b[0m");
-            }
-            else if (match.Groups["strong"].Success)
-            {
-                var value = match.Value[2..^2];
-                output.Append("\u001b[1m").Append(RenderInline(value)).Append("\u001b[22m");
-            }
-            else if (match.Groups["strike"].Success)
-            {
-                output.Append("\u001b[9m").Append(RenderInline(match.Value[2..^2])).Append("\u001b[29m");
-            }
-            else if (match.Groups["emphasis"].Success)
-            {
-                output.Append("\u001b[3m").Append(RenderInline(match.Value[1..^1])).Append("\u001b[23m");
-            }
-            else if (match.Groups["escape"].Success)
-            {
-                output.Append(match.Value[1]);
-            }
-            previous = match.Index + match.Length;
+            output.Append(text, previous, text.Length - previous);
+            return output.ToString();
         }
-        output.Append(text, previous, text.Length - previous);
-        return output.ToString();
+        catch (RegexMatchTimeoutException) { return text; }
     }
 }

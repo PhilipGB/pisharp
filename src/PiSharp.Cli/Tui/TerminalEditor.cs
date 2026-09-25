@@ -232,8 +232,9 @@ public sealed class TerminalEditor
         _screen?.SetFooter(ActiveRunFooter);
     }
 
-    public string? ReadLine()
+    public async Task<string?> ReadLineAsync(Func<string, Task> dispatchApplicationAction, bool enableApplicationActions = true)
     {
+        ArgumentNullException.ThrowIfNull(dispatchApplicationAction);
         var previous = Console.TreatControlCAsInput;
         try
         {
@@ -249,6 +250,12 @@ public sealed class TerminalEditor
                     ClearLine();
                     Console.WriteLine();
                     return null;
+                }
+                if (enableApplicationActions && next.Key is { } applicationKey &&
+                    await HandleApplicationShortcutAsync(applicationKey, dispatchApplicationAction, ClearLine))
+                {
+                    Render();
+                    continue;
                 }
                 if (next.Key is { } tabKey && _keymap.Matches("tui.input.tab", tabKey))
                 {
@@ -294,6 +301,17 @@ public sealed class TerminalEditor
             }
         }
         finally { Console.TreatControlCAsInput = previous; }
+    }
+
+    public async Task<bool> HandleApplicationShortcutAsync(ConsoleKeyInfo key, Func<string, Task> dispatch,
+        Action? beforeDispatch = null)
+    {
+        ArgumentNullException.ThrowIfNull(dispatch);
+        var action = _keymap.MatchIdleApplicationAction(key);
+        if (action is null) return false;
+        beforeDispatch?.Invoke();
+        await dispatch(action);
+        return true;
     }
 
     private void ClearLine()
