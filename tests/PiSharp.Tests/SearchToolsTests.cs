@@ -115,6 +115,43 @@ public sealed class SearchToolsTests
         finally { Directory.Delete(root, recursive: true); }
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task FindListsSymlinkEntriesButGrepDoesNotFollowThem(bool initializeGitRepository)
+    {
+        if (!OperatingSystem.IsLinux()) return;
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-search-symlinks-" + Guid.NewGuid().ToString("N"));
+        var targetDirectory = Path.Combine(root, "target");
+        Directory.CreateDirectory(targetDirectory);
+        try
+        {
+            if (initializeGitRepository)
+            {
+                using var git = Process.Start(new ProcessStartInfo("git")
+                {
+                    WorkingDirectory = root,
+                    ArgumentList = { "init", "-q" }
+                });
+                Assert.NotNull(git);
+                await git.WaitForExitAsync();
+                Assert.Equal(0, git.ExitCode);
+            }
+
+            await File.WriteAllTextAsync(Path.Combine(root, "real.txt"), "needle\n");
+            await File.WriteAllTextAsync(Path.Combine(targetDirectory, "inside.txt"), "needle\n");
+            File.CreateSymbolicLink(Path.Combine(root, "file-link.txt"), "real.txt");
+            Directory.CreateSymbolicLink(Path.Combine(root, "dir-link"), "target");
+
+            var tools = new SearchTools(root);
+            Assert.Equal("file-link.txt\nreal.txt\ntarget/inside.txt", await tools.Find("*.txt"));
+            Assert.Equal("dir-link/", await tools.Find("dir-link"));
+            var grepLines = (await tools.Grep("needle")).Split('\n').Order(StringComparer.Ordinal);
+            Assert.Equal(["real.txt:1: needle", "target/inside.txt:1: needle"], grepLines);
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
     [Fact]
     public async Task GitIgnoreFiltersSearchResultsOutsideGitRepositories()
     {

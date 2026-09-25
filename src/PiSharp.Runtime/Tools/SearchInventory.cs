@@ -71,13 +71,23 @@ internal static class SearchInventory
                 {
                     var file = Path.GetFullPath(relative, root);
                     var parent = Path.GetDirectoryName(file)!;
-                    if (IsIgnored(file, isDirectory: false, RulesForDirectory(parent))) return false;
-                    if (!File.Exists(file))
+                    var fileExists = File.Exists(file);
+                    var directoryExists = Directory.Exists(file);
+                    if (IsIgnored(file, directoryExists, RulesForDirectory(parent))) return false;
+                    if (!fileExists && !directoryExists)
                     {
                         if (includeRgIgnore) ThrowIfParentIsInaccessible(parent);
                         return false;
                     }
-                    if (File.GetAttributes(file).HasFlag(FileAttributes.ReparsePoint)) return false;
+                    var attributes = File.GetAttributes(file);
+                    if (attributes.HasFlag(FileAttributes.ReparsePoint))
+                    {
+                        if (!includeDirectories) return false;
+                        if (results.Count >= MaxEntries) return true;
+                        results.Add(file);
+                        return false;
+                    }
+                    if (directoryExists) return false;
                     if (results.Count >= MaxEntries) return true;
                     results.Add(file);
                     return false;
@@ -116,10 +126,12 @@ internal static class SearchInventory
                     if (inheritedApplicationRules is not null)
                         inheritedRules = inheritedRules.Concat(inheritedApplicationRules).ToArray();
                     var directories = await EnumerateDirectoriesAsync(root, MaxEntries - results.Count,
-                        includeFdIgnore, includeRgIgnore, inheritedRules, cancellationToken);
+                        includeFdIgnore, includeRgIgnore, includeDirectories, inheritedRules, cancellationToken);
                     if (includeDirectories) results.AddRange(directories);
 
-                    foreach (var nestedRepository in directories.Where(HasGitMarker)
+                    foreach (var nestedRepository in directories.Where(directory =>
+                                     !File.GetAttributes(directory).HasFlag(FileAttributes.ReparsePoint) &&
+                                     HasGitMarker(directory))
                                  .Where(directory => !HasRepositoryAncestorBetween(root, directory)))
                     {
                         cancellationToken.ThrowIfCancellationRequested();
@@ -174,12 +186,19 @@ internal static class SearchInventory
                     if (IsIgnored(entry, isDirectory, rules)) continue;
                     if (isDirectory)
                     {
-                        if (Path.GetFileName(entry) is ".git" ||
-                            File.GetAttributes(entry).HasFlag(FileAttributes.ReparsePoint)) continue;
+                        if (Path.GetFileName(entry) is ".git") continue;
+                        var attributes = File.GetAttributes(entry);
+                        if (attributes.HasFlag(FileAttributes.ReparsePoint))
+                        {
+                            if (includeDirectories) files.Add(entry);
+                            continue;
+                        }
                         if (includeDirectories) files.Add(entry);
                         pending.Push((entry, rules));
                     }
-                    else if (File.Exists(entry)) files.Add(entry);
+                    else if (File.Exists(entry) &&
+                             (includeDirectories || !File.GetAttributes(entry).HasFlag(FileAttributes.ReparsePoint)))
+                        files.Add(entry);
                 }
                 catch (Exception error) when (error is IOException or UnauthorizedAccessException) { }
             }
@@ -189,7 +208,8 @@ internal static class SearchInventory
     }
 
     private static async Task<IReadOnlyList<string>> EnumerateDirectoriesAsync(string root, int maxEntries,
-        bool includeFdIgnore, bool includeRgIgnore, IReadOnlyList<IgnoreRule> inheritedRules,
+        bool includeFdIgnore, bool includeRgIgnore, bool includeSymlinkDirectories,
+        IReadOnlyList<IgnoreRule> inheritedRules,
         CancellationToken cancellationToken)
     {
         var directories = new List<string>();
@@ -208,9 +228,16 @@ internal static class SearchInventory
                 cancellationToken.ThrowIfCancellationRequested();
                 try
                 {
-                    if (IsIgnored(entry, isDirectory: true, rules) ||
-                        Path.GetFileName(entry) is ".git" ||
-                        File.GetAttributes(entry).HasFlag(FileAttributes.ReparsePoint)) continue;
+                    var attributes = File.GetAttributes(entry);
+                    if (IsIgnored(entry, isDirectory: true, rules) || Path.GetFileName(entry) is ".git") continue;
+                    if (attributes.HasFlag(FileAttributes.ReparsePoint))
+                    {
+                        if (!includeSymlinkDirectories) continue;
+                        if (directories.Count >= maxEntries)
+                            throw new ToolFailureException("Search exceeds 20000 files; narrow the search path.");
+                        directories.Add(entry);
+                        continue;
+                    }
                     if (directories.Count >= maxEntries)
                         throw new ToolFailureException("Search exceeds 20000 files; narrow the search path.");
                     directories.Add(entry);
