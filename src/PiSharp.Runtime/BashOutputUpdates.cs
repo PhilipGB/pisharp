@@ -12,6 +12,7 @@ internal sealed class BashOutputUpdates : IDisposable
     private const string s_omitted = "\n[Earlier live output omitted; the final result contains the retained output.]\n";
     private readonly object _gate = new();
     private readonly Action<string>? _publish;
+    private readonly bool _throttle;
     private readonly StringBuilder _pending = new();
     private readonly Timer? _timer;
     private long _lastPublish;
@@ -19,10 +20,12 @@ internal sealed class BashOutputUpdates : IDisposable
     private bool _omittedPending;
     private bool _completed;
 
-    public BashOutputUpdates(Action<string>? publish)
+    public BashOutputUpdates(Action<string>? publish, bool throttle = true)
     {
         _publish = publish;
-        if (publish is not null) _timer = new Timer(_ => PublishPending(), null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
+        _throttle = throttle;
+        if (publish is not null && throttle)
+            _timer = new Timer(_ => PublishPending(), null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
     }
 
     public void Append(string text)
@@ -31,6 +34,11 @@ internal sealed class BashOutputUpdates : IDisposable
         lock (_gate)
         {
             if (_completed || _failure is not null) return;
+            if (!_throttle)
+            {
+                EmitUnsafe(text);
+                return;
+            }
             var elapsed = _lastPublish == 0 ? s_interval : Stopwatch.GetElapsedTime(_lastPublish);
             if (_pending.Length == 0 && elapsed >= s_interval)
             {

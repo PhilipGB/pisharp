@@ -238,7 +238,7 @@ public sealed class CodingTools
     public Task<BashExecutionResult> ExecuteBashAsync(string command, Action<string>? onUpdate = null,
         CancellationToken cancellationToken = default) =>
         BashCoreAsync(command, timeout: null, onUpdate, cancellationToken, returnCancellationResult: true,
-            normalizeOutput: true);
+            normalizeOutput: true, throttleUpdates: false);
 
     public void AbortBash()
     {
@@ -251,10 +251,10 @@ public sealed class CodingTools
 
     private async Task<string> BashToolAsync(string command, double? timeout, Action<string>? onUpdate,
         CancellationToken cancellationToken, IReadOnlyDictionary<string, string?>? sessionEnvironment = null,
-        bool normalizeOutput = false)
+        bool normalizeOutput = false, bool throttleUpdates = true)
     {
         var result = await BashCoreAsync(command, timeout, onUpdate, cancellationToken, returnCancellationResult: false,
-            sessionEnvironment, normalizeOutput);
+            sessionEnvironment, normalizeOutput, throttleUpdates);
         if (result.ExitCode is { } exitCode && exitCode != 0)
             throw new ToolFailureException($"Command exited with code {exitCode}", result.DisplayOutput, exitCode);
         return result.DisplayOutput;
@@ -262,7 +262,8 @@ public sealed class CodingTools
 
     private async Task<BashExecutionResult> BashCoreAsync(string command, double? timeout, Action<string>? onUpdate,
         CancellationToken cancellationToken, bool returnCancellationResult,
-        IReadOnlyDictionary<string, string?>? sessionEnvironment = null, bool normalizeOutput = false)
+        IReadOnlyDictionary<string, string?>? sessionEnvironment = null, bool normalizeOutput = false,
+        bool throttleUpdates = true)
     {
         if (timeout.HasValue && (!double.IsFinite(timeout.Value) || timeout.Value <= 0))
             throw new ToolFailureException("Invalid timeout: must be a finite number of seconds");
@@ -283,7 +284,7 @@ public sealed class CodingTools
         };
         using var pumpStop = new CancellationTokenSource();
         await using var output = new ShellOutputBuffer(normalizeOutput);
-        using var updates = new BashOutputUpdates(onUpdate);
+        using var updates = new BashOutputUpdates(onUpdate, throttleUpdates);
         long lastOutputTicks = Stopwatch.GetTimestamp();
         var started = false;
         Task? stdout = null;

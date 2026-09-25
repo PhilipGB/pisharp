@@ -136,6 +136,20 @@ public sealed class CodingToolsTests : IDisposable
     }
 
     [Fact]
+    public void DirectBashUpdatesArePublishedImmediatelyWithoutCoalescing()
+    {
+        var updates = new List<string>();
+        using var publisher = new BashOutputUpdates(updates.Add, throttle: false);
+
+        publisher.Append("first");
+        Assert.Equal(["first"], updates);
+        publisher.Append("second");
+        Assert.Equal(["first", "second"], updates);
+        publisher.Complete();
+        Assert.Equal(["first", "second"], updates);
+    }
+
+    [Fact]
     public async Task BashCancellationAndTimeoutKillTheProcessGroup()
     {
         if (!OperatingSystem.IsLinux()) return;
