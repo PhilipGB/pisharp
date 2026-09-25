@@ -1642,14 +1642,22 @@
     {
       "id": "rpc-queue-update",
       "title": "RPC / event: queue_update",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:38",
       "acceptance": [
         "Implement queue_update using shared canonical runtime with correlated responses/event ordering",
         "Test protocol through RPC process, including failures and cancellation"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "src/PiSharp.Cli/Protocols/RpcEventWriter.cs: projects queue snapshots as top-level {type, steering, followUp} and omits the PiSharp-only prompt_queued notice.",
+        "src/PiSharp.Cli/Protocols/RpcMode.cs: routes RPC lifecycle output through the dedicated event writer while sharing the atomic JSONL writer with command responses."
+      ],
+      "evidence": [
+        "Compared current Pi main d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 packages/coding-agent/src/core/agent-session.ts _emitQueueUpdate and modes/rpc/rpc-mode.ts subscription: queue updates are direct top-level snapshots with steering and followUp arrays.",
+        "RpcModeTests.PromptQueuesSecondRPCIsQueuedAfterTheCurrentTurn and RpcModeTests.RpcSteeringFollowUpAndClearQueueExposeDistinctPendingInput verify queue snapshots in real RPC mode, exact fields, and absence of prompt_queued on the wire.",
+        "Focused local RPC/process tests: dotnet test tests/PiSharp.Tests/PiSharp.Tests.csproj --filter FullyQualifiedName~RpcModeTests|FullyQualifiedName~RpcModelProcessTests --no-restore => 22 passed, 0 failed, 0 skipped.",
+        "Current local working tree: focused RPC/process tests passed 22/22; dotnet format PiSharp.slnx --verify-no-changes --no-restore passed; dotnet build PiSharp.slnx --warnaserror succeeded with 0 warnings/errors; dotnet test PiSharp.slnx passed 535/535 (0 failed, 0 skipped). Exact source-head CI is pending."
+      ],
       "dependencies": []
     },
     {

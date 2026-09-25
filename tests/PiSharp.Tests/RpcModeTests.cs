@@ -554,7 +554,10 @@ public sealed class RpcModeTests
             Assert.True(queued.RootElement.GetProperty("success").GetBoolean());
             Assert.Equal("queued", queued.RootElement.GetProperty("data").GetProperty("disposition").GetString());
             Assert.False(missingBehavior.RootElement.GetProperty("success").GetBoolean());
-            Assert.Contains(output.Lines(), line => line.Contains("prompt_queued", StringComparison.Ordinal));
+            var lines = output.Lines();
+            Assert.Contains(lines, line => line.Contains("\"type\":\"queue_update\"", StringComparison.Ordinal) &&
+                line.Contains("\"followUp\":[\"two\"]", StringComparison.Ordinal));
+            Assert.DoesNotContain(lines, line => line.Contains("prompt_queued", StringComparison.Ordinal));
             Assert.Equal(2, client.Requests);
             Assert.True(client.SecondRequestSawFirstTurn);
             Assert.Equal(2, session.ActiveMessages().Count(message => message.Role == ChatRole.User));
@@ -594,7 +597,13 @@ public sealed class RpcModeTests
             .EnumerateArray().Select(item => item.GetString()));
         Assert.Equal(["discard follow"], clear.RootElement.GetProperty("data").GetProperty("followUp")
             .EnumerateArray().Select(item => item.GetString()));
-        Assert.Contains(output.Lines(), line => line.Contains("queue_update", StringComparison.Ordinal));
+        var queueUpdates = output.Lines().Where(line => line.Contains("\"type\":\"queue_update\"", StringComparison.Ordinal)).ToArray();
+        Assert.NotEmpty(queueUpdates);
+        Assert.All(queueUpdates, line => Assert.DoesNotContain("\"format\":\"pisharp\"", line, StringComparison.Ordinal));
+        using var snapshot = JsonDocument.Parse(Assert.Single(queueUpdates, line =>
+            line.Contains("\"steering\":[\"discard steer\"]", StringComparison.Ordinal) &&
+            line.Contains("\"followUp\":[\"discard follow\"]", StringComparison.Ordinal)));
+        Assert.Equal(["type", "steering", "followUp"], snapshot.RootElement.EnumerateObject().Select(property => property.Name));
         foreach (var (id, command) in new[] { ("follow", "follow_up"), ("steer", "steer") })
         {
             using var response = JsonDocument.Parse(Assert.Single(output.Lines(), line =>
