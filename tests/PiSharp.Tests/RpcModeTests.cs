@@ -46,6 +46,10 @@ public sealed class RpcModeTests
             var responseIndex = Array.FindIndex(output.Lines(), line => line.Contains("\"id\":\"prompt-1\"", StringComparison.Ordinal));
             var acceptedIndex = Array.FindIndex(output.Lines(), line => line.Contains("\"prompt_accepted\"", StringComparison.Ordinal));
             Assert.True(responseIndex >= 0 && acceptedIndex > responseIndex);
+            var settled = Assert.Single(events, e => e.RootElement.GetProperty("type").GetString() == "agent_settled");
+            Assert.Equal(["type"], settled.RootElement.EnumerateObject().Select(property => property.Name));
+            var settledIndex = Array.FindIndex(output.Lines(), line => line.Contains("\"type\":\"agent_settled\"", StringComparison.Ordinal));
+            Assert.True(settledIndex > responseIndex);
             Assert.Contains(events, e => e.RootElement.GetProperty("type").GetString() == "response" &&
                 e.RootElement.GetProperty("id").GetString() == "unknown" && !e.RootElement.GetProperty("success").GetBoolean());
             Assert.Contains(events, e => e.RootElement.GetProperty("type").GetString() == "response" &&

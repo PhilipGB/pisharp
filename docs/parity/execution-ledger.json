@@ -1590,14 +1590,19 @@
     {
       "id": "rpc-agent-start-end-settled",
       "title": "RPC / event: agent_start/end/settled",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:38",
       "acceptance": [
         "Implement agent_start/end/settled using shared canonical runtime with correlated responses/event ordering",
         "Test protocol through RPC process, including failures and cancellation"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "src/PiSharp.Cli/Protocols/RpcEventWriter.cs: locally projects the runtime's agent_settled boundary to Pi's top-level {type} event; agent_start and agent_end are not yet represented."
+      ],
+      "evidence": [
+        "Compared current Pi main d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 packages/coding-agent/src/core/agent-session.ts and modes/rpc/rpc-mode.ts: agent_settled is emitted as a payload-free top-level event after agent work settles.",
+        "RpcModeTests.AcceptsPromptThenEmitsEventsAndSupportsSubsequentStateQueries verifies the top-level event contains exactly type=agent_settled and occurs after the prompt response; focused image/RPC tests passed 24/24, dotnet format PiSharp.slnx --verify-no-changes --no-restore passed, dotnet build PiSharp.slnx --no-restore --warnaserror succeeded with 0 warnings/errors, and dotnet test PiSharp.slnx --no-restore passed 535/535. Exact-head CI is pending."
+      ],
       "dependencies": []
     },
     {
@@ -1703,7 +1708,8 @@
         "Compared current Pi main d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 packages/coding-agent/src/modes/rpc/rpc-mode.ts and core/agent-session.ts: session level changes synchronously emit thinking_level_changed before the RPC success response.",
         "RpcModelProcessTests.RpcModelAndThinkingCommandsSelectAndCycleTheRunningRuntime verifies the exact top-level event fields, set/cycle ordering before responses, and no duplicate event when setting the current level.",
         "Focused local RPC/process tests: dotnet test tests/PiSharp.Tests/PiSharp.Tests.csproj --filter FullyQualifiedName~RpcModeTests|FullyQualifiedName~RpcModelProcessTests --no-restore => 22 passed, 0 failed, 0 skipped.",
-        "Current local working tree: focused RPC/process tests passed 22/22; dotnet format PiSharp.slnx --verify-no-changes --no-restore passed; dotnet build PiSharp.slnx --warnaserror succeeded with 0 warnings/errors; dotnet test PiSharp.slnx passed 535/535 (0 failed, 0 skipped). Exact source-head CI is pending."
+        "Focused RPC/process tests: dotnet test tests/PiSharp.Tests/PiSharp.Tests.csproj --filter FullyQualifiedName~RpcModeTests|FullyQualifiedName~RpcModelProcessTests --no-restore => 22 passed, 0 failed, 0 skipped.",
+        "Linux CI run 36197929103 on exact source head 24277bf3c5aa2f046183ef76d943dd7290f8fd9d passed format verification, warnings-as-errors build with 0 warnings/errors, and all 535 tests (0 failed, 0 skipped)."
       ],
       "dependencies": []
     },

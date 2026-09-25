@@ -26,6 +26,7 @@ internal sealed class RpcEventWriter(JsonLineWriter output)
     {
         "prompt_queued" => null,
         "queue_update" => ProjectQueueUpdate(item),
+        "agent_settled" => new { type = "agent_settled" },
         _ => new { type = "event", format = "pisharp", data = item }
     };
 

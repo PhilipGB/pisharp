@@ -58,19 +58,7 @@ public sealed class ReadImageToolTests
             Assert.True(Base64Length(largeImage.Length) < 8_000_000);
             await File.WriteAllBytesAsync(Path.Combine(root, "large.png"), largeImage);
 
-            using var listener = new HttpListener();
-            var port = 0;
-            for (var attempt = 0; attempt < 10; attempt++)
-            {
-                using var reservation = new TcpListener(IPAddress.Loopback, 0);
-                reservation.Start();
-                port = ((IPEndPoint)reservation.LocalEndpoint).Port;
-                reservation.Stop();
-                listener.Prefixes.Clear();
-                listener.Prefixes.Add($"http://127.0.0.1:{port}/");
-                try { listener.Start(); break; }
-                catch (HttpListenerException) when (attempt < 9) { }
-            }
+            using var listener = StartLoopbackListener(out var port);
 
             var requests = new List<JsonDocument>();
             var server = Task.Run(async () =>
@@ -220,6 +208,33 @@ public sealed class ReadImageToolTests
     private static void AssertResponseContainsImage(JsonElement body, byte[] image)
     {
         Assert.Equal("data:image/png;base64," + Convert.ToBase64String(image), GetResponseImageDataUrl(body));
+    }
+
+    private static HttpListener StartLoopbackListener(out int port)
+    {
+        port = 0;
+        for (var attempt = 0; attempt < 10; attempt++)
+        {
+            using var reservation = new TcpListener(IPAddress.Loopback, 0);
+            reservation.Start();
+            var candidatePort = ((IPEndPoint)reservation.LocalEndpoint).Port;
+            reservation.Stop();
+
+            var listener = new HttpListener();
+            listener.Prefixes.Add($"http://127.0.0.1:{candidatePort}/");
+            try
+            {
+                listener.Start();
+                port = candidatePort;
+                return listener;
+            }
+            catch (HttpListenerException) when (attempt < 9)
+            {
+                listener.Close();
+            }
+        }
+
+        throw new InvalidOperationException("Could not start an HTTP listener on an available loopback port.");
     }
 
     private static string GetResponseImageDataUrl(JsonElement body)
