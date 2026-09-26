@@ -70,6 +70,13 @@ public sealed class RpcModeTests
             Assert.Contains(events, e => e.RootElement.GetProperty("type").GetString() == "response" &&
                 e.RootElement.GetProperty("id").GetString() == "after" &&
                 e.RootElement.GetProperty("data").GetProperty("messages").GetArrayLength() == 2);
+            var sessionInfo = Assert.Single(events, e => e.RootElement.GetProperty("type").GetString() == "session_info_changed");
+            Assert.Equal(["type", "name"], sessionInfo.RootElement.EnumerateObject().Select(property => property.Name));
+            Assert.Equal("my feature", sessionInfo.RootElement.GetProperty("name").GetString());
+            var lines = output.Lines();
+            var sessionInfoIndex = Array.FindIndex(lines, line => line.Contains("session_info_changed", StringComparison.Ordinal));
+            var nameResponseIndex = Array.FindIndex(lines, line => line.Contains("\"id\":\"name\"", StringComparison.Ordinal));
+            Assert.True(sessionInfoIndex >= 0 && nameResponseIndex > sessionInfoIndex);
             Assert.Contains(events, e => e.RootElement.GetProperty("type").GetString() == "response" &&
                 e.RootElement.GetProperty("id").GetString() == "bad-cursor" &&
                 !e.RootElement.GetProperty("success").GetBoolean() &&

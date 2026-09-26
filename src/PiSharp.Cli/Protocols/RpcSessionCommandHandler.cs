@@ -11,6 +11,7 @@ internal sealed class RpcSessionCommandHandler(
     Func<ConversationRun> currentRun,
     Func<string?> getThinkingLevel,
     Func<bool> isBusy,
+    Func<RpcEventWriter> events,
     Func<CancellationToken, Task>? save,
     Func<string?, CancellationToken, Task<bool>>? newSession,
     Func<string, CancellationToken, Task<string?>>? forkSession,
@@ -274,6 +275,7 @@ internal sealed class RpcSessionCommandHandler(
                     await respond(id, command, false, error.Message);
                     return true;
                 }
+                await events().EmitSessionInfoChangedAsync(updatedName, cancellationToken);
                 await respond(id, command, true, null);
                 return true;
 

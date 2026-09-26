@@ -44,7 +44,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
             setThinkingLevel, setThinkingLevelDuringRun, getAvailableThinkingLevels, supportsThinking);
         var retryCommands = new RpcRetryCommandHandler(RespondAsync, () => CurrentRun, persistRetryEnabled);
         var sessionCommands = new RpcSessionCommandHandler(_writer, RespondAsync, () => CurrentRun,
-            () => getThinkingLevel?.Invoke(), () => _active is { IsCompleted: false }, save,
+            () => getThinkingLevel?.Invoke(), () => _active is { IsCompleted: false }, () => Events, save,
             newSession is null ? null : StartNewSessionAsync,
             forkSession is null ? null : StartForkSessionAsync,
             cloneSession is null ? null : StartCloneSessionAsync,

@@ -10,6 +10,9 @@ internal sealed class RpcEventWriter(JsonLineWriter output)
     public Task EmitThinkingLevelChangedAsync(string level, CancellationToken cancellationToken = default) =>
         output.EmitAsync(new { type = "thinking_level_changed", level }, cancellationToken);
 
+    public Task EmitSessionInfoChangedAsync(string? name, CancellationToken cancellationToken = default) =>
+        output.EmitAsync(new { type = "session_info_changed", name }, cancellationToken);
+
     public async Task<bool> RunAsync(ConversationRun run, string prompt, CancellationToken cancellationToken = default,
         Func<AgentLifecycleEvent, Task>? observeEvent = null, string? api = null)
     {
