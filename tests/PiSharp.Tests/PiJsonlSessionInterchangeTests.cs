@@ -7,6 +7,23 @@ namespace PiSharp.Tests;
 public sealed class PiJsonlSessionInterchangeTests
 {
     [Fact]
+    public void ParentSessionPathRoundTripsThroughNativeAndPiSessionHeaders()
+    {
+        var cwd = Path.GetFullPath(Path.GetTempPath());
+        const string parentPath = "/sessions/parent.jsonl";
+        var child = new ConversationSession(cwd, "fixture-model", null, "fixture", parentPath);
+
+        var native = ConversationSession.Parse(child.ToJson());
+        var imported = PiJsonlSessionInterchange.Import(PiJsonlSessionInterchange.Export(native));
+
+        Assert.Equal(parentPath, native.ParentSessionPath);
+        Assert.Equal(parentPath, imported.ParentSessionPath);
+        using var header = JsonDocument.Parse(PiJsonlSessionInterchange.Export(imported)
+            .Split('\n', StringSplitOptions.RemoveEmptyEntries)[0]);
+        Assert.Equal(parentPath, header.RootElement.GetProperty("parentSession").GetString());
+    }
+
+    [Fact]
     public void RpcMessageProjectionUsesOnlyNewCanonicalMessagesAndKeepsToolCallIdentity()
     {
         var session = new ConversationSession(Path.GetTempPath(), "fixture-model", null, "fixture");

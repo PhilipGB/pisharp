@@ -99,6 +99,65 @@ public sealed class RpcModeTests
     }
 
     [Fact]
+    public async Task NewSessionAbortsAnActiveRunBeforeReturningAndRebindsState()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-rpc-new-session-abort-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        try
+        {
+            var channel = Channel.CreateUnbounded<string>();
+            var reader = new CommandReader(channel.Reader);
+            using var output = new LockedWriter();
+            var client = new PartialBlockingClient();
+            var previous = new ConversationSession(cwd, "fixture", null);
+            var previousRun = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(cwd)), previous);
+            var currentRun = previousRun;
+            var service = new RpcMode(reader, output, previousRun, getCurrentRun: () => currentRun,
+                newSession: async (parentSession, token) =>
+                {
+                    Assert.Equal("/sessions/parent.jsonl", parentSession);
+                    var next = new ConversationSession(cwd, "fixture", null, parentSessionPath: parentSession);
+                    currentRun = await ConversationRun.OpenAsync(new PiAgent(new StubClient(), new CodingTools(cwd)), next);
+                    return false;
+                });
+            var serving = service.ServeAsync();
+            channel.Writer.TryWrite("{\"id\":\"prompt\",\"type\":\"prompt\",\"message\":\"hold open\"}");
+            await WaitForAsync(output, "\"type\":\"agent_start\"");
+            channel.Writer.TryWrite("{\"id\":\"replace\",\"type\":\"new_session\",\"parentSession\":\"/sessions/parent.jsonl\"}");
+            await WaitForAsync(output, "\"id\":\"replace\"");
+            await WaitForAsync(output, "\"type\":\"agent_settled\"");
+            channel.Writer.TryWrite("{\"id\":\"state\",\"type\":\"get_state\"}");
+            await WaitForAsync(output, "\"id\":\"state\"");
+            channel.Writer.Complete();
+            await serving.WaitAsync(TimeSpan.FromSeconds(5));
+
+            var events = output.Lines().Select(line => JsonDocument.Parse(line)).ToArray();
+            try
+            {
+                var endIndex = Array.FindIndex(events, item =>
+                    item.RootElement.TryGetProperty("type", out var type) && type.GetString() == "agent_end");
+                var settledIndex = Array.FindIndex(events, item =>
+                    item.RootElement.TryGetProperty("type", out var type) && type.GetString() == "agent_settled");
+                var newSessionIndex = Array.FindIndex(events, item =>
+                    item.RootElement.TryGetProperty("id", out var id) && id.GetString() == "replace");
+                Assert.True(endIndex >= 0 && settledIndex > endIndex && newSessionIndex > settledIndex);
+                var finalMessages = events[endIndex].RootElement.GetProperty("messages");
+                Assert.True(finalMessages.GetArrayLength() > 0);
+                Assert.Equal("aborted", finalMessages[finalMessages.GetArrayLength() - 1]
+                    .GetProperty("stopReason").GetString());
+                Assert.DoesNotContain(events, item =>
+                    item.RootElement.TryGetProperty("type", out var type) && type.GetString() == "error");
+                var state = Assert.Single(events, item =>
+                    item.RootElement.TryGetProperty("id", out var id) && id.GetString() == "state");
+                Assert.NotEqual(previous.Id, state.RootElement.GetProperty("data").GetProperty("sessionId").GetString());
+                Assert.Equal("/sessions/parent.jsonl", currentRun.Conversation.ParentSessionPath);
+            }
+            finally { foreach (var item in events) item.Dispose(); }
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Fact]
     public async Task PromptPreflightFailureReturnsOneCorrelatedResponse()
     {
         var channel = Channel.CreateUnbounded<string>();
@@ -1177,6 +1236,21 @@ public sealed class RpcModeTests
         public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
             ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         { await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken); yield break; }
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
+    }
+
+    private sealed class PartialBlockingClient : IChatClient
+    {
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            yield return new ChatResponseUpdate(ChatRole.Assistant, "partial");
+            await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+            yield break;
+        }
         public object? GetService(Type serviceType, object? serviceKey = null) => null;
         public void Dispose() { }
     }

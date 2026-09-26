@@ -16,14 +16,18 @@ public sealed class ConversationSession
     public string? Provider { get; private set; }
     public string? Endpoint { get; private set; }
     public string? Name { get; private set; }
+    public string? ParentSessionPath { get; }
     internal JsonElement? PiJsonlHeader { get; }
     public ConversationTree Tree { get; }
 
-    public ConversationSession(string workingDirectory, string model, string? endpoint, string? provider = null)
-        : this(Guid.NewGuid().ToString("N"), Path.GetFullPath(workingDirectory), model, endpoint, provider, null, new ConversationTree()) { }
+    public ConversationSession(string workingDirectory, string model, string? endpoint, string? provider = null,
+        string? parentSessionPath = null)
+        : this(Guid.NewGuid().ToString("N"), Path.GetFullPath(workingDirectory), model, endpoint, provider, null,
+            new ConversationTree(), parentSessionPath: parentSessionPath)
+    { }
 
     private ConversationSession(string id, string cwd, string model, string? endpoint, string? provider, string? name,
-        ConversationTree tree, JsonElement? piJsonlHeader = null)
+        ConversationTree tree, JsonElement? piJsonlHeader = null, string? parentSessionPath = null)
     {
         Id = id;
         WorkingDirectory = cwd;
@@ -33,11 +37,14 @@ public sealed class ConversationSession
         Name = name;
         Tree = tree;
         PiJsonlHeader = piJsonlHeader?.Clone();
+        ParentSessionPath = parentSessionPath;
     }
 
     internal static ConversationSession FromPiJsonl(string id, string cwd, string model, string? provider, string? name,
         ConversationTree tree, JsonElement header) =>
-        new(id, cwd, model, null, provider, name, tree, header);
+        new(id, cwd, model, null, provider, name, tree, header,
+            header.TryGetProperty("parentSession", out var parent) && parent.ValueKind == JsonValueKind.String
+                ? parent.GetString() : null);
 
     internal static ConversationNode ImportedPiMessage(string id, string? parentId, DateTimeOffset timestamp,
         ChatMessage message, JsonElement originalEntry)
@@ -358,7 +365,7 @@ public sealed class ConversationSession
     public string ToJson()
     {
         var document = new Document(FormatVersion, Id, WorkingDirectory, Model, Endpoint, Name, Tree.HeadId,
-            Tree.Entries.ToArray(), Provider, PiJsonlHeader);
+            Tree.Entries.ToArray(), Provider, PiJsonlHeader, ParentSessionPath);
         return JsonSerializer.Serialize(document);
     }
 
@@ -407,7 +414,7 @@ public sealed class ConversationSession
         }
         tree.Select(document.HeadId); // An explicit null selection is distinct from the last appended entry.
         return new ConversationSession(document.Id, document.WorkingDirectory, document.Model, document.Endpoint,
-            document.Provider, document.Name, tree, document.PiHeader);
+            document.Provider, document.Name, tree, document.PiHeader, document.ParentSessionPath);
     }
 
     private static void ValidateUsage(UsageRecord usage, string id)
@@ -442,5 +449,6 @@ public sealed class ConversationSession
     private sealed record ChatRecord(JsonElement Message, ToolError[]? Errors, JsonElement? PiEntry = null);
     private sealed record ToolError(int Index, string Type, string Message);
     private sealed record Document(int Version, string Id, string WorkingDirectory, string Model, string? Endpoint,
-        string? Name, string? HeadId, ConversationNode[] Entries, string? Provider = null, JsonElement? PiHeader = null);
+        string? Name, string? HeadId, ConversationNode[] Entries, string? Provider = null, JsonElement? PiHeader = null,
+        string? ParentSessionPath = null);
 }

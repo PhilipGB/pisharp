@@ -108,6 +108,7 @@ public static class PiJsonlSessionInterchange
         header["id"] = session.Id;
         header["timestamp"] = DateTimeOffset.UtcNow.ToString("O");
         header["cwd"] = session.WorkingDirectory;
+        if (session.ParentSessionPath is not null) header["parentSession"] = session.ParentSessionPath;
         AppendLine(output, header);
 
         var orderedEntries = OrderedEntriesForExport(session);

@@ -19,7 +19,8 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
     Func<IReadOnlyList<string>>? getAvailableThinkingLevels = null, Func<bool>? supportsThinking = null,
     Func<string?>? getApi = null,
     Func<string, CancellationToken, Task<string>>? setThinkingLevelDuringRun = null,
-    Func<bool, CancellationToken, Task>? persistRetryEnabled = null)
+    Func<bool, CancellationToken, Task>? persistRetryEnabled = null,
+    Func<string?, CancellationToken, Task<bool>>? newSession = null)
 {
     private readonly JsonLineWriter _writer = new(output);
     private RpcEventWriter? _events;
@@ -36,7 +37,8 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
             setThinkingLevel, setThinkingLevelDuringRun, getAvailableThinkingLevels, supportsThinking);
         var retryCommands = new RpcRetryCommandHandler(RespondAsync, () => CurrentRun, persistRetryEnabled);
         var sessionCommands = new RpcSessionCommandHandler(_writer, RespondAsync, () => CurrentRun,
-            () => getThinkingLevel?.Invoke(), () => _active is { IsCompleted: false }, save);
+            () => getThinkingLevel?.Invoke(), () => _active is { IsCompleted: false }, save,
+            newSession is null ? null : StartNewSessionAsync);
         try
         {
             while (await input.ReadLineAsync(cancellationToken) is { } line)
@@ -244,6 +246,17 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
         }
     }
 
+    private async Task<bool> StartNewSessionAsync(string? parentSession, CancellationToken cancellationToken)
+    {
+        if (_active is { IsCompleted: false } active)
+        {
+            _abort?.Cancel();
+            try { await active; }
+            catch (OperationCanceledException) { }
+        }
+        return await newSession!(parentSession, cancellationToken);
+    }
+
     private static bool TryGetTextMessage(JsonElement root, out string? message, out string? error)
     {
         message = null;
@@ -277,6 +290,10 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                 }
             }, getApi?.Invoke());
             if (save is not null) await save(CancellationToken.None);
+        }
+        catch (OperationCanceledException error) when (token.IsCancellationRequested)
+        {
+            if (!responded) await RespondPromptAsync(id, false, error: error.Message);
         }
         catch (Exception error)
         {

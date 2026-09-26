@@ -38,6 +38,18 @@ internal sealed class InteractiveSessionController(
         return await CreateBranchAsync(source, sourcePath, clone, null, null);
     }
 
+    public async Task<SessionBranchResult> NewAsync(ConversationSession source, string? sourcePath,
+        string? parentSessionPath = null)
+    {
+        if (sourcePath is not null) await store.SaveAsync(source, sourcePath);
+        var conversation = new ConversationSession(source.WorkingDirectory, source.Model, source.Endpoint,
+            source.Provider, parentSessionPath);
+        var path = noSession ? null : store.NewPath(conversation);
+        var run = await openRun(conversation, path);
+        if (path is not null) await store.SaveAsync(conversation, path);
+        return new(conversation, run, path, null, null);
+    }
+
     private async Task<SessionBranchResult> CreateBranchAsync(ConversationSession source, string? sourcePath,
         ConversationSession branch, string? sourceEntryId, string? prompt)
     {

@@ -760,14 +760,25 @@ string? ReadSecret()
 }
 if (cli.Mode == "rpc")
 {
-    await new RpcMode(Console.In, Console.Out, conversationRun, sessionPath is null ? null :
-        cancellationToken => store.SaveAsync(conversation, sessionPath, cancellationToken), resources, GetRpcModelsAsync,
+    async Task<bool> StartRpcSessionAsync(string? parentSession, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var created = await sessionController.NewAsync(conversation, sessionPath, parentSession);
+        conversation = created.Conversation;
+        conversationRun = created.Run;
+        sessionPath = created.Path;
+        return false;
+    }
+
+    await new RpcMode(Console.In, Console.Out, conversationRun,
+        cancellationToken => sessionPath is null ? Task.CompletedTask : store.SaveAsync(conversation, sessionPath, cancellationToken),
+        resources, GetRpcModelsAsync,
         extensionLease.Current.Registration, () => selection.Authenticated ? null :
             $"Provider '{selection.Provider.Id}' is not authenticated. Use /login {selection.Provider.Id} or configure {selection.Provider.ApiKeyEnvironment ?? "a credential"}.",
         SelectRpcModelAsync, () => conversationRun, () => thinking, () => modelRuntime.Scope.Count > 0,
         SetRpcThinkingLevelAsync, () => ThinkingLevels.AvailableForModel(selection.Model.Reasoning),
         () => selection.Model.Reasoning == true, () => ProviderChatClientFactory.ResolveProtocol(selection),
-        SetRpcThinkingLevelDuringRunAsync, SetRpcAutoRetryEnabledAsync).ServeAsync();
+        SetRpcThinkingLevelDuringRunAsync, SetRpcAutoRetryEnabledAsync, StartRpcSessionAsync).ServeAsync();
     return;
 }
 if (cli.Mode == "json")
@@ -1055,22 +1066,14 @@ else
                         break;
                     case "/new":
                     case "/clone":
+                        SessionBranchResult branch;
                         if (command == "/clone")
-                        {
-                            var branch = await sessionController.CloneAsync(conversation, sessionPath);
-                            conversation = branch.Conversation;
-                            sessionPath = branch.Path;
-                            conversationRun = branch.Run;
-                        }
+                            branch = await sessionController.CloneAsync(conversation, sessionPath);
                         else
-                        {
-                            if (sessionPath is not null) await store.SaveAsync(conversation, sessionPath);
-                            conversation = new ConversationSession(Environment.CurrentDirectory, connection.Model,
-                                connection.Endpoint?.ToString(), selection.Provider.Id);
-                            sessionPath = cli.NoSession ? null : store.NewPath(conversation);
-                            conversationRun = await OpenRunAsync(agent, conversation, sessionPath);
-                            if (sessionPath is not null) await store.SaveAsync(conversation, sessionPath);
-                        }
+                            branch = await sessionController.NewAsync(conversation, sessionPath, sessionPath);
+                        conversation = branch.Conversation;
+                        sessionPath = branch.Path;
+                        conversationRun = branch.Run;
                         LoadSessionTranscript();
                         Console.WriteLine($"{command[1..]}: {sessionPath ?? "(ephemeral)"}");
                         break;

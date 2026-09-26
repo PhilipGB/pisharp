@@ -11,7 +11,8 @@ internal sealed class RpcSessionCommandHandler(
     Func<ConversationRun> currentRun,
     Func<string?> getThinkingLevel,
     Func<bool> isBusy,
-    Func<CancellationToken, Task>? save)
+    Func<CancellationToken, Task>? save,
+    Func<string?, CancellationToken, Task<bool>>? newSession)
 {
     public async Task<bool> TryHandleAsync(string command, JsonElement root, JsonElement? id,
         CancellationToken cancellationToken)
@@ -20,6 +21,37 @@ internal sealed class RpcSessionCommandHandler(
         var conversation = run.Conversation;
         switch (command)
         {
+            case "new_session":
+                if (root.TryGetProperty("parentSession", out var parentSession) &&
+                    parentSession.ValueKind != JsonValueKind.String)
+                {
+                    await respond(id, command, false, "parentSession must be a string.");
+                    return true;
+                }
+                if (newSession is null)
+                {
+                    await respond(id, command, false, "Session replacement is not configured.");
+                    return true;
+                }
+                try
+                {
+                    var cancelled = await newSession(parentSession.ValueKind == JsonValueKind.String
+                        ? parentSession.GetString() : null, cancellationToken);
+                    await output.EmitAsync(new
+                    {
+                        id,
+                        type = "response",
+                        command,
+                        success = true,
+                        data = new { cancelled }
+                    }, cancellationToken);
+                }
+                catch (Exception error) when (error is not OperationCanceledException)
+                {
+                    await respond(id, command, false, error.Message);
+                }
+                return true;
+
             case "get_state":
                 var queue = run.GetPendingPrompts();
                 await output.EmitAsync(new
