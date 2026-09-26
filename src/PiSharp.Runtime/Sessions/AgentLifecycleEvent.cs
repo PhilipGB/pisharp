@@ -16,4 +16,10 @@ public sealed record AgentLifecycleEvent(string Type, string? Text = null, strin
 
     [JsonIgnore]
     public IReadOnlyList<DataContent>? Images { get; init; }
+
+    [JsonIgnore]
+    public string? RunStartHead { get; init; }
+
+    [JsonIgnore]
+    public string? TurnEndHead { get; init; }
 }

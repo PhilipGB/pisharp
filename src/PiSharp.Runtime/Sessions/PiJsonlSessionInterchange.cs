@@ -153,7 +153,7 @@ public static class PiJsonlSessionInterchange
     }
 
     internal static JsonArray ProjectRunMessages(ConversationSession session, string? afterEntryId, string? api,
-        string? terminalType = null, string? errorMessage = null)
+        string? terminalType = null, string? errorMessage = null, string? throughEntryId = null)
     {
         var path = session.Tree.ActivePath();
         var firstRunEntry = 0;
@@ -166,12 +166,22 @@ public static class PiJsonlSessionInterchange
                 throw new InvalidOperationException("The active session branch changed during the RPC run.");
             firstRunEntry = previousIndex + 1;
         }
+        var lastRunEntry = path.Count - 1;
+        if (throughEntryId is not null)
+        {
+            lastRunEntry = -1;
+            for (var index = 0; index < path.Count; index++)
+                if (path[index].Id == throughEntryId) { lastRunEntry = index; break; }
+            if (lastRunEntry < firstRunEntry)
+                throw new InvalidOperationException("The active session branch changed during the RPC turn.");
+        }
+        var runPath = path.Take(lastRunEntry + 1).ToArray();
 
         var messages = new JsonArray();
         var toolNames = new Dictionary<string, string>(StringComparer.Ordinal);
-        for (var index = 0; index < path.Count; index++)
+        for (var index = 0; index < runPath.Length; index++)
         {
-            var node = path[index];
+            var node = runPath[index];
             if (node.Type != "chat") continue;
             var original = OriginalEntry(node);
             JsonObject message;
@@ -199,7 +209,7 @@ public static class PiJsonlSessionInterchange
         }
 
         if ((terminalType is "turn_failed" or "turn_interrupted") &&
-            path.Skip(firstRunEntry).LastOrDefault(node => node.Type == "interrupted") is { } interrupted)
+            runPath.Skip(firstRunEntry).LastOrDefault(node => node.Type == "interrupted") is { } interrupted)
         {
             var partialText = StringProperty(interrupted.Payload, "partialAssistantText") ?? "";
             var lastAssistant = messages.OfType<JsonObject>().LastOrDefault(message => NodeString(message["role"]) == "assistant");

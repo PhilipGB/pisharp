@@ -172,7 +172,7 @@ public sealed class ConversationRun
                             }
                     }
                     FlushPendingBashExecutions();
-                    Publish(new("turn_completed"));
+                    Publish(new("turn_completed") { TurnEndHead = Conversation.Tree.HeadId });
                     current = TakeQueuedPromptOrClose(owner);
                 }
                 Publish(new("agent_run_completed"));
@@ -180,13 +180,21 @@ public sealed class ConversationRun
             catch (OperationCanceledException)
             {
                 if (!consumerClosed.IsCancellationRequested)
-                    try { await channel.Writer.WriteAsync(new(accepted ? "turn_interrupted" : "prompt_rejected"), consumerClosed.Token); }
+                    try
+                    {
+                        await channel.Writer.WriteAsync(new(accepted ? "turn_interrupted" : "prompt_rejected")
+                        { TurnEndHead = Conversation.Tree.HeadId }, consumerClosed.Token);
+                    }
                     catch (OperationCanceledException) { }
             }
             catch (Exception error)
             {
                 if (!consumerClosed.IsCancellationRequested)
-                    try { await channel.Writer.WriteAsync(new(accepted ? "turn_failed" : "prompt_rejected", Error: error.Message), consumerClosed.Token); }
+                    try
+                    {
+                        await channel.Writer.WriteAsync(new(accepted ? "turn_failed" : "prompt_rejected", Error: error.Message)
+                        { TurnEndHead = Conversation.Tree.HeadId }, consumerClosed.Token);
+                    }
                     catch (OperationCanceledException) { }
             }
             finally
@@ -418,7 +426,8 @@ public sealed class ConversationRun
             var promptImages = promptMessage.Contents?.OfType<DataContent>().ToArray();
             onEvent?.Invoke(new("prompt_accepted", Text: prompt)
             {
-                Images = promptImages is { Length: > 0 } ? promptImages : null
+                Images = promptImages is { Length: > 0 } ? promptImages : null,
+                RunStartHead = Conversation.Tree.HeadId
             });
             var inFlightBudget = _autoCompaction is null ? null : new InFlightContextBudget(_autoCompaction,
                 (messages, token) => _agent.SummarizeAsync(messages, null, token),

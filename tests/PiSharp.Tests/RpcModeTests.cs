@@ -619,15 +619,30 @@ public sealed class RpcModeTests
             Assert.Equal("queued", queued.RootElement.GetProperty("data").GetProperty("disposition").GetString());
             Assert.False(missingBehavior.RootElement.GetProperty("success").GetBoolean());
             var lines = output.Lines();
-            Assert.Equal(1, lines.Count(line => line.Contains("\"type\":\"agent_start\"", StringComparison.Ordinal)));
-            var agentStartIndex = Array.FindIndex(lines, line => line.Contains("\"type\":\"agent_start\"", StringComparison.Ordinal));
-            var agentEndIndex = Array.FindIndex(lines, line => line.Contains("\"type\":\"agent_end\"", StringComparison.Ordinal));
+            var agentStartIndices = lines.Select((line, index) => (line, index))
+                .Where(item => item.line.Contains("\"type\":\"agent_start\"", StringComparison.Ordinal))
+                .Select(item => item.index).ToArray();
+            var agentEndIndices = lines.Select((line, index) => (line, index))
+                .Where(item => item.line.Contains("\"type\":\"agent_end\"", StringComparison.Ordinal))
+                .Select(item => item.index).ToArray();
             var agentSettledIndex = Array.FindIndex(lines, line => line.Contains("\"type\":\"agent_settled\"", StringComparison.Ordinal));
-            Assert.True(agentStartIndex >= 0 && agentEndIndex > agentStartIndex && agentSettledIndex > agentEndIndex);
-            using (var end = JsonDocument.Parse(lines[agentEndIndex]))
+            Assert.Equal(2, agentStartIndices.Length);
+            Assert.Equal(2, agentEndIndices.Length);
+            Assert.True(agentStartIndices[0] >= 0 && agentEndIndices[0] > agentStartIndices[0] &&
+                agentStartIndices[1] > agentEndIndices[0] && agentEndIndices[1] > agentStartIndices[1] &&
+                agentSettledIndex > agentEndIndices[1]);
+            using (var firstEnd = JsonDocument.Parse(lines[agentEndIndices[0]]))
             {
-                Assert.False(end.RootElement.GetProperty("willRetry").GetBoolean());
-                Assert.Equal(["one", "first reply", "two", "second reply"], end.RootElement.GetProperty("messages").EnumerateArray()
+                Assert.False(firstEnd.RootElement.GetProperty("willRetry").GetBoolean());
+                Assert.Equal(["one", "first reply"], firstEnd.RootElement.GetProperty("messages").EnumerateArray()
+                    .Select(message => message.GetProperty("role").GetString() == "assistant"
+                        ? message.GetProperty("content")[0].GetProperty("text").GetString()
+                        : message.GetProperty("content").GetString()));
+            }
+            using (var secondEnd = JsonDocument.Parse(lines[agentEndIndices[1]]))
+            {
+                Assert.False(secondEnd.RootElement.GetProperty("willRetry").GetBoolean());
+                Assert.Equal(["two", "second reply"], secondEnd.RootElement.GetProperty("messages").EnumerateArray()
                     .Select(message => message.GetProperty("role").GetString() == "assistant"
                         ? message.GetProperty("content")[0].GetProperty("text").GetString()
                         : message.GetProperty("content").GetString()));

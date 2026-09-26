@@ -15,14 +15,15 @@ internal sealed class RpcEventWriter(JsonLineWriter output)
     {
         var succeeded = false;
         var accepted = false;
-        var runStartHead = run.Conversation.Tree.HeadId;
+        string? turnStartHead = null;
         await foreach (var item in run.RunEventsAsync(prompt, cancellationToken))
         {
             if (observeEvent is not null) await observeEvent(item);
             if (item.Type == "prompt_accepted")
             {
-                if (!accepted) await output.EmitAsync(new { type = "agent_start" }, CancellationToken.None);
+                turnStartHead = item.RunStartHead;
                 accepted = true;
+                await output.EmitAsync(new { type = "agent_start" }, CancellationToken.None);
                 continue;
             }
             if (item.Type == "prompt_rejected") continue;
@@ -31,7 +32,7 @@ internal sealed class RpcEventWriter(JsonLineWriter output)
                 if (accepted) await output.EmitAsync(new { type = "agent_settled" }, CancellationToken.None);
                 continue;
             }
-            if (_projector.Project(item, run.Conversation, runStartHead, accepted, api) is { } record)
+            if (_projector.Project(item, run.Conversation, turnStartHead, accepted, api) is { } record)
                 await output.EmitAsync(record, CancellationToken.None);
             if (item.Type == "agent_run_completed") succeeded = true;
         }
