@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "plan_received": false,
-  "source_note": "Original plan was announced after a heading but not appended. Conservative provisional inventory from pinned upstream feature matrix and detailed inventory; never treat as complete until reconciled with the missing plan and audited upstream. Durable parity baseline is b3487650f6378f1b0d1643dd254445ceb4a98035. Current Pi main was checked 2026-09-26 at d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31; scoped queue-mode and settings behavior was inspected against that head. Current deltas include TypeScript 7/Node type stripping, an overlay-close cursor-restoration fix, RPC listener snapshot dispatch, full-file read null-range rendering, and per-ref temporary extension cache paths; these are classified in docs/continuation.md. Current Pi SettingsSelectorComponent, SettingsList, and their tests were inspected. The reviewed TUI uses pi-tui 0.87.1 and Marked 18.0.11; Pi wraps ANSI-aware grapheme cells and breaks overlong tokens. Its pinned alt-screen implementation and tests cover SGR button-motion tracking, visible text drag selection/copy, wheel dispatch, grapheme snapping, and mouse-mode cleanup. Further provider, session, protocol, image, theme-CLI/search-path, autocomplete and extension deltas remain unaudited. Pi Packages remain excluded unless needed for a core capability.",
+  "source_note": "Original plan was announced after a heading but not appended. Conservative provisional inventory from pinned upstream feature matrix and detailed inventory; never treat as complete until reconciled with the missing plan and audited upstream. Durable parity baseline is b3487650f6378f1b0d1643dd254445ceb4a98035. Current Pi main was refreshed 2026-09-26 to 2b0a123de98318c2ff8069661721ce0c3794c34e; scoped queue-mode, RPC state and recovery-setting behavior was inspected against that head. Current deltas include TypeScript 7/Node type stripping, an overlay-close cursor-restoration fix, RPC listener snapshot dispatch, full-file read null-range rendering, and per-ref temporary extension cache paths; these are classified in docs/continuation.md. Current Pi SettingsSelectorComponent, SettingsList, and their tests were inspected. The reviewed TUI uses pi-tui 0.87.1 and Marked 18.0.11; Pi wraps ANSI-aware grapheme cells and breaks overlong tokens. Its pinned alt-screen implementation and tests cover SGR button-motion tracking, visible text drag selection/copy, wheel dispatch, grapheme snapping, and mouse-mode cleanup. Further provider, session, protocol, image, theme-CLI/search-path, autocomplete and extension deltas remain unaudited. Pi Packages remain excluded unless needed for a core capability.",
   "baseline": "earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035",
   "required_ids": [
     "feature-agent-multi-turn-and-streaming",
@@ -1161,14 +1161,18 @@
       "implementation": [
         "src/PiSharp.Cli/Protocols/RpcMode.cs: partial get_state operation (PiSharp wire format)",
         "src/PiSharp.Cli/Protocols/RpcMode.cs: get_state now includes the active thinkingLevel.",
-        "get_state now reports steeringMode, followUpMode and pendingMessageCount; the model and remaining state payload fields still differ from current Pi."
+        "get_state now reports steeringMode, followUpMode and pendingMessageCount; the model and remaining state payload fields still differ from current Pi.",
+        "RpcStateCommandHandler returns the Pi state fields, omits unset model/session fields, and projects selected model metadata available from PiSharp ModelDescriptor/ProviderProfile. Optional model fields and a process differential remain incomplete.",
+        "ConversationRun exposes the active session file, automatic-compaction setting and in-flight compaction state for the state query."
       ],
       "evidence": [
         "tests/PiSharp.Tests/RpcModeTests.cs: local protocol/command fixtures (coverage varies by operation)",
         "RpcModelProcessTests.RpcModelAndThinkingCommandsSelectAndCycleTheRunningRuntime verifies off/max state after runtime changes; RpcModelProcessTests.RpcStartupRestoresThinkingLevelFromTheSelectedSessionBranch verifies startup restores the persisted branch level.",
         "Exact commit 1bb382e3f1002b2191afb1b30b24b128d2140aa8 passed Linux CI run 36196277855: format passed, warnings-as-errors build passed with 0 warnings/errors, and all 535 tests passed (0 failed, 0 skipped).",
         "RpcModelProcessTests.RpcQueueModesPersistAndAppearInStateInTheCliProcess verifies both modes, pending count, response correlation and persisted setting through the CLI process; exact-head Linux CI 4a56c8224bf37e7471492b00ba02ea97a4a9a7a8 / run 36228794249 passed format, warnings-as-errors build and 595 tests (0 failed, 0 skipped).",
-        "Current Pi d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 rpc-commands.md defines the expanded get_state fields; model descriptor and full state shape remain the next implementation slice."
+        "Current Pi d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 rpc-commands.md defines the expanded get_state fields; model descriptor and full state shape remain the next implementation slice.",
+        "Current Pi 2b0a123de98318c2ff8069661721ce0c3794c34e rpc-mode.ts, rpc-types.ts, rpc-commands.md and rpc.test.ts were inspected. PiSharp RpcModelProcessTests and RpcStateTests cover returned fields, correlation, sparse/rich model metadata, ephemeral/named sessions and a deterministic held automatic summary.",
+        "Exact source head 654382a2c7f9483ff8cc3e16b4c847dd1ab4c2fe passed Linux CI run 36230095495. Local exact-source validation passed format, warnings-as-errors build with 0 warnings/errors, and 596 tests (0 failed, 0 skipped)."
       ],
       "dependencies": []
     },
@@ -1374,7 +1378,8 @@
       "source": "docs/parity/detailed-inventory.md:35",
       "acceptance": [
         "Implement set_auto_compaction using shared canonical runtime with correlated responses/event ordering",
-        "Test protocol through RPC process, including failures and cancellation"
+        "Test protocol through RPC process, including failures and cancellation",
+        "Match current Pi behavior: persist the global enabled value and update the active run immediately; get_state must report effective active state."
       ],
       "implementation": [],
       "evidence": [],
