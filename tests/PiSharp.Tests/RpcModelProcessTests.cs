@@ -41,8 +41,13 @@ public sealed class RpcModelProcessTests
             await WriteCommandAsync(process, new { id = "steering-all", type = "set_steering_mode", mode = "all" }, timeout.Token);
             await WriteCommandAsync(process, new { id = "follow-one", type = "set_follow_up_mode", mode = "one-at-a-time" }, timeout.Token);
             await WriteCommandAsync(process, new { id = "invalid", type = "set_follow_up_mode", mode = "never" }, timeout.Token);
+            await WriteCommandAsync(process, new { id = "compaction-off", type = "set_auto_compaction", enabled = false }, timeout.Token);
+            await WriteCommandAsync(process, new { id = "compaction-invalid", type = "set_auto_compaction", enabled = "false" }, timeout.Token);
             await WriteCommandAsync(process, new { id = "state", type = "get_state" }, timeout.Token);
-            var lines = await ReadResponsesAsync(process, ["steering-all", "follow-one", "invalid", "state"], timeout.Token);
+            await WriteCommandAsync(process, new { id = "compaction-on", type = "set_auto_compaction", enabled = true }, timeout.Token);
+            await WriteCommandAsync(process, new { id = "state-enabled", type = "get_state" }, timeout.Token);
+            var lines = await ReadResponsesAsync(process,
+                ["steering-all", "follow-one", "invalid", "compaction-off", "compaction-invalid", "state", "compaction-on", "state-enabled"], timeout.Token);
             process.StandardInput.Close();
             await process.WaitForExitAsync(timeout.Token);
 
@@ -51,9 +56,15 @@ public sealed class RpcModelProcessTests
             using var steeringResponse = JsonDocument.Parse(Assert.Single(lines, line => line.Contains("\"id\":\"steering-all\"", StringComparison.Ordinal)));
             using var followResponse = JsonDocument.Parse(Assert.Single(lines, line => line.Contains("\"id\":\"follow-one\"", StringComparison.Ordinal)));
             using var invalidResponse = JsonDocument.Parse(Assert.Single(lines, line => line.Contains("\"id\":\"invalid\"", StringComparison.Ordinal)));
+            using var compactionOffResponse = JsonDocument.Parse(Assert.Single(lines, line => line.Contains("\"id\":\"compaction-off\"", StringComparison.Ordinal)));
+            using var compactionInvalidResponse = JsonDocument.Parse(Assert.Single(lines, line => line.Contains("\"id\":\"compaction-invalid\"", StringComparison.Ordinal)));
+            using var compactionOnResponse = JsonDocument.Parse(Assert.Single(lines, line => line.Contains("\"id\":\"compaction-on\"", StringComparison.Ordinal)));
             Assert.True(steeringResponse.RootElement.GetProperty("success").GetBoolean());
             Assert.True(followResponse.RootElement.GetProperty("success").GetBoolean());
             Assert.False(invalidResponse.RootElement.GetProperty("success").GetBoolean());
+            Assert.True(compactionOffResponse.RootElement.GetProperty("success").GetBoolean());
+            Assert.False(compactionInvalidResponse.RootElement.GetProperty("success").GetBoolean());
+            Assert.True(compactionOnResponse.RootElement.GetProperty("success").GetBoolean());
             using var state = JsonDocument.Parse(Assert.Single(lines, line => line.Contains("\"id\":\"state\"", StringComparison.Ordinal)));
             var stateData = state.RootElement.GetProperty("data");
             Assert.Equal(["model", "thinkingLevel", "isStreaming", "isCompacting", "steeringMode", "followUpMode",
@@ -63,7 +74,7 @@ public sealed class RpcModelProcessTests
             Assert.Equal("one-at-a-time", stateData.GetProperty("followUpMode").GetString());
             Assert.False(stateData.GetProperty("isStreaming").GetBoolean());
             Assert.False(stateData.GetProperty("isCompacting").GetBoolean());
-            Assert.True(stateData.GetProperty("autoCompactionEnabled").GetBoolean());
+            Assert.False(stateData.GetProperty("autoCompactionEnabled").GetBoolean());
             Assert.Equal(0, stateData.GetProperty("messageCount").GetInt32());
             Assert.Equal(0, stateData.GetProperty("pendingMessageCount").GetInt32());
             Assert.False(stateData.TryGetProperty("sessionFile", out _));
@@ -89,9 +100,13 @@ public sealed class RpcModelProcessTests
             Assert.Equal(512, resize.GetProperty("maxWidth").GetInt32());
             Assert.Equal(1048576, resize.GetProperty("maxBytes").GetInt32());
             Assert.Equal(80, resize.GetProperty("jpegQuality").GetInt32());
+            using var enabledState = JsonDocument.Parse(Assert.Single(lines, line =>
+                line.Contains("\"id\":\"state-enabled\"", StringComparison.Ordinal)));
+            Assert.True(enabledState.RootElement.GetProperty("data").GetProperty("autoCompactionEnabled").GetBoolean());
             using var savedSettings = JsonDocument.Parse(await File.ReadAllTextAsync(Path.Combine(agent, "settings.json")));
             Assert.Equal("all", savedSettings.RootElement.GetProperty("steeringMode").GetString());
             Assert.Equal("one-at-a-time", savedSettings.RootElement.GetProperty("followUpMode").GetString());
+            Assert.True(savedSettings.RootElement.GetProperty("compaction").GetProperty("enabled").GetBoolean());
             Assert.DoesNotContain(lines, line => line.Contains("\"type\":\"error\"", StringComparison.Ordinal));
         }
         finally

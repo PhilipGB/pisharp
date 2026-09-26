@@ -154,7 +154,7 @@ AutoCompactionPolicy? contextPolicy;
 ModelPricing? modelPricing;
 try
 {
-    contextPolicy = userSettings.ResolveCompaction(selection.Model.ContextLength, Environment.GetEnvironmentVariable, $"{selection.Provider.Id}/{selection.Model.Id}");
+    contextPolicy = userSettings.ResolveCompactionPolicy(selection.Model.ContextLength, Environment.GetEnvironmentVariable, $"{selection.Provider.Id}/{selection.Model.Id}");
     modelPricing = ModelPricing.FromEnvironment(Environment.GetEnvironmentVariable) ?? selection.Model.Pricing;
 }
 catch (ArgumentException error) { Console.Error.WriteLine(error.Message); Environment.ExitCode = 2; return; }
@@ -165,7 +165,7 @@ Task<ConversationRun> OpenRunAsync(PiAgent runningAgent, ConversationSession ses
     var runProject = targetProject ?? projectRuntime;
     var runModel = targetSelection ?? selection;
     var runSettings = targetProject is null ? userSettings : targetProject.Settings;
-    var runCompaction = targetProject is null ? contextPolicy : runSettings.ResolveCompaction(runModel.Model.ContextLength,
+    var runCompaction = targetProject is null ? contextPolicy : runSettings.ResolveCompactionPolicy(runModel.Model.ContextLength,
         Environment.GetEnvironmentVariable, $"{runModel.Provider.Id}/{runModel.Model.Id}");
     var runPricing = targetProject is null ? modelPricing :
         ModelPricing.FromEnvironment(Environment.GetEnvironmentVariable) ?? runModel.Model.Pricing;
@@ -174,7 +174,8 @@ Task<ConversationRun> OpenRunAsync(PiAgent runningAgent, ConversationSession ses
         sessionFile: path, provider: runProvider ?? runModel.Provider.Id, reasoningLevel: reasoningLevel ?? thinking,
         retryPolicy: runSettings.Retry?.ResolvePolicy() ?? AgentRunRetryPolicy.Default,
         steeringMode: runSettings.SteeringMode ?? PromptDeliveryMode.OneAtATime,
-        followUpMode: runSettings.FollowUpMode ?? PromptDeliveryMode.OneAtATime);
+        followUpMode: runSettings.FollowUpMode ?? PromptDeliveryMode.OneAtATime,
+        autoCompactionEnabled: runSettings.AutoCompactionEnabled(Environment.GetEnvironmentVariable));
 }
 var sessionPath = cli.NoSession || cli.ForkSource is not null ? null : cli.SessionPath is not null &&
     (cli.SessionPath.Contains(Path.DirectorySeparatorChar) || cli.SessionPath.EndsWith(".session.json", StringComparison.Ordinal) ||
@@ -231,7 +232,7 @@ try
         connection = selection.Connection;
         thinking = ThinkingLevels.ValidateForModel(thinking, selection.Model.Reasoning);
         chat = ProviderChatClientFactory.Create(selection);
-        contextPolicy = userSettings.ResolveCompaction(selection.Model.ContextLength, Environment.GetEnvironmentVariable, $"{selection.Provider.Id}/{selection.Model.Id}");
+        contextPolicy = userSettings.ResolveCompactionPolicy(selection.Model.ContextLength, Environment.GetEnvironmentVariable, $"{selection.Provider.Id}/{selection.Model.Id}");
         modelPricing = ModelPricing.FromEnvironment(Environment.GetEnvironmentVariable) ?? selection.Model.Pricing;
         agent = projectRuntime.CreateAgent(chat, selection, thinking, cli, userSettings);
     }
@@ -393,7 +394,7 @@ async Task ReplaceModelRuntime(ModelSelection nextSelection, string nextThinking
     nextThinking = ThinkingLevels.ValidateForModel(nextThinking, nextSelection.Model.Reasoning);
     var nextConnection = nextSelection.Connection;
     var nextChat = ProviderChatClientFactory.Create(nextSelection);
-    var nextPolicy = userSettings.ResolveCompaction(nextSelection.Model.ContextLength, Environment.GetEnvironmentVariable, $"{nextSelection.Provider.Id}/{nextSelection.Model.Id}");
+    var nextPolicy = userSettings.ResolveCompactionPolicy(nextSelection.Model.ContextLength, Environment.GetEnvironmentVariable, $"{nextSelection.Provider.Id}/{nextSelection.Model.Id}");
     var nextPricing = ModelPricing.FromEnvironment(Environment.GetEnvironmentVariable) ?? nextSelection.Model.Pricing;
     var nextAgent = projectRuntime.CreateAgent(nextChat, nextSelection, nextThinking, cli, userSettings);
     var previousHead = conversation.Tree.HeadId;
@@ -700,7 +701,7 @@ async Task ReloadResources()
             trustStore, interactiveTrust: false, Console.In, Console.Error, trustedOverride: trusted);
         nextProject = await ProjectRuntimeContext.LoadAsync(nextConfiguration, agentDirectory, cli, configuredSessionDirectory);
         var nextAgent = nextProject.CreateAgent(chat, selection, thinking, cli);
-        var nextContextPolicy = nextConfiguration.Settings.ResolveCompaction(selection.Model.ContextLength, Environment.GetEnvironmentVariable,
+        var nextContextPolicy = nextConfiguration.Settings.ResolveCompactionPolicy(selection.Model.ContextLength, Environment.GetEnvironmentVariable,
             $"{selection.Provider.Id}/{selection.Model.Id}");
         var nextModelPricing = ModelPricing.FromEnvironment(Environment.GetEnvironmentVariable) ?? selection.Model.Pricing;
         var nextRun = await OpenRunAsync(nextAgent, conversation, sessionPath, targetProject: nextProject);
@@ -841,7 +842,8 @@ if (cli.Mode == "rpc")
         ForkRpcSessionAsync, CloneRpcSessionAsync, SwitchProjectSessionAsync,
         () => resources, () => extensionLease.Current.Registration,
         rpcUserSettings.SetPromptDeliveryModeAsync,
-        getModelSnapshot: () => JsonSerializer.SerializeToElement(RpcModelSnapshot.From(selection))).ServeAsync();
+        getModelSnapshot: () => JsonSerializer.SerializeToElement(RpcModelSnapshot.From(selection)),
+        persistAutoCompactionEnabled: rpcUserSettings.SetAutoCompactionEnabledAsync).ServeAsync();
     return;
 }
 if (cli.Mode == "json")

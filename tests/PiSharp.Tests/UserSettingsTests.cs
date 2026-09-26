@@ -196,6 +196,7 @@ public sealed class UserSettingsTests
             await File.WriteAllTextAsync(Path.Combine(root, "settings.json"),
                 "{\"compaction\":{\"enabled\":true,\"reserveTokens\":2048,\"keepRecentTokens\":512}}");
             var settings = await UserSettings.LoadAsync(root, _ => null);
+            Assert.True(settings.AutoCompactionEnabled(_ => null));
             Assert.Null(settings.ResolveCompaction(null, _ => null));
             Assert.Equal(7952, settings.ResolveCompaction(10000, _ => null)!.TriggerTokens);
             Assert.Equal(512, settings.ResolveCompaction(10000, _ => null)!.KeepRecentTokens);
@@ -208,6 +209,9 @@ public sealed class UserSettingsTests
             await File.WriteAllTextAsync(Path.Combine(root, "settings.json"), "{\"compaction\":{\"enabled\":false}}");
             var disabled = await UserSettings.LoadAsync(root, _ => null);
             Assert.Null(disabled.ResolveCompaction(10000, _ => null));
+            Assert.False(disabled.AutoCompactionEnabled(_ => null));
+            Assert.Equal(7500, disabled.ResolveCompactionPolicy(10000, _ => null)!.TriggerTokens);
+            Assert.True(disabled.AutoCompactionEnabled(name => name == "PISHARP_CONTEXT_WINDOW_TOKENS" ? "10000" : null));
             Assert.Equal(4000, disabled.ResolveCompaction(10000, name => name switch
             {
                 "PISHARP_CONTEXT_WINDOW_TOKENS" => "5000",

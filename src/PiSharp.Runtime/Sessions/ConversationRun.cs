@@ -14,6 +14,7 @@ public sealed class ConversationRun
     private readonly PiAgent _agent;
     private readonly Func<CancellationToken, Task>? _save;
     private readonly AutoCompactionPolicy? _autoCompaction;
+    private int _autoCompactionEnabled;
     private readonly ModelPricing? _pricing;
     private readonly string? _sessionFile;
     private readonly string? _provider;
@@ -31,18 +32,20 @@ public sealed class ConversationRun
     private int _isCompacting;
     public ConversationSession Conversation { get; }
     public string? SessionFile => _sessionFile;
-    public bool AutoCompactionEnabled => _autoCompaction is not null;
+    public bool AutoCompactionEnabled => Volatile.Read(ref _autoCompactionEnabled) != 0;
     public bool IsCompacting => Volatile.Read(ref _isCompacting) != 0;
 
     private ConversationRun(PiAgent agent, ConversationSession conversation, AgentSession execution, Func<CancellationToken, Task>? save,
         AutoCompactionPolicy? autoCompaction, ModelPricing? pricing, string? sessionFile, string? provider,
         string? reasoningLevel, AgentRunRetryPolicy retryPolicy, PromptDeliveryMode steeringMode,
         PromptDeliveryMode followUpMode,
+        bool autoCompactionEnabled,
         Func<TimeSpan, CancellationToken, Task>? retryDelay)
     {
         _agent = agent;
         _save = save;
         _autoCompaction = autoCompaction;
+        _autoCompactionEnabled = autoCompactionEnabled ? 1 : 0;
         _pricing = pricing;
         _sessionFile = sessionFile is null ? null : Path.GetFullPath(sessionFile);
         _provider = provider;
@@ -61,13 +64,15 @@ public sealed class ConversationRun
         string? provider = null, string? reasoningLevel = null, AgentRunRetryPolicy? retryPolicy = null,
         Func<TimeSpan, CancellationToken, Task>? retryDelay = null,
         PromptDeliveryMode steeringMode = PromptDeliveryMode.OneAtATime,
-        PromptDeliveryMode followUpMode = PromptDeliveryMode.OneAtATime)
+        PromptDeliveryMode followUpMode = PromptDeliveryMode.OneAtATime,
+        bool autoCompactionEnabled = true)
     {
         if (autoCompaction is not null) _ = autoCompaction.TriggerTokens;
         if (conversation.RecoverIncomplete() && save is not null) await save(cancellationToken);
         var execution = await agent.RestoreHistoryAsync(conversation.ContextMessages(), cancellationToken);
         return new ConversationRun(agent, conversation, execution, save, autoCompaction, pricing, sessionFile, provider,
-            reasoningLevel, retryPolicy ?? AgentRunRetryPolicy.Default, steeringMode, followUpMode, retryDelay);
+            reasoningLevel, retryPolicy ?? AgentRunRetryPolicy.Default, steeringMode, followUpMode,
+            autoCompactionEnabled, retryDelay);
     }
 
     /// <summary>Queue guidance ahead of follow-up work on the active application run.</summary>
@@ -156,6 +161,8 @@ public sealed class ConversationRun
     public void SetAutoRetryEnabled(bool enabled) => _retryController.SetEnabled(enabled);
 
     public void AbortRetry() => _retryController.AbortRetry();
+
+    public void SetAutoCompactionEnabled(bool enabled) => Volatile.Write(ref _autoCompactionEnabled, enabled ? 1 : 0);
 
     private sealed record PromptBatch(IReadOnlyList<ChatMessage> Messages, IReadOnlyList<string> Texts)
     {
@@ -544,7 +551,8 @@ public sealed class ConversationRun
                 _historyCount = history.Count;
             }
             var estimatedPrompt = retryContinuation ? "" : prompt;
-            if (_autoCompaction is not null && EstimateNextContext(estimatedPrompt) > _autoCompaction.TriggerTokens)
+            if (AutoCompactionEnabled && _autoCompaction is not null &&
+                EstimateNextContext(estimatedPrompt) > _autoCompaction.TriggerTokens)
             {
                 if (await CompactCoreAsync(null, cancellationToken))
                     onEvent?.Invoke(new("context_compacted", Text: "Automatic context summary saved; raw history retained."));
@@ -605,7 +613,7 @@ public sealed class ConversationRun
                     });
                 }
             }
-            var inFlightBudget = _autoCompaction is null ? null : new InFlightContextBudget(_autoCompaction,
+            var inFlightBudget = !AutoCompactionEnabled || _autoCompaction is null ? null : new InFlightContextBudget(_autoCompaction,
                 (messages, token) => _agent.SummarizeAsync(messages, null, token),
                 async (summary, token) =>
                 {

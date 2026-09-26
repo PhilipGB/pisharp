@@ -12,6 +12,12 @@ internal sealed class RpcUserSettingsController(string agentDirectory, Func<stri
         currentRun().SetAutoRetryEnabled(enabled);
     }
 
+    public async Task SetAutoCompactionEnabledAsync(bool enabled, CancellationToken cancellationToken)
+    {
+        await SetGlobalSettingAsync("compaction.enabled", enabled ? "true" : "false", cancellationToken);
+        currentRun().SetAutoCompactionEnabled(enabled);
+    }
+
     public async Task SetPromptDeliveryModeAsync(bool steering, PromptDeliveryMode mode,
         CancellationToken cancellationToken)
     {

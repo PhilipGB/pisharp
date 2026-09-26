@@ -48,7 +48,7 @@ internal sealed class ProjectSessionRuntimeFactory(
                 selection.Model.Reasoning);
             var chat = ProviderChatClientFactory.Create(selection);
             var agent = project.CreateAgent(chat, selection, thinking, arguments);
-            var compaction = project.Settings.ResolveCompaction(selection.Model.ContextLength,
+            var compaction = project.Settings.ResolveCompactionPolicy(selection.Model.ContextLength,
                 Environment.GetEnvironmentVariable, $"{selection.Provider.Id}/{selection.Model.Id}");
             var pricing = ModelPricing.FromEnvironment(Environment.GetEnvironmentVariable) ?? selection.Model.Pricing;
 
@@ -64,7 +64,8 @@ internal sealed class ProjectSessionRuntimeFactory(
                 provider: selection.Provider.Id, reasoningLevel: thinking,
                 retryPolicy: project.Settings.Retry?.ResolvePolicy() ?? AgentRunRetryPolicy.Default,
                 steeringMode: project.Settings.SteeringMode ?? PromptDeliveryMode.OneAtATime,
-                followUpMode: project.Settings.FollowUpMode ?? PromptDeliveryMode.OneAtATime);
+                followUpMode: project.Settings.FollowUpMode ?? PromptDeliveryMode.OneAtATime,
+                autoCompactionEnabled: project.Settings.AutoCompactionEnabled(Environment.GetEnvironmentVariable));
             return new ProjectSessionRuntime(project, conversation, run, destinationPath, selection, chat, agent,
                 thinking, compaction, pricing);
         }

@@ -50,13 +50,20 @@ public sealed record CompactionSettings(bool? Enabled = null, int? ReserveTokens
     }
 
     public AutoCompactionPolicy? Resolve(int? contextWindow, Func<string, string?> environment, string? modelKey = null)
+        => ResolveCore(contextWindow, environment, modelKey, honorEnabledSetting: true);
+
+    public AutoCompactionPolicy? ResolvePolicy(int? contextWindow, Func<string, string?> environment, string? modelKey = null)
+        => ResolveCore(contextWindow, environment, modelKey, honorEnabledSetting: false);
+
+    private AutoCompactionPolicy? ResolveCore(int? contextWindow, Func<string, string?> environment, string? modelKey,
+        bool honorEnabledSetting)
     {
         var modelOverride = modelKey is not null && ModelOverrides is not null &&
             ModelOverrides.TryGetValue(modelKey, out var matched) ? matched : null;
         var recent = modelOverride?.KeepRecentTokens ?? KeepRecentTokens;
         var explicitPolicy = AutoCompactionPolicy.FromEnvironment(environment);
         if (explicitPolicy is not null) return explicitPolicy with { KeepRecentTokens = recent };
-        if (Enabled == false || contextWindow is null) return null;
+        if (honorEnabledSetting && Enabled == false || contextWindow is null) return null;
         var policy = new AutoCompactionPolicy(contextWindow.Value,
             modelOverride?.ReserveTokens ?? ReserveTokens ?? Math.Min(16_384, contextWindow.Value / 4), recent);
         _ = policy.TriggerTokens;
@@ -313,6 +320,12 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
     }
     public AutoCompactionPolicy? ResolveCompaction(int? contextWindow, Func<string, string?> environment, string? modelKey = null) =>
         (Compaction ?? new CompactionSettings()).Resolve(contextWindow, environment, modelKey);
+    public AutoCompactionPolicy? ResolveCompactionPolicy(int? contextWindow, Func<string, string?> environment,
+        string? modelKey = null) =>
+        (Compaction ?? new CompactionSettings()).ResolvePolicy(contextWindow, environment, modelKey);
+    public bool AutoCompactionEnabled(Func<string, string?> environment) =>
+        (Compaction ?? new CompactionSettings()).Enabled != false ||
+        environment("PISHARP_CONTEXT_WINDOW_TOKENS") is not null;
     public CliArguments ApplyDefaults(CliArguments cli, Func<string, string?> environment, bool preserveSessionModel = false)
     {
         var useLocal = cli.Local || (!preserveSessionModel && cli.Provider is null && DefaultProvider == "local");
