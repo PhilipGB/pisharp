@@ -1,4 +1,5 @@
 using Microsoft.Extensions.AI;
+using System.Text.Json.Serialization;
 
 namespace PiSharp.Runtime.Sessions;
 
@@ -35,6 +36,18 @@ public sealed record ModelPricingTier(int InputTokensAbove, decimal Input, decim
 public sealed record UsageRecord(string Model, string Source, long InputTokens, long OutputTokens,
     long CachedInputTokens, long ReasoningTokens, long TotalTokens, decimal? Cost, long CachedWriteTokens = 0)
 {
+    [JsonIgnore]
+    public decimal? InputCost { get; init; }
+
+    [JsonIgnore]
+    public decimal? OutputCost { get; init; }
+
+    [JsonIgnore]
+    public decimal? CachedInputCost { get; init; }
+
+    [JsonIgnore]
+    public decimal? CachedWriteCost { get; init; }
+
     public static UsageRecord Create(string model, string source, UsageDetails details, ModelPricing? pricing)
     {
         var input = details.InputTokenCount ?? 0;
@@ -51,14 +64,28 @@ public sealed record UsageRecord(string Model, string Source, long InputTokens, 
         if (input < 0 || output < 0 || cached < 0 || cachedWrite < 0 || reasoning < 0 || total < 0)
             throw new InvalidDataException("Provider usage counts cannot be negative.");
         decimal? cost = null;
+        decimal? inputCost = null;
+        decimal? outputCost = null;
+        decimal? cachedInputCost = null;
+        decimal? cachedWriteCost = null;
         if (pricing is not null)
         {
             var rates = pricing.ForInput(input);
             var ordinaryInput = Math.Max(0, input - cached);
             var cachedRate = rates.CachedInput ?? rates.Input;
             var cachedWriteRate = rates.CachedWrite ?? rates.Input;
-            cost = (ordinaryInput * rates.Input + cached * cachedRate + cachedWrite * cachedWriteRate + output * rates.Output) / 1_000_000m;
+            inputCost = ordinaryInput * rates.Input / 1_000_000m;
+            cachedInputCost = cached * cachedRate / 1_000_000m;
+            cachedWriteCost = cachedWrite * cachedWriteRate / 1_000_000m;
+            outputCost = output * rates.Output / 1_000_000m;
+            cost = inputCost + cachedInputCost + cachedWriteCost + outputCost;
         }
-        return new UsageRecord(model, source, input, output, cached, reasoning, total, cost, cachedWrite);
+        return new UsageRecord(model, source, input, output, cached, reasoning, total, cost, cachedWrite)
+        {
+            InputCost = inputCost,
+            OutputCost = outputCost,
+            CachedInputCost = cachedInputCost,
+            CachedWriteCost = cachedWriteCost
+        };
     }
 }

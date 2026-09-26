@@ -53,6 +53,7 @@ public sealed class JsonEventModeTests
             {
                 Assert.Contains(records, record => record.RootElement.GetProperty("data").GetProperty("Type").GetString() == "tool_execution_finished" &&
                     record.RootElement.GetProperty("data").GetProperty("IsError").GetBoolean());
+                Assert.DoesNotContain(records, record => record.RootElement.GetProperty("data").GetProperty("Type").GetString() == "model_content_update");
                 Assert.Contains(conversation.ActiveMessages().SelectMany(message => message.Contents), content =>
                     content is FunctionResultContent { Exception: not null });
             }

@@ -80,7 +80,7 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
     public void Render(AgentLifecycleEvent update)
     {
         ArgumentNullException.ThrowIfNull(update);
-        if (update.Type != "model_text_delta") CommitAssistantText();
+        if (update.Type is not ("model_text_delta" or "model_content_update")) CommitAssistantText();
         switch (update.Type)
         {
             case "prompt_accepted" when interactive && screen is not null:

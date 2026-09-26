@@ -6,14 +6,14 @@
 
 ## Current checkpoint
 
-- Source head `2f0250ee91a500cdb6b08dce2e940b849089ba26` passed exact-head Linux CI run [36217090057](https://github.com/PhilipGB/pisharp/actions/runs/36217090057): format, warnings-as-errors build (0 warnings/errors), and 574 tests (0 failed, 0 skipped).
-- Current Pi `main`: `d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31`; durable baseline: `b3487650f6378f1b0d1643dd254445ceb4a98035`. The current-main review remains scoped, not a full audit.
-- Implemented subsets now include Pi JSONL v1-v3 import/export, cross-project runtime switching for interactive import and RPC `switch_session`, RPC new/fork/clone, low-level-turn lifecycle projection with bounded session retry events, and `session_info_changed` before its response. These have deterministic unit/process/PTY evidence; Pi-wide behavioral equivalence is not established.
-- Major gaps remain in Pi-shaped RPC entry/tree data and turn/message/tool/other session event families; session manager import/export, recovery and concurrency differentials; settings/resources/extensions; multimodal and provider/auth breadth; coding-tool residuals; and TUI/layout residuals.
-- Architecture: `Program.cs` is 1,132 lines with mixed composition/application behavior; `RpcMode.cs` is 451 lines after command-family extraction; `TerminalScreen.cs` is 631 lines after prior decomposition. Continue bounded capability extraction as new work requires it.
+- Source head `6f9b0f910b655d45e57a8f887730107498d2b068` passed exact-head Linux CI run [36219218706](https://github.com/PhilipGB/pisharp/actions/runs/36219218706): format, warnings-as-errors build (0 warnings/errors), and 580 tests (0 failed, 0 skipped).
+- Current Pi `main` is `d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31`; durable baseline is `b3487650f6378f1b0d1643dd254445ceb4a98035`. The current-main review remains scoped, not a full audit.
+- This worktree, based on `6f9b0f910b655d45e57a8f887730107498d2b068`, adds Pi-shaped RPC agent/turn/message/tool events and consistent message snapshots. Consumed steering prompts now get user message boundaries inside the next turn, and failures after a tool continuation do not repeat prior-turn tool results. Local validation passed format, warnings-as-errors build (0 warnings/errors), and 586 tests (0 failed, 0 skipped); this slice is not yet committed or covered by exact-head CI. Implemented larger areas include Pi JSONL v1-v3 import/export, cross-project runtime switching, RPC session commands, Pi-shaped entry/tree results, retries and session-name persistence.
+- Major gaps remain in `entry_appended` and other RPC response/event differentials, session recovery/concurrency, settings/resources/extensions, multimodal and provider/auth breadth, coding-tool residuals, and TUI/layout behavior.
+- Architecture: `Program.cs` remains a mixed startup/application file above 1,000 lines; `RpcMode.cs` is about 450 lines; `RpcAssistantMessageProjector` now owns assistant message lifecycle and wire projection. Continue cohesive extraction alongside parity work.
 
 ## Priority and exact next action
 
-1. Replace RPC `get_entries` and `get_tree` canonical `pisharp` payloads with current-Pi `SessionEntry` and nested `SessionTreeNode` projections. Inspect the pinned RPC tests, reuse one session-entry projection boundary with Pi JSONL export, and add exact shape, cursor, labels, branch ordering and process tests.
-2. Continue remaining RPC event/response families and session interoperability/recovery, using current Pi sources and deterministic differential fixtures.
-3. Continue through settings, resources, extensions, multimodal behavior, provider/auth breadth, coding-tool residuals and TUI residuals; keep extracting cohesive application boundaries alongside capability work.
+1. Commit and push the current RPC lifecycle/message/tool slice, then verify exact-head Linux CI.
+2. Next implementation action: add Pi-shaped `entry_appended` events at the canonical session append boundary and verify event-before-response ordering through the actual RPC process.
+3. Continue RPC response/event differentials and session recovery/interchange, then settings, resources, extensions, multimodal/provider/auth, coding-tool and TUI parity. Refresh upstream before each material family and before final claims.

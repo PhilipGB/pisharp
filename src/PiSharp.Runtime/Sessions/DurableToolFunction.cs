@@ -12,13 +12,18 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
     protected override async ValueTask<object?> InvokeCoreAsync(AIFunctionArguments arguments, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        var callContent = FunctionInvokingChatClient.CurrentContext?.CallContent;
+        var callArguments = callContent is { Arguments: { } argumentsContent }
+            ? argumentsContent.ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal)
+            : null;
         var execution = current();
         var id = execution is null ? Guid.NewGuid().ToString("N") :
             await execution.StartToolAsync(Name, arguments, cancellationToken);
         var displayArguments = arguments.ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal);
         publish(new AgentLifecycleEvent("tool_execution_started", Tool: Name, OperationId: id)
         {
-            ToolArguments = displayArguments
+            ToolArguments = callArguments ?? displayArguments,
+            ToolCallId = callContent?.CallId
         });
         object? value = null;
         Exception? failure = null;
@@ -30,7 +35,11 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
             context = arguments.Context ??= new Dictionary<object, object?>();
             hadUpdate = context.TryGetValue(CodingTools.BashOutputContextKey, out previousUpdate);
             context[CodingTools.BashOutputContextKey] = (Action<string>)(text =>
-                publish(new("tool_execution_update", Text: text, Tool: Name, OperationId: id)));
+                publish(new AgentLifecycleEvent("tool_execution_update", Text: text, Tool: Name, OperationId: id)
+                {
+                    ToolArguments = callArguments ?? displayArguments,
+                    ToolCallId = callContent?.CallId
+                }));
         }
         try { value = await base.InvokeCoreAsync(arguments, cancellationToken); }
         catch (Exception error) { failure = error; }
@@ -56,7 +65,11 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
             IsError: failure is not null, Error: failure?.Message,
             Details: hasStructuredOutput ? details : null)
         {
-            Images = toolImages
+            Images = toolImages,
+            ToolArguments = callArguments ?? displayArguments,
+            ToolCallId = callContent?.CallId,
+            ToolResultMessage = callContent is null ? null : new ChatMessage(ChatRole.Tool,
+                [new FunctionResultContent(callContent.CallId, resultText) { Exception = failure }])
         });
         if (failure is not null) ExceptionDispatchInfo.Capture(failure).Throw();
         return value;

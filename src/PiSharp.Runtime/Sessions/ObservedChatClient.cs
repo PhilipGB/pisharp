@@ -15,17 +15,24 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
     public override async Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages,
         ChatOptions? options = null, CancellationToken cancellationToken = default)
     {
+        publish(new("model_request_started"));
         var original = WithSteering(messages).ToArray();
         var requestMessages = await PrepareRequestAsync(original, force: false, cancellationToken);
         options = ApplyCurrentReasoning(options);
         var overflowRecovered = false;
         for (var retries = 0; ; retries++)
         {
-            publish(new("model_request_started"));
             try
             {
                 var response = await base.GetResponseAsync(requestMessages, options, cancellationToken);
-                publish(new("model_request_completed"));
+                publish(new("model_request_completed")
+                {
+                    ProviderResponse = response.Messages.LastOrDefault(),
+                    ProviderUsage = response.Usage,
+                    ProviderResponseId = response.ResponseId,
+                    ProviderModelId = response.ModelId,
+                    ProviderFinishReason = response.FinishReason?.Value
+                });
                 return response;
             }
             catch (OperationCanceledException) { publish(new("model_request_interrupted")); throw; }
@@ -48,16 +55,17 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
     public override async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
         ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
+        publish(new("model_request_started"));
         var original = WithSteering(messages).ToArray();
         var requestMessages = await PrepareRequestAsync(original, force: false, cancellationToken);
         options = ApplyCurrentReasoning(options);
         var overflowRecovered = false;
         for (var retries = 0; ; retries++)
         {
-            publish(new("model_request_started"));
             var ended = false;
             var producedOutput = false;
             Exception? failure = null;
+            var responseUpdates = new List<ChatResponseUpdate>();
             try
             {
                 await using var enumerator = base.GetStreamingResponseAsync(requestMessages, options, cancellationToken)
@@ -70,10 +78,16 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
                     catch (Exception error) { failure = error; break; }
                     if (!next) break;
                     var update = enumerator.Current;
+                    responseUpdates.Add(update);
                     // A role/model/response-id SSE envelope has no content and must not
                     // suppress a safe retry before the provider emits text, reasoning or tools.
-                    producedOutput |= update.Contents is { Count: > 0 } || !string.IsNullOrEmpty(update.Text);
-                    if (!string.IsNullOrEmpty(update.Text)) publish(new("model_text_delta", Text: update.Text));
+                    producedOutput |= update.Contents?.Any(content => content is not UsageContent) == true ||
+                        !string.IsNullOrEmpty(update.Text);
+                    publish(new AgentLifecycleEvent(string.IsNullOrEmpty(update.Text)
+                        ? "model_content_update" : "model_text_delta", Text: update.Text)
+                    {
+                        ProviderUpdate = update
+                    });
                     yield return update;
                 }
                 ended = true;
@@ -82,7 +96,15 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
 
             if (failure is null)
             {
-                publish(new("model_request_completed"));
+                var response = responseUpdates.ToChatResponse();
+                publish(new("model_request_completed")
+                {
+                    ProviderResponse = response.Messages.LastOrDefault(),
+                    ProviderUsage = response.Usage,
+                    ProviderResponseId = response.ResponseId,
+                    ProviderModelId = response.ModelId,
+                    ProviderFinishReason = response.FinishReason?.Value
+                });
                 yield break;
             }
 

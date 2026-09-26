@@ -1556,15 +1556,16 @@
       "acceptance": [
         "Implement get_entries using shared canonical runtime with correlated responses/event ordering",
         "Test protocol through RPC process, including failures and cancellation",
-        "Next: data.entries must be Pi SessionEntry objects without a format marker, with the Pi since cursor semantics and leafId. Share the entry mapper with PiJsonlSessionInterchange and add shape/cursor/tree process tests against current Pi fixtures."
+        "Implemented subset: data.entries uses the shared Pi SessionEntry projection without a format marker, preserves append order, supports Pi since-cursor behavior and returns leafId; exact pinned differential and remaining entry variants are still required."
       ],
       "implementation": [
-        "RpcSessionCommandHandler currently returns canonical ConversationNode values with format:\"pisharp\"; projection is not Pi-compatible."
+        "RpcSessionEntryProjector delegates to PiJsonlSessionInterchange.ProjectEntries, sharing native and imported Pi entry projection with v3 export.",
+        "RpcSessionCommandHandler applies the cursor strictly after the matched ID and rejects malformed or unknown cursors."
       ],
       "evidence": [
-        "Current Pi d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 packages/coding-agent/src/modes/rpc/rpc-mode.ts returns getEntries() with leafId and getTree() with leafId; core/session-manager.ts excludes the header and builds nested tree nodes with resolved labels.",
-        "PiSharp RpcModeTests cover cursor rejection and basic entries/tree responses, but do not establish Pi wire compatibility.",
-        "Exact integrated source head 2f0250ee91a500cdb6b08dce2e940b849089ba26 passed Linux CI run 36217090057: format verification, warnings-as-errors build with 0 warnings/errors, and 574 tests (0 failed, 0 skipped)."
+        "Current Pi main remains d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31. packages/coding-agent/src/modes/rpc/rpc-mode.ts returns getEntries() and leafId; core/session-manager.ts excludes the header and preserves Pi entry order.",
+        "RpcSessionEntryProjectorTests and RpcModeTests cover native/imported projection, absence of the pisharp marker, append order, cursor response and Pi process output; exact full differential coverage remains open.",
+        "Exact source head 6f9b0f910b655d45e57a8f887730107498d2b068 passed Linux CI run 36219218706: format verification, warnings-as-errors build with 0 warnings/errors, and 580 tests (0 failed, 0 skipped)."
       ],
       "dependencies": []
     },
@@ -1576,15 +1577,15 @@
       "acceptance": [
         "Implement get_tree using shared canonical runtime with correlated responses/event ordering",
         "Test protocol through RPC process, including failures and cancellation",
-        "Next: data.tree must use nested Pi SessionTreeNode objects {entry, children, label?, labelTimestamp?}, plus leafId and no pisharp marker. Share the entry mapper with PiJsonlSessionInterchange and add shape/cursor/tree process tests against current Pi fixtures."
+        "Implemented subset: data.tree uses Pi-shaped nested {entry, children, label?, labelTimestamp?} nodes plus leafId. Exact pinned differential for every Pi entry/label/branch case remains required."
       ],
       "implementation": [
-        "RpcSessionCommandHandler currently returns canonical ConversationNode values with format:\"pisharp\"; projection is not Pi-compatible."
+        "RpcSessionEntryProjector builds nested nodes from the shared PiJsonlSessionInterchange entry projection, resolves latest labels including empty-label clears, and orders siblings by timestamp with append-order ties."
       ],
       "evidence": [
-        "Current Pi d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 packages/coding-agent/src/modes/rpc/rpc-mode.ts returns getEntries() with leafId and getTree() with leafId; core/session-manager.ts excludes the header and builds nested tree nodes with resolved labels.",
-        "PiSharp RpcModeTests cover cursor rejection and basic entries/tree responses, but do not establish Pi wire compatibility.",
-        "Exact integrated source head 2f0250ee91a500cdb6b08dce2e940b849089ba26 passed Linux CI run 36217090057: format verification, warnings-as-errors build with 0 warnings/errors, and 574 tests (0 failed, 0 skipped)."
+        "Current Pi main remains d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31. packages/coding-agent/src/core/session-manager.ts builds nested tree nodes, resolves labels by append order and sorts siblings by timestamp.",
+        "RpcSessionEntryProjectorTests, RpcModeTests and RpcSessionProcessTests cover nested shape, optional label properties, branch ordering, clear/latest label behavior and process output.",
+        "Exact source head 6f9b0f910b655d45e57a8f887730107498d2b068 passed Linux CI run 36219218706: format verification, warnings-as-errors build with 0 warnings/errors, and 580 tests (0 failed, 0 skipped)."
       ],
       "dependencies": []
     },
@@ -1614,15 +1615,18 @@
       "acceptance": [
         "Implement set_session_name using shared canonical runtime with correlated responses/event ordering",
         "Test protocol through RPC process, including failures and cancellation",
-        "Remaining: Pi wire-compatible payloads, lifecycle/error semantics and pinned process differential."
+        "Implemented subset: persist a Pi session_info entry and emit session_info_changed before the correlated response; retain validation, save-failure rollback and current-Pi differential work."
       ],
       "implementation": [
-        "RpcSessionCommandHandler persists the trimmed session name, then RpcEventWriter emits top-level {type:\"session_info_changed\",name} before the correlated response."
+        "ConversationSession.BeginSessionNameChange appends a canonical session_info node and updates Name; the rollback scope discards only that uncommitted latest append if atomic save fails.",
+        "RPC and interactive /name/--name paths save before commit; RPC emits {type:session_info_changed,name} before its success response."
       ],
       "evidence": [
-        "RpcModeTests asserts the exact event fields/name and that session_info_changed precedes the set_session_name response; save failure restores the previous name and emits no success event.",
-        "Current Pi d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 core/agent-session.ts defines session_info_changed with name and emits it after appending session_info.",
-        "Exact integrated source head 2f0250ee91a500cdb6b08dce2e940b849089ba26 passed Linux CI run 36217090057: format verification, warnings-as-errors build with 0 warnings/errors, and 574 tests (0 failed, 0 skipped)."
+        "RpcModeTests covers event/response order, appended entry contents, get_entries/tree visibility and rollback when the injected save fails.",
+        "RpcSessionProcessTests.SetSessionNamePersistsPiSessionInfoEntryInRpcProcess verifies LF process output, entry projection, persisted native history and Pi JSONL projection.",
+        "PiJsonlSessionInterchangeTests.SessionNameChangeIsAnActivePiEntryAndSurvivesExportAndImport verifies shared session_info serialization; TerminalPtyTests verifies name sanitization and interactive command behavior.",
+        "Current Pi main remains d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31. packages/coding-agent/src/core/agent-session.ts calls sessionManager.appendSessionInfo before emitting session_info_changed; session-manager.ts trims/sanitizes names and appends the entry.",
+        "Exact source head 6f9b0f910b655d45e57a8f887730107498d2b068 passed Linux CI run 36219218706: format verification, warnings-as-errors build with 0 warnings/errors, and 580 tests (0 failed, 0 skipped)."
       ],
       "dependencies": []
     },
@@ -1650,67 +1654,79 @@
       "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:38",
       "acceptance": [
-        "Keep Pi per-attempt event ordering, message normalization and retry conditions aligned through current-main differential fixtures.",
-        "Complete remaining turn/message/tool/entry/compaction/session event projections and process shutdown/cancellation differentials."
+        "Match Pi run boundaries: one agent_start/agent_end pair for a run that consumes queued steering/follow-up work, with turn_start/turn_end per model turn; retry attempts must follow Pi event order.",
+        "Test queued work, tool turns, retry, error, cancellation and settlement through process-level output."
       ],
       "implementation": [
-        "RpcEventProjector/RpcEventWriter project agent_start/end per low-level turn with run-local Pi messages and actual willRetry state, plus queue_update, payload-free agent_settled, and auto_retry_start/end. AgentRunRetryPolicy is separate from ObservedChatClient provider-request retry; abort_retry cancels scheduled session retry."
+        "RpcEventWriter/RpcEventProjector now emit one agent_start/agent_end pair per accepted RPC run and turn_start/turn_end per provider turn, including multiple queued local turns.",
+        "agent_end.messages uses the projected run message snapshots and retains willRetry; agent_settled remains payload-free and follows retry/queue settlement."
       ],
       "evidence": [
-        "Compared current Pi main d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 packages/coding-agent/src/core/agent-session.ts and modes/rpc/rpc-mode.ts: agent_settled is emitted as a payload-free top-level event after agent work settles.",
-        "Compared current Pi main d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 packages/coding-agent/src/modes/rpc/rpc-mode.ts and core/agent-session.ts: successful preflight responds before agent_start; rejected preflight does not start a run; queue work settles once after the accepted run.",
-        "RpcModeTests.AcceptsPromptThenEmitsEventsAndSupportsSubsequentStateQueries asserts exact payload-free agent_start/agent_settled shapes and response/start/settled order; PromptReceivedDuringStreamingQueuesAnotherTurnBeforeSettlement asserts one start for queued turns; preflight-failure tests assert only the correlated response.",
-        "Linux CI run 36199106854 on exact source head 18940ed3e16f16f0c783a894fd01151fb5897b25 passed format verification, warnings-as-errors build with 0 warnings/errors, and all 535 tests (0 failed, 0 skipped).",
-        "Focused RPC/process tests passed 22/22; current Pi main remote and local checkout both remain d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31.",
-        "Compared current Pi d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 packages/coding-agent/docs/json.md, packages/agent/src/agent-loop.ts and agent-session.ts: agent_end carries messages and willRetry per low-level run, appears before agent_settled, and retry decisions wrap failed runs.",
-        "RpcAgentLifecycleProcessTests.RpcProcessEmitsPiAgentEndWithCanonicalMessagesBeforeSettlement verifies LF JSON process output, correlated response then agent_start/end/settled order, provider/API/message fields, and clean stderr. RpcModeTests cover queued turns, abort and provider failure agent_end records.",
-        "After extracting RpcModelCommandHandler, focused RpcModeTests and RpcModelProcessTests passed 23/23; dotnet format verification, warnings-as-errors build and the full suite passed locally (541/541). Exact source head 38b402e53bf4e0e543e2f2493ecf67ad2765f898 passed Linux CI run 36205642095: 541 passed, 0 failed, 0 skipped.",
-        "At earlier source head 38b402e5, willRetry was fixed false and provider-request retries remained separate; the retry statement was superseded by commit 44a452f90. Turn/message/tool/session projections remained incomplete at that checkpoint.",
-        "Before commits 9b45200e7/44a452f90, PiSharp bundled queued turns and emitted willRetry:false. Current Pi source at d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 and the inspected retry test define per-low-level attempts, willRetry before auto_retry_start, and a new agent_start for a retry.",
-        "Active thinking RPC/lifecycle implementation at exact source head 3c766cd71fa297c1fa08ee42e371c93b3841e53 passed Linux CI run 36207133787: format, warnings-as-errors build, and 543 tests (0 failed, 0 skipped).",
-        "Commits 9b45200e73109852af48a1f2d0ceef19340fe12b and 44a452f90110e30a5fecab1e58e76a31f95fdb58 implement per-low-level-turn event projection and a separate bounded session retry lifecycle. AgentLifecycleTests, AgentRunRetryPolicyTests, RpcModeTests and RpcRetryProcessTests cover deterministic retry, abort, willRetry and ordering.",
-        "Earlier ledger notes saying willRetry was fixed false and queued turns were bundled describe source heads before 9b45200e/44a452f90; those statements are superseded.",
-        "Exact integrated source head 2f0250ee91a500cdb6b08dce2e940b849089ba26 passed Linux CI run 36217090057: format verification, warnings-as-errors build with 0 warnings/errors, and 574 tests (0 failed, 0 skipped)."
+        "Current Pi main d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 emits one agent_start and one final agent_end around the outer run, with turn_start/turn_end per model turn; queued follow-up messages continue inside that run (packages/agent/src/agent-loop.ts).",
+        "RpcModeTests.PromptReceivedDuringStreamingQueuesAnotherTurnBeforeSettlement verifies one agent boundary pair and two turn pairs for two queued prompts. RpcAgentLifecycleProcessTests verifies the real CLI process boundary order for an ordinary turn and a tool turn.",
+        "RpcModeTests covers retry ordering, terminal provider errors and cancellation; these tests assert assistant snapshots match across message_end, turn_end and agent_end.messages. Process-level error/cancellation and pinned Pi differentials remain open.",
+        "Focused local RPC/JSON event tests passed 41/41; full local validation passed dotnet format --verify-no-changes, warnings-as-errors build with 0 warnings/errors, and 586 tests (0 failed, 0 skipped). RpcModeTests.RpcSteeringConsumedDuringToolLoopHasMessageBoundariesInNextTurn covers a steering user message between the next turn_start and assistant response. Exact-head CI for this work is pending."
       ],
       "dependencies": []
     },
     {
       "id": "rpc-turn-start-end",
       "title": "RPC / event: turn_start/end",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:38",
       "acceptance": [
-        "Implement turn_start/end using shared canonical runtime with correlated responses/event ordering",
-        "Test protocol through RPC process, including failures and cancellation"
+        "Project Pi turn_start before each model turn and turn_end after its assistant message and tool results, including queued steering/follow-up turns.",
+        "Preserve ordering against agent_start/end, message/tool events, retries, response correlation and agent_settled.",
+        "Test actual RPC process output for a normal turn, tool turn, queued turn, failure and cancellation."
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "RpcEventProjector maps assistant_turn_started/completed to turn_start/turn_end. Turn ends contain the emitted assistant message and tool results ordered by assistant tool-call order; failed/interrupted requests close their message before turn_end."
+      ],
+      "evidence": [
+        "Current Pi main d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 emits turn_start before each model request and turn_end after assistant/tool result message events (packages/agent/src/agent-loop.ts).",
+        "RpcAgentLifecycleProcessTests covers one ordinary turn and a real two-request tool turn. RpcModeTests covers two queued turns, provider failure without output, partial failure and cancellation, including final-message equality across message_end, turn_end and agent_end.",
+        "Focused local RPC/JSON event tests passed 41/41. Process-level queued/error/cancellation differentials and current-Pi comparisons remain open."
+      ],
       "dependencies": []
     },
     {
       "id": "rpc-message-start-update-end",
       "title": "RPC / event: message_start/update/end",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:38",
       "acceptance": [
-        "Implement message_start/update/end using shared canonical runtime with correlated responses/event ordering",
-        "Test protocol through RPC process, including failures and cancellation"
+        "Project Pi message_start/update/end fields and event ordering from runtime messages; preserve cumulative usage and final-message consistency",
+        "Cover ordinary/tool process runs and error/cancellation behavior with deterministic protocol tests"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "RpcAssistantMessageProjector owns prompt, assistant and tool-result message projection. It emits Pi-shaped text/thinking deltas, complete message snapshots, usage, cost, response metadata and terminal error/abort messages; RpcEventProjector reconciles emitted snapshots into turn_end and agent_end.",
+        "Microsoft.Extensions.AI.OpenAI 10.10.0 aggregates OpenAI tool argument chunks and yields a completed FunctionCallContent. PiSharp projects the complete arguments as one JSON toolcall_delta for that adapter; raw argument fragments are unavailable through this provider-neutral boundary."
+      ],
+      "evidence": [
+        "Current Pi JSON docs define message_start/update/end; assistant updates expose usage and assistantMessageEvent, while the agent loop emits message_end before turn_end (packages/coding-agent/docs/json.md and packages/agent/src/agent-loop.ts).",
+        "RpcAgentLifecycleProcessTests verifies real CLI message event order, content, tool result placement and snapshot equality across message_end, turn_end and agent_end. RpcModeTests verifies cumulative usage/cost, response metadata, partial error and empty failure/cancellation messages.",
+        "Focused local RPC/JSON event tests passed 41/41; full local validation passed dotnet format --verify-no-changes, warnings-as-errors build with 0 warnings/errors, and 586 tests (0 failed, 0 skipped). Exact-head CI for this work is pending."
+      ],
       "dependencies": []
     },
     {
       "id": "rpc-tool-execution-start-update-end",
       "title": "RPC / event: tool_execution_start/update/end",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:38",
       "acceptance": [
-        "Implement tool_execution_start/update/end using shared canonical runtime with correlated responses/event ordering",
-        "Test protocol through RPC process, including failures and cancellation"
+        "Project tool execution start/update/end, including call correlation, partial results, details, errors and ordering against message events",
+        "Cover real RPC process behavior and remaining failure/cancellation differentials"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "RpcEventProjector maps tool execution lifecycle records with correlated toolCallId, args, partialResult/result details and error state. RpcAssistantMessageProjector emits assistant toolcall events and toolResult message_start/end after tool_execution_end, reusing the same tool result in turn_end and agent_end.",
+        "OpenAI-compatible tool calls currently arrive from Microsoft.Extensions.AI as completed FunctionCallContent after argument aggregation, so toolcall_delta is one complete JSON fragment."
+      ],
+      "evidence": [
+        "Current Pi agent loop emits tool_execution_start/end and toolResult message_start/end after execution; turn_end follows tool result messages (packages/agent/src/agent-loop.ts).",
+        "RpcAgentLifecycleProcessTests exercises the actual CLI with an OpenAI-compatible tool call and checks call IDs, event order, request tool result and matching toolResult snapshots. RpcModeTests covers deterministic tool turn event fields and details.",
+        "Focused local RPC/JSON event tests passed 41/41. RpcModeTests.RpcFailureAfterToolContinuationDoesNotRepeatPriorTurnToolResults verifies the error turn does not repeat its predecessor's tool result. Tool execution error/cancellation process differentials and pinned Pi comparisons remain open."
+      ],
       "dependencies": []
     },
     {
@@ -1758,12 +1774,12 @@
         "Test protocol through RPC process, including failures and cancellation"
       ],
       "implementation": [
-        "RpcEventWriter owns the Pi top-level session_info_changed projection; set_session_name persists first and emits it before the response."
+        "RpcEventWriter owns the top-level session_info_changed projection. set_session_name first appends and persists session_info, then emits the event before the response."
       ],
       "evidence": [
-        "RpcModeTests asserts the exact event fields/name and that session_info_changed precedes the set_session_name response; save failure restores the previous name and emits no success event.",
-        "Current Pi d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 core/agent-session.ts defines session_info_changed with name and emits it after appending session_info.",
-        "Exact integrated source head 2f0250ee91a500cdb6b08dce2e940b849089ba26 passed Linux CI run 36217090057: format verification, warnings-as-errors build with 0 warnings/errors, and 574 tests (0 failed, 0 skipped)."
+        "RpcModeTests and RpcSessionProcessTests cover exact event fields/order, history persistence and save-failure rollback.",
+        "Current Pi main remains d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31. packages/coding-agent/src/core/agent-session.ts appends session_info before emitting session_info_changed.",
+        "Exact source head 6f9b0f910b655d45e57a8f887730107498d2b068 passed Linux CI run 36219218706: format verification, warnings-as-errors build with 0 warnings/errors, and 580 tests (0 failed, 0 skipped)."
       ],
       "dependencies": []
     },

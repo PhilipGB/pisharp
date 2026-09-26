@@ -18,6 +18,48 @@ public sealed record AgentLifecycleEvent(string Type, string? Text = null, strin
     public IReadOnlyList<DataContent>? Images { get; init; }
 
     [JsonIgnore]
+    public ChatMessage? ProviderResponse { get; init; }
+
+    [JsonIgnore]
+    public ChatResponseUpdate? ProviderUpdate { get; init; }
+
+    [JsonIgnore]
+    public UsageDetails? ProviderUsage { get; init; }
+
+    [JsonIgnore]
+    public string? ProviderResponseId { get; init; }
+
+    [JsonIgnore]
+    public string? ProviderModelId { get; init; }
+
+    [JsonIgnore]
+    public string? ProviderFinishReason { get; init; }
+
+    [JsonIgnore]
+    public string? ProviderThinkingLevel { get; init; }
+
+    [JsonIgnore]
+    public UsageRecord? UsageSnapshot { get; init; }
+
+    [JsonIgnore]
+    public ChatMessage? PromptMessage { get; init; }
+
+    [JsonIgnore]
+    public DateTimeOffset? MessageTimestamp { get; init; }
+
+    [JsonIgnore]
+    public string? ToolCallId { get; init; }
+
+    [JsonIgnore]
+    public ChatMessage? ToolResultMessage { get; init; }
+
+    [JsonIgnore]
+    public ChatMessage? TurnMessage { get; init; }
+
+    [JsonIgnore]
+    public IReadOnlyList<ChatMessage>? TurnToolResults { get; init; }
+
+    [JsonIgnore]
     public string? RunStartHead { get; init; }
 
     [JsonIgnore]

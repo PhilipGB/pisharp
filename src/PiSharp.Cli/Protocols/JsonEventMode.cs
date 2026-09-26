@@ -38,7 +38,8 @@ public sealed class JsonEventMode(JsonLineWriter output)
         {
             // A canceled run must still report its interruption and settlement to consumers.
             if (observeEvent is not null) await observeEvent(item);
-            await output.EmitAsync(new { type = "event", format = "pisharp", data = item }, CancellationToken.None);
+            if (item.Type != "model_content_update")
+                await output.EmitAsync(new { type = "event", format = "pisharp", data = item }, CancellationToken.None);
             if (item.Type == "agent_run_completed") succeeded = true;
         }
         return succeeded;

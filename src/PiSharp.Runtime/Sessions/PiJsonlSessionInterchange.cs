@@ -145,6 +145,16 @@ public static class PiJsonlSessionInterchange
             JsonSerializer.SerializeToElement(ProjectEntry(session, node))).ToArray();
     }
 
+    internal static JsonObject ProjectRuntimeMessage(ConversationSession session, ChatMessage message,
+        string? api = null, string? toolName = null, DateTimeOffset? timestamp = null)
+    {
+        var node = new ConversationNode("rpc", null, "chat", default, timestamp ?? DateTimeOffset.UtcNow);
+        var projected = ExportMessage(session, node, message)["message"]!.DeepClone().AsObject();
+        if (message.Role == ChatRole.Assistant && !string.IsNullOrWhiteSpace(api)) projected["api"] = api;
+        if (message.Role == ChatRole.Tool && toolName is not null) projected["toolName"] = toolName;
+        return projected;
+    }
+
     private static JsonObject ProjectEntry(ConversationSession session, ConversationNode node)
     {
         var raw = OriginalEntry(node);

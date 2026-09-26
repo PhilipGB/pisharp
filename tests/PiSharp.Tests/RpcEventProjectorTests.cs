@@ -11,17 +11,17 @@ public sealed class RpcEventProjectorTests
     {
         var projector = new RpcEventProjector();
         var conversation = new ConversationSession(Path.GetTempPath(), "fixture", null);
-        var start = projector.Project(new AgentLifecycleEvent("auto_retry_start", Error: "overloaded")
+        var start = Assert.Single(projector.Project(new AgentLifecycleEvent("auto_retry_start", Error: "overloaded")
         {
             RetryAttempt = 2,
             RetryMaxAttempts = 3,
             RetryDelayMs = 4000
-        }, conversation, null, runAccepted: true, api: null);
-        var end = projector.Project(new AgentLifecycleEvent("auto_retry_end")
+        }, conversation, null, null, runAccepted: true, api: null));
+        var end = Assert.Single(projector.Project(new AgentLifecycleEvent("auto_retry_end")
         {
             RetryAttempt = 2,
             RetrySuccess = true
-        }, conversation, null, runAccepted: true, api: null);
+        }, conversation, null, null, runAccepted: true, api: null));
 
         using var startRecord = JsonDocument.Parse(JsonSerializer.Serialize(start));
         Assert.Equal(["type", "attempt", "maxAttempts", "delayMs", "errorMessage"],
@@ -41,13 +41,15 @@ public sealed class RpcEventProjectorTests
     {
         var projector = new RpcEventProjector();
         var conversation = new ConversationSession(Path.GetTempPath(), "fixture", null);
-        var queue = projector.Project(new AgentLifecycleEvent("queue_update",
-            Text: "{\"steering\":[\"first\"],\"followUp\":[\"later\"]}"), conversation, null,
-            runAccepted: true, api: null);
-        var generic = projector.Project(new AgentLifecycleEvent("model_text_delta", Text: "hello"), conversation,
-            null, runAccepted: true, api: null);
-        var rejectedEnd = projector.Project(new AgentLifecycleEvent("agent_run_completed"), conversation, null,
-            runAccepted: false, api: null);
+        var queue = Assert.Single(projector.Project(new AgentLifecycleEvent("queue_update",
+            Text: "{\"steering\":[\"first\"],\"followUp\":[\"later\"]}"), conversation, null, null,
+            runAccepted: true, api: null));
+        Assert.Empty(projector.Project(new AgentLifecycleEvent("model_text_delta", Text: "hello"), conversation,
+            null, null, runAccepted: true, api: null));
+        var generic = Assert.Single(projector.Project(new AgentLifecycleEvent("custom_lifecycle"), conversation,
+            null, null, runAccepted: true, api: null));
+        Assert.Empty(projector.Project(new AgentLifecycleEvent("agent_run_completed"), conversation, null, null,
+            runAccepted: false, api: null));
 
         using var queueRecord = JsonDocument.Parse(JsonSerializer.Serialize(queue));
         Assert.Equal("queue_update", queueRecord.RootElement.GetProperty("type").GetString());
@@ -55,7 +57,6 @@ public sealed class RpcEventProjectorTests
         Assert.Equal("later", queueRecord.RootElement.GetProperty("followUp")[0].GetString());
         using var genericRecord = JsonDocument.Parse(JsonSerializer.Serialize(generic));
         Assert.Equal("pisharp", genericRecord.RootElement.GetProperty("format").GetString());
-        Assert.Equal("model_text_delta", genericRecord.RootElement.GetProperty("data").GetProperty("Type").GetString());
-        Assert.Null(rejectedEnd);
+        Assert.Equal("custom_lifecycle", genericRecord.RootElement.GetProperty("data").GetProperty("Type").GetString());
     }
 }

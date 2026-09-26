@@ -52,6 +52,30 @@ public sealed class RpcModeTests
             Assert.Equal(["type"], start.RootElement.EnumerateObject().Select(property => property.Name));
             var startIndex = Array.FindIndex(output.Lines(), line => line.Contains("\"type\":\"agent_start\"", StringComparison.Ordinal));
             Assert.True(responseIndex >= 0 && startIndex > responseIndex);
+            var turnStartIndex = Array.FindIndex(output.Lines(), line => line.Contains("\"type\":\"turn_start\"", StringComparison.Ordinal));
+            var turnEndIndex = Array.FindIndex(output.Lines(), line => line.Contains("\"type\":\"turn_end\"", StringComparison.Ordinal));
+            Assert.True(turnStartIndex > startIndex && turnEndIndex > turnStartIndex);
+            var userMessageStart = Assert.Single(events, e => e.RootElement.GetProperty("type").GetString() == "message_start" &&
+                e.RootElement.GetProperty("message").GetProperty("role").GetString() == "user");
+            var userMessageEnd = Assert.Single(events, e => e.RootElement.GetProperty("type").GetString() == "message_end" &&
+                e.RootElement.GetProperty("message").GetProperty("role").GetString() == "user");
+            Assert.Equal("hello", userMessageStart.RootElement.GetProperty("message").GetProperty("content").GetString());
+            var assistantMessageStartIndex = Array.FindIndex(events, e => e.RootElement.GetProperty("type").GetString() == "message_start" &&
+                e.RootElement.GetProperty("message").GetProperty("role").GetString() == "assistant");
+            var assistantMessageEndIndex = Array.FindIndex(events, e => e.RootElement.GetProperty("type").GetString() == "message_end" &&
+                e.RootElement.GetProperty("message").GetProperty("role").GetString() == "assistant");
+            var messageUpdate = Assert.Single(events, e => e.RootElement.GetProperty("type").GetString() == "message_update" &&
+                e.RootElement.GetProperty("assistantMessageEvent").GetProperty("type").GetString() == "text_delta");
+            Assert.Equal("reply", messageUpdate.RootElement.GetProperty("assistantMessageEvent").GetProperty("delta").GetString());
+            Assert.True(startIndex < turnStartIndex && turnStartIndex < Array.IndexOf(events, userMessageStart) &&
+                Array.IndexOf(events, userMessageStart) < Array.IndexOf(events, userMessageEnd) &&
+                Array.IndexOf(events, userMessageEnd) < assistantMessageStartIndex &&
+                assistantMessageStartIndex < Array.IndexOf(events, messageUpdate) &&
+                Array.IndexOf(events, messageUpdate) < assistantMessageEndIndex && assistantMessageEndIndex < turnEndIndex);
+            Assert.True(JsonElement.DeepEquals(events[assistantMessageEndIndex].RootElement.GetProperty("message"),
+                events[turnEndIndex].RootElement.GetProperty("message")));
+            Assert.Single(events, e => e.RootElement.GetProperty("type").GetString() == "turn_start");
+            Assert.Single(events, e => e.RootElement.GetProperty("type").GetString() == "turn_end");
             var agentEnd = Assert.Single(events, e => e.RootElement.GetProperty("type").GetString() == "agent_end");
             Assert.Equal(["type", "messages", "willRetry"], agentEnd.RootElement.EnumerateObject().Select(property => property.Name));
             Assert.False(agentEnd.RootElement.GetProperty("willRetry").GetBoolean());
@@ -61,11 +85,13 @@ public sealed class RpcModeTests
             Assert.Equal("hello", runMessages[0].GetProperty("content").GetString());
             Assert.Equal("assistant", runMessages[1].GetProperty("role").GetString());
             Assert.Equal("reply", runMessages[1].GetProperty("content")[0].GetProperty("text").GetString());
+            Assert.True(JsonElement.DeepEquals(userMessageEnd.RootElement.GetProperty("message"), runMessages[0]));
+            Assert.True(JsonElement.DeepEquals(events[assistantMessageEndIndex].RootElement.GetProperty("message"), runMessages[1]));
             var settled = Assert.Single(events, e => e.RootElement.GetProperty("type").GetString() == "agent_settled");
             Assert.Equal(["type"], settled.RootElement.EnumerateObject().Select(property => property.Name));
             var settledIndex = Array.FindIndex(output.Lines(), line => line.Contains("\"type\":\"agent_settled\"", StringComparison.Ordinal));
             var endIndex = Array.FindIndex(output.Lines(), line => line.Contains("\"type\":\"agent_end\"", StringComparison.Ordinal));
-            Assert.True(settledIndex > endIndex && endIndex > startIndex);
+            Assert.True(settledIndex > endIndex && endIndex > turnEndIndex);
             Assert.DoesNotContain(output.Lines(), line => line.Contains("prompt_accepted", StringComparison.Ordinal));
             Assert.Contains(events, e => e.RootElement.GetProperty("type").GetString() == "response" &&
                 e.RootElement.GetProperty("id").GetString() == "unknown" && !e.RootElement.GetProperty("success").GetBoolean());
@@ -163,6 +189,59 @@ public sealed class RpcModeTests
             Assert.Null(session.Tree.HeadId);
         }
         finally { foreach (var item in events) item.Dispose(); }
+    }
+
+    [Fact]
+    public async Task RpcMessageUpdatesCarryPiContentDeltasAndCumulativeUsage()
+    {
+        var channel = Channel.CreateUnbounded<string>();
+        using var output = new LockedWriter();
+        var client = new RpcMessageStreamingClient();
+        var session = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        var pricing = new ModelPricing(Input: 2, Output: 10, CachedInput: 0.5m, CachedWrite: 3);
+        var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(Path.GetTempPath())), session,
+            pricing: pricing);
+        var serving = new RpcMode(new CommandReader(channel.Reader), output, run).ServeAsync();
+        channel.Writer.TryWrite("{\"id\":\"message-events\",\"type\":\"prompt\",\"message\":\"hello\"}");
+        await WaitForAsync(output, "agent_settled");
+        channel.Writer.Complete();
+        await serving.WaitAsync(TimeSpan.FromSeconds(5));
+
+        var records = output.Lines().Select(line => JsonDocument.Parse(line)).ToArray();
+        try
+        {
+            var updates = records.Where(record => record.RootElement.GetProperty("type").GetString() == "message_update")
+                .Select(record => record.RootElement).ToArray();
+            var textDeltas = updates.Where(update => update.GetProperty("assistantMessageEvent").GetProperty("type").GetString() == "text_delta")
+                .ToArray();
+            Assert.Equal(["hello ", "world"], textDeltas.Select(update =>
+                update.GetProperty("assistantMessageEvent").GetProperty("delta").GetString()));
+            var usage = textDeltas[0].GetProperty("usage");
+            Assert.Equal(100, usage.GetProperty("input").GetInt64());
+            Assert.Equal(40, usage.GetProperty("output").GetInt64());
+            Assert.Equal(20, usage.GetProperty("cacheRead").GetInt64());
+            Assert.Equal(5, usage.GetProperty("cacheWrite").GetInt64());
+            Assert.Equal(12, usage.GetProperty("reasoning").GetInt64());
+            Assert.Equal(140, usage.GetProperty("totalTokens").GetInt64());
+            Assert.Equal(0.00016m, usage.GetProperty("cost").GetProperty("input").GetDecimal());
+            Assert.Equal(0.0004m, usage.GetProperty("cost").GetProperty("output").GetDecimal());
+            Assert.Equal(0.00001m, usage.GetProperty("cost").GetProperty("cacheRead").GetDecimal());
+            Assert.Equal(0.000015m, usage.GetProperty("cost").GetProperty("cacheWrite").GetDecimal());
+            Assert.Equal(0.000585m, usage.GetProperty("cost").GetProperty("total").GetDecimal());
+            Assert.Contains(updates, update => update.GetProperty("assistantMessageEvent").GetProperty("type").GetString() == "thinking_delta" &&
+                update.GetProperty("assistantMessageEvent").GetProperty("delta").GetString() == "checking");
+
+            var messageStart = Assert.Single(records, record => record.RootElement.GetProperty("type").GetString() == "message_start" &&
+                record.RootElement.GetProperty("message").GetProperty("role").GetString() == "assistant");
+            Assert.Equal("pending", messageStart.RootElement.GetProperty("message").GetProperty("stopReason").GetString());
+            var messageEnd = Assert.Single(records, record => record.RootElement.GetProperty("type").GetString() == "message_end" &&
+                record.RootElement.GetProperty("message").GetProperty("role").GetString() == "assistant");
+            Assert.Equal("length", messageEnd.RootElement.GetProperty("message").GetProperty("stopReason").GetString());
+            Assert.Equal("rpc-response-model", messageEnd.RootElement.GetProperty("message").GetProperty("responseModel").GetString());
+            Assert.Equal("rpc-response-id", messageEnd.RootElement.GetProperty("message").GetProperty("responseId").GetString());
+            Assert.Equal(140, messageEnd.RootElement.GetProperty("message").GetProperty("usage").GetProperty("totalTokens").GetInt64());
+        }
+        finally { foreach (var record in records) record.Dispose(); }
     }
 
     [Fact]
@@ -822,24 +901,38 @@ public sealed class RpcModeTests
                 .Where(item => item.line.Contains("\"type\":\"agent_end\"", StringComparison.Ordinal))
                 .Select(item => item.index).ToArray();
             var agentSettledIndex = Array.FindIndex(lines, line => line.Contains("\"type\":\"agent_settled\"", StringComparison.Ordinal));
-            Assert.Equal(2, agentStartIndices.Length);
-            Assert.Equal(2, agentEndIndices.Length);
-            Assert.True(agentStartIndices[0] >= 0 && agentEndIndices[0] > agentStartIndices[0] &&
-                agentStartIndices[1] > agentEndIndices[0] && agentEndIndices[1] > agentStartIndices[1] &&
-                agentSettledIndex > agentEndIndices[1]);
-            using (var firstEnd = JsonDocument.Parse(lines[agentEndIndices[0]]))
+            Assert.Single(agentStartIndices);
+            Assert.Single(agentEndIndices);
+            var turnStartIndices = lines.Select((line, index) => (line, index))
+                .Where(item => item.line.Contains("\"type\":\"turn_start\"", StringComparison.Ordinal))
+                .Select(item => item.index).ToArray();
+            var turnEndIndices = lines.Select((line, index) => (line, index))
+                .Where(item => item.line.Contains("\"type\":\"turn_end\"", StringComparison.Ordinal))
+                .Select(item => item.index).ToArray();
+            Assert.Equal(2, turnStartIndices.Length);
+            Assert.Equal(2, turnEndIndices.Length);
+            Assert.True(agentStartIndices[0] < turnStartIndices[0] && turnStartIndices[0] < turnEndIndices[0] &&
+                turnEndIndices[0] < turnStartIndices[1] && turnStartIndices[1] < turnEndIndices[1] &&
+                turnEndIndices[1] < agentEndIndices[0] && agentSettledIndex > agentEndIndices[0]);
+            using (var firstEnd = JsonDocument.Parse(lines[turnEndIndices[0]]))
             {
-                Assert.False(firstEnd.RootElement.GetProperty("willRetry").GetBoolean());
-                Assert.Equal(["one", "first reply"], firstEnd.RootElement.GetProperty("messages").EnumerateArray()
-                    .Select(message => message.GetProperty("role").GetString() == "assistant"
-                        ? message.GetProperty("content")[0].GetProperty("text").GetString()
-                        : message.GetProperty("content").GetString()));
+                Assert.Equal(["type", "message", "toolResults"], firstEnd.RootElement.EnumerateObject()
+                    .Select(property => property.Name));
+                Assert.Equal("first reply", firstEnd.RootElement.GetProperty("message").GetProperty("content")[0]
+                    .GetProperty("text").GetString());
+                Assert.Empty(firstEnd.RootElement.GetProperty("toolResults").EnumerateArray());
             }
-            using (var secondEnd = JsonDocument.Parse(lines[agentEndIndices[1]]))
+            using (var secondEnd = JsonDocument.Parse(lines[turnEndIndices[1]]))
             {
-                Assert.False(secondEnd.RootElement.GetProperty("willRetry").GetBoolean());
-                Assert.Equal(["two", "second reply"], secondEnd.RootElement.GetProperty("messages").EnumerateArray()
-                    .Select(message => message.GetProperty("role").GetString() == "assistant"
+                Assert.Equal("second reply", secondEnd.RootElement.GetProperty("message").GetProperty("content")[0]
+                    .GetProperty("text").GetString());
+                Assert.Empty(secondEnd.RootElement.GetProperty("toolResults").EnumerateArray());
+            }
+            using (var agentEnd = JsonDocument.Parse(lines[agentEndIndices[0]]))
+            {
+                Assert.False(agentEnd.RootElement.GetProperty("willRetry").GetBoolean());
+                Assert.Equal(["one", "first reply", "two", "second reply"], agentEnd.RootElement.GetProperty("messages")
+                    .EnumerateArray().Select(message => message.GetProperty("role").GetString() == "assistant"
                         ? message.GetProperty("content")[0].GetProperty("text").GetString()
                         : message.GetProperty("content").GetString()));
             }
@@ -852,6 +945,120 @@ public sealed class RpcModeTests
             Assert.Equal(1, output.Lines().Count(line => line.Contains("agent_settled", StringComparison.Ordinal)));
         }
         finally { foreach (var response in responses) response.Dispose(); }
+    }
+
+    [Fact]
+    public async Task RpcTurnEventsIncludePiToolCallAndResultBoundaries()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-rpc-tool-turn-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        await File.WriteAllTextAsync(Path.Combine(cwd, "fixture.txt"), "turn result");
+        var channel = Channel.CreateUnbounded<string>();
+        using var output = new LockedWriter();
+        var client = new RpcToolTurnClient();
+        var session = new ConversationSession(cwd, "fixture", null);
+        var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(cwd)), session);
+        var serving = new RpcMode(new CommandReader(channel.Reader), output, run).ServeAsync();
+
+        channel.Writer.TryWrite("{\"id\":\"tool-turn\",\"type\":\"prompt\",\"message\":\"read fixture\"}");
+        await WaitForAsync(output, "agent_settled");
+        channel.Writer.Complete();
+        await serving.WaitAsync(TimeSpan.FromSeconds(5));
+
+        var records = output.Lines().Select(line => JsonDocument.Parse(line)).ToArray();
+        try
+        {
+            var types = records.Select(record => record.RootElement.GetProperty("type").GetString()).ToArray();
+            Assert.Equal(1, types.Count(type => type == "agent_start"));
+            Assert.Equal(1, types.Count(type => type == "agent_end"));
+            Assert.Equal(2, types.Count(type => type == "turn_start"));
+            Assert.Equal(2, types.Count(type => type == "turn_end"));
+            var toolStartIndex = Array.IndexOf(types, "tool_execution_start");
+            var toolEndIndex = Array.IndexOf(types, "tool_execution_end");
+            var firstTurnEndIndex = Array.IndexOf(types, "turn_end");
+            var secondTurnStartIndex = Array.LastIndexOf(types, "turn_start");
+            Assert.True(toolStartIndex >= 0 && toolEndIndex > toolStartIndex && firstTurnEndIndex > toolEndIndex &&
+                secondTurnStartIndex > firstTurnEndIndex);
+            var toolStart = records[toolStartIndex].RootElement;
+            Assert.Equal("read-call", toolStart.GetProperty("toolCallId").GetString());
+            Assert.Equal("read", toolStart.GetProperty("toolName").GetString());
+            Assert.Equal("fixture.txt", toolStart.GetProperty("args").GetProperty("path").GetString());
+            var toolEnd = records[toolEndIndex].RootElement;
+            Assert.Equal("read-call", toolEnd.GetProperty("toolCallId").GetString());
+            Assert.Equal("read", toolEnd.GetProperty("toolName").GetString());
+            Assert.False(toolEnd.GetProperty("isError").GetBoolean());
+            var toolCallUpdates = records.Where(record => record.RootElement.GetProperty("type").GetString() == "message_update")
+                .Select(record => record.RootElement.GetProperty("assistantMessageEvent"))
+                .Where(item => item.GetProperty("type").GetString()!.StartsWith("toolcall_", StringComparison.Ordinal))
+                .ToArray();
+            Assert.Equal(["toolcall_start", "toolcall_delta", "toolcall_end"],
+                toolCallUpdates.Select(item => item.GetProperty("type").GetString()));
+            Assert.Equal("read-call", toolCallUpdates[0].GetProperty("id").GetString());
+            Assert.Equal("read", toolCallUpdates[0].GetProperty("toolName").GetString());
+            Assert.Equal("read-call", toolCallUpdates[2].GetProperty("toolCall").GetProperty("id").GetString());
+            var toolMessageStartIndex = Array.FindIndex(records, record =>
+                record.RootElement.GetProperty("type").GetString() == "message_start" &&
+                record.RootElement.GetProperty("message").GetProperty("role").GetString() == "toolResult");
+            var toolMessageEndIndex = Array.FindIndex(records, record =>
+                record.RootElement.GetProperty("type").GetString() == "message_end" &&
+                record.RootElement.GetProperty("message").GetProperty("role").GetString() == "toolResult");
+            Assert.True(toolEndIndex < toolMessageStartIndex && toolMessageStartIndex < toolMessageEndIndex &&
+                toolMessageEndIndex < firstTurnEndIndex);
+            var firstTurnEnd = records[firstTurnEndIndex].RootElement;
+            Assert.Equal("assistant", firstTurnEnd.GetProperty("message").GetProperty("role").GetString());
+            Assert.Equal("toolCall", firstTurnEnd.GetProperty("message").GetProperty("content")[0]
+                .GetProperty("type").GetString());
+            var toolResult = Assert.Single(firstTurnEnd.GetProperty("toolResults").EnumerateArray().ToArray());
+            Assert.Equal("toolResult", toolResult.GetProperty("role").GetString());
+            Assert.Equal("read-call", toolResult.GetProperty("toolCallId").GetString());
+            Assert.Equal("read", toolResult.GetProperty("toolName").GetString());
+            Assert.Contains("turn result", toolResult.GetProperty("content")[0].GetProperty("text").GetString());
+            Assert.True(JsonElement.DeepEquals(records[toolMessageEndIndex].RootElement.GetProperty("message"), toolResult));
+            var secondTurnEnd = records[Array.LastIndexOf(types, "turn_end")].RootElement;
+            Assert.Equal("finished", secondTurnEnd.GetProperty("message").GetProperty("content")[0]
+                .GetProperty("text").GetString());
+            Assert.Empty(secondTurnEnd.GetProperty("toolResults").EnumerateArray());
+        }
+        finally
+        {
+            foreach (var record in records) record.Dispose();
+            Directory.Delete(cwd, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task RpcFailureAfterToolContinuationDoesNotRepeatPriorTurnToolResults()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-rpc-tool-failure-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        await File.WriteAllTextAsync(Path.Combine(cwd, "fixture.txt"), "turn result");
+        try
+        {
+            var channel = Channel.CreateUnbounded<string>();
+            using var output = new LockedWriter();
+            var client = new RpcToolThenFailureClient();
+            var session = new ConversationSession(cwd, "fixture", null);
+            var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(cwd)), session);
+            var serving = new RpcMode(new CommandReader(channel.Reader), output, run).ServeAsync();
+
+            channel.Writer.TryWrite("{\"id\":\"prompt\",\"type\":\"prompt\",\"message\":\"read the fixture\"}");
+            await WaitForAsync(output, "agent_settled");
+            channel.Writer.Complete();
+            await serving.WaitAsync(TimeSpan.FromSeconds(5));
+
+            var turns = output.Lines().Where(line => line.Contains("\"type\":\"turn_end\"", StringComparison.Ordinal))
+                .Select(line => JsonDocument.Parse(line)).ToArray();
+            try
+            {
+                Assert.Equal(2, turns.Length);
+                Assert.Single(turns[0].RootElement.GetProperty("toolResults").EnumerateArray());
+                Assert.Empty(turns[1].RootElement.GetProperty("toolResults").EnumerateArray());
+                Assert.Equal("error", turns[1].RootElement.GetProperty("message").GetProperty("stopReason").GetString());
+                Assert.Equal(2, client.Requests);
+            }
+            finally { foreach (var turn in turns) turn.Dispose(); }
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
     }
 
     [Fact]
@@ -900,6 +1107,73 @@ public sealed class RpcModeTests
             Assert.True(response.RootElement.GetProperty("success").GetBoolean());
             Assert.Equal("queued", response.RootElement.GetProperty("data").GetProperty("disposition").GetString());
         }
+    }
+
+    [Fact]
+    public async Task RpcSteeringConsumedDuringToolLoopHasMessageBoundariesInNextTurn()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-rpc-steering-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        await File.WriteAllTextAsync(Path.Combine(cwd, "fixture.txt"), "tool result");
+        try
+        {
+            var channel = Channel.CreateUnbounded<string>();
+            using var output = new LockedWriter();
+            var client = new SteeringRpcToolClient();
+            var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(cwd)),
+                new ConversationSession(cwd, "fixture", null));
+            var serving = new RpcMode(new CommandReader(channel.Reader), output, run).ServeAsync();
+
+            channel.Writer.TryWrite("{\"id\":\"start\",\"type\":\"prompt\",\"message\":\"initial\"}");
+            await client.FirstRequestStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            channel.Writer.TryWrite("{\"id\":\"steer\",\"type\":\"steer\",\"message\":\"inspect the result\"}");
+            await WaitForAsync(output, "\"id\":\"steer\"");
+            client.ReleaseFirstRequest.TrySetResult();
+            await WaitForAsync(output, "agent_settled");
+            channel.Writer.Complete();
+            await serving.WaitAsync(TimeSpan.FromSeconds(5));
+
+            var lines = output.Lines();
+            using var response = JsonDocument.Parse(Assert.Single(lines, line =>
+                line.Contains("\"id\":\"steer\"", StringComparison.Ordinal) &&
+                line.Contains("\"command\":\"steer\"", StringComparison.Ordinal)));
+            Assert.True(response.RootElement.GetProperty("success").GetBoolean());
+            Assert.Equal("queued", response.RootElement.GetProperty("data").GetProperty("disposition").GetString());
+            Assert.Equal(2, client.Requests);
+            Assert.True(client.SecondRequestSawSteering);
+
+            var turnEnds = lines.Select((line, index) => (line, index))
+                .Where(item => item.line.Contains("\"type\":\"turn_end\"", StringComparison.Ordinal))
+                .Select(item => item.index).ToArray();
+            var turnStarts = lines.Select((line, index) => (line, index))
+                .Where(item => item.line.Contains("\"type\":\"turn_start\"", StringComparison.Ordinal))
+                .Select(item => item.index).ToArray();
+            Assert.Equal(2, turnEnds.Length);
+            Assert.Equal(2, turnStarts.Length);
+            var steeringStart = Array.FindIndex(lines, line =>
+                line.Contains("\"type\":\"message_start\"", StringComparison.Ordinal) &&
+                line.Contains("inspect the result", StringComparison.Ordinal));
+            var steeringEnd = Array.FindIndex(lines, line =>
+                line.Contains("\"type\":\"message_end\"", StringComparison.Ordinal) &&
+                line.Contains("inspect the result", StringComparison.Ordinal));
+            var finalAssistantStart = Array.FindIndex(lines, steeringEnd + 1, line =>
+                line.Contains("\"type\":\"message_start\"", StringComparison.Ordinal) &&
+                line.Contains("\"role\":\"assistant\"", StringComparison.Ordinal));
+            Assert.True(turnEnds[0] < turnStarts[1] && turnStarts[1] < steeringStart &&
+                steeringStart < steeringEnd && steeringEnd < finalAssistantStart &&
+                finalAssistantStart < turnEnds[1]);
+
+            using var steeringMessageStart = JsonDocument.Parse(lines[steeringStart]);
+            using var steeringMessageEnd = JsonDocument.Parse(lines[steeringEnd]);
+            Assert.True(JsonElement.DeepEquals(steeringMessageStart.RootElement.GetProperty("message"),
+                steeringMessageEnd.RootElement.GetProperty("message")));
+            using var agentEnd = JsonDocument.Parse(Assert.Single(lines, line =>
+                line.Contains("\"type\":\"agent_end\"", StringComparison.Ordinal)));
+            Assert.Equal(1, agentEnd.RootElement.GetProperty("messages").EnumerateArray().Count(message =>
+                message.GetProperty("role").GetString() == "user" &&
+                message.GetProperty("content").GetString() == "inspect the result"));
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
     }
 
     [Fact]
@@ -1055,16 +1329,25 @@ public sealed class RpcModeTests
         var run = await ConversationRun.OpenAsync(new PiAgent(new BlockingClient(), new CodingTools(Path.GetTempPath())), session);
         var serving = new RpcMode(new CommandReader(channel.Reader), output, run).ServeAsync();
         channel.Writer.TryWrite("{\"id\":1,\"type\":\"prompt\",\"message\":\"wait\"}");
-        await WaitForAsync(output, "model_request_started");
+        await WaitForAsync(output, "turn_start");
         channel.Writer.TryWrite("{\"id\":2,\"type\":\"abort\"}");
         await WaitForAsync(output, "agent_settled");
         channel.Writer.Complete();
         await serving.WaitAsync(TimeSpan.FromSeconds(5));
         Assert.Contains(session.Tree.Entries, entry => entry.Type == "interrupted");
         var lines = output.Lines();
+        var assistantMessageStartIndex = Array.FindIndex(lines, line => line.Contains("\"type\":\"message_start\"", StringComparison.Ordinal) &&
+            line.Contains("\"role\":\"assistant\"", StringComparison.Ordinal));
+        var assistantMessageEndIndex = Array.FindIndex(lines, line => line.Contains("\"type\":\"message_end\"", StringComparison.Ordinal) &&
+            line.Contains("\"role\":\"assistant\"", StringComparison.Ordinal));
+        var turnEndIndex = Array.FindIndex(lines, line => line.Contains("\"type\":\"turn_end\"", StringComparison.Ordinal));
         var agentEndIndex = Array.FindIndex(lines, line => line.Contains("\"type\":\"agent_end\"", StringComparison.Ordinal));
         var settledIndex = Array.FindIndex(lines, line => line.Contains("\"type\":\"agent_settled\"", StringComparison.Ordinal));
-        Assert.True(agentEndIndex >= 0 && settledIndex > agentEndIndex);
+        Assert.True(assistantMessageStartIndex >= 0 && assistantMessageEndIndex > assistantMessageStartIndex &&
+            turnEndIndex > assistantMessageEndIndex && agentEndIndex > turnEndIndex && settledIndex > agentEndIndex);
+        using var assistantEnd = JsonDocument.Parse(lines[assistantMessageEndIndex]);
+        var assistantMessage = assistantEnd.RootElement.GetProperty("message");
+        Assert.Equal("aborted", assistantMessage.GetProperty("stopReason").GetString());
         using (var end = JsonDocument.Parse(lines[agentEndIndex]))
         {
             Assert.False(end.RootElement.GetProperty("willRetry").GetBoolean());
@@ -1072,6 +1355,11 @@ public sealed class RpcModeTests
             var finalMessage = messages[messages.GetArrayLength() - 1];
             Assert.Equal("assistant", finalMessage.GetProperty("role").GetString());
             Assert.Equal("aborted", finalMessage.GetProperty("stopReason").GetString());
+            Assert.True(JsonElement.DeepEquals(assistantMessage, finalMessage));
+        }
+        using (var turnEnd = JsonDocument.Parse(lines[turnEndIndex]))
+        {
+            Assert.True(JsonElement.DeepEquals(assistantMessage, turnEnd.RootElement.GetProperty("message")));
         }
         Assert.Contains(output.Lines(), line => line.Contains("\"command\":\"abort\",\"success\":true", StringComparison.Ordinal));
     }
@@ -1091,9 +1379,15 @@ public sealed class RpcModeTests
         await serving.WaitAsync(TimeSpan.FromSeconds(5));
 
         var lines = output.Lines();
+        var assistantMessageEndIndex = Array.FindIndex(lines, line => line.Contains("\"type\":\"message_end\"", StringComparison.Ordinal) &&
+            line.Contains("\"role\":\"assistant\"", StringComparison.Ordinal));
+        var turnEndIndex = Array.FindIndex(lines, line => line.Contains("\"type\":\"turn_end\"", StringComparison.Ordinal));
         var agentEndIndex = Array.FindIndex(lines, line => line.Contains("\"type\":\"agent_end\"", StringComparison.Ordinal));
         var settledIndex = Array.FindIndex(lines, line => line.Contains("\"type\":\"agent_settled\"", StringComparison.Ordinal));
-        Assert.True(agentEndIndex >= 0 && settledIndex > agentEndIndex);
+        Assert.True(assistantMessageEndIndex >= 0 && turnEndIndex > assistantMessageEndIndex &&
+            agentEndIndex > turnEndIndex && settledIndex > agentEndIndex);
+        using var assistantEnd = JsonDocument.Parse(lines[assistantMessageEndIndex]);
+        var assistantMessage = assistantEnd.RootElement.GetProperty("message");
         using var end = JsonDocument.Parse(lines[agentEndIndex]);
         Assert.False(end.RootElement.GetProperty("willRetry").GetBoolean());
         var messages = end.RootElement.GetProperty("messages");
@@ -1102,6 +1396,45 @@ public sealed class RpcModeTests
         Assert.Equal("partial", failedAssistant.GetProperty("content")[0].GetProperty("text").GetString());
         Assert.Equal("error", failedAssistant.GetProperty("stopReason").GetString());
         Assert.Equal("failed after output", failedAssistant.GetProperty("errorMessage").GetString());
+        Assert.True(JsonElement.DeepEquals(assistantMessage, failedAssistant));
+        using var turnEnd = JsonDocument.Parse(lines[turnEndIndex]);
+        Assert.True(JsonElement.DeepEquals(assistantMessage, turnEnd.RootElement.GetProperty("message")));
+    }
+
+    [Fact]
+    public async Task FailedProviderRequestWithoutOutputEmitsAnEmptyPiAssistantMessage()
+    {
+        var channel = Channel.CreateUnbounded<string>();
+        using var output = new LockedWriter();
+        var session = new ConversationSession(Path.GetTempPath(), "fixture", null, "fixture");
+        var run = await ConversationRun.OpenAsync(new PiAgent(new PreResponseFailureClient(),
+            new CodingTools(Path.GetTempPath()), retryPolicy: new ProviderRetryPolicy(maxRetries: 0)), session);
+        var serving = new RpcMode(new CommandReader(channel.Reader), output, run).ServeAsync();
+        channel.Writer.TryWrite("{\"id\":\"failed-empty\",\"type\":\"prompt\",\"message\":\"hello\"}");
+        await WaitForAsync(output, "agent_settled");
+        channel.Writer.Complete();
+        await serving.WaitAsync(TimeSpan.FromSeconds(5));
+
+        var lines = output.Lines();
+        var messageStartIndex = Array.FindIndex(lines, line => line.Contains("\"type\":\"message_start\"", StringComparison.Ordinal) &&
+            line.Contains("\"role\":\"assistant\"", StringComparison.Ordinal));
+        var messageEndIndex = Array.FindIndex(lines, line => line.Contains("\"type\":\"message_end\"", StringComparison.Ordinal) &&
+            line.Contains("\"role\":\"assistant\"", StringComparison.Ordinal));
+        var turnEndIndex = Array.FindIndex(lines, line => line.Contains("\"type\":\"turn_end\"", StringComparison.Ordinal));
+        var agentEndIndex = Array.FindIndex(lines, line => line.Contains("\"type\":\"agent_end\"", StringComparison.Ordinal));
+        Assert.True(messageStartIndex >= 0 && messageEndIndex > messageStartIndex &&
+            turnEndIndex > messageEndIndex && agentEndIndex > turnEndIndex);
+
+        using var messageEnd = JsonDocument.Parse(lines[messageEndIndex]);
+        var assistantMessage = messageEnd.RootElement.GetProperty("message");
+        Assert.Empty(assistantMessage.GetProperty("content").EnumerateArray());
+        Assert.Equal("error", assistantMessage.GetProperty("stopReason").GetString());
+        Assert.Equal("provider rejected request", assistantMessage.GetProperty("errorMessage").GetString());
+        using var turnEnd = JsonDocument.Parse(lines[turnEndIndex]);
+        Assert.True(JsonElement.DeepEquals(assistantMessage, turnEnd.RootElement.GetProperty("message")));
+        using var agentEnd = JsonDocument.Parse(lines[agentEndIndex]);
+        Assert.True(JsonElement.DeepEquals(assistantMessage,
+            agentEnd.RootElement.GetProperty("messages")[agentEnd.RootElement.GetProperty("messages").GetArrayLength() - 1]));
     }
 
     [Fact]
@@ -1333,6 +1666,142 @@ public sealed class RpcModeTests
         public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
             ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         { yield return new ChatResponseUpdate(ChatRole.Assistant, "reply"); await Task.CompletedTask; }
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
+    }
+
+    private sealed class RpcToolTurnClient : IChatClient
+    {
+        private int _requests;
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            if (Interlocked.Increment(ref _requests) == 1)
+            {
+                Assert.Contains(options?.Tools ?? [], tool => tool is AIFunction function && function.Name == "read");
+                yield return new ChatResponseUpdate(ChatRole.Assistant,
+                    [new FunctionCallContent("read-call", "read", new Dictionary<string, object?> { ["path"] = "fixture.txt" })]);
+            }
+            else
+            {
+                Assert.Contains(messages.SelectMany(message => message.Contents), content =>
+                    content is FunctionResultContent { CallId: "read-call" });
+                yield return new ChatResponseUpdate(ChatRole.Assistant, "finished");
+            }
+            await Task.CompletedTask;
+        }
+
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
+    }
+
+    private sealed class RpcToolThenFailureClient : IChatClient
+    {
+        private int _requests;
+        public int Requests => Volatile.Read(ref _requests);
+
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            if (Interlocked.Increment(ref _requests) == 1)
+            {
+                yield return new ChatResponseUpdate(ChatRole.Assistant,
+                    [new FunctionCallContent("read-call", "read", new Dictionary<string, object?> { ["path"] = "fixture.txt" })]);
+                yield break;
+            }
+
+            await Task.Yield();
+            throw new InvalidOperationException("provider failed after tool result");
+        }
+
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
+    }
+
+    private sealed class SteeringRpcToolClient : IChatClient
+    {
+        private int _requests;
+        public int Requests => Volatile.Read(ref _requests);
+        public bool SecondRequestSawSteering { get; private set; }
+        public TaskCompletionSource FirstRequestStarted { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource ReleaseFirstRequest { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            var request = Interlocked.Increment(ref _requests);
+            var snapshot = messages.ToArray();
+            if (request == 1)
+            {
+                FirstRequestStarted.TrySetResult();
+                await ReleaseFirstRequest.Task.WaitAsync(cancellationToken);
+                yield return new ChatResponseUpdate(ChatRole.Assistant,
+                    [new FunctionCallContent("read-call", "read", new Dictionary<string, object?> { ["path"] = "fixture.txt" })]);
+                yield break;
+            }
+
+            SecondRequestSawSteering = snapshot.Any(message => message.Role == ChatRole.User &&
+                message.Text == "inspect the result");
+            Assert.Contains(snapshot.SelectMany(message => message.Contents), content =>
+                content is FunctionResultContent { CallId: "read-call" });
+            yield return new ChatResponseUpdate(ChatRole.Assistant, "finished");
+        }
+
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
+    }
+
+    private sealed class PreResponseFailureClient : IChatClient
+    {
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
+        public IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null, CancellationToken cancellationToken = default) =>
+            throw new InvalidOperationException("provider rejected request");
+
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
+    }
+
+    private sealed class RpcMessageStreamingClient : IChatClient
+    {
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            yield return new ChatResponseUpdate(ChatRole.Assistant,
+            [new UsageContent(new UsageDetails
+            {
+                InputTokenCount = 100,
+                OutputTokenCount = 40,
+                CachedInputTokenCount = 20,
+                ReasoningTokenCount = 12,
+                TotalTokenCount = 140,
+                AdditionalCounts = new AdditionalPropertiesDictionary<long> { ["cacheWriteTokens"] = 5 }
+            })]);
+            yield return new ChatResponseUpdate(ChatRole.Assistant, "hello ");
+            yield return new ChatResponseUpdate(ChatRole.Assistant, "world");
+            yield return new ChatResponseUpdate(ChatRole.Assistant, [new TextReasoningContent("checking")])
+            {
+                ModelId = "rpc-response-model",
+                ResponseId = "rpc-response-id",
+                FinishReason = ChatFinishReason.Length
+            };
+            await Task.CompletedTask;
+        }
+
         public object? GetService(Type serviceType, object? serviceKey = null) => null;
         public void Dispose() { }
     }

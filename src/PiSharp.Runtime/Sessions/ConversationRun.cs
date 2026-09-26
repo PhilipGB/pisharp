@@ -269,7 +269,13 @@ public sealed class ConversationRun
         {
             if (!_steeringQueue.TryDequeue(out var prompt)) return [];
             _promptQueueEvents?.Invoke(QueueEvent(SnapshotQueues()));
-            return [new ChatMessage(ChatRole.User, prompt)];
+            var message = new ChatMessage(ChatRole.User, prompt);
+            _promptQueueEvents?.Invoke(new AgentLifecycleEvent("steering_message_accepted", Text: prompt)
+            {
+                PromptMessage = message,
+                MessageTimestamp = DateTimeOffset.UtcNow
+            });
+            return [message];
         }
     }
 
@@ -436,9 +442,43 @@ public sealed class ConversationRun
         DurableExecution? durable = _save is null ? null : new DurableExecution(Conversation, _save);
         var started = false;
         var accepted = false;
+        ChatMessage? providerResponse = null;
+        var turnToolResults = new List<ChatMessage>();
+        void CompleteProviderTurn()
+        {
+            if (providerResponse is null) return;
+            onEvent?.Invoke(new AgentLifecycleEvent("assistant_turn_completed")
+            {
+                TurnMessage = providerResponse,
+                TurnToolResults = turnToolResults.ToArray()
+            });
+            providerResponse = null;
+            turnToolResults.Clear();
+        }
+
         void Observe(AgentLifecycleEvent item)
         {
-            if (item.Type == "model_request_started") partialAssistantText.Clear();
+            if (item.Type == "model_request_started")
+            {
+                CompleteProviderTurn();
+                partialAssistantText.Clear();
+                onEvent?.Invoke(new("assistant_turn_started"));
+            }
+            else if (item.Type == "model_request_completed")
+            {
+                providerResponse = item.ProviderResponse;
+                item = item with
+                {
+                    ProviderThinkingLevel = Volatile.Read(ref _reasoningLevel),
+                    UsageSnapshot = item.ProviderUsage is { } usage
+                        ? UsageRecord.Create(Conversation.Model, "model", usage, _pricing)
+                        : null
+                };
+            }
+            else if (item.ProviderUpdate?.Contents?.OfType<UsageContent>().LastOrDefault() is { } updateUsage)
+                item = item with { UsageSnapshot = UsageRecord.Create(Conversation.Model, "model", updateUsage.Details, _pricing) };
+            else if (item.Type == "tool_execution_finished" && item.ToolResultMessage is { } result)
+                turnToolResults.Add(result);
             else if (item.Type == "model_text_delta" && item.Text is not null) partialAssistantText.Append(item.Text);
             onEvent?.Invoke(item);
         }
@@ -499,6 +539,8 @@ public sealed class ConversationRun
                 onEvent?.Invoke(new("prompt_accepted", Text: prompt)
                 {
                     Images = promptImages is { Length: > 0 } ? promptImages : null,
+                    PromptMessage = promptMessage,
+                    MessageTimestamp = DateTimeOffset.UtcNow,
                     RunStartHead = attemptStartHead,
                     RunStartPathLength = attemptStartPathLength
                 });
@@ -541,6 +583,7 @@ public sealed class ConversationRun
                             Conversation.AppendUsage(UsageRecord.Create(Conversation.Model, "model", usage.Details, _pricing));
                 yield return update;
             }
+            CompleteProviderTurn();
             completed = true;
         }
         finally
