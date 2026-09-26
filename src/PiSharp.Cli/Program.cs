@@ -239,7 +239,7 @@ catch (Exception e) when (e is IOException or InvalidDataException or Unauthoriz
     Environment.ExitCode = 2;
     return;
 }
-var sessionBranches = new SessionBranchController(store, cli.NoSession,
+var sessionController = new InteractiveSessionController(store, cli.NoSession,
     (branch, path) => OpenRunAsync(agent, branch, path));
 bool print = cli.Print || cli.Mode == "print" || Console.IsInputRedirected || Console.IsOutputRedirected;
 var prompt = cli.Prompt;
@@ -484,20 +484,16 @@ async Task SelectModelAsync()
 
 async Task ResumeSessionAsync(SessionListing listing)
 {
-    if (listing.Path == sessionPath)
+    var resumed = await sessionController.ResumeAsync(conversation, sessionPath, listing,
+        connection.Model, connection.Endpoint?.ToString(), selection.Provider.Id);
+    if (resumed is null)
     {
         Console.WriteLine("Already in this session.");
         return;
     }
-    if (sessionPath is not null) await store.SaveAsync(conversation, sessionPath);
-    var resumedConversation = await store.LoadAsync(listing.Path);
-    if (resumedConversation.Model != connection.Model || resumedConversation.Endpoint != connection.Endpoint?.ToString() ||
-        resumedConversation.Provider is not null && !resumedConversation.Provider.Equals(selection.Provider.Id, StringComparison.OrdinalIgnoreCase))
-        throw new InvalidOperationException("Session uses another provider, model, or endpoint; open it directly with --session.");
-    var resumedRun = await OpenRunAsync(agent, resumedConversation, listing.Path);
-    conversation = resumedConversation;
-    conversationRun = resumedRun;
-    sessionPath = listing.Path;
+    conversation = resumed.Conversation;
+    conversationRun = resumed.Run;
+    sessionPath = resumed.Path;
     LoadSessionTranscript();
     Console.WriteLine($"Resumed {conversation.Id[..12]} · {conversation.Name ?? "(unnamed)"}");
 }
@@ -516,7 +512,7 @@ async Task SelectSessionAsync()
 
 async Task ForkFromUserAsync(string id)
 {
-    var branch = await sessionBranches.ForkAtUserAsync(conversation, sessionPath, id);
+    var branch = await sessionController.ForkAtUserAsync(conversation, sessionPath, id);
     conversation = branch.Conversation;
     sessionPath = branch.Path;
     conversationRun = branch.Run;
@@ -1043,7 +1039,7 @@ else
                     case "/clone":
                         if (command == "/clone")
                         {
-                            var branch = await sessionBranches.CloneAsync(conversation, sessionPath);
+                            var branch = await sessionController.CloneAsync(conversation, sessionPath);
                             conversation = branch.Conversation;
                             sessionPath = branch.Path;
                             conversationRun = branch.Run;

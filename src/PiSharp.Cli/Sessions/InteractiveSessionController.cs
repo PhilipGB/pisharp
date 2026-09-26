@@ -2,11 +2,24 @@ using PiSharp.Runtime.Sessions;
 
 namespace PiSharp.Cli.Sessions;
 
-internal sealed class SessionBranchController(
+internal sealed class InteractiveSessionController(
     ConversationStore store,
     bool noSession,
     Func<ConversationSession, string?, Task<ConversationRun>> openRun)
 {
+    public async Task<SessionResumeResult?> ResumeAsync(ConversationSession current, string? currentPath,
+        SessionListing listing, string currentModel, string? currentEndpoint, string currentProvider)
+    {
+        if (listing.Path == currentPath) return null;
+        if (currentPath is not null) await store.SaveAsync(current, currentPath);
+        var resumed = await store.LoadAsync(listing.Path);
+        if (resumed.Model != currentModel || resumed.Endpoint != currentEndpoint ||
+            resumed.Provider is not null && !resumed.Provider.Equals(currentProvider, StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("Session uses another provider, model, or endpoint; open it directly with --session.");
+        var run = await openRun(resumed, listing.Path);
+        return new(resumed, run, listing.Path);
+    }
+
     public async Task<SessionBranchResult> ForkAtUserAsync(ConversationSession source, string? sourcePath,
         string idPrefix)
     {
@@ -38,3 +51,5 @@ internal sealed class SessionBranchController(
 
 internal sealed record SessionBranchResult(ConversationSession Conversation, ConversationRun Run, string? Path,
     string? SourceEntryId, string? Prompt);
+
+internal sealed record SessionResumeResult(ConversationSession Conversation, ConversationRun Run, string Path);
