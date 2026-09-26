@@ -601,11 +601,12 @@
       ],
       "implementation": [
         "src/PiSharp.Runtime/Sessions/PiJsonlSessionInterchange.cs: bounded Pi v1-v3 import and v3 export; migrates v1 links/compaction indexes and v1/v2 hookMessage roles; retains original records and maps messages, tool calls/results, images, Bash, compaction, context edits, model changes and session metadata.",
-        "src/PiSharp.Cli/Program.cs and src/PiSharp.Cli/SessionPathArgument.cs: confirmed /import, /export-jsonl and .jsonl startup --session handling. Import currently requires an existing Pi CWD equal to the running project directory."
+        "src/PiSharp.Cli/PiSessionImportService.cs: bounds Pi JSONL file reads, validates the stored project CWD, and chooses collision-free destination paths. Program routes startup --session, /fork and confirmed /import through the service; cross-project runtime switching remains open."
       ],
       "evidence": [
         "PiJsonlSessionInterchangeTests cover v1/v2 migrations, v3 branch/context-edit/compaction round trips, raw record retention, active-head restoration, malformed headers, private no-overwrite export and cancelled-write cleanup. TerminalPtyTests cover import confirmation/cancel/retry, startup --session, transcript restoration and JSONL export.",
-        "Implementation commit 2a10535814e102d17ba4aaefc8bf3512a0a87432 passed focused session/PTY tests, format verification, warnings-as-errors build and all 526 tests; exact-head Linux CI run 36188382176 passed format, build and all 526 tests (0 failed, 0 skipped). Current Pi d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 v1-v3 migration and import sources/tests were inspected; broad session-manager parity is not verified."
+        "Implementation commit 2a10535814e102d17ba4aaefc8bf3512a0a87432 passed focused session/PTY tests, format verification, warnings-as-errors build and all 526 tests; exact-head Linux CI run 36188382176 passed format, build and all 526 tests (0 failed, 0 skipped). Current Pi d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 v1-v3 migration and import sources/tests were inspected; broad session-manager parity is not verified.",
+        "PiSessionImportServiceTests cover same-project validation, missing files, no-session mode and collision-free destinations. Commit 7ae23732cb176d76709cc9fb521b2f12170b5450 passed exact-head Linux CI run 36205110022 with format, warnings-as-errors build and all 541 tests. The service extraction does not yet support Pi's imported-CWD runtime switch."
       ],
       "dependencies": []
     },
@@ -641,8 +642,14 @@
         "protocol-safe errors, shutdown",
         "Verify through application workflow and compare docs/cli.md, docs/json.md, docs/rpc.md, docs/rpc-commands.md, docs/sdk.md; packages/coding-agent/src/modes/; adapters on common PiAgent, contract tests"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "src/PiSharp.Cli/Protocols/RpcEventProjector.cs centralizes top-level queue and agent lifecycle projection; unsupported event families retain the explicit PiSharp wrapper.",
+        "src/PiSharp.Cli/Protocols/RpcModelCommandHandler.cs owns model discovery/selection/cycling and thinking-level RPC commands extracted from RpcMode."
+      ],
+      "evidence": [
+        "RpcAgentLifecycleProcessTests exercises a real CLI RPC process and local OpenAI-compatible SSE provider; RpcModeTests and RpcModelProcessTests cover event order, queued prompts, failures, abort, model selection and thinking changes.",
+        "Exact source head 38b402e53bf4e0e543e2f2493ecf67ad2765f898 passed Linux CI run 36205642095 with format verification, warnings-as-errors build and all 541 tests (0 failed, 0 skipped). RPC remains incomplete and unverified as a whole."
+      ],
       "dependencies": []
     },
     {
@@ -1594,17 +1601,22 @@
       "source": "docs/parity/detailed-inventory.md:38",
       "acceptance": [
         "Implement agent_start/end/settled using shared canonical runtime with correlated responses/event ordering",
-        "Test protocol through RPC process, including failures and cancellation"
+        "Test protocol through RPC process, including failures and cancellation",
+        "Match Pi low-level retry attempts and set agent_end.willRetry from actual retry state"
       ],
       "implementation": [
-        "src/PiSharp.Cli/Protocols/RpcEventWriter.cs: projects first prompt_accepted to Pi's top-level {type: agent_start}, emits one payload-free agent_settled after accepted work drains, and suppresses both for preflight rejection; agent_end is not yet represented."
+        "src/PiSharp.Cli/Protocols/RpcEventWriter.cs and RpcEventProjector.cs: project agent_start, run-local canonical agent_end.messages with willRetry:false, queue_update and payload-free agent_settled at one wire boundary; preflight rejection emits no lifecycle events."
       ],
       "evidence": [
         "Compared current Pi main d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 packages/coding-agent/src/core/agent-session.ts and modes/rpc/rpc-mode.ts: agent_settled is emitted as a payload-free top-level event after agent work settles.",
         "Compared current Pi main d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 packages/coding-agent/src/modes/rpc/rpc-mode.ts and core/agent-session.ts: successful preflight responds before agent_start; rejected preflight does not start a run; queue work settles once after the accepted run.",
         "RpcModeTests.AcceptsPromptThenEmitsEventsAndSupportsSubsequentStateQueries asserts exact payload-free agent_start/agent_settled shapes and response/start/settled order; PromptReceivedDuringStreamingQueuesAnotherTurnBeforeSettlement asserts one start for queued turns; preflight-failure tests assert only the correlated response.",
         "Linux CI run 36199106854 on exact source head 18940ed3e16f16f0c783a894fd01151fb5897b25 passed format verification, warnings-as-errors build with 0 warnings/errors, and all 535 tests (0 failed, 0 skipped).",
-        "Focused RPC/process tests passed 22/22; current Pi main remote and local checkout both remain d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31."
+        "Focused RPC/process tests passed 22/22; current Pi main remote and local checkout both remain d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31.",
+        "Compared current Pi d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 packages/coding-agent/docs/json.md, packages/agent/src/agent-loop.ts and agent-session.ts: agent_end carries messages and willRetry per low-level run, appears before agent_settled, and retry decisions wrap failed runs.",
+        "RpcAgentLifecycleProcessTests.RpcProcessEmitsPiAgentEndWithCanonicalMessagesBeforeSettlement verifies LF JSON process output, correlated response then agent_start/end/settled order, provider/API/message fields, and clean stderr. RpcModeTests cover queued turns, abort and provider failure agent_end records.",
+        "After extracting RpcModelCommandHandler, focused RpcModeTests and RpcModelProcessTests passed 23/23; dotnet format verification, warnings-as-errors build and the full suite passed locally (541/541). Exact source head 38b402e53bf4e0e543e2f2493ecf67ad2765f898 passed Linux CI run 36205642095: 541 passed, 0 failed, 0 skipped.",
+        "willRetry is currently fixed false. Provider request retry events remain internal to ObservedChatClient and are not equivalent to Pi's separate retryable agent-run attempts; turn/message/tool/session projections remain incomplete."
       ],
       "dependencies": []
     },
