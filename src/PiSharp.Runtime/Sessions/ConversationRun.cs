@@ -17,11 +17,12 @@ public sealed class ConversationRun
     private readonly ModelPricing? _pricing;
     private readonly string? _sessionFile;
     private readonly string? _provider;
-    private readonly string? _reasoningLevel;
+    private string? _reasoningLevel;
     private readonly SemaphoreSlim _gate = new(1, 1);
     private readonly object _promptQueueGate = new();
     private readonly Queue<string> _steeringQueue = new();
     private readonly Queue<string> _followUpQueue = new();
+    private readonly Queue<string> _pendingThinkingChanges = new();
     private readonly Queue<BashExecutionRecord> _pendingBashExecutions = new();
     private object? _promptLoopOwner;
     private Action<AgentLifecycleEvent>? _promptQueueEvents;
@@ -100,6 +101,19 @@ public sealed class ConversationRun
     public int PendingPromptCount
     {
         get { lock (_promptQueueGate) return _steeringQueue.Count + _followUpQueue.Count; }
+    }
+
+    public bool SetThinkingLevelDuringRun(string level, ReasoningOptions? reasoning)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(level);
+        lock (_promptQueueGate)
+        {
+            if (_promptLoopOwner is null) return false;
+            _agent.SetReasoningOptions(reasoning);
+            Volatile.Write(ref _reasoningLevel, level);
+            _pendingThinkingChanges.Enqueue(level);
+            return true;
+        }
     }
 
     public Task<BashExecutionResult> ExecuteBashAsync(string command, Action<string>? onUpdate = null,
@@ -221,6 +235,7 @@ public sealed class ConversationRun
         lock (_promptQueueGate)
         {
             if (!ReferenceEquals(_promptLoopOwner, owner)) return null;
+            PersistPendingThinkingChangesUnsafe();
             if (_steeringQueue.TryDequeue(out var steering))
             {
                 _promptQueueEvents?.Invoke(QueueEvent(SnapshotQueues()));
@@ -242,9 +257,19 @@ public sealed class ConversationRun
         lock (_promptQueueGate)
         {
             if (!ReferenceEquals(_promptLoopOwner, owner)) return;
+            PersistPendingThinkingChangesUnsafe();
             FlushPendingBashExecutionsUnsafe();
             _promptLoopOwner = null;
             _promptQueueEvents = null;
+        }
+    }
+
+    private void PersistPendingThinkingChangesUnsafe()
+    {
+        while (_pendingThinkingChanges.TryDequeue(out var level))
+        {
+            // RunStreamingAsync has finished before the branch is changed, so its canonical history append cannot race this entry.
+            Conversation.AppendThinkingLevelChange(level);
         }
     }
 
@@ -469,7 +494,8 @@ public sealed class ConversationRun
         var provider = _provider ?? Conversation.Provider;
         if (provider is not null) environment["PI_PROVIDER"] = provider;
         if (_sessionFile is not null) environment["PI_SESSION_FILE"] = _sessionFile;
-        if (_reasoningLevel is not null) environment["PI_REASONING_LEVEL"] = _reasoningLevel;
+        var reasoningLevel = Volatile.Read(ref _reasoningLevel);
+        if (reasoningLevel is not null) environment["PI_REASONING_LEVEL"] = reasoningLevel;
         return environment;
     }
 

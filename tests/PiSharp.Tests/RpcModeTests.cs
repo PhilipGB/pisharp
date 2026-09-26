@@ -172,6 +172,52 @@ public sealed class RpcModeTests
     }
 
     [Fact]
+    public async Task SetThinkingLevelIsAcceptedDuringAnActiveRunAndEmitsBeforeItsResponse()
+    {
+        var channel = Channel.CreateUnbounded<string>();
+        using var output = new LockedWriter();
+        var client = new OrderedRpcQueueClient();
+        var session = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(Path.GetTempPath()),
+            reasoning: new ReasoningOptions { Effort = ReasoningEffort.Low, Output = ReasoningOutput.Full }),
+            session, reasoningLevel: "low");
+        var thinking = "low";
+        var service = new RpcMode(new CommandReader(channel.Reader), output, run,
+            getThinkingLevel: () => thinking,
+            getAvailableThinkingLevels: () => ["off", "low", "medium", "high"],
+            supportsThinking: () => true,
+            setThinkingLevelDuringRun: (level, token) =>
+            {
+                token.ThrowIfCancellationRequested();
+                var options = level == "high"
+                    ? new ReasoningOptions { Effort = ReasoningEffort.High, Output = ReasoningOutput.Full }
+                    : null;
+                if (!run.SetThinkingLevelDuringRun(level, options))
+                    throw new InvalidOperationException("The active run is already settling.");
+                thinking = level;
+                return Task.FromResult(level);
+            });
+        var serving = service.ServeAsync();
+        channel.Writer.TryWrite("{\"id\":\"prompt\",\"type\":\"prompt\",\"message\":\"hello\"}");
+        await client.FirstRequestStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        channel.Writer.TryWrite("{\"id\":\"thinking\",\"type\":\"set_thinking_level\",\"level\":\"high\"}");
+        await WaitForAsync(output, "thinking_level_changed");
+        var linesAtChange = output.Lines();
+        var thinkingEventIndex = Array.FindIndex(linesAtChange, line => line.Contains("thinking_level_changed", StringComparison.Ordinal));
+        var responseIndex = Array.FindIndex(linesAtChange, line => line.Contains("\"id\":\"thinking\"", StringComparison.Ordinal));
+        Assert.True(thinkingEventIndex >= 0 && responseIndex > thinkingEventIndex);
+        Assert.Equal("high", thinking);
+
+        client.ReleaseFirstRequest.TrySetResult();
+        await WaitForAsync(output, "agent_settled");
+        channel.Writer.Complete();
+        await serving.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.Single(session.Tree.Entries, entry => entry.Type == "thinking_level_change");
+        Assert.Equal("high", session.Tree.Entries.Last().Payload.GetProperty("thinkingLevel").GetString());
+    }
+
+    [Fact]
     public async Task RuntimePreflightFailureReturnsOnlyCorrelatedErrorWithoutStartingAnAgentRun()
     {
         var channel = Channel.CreateUnbounded<string>();
@@ -847,12 +893,7 @@ public sealed class RpcModeTests
         Assert.Equal("failed after output", failedAssistant.GetProperty("errorMessage").GetString());
     }
 
-    private static async Task WaitForAsync(LockedWriter output, string fragment)
-    {
-        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-        while (!output.Lines().Any(line => line.Contains(fragment, StringComparison.Ordinal)))
-            await Task.Delay(10, timeout.Token);
-    }
+    private static Task WaitForAsync(LockedWriter output, string fragment) => output.WaitForLineAsync(fragment);
 
     private sealed class CommandReader(ChannelReader<string> channel) : TextReader
     {
@@ -866,11 +907,49 @@ public sealed class RpcModeTests
     private sealed class LockedWriter : StringWriter
     {
         private readonly object _gate = new();
-        public override Task WriteLineAsync(string? value)
+        private TaskCompletionSource _changed = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public override Task WriteAsync(string? value)
         {
-            lock (_gate) WriteLine(value);
+            lock (_gate)
+            {
+                Write(value);
+                SignalChangedUnsafe();
+            }
             return Task.CompletedTask;
         }
+
+        public override Task WriteLineAsync(string? value)
+        {
+            lock (_gate)
+            {
+                WriteLine(value);
+                SignalChangedUnsafe();
+            }
+            return Task.CompletedTask;
+        }
+
+        private void SignalChangedUnsafe()
+        {
+            var changed = _changed;
+            _changed = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            changed.TrySetResult();
+        }
+
+        public async Task WaitForLineAsync(string fragment)
+        {
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+            while (true)
+            {
+                Task changed;
+                lock (_gate)
+                {
+                    if (ToString().Contains(fragment, StringComparison.Ordinal)) return;
+                    changed = _changed.Task;
+                }
+                await changed.WaitAsync(timeout.Token);
+            }
+        }
+
         public string[] Lines() { lock (_gate) return ToString().Split('\n', StringSplitOptions.RemoveEmptyEntries); }
     }
 

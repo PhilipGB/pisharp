@@ -14,6 +14,7 @@ internal sealed class RpcModelCommandHandler(
     Func<string?>? getThinkingLevel,
     Func<bool>? isModelScoped,
     Func<string, CancellationToken, Task<string>>? setThinkingLevel,
+    Func<string, CancellationToken, Task<string>>? setThinkingLevelDuringRun,
     Func<IReadOnlyList<string>>? getAvailableThinkingLevels,
     Func<bool>? supportsThinking)
 {
@@ -121,15 +122,18 @@ internal sealed class RpcModelCommandHandler(
                 }
                 return true;
             case "set_thinking_level":
-                if (busy) { await respond(id, command, false, "Wait until the active prompt settles."); return true; }
                 if (!root.TryGetProperty("level", out var requestedLevel) || requestedLevel.ValueKind != JsonValueKind.String ||
                     string.IsNullOrWhiteSpace(requestedLevel.GetString()))
                 { await respond(id, command, false, "A thinking level is required."); return true; }
-                if (setThinkingLevel is null) { await respond(id, command, false, "Thinking-level selection is unavailable."); return true; }
+                if (busy && setThinkingLevelDuringRun is null)
+                { await respond(id, command, false, "Thinking-level changes during an active run are unavailable."); return true; }
+                if (!busy && setThinkingLevel is null)
+                { await respond(id, command, false, "Thinking-level selection is unavailable."); return true; }
                 try
                 {
                     var previousLevel = getThinkingLevel?.Invoke();
-                    var selectedLevel = await setThinkingLevel(requestedLevel.GetString()!, cancellationToken);
+                    var setter = busy ? setThinkingLevelDuringRun! : setThinkingLevel!;
+                    var selectedLevel = await setter(requestedLevel.GetString()!, cancellationToken);
                     if (!string.Equals(previousLevel, selectedLevel, StringComparison.Ordinal))
                         await events().EmitThinkingLevelChangedAsync(selectedLevel, cancellationToken);
                     await respond(id, command, true, null);
@@ -140,13 +144,13 @@ internal sealed class RpcModelCommandHandler(
                 }
                 return true;
             case "cycle_thinking_level":
-                if (busy) { await respond(id, command, false, "Wait until the active prompt settles."); return true; }
                 if (supportsThinking?.Invoke() != true)
                 {
                     await writer.EmitAsync(new { id, type = "response", command, success = true, data = (object?)null }, cancellationToken);
                     return true;
                 }
-                if (setThinkingLevel is null || getAvailableThinkingLevels is null)
+                if ((busy && setThinkingLevelDuringRun is null) || (!busy && setThinkingLevel is null) ||
+                    getAvailableThinkingLevels is null)
                 { await respond(id, command, false, "Thinking-level selection is unavailable."); return true; }
                 try
                 {
@@ -159,7 +163,8 @@ internal sealed class RpcModelCommandHandler(
                     var currentLevel = getThinkingLevel?.Invoke() ?? "off";
                     var currentIndex = Array.IndexOf(levels.ToArray(), currentLevel);
                     var nextLevel = levels[(currentIndex + 1 + levels.Count) % levels.Count];
-                    var selectedLevel = await setThinkingLevel(nextLevel, cancellationToken);
+                    var setter = busy ? setThinkingLevelDuringRun! : setThinkingLevel!;
+                    var selectedLevel = await setter(nextLevel, cancellationToken);
                     if (!string.Equals(currentLevel, selectedLevel, StringComparison.Ordinal))
                         await events().EmitThinkingLevelChangedAsync(selectedLevel, cancellationToken);
                     await writer.EmitAsync(new

@@ -70,6 +70,37 @@ public sealed class AgentLifecycleTests
     }
 
     [Fact]
+    public async Task ActiveThinkingChangeAppliesToTheNextProviderRequestAndPersists()
+    {
+        var fixture = new ThinkingToolFixture();
+        var client = new ThinkingChangeClient();
+        var tool = AIFunctionFactory.Create(fixture.WaitAsync, name: "wait_for_thinking");
+        var session = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        var agent = new PiAgent(client, new CodingTools(Path.GetTempPath()), selectedTools: ["wait_for_thinking"],
+            noTools: true, extensionTools: [tool],
+            reasoning: new ReasoningOptions { Effort = ReasoningEffort.Low, Output = ReasoningOutput.Full });
+        var run = await ConversationRun.OpenAsync(agent, session, reasoningLevel: "low");
+        var events = new List<AgentLifecycleEvent>();
+        var active = Task.Run(async () =>
+        {
+            await foreach (var item in run.RunEventsAsync("continue after tool")) events.Add(item);
+        });
+
+        await fixture.Started.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.True(run.SetThinkingLevelDuringRun("high",
+            new ReasoningOptions { Effort = ReasoningEffort.High, Output = ReasoningOutput.Full }));
+        fixture.Release.TrySetResult();
+        await active.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.Equal([ReasoningEffort.Low, ReasoningEffort.High], client.RequestEfforts);
+        Assert.True(client.ContinuationSawToolResult);
+        var thinkingEntry = Assert.Single(session.Tree.Entries, entry => entry.Type == "thinking_level_change");
+        Assert.Equal("high", thinkingEntry.Payload.GetProperty("thinkingLevel").GetString());
+        Assert.Equal("done", session.ActiveMessages().Last().Text);
+        Assert.Equal("agent_settled", events[^1].Type);
+    }
+
+    [Fact]
     public async Task RetryToolContinuationAndQueuedPromptShareOneSettledMultiTurnRun()
     {
         var cwd = Path.Combine(Path.GetTempPath(), "pisharp-retry-queue-" + Guid.NewGuid().ToString("N"));
@@ -370,6 +401,49 @@ public sealed class AgentLifecycleTests
             await Release.Task.WaitAsync(cancellationToken);
             return "tool done";
         }
+    }
+
+    private sealed class ThinkingToolFixture
+    {
+        public TaskCompletionSource Started { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource Release { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        [Description("Wait for an active thinking setting change before returning.")]
+        public async Task<string> WaitAsync(CancellationToken cancellationToken)
+        {
+            Started.TrySetResult();
+            await Release.Task.WaitAsync(cancellationToken);
+            return "tool done";
+        }
+    }
+
+    private sealed class ThinkingChangeClient : IChatClient
+    {
+        private int _requests;
+        public List<ReasoningEffort?> RequestEfforts { get; } = [];
+        public bool ContinuationSawToolResult { get; private set; }
+
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            RequestEfforts.Add(options?.Reasoning?.Effort);
+            if (++_requests == 1)
+                yield return new ChatResponseUpdate(ChatRole.Assistant,
+                    [new FunctionCallContent("thinking-call", "wait_for_thinking", new Dictionary<string, object?>())]);
+            else
+            {
+                ContinuationSawToolResult = messages.SelectMany(message => message.Contents)
+                    .OfType<FunctionResultContent>().Any(result => result.CallId == "thinking-call");
+                yield return new ChatResponseUpdate(ChatRole.Assistant, "done");
+            }
+            await Task.CompletedTask;
+        }
+
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
     }
 
     private sealed class SteeringToolClient : IChatClient

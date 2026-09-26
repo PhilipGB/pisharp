@@ -12,6 +12,7 @@ public sealed class PiAgent
     private readonly ChatClientAgent _agent;
     private readonly ChatClientAgent _summarizer;
     private readonly SemaphoreSlim _runGate = new(1, 1);
+    private ReasoningOptions? _reasoning;
     private DurableExecution? _active;
     private Action<AgentLifecycleEvent>? _events;
     private Func<IReadOnlyList<ChatMessage>>? _takeSteering;
@@ -24,6 +25,7 @@ public sealed class PiAgent
         ReasoningOptions? reasoning = null, bool blockImages = false, bool noBuiltinTools = false, bool supportsImages = true)
     {
         _codingTools = tools;
+        _reasoning = reasoning;
         _summarizer = new ChatClientAgent(client, new ChatClientAgentOptions
         {
             Name = "PiSharpCompaction",
@@ -40,7 +42,8 @@ public sealed class PiAgent
             builtin.Concat(external).GroupBy(tool => tool.Name, StringComparer.Ordinal).Any(group => group.Count() > 1))
             throw new ArgumentException("Extension tool conflicts with a built-in tool name.");
         _agent = new ChatClientAgent(new ObservedChatClient(client, value => _events?.Invoke(value),
-            retryPolicy ?? ProviderRetryPolicy.Default, TakeSteeringForRequest, blockImages, ProjectForRequestAsync, supportsImages), new ChatClientAgentOptions
+            retryPolicy ?? ProviderRetryPolicy.Default, TakeSteeringForRequest, blockImages, ProjectForRequestAsync,
+            supportsImages, () => Volatile.Read(ref _reasoning)), new ChatClientAgentOptions
             {
                 Name = "PiSharp",
                 ChatHistoryProvider = _history,
@@ -103,6 +106,8 @@ public sealed class PiAgent
 
     public async Task<AgentSession> CreateSessionAsync(CancellationToken cancellationToken = default) =>
         await _agent.CreateSessionAsync(cancellationToken);
+
+    public void SetReasoningOptions(ReasoningOptions? reasoning) => Volatile.Write(ref _reasoning, reasoning);
 
     public Task<BashExecutionResult> ExecuteBashAsync(string command, Action<string>? onUpdate = null,
         CancellationToken cancellationToken = default) => _codingTools.ExecuteBashAsync(command, onUpdate, cancellationToken);

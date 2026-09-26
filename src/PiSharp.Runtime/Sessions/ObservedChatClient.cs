@@ -10,13 +10,14 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
     ProviderRetryPolicy retryPolicy, Func<IEnumerable<ChatMessage>, IReadOnlyList<ChatMessage>> takeSteering,
     bool blockImages = false,
     Func<IReadOnlyList<ChatMessage>, bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? projectContext = null,
-    bool supportsImages = true) : DelegatingChatClient(inner)
+    bool supportsImages = true, Func<ReasoningOptions?>? getReasoning = null) : DelegatingChatClient(inner)
 {
     public override async Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages,
         ChatOptions? options = null, CancellationToken cancellationToken = default)
     {
         var original = WithSteering(messages).ToArray();
         var requestMessages = await PrepareRequestAsync(original, force: false, cancellationToken);
+        options = ApplyCurrentReasoning(options);
         var overflowRecovered = false;
         for (var retries = 0; ; retries++)
         {
@@ -49,6 +50,7 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
     {
         var original = WithSteering(messages).ToArray();
         var requestMessages = await PrepareRequestAsync(original, force: false, cancellationToken);
+        options = ApplyCurrentReasoning(options);
         var overflowRecovered = false;
         for (var retries = 0; ; retries++)
         {
@@ -112,6 +114,14 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
         if (ReferenceEquals(compacted, original)) return null;
         publish(new("model_context_overflow_recovery", Text: "Retrying the model request once with a shortened context."));
         return FilterImages(AttachReadImages(compacted)).ToArray();
+    }
+
+    private ChatOptions? ApplyCurrentReasoning(ChatOptions? options)
+    {
+        if (getReasoning is null) return options;
+        var requestOptions = options?.Clone() ?? new ChatOptions();
+        requestOptions.Reasoning = getReasoning();
+        return requestOptions;
     }
 
     // Keep the persisted function result intact. Provider clients see its text plus image content

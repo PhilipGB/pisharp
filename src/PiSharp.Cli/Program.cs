@@ -442,6 +442,18 @@ async Task<string> SetRpcThinkingLevelAsync(string level, CancellationToken toke
     return thinking;
 }
 
+Task<string> SetRpcThinkingLevelDuringRunAsync(string level, CancellationToken token)
+{
+    token.ThrowIfCancellationRequested();
+    var normalized = ThinkingLevels.Normalize(level);
+    var nextThinking = selection.Model.Reasoning == true ? normalized : "off";
+    if (nextThinking.Equals(thinking, StringComparison.Ordinal)) return Task.FromResult(thinking);
+    if (!conversationRun.SetThinkingLevelDuringRun(nextThinking, ThinkingLevels.ToOptions(nextThinking)))
+        throw new InvalidOperationException("The active run is already settling.");
+    thinking = nextThinking;
+    return Task.FromResult(thinking);
+}
+
 var terminalModelPicker = editor is null ? null : new TerminalModelPicker(modelRuntime, editor);
 var terminalSessionPicker = editor is null ? null : new TerminalSessionPicker(store, editor);
 var terminalForkPicker = editor is null ? null : new TerminalForkPicker(editor);
@@ -733,7 +745,8 @@ if (cli.Mode == "rpc")
             $"Provider '{selection.Provider.Id}' is not authenticated. Use /login {selection.Provider.Id} or configure {selection.Provider.ApiKeyEnvironment ?? "a credential"}.",
         SelectRpcModelAsync, () => conversationRun, () => thinking, () => modelRuntime.Scope.Count > 0,
         SetRpcThinkingLevelAsync, () => ThinkingLevels.AvailableForModel(selection.Model.Reasoning),
-        () => selection.Model.Reasoning == true, () => ProviderChatClientFactory.ResolveProtocol(selection)).ServeAsync();
+        () => selection.Model.Reasoning == true, () => ProviderChatClientFactory.ResolveProtocol(selection),
+        SetRpcThinkingLevelDuringRunAsync).ServeAsync();
     return;
 }
 if (cli.Mode == "json")
