@@ -7,6 +7,7 @@ using PiSharp.Runtime.Extensions;
 using PiSharp.Runtime.Resources;
 using PiSharp.Cli.Tui;
 using PiSharp.Cli.Protocols;
+using PiSharp.Cli.Sessions;
 
 var agentDirectory = Environment.GetEnvironmentVariable("PISHARP_AGENT_DIR") ??
     Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".pisharp", "agent");
@@ -238,6 +239,8 @@ catch (Exception e) when (e is IOException or InvalidDataException or Unauthoriz
     Environment.ExitCode = 2;
     return;
 }
+var sessionBranches = new SessionBranchController(store, cli.NoSession,
+    (branch, path) => OpenRunAsync(agent, branch, path));
 bool print = cli.Print || cli.Mode == "print" || Console.IsInputRedirected || Console.IsOutputRedirected;
 var prompt = cli.Prompt;
 // Pi combines trimmed piped input before @file content and the positional prompt.
@@ -513,20 +516,13 @@ async Task SelectSessionAsync()
 
 async Task ForkFromUserAsync(string id)
 {
-    var candidates = conversation.ForkableUserMessages()
-        .Where(item => item.Id.StartsWith(id, StringComparison.Ordinal)).ToArray();
-    if (candidates.Length != 1) throw new ArgumentException("Specify a unique user message id prefix from /fork.");
-    var (forked, draft) = conversation.ForkAtUser(candidates[0].Id);
-    if (sessionPath is not null) await store.SaveAsync(conversation, sessionPath);
-    var forkPath = cli.NoSession ? null : store.NewPath(forked);
-    var forkRun = await OpenRunAsync(agent, forked, forkPath);
-    if (forkPath is not null) await store.SaveAsync(forked, forkPath);
-    conversation = forked;
-    sessionPath = forkPath;
-    conversationRun = forkRun;
+    var branch = await sessionBranches.ForkAtUserAsync(conversation, sessionPath, id);
+    conversation = branch.Conversation;
+    sessionPath = branch.Path;
+    conversationRun = branch.Run;
     LoadSessionTranscript();
-    editor?.Prefill(draft);
-    Console.WriteLine($"Forked {candidates[0].Id[..12]} to {forkPath ?? "(ephemeral)"}. Edit and submit the draft prompt.");
+    if (branch.Prompt is { } draft) editor?.Prefill(draft);
+    Console.WriteLine($"Forked {branch.SourceEntryId![..12]} to {branch.Path ?? "(ephemeral)"}. Edit and submit the draft prompt.");
 }
 
 async Task SelectForkAsync()
@@ -1045,13 +1041,22 @@ else
                         break;
                     case "/new":
                     case "/clone":
-                        if (sessionPath is not null) await store.SaveAsync(conversation, sessionPath);
-                        conversation = command == "/clone" ? conversation.Fork()
-                            : new ConversationSession(Environment.CurrentDirectory, connection.Model, connection.Endpoint?.ToString(), selection.Provider.Id);
-                        sessionPath = cli.NoSession ? null : store.NewPath(conversation);
-                        var newPath = sessionPath;
-                        conversationRun = await OpenRunAsync(agent, conversation, newPath);
-                        if (sessionPath is not null) await store.SaveAsync(conversation, sessionPath);
+                        if (command == "/clone")
+                        {
+                            var branch = await sessionBranches.CloneAsync(conversation, sessionPath);
+                            conversation = branch.Conversation;
+                            sessionPath = branch.Path;
+                            conversationRun = branch.Run;
+                        }
+                        else
+                        {
+                            if (sessionPath is not null) await store.SaveAsync(conversation, sessionPath);
+                            conversation = new ConversationSession(Environment.CurrentDirectory, connection.Model,
+                                connection.Endpoint?.ToString(), selection.Provider.Id);
+                            sessionPath = cli.NoSession ? null : store.NewPath(conversation);
+                            conversationRun = await OpenRunAsync(agent, conversation, sessionPath);
+                            if (sessionPath is not null) await store.SaveAsync(conversation, sessionPath);
+                        }
                         LoadSessionTranscript();
                         Console.WriteLine($"{command[1..]}: {sessionPath ?? "(ephemeral)"}");
                         break;
