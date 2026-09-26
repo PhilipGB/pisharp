@@ -87,6 +87,24 @@ public sealed class ConversationSessionTests
     }
 
     [Fact]
+    public void UserMessagesForForkingIncludesMessagesFromEveryBranch()
+    {
+        var session = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        session.Append(new ChatMessage(ChatRole.User, "first"));
+        var firstId = session.Tree.HeadId!;
+        session.Append(new ChatMessage(ChatRole.Assistant, "answer"));
+        session.Append(new ChatMessage(ChatRole.User, "other branch"));
+        var otherBranchId = session.Tree.HeadId!;
+        session.Tree.Select(firstId);
+        session.Append(new ChatMessage(ChatRole.User, "alternate"));
+
+        var alternateId = session.Tree.HeadId!;
+        Assert.Equal([(firstId, "first"), (otherBranchId, "other branch"), (alternateId, "alternate")],
+            session.UserMessagesForForking());
+        Assert.Equal([(firstId, "first"), (alternateId, "alternate")], session.ForkableUserMessages());
+    }
+
+    [Fact]
     public async Task ModelChangePersistsAndCrossModelBranchSelectionFailsClosed()
     {
         var cwd = Path.Combine(Path.GetTempPath(), "pisharp-model-" + Guid.NewGuid().ToString("N"));

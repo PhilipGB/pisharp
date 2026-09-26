@@ -28,6 +28,8 @@ public sealed class RpcModeTests
         await WaitForAsync(output, "agent_settled");
         channel.Writer.TryWrite("{\"id\":\"after\",\"type\":\"get_messages\"}");
         channel.Writer.TryWrite("{\"id\":\"name\",\"type\":\"set_session_name\",\"name\":\"my feature\"}");
+        channel.Writer.TryWrite("{\"id\":\"fork-messages\",\"type\":\"get_fork_messages\"}");
+        channel.Writer.TryWrite("{\"id\":\"blank-name\",\"type\":\"set_session_name\",\"name\":\"  \"}");
         channel.Writer.TryWrite("{\"id\":\"entries\",\"type\":\"get_entries\"}");
         channel.Writer.TryWrite("{\"id\":\"bad-cursor\",\"type\":\"get_entries\",\"since\":\"missing\"}");
         channel.Writer.TryWrite("{\"id\":\"tree\",\"type\":\"get_tree\"}");
@@ -70,8 +72,18 @@ public sealed class RpcModeTests
                 e.RootElement.GetProperty("data").GetProperty("messages").GetArrayLength() == 2);
             Assert.Contains(events, e => e.RootElement.GetProperty("type").GetString() == "response" &&
                 e.RootElement.GetProperty("id").GetString() == "bad-cursor" &&
-                !e.RootElement.GetProperty("success").GetBoolean());
+                !e.RootElement.GetProperty("success").GetBoolean() &&
+                e.RootElement.GetProperty("error").GetString() == "Entry not found: missing");
             Assert.Equal("my feature", session.Name);
+            Assert.Contains(events, e => e.RootElement.GetProperty("type").GetString() == "response" &&
+                e.RootElement.GetProperty("id").GetString() == "blank-name" &&
+                !e.RootElement.GetProperty("success").GetBoolean() &&
+                e.RootElement.GetProperty("error").GetString() == "Session name cannot be empty");
+            var forkMessages = Assert.Single(events, e => e.RootElement.GetProperty("type").GetString() == "response" &&
+                e.RootElement.GetProperty("id").GetString() == "fork-messages").RootElement
+                .GetProperty("data").GetProperty("messages");
+            Assert.Single(forkMessages.EnumerateArray());
+            Assert.Equal("hello", forkMessages[0].GetProperty("text").GetString());
             Assert.Contains(events, e => e.RootElement.GetProperty("type").GetString() == "response" &&
                 e.RootElement.GetProperty("id").GetString() == "entries" &&
                 e.RootElement.GetProperty("data").GetProperty("entries").GetArrayLength() == 2);
@@ -202,6 +214,7 @@ public sealed class RpcModeTests
         await client.FirstRequestStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
         channel.Writer.TryWrite("{\"id\":\"thinking\",\"type\":\"set_thinking_level\",\"level\":\"high\"}");
         await WaitForAsync(output, "thinking_level_changed");
+        await WaitForAsync(output, "\"id\":\"thinking\"");
         var linesAtChange = output.Lines();
         var thinkingEventIndex = Array.FindIndex(linesAtChange, line => line.Contains("thinking_level_changed", StringComparison.Ordinal));
         var responseIndex = Array.FindIndex(linesAtChange, line => line.Contains("\"id\":\"thinking\"", StringComparison.Ordinal));

@@ -329,6 +329,13 @@ public sealed class ConversationSession
             .ToArray();
     }
 
+    public IReadOnlyList<(string Id, string Text)> UserMessagesForForking() => Tree.Entries
+        .Where(node => node.Type == "chat")
+        .Select(node => (node.Id, Message: RestoreEntry(node)))
+        .Where(item => item.Message.Role == ChatRole.User && !string.IsNullOrWhiteSpace(item.Message.Text))
+        .Select(item => (item.Id, item.Message.Text))
+        .ToArray();
+
     /// <summary>Create a separate session ending immediately before a selected user message.
     /// Return its editable prompt without silently sending it to the provider.</summary>
     public (ConversationSession Session, string Prompt) ForkAtUser(string id)
