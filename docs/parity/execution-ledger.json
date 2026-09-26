@@ -1364,51 +1364,75 @@
         "Remaining: Pi wire-compatible payloads, lifecycle/error semantics and pinned process differential."
       ],
       "implementation": [
-        "src/PiSharp.Cli/Protocols/RpcMode.cs: partial compact operation (PiSharp wire format)"
+        "RpcCompactionCommandHandler dispatches manual compaction through ConversationRun. It accepts customInstructions, aborts and settles an active prompt, and returns summary, firstKeptEntryId, tokensBefore, estimatedTokensAfter, optional usage and file details.",
+        "RpcCompactionResultProjector owns Pi RPC result/start/end shapes; ConversationCompactionMetadata collects previous and current read/modified file operations and estimates chars/4 tokens.",
+        "ConversationSession persists token/detail metadata on its canonical compaction entry and PiJsonlSessionInterchange exports details. ConversationRun emits manual compaction_start/compaction_end and restores the active MAF context after success."
       ],
       "evidence": [
-        "tests/PiSharp.Tests/RpcModeTests.cs: local protocol/command fixtures (coverage varies by operation)"
+        "Current Pi main 2b0a123de98318c2ff8069661721ce0c3794c34e packages/coding-agent/src/modes/rpc/rpc-mode.ts, core/agent-session.ts, core/compaction.ts and docs/rpc-commands.md were inspected for customInstructions, result fields, file details, heuristic estimates, abort-before-compact and lifecycle order.",
+        "RpcModeTests.CompactCommandRebuildsContextButNotRawMessages verifies result fields, file details, event ordering, repeated-compaction failure, canonical metadata and Pi JSONL projection; RpcModeTests.CompactCommandCancelsAnActiveRunBeforeReturningPiResult verifies active-run settlement precedes compaction.",
+        "RpcModeTests.RpcAbortCancelsAndSettlesAnInProgressCompaction and RpcCompactionProcessTests cover state during compaction, abort lifecycle, correlation and event/response order through in-process RPC and the actual CLI process. RpcCompactionProcessTests.RpcProcessReturnsPiCompactionResultAndUsesCustomInstructions verifies provider request instructions and usage projection.",
+        "Local validation on exact source head 04d66e2793c7fff1ef9d27d9463de53e9a7c5024: format passed; warnings-as-errors build had 0 warnings/errors; 601 tests passed (0 failed, 0 skipped). Linux CI run 36268510576 passed all three steps on the same SHA.",
+        "Remaining: token estimates are chars/4 over canonical MAF context and do not include Pi's usage-aware projected-context/system-prompt accounting; cost is omitted when PiSharp pricing is unknown; no pinned Pi process differential has been run."
       ],
       "dependencies": []
     },
     {
       "id": "rpc-set-auto-compaction",
       "title": "RPC / event: set_auto_compaction",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:35",
       "acceptance": [
         "Implement set_auto_compaction using shared canonical runtime with correlated responses/event ordering",
         "Test protocol through RPC process, including failures and cancellation",
         "Match current Pi behavior: persist the global enabled value and update the active run immediately; get_state must report effective active state."
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "RpcCompactionCommandHandler validates enabled, persists the global setting and applies it immediately to the active ConversationRun; RpcStateCommandHandler reports the active value."
+      ],
+      "evidence": [
+        "RpcCompactionCommandHandler validates enabled, persists through RpcUserSettingsController, and changes the active ConversationRun policy immediately; get_state reports the current value.",
+        "RpcStateTests.SetAutoCompactionChangesActiveRunBehaviorAndState covers immediate behavior/state; RpcModelProcessTests.RpcQueueModesPersistAndAppearInStateInTheCliProcess covers accepted/rejected values, persisted settings and correlated process responses.",
+        "Local and exact-head Linux CI validation: SHA 04d66e2793c7fff1ef9d27d9463de53e9a7c5024, run 36268510576, format/build passed and 601 tests passed (0 failed, 0 skipped). Current Pi 2b0a123de98318c2ff8069661721ce0c3794c34e rpc-mode.ts and rpc-commands.md confirm the enabled response and active-session setter."
+      ],
       "dependencies": []
     },
     {
       "id": "rpc-set-auto-retry",
       "title": "RPC / event: set_auto_retry",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:35",
       "acceptance": [
         "Implement set_auto_retry using shared canonical runtime with correlated responses/event ordering",
         "Test protocol through RPC process, including failures and cancellation"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "RpcRetryCommandHandler validates enabled and persists the global retry setting through the shared retry controller/settings operation."
+      ],
+      "evidence": [
+        "RpcRetryCommandHandler validates enabled and shares runtime/global settings persistence with interactive settings.",
+        "RpcRetryProcessTests.RpcProcessAbortsAgentRetryAndPersistsRetrySetting exercises enable/disable in the actual CLI process; RpcModeTests.AbortRetryCancelsScheduledRpcRetryAndProjectsPiEventShapes covers validation and lifecycle effects.",
+        "Current Pi 2b0a123de98318c2ff8069661721ce0c3794c34e rpc-mode.ts and rpc-commands.md were inspected; local/CLI evidence does not establish a pinned Pi process differential. Exact source SHA 04d66e2793c7fff1ef9d27d9463de53e9a7c5024 passed Linux CI run 36268510576 with 601 tests (0 failed, 0 skipped)."
+      ],
       "dependencies": []
     },
     {
       "id": "rpc-abort-retry",
       "title": "RPC / event: abort_retry",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:35",
       "acceptance": [
         "Implement abort_retry using shared canonical runtime with correlated responses/event ordering",
         "Test protocol through RPC process, including failures and cancellation"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "RpcRetryCommandHandler aborts the active scheduled retry through ConversationRun's canonical retry controller and returns a correlated response."
+      ],
+      "evidence": [
+        "RpcRetryCommandHandler cancels the active scheduled retry through the canonical ConversationRun retry controller and returns a correlated success response.",
+        "RpcRetryProcessTests.RpcProcessAbortsAgentRetryAndPersistsRetrySetting aborts and settles an in-flight retry through the actual CLI RPC process; RpcModeTests.AbortRetryCancelsScheduledRpcRetryAndProjectsPiEventShapes verifies retry-end event ordering and a no-op abort.",
+        "Current Pi 2b0a123de98318c2ff8069661721ce0c3794c34e rpc-mode.ts and rpc-commands.md confirm abort_retry success semantics. A pinned Pi process differential remains open. Exact source SHA 04d66e2793c7fff1ef9d27d9463de53e9a7c5024 passed Linux CI run 36268510576 with 601 tests (0 failed, 0 skipped)."
+      ],
       "dependencies": []
     },
     {
