@@ -1378,18 +1378,154 @@ public sealed class RpcModeTests
         var channel = Channel.CreateUnbounded<string>();
         using var output = new LockedWriter();
         var session = new ConversationSession(Path.GetTempPath(), "fixture", null);
-        session.Append(new ChatMessage(ChatRole.User, "one"));
-        session.Append(new ChatMessage(ChatRole.Assistant, "answer"));
-        session.Append(new ChatMessage(ChatRole.User, "two"));
+        session.Append(new ChatMessage(ChatRole.User, "inspect files"));
+        session.Append(new ChatMessage(ChatRole.Assistant,
+        [
+            new FunctionCallContent("read-call", "read", new Dictionary<string, object?> { ["path"] = "notes.md" }),
+            new FunctionCallContent("edit-call", "edit", new Dictionary<string, object?> { ["path"] = "src/app.cs" })
+        ]));
+        session.Append(new ChatMessage(ChatRole.Tool,
+        [
+            new FunctionResultContent("read-call", "notes"),
+            new FunctionResultContent("edit-call", "updated")
+        ]));
+        session.Append(new ChatMessage(ChatRole.Assistant, "files handled"));
+        session.Append(new ChatMessage(ChatRole.User, "continue"));
+        Assert.Equal(2, session.ActiveMessages()[1].Contents.OfType<FunctionCallContent>().Count());
+        Assert.Equal(2, session.PrepareCompaction()!.MessagesToSummarize
+            .Sum(message => message.Contents.OfType<FunctionCallContent>().Count()));
         var run = await ConversationRun.OpenAsync(new PiAgent(new StubClient(), new CodingTools(Path.GetTempPath())), session);
         var serving = new RpcMode(new CommandReader(channel.Reader), output, run).ServeAsync();
-        channel.Writer.TryWrite("{\"id\":9,\"type\":\"compact\",\"instructions\":\"retain decisions\"}");
-        await WaitForAsync(output, "\"compacted\":true");
+        channel.Writer.TryWrite("{\"id\":9,\"type\":\"compact\",\"customInstructions\":\"retain decisions\"}");
+        await WaitForAsync(output, "\"estimatedTokensAfter\"");
+        channel.Writer.TryWrite("{\"id\":10,\"type\":\"compact\"}");
+        await WaitForAsync(output, "Already compacted");
         channel.Writer.Complete();
         await serving.WaitAsync(TimeSpan.FromSeconds(5));
-        Assert.Equal(3, session.ActiveMessages().Count);
+        Assert.Equal(5, session.ActiveMessages().Count);
         Assert.Equal(2, session.ContextMessages().Count);
-        Assert.Contains(output.Lines(), line => line.Contains("\"command\":\"compact\"", StringComparison.Ordinal));
+        var lines = output.Lines();
+        using var response = JsonDocument.Parse(Assert.Single(lines, line =>
+            line.Contains("\"id\":9", StringComparison.Ordinal)));
+        Assert.True(response.RootElement.GetProperty("success").GetBoolean());
+        var data = response.RootElement.GetProperty("data");
+        Assert.Equal("summary", data.GetProperty("summary").GetString());
+        Assert.Equal(session.Tree.Entries[4].Id, data.GetProperty("firstKeptEntryId").GetString());
+        Assert.True(data.GetProperty("tokensBefore").GetInt32() > data.GetProperty("estimatedTokensAfter").GetInt32());
+        var details = data.GetProperty("details");
+        Assert.Equal(["notes.md"], details.GetProperty("readFiles").EnumerateArray()
+            .Select(item => item.GetString()!).ToArray());
+        Assert.Equal(["src/app.cs"], details.GetProperty("modifiedFiles").EnumerateArray()
+            .Select(item => item.GetString()!).ToArray());
+        var starts = lines.Where(line => line.Contains("\"type\":\"compaction_start\"", StringComparison.Ordinal)).ToArray();
+        var ends = lines.Where(line => line.Contains("\"type\":\"compaction_end\"", StringComparison.Ordinal)).ToArray();
+        Assert.Equal(2, starts.Length);
+        Assert.Equal(2, ends.Length);
+        var start = starts[0];
+        var end = ends[0];
+        using var startEvent = JsonDocument.Parse(start);
+        using var endEvent = JsonDocument.Parse(end);
+        Assert.Equal("manual", startEvent.RootElement.GetProperty("reason").GetString());
+        Assert.Equal("manual", endEvent.RootElement.GetProperty("reason").GetString());
+        Assert.True(JsonElement.DeepEquals(data, endEvent.RootElement.GetProperty("result")));
+        Assert.True(Array.IndexOf(lines, start) < Array.IndexOf(lines, end) &&
+            Array.IndexOf(lines, end) < Array.IndexOf(lines, lines.Single(line =>
+                line.Contains("\"id\":9", StringComparison.Ordinal))));
+        using var repeatedResponse = JsonDocument.Parse(Assert.Single(lines, line =>
+            line.Contains("\"id\":10", StringComparison.Ordinal)));
+        Assert.False(repeatedResponse.RootElement.GetProperty("success").GetBoolean());
+        Assert.Equal("Already compacted", repeatedResponse.RootElement.GetProperty("error").GetString());
+        using var repeatedEnd = JsonDocument.Parse(ends[1]);
+        Assert.Equal("Compaction failed: Already compacted", repeatedEnd.RootElement.GetProperty("errorMessage").GetString());
+        Assert.False(repeatedEnd.RootElement.TryGetProperty("result", out _));
+        Assert.True(Array.IndexOf(lines, ends[1]) < Array.FindIndex(lines,
+            line => line.Contains("\"id\":10", StringComparison.Ordinal)));
+        var compaction = Assert.Single(session.Tree.Entries, entry => entry.Type == "compaction");
+        Assert.Equal(data.GetProperty("tokensBefore").GetInt32(), compaction.Payload.GetProperty("tokensBefore").GetInt32());
+        var exported = PiJsonlSessionInterchange.ProjectEntries(session)
+            .Single(entry => entry.GetProperty("type").GetString() == "compaction");
+        Assert.True(JsonElement.DeepEquals(details, exported.GetProperty("details")));
+    }
+
+    [Fact]
+    public async Task CompactCommandCancelsAnActiveRunBeforeReturningPiResult()
+    {
+        var channel = Channel.CreateUnbounded<string>();
+        using var output = new LockedWriter();
+        var session = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        session.Append(new ChatMessage(ChatRole.User, "older request"));
+        session.Append(new ChatMessage(ChatRole.Assistant, "older answer"));
+        session.Append(new ChatMessage(ChatRole.User, "latest request"));
+        var run = await ConversationRun.OpenAsync(new PiAgent(new BlockingPromptAndSummaryClient(),
+            new CodingTools(Path.GetTempPath())), session);
+        var serving = new RpcMode(new CommandReader(channel.Reader), output, run).ServeAsync();
+        channel.Writer.TryWrite("{\"id\":\"prompt\",\"type\":\"prompt\",\"message\":\"hold\"}");
+        await WaitForAsync(output, "turn_start");
+        channel.Writer.TryWrite("{\"id\":\"compact\",\"type\":\"compact\"}");
+        await WaitForAsync(output, "\"id\":\"compact\"");
+        channel.Writer.Complete();
+        await serving.WaitAsync(TimeSpan.FromSeconds(5));
+
+        var lines = output.Lines();
+        var settlementIndex = Array.FindIndex(lines, line => line.Contains("\"type\":\"agent_settled\"", StringComparison.Ordinal));
+        var startIndex = Array.FindIndex(lines, line => line.Contains("\"type\":\"compaction_start\"", StringComparison.Ordinal));
+        var endIndex = Array.FindIndex(lines, line => line.Contains("\"type\":\"compaction_end\"", StringComparison.Ordinal));
+        var responseIndex = Array.FindIndex(lines, line => line.Contains("\"id\":\"compact\"", StringComparison.Ordinal));
+        Assert.True(settlementIndex >= 0 && startIndex > settlementIndex && endIndex > startIndex &&
+            responseIndex > endIndex);
+        var interruptedTurn = Assert.Single(lines, line =>
+            line.Contains("\"type\":\"turn_end\"", StringComparison.Ordinal));
+        using var turnEnd = JsonDocument.Parse(interruptedTurn);
+        Assert.Equal("aborted", turnEnd.RootElement.GetProperty("message").GetProperty("stopReason").GetString());
+        using var response = JsonDocument.Parse(lines[responseIndex]);
+        Assert.True(response.RootElement.GetProperty("success").GetBoolean());
+        Assert.Equal("summary", response.RootElement.GetProperty("data").GetProperty("summary").GetString());
+        Assert.Equal(2, session.ContextMessages().Count);
+    }
+
+    [Fact]
+    public async Task RpcAbortCancelsAndSettlesAnInProgressCompaction()
+    {
+        var channel = Channel.CreateUnbounded<string>();
+        using var output = new LockedWriter();
+        var session = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        session.Append(new ChatMessage(ChatRole.User, "older request"));
+        session.Append(new ChatMessage(ChatRole.Assistant, "older answer"));
+        session.Append(new ChatMessage(ChatRole.User, "latest request"));
+        var client = new BlockingSummaryClient();
+        var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(Path.GetTempPath())), session);
+        var serving = new RpcMode(new CommandReader(channel.Reader), output, run).ServeAsync();
+        channel.Writer.TryWrite("{\"id\":\"compact\",\"type\":\"compact\"}");
+        await WaitForAsync(output, "compaction_start");
+        await client.SummaryStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        channel.Writer.TryWrite("{\"id\":\"state\",\"type\":\"get_state\"}");
+        await WaitForAsync(output, "\"id\":\"state\"");
+        channel.Writer.TryWrite("{\"id\":\"abort\",\"type\":\"abort\"}");
+        await WaitForAsync(output, "\"id\":\"abort\"");
+        channel.Writer.Complete();
+        await serving.WaitAsync(TimeSpan.FromSeconds(5));
+
+        var records = output.Lines().Select(line => JsonDocument.Parse(line)).ToArray();
+        try
+        {
+            var state = Assert.Single(records, record => record.RootElement.TryGetProperty("id", out var id) &&
+                id.GetString() == "state");
+            Assert.True(state.RootElement.GetProperty("data").GetProperty("isCompacting").GetBoolean());
+            var end = Assert.Single(records, record => record.RootElement.GetProperty("type").GetString() == "compaction_end");
+            Assert.True(end.RootElement.GetProperty("aborted").GetBoolean());
+            Assert.False(end.RootElement.GetProperty("willRetry").GetBoolean());
+            Assert.False(end.RootElement.TryGetProperty("result", out _));
+            Assert.False(end.RootElement.TryGetProperty("errorMessage", out _));
+            var compact = Assert.Single(records, record => record.RootElement.TryGetProperty("id", out var id) &&
+                id.GetString() == "compact");
+            Assert.False(compact.RootElement.GetProperty("success").GetBoolean());
+            var abort = Assert.Single(records, record => record.RootElement.TryGetProperty("id", out var id) &&
+                id.GetString() == "abort");
+            Assert.True(abort.RootElement.GetProperty("success").GetBoolean());
+            Assert.True(Array.IndexOf(records, end) < Array.IndexOf(records, compact) &&
+                Array.IndexOf(records, compact) < Array.IndexOf(records, abort));
+        }
+        finally { foreach (var record in records) record.Dispose(); }
     }
 
     [Fact]
@@ -1954,6 +2090,46 @@ public sealed class RpcModeTests
         public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
             ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         { await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken); yield break; }
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
+    }
+
+    private sealed class BlockingPromptAndSummaryClient : IChatClient
+    {
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(new ChatResponse([new ChatMessage(ChatRole.Assistant, "summary")]));
+
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+            yield break;
+        }
+
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
+    }
+
+    private sealed class BlockingSummaryClient : IChatClient
+    {
+        public TaskCompletionSource SummaryStarted { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public async Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+            CancellationToken cancellationToken = default)
+        {
+            SummaryStarted.TrySetResult();
+            await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+            return new ChatResponse([]);
+        }
+
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+            yield break;
+        }
+
         public object? GetService(Type serviceType, object? serviceKey = null) => null;
         public void Dispose() { }
     }

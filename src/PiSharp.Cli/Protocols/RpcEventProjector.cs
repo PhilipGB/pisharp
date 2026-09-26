@@ -88,6 +88,8 @@ internal sealed class RpcEventProjector
                 errorMessage = item.Error
             },
             "auto_retry_end" => ProjectRetryEnd(item),
+            "compaction_start" => RpcCompactionResultProjector.ProjectStart(item.CompactionReason ?? "manual"),
+            "compaction_end" => RpcCompactionResultProjector.ProjectEnd(item),
             _ => new { type = "event", format = "pisharp", data = item }
         };
 

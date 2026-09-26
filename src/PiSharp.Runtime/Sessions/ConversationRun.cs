@@ -401,17 +401,69 @@ public sealed class ConversationRun
 
     /// <summary>Manually summarize completed earlier turns; no raw session messages are removed.</summary>
     public async Task<bool> CompactAsync(string? focus = null, CancellationToken cancellationToken = default)
+        => await CompactWithResultAsync(focus, cancellationToken) is not null;
+
+    public async Task<ConversationCompactionResult?> CompactWithResultAsync(string? focus = null,
+        CancellationToken cancellationToken = default, Func<AgentLifecycleEvent, Task>? publishEvent = null)
     {
         await _gate.WaitAsync(cancellationToken);
-        try { return await CompactCoreAsync(focus, cancellationToken); }
+        try
+        {
+            if (publishEvent is not null)
+                await publishEvent(new AgentLifecycleEvent("compaction_start") { CompactionReason = "manual" });
+            try
+            {
+                var result = await CompactCoreAsync(focus, cancellationToken);
+                var error = result is null ? CompactionUnavailableError() : null;
+                if (publishEvent is not null)
+                    await publishEvent(new AgentLifecycleEvent("compaction_end", Error: error is null ? null :
+                        "Compaction failed: " + error)
+                    {
+                        CompactionReason = "manual",
+                        CompactionResult = result,
+                        CompactionAborted = false,
+                        CompactionWillRetry = false
+                    });
+                return result;
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                if (publishEvent is not null)
+                    await publishEvent(new AgentLifecycleEvent("compaction_end")
+                    {
+                        CompactionReason = "manual",
+                        CompactionAborted = true,
+                        CompactionWillRetry = false
+                    });
+                throw;
+            }
+            catch (Exception error)
+            {
+                if (publishEvent is not null)
+                    await publishEvent(new AgentLifecycleEvent("compaction_end", Error: "Compaction failed: " + error.Message)
+                    {
+                        CompactionReason = "manual",
+                        CompactionAborted = false,
+                        CompactionWillRetry = false
+                    });
+                throw;
+            }
+        }
         finally { _gate.Release(); }
     }
 
+    private string CompactionUnavailableError() => Conversation.Tree.ActivePath()
+        .LastOrDefault(entry => entry.Type is not ("usage" or "context_projection"))?.Type == "compaction"
+            ? "Already compacted"
+            : "Nothing to compact (session too small)";
+
     // Called only while the run gate is held. A failed summary or save cannot switch active context.
-    private async Task<bool> CompactCoreAsync(string? focus, CancellationToken cancellationToken)
+    private async Task<ConversationCompactionResult?> CompactCoreAsync(string? focus, CancellationToken cancellationToken)
     {
         var plan = Conversation.PrepareCompaction(_autoCompaction?.KeepRecentTokens);
-        if (plan is null) return false;
+        if (plan is null) return null;
+        var tokensBefore = ConversationCompactionMetadata.EstimateTokens(Conversation.ContextMessages());
+        var details = ConversationCompactionMetadata.CollectDetails(Conversation, plan);
         Volatile.Write(ref _isCompacting, 1);
         try
         {
@@ -419,15 +471,18 @@ public sealed class ConversationRun
             var previousHead = Conversation.Tree.HeadId;
             try
             {
-                Conversation.AppendCompaction(plan, summary.Text, _autoCompaction?.KeepRecentTokens);
-                if (summary.Usage is not null)
-                    Conversation.AppendUsage(UsageRecord.Create(Conversation.Model, "compaction", summary.Usage, _pricing));
+                Conversation.AppendCompaction(plan, summary.Text, _autoCompaction?.KeepRecentTokens,
+                    tokensBefore, details);
+                var usage = summary.Usage is null ? null :
+                    UsageRecord.Create(Conversation.Model, "compaction", summary.Usage, _pricing);
+                if (usage is not null) Conversation.AppendUsage(usage);
                 var messages = Conversation.ContextMessages();
                 var restored = await _agent.RestoreHistoryAsync(messages, cancellationToken);
                 if (_save is not null) await _save(cancellationToken);
                 _execution = restored;
                 _historyCount = messages.Count;
-                return true;
+                return new ConversationCompactionResult(summary.Text, plan.FirstKeptEntryId, tokensBefore,
+                    ConversationCompactionMetadata.EstimateTokens(messages), usage, details);
             }
             catch { Conversation.Tree.Select(previousHead); throw; }
         }
@@ -554,7 +609,7 @@ public sealed class ConversationRun
             if (AutoCompactionEnabled && _autoCompaction is not null &&
                 EstimateNextContext(estimatedPrompt) > _autoCompaction.TriggerTokens)
             {
-                if (await CompactCoreAsync(null, cancellationToken))
+                if (await CompactCoreAsync(null, cancellationToken) is not null)
                     onEvent?.Invoke(new("context_compacted", Text: "Automatic context summary saved; raw history retained."));
                 if (EstimateNextContext(estimatedPrompt) > _autoCompaction.TriggerTokens)
                     throw new InvalidOperationException("Estimated context still exceeds the configured budget; shorten the prompt or increase the model context window.");

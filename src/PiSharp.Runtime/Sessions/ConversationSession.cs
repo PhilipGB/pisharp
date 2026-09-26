@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.AI;
 using PiSharp.Core;
@@ -267,13 +268,15 @@ public sealed class ConversationSession
         return new CompactionPlan(path[boundary].Id, context.Take(context.Count - keptCount).ToArray());
     }
 
-    public void AppendCompaction(CompactionPlan plan, string summary, int? keepRecentTokens = null)
+    public void AppendCompaction(CompactionPlan plan, string summary, int? keepRecentTokens = null,
+        int tokensBefore = 0, ConversationCompactionDetails? details = null)
     {
         if (string.IsNullOrWhiteSpace(summary) || summary.Length > 64 * 1024)
             throw new InvalidDataException("Compaction summary must be nonempty and at most 64KB.");
         if (PrepareCompaction(keepRecentTokens)?.FirstKeptEntryId != plan.FirstKeptEntryId)
             throw new InvalidOperationException("Conversation changed during compaction.");
-        Tree.Append("compaction", JsonSerializer.SerializeToElement(new { summary, firstKeptEntryId = plan.FirstKeptEntryId }));
+        Tree.Append("compaction", JsonSerializer.SerializeToElement(new CompactionRecord(summary,
+            plan.FirstKeptEntryId, tokensBefore, details)));
     }
 
     internal static ChatMessage RestoreEntry(ConversationNode entry) => entry.Type == "chat"
@@ -520,6 +523,13 @@ public sealed class ConversationSession
     }
 
     public sealed record CompactionPlan(string FirstKeptEntryId, IReadOnlyList<ChatMessage> MessagesToSummarize);
+
+    private sealed record CompactionRecord(
+        [property: JsonPropertyName("summary")] string Summary,
+        [property: JsonPropertyName("firstKeptEntryId")] string FirstKeptEntryId,
+        [property: JsonPropertyName("tokensBefore")] int TokensBefore,
+        [property: JsonPropertyName("details"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        ConversationCompactionDetails? Details);
 
     private sealed record ChatRecord(JsonElement Message, ToolError[]? Errors, JsonElement? PiEntry = null);
     private sealed record ToolError(int Index, string Type, string Message);

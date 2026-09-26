@@ -49,6 +49,18 @@ public sealed record AgentLifecycleEvent(string Type, string? Text = null, strin
     public JsonElement? AppendedEntry { get; init; }
 
     [JsonIgnore]
+    public string? CompactionReason { get; init; }
+
+    [JsonIgnore]
+    public ConversationCompactionResult? CompactionResult { get; init; }
+
+    [JsonIgnore]
+    public bool? CompactionAborted { get; init; }
+
+    [JsonIgnore]
+    public bool? CompactionWillRetry { get; init; }
+
+    [JsonIgnore]
     public DateTimeOffset? MessageTimestamp { get; init; }
 
     [JsonIgnore]

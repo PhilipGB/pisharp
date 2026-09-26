@@ -578,13 +578,16 @@ public static class PiJsonlSessionInterchange
         {
             var payload = node.Payload;
             var firstKept = StringProperty(payload, "firstKeptEntryId");
-            return new JsonObject
+            var entry = new JsonObject
             {
                 ["type"] = "compaction",
                 ["summary"] = StringProperty(payload, "summary"),
                 ["firstKeptEntryId"] = firstKept,
                 ["tokensBefore"] = IntProperty(payload, "tokensBefore") ?? 0
             };
+            if (TryProperty(payload, "details", out var details) && details.ValueKind == JsonValueKind.Object)
+                entry["details"] = JsonNode.Parse(details.GetRawText());
+            return entry;
         }
         if (node.Type == "model_change")
             return new JsonObject

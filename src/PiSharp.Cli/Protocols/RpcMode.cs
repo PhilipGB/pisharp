@@ -33,6 +33,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
     private readonly JsonLineWriter _writer = new(output);
     private RpcEventWriter? _events;
     private readonly ConcurrentDictionary<Guid, BashOperation> _bashOperations = new();
+    private readonly ConcurrentDictionary<Guid, RpcCompactionOperation> _compactionOperations = new();
     private CancellationTokenSource? _abort;
     private Task? _active;
     private ConversationRun CurrentRun => getCurrentRun?.Invoke() ?? run;
@@ -46,8 +47,9 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
             discoverModels, setModel, () => CurrentRun, getThinkingLevel, isModelScoped,
             setThinkingLevel, setThinkingLevelDuringRun, getAvailableThinkingLevels, supportsThinking);
         var retryCommands = new RpcRetryCommandHandler(RespondAsync, () => CurrentRun, persistRetryEnabled);
-        var compactionCommands = new RpcCompactionCommandHandler(RespondAsync, () => CurrentRun,
-            persistAutoCompactionEnabled);
+        var compactionCommands = new RpcCompactionCommandHandler(_writer, RespondAsync, () => CurrentRun,
+            persistAutoCompactionEnabled, CancelActivePromptAsync,
+            item => Events.EmitCommandLifecycleAsync(CurrentRun, item));
         var queueModeCommands = new RpcQueueModeCommandHandler(RespondAsync, () => CurrentRun, persistQueueMode);
         var stateCommands = new RpcStateCommandHandler(_writer, () => CurrentRun,
             () => getThinkingLevel?.Invoke(), () => _active is { IsCompleted: false },
@@ -80,6 +82,11 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                     }
                     var type = kind.GetString()!;
                     var id = root.TryGetProperty("id", out var requestId) ? requestId.Clone() : (JsonElement?)null;
+                    if (type == "compact")
+                    {
+                        StartCompaction(compactionCommands, root.Clone(), id, cancellationToken);
+                        continue;
+                    }
                     var busy = _active is { IsCompleted: false };
                     if (await stateCommands.TryHandleAsync(type, id, cancellationToken)) continue;
                     if (await compactionCommands.TryHandleAsync(type, root, id, cancellationToken)) continue;
@@ -89,18 +96,6 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                     if (await modelCommands.TryHandleAsync(type, root, id, busy, cancellationToken)) continue;
                     switch (type)
                     {
-                        case "compact":
-                            if (busy) { await RespondAsync(id, type, false, "Wait until the active prompt settles."); break; }
-                            if (root.TryGetProperty("instructions", out var focus) && focus.ValueKind != JsonValueKind.String)
-                            { await RespondAsync(id, type, false, "Instructions must be text."); break; }
-                            try
-                            {
-                                var compacted = await CurrentRun.CompactAsync(root.TryGetProperty("instructions", out focus) ? focus.GetString() : null, cancellationToken);
-                                await _writer.EmitAsync(new { id, type = "response", command = type, success = true, data = new { compacted } }, cancellationToken);
-                            }
-                            catch (Exception error) when (error is not OperationCanceledException)
-                            { await RespondAsync(id, type, false, error.Message); }
-                            break;
                         case "get_commands":
                             await _writer.EmitAsync(new
                             {
@@ -245,7 +240,8 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                             }, cancellationToken);
                             break;
                         case "abort":
-                            if (busy) { _abort?.Cancel(); try { await _active!; } catch (OperationCanceledException) { } }
+                            if (busy) await CancelActivePromptAsync();
+                            await CancelActiveCompactionsAsync();
                             await RespondAsync(id, type, true);
                             break;
                         default:
@@ -270,8 +266,41 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                 _abort?.Cancel();
                 try { await _active; } catch (OperationCanceledException) { }
             }
+            var compactions = _compactionOperations.Values.ToArray();
+            if (compactions.Length > 0)
+                await Task.WhenAll(compactions.Select(operation => operation.Completed.Task));
             _abort?.Dispose();
         }
+    }
+
+    private void StartCompaction(RpcCompactionCommandHandler handler, JsonElement root, JsonElement? id,
+        CancellationToken cancellationToken)
+    {
+        var key = Guid.NewGuid();
+        var operation = new RpcCompactionOperation(CancellationTokenSource.CreateLinkedTokenSource(cancellationToken));
+        if (!_compactionOperations.TryAdd(key, operation))
+        {
+            operation.Cancellation.Dispose();
+            return;
+        }
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await handler.TryHandleAsync("compact", root, id, operation.Cancellation.Token,
+                    () => CancelActiveRunAsync(key));
+            }
+            catch (Exception error)
+            {
+                await RespondAsync(id, "compact", false, error.Message);
+            }
+            finally
+            {
+                _compactionOperations.TryRemove(key, out _);
+                operation.Cancellation.Dispose();
+                operation.Completed.TrySetResult();
+            }
+        }, CancellationToken.None);
     }
 
     private async Task<bool> StartNewSessionAsync(string? parentSession, CancellationToken cancellationToken)
@@ -299,12 +328,30 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
         return await switchSession!(sessionPath, cancellationToken);
     }
 
-    private async Task CancelActiveRunAsync()
+    private async Task CancelActiveRunAsync(Guid? exceptCompaction = null)
+    {
+        await CancelActivePromptAsync();
+        await CancelActiveCompactionsAsync(exceptCompaction);
+    }
+
+    private async Task CancelActivePromptAsync()
     {
         if (_active is not { IsCompleted: false } active) return;
         _abort?.Cancel();
         try { await active; }
         catch (OperationCanceledException) { }
+    }
+
+    private async Task CancelActiveCompactionsAsync(Guid? exceptOperation = null)
+    {
+        var active = _compactionOperations.Where(item => item.Key != exceptOperation)
+            .Select(item => item.Value).ToArray();
+        foreach (var operation in active)
+        {
+            try { operation.Cancellation.Cancel(); }
+            catch (ObjectDisposedException) { }
+        }
+        if (active.Length > 0) await Task.WhenAll(active.Select(operation => operation.Completed.Task));
     }
 
     private static bool TryGetTextMessage(JsonElement root, out string? message, out string? error)
@@ -443,6 +490,12 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
     }
 
     private sealed class BashOperation(CancellationTokenSource cancellation)
+    {
+        public CancellationTokenSource Cancellation { get; } = cancellation;
+        public TaskCompletionSource Completed { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    }
+
+    private sealed class RpcCompactionOperation(CancellationTokenSource cancellation)
     {
         public CancellationTokenSource Cancellation { get; } = cancellation;
         public TaskCompletionSource Completed { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
