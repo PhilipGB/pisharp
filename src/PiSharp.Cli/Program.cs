@@ -9,8 +9,8 @@ using PiSharp.Cli.Tui;
 using PiSharp.Cli.Protocols;
 using PiSharp.Cli.Sessions;
 
-var agentDirectory = Environment.GetEnvironmentVariable("PISHARP_AGENT_DIR") ??
-    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".pisharp", "agent");
+var agentDirectory = Path.GetFullPath(Environment.GetEnvironmentVariable("PISHARP_AGENT_DIR") ??
+    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".pisharp", "agent"));
 if (args.Length > 0 && args[0] == "auth")
 {
     Environment.ExitCode = await AuthStatusCommand.RunAsync(args[1..], agentDirectory,
@@ -38,6 +38,24 @@ if (cli.Version)
 if (cli.Help)
 {
     Console.WriteLine("PiSharp (incomplete implementation)\nUsage: pisharp [--local | --provider <id>] [--model <id>] [--models <globs>] [--thinking <level>] [--api-key <key>] [--list-models [pattern]] [--system-prompt <text|file>] [--append-system-prompt <text|file>] [--no-context-files] [--no-extensions] [-e|--extension <path>] [--no-skills] [--skill <path>] [--no-prompt-templates] [--prompt-template <path>] [--offline] [--verbose] [-a|--approve|-na|--no-approve] [--mode text|interactive|print|json|rpc] [-p|--print] [-h|--help] [-v|--version] [-c|--continue | --session <path|project-id> | --fork <path|project-id> | --no-session] [--session-dir <dir>] [--name <label>] [prompt] [@files...]\n--tools <read,bash,edit,write,grep,find,ls> selects tools (grep/find/ls are opt-in); --exclude-tools <names> removes tools; --no-tools disables defaults (including extension tools); --no-builtin-tools disables only default built-ins.\nProviders and static model metadata may be configured in $PISHARP_AGENT_DIR/models.json. Credentials are read from environment or private auth.json; --api-key is runtime-only.\nOffline credential status: pisharp auth check --provider <id> [--model <configured-exact-id>] [--local]; explicit pisharp auth print-api-key --provider <id> prints an API key to stdout.\nStandalone private HTML: pisharp --export <PiSharp-session-file> [output.html]; never overwrites.\n--local uses http://192.168.0.97:8000/v1 and Qwen3.8-27B-GGUF (no API key required).\nInteractive: /model, /models, /settings, /thinking, /scoped-models, /login, /logout, /tree, /branch, /fork, /clone, /new, /sessions, /resume, /delete-session, /compact, /copy, /export, /export-jsonl, /import, /name, /session, /trust, /reload, /hotkeys, /quit.");
+    return;
+}
+var invocationDirectory = Environment.CurrentDirectory;
+string? configuredSessionDirectory;
+try
+{
+    configuredSessionDirectory = Environment.GetEnvironmentVariable("PISHARP_SESSION_DIR");
+    if (configuredSessionDirectory is not null)
+        configuredSessionDirectory = Path.GetFullPath(configuredSessionDirectory, invocationDirectory);
+    var startupTarget = PiSessionStartupTarget.Resolve(invocationDirectory, cli);
+    cli = startupTarget.Arguments;
+    Environment.CurrentDirectory = startupTarget.WorkingDirectory;
+}
+catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidDataException or
+    System.Text.Json.JsonException or ArgumentException or NotSupportedException)
+{
+    Console.Error.WriteLine($"Could not inspect session startup target: {error.Message}");
+    Environment.ExitCode = 2;
     return;
 }
 var trustStore = new ProjectTrust(agentDirectory);
@@ -146,8 +164,8 @@ catch (ArgumentException e)
     Environment.ExitCode = 2;
     return;
 }
-var store = new ConversationStore(Environment.CurrentDirectory, cli.SessionDirectory ??
-    Environment.GetEnvironmentVariable("PISHARP_SESSION_DIR") ?? userSettings.SessionDirectory);
+var store = new ConversationStore(Environment.CurrentDirectory,
+    cli.SessionDirectory ?? configuredSessionDirectory ?? userSettings.SessionDirectory);
 var piSessionImport = new PiSessionImportService(store, Environment.CurrentDirectory, cli.NoSession);
 AutoCompactionPolicy? contextPolicy;
 ModelPricing? modelPricing;

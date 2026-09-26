@@ -252,11 +252,16 @@ public sealed class ConversationSessionTests
             var store = new ConversationStore(cwd, Path.Combine(cwd, "sessions"));
             var canonical = new ConversationSession(cwd, "fixture", null);
             var run = await ConversationRun.OpenAsync(new PiAgent(new BlockingClient(), new CodingTools(cwd)), canonical);
-            using var cancel = new CancellationTokenSource(TimeSpan.FromMilliseconds(100));
-            await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
+            using var cancel = new CancellationTokenSource();
+            var partialSeen = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var running = Task.Run(async () =>
             {
-                await foreach (var _ in run.RunStreamingAsync("interrupt me", cancel.Token)) { }
+                await foreach (var update in run.RunStreamingAsync("interrupt me", cancel.Token))
+                    if (update.Text == "partial") partialSeen.TrySetResult();
             });
+            await partialSeen.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            cancel.Cancel();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => running);
             Assert.Equal("interrupted", canonical.Tree.Entries.Last().Type);
             Assert.Equal("partial", canonical.Tree.Entries.Last().Payload.GetProperty("partialText").GetString());
             Assert.Equal("interrupt me", canonical.Tree.Entries.Last().Payload.GetProperty("prompt").GetString());
