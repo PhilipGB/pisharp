@@ -7,6 +7,28 @@ namespace PiSharp.Tests;
 public sealed class PiJsonlSessionInterchangeTests
 {
     [Fact]
+    public void SessionNameChangeIsAnActivePiEntryAndSurvivesExportAndImport()
+    {
+        var session = new ConversationSession(Path.GetTempPath(), "fixture-model", null, "fixture");
+        session.Append(new ChatMessage(ChatRole.User, "hello"));
+        var parentId = session.Tree.HeadId;
+        using (var change = session.BeginSessionNameChange("project notes")) change.Commit();
+
+        var nameEntry = Assert.Single(session.Tree.Entries, entry => entry.Type == "session_info");
+        Assert.Equal(parentId, nameEntry.ParentId);
+        var exported = PiJsonlSessionInterchange.Export(session);
+        using var record = JsonDocument.Parse(exported.Split('\n', StringSplitOptions.RemoveEmptyEntries)
+            .Single(line => line.Contains("session_info", StringComparison.Ordinal)));
+        Assert.Equal(nameEntry.Id, record.RootElement.GetProperty("id").GetString());
+        Assert.Equal(parentId, record.RootElement.GetProperty("parentId").GetString());
+        Assert.Equal("project notes", record.RootElement.GetProperty("name").GetString());
+
+        var imported = PiJsonlSessionInterchange.Import(exported);
+        Assert.Equal("project notes", imported.Name);
+        Assert.Equal("session_info", imported.Tree.Entries[^1].Type);
+    }
+
+    [Fact]
     public void ParentSessionPathRoundTripsThroughNativeAndPiSessionHeaders()
     {
         var cwd = Path.GetFullPath(Path.GetTempPath());

@@ -1013,8 +1013,7 @@ public sealed class TerminalPtyTests
             Assert.Contains("(ephemeral)", output);
             Assert.Contains("Name: smoke", output);
             Assert.Contains("Name: café界🙂", output);
-            var normalized = System.Text.RegularExpressions.Regex.Replace(output, "\\r+\\n", "\n");
-            Assert.True(normalized.Contains("Name: pasted\nsecond", StringComparison.Ordinal), normalized);
+            Assert.Contains("Name: pasted second", output);
             Assert.Contains("PiSharp", output);
             Assert.DoesNotContain("Agent error", await stderr);
         }

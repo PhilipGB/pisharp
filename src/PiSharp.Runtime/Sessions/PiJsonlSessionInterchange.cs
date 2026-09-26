@@ -117,8 +117,9 @@ public static class PiJsonlSessionInterchange
 
         var activePath = session.Tree.ActivePath();
         var lastInfo = activePath.LastOrDefault(node => node.Type == "session_info");
-        var representedName = lastInfo is not null && OriginalEntry(lastInfo) is { } nameEntry
-            ? StringProperty(nameEntry, "name") : null;
+        var representedName = lastInfo is null ? null : OriginalEntry(lastInfo) is { } nameEntry
+            ? StringProperty(nameEntry, "name") : StringProperty(lastInfo.Payload, "name");
+        if (string.IsNullOrWhiteSpace(representedName)) representedName = null;
         var needsHeadAnchor = orderedEntries.LastOrDefault()?.Id != session.Tree.HeadId;
         if (needsHeadAnchor || session.Name != representedName)
         {
@@ -589,6 +590,13 @@ public static class PiJsonlSessionInterchange
                 ["type"] = "thinking_level_change",
                 ["thinkingLevel"] = StringProperty(node.Payload, "thinkingLevel") ??
                     throw new InvalidDataException($"Missing thinking level at {node.Id}.")
+            };
+        if (node.Type == "session_info")
+            return new JsonObject
+            {
+                ["type"] = "session_info",
+                ["name"] = StringProperty(node.Payload, "name") ??
+                    throw new InvalidDataException($"Missing session name at {node.Id}.")
             };
         if (node.Type == "context_edit")
         {

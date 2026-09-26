@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.AI;
 using PiSharp.Core;
 using PiSharp.Runtime.Tools;
@@ -67,6 +68,50 @@ public sealed class ConversationSession
         entry.ValueKind == JsonValueKind.Object ? entry.Clone() : null;
 
     public void Rename(string? name) => Name = name;
+
+    public SessionNameChange BeginSessionNameChange(string name)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+        var sanitizedName = Regex.Replace(name, "[\\r\\n]+", " ").Trim();
+        var previousName = Name;
+        var previousHeadId = Tree.HeadId;
+        var entry = Tree.Append("session_info", JsonSerializer.SerializeToElement(new { name = sanitizedName }));
+        Name = sanitizedName.Length == 0 ? null : sanitizedName;
+        return new SessionNameChange(this, entry, previousName, previousHeadId);
+    }
+
+    private void RollbackSessionNameChange(ConversationNode entry, string? previousName, string? previousHeadId)
+    {
+        Tree.RollbackAppend(entry, previousHeadId);
+        Name = previousName;
+    }
+
+    public sealed class SessionNameChange : IDisposable
+    {
+        private ConversationSession? _session;
+        private readonly ConversationNode _entry;
+        private readonly string? _previousName;
+        private readonly string? _previousHeadId;
+
+        internal SessionNameChange(ConversationSession session, ConversationNode entry, string? previousName,
+            string? previousHeadId)
+        {
+            _session = session;
+            _entry = entry;
+            _previousName = previousName;
+            _previousHeadId = previousHeadId;
+        }
+
+        public void Commit() => _session = null;
+
+        public void Dispose()
+        {
+            var session = _session;
+            _session = null;
+            session?.RollbackSessionNameChange(_entry, _previousName, _previousHeadId);
+        }
+    }
+
     public void AppendThinkingLevelChange(string level)
     {
         if (string.IsNullOrWhiteSpace(level)) throw new ArgumentException("Thinking level cannot be empty.", nameof(level));

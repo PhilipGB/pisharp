@@ -232,12 +232,13 @@ try
         modelPricing = ModelPricing.FromEnvironment(Environment.GetEnvironmentVariable) ?? selection.Model.Pricing;
         agent = projectRuntime.CreateAgent(chat, selection, thinking, cli, userSettings);
     }
-    if (cli.SessionName is not null) conversation.Rename(cli.SessionName);
+    using var initialNameChange = cli.SessionName is null ? null : conversation.BeginSessionNameChange(cli.SessionName);
     if (!cli.NoSession) sessionPath ??= store.NewPath(conversation);
     var initialPath = sessionPath;
     conversationRun = await OpenRunAsync(agent, conversation, initialPath);
     if ((cli.SessionName is not null || cli.ForkSource is not null) && sessionPath is not null)
         await store.SaveAsync(conversation, sessionPath);
+    initialNameChange?.Commit();
 }
 catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException or System.Text.Json.JsonException or ArgumentException)
 {
@@ -1038,8 +1039,11 @@ else
                         Console.WriteLine($"Selected {matches[0].Id[..12]}");
                         break;
                     case "/name":
-                        conversation.Rename(argument.Length == 0 ? null : argument);
-                        if (sessionPath is not null) await store.SaveAsync(conversation, sessionPath);
+                        using (var nameChange = conversation.BeginSessionNameChange(argument))
+                        {
+                            if (sessionPath is not null) await store.SaveAsync(conversation, sessionPath);
+                            nameChange.Commit();
+                        }
                         Console.WriteLine($"Name: {conversation.Name ?? "(none)"}");
                         break;
                     case "/session":

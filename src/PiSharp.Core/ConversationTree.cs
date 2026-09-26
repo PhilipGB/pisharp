@@ -25,6 +25,16 @@ public sealed class ConversationTree
         return entry;
     }
 
+    public void RollbackAppend(ConversationNode entry, string? previousHeadId)
+    {
+        if (_entries.Count == 0 || !ReferenceEquals(_entries[^1], entry) || HeadId != entry.Id ||
+            entry.ParentId != previousHeadId)
+            throw new InvalidOperationException("Only the latest append can be rolled back from its selected branch.");
+        _entries.RemoveAt(_entries.Count - 1);
+        _byId.Remove(entry.Id);
+        HeadId = previousHeadId;
+    }
+
     public void Select(string? id)
     {
         if (id is not null && !_byId.ContainsKey(id)) throw new KeyNotFoundException($"No session entry with id {id}.");

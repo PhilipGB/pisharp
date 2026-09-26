@@ -10,6 +10,94 @@ namespace PiSharp.Tests;
 public sealed class RpcSessionProcessTests
 {
     [Fact]
+    public async Task SetSessionNamePersistsPiSessionInfoEntryInRpcProcess()
+    {
+        if (!OperatingSystem.IsLinux()) return;
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-rpc-name-" + Guid.NewGuid().ToString("N"));
+        var agentDirectory = Path.Combine(root, "agent");
+        var sessionDirectory = Path.Combine(root, "sessions");
+        Directory.CreateDirectory(root);
+        Directory.CreateDirectory(agentDirectory);
+        var store = new ConversationStore(root, sessionDirectory);
+        var session = new ConversationSession(root, ConnectionSettings.LocalModel,
+            new Uri(ConnectionSettings.LocalEndpoint).ToString(), "local");
+        session.Append(new ChatMessage(ChatRole.User, "prior message"));
+        var sessionPath = store.NewPath(session);
+        await store.SaveAsync(session, sessionPath);
+
+        Process? process = null;
+        try
+        {
+            var start = new ProcessStartInfo("dotnet")
+            {
+                WorkingDirectory = root,
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+            start.ArgumentList.Add(typeof(CliArguments).Assembly.Location);
+            foreach (var argument in new[] { "--mode", "rpc", "--local", "--offline", "--session", sessionPath,
+                "--session-dir", sessionDirectory })
+                start.ArgumentList.Add(argument);
+            foreach (var name in new[] { "OPENAI_API_KEY", "PISHARP_API_KEY", "PISHARP_BASE_URL", "PISHARP_MODEL",
+                "PISHARP_AUTH_PATH", "PISHARP_MODELS_PATH", "PISHARP_SETTINGS_PATH", "PISHARP_SESSION_DIR" })
+                start.Environment.Remove(name);
+            start.Environment["PISHARP_AGENT_DIR"] = agentDirectory;
+            start.Environment["PISHARP_SESSION_DIR"] = sessionDirectory;
+            process = Process.Start(start)!;
+            var output = process.StandardOutput.ReadToEndAsync();
+            var error = process.StandardError.ReadToEndAsync();
+            await process.StandardInput.WriteLineAsync("{\"id\":\"name\",\"type\":\"set_session_name\",\"name\":\"project notes\"}");
+            await process.StandardInput.WriteLineAsync("{\"id\":\"entries\",\"type\":\"get_entries\"}");
+            await process.StandardInput.WriteLineAsync("{\"id\":\"tree\",\"type\":\"get_tree\"}");
+            process.StandardInput.Close();
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+            await process.WaitForExitAsync(timeout.Token);
+
+            Assert.Equal(0, process.ExitCode);
+            Assert.Equal("", await error.WaitAsync(timeout.Token));
+            var lines = (await output.WaitAsync(timeout.Token)).Split('\n', StringSplitOptions.RemoveEmptyEntries);
+            var records = lines.Select(line => JsonDocument.Parse(line)).ToArray();
+            try
+            {
+                var nameEventIndex = Array.FindIndex(records, record =>
+                    record.RootElement.TryGetProperty("type", out var type) && type.GetString() == "session_info_changed");
+                var nameResponseIndex = Array.FindIndex(records, record =>
+                    record.RootElement.TryGetProperty("id", out var id) && id.GetString() == "name");
+                Assert.True(nameEventIndex >= 0 && nameResponseIndex > nameEventIndex);
+                Assert.Equal("project notes", records[nameEventIndex].RootElement.GetProperty("name").GetString());
+                Assert.True(records[nameResponseIndex].RootElement.GetProperty("success").GetBoolean());
+
+                var entries = records.Single(record => record.RootElement.TryGetProperty("id", out var id) && id.GetString() == "entries")
+                    .RootElement.GetProperty("data").GetProperty("entries");
+                var info = Assert.Single(entries.EnumerateArray(), entry => entry.GetProperty("type").GetString() == "session_info");
+                Assert.Equal("project notes", info.GetProperty("name").GetString());
+                var tree = records.Single(record => record.RootElement.TryGetProperty("id", out var id) && id.GetString() == "tree")
+                    .RootElement.GetProperty("data");
+                Assert.Equal(info.GetProperty("id").GetString(), tree.GetProperty("leafId").GetString());
+
+                var persisted = await new ConversationStore(root, sessionDirectory).LoadAsync(sessionPath);
+                Assert.Equal("project notes", persisted.Name);
+                Assert.Equal(info.GetProperty("id").GetString(), persisted.Tree.HeadId);
+                var exportedInfo = PiJsonlSessionInterchange.ProjectEntries(persisted)
+                    .Single(entry => entry.GetProperty("type").GetString() == "session_info");
+                Assert.Equal("project notes", exportedInfo.GetProperty("name").GetString());
+            }
+            finally { foreach (var record in records) record.Dispose(); }
+        }
+        finally
+        {
+            if (process is { HasExited: false })
+            {
+                process.Kill(entireProcessTree: true);
+                await process.WaitForExitAsync();
+            }
+            process?.Dispose();
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task SwitchSessionRebuildsTheRuntimeForTheRecordedProjectDirectory()
     {
         if (!OperatingSystem.IsLinux()) return;

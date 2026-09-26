@@ -79,6 +79,9 @@ public sealed class RpcModeTests
             var sessionInfoIndex = Array.FindIndex(lines, line => line.Contains("session_info_changed", StringComparison.Ordinal));
             var nameResponseIndex = Array.FindIndex(lines, line => line.Contains("\"id\":\"name\"", StringComparison.Ordinal));
             Assert.True(sessionInfoIndex >= 0 && nameResponseIndex > sessionInfoIndex);
+            Assert.Equal("session_info", session.Tree.Entries[^1].Type);
+            Assert.Equal("my feature", session.Tree.Entries[^1].Payload.GetProperty("name").GetString());
+            Assert.Equal(session.Tree.Entries[^2].Id, session.Tree.Entries[^1].ParentId);
             Assert.Contains(events, e => e.RootElement.GetProperty("type").GetString() == "response" &&
                 e.RootElement.GetProperty("id").GetString() == "bad-cursor" &&
                 !e.RootElement.GetProperty("success").GetBoolean() &&
@@ -95,17 +98,20 @@ public sealed class RpcModeTests
             Assert.Equal("hello", forkMessages[0].GetProperty("text").GetString());
             var entriesResponse = Assert.Single(events, e => e.RootElement.GetProperty("type").GetString() == "response" &&
                 e.RootElement.GetProperty("id").GetString() == "entries" &&
-                e.RootElement.GetProperty("data").GetProperty("entries").GetArrayLength() == 2);
+                e.RootElement.GetProperty("data").GetProperty("entries").GetArrayLength() == 3);
             var entriesData = entriesResponse.RootElement.GetProperty("data");
             Assert.Equal(["entries", "leafId"], entriesData.EnumerateObject().Select(property => property.Name));
             Assert.False(entriesData.TryGetProperty("format", out _));
             Assert.Equal("message", entriesData.GetProperty("entries")[0].GetProperty("type").GetString());
             Assert.Equal(firstEntryId, entriesData.GetProperty("entries")[0].GetProperty("id").GetString());
+            Assert.Equal("session_info", entriesData.GetProperty("entries")[2].GetProperty("type").GetString());
+            Assert.Equal("my feature", entriesData.GetProperty("entries")[2].GetProperty("name").GetString());
             Assert.Equal(session.Tree.HeadId, entriesData.GetProperty("leafId").GetString());
             var cursorEntries = Assert.Single(events, e => e.RootElement.GetProperty("type").GetString() == "response" &&
                 e.RootElement.GetProperty("id").GetString() == "entries-after-cursor").RootElement.GetProperty("data");
-            Assert.Equal(1, cursorEntries.GetProperty("entries").GetArrayLength());
+            Assert.Equal(2, cursorEntries.GetProperty("entries").GetArrayLength());
             Assert.Equal(session.Tree.Entries[1].Id, cursorEntries.GetProperty("entries")[0].GetProperty("id").GetString());
+            Assert.Equal(session.Tree.Entries[2].Id, cursorEntries.GetProperty("entries")[1].GetProperty("id").GetString());
             Assert.Equal(session.Tree.HeadId, cursorEntries.GetProperty("leafId").GetString());
             var treeResponse = Assert.Single(events, e => e.RootElement.GetProperty("type").GetString() == "response" &&
                 e.RootElement.GetProperty("id").GetString() == "tree" &&
@@ -117,6 +123,11 @@ public sealed class RpcModeTests
             Assert.Equal(["entry", "children"], rootNode.EnumerateObject().Select(property => property.Name));
             Assert.Equal(firstEntryId, rootNode.GetProperty("entry").GetProperty("id").GetString());
             Assert.Equal(1, rootNode.GetProperty("children").GetArrayLength());
+            var assistantNode = rootNode.GetProperty("children")[0];
+            Assert.Equal("session_info", assistantNode.GetProperty("children")[0]
+                .GetProperty("entry").GetProperty("type").GetString());
+            Assert.Equal("my feature", assistantNode.GetProperty("children")[0]
+                .GetProperty("entry").GetProperty("name").GetString());
             Assert.Equal(session.Tree.HeadId, treeData.GetProperty("leafId").GetString());
             Assert.Contains(events, e => e.RootElement.GetProperty("type").GetString() == "response" &&
                 e.RootElement.GetProperty("id").GetString() == "text" &&
@@ -124,6 +135,34 @@ public sealed class RpcModeTests
             Assert.DoesNotContain(events, e => e.RootElement.GetProperty("type").GetString() == "session");
         }
         finally { foreach (var e in events) e.Dispose(); }
+    }
+
+    [Fact]
+    public async Task SessionNameSaveFailureRollsBackTheEntryAndNameWithoutEmittingSuccess()
+    {
+        var channel = Channel.CreateUnbounded<string>();
+        using var output = new LockedWriter();
+        var session = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        var run = await ConversationRun.OpenAsync(new PiAgent(new StubClient(), new CodingTools(Path.GetTempPath())), session);
+        var service = new RpcMode(new CommandReader(channel.Reader), output, run,
+            save: _ => Task.FromException(new IOException("disk full")));
+        var serving = service.ServeAsync();
+        channel.Writer.TryWrite("{\"id\":\"name\",\"type\":\"set_session_name\",\"name\":\"draft\"}");
+        channel.Writer.Complete();
+        await serving.WaitAsync(TimeSpan.FromSeconds(5));
+
+        var events = output.Lines().Select(line => JsonDocument.Parse(line)).ToArray();
+        try
+        {
+            var response = Assert.Single(events);
+            Assert.Equal("name", response.RootElement.GetProperty("id").GetString());
+            Assert.False(response.RootElement.GetProperty("success").GetBoolean());
+            Assert.Equal("disk full", response.RootElement.GetProperty("error").GetString());
+            Assert.Null(session.Name);
+            Assert.Empty(session.Tree.Entries);
+            Assert.Null(session.Tree.HeadId);
+        }
+        finally { foreach (var item in events) item.Dispose(); }
     }
 
     [Fact]

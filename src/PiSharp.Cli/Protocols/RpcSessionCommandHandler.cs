@@ -253,30 +253,32 @@ internal sealed class RpcSessionCommandHandler(
                 return true;
 
             case "set_session_name":
-                if (isBusy()) return await RejectBusyAsync(id, command);
-                if (!root.TryGetProperty("name", out var name) || name.ValueKind != JsonValueKind.String)
                 {
-                    await respond(id, command, false, "A string name is required.");
+                    if (isBusy()) return await RejectBusyAsync(id, command);
+                    if (!root.TryGetProperty("name", out var name) || name.ValueKind != JsonValueKind.String)
+                    {
+                        await respond(id, command, false, "A string name is required.");
+                        return true;
+                    }
+                    var updatedName = name.GetString()!.Trim();
+                    if (updatedName.Length == 0)
+                    {
+                        await respond(id, command, false, "Session name cannot be empty");
+                        return true;
+                    }
+                    using var nameChange = conversation.BeginSessionNameChange(updatedName);
+                    try { if (save is not null) await save(cancellationToken); }
+                    catch (Exception error)
+                    {
+                        nameChange.Dispose();
+                        await respond(id, command, false, error.Message);
+                        return true;
+                    }
+                    nameChange.Commit();
+                    await events().EmitSessionInfoChangedAsync(updatedName, cancellationToken);
+                    await respond(id, command, true, null);
                     return true;
                 }
-                var updatedName = name.GetString()!.Trim();
-                if (updatedName.Length == 0)
-                {
-                    await respond(id, command, false, "Session name cannot be empty");
-                    return true;
-                }
-                var previousName = conversation.Name;
-                conversation.Rename(updatedName);
-                try { if (save is not null) await save(cancellationToken); }
-                catch (Exception error)
-                {
-                    conversation.Rename(previousName);
-                    await respond(id, command, false, error.Message);
-                    return true;
-                }
-                await events().EmitSessionInfoChangedAsync(updatedName, cancellationToken);
-                await respond(id, command, true, null);
-                return true;
 
             default:
                 return false;
