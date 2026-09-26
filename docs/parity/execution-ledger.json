@@ -1768,7 +1768,7 @@
         "Current Pi main d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 packages/coding-agent/src/core/agent-session.ts emits entry_appended for each retry context_edit after auto_retry_start; extension boundary-draft appends are a separate unimplemented path.",
         "RpcModeTests.RpcRetryProjectsAppendedContextEditBeforeRetryContinues checks saved Pi context_edit entries, their assistant/tool targets and event ordering. RpcRetryProcessTests.RpcProcessEmitsPiEntryAppendedForRetryContextEditsBeforeContinuation verifies the wire event through the CLI with three provider requests and entry events before the retry continuation.",
         "ProviderTurnHistoryReconcilerTests covers recovery of missing tool results in assistant call order and deduplication when provider and lifecycle timestamps differ. CompactionTests.ToolContinuationSummaryFailureForOversizedSingleTurnDoesNotReplayTool confirms the next request receives the recovery notice and completed tool result is not replayed.",
-        "Local worktree validation based on b9ac897ffced87d84557b684075960eb0ecafe6e: focused RPC/compaction/reconciliation tests passed; dotnet format --verify-no-changes passed; warnings-as-errors build passed with 0 warnings/errors; full suite passed 590/590 with 0 skipped. Exact-head CI for this slice is pending."
+        "Exact source head 317a634dc5ff610b5ef5eb11a6b41d2413483a55 passed Linux CI run 36226804227: format verification, warnings-as-errors build with 0 warnings/errors, and 590 tests (0 failed, 0 skipped)."
       ],
       "dependencies": []
     },

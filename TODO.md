@@ -6,8 +6,8 @@
 
 ## Current checkpoint
 
-- Last known-good source head: `b9ac897ffced87d84557b684075960eb0ecafe6e`; Linux CI run [36224724170](https://github.com/PhilipGB/pisharp/actions/runs/36224724170) passed format, warnings-as-errors build (0 warnings/errors), and 586 tests (0 failed, 0 skipped).
-- Current worktree is based on that head. The in-progress RPC/session slice adds Pi-shaped `entry_appended` for retry context edits, retains completed provider/tool turns when MAF loses them after a later failure, and tests real CLI event order. Validation on the worktree passed format, warnings-as-errors build (0 warnings/errors), and 590 tests (0 failed, 0 skipped); exact-head CI is pending.
+- Last validated source head: `317a634dc5ff610b5ef5eb11a6b41d2413483a55`; exact-head Linux CI run [36226804227](https://github.com/PhilipGB/pisharp/actions/runs/36226804227) passed format, warnings-as-errors build (0 warnings/errors), and 590 tests (0 failed, 0 skipped).
+- The latest RPC/session slice adds Pi-shaped `entry_appended` for retry context edits, retains completed provider/tool turns when MAF loses them after a later failure, and tests real CLI event order. Local format, warnings-as-errors build, and all 590 tests passed before CI.
 - Current Pi `main` remains `d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31`; durable baseline is `b3487650f6378f1b0d1643dd254445ceb4a98035`. Reviews remain scoped, not a full audit.
 - Major gaps remain across RPC response/event differentials, session recovery/concurrency, settings/resources/extensions, multimodal and provider/auth breadth, coding-tool residuals, and TUI/layout behavior. Retry context edits are the only `entry_appended` path covered so far.
 - Architecture: `Program.cs` remains a mixed startup/application file above 1,000 lines; `RpcMode.cs` is about 450 lines. The new `ProviderTurnHistoryReconciler` isolates failed-attempt history repair; continue extracting only cohesive boundaries needed by the next capability.
