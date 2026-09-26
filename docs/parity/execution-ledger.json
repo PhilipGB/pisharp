@@ -601,12 +601,13 @@
       ],
       "implementation": [
         "src/PiSharp.Runtime/Sessions/PiJsonlSessionInterchange.cs: bounded Pi v1-v3 import and v3 export; migrates v1 links/compaction indexes and v1/v2 hookMessage roles; retains original records and maps messages, tool calls/results, images, Bash, compaction, context edits, model changes and session metadata.",
-        "src/PiSharp.Cli/PiSessionImportService.cs: bounds Pi JSONL file reads, validates the stored project CWD, and chooses collision-free destination paths. Program routes startup --session, /fork and confirmed /import through the service; cross-project runtime switching remains open."
+        "src/PiSharp.Cli/PiSessionImportService.cs: bounds Pi JSONL file reads, validates the stored project CWD, and chooses collision-free destination paths. Program routes startup --session, /fork and confirmed /import through the service; cross-project runtime switching now rebuilds runtime/resources/session storage from the Pi header CWD; broader session-manager parity remains open."
       ],
       "evidence": [
         "PiJsonlSessionInterchangeTests cover v1/v2 migrations, v3 branch/context-edit/compaction round trips, raw record retention, active-head restoration, malformed headers, private no-overwrite export and cancelled-write cleanup. TerminalPtyTests cover import confirmation/cancel/retry, startup --session, transcript restoration and JSONL export.",
         "Implementation commit 2a10535814e102d17ba4aaefc8bf3512a0a87432 passed focused session/PTY tests, format verification, warnings-as-errors build and all 526 tests; exact-head Linux CI run 36188382176 passed format, build and all 526 tests (0 failed, 0 skipped). Current Pi d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 v1-v3 migration and import sources/tests were inspected; broad session-manager parity is not verified.",
-        "PiSessionImportServiceTests cover same-project validation, missing files, no-session mode and collision-free destinations. Commit 7ae23732cb176d76709cc9fb521b2f12170b5450 passed exact-head Linux CI run 36205110022 with format, warnings-as-errors build and all 541 tests. The service extraction does not yet support Pi's imported-CWD runtime switch."
+        "PiSessionImportServiceTests cover same-project validation, missing files, no-session mode and collision-free destinations. Commit 7ae23732cb176d76709cc9fb521b2f12170b5450 passed exact-head Linux CI run 36205110022 with format, warnings-as-errors build and all 541 tests. At that earlier service-extraction checkpoint, imported-CWD runtime switching was still open; it was implemented later in 0fd7e0da6.",
+        "Exact integrated source head 2f0250ee91a500cdb6b08dce2e940b849089ba26 passed Linux CI run 36217090057: format verification, warnings-as-errors build with 0 warnings/errors, and 574 tests (0 failed, 0 skipped). Cross-project switching is covered by RpcSessionProcessTests.SwitchSessionRebuildsTheRuntimeForTheRecordedProjectDirectory and TerminalPtyTests.PiJsonlImportConfirmsAndSwitchesTheActiveSessionThroughLinuxPty."
       ],
       "dependencies": []
     },
@@ -628,7 +629,8 @@
       ],
       "evidence": [
         "TerminalPtyTests.ForkPickerSearchesUserMessagesAndSeedsSelectedPromptThroughLinuxPty verifies searchable active-branch selection, selected prompt prefill, source preservation and the fork prefix; TerminalPtyTests.ForkFromEarlierUserTurnPreservesSourceAndSeedsEditableDraft verifies direct-ID selection; EditorKeymapTests.SessionSelectorShortcutCanBeConfiguredAndPreservesTheEditorDraft covers configurable app.session.fork dispatch and draft retention. Focused tests pass 3/3. Format verification passes, warnings-as-errors build reports 0 warnings/errors, and dotnet test PiSharp.slnx passes 424/424 with 0 skipped in the validated local working tree; exact-head commit ba25c8adbc861e0dece4372bf4c7f97424014fe1 passed Linux CI run 36136775710.",
-        "PiJsonlSessionInterchangeTests.CurrentPiV3ImportPreservesBranchesContextEditsCompactionAndOriginalRecords round-trips inactive branches and the selected head. TerminalPtyTests.PiJsonlImportConfirmsAndSwitchesTheActiveSessionThroughLinuxPty covers confirmation and session switching; TerminalPtyTests covers export and visible imported transcript. Exact commit 2a10535814e102d17ba4aaefc8bf3512a0a87432 passed Linux CI run 36188382176 with all 526 tests; same-CWD restriction and broader Pi session lifecycle/differentials remain open."
+        "PiJsonlSessionInterchangeTests.CurrentPiV3ImportPreservesBranchesContextEditsCompactionAndOriginalRecords round-trips inactive branches and the selected head. TerminalPtyTests.PiJsonlImportConfirmsAndSwitchesTheActiveSessionThroughLinuxPty covers confirmation and session switching; TerminalPtyTests covers export and visible imported transcript. Exact commit 2a10535814e102d17ba4aaefc8bf3512a0a87432 passed Linux CI run 36188382176 with all 526 tests; cross-project CWD rebinding is implemented; broader Pi session lifecycle/differentials remain open.",
+        "Exact integrated source head 2f0250ee91a500cdb6b08dce2e940b849089ba26 passed Linux CI run 36217090057: format verification, warnings-as-errors build with 0 warnings/errors, and 574 tests (0 failed, 0 skipped). Cross-project switching is covered by RpcSessionProcessTests.SwitchSessionRebuildsTheRuntimeForTheRecordedProjectDirectory and TerminalPtyTests.PiJsonlImportConfirmsAndSwitchesTheActiveSessionThroughLinuxPty."
       ],
       "dependencies": []
     },
@@ -643,12 +645,15 @@
         "Verify through application workflow and compare docs/cli.md, docs/json.md, docs/rpc.md, docs/rpc-commands.md, docs/sdk.md; packages/coding-agent/src/modes/; adapters on common PiAgent, contract tests"
       ],
       "implementation": [
-        "src/PiSharp.Cli/Protocols/RpcEventProjector.cs centralizes top-level queue and agent lifecycle projection; unsupported event families retain the explicit PiSharp wrapper.",
-        "src/PiSharp.Cli/Protocols/RpcModelCommandHandler.cs owns model discovery/selection/cycling and thinking-level RPC commands extracted from RpcMode."
+        "RpcEventProjector/RpcEventWriter centralize Pi top-level projection for queue, per-low-level agent lifecycle, retry, thinking-level and session-name events; other event families retain explicit PiSharp payloads.",
+        "RpcModelCommandHandler, RpcRetryCommandHandler and RpcSessionCommandHandler own model/thinking, retry and session command families extracted from RpcMode.",
+        "ProjectRuntimeContext and ProjectSessionRuntimeFactory rebind CWD-scoped settings, trust/resources, extensions and session persistence when interactive import or RPC switch_session opens another project."
       ],
       "evidence": [
         "RpcAgentLifecycleProcessTests exercises a real CLI RPC process and local OpenAI-compatible SSE provider; RpcModeTests and RpcModelProcessTests cover event order, queued prompts, failures, abort, model selection and thinking changes.",
-        "Exact source head 38b402e53bf4e0e543e2f2493ecf67ad2765f898 passed Linux CI run 36205642095 with format verification, warnings-as-errors build and all 541 tests (0 failed, 0 skipped). RPC remains incomplete and unverified as a whole."
+        "Exact source head 38b402e53bf4e0e543e2f2493ecf67ad2765f898 passed Linux CI run 36205642095 with format verification, warnings-as-errors build and all 541 tests (0 failed, 0 skipped). RPC remains incomplete and unverified as a whole.",
+        "Current Pi d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 RPC, session-manager and agent-session sources were inspected for retry ordering, session switch behavior, session_info_changed, and get_entries/get_tree structures. These scoped comparisons do not establish full RPC equivalence.",
+        "Exact integrated source head 2f0250ee91a500cdb6b08dce2e940b849089ba26 passed Linux CI run 36217090057: format, warnings-as-errors build (0 warnings/errors), and 574 tests (0 failed, 0 skipped). RPC remains incomplete and unverified as a whole."
       ],
       "dependencies": []
     },
@@ -804,9 +809,9 @@
       "source": "docs/parity/detailed-inventory.md:10",
       "acceptance": [
         "Prompt history tree, project association, rename/delete picker, clone vs fork, invalid import recovery",
-        "In progress: /sessions, direct /resume <id|name>, project-scoped resume picker, clone, branch selection, searchable fork picker, confirmed Pi JSONL import and v3 export have deterministic coverage; import currently requires matching project CWD. Cross-project picker scope, rename/sort/path/trash controls remain open; metadata search and confirmation-gated permanent deletion have PTY/unit evidence",
+        "In progress: project-scoped session picker, branch/fork operations, confirmed Pi JSONL import/export and cross-project import switching have deterministic coverage; picker rename/sort/path/trash controls remain open.",
         "Verify command results, errors and PTY workflows",
-        "Remaining: cross-project import/workspace switching, cross-project/session-tree picker controls, trash and upstream session differential."
+        "Remaining: cross-project/session-tree picker controls, trash, crash/concurrent recovery and upstream session differential."
       ],
       "implementation": [
         "src/PiSharp.Cli/Program.cs: /new, /resume, /name, /session, /tree, /fork, /clone and /sessions",
@@ -818,7 +823,8 @@
         "tests/PiSharp.Tests/TerminalPtyTests.cs: session resume/clone/fork interactions; tests/PiSharp.Tests/ConversationSessionTests.cs: canonical session persistence",
         "TerminalPtyTests.SessionDiscoveryResumeAndCloneWorkThroughLinuxPty verifies direct ID/name resume then project-picker search and selection through a Linux PTY; TerminalSelectionListTests.EmptySessionListStaysOpenUntilExplicitCancellation covers the no-results state. Format verification, warnings-as-errors build and all 423 tests passed in Linux CI run 36134474053 on exact commit 37eff5a9c7a15c5b12e8ff948fa53714046a2fda.",
         "TerminalPtyTests.ForkPickerSearchesUserMessagesAndSeedsSelectedPromptThroughLinuxPty verifies searchable active-branch selection, selected prompt prefill, source preservation and the fork prefix; TerminalPtyTests.ForkFromEarlierUserTurnPreservesSourceAndSeedsEditableDraft verifies direct-ID selection; EditorKeymapTests.SessionSelectorShortcutCanBeConfiguredAndPreservesTheEditorDraft covers configurable app.session.fork dispatch and draft retention. Focused tests pass 3/3. Format verification passes, warnings-as-errors build reports 0 warnings/errors, and dotnet test PiSharp.slnx passes 424/424 with 0 skipped in the validated local working tree; exact-head commit ba25c8adbc861e0dece4372bf4c7f97424014fe1 passed Linux CI run 36136775710.",
-        "TerminalPtyTests.PiJsonlImportConfirmsAndSwitchesTheActiveSessionThroughLinuxPty covers confirm, cancel/retry and imported transcript behavior. Session interchange round-trip/migration tests and exact-head Linux CI run 36188382176 passed on commit 2a10535814e102d17ba4aaefc8bf3512a0a87432; 526 tests passed, 0 failed, 0 skipped."
+        "TerminalPtyTests.PiJsonlImportConfirmsAndSwitchesTheActiveSessionThroughLinuxPty covers confirm, cancel/retry and imported transcript behavior. Session interchange round-trip/migration tests and exact-head Linux CI run 36188382176 passed on commit 2a10535814e102d17ba4aaefc8bf3512a0a87432; 526 tests passed, 0 failed, 0 skipped.",
+        "Exact integrated source head 2f0250ee91a500cdb6b08dce2e940b849089ba26 passed Linux CI run 36217090057: format verification, warnings-as-errors build with 0 warnings/errors, and 574 tests (0 failed, 0 skipped). Cross-project switching is covered by RpcSessionProcessTests.SwitchSessionRebuildsTheRuntimeForTheRecordedProjectDirectory and TerminalPtyTests.PiJsonlImportConfirmsAndSwitchesTheActiveSessionThroughLinuxPty."
       ],
       "dependencies": []
     },
@@ -951,11 +957,12 @@
       ],
       "implementation": [
         "Partial: src/PiSharp.Cli/CliArguments.cs and Program.cs implement --continue, --session, --session-dir, --no-session, --fork and --name, with project-local session catalog lookup. -r resume picker and --session-id are absent.",
-        "Startup --session also accepts Pi .jsonl files, migrates v1-v3 through PiJsonlSessionInterchange and restores visible transcript history; import requires the session CWD to equal the current project."
+        "Startup --session also accepts Pi .jsonl files and migrates v1-v3 through PiJsonlSessionInterchange. Startup selection, confirmed /import, and RPC switch_session rebuild the project runtime, trust/resources and session store from the stored CWD; -r resume picker and --session-id remain absent."
       ],
       "evidence": [
         "tests/PiSharp.Tests/{CliProcessTests,TerminalPtyTests,ProviderModelRuntimeTests}.cs include process startup selection, fork and model conflict fixtures; docs/parity/detailed-inventory.md records the remaining interoperability and picker gaps. This does not prove Pi session equivalence.",
-        "SessionPathArgumentTests and TerminalPtyTests cover .jsonl path arguments and startup import; exact implementation commit 2a10535814e102d17ba4aaefc8bf3512a0a87432 passed Linux CI run 36188382176 with 526 tests and no skips."
+        "SessionPathArgumentTests and TerminalPtyTests cover .jsonl path arguments and startup import; exact implementation commit 2a10535814e102d17ba4aaefc8bf3512a0a87432 passed Linux CI run 36188382176 with 526 tests and no skips.",
+        "Exact integrated source head 2f0250ee91a500cdb6b08dce2e940b849089ba26 passed Linux CI run 36217090057: format verification, warnings-as-errors build with 0 warnings/errors, and 574 tests (0 failed, 0 skipped). Cross-project switching is covered by RpcSessionProcessTests.SwitchSessionRebuildsTheRuntimeForTheRecordedProjectDirectory and TerminalPtyTests.PiJsonlImportConfirmsAndSwitchesTheActiveSessionThroughLinuxPty."
       ],
       "dependencies": []
     },
@@ -1120,14 +1127,21 @@
     {
       "id": "rpc-new-session",
       "title": "RPC / event: new_session",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:33",
       "acceptance": [
         "Implement new_session using shared canonical runtime with correlated responses/event ordering",
-        "Test protocol through RPC process, including failures and cancellation"
+        "Test protocol through RPC process, including failures and cancellation",
+        "Remaining: exact response/event ordering, malformed-input behavior and current-Pi process differential across session replacement paths."
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "RpcSessionCommandHandler dispatches new_session through the shared session replacement operation; native and Pi JSONL parentSession paths preserve project CWD and parent links."
+      ],
+      "evidence": [
+        "RpcSessionProcessTests covers new_session, switch_session, fork and clone through the actual CLI RPC process, including parent links and project/runtime rebinding; RpcModeTests covers active-run replacement settlement.",
+        "Exact integrated source head 2f0250ee91a500cdb6b08dce2e940b849089ba26 passed Linux CI run 36217090057: format verification, warnings-as-errors build with 0 warnings/errors, and 574 tests (0 failed, 0 skipped).",
+        "Current Pi d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 rpc-mode.ts and agent-session-runtime.ts were inspected for command flow and project CWD behavior. This is scoped source plus PiSharp process evidence; protocol differential parity remains open."
+      ],
       "dependencies": []
     },
     {
@@ -1457,53 +1471,81 @@
     {
       "id": "rpc-switch-session",
       "title": "RPC / event: switch_session",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:37",
       "acceptance": [
         "Implement switch_session using shared canonical runtime with correlated responses/event ordering",
-        "Test protocol through RPC process, including failures and cancellation"
+        "Test protocol through RPC process, including failures and cancellation",
+        "Remaining: exact response/event ordering, malformed-input behavior and current-Pi process differential across session replacement paths."
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "RpcSessionCommandHandler dispatches switch_session through ProjectSessionRuntimeFactory; it persists the active session, cancels/settles active work, then adopts the target CWD, trust/resources, store and session."
+      ],
+      "evidence": [
+        "RpcSessionProcessTests covers new_session, switch_session, fork and clone through the actual CLI RPC process, including parent links and project/runtime rebinding; RpcModeTests covers active-run replacement settlement.",
+        "Exact integrated source head 2f0250ee91a500cdb6b08dce2e940b849089ba26 passed Linux CI run 36217090057: format verification, warnings-as-errors build with 0 warnings/errors, and 574 tests (0 failed, 0 skipped).",
+        "Current Pi d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 rpc-mode.ts and agent-session-runtime.ts were inspected for command flow and project CWD behavior. This is scoped source plus PiSharp process evidence; protocol differential parity remains open."
+      ],
       "dependencies": []
     },
     {
       "id": "rpc-fork",
       "title": "RPC / event: fork",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:37",
       "acceptance": [
         "Implement fork using shared canonical runtime with correlated responses/event ordering",
-        "Test protocol through RPC process, including failures and cancellation"
+        "Test protocol through RPC process, including failures and cancellation",
+        "Remaining: exact response/event ordering, malformed-input behavior and current-Pi process differential across session replacement paths."
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "RpcSessionCommandHandler dispatches fork through the shared session branch operation and returns selected prompt text plus cancelled state."
+      ],
+      "evidence": [
+        "RpcSessionProcessTests covers new_session, switch_session, fork and clone through the actual CLI RPC process, including parent links and project/runtime rebinding; RpcModeTests covers active-run replacement settlement.",
+        "Exact integrated source head 2f0250ee91a500cdb6b08dce2e940b849089ba26 passed Linux CI run 36217090057: format verification, warnings-as-errors build with 0 warnings/errors, and 574 tests (0 failed, 0 skipped).",
+        "Current Pi d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 rpc-mode.ts and agent-session-runtime.ts were inspected for command flow and project CWD behavior. This is scoped source plus PiSharp process evidence; protocol differential parity remains open."
+      ],
       "dependencies": []
     },
     {
       "id": "rpc-clone",
       "title": "RPC / event: clone",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:37",
       "acceptance": [
         "Implement clone using shared canonical runtime with correlated responses/event ordering",
-        "Test protocol through RPC process, including failures and cancellation"
+        "Test protocol through RPC process, including failures and cancellation",
+        "Remaining: exact response/event ordering, malformed-input behavior and current-Pi process differential across session replacement paths."
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "RpcSessionCommandHandler dispatches clone through the shared session replacement operation and persists the parent session relationship."
+      ],
+      "evidence": [
+        "RpcSessionProcessTests covers new_session, switch_session, fork and clone through the actual CLI RPC process, including parent links and project/runtime rebinding; RpcModeTests covers active-run replacement settlement.",
+        "Exact integrated source head 2f0250ee91a500cdb6b08dce2e940b849089ba26 passed Linux CI run 36217090057: format verification, warnings-as-errors build with 0 warnings/errors, and 574 tests (0 failed, 0 skipped).",
+        "Current Pi d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 rpc-mode.ts and agent-session-runtime.ts were inspected for command flow and project CWD behavior. This is scoped source plus PiSharp process evidence; protocol differential parity remains open."
+      ],
       "dependencies": []
     },
     {
       "id": "rpc-get-fork-messages",
       "title": "RPC / event: get_fork_messages",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:37",
       "acceptance": [
         "Implement get_fork_messages using shared canonical runtime with correlated responses/event ordering",
-        "Test protocol through RPC process, including failures and cancellation"
+        "Test protocol through RPC process, including failures and cancellation",
+        "Remaining: exact response/event ordering, malformed-input behavior and current-Pi process differential across session replacement paths."
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "RpcSessionCommandHandler exposes forkable active-branch user messages with entry IDs and text."
+      ],
+      "evidence": [
+        "RpcSessionProcessTests covers new_session, switch_session, fork and clone through the actual CLI RPC process, including parent links and project/runtime rebinding; RpcModeTests covers active-run replacement settlement.",
+        "Exact integrated source head 2f0250ee91a500cdb6b08dce2e940b849089ba26 passed Linux CI run 36217090057: format verification, warnings-as-errors build with 0 warnings/errors, and 574 tests (0 failed, 0 skipped).",
+        "Current Pi d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 rpc-mode.ts and agent-session-runtime.ts were inspected for command flow and project CWD behavior. This is scoped source plus PiSharp process evidence; protocol differential parity remains open."
+      ],
       "dependencies": []
     },
     {
@@ -1514,13 +1556,15 @@
       "acceptance": [
         "Implement get_entries using shared canonical runtime with correlated responses/event ordering",
         "Test protocol through RPC process, including failures and cancellation",
-        "Remaining: Pi wire-compatible payloads, lifecycle/error semantics and pinned process differential."
+        "Next: data.entries must be Pi SessionEntry objects without a format marker, with the Pi since cursor semantics and leafId. Share the entry mapper with PiJsonlSessionInterchange and add shape/cursor/tree process tests against current Pi fixtures."
       ],
       "implementation": [
-        "src/PiSharp.Cli/Protocols/RpcMode.cs: partial get_entries operation (PiSharp wire format)"
+        "RpcSessionCommandHandler currently returns canonical ConversationNode values with format:\"pisharp\"; projection is not Pi-compatible."
       ],
       "evidence": [
-        "tests/PiSharp.Tests/RpcModeTests.cs: local protocol/command fixtures (coverage varies by operation)"
+        "Current Pi d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 packages/coding-agent/src/modes/rpc/rpc-mode.ts returns getEntries() with leafId and getTree() with leafId; core/session-manager.ts excludes the header and builds nested tree nodes with resolved labels.",
+        "PiSharp RpcModeTests cover cursor rejection and basic entries/tree responses, but do not establish Pi wire compatibility.",
+        "Exact integrated source head 2f0250ee91a500cdb6b08dce2e940b849089ba26 passed Linux CI run 36217090057: format verification, warnings-as-errors build with 0 warnings/errors, and 574 tests (0 failed, 0 skipped)."
       ],
       "dependencies": []
     },
@@ -1532,13 +1576,15 @@
       "acceptance": [
         "Implement get_tree using shared canonical runtime with correlated responses/event ordering",
         "Test protocol through RPC process, including failures and cancellation",
-        "Remaining: Pi wire-compatible payloads, lifecycle/error semantics and pinned process differential."
+        "Next: data.tree must use nested Pi SessionTreeNode objects {entry, children, label?, labelTimestamp?}, plus leafId and no pisharp marker. Share the entry mapper with PiJsonlSessionInterchange and add shape/cursor/tree process tests against current Pi fixtures."
       ],
       "implementation": [
-        "src/PiSharp.Cli/Protocols/RpcMode.cs: partial get_tree operation (PiSharp wire format)"
+        "RpcSessionCommandHandler currently returns canonical ConversationNode values with format:\"pisharp\"; projection is not Pi-compatible."
       ],
       "evidence": [
-        "tests/PiSharp.Tests/RpcModeTests.cs: local protocol/command fixtures (coverage varies by operation)"
+        "Current Pi d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 packages/coding-agent/src/modes/rpc/rpc-mode.ts returns getEntries() with leafId and getTree() with leafId; core/session-manager.ts excludes the header and builds nested tree nodes with resolved labels.",
+        "PiSharp RpcModeTests cover cursor rejection and basic entries/tree responses, but do not establish Pi wire compatibility.",
+        "Exact integrated source head 2f0250ee91a500cdb6b08dce2e940b849089ba26 passed Linux CI run 36217090057: format verification, warnings-as-errors build with 0 warnings/errors, and 574 tests (0 failed, 0 skipped)."
       ],
       "dependencies": []
     },
@@ -1571,10 +1617,12 @@
         "Remaining: Pi wire-compatible payloads, lifecycle/error semantics and pinned process differential."
       ],
       "implementation": [
-        "src/PiSharp.Cli/Protocols/RpcMode.cs: partial set_session_name operation (PiSharp wire format)"
+        "RpcSessionCommandHandler persists the trimmed session name, then RpcEventWriter emits top-level {type:\"session_info_changed\",name} before the correlated response."
       ],
       "evidence": [
-        "tests/PiSharp.Tests/RpcModeTests.cs: local protocol/command fixtures (coverage varies by operation)"
+        "RpcModeTests asserts the exact event fields/name and that session_info_changed precedes the set_session_name response; save failure restores the previous name and emits no success event.",
+        "Current Pi d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 core/agent-session.ts defines session_info_changed with name and emits it after appending session_info.",
+        "Exact integrated source head 2f0250ee91a500cdb6b08dce2e940b849089ba26 passed Linux CI run 36217090057: format verification, warnings-as-errors build with 0 warnings/errors, and 574 tests (0 failed, 0 skipped)."
       ],
       "dependencies": []
     },
@@ -1602,12 +1650,11 @@
       "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:38",
       "acceptance": [
-        "Implement agent_start/end/settled using shared canonical runtime with correlated responses/event ordering",
-        "Test protocol through RPC process, including failures and cancellation",
-        "Match Pi low-level retry attempts and set agent_end.willRetry from actual retry state"
+        "Keep Pi per-attempt event ordering, message normalization and retry conditions aligned through current-main differential fixtures.",
+        "Complete remaining turn/message/tool/entry/compaction/session event projections and process shutdown/cancellation differentials."
       ],
       "implementation": [
-        "src/PiSharp.Cli/Protocols/RpcEventWriter.cs and RpcEventProjector.cs: project one agent_start/end pair per accepted PiSharp run, canonical messages and willRetry:false, queue_update, and payload-free agent_settled at one wire boundary; low-level turn segmentation and retry state remain open."
+        "RpcEventProjector/RpcEventWriter project agent_start/end per low-level turn with run-local Pi messages and actual willRetry state, plus queue_update, payload-free agent_settled, and auto_retry_start/end. AgentRunRetryPolicy is separate from ObservedChatClient provider-request retry; abort_retry cancels scheduled session retry."
       ],
       "evidence": [
         "Compared current Pi main d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 packages/coding-agent/src/core/agent-session.ts and modes/rpc/rpc-mode.ts: agent_settled is emitted as a payload-free top-level event after agent work settles.",
@@ -1618,9 +1665,12 @@
         "Compared current Pi d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 packages/coding-agent/docs/json.md, packages/agent/src/agent-loop.ts and agent-session.ts: agent_end carries messages and willRetry per low-level run, appears before agent_settled, and retry decisions wrap failed runs.",
         "RpcAgentLifecycleProcessTests.RpcProcessEmitsPiAgentEndWithCanonicalMessagesBeforeSettlement verifies LF JSON process output, correlated response then agent_start/end/settled order, provider/API/message fields, and clean stderr. RpcModeTests cover queued turns, abort and provider failure agent_end records.",
         "After extracting RpcModelCommandHandler, focused RpcModeTests and RpcModelProcessTests passed 23/23; dotnet format verification, warnings-as-errors build and the full suite passed locally (541/541). Exact source head 38b402e53bf4e0e543e2f2493ecf67ad2765f898 passed Linux CI run 36205642095: 541 passed, 0 failed, 0 skipped.",
-        "willRetry is currently fixed false. Provider request retry events remain internal to ObservedChatClient and are not equivalent to Pi's separate retryable agent-run attempts; turn/message/tool/session projections remain incomplete.",
-        "Current Pi retry source and agent-session-retry-events.test.ts at d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 show agent_end per low-level run, willRetry before auto_retry_start, then a new agent_start for the retry; PiSharp still bundles queued turns and emits willRetry:false.",
-        "Active thinking RPC/lifecycle implementation at exact source head 3c766cd71fa297c1fa08ee42e371c93b3841e53 passed Linux CI run 36207133787: format, warnings-as-errors build, and 543 tests (0 failed, 0 skipped)."
+        "At earlier source head 38b402e5, willRetry was fixed false and provider-request retries remained separate; the retry statement was superseded by commit 44a452f90. Turn/message/tool/session projections remained incomplete at that checkpoint.",
+        "Before commits 9b45200e7/44a452f90, PiSharp bundled queued turns and emitted willRetry:false. Current Pi source at d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 and the inspected retry test define per-low-level attempts, willRetry before auto_retry_start, and a new agent_start for a retry.",
+        "Active thinking RPC/lifecycle implementation at exact source head 3c766cd71fa297c1fa08ee42e371c93b3841e53 passed Linux CI run 36207133787: format, warnings-as-errors build, and 543 tests (0 failed, 0 skipped).",
+        "Commits 9b45200e73109852af48a1f2d0ceef19340fe12b and 44a452f90110e30a5fecab1e58e76a31f95fdb58 implement per-low-level-turn event projection and a separate bounded session retry lifecycle. AgentLifecycleTests, AgentRunRetryPolicyTests, RpcModeTests and RpcRetryProcessTests cover deterministic retry, abort, willRetry and ordering.",
+        "Earlier ledger notes saying willRetry was fixed false and queued turns were bundled describe source heads before 9b45200e/44a452f90; those statements are superseded.",
+        "Exact integrated source head 2f0250ee91a500cdb6b08dce2e940b849089ba26 passed Linux CI run 36217090057: format verification, warnings-as-errors build with 0 warnings/errors, and 574 tests (0 failed, 0 skipped)."
       ],
       "dependencies": []
     },
@@ -1701,14 +1751,20 @@
     {
       "id": "rpc-session-info-changed",
       "title": "RPC / event: session_info_changed",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:38",
       "acceptance": [
         "Implement session_info_changed using shared canonical runtime with correlated responses/event ordering",
         "Test protocol through RPC process, including failures and cancellation"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "RpcEventWriter owns the Pi top-level session_info_changed projection; set_session_name persists first and emits it before the response."
+      ],
+      "evidence": [
+        "RpcModeTests asserts the exact event fields/name and that session_info_changed precedes the set_session_name response; save failure restores the previous name and emits no success event.",
+        "Current Pi d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 core/agent-session.ts defines session_info_changed with name and emits it after appending session_info.",
+        "Exact integrated source head 2f0250ee91a500cdb6b08dce2e940b849089ba26 passed Linux CI run 36217090057: format verification, warnings-as-errors build with 0 warnings/errors, and 574 tests (0 failed, 0 skipped)."
+      ],
       "dependencies": []
     },
     {

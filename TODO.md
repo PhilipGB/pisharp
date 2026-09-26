@@ -1,19 +1,19 @@
 # PiSharp capability parity
 
-**Goal:** implement Pi's in-scope capabilities idiomatically in C#/.NET with behavioral and differential evidence. Pi Packages remain excluded unless needed for a core capability.
+**Goal:** implement Pi's in-scope capabilities idiomatically in C#/.NET, using Microsoft Agent Framework and Microsoft.Extensions.AI where appropriate. Pi Packages remain excluded unless a core capability needs them.
 
-**Stop condition:** a full audit against current Pi `main` finds no material in-scope gaps and required validation/differential evidence passes.
+**Stop condition:** current-Pi audit finds no material in-scope gaps, required behavioral/differential evidence passes, exact-head CI is green, and no major architecture bottleneck remains.
 
 ## Current checkpoint
 
-- Source head `3c766cd71fa297c1fa08ee42e371c93b3841e53e` passed Linux CI run [36207133787](https://github.com/PhilipGB/pisharp/actions/runs/36207133787): format verification, warnings-as-errors build, and 543 tests (0 failed, 0 skipped). Local focused RPC/lifecycle tests passed 25/25; full tests passed 543/543.
-- Current Pi `main`: `d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31`; durable baseline: `b3487650f6378f1b0d1643dd254445ceb4a98035`. Retry sources and tests were inspected at current `main`; this is scoped evidence, not a full audit.
-- RPC model/thinking handlers are extracted. Active-run thinking changes reach the next provider request and persist after the current MAF history write. `agent_end` currently has Pi's payload shape but is emitted once for PiSharp's accepted run with `willRetry: false`; Pi emits it per low-level run attempt. Provider-request retries remain separate from session retry semantics.
-- Major gaps remain in RPC/events/retry and session controls/recovery/interoperability; cross-project sessions; settings; resources; extensions; multimodal and provider/auth breadth; coding-tool residuals; TUI terminal layout/styling; and current-upstream audit/differentials.
-- Architecture concerns: `Program.cs` is 1,064 lines of mixed startup/application behavior; `RpcMode.cs` is 509 lines; `TerminalScreen.cs` is 631 lines after prior extractions. Continue extracting cohesive boundaries as the next capability requires them.
+- Source head `2f0250ee91a500cdb6b08dce2e940b849089ba26` passed exact-head Linux CI run [36217090057](https://github.com/PhilipGB/pisharp/actions/runs/36217090057): format, warnings-as-errors build (0 warnings/errors), and 574 tests (0 failed, 0 skipped).
+- Current Pi `main`: `d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31`; durable baseline: `b3487650f6378f1b0d1643dd254445ceb4a98035`. The current-main review remains scoped, not a full audit.
+- Implemented subsets now include Pi JSONL v1-v3 import/export, cross-project runtime switching for interactive import and RPC `switch_session`, RPC new/fork/clone, low-level-turn lifecycle projection with bounded session retry events, and `session_info_changed` before its response. These have deterministic unit/process/PTY evidence; Pi-wide behavioral equivalence is not established.
+- Major gaps remain in Pi-shaped RPC entry/tree data and turn/message/tool/other session event families; session manager import/export, recovery and concurrency differentials; settings/resources/extensions; multimodal and provider/auth breadth; coding-tool residuals; and TUI/layout residuals.
+- Architecture: `Program.cs` is 1,132 lines with mixed composition/application behavior; `RpcMode.cs` is 451 lines after command-family extraction; `TerminalScreen.cs` is 631 lines after prior decomposition. Continue bounded capability extraction as new work requires it.
 
 ## Priority and exact next action
 
-1. Change RPC event projection to emit one `agent_start`/`agent_end` per accepted low-level turn, with that turn's canonical messages; make queued-turn tests assert segmented events. Then add session-level retry state and `willRetry`/`auto_retry_start`/`auto_retry_end`/`abort_retry`, keeping `ObservedChatClient` provider-request retries distinct.
-2. Preserve failed attempts in session history while omitting retryable attempts from the next model context; use deterministic barriers for retry, cancellation, event order, and tool continuation.
-3. Extract the next needed application/session boundary from `Program.cs`, then continue RPC and cross-project session parity before moving through the remaining matrix.
+1. Replace RPC `get_entries` and `get_tree` canonical `pisharp` payloads with current-Pi `SessionEntry` and nested `SessionTreeNode` projections. Inspect the pinned RPC tests, reuse one session-entry projection boundary with Pi JSONL export, and add exact shape, cursor, labels, branch ordering and process tests.
+2. Continue remaining RPC event/response families and session interoperability/recovery, using current Pi sources and deterministic differential fixtures.
+3. Continue through settings, resources, extensions, multimodal behavior, provider/auth breadth, coding-tool residuals and TUI residuals; keep extracting cohesive application boundaries alongside capability work.
