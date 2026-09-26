@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "plan_received": false,
-  "source_note": "Original plan was announced after a heading but not appended. Conservative provisional inventory from pinned upstream feature matrix and detailed inventory; never treat as complete until reconciled with the missing plan and audited upstream. Current Pi main refreshed 2026-09-25 to b3487650f6378f1b0d1643dd254445ceb4a98035; prior parity baseline was 49681e1b71c9c32cdfbf45c21f8e3cb3a8c8629d, and the earlier current-main review was 5fd446ca1843682e8da3fec4ceb71c42f56fbace. Current deltas include TypeScript 7/Node type stripping, an overlay-close cursor-restoration fix, RPC listener snapshot dispatch, full-file read null-range rendering, and per-ref temporary extension cache paths; these are classified in docs/continuation.md. Current Pi SettingsSelectorComponent, SettingsList, and their tests were inspected. The reviewed TUI uses pi-tui 0.87.1 and Marked 18.0.11; Pi wraps ANSI-aware grapheme cells and breaks overlong tokens. Its pinned alt-screen implementation and tests cover SGR button-motion tracking, visible text drag selection/copy, wheel dispatch, grapheme snapping, and mouse-mode cleanup. Further provider, session, protocol, image, theme-CLI/search-path, autocomplete and extension deltas remain unaudited. Pi Packages remain excluded unless needed for a core capability.",
+  "source_note": "Original plan was announced after a heading but not appended. Conservative provisional inventory from pinned upstream feature matrix and detailed inventory; never treat as complete until reconciled with the missing plan and audited upstream. Durable parity baseline is b3487650f6378f1b0d1643dd254445ceb4a98035. Current Pi main was checked 2026-09-26 at d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31; scoped queue-mode and settings behavior was inspected against that head. Current deltas include TypeScript 7/Node type stripping, an overlay-close cursor-restoration fix, RPC listener snapshot dispatch, full-file read null-range rendering, and per-ref temporary extension cache paths; these are classified in docs/continuation.md. Current Pi SettingsSelectorComponent, SettingsList, and their tests were inspected. The reviewed TUI uses pi-tui 0.87.1 and Marked 18.0.11; Pi wraps ANSI-aware grapheme cells and breaks overlong tokens. Its pinned alt-screen implementation and tests cover SGR button-motion tracking, visible text drag selection/copy, wheel dispatch, grapheme snapping, and mouse-mode cleanup. Further provider, session, protocol, image, theme-CLI/search-path, autocomplete and extension deltas remain unaudited. Pi Packages remain excluded unless needed for a core capability.",
   "baseline": "earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035",
   "required_ids": [
     "feature-agent-multi-turn-and-streaming",
@@ -198,7 +198,7 @@
     {
       "id": "feature-agent-steering-follow-up-concurrent-tools",
       "title": "Agent / steering, follow-up, concurrent tools",
-      "status": "verified",
+      "status": "in_progress",
       "source": "docs/parity/feature-matrix.md:8",
       "acceptance": [
         "Escape abort; Enter steering; Alt+Enter follow-up; parallel tool calls",
@@ -210,7 +210,9 @@
         "src/PiSharp.Runtime/PiAgent.cs and Sessions/ObservedChatClient.cs: MAF ChatClientAgent concurrent function invocation is enabled; steering is inserted before a continuation provider request and then reconciled into AgentSession history after the preceding tool result.",
         "src/PiSharp.Cli/Tui/{TerminalEditor,TerminalInput,EditorBuffer}.cs and Program.cs: input stays active while a run streams; Enter steers, Alt+Enter follows up, Alt+Up dequeues, Escape/Ctrl+C abort, and unsent queue plus draft return to the editor.",
         "src/PiSharp.Cli/Protocols/RpcMode.cs: distinct steer, follow_up, clear_queue commands and queue state/events share the application runtime.",
-        "tests/PiSharp.Tests/{AgentLifecycleTests,RpcModeTests,TerminalInputTests}.cs: deterministic queue-boundary, abort restoration, key routing, RPC, transcript ordering, and concurrent-tool overlap fixtures."
+        "tests/PiSharp.Tests/{AgentLifecycleTests,RpcModeTests,TerminalInputTests}.cs: deterministic queue-boundary, abort restoration, key routing, RPC, transcript ordering, and concurrent-tool overlap fixtures.",
+        "src/PiSharp.Runtime/Sessions/PromptDeliveryQueue.cs and ConversationRun.cs: independently configure steering/follow-up delivery as one-at-a-time or all; all-mode drains distinct messages in queue order at provider boundaries and after turns.",
+        "src/PiSharp.Cli/Protocols/RpcQueueModeCommandHandler.cs and RpcUserSettingsController.cs: validated mode setters persist global settings and update the active canonical run; get_state exposes both modes and pending count."
       ],
       "evidence": [
         "Pinned upstream 002fc8385268300ca91a5fc95f935c2afbbdac02 inspected at packages/coding-agent/docs/usage.md, packages/agent/src/agent-loop.ts, packages/coding-agent/src/core/agent-session.ts, interactive-mode.ts, and modes/rpc: Enter steering is delivered after the current response/tool batch, follow-up waits for natural stop, abort returns pending input, and multiple tool calls default to parallel unless constrained.",
@@ -221,7 +223,9 @@
         "RpcModeTests.RpcSteeringFollowUpAndClearQueueExposeDistinctPendingInput exercises the application adapter while a provider request is blocked, verifies atomic clear response arrays, requeues both kinds, and observes steering before follow-up before settlement.",
         "dotnet test PiSharp.slnx --no-build => 116 passed, 0 failed; dotnet build PiSharp.slnx --no-restore --warnaserror => 0 warnings/errors; dotnet format PiSharp.slnx --verify-no-changes --no-restore => passed.",
         "python3 -Werror::ResourceWarning -m unittest discover -s tools/autonomy -p 'test_*.py' -v => 8 passed.",
-        "Scope note: behavior is verified for the fixed one-at-a-time PiSharp queue policy and MAF local function loop. Configurable all-at-once queue modes and byte-for-byte upstream wire compatibility remain separate requirements."
+        "Current Pi d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 packages/coding-agent/docs/rpc-commands.md and settings-manager.ts were inspected: both defaults are one-at-a-time, all-mode drains the queue at the defined provider/turn boundaries, project/user precedence is supported, and RPC setters update active settings. PiSharp AgentLifecycleTests, UserSettingsTests/UserSettingsWriterTests, RpcModeTests and RpcModelProcessTests cover local behavior and CLI persistence; this is not a Pi process differential.",
+        "Exact source head 4a56c8224bf37e7471492b00ba02ea97a4a9a7a8 passed Linux CI run 36228794249: format verification, warnings-as-errors build with 0 warnings/errors, and 595 tests (0 failed, 0 skipped).",
+        "Scope note: local behavior is covered for both modes; broad current-Pi behavioral differentials remain open, so the capability is in progress."
       ],
       "dependencies": []
     },
@@ -1156,12 +1160,15 @@
       ],
       "implementation": [
         "src/PiSharp.Cli/Protocols/RpcMode.cs: partial get_state operation (PiSharp wire format)",
-        "src/PiSharp.Cli/Protocols/RpcMode.cs: get_state now includes the active thinkingLevel."
+        "src/PiSharp.Cli/Protocols/RpcMode.cs: get_state now includes the active thinkingLevel.",
+        "get_state now reports steeringMode, followUpMode and pendingMessageCount; the model and remaining state payload fields still differ from current Pi."
       ],
       "evidence": [
         "tests/PiSharp.Tests/RpcModeTests.cs: local protocol/command fixtures (coverage varies by operation)",
         "RpcModelProcessTests.RpcModelAndThinkingCommandsSelectAndCycleTheRunningRuntime verifies off/max state after runtime changes; RpcModelProcessTests.RpcStartupRestoresThinkingLevelFromTheSelectedSessionBranch verifies startup restores the persisted branch level.",
-        "Exact commit 1bb382e3f1002b2191afb1b30b24b128d2140aa8 passed Linux CI run 36196277855: format passed, warnings-as-errors build passed with 0 warnings/errors, and all 535 tests passed (0 failed, 0 skipped)."
+        "Exact commit 1bb382e3f1002b2191afb1b30b24b128d2140aa8 passed Linux CI run 36196277855: format passed, warnings-as-errors build passed with 0 warnings/errors, and all 535 tests passed (0 failed, 0 skipped).",
+        "RpcModelProcessTests.RpcQueueModesPersistAndAppearInStateInTheCliProcess verifies both modes, pending count, response correlation and persisted setting through the CLI process; exact-head Linux CI 4a56c8224bf37e7471492b00ba02ea97a4a9a7a8 / run 36228794249 passed format, warnings-as-errors build and 595 tests (0 failed, 0 skipped).",
+        "Current Pi d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 rpc-commands.md defines the expanded get_state fields; model descriptor and full state shape remain the next implementation slice."
       ],
       "dependencies": []
     },
@@ -1309,27 +1316,37 @@
     {
       "id": "rpc-set-steering-mode",
       "title": "RPC / event: set_steering_mode",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:34",
       "acceptance": [
         "Implement set_steering_mode using shared canonical runtime with correlated responses/event ordering",
         "Test protocol through RPC process, including failures and cancellation"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "RpcQueueModeCommandHandler implements set_steering_mode with accepted-mode validation, active canonical-run update, global settings persistence and correlated response."
+      ],
+      "evidence": [
+        "RpcModelProcessTests.RpcQueueModesPersistAndAppearInStateInTheCliProcess exercises both setters, valid/invalid values, response IDs, follow-up get_state and settings-file persistence in the actual CLI RPC process.",
+        "Current Pi d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 rpc-commands.md and settings-manager.ts inspected; local behavior and exact-head CI are covered, but a Pi process differential remains open. Exact head 4a56c8224bf37e7471492b00ba02ea97a4a9a7a8 passed Linux CI run 36228794249: format, warnings-as-errors build (0 warnings/errors), 595 tests (0 failed, 0 skipped)."
+      ],
       "dependencies": []
     },
     {
       "id": "rpc-set-follow-up-mode",
       "title": "RPC / event: set_follow_up_mode",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:34",
       "acceptance": [
         "Implement set_follow_up_mode using shared canonical runtime with correlated responses/event ordering",
         "Test protocol through RPC process, including failures and cancellation"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "RpcQueueModeCommandHandler implements set_follow_up_mode with accepted-mode validation, active canonical-run update, global settings persistence and correlated response."
+      ],
+      "evidence": [
+        "RpcModelProcessTests.RpcQueueModesPersistAndAppearInStateInTheCliProcess exercises both setters, valid/invalid values, response IDs, follow-up get_state and settings-file persistence in the actual CLI RPC process.",
+        "Current Pi d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 rpc-commands.md and settings-manager.ts inspected; local behavior and exact-head CI are covered, but a Pi process differential remains open. Exact head 4a56c8224bf37e7471492b00ba02ea97a4a9a7a8 passed Linux CI run 36228794249: format, warnings-as-errors build (0 warnings/errors), 595 tests (0 failed, 0 skipped)."
+      ],
       "dependencies": []
     },
     {
@@ -2090,27 +2107,37 @@
     {
       "id": "settings-steeringmode",
       "title": "Setting: steeringMode",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:61",
       "acceptance": [
         "Support steeringMode with upstream type/default and user/trusted-project precedence",
         "Test malformed settings, trust boundaries, reload and startup behaviour"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "UserSettings parses steeringMode with Pi default one-at-a-time and trusted-project-over-user precedence; UserSettingsWriter persists RPC changes to the global settings file."
+      ],
+      "evidence": [
+        "UserSettingsTests and UserSettingsWriterTests cover defaults, user/trusted-project precedence, invalid values and persistence; RpcModelProcessTests.RpcQueueModesPersistAndAppearInStateInTheCliProcess verifies setter persistence in the actual CLI RPC process.",
+        "Current Pi d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 settings-manager.ts and settings docs inspected. Exact source head 4a56c8224bf37e7471492b00ba02ea97a4a9a7a8 passed Linux CI run 36228794249: format, warnings-as-errors build (0 warnings/errors), 595 tests (0 failed, 0 skipped). Trust/reload differentials remain open."
+      ],
       "dependencies": []
     },
     {
       "id": "settings-followupmode",
       "title": "Setting: followUpMode",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:61",
       "acceptance": [
         "Support followUpMode with upstream type/default and user/trusted-project precedence",
         "Test malformed settings, trust boundaries, reload and startup behaviour"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "UserSettings parses followUpMode with Pi default one-at-a-time and trusted-project-over-user precedence; UserSettingsWriter persists RPC changes to the global settings file."
+      ],
+      "evidence": [
+        "UserSettingsTests and UserSettingsWriterTests cover defaults, user/trusted-project precedence, invalid values and persistence; RpcModelProcessTests.RpcQueueModesPersistAndAppearInStateInTheCliProcess verifies setter persistence in the actual CLI RPC process.",
+        "Current Pi d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 settings-manager.ts and settings docs inspected. Exact source head 4a56c8224bf37e7471492b00ba02ea97a4a9a7a8 passed Linux CI run 36228794249: format, warnings-as-errors build (0 warnings/errors), 595 tests (0 failed, 0 skipped). Trust/reload differentials remain open."
+      ],
       "dependencies": []
     },
     {
