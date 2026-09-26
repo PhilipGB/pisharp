@@ -30,6 +30,9 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
 
     public async Task ServeAsync(CancellationToken cancellationToken = default)
     {
+        var modelCommands = new RpcModelCommandHandler(_writer, RespondAsync, () => Events,
+            discoverModels, setModel, () => CurrentRun, getThinkingLevel, isModelScoped,
+            setThinkingLevel, getAvailableThinkingLevels, supportsThinking);
         try
         {
             while (await input.ReadLineAsync(cancellationToken) is { } line)
@@ -53,161 +56,9 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                     var type = kind.GetString()!;
                     var id = root.TryGetProperty("id", out var requestId) ? requestId.Clone() : (JsonElement?)null;
                     var busy = _active is { IsCompleted: false };
+                    if (await modelCommands.TryHandleAsync(type, root, id, busy, cancellationToken)) continue;
                     switch (type)
                     {
-                        case "get_available_models":
-                            if (busy) { await RespondAsync(id, type, false, "Wait until the active prompt settles."); break; }
-                            if (discoverModels is null) { await RespondAsync(id, type, false, "Model discovery is unavailable."); break; }
-                            try
-                            {
-                                var models = await discoverModels(null, cancellationToken);
-                                await _writer.EmitAsync(new
-                                {
-                                    id,
-                                    type = "response",
-                                    command = type,
-                                    success = true,
-                                    data = new { models }
-                                }, cancellationToken);
-                            }
-                            catch (Exception error) when (error is HttpRequestException or InvalidDataException or JsonException or TaskCanceledException)
-                            { await RespondAsync(id, type, false, error.Message); }
-                            break;
-                        case "set_model":
-                            if (busy) { await RespondAsync(id, type, false, "Wait until the active prompt settles."); break; }
-                            if (!root.TryGetProperty("provider", out var modelProvider) || modelProvider.ValueKind != JsonValueKind.String ||
-                                string.IsNullOrWhiteSpace(modelProvider.GetString()) || !root.TryGetProperty("modelId", out var modelId) ||
-                                modelId.ValueKind != JsonValueKind.String || string.IsNullOrWhiteSpace(modelId.GetString()))
-                            { await RespondAsync(id, type, false, "A provider and modelId are required."); break; }
-                            if (setModel is null) { await RespondAsync(id, type, false, "Model selection is unavailable."); break; }
-                            if (discoverModels is null) { await RespondAsync(id, type, false, "Model discovery is unavailable."); break; }
-                            try
-                            {
-                                var requestedProvider = modelProvider.GetString()!;
-                                var requestedModelId = modelId.GetString()!;
-                                var models = await discoverModels(requestedProvider, cancellationToken);
-                                var candidate = models.FirstOrDefault(model =>
-                                    model.Provider?.Equals(requestedProvider, StringComparison.Ordinal) == true &&
-                                    model.Id.Equals(requestedModelId, StringComparison.Ordinal));
-                                if (candidate is null)
-                                {
-                                    await RespondAsync(id, type, false, $"Model not found: {requestedProvider}/{requestedModelId}");
-                                    break;
-                                }
-                                var selectedModel = await setModel(candidate, cancellationToken);
-                                await _writer.EmitAsync(new
-                                {
-                                    id,
-                                    type = "response",
-                                    command = type,
-                                    success = true,
-                                    data = new { provider = selectedModel.Provider, id = selectedModel.Id }
-                                }, cancellationToken);
-                            }
-                            catch (Exception error) when (error is not OperationCanceledException)
-                            { await RespondAsync(id, type, false, error.Message); }
-                            break;
-                        case "cycle_model":
-                            if (busy) { await RespondAsync(id, type, false, "Wait until the active prompt settles."); break; }
-                            if (discoverModels is null) { await RespondAsync(id, type, false, "Model discovery is unavailable."); break; }
-                            try
-                            {
-                                var models = (await discoverModels(null, cancellationToken))
-                                    .Where(model => model.Available && !string.IsNullOrWhiteSpace(model.Provider)).ToArray();
-                                if (models.Length <= 1)
-                                {
-                                    await _writer.EmitAsync(new { id, type = "response", command = type, success = true, data = (object?)null }, cancellationToken);
-                                    break;
-                                }
-                                if (setModel is null) { await RespondAsync(id, type, false, "Model selection is unavailable."); break; }
-                                var current = CurrentRun.Conversation;
-                                var currentIndex = Array.FindIndex(models, model =>
-                                    model.Provider?.Equals(current.Provider, StringComparison.Ordinal) == true &&
-                                    model.Id.Equals(current.Model, StringComparison.Ordinal));
-                                if (currentIndex < 0) currentIndex = 0;
-                                var candidate = models[(currentIndex + 1) % models.Length];
-                                var selectedModel = await setModel(candidate, cancellationToken);
-                                await _writer.EmitAsync(new
-                                {
-                                    id,
-                                    type = "response",
-                                    command = type,
-                                    success = true,
-                                    data = new
-                                    {
-                                        model = new { provider = selectedModel.Provider, id = selectedModel.Id },
-                                        thinkingLevel = getThinkingLevel?.Invoke() ?? "off",
-                                        isScoped = isModelScoped?.Invoke() ?? false
-                                    }
-                                }, cancellationToken);
-                            }
-                            catch (Exception error) when (error is not OperationCanceledException)
-                            { await RespondAsync(id, type, false, error.Message); }
-                            break;
-                        case "set_thinking_level":
-                            if (busy) { await RespondAsync(id, type, false, "Wait until the active prompt settles."); break; }
-                            if (!root.TryGetProperty("level", out var requestedLevel) || requestedLevel.ValueKind != JsonValueKind.String ||
-                                string.IsNullOrWhiteSpace(requestedLevel.GetString()))
-                            { await RespondAsync(id, type, false, "A thinking level is required."); break; }
-                            if (setThinkingLevel is null) { await RespondAsync(id, type, false, "Thinking-level selection is unavailable."); break; }
-                            try
-                            {
-                                var previousLevel = getThinkingLevel?.Invoke();
-                                var selectedLevel = await setThinkingLevel(requestedLevel.GetString()!, cancellationToken);
-                                if (!string.Equals(previousLevel, selectedLevel, StringComparison.Ordinal))
-                                    await Events.EmitThinkingLevelChangedAsync(selectedLevel, cancellationToken);
-                                await RespondAsync(id, type, true);
-                            }
-                            catch (Exception error) when (error is not OperationCanceledException)
-                            { await RespondAsync(id, type, false, error.Message); }
-                            break;
-                        case "cycle_thinking_level":
-                            if (busy) { await RespondAsync(id, type, false, "Wait until the active prompt settles."); break; }
-                            if (supportsThinking?.Invoke() != true)
-                            {
-                                await _writer.EmitAsync(new { id, type = "response", command = type, success = true, data = (object?)null }, cancellationToken);
-                                break;
-                            }
-                            if (setThinkingLevel is null || getAvailableThinkingLevels is null)
-                            { await RespondAsync(id, type, false, "Thinking-level selection is unavailable."); break; }
-                            try
-                            {
-                                var levels = getAvailableThinkingLevels();
-                                if (levels.Count == 0)
-                                {
-                                    await _writer.EmitAsync(new { id, type = "response", command = type, success = true, data = (object?)null }, cancellationToken);
-                                    break;
-                                }
-                                var currentLevel = getThinkingLevel?.Invoke() ?? "off";
-                                var currentIndex = Array.IndexOf(levels.ToArray(), currentLevel);
-                                var nextLevel = levels[(currentIndex + 1 + levels.Count) % levels.Count];
-                                var selectedLevel = await setThinkingLevel(nextLevel, cancellationToken);
-                                if (!string.Equals(currentLevel, selectedLevel, StringComparison.Ordinal))
-                                    await Events.EmitThinkingLevelChangedAsync(selectedLevel, cancellationToken);
-                                await _writer.EmitAsync(new
-                                {
-                                    id,
-                                    type = "response",
-                                    command = type,
-                                    success = true,
-                                    data = new { level = selectedLevel }
-                                }, cancellationToken);
-                            }
-                            catch (Exception error) when (error is not OperationCanceledException)
-                            { await RespondAsync(id, type, false, error.Message); }
-                            break;
-                        case "get_available_thinking_levels":
-                            if (getAvailableThinkingLevels is null)
-                            { await RespondAsync(id, type, false, "Thinking-level discovery is unavailable."); break; }
-                            await _writer.EmitAsync(new
-                            {
-                                id,
-                                type = "response",
-                                command = type,
-                                success = true,
-                                data = new { levels = getAvailableThinkingLevels() }
-                            }, cancellationToken);
-                            break;
                         case "compact":
                             if (busy) { await RespondAsync(id, type, false, "Wait until the active prompt settles."); break; }
                             if (root.TryGetProperty("instructions", out var focus) && focus.ValueKind != JsonValueKind.String)
