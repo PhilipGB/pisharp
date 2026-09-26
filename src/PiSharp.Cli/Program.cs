@@ -198,8 +198,8 @@ try
             ? Path.GetFullPath(cli.ForkSource)
             : SessionCatalog.Resolve(await SessionCatalog.ListAsync(store), cli.ForkSource).Path;
         conversation = sourcePath.EndsWith(".jsonl", StringComparison.OrdinalIgnoreCase)
-            ? piSessionImport.ImportFile(sourcePath).Fork()
-            : (await store.LoadAsync(sourcePath)).Fork();
+            ? piSessionImport.ImportFile(sourcePath).Fork(sourcePath)
+            : (await store.LoadAsync(sourcePath)).Fork(sourcePath);
     }
     else if (sessionPath is not null && sessionPath.EndsWith(".jsonl", StringComparison.OrdinalIgnoreCase))
     {
@@ -541,10 +541,10 @@ async Task ForkFromUserAsync(string id)
 
 async Task SelectForkAsync()
 {
-    var forkable = conversation.ForkableUserMessages();
+    var forkable = conversation.UserMessagesForForking();
     if (forkable.Count == 0)
     {
-        Console.WriteLine("No text-only user messages on this branch.");
+        Console.WriteLine("No user messages with text are available to fork.");
         return;
     }
     if (terminalForkPicker is null)
@@ -760,13 +760,34 @@ string? ReadSecret()
 }
 if (cli.Mode == "rpc")
 {
+    void AdoptRpcSession(SessionBranchResult replacement)
+    {
+        conversation = replacement.Conversation;
+        conversationRun = replacement.Run;
+        sessionPath = replacement.Path;
+    }
+
     async Task<bool> StartRpcSessionAsync(string? parentSession, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         var created = await sessionController.NewAsync(conversation, sessionPath, parentSession);
-        conversation = created.Conversation;
-        conversationRun = created.Run;
-        sessionPath = created.Path;
+        AdoptRpcSession(created);
+        return false;
+    }
+
+    async Task<string?> ForkRpcSessionAsync(string entryId, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var forked = await sessionController.ForkAtUserAsync(conversation, sessionPath, entryId);
+        AdoptRpcSession(forked);
+        return forked.Prompt;
+    }
+
+    async Task<bool> CloneRpcSessionAsync(CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var cloned = await sessionController.CloneAsync(conversation, sessionPath);
+        AdoptRpcSession(cloned);
         return false;
     }
 
@@ -778,7 +799,8 @@ if (cli.Mode == "rpc")
         SelectRpcModelAsync, () => conversationRun, () => thinking, () => modelRuntime.Scope.Count > 0,
         SetRpcThinkingLevelAsync, () => ThinkingLevels.AvailableForModel(selection.Model.Reasoning),
         () => selection.Model.Reasoning == true, () => ProviderChatClientFactory.ResolveProtocol(selection),
-        SetRpcThinkingLevelDuringRunAsync, SetRpcAutoRetryEnabledAsync, StartRpcSessionAsync).ServeAsync();
+        SetRpcThinkingLevelDuringRunAsync, SetRpcAutoRetryEnabledAsync, StartRpcSessionAsync,
+        ForkRpcSessionAsync, CloneRpcSessionAsync).ServeAsync();
     return;
 }
 if (cli.Mode == "json")

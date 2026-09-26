@@ -23,18 +23,18 @@ internal sealed class InteractiveSessionController(
     public async Task<SessionBranchResult> ForkAtUserAsync(ConversationSession source, string? sourcePath,
         string idPrefix)
     {
-        var matches = source.ForkableUserMessages()
+        var matches = source.UserMessagesForForking()
             .Where(item => item.Id.StartsWith(idPrefix, StringComparison.Ordinal)).ToArray();
         if (matches.Length != 1)
             throw new ArgumentException("Specify a unique user message id prefix from /fork.");
         var selected = matches[0];
-        var (forked, prompt) = source.ForkAtUser(selected.Id);
+        var (forked, prompt) = source.ForkAtUser(selected.Id, sourcePath);
         return await CreateBranchAsync(source, sourcePath, forked, selected.Id, prompt);
     }
 
     public async Task<SessionBranchResult> CloneAsync(ConversationSession source, string? sourcePath)
     {
-        var clone = source.Fork();
+        var clone = source.Fork(sourcePath);
         return await CreateBranchAsync(source, sourcePath, clone, null, null);
     }
 

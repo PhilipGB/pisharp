@@ -102,6 +102,22 @@ public sealed class ConversationSessionTests
         Assert.Equal([(firstId, "first"), (otherBranchId, "other branch"), (alternateId, "alternate")],
             session.UserMessagesForForking());
         Assert.Equal([(firstId, "first"), (alternateId, "alternate")], session.ForkableUserMessages());
+
+        var (fork, prompt) = session.ForkAtUser(otherBranchId);
+        Assert.Equal("other branch", prompt);
+        Assert.Equal(["first", "answer"], fork.ActiveMessages().Select(message => message.Text));
+    }
+
+    [Fact]
+    public void ForkTextIncludesTextPartsAndIgnoresImages()
+    {
+        var session = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        session.Append(new ChatMessage(ChatRole.User,
+            [new TextContent("before "), new DataContent(new byte[] { 1, 2, 3 }, "image/png"), new TextContent("after")]));
+        var entryId = session.Tree.HeadId!;
+
+        Assert.Equal([(entryId, "before after")], session.UserMessagesForForking());
+        Assert.Equal("before after", session.ForkAtUser(entryId).Prompt);
     }
 
     [Fact]

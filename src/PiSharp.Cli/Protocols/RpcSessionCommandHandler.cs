@@ -12,7 +12,9 @@ internal sealed class RpcSessionCommandHandler(
     Func<string?> getThinkingLevel,
     Func<bool> isBusy,
     Func<CancellationToken, Task>? save,
-    Func<string?, CancellationToken, Task<bool>>? newSession)
+    Func<string?, CancellationToken, Task<bool>>? newSession,
+    Func<string, CancellationToken, Task<string?>>? forkSession,
+    Func<CancellationToken, Task<bool>>? cloneSession)
 {
     public async Task<bool> TryHandleAsync(string command, JsonElement root, JsonElement? id,
         CancellationToken cancellationToken)
@@ -37,6 +39,65 @@ internal sealed class RpcSessionCommandHandler(
                 {
                     var cancelled = await newSession(parentSession.ValueKind == JsonValueKind.String
                         ? parentSession.GetString() : null, cancellationToken);
+                    await output.EmitAsync(new
+                    {
+                        id,
+                        type = "response",
+                        command,
+                        success = true,
+                        data = new { cancelled }
+                    }, cancellationToken);
+                }
+                catch (Exception error) when (error is not OperationCanceledException)
+                {
+                    await respond(id, command, false, error.Message);
+                }
+                return true;
+
+            case "fork":
+                if (!root.TryGetProperty("entryId", out var entryId) || entryId.ValueKind != JsonValueKind.String ||
+                    string.IsNullOrWhiteSpace(entryId.GetString()))
+                {
+                    await respond(id, command, false, "A nonempty entryId is required.");
+                    return true;
+                }
+                if (forkSession is null)
+                {
+                    await respond(id, command, false, "Session replacement is not configured.");
+                    return true;
+                }
+                try
+                {
+                    var text = await forkSession(entryId.GetString()!, cancellationToken);
+                    await output.EmitAsync(new
+                    {
+                        id,
+                        type = "response",
+                        command,
+                        success = true,
+                        data = new { text, cancelled = false }
+                    }, cancellationToken);
+                }
+                catch (Exception error) when (error is not OperationCanceledException)
+                {
+                    await respond(id, command, false, error.Message);
+                }
+                return true;
+
+            case "clone":
+                if (conversation.Tree.HeadId is null)
+                {
+                    await respond(id, command, false, "Cannot clone session: no current entry selected");
+                    return true;
+                }
+                if (cloneSession is null)
+                {
+                    await respond(id, command, false, "Session replacement is not configured.");
+                    return true;
+                }
+                try
+                {
+                    var cancelled = await cloneSession(cancellationToken);
                     await output.EmitAsync(new
                     {
                         id,

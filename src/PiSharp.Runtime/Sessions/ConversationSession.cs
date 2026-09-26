@@ -339,28 +339,58 @@ public sealed class ConversationSession
     public IReadOnlyList<(string Id, string Text)> UserMessagesForForking() => Tree.Entries
         .Where(node => node.Type == "chat")
         .Select(node => (node.Id, Message: RestoreEntry(node)))
-        .Where(item => item.Message.Role == ChatRole.User && !string.IsNullOrWhiteSpace(item.Message.Text))
-        .Select(item => (item.Id, item.Message.Text))
+        .Where(item => item.Message.Role == ChatRole.User)
+        .Select(item => (item.Id, Text: ExtractUserMessageText(item.Message)))
+        .Where(item => item.Text.Length > 0)
+        .Select(item => (item.Id, item.Text))
         .ToArray();
 
     /// <summary>Create a separate session ending immediately before a selected user message.
     /// Return its editable prompt without silently sending it to the provider.</summary>
-    public (ConversationSession Session, string Prompt) ForkAtUser(string id)
+    public (ConversationSession Session, string Prompt) ForkAtUser(string id, string? parentSessionPath = null)
     {
-        var entry = Tree.ActivePath().FirstOrDefault(node => node.Id == id)
-            ?? throw new ArgumentException("Select a user message on the active branch.", nameof(id));
-        if (entry.Type != "chat") throw new ArgumentException("Select a user message.", nameof(id));
-        var message = RestoreEntry(entry);
-        if (message.Role != ChatRole.User || message.Contents.Any(content => content is not TextContent) ||
-            string.IsNullOrWhiteSpace(message.Text))
-            throw new ArgumentException("Select a text-only user message.", nameof(id));
-        if (Tree.ActivePath().SkipWhile(node => node.Id != id).Any(node => node.Type == "model_change"))
+        if (Tree.Entries.All(node => node.Id != id))
+            throw new ArgumentException("Select a user message.", nameof(id));
+        var branchPath = Tree.ClonePath(id).ActivePath();
+        var entry = branchPath[^1];
+        var activePath = Tree.ActivePath();
+        var activeIndex = activePath.ToList().FindIndex(node => node.Id == id);
+        if (activeIndex >= 0 && activePath.Skip(activeIndex).Any(node => node.Type == "model_change"))
             throw new InvalidOperationException("Forking across a model change requires per-branch provider selection.");
+        var branchModelChange = branchPath.Take(branchPath.Count - 1)
+            .LastOrDefault(node => node.Type == "model_change");
+        if (activeIndex < 0 && branchModelChange is null && activePath.Any(node => node.Type == "model_change"))
+            throw new InvalidOperationException("The selected branch model cannot be resolved safely.");
+        if (entry.Type != "chat")
+            throw new ArgumentException("Select a user message.", nameof(id));
+        var message = RestoreEntry(entry);
+        if (message.Role != ChatRole.User)
+            throw new ArgumentException("Select a user message.", nameof(id));
+        var selectedText = ExtractUserMessageText(message);
+
+        var model = Model;
+        var endpoint = Endpoint;
+        var provider = Provider;
+        if (branchModelChange is { } change)
+        {
+            model = change.Payload.GetProperty("model").GetString() ?? model;
+            endpoint = change.Payload.TryGetProperty("endpoint", out var endpointValue) &&
+                endpointValue.ValueKind == JsonValueKind.String ? endpointValue.GetString() : null;
+            provider = change.Payload.TryGetProperty("provider", out var providerValue) &&
+                providerValue.ValueKind == JsonValueKind.String ? providerValue.GetString() : null;
+        }
+
         var previous = Tree.ClonePath(entry.ParentId);
-        return (new ConversationSession(Guid.NewGuid().ToString("N"), WorkingDirectory, Model, Endpoint, Provider, Name, previous), message.Text);
+        return (new ConversationSession(Guid.NewGuid().ToString("N"), WorkingDirectory, model, endpoint, provider,
+            Name, previous, parentSessionPath: parentSessionPath), selectedText);
     }
 
-    public ConversationSession Fork() => new(Guid.NewGuid().ToString("N"), WorkingDirectory, Model, Endpoint, Provider, Name, Tree.CloneActivePath());
+    private static string ExtractUserMessageText(ChatMessage message) =>
+        string.Concat(message.Contents.OfType<TextContent>().Select(content => content.Text));
+
+    public ConversationSession Fork(string? parentSessionPath = null) =>
+        new(Guid.NewGuid().ToString("N"), WorkingDirectory, Model, Endpoint, Provider, Name, Tree.CloneActivePath(),
+            parentSessionPath: parentSessionPath);
 
     public string ToJson()
     {

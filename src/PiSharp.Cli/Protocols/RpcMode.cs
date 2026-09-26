@@ -20,7 +20,9 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
     Func<string?>? getApi = null,
     Func<string, CancellationToken, Task<string>>? setThinkingLevelDuringRun = null,
     Func<bool, CancellationToken, Task>? persistRetryEnabled = null,
-    Func<string?, CancellationToken, Task<bool>>? newSession = null)
+    Func<string?, CancellationToken, Task<bool>>? newSession = null,
+    Func<string, CancellationToken, Task<string?>>? forkSession = null,
+    Func<CancellationToken, Task<bool>>? cloneSession = null)
 {
     private readonly JsonLineWriter _writer = new(output);
     private RpcEventWriter? _events;
@@ -38,7 +40,9 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
         var retryCommands = new RpcRetryCommandHandler(RespondAsync, () => CurrentRun, persistRetryEnabled);
         var sessionCommands = new RpcSessionCommandHandler(_writer, RespondAsync, () => CurrentRun,
             () => getThinkingLevel?.Invoke(), () => _active is { IsCompleted: false }, save,
-            newSession is null ? null : StartNewSessionAsync);
+            newSession is null ? null : StartNewSessionAsync,
+            forkSession is null ? null : StartForkSessionAsync,
+            cloneSession is null ? null : StartCloneSessionAsync);
         try
         {
             while (await input.ReadLineAsync(cancellationToken) is { } line)
@@ -248,13 +252,29 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
 
     private async Task<bool> StartNewSessionAsync(string? parentSession, CancellationToken cancellationToken)
     {
-        if (_active is { IsCompleted: false } active)
-        {
-            _abort?.Cancel();
-            try { await active; }
-            catch (OperationCanceledException) { }
-        }
+        await CancelActiveRunAsync();
         return await newSession!(parentSession, cancellationToken);
+    }
+
+    private async Task<string?> StartForkSessionAsync(string entryId, CancellationToken cancellationToken)
+    {
+        _ = CurrentRun.Conversation.ForkAtUser(entryId);
+        await CancelActiveRunAsync();
+        return await forkSession!(entryId, cancellationToken);
+    }
+
+    private async Task<bool> StartCloneSessionAsync(CancellationToken cancellationToken)
+    {
+        await CancelActiveRunAsync();
+        return await cloneSession!(cancellationToken);
+    }
+
+    private async Task CancelActiveRunAsync()
+    {
+        if (_active is not { IsCompleted: false } active) return;
+        _abort?.Cancel();
+        try { await active; }
+        catch (OperationCanceledException) { }
     }
 
     private static bool TryGetTextMessage(JsonElement root, out string? message, out string? error)
