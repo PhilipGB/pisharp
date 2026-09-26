@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.AI;
 
@@ -43,6 +44,9 @@ public sealed record AgentLifecycleEvent(string Type, string? Text = null, strin
 
     [JsonIgnore]
     public ChatMessage? PromptMessage { get; init; }
+
+    [JsonIgnore]
+    public JsonElement? AppendedEntry { get; init; }
 
     [JsonIgnore]
     public DateTimeOffset? MessageTimestamp { get; init; }

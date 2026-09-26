@@ -78,6 +78,7 @@ internal sealed class RpcEventProjector
                 "assistant_turn_completed" or "model_request_started" or "model_request_completed" or
                 "model_request_failed" or "model_request_interrupted" or "model_text_delta" or "model_content_update" => null,
             "queue_update" => ProjectQueueUpdate(item),
+            "entry_appended" => ProjectAppendedEntry(item),
             "auto_retry_start" => new
             {
                 type = "auto_retry_start",
@@ -89,6 +90,12 @@ internal sealed class RpcEventProjector
             "auto_retry_end" => ProjectRetryEnd(item),
             _ => new { type = "event", format = "pisharp", data = item }
         };
+
+    private static object ProjectAppendedEntry(AgentLifecycleEvent item) => new
+    {
+        type = "entry_appended",
+        entry = item.AppendedEntry ?? throw new InvalidOperationException("Appended-entry event has no session entry.")
+    };
 
     private object ProjectCompletedTurn(AgentLifecycleEvent item, ConversationSession conversation, string? api)
     {

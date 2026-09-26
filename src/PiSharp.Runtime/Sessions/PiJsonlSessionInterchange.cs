@@ -155,7 +155,7 @@ public static class PiJsonlSessionInterchange
         return projected;
     }
 
-    private static JsonObject ProjectEntry(ConversationSession session, ConversationNode node)
+    internal static JsonObject ProjectEntry(ConversationSession session, ConversationNode node)
     {
         var raw = OriginalEntry(node);
         JsonObject record;

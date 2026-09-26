@@ -192,7 +192,7 @@ public sealed class ConversationRun
                                     Publish(UsageEvent(UsageRecord.Create(Conversation.Model, "model", usage.Details, _pricing)));
                             }
                         },
-                        OmitFailedRetryContextAsync,
+                        (head, pathLength, token) => OmitFailedRetryContextAsync(head, pathLength, Publish, token),
                         async token =>
                         {
                             var history = Conversation.ContextMessages();
@@ -439,6 +439,7 @@ public sealed class ConversationRun
         var lastProgressAt = DateTimeOffset.UtcNow;
         var events = new List<string>();
         var partialAssistantText = new System.Text.StringBuilder();
+        var providerTurnHistory = new ProviderTurnHistoryReconciler();
         DurableExecution? durable = _save is null ? null : new DurableExecution(Conversation, _save);
         var started = false;
         var accepted = false;
@@ -447,10 +448,12 @@ public sealed class ConversationRun
         void CompleteProviderTurn()
         {
             if (providerResponse is null) return;
+            var toolResults = turnToolResults.ToArray();
+            providerTurnHistory.RecordCompletedTurn(providerResponse, toolResults);
             onEvent?.Invoke(new AgentLifecycleEvent("assistant_turn_completed")
             {
                 TurnMessage = providerResponse,
-                TurnToolResults = turnToolResults.ToArray()
+                TurnToolResults = toolResults
             });
             providerResponse = null;
             turnToolResults.Clear();
@@ -603,7 +606,11 @@ public sealed class ConversationRun
                 var promptInHistory = promptInConversation && history.Count > _historyCount &&
                     JsonElement.DeepEquals(JsonSerializer.SerializeToElement(history[_historyCount], AIJsonUtilities.DefaultOptions),
                         JsonSerializer.SerializeToElement(promptMessage, AIJsonUtilities.DefaultOptions));
-                foreach (var message in history.Skip(_historyCount + (promptInHistory ? 1 : 0)))
+                var historyStartIndex = _historyCount + (promptInHistory ? 1 : 0);
+                var appendedHistory = history.Skip(historyStartIndex).ToList();
+                if (!completed)
+                    providerTurnHistory.RestoreMissingMessages(appendedHistory);
+                foreach (var message in appendedHistory)
                     Conversation.Append(message);
                 var canonicalHistory = Conversation.ContextMessages();
                 if (canonicalHistory.Count != history.Count || canonicalHistory.Where((message, index) => !JsonElement.DeepEquals(
@@ -628,7 +635,7 @@ public sealed class ConversationRun
     }
 
     private async Task OmitFailedRetryContextAsync(string? attemptStartHead, int attemptStartPathLength,
-        CancellationToken cancellationToken)
+        Action<AgentLifecycleEvent> publish, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         var path = Conversation.Tree.ActivePath();
@@ -638,6 +645,7 @@ public sealed class ConversationRun
         var failedAssistant = Array.FindLastIndex(attemptEntries, node =>
             ConversationSession.RestoreEntry(node).Role == ChatRole.Assistant);
         var changed = false;
+        var appended = new List<ConversationNode>();
         if (failedAssistant >= 0)
         {
             var omitted = new List<string> { attemptEntries[failedAssistant].Id };
@@ -647,10 +655,16 @@ public sealed class ConversationRun
                 if (message.Role != ChatRole.Tool) break;
                 omitted.Add(attemptEntries[index].Id);
             }
-            foreach (var entryId in omitted) Conversation.AppendContextOmission(entryId);
+            foreach (var entryId in omitted) appended.Add(Conversation.AppendContextOmission(entryId));
             changed = true;
         }
         if (changed && _save is not null) await _save(CancellationToken.None);
+        foreach (var entry in appended)
+            publish(new AgentLifecycleEvent("entry_appended")
+            {
+                AppendedEntry = JsonSerializer.SerializeToElement(
+                    PiJsonlSessionInterchange.ProjectEntry(Conversation, entry))
+            });
     }
 
     private IReadOnlyDictionary<string, string?> CreateBashSessionEnvironment()

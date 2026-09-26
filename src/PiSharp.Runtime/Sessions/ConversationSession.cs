@@ -118,10 +118,10 @@ public sealed class ConversationSession
         Tree.Append("thinking_level_change", JsonSerializer.SerializeToElement(new { thinkingLevel = level }));
     }
 
-    internal void AppendContextOmission(string targetId)
+    internal ConversationNode AppendContextOmission(string targetId)
     {
         if (string.IsNullOrWhiteSpace(targetId)) throw new ArgumentException("A context-edit target is required.", nameof(targetId));
-        Tree.Append("context_edit", JsonSerializer.SerializeToElement(new { targetId, replacement = (string?)null }));
+        return Tree.Append("context_edit", JsonSerializer.SerializeToElement(new { targetId, replacement = (string?)null }));
     }
 
     public void SelectModel(string model, string? endpoint, string? provider = null)

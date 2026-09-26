@@ -449,7 +449,7 @@ public sealed class CompactionTests
             var store = new ConversationStore(cwd, Path.Combine(cwd, "sessions"));
             var path = store.NewPath(conversation);
             await store.SaveAsync(conversation, path);
-            var client = new ToolLoopBudgetClient { FailSummary = true };
+            var client = new ToolLoopBudgetClient { FailSummaryOnce = true };
             var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(cwd)), conversation,
                 save: token => store.SaveAsync(conversation, path, token),
                 autoCompaction: new AutoCompactionPolicy(2700, 300));
@@ -465,6 +465,7 @@ public sealed class CompactionTests
             await foreach (var _ in run.RunEventsAsync("inspect the previous result before trying again")) { }
             Assert.True(client.SawRecoveryNotice);
             Assert.Equal(2, client.Requests);
+            Assert.Equal(2, client.Summaries);
             Assert.Contains(conversation.ActiveMessages(), message => message.Text.Contains("Recovery notice", StringComparison.Ordinal));
         }
         finally { Directory.Delete(cwd, recursive: true); }
@@ -814,6 +815,7 @@ public sealed class CompactionTests
         public bool ContinuationSawSummaryAndToolResult { get; private set; }
         public string LastSummaryRequest { get; private set; } = "";
         public bool RepeatRead { get; init; }
+        public bool FailSummaryOnce { get; init; }
         public Action? OnFirstSummary { get; init; }
         public bool ContinuationSawSummaryWithoutRawToolResult { get; private set; }
         public bool ContinuationSawSteering { get; private set; }
@@ -822,7 +824,7 @@ public sealed class CompactionTests
             CancellationToken cancellationToken = default)
         {
             Summaries++;
-            if (FailSummary) throw new IOException("summarizer unavailable");
+            if (FailSummary || FailSummaryOnce && Summaries == 1) throw new IOException("summarizer unavailable");
             LastSummaryRequest = messages.Last().Text;
             if (Summaries == 1) OnFirstSummary?.Invoke();
             return Task.FromResult(new ChatResponse([new ChatMessage(ChatRole.Assistant, "Previous question answered.")])

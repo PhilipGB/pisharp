@@ -1547,6 +1547,56 @@ public sealed class RpcModeTests
         finally { foreach (var document in eventTypes) document.Dispose(); }
     }
 
+    [Fact]
+    public async Task RpcRetryProjectsAppendedContextEditBeforeRetryContinues()
+    {
+        var channel = Channel.CreateUnbounded<string>();
+        using var output = new LockedWriter();
+        var client = new ToolThenFailureThenSuccessRpcClient();
+        var retryPolicy = new AgentRunRetryPolicy(enabled: true, maxRetries: 1,
+            baseDelay: TimeSpan.Zero, maxDelay: TimeSpan.Zero);
+        var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(Path.GetTempPath()),
+            retryPolicy: ProviderRetryPolicy.None), new ConversationSession(Path.GetTempPath(), "fixture", null),
+            retryPolicy: retryPolicy);
+        var serving = new RpcMode(new CommandReader(channel.Reader), output, run).ServeAsync();
+
+        channel.Writer.TryWrite("{\"id\":\"prompt\",\"type\":\"prompt\",\"message\":\"hello\"}");
+        await WaitForAsync(output, "agent_settled");
+        channel.Writer.Complete();
+        await serving.WaitAsync(TimeSpan.FromSeconds(5));
+
+        var lines = output.Lines();
+        var appendedLines = lines.Where(line => line.Contains("\"type\":\"entry_appended\"", StringComparison.Ordinal)).ToArray();
+        var appended = appendedLines.Select(line => JsonDocument.Parse(line)).ToArray();
+        try
+        {
+            Assert.Equal(2, appended.Length);
+            foreach (var record in appended)
+            {
+                var entry = record.RootElement.GetProperty("entry");
+                Assert.Equal("context_edit", entry.GetProperty("type").GetString());
+                Assert.False(string.IsNullOrWhiteSpace(entry.GetProperty("id").GetString()));
+                Assert.Equal("null", entry.GetProperty("replacement").GetRawText());
+                var targetId = entry.GetProperty("targetId").GetString();
+                var target = Assert.Single(run.Conversation.Tree.Entries, node => node.Id == targetId);
+                Assert.Equal("chat", target.Type);
+                Assert.Contains(ConversationSession.RestoreEntry(target).Role, new[] { ChatRole.Assistant, ChatRole.Tool });
+            }
+            var retryStartIndex = Array.FindIndex(lines, line =>
+                line.Contains("\"type\":\"auto_retry_start\"", StringComparison.Ordinal));
+            var appendedStartIndex = Array.FindIndex(lines, line =>
+                line.Contains("\"type\":\"entry_appended\"", StringComparison.Ordinal));
+            var appendedEndIndex = Array.FindLastIndex(lines, line =>
+                line.Contains("\"type\":\"entry_appended\"", StringComparison.Ordinal));
+            var retryAgentStartIndex = Array.FindLastIndex(lines, line =>
+                line.Contains("\"type\":\"agent_start\"", StringComparison.Ordinal));
+            Assert.True(retryStartIndex >= 0 && retryStartIndex < appendedStartIndex &&
+                appendedEndIndex < retryAgentStartIndex);
+            Assert.Equal(3, client.Requests);
+        }
+        finally { foreach (var record in appended) record.Dispose(); }
+    }
+
     private static Task WaitForAsync(LockedWriter output, string fragment) => output.WaitForLineAsync(fragment);
 
     private sealed class CommandReader(ChannelReader<string> channel) : TextReader
@@ -1896,6 +1946,39 @@ public sealed class RpcModeTests
                 await Task.Yield();
                 throw new HttpRequestException("503 service unavailable", null, System.Net.HttpStatusCode.ServiceUnavailable);
             }
+            yield return new ChatResponseUpdate(ChatRole.Assistant, "recovered");
+        }
+
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
+    }
+
+    private sealed class ToolThenFailureThenSuccessRpcClient : IChatClient
+    {
+        private int _requests;
+        public int Requests => Volatile.Read(ref _requests);
+
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            var request = Interlocked.Increment(ref _requests);
+            if (request == 1)
+            {
+                yield return new ChatResponseUpdate(ChatRole.Assistant,
+                    [new FunctionCallContent("read-call", "read", new Dictionary<string, object?> { ["path"] = "retry-fixture.txt" })]);
+                yield break;
+            }
+            if (request == 2)
+            {
+                await Task.Yield();
+                throw new HttpRequestException("503 service unavailable", null, System.Net.HttpStatusCode.ServiceUnavailable);
+            }
+
+            Assert.DoesNotContain(messages.SelectMany(message => message.Contents), content =>
+                content is FunctionCallContent { CallId: "read-call" } or FunctionResultContent { CallId: "read-call" });
             yield return new ChatResponseUpdate(ChatRole.Assistant, "recovered");
         }
 
