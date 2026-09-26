@@ -355,9 +355,16 @@ public sealed class ConversationRun
         var lastProgress = 0;
         var lastProgressAt = DateTimeOffset.UtcNow;
         var events = new List<string>();
+        var partialAssistantText = new System.Text.StringBuilder();
         DurableExecution? durable = _save is null ? null : new DurableExecution(Conversation, _save);
         var started = false;
         var accepted = false;
+        void Observe(AgentLifecycleEvent item)
+        {
+            if (item.Type == "model_request_started") partialAssistantText.Clear();
+            else if (item.Type == "model_text_delta" && item.Text is not null) partialAssistantText.Append(item.Text);
+            onEvent?.Invoke(item);
+        }
         try
         {
             // A failed settled run can have checkpointed side effects without MAF-persisted tool results.
@@ -399,7 +406,7 @@ public sealed class ConversationRun
                     onEvent?.Invoke(new("context_compacted_in_flight", Text: "Continuation request summarized; canonical history was not changed."));
                 });
             await foreach (var update in _agent.RunStreamingDurableAsync(promptMessage, _execution, cancellationToken, durable,
-                onEvent, TakeSteeringForProvider, inFlightBudget is null ? null : inFlightBudget.ProjectAsync,
+                Observe, TakeSteeringForProvider, inFlightBudget is null ? null : inFlightBudget.ProjectAsync,
                 CreateBashSessionEnvironment()))
             {
                 if (!string.IsNullOrEmpty(update.Text))
@@ -437,7 +444,7 @@ public sealed class ConversationRun
                 foreach (var message in history.Skip(_historyCount)) Conversation.Append(message);
                 _historyCount = history.Count;
                 if (!completed && accepted) Conversation.Tree.Append("interrupted", JsonSerializer.SerializeToElement(
-                    new { prompt, partialText = partialText.ToString(), events, timestamp = DateTimeOffset.UtcNow }));
+                    new { prompt, partialText = partialText.ToString(), partialAssistantText = partialAssistantText.ToString(), events, timestamp = DateTimeOffset.UtcNow }));
                 if (started) await durable!.FinishAsync(completed);
             }
             finally { _gate.Release(); }

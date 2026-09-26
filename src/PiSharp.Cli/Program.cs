@@ -147,30 +147,7 @@ catch (ArgumentException e)
 }
 var store = new ConversationStore(Environment.CurrentDirectory, cli.SessionDirectory ??
     Environment.GetEnvironmentVariable("PISHARP_SESSION_DIR") ?? userSettings.SessionDirectory);
-ConversationSession ImportPiSessionFile(string path)
-{
-    var file = new FileInfo(path);
-    if (!file.Exists) throw new FileNotFoundException("Pi session file was not found.", path);
-    if (file.Length > 128L * 1024 * 1024) throw new InvalidDataException("Pi session exceeds the 128 MiB import limit.");
-    var imported = PiJsonlSessionInterchange.Import(File.ReadAllText(path));
-    var workingDirectoryComparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
-    if (!Path.GetFullPath(imported.WorkingDirectory).Equals(Path.GetFullPath(Environment.CurrentDirectory), workingDirectoryComparison))
-        throw new InvalidDataException($"Pi session working directory '{imported.WorkingDirectory}' differs from this project. Start PiSharp there before importing.");
-    if (!Directory.Exists(imported.WorkingDirectory))
-        throw new InvalidDataException($"Pi session working directory does not exist: {imported.WorkingDirectory}");
-    return imported;
-}
-string? NewImportedSessionPath(ConversationSession imported)
-{
-    if (cli.NoSession) return null;
-    var path = store.NewPath(imported);
-    const string extension = ".session.json";
-    var stem = Path.GetFileName(path)[..^extension.Length];
-    var directory = Path.GetDirectoryName(path)!;
-    for (var suffix = 1; File.Exists(path); suffix++)
-        path = Path.Combine(directory, $"{stem}-{suffix}{extension}");
-    return path;
-}
+var piSessionImport = new PiSessionImportService(store, Environment.CurrentDirectory, cli.NoSession);
 AutoCompactionPolicy? contextPolicy;
 ModelPricing? modelPricing;
 try
@@ -201,12 +178,12 @@ try
             ? Path.GetFullPath(cli.ForkSource)
             : SessionCatalog.Resolve(await SessionCatalog.ListAsync(store), cli.ForkSource).Path;
         conversation = sourcePath.EndsWith(".jsonl", StringComparison.OrdinalIgnoreCase)
-            ? ImportPiSessionFile(sourcePath).Fork()
+            ? piSessionImport.ImportFile(sourcePath).Fork()
             : (await store.LoadAsync(sourcePath)).Fork();
     }
     else if (sessionPath is not null && sessionPath.EndsWith(".jsonl", StringComparison.OrdinalIgnoreCase))
     {
-        conversation = ImportPiSessionFile(sessionPath);
+        conversation = piSessionImport.ImportFile(sessionPath);
         sessionPath = store.NewPath(conversation);
         await store.SaveAsync(conversation, sessionPath);
     }
@@ -756,7 +733,7 @@ if (cli.Mode == "rpc")
             $"Provider '{selection.Provider.Id}' is not authenticated. Use /login {selection.Provider.Id} or configure {selection.Provider.ApiKeyEnvironment ?? "a credential"}.",
         SelectRpcModelAsync, () => conversationRun, () => thinking, () => modelRuntime.Scope.Count > 0,
         SetRpcThinkingLevelAsync, () => ThinkingLevels.AvailableForModel(selection.Model.Reasoning),
-        () => selection.Model.Reasoning == true).ServeAsync();
+        () => selection.Model.Reasoning == true, () => ProviderChatClientFactory.ResolveProtocol(selection)).ServeAsync();
     return;
 }
 if (cli.Mode == "json")
@@ -851,7 +828,7 @@ else
                             Console.WriteLine("Import cancelled.");
                             break;
                         }
-                        var imported = ImportPiSessionFile(inputPath);
+                        var imported = piSessionImport.ImportFile(inputPath);
                         var importedSelection = imported.Model == "unknown" ? selection :
                             await modelRuntime.ResolveAsync(imported.Provider, imported.Model, includeOutOfScope: true);
                         var importedThinking = PiJsonlSessionInterchange.GetThinkingLevel(imported) ?? thinking;
@@ -862,7 +839,7 @@ else
                         var previousConversation = conversation;
                         var previousPath = sessionPath;
                         var previousRun = conversationRun;
-                        var importedPath = NewImportedSessionPath(imported);
+                        var importedPath = piSessionImport.CreateDestinationPath(imported);
                         if (importedPath is not null) await store.SaveAsync(imported, importedPath);
                         conversation = imported;
                         sessionPath = importedPath;

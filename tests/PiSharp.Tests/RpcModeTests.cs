@@ -48,10 +48,20 @@ public sealed class RpcModeTests
             Assert.Equal(["type"], start.RootElement.EnumerateObject().Select(property => property.Name));
             var startIndex = Array.FindIndex(output.Lines(), line => line.Contains("\"type\":\"agent_start\"", StringComparison.Ordinal));
             Assert.True(responseIndex >= 0 && startIndex > responseIndex);
+            var agentEnd = Assert.Single(events, e => e.RootElement.GetProperty("type").GetString() == "agent_end");
+            Assert.Equal(["type", "messages", "willRetry"], agentEnd.RootElement.EnumerateObject().Select(property => property.Name));
+            Assert.False(agentEnd.RootElement.GetProperty("willRetry").GetBoolean());
+            var runMessages = agentEnd.RootElement.GetProperty("messages");
+            Assert.Equal(2, runMessages.GetArrayLength());
+            Assert.Equal("user", runMessages[0].GetProperty("role").GetString());
+            Assert.Equal("hello", runMessages[0].GetProperty("content").GetString());
+            Assert.Equal("assistant", runMessages[1].GetProperty("role").GetString());
+            Assert.Equal("reply", runMessages[1].GetProperty("content")[0].GetProperty("text").GetString());
             var settled = Assert.Single(events, e => e.RootElement.GetProperty("type").GetString() == "agent_settled");
             Assert.Equal(["type"], settled.RootElement.EnumerateObject().Select(property => property.Name));
             var settledIndex = Array.FindIndex(output.Lines(), line => line.Contains("\"type\":\"agent_settled\"", StringComparison.Ordinal));
-            Assert.True(settledIndex > startIndex);
+            var endIndex = Array.FindIndex(output.Lines(), line => line.Contains("\"type\":\"agent_end\"", StringComparison.Ordinal));
+            Assert.True(settledIndex > endIndex && endIndex > startIndex);
             Assert.DoesNotContain(output.Lines(), line => line.Contains("prompt_accepted", StringComparison.Ordinal));
             Assert.Contains(events, e => e.RootElement.GetProperty("type").GetString() == "response" &&
                 e.RootElement.GetProperty("id").GetString() == "unknown" && !e.RootElement.GetProperty("success").GetBoolean());
@@ -565,8 +575,17 @@ public sealed class RpcModeTests
             var lines = output.Lines();
             Assert.Equal(1, lines.Count(line => line.Contains("\"type\":\"agent_start\"", StringComparison.Ordinal)));
             var agentStartIndex = Array.FindIndex(lines, line => line.Contains("\"type\":\"agent_start\"", StringComparison.Ordinal));
+            var agentEndIndex = Array.FindIndex(lines, line => line.Contains("\"type\":\"agent_end\"", StringComparison.Ordinal));
             var agentSettledIndex = Array.FindIndex(lines, line => line.Contains("\"type\":\"agent_settled\"", StringComparison.Ordinal));
-            Assert.True(agentStartIndex >= 0 && agentSettledIndex > agentStartIndex);
+            Assert.True(agentStartIndex >= 0 && agentEndIndex > agentStartIndex && agentSettledIndex > agentEndIndex);
+            using (var end = JsonDocument.Parse(lines[agentEndIndex]))
+            {
+                Assert.False(end.RootElement.GetProperty("willRetry").GetBoolean());
+                Assert.Equal(["one", "first reply", "two", "second reply"], end.RootElement.GetProperty("messages").EnumerateArray()
+                    .Select(message => message.GetProperty("role").GetString() == "assistant"
+                        ? message.GetProperty("content")[0].GetProperty("text").GetString()
+                        : message.GetProperty("content").GetString()));
+            }
             Assert.Contains(lines, line => line.Contains("\"type\":\"queue_update\"", StringComparison.Ordinal) &&
                 line.Contains("\"followUp\":[\"two\"]", StringComparison.Ordinal));
             Assert.DoesNotContain(lines, line => line.Contains("prompt_queued", StringComparison.Ordinal));
@@ -785,7 +804,47 @@ public sealed class RpcModeTests
         channel.Writer.Complete();
         await serving.WaitAsync(TimeSpan.FromSeconds(5));
         Assert.Contains(session.Tree.Entries, entry => entry.Type == "interrupted");
+        var lines = output.Lines();
+        var agentEndIndex = Array.FindIndex(lines, line => line.Contains("\"type\":\"agent_end\"", StringComparison.Ordinal));
+        var settledIndex = Array.FindIndex(lines, line => line.Contains("\"type\":\"agent_settled\"", StringComparison.Ordinal));
+        Assert.True(agentEndIndex >= 0 && settledIndex > agentEndIndex);
+        using (var end = JsonDocument.Parse(lines[agentEndIndex]))
+        {
+            Assert.False(end.RootElement.GetProperty("willRetry").GetBoolean());
+            var messages = end.RootElement.GetProperty("messages");
+            var finalMessage = messages[messages.GetArrayLength() - 1];
+            Assert.Equal("assistant", finalMessage.GetProperty("role").GetString());
+            Assert.Equal("aborted", finalMessage.GetProperty("stopReason").GetString());
+        }
         Assert.Contains(output.Lines(), line => line.Contains("\"command\":\"abort\",\"success\":true", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task FailedProviderRunEmitsPiErrorMessageInAgentEndBeforeSettlement()
+    {
+        var channel = Channel.CreateUnbounded<string>();
+        using var output = new LockedWriter();
+        var session = new ConversationSession(Path.GetTempPath(), "fixture", null, "fixture");
+        var run = await ConversationRun.OpenAsync(new PiAgent(new PartialFailureClient(), new CodingTools(Path.GetTempPath()),
+            retryPolicy: new ProviderRetryPolicy(maxRetries: 2)), session);
+        var serving = new RpcMode(new CommandReader(channel.Reader), output, run).ServeAsync();
+        channel.Writer.TryWrite("{\"id\":\"failed\",\"type\":\"prompt\",\"message\":\"hello\"}");
+        await WaitForAsync(output, "agent_settled");
+        channel.Writer.Complete();
+        await serving.WaitAsync(TimeSpan.FromSeconds(5));
+
+        var lines = output.Lines();
+        var agentEndIndex = Array.FindIndex(lines, line => line.Contains("\"type\":\"agent_end\"", StringComparison.Ordinal));
+        var settledIndex = Array.FindIndex(lines, line => line.Contains("\"type\":\"agent_settled\"", StringComparison.Ordinal));
+        Assert.True(agentEndIndex >= 0 && settledIndex > agentEndIndex);
+        using var end = JsonDocument.Parse(lines[agentEndIndex]);
+        Assert.False(end.RootElement.GetProperty("willRetry").GetBoolean());
+        var messages = end.RootElement.GetProperty("messages");
+        var failedAssistant = messages[messages.GetArrayLength() - 1];
+        Assert.Equal("assistant", failedAssistant.GetProperty("role").GetString());
+        Assert.Equal("partial", failedAssistant.GetProperty("content")[0].GetProperty("text").GetString());
+        Assert.Equal("error", failedAssistant.GetProperty("stopReason").GetString());
+        Assert.Equal("failed after output", failedAssistant.GetProperty("errorMessage").GetString());
     }
 
     private static async Task WaitForAsync(LockedWriter output, string fragment)
@@ -901,6 +960,21 @@ public sealed class RpcModeTests
         public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
             ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         { await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken); yield break; }
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
+    }
+
+    private sealed class PartialFailureClient : IChatClient
+    {
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            yield return new ChatResponseUpdate(ChatRole.Assistant, "partial");
+            await Task.Yield();
+            throw new IOException("failed after output");
+        }
         public object? GetService(Type serviceType, object? serviceKey = null) => null;
         public void Dispose() { }
     }

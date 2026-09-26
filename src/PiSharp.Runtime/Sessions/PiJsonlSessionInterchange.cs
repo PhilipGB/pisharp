@@ -152,6 +152,102 @@ public static class PiJsonlSessionInterchange
         return output.ToString();
     }
 
+    internal static JsonArray ProjectRunMessages(ConversationSession session, string? afterEntryId, string? api,
+        string? terminalType = null, string? errorMessage = null)
+    {
+        var path = session.Tree.ActivePath();
+        var firstRunEntry = 0;
+        if (afterEntryId is not null)
+        {
+            var previousIndex = -1;
+            for (var index = 0; index < path.Count; index++)
+                if (path[index].Id == afterEntryId) { previousIndex = index; break; }
+            if (previousIndex < 0)
+                throw new InvalidOperationException("The active session branch changed during the RPC run.");
+            firstRunEntry = previousIndex + 1;
+        }
+
+        var messages = new JsonArray();
+        var toolNames = new Dictionary<string, string>(StringComparer.Ordinal);
+        for (var index = 0; index < path.Count; index++)
+        {
+            var node = path[index];
+            if (node.Type != "chat") continue;
+            var original = OriginalEntry(node);
+            JsonObject message;
+            if (original is { } entry && TryProperty(entry, "message", out var originalMessage) &&
+                originalMessage.ValueKind == JsonValueKind.Object)
+                message = JsonNode.Parse(originalMessage.GetRawText())!.AsObject();
+            else
+                message = ExportNativeEntry(session, node)["message"]!.DeepClone().AsObject();
+
+            var role = NodeString(message["role"]);
+            if (role == "assistant")
+            {
+                if (!string.IsNullOrWhiteSpace(api)) message["api"] = api;
+                if (message["content"] is JsonArray content)
+                    foreach (var part in content.OfType<JsonObject>())
+                        if (NodeString(part["type"]) == "toolCall" && NodeString(part["id"]) is { } callId &&
+                            NodeString(part["name"]) is { } toolName)
+                            toolNames[callId] = toolName;
+            }
+            else if (role == "toolResult" && NodeString(message["toolCallId"]) is { } resultId &&
+                toolNames.TryGetValue(resultId, out var resultTool))
+                message["toolName"] = resultTool;
+
+            if (index >= firstRunEntry) messages.Add(message);
+        }
+
+        if ((terminalType is "turn_failed" or "turn_interrupted") &&
+            path.Skip(firstRunEntry).LastOrDefault(node => node.Type == "interrupted") is { } interrupted)
+        {
+            var partialText = StringProperty(interrupted.Payload, "partialAssistantText") ?? "";
+            var lastAssistant = messages.OfType<JsonObject>().LastOrDefault(message => NodeString(message["role"]) == "assistant");
+            if (partialText.Length > 0 && lastAssistant is not null &&
+                string.Equals(ReadPiText(lastAssistant["content"]), partialText, StringComparison.Ordinal))
+            {
+                lastAssistant["stopReason"] = terminalType == "turn_interrupted" ? "aborted" : "error";
+                if (terminalType == "turn_failed" && !string.IsNullOrEmpty(errorMessage))
+                    lastAssistant["errorMessage"] = errorMessage;
+            }
+            else
+            {
+                var content = new JsonArray();
+                if (partialText.Length > 0) content.Add(new JsonObject { ["type"] = "text", ["text"] = partialText });
+                var assistant = new JsonObject
+                {
+                    ["role"] = "assistant",
+                    ["content"] = content,
+                    ["timestamp"] = interrupted.Timestamp.ToUnixTimeMilliseconds(),
+                    ["provider"] = session.Provider,
+                    ["model"] = session.Model,
+                    ["api"] = api ?? "openai-responses",
+                    ["stopReason"] = terminalType == "turn_interrupted" ? "aborted" : "error",
+                    ["usage"] = EmptyUsage()
+                };
+                if (terminalType == "turn_failed" && !string.IsNullOrEmpty(errorMessage))
+                    assistant["errorMessage"] = errorMessage;
+                messages.Add(assistant);
+            }
+        }
+        return messages;
+    }
+
+    private static string ReadPiText(JsonNode? content) => content is JsonArray parts
+        ? string.Concat(parts.OfType<JsonObject>().Where(part => NodeString(part["type"]) == "text")
+            .Select(part => NodeString(part["text"]) ?? ""))
+        : NodeString(content) ?? "";
+
+    private static JsonObject EmptyUsage() => new()
+    {
+        ["input"] = 0,
+        ["output"] = 0,
+        ["cacheRead"] = 0,
+        ["cacheWrite"] = 0,
+        ["totalTokens"] = 0,
+        ["cost"] = new JsonObject { ["input"] = 0, ["output"] = 0, ["cacheRead"] = 0, ["cacheWrite"] = 0, ["total"] = 0 }
+    };
+
     /// <summary>Writes Pi JSONL without replacing an existing export; files are user-private on Unix.</summary>
     public static async Task ExportToFileAsync(ConversationSession session, string path,
         CancellationToken cancellationToken = default)
@@ -536,16 +632,8 @@ public static class PiJsonlSessionInterchange
             messageObject["provider"] = session.Provider;
             messageObject["model"] = session.Model;
             messageObject["api"] = "openai-responses";
-            messageObject["stopReason"] = "stop";
-            messageObject["usage"] = new JsonObject
-            {
-                ["input"] = 0,
-                ["output"] = 0,
-                ["cacheRead"] = 0,
-                ["cacheWrite"] = 0,
-                ["totalTokens"] = 0,
-                ["cost"] = new JsonObject { ["input"] = 0, ["output"] = 0, ["cacheRead"] = 0, ["cacheWrite"] = 0, ["total"] = 0 }
-            };
+            messageObject["stopReason"] = message.Contents.OfType<FunctionCallContent>().Any() ? "toolUse" : "stop";
+            messageObject["usage"] = EmptyUsage();
         }
         if (role == "toolResult")
         {
@@ -589,6 +677,9 @@ public static class PiJsonlSessionInterchange
 
     private static bool BoolProperty(JsonElement element, string name) =>
         TryProperty(element, name, out var value) && value.ValueKind == JsonValueKind.True;
+
+    private static string? NodeString(JsonNode? node) =>
+        node is JsonValue value && value.TryGetValue<string>(out var text) ? text : null;
 
     private static DateTimeOffset ParseTimestamp(string? value) =>
         DateTimeOffset.TryParse(value, out var timestamp) ? timestamp : DateTimeOffset.UnixEpoch;

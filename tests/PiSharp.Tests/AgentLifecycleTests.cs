@@ -223,6 +223,7 @@ public sealed class AgentLifecycleTests
         Assert.DoesNotContain(events, item => item.Type is "turn_completed" or "agent_run_completed");
         var interrupted = Assert.Single(session.Tree.Entries, entry => entry.Type == "interrupted");
         Assert.Equal("partial", interrupted.Payload.GetProperty("partialText").GetString());
+        Assert.Equal("partial", interrupted.Payload.GetProperty("partialAssistantText").GetString());
     }
 
     [Theory]

@@ -17,7 +17,8 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
     Func<ConversationRun>? getCurrentRun = null, Func<string?>? getThinkingLevel = null,
     Func<bool>? isModelScoped = null,
     Func<string, CancellationToken, Task<string>>? setThinkingLevel = null,
-    Func<IReadOnlyList<string>>? getAvailableThinkingLevels = null, Func<bool>? supportsThinking = null)
+    Func<IReadOnlyList<string>>? getAvailableThinkingLevels = null, Func<bool>? supportsThinking = null,
+    Func<string?>? getApi = null)
 {
     private readonly JsonLineWriter _writer = new(output);
     private RpcEventWriter? _events;
@@ -536,7 +537,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                     responded = true;
                     await RespondPromptAsync(id, false, error: item.Error ?? "Prompt was rejected.");
                 }
-            });
+            }, getApi?.Invoke());
             if (save is not null) await save(CancellationToken.None);
         }
         catch (Exception error)

@@ -7,6 +7,27 @@ namespace PiSharp.Tests;
 public sealed class PiJsonlSessionInterchangeTests
 {
     [Fact]
+    public void RpcMessageProjectionUsesOnlyNewCanonicalMessagesAndKeepsToolCallIdentity()
+    {
+        var session = new ConversationSession(Path.GetTempPath(), "fixture-model", null, "fixture");
+        session.Append(new ChatMessage(ChatRole.User, "earlier"));
+        var runStart = session.Tree.HeadId;
+        session.Append(new ChatMessage(ChatRole.User, "new prompt"));
+        session.Append(new ChatMessage(ChatRole.Assistant, [new FunctionCallContent("call-1", "read",
+            new Dictionary<string, object?> { ["path"] = "file.txt" })]));
+        session.Append(new ChatMessage(ChatRole.Tool, [new FunctionResultContent("call-1", "contents")]));
+
+        var messages = PiJsonlSessionInterchange.ProjectRunMessages(session, runStart, "openai-completions");
+
+        Assert.Equal(3, messages.Count);
+        Assert.Equal("new prompt", messages[0]!["content"]!.GetValue<string>());
+        Assert.Equal("toolUse", messages[1]!["stopReason"]!.GetValue<string>());
+        Assert.Equal("openai-completions", messages[1]!["api"]!.GetValue<string>());
+        Assert.Equal("read", messages[2]!["toolName"]!.GetValue<string>());
+        Assert.Equal("call-1", messages[2]!["toolCallId"]!.GetValue<string>());
+    }
+
+    [Fact]
     public void CurrentPiV3ImportPreservesBranchesContextEditsCompactionAndOriginalRecords()
     {
         var cwd = Path.GetFullPath(Path.GetTempPath());
