@@ -28,7 +28,11 @@ public sealed class ConversationRun
     private Action<AgentLifecycleEvent>? _promptQueueEvents;
     private AgentSession _execution;
     private int _historyCount;
+    private int _isCompacting;
     public ConversationSession Conversation { get; }
+    public string? SessionFile => _sessionFile;
+    public bool AutoCompactionEnabled => _autoCompaction is not null;
+    public bool IsCompacting => Volatile.Read(ref _isCompacting) != 0;
 
     private ConversationRun(PiAgent agent, ConversationSession conversation, AgentSession execution, Func<CancellationToken, Task>? save,
         AutoCompactionPolicy? autoCompaction, ModelPricing? pricing, string? sessionFile, string? provider,
@@ -401,21 +405,26 @@ public sealed class ConversationRun
     {
         var plan = Conversation.PrepareCompaction(_autoCompaction?.KeepRecentTokens);
         if (plan is null) return false;
-        var summary = await _agent.SummarizeAsync(plan.MessagesToSummarize, focus, cancellationToken);
-        var previousHead = Conversation.Tree.HeadId;
+        Volatile.Write(ref _isCompacting, 1);
         try
         {
-            Conversation.AppendCompaction(plan, summary.Text, _autoCompaction?.KeepRecentTokens);
-            if (summary.Usage is not null)
-                Conversation.AppendUsage(UsageRecord.Create(Conversation.Model, "compaction", summary.Usage, _pricing));
-            var messages = Conversation.ContextMessages();
-            var restored = await _agent.RestoreHistoryAsync(messages, cancellationToken);
-            if (_save is not null) await _save(cancellationToken);
-            _execution = restored;
-            _historyCount = messages.Count;
-            return true;
+            var summary = await _agent.SummarizeAsync(plan.MessagesToSummarize, focus, cancellationToken);
+            var previousHead = Conversation.Tree.HeadId;
+            try
+            {
+                Conversation.AppendCompaction(plan, summary.Text, _autoCompaction?.KeepRecentTokens);
+                if (summary.Usage is not null)
+                    Conversation.AppendUsage(UsageRecord.Create(Conversation.Model, "compaction", summary.Usage, _pricing));
+                var messages = Conversation.ContextMessages();
+                var restored = await _agent.RestoreHistoryAsync(messages, cancellationToken);
+                if (_save is not null) await _save(cancellationToken);
+                _execution = restored;
+                _historyCount = messages.Count;
+                return true;
+            }
+            catch { Conversation.Tree.Select(previousHead); throw; }
         }
-        catch { Conversation.Tree.Select(previousHead); throw; }
+        finally { Volatile.Write(ref _isCompacting, 0); }
     }
 
     /// <summary>Selection is durable in Conversation.HeadId; rebuild MAF state before the next run.</summary>

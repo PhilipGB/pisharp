@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.Extensions.AI;
 using PiSharp.Cli;
 using PiSharp.Runtime;
@@ -839,7 +840,8 @@ if (cli.Mode == "rpc")
         SetRpcThinkingLevelDuringRunAsync, rpcUserSettings.SetAutoRetryEnabledAsync, StartRpcSessionAsync,
         ForkRpcSessionAsync, CloneRpcSessionAsync, SwitchProjectSessionAsync,
         () => resources, () => extensionLease.Current.Registration,
-        rpcUserSettings.SetPromptDeliveryModeAsync).ServeAsync();
+        rpcUserSettings.SetPromptDeliveryModeAsync,
+        getModelSnapshot: () => JsonSerializer.SerializeToElement(RpcModelSnapshot.From(selection))).ServeAsync();
     return;
 }
 if (cli.Mode == "json")

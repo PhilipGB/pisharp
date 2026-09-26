@@ -26,7 +26,8 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
     Func<string, CancellationToken, Task<bool>>? switchSession = null,
     Func<PiSharp.Runtime.Resources.ResourceCatalog?>? getCurrentResources = null,
     Func<ExtensionRegistration?>? getCurrentExtensions = null,
-    Func<bool, PromptDeliveryMode, CancellationToken, Task>? persistQueueMode = null)
+    Func<bool, PromptDeliveryMode, CancellationToken, Task>? persistQueueMode = null,
+    Func<JsonElement?>? getModelSnapshot = null)
 {
     private readonly JsonLineWriter _writer = new(output);
     private RpcEventWriter? _events;
@@ -45,8 +46,11 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
             setThinkingLevel, setThinkingLevelDuringRun, getAvailableThinkingLevels, supportsThinking);
         var retryCommands = new RpcRetryCommandHandler(RespondAsync, () => CurrentRun, persistRetryEnabled);
         var queueModeCommands = new RpcQueueModeCommandHandler(RespondAsync, () => CurrentRun, persistQueueMode);
+        var stateCommands = new RpcStateCommandHandler(_writer, () => CurrentRun,
+            () => getThinkingLevel?.Invoke(), () => _active is { IsCompleted: false },
+            () => getModelSnapshot?.Invoke());
         var sessionCommands = new RpcSessionCommandHandler(_writer, RespondAsync, () => CurrentRun,
-            () => getThinkingLevel?.Invoke(), () => _active is { IsCompleted: false }, () => Events, save,
+            () => _active is { IsCompleted: false }, () => Events, save,
             newSession is null ? null : StartNewSessionAsync,
             forkSession is null ? null : StartForkSessionAsync,
             cloneSession is null ? null : StartCloneSessionAsync,
@@ -74,6 +78,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                     var type = kind.GetString()!;
                     var id = root.TryGetProperty("id", out var requestId) ? requestId.Clone() : (JsonElement?)null;
                     var busy = _active is { IsCompleted: false };
+                    if (await stateCommands.TryHandleAsync(type, id, cancellationToken)) continue;
                     if (await queueModeCommands.TryHandleAsync(type, root, id, cancellationToken)) continue;
                     if (await retryCommands.TryHandleAsync(type, root, id, cancellationToken)) continue;
                     if (await sessionCommands.TryHandleAsync(type, root, id, cancellationToken)) continue;

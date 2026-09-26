@@ -8,7 +8,6 @@ internal sealed class RpcSessionCommandHandler(
     JsonLineWriter output,
     Func<JsonElement?, string, bool, string?, Task> respond,
     Func<ConversationRun> currentRun,
-    Func<string?> getThinkingLevel,
     Func<bool> isBusy,
     Func<RpcEventWriter> events,
     Func<CancellationToken, Task>? save,
@@ -142,33 +141,6 @@ internal sealed class RpcSessionCommandHandler(
                 {
                     await respond(id, command, false, error.Message);
                 }
-                return true;
-
-            case "get_state":
-                var queue = run.GetPendingPrompts();
-                await output.EmitAsync(new
-                {
-                    id,
-                    type = "response",
-                    command,
-                    success = true,
-                    data = new
-                    {
-                        model = conversation.Model,
-                        thinkingLevel = getThinkingLevel() ?? "off",
-                        isStreaming = isBusy(),
-                        sessionId = conversation.Id,
-                        sessionName = conversation.Name,
-                        messageCount = conversation.ActiveMessages().Count,
-                        pendingMessageCount = queue.InDeliveryOrder.Count,
-                        steeringMode = run.SteeringMode.ToSettingValue(),
-                        followUpMode = run.FollowUpMode.ToSettingValue(),
-                        steering = queue.Steering,
-                        followUp = queue.FollowUp,
-                        format = "pisharp",
-                        version = ConversationSession.FormatVersion
-                    }
-                }, cancellationToken);
                 return true;
 
             case "get_messages":

@@ -15,7 +15,7 @@ public sealed class RpcModelProcessTests
         var agent = Path.Combine(root, "agent");
         Directory.CreateDirectory(agent);
         await File.WriteAllTextAsync(Path.Combine(agent, "models.json"), """
-            {"providers":{"fixture":{"baseUrl":"http://127.0.0.1:1/v1","apiKeyEnv":"PISHARP_FIXTURE_KEY","models":[{"id":"fixture-model"}]}}}
+            {"providers":{"fixture":{"baseUrl":"http://127.0.0.1:1/v1","apiKeyEnv":"PISHARP_FIXTURE_KEY","models":[{"id":"fixture-model","name":"Fixture Model","contextWindow":8192,"maxTokens":2048,"reasoning":true,"input":["text","image"],"api":"openai-completions","cost":{"input":1.25,"output":4,"cacheRead":0.2,"cacheWrite":0.5},"inputLimits":{"images":{"resize":{"maxWidth":512,"maxBytes":1048576,"jpegQuality":80}}}}]}}}
             """);
         Process? process = null;
         try
@@ -55,8 +55,40 @@ public sealed class RpcModelProcessTests
             Assert.True(followResponse.RootElement.GetProperty("success").GetBoolean());
             Assert.False(invalidResponse.RootElement.GetProperty("success").GetBoolean());
             using var state = JsonDocument.Parse(Assert.Single(lines, line => line.Contains("\"id\":\"state\"", StringComparison.Ordinal)));
-            Assert.Equal("all", state.RootElement.GetProperty("data").GetProperty("steeringMode").GetString());
-            Assert.Equal("one-at-a-time", state.RootElement.GetProperty("data").GetProperty("followUpMode").GetString());
+            var stateData = state.RootElement.GetProperty("data");
+            Assert.Equal(["model", "thinkingLevel", "isStreaming", "isCompacting", "steeringMode", "followUpMode",
+                    "sessionId", "autoCompactionEnabled", "messageCount", "pendingMessageCount"],
+                stateData.EnumerateObject().Select(property => property.Name));
+            Assert.Equal("all", stateData.GetProperty("steeringMode").GetString());
+            Assert.Equal("one-at-a-time", stateData.GetProperty("followUpMode").GetString());
+            Assert.False(stateData.GetProperty("isStreaming").GetBoolean());
+            Assert.False(stateData.GetProperty("isCompacting").GetBoolean());
+            Assert.True(stateData.GetProperty("autoCompactionEnabled").GetBoolean());
+            Assert.Equal(0, stateData.GetProperty("messageCount").GetInt32());
+            Assert.Equal(0, stateData.GetProperty("pendingMessageCount").GetInt32());
+            Assert.False(stateData.TryGetProperty("sessionFile", out _));
+            Assert.False(stateData.TryGetProperty("sessionName", out _));
+            var model = stateData.GetProperty("model");
+            Assert.Equal(["id", "name", "api", "provider", "baseUrl", "input", "cost", "reasoning",
+                    "contextWindow", "maxTokens", "inputLimits"],
+                model.EnumerateObject().Select(property => property.Name));
+            Assert.Equal("fixture-model", model.GetProperty("id").GetString());
+            Assert.Equal("Fixture Model", model.GetProperty("name").GetString());
+            Assert.Equal("openai-completions", model.GetProperty("api").GetString());
+            Assert.Equal("fixture", model.GetProperty("provider").GetString());
+            Assert.Equal("http://127.0.0.1:1/v1", model.GetProperty("baseUrl").GetString());
+            Assert.Equal(["text", "image"], model.GetProperty("input").EnumerateArray().Select(value => value.GetString()));
+            Assert.Equal(1.25m, model.GetProperty("cost").GetProperty("input").GetDecimal());
+            Assert.Equal(4m, model.GetProperty("cost").GetProperty("output").GetDecimal());
+            Assert.Equal(0.2m, model.GetProperty("cost").GetProperty("cacheRead").GetDecimal());
+            Assert.Equal(0.5m, model.GetProperty("cost").GetProperty("cacheWrite").GetDecimal());
+            Assert.True(model.GetProperty("reasoning").GetBoolean());
+            Assert.Equal(8192, model.GetProperty("contextWindow").GetInt32());
+            Assert.Equal(2048, model.GetProperty("maxTokens").GetInt32());
+            var resize = model.GetProperty("inputLimits").GetProperty("images").GetProperty("resize");
+            Assert.Equal(512, resize.GetProperty("maxWidth").GetInt32());
+            Assert.Equal(1048576, resize.GetProperty("maxBytes").GetInt32());
+            Assert.Equal(80, resize.GetProperty("jpegQuality").GetInt32());
             using var savedSettings = JsonDocument.Parse(await File.ReadAllTextAsync(Path.Combine(agent, "settings.json")));
             Assert.Equal("all", savedSettings.RootElement.GetProperty("steeringMode").GetString());
             Assert.Equal("one-at-a-time", savedSettings.RootElement.GetProperty("followUpMode").GetString());
@@ -109,8 +141,9 @@ public sealed class RpcModelProcessTests
             process = Process.Start(start)!;
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
             var stderr = process.StandardError.ReadToEndAsync();
+            await WriteCommandAsync(process, new { id = "set-name", type = "set_session_name", name = "restored fixture" }, timeout.Token);
             await WriteCommandAsync(process, new { id = "restored-state", type = "get_state" }, timeout.Token);
-            var lines = await ReadResponsesAsync(process, ["restored-state"], timeout.Token);
+            var lines = await ReadResponsesAsync(process, ["set-name", "restored-state"], timeout.Token);
             process.StandardInput.Close();
             await process.WaitForExitAsync(timeout.Token);
 
@@ -120,8 +153,12 @@ public sealed class RpcModelProcessTests
                 line.Contains("\"id\":\"restored-state\"", StringComparison.Ordinal)));
             Assert.True(response.RootElement.GetProperty("success").GetBoolean());
             var state = response.RootElement.GetProperty("data");
-            Assert.Equal("fixture-reasoning", state.GetProperty("model").GetString());
+            Assert.Equal(["id", "name", "api", "provider", "baseUrl", "input", "reasoning"],
+                state.GetProperty("model").EnumerateObject().Select(property => property.Name));
+            Assert.Equal("fixture-reasoning", state.GetProperty("model").GetProperty("id").GetString());
             Assert.Equal("max", state.GetProperty("thinkingLevel").GetString());
+            Assert.Equal(Path.GetFullPath(sessionPath), state.GetProperty("sessionFile").GetString());
+            Assert.Equal("restored fixture", state.GetProperty("sessionName").GetString());
         }
         finally
         {
@@ -229,7 +266,7 @@ public sealed class RpcModelProcessTests
             Assert.Contains("Model not found: fixture/not-configured", unknown.RootElement.GetProperty("error").GetString());
             using var state = JsonDocument.Parse(Assert.Single(lines, line =>
                 line.Contains("\"id\":\"state\"", StringComparison.Ordinal)));
-            Assert.Equal("fixture-model", state.RootElement.GetProperty("data").GetProperty("model").GetString());
+            Assert.Equal("fixture-model", state.RootElement.GetProperty("data").GetProperty("model").GetProperty("id").GetString());
             Assert.Equal("off", state.RootElement.GetProperty("data").GetProperty("thinkingLevel").GetString());
             using var unsupportedThinking = JsonDocument.Parse(Assert.Single(lines, line =>
                 line.Contains("\"id\":\"unsupported-thinking\"", StringComparison.Ordinal)));

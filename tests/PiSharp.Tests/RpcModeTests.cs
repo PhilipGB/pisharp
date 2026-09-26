@@ -403,7 +403,10 @@ public sealed class RpcModeTests
                     new PiAgent(new StubClient(), new CodingTools(Path.GetTempPath())), session, token);
                 return model;
             },
-            getCurrentRun: () => currentRun);
+            getCurrentRun: () => currentRun,
+            getModelSnapshot: () => JsonSerializer.SerializeToElement(new RpcModelSnapshot(currentRun.Conversation.Model,
+                currentRun.Conversation.Model, "openai-completions", "fixture", "http://new.test/v1",
+                ["text"], null, false, null, null, null)));
         var serving = service.ServeAsync();
         channel.Writer.TryWrite("{\"id\":\"switch\",\"type\":\"set_model\",\"provider\":\"fixture\",\"modelId\":\"fixture-next\"}");
         channel.Writer.TryWrite("{\"id\":\"state\",\"type\":\"get_state\"}");
@@ -418,7 +421,7 @@ public sealed class RpcModeTests
         Assert.Equal("fixture", switched.RootElement.GetProperty("data").GetProperty("provider").GetString());
         using var state = JsonDocument.Parse(Assert.Single(output.Lines(), line =>
             line.Contains("\"id\":\"state\"", StringComparison.Ordinal)));
-        Assert.Equal("fixture-next", state.RootElement.GetProperty("data").GetProperty("model").GetString());
+        Assert.Equal("fixture-next", state.RootElement.GetProperty("data").GetProperty("model").GetProperty("id").GetString());
         Assert.Equal("http://new.test/v1", currentRun.Conversation.Endpoint);
         Assert.Single(session.Tree.Entries, entry => entry.Type == "model_change");
     }
