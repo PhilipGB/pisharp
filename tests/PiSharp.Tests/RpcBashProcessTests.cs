@@ -188,9 +188,11 @@ public sealed class RpcBashProcessTests
                 line.Contains("\"id\":\"process-entries\"", StringComparison.Ordinal))))
             {
                 var entry = Assert.Single(response.RootElement.GetProperty("data").GetProperty("entries").EnumerateArray());
-                Assert.Equal("bash_execution", entry.GetProperty("Type").GetString());
-                Assert.True(entry.GetProperty("Payload").GetProperty("excludeFromContext").GetBoolean());
-                Assert.Contains("process-stdout", entry.GetProperty("Payload").GetProperty("output").GetString());
+                Assert.Equal("message", entry.GetProperty("type").GetString());
+                var bashExecution = entry.GetProperty("message");
+                Assert.Equal("bashExecution", bashExecution.GetProperty("role").GetString());
+                Assert.True(bashExecution.GetProperty("excludeFromContext").GetBoolean());
+                Assert.Contains("process-stdout", bashExecution.GetProperty("output").GetString());
             }
             using (var response = JsonDocument.Parse(Assert.Single(inspectionLines, line =>
                 line.Contains("\"id\":\"process-messages\"", StringComparison.Ordinal))))

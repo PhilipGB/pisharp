@@ -1,6 +1,5 @@
 using System.Text.Json;
 using Microsoft.Extensions.AI;
-using PiSharp.Core;
 using PiSharp.Runtime.Sessions;
 
 namespace PiSharp.Cli.Protocols;
@@ -219,12 +218,12 @@ internal sealed class RpcSessionCommandHandler(
 
             case "get_entries":
                 if (isBusy()) return await RejectBusyAsync(id, command);
-                var entries = conversation.Tree.Entries;
+                var entries = RpcSessionEntryProjector.ProjectEntries(conversation);
                 var index = -1;
                 if (root.TryGetProperty("since", out var since))
                 {
                     if (since.ValueKind != JsonValueKind.String ||
-                        (index = entries.ToList().FindIndex(entry => entry.Id == since.GetString())) < 0)
+                        (index = IndexOfEntry(entries, since.GetString())) < 0)
                     {
                         var cursor = since.ValueKind == JsonValueKind.String ? since.GetString() : since.GetRawText();
                         await respond(id, command, false, $"Entry not found: {cursor}");
@@ -237,7 +236,7 @@ internal sealed class RpcSessionCommandHandler(
                     type = "response",
                     command,
                     success = true,
-                    data = new { format = "pisharp", entries = entries.Skip(index + 1).ToArray(), leafId = conversation.Tree.HeadId }
+                    data = new { entries = entries.Skip(index + 1).ToArray(), leafId = conversation.Tree.HeadId }
                 }, cancellationToken);
                 return true;
 
@@ -249,7 +248,7 @@ internal sealed class RpcSessionCommandHandler(
                     type = "response",
                     command,
                     success = true,
-                    data = new { format = "pisharp", tree = BuildTree(conversation), leafId = conversation.Tree.HeadId }
+                    data = new { tree = RpcSessionEntryProjector.ProjectTree(conversation), leafId = conversation.Tree.HeadId }
                 }, cancellationToken);
                 return true;
 
@@ -290,23 +289,10 @@ internal sealed class RpcSessionCommandHandler(
         return true;
     }
 
-    private static IReadOnlyList<TreeNode> BuildTree(ConversationSession conversation)
+    private static int IndexOfEntry(IReadOnlyList<JsonElement> entries, string? id)
     {
-        var lookup = conversation.Tree.Entries.ToDictionary(entry => entry.Id, entry => new TreeNode(entry));
-        var roots = new List<TreeNode>();
-        foreach (var entry in conversation.Tree.Entries)
-        {
-            var node = lookup[entry.Id];
-            if (entry.ParentId is not null && lookup.TryGetValue(entry.ParentId, out var parent))
-                parent.Children.Add(node);
-            else roots.Add(node);
-        }
-        return roots;
-    }
-
-    private sealed class TreeNode(ConversationNode entry)
-    {
-        public ConversationNode Entry { get; } = entry;
-        public List<TreeNode> Children { get; } = [];
+        for (var index = 0; index < entries.Count; index++)
+            if (entries[index].GetProperty("id").GetString() == id) return index;
+        return -1;
     }
 }

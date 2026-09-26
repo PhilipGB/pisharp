@@ -72,6 +72,8 @@ public sealed class RpcSessionProcessTests
             await process.StandardInput.WriteLineAsync($"{{\"id\":\"new\",\"type\":\"new_session\",\"parentSession\":\"{targetPath}\"}}");
             await process.StandardInput.WriteLineAsync("{\"id\":\"new-state\",\"type\":\"get_state\"}");
             await process.StandardInput.WriteLineAsync($"{{\"id\":\"switch-jsonl\",\"type\":\"switch_session\",\"sessionPath\":\"{targetJsonlPath}\"}}");
+            await process.StandardInput.WriteLineAsync("{\"id\":\"jsonl-entries\",\"type\":\"get_entries\"}");
+            await process.StandardInput.WriteLineAsync("{\"id\":\"jsonl-tree\",\"type\":\"get_tree\"}");
             await process.StandardInput.WriteLineAsync("{\"id\":\"jsonl-state\",\"type\":\"get_state\"}");
             await process.StandardInput.WriteLineAsync($"{{\"id\":\"new-jsonl\",\"type\":\"new_session\",\"parentSession\":\"{targetJsonlPath}\"}}");
             await process.StandardInput.WriteLineAsync("{\"id\":\"new-jsonl-state\",\"type\":\"get_state\"}");
@@ -122,6 +124,27 @@ public sealed class RpcSessionProcessTests
                     item => item.Session.Id == jsonlNewId);
                 Assert.Equal(targetCwd, savedJsonlChild.Session.WorkingDirectory);
                 Assert.Equal(targetJsonlPath, savedJsonlChild.Session.ParentSessionPath);
+                var jsonlEntriesResponse = Assert.Single(responses,
+                    response => response.RootElement.GetProperty("id").GetString() == "jsonl-entries");
+                var jsonlEntries = jsonlEntriesResponse.RootElement.GetProperty("data");
+                Assert.Equal(["entries", "leafId"], jsonlEntries.EnumerateObject().Select(property => property.Name));
+                Assert.False(jsonlEntries.TryGetProperty("format", out _));
+                var jsonlEntryList = jsonlEntries.GetProperty("entries");
+                var jsonlEntry = Assert.Single(jsonlEntryList.EnumerateArray(),
+                    entry => entry.GetProperty("id").GetString() == target.Tree.Entries[0].Id);
+                Assert.Equal("message", jsonlEntry.GetProperty("type").GetString());
+                Assert.Equal(jsonlEntryList[jsonlEntryList.GetArrayLength() - 1].GetProperty("id").GetString(),
+                    jsonlEntries.GetProperty("leafId").GetString());
+                var jsonlTreeResponse = Assert.Single(responses,
+                    response => response.RootElement.GetProperty("id").GetString() == "jsonl-tree");
+                var jsonlTree = jsonlTreeResponse.RootElement.GetProperty("data");
+                Assert.Equal(["tree", "leafId"], jsonlTree.EnumerateObject().Select(property => property.Name));
+                var jsonlRoot = Assert.Single(jsonlTree.GetProperty("tree").EnumerateArray());
+                Assert.Equal(["entry", "children"], jsonlRoot.EnumerateObject().Select(property => property.Name));
+                Assert.Equal(target.Tree.Entries[0].Id, jsonlRoot.GetProperty("entry").GetProperty("id").GetString());
+                Assert.Equal(jsonlEntries.GetProperty("leafId").GetString(), jsonlTree.GetProperty("leafId").GetString());
+                var modelChange = Assert.Single(jsonlRoot.GetProperty("children").EnumerateArray());
+                Assert.Equal("model_change", modelChange.GetProperty("entry").GetProperty("type").GetString());
             }
             finally { foreach (var response in responses) response.Dispose(); }
         }

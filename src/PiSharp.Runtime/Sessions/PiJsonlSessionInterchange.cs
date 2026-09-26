@@ -113,24 +113,7 @@ public static class PiJsonlSessionInterchange
 
         var orderedEntries = OrderedEntriesForExport(session);
         foreach (var node in orderedEntries)
-        {
-            var raw = OriginalEntry(node);
-            JsonObject record;
-            if (raw is { } original)
-            {
-                record = JsonNode.Parse(original.GetRawText())!.AsObject();
-                record["id"] = node.Id;
-                record["parentId"] = node.ParentId;
-            }
-            else
-            {
-                record = ExportNativeEntry(session, node);
-                record["id"] = node.Id;
-                record["parentId"] = node.ParentId;
-                record["timestamp"] = node.Timestamp.ToUniversalTime().ToString("O");
-            }
-            AppendLine(output, record);
-        }
+            AppendLine(output, ProjectEntry(session, node));
 
         var activePath = session.Tree.ActivePath();
         var lastInfo = activePath.LastOrDefault(node => node.Type == "session_info");
@@ -151,6 +134,34 @@ public static class PiJsonlSessionInterchange
             AppendLine(output, info);
         }
         return output.ToString();
+    }
+
+    /// <summary>Projects stored entries to Pi v3 entry objects without adding a session header or branch anchor.</summary>
+    public static IReadOnlyList<JsonElement> ProjectEntries(ConversationSession session)
+    {
+        ArgumentNullException.ThrowIfNull(session);
+        return session.Tree.Entries.Select(node =>
+            JsonSerializer.SerializeToElement(ProjectEntry(session, node))).ToArray();
+    }
+
+    private static JsonObject ProjectEntry(ConversationSession session, ConversationNode node)
+    {
+        var raw = OriginalEntry(node);
+        JsonObject record;
+        if (raw is { } original)
+        {
+            record = JsonNode.Parse(original.GetRawText())!.AsObject();
+            record["id"] = node.Id;
+            record["parentId"] = node.ParentId;
+        }
+        else
+        {
+            record = ExportNativeEntry(session, node);
+            record["id"] = node.Id;
+            record["parentId"] = node.ParentId;
+            record["timestamp"] = node.Timestamp.ToUniversalTime().ToString("O");
+        }
+        return record;
     }
 
     internal static JsonArray ProjectRunMessages(ConversationSession session, string? afterEntryId, string? api,

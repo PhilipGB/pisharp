@@ -209,8 +209,8 @@ public sealed class RpcModelProcessTests
             using var entries = JsonDocument.Parse(Assert.Single(lines, line =>
                 line.Contains("\"id\":\"thinking-entries\"", StringComparison.Ordinal)));
             Assert.Contains(entries.RootElement.GetProperty("data").GetProperty("entries").EnumerateArray(), entry =>
-                entry.GetProperty("Type").GetString() == "thinking_level_change" &&
-                entry.GetProperty("Payload").GetProperty("thinkingLevel").GetString() == "max");
+                entry.GetProperty("type").GetString() == "thinking_level_change" &&
+                entry.GetProperty("thinkingLevel").GetString() == "max");
             using var cycledThinking = JsonDocument.Parse(Assert.Single(lines, line =>
                 line.Contains("\"id\":\"cycle-thinking\"", StringComparison.Ordinal)));
             Assert.Equal("off", cycledThinking.RootElement.GetProperty("data").GetProperty("level").GetString());

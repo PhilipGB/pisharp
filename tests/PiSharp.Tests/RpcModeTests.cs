@@ -31,6 +31,8 @@ public sealed class RpcModeTests
         channel.Writer.TryWrite("{\"id\":\"fork-messages\",\"type\":\"get_fork_messages\"}");
         channel.Writer.TryWrite("{\"id\":\"blank-name\",\"type\":\"set_session_name\",\"name\":\"  \"}");
         channel.Writer.TryWrite("{\"id\":\"entries\",\"type\":\"get_entries\"}");
+        var firstEntryId = session.Tree.Entries[0].Id;
+        channel.Writer.TryWrite($"{{\"id\":\"entries-after-cursor\",\"type\":\"get_entries\",\"since\":\"{firstEntryId}\"}}");
         channel.Writer.TryWrite("{\"id\":\"bad-cursor\",\"type\":\"get_entries\",\"since\":\"missing\"}");
         channel.Writer.TryWrite("{\"id\":\"tree\",\"type\":\"get_tree\"}");
         channel.Writer.TryWrite("{\"id\":\"text\",\"type\":\"get_last_assistant_text\"}");
@@ -91,12 +93,31 @@ public sealed class RpcModeTests
                 .GetProperty("data").GetProperty("messages");
             Assert.Single(forkMessages.EnumerateArray());
             Assert.Equal("hello", forkMessages[0].GetProperty("text").GetString());
-            Assert.Contains(events, e => e.RootElement.GetProperty("type").GetString() == "response" &&
+            var entriesResponse = Assert.Single(events, e => e.RootElement.GetProperty("type").GetString() == "response" &&
                 e.RootElement.GetProperty("id").GetString() == "entries" &&
                 e.RootElement.GetProperty("data").GetProperty("entries").GetArrayLength() == 2);
-            Assert.Contains(events, e => e.RootElement.GetProperty("type").GetString() == "response" &&
+            var entriesData = entriesResponse.RootElement.GetProperty("data");
+            Assert.Equal(["entries", "leafId"], entriesData.EnumerateObject().Select(property => property.Name));
+            Assert.False(entriesData.TryGetProperty("format", out _));
+            Assert.Equal("message", entriesData.GetProperty("entries")[0].GetProperty("type").GetString());
+            Assert.Equal(firstEntryId, entriesData.GetProperty("entries")[0].GetProperty("id").GetString());
+            Assert.Equal(session.Tree.HeadId, entriesData.GetProperty("leafId").GetString());
+            var cursorEntries = Assert.Single(events, e => e.RootElement.GetProperty("type").GetString() == "response" &&
+                e.RootElement.GetProperty("id").GetString() == "entries-after-cursor").RootElement.GetProperty("data");
+            Assert.Equal(1, cursorEntries.GetProperty("entries").GetArrayLength());
+            Assert.Equal(session.Tree.Entries[1].Id, cursorEntries.GetProperty("entries")[0].GetProperty("id").GetString());
+            Assert.Equal(session.Tree.HeadId, cursorEntries.GetProperty("leafId").GetString());
+            var treeResponse = Assert.Single(events, e => e.RootElement.GetProperty("type").GetString() == "response" &&
                 e.RootElement.GetProperty("id").GetString() == "tree" &&
                 e.RootElement.GetProperty("data").GetProperty("tree").GetArrayLength() == 1);
+            var treeData = treeResponse.RootElement.GetProperty("data");
+            Assert.Equal(["tree", "leafId"], treeData.EnumerateObject().Select(property => property.Name));
+            Assert.False(treeData.TryGetProperty("format", out _));
+            var rootNode = Assert.Single(treeData.GetProperty("tree").EnumerateArray());
+            Assert.Equal(["entry", "children"], rootNode.EnumerateObject().Select(property => property.Name));
+            Assert.Equal(firstEntryId, rootNode.GetProperty("entry").GetProperty("id").GetString());
+            Assert.Equal(1, rootNode.GetProperty("children").GetArrayLength());
+            Assert.Equal(session.Tree.HeadId, treeData.GetProperty("leafId").GetString());
             Assert.Contains(events, e => e.RootElement.GetProperty("type").GetString() == "response" &&
                 e.RootElement.GetProperty("id").GetString() == "text" &&
                 e.RootElement.GetProperty("data").GetProperty("text").GetString() == "reply");
