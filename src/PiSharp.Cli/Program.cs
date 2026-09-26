@@ -431,8 +431,8 @@ async Task ReplaceModelRuntime(ModelSelection nextSelection, string nextThinking
     }
 }
 
-Task<IReadOnlyList<ModelDescriptor>> GetRpcModelsAsync(string? providerId, CancellationToken token) =>
-    modelRuntime.ListModelsAsync(providerId, token);
+async Task<IReadOnlyList<ModelDescriptor>> GetRpcModelsAsync(string? providerId, CancellationToken token) =>
+    (await modelRuntime.ListModelsAsync(providerId, token)).Where(model => model.Available).ToArray();
 
 async Task<ModelDescriptor> SelectRpcModelAsync(ModelDescriptor model, CancellationToken token)
 {
@@ -842,8 +842,10 @@ if (cli.Mode == "rpc")
         ForkRpcSessionAsync, CloneRpcSessionAsync, SwitchProjectSessionAsync,
         () => resources, () => extensionLease.Current.Registration,
         rpcUserSettings.SetPromptDeliveryModeAsync,
-        getModelSnapshot: () => JsonSerializer.SerializeToElement(RpcModelSnapshot.From(selection)),
-        persistAutoCompactionEnabled: rpcUserSettings.SetAutoCompactionEnabledAsync).ServeAsync();
+        getModelSnapshot: () => RpcModelProjector.Project(selection),
+        persistAutoCompactionEnabled: rpcUserSettings.SetAutoCompactionEnabledAsync,
+        projectModel: model => RpcModelProjector.Project(model,
+            model.Provider is { } providerId ? modelRuntime.GetProvider(providerId) : null)).ServeAsync();
     return;
 }
 if (cli.Mode == "json")

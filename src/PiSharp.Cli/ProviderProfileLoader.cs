@@ -41,8 +41,12 @@ internal static class ProviderProfileLoader
             // Preserve built-in identity across case-insensitive models.json overrides. Protocol
             // dispatch and credential storage use the canonical provider ID, not JSON spelling.
             var canonicalId = providers.GetValueOrDefault(item.Name)?.Id ?? item.Name;
-            var baseUrl = String(value, "baseUrl") ?? providers.GetValueOrDefault(item.Name)?.Endpoint.ToString();
+            var existing = providers.GetValueOrDefault(item.Name);
+            var baseUrl = String(value, "baseUrl") ?? existing?.Endpoint.ToString();
             if (baseUrl is null) throw new InvalidDataException($"Provider '{item.Name}' requires baseUrl.");
+            var endpoint = ParseEndpoint(baseUrl, $"models.json provider '{item.Name}' baseUrl");
+            var api = String(value, "api") ?? existing?.Api;
+            var compatibility = ModelMetadataJson.ReadObject(value, "compat", $"models.json provider '{item.Name}'", strict: true);
             var models = new List<ModelDescriptor>();
             var seenModels = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             if (value.TryGetProperty("models", out var array) && array.ValueKind == JsonValueKind.Array)
@@ -52,15 +56,36 @@ internal static class ProviderProfileLoader
                         throw new InvalidDataException($"Provider '{item.Name}' has an invalid model.");
                     if (!seenModels.Add(String(model, "id")!))
                         throw new InvalidDataException($"Provider '{item.Name}' has duplicate model IDs.");
-                    models.Add(new(String(model, "id")!, canonicalId, PositiveInt(model, "contextWindow") ?? PositiveInt(model, "context_length"),
-                        "configured", Boolean(model, "reasoning"), ParsePricing(model), canonicalId,
-                        Name: String(model, "name"), MaxOutputTokens: PositiveInt(model, "maxTokens") ?? PositiveInt(model, "max_tokens"),
-                        Input: ParseInputs(model), Api: String(model, "api"),
-                        InputLimits: ModelInputLimitsParser.Parse(model,
-                            $"models.json provider '{item.Name}' model '{String(model, "id")}'", strict: true)));
+                    var id = String(model, "id")!;
+                    var defaults = existing?.Models.FirstOrDefault(candidate => candidate.Id.Equals(id, StringComparison.Ordinal));
+                    var modelBaseUrl = String(model, "baseUrl");
+                    if (modelBaseUrl is not null)
+                    {
+                        var modelEndpoint = ParseEndpoint(modelBaseUrl,
+                            $"models.json provider '{item.Name}' model '{id}' baseUrl");
+                        if (!ProviderModelRuntime.IsSameAuthority(endpoint, modelEndpoint))
+                            throw new InvalidDataException($"models.json provider '{item.Name}' model '{id}' baseUrl must use the provider's scheme, host, and port.");
+                        modelBaseUrl = modelEndpoint.ToString().TrimEnd('/');
+                    }
+                    var source = $"models.json provider '{item.Name}' model '{id}'";
+                    models.Add(new(id, defaults?.Owner ?? canonicalId,
+                        PositiveInt(model, "contextWindow") ?? PositiveInt(model, "context_length") ?? defaults?.ContextLength ?? 128000,
+                        "configured", Boolean(model, "reasoning") ?? defaults?.Reasoning ?? false,
+                        ParsePricing(model) ?? defaults?.Pricing ?? new ModelPricing(0, 0, 0, CachedWrite: 0), canonicalId,
+                        Name: String(model, "name") ?? defaults?.Name ?? id,
+                        MaxOutputTokens: PositiveInt(model, "maxTokens") ?? PositiveInt(model, "max_tokens") ?? defaults?.MaxOutputTokens ?? 16384,
+                        Input: ParseInputs(model) ?? defaults?.Input ?? ["text"],
+                        Api: String(model, "api") ?? defaults?.Api,
+                        InputLimits: ModelInputLimits.Merge(
+                            ModelInputLimitsParser.Parse(model, source, strict: true), defaults?.InputLimits),
+                        BaseUrl: modelBaseUrl ?? defaults?.BaseUrl,
+                        ThinkingLevelMap: ModelMetadataJson.MergeObjects(ModelMetadataJson.ReadObject(model, "thinkingLevelMap", source, strict: true), defaults?.ThinkingLevelMap),
+                        PromptCache: ModelMetadataJson.MergeObjects(ModelMetadataJson.ReadObject(model, "promptCache", source, strict: true), defaults?.PromptCache),
+                        SamplingParameters: ModelMetadataJson.MergeObjects(ModelMetadataJson.ReadObject(model, "samplingParams", source, strict: true), defaults?.SamplingParameters),
+                        Compatibility: ModelMetadataJson.MergeCompatibility(
+                            ModelMetadataJson.ReadObject(model, "compat", source, strict: true),
+                            ModelMetadataJson.MergeCompatibility(compatibility, defaults?.Compatibility))));
                 }
-            var existing = providers.GetValueOrDefault(item.Name);
-            var endpoint = ParseEndpoint(baseUrl, $"models.json provider '{item.Name}' baseUrl");
             // The built-in OpenAI identity owns credentials from auth.json and OPENAI_API_KEY.
             // Overriding its endpoint, or naming that env var for another endpoint, leaks them.
             if (item.Name.Equals("openai", StringComparison.OrdinalIgnoreCase) && !ProviderModelRuntime.IsOfficialOpenAiEndpoint(endpoint))
@@ -82,7 +107,7 @@ internal static class ProviderProfileLoader
                 throw new InvalidDataException("models.json cannot enable OAuth without a provider-specific refresh adapter.");
             providers[canonicalId] = new(canonicalId, String(value, "name") ?? existing?.Name ?? item.Name,
                 endpoint, authHeader, false, apiKeyEnvironment,
-                String(value, "apiKey"), models.Count == 0 ? existing?.Models ?? [] : models);
+                String(value, "apiKey"), models.Count == 0 ? existing?.Models ?? [] : models, api, compatibility);
         }
     }
 

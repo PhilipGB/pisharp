@@ -10,6 +10,7 @@ internal sealed class RpcModelCommandHandler(
     Func<RpcEventWriter> events,
     Func<string?, CancellationToken, Task<IReadOnlyList<ModelDescriptor>>>? discoverModels,
     Func<ModelDescriptor, CancellationToken, Task<ModelDescriptor>>? setModel,
+    Func<ModelDescriptor, JsonElement> projectModel,
     Func<ConversationRun> currentRun,
     Func<string?>? getThinkingLevel,
     Func<bool>? isModelScoped,
@@ -37,7 +38,7 @@ internal sealed class RpcModelCommandHandler(
                             type = "response",
                             command,
                             success = true,
-                            data = new { models }
+                            data = new { models = models.Select(projectModel).ToArray() }
                         }, cancellationToken);
                     }
                     catch (Exception error) when (error is HttpRequestException or InvalidDataException or JsonException or TaskCanceledException)
@@ -74,7 +75,7 @@ internal sealed class RpcModelCommandHandler(
                         type = "response",
                         command,
                         success = true,
-                        data = new { provider = selectedModel.Provider, id = selectedModel.Id }
+                        data = projectModel(selectedModel)
                     }, cancellationToken);
                 }
                 catch (Exception error) when (error is not OperationCanceledException)
@@ -110,7 +111,7 @@ internal sealed class RpcModelCommandHandler(
                         success = true,
                         data = new
                         {
-                            model = new { provider = selectedModel.Provider, id = selectedModel.Id },
+                            model = projectModel(selectedModel),
                             thinkingLevel = getThinkingLevel?.Invoke() ?? "off",
                             isScoped = isModelScoped?.Invoke() ?? false
                         }

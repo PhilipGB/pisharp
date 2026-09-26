@@ -10,7 +10,7 @@ public static class ProviderChatClientFactory
 {
     public static string ResolveProtocol(ModelSelection selection)
     {
-        var protocol = selection.Model.Api ?? (selection.Provider.Id switch
+        var protocol = selection.Model.Api ?? selection.Provider.Api ?? (selection.Provider.Id switch
         {
             "openai" or "xai" => "openai-responses",
             "anthropic" => "anthropic-messages",
@@ -28,8 +28,8 @@ public static class ProviderChatClientFactory
     {
         var protocol = ResolveProtocol(selection);
         if (protocol == "anthropic-messages")
-            return new AnthropicClient { ApiKey = selection.ApiKey, BaseUrl = selection.Provider.Endpoint.ToString() }
-                .AsIChatClient(selection.Model.Id, selection.Model.MaxOutputTokens,
+            return new AnthropicClient { ApiKey = selection.ApiKey, BaseUrl = selection.Connection.Endpoint?.ToString() ?? selection.Provider.Endpoint.ToString() }
+                .AsIChatClient(selection.Model.Id, selection.Model.MaxOutputTokens ?? 16384,
                     thinkingMode: selection.Model.Id is "claude-sonnet-4-6" or "claude-opus-4-6"
                         ? AnthropicThinkingMode.Adaptive : AnthropicThinkingMode.Extended);
         var options = new OpenAIClientOptions();

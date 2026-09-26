@@ -8,6 +8,129 @@ namespace PiSharp.Tests;
 public sealed class RpcModelProcessTests
 {
     [Fact]
+    public async Task ModelCommandsProjectPiModelMetadataAndApplySparseDefaultsInTheCliProcess()
+    {
+        if (!OperatingSystem.IsLinux()) return;
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-rpc-model-projection-" + Guid.NewGuid().ToString("N"));
+        var agent = Path.Combine(root, "agent");
+        Directory.CreateDirectory(agent);
+        await File.WriteAllTextAsync(Path.Combine(agent, "models.json"), """
+            {"providers":{"fixture":{"baseUrl":"http://127.0.0.1:1/v1","api":"openai-completions","compat":{"supportsDeveloperRole":true,"openRouterRouting":{"zdr":false,"maxPrice":0.5}},"apiKeyEnv":"PISHARP_FIXTURE_KEY","headers":{"Authorization":"Bearer fixture-only-secret"},"models":[
+             {"id":"rich","name":"Rich model","baseUrl":"http://127.0.0.1:1/v1/model-rich","api":"openai-responses","contextWindow":8192,"maxTokens":2048,"reasoning":true,"thinkingLevelMap":{"off":"none","high":"extended","max":null},"input":["text","image"],"inputLimits":{"maxRequestBytes":120000,"images":{"maxPerMessage":4,"maxPerRequest":8,"resize":{"maxWidth":512,"maxHeight":768,"maxBytes":1048576,"jpegQuality":80}}},"cost":{"input":1.25,"output":4,"cacheRead":0.2,"cacheWrite":0.5,"tiers":[{"inputTokensAbove":100,"input":2,"output":5,"cacheRead":0.3,"cacheWrite":0.6}]},"promptCache":{"short":300,"long":1800},"samplingParams":{"temperature":0.2,"top_p":0.9},"compat":{"supportsStore":false,"openRouterRouting":{"zdr":true,"allowFallbacks":false}},"headers":{"X-Model-Secret":"fixture-only-secret"}},
+             {"id":"sparse"}]}}}
+            """);
+        Process? process = null;
+        try
+        {
+            var start = new ProcessStartInfo("dotnet")
+            {
+                WorkingDirectory = root,
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+            start.ArgumentList.Add(typeof(CliArguments).Assembly.Location);
+            foreach (var name in start.Environment.Keys.Where(name => name.EndsWith("_API_KEY", StringComparison.OrdinalIgnoreCase)).ToArray())
+                start.Environment.Remove(name);
+            foreach (var argument in new[] { "--mode", "rpc", "--provider", "fixture", "--model", "sparse", "--offline", "--no-session" })
+                start.ArgumentList.Add(argument);
+            foreach (var name in new[] { "OPENAI_API_KEY", "PISHARP_API_KEY", "PISHARP_BASE_URL", "PISHARP_MODEL",
+                "PISHARP_AUTH_PATH", "PISHARP_MODELS_PATH", "PISHARP_SETTINGS_PATH", "PISHARP_FIXTURE_KEY" })
+                start.Environment.Remove(name);
+            start.Environment["PISHARP_AGENT_DIR"] = agent;
+            start.Environment["PISHARP_FIXTURE_KEY"] = "fixture-only-secret";
+            process = Process.Start(start)!;
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+            var stderr = process.StandardError.ReadToEndAsync();
+            await WriteCommandAsync(process, new { id = "available", type = "get_available_models" }, timeout.Token);
+            await WriteCommandAsync(process, new { id = "unavailable", type = "set_model", provider = "openai", modelId = "gpt-4o-mini" }, timeout.Token);
+            await WriteCommandAsync(process, new { id = "select", type = "set_model", provider = "fixture", modelId = "rich" }, timeout.Token);
+            await WriteCommandAsync(process, new { id = "cycle", type = "cycle_model" }, timeout.Token);
+            await WriteCommandAsync(process, new { id = "state", type = "get_state" }, timeout.Token);
+            var lines = await ReadResponsesAsync(process, ["available", "unavailable", "select", "cycle", "state"], timeout.Token);
+            process.StandardInput.Close();
+            await process.WaitForExitAsync(timeout.Token);
+
+            Assert.Equal(0, process.ExitCode);
+            Assert.Equal("", await stderr.WaitAsync(timeout.Token));
+            var output = string.Join('\n', lines);
+            Assert.DoesNotContain("fixture-only-secret", output, StringComparison.Ordinal);
+
+            using var available = JsonDocument.Parse(Assert.Single(lines, line => line.Contains("\"id\":\"available\"", StringComparison.Ordinal)));
+            var models = available.RootElement.GetProperty("data").GetProperty("models");
+            Assert.Equal(2, models.GetArrayLength());
+            var rich = models.EnumerateArray().Single(model => model.GetProperty("id").GetString() == "rich");
+            Assert.Equal("Rich model", rich.GetProperty("name").GetString());
+            Assert.Equal("openai-responses", rich.GetProperty("api").GetString());
+            Assert.Equal("fixture", rich.GetProperty("provider").GetString());
+            Assert.Equal("http://127.0.0.1:1/v1/model-rich", rich.GetProperty("baseUrl").GetString());
+            Assert.True(rich.GetProperty("reasoning").GetBoolean());
+            Assert.Equal("none", rich.GetProperty("thinkingLevelMap").GetProperty("off").GetString());
+            Assert.Equal(JsonValueKind.Null, rich.GetProperty("thinkingLevelMap").GetProperty("max").ValueKind);
+            Assert.Equal(["text", "image"], rich.GetProperty("input").EnumerateArray().Select(item => item.GetString()));
+            var limits = rich.GetProperty("inputLimits");
+            Assert.Equal(120000, limits.GetProperty("maxRequestBytes").GetInt32());
+            Assert.Equal(4, limits.GetProperty("images").GetProperty("maxPerMessage").GetInt32());
+            Assert.Equal(8, limits.GetProperty("images").GetProperty("maxPerRequest").GetInt32());
+            Assert.Equal(512, limits.GetProperty("images").GetProperty("resize").GetProperty("maxWidth").GetInt32());
+            var cost = rich.GetProperty("cost");
+            Assert.Equal(1.25m, cost.GetProperty("input").GetDecimal());
+            Assert.Equal(0.2m, cost.GetProperty("cacheRead").GetDecimal());
+            Assert.Equal(0.5m, cost.GetProperty("cacheWrite").GetDecimal());
+            Assert.Equal(100, cost.GetProperty("tiers")[0].GetProperty("inputTokensAbove").GetInt32());
+            Assert.Equal(0.6m, cost.GetProperty("tiers")[0].GetProperty("cacheWrite").GetDecimal());
+            Assert.Equal(300, rich.GetProperty("promptCache").GetProperty("short").GetInt32());
+            Assert.Equal(1800, rich.GetProperty("promptCache").GetProperty("long").GetInt32());
+            Assert.Equal(0.2, rich.GetProperty("samplingParams").GetProperty("temperature").GetDouble());
+            Assert.False(rich.GetProperty("compat").GetProperty("supportsStore").GetBoolean());
+            Assert.True(rich.GetProperty("compat").GetProperty("supportsDeveloperRole").GetBoolean());
+            Assert.True(rich.GetProperty("compat").GetProperty("openRouterRouting").GetProperty("zdr").GetBoolean());
+            Assert.False(rich.GetProperty("compat").GetProperty("openRouterRouting").GetProperty("allowFallbacks").GetBoolean());
+            Assert.Equal(0.5, rich.GetProperty("compat").GetProperty("openRouterRouting").GetProperty("maxPrice").GetDouble());
+            Assert.False(rich.TryGetProperty("headers", out _));
+            Assert.False(rich.TryGetProperty("Owner", out _));
+            Assert.False(rich.TryGetProperty("Status", out _));
+            Assert.False(rich.TryGetProperty("Available", out _));
+
+            using var unavailable = JsonDocument.Parse(Assert.Single(lines, line => line.Contains("\"id\":\"unavailable\"", StringComparison.Ordinal)));
+            Assert.False(unavailable.RootElement.GetProperty("success").GetBoolean());
+            Assert.Equal("Model not found: openai/gpt-4o-mini", unavailable.RootElement.GetProperty("error").GetString());
+
+            using var selected = JsonDocument.Parse(Assert.Single(lines, line => line.Contains("\"id\":\"select\"", StringComparison.Ordinal)));
+            var selectedModel = selected.RootElement.GetProperty("data");
+            Assert.Equal("rich", selectedModel.GetProperty("id").GetString());
+            Assert.Equal("http://127.0.0.1:1/v1/model-rich", selectedModel.GetProperty("baseUrl").GetString());
+
+            using var cycled = JsonDocument.Parse(Assert.Single(lines, line => line.Contains("\"id\":\"cycle\"", StringComparison.Ordinal)));
+            var sparse = cycled.RootElement.GetProperty("data").GetProperty("model");
+            Assert.Equal("sparse", sparse.GetProperty("id").GetString());
+            Assert.Equal("sparse", sparse.GetProperty("name").GetString());
+            Assert.Equal("openai-completions", sparse.GetProperty("api").GetString());
+            Assert.Equal("http://127.0.0.1:1/v1", sparse.GetProperty("baseUrl").GetString());
+            Assert.False(sparse.GetProperty("reasoning").GetBoolean());
+            Assert.Equal(["text"], sparse.GetProperty("input").EnumerateArray().Select(item => item.GetString()));
+            Assert.Equal(128000, sparse.GetProperty("contextWindow").GetInt32());
+            Assert.Equal(16384, sparse.GetProperty("maxTokens").GetInt32());
+            Assert.Equal(0, sparse.GetProperty("cost").GetProperty("input").GetDecimal());
+            Assert.Equal(0, sparse.GetProperty("cost").GetProperty("cacheRead").GetDecimal());
+            Assert.Equal("off", cycled.RootElement.GetProperty("data").GetProperty("thinkingLevel").GetString());
+
+            using var state = JsonDocument.Parse(Assert.Single(lines, line => line.Contains("\"id\":\"state\"", StringComparison.Ordinal)));
+            Assert.Equal("sparse", state.RootElement.GetProperty("data").GetProperty("model").GetProperty("id").GetString());
+        }
+        finally
+        {
+            if (process is { HasExited: false })
+            {
+                process.Kill(entireProcessTree: true);
+                await process.WaitForExitAsync();
+            }
+            process?.Dispose();
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task RpcQueueModesPersistAndAppearInStateInTheCliProcess()
     {
         if (!OperatingSystem.IsLinux()) return;
@@ -80,8 +203,8 @@ public sealed class RpcModelProcessTests
             Assert.False(stateData.TryGetProperty("sessionFile", out _));
             Assert.False(stateData.TryGetProperty("sessionName", out _));
             var model = stateData.GetProperty("model");
-            Assert.Equal(["id", "name", "api", "provider", "baseUrl", "input", "cost", "reasoning",
-                    "contextWindow", "maxTokens", "inputLimits"],
+            Assert.Equal(["id", "name", "api", "provider", "baseUrl", "reasoning", "input", "inputLimits",
+                    "cost", "contextWindow", "maxTokens"],
                 model.EnumerateObject().Select(property => property.Name));
             Assert.Equal("fixture-model", model.GetProperty("id").GetString());
             Assert.Equal("Fixture Model", model.GetProperty("name").GetString());
@@ -168,7 +291,8 @@ public sealed class RpcModelProcessTests
                 line.Contains("\"id\":\"restored-state\"", StringComparison.Ordinal)));
             Assert.True(response.RootElement.GetProperty("success").GetBoolean());
             var state = response.RootElement.GetProperty("data");
-            Assert.Equal(["id", "name", "api", "provider", "baseUrl", "input", "reasoning"],
+            Assert.Equal(["id", "name", "api", "provider", "baseUrl", "reasoning", "input", "cost",
+                    "contextWindow", "maxTokens"],
                 state.GetProperty("model").EnumerateObject().Select(property => property.Name));
             Assert.Equal("fixture-reasoning", state.GetProperty("model").GetProperty("id").GetString());
             Assert.Equal("max", state.GetProperty("thinkingLevel").GetString());

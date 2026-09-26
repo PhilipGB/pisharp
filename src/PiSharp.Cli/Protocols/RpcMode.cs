@@ -28,7 +28,8 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
     Func<ExtensionRegistration?>? getCurrentExtensions = null,
     Func<bool, PromptDeliveryMode, CancellationToken, Task>? persistQueueMode = null,
     Func<JsonElement?>? getModelSnapshot = null,
-    Func<bool, CancellationToken, Task>? persistAutoCompactionEnabled = null)
+    Func<bool, CancellationToken, Task>? persistAutoCompactionEnabled = null,
+    Func<ModelDescriptor, JsonElement>? projectModel = null)
 {
     private readonly JsonLineWriter _writer = new(output);
     private RpcEventWriter? _events;
@@ -44,7 +45,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
     public async Task ServeAsync(CancellationToken cancellationToken = default)
     {
         var modelCommands = new RpcModelCommandHandler(_writer, RespondAsync, () => Events,
-            discoverModels, setModel, () => CurrentRun, getThinkingLevel, isModelScoped,
+            discoverModels, setModel, projectModel ?? RpcModelProjector.Project, () => CurrentRun, getThinkingLevel, isModelScoped,
             setThinkingLevel, setThinkingLevelDuringRun, getAvailableThinkingLevels, supportsThinking);
         var retryCommands = new RpcRetryCommandHandler(RespondAsync, () => CurrentRun, persistRetryEnabled);
         var compactionCommands = new RpcCompactionCommandHandler(_writer, RespondAsync, () => CurrentRun,

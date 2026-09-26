@@ -6,14 +6,20 @@ namespace PiSharp.Cli;
 
 public sealed record ProviderProfile(string Id, string Name, Uri Endpoint, bool AuthRequired,
     bool OAuthSupported, string? ApiKeyEnvironment, string? ConfiguredApiKey,
-    IReadOnlyList<ModelDescriptor> Models);
+    IReadOnlyList<ModelDescriptor> Models, string? Api = null, JsonElement? Compatibility = null);
 
 public sealed record ModelSelection(ProviderProfile Provider, ModelDescriptor Model, string ApiKey,
     bool Authenticated, string AuthSource)
 {
-    public ConnectionSettings Connection => new(Model.Id,
-        ProviderModelRuntime.IsOfficialOpenAiEndpoint(Provider.Endpoint) ? null : Provider.Endpoint,
-        ApiKey);
+    public ConnectionSettings Connection
+    {
+        get
+        {
+            var endpoint = Model.BaseUrl is { } baseUrl ? new Uri(baseUrl) : Provider.Endpoint;
+            return new ConnectionSettings(Model.Id,
+                ProviderModelRuntime.IsOfficialOpenAiEndpoint(endpoint) ? null : endpoint, ApiKey);
+        }
+    }
 }
 
 /// <summary>Credential-aware OpenAI-compatible provider/catalog selection shared by CLI commands.</summary>
@@ -228,22 +234,40 @@ public sealed class ProviderModelRuntime
     private static ModelDescriptor Merge(ProviderProfile provider, ModelDescriptor discovered)
     {
         var configured = provider.Models.FirstOrDefault(model => model.Id == discovered.Id);
+        var baseUrl = configured?.BaseUrl ?? discovered.BaseUrl;
+        if (baseUrl is not null)
+        {
+            var modelEndpoint = ProviderProfileLoader.ParseEndpoint(baseUrl, $"Model '{provider.Id}/{discovered.Id}' baseUrl");
+            if (!IsSameAuthority(provider.Endpoint, modelEndpoint))
+                throw new InvalidDataException($"Model '{provider.Id}/{discovered.Id}' baseUrl must use the provider's scheme, host, and port.");
+            baseUrl = modelEndpoint.ToString().TrimEnd('/');
+        }
         return discovered with
         {
             Provider = provider.Id,
-            Owner = discovered.Owner ?? configured?.Owner,
-            ContextLength = discovered.ContextLength ?? configured?.ContextLength,
-            Reasoning = discovered.Reasoning ?? configured?.Reasoning,
-            Pricing = discovered.Pricing ?? configured?.Pricing,
-            Name = discovered.Name ?? configured?.Name,
-            MaxOutputTokens = discovered.MaxOutputTokens ?? configured?.MaxOutputTokens,
-            Input = discovered.Input ?? configured?.Input,
-            Api = discovered.Api ?? configured?.Api,
+            Owner = discovered.Owner ?? configured?.Owner ?? provider.Id,
+            ContextLength = configured?.ContextLength ?? discovered.ContextLength ?? 128000,
+            Reasoning = configured?.Reasoning ?? discovered.Reasoning ?? false,
+            Pricing = configured?.Pricing ?? discovered.Pricing ?? new ModelPricing(0, 0, 0, CachedWrite: 0),
+            Name = configured?.Name ?? discovered.Name ?? discovered.Id,
+            MaxOutputTokens = configured?.MaxOutputTokens ?? discovered.MaxOutputTokens ?? 16384,
+            Input = configured?.Input ?? discovered.Input ?? ["text"],
+            Api = configured?.Api ?? discovered.Api,
             InputLimits = ModelInputLimits.Merge(configured?.InputLimits, discovered.InputLimits),
+            BaseUrl = baseUrl,
+            ThinkingLevelMap = ModelMetadataJson.MergeObjects(configured?.ThinkingLevelMap, discovered.ThinkingLevelMap),
+            PromptCache = ModelMetadataJson.MergeObjects(configured?.PromptCache, discovered.PromptCache),
+            SamplingParameters = ModelMetadataJson.MergeObjects(configured?.SamplingParameters, discovered.SamplingParameters),
+            Compatibility = ModelMetadataJson.MergeCompatibility(configured?.Compatibility,
+                ModelMetadataJson.MergeCompatibility(discovered.Compatibility, provider.Compatibility)),
             Available = true,
             UnavailableReason = null
         };
     }
+
+    internal static bool IsSameAuthority(Uri left, Uri right) =>
+        left.Scheme.Equals(right.Scheme, StringComparison.OrdinalIgnoreCase) &&
+        left.Host.Equals(right.Host, StringComparison.OrdinalIgnoreCase) && left.Port == right.Port;
 
     internal static bool IsOfficialOpenAiEndpoint(Uri endpoint) => endpoint.Scheme == Uri.UriSchemeHttps &&
         endpoint.Host.Equals("api.openai.com", StringComparison.OrdinalIgnoreCase) && endpoint.Port == 443 &&

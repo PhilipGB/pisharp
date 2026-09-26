@@ -9,7 +9,9 @@ public sealed record ModelDescriptor(string Id, string? Owner, int? ContextLengt
     bool? Reasoning = null, ModelPricing? Pricing = null, string? Provider = null,
     bool Available = true, string? UnavailableReason = null, string? Name = null,
     int? MaxOutputTokens = null, IReadOnlyList<string>? Input = null, string? Api = null,
-    ModelInputLimits? InputLimits = null);
+    ModelInputLimits? InputLimits = null, string? BaseUrl = null,
+    JsonElement? ThinkingLevelMap = null, JsonElement? PromptCache = null,
+    JsonElement? SamplingParameters = null, JsonElement? Compatibility = null);
 
 /// <summary>Discover OpenAI-compatible model IDs without coupling model metadata to a specific SDK.</summary>
 public static class ModelCatalog
@@ -57,7 +59,11 @@ public static class ModelCatalog
             var api = StringProperty(item, "api");
             models.Add(new(id, StringProperty(item, "owned_by"), context, status, reasoning, ParsePricing(item),
                 Name: StringProperty(item, "name"), MaxOutputTokens: maxOutput, Input: input, Api: api,
-                InputLimits: ModelInputLimitsParser.Parse(item, $"Model '{id}'", strict: false)));
+                InputLimits: ModelInputLimitsParser.Parse(item, $"Model '{id}'", strict: false),
+                ThinkingLevelMap: ModelMetadataJson.ReadObject(item, "thinkingLevelMap"),
+                PromptCache: ModelMetadataJson.ReadObject(item, "promptCache"),
+                SamplingParameters: ModelMetadataJson.ReadObject(item, "samplingParams"),
+                Compatibility: ModelMetadataJson.ReadObject(item, "compat")));
         }
         return models;
     }

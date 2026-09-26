@@ -2,6 +2,7 @@ using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Threading.Channels;
 using Microsoft.Extensions.AI;
+using PiSharp.Cli;
 using PiSharp.Cli.Protocols;
 using PiSharp.Runtime;
 using PiSharp.Runtime.Extensions;
@@ -404,9 +405,13 @@ public sealed class RpcModeTests
                 return model;
             },
             getCurrentRun: () => currentRun,
-            getModelSnapshot: () => JsonSerializer.SerializeToElement(new RpcModelSnapshot(currentRun.Conversation.Model,
-                currentRun.Conversation.Model, "openai-completions", "fixture", "http://new.test/v1",
-                ["text"], null, false, null, null, null)));
+            getModelSnapshot: () =>
+            {
+                var model = new ModelDescriptor(currentRun.Conversation.Model, "fixture", null, null, Provider: "fixture");
+                var provider = new ProviderProfile("fixture", "fixture", new Uri(currentRun.Conversation.Endpoint!),
+                    true, false, null, null, [model]);
+                return RpcModelProjector.Project(model, provider);
+            });
         var serving = service.ServeAsync();
         channel.Writer.TryWrite("{\"id\":\"switch\",\"type\":\"set_model\",\"provider\":\"fixture\",\"modelId\":\"fixture-next\"}");
         channel.Writer.TryWrite("{\"id\":\"state\",\"type\":\"get_state\"}");
@@ -1368,8 +1373,16 @@ public sealed class RpcModeTests
         channel.Writer.TryWrite("{\"id\":5,\"type\":\"get_available_models\"}");
         channel.Writer.Complete();
         await serving.WaitAsync(TimeSpan.FromSeconds(5));
-        Assert.Contains(output.Lines(), line => line.Contains("\"command\":\"get_available_models\"", StringComparison.Ordinal) &&
-            line.Contains("\"Id\":\"model-one\"", StringComparison.Ordinal));
+        using var response = JsonDocument.Parse(Assert.Single(output.Lines(), line =>
+            line.Contains("\"command\":\"get_available_models\"", StringComparison.Ordinal)));
+        var model = response.RootElement.GetProperty("data").GetProperty("models")[0];
+        Assert.Equal("model-one", model.GetProperty("id").GetString());
+        Assert.Equal("model-one", model.GetProperty("name").GetString());
+        Assert.Equal(4096, model.GetProperty("contextWindow").GetInt32());
+        Assert.Equal(16384, model.GetProperty("maxTokens").GetInt32());
+        Assert.False(model.TryGetProperty("Id", out _));
+        Assert.False(model.TryGetProperty("Owner", out _));
+        Assert.False(model.TryGetProperty("status", out _));
     }
 
     [Fact]

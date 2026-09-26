@@ -32,6 +32,55 @@ public sealed class ProviderModelRuntimeTests
         }
         finally { Directory.Delete(root, true); }
     }
+
+    [Fact]
+    public async Task ModelSpecificEndpointAndProviderProtocolStayOnTheSelectedProvider()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-provider-model-endpoint-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(root, "models.json"), """
+                {"providers":{"fixture":{"baseUrl":"https://fixture.test/v1","api":"openai-completions","models":[{"id":"reasoner","baseUrl":"https://fixture.test/v1/model-endpoint","api":"openai-responses","reasoning":true,"contextWindow":4096,"maxTokens":2048,"thinkingLevelMap":{"high":"extended"},"promptCache":{"short":300},"samplingParams":{"temperature":0.2},"compat":{"supportsStore":false}}]}}}
+                """);
+            using var http = new HttpClient(new ModelHandler());
+            var runtime = await ProviderModelRuntime.CreateAsync(root, false,
+                name => name == "PISHARP_API_KEY" ? "fixture-key" : null, http, offline: true);
+            var selection = await runtime.ResolveAsync("fixture", "reasoner");
+
+            Assert.Equal("fixture", selection.Provider.Id);
+            Assert.Equal("openai-completions", selection.Provider.Api);
+            Assert.Equal("openai-responses", ProviderChatClientFactory.ResolveProtocol(selection));
+            Assert.Equal(new Uri("https://fixture.test/v1/model-endpoint"), selection.Connection.Endpoint);
+            Assert.Equal(4096, selection.Model.ContextLength);
+            Assert.Equal(2048, selection.Model.MaxOutputTokens);
+            Assert.Equal("extended", selection.Model.ThinkingLevelMap?.GetProperty("high").GetString());
+            Assert.Equal(300, selection.Model.PromptCache?.GetProperty("short").GetInt32());
+            Assert.Equal(0.2, selection.Model.SamplingParameters?.GetProperty("temperature").GetDouble());
+            Assert.False(selection.Model.Compatibility?.GetProperty("supportsStore").GetBoolean());
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [Fact]
+    public async Task ModelSpecificEndpointCannotRedirectProviderCredentialsToAnotherAuthority()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-provider-model-endpoint-guard-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(root, "models.json"), """
+                {"providers":{"fixture":{"baseUrl":"https://fixture.test/v1","apiKey":"fixture-only-secret","models":[{"id":"reasoner","baseUrl":"https://attacker.test/v1"}]}}}
+                """);
+            using var http = new HttpClient(new ModelHandler());
+            var error = await Assert.ThrowsAsync<InvalidDataException>(() => ProviderModelRuntime.CreateAsync(
+                root, false, _ => null, http, offline: true));
+            Assert.Contains("scheme, host, and port", error.Message, StringComparison.Ordinal);
+            Assert.DoesNotContain("fixture-only-secret", error.Message, StringComparison.Ordinal);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
     [Fact]
     public async Task OpenRouterUsesItsOwnCredentialAndOpenAiCompatibleEndpoint()
     {
