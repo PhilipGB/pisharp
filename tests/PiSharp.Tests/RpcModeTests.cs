@@ -1110,6 +1110,75 @@ public sealed class RpcModeTests
     }
 
     [Fact]
+    public async Task RpcQueueModeCommandsPersistExposeStateAndDrainDistinctBatches()
+    {
+        var channel = Channel.CreateUnbounded<string>();
+        using var output = new LockedWriter();
+        var client = new OrderedRpcQueueClient();
+        var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(Path.GetTempPath())),
+            new ConversationSession(Path.GetTempPath(), "fixture", null));
+        var persisted = new Dictionary<string, PromptDeliveryMode>(StringComparer.Ordinal);
+        var serving = new RpcMode(new CommandReader(channel.Reader), output, run,
+            persistQueueMode: (steering, mode, token) =>
+            {
+                token.ThrowIfCancellationRequested();
+                var setting = steering ? "steeringMode" : "followUpMode";
+                persisted[setting] = mode;
+                if (steering) run.SetSteeringMode(mode);
+                else run.SetFollowUpMode(mode);
+                return Task.CompletedTask;
+            }).ServeAsync();
+
+        channel.Writer.TryWrite("{\"id\":\"start\",\"type\":\"prompt\",\"message\":\"initial\"}");
+        await client.FirstRequestStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        channel.Writer.TryWrite("{\"id\":\"steering-mode\",\"type\":\"set_steering_mode\",\"mode\":\"all\"}");
+        channel.Writer.TryWrite("{\"id\":\"follow-mode\",\"type\":\"set_follow_up_mode\",\"mode\":\"all\"}");
+        channel.Writer.TryWrite("{\"id\":\"bad-mode\",\"type\":\"set_steering_mode\",\"mode\":\"sometimes\"}");
+        await WaitForAsync(output, "\"id\":\"bad-mode\"");
+        channel.Writer.TryWrite("{\"id\":\"s1\",\"type\":\"steer\",\"message\":\"steer first\"}");
+        channel.Writer.TryWrite("{\"id\":\"s2\",\"type\":\"steer\",\"message\":\"steer second\"}");
+        channel.Writer.TryWrite("{\"id\":\"f1\",\"type\":\"follow_up\",\"message\":\"follow first\"}");
+        channel.Writer.TryWrite("{\"id\":\"f2\",\"type\":\"follow_up\",\"message\":\"follow second\"}");
+        await WaitForAsync(output, "\"id\":\"f2\"");
+        channel.Writer.TryWrite("{\"id\":\"state\",\"type\":\"get_state\"}");
+        await WaitForAsync(output, "\"id\":\"state\"");
+        client.ReleaseFirstRequest.TrySetResult();
+        await WaitForAsync(output, "agent_settled");
+        channel.Writer.Complete();
+        await serving.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.Equal(PromptDeliveryMode.All, persisted["steeringMode"]);
+        Assert.Equal(PromptDeliveryMode.All, persisted["followUpMode"]);
+        Assert.Equal(3, client.UserMessagesByRequest.Count);
+        Assert.Equal(["initial"], client.UserMessagesByRequest[0]);
+        Assert.Equal(["initial", "steer first", "steer second"], client.UserMessagesByRequest[1]);
+        Assert.Equal(["initial", "steer first", "steer second", "follow first", "follow second"],
+            client.UserMessagesByRequest[2]);
+
+        var lines = output.Lines();
+        var projectedUserMessages = lines.Where(line => line.Contains("\"type\":\"message_end\"", StringComparison.Ordinal) &&
+                line.Contains("\"role\":\"user\"", StringComparison.Ordinal))
+            .Select(line =>
+            {
+                using var record = JsonDocument.Parse(line);
+                return record.RootElement.GetProperty("message").GetProperty("content").GetString()!;
+            }).ToArray();
+        Assert.Equal(["initial", "steer first", "steer second", "follow first", "follow second"], projectedUserMessages);
+        using var steeringResponse = JsonDocument.Parse(Assert.Single(lines, line => line.Contains("\"id\":\"steering-mode\"", StringComparison.Ordinal)));
+        using var followResponse = JsonDocument.Parse(Assert.Single(lines, line => line.Contains("\"id\":\"follow-mode\"", StringComparison.Ordinal)));
+        using var invalidResponse = JsonDocument.Parse(Assert.Single(lines, line => line.Contains("\"id\":\"bad-mode\"", StringComparison.Ordinal)));
+        Assert.True(steeringResponse.RootElement.GetProperty("success").GetBoolean());
+        Assert.True(followResponse.RootElement.GetProperty("success").GetBoolean());
+        Assert.False(invalidResponse.RootElement.GetProperty("success").GetBoolean());
+        Assert.Equal("mode must be 'all' or 'one-at-a-time'.", invalidResponse.RootElement.GetProperty("error").GetString());
+        using var state = JsonDocument.Parse(Assert.Single(lines, line => line.Contains("\"id\":\"state\"", StringComparison.Ordinal)));
+        var data = state.RootElement.GetProperty("data");
+        Assert.Equal("all", data.GetProperty("steeringMode").GetString());
+        Assert.Equal("all", data.GetProperty("followUpMode").GetString());
+        Assert.Equal(4, data.GetProperty("pendingMessageCount").GetInt32());
+    }
+
+    [Fact]
     public async Task RpcSteeringConsumedDuringToolLoopHasMessageBoundariesInNextTurn()
     {
         var cwd = Path.Combine(Path.GetTempPath(), "pisharp-rpc-steering-" + Guid.NewGuid().ToString("N"));
@@ -1660,6 +1729,7 @@ public sealed class RpcModeTests
     private sealed class OrderedRpcQueueClient : IChatClient
     {
         public List<string> LatestUserByRequest { get; } = [];
+        public List<string[]> UserMessagesByRequest { get; } = [];
         public TaskCompletionSource FirstRequestStarted { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public TaskCompletionSource ReleaseFirstRequest { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
@@ -1667,7 +1737,9 @@ public sealed class RpcModeTests
         public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
             ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
-            LatestUserByRequest.Add(messages.Last(message => message.Role == ChatRole.User).Text!);
+            var users = messages.Where(message => message.Role == ChatRole.User).Select(message => message.Text!).ToArray();
+            UserMessagesByRequest.Add(users);
+            LatestUserByRequest.Add(users[^1]);
             if (LatestUserByRequest.Count == 1)
             {
                 FirstRequestStarted.TrySetResult();

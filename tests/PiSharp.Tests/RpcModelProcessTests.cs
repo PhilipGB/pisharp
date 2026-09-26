@@ -8,6 +8,73 @@ namespace PiSharp.Tests;
 public sealed class RpcModelProcessTests
 {
     [Fact]
+    public async Task RpcQueueModesPersistAndAppearInStateInTheCliProcess()
+    {
+        if (!OperatingSystem.IsLinux()) return;
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-rpc-queue-mode-process-" + Guid.NewGuid().ToString("N"));
+        var agent = Path.Combine(root, "agent");
+        Directory.CreateDirectory(agent);
+        await File.WriteAllTextAsync(Path.Combine(agent, "models.json"), """
+            {"providers":{"fixture":{"baseUrl":"http://127.0.0.1:1/v1","apiKeyEnv":"PISHARP_FIXTURE_KEY","models":[{"id":"fixture-model"}]}}}
+            """);
+        Process? process = null;
+        try
+        {
+            var start = new ProcessStartInfo("dotnet")
+            {
+                WorkingDirectory = root,
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+            start.ArgumentList.Add(typeof(CliArguments).Assembly.Location);
+            foreach (var argument in new[] { "--mode", "rpc", "--provider", "fixture", "--model", "fixture-model", "--offline", "--no-session" })
+                start.ArgumentList.Add(argument);
+            foreach (var name in new[] { "OPENAI_API_KEY", "PISHARP_API_KEY", "PISHARP_BASE_URL", "PISHARP_MODEL",
+                "PISHARP_AUTH_PATH", "PISHARP_MODELS_PATH", "PISHARP_SETTINGS_PATH", "PISHARP_FIXTURE_KEY" })
+                start.Environment.Remove(name);
+            start.Environment["PISHARP_AGENT_DIR"] = agent;
+            start.Environment["PISHARP_FIXTURE_KEY"] = "fixture-only-key";
+            process = Process.Start(start)!;
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+            var stderr = process.StandardError.ReadToEndAsync();
+            await WriteCommandAsync(process, new { id = "steering-all", type = "set_steering_mode", mode = "all" }, timeout.Token);
+            await WriteCommandAsync(process, new { id = "follow-one", type = "set_follow_up_mode", mode = "one-at-a-time" }, timeout.Token);
+            await WriteCommandAsync(process, new { id = "invalid", type = "set_follow_up_mode", mode = "never" }, timeout.Token);
+            await WriteCommandAsync(process, new { id = "state", type = "get_state" }, timeout.Token);
+            var lines = await ReadResponsesAsync(process, ["steering-all", "follow-one", "invalid", "state"], timeout.Token);
+            process.StandardInput.Close();
+            await process.WaitForExitAsync(timeout.Token);
+
+            Assert.Equal(0, process.ExitCode);
+            Assert.Equal("", await stderr.WaitAsync(timeout.Token));
+            using var steeringResponse = JsonDocument.Parse(Assert.Single(lines, line => line.Contains("\"id\":\"steering-all\"", StringComparison.Ordinal)));
+            using var followResponse = JsonDocument.Parse(Assert.Single(lines, line => line.Contains("\"id\":\"follow-one\"", StringComparison.Ordinal)));
+            using var invalidResponse = JsonDocument.Parse(Assert.Single(lines, line => line.Contains("\"id\":\"invalid\"", StringComparison.Ordinal)));
+            Assert.True(steeringResponse.RootElement.GetProperty("success").GetBoolean());
+            Assert.True(followResponse.RootElement.GetProperty("success").GetBoolean());
+            Assert.False(invalidResponse.RootElement.GetProperty("success").GetBoolean());
+            using var state = JsonDocument.Parse(Assert.Single(lines, line => line.Contains("\"id\":\"state\"", StringComparison.Ordinal)));
+            Assert.Equal("all", state.RootElement.GetProperty("data").GetProperty("steeringMode").GetString());
+            Assert.Equal("one-at-a-time", state.RootElement.GetProperty("data").GetProperty("followUpMode").GetString());
+            using var savedSettings = JsonDocument.Parse(await File.ReadAllTextAsync(Path.Combine(agent, "settings.json")));
+            Assert.Equal("all", savedSettings.RootElement.GetProperty("steeringMode").GetString());
+            Assert.Equal("one-at-a-time", savedSettings.RootElement.GetProperty("followUpMode").GetString());
+            Assert.DoesNotContain(lines, line => line.Contains("\"type\":\"error\"", StringComparison.Ordinal));
+        }
+        finally
+        {
+            if (process is { HasExited: false })
+            {
+                process.Kill(entireProcessTree: true);
+                await process.WaitForExitAsync();
+            }
+            process?.Dispose();
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task RpcStartupRestoresThinkingLevelFromTheSelectedSessionBranch()
     {
         if (!OperatingSystem.IsLinux()) return;

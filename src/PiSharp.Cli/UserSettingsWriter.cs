@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using PiSharp.Runtime.Sessions;
 
 namespace PiSharp.Cli;
 
@@ -49,6 +50,7 @@ internal static class UserSettingsWriter
         {
             "hideThinkingBlock" or "quietStartup" or "images.blockImages" or "compaction.enabled" or "retry.enabled" =>
                 value is null or "true" or "false",
+            "steeringMode" or "followUpMode" => value is null || PromptDeliveryModes.TryParseSettingValue(value, out _),
             "defaultProjectTrust" when userScope => value is null or "ask" or "always" or "never",
             "defaultThinkingLevel" => value is null || ThinkingLevels.IsValid(value),
             "theme" => value is null || IsValidThemeSetting(value),

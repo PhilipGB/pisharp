@@ -21,8 +21,7 @@ public sealed class ConversationRun
     private string? _reasoningLevel;
     private readonly SemaphoreSlim _gate = new(1, 1);
     private readonly object _promptQueueGate = new();
-    private readonly Queue<string> _steeringQueue = new();
-    private readonly Queue<string> _followUpQueue = new();
+    private readonly PromptDeliveryQueue _promptQueue = new();
     private readonly Queue<string> _pendingThinkingChanges = new();
     private readonly Queue<BashExecutionRecord> _pendingBashExecutions = new();
     private object? _promptLoopOwner;
@@ -33,7 +32,8 @@ public sealed class ConversationRun
 
     private ConversationRun(PiAgent agent, ConversationSession conversation, AgentSession execution, Func<CancellationToken, Task>? save,
         AutoCompactionPolicy? autoCompaction, ModelPricing? pricing, string? sessionFile, string? provider,
-        string? reasoningLevel, AgentRunRetryPolicy retryPolicy,
+        string? reasoningLevel, AgentRunRetryPolicy retryPolicy, PromptDeliveryMode steeringMode,
+        PromptDeliveryMode followUpMode,
         Func<TimeSpan, CancellationToken, Task>? retryDelay)
     {
         _agent = agent;
@@ -44,6 +44,8 @@ public sealed class ConversationRun
         _provider = provider;
         _retryController = new AgentRunRetryController(retryPolicy, retryDelay);
         _reasoningLevel = reasoningLevel;
+        _promptQueue.SetSteeringMode(steeringMode);
+        _promptQueue.SetFollowUpMode(followUpMode);
         Conversation = conversation;
         _execution = execution;
         _historyCount = conversation.ContextMessages().Count;
@@ -53,40 +55,42 @@ public sealed class ConversationRun
         CancellationToken cancellationToken = default, Func<CancellationToken, Task>? save = null,
         AutoCompactionPolicy? autoCompaction = null, ModelPricing? pricing = null, string? sessionFile = null,
         string? provider = null, string? reasoningLevel = null, AgentRunRetryPolicy? retryPolicy = null,
-        Func<TimeSpan, CancellationToken, Task>? retryDelay = null)
+        Func<TimeSpan, CancellationToken, Task>? retryDelay = null,
+        PromptDeliveryMode steeringMode = PromptDeliveryMode.OneAtATime,
+        PromptDeliveryMode followUpMode = PromptDeliveryMode.OneAtATime)
     {
         if (autoCompaction is not null) _ = autoCompaction.TriggerTokens;
         if (conversation.RecoverIncomplete() && save is not null) await save(cancellationToken);
         var execution = await agent.RestoreHistoryAsync(conversation.ContextMessages(), cancellationToken);
         return new ConversationRun(agent, conversation, execution, save, autoCompaction, pricing, sessionFile, provider,
-            reasoningLevel, retryPolicy ?? AgentRunRetryPolicy.Default, retryDelay);
+            reasoningLevel, retryPolicy ?? AgentRunRetryPolicy.Default, steeringMode, followUpMode, retryDelay);
     }
 
     /// <summary>Queue guidance ahead of follow-up work on the active application run.</summary>
-    public bool TrySteer(string prompt) => TryQueue(prompt, _steeringQueue, "steering");
+    public bool TrySteer(string prompt) => TryQueue(prompt, steering: true, "steering");
 
     /// <summary>Queue work that runs after steering input has drained.</summary>
-    public bool TryFollowUp(string prompt) => TryQueue(prompt, _followUpQueue, "follow_up");
+    public bool TryFollowUp(string prompt) => TryQueue(prompt, steering: false, "follow_up");
 
     /// <summary>Compatibility alias: an additional RPC prompt is follow-up work.</summary>
     public bool TryQueuePrompt(string prompt) => TryFollowUp(prompt);
 
-    private bool TryQueue(string prompt, Queue<string> queue, string kind)
+    private bool TryQueue(string prompt, bool steering, string kind)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(prompt);
         lock (_promptQueueGate)
         {
             if (_promptLoopOwner is null) return false;
-            queue.Enqueue(prompt);
+            _promptQueue.Enqueue(prompt, steering);
             _promptQueueEvents?.Invoke(new("prompt_queued", Text: prompt, Tool: kind));
-            _promptQueueEvents?.Invoke(QueueEvent(SnapshotQueues()));
+            _promptQueueEvents?.Invoke(QueueEvent(_promptQueue.Snapshot()));
             return true;
         }
     }
 
     public PendingPrompts GetPendingPrompts()
     {
-        lock (_promptQueueGate) return SnapshotQueues();
+        lock (_promptQueueGate) return _promptQueue.Snapshot();
     }
 
     /// <summary>Remove and return input that has not reached the model, for editor restoration.</summary>
@@ -94,9 +98,7 @@ public sealed class ConversationRun
     {
         lock (_promptQueueGate)
         {
-            var pending = SnapshotQueues();
-            _steeringQueue.Clear();
-            _followUpQueue.Clear();
+            var pending = _promptQueue.Clear();
             _promptQueueEvents?.Invoke(QueueEvent(PendingPrompts.Empty));
             return pending;
         }
@@ -104,7 +106,27 @@ public sealed class ConversationRun
 
     public int PendingPromptCount
     {
-        get { lock (_promptQueueGate) return _steeringQueue.Count + _followUpQueue.Count; }
+        get { lock (_promptQueueGate) return _promptQueue.Count; }
+    }
+
+    public PromptDeliveryMode SteeringMode
+    {
+        get { lock (_promptQueueGate) return _promptQueue.SteeringMode; }
+    }
+
+    public PromptDeliveryMode FollowUpMode
+    {
+        get { lock (_promptQueueGate) return _promptQueue.FollowUpMode; }
+    }
+
+    public void SetSteeringMode(PromptDeliveryMode mode)
+    {
+        lock (_promptQueueGate) _promptQueue.SetSteeringMode(mode);
+    }
+
+    public void SetFollowUpMode(PromptDeliveryMode mode)
+    {
+        lock (_promptQueueGate) _promptQueue.SetFollowUpMode(mode);
     }
 
     public bool SetThinkingLevelDuringRun(string level, ReasoningOptions? reasoning)
@@ -131,7 +153,11 @@ public sealed class ConversationRun
 
     public void AbortRetry() => _retryController.AbortRetry();
 
-    private PendingPrompts SnapshotQueues() => new(_steeringQueue.ToArray(), _followUpQueue.ToArray());
+    private sealed record PromptBatch(IReadOnlyList<ChatMessage> Messages, IReadOnlyList<string> Texts)
+    {
+        public string Text => string.Join("\n", Texts);
+    }
+
     private static AgentLifecycleEvent QueueEvent(PendingPrompts pending) => new("queue_update",
         Text: JsonSerializer.Serialize(new { steering = pending.Steering, followUp = pending.FollowUp }));
 
@@ -161,18 +187,19 @@ public sealed class ConversationRun
             try
             {
                 owner = BeginPromptLoop(Publish);
-                string? current = promptText;
-                var firstTurn = true;
+                PromptBatch? current = new([promptMessage], [promptText]);
                 var stopRun = false;
                 while (current is not null)
                 {
+                    var turn = current;
                     activeTurnOutcomeSent = false;
-                    var currentMessage = firstTurn ? promptMessage : new ChatMessage(ChatRole.User, current);
-                    firstTurn = false;
+                    var currentMessage = turn.Messages[0];
                     var outcome = await _retryController.RunTurnAsync(
                         (continuation, observeAttempt) => continuation
-                            ? RunStreamingContinuationAsync(current, linked.Token, observeAttempt)
-                            : RunStreamingAsync(currentMessage, current, linked.Token, observeAttempt),
+                            ? RunStreamingContinuationAsync(turn.Text, linked.Token, observeAttempt)
+                            : turn.Messages.Count > 1
+                                ? RunStreamingBatchAsync(turn.Messages, turn.Text, linked.Token, observeAttempt)
+                                : RunStreamingAsync(currentMessage, turn.Texts[0], linked.Token, observeAttempt),
                         item =>
                         {
                             if (item.Type == "prompt_accepted") accepted = true;
@@ -267,33 +294,35 @@ public sealed class ConversationRun
     {
         lock (_promptQueueGate)
         {
-            if (!_steeringQueue.TryDequeue(out var prompt)) return [];
-            _promptQueueEvents?.Invoke(QueueEvent(SnapshotQueues()));
-            var message = new ChatMessage(ChatRole.User, prompt);
-            _promptQueueEvents?.Invoke(new AgentLifecycleEvent("steering_message_accepted", Text: prompt)
+            var prompts = _promptQueue.TakeSteeringForProvider();
+            if (prompts.Count == 0) return [];
+            _promptQueueEvents?.Invoke(QueueEvent(_promptQueue.Snapshot()));
+            var messages = new ChatMessage[prompts.Count];
+            for (var index = 0; index < prompts.Count; index++)
             {
-                PromptMessage = message,
-                MessageTimestamp = DateTimeOffset.UtcNow
-            });
-            return [message];
+                var message = new ChatMessage(ChatRole.User, prompts[index]);
+                messages[index] = message;
+                _promptQueueEvents?.Invoke(new AgentLifecycleEvent("steering_message_accepted", Text: prompts[index])
+                {
+                    PromptMessage = message,
+                    MessageTimestamp = DateTimeOffset.UtcNow
+                });
+            }
+            return messages;
         }
     }
 
-    private string? TakeQueuedPromptOrClose(object owner)
+    private PromptBatch? TakeQueuedPromptOrClose(object owner)
     {
         lock (_promptQueueGate)
         {
             if (!ReferenceEquals(_promptLoopOwner, owner)) return null;
             PersistPendingThinkingChangesUnsafe();
-            if (_steeringQueue.TryDequeue(out var steering))
+            if (_promptQueue.TakeNextBatch() is { } batch)
             {
-                _promptQueueEvents?.Invoke(QueueEvent(SnapshotQueues()));
-                return steering;
-            }
-            if (_followUpQueue.TryDequeue(out var followUp))
-            {
-                _promptQueueEvents?.Invoke(QueueEvent(SnapshotQueues()));
-                return followUp;
+                _promptQueueEvents?.Invoke(QueueEvent(_promptQueue.Snapshot()));
+                return new PromptBatch(batch.Messages.Select(prompt => new ChatMessage(ChatRole.User, prompt)).ToArray(),
+                    batch.Messages);
             }
             _promptLoopOwner = null;
             _promptQueueEvents = null;
@@ -423,6 +452,13 @@ public sealed class ConversationRun
         CancellationToken cancellationToken = default, Action<AgentLifecycleEvent>? onEvent = null) =>
         RunStreamingAttemptAsync(promptMessage, prompt, false, cancellationToken, onEvent);
 
+    private IAsyncEnumerable<AgentResponseUpdate> RunStreamingBatchAsync(IReadOnlyList<ChatMessage> promptMessages,
+        string prompt, CancellationToken cancellationToken, Action<AgentLifecycleEvent>? onEvent)
+    {
+        if (promptMessages.Count < 2) throw new ArgumentException("A prompt batch requires multiple messages.", nameof(promptMessages));
+        return RunStreamingAttemptAsync(null, prompt, false, cancellationToken, onEvent, promptMessages);
+    }
+
     private IAsyncEnumerable<AgentResponseUpdate> RunStreamingContinuationAsync(string prompt,
         CancellationToken cancellationToken, Action<AgentLifecycleEvent>? onEvent) =>
         RunStreamingAttemptAsync(null, prompt, true, cancellationToken, onEvent);
@@ -430,7 +466,8 @@ public sealed class ConversationRun
     private async IAsyncEnumerable<AgentResponseUpdate> RunStreamingAttemptAsync(ChatMessage? promptMessage, string prompt,
         bool retryContinuation,
         [EnumeratorCancellation] CancellationToken cancellationToken = default,
-        Action<AgentLifecycleEvent>? onEvent = null)
+        Action<AgentLifecycleEvent>? onEvent = null,
+        IReadOnlyList<ChatMessage>? acceptedPromptMessages = null)
     {
         await _gate.WaitAsync(cancellationToken);
         var completed = false;
@@ -512,12 +549,19 @@ public sealed class ConversationRun
             }
             var attemptStartHead = Conversation.Tree.HeadId;
             var attemptStartPathLength = Conversation.Tree.ActivePath().Count;
-            if (promptMessage is not null)
+            var inputMessages = promptMessage is not null ? [promptMessage] : acceptedPromptMessages ?? [];
+            if (inputMessages.Count > 0)
             {
                 var previousHead = Conversation.Tree.HeadId;
-                Conversation.Append(promptMessage);
+                foreach (var inputMessage in inputMessages) Conversation.Append(inputMessage);
                 try
                 {
+                    if (promptMessage is null)
+                    {
+                        var history = Conversation.ContextMessages();
+                        _execution = await _agent.RestoreHistoryAsync(history, cancellationToken);
+                        _historyCount = history.Count;
+                    }
                     if (_save is not null) await _save(CancellationToken.None);
                 }
                 catch
@@ -530,7 +574,7 @@ public sealed class ConversationRun
                 }
             }
             accepted = true;
-            if (promptMessage is null)
+            if (inputMessages.Count == 0)
                 onEvent?.Invoke(new("agent_attempt_started")
                 {
                     RunStartHead = attemptStartHead,
@@ -538,15 +582,19 @@ public sealed class ConversationRun
                 });
             else
             {
-                var promptImages = promptMessage.Contents?.OfType<DataContent>().ToArray();
-                onEvent?.Invoke(new("prompt_accepted", Text: prompt)
+                foreach (var inputMessage in inputMessages)
                 {
-                    Images = promptImages is { Length: > 0 } ? promptImages : null,
-                    PromptMessage = promptMessage,
-                    MessageTimestamp = DateTimeOffset.UtcNow,
-                    RunStartHead = attemptStartHead,
-                    RunStartPathLength = attemptStartPathLength
-                });
+                    var promptImages = inputMessage.Contents?.OfType<DataContent>().ToArray();
+                    var messageText = promptMessage is not null ? prompt : inputMessage.Text ?? string.Empty;
+                    onEvent?.Invoke(new("prompt_accepted", Text: messageText)
+                    {
+                        Images = promptImages is { Length: > 0 } ? promptImages : null,
+                        PromptMessage = inputMessage,
+                        MessageTimestamp = DateTimeOffset.UtcNow,
+                        RunStartHead = attemptStartHead,
+                        RunStartPathLength = attemptStartPathLength
+                    });
+                }
             }
             var inFlightBudget = _autoCompaction is null ? null : new InFlightContextBudget(_autoCompaction,
                 (messages, token) => _agent.SummarizeAsync(messages, null, token),

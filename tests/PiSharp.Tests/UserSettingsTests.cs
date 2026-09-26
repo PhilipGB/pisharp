@@ -1,9 +1,46 @@
 using PiSharp.Cli;
+using PiSharp.Runtime.Sessions;
 
 namespace PiSharp.Tests;
 
 public sealed class UserSettingsTests
 {
+    [Fact]
+    public async Task PromptDeliveryModesLoadWithDefaultsAndTrustedProjectOverrides()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-queue-settings-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(Path.Combine(root, ".pi"));
+        try
+        {
+            var userPath = Path.Combine(root, "settings.json");
+            await File.WriteAllTextAsync(userPath, "{\"steeringMode\":\"all\",\"followUpMode\":\"one-at-a-time\"}");
+            var user = await UserSettings.LoadAsync(root, _ => null);
+            Assert.Equal(PromptDeliveryMode.All, user.SteeringMode);
+            Assert.Equal(PromptDeliveryMode.OneAtATime, user.FollowUpMode);
+
+            await File.WriteAllTextAsync(Path.Combine(root, ".pi", "settings.json"), "{\"followUpMode\":\"all\"}");
+            var effective = user.Overlay(await UserSettings.LoadProjectAsync(root));
+            Assert.Equal(PromptDeliveryMode.All, effective.SteeringMode);
+            Assert.Equal(PromptDeliveryMode.All, effective.FollowUpMode);
+
+            await File.WriteAllTextAsync(userPath, "{}");
+            var unset = await UserSettings.LoadAsync(root, _ => null);
+            Assert.Null(unset.SteeringMode);
+            Assert.Null(unset.FollowUpMode);
+            foreach (var invalid in new[]
+            {
+                "{\"steeringMode\":\"one_at_a_time\"}",
+                "{\"followUpMode\":true}",
+                "{\"followUpMode\":\"sometimes\"}"
+            })
+            {
+                await File.WriteAllTextAsync(userPath, invalid);
+                await Assert.ThrowsAsync<InvalidDataException>(() => UserSettings.LoadAsync(root, _ => null));
+            }
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
     [Fact]
     public async Task RetrySettingsDefaultToPiPolicyAndMergeTrustedProjectOverrides()
     {

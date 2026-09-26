@@ -211,7 +211,11 @@ public sealed class PiAgent
             if (history.Any(item => ReferenceEquals(item, message))) continue;
             var index = afterCallId is null ? history.Count - 1 : history.FindLastIndex(item =>
                 item.Contents.OfType<FunctionResultContent>().Any(result => result.CallId == afterCallId));
-            history.Insert(Math.Clamp(index + 1, 0, history.Count), message);
+            var insertionIndex = Math.Clamp(index + 1, 0, history.Count);
+            while (insertionIndex < history.Count && _injectedSteering.Any(steering =>
+                steering.AfterCallId == afterCallId && ReferenceEquals(steering.Message, history[insertionIndex])))
+                insertionIndex++;
+            history.Insert(insertionIndex, message);
         }
         _history.SetMessages(session, history);
         _injectedSteering.Clear();

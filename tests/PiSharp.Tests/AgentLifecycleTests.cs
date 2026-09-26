@@ -212,6 +212,60 @@ public sealed class AgentLifecycleTests
     }
 
     [Fact]
+    public async Task AllSteeringMessagesDuringToolExecutionRemainDistinctAndOrdered()
+    {
+        var fixture = new SteeringToolFixture();
+        var client = new SteeringBatchClient();
+        var tool = AIFunctionFactory.Create(fixture.WaitAsync, name: "wait_for_steering");
+        var session = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(Path.GetTempPath()),
+            selectedTools: ["wait_for_steering"], noTools: true, extensionTools: [tool]), session,
+            steeringMode: PromptDeliveryMode.All);
+        var active = Task.Run(async () =>
+        {
+            await foreach (var _ in run.RunEventsAsync("start")) { }
+        });
+        await fixture.Started.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.True(run.TrySteer("first steering"));
+        Assert.True(run.TrySteer("second steering"));
+        fixture.Release.TrySetResult();
+        await active.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.True(client.ContinuationSawOrderedSteeringAndToolResult);
+        Assert.Equal(["start", "first steering", "second steering"],
+            session.ActiveMessages().Where(message => message.Role == ChatRole.User).Select(message => message.Text));
+        Assert.Equal([ChatRole.User, ChatRole.Assistant, ChatRole.Tool, ChatRole.User, ChatRole.User, ChatRole.Assistant],
+            session.ActiveMessages().Select(message => message.Role));
+    }
+
+    [Fact]
+    public async Task AllSteeringAndFollowUpModesDeliverDistinctBatchesInPriorityOrder()
+    {
+        var client = new OrderedQueueClient();
+        var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(Path.GetTempPath())),
+            new ConversationSession(Path.GetTempPath(), "fixture", null),
+            steeringMode: PromptDeliveryMode.All, followUpMode: PromptDeliveryMode.All);
+        var active = Task.Run(async () =>
+        {
+            await foreach (var _ in run.RunEventsAsync("initial")) { }
+        });
+        await client.FirstRequestStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.True(run.TryFollowUp("follow first"));
+        Assert.True(run.TryFollowUp("follow second"));
+        Assert.True(run.TrySteer("steer first"));
+        Assert.True(run.TrySteer("steer second"));
+        client.ReleaseFirstRequest.TrySetResult();
+        await active.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.Equal(3, client.UserMessagesByRequest.Count);
+        Assert.Equal(["initial"], client.UserMessagesByRequest[0]);
+        Assert.Equal(["initial", "steer first", "steer second"], client.UserMessagesByRequest[1]);
+        Assert.Equal(["initial", "steer first", "steer second", "follow first", "follow second"],
+            client.UserMessagesByRequest[2]);
+        Assert.Equal(3, run.Conversation.ActiveMessages().Count(message => message.Role == ChatRole.Assistant));
+    }
+
+    [Fact]
     public async Task MultipleModelToolCallsExecuteConcurrentlyAndPersistInSourceOrder()
     {
         var fixture = new ConcurrentToolFixture();
@@ -436,6 +490,7 @@ public sealed class AgentLifecycleTests
     private sealed class OrderedQueueClient : IChatClient
     {
         public List<string> LatestUserByRequest { get; } = [];
+        public List<string[]> UserMessagesByRequest { get; } = [];
         public TaskCompletionSource FirstRequestStarted { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public TaskCompletionSource ReleaseFirstRequest { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
@@ -443,7 +498,9 @@ public sealed class AgentLifecycleTests
         public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
             ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
-            LatestUserByRequest.Add(messages.Last(message => message.Role == ChatRole.User).Text!);
+            var users = messages.Where(message => message.Role == ChatRole.User).Select(message => message.Text!).ToArray();
+            UserMessagesByRequest.Add(users);
+            LatestUserByRequest.Add(users[^1]);
             if (LatestUserByRequest.Count == 1)
             {
                 FirstRequestStarted.TrySetResult();
@@ -535,6 +592,38 @@ public sealed class AgentLifecycleTests
             }
             await Task.CompletedTask;
         }
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
+    }
+
+    private sealed class SteeringBatchClient : IChatClient
+    {
+        private int _requests;
+        public bool ContinuationSawOrderedSteeringAndToolResult { get; private set; }
+
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            if (++_requests == 1)
+            {
+                yield return new ChatResponseUpdate(ChatRole.Assistant,
+                    [new FunctionCallContent("wait", "wait_for_steering", new Dictionary<string, object?>())]);
+            }
+            else
+            {
+                var snapshot = messages.ToArray();
+                var userMessages = snapshot.Where(message => message.Role == ChatRole.User).Select(message => message.Text).ToArray();
+                ContinuationSawOrderedSteeringAndToolResult = userMessages[^2..].SequenceEqual(["first steering", "second steering"]) &&
+                    snapshot.SelectMany(message => message.Contents).OfType<FunctionResultContent>()
+                        .Any(result => result.CallId == "wait");
+                yield return new ChatResponseUpdate(ChatRole.Assistant, "steered");
+            }
+            await Task.CompletedTask;
+        }
+
         public object? GetService(Type serviceType, object? serviceKey = null) => null;
         public void Dispose() { }
     }

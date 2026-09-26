@@ -114,7 +114,7 @@ public sealed record RetrySettings(bool? Enabled = null, int? MaxRetries = null,
 public sealed record UserSettings(string? DefaultProvider = null, string? DefaultModel = null,
     string? DefaultThinkingLevel = null, IReadOnlyList<string>? DefaultTools = null, string? SessionDirectory = null,
     CompactionSettings? Compaction = null, bool? BlockImages = null, string? DefaultProjectTrust = null, bool? HideThinkingBlock = null, bool? QuietStartup = null, IReadOnlyList<string>? EnabledModels = null, string? ShellPath = null, string? ExternalEditor = null, string? Theme = null,
-    RetrySettings? Retry = null)
+    RetrySettings? Retry = null, PromptDeliveryMode? SteeringMode = null, PromptDeliveryMode? FollowUpMode = null)
 {
     public static async Task<UserSettings> LoadAsync(string agentDirectory, Func<string, string?> environment,
         CancellationToken cancellationToken = default)
@@ -132,6 +132,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         IReadOnlyList<string>? tools = null, enabledModels = null;
         CompactionSettings? compaction = null;
         RetrySettings? retry = null;
+        PromptDeliveryMode? steeringMode = null, followUpMode = null;
         bool? blockImages = null, hideThinkingBlock = null, quietStartup = null;
         var seen = new HashSet<string>(StringComparer.Ordinal);
         foreach (var property in document.RootElement.EnumerateObject())
@@ -232,11 +233,21 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
                     if (!ThinkingLevels.IsValid(thinking))
                         throw new InvalidDataException("settings.json defaultThinkingLevel is invalid.");
                     break;
+                case "steeringMode":
+                    if (!PromptDeliveryModes.TryParseSettingValue(value, out var parsedSteeringMode))
+                        throw new InvalidDataException("settings.json steeringMode must be all or one-at-a-time.");
+                    steeringMode = parsedSteeringMode;
+                    break;
+                case "followUpMode":
+                    if (!PromptDeliveryModes.TryParseSettingValue(value, out var parsedFollowUpMode))
+                        throw new InvalidDataException("settings.json followUpMode must be all or one-at-a-time.");
+                    followUpMode = parsedFollowUpMode;
+                    break;
                 default: throw new InvalidDataException($"settings.json contains unsupported property '{property.Name}'.");
             }
         }
         return new(provider, model, thinking, tools, sessionDirectory, compaction, blockImages, defaultTrust, hideThinkingBlock,
-            quietStartup, enabledModels, shellPath, externalEditor, theme, retry);
+            quietStartup, enabledModels, shellPath, externalEditor, theme, retry, steeringMode, followUpMode);
     }
 
     public static string GetSettingsPath(string agentDirectory, Func<string, string?> environment) =>
@@ -266,7 +277,9 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
             project.Retry.Enabled ?? Retry?.Enabled,
             project.Retry.MaxRetries ?? Retry?.MaxRetries,
             project.Retry.BaseDelayMs ?? Retry?.BaseDelayMs,
-            project.Retry.MaxAgentDelayMs ?? Retry?.MaxAgentDelayMs));
+            project.Retry.MaxAgentDelayMs ?? Retry?.MaxAgentDelayMs),
+        project.SteeringMode ?? SteeringMode,
+        project.FollowUpMode ?? FollowUpMode);
 
     private static bool IsValidThemeSetting(string value)
     {

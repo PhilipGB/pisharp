@@ -62,7 +62,9 @@ internal sealed class ProjectSessionRuntimeFactory(
                 save: destinationPath is null ? null : token => project.Store.SaveAsync(conversation, destinationPath, token),
                 autoCompaction: compaction, pricing: pricing, sessionFile: destinationPath,
                 provider: selection.Provider.Id, reasoningLevel: thinking,
-                retryPolicy: project.Settings.Retry?.ResolvePolicy() ?? AgentRunRetryPolicy.Default);
+                retryPolicy: project.Settings.Retry?.ResolvePolicy() ?? AgentRunRetryPolicy.Default,
+                steeringMode: project.Settings.SteeringMode ?? PromptDeliveryMode.OneAtATime,
+                followUpMode: project.Settings.FollowUpMode ?? PromptDeliveryMode.OneAtATime);
             return new ProjectSessionRuntime(project, conversation, run, destinationPath, selection, chat, agent,
                 thinking, compaction, pricing);
         }

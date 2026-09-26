@@ -1,4 +1,5 @@
 using PiSharp.Cli;
+using PiSharp.Runtime.Sessions;
 
 namespace PiSharp.Tests;
 
@@ -18,6 +19,8 @@ public sealed class UserSettingsWriterTests
             await UserSettingsWriter.SetAsync(path, "images.blockImages", "false", userScope: true);
             await UserSettingsWriter.SetAsync(path, "compaction.enabled", "false", userScope: true);
             await UserSettingsWriter.SetAsync(path, "retry.enabled", "false", userScope: true);
+            await UserSettingsWriter.SetAsync(path, "steeringMode", "all", userScope: true);
+            await UserSettingsWriter.SetAsync(path, "followUpMode", "one-at-a-time", userScope: true);
             var settings = await UserSettings.LoadAsync(root, _ => null);
 
             Assert.True(settings.HideThinkingBlock);
@@ -26,11 +29,18 @@ public sealed class UserSettingsWriterTests
             Assert.False(settings.Compaction?.Enabled);
             Assert.Equal(2048, settings.Compaction?.ReserveTokens);
             Assert.False(settings.Retry?.Enabled);
+            Assert.Equal(PromptDeliveryMode.All, settings.SteeringMode);
+            Assert.Equal(PromptDeliveryMode.OneAtATime, settings.FollowUpMode);
 
             await UserSettingsWriter.SetAsync(path, "images.blockImages", null, userScope: true);
             await UserSettingsWriter.SetAsync(path, "retry.enabled", null, userScope: true);
+            await UserSettingsWriter.SetAsync(path, "steeringMode", null, userScope: true);
             Assert.Null((await UserSettings.LoadAsync(root, _ => null)).BlockImages);
-            Assert.Null((await UserSettings.LoadAsync(root, _ => null)).Retry);
+            var cleared = await UserSettings.LoadAsync(root, _ => null);
+            Assert.Null(cleared.Retry);
+            Assert.Null(cleared.SteeringMode);
+            await Assert.ThrowsAsync<ArgumentException>(() =>
+                UserSettingsWriter.SetAsync(path, "followUpMode", "sometimes", userScope: true));
         }
         finally { Directory.Delete(root, recursive: true); }
     }

@@ -171,7 +171,9 @@ Task<ConversationRun> OpenRunAsync(PiAgent runningAgent, ConversationSession ses
     return ConversationRun.OpenAsync(runningAgent, session, save: path is null ? null :
         token => runProject.Store.SaveAsync(session, path, token), autoCompaction: runCompaction, pricing: runPricing,
         sessionFile: path, provider: runProvider ?? runModel.Provider.Id, reasoningLevel: reasoningLevel ?? thinking,
-        retryPolicy: runSettings.Retry?.ResolvePolicy() ?? AgentRunRetryPolicy.Default);
+        retryPolicy: runSettings.Retry?.ResolvePolicy() ?? AgentRunRetryPolicy.Default,
+        steeringMode: runSettings.SteeringMode ?? PromptDeliveryMode.OneAtATime,
+        followUpMode: runSettings.FollowUpMode ?? PromptDeliveryMode.OneAtATime);
 }
 var sessionPath = cli.NoSession || cli.ForkSource is not null ? null : cli.SessionPath is not null &&
     (cli.SessionPath.Contains(Path.DirectorySeparatorChar) || cli.SessionPath.EndsWith(".session.json", StringComparison.Ordinal) ||
@@ -463,15 +465,14 @@ Task<string> SetRpcThinkingLevelDuringRunAsync(string level, CancellationToken t
     return Task.FromResult(thinking);
 }
 
-async Task SetRpcAutoRetryEnabledAsync(bool enabled, CancellationToken token)
-{
-    var settingsPath = UserSettings.GetSettingsPath(agentDirectory, Environment.GetEnvironmentVariable);
-    await UserSettingsWriter.SetAsync(settingsPath, "retry.enabled", enabled ? "true" : "false",
-        userScope: true, token);
-    baseUserSettings = await UserSettings.LoadAsync(agentDirectory, Environment.GetEnvironmentVariable, token);
-    userSettings = baseUserSettings.Overlay(projectSettings ?? new UserSettings());
-    conversationRun.SetAutoRetryEnabled(enabled);
-}
+var rpcUserSettings = new RpcUserSettingsController(agentDirectory, Environment.GetEnvironmentVariable,
+    () => projectSettings,
+    (globalSettings, effectiveSettings) =>
+    {
+        baseUserSettings = globalSettings;
+        userSettings = effectiveSettings;
+    },
+    () => conversationRun);
 
 var terminalModelPicker = editor is null ? null : new TerminalModelPicker(modelRuntime, editor);
 var terminalSessionPicker = editor is null ? null : new TerminalSessionPicker(store, editor);
@@ -835,9 +836,10 @@ if (cli.Mode == "rpc")
         SelectRpcModelAsync, () => conversationRun, () => thinking, () => modelRuntime.Scope.Count > 0,
         SetRpcThinkingLevelAsync, () => ThinkingLevels.AvailableForModel(selection.Model.Reasoning),
         () => selection.Model.Reasoning == true, () => ProviderChatClientFactory.ResolveProtocol(selection),
-        SetRpcThinkingLevelDuringRunAsync, SetRpcAutoRetryEnabledAsync, StartRpcSessionAsync,
+        SetRpcThinkingLevelDuringRunAsync, rpcUserSettings.SetAutoRetryEnabledAsync, StartRpcSessionAsync,
         ForkRpcSessionAsync, CloneRpcSessionAsync, SwitchProjectSessionAsync,
-        () => resources, () => extensionLease.Current.Registration).ServeAsync();
+        () => resources, () => extensionLease.Current.Registration,
+        rpcUserSettings.SetPromptDeliveryModeAsync).ServeAsync();
     return;
 }
 if (cli.Mode == "json")
