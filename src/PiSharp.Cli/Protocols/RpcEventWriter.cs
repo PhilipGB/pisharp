@@ -19,7 +19,7 @@ internal sealed class RpcEventWriter(JsonLineWriter output)
         await foreach (var item in run.RunEventsAsync(prompt, cancellationToken))
         {
             if (observeEvent is not null) await observeEvent(item);
-            if (item.Type == "prompt_accepted")
+            if (item.Type is "prompt_accepted" or "agent_attempt_started")
             {
                 turnStartHead = item.RunStartHead;
                 accepted = true;

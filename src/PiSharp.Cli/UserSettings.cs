@@ -64,9 +64,57 @@ public sealed record CompactionSettings(bool? Enabled = null, int? ReserveTokens
     }
 }
 /// <summary>Validated non-secret settings subset for the user and trusted project scopes.</summary>
+public sealed record RetrySettings(bool? Enabled = null, int? MaxRetries = null, int? BaseDelayMs = null,
+    int? MaxAgentDelayMs = null)
+{
+    public static RetrySettings Parse(JsonElement value)
+    {
+        if (value.ValueKind != JsonValueKind.Object)
+            throw new InvalidDataException("settings.json retry must be an object.");
+        bool? enabled = null;
+        int? maxRetries = null, baseDelayMs = null, maxAgentDelayMs = null;
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var property in value.EnumerateObject())
+        {
+            if (!seen.Add(property.Name)) throw new InvalidDataException($"settings.json retry contains duplicate property '{property.Name}'.");
+            switch (property.Name)
+            {
+                case "enabled" when property.Value.ValueKind is JsonValueKind.True or JsonValueKind.False:
+                    enabled = property.Value.GetBoolean();
+                    break;
+                case "maxRetries" when property.Value.ValueKind == JsonValueKind.Number &&
+                    property.Value.TryGetInt32(out var retries) && retries is >= 0 and <= 20:
+                    maxRetries = retries;
+                    break;
+                case "baseDelayMs" when property.Value.ValueKind == JsonValueKind.Number &&
+                    property.Value.TryGetInt32(out var baseDelay) && baseDelay is >= 0 and <= 60_000:
+                    baseDelayMs = baseDelay;
+                    break;
+                case "maxAgentDelayMs" when property.Value.ValueKind == JsonValueKind.Number &&
+                    property.Value.TryGetInt32(out var maxDelay) && maxDelay is >= 0 and <= 300_000:
+                    maxAgentDelayMs = maxDelay;
+                    break;
+                default:
+                    throw new InvalidDataException($"settings.json retry.{property.Name} is unsupported or invalid.");
+            }
+        }
+        return new(enabled, maxRetries, baseDelayMs, maxAgentDelayMs);
+    }
+
+    public PiSharp.Runtime.Sessions.AgentRunRetryPolicy ResolvePolicy()
+    {
+        var defaults = PiSharp.Runtime.Sessions.AgentRunRetryPolicy.Default;
+        var baseDelay = TimeSpan.FromMilliseconds(BaseDelayMs ?? (int)defaults.BaseDelay.TotalMilliseconds);
+        var maximum = TimeSpan.FromMilliseconds(MaxAgentDelayMs ?? (int)defaults.MaxDelay.TotalMilliseconds);
+        if (baseDelay > maximum) baseDelay = maximum;
+        return new(Enabled ?? defaults.Enabled, MaxRetries ?? defaults.MaxRetries, baseDelay, maximum);
+    }
+}
+
 public sealed record UserSettings(string? DefaultProvider = null, string? DefaultModel = null,
     string? DefaultThinkingLevel = null, IReadOnlyList<string>? DefaultTools = null, string? SessionDirectory = null,
-    CompactionSettings? Compaction = null, bool? BlockImages = null, string? DefaultProjectTrust = null, bool? HideThinkingBlock = null, bool? QuietStartup = null, IReadOnlyList<string>? EnabledModels = null, string? ShellPath = null, string? ExternalEditor = null, string? Theme = null)
+    CompactionSettings? Compaction = null, bool? BlockImages = null, string? DefaultProjectTrust = null, bool? HideThinkingBlock = null, bool? QuietStartup = null, IReadOnlyList<string>? EnabledModels = null, string? ShellPath = null, string? ExternalEditor = null, string? Theme = null,
+    RetrySettings? Retry = null)
 {
     public static async Task<UserSettings> LoadAsync(string agentDirectory, Func<string, string?> environment,
         CancellationToken cancellationToken = default)
@@ -83,6 +131,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
             externalEditor = null, theme = null;
         IReadOnlyList<string>? tools = null, enabledModels = null;
         CompactionSettings? compaction = null;
+        RetrySettings? retry = null;
         bool? blockImages = null, hideThinkingBlock = null, quietStartup = null;
         var seen = new HashSet<string>(StringComparer.Ordinal);
         foreach (var property in document.RootElement.EnumerateObject())
@@ -119,6 +168,11 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
             if (property.Name == "compaction")
             {
                 compaction = CompactionSettings.Parse(property.Value);
+                continue;
+            }
+            if (property.Name == "retry")
+            {
+                retry = RetrySettings.Parse(property.Value);
                 continue;
             }
             if (property.Name == "enabledModels")
@@ -182,7 +236,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
             }
         }
         return new(provider, model, thinking, tools, sessionDirectory, compaction, blockImages, defaultTrust, hideThinkingBlock,
-            quietStartup, enabledModels, shellPath, externalEditor, theme);
+            quietStartup, enabledModels, shellPath, externalEditor, theme, retry);
     }
 
     public static string GetSettingsPath(string agentDirectory, Func<string, string?> environment) =>
@@ -207,7 +261,12 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         project.EnabledModels ?? EnabledModels,
         project.ShellPath ?? ShellPath,
         project.ExternalEditor ?? ExternalEditor,
-        project.Theme ?? Theme);
+        project.Theme ?? Theme,
+        project.Retry is null ? Retry : new RetrySettings(
+            project.Retry.Enabled ?? Retry?.Enabled,
+            project.Retry.MaxRetries ?? Retry?.MaxRetries,
+            project.Retry.BaseDelayMs ?? Retry?.BaseDelayMs,
+            project.Retry.MaxAgentDelayMs ?? Retry?.MaxAgentDelayMs));
 
     private static bool IsValidThemeSetting(string value)
     {

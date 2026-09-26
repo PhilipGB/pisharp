@@ -7,6 +7,36 @@ namespace PiSharp.Tests;
 public sealed class RpcEventProjectorTests
 {
     [Fact]
+    public void ProjectsRetryEventsWithPiFieldsAndOmitsAbsentFinalError()
+    {
+        var projector = new RpcEventProjector();
+        var conversation = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        var start = projector.Project(new AgentLifecycleEvent("auto_retry_start", Error: "overloaded")
+        {
+            RetryAttempt = 2,
+            RetryMaxAttempts = 3,
+            RetryDelayMs = 4000
+        }, conversation, null, runAccepted: true, api: null);
+        var end = projector.Project(new AgentLifecycleEvent("auto_retry_end")
+        {
+            RetryAttempt = 2,
+            RetrySuccess = true
+        }, conversation, null, runAccepted: true, api: null);
+
+        using var startRecord = JsonDocument.Parse(JsonSerializer.Serialize(start));
+        Assert.Equal(["type", "attempt", "maxAttempts", "delayMs", "errorMessage"],
+            startRecord.RootElement.EnumerateObject().Select(property => property.Name));
+        Assert.Equal(2, startRecord.RootElement.GetProperty("attempt").GetInt32());
+        Assert.Equal(3, startRecord.RootElement.GetProperty("maxAttempts").GetInt32());
+        Assert.Equal(4000, startRecord.RootElement.GetProperty("delayMs").GetInt64());
+        using var endRecord = JsonDocument.Parse(JsonSerializer.Serialize(end));
+        Assert.Equal(["type", "success", "attempt"], endRecord.RootElement.EnumerateObject()
+            .Select(property => property.Name));
+        Assert.True(endRecord.RootElement.GetProperty("success").GetBoolean());
+        Assert.Equal(2, endRecord.RootElement.GetProperty("attempt").GetInt32());
+    }
+
+    [Fact]
     public void ProjectsQueueSnapshotsAndRetainsExplicitFormatForUnmappedEvents()
     {
         var projector = new RpcEventProjector();

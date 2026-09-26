@@ -19,7 +19,8 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
     Func<string, CancellationToken, Task<string>>? setThinkingLevel = null,
     Func<IReadOnlyList<string>>? getAvailableThinkingLevels = null, Func<bool>? supportsThinking = null,
     Func<string?>? getApi = null,
-    Func<string, CancellationToken, Task<string>>? setThinkingLevelDuringRun = null)
+    Func<string, CancellationToken, Task<string>>? setThinkingLevelDuringRun = null,
+    Func<bool, CancellationToken, Task>? persistRetryEnabled = null)
 {
     private readonly JsonLineWriter _writer = new(output);
     private RpcEventWriter? _events;
@@ -34,6 +35,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
         var modelCommands = new RpcModelCommandHandler(_writer, RespondAsync, () => Events,
             discoverModels, setModel, () => CurrentRun, getThinkingLevel, isModelScoped,
             setThinkingLevel, setThinkingLevelDuringRun, getAvailableThinkingLevels, supportsThinking);
+        var retryCommands = new RpcRetryCommandHandler(RespondAsync, () => CurrentRun, persistRetryEnabled);
         try
         {
             while (await input.ReadLineAsync(cancellationToken) is { } line)
@@ -57,6 +59,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                     var type = kind.GetString()!;
                     var id = root.TryGetProperty("id", out var requestId) ? requestId.Clone() : (JsonElement?)null;
                     var busy = _active is { IsCompleted: false };
+                    if (await retryCommands.TryHandleAsync(type, root, id, cancellationToken)) continue;
                     if (await modelCommands.TryHandleAsync(type, root, id, busy, cancellationToken)) continue;
                     switch (type)
                     {

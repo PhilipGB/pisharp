@@ -47,7 +47,7 @@ internal static class UserSettingsWriter
         var setting = string.Join('.', segments);
         var valid = setting switch
         {
-            "hideThinkingBlock" or "quietStartup" or "images.blockImages" or "compaction.enabled" =>
+            "hideThinkingBlock" or "quietStartup" or "images.blockImages" or "compaction.enabled" or "retry.enabled" =>
                 value is null or "true" or "false",
             "defaultProjectTrust" when userScope => value is null or "ask" or "always" or "never",
             "defaultThinkingLevel" => value is null || ThinkingLevels.IsValid(value),

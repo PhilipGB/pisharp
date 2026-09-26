@@ -17,6 +17,7 @@ public sealed class ConversationRun
     private readonly ModelPricing? _pricing;
     private readonly string? _sessionFile;
     private readonly string? _provider;
+    private readonly AgentRunRetryController _retryController;
     private string? _reasoningLevel;
     private readonly SemaphoreSlim _gate = new(1, 1);
     private readonly object _promptQueueGate = new();
@@ -32,7 +33,8 @@ public sealed class ConversationRun
 
     private ConversationRun(PiAgent agent, ConversationSession conversation, AgentSession execution, Func<CancellationToken, Task>? save,
         AutoCompactionPolicy? autoCompaction, ModelPricing? pricing, string? sessionFile, string? provider,
-        string? reasoningLevel)
+        string? reasoningLevel, AgentRunRetryPolicy retryPolicy,
+        Func<TimeSpan, CancellationToken, Task>? retryDelay)
     {
         _agent = agent;
         _save = save;
@@ -40,6 +42,7 @@ public sealed class ConversationRun
         _pricing = pricing;
         _sessionFile = sessionFile is null ? null : Path.GetFullPath(sessionFile);
         _provider = provider;
+        _retryController = new AgentRunRetryController(retryPolicy, retryDelay);
         _reasoningLevel = reasoningLevel;
         Conversation = conversation;
         _execution = execution;
@@ -49,13 +52,14 @@ public sealed class ConversationRun
     public static async Task<ConversationRun> OpenAsync(PiAgent agent, ConversationSession conversation,
         CancellationToken cancellationToken = default, Func<CancellationToken, Task>? save = null,
         AutoCompactionPolicy? autoCompaction = null, ModelPricing? pricing = null, string? sessionFile = null,
-        string? provider = null, string? reasoningLevel = null)
+        string? provider = null, string? reasoningLevel = null, AgentRunRetryPolicy? retryPolicy = null,
+        Func<TimeSpan, CancellationToken, Task>? retryDelay = null)
     {
         if (autoCompaction is not null) _ = autoCompaction.TriggerTokens;
         if (conversation.RecoverIncomplete() && save is not null) await save(cancellationToken);
         var execution = await agent.RestoreHistoryAsync(conversation.ContextMessages(), cancellationToken);
         return new ConversationRun(agent, conversation, execution, save, autoCompaction, pricing, sessionFile, provider,
-            reasoningLevel);
+            reasoningLevel, retryPolicy ?? AgentRunRetryPolicy.Default, retryDelay);
     }
 
     /// <summary>Queue guidance ahead of follow-up work on the active application run.</summary>
@@ -121,6 +125,12 @@ public sealed class ConversationRun
 
     public void AbortBash() => _agent.AbortBash();
 
+    public bool IsRetrying => _retryController.IsRetrying;
+
+    public void SetAutoRetryEnabled(bool enabled) => _retryController.SetEnabled(enabled);
+
+    public void AbortRetry() => _retryController.AbortRetry();
+
     private PendingPrompts SnapshotQueues() => new(_steeringQueue.ToArray(), _followUpQueue.ToArray());
     private static AgentLifecycleEvent QueueEvent(PendingPrompts pending) => new("queue_update",
         Text: JsonSerializer.Serialize(new { steering = pending.Steering, followUp = pending.FollowUp }));
@@ -146,23 +156,34 @@ public sealed class ConversationRun
         var pump = Task.Run(async () =>
         {
             var accepted = false;
+            var activeTurnOutcomeSent = false;
             object? owner = null;
             try
             {
                 owner = BeginPromptLoop(Publish);
                 string? current = promptText;
                 var firstTurn = true;
+                var stopRun = false;
                 while (current is not null)
                 {
+                    activeTurnOutcomeSent = false;
                     var currentMessage = firstTurn ? promptMessage : new ChatMessage(ChatRole.User, current);
                     firstTurn = false;
-                    await foreach (var update in RunStreamingAsync(currentMessage, current, linked.Token, value =>
-                    {
-                        if (value.Type == "prompt_accepted") accepted = true;
-                        Publish(value);
-                    }))
-                    {
-                        if (update.Contents is not null)
+                    var outcome = await _retryController.RunTurnAsync(
+                        (continuation, observeAttempt) => continuation
+                            ? RunStreamingContinuationAsync(current, linked.Token, observeAttempt)
+                            : RunStreamingAsync(currentMessage, current, linked.Token, observeAttempt),
+                        item =>
+                        {
+                            if (item.Type == "prompt_accepted") accepted = true;
+                            if (item.Type is "prompt_accepted" or "agent_attempt_started") activeTurnOutcomeSent = false;
+                            Publish(item);
+                            if (item.Type is "turn_completed" or "turn_failed" or "turn_interrupted" or "prompt_rejected")
+                                activeTurnOutcomeSent = true;
+                        },
+                        update =>
+                        {
+                            if (update.Contents is null) return;
                             foreach (var content in update.Contents)
                             {
                                 if (content is TextReasoningContent reasoning && !string.IsNullOrEmpty(reasoning.Text))
@@ -170,16 +191,30 @@ public sealed class ConversationRun
                                 else if (content is UsageContent usage)
                                     Publish(UsageEvent(UsageRecord.Create(Conversation.Model, "model", usage.Details, _pricing)));
                             }
+                        },
+                        OmitFailedRetryContextAsync,
+                        async token =>
+                        {
+                            var history = Conversation.ContextMessages();
+                            _execution = await _agent.RestoreHistoryAsync(history, token);
+                            _historyCount = history.Count;
+                        },
+                        FlushPendingBashExecutions,
+                        () => Conversation.Tree.HeadId,
+                        linked.Token);
+                    activeTurnOutcomeSent = true;
+                    if (outcome != AgentTurnOutcome.Completed)
+                    {
+                        stopRun = true;
+                        break;
                     }
-                    FlushPendingBashExecutions();
-                    Publish(new("turn_completed") { TurnEndHead = Conversation.Tree.HeadId });
                     current = TakeQueuedPromptOrClose(owner);
                 }
-                Publish(new("agent_run_completed"));
+                if (!stopRun) Publish(new("agent_run_completed"));
             }
             catch (OperationCanceledException)
             {
-                if (!consumerClosed.IsCancellationRequested)
+                if (!consumerClosed.IsCancellationRequested && !activeTurnOutcomeSent)
                     try
                     {
                         await channel.Writer.WriteAsync(new(accepted ? "turn_interrupted" : "prompt_rejected")
@@ -189,7 +224,7 @@ public sealed class ConversationRun
             }
             catch (Exception error)
             {
-                if (!consumerClosed.IsCancellationRequested)
+                if (!consumerClosed.IsCancellationRequested && !activeTurnOutcomeSent)
                     try
                     {
                         await channel.Writer.WriteAsync(new(accepted ? "turn_failed" : "prompt_rejected", Error: error.Message)
@@ -378,7 +413,16 @@ public sealed class ConversationRun
         CancellationToken cancellationToken = default, Action<AgentLifecycleEvent>? onEvent = null) =>
         RunStreamingAsync(new ChatMessage(ChatRole.User, prompt), prompt, cancellationToken, onEvent);
 
-    public async IAsyncEnumerable<AgentResponseUpdate> RunStreamingAsync(ChatMessage promptMessage, string prompt,
+    public IAsyncEnumerable<AgentResponseUpdate> RunStreamingAsync(ChatMessage promptMessage, string prompt,
+        CancellationToken cancellationToken = default, Action<AgentLifecycleEvent>? onEvent = null) =>
+        RunStreamingAttemptAsync(promptMessage, prompt, false, cancellationToken, onEvent);
+
+    private IAsyncEnumerable<AgentResponseUpdate> RunStreamingContinuationAsync(string prompt,
+        CancellationToken cancellationToken, Action<AgentLifecycleEvent>? onEvent) =>
+        RunStreamingAttemptAsync(null, prompt, true, cancellationToken, onEvent);
+
+    private async IAsyncEnumerable<AgentResponseUpdate> RunStreamingAttemptAsync(ChatMessage? promptMessage, string prompt,
+        bool retryContinuation,
         [EnumeratorCancellation] CancellationToken cancellationToken = default,
         Action<AgentLifecycleEvent>? onEvent = null)
     {
@@ -402,7 +446,7 @@ public sealed class ConversationRun
         {
             // A failed settled run can have checkpointed side effects without MAF-persisted tool results.
             // Rebuild from canonical history with an explicit no-replay warning before accepting another prompt.
-            if (Conversation.RecoverIncomplete())
+            if (!retryContinuation && Conversation.RecoverIncomplete())
             {
                 var history = Conversation.ContextMessages();
                 var restored = await _agent.RestoreHistoryAsync(history, cancellationToken);
@@ -410,11 +454,12 @@ public sealed class ConversationRun
                 _execution = restored;
                 _historyCount = history.Count;
             }
-            if (_autoCompaction is not null && EstimateNextContext(prompt) > _autoCompaction.TriggerTokens)
+            var estimatedPrompt = retryContinuation ? "" : prompt;
+            if (_autoCompaction is not null && EstimateNextContext(estimatedPrompt) > _autoCompaction.TriggerTokens)
             {
                 if (await CompactCoreAsync(null, cancellationToken))
                     onEvent?.Invoke(new("context_compacted", Text: "Automatic context summary saved; raw history retained."));
-                if (EstimateNextContext(prompt) > _autoCompaction.TriggerTokens)
+                if (EstimateNextContext(estimatedPrompt) > _autoCompaction.TriggerTokens)
                     throw new InvalidOperationException("Estimated context still exceeds the configured budget; shorten the prompt or increase the model context window.");
             }
             if (durable is not null)
@@ -422,13 +467,42 @@ public sealed class ConversationRun
                 await durable.StartAsync(prompt, cancellationToken);
                 started = true;
             }
-            accepted = true;
-            var promptImages = promptMessage.Contents?.OfType<DataContent>().ToArray();
-            onEvent?.Invoke(new("prompt_accepted", Text: prompt)
+            var attemptStartHead = Conversation.Tree.HeadId;
+            var attemptStartPathLength = Conversation.Tree.ActivePath().Count;
+            if (promptMessage is not null)
             {
-                Images = promptImages is { Length: > 0 } ? promptImages : null,
-                RunStartHead = Conversation.Tree.HeadId
-            });
+                var previousHead = Conversation.Tree.HeadId;
+                Conversation.Append(promptMessage);
+                try
+                {
+                    if (_save is not null) await _save(CancellationToken.None);
+                }
+                catch
+                {
+                    Conversation.Tree.Select(previousHead);
+                    var history = Conversation.ContextMessages();
+                    _execution = await _agent.RestoreHistoryAsync(history, CancellationToken.None);
+                    _historyCount = history.Count;
+                    throw;
+                }
+            }
+            accepted = true;
+            if (promptMessage is null)
+                onEvent?.Invoke(new("agent_attempt_started")
+                {
+                    RunStartHead = attemptStartHead,
+                    RunStartPathLength = attemptStartPathLength
+                });
+            else
+            {
+                var promptImages = promptMessage.Contents?.OfType<DataContent>().ToArray();
+                onEvent?.Invoke(new("prompt_accepted", Text: prompt)
+                {
+                    Images = promptImages is { Length: > 0 } ? promptImages : null,
+                    RunStartHead = attemptStartHead,
+                    RunStartPathLength = attemptStartPathLength
+                });
+            }
             var inFlightBudget = _autoCompaction is null ? null : new InFlightContextBudget(_autoCompaction,
                 (messages, token) => _agent.SummarizeAsync(messages, null, token),
                 async (summary, token) =>
@@ -439,9 +513,14 @@ public sealed class ConversationRun
                     if (_save is not null) await _save(token);
                     onEvent?.Invoke(new("context_compacted_in_flight", Text: "Continuation request summarized; canonical history was not changed."));
                 });
-            await foreach (var update in _agent.RunStreamingDurableAsync(promptMessage, _execution, cancellationToken, durable,
-                Observe, TakeSteeringForProvider, inFlightBudget is null ? null : inFlightBudget.ProjectAsync,
-                CreateBashSessionEnvironment()))
+            var updates = promptMessage is null
+                ? _agent.RunStreamingContinuationDurableAsync(_execution, cancellationToken, durable,
+                    Observe, TakeSteeringForProvider, inFlightBudget is null ? null : inFlightBudget.ProjectAsync,
+                    CreateBashSessionEnvironment())
+                : _agent.RunStreamingDurableAsync(promptMessage, _execution, cancellationToken, durable,
+                    Observe, TakeSteeringForProvider, inFlightBudget is null ? null : inFlightBudget.ProjectAsync,
+                    CreateBashSessionEnvironment());
+            await foreach (var update in updates)
             {
                 if (!string.IsNullOrEmpty(update.Text))
                 {
@@ -471,12 +550,24 @@ public sealed class ConversationRun
                 var history = _agent.GetHistory(_execution);
                 if (history.Count < _historyCount) throw new InvalidDataException("MAF discarded canonical conversation history.");
                 var existing = Conversation.ContextMessages();
-                if (existing.Count != _historyCount || existing.Where((message, index) => !JsonElement.DeepEquals(
+                if (existing.Count < _historyCount || Enumerable.Range(0, _historyCount).Any(index =>
+                    !JsonElement.DeepEquals(JsonSerializer.SerializeToElement(existing[index], AIJsonUtilities.DefaultOptions),
+                        JsonSerializer.SerializeToElement(history[index], AIJsonUtilities.DefaultOptions))))
+                    throw new InvalidDataException("MAF changed existing canonical conversation history.");
+                var promptInConversation = promptMessage is not null && existing.Count > _historyCount &&
+                    JsonElement.DeepEquals(JsonSerializer.SerializeToElement(existing[_historyCount], AIJsonUtilities.DefaultOptions),
+                        JsonSerializer.SerializeToElement(promptMessage, AIJsonUtilities.DefaultOptions));
+                var promptInHistory = promptInConversation && history.Count > _historyCount &&
+                    JsonElement.DeepEquals(JsonSerializer.SerializeToElement(history[_historyCount], AIJsonUtilities.DefaultOptions),
+                        JsonSerializer.SerializeToElement(promptMessage, AIJsonUtilities.DefaultOptions));
+                foreach (var message in history.Skip(_historyCount + (promptInHistory ? 1 : 0)))
+                    Conversation.Append(message);
+                var canonicalHistory = Conversation.ContextMessages();
+                if (canonicalHistory.Count != history.Count || canonicalHistory.Where((message, index) => !JsonElement.DeepEquals(
                     JsonSerializer.SerializeToElement(message, AIJsonUtilities.DefaultOptions),
                     JsonSerializer.SerializeToElement(history[index], AIJsonUtilities.DefaultOptions))).Any())
-                    throw new InvalidDataException("MAF changed existing canonical conversation history.");
-                foreach (var message in history.Skip(_historyCount)) Conversation.Append(message);
-                _historyCount = history.Count;
+                    _execution = await _agent.RestoreHistoryAsync(canonicalHistory, CancellationToken.None);
+                _historyCount = canonicalHistory.Count;
                 if (!completed && accepted) Conversation.Tree.Append("interrupted", JsonSerializer.SerializeToElement(
                     new { prompt, partialText = partialText.ToString(), partialAssistantText = partialAssistantText.ToString(), events, timestamp = DateTimeOffset.UtcNow }));
                 if (started) await durable!.FinishAsync(completed);
@@ -491,6 +582,32 @@ public sealed class ConversationRun
         if (measured is null) return AutoCompactionPolicy.Estimate(Conversation.ContextMessages(), prompt);
         var pending = (prompt.Length + 1L) / 2 + 64;
         return (int)Math.Min(int.MaxValue, measured.Value + pending);
+    }
+
+    private async Task OmitFailedRetryContextAsync(string? attemptStartHead, int attemptStartPathLength,
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var path = Conversation.Tree.ActivePath();
+        var start = attemptStartHead is null ? -1 : path.ToList().FindIndex(node => node.Id == attemptStartHead);
+        var firstAttemptEntry = start >= 0 ? start + 1 : Math.Clamp(attemptStartPathLength, 0, path.Count);
+        var attemptEntries = path.Skip(firstAttemptEntry).Where(node => node.Type == "chat").ToArray();
+        var failedAssistant = Array.FindLastIndex(attemptEntries, node =>
+            ConversationSession.RestoreEntry(node).Role == ChatRole.Assistant);
+        var changed = false;
+        if (failedAssistant >= 0)
+        {
+            var omitted = new List<string> { attemptEntries[failedAssistant].Id };
+            for (var index = failedAssistant + 1; index < attemptEntries.Length; index++)
+            {
+                var message = ConversationSession.RestoreEntry(attemptEntries[index]);
+                if (message.Role != ChatRole.Tool) break;
+                omitted.Add(attemptEntries[index].Id);
+            }
+            foreach (var entryId in omitted) Conversation.AppendContextOmission(entryId);
+            changed = true;
+        }
+        if (changed && _save is not null) await _save(CancellationToken.None);
     }
 
     private IReadOnlyDictionary<string, string?> CreateBashSessionEnvironment()

@@ -908,6 +908,116 @@ public sealed class RpcModeTests
         Assert.Equal("failed after output", failedAssistant.GetProperty("errorMessage").GetString());
     }
 
+    [Fact]
+    public async Task AbortRetryCancelsScheduledRpcRetryAndProjectsPiEventShapes()
+    {
+        var channel = Channel.CreateUnbounded<string>();
+        using var output = new LockedWriter();
+        var client = new RetryableRpcClient();
+        Func<TimeSpan, CancellationToken, Task> retryDelay = (_, token) =>
+            Task.Delay(Timeout.InfiniteTimeSpan, token);
+        var retryPolicy = new AgentRunRetryPolicy(enabled: true, maxRetries: 2,
+            baseDelay: TimeSpan.FromSeconds(30), maxDelay: TimeSpan.FromSeconds(30));
+        var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(Path.GetTempPath()),
+            retryPolicy: ProviderRetryPolicy.None), new ConversationSession(Path.GetTempPath(), "fixture", null),
+            retryPolicy: retryPolicy, retryDelay: retryDelay);
+        bool? persistedRetryEnabled = null;
+        var service = new RpcMode(new CommandReader(channel.Reader), output, run,
+            persistRetryEnabled: (enabled, token) =>
+            {
+                token.ThrowIfCancellationRequested();
+                persistedRetryEnabled = enabled;
+                run.SetAutoRetryEnabled(enabled);
+                return Task.CompletedTask;
+            });
+        var serving = service.ServeAsync();
+
+        channel.Writer.TryWrite("{\"id\":\"prompt\",\"type\":\"prompt\",\"message\":\"hello\"}");
+        await WaitForAsync(output, "auto_retry_start");
+        channel.Writer.TryWrite("{\"id\":\"abort-retry\",\"type\":\"abort_retry\"}");
+        await WaitForAsync(output, "\"id\":\"abort-retry\"");
+        await WaitForAsync(output, "agent_settled");
+        channel.Writer.TryWrite("{\"id\":\"disable-retry\",\"type\":\"set_auto_retry\",\"enabled\":false}");
+        await WaitForAsync(output, "\"id\":\"disable-retry\"");
+        channel.Writer.TryWrite("{\"id\":\"invalid-retry\",\"type\":\"set_auto_retry\",\"enabled\":\"false\"}");
+        await WaitForAsync(output, "\"id\":\"invalid-retry\"");
+        channel.Writer.TryWrite("{\"id\":\"noop-abort\",\"type\":\"abort_retry\"}");
+        await WaitForAsync(output, "\"id\":\"noop-abort\"");
+        channel.Writer.Complete();
+        await serving.WaitAsync(TimeSpan.FromSeconds(5));
+
+        var lines = output.Lines();
+        var agentStarts = lines.Where(line => line.Contains("\"type\":\"agent_start\"", StringComparison.Ordinal)).ToArray();
+        var agentEnds = lines.Where(line => line.Contains("\"type\":\"agent_end\"", StringComparison.Ordinal)).ToArray();
+        Assert.Single(agentStarts);
+        using var failed = JsonDocument.Parse(Assert.Single(agentEnds));
+        Assert.True(failed.RootElement.GetProperty("willRetry").GetBoolean());
+        var startLine = Assert.Single(lines, line => line.Contains("\"type\":\"auto_retry_start\"", StringComparison.Ordinal));
+        using var start = JsonDocument.Parse(startLine);
+        Assert.Equal(1, start.RootElement.GetProperty("attempt").GetInt32());
+        Assert.Equal(2, start.RootElement.GetProperty("maxAttempts").GetInt32());
+        Assert.True(start.RootElement.GetProperty("delayMs").GetInt64() > 0);
+        var endLine = Assert.Single(lines, line => line.Contains("\"type\":\"auto_retry_end\"", StringComparison.Ordinal));
+        using var end = JsonDocument.Parse(endLine);
+        Assert.False(end.RootElement.GetProperty("success").GetBoolean());
+        Assert.Equal("Retry cancelled", end.RootElement.GetProperty("finalError").GetString());
+        var settledIndex = Array.FindIndex(lines, line => line.Contains("\"type\":\"agent_settled\"", StringComparison.Ordinal));
+        Assert.True(settledIndex > Array.IndexOf(lines, endLine));
+        Assert.Contains(lines, line => line.Contains("\"command\":\"abort_retry\",\"success\":true", StringComparison.Ordinal));
+        Assert.Contains(lines, line => line.Contains("\"command\":\"set_auto_retry\",\"success\":true", StringComparison.Ordinal));
+        Assert.Contains(lines, line => line.Contains("\"command\":\"set_auto_retry\",\"success\":false", StringComparison.Ordinal));
+        Assert.False(persistedRetryEnabled);
+        Assert.Equal(1, client.Requests);
+    }
+
+    [Fact]
+    public async Task SuccessfulRpcRetryHasOrderedAgentAndRetryEventsForEachAttempt()
+    {
+        var channel = Channel.CreateUnbounded<string>();
+        using var output = new LockedWriter();
+        var client = new RetryOnceRpcClient();
+        var retryPolicy = new AgentRunRetryPolicy(enabled: true, maxRetries: 1,
+            baseDelay: TimeSpan.Zero, maxDelay: TimeSpan.Zero);
+        var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(Path.GetTempPath()),
+            retryPolicy: ProviderRetryPolicy.None), new ConversationSession(Path.GetTempPath(), "fixture", null),
+            retryPolicy: retryPolicy);
+        var serving = new RpcMode(new CommandReader(channel.Reader), output, run).ServeAsync();
+        channel.Writer.TryWrite("{\"id\":\"prompt\",\"type\":\"prompt\",\"message\":\"hello\"}");
+        await WaitForAsync(output, "agent_settled");
+        channel.Writer.Complete();
+        await serving.WaitAsync(TimeSpan.FromSeconds(5));
+
+        var lines = output.Lines();
+        var eventTypes = lines.Select(line => JsonDocument.Parse(line)).ToArray();
+        try
+        {
+            var types = eventTypes.Select(document => document.RootElement.TryGetProperty("type", out var type)
+                ? type.GetString() : null).ToArray();
+            Assert.Equal(2, types.Count(type => type == "agent_start"));
+            Assert.Equal(2, types.Count(type => type == "agent_end"));
+            Assert.Equal(1, types.Count(type => type == "auto_retry_start"));
+            Assert.Equal(1, types.Count(type => type == "auto_retry_end"));
+            var firstEndIndex = Array.FindIndex(eventTypes, document => document.RootElement.TryGetProperty("type", out var type) &&
+                type.GetString() == "agent_end");
+            var startIndex = Array.FindIndex(eventTypes, document => document.RootElement.TryGetProperty("type", out var type) &&
+                type.GetString() == "auto_retry_start");
+            var secondStartIndex = Array.FindLastIndex(eventTypes, document => document.RootElement.TryGetProperty("type", out var type) &&
+                type.GetString() == "agent_start");
+            var retryEndIndex = Array.FindIndex(eventTypes, document => document.RootElement.TryGetProperty("type", out var type) &&
+                type.GetString() == "auto_retry_end");
+            var secondEndIndex = Array.FindLastIndex(eventTypes, document => document.RootElement.TryGetProperty("type", out var type) &&
+                type.GetString() == "agent_end");
+            var settledIndex = Array.FindIndex(eventTypes, document => document.RootElement.TryGetProperty("type", out var type) &&
+                type.GetString() == "agent_settled");
+            Assert.True(firstEndIndex < startIndex && startIndex < secondStartIndex && secondStartIndex < retryEndIndex &&
+                retryEndIndex < secondEndIndex && secondEndIndex < settledIndex);
+            Assert.True(eventTypes[firstEndIndex].RootElement.GetProperty("willRetry").GetBoolean());
+            Assert.False(eventTypes[secondEndIndex].RootElement.GetProperty("willRetry").GetBoolean());
+            Assert.Equal(2, client.Requests);
+        }
+        finally { foreach (var document in eventTypes) document.Dispose(); }
+    }
+
     private static Task WaitForAsync(LockedWriter output, string fragment) => output.WaitForLineAsync(fragment);
 
     private sealed class CommandReader(ChannelReader<string> channel) : TextReader
@@ -1069,6 +1179,46 @@ public sealed class RpcModeTests
             await Task.Yield();
             throw new IOException("failed after output");
         }
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
+    }
+
+    private sealed class RetryableRpcClient : IChatClient
+    {
+        public int Requests { get; private set; }
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            Requests++;
+            yield return new ChatResponseUpdate(ChatRole.Assistant, "partial");
+            await Task.Yield();
+            throw new HttpRequestException("503 service unavailable", null, System.Net.HttpStatusCode.ServiceUnavailable);
+        }
+
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
+    }
+
+    private sealed class RetryOnceRpcClient : IChatClient
+    {
+        public int Requests { get; private set; }
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            if (++Requests == 1)
+            {
+                await Task.Yield();
+                throw new HttpRequestException("503 service unavailable", null, System.Net.HttpStatusCode.ServiceUnavailable);
+            }
+            yield return new ChatResponseUpdate(ChatRole.Assistant, "recovered");
+        }
+
         public object? GetService(Type serviceType, object? serviceKey = null) => null;
         public void Dispose() { }
     }

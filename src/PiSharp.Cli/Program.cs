@@ -160,7 +160,8 @@ Task<ConversationRun> OpenRunAsync(PiAgent runningAgent, ConversationSession ses
     string? runProvider = null, string? reasoningLevel = null) =>
     ConversationRun.OpenAsync(runningAgent, session, save: path is null ? null :
         token => store.SaveAsync(session, path, token), autoCompaction: contextPolicy, pricing: modelPricing,
-        sessionFile: path, provider: runProvider ?? selection.Provider.Id, reasoningLevel: reasoningLevel ?? thinking);
+        sessionFile: path, provider: runProvider ?? selection.Provider.Id, reasoningLevel: reasoningLevel ?? thinking,
+        retryPolicy: userSettings.Retry?.ResolvePolicy() ?? AgentRunRetryPolicy.Default);
 var sessionPath = cli.NoSession || cli.ForkSource is not null ? null : cli.SessionPath is not null &&
     (cli.SessionPath.Contains(Path.DirectorySeparatorChar) || cli.SessionPath.EndsWith(".session.json", StringComparison.Ordinal) ||
         cli.SessionPath.EndsWith(".jsonl", StringComparison.OrdinalIgnoreCase))
@@ -452,6 +453,16 @@ Task<string> SetRpcThinkingLevelDuringRunAsync(string level, CancellationToken t
         throw new InvalidOperationException("The active run is already settling.");
     thinking = nextThinking;
     return Task.FromResult(thinking);
+}
+
+async Task SetRpcAutoRetryEnabledAsync(bool enabled, CancellationToken token)
+{
+    var settingsPath = UserSettings.GetSettingsPath(agentDirectory, Environment.GetEnvironmentVariable);
+    await UserSettingsWriter.SetAsync(settingsPath, "retry.enabled", enabled ? "true" : "false",
+        userScope: true, token);
+    baseUserSettings = await UserSettings.LoadAsync(agentDirectory, Environment.GetEnvironmentVariable, token);
+    userSettings = baseUserSettings.Overlay(projectSettings ?? new UserSettings());
+    conversationRun.SetAutoRetryEnabled(enabled);
 }
 
 var terminalModelPicker = editor is null ? null : new TerminalModelPicker(modelRuntime, editor);
@@ -746,7 +757,7 @@ if (cli.Mode == "rpc")
         SelectRpcModelAsync, () => conversationRun, () => thinking, () => modelRuntime.Scope.Count > 0,
         SetRpcThinkingLevelAsync, () => ThinkingLevels.AvailableForModel(selection.Model.Reasoning),
         () => selection.Model.Reasoning == true, () => ProviderChatClientFactory.ResolveProtocol(selection),
-        SetRpcThinkingLevelDuringRunAsync).ServeAsync();
+        SetRpcThinkingLevelDuringRunAsync, SetRpcAutoRetryEnabledAsync).ServeAsync();
     return;
 }
 if (cli.Mode == "json")

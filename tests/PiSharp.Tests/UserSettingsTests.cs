@@ -5,6 +5,34 @@ namespace PiSharp.Tests;
 public sealed class UserSettingsTests
 {
     [Fact]
+    public async Task RetrySettingsDefaultToPiPolicyAndMergeTrustedProjectOverrides()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-retry-settings-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(Path.Combine(root, ".pi"));
+        try
+        {
+            var userPath = Path.Combine(root, "settings.json");
+            await File.WriteAllTextAsync(userPath, "{\"retry\":{\"maxRetries\":4,\"baseDelayMs\":1250,\"maxAgentDelayMs\":5000}}");
+            var user = await UserSettings.LoadAsync(root, _ => null);
+            var policy = user.Retry!.ResolvePolicy();
+            Assert.True(policy.Enabled);
+            Assert.Equal(4, policy.MaxRetries);
+            Assert.Equal(TimeSpan.FromMilliseconds(1250), policy.DelayForAttempt(1));
+            Assert.Equal(TimeSpan.FromMilliseconds(2500), policy.DelayForAttempt(2));
+
+            await File.WriteAllTextAsync(Path.Combine(root, ".pi", "settings.json"), "{\"retry\":{\"enabled\":false,\"maxRetries\":1}}");
+            var effective = user.Overlay(await UserSettings.LoadProjectAsync(root)).Retry!.ResolvePolicy();
+            Assert.False(effective.Enabled);
+            Assert.Equal(1, effective.MaxRetries);
+            Assert.Equal(TimeSpan.FromMilliseconds(1250), effective.DelayForAttempt(1));
+
+            await File.WriteAllTextAsync(userPath, "{\"retry\":{\"enabled\":\"false\"}}");
+            await Assert.ThrowsAsync<InvalidDataException>(() => UserSettings.LoadAsync(root, _ => null));
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [Fact]
     public async Task UserSettingsProvideValidatedDefaultsBelowCliAndEnvironmentOverrides()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-settings-" + Guid.NewGuid().ToString("N"));

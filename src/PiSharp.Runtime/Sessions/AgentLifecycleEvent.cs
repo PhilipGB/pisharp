@@ -21,5 +21,26 @@ public sealed record AgentLifecycleEvent(string Type, string? Text = null, strin
     public string? RunStartHead { get; init; }
 
     [JsonIgnore]
+    public int? RunStartPathLength { get; init; }
+
+    [JsonIgnore]
     public string? TurnEndHead { get; init; }
+
+    [JsonPropertyName("attempt"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public int? RetryAttempt { get; init; }
+
+    [JsonPropertyName("maxAttempts"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public int? RetryMaxAttempts { get; init; }
+
+    [JsonPropertyName("delayMs"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public long? RetryDelayMs { get; init; }
+
+    [JsonPropertyName("willRetry"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public bool? WillRetry { get; init; }
+
+    [JsonPropertyName("success"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public bool? RetrySuccess { get; init; }
+
+    [JsonPropertyName("finalError"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? RetryFinalError { get; init; }
 }

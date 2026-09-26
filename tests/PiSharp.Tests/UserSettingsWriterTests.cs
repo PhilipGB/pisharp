@@ -17,6 +17,7 @@ public sealed class UserSettingsWriterTests
             await UserSettingsWriter.SetAsync(path, "hideThinkingBlock", "true", userScope: true);
             await UserSettingsWriter.SetAsync(path, "images.blockImages", "false", userScope: true);
             await UserSettingsWriter.SetAsync(path, "compaction.enabled", "false", userScope: true);
+            await UserSettingsWriter.SetAsync(path, "retry.enabled", "false", userScope: true);
             var settings = await UserSettings.LoadAsync(root, _ => null);
 
             Assert.True(settings.HideThinkingBlock);
@@ -24,9 +25,12 @@ public sealed class UserSettingsWriterTests
             Assert.True(settings.QuietStartup);
             Assert.False(settings.Compaction?.Enabled);
             Assert.Equal(2048, settings.Compaction?.ReserveTokens);
+            Assert.False(settings.Retry?.Enabled);
 
             await UserSettingsWriter.SetAsync(path, "images.blockImages", null, userScope: true);
+            await UserSettingsWriter.SetAsync(path, "retry.enabled", null, userScope: true);
             Assert.Null((await UserSettings.LoadAsync(root, _ => null)).BlockImages);
+            Assert.Null((await UserSettings.LoadAsync(root, _ => null)).Retry);
         }
         finally { Directory.Delete(root, recursive: true); }
     }

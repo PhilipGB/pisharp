@@ -145,11 +145,28 @@ public sealed class PiAgent
         RunStreamingDurableAsync(new ChatMessage(ChatRole.User, prompt), session, cancellationToken, durable, onEvent,
             takeSteering, projectContext, bashSessionEnvironment);
 
-    internal async IAsyncEnumerable<AgentResponseUpdate> RunStreamingDurableAsync(ChatMessage prompt, AgentSession session,
-        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken, DurableExecution? durable,
+    internal IAsyncEnumerable<AgentResponseUpdate> RunStreamingDurableAsync(ChatMessage prompt, AgentSession session,
+        CancellationToken cancellationToken, DurableExecution? durable,
         Action<AgentLifecycleEvent>? onEvent = null, Func<IReadOnlyList<ChatMessage>>? takeSteering = null,
         Func<IReadOnlyList<ChatMessage>, bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? projectContext = null,
-        IReadOnlyDictionary<string, string?>? bashSessionEnvironment = null)
+        IReadOnlyDictionary<string, string?>? bashSessionEnvironment = null) =>
+        RunStreamingDurableCoreAsync(prompt, session, cancellationToken, durable, onEvent, takeSteering,
+            projectContext, bashSessionEnvironment);
+
+    internal IAsyncEnumerable<AgentResponseUpdate> RunStreamingContinuationDurableAsync(AgentSession session,
+        CancellationToken cancellationToken, DurableExecution? durable, Action<AgentLifecycleEvent>? onEvent = null,
+        Func<IReadOnlyList<ChatMessage>>? takeSteering = null,
+        Func<IReadOnlyList<ChatMessage>, bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? projectContext = null,
+        IReadOnlyDictionary<string, string?>? bashSessionEnvironment = null) =>
+        RunStreamingDurableCoreAsync(null, session, cancellationToken, durable, onEvent, takeSteering,
+            projectContext, bashSessionEnvironment);
+
+    private async IAsyncEnumerable<AgentResponseUpdate> RunStreamingDurableCoreAsync(ChatMessage? prompt,
+        AgentSession session,
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken, DurableExecution? durable,
+        Action<AgentLifecycleEvent>? onEvent, Func<IReadOnlyList<ChatMessage>>? takeSteering,
+        Func<IReadOnlyList<ChatMessage>, bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? projectContext,
+        IReadOnlyDictionary<string, string?>? bashSessionEnvironment)
     {
         await _runGate.WaitAsync(cancellationToken);
         try
@@ -170,7 +187,10 @@ public sealed class PiAgent
             }
             try
             {
-                await foreach (var update in _agent.RunStreamingAsync(prompt, session, runOptions, cancellationToken))
+                var updates = prompt is null
+                    ? _agent.RunStreamingAsync(session, runOptions, cancellationToken)
+                    : _agent.RunStreamingAsync(prompt, session, runOptions, cancellationToken);
+                await foreach (var update in updates)
                     yield return update;
             }
             finally

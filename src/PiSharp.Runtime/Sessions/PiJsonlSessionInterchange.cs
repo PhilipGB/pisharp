@@ -351,8 +351,9 @@ public static class PiJsonlSessionInterchange
     {
         targetId = "";
         replacement = default;
-        if (node.Type != "context_edit" || OriginalEntry(node) is not { } edit ||
-            StringProperty(edit, "targetId") is not { Length: > 0 } target ||
+        if (node.Type != "context_edit") return false;
+        var edit = OriginalEntry(node) ?? node.Payload;
+        if (StringProperty(edit, "targetId") is not { Length: > 0 } target ||
             !TryProperty(edit, "replacement", out replacement)) return false;
         targetId = target;
         return true;
@@ -577,6 +578,17 @@ public static class PiJsonlSessionInterchange
                 ["thinkingLevel"] = StringProperty(node.Payload, "thinkingLevel") ??
                     throw new InvalidDataException($"Missing thinking level at {node.Id}.")
             };
+        if (node.Type == "context_edit")
+        {
+            if (!TryGetContextEdit(node, out var targetId, out var replacement))
+                throw new InvalidDataException($"Invalid context edit at {node.Id}.");
+            return new JsonObject
+            {
+                ["type"] = "context_edit",
+                ["targetId"] = targetId,
+                ["replacement"] = JsonNode.Parse(replacement.GetRawText())
+            };
+        }
         return new JsonObject
         {
             ["type"] = "custom",

@@ -31,7 +31,11 @@ public sealed class DurableExecutionTests
                 await foreach (var _ in run.RunStreamingAsync("create a file", cancel.Token)) { }
             });
             Assert.Equal("made", await File.ReadAllTextAsync(Path.Combine(cwd, "result.txt")));
-            Assert.Equal(["run_started", "tool_intent", "tool_outcome", "run_finished"], checkpoints);
+            Assert.Equal(["run_started", "chat", "tool_intent", "tool_outcome", "run_finished"], checkpoints);
+            var acceptedPrompt = session.Tree.Entries.Single(node => node.Type == "chat" &&
+                ConversationSession.RestoreEntry(node).Text == "create a file");
+            Assert.True(session.Tree.Entries.ToList().FindIndex(node => node.Id == acceptedPrompt.Id) <
+                session.Tree.Entries.ToList().FindIndex(node => node.Type == "tool_intent"));
             var document = await store.LoadAsync(path);
             Assert.Contains(document.Tree.Entries, node => node.Type == "tool_outcome");
             Assert.True(document.RecoverIncomplete()); // A settled but failed continuation still needs a no-replay warning.

@@ -28,6 +28,28 @@ public sealed class PiJsonlSessionInterchangeTests
     }
 
     [Fact]
+    public void NativeContextOmissionsFilterModelInputAndRoundTripAsPiEntries()
+    {
+        var session = new ConversationSession(Path.GetTempPath(), "fixture-model", null);
+        session.Append(new ChatMessage(ChatRole.User, "hello"));
+        session.Append(new ChatMessage(ChatRole.Assistant, "temporary failure"));
+        var failedAssistantId = session.Tree.HeadId!;
+        session.AppendContextOmission(failedAssistantId);
+
+        Assert.Equal([ChatRole.User], session.ContextMessages().Select(message => message.Role));
+        var exported = PiJsonlSessionInterchange.Export(session);
+        var editLine = Assert.Single(exported.Split('\n', StringSplitOptions.RemoveEmptyEntries),
+            line => line.Contains("\"type\":\"context_edit\"", StringComparison.Ordinal));
+        using var edit = JsonDocument.Parse(editLine);
+        Assert.Equal(failedAssistantId, edit.RootElement.GetProperty("targetId").GetString());
+        Assert.Equal(JsonValueKind.Null, edit.RootElement.GetProperty("replacement").ValueKind);
+
+        var reloaded = PiJsonlSessionInterchange.Import(exported);
+        Assert.Equal([ChatRole.User], reloaded.ContextMessages().Select(message => message.Role));
+        Assert.Equal("temporary failure", reloaded.ActiveMessages().Last(message => message.Role == ChatRole.Assistant).Text);
+    }
+
+    [Fact]
     public void CurrentPiV3ImportPreservesBranchesContextEditsCompactionAndOriginalRecords()
     {
         var cwd = Path.GetFullPath(Path.GetTempPath());

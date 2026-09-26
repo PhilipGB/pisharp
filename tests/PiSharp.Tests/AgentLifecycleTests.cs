@@ -257,6 +257,72 @@ public sealed class AgentLifecycleTests
         Assert.Equal("partial", interrupted.Payload.GetProperty("partialAssistantText").GetString());
     }
 
+    [Fact]
+    public async Task SessionRetryContinuesExistingContextAndReportsAttemptBoundaries()
+    {
+        var client = new RetryAfterPartialClient();
+        var session = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        var retryPolicy = new AgentRunRetryPolicy(enabled: true, maxRetries: 1,
+            baseDelay: TimeSpan.Zero, maxDelay: TimeSpan.Zero);
+        var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(Path.GetTempPath()),
+            retryPolicy: ProviderRetryPolicy.None), session, retryPolicy: retryPolicy);
+        var events = new List<AgentLifecycleEvent>();
+
+        await foreach (var item in run.RunEventsAsync("hello")) events.Add(item);
+
+        Assert.Equal(2, client.Requests);
+        Assert.Equal(1, client.RetryMessages.Count(message => message.Role == ChatRole.User && message.Text == "hello"));
+        Assert.DoesNotContain(client.RetryMessages, message => message.Text?.Contains("partial", StringComparison.Ordinal) == true);
+        Assert.Single(session.ActiveMessages(), message => message.Role == ChatRole.User && message.Text == "hello");
+        Assert.Equal("recovered", session.ActiveMessages().Last(message => message.Role == ChatRole.Assistant).Text);
+        var failed = Assert.Single(events, item => item.Type == "turn_failed");
+        Assert.True(failed.WillRetry);
+        Assert.Single(events, item => item.Type == "auto_retry_start");
+        Assert.Single(events, item => item.Type == "agent_attempt_started");
+        Assert.Single(events, item => item.Type == "auto_retry_end" && item.RetrySuccess == true);
+        Assert.Single(events, item => item.Type == "turn_completed");
+        Assert.Equal("agent_settled", events[^1].Type);
+        Assert.True(events.FindIndex(item => item.Type == "turn_failed") <
+            events.FindIndex(item => item.Type == "auto_retry_start"));
+        Assert.True(events.FindIndex(item => item.Type == "auto_retry_start") <
+            events.FindIndex(item => item.Type == "agent_attempt_started"));
+    }
+
+    [Fact]
+    public async Task AbortRetryCancelsOnlyTheRetryDelayAndReportsFinalization()
+    {
+        var delayStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        Func<TimeSpan, CancellationToken, Task> retryDelay = async (_, cancellationToken) =>
+        {
+            delayStarted.TrySetResult();
+            await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+        };
+        var client = new RetryAfterPartialClient();
+        var retryPolicy = new AgentRunRetryPolicy(enabled: true, maxRetries: 2,
+            baseDelay: TimeSpan.FromSeconds(2), maxDelay: TimeSpan.FromSeconds(4));
+        var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(Path.GetTempPath()),
+            retryPolicy: ProviderRetryPolicy.None), new ConversationSession(Path.GetTempPath(), "fixture", null),
+            retryPolicy: retryPolicy, retryDelay: retryDelay);
+        var events = new List<AgentLifecycleEvent>();
+        var running = Task.Run(async () =>
+        {
+            await foreach (var item in run.RunEventsAsync("hello")) events.Add(item);
+        });
+
+        await delayStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.True(run.IsRetrying);
+        run.AbortRetry();
+        await running.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.Equal(1, client.Requests);
+        var retryEnd = Assert.Single(events, item => item.Type == "auto_retry_end");
+        Assert.False(retryEnd.RetrySuccess);
+        Assert.Equal("Retry cancelled", retryEnd.RetryFinalError);
+        Assert.DoesNotContain(events, item => item.Type == "agent_attempt_started");
+        Assert.False(run.IsRetrying);
+        Assert.Equal("agent_settled", events[^1].Type);
+    }
+
     [Theory]
     [InlineData(400, false)]
     [InlineData(401, false)]
@@ -625,6 +691,28 @@ public sealed class AgentLifecycleTests
             yield return new ChatResponseUpdate(ChatRole.Assistant, "partial");
             await Task.Yield();
             throw new IOException("failed after output");
+        }
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
+    }
+
+    private sealed class RetryAfterPartialClient : IChatClient
+    {
+        public int Requests { get; private set; }
+        public IReadOnlyList<ChatMessage> RetryMessages { get; private set; } = [];
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            if (++Requests == 1)
+            {
+                yield return new ChatResponseUpdate(ChatRole.Assistant, "partial");
+                await Task.Yield();
+                throw new HttpRequestException("503 service unavailable", null, System.Net.HttpStatusCode.ServiceUnavailable);
+            }
+            RetryMessages = messages.ToArray();
+            yield return new ChatResponseUpdate(ChatRole.Assistant, "recovered");
         }
         public object? GetService(Type serviceType, object? serviceKey = null) => null;
         public void Dispose() { }
