@@ -185,16 +185,18 @@ public sealed class TerminalPtyTests
     {
         if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
         var cwd = Path.Combine(Path.GetTempPath(), "pisharp-pi-import-pty-" + Guid.NewGuid().ToString("N"));
+        var sourceCwd = Path.Combine(cwd, "source-project");
         var agent = Path.Combine(cwd, "agent");
         Directory.CreateDirectory(agent);
+        Directory.CreateDirectory(sourceCwd);
         Process? process = null;
         try
         {
             const string importedId = "pi-import-pty";
-            var sourcePath = Path.Combine(cwd, "pi session with spaces.jsonl");
+            var sourcePath = Path.Combine(sourceCwd, "pi session with spaces.jsonl");
             var exportPath = Path.Combine(cwd, "round trip export.jsonl");
             var jsonl = $$$$"""
-                {"type":"session","version":3,"id":"{{{{importedId}}}}","timestamp":"2025-01-01T00:00:00Z","cwd":"{{{{cwd}}}}"}
+                {"type":"session","version":3,"id":"{{{{importedId}}}}","timestamp":"2025-01-01T00:00:00Z","cwd":"{{{{sourceCwd}}}}"}
                 {"type":"message","id":"user-entry","parentId":null,"timestamp":"2025-01-01T00:00:01Z","message":{"role":"user","content":"imported context from Pi","timestamp":1735689601000}}
                 """;
             await File.WriteAllTextAsync(sourcePath, jsonl);
@@ -205,7 +207,7 @@ public sealed class TerminalPtyTests
                 RedirectStandardInput = true,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
-                ArgumentList = { "-q", "-e", "-c", $"stty rows 24 cols 80; exec dotnet {ShellQuote(typeof(CliArguments).Assembly.Location)} --local --offline --session-dir {ShellQuote(store.DirectoryPath)} --no-tools", "/dev/null" }
+                ArgumentList = { "-q", "-e", "-c", $"stty rows 24 cols 180; exec dotnet {ShellQuote(typeof(CliArguments).Assembly.Location)} --local --offline --session-dir {ShellQuote(store.DirectoryPath)} --no-tools", "/dev/null" }
             };
             start.Environment["PISHARP_AGENT_DIR"] = agent;
             process = Process.Start(start);
@@ -274,10 +276,12 @@ public sealed class TerminalPtyTests
 
             string terminalOutput;
             lock (output) terminalOutput = output.ToString();
-            var saved = Assert.Single(await PiSharp.Runtime.Sessions.SessionCatalog.ListAsync(store),
+            var importedStore = new PiSharp.Runtime.Sessions.ConversationStore(sourceCwd, store.DirectoryPath);
+            var saved = Assert.Single(await PiSharp.Runtime.Sessions.SessionCatalog.ListAsync(importedStore),
                 session => session.Id == importedId);
-            var imported = await store.LoadAsync(saved.Path);
+            var imported = await importedStore.LoadAsync(saved.Path);
             Assert.Equal(0, process.ExitCode);
+            Assert.Equal(sourceCwd, imported.WorkingDirectory);
             Assert.Contains("Type import to confirm:", terminalOutput);
             Assert.Contains("Import cancelled.", terminalOutput);
             Assert.Contains("Exported private Pi JSONL to", terminalOutput);
@@ -291,7 +295,7 @@ public sealed class TerminalPtyTests
             Assert.DoesNotContain("Session error:", terminalOutput);
             Assert.DoesNotContain("Agent error:", await stderr);
 
-            var startupStore = new PiSharp.Runtime.Sessions.ConversationStore(cwd, Path.Combine(cwd, "startup-sessions"));
+            var startupStore = new PiSharp.Runtime.Sessions.ConversationStore(sourceCwd, Path.Combine(cwd, "startup-sessions"));
             var startup = new ProcessStartInfo("/usr/bin/script")
             {
                 WorkingDirectory = cwd,
@@ -311,6 +315,7 @@ public sealed class TerminalPtyTests
             var startupText = await startupOutput;
             var startupSession = Assert.Single(await PiSharp.Runtime.Sessions.SessionCatalog.ListAsync(startupStore),
                 session => session.Id == importedId);
+            Assert.Equal(sourceCwd, (await startupStore.LoadAsync(startupSession.Path)).WorkingDirectory);
             Assert.Equal(0, process.ExitCode);
             Assert.Contains(importedId, startupText);
             Assert.Contains("› imported context from Pi", startupText);

@@ -58,23 +58,14 @@ catch (Exception error) when (error is IOException or UnauthorizedAccessExceptio
     Environment.ExitCode = 2;
     return;
 }
+var currentDirectory = Environment.CurrentDirectory;
 var trustStore = new ProjectTrust(agentDirectory);
-bool trusted;
-UserSettings baseUserSettings;
-UserSettings? projectSettings = null;
-UserSettings userSettings;
+ProjectRuntimeConfiguration projectConfiguration;
 try
 {
-    baseUserSettings = await UserSettings.LoadAsync(agentDirectory, Environment.GetEnvironmentVariable);
-    userSettings = baseUserSettings;
-    trusted = await trustStore.ResolveAsync(Environment.CurrentDirectory, cli.ProjectTrustOverride,
-        cli.Mode == "interactive" && !cli.Print && !Console.IsInputRedirected && !Console.IsOutputRedirected, Console.In, Console.Error,
-        defaultProjectTrust: baseUserSettings.DefaultProjectTrust ?? "ask");
-    if (trusted)
-    {
-        projectSettings = await UserSettings.LoadProjectAsync(Environment.CurrentDirectory);
-        userSettings = baseUserSettings.Overlay(projectSettings);
-    }
+    projectConfiguration = await ProjectRuntimeConfiguration.LoadAsync(currentDirectory, agentDirectory, cli,
+        trustStore, cli.Mode == "interactive" && !cli.Print && !Console.IsInputRedirected && !Console.IsOutputRedirected,
+        Console.In, Console.Error);
 }
 catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidDataException or System.Text.Json.JsonException or ArgumentException)
 {
@@ -82,6 +73,10 @@ catch (Exception error) when (error is IOException or UnauthorizedAccessExceptio
     Environment.ExitCode = 2;
     return;
 }
+var trusted = projectConfiguration.Trusted;
+var baseUserSettings = projectConfiguration.BaseUserSettings;
+var projectSettings = projectConfiguration.ProjectSettings;
+var userSettings = projectConfiguration.Settings;
 cli = userSettings.ApplyDefaults(cli, Environment.GetEnvironmentVariable,
     preserveSessionModel: cli.Continue || cli.SessionPath is not null || cli.ForkSource is not null || cli.ListModels);
 using var catalogHttp = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
@@ -126,37 +121,27 @@ catch (Exception error) when (error is NotSupportedException or InvalidOperation
     Environment.ExitCode = 2;
     return;
 }
-string instructions;
-(string? System, string? Append) prompts;
-ResourceCatalog resources;
-ExtensionCatalog extensions;
+ProjectRuntimeContext projectRuntime;
 try
 {
-    prompts = await CliPromptOverrides.ResolveAsync(cli,
-        await ProjectPrompts.LoadAsync(Environment.CurrentDirectory, agentDirectory, trusted), Environment.CurrentDirectory);
-    instructions = cli.NoContextFiles ? "" : await ContextInstructions.LoadAsync(Environment.CurrentDirectory, agentDirectory);
-    resources = await ResourceCatalog.LoadAsync(Environment.CurrentDirectory, agentDirectory, trusted,
-        discoverSkills: !cli.NoSkills, discoverPrompts: !cli.NoPromptTemplates,
-        additionalSkills: cli.SkillPaths, additionalPrompts: cli.PromptTemplatePaths);
-    extensions = ExtensionCatalog.Load(agentDirectory, Environment.CurrentDirectory, trusted, discover: !cli.NoExtensions,
-        additionalPaths: cli.ExtensionPaths);
-    instructions += "\n" + resources.SystemInstructions();
+    projectRuntime = await ProjectRuntimeContext.LoadAsync(projectConfiguration, agentDirectory, cli,
+        configuredSessionDirectory);
 }
 catch (Exception e) when (e is not OperationCanceledException)
 {
-    Console.Error.WriteLine($"Could not load project resources or extensions: {e.Message}");
+    Console.Error.WriteLine($"Could not load project runtime: {e.Message}");
     Environment.ExitCode = 2;
     return;
 }
-using var extensionLease = new ExtensionLease(extensions);
+var resources = projectRuntime.Resources;
+var instructions = projectRuntime.Instructions;
+var prompts = projectRuntime.Prompts;
+var store = projectRuntime.Store;
+using var extensionLease = new ExtensionLease(projectRuntime.TransferExtensions());
 PiAgent agent;
 try
 {
-    agent = new PiAgent(chat, new CodingTools(Environment.CurrentDirectory, userSettings.ShellPath,
-        selection.Model.InputLimits?.Images?.Resize), cli.Tools, cli.ExcludeTools, cli.NoTools,
-    instructions, prompts.System, prompts.Append, extensionLease.Current.Registration.Tools,
-    reasoning: ThinkingLevels.ToOptions(thinking), blockImages: userSettings.BlockImages == true, noBuiltinTools: cli.NoBuiltinTools,
-    supportsImages: selection.Model.Input?.Contains("image", StringComparer.Ordinal) != false);
+    agent = projectRuntime.CreateAgent(chat, selection, thinking, cli, userSettings);
 }
 catch (ArgumentException e)
 {
@@ -164,9 +149,6 @@ catch (ArgumentException e)
     Environment.ExitCode = 2;
     return;
 }
-var store = new ConversationStore(Environment.CurrentDirectory,
-    cli.SessionDirectory ?? configuredSessionDirectory ?? userSettings.SessionDirectory);
-var piSessionImport = new PiSessionImportService(store, Environment.CurrentDirectory, cli.NoSession);
 AutoCompactionPolicy? contextPolicy;
 ModelPricing? modelPricing;
 try
@@ -176,11 +158,21 @@ try
 }
 catch (ArgumentException error) { Console.Error.WriteLine(error.Message); Environment.ExitCode = 2; return; }
 Task<ConversationRun> OpenRunAsync(PiAgent runningAgent, ConversationSession session, string? path,
-    string? runProvider = null, string? reasoningLevel = null) =>
-    ConversationRun.OpenAsync(runningAgent, session, save: path is null ? null :
-        token => store.SaveAsync(session, path, token), autoCompaction: contextPolicy, pricing: modelPricing,
-        sessionFile: path, provider: runProvider ?? selection.Provider.Id, reasoningLevel: reasoningLevel ?? thinking,
-        retryPolicy: userSettings.Retry?.ResolvePolicy() ?? AgentRunRetryPolicy.Default);
+    string? runProvider = null, string? reasoningLevel = null,
+    ProjectRuntimeContext? targetProject = null, ModelSelection? targetSelection = null)
+{
+    var runProject = targetProject ?? projectRuntime;
+    var runModel = targetSelection ?? selection;
+    var runSettings = targetProject is null ? userSettings : targetProject.Settings;
+    var runCompaction = targetProject is null ? contextPolicy : runSettings.ResolveCompaction(runModel.Model.ContextLength,
+        Environment.GetEnvironmentVariable, $"{runModel.Provider.Id}/{runModel.Model.Id}");
+    var runPricing = targetProject is null ? modelPricing :
+        ModelPricing.FromEnvironment(Environment.GetEnvironmentVariable) ?? runModel.Model.Pricing;
+    return ConversationRun.OpenAsync(runningAgent, session, save: path is null ? null :
+        token => runProject.Store.SaveAsync(session, path, token), autoCompaction: runCompaction, pricing: runPricing,
+        sessionFile: path, provider: runProvider ?? runModel.Provider.Id, reasoningLevel: reasoningLevel ?? thinking,
+        retryPolicy: runSettings.Retry?.ResolvePolicy() ?? AgentRunRetryPolicy.Default);
+}
 var sessionPath = cli.NoSession || cli.ForkSource is not null ? null : cli.SessionPath is not null &&
     (cli.SessionPath.Contains(Path.DirectorySeparatorChar) || cli.SessionPath.EndsWith(".session.json", StringComparison.Ordinal) ||
         cli.SessionPath.EndsWith(".jsonl", StringComparison.OrdinalIgnoreCase))
@@ -198,19 +190,19 @@ try
             ? Path.GetFullPath(cli.ForkSource)
             : SessionCatalog.Resolve(await SessionCatalog.ListAsync(store), cli.ForkSource).Path;
         conversation = sourcePath.EndsWith(".jsonl", StringComparison.OrdinalIgnoreCase)
-            ? piSessionImport.ImportFile(sourcePath).Fork(sourcePath)
+            ? projectRuntime.SessionImport.ImportFile(sourcePath).Fork(sourcePath)
             : (await store.LoadAsync(sourcePath)).Fork(sourcePath);
     }
     else if (sessionPath is not null && sessionPath.EndsWith(".jsonl", StringComparison.OrdinalIgnoreCase))
     {
-        conversation = piSessionImport.ImportFile(sessionPath);
+        conversation = projectRuntime.SessionImport.ImportFile(sessionPath);
         sessionPath = store.NewPath(conversation);
         await store.SaveAsync(conversation, sessionPath);
     }
     else
         conversation = sessionPath is not null && File.Exists(sessionPath)
             ? await store.LoadAsync(sessionPath)
-            : new ConversationSession(Environment.CurrentDirectory, connection.Model, connection.Endpoint?.ToString(), selection.Provider.Id);
+            : new ConversationSession(currentDirectory, connection.Model, connection.Endpoint?.ToString(), selection.Provider.Id);
     if (conversation.Model == "unknown")
     {
         conversation.SelectModel(connection.Model, connection.Endpoint?.ToString(), selection.Provider.Id);
@@ -238,11 +230,7 @@ try
         chat = ProviderChatClientFactory.Create(selection);
         contextPolicy = userSettings.ResolveCompaction(selection.Model.ContextLength, Environment.GetEnvironmentVariable, $"{selection.Provider.Id}/{selection.Model.Id}");
         modelPricing = ModelPricing.FromEnvironment(Environment.GetEnvironmentVariable) ?? selection.Model.Pricing;
-        agent = new PiAgent(chat,
-            new CodingTools(Environment.CurrentDirectory, userSettings.ShellPath,
-                selection.Model.InputLimits?.Images?.Resize), cli.Tools, cli.ExcludeTools, cli.NoTools, instructions, prompts.System, prompts.Append,
-            extensionLease.Current.Registration.Tools, reasoning: ThinkingLevels.ToOptions(thinking), blockImages: userSettings.BlockImages == true, noBuiltinTools: cli.NoBuiltinTools,
-            supportsImages: selection.Model.Input?.Contains("image", StringComparer.Ordinal) != false);
+        agent = projectRuntime.CreateAgent(chat, selection, thinking, cli, userSettings);
     }
     if (cli.SessionName is not null) conversation.Rename(cli.SessionName);
     if (!cli.NoSession) sessionPath ??= store.NewPath(conversation);
@@ -259,6 +247,8 @@ catch (Exception e) when (e is IOException or InvalidDataException or Unauthoriz
 }
 var sessionController = new InteractiveSessionController(store, cli.NoSession,
     (branch, path) => OpenRunAsync(agent, branch, path));
+var projectSessionRuntimeFactory = new ProjectSessionRuntimeFactory(agentDirectory, cli,
+    configuredSessionDirectory, trustStore, modelRuntime);
 bool print = cli.Print || cli.Mode == "print" || Console.IsInputRedirected || Console.IsOutputRedirected;
 var prompt = cli.Prompt;
 // Pi combines trimmed piped input before @file content and the positional prompt.
@@ -281,8 +271,9 @@ if (!selection.Authenticated && cli.Mode != "rpc" &&
 TerminalEditor? editor = !print && cli.Mode is not ("json" or "rpc") ? new TerminalEditor(() =>
     resources.Skills.Select(item => "/skill:" + item.Name)
         .Concat(resources.Prompts.Select(item => "/" + item.Name))
-        .Concat(extensionLease.Current.Registration.Commands.Keys.Select(name => "/" + name)).ToArray(), agentDirectory) : null;
-var terminalThemeCatalog = new TerminalThemeCatalog(agentDirectory, trusted ? Environment.CurrentDirectory : null);
+        .Concat(extensionLease.Current.Registration.Commands.Keys.Select(name => "/" + name)).ToArray(),
+    agentDirectory, () => currentDirectory) : null;
+var terminalThemeCatalog = new TerminalThemeCatalog(agentDirectory, trusted ? currentDirectory : null);
 TerminalTheme ResolveConfiguredTheme(string? themeSetting, TerminalTheme.Rgb? terminalForeground = null,
     TerminalTheme.Rgb? terminalBackground = null)
 {
@@ -318,7 +309,7 @@ var terminalClipboard = new TerminalClipboard(writeTerminalControl: value =>
 });
 string IdleFooter() => $"{selection.Provider.Id}/{selection.Model.Id} · thinking {thinking} · Ctrl+L models · Ctrl+P cycle · Shift+Tab thinking · Enter send";
 terminalScreen?.SetFooter(IdleFooter());
-if (editor is not null && (cli.Verbose || userSettings.QuietStartup != true)) Console.WriteLine($"PiSharp · {selection.Provider.Id}/{connection.Model} · thinking {thinking} · {Environment.CurrentDirectory}\n/model · /settings · /thinking · /scoped-models · /login · /logout · /tree · /fork · /new · /session · /hotkeys · /quit · Escape interrupts; Enter steers; Alt+Enter follows up\n");
+if (editor is not null && (cli.Verbose || userSettings.QuietStartup != true)) Console.WriteLine($"PiSharp · {selection.Provider.Id}/{connection.Model} · thinking {thinking} · {currentDirectory}\n/model · /settings · /thinking · /scoped-models · /login · /logout · /tree · /fork · /new · /session · /hotkeys · /quit · Escape interrupts; Enter steers; Alt+Enter follows up\n");
 CancellationTokenSource? activeRun = null;
 Console.CancelKeyPress += (_, e) => { e.Cancel = true; activeRun?.Cancel(); };
 
@@ -334,7 +325,7 @@ async Task Run(string input, IReadOnlyList<DataContent>? images = null)
     var transcript = new InteractiveTranscript(Console.Out, Console.Error, interactive: !print,
         hideThinking: userSettings.HideThinkingBlock == true, screen: terminalScreen,
         toolRenderer: name => extensionLease.Current.Registration.GetToolRenderer(name),
-        workingDirectory: Environment.CurrentDirectory);
+        workingDirectory: currentDirectory);
     try
     {
         if (!selection.Authenticated)
@@ -400,12 +391,7 @@ async Task ReplaceModelRuntime(ModelSelection nextSelection, string nextThinking
     var nextChat = ProviderChatClientFactory.Create(nextSelection);
     var nextPolicy = userSettings.ResolveCompaction(nextSelection.Model.ContextLength, Environment.GetEnvironmentVariable, $"{nextSelection.Provider.Id}/{nextSelection.Model.Id}");
     var nextPricing = ModelPricing.FromEnvironment(Environment.GetEnvironmentVariable) ?? nextSelection.Model.Pricing;
-    var nextAgent = new PiAgent(nextChat,
-        new CodingTools(Environment.CurrentDirectory, userSettings.ShellPath,
-            nextSelection.Model.InputLimits?.Images?.Resize), cli.Tools, cli.ExcludeTools, cli.NoTools,
-        instructions, prompts.System, prompts.Append, extensionLease.Current.Registration.Tools,
-        reasoning: ThinkingLevels.ToOptions(nextThinking), blockImages: userSettings.BlockImages == true, noBuiltinTools: cli.NoBuiltinTools,
-        supportsImages: nextSelection.Model.Input?.Contains("image", StringComparer.Ordinal) != false);
+    var nextAgent = projectRuntime.CreateAgent(nextChat, nextSelection, nextThinking, cli, userSettings);
     var previousHead = conversation.Tree.HeadId;
     var previousSelection = selection;
     var previousConnection = connection;
@@ -563,19 +549,25 @@ async Task<(UserSettings User, UserSettings? Project)> SaveSettingAsync(bool pro
     if (projectScope && !trusted)
         throw new InvalidOperationException("Trust this project before editing its settings.");
     var settingsPath = projectScope
-        ? Path.Combine(Environment.CurrentDirectory, ".pi", "settings.json")
+        ? Path.Combine(currentDirectory, ".pi", "settings.json")
         : UserSettings.GetSettingsPath(agentDirectory, Environment.GetEnvironmentVariable);
     await UserSettingsWriter.SetAsync(settingsPath, setting, value, userScope: !projectScope);
     if (projectScope)
-        projectSettings = await UserSettings.LoadProjectAsync(Environment.CurrentDirectory);
+        projectSettings = await UserSettings.LoadProjectAsync(currentDirectory);
     else
         baseUserSettings = await UserSettings.LoadAsync(agentDirectory, Environment.GetEnvironmentVariable);
     userSettings = baseUserSettings.Overlay(projectSettings ?? new UserSettings());
+    projectConfiguration = projectConfiguration with
+    {
+        BaseUserSettings = baseUserSettings,
+        ProjectSettings = projectSettings,
+        Settings = userSettings
+    };
     if (setting is "images.blockImages" or "compaction.enabled")
         await ReplaceModelRuntime(selection, thinking, recordModelChange: false);
     if (setting == "theme")
     {
-        terminalThemeCatalog = new TerminalThemeCatalog(agentDirectory, trusted ? Environment.CurrentDirectory : null);
+        terminalThemeCatalog = new TerminalThemeCatalog(agentDirectory, trusted ? currentDirectory : null);
         terminalScreen?.SetTheme(ResolveConfiguredTheme(userSettings.Theme));
     }
     Console.WriteLine($"Saved {(projectScope ? "project" : "user")} setting {setting} = {value ?? "(default)"}.");
@@ -697,47 +689,43 @@ async Task HandleEditorApplicationAction(string action)
 
 async Task ReloadResources()
 {
-    var nextBaseUserSettings = await UserSettings.LoadAsync(agentDirectory, Environment.GetEnvironmentVariable);
-    var nextProjectSettings = trusted ? await UserSettings.LoadProjectAsync(Environment.CurrentDirectory) : null;
-    var nextUserSettings = nextBaseUserSettings.Overlay(nextProjectSettings ?? new UserSettings());
-    var nextResources = await ResourceCatalog.LoadAsync(Environment.CurrentDirectory, agentDirectory, trusted,
-        discoverSkills: !cli.NoSkills, discoverPrompts: !cli.NoPromptTemplates,
-        additionalSkills: cli.SkillPaths, additionalPrompts: cli.PromptTemplatePaths);
-    var nextContext = (cli.NoContextFiles ? "" : await ContextInstructions.LoadAsync(Environment.CurrentDirectory, agentDirectory)) +
-        "\n" + nextResources.SystemInstructions();
-    var nextPrompts = await CliPromptOverrides.ResolveAsync(cli,
-        await ProjectPrompts.LoadAsync(Environment.CurrentDirectory, agentDirectory, trusted), Environment.CurrentDirectory);
-    var nextExtensions = ExtensionCatalog.Load(agentDirectory, Environment.CurrentDirectory, trusted, discover: !cli.NoExtensions,
-        additionalPaths: cli.ExtensionPaths);
+    ProjectRuntimeContext? nextProject = null;
     var previousContextPolicy = contextPolicy;
     try
     {
-        var nextAgent = new PiAgent(chat,
-            new CodingTools(Environment.CurrentDirectory, nextUserSettings.ShellPath,
-                selection.Model.InputLimits?.Images?.Resize), cli.Tools, cli.ExcludeTools, cli.NoTools,
-            nextContext, nextPrompts.System, nextPrompts.Append, nextExtensions.Registration.Tools,
-            reasoning: ThinkingLevels.ToOptions(thinking), blockImages: nextUserSettings.BlockImages == true, noBuiltinTools: cli.NoBuiltinTools,
-            supportsImages: selection.Model.Input?.Contains("image", StringComparer.Ordinal) != false);
-        contextPolicy = nextUserSettings.ResolveCompaction(selection.Model.ContextLength, Environment.GetEnvironmentVariable,
+        var nextConfiguration = await ProjectRuntimeConfiguration.LoadAsync(currentDirectory, agentDirectory, cli,
+            trustStore, interactiveTrust: false, Console.In, Console.Error, trustedOverride: trusted);
+        nextProject = await ProjectRuntimeContext.LoadAsync(nextConfiguration, agentDirectory, cli, configuredSessionDirectory);
+        var nextAgent = nextProject.CreateAgent(chat, selection, thinking, cli);
+        var nextContextPolicy = nextConfiguration.Settings.ResolveCompaction(selection.Model.ContextLength, Environment.GetEnvironmentVariable,
             $"{selection.Provider.Id}/{selection.Model.Id}");
-        var path = sessionPath;
-        var nextRun = await OpenRunAsync(nextAgent, conversation, path);
-        extensionLease.Replace(nextExtensions);
-        baseUserSettings = nextBaseUserSettings;
-        projectSettings = nextProjectSettings;
-        userSettings = nextUserSettings;
-        terminalThemeCatalog = new TerminalThemeCatalog(agentDirectory, trusted ? Environment.CurrentDirectory : null);
-        terminalScreen?.SetTheme(ResolveConfiguredTheme(nextUserSettings.Theme));
-        instructions = nextContext;
-        resources = nextResources;
-        prompts = nextPrompts;
+        var nextModelPricing = ModelPricing.FromEnvironment(Environment.GetEnvironmentVariable) ?? selection.Model.Pricing;
+        var nextRun = await OpenRunAsync(nextAgent, conversation, sessionPath, targetProject: nextProject);
+        extensionLease.Replace(nextProject.TransferExtensions());
+        projectRuntime = nextProject;
+        projectConfiguration = nextConfiguration;
+        trusted = nextConfiguration.Trusted;
+        baseUserSettings = nextConfiguration.BaseUserSettings;
+        projectSettings = nextConfiguration.ProjectSettings;
+        userSettings = nextConfiguration.Settings;
+        resources = nextProject.Resources;
+        instructions = nextProject.Instructions;
+        prompts = nextProject.Prompts;
+        store = nextProject.Store;
+        contextPolicy = nextContextPolicy;
+        modelPricing = nextModelPricing;
+        sessionController = new InteractiveSessionController(store, cli.NoSession,
+            (branch, path) => OpenRunAsync(agent, branch, path));
+        terminalSessionPicker = editor is null ? null : new TerminalSessionPicker(store, editor);
+        terminalThemeCatalog = new TerminalThemeCatalog(agentDirectory, trusted ? currentDirectory : null);
+        terminalScreen?.SetTheme(ResolveConfiguredTheme(userSettings.Theme));
         agent = nextAgent;
         conversationRun = nextRun;
     }
     catch
     {
         contextPolicy = previousContextPolicy;
-        nextExtensions.Dispose();
+        nextProject?.Dispose();
         throw;
     }
 }
@@ -758,6 +746,53 @@ string? ReadSecret()
         if (!char.IsControl(key.KeyChar)) value.Append(key.KeyChar);
     }
 }
+
+void AdoptProjectSession(ProjectSessionRuntime replacement)
+{
+    var nextProject = replacement.Project;
+    extensionLease.Replace(nextProject.TransferExtensions());
+    projectRuntime = nextProject;
+    projectConfiguration = nextProject.Configuration;
+    currentDirectory = nextProject.WorkingDirectory;
+    trusted = nextProject.Trusted;
+    baseUserSettings = nextProject.Configuration.BaseUserSettings;
+    projectSettings = nextProject.ProjectSettings;
+    userSettings = nextProject.Settings;
+    resources = nextProject.Resources;
+    instructions = nextProject.Instructions;
+    prompts = nextProject.Prompts;
+    store = nextProject.Store;
+    conversation = replacement.Conversation;
+    conversationRun = replacement.Run;
+    sessionPath = replacement.Path;
+    selection = replacement.Selection;
+    connection = selection.Connection;
+    chat = replacement.Chat;
+    agent = replacement.Agent;
+    thinking = replacement.Thinking;
+    contextPolicy = replacement.ContextPolicy;
+    modelPricing = replacement.Pricing;
+    sessionController = new InteractiveSessionController(store, cli.NoSession,
+        (branch, path) => OpenRunAsync(agent, branch, path));
+    terminalSessionPicker = editor is null ? null : new TerminalSessionPicker(store, editor);
+    terminalThemeCatalog = new TerminalThemeCatalog(agentDirectory, trusted ? currentDirectory : null);
+    terminalScreen?.SetTheme(ResolveConfiguredTheme(userSettings.Theme));
+    terminalScreen?.SetFooter(IdleFooter());
+    LoadSessionTranscript();
+}
+
+async Task<bool> SwitchProjectSessionAsync(string sessionReference, CancellationToken cancellationToken)
+{
+    var targetPath = Path.GetFullPath(sessionReference, currentDirectory);
+    var comparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+    if (sessionPath is not null && Path.GetFullPath(sessionPath).Equals(targetPath, comparison)) return false;
+    if (sessionPath is not null) await store.SaveAsync(conversation, sessionPath, cancellationToken);
+    using var replacement = await projectSessionRuntimeFactory.OpenAsync(targetPath, currentDirectory,
+        selection, thinking, keepSourceSessionDirectory: true, cancellationToken: cancellationToken);
+    AdoptProjectSession(replacement);
+    return false;
+}
+
 if (cli.Mode == "rpc")
 {
     void AdoptRpcSession(SessionBranchResult replacement)
@@ -800,7 +835,8 @@ if (cli.Mode == "rpc")
         SetRpcThinkingLevelAsync, () => ThinkingLevels.AvailableForModel(selection.Model.Reasoning),
         () => selection.Model.Reasoning == true, () => ProviderChatClientFactory.ResolveProtocol(selection),
         SetRpcThinkingLevelDuringRunAsync, SetRpcAutoRetryEnabledAsync, StartRpcSessionAsync,
-        ForkRpcSessionAsync, CloneRpcSessionAsync).ServeAsync();
+        ForkRpcSessionAsync, CloneRpcSessionAsync, SwitchProjectSessionAsync,
+        () => resources, () => extensionLease.Current.Registration).ServeAsync();
     return;
 }
 if (cli.Mode == "json")
@@ -814,7 +850,7 @@ if (cli.Mode == "json")
         try
         {
             var resolved = await resources.ResolveInputAsync(prompt);
-            expanded = await CliFileArguments.ProcessFilesAsync(resolved, cli.FileArguments, Environment.CurrentDirectory);
+            expanded = await CliFileArguments.ProcessFilesAsync(resolved, cli.FileArguments, currentDirectory);
             expanded = expanded with { Text = stdinContent + expanded.Text };
         }
         catch (Exception e) when (e is ArgumentException or IOException)
@@ -842,7 +878,7 @@ if (cli.Mode == "json")
 if (print)
 {
     CliFileArguments.PromptFiles promptFiles;
-    try { promptFiles = await CliFileArguments.ProcessFilesAsync(prompt, cli.FileArguments, Environment.CurrentDirectory); }
+    try { promptFiles = await CliFileArguments.ProcessFilesAsync(prompt, cli.FileArguments, currentDirectory); }
     catch (Exception e) when (e is IOException or ArgumentException) { Console.Error.WriteLine(e.Message); Environment.ExitCode = 1; return; }
     promptFiles = promptFiles with { Text = stdinContent + promptFiles.Text };
     if (string.IsNullOrWhiteSpace(promptFiles.Text) && promptFiles.Images.Count == 0) { Console.Error.WriteLine("A prompt is required in print mode."); Environment.ExitCode = 2; }
@@ -853,7 +889,7 @@ else
     if (!string.IsNullOrWhiteSpace(prompt) || (cli.FileArguments?.Count ?? 0) > 0)
     {
         CliFileArguments.PromptFiles promptFiles;
-        try { promptFiles = await CliFileArguments.ProcessFilesAsync(prompt, cli.FileArguments, Environment.CurrentDirectory); }
+        try { promptFiles = await CliFileArguments.ProcessFilesAsync(prompt, cli.FileArguments, currentDirectory); }
         catch (Exception e) when (e is IOException or ArgumentException) { Console.Error.WriteLine(e.Message); Environment.ExitCode = 1; return; }
         if (!string.IsNullOrWhiteSpace(promptFiles.Text) || promptFiles.Images.Count > 0)
             await Run(promptFiles.Text, promptFiles.Images);
@@ -873,61 +909,38 @@ else
                 switch (command)
                 {
                     case "/export":
-                        var exportPath = argument.Length == 0 ? Path.Combine(Environment.CurrentDirectory,
-                            $"pisharp-{conversation.Id[..12]}.html") : Path.GetFullPath(argument);
+                        var exportPath = argument.Length == 0 ? Path.Combine(currentDirectory,
+                            $"pisharp-{conversation.Id[..12]}.html") : Path.GetFullPath(argument, currentDirectory);
                         await SessionExport.ExportHtmlAsync(conversation, exportPath);
                         Console.WriteLine($"Exported private HTML to {exportPath}. Review before sharing.");
                         break;
                     case "/export-jsonl":
                         var jsonlPath = argument.Length == 0
-                            ? Path.Combine(Environment.CurrentDirectory, $"pisharp-{conversation.Id[..12]}.jsonl")
-                            : Path.GetFullPath(SessionPathArgument.Parse(argument));
+                            ? Path.Combine(currentDirectory, $"pisharp-{conversation.Id[..12]}.jsonl")
+                            : Path.GetFullPath(SessionPathArgument.Parse(argument), currentDirectory);
                         await PiJsonlSessionInterchange.ExportToFileAsync(conversation, jsonlPath);
                         Console.WriteLine($"Exported private Pi JSONL to {jsonlPath}.");
                         break;
                     case "/import":
-                        if (argument.Length == 0) throw new ArgumentException("Usage: /import <path.jsonl>");
-                        var inputPath = Path.GetFullPath(SessionPathArgument.Parse(argument));
-                        Console.WriteLine($"Replace the active session with {TerminalSafeText.Normalize(inputPath)}? Type import to confirm:");
-                        var importConfirmation = await editor.ReadLineAsync(HandleEditorApplicationAction, enableApplicationActions: false);
-                        if (importConfirmation?.Trim() != "import")
                         {
-                            Console.WriteLine("Import cancelled.");
+                            if (argument.Length == 0) throw new ArgumentException("Usage: /import <path.jsonl>");
+                            var inputPath = Path.GetFullPath(SessionPathArgument.Parse(argument), currentDirectory);
+                            if (!inputPath.EndsWith(".jsonl", StringComparison.OrdinalIgnoreCase))
+                                throw new ArgumentException("Import requires a Pi .jsonl session file.");
+                            Console.WriteLine($"Replace the active session with {TerminalSafeText.Normalize(inputPath)}? Type import to confirm:");
+                            var importConfirmation = await editor.ReadLineAsync(HandleEditorApplicationAction, enableApplicationActions: false);
+                            if (importConfirmation?.Trim() != "import")
+                            {
+                                Console.WriteLine("Import cancelled.");
+                                break;
+                            }
+                            if (sessionPath is not null) await store.SaveAsync(conversation, sessionPath);
+                            using var importedRuntime = await projectSessionRuntimeFactory.OpenAsync(inputPath,
+                                currentDirectory, selection, thinking);
+                            AdoptProjectSession(importedRuntime);
+                            Console.WriteLine($"Imported Pi session {conversation.Id} · {conversation.ActiveMessages().Count} active messages · {sessionPath ?? "(ephemeral)"}");
                             break;
                         }
-                        var imported = piSessionImport.ImportFile(inputPath);
-                        var importedSelection = imported.Model == "unknown" ? selection :
-                            await modelRuntime.ResolveAsync(imported.Provider, imported.Model, includeOutOfScope: true);
-                        var importedThinking = PiJsonlSessionInterchange.GetThinkingLevel(imported) ?? thinking;
-                        importedThinking = ThinkingLevels.ValidateForModel(importedThinking, importedSelection.Model.Reasoning);
-                        if (imported.Model == "unknown")
-                            imported.SelectModel(importedSelection.Model.Id, importedSelection.Connection.Endpoint?.ToString(), importedSelection.Provider.Id);
-                        if (sessionPath is not null) await store.SaveAsync(conversation, sessionPath);
-                        var previousConversation = conversation;
-                        var previousPath = sessionPath;
-                        var previousRun = conversationRun;
-                        var importedPath = piSessionImport.CreateDestinationPath(imported);
-                        if (importedPath is not null) await store.SaveAsync(imported, importedPath);
-                        conversation = imported;
-                        sessionPath = importedPath;
-                        try
-                        {
-                            if (importedSelection.Provider.Id != selection.Provider.Id || importedSelection.Model.Id != selection.Model.Id ||
-                                importedThinking != thinking)
-                                await ReplaceModelRuntime(importedSelection, importedThinking, recordModelChange: false);
-                            else conversationRun = await OpenRunAsync(agent, conversation, sessionPath);
-                        }
-                        catch
-                        {
-                            conversation = previousConversation;
-                            sessionPath = previousPath;
-                            conversationRun = previousRun;
-                            if (importedPath is not null && File.Exists(importedPath)) File.Delete(importedPath);
-                            throw;
-                        }
-                        LoadSessionTranscript();
-                        Console.WriteLine($"Imported Pi session {conversation.Id} · {conversation.ActiveMessages().Count} active messages · {sessionPath ?? "(ephemeral)"}");
-                        break;
                     case "/sessions":
                         var listings = SessionCatalog.Search(await SessionCatalog.ListAsync(store), argument);
                         foreach (var item in listings)
@@ -1039,7 +1052,7 @@ else
                     case "/trust":
                         if (argument.Length == 0)
                         {
-                            Console.WriteLine($"Project resources: {(trusted ? "trusted" : "not trusted")}; saved decision: {(await trustStore.GetAsync(Environment.CurrentDirectory))?.ToString() ?? "none"}");
+                            Console.WriteLine($"Project resources: {(trusted ? "trusted" : "not trusted")}; saved decision: {(await trustStore.GetAsync(currentDirectory))?.ToString() ?? "none"}");
                             break;
                         }
                         bool? decision = argument switch
@@ -1049,8 +1062,8 @@ else
                             "forget" => null,
                             _ => throw new ArgumentException("Use /trust yes, /trust no, or /trust forget.")
                         };
-                        await trustStore.SetAsync(Environment.CurrentDirectory, decision);
-                        trusted = decision ?? await trustStore.ResolveAsync(Environment.CurrentDirectory, null,
+                        await trustStore.SetAsync(currentDirectory, decision);
+                        trusted = decision ?? await trustStore.ResolveAsync(currentDirectory, null,
                             false, Console.In, Console.Error);
                         await ReloadResources();
                         Console.WriteLine($"Project resources: {(trusted ? "trusted" : "not trusted")}");

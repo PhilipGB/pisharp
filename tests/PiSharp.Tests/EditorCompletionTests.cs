@@ -40,6 +40,30 @@ public sealed class EditorCompletionTests
     }
 
     [Fact]
+    public void PathCompletionFollowsTheActiveProjectWorkingDirectory()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-complete-projects-" + Guid.NewGuid().ToString("N"));
+        var first = Path.Combine(root, "first");
+        var second = Path.Combine(root, "second");
+        Directory.CreateDirectory(first);
+        Directory.CreateDirectory(second);
+        File.WriteAllText(Path.Combine(first, "first.txt"), "x");
+        File.WriteAllText(Path.Combine(second, "second.txt"), "x");
+        try
+        {
+            var currentDirectory = first;
+            var completion = new EditorCompletion(() => currentDirectory);
+            var buffer = new EditorBuffer();
+
+            Assert.Equal(["first.txt"], completion.Complete(buffer));
+            currentDirectory = second;
+            buffer.SetText("");
+            Assert.Equal(["second.txt"], completion.Complete(buffer));
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
     public void PathCompletionIncludesHiddenEntriesExceptGit()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-complete-" + Guid.NewGuid().ToString("N"));

@@ -39,7 +39,7 @@ internal sealed record PiSessionStartupTarget(string WorkingDirectory, CliArgume
         reference.EndsWith(".session.json", StringComparison.OrdinalIgnoreCase) ||
         reference.EndsWith(".jsonl", StringComparison.OrdinalIgnoreCase);
 
-    private static string ReadWorkingDirectory(string sessionPath, string invocationPath)
+    internal static string ReadWorkingDirectory(string sessionPath, string invocationPath)
     {
         if (!File.Exists(sessionPath)) return invocationPath;
         var file = new FileInfo(sessionPath);

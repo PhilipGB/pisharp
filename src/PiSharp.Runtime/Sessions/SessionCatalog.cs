@@ -23,8 +23,11 @@ public static class SessionCatalog
                 var bytes = await File.ReadAllBytesAsync(path, cancellationToken);
                 session = ConversationSession.Parse(System.Text.Encoding.UTF8.GetString(bytes));
                 hash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(bytes));
-                if (session.WorkingDirectory != store.WorkingDirectory)
+                if (!ConversationStore.WorkingDirectoriesMatch(session.WorkingDirectory, store.WorkingDirectory))
+                {
+                    if (store.FiltersForeignWorkingDirectories) continue;
                     throw new InvalidDataException("Session belongs to another working directory.");
+                }
             }
             catch (Exception error) when (error is IOException or InvalidDataException or System.Text.Json.JsonException)
             { throw new InvalidDataException($"Could not index session '{path}': {error.Message}", error); }

@@ -3,8 +3,21 @@ using System.Globalization;
 namespace PiSharp.Cli.Tui;
 
 /// <summary>Completes implemented slash commands and local paths; UI only, no agent state.</summary>
-public sealed class EditorCompletion(string workingDirectory, Func<IReadOnlyList<string>>? dynamicCommands = null)
+public sealed class EditorCompletion
 {
+    private readonly Func<string> _workingDirectory;
+    private readonly Func<IReadOnlyList<string>>? _dynamicCommands;
+
+    public EditorCompletion(string workingDirectory, Func<IReadOnlyList<string>>? dynamicCommands = null)
+        : this(() => workingDirectory, dynamicCommands) { }
+
+    public EditorCompletion(Func<string> workingDirectory, Func<IReadOnlyList<string>>? dynamicCommands = null)
+    {
+        ArgumentNullException.ThrowIfNull(workingDirectory);
+        _workingDirectory = workingDirectory;
+        _dynamicCommands = dynamicCommands;
+    }
+
     private static readonly string[] s_commands =
     [
         "/tree",
@@ -38,8 +51,6 @@ public sealed class EditorCompletion(string workingDirectory, Func<IReadOnlyList
         ['<'] = '>',
         ['`'] = '`'
     };
-    private readonly string _cwd = Path.GetFullPath(workingDirectory);
-
     public IReadOnlyList<string> Complete(EditorBuffer buffer)
     {
         ArgumentNullException.ThrowIfNull(buffer);
@@ -48,7 +59,7 @@ public sealed class EditorCompletion(string workingDirectory, Func<IReadOnlyList
         if (start == 0 && before[start..].StartsWith('/'))
         {
             var slashFragment = before[start..];
-            var matches = s_commands.Concat(dynamicCommands?.Invoke() ?? [])
+            var matches = s_commands.Concat(_dynamicCommands?.Invoke() ?? [])
                 .Where(command => command.StartsWith(slashFragment, StringComparison.OrdinalIgnoreCase)).ToArray();
             return Apply(buffer, start, slashFragment, matches);
         }
@@ -66,7 +77,7 @@ public sealed class EditorCompletion(string workingDirectory, Func<IReadOnlyList
         if (hasAtPrefix) path = path[1..];
         if (path.StartsWith('"')) path = path[1..];
         var hasExistingClosingQuote = buffer.Cursor < buffer.Text.Length && buffer.Text[buffer.Cursor] == '"';
-        var matchesForPath = GetPathCompletions(path, hasAtPrefix, quoted);
+        var matchesForPath = GetPathCompletions(path, hasAtPrefix, quoted, Path.GetFullPath(_workingDirectory()));
         return Apply(buffer, fragmentStart, fragment, matchesForPath, hasExistingClosingQuote);
     }
 
@@ -119,7 +130,7 @@ public sealed class EditorCompletion(string workingDirectory, Func<IReadOnlyList
         return open;
     }
 
-    private IReadOnlyList<string> GetPathCompletions(string rawPath, bool hasAtPrefix, bool quoted)
+    private IReadOnlyList<string> GetPathCompletions(string rawPath, bool hasAtPrefix, bool quoted, string cwd)
     {
         var separator = Math.Max(rawPath.LastIndexOf('/'), rawPath.LastIndexOf('\\'));
         var parent = separator < 0 ? "" : rawPath[..(separator + 1)];
@@ -139,11 +150,11 @@ public sealed class EditorCompletion(string workingDirectory, Func<IReadOnlyList
             else if (parent == "~")
                 folder = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
             else if (parent.Length == 0)
-                folder = _cwd;
+                folder = cwd;
             else
             {
                 var localParent = parent.Replace('/', Path.DirectorySeparatorChar).Replace('\\', Path.DirectorySeparatorChar);
-                folder = Path.IsPathRooted(localParent) ? Path.GetFullPath(localParent) : Path.GetFullPath(localParent, _cwd);
+                folder = Path.IsPathRooted(localParent) ? Path.GetFullPath(localParent) : Path.GetFullPath(localParent, cwd);
             }
             if (!Directory.Exists(folder)) return [];
             var matches = new List<(string Value, string Name, bool IsDirectory)>();

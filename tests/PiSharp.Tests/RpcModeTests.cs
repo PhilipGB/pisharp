@@ -158,6 +158,63 @@ public sealed class RpcModeTests
     }
 
     [Fact]
+    public async Task SwitchSessionAbortsAnActiveRunBeforeInvokingReplacement()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-rpc-switch-session-abort-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        try
+        {
+            var channel = Channel.CreateUnbounded<string>();
+            using var output = new LockedWriter();
+            var previous = new ConversationSession(cwd, "fixture", null);
+            var previousRun = await ConversationRun.OpenAsync(new PiAgent(new PartialBlockingClient(), new CodingTools(cwd)), previous);
+            var currentRun = previousRun;
+            var service = new RpcMode(new CommandReader(channel.Reader), output, previousRun,
+                getCurrentRun: () => currentRun,
+                switchSession: async (path, token) =>
+                {
+                    Assert.Equal("/sessions/next.session.json", path);
+                    Assert.Contains(output.Lines(), line => line.Contains("\"type\":\"agent_settled\"", StringComparison.Ordinal));
+                    var next = new ConversationSession(cwd, "fixture", null);
+                    currentRun = await ConversationRun.OpenAsync(new PiAgent(new StubClient(), new CodingTools(cwd)), next,
+                        token);
+                    return false;
+                });
+            var serving = service.ServeAsync();
+            channel.Writer.TryWrite("{\"id\":\"prompt\",\"type\":\"prompt\",\"message\":\"hold open\"}");
+            await WaitForAsync(output, "\"type\":\"agent_start\"");
+            channel.Writer.TryWrite("{\"id\":\"switch\",\"type\":\"switch_session\",\"sessionPath\":\"/sessions/next.session.json\"}");
+            await WaitForAsync(output, "\"id\":\"switch\"");
+            await WaitForAsync(output, "\"type\":\"agent_settled\"");
+            channel.Writer.TryWrite("{\"id\":\"state\",\"type\":\"get_state\"}");
+            await WaitForAsync(output, "\"id\":\"state\"");
+            channel.Writer.Complete();
+            await serving.WaitAsync(TimeSpan.FromSeconds(5));
+
+            var events = output.Lines().Select(line => JsonDocument.Parse(line)).ToArray();
+            try
+            {
+                var response = Assert.Single(events, item =>
+                    item.RootElement.TryGetProperty("id", out var id) && id.GetString() == "switch");
+                Assert.True(response.RootElement.GetProperty("success").GetBoolean());
+                Assert.False(response.RootElement.GetProperty("data").GetProperty("cancelled").GetBoolean());
+                var settledIndex = Array.FindIndex(events, item =>
+                    item.RootElement.TryGetProperty("type", out var type) && type.GetString() == "agent_settled");
+                var responseIndex = Array.FindIndex(events, item =>
+                    item.RootElement.TryGetProperty("id", out var id) && id.GetString() == "switch");
+                Assert.True(responseIndex > settledIndex);
+                var state = Assert.Single(events, item =>
+                    item.RootElement.TryGetProperty("id", out var id) && id.GetString() == "state");
+                Assert.NotEqual(previous.Id, state.RootElement.GetProperty("data").GetProperty("sessionId").GetString());
+                Assert.DoesNotContain(events, item =>
+                    item.RootElement.TryGetProperty("type", out var type) && type.GetString() == "error");
+            }
+            finally { foreach (var item in events) item.Dispose(); }
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Fact]
     public async Task PromptPreflightFailureReturnsOneCorrelatedResponse()
     {
         var channel = Channel.CreateUnbounded<string>();

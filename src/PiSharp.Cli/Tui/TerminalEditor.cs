@@ -14,9 +14,12 @@ public sealed class TerminalEditor
     private int _savedCursor;
     private string _lastSearchQuery = "";
     private bool _toolResultsExpanded;
-    public TerminalEditor(Func<IReadOnlyList<string>>? commands = null, string? agentDirectory = null)
+    public TerminalEditor(Func<IReadOnlyList<string>>? commands = null, string? agentDirectory = null,
+        Func<string>? getWorkingDirectory = null)
     {
-        _completion = new(Environment.CurrentDirectory, commands);
+        _completion = getWorkingDirectory is null
+            ? new EditorCompletion(Environment.CurrentDirectory, commands)
+            : new EditorCompletion(getWorkingDirectory, commands);
         _keymap = new(agentDirectory);
         _buffer = new(_keymap);
     }

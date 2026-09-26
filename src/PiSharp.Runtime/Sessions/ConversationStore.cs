@@ -8,16 +8,42 @@ public sealed class ConversationStore(string workingDirectory, string? directory
 {
     public string WorkingDirectory { get; } = Path.GetFullPath(workingDirectory);
     private readonly Dictionary<string, string> _knownHashes = new(StringComparer.Ordinal);
-    public string DirectoryPath { get; } = directory ?? Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".pisharp", "sessions",
-        Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(Path.GetFullPath(workingDirectory)))).ToLowerInvariant()[..16]);
+    public string DefaultDirectoryPath { get; } = CreateDefaultDirectory(workingDirectory);
+    public string DirectoryPath { get; } = Path.GetFullPath(directory ?? CreateDefaultDirectory(workingDirectory));
+    public bool FiltersForeignWorkingDirectories => !PathsEqual(DirectoryPath, DefaultDirectoryPath);
 
     public string NewPath(ConversationSession conversation) => Path.Combine(DirectoryPath,
         $"{DateTimeOffset.UtcNow:yyyyMMddTHHmmss}_{conversation.Id}.session.json");
 
-    public string? MostRecentPath() => Directory.Exists(DirectoryPath)
-        ? Directory.EnumerateFiles(DirectoryPath, "*.session.json").OrderByDescending(File.GetLastWriteTimeUtc).FirstOrDefault()
-        : null;
+    public string? MostRecentPath()
+    {
+        if (!Directory.Exists(DirectoryPath)) return null;
+        foreach (var path in Directory.EnumerateFiles(DirectoryPath, "*.session.json")
+            .OrderByDescending(File.GetLastWriteTimeUtc))
+        {
+            if (!FiltersForeignWorkingDirectories) return path;
+            try
+            {
+                var session = ConversationSession.Parse(File.ReadAllText(path));
+                if (WorkingDirectoriesMatch(session.WorkingDirectory, WorkingDirectory)) return path;
+            }
+            catch (Exception error) when (error is IOException or InvalidDataException or System.Text.Json.JsonException)
+            {
+                // Pi's recent-session discovery skips unreadable candidates and checks the next file.
+            }
+        }
+        return null;
+    }
+
+    public static bool WorkingDirectoriesMatch(string left, string right) =>
+        PathsEqual(Path.GetFullPath(left), Path.GetFullPath(right));
+
+    private static bool PathsEqual(string left, string right) =>
+        string.Equals(left, right, OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+
+    private static string CreateDefaultDirectory(string workingDirectory) => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".pisharp", "sessions",
+        Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(Path.GetFullPath(workingDirectory)))).ToLowerInvariant()[..16]);
 
     public async Task<ConversationSession> LoadAsync(string path, CancellationToken cancellationToken = default)
     {

@@ -106,4 +106,33 @@ public sealed class SessionCatalogTests
         }
         finally { Directory.Delete(cwd, true); }
     }
+
+    [Fact]
+    public async Task SharedSessionDirectoryFiltersSessionsFromOtherWorkingDirectories()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-shared-sessions-" + Guid.NewGuid().ToString("N"));
+        var localCwd = Path.Combine(root, "local");
+        var foreignCwd = Path.Combine(root, "foreign");
+        var sharedDirectory = Path.Combine(root, "sessions");
+        Directory.CreateDirectory(localCwd);
+        Directory.CreateDirectory(foreignCwd);
+        try
+        {
+            var localStore = new ConversationStore(localCwd, sharedDirectory);
+            var foreignStore = new ConversationStore(foreignCwd, sharedDirectory);
+            var local = new ConversationSession(localCwd, "fixture", null);
+            var foreign = new ConversationSession(foreignCwd, "fixture", null);
+            var localPath = localStore.NewPath(local);
+            var foreignPath = foreignStore.NewPath(foreign);
+            await localStore.SaveAsync(local, localPath);
+            await foreignStore.SaveAsync(foreign, foreignPath);
+            File.SetLastWriteTimeUtc(localPath, DateTime.UtcNow.AddDays(-1));
+            File.SetLastWriteTimeUtc(foreignPath, DateTime.UtcNow);
+
+            Assert.Equal(localPath, localStore.MostRecentPath());
+            Assert.Equal(localPath, Assert.Single(await SessionCatalog.ListAsync(localStore)).Path);
+            Assert.Equal(foreignPath, Assert.Single(await SessionCatalog.ListAsync(foreignStore)).Path);
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
 }

@@ -14,7 +14,8 @@ internal sealed class RpcSessionCommandHandler(
     Func<CancellationToken, Task>? save,
     Func<string?, CancellationToken, Task<bool>>? newSession,
     Func<string, CancellationToken, Task<string?>>? forkSession,
-    Func<CancellationToken, Task<bool>>? cloneSession)
+    Func<CancellationToken, Task<bool>>? cloneSession,
+    Func<string, CancellationToken, Task<bool>>? switchSession)
 {
     public async Task<bool> TryHandleAsync(string command, JsonElement root, JsonElement? id,
         CancellationToken cancellationToken)
@@ -23,6 +24,36 @@ internal sealed class RpcSessionCommandHandler(
         var conversation = run.Conversation;
         switch (command)
         {
+            case "switch_session":
+                if (!root.TryGetProperty("sessionPath", out var sessionPath) || sessionPath.ValueKind != JsonValueKind.String ||
+                    string.IsNullOrWhiteSpace(sessionPath.GetString()))
+                {
+                    await respond(id, command, false, "A nonempty sessionPath is required.");
+                    return true;
+                }
+                if (switchSession is null)
+                {
+                    await respond(id, command, false, "Session replacement is not configured.");
+                    return true;
+                }
+                try
+                {
+                    var cancelled = await switchSession(sessionPath.GetString()!, cancellationToken);
+                    await output.EmitAsync(new
+                    {
+                        id,
+                        type = "response",
+                        command,
+                        success = true,
+                        data = new { cancelled }
+                    }, cancellationToken);
+                }
+                catch (Exception error) when (error is not OperationCanceledException)
+                {
+                    await respond(id, command, false, error.Message);
+                }
+                return true;
+
             case "new_session":
                 if (root.TryGetProperty("parentSession", out var parentSession) &&
                     parentSession.ValueKind != JsonValueKind.String)

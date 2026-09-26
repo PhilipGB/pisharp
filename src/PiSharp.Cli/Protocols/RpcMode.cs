@@ -22,7 +22,10 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
     Func<bool, CancellationToken, Task>? persistRetryEnabled = null,
     Func<string?, CancellationToken, Task<bool>>? newSession = null,
     Func<string, CancellationToken, Task<string?>>? forkSession = null,
-    Func<CancellationToken, Task<bool>>? cloneSession = null)
+    Func<CancellationToken, Task<bool>>? cloneSession = null,
+    Func<string, CancellationToken, Task<bool>>? switchSession = null,
+    Func<PiSharp.Runtime.Resources.ResourceCatalog?>? getCurrentResources = null,
+    Func<ExtensionRegistration?>? getCurrentExtensions = null)
 {
     private readonly JsonLineWriter _writer = new(output);
     private RpcEventWriter? _events;
@@ -30,6 +33,8 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
     private CancellationTokenSource? _abort;
     private Task? _active;
     private ConversationRun CurrentRun => getCurrentRun?.Invoke() ?? run;
+    private PiSharp.Runtime.Resources.ResourceCatalog? CurrentResources => getCurrentResources?.Invoke() ?? resources;
+    private ExtensionRegistration? CurrentExtensions => getCurrentExtensions?.Invoke() ?? extensions;
     private RpcEventWriter Events => _events ??= new RpcEventWriter(_writer);
 
     public async Task ServeAsync(CancellationToken cancellationToken = default)
@@ -42,7 +47,8 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
             () => getThinkingLevel?.Invoke(), () => _active is { IsCompleted: false }, save,
             newSession is null ? null : StartNewSessionAsync,
             forkSession is null ? null : StartForkSessionAsync,
-            cloneSession is null ? null : StartCloneSessionAsync);
+            cloneSession is null ? null : StartCloneSessionAsync,
+            switchSession is null ? null : StartSwitchSessionAsync);
         try
         {
             while (await input.ReadLineAsync(cancellationToken) is { } line)
@@ -92,8 +98,12 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                                 success = true,
                                 data = new
                                 {
-                                    commands = (resources?.Prompts.Select(item => new { name = item.Name, description = item.Description, source = "prompt" })
-                                    ?? []).Concat(resources?.Skills.Select(item => new { name = "skill:" + item.Name, description = item.Description, source = "skill" }) ?? []).ToArray()
+                                    commands = (CurrentExtensions?.Commands.Keys.Select(name =>
+                                            new { name, description = (string?)null, source = "extension" }) ?? [])
+                                        .Concat(CurrentResources?.Prompts.Select(item =>
+                                            new { name = item.Name, description = (string?)item.Description, source = "prompt" }) ?? [])
+                                        .Concat(CurrentResources?.Skills.Select(item =>
+                                            new { name = "skill:" + item.Name, description = (string?)item.Description, source = "skill" }) ?? []).ToArray()
                                 }
                             }, cancellationToken);
                             break;
@@ -146,8 +156,9 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                             string expanded;
                             try
                             {
-                                expanded = resources is null ? message.GetString()! :
-                                await resources.ResolveInputAsync(message.GetString()!, cancellationToken);
+                                var activeResources = CurrentResources;
+                                expanded = activeResources is null ? message.GetString()! :
+                                await activeResources.ResolveInputAsync(message.GetString()!, cancellationToken);
                             }
                             catch (Exception error) when (error is ArgumentException or IOException)
                             { await RespondAsync(id, type, false, error.Message); break; }
@@ -200,8 +211,9 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                             string queuedExpanded;
                             try
                             {
-                                queuedExpanded = resources is null ? queuedMessage! :
-                                    await resources.ResolveInputAsync(queuedMessage!, cancellationToken);
+                                var activeResources = CurrentResources;
+                                queuedExpanded = activeResources is null ? queuedMessage! :
+                                    await activeResources.ResolveInputAsync(queuedMessage!, cancellationToken);
                             }
                             catch (Exception error) when (error is ArgumentException or IOException)
                             { await RespondAsync(id, type, false, error.Message); break; }
@@ -267,6 +279,12 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
     {
         await CancelActiveRunAsync();
         return await cloneSession!(cancellationToken);
+    }
+
+    private async Task<bool> StartSwitchSessionAsync(string sessionPath, CancellationToken cancellationToken)
+    {
+        await CancelActiveRunAsync();
+        return await switchSession!(sessionPath, cancellationToken);
     }
 
     private async Task CancelActiveRunAsync()
@@ -368,11 +386,12 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
     private async Task<BashExecutionResult> ExecuteUserBashAsync(string? correlationId, string command,
         bool excludeFromContext, CancellationToken cancellationToken)
     {
-        if (extensions is not null)
+        var activeExtensions = CurrentExtensions;
+        if (activeExtensions is not null)
         {
             var context = new UserBashContext(command, excludeFromContext, CurrentRun.Conversation.WorkingDirectory,
                 delta => EmitBashUpdateAsync(correlationId, delta));
-            foreach (var handler in extensions.UserBashHandlers)
+            foreach (var handler in activeExtensions.UserBashHandlers)
             {
                 try
                 {
