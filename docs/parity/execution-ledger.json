@@ -1241,15 +1241,16 @@
         "Test protocol through RPC process, including failures and cancellation"
       ],
       "implementation": [
-        "src/PiSharp.Cli/Protocols/RpcMode.cs: idle-only command accepts a named level and returns success without data.",
-        "src/PiSharp.Cli/Program.cs: validates and normalizes levels, clamps models without reasoning to off, rebuilds the MAF runtime, and persists a thinking_level_change on the active branch.",
+        "src/PiSharp.Cli/Protocols/RpcModelCommandHandler.cs: accepts set_thinking_level while idle or active and emits thinking_level_changed before the correlated response.",
+        "src/PiSharp.Cli/Program.cs and src/PiSharp.Runtime/Sessions/ConversationRun.cs: normalize/clamp the requested level, update the shared PiAgent for the next provider request, and append the branch entry after the current MAF history write.",
         "src/PiSharp.Runtime/Sessions/ConversationSession.cs and PiJsonlSessionInterchange.cs: persist thinking changes and export them as Pi JSONL records."
       ],
       "evidence": [
         "Compared current Pi main d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 RPC types/mode and agent-session behavior for accepted level names, branch entries and response shape.",
         "RpcModelProcessTests.RpcModelAndThinkingCommandsSelectAndCycleTheRunningRuntime verifies unsupported-model clamping, max selection, state, and persisted entry; PiJsonlSessionInterchangeTests.ThinkingLevelChangesPersistAndRoundTripAsPiEntries verifies Pi v3 JSONL export/import.",
-        "Compared current Pi RPC at d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31: Pi accepts this while a run is active; PiSharp emits the Pi-shaped event before the response for idle changes but still rejects the command while busy.",
-        "Exact commit 1bb382e3f1002b2191afb1b30b24b128d2140aa8 passed Linux CI run 36196277855: format passed, warnings-as-errors build passed with 0 warnings/errors, and all 535 tests passed (0 failed, 0 skipped)."
+        "RpcModeTests.SetThinkingLevelIsAcceptedDuringAnActiveRunAndEmitsBeforeItsResponse checks active RPC event-before-response ordering and persisted branch state; AgentLifecycleTests.ActiveThinkingChangeAppliesToTheNextProviderRequestAndPersists checks a barrier-controlled tool continuation receives the updated reasoning options.",
+        "Exact commit 1bb382e3f1002b2191afb1b30b24b128d2140aa8 passed Linux CI run 36196277855: format passed, warnings-as-errors build passed with 0 warnings/errors, and all 535 tests passed (0 failed, 0 skipped).",
+        "Exact source head 3c766cd71fa297c1fa08ee42e371c93b3841e53e passed Linux CI run 36207133787: format, warnings-as-errors build, and 543 tests (0 failed, 0 skipped)."
       ],
       "dependencies": []
     },
@@ -1263,11 +1264,12 @@
         "Test protocol through RPC process, including failures and cancellation"
       ],
       "implementation": [
-        "src/PiSharp.Cli/Protocols/RpcMode.cs: idle-only command cycles available levels, returns {level}, and returns null when the active model lacks reasoning support."
+        "src/PiSharp.Cli/Protocols/RpcModelCommandHandler.cs: cycles the current model levels while idle or active, returns {level}, and returns null when the active model lacks reasoning support."
       ],
       "evidence": [
         "RpcModelProcessTests.RpcModelAndThinkingCommandsSelectAndCycleTheRunningRuntime verifies the unsupported-model null result and wrap from max to off for a reasoning-capable model.",
-        "Exact commit 1bb382e3f1002b2191afb1b30b24b128d2140aa8 passed Linux CI run 36196277855: format passed, warnings-as-errors build passed with 0 warnings/errors, and all 535 tests passed (0 failed, 0 skipped)."
+        "Exact commit 1bb382e3f1002b2191afb1b30b24b128d2140aa8 passed Linux CI run 36196277855: format passed, warnings-as-errors build passed with 0 warnings/errors, and all 535 tests passed (0 failed, 0 skipped).",
+        "Active changes share the tested setter and event-before-response path used by set_thinking_level; exact head 3c766cd71fa297c1fa08ee42e371c93b3841e53 passed Linux CI run 36207133787 with 543 tests (0 failed, 0 skipped)."
       ],
       "dependencies": []
     },
@@ -1605,7 +1607,7 @@
         "Match Pi low-level retry attempts and set agent_end.willRetry from actual retry state"
       ],
       "implementation": [
-        "src/PiSharp.Cli/Protocols/RpcEventWriter.cs and RpcEventProjector.cs: project agent_start, run-local canonical agent_end.messages with willRetry:false, queue_update and payload-free agent_settled at one wire boundary; preflight rejection emits no lifecycle events."
+        "src/PiSharp.Cli/Protocols/RpcEventWriter.cs and RpcEventProjector.cs: project one agent_start/end pair per accepted PiSharp run, canonical messages and willRetry:false, queue_update, and payload-free agent_settled at one wire boundary; low-level turn segmentation and retry state remain open."
       ],
       "evidence": [
         "Compared current Pi main d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 packages/coding-agent/src/core/agent-session.ts and modes/rpc/rpc-mode.ts: agent_settled is emitted as a payload-free top-level event after agent work settles.",
@@ -1616,7 +1618,9 @@
         "Compared current Pi d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 packages/coding-agent/docs/json.md, packages/agent/src/agent-loop.ts and agent-session.ts: agent_end carries messages and willRetry per low-level run, appears before agent_settled, and retry decisions wrap failed runs.",
         "RpcAgentLifecycleProcessTests.RpcProcessEmitsPiAgentEndWithCanonicalMessagesBeforeSettlement verifies LF JSON process output, correlated response then agent_start/end/settled order, provider/API/message fields, and clean stderr. RpcModeTests cover queued turns, abort and provider failure agent_end records.",
         "After extracting RpcModelCommandHandler, focused RpcModeTests and RpcModelProcessTests passed 23/23; dotnet format verification, warnings-as-errors build and the full suite passed locally (541/541). Exact source head 38b402e53bf4e0e543e2f2493ecf67ad2765f898 passed Linux CI run 36205642095: 541 passed, 0 failed, 0 skipped.",
-        "willRetry is currently fixed false. Provider request retry events remain internal to ObservedChatClient and are not equivalent to Pi's separate retryable agent-run attempts; turn/message/tool/session projections remain incomplete."
+        "willRetry is currently fixed false. Provider request retry events remain internal to ObservedChatClient and are not equivalent to Pi's separate retryable agent-run attempts; turn/message/tool/session projections remain incomplete.",
+        "Current Pi retry source and agent-session-retry-events.test.ts at d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 show agent_end per low-level run, willRetry before auto_retry_start, then a new agent_start for the retry; PiSharp still bundles queued turns and emits willRetry:false.",
+        "Active thinking RPC/lifecycle implementation at exact source head 3c766cd71fa297c1fa08ee42e371c93b3841e53 passed Linux CI run 36207133787: format, warnings-as-errors build, and 543 tests (0 failed, 0 skipped)."
       ],
       "dependencies": []
     },
