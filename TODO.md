@@ -1,17 +1,21 @@
 # PiSharp capability parity
 
-**Goal:** implement Pi's in-scope capabilities idiomatically in C#/.NET with Microsoft Agent Framework and Microsoft.Extensions.AI where appropriate. Pi Packages remain excluded unless required for a core capability.
+**Goal:** implement Pi's in-scope capabilities idiomatically in C#/.NET, using Microsoft Agent Framework and Microsoft.Extensions.AI where appropriate. Pi Packages stay excluded unless needed for a core capability.
 
-**Stop condition:** a current-Pi audit finds no material in-scope gaps, required behavioral/differential evidence passes, exact-head CI is green, and no major architecture bottleneck remains.
+**Stop condition:** a full current-Pi audit finds no material in-scope gaps, required behavioral/differential evidence passes, exact-head CI is green, and major architecture bottlenecks are resolved.
 
 ## Current state
 
-- Latest pushed, CI-validated source head: `04d66e2793c7fff1ef9d27d9463de53e9a7c5024`; exact-head Linux CI run [36268510576](https://github.com/PhilipGB/pisharp/actions/runs/36268510576) passed format, warnings-as-errors build, and 601 tests (0 failed, 0 skipped).
-- Current Pi `main` was refreshed on 2026-09-26 to `2b0a123de98318c2ff8069661721ce0c3794c34e`; durable parity baseline remains `b3487650f6378f1b0d1643dd254445ceb4a98035`.
-- RPC `compact` now accepts Pi's `customInstructions`, aborts and settles an active run, returns Pi-shaped result/usage/details, persists compaction metadata for JSONL, and emits manual lifecycle events. Process tests cover success and abort; local source validation and exact-head CI passed.
-- Material gaps remain across current-Pi RPC/event differentials and model metadata, session recovery/concurrency, settings/resources/extensions, multimodal/provider/auth breadth, coding tools, and TUI behavior. No overall parity claim is made.
-- `Program.cs` remains a mixed startup/application file above 1,000 lines; `RpcMode.cs` is about 500 lines. Continue extracting cohesive boundaries alongside parity work.
+- Latest pushed, exact-head CI-validated source: `49233922512294af3dd4a34381fb0d7e1e52e78d`; Linux CI run [36276515605](https://github.com/PhilipGB/pisharp/actions/runs/36276515605) passed format, warnings-as-errors build, and 604 tests (0 failed, 0 skipped).
+- Current Pi `main`: `2b0a123de98318c2ff8069661721ce0c3794c34e`; durable baseline: `b3487650f6378f1b0d1643dd254445ceb4a98035`.
+- RPC model commands and `get_state` now share a Pi-shaped model projector. It preserves configured/discovered model metadata, Pi input limits, and provider/model compatibility merges while keeping headers and credentials out of output. Linux process tests cover rich and sparse models.
+- Major gaps remain in RPC behavior/differentials, session recovery/concurrency, settings/resources/extensions, multimodal/provider/auth breadth, coding tools, and TUI behavior. No overall parity claim is made.
+- Architecture remains concentrated: `Program.cs` is 1,144 lines and `RpcMode.cs` is 517 lines. The next model/runtime work should move state transitions into a cohesive controller.
+
+## Current priority
+
+RPC model selection behavior and lifecycle semantics, then session interoperability; continue extracting application behavior alongside each capability.
 
 ## Exact next action
 
-Implement one explicit model projector for `get_available_models`, `set_model`, `cycle_model`, and `get_state`. Compare current Pi model fields and response shapes, preserve available metadata without exposing credentials, add sparse/rich process tests, then continue through the remaining RPC/session gaps.
+Compare current Pi's active `set_model`/`cycle_model` behavior with PiSharp, extract the shared model/runtime transition from `Program.cs`, and add deterministic coverage for switching during an active tool turn and using the selected model on the next provider request. Include `get_available_models` while busy in the same RPC compatibility pass.

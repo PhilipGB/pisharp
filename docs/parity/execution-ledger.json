@@ -295,7 +295,8 @@
         "Partial: src/PiSharp.Runtime/{Providers/ModelCatalog,Sessions/ConversationSession,PiAgent}.cs records provider/model metadata, persists the provider ID, and passes reasoning options to MAF.",
         "src/PiSharp.Cli/ProviderProfileLoader.cs: bounded models.json parsing and provider endpoint/key-environment identity checks; src/PiSharp.Cli/BuiltinProviderProfiles.cs: pinned xAI Grok 4.3/4.5/4.6/4.7 Responses metadata; ProviderModelRuntime.ListModelsAsync uses static xAI catalogue without /models. xAI OAuth is not supported.",
         "src/PiSharp.Cli/{BuiltinProviderProfiles,ProviderChatClientFactory,ProviderModelRuntime}.cs: Anthropic API-key-only native Messages protocol via Anthropic 12.50.0 MEAI adapter; three pinned Sonnet/Opus/Haiku model/price entries and model-specific Messages max-output budget and adaptive/extended thinking-mode dispatch without OpenAI /models probe (unknown overrides unpriced); reserved built-in endpoint and credential environment. Anthropic OAuth and full model catalog are absent.",
-        "src/PiSharp.Cli/Tui/TerminalModelPicker.cs and ProviderModelRuntime.cs: Ctrl+L or /model opens searchable all/scoped catalog views and can resolve an out-of-scope choice without changing the configured cycling scope."
+        "src/PiSharp.Cli/Tui/TerminalModelPicker.cs and ProviderModelRuntime.cs: Ctrl+L or /model opens searchable all/scoped catalog views and can resolve an out-of-scope choice without changing the configured cycling scope.",
+        "src/PiSharp.Cli/Protocols/RpcModelProjector.cs emits the Pi model fields consistently for get_available_models, set_model, cycle_model and get_state; ModelMetadataJson and ModelInputLimits preserve Pi-shaped catalog/config data, and provider/model compatibility uses Pi-compatible nested merges."
       ],
       "evidence": [
         "tests/PiSharp.Tests/ProviderModelRuntimeTests.cs: deterministic custom endpoint key isolation, configured metadata and fuzzy lookup, no /models request for exact IDs, private credential restart/symlink/permission checks, and CLI missing-auth rejection.",
@@ -310,7 +311,9 @@
         "ProviderProfileLoader canonicalizes case-variant built-in provider IDs; ProviderModelRuntimeTests.CaseVariantBuiltInOverrideKeepsCanonicalIdentityAndProtocol verifies uppercase ANTHROPIC override preserves native Messages dispatch, model owner and isolated credential. This is local identity evidence, not upstream differential.",
         "ProviderChatClientFactoryTests: Anthropic loopback verifies /v1/messages, x-api-key (not Bearer), Anthropic version, model-specific max_tokens, nonstream usage, SSE text/tool-call-result continuation, and inline PNG image blocks and AnthropicReasoningUsesPinnedModelThinkingMode verifies adaptive/effort vs extended/budget; ProviderModelRuntimeTests.AnthropicUsesItsOwnCredentialAndStaticMessagesCatalog: three pinned model prices/limits/modalities against d5629e2, known/unknown default overrides, credential isolation and no OpenAI /models probe. No live Anthropic account, reasoning/advanced usage semantics, OAuth or pinned Pi request differential.",
         "tests/PiSharp.Tests/ProviderChatClientFactoryTests.cs: protocol selection for OpenAI Responses vs compatible Completions, unsupported API refusal, loopback Responses SSE request, nonstream usage and stateless history, function-call/tool-result continuation without previous_response_id, and subprocess unsupported-API refusal; src/PiSharp.Cli/{ProviderChatClientFactory,StatelessResponsesChatClient}.cs keeps canonical MAF history. No live hosted-provider or OAuth differential.",
-        "TerminalSelectionListTests plus ProviderModelRuntimeTests Linux PTY cover filtered all/scoped selection, out-of-scope resolution and VT navigation. Local suite passes 421/421; exact code head bb576e37c09a8fde1734f03e966e5233f62aabdd passed Linux CI run 36132336108; fuzzy scoring has no current-Pi differential, scoped-model editing/default persistence and provider/auth breadth remain open."
+        "TerminalSelectionListTests plus ProviderModelRuntimeTests Linux PTY cover filtered all/scoped selection, out-of-scope resolution and VT navigation. Local suite passes 421/421; exact code head bb576e37c09a8fde1734f03e966e5233f62aabdd passed Linux CI run 36132336108; fuzzy scoring has no current-Pi differential, scoped-model editing/default persistence and provider/auth breadth remain open.",
+        "RpcModelProcessTests.ModelCommandsProjectPiModelMetadataAndApplySparseDefaultsInTheCliProcess covers rich/sparse model projections, configured model endpoints, provider/model metadata merges, unavailable models, and header/credential isolation through a real CLI RPC process.",
+        "Exact source head 49233922512294af3dd4a34381fb0d7e1e52e78d passed Linux CI run 36276515605: format passed, warnings-as-errors build passed with 0 warnings/errors, and 604 tests passed (0 failed, 0 skipped)."
       ],
       "dependencies": []
     },
@@ -1155,24 +1158,26 @@
       "source": "docs/parity/detailed-inventory.md:34",
       "acceptance": [
         "Implement get_state using shared canonical runtime with correlated responses/event ordering",
-        "Test protocol through RPC process, including failures and cancellation",
-        "Remaining: Pi wire-compatible payloads, lifecycle/error semantics and pinned process differential."
+        "Test all current Pi RpcSessionState fields and omission rules through the CLI RPC process",
+        "Remaining: pinned Pi process differential and active-run model selection behavior."
       ],
       "implementation": [
         "src/PiSharp.Cli/Protocols/RpcMode.cs: partial get_state operation (PiSharp wire format)",
         "src/PiSharp.Cli/Protocols/RpcMode.cs: get_state now includes the active thinkingLevel.",
-        "get_state now reports steeringMode, followUpMode and pendingMessageCount; the model and remaining state payload fields still differ from current Pi.",
-        "RpcStateCommandHandler returns the Pi state fields, omits unset model/session fields, and projects selected model metadata available from PiSharp ModelDescriptor/ProviderProfile. Optional model fields and a process differential remain incomplete.",
-        "ConversationRun exposes the active session file, automatic-compaction setting and in-flight compaction state for the state query."
+        "ConversationRun exposes the active session file, automatic-compaction setting and in-flight compaction state for the state query.",
+        "RpcModelProjector projects the selected model with the same complete Pi-shaped metadata as the model command responses; RpcModelProcessTests covers the state model in a real CLI process.",
+        "RpcStateCommandHandler returns the current Pi RpcSessionState fields and obtains model from RpcModelProjector; the real CLI process test checks state shape and projected selected-model metadata."
       ],
       "evidence": [
         "tests/PiSharp.Tests/RpcModeTests.cs: local protocol/command fixtures (coverage varies by operation)",
         "RpcModelProcessTests.RpcModelAndThinkingCommandsSelectAndCycleTheRunningRuntime verifies off/max state after runtime changes; RpcModelProcessTests.RpcStartupRestoresThinkingLevelFromTheSelectedSessionBranch verifies startup restores the persisted branch level.",
         "Exact commit 1bb382e3f1002b2191afb1b30b24b128d2140aa8 passed Linux CI run 36196277855: format passed, warnings-as-errors build passed with 0 warnings/errors, and all 535 tests passed (0 failed, 0 skipped).",
         "RpcModelProcessTests.RpcQueueModesPersistAndAppearInStateInTheCliProcess verifies both modes, pending count, response correlation and persisted setting through the CLI process; exact-head Linux CI 4a56c8224bf37e7471492b00ba02ea97a4a9a7a8 / run 36228794249 passed format, warnings-as-errors build and 595 tests (0 failed, 0 skipped).",
-        "Current Pi d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 rpc-commands.md defines the expanded get_state fields; model descriptor and full state shape remain the next implementation slice.",
         "Current Pi 2b0a123de98318c2ff8069661721ce0c3794c34e rpc-mode.ts, rpc-types.ts, rpc-commands.md and rpc.test.ts were inspected. PiSharp RpcModelProcessTests and RpcStateTests cover returned fields, correlation, sparse/rich model metadata, ephemeral/named sessions and a deterministic held automatic summary.",
-        "Exact source head 654382a2c7f9483ff8cc3e16b4c847dd1ab4c2fe passed Linux CI run 36230095495. Local exact-source validation passed format, warnings-as-errors build with 0 warnings/errors, and 596 tests (0 failed, 0 skipped)."
+        "Exact source head 654382a2c7f9483ff8cc3e16b4c847dd1ab4c2fe passed Linux CI run 36230095495. Local exact-source validation passed format, warnings-as-errors build with 0 warnings/errors, and 596 tests (0 failed, 0 skipped).",
+        "Current Pi main 2b0a123de98318c2ff8069661721ce0c3794c34e rpc-mode.ts/rpc-types.ts return complete Model values for set_model/cycle_model/get_available_models; model-config.ts/provider-composer.ts and model-registry.test.ts establish the exposed fields and provider/model compatibility merge rules.",
+        "RpcModelProcessTests.ModelCommandsProjectPiModelMetadataAndApplySparseDefaultsInTheCliProcess exercises get_available_models, set_model, cycle_model and get_state in the CLI process. Rich/sparse output covers lower-camel Pi fields, model metadata, inputLimits, cost tiers, provider/model nested compat merging, unavailable-model rejection, and omission of secret headers and internal catalog fields.",
+        "Exact source head 49233922512294af3dd4a34381fb0d7e1e52e78d passed Linux CI run 36276515605: format passed, warnings-as-errors build passed with 0 warnings/errors, and 604 tests passed (0 failed, 0 skipped)."
       ],
       "dependencies": []
     },
@@ -1200,19 +1205,24 @@
       "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:34",
       "acceptance": [
-        "Implement set_model using shared canonical runtime with correlated responses and Pi provider/model fields",
-        "Test runtime replacement, unknown-model failure and process-level behavior; cancellation and broader Pi wire differential remain open"
+        "Implement set_model using the shared canonical model/runtime operation with correlated responses and Pi Model data",
+        "Test runtime replacement, exact-ID rejection and CLI process response fields",
+        "Remaining: active-run switching, per-model thinking behavior and pinned Pi process differential."
       ],
       "implementation": [
-        "src/PiSharp.Cli/Protocols/RpcMode.cs: idle-only set_model command returns lower-camel provider/id data",
-        "src/PiSharp.Cli/Program.cs: catalog validation, authenticated model resolution, runtime replacement and canonical session model-change recording"
+        "RpcModelCommandHandler validates an exact available provider/model and returns the shared Pi-shaped projected Model object; it currently rejects set_model while busy, unlike current Pi.",
+        "Program.cs resolves provider credentials and calls the shared runtime replacement operation, recording the selected model in the canonical session.",
+        "RpcModelProjector is shared with get_available_models, cycle_model and get_state."
       ],
       "evidence": [
-        "Compared the exact request fields, exact catalog-ID lookup, correlated failure, and provider/id success payload with current Pi main d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 in packages/coding-agent/src/modes/rpc/{rpc-types.ts,rpc-mode.ts,rpc-client.ts}.",
+        "Current Pi main 2b0a123de98318c2ff8069661721ce0c3794c34e rpc-mode.ts/rpc-types.ts performs exact provider/id lookup in the available snapshot, accepts the command during a run, calls AgentSession.setModel and returns the full Model.",
         "RpcModeTests.SetModelReplacesTheRuntimeForSubsequentRpcCommands verifies response fields, changed runtime state, endpoint and one model_change entry.",
         "RpcModelProcessTests.RpcModelAndThinkingCommandsSelectAndCycleTheRunningRuntime drives the CLI RPC process through successful model replacement and later cycle selection, exact catalog rejection and unchanged-state follow-up.",
         "dotnet format PiSharp.slnx --verify-no-changes --no-restore; dotnet build PiSharp.slnx --warnaserror; dotnet test PiSharp.slnx => format passed, 0 build warnings/errors, 533 passed, 0 failed, 0 skipped.",
-        "Exact commit 2683df75dbf4cac7e4b004e8d9546fbd3338093b passed Linux CI run 36193142003: format, warnings-as-errors build, and test suite."
+        "Exact commit 2683df75dbf4cac7e4b004e8d9546fbd3338093b passed Linux CI run 36193142003: format, warnings-as-errors build, and test suite.",
+        "Current Pi main 2b0a123de98318c2ff8069661721ce0c3794c34e rpc-mode.ts/rpc-types.ts return complete Model values for set_model/cycle_model/get_available_models; model-config.ts/provider-composer.ts and model-registry.test.ts establish the exposed fields and provider/model compatibility merge rules.",
+        "RpcModelProcessTests.ModelCommandsProjectPiModelMetadataAndApplySparseDefaultsInTheCliProcess exercises get_available_models, set_model, cycle_model and get_state in the CLI process. Rich/sparse output covers lower-camel Pi fields, model metadata, inputLimits, cost tiers, provider/model nested compat merging, unavailable-model rejection, and omission of secret headers and internal catalog fields.",
+        "Exact source head 49233922512294af3dd4a34381fb0d7e1e52e78d passed Linux CI run 36276515605: format passed, warnings-as-errors build passed with 0 warnings/errors, and 604 tests passed (0 failed, 0 skipped)."
       ],
       "dependencies": []
     },
@@ -1222,19 +1232,23 @@
       "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:34",
       "acceptance": [
-        "Implement cycle_model using the shared catalog/runtime and Pi response fields",
-        "Test wraparound, null for at most one model, process selection, failures and cancellation"
+        "Implement cycle_model using shared catalog/runtime and current Pi result fields",
+        "Test wraparound, null for at most one model, process selection and correlated responses",
+        "Remaining: active-run switching, scoped ordering/per-model thinking behavior and pinned Pi process differential."
       ],
       "implementation": [
-        "src/PiSharp.Cli/Protocols/RpcMode.cs: idle-only wraparound cycle over available provider/model pairs; returns null for zero/one available model",
-        "src/PiSharp.Cli/Program.cs: one resolved ModelDescriptor feeds canonical provider/client/agent replacement and session model change"
+        "RpcModelCommandHandler cycles the available provider/model sequence and returns null for a single choice; it currently rejects cycle_model while busy, unlike current Pi.",
+        "Program.cs resolves the next provider credentials and calls the shared runtime replacement operation, recording the selected model in the canonical session.",
+        "RpcModelProjector returns the full Pi Model inside {model,thinkingLevel,isScoped}."
       ],
       "evidence": [
-        "Compared null/result shapes and {model,thinkingLevel,isScoped} response with current Pi main d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 packages/coding-agent/src/modes/rpc/{rpc-types.ts,rpc-mode.ts,rpc-client.ts} and core/agent-session.ts.",
+        "Current Pi main 2b0a123de98318c2ff8069661721ce0c3794c34e rpc-mode.ts/rpc-types.ts returns null for no cycle result or {model,thinkingLevel,isScoped}; AgentSession.cycleModel can run during an active provider/tool loop.",
         "RpcModelProcessTests.RpcModelAndThinkingCommandsSelectAndCycleTheRunningRuntime verifies wraparound selection, response fields and following get_state model.",
         "RpcModeTests.CycleModelReturnsNullWhenOnlyOneModelIsAvailable verifies the null response without attempting runtime replacement.",
         "Exact commit 94805a8206306ae5aab166cbb523c8af786489b3 passed Linux CI run 36194265892: format, warnings-as-errors build, and test suite.",
-        "Still open: Pi per-model thinking defaults, model-change thinking event ordering, scoped catalog edge cases, cancellation and full wire differential."
+        "Current Pi main 2b0a123de98318c2ff8069661721ce0c3794c34e rpc-mode.ts/rpc-types.ts return complete Model values for set_model/cycle_model/get_available_models; model-config.ts/provider-composer.ts and model-registry.test.ts establish the exposed fields and provider/model compatibility merge rules.",
+        "RpcModelProcessTests.ModelCommandsProjectPiModelMetadataAndApplySparseDefaultsInTheCliProcess exercises get_available_models, set_model, cycle_model and get_state in the CLI process. Rich/sparse output covers lower-camel Pi fields, model metadata, inputLimits, cost tiers, provider/model nested compat merging, unavailable-model rejection, and omission of secret headers and internal catalog fields.",
+        "Exact source head 49233922512294af3dd4a34381fb0d7e1e52e78d passed Linux CI run 36276515605: format passed, warnings-as-errors build passed with 0 warnings/errors, and 604 tests passed (0 failed, 0 skipped)."
       ],
       "dependencies": []
     },
@@ -1244,15 +1258,19 @@
       "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:34",
       "acceptance": [
-        "Implement get_available_models using shared canonical runtime with correlated responses/event ordering",
-        "Test protocol through RPC process, including failures and cancellation",
-        "Remaining: Pi wire-compatible payloads, lifecycle/error semantics and pinned process differential."
+        "Implement get_available_models using the shared model catalog with correlated responses and Pi model fields",
+        "Test rich/sparse model output and unavailable-model filtering through the CLI RPC process",
+        "Remaining: busy-state behavior, catalog cancellation/failure differentials, and a pinned Pi process differential."
       ],
       "implementation": [
-        "src/PiSharp.Cli/Protocols/RpcMode.cs: partial get_available_models operation (PiSharp wire format)"
+        "RpcModelCommandHandler projects the available catalog through RpcModelProjector and filters unavailable models at the shared runtime boundary; it currently rejects the command while busy, unlike current Pi."
       ],
       "evidence": [
-        "tests/PiSharp.Tests/RpcModeTests.cs: local protocol/command fixtures (coverage varies by operation)"
+        "tests/PiSharp.Tests/RpcModeTests.cs: local protocol/command fixtures (coverage varies by operation)",
+        "Current Pi main 2b0a123de98318c2ff8069661721ce0c3794c34e rpc-mode.ts returns the available snapshot without an active-run restriction.",
+        "Current Pi main 2b0a123de98318c2ff8069661721ce0c3794c34e rpc-mode.ts/rpc-types.ts return complete Model values for set_model/cycle_model/get_available_models; model-config.ts/provider-composer.ts and model-registry.test.ts establish the exposed fields and provider/model compatibility merge rules.",
+        "RpcModelProcessTests.ModelCommandsProjectPiModelMetadataAndApplySparseDefaultsInTheCliProcess exercises get_available_models, set_model, cycle_model and get_state in the CLI process. Rich/sparse output covers lower-camel Pi fields, model metadata, inputLimits, cost tiers, provider/model nested compat merging, unavailable-model rejection, and omission of secret headers and internal catalog fields.",
+        "Exact source head 49233922512294af3dd4a34381fb0d7e1e52e78d passed Linux CI run 36276515605: format passed, warnings-as-errors build passed with 0 warnings/errors, and 604 tests passed (0 failed, 0 skipped)."
       ],
       "dependencies": []
     },
