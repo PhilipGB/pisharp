@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using Microsoft.Extensions.AI;
@@ -386,7 +387,8 @@ public sealed class CompactionTests
                 autoCompaction: new AutoCompactionPolicy(2700, 300));
             var events = new List<AgentLifecycleEvent>();
             await foreach (var item in run.RunEventsAsync("read both files")) events.Add(item);
-            Assert.Equal(2, client.Requests);
+            Assert.True(client.Requests == 2,
+                $"Expected two provider requests but saw {client.Requests}: {string.Join(" | ", client.RequestSnapshots)}");
             Assert.Equal(1, client.Summaries);
             Assert.True(client.ContinuationSawSummaryWithoutOrphanedResults);
             Assert.Single(events, item => item.Type == "context_compacted_in_flight");
@@ -783,7 +785,10 @@ public sealed class CompactionTests
 
     private sealed class ParallelToolBudgetClient : IChatClient
     {
-        public int Requests { get; private set; }
+        private readonly ConcurrentQueue<string> _requestSnapshots = new();
+        private int _requests;
+        public int Requests => Volatile.Read(ref _requests);
+        public IReadOnlyList<string> RequestSnapshots => _requestSnapshots.ToArray();
         public int Summaries { get; private set; }
         public bool ContinuationSawSummaryWithoutOrphanedResults { get; private set; }
         public bool RepeatRead { get; init; }
@@ -797,14 +802,16 @@ public sealed class CompactionTests
         public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
             ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
-            Requests++;
-            if (Requests == 1)
+            var request = Interlocked.Increment(ref _requests);
+            _requestSnapshots.Enqueue(string.Join("; ", messages.Select(message =>
+                $"{message.Role}[{string.Join(',', message.Contents.Select(content => content.GetType().Name))}] {message.Text[..Math.Min(message.Text.Length, 80)]}")));
+            if (request == 1)
                 yield return new ChatResponseUpdate(ChatRole.Assistant,
                 [
                     new FunctionCallContent("first", "read", new Dictionary<string, object?> { ["path"] = "first.txt" }),
                     new FunctionCallContent("second", "read", new Dictionary<string, object?> { ["path"] = "second.txt" })
                 ]);
-            else if (Requests == 2 && RepeatRead)
+            else if (request == 2 && RepeatRead)
             {
                 var snapshot = messages.ToArray();
                 SecondRequestSawSummaryWithoutOrphans =
