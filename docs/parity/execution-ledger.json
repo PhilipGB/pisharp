@@ -2788,14 +2788,16 @@
     {
       "id": "settings-transport",
       "title": "Setting: transport",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:64",
       "acceptance": [
-        "Support transport with upstream type/default and user/trusted-project precedence",
-        "Test malformed settings, trust boundaries, reload and startup behaviour"
+        "Determine provider protocol scope before implementing transport values; do not expose a no-op setting",
+        "If the Codex Responses protocol enters scope, match transport default, migration, precedence, runtime selection and fallback behavior"
       ],
       "implementation": [],
-      "evidence": [],
+      "evidence": [
+        "Pinned Pi source 2b0a123de98318c2ff8069661721ce0c3794c34e defines auto/sse/websocket/websocket-cached and migrates the legacy websockets boolean. settings-manager.ts forwards the value only into openai-codex-responses, whose adapter reuses session/account WebSockets, optionally sends cached continuation deltas, retries selected handshake/continuation errors, falls back to SSE before stream start, and uses websocketConnectTimeoutMs for the handshake. PiSharp's active factory resolves OpenAI Responses, OpenAI Chat Completions and Anthropic Messages, and has no openai-codex-responses adapter. Exposing these settings with current protocols would be a no-op; protocol scope remains unresolved."
+      ],
       "dependencies": []
     },
     {
@@ -2829,21 +2831,23 @@
         "UserSettings parses nonnegative numeric values and the disabled spelling, floors fractional values, applies the 300000 ms Pi default, and overlays trusted project settings over user settings. ProviderChatClientFactory maps the effective idle value to OpenAI NetworkTimeout and Anthropic Timeout and adds a resettable parsed-update streaming idle deadline; /settings edits the value and replaces the provider runtime for the next request."
       ],
       "evidence": [
-        "ProviderChatClientFactoryTests.ProviderStreamIdleSettingCancelsAStalledLoopbackStream exercises real OpenAI Responses and Anthropic streams; UserSettingsTests.ProviderRetrySettingsAreSeparateValidatedAndMergedByScope covers parsing, invalid values, fractional flooring and user/project precedence; UserSettingsWriterTests and TerminalPtyTests cover persistence and the picker. ProviderRequestTimeoutTests covers reset and caller cancellation, while ProviderTimeoutProcessTests proves a persisted setting stops a real CLI request. A paired process run from exact pinned Pi source and PiSharp used the same 300 ms request timeout and 1800 ms local response delay; both issued one request and timed out. Pi's dispatcher measures wire-level response headers/body bytes; PiSharp's outer idle timer measures parsed updates, so partial SSE bytes without an update can time out earlier. Local format verification passed, warnings-as-errors build passed with 0 warnings/errors, and the full suite passed 680/680 with 0 skipped."
+        "ProviderChatClientFactoryTests.ProviderStreamIdleSettingCancelsAStalledLoopbackStream exercises real OpenAI Responses and Anthropic streams; UserSettingsTests.ProviderRetrySettingsAreSeparateValidatedAndMergedByScope covers parsing, invalid values, fractional flooring and user/project precedence; UserSettingsWriterTests and TerminalPtyTests cover persistence and the picker. ProviderRequestTimeoutTests covers reset and caller cancellation, while ProviderTimeoutProcessTests proves a persisted setting stops a real CLI request. A paired process run from exact pinned Pi source and PiSharp used the same 300 ms request timeout and 1800 ms local response delay; both issued one request and timed out. Pi's dispatcher measures wire-level response headers/body bytes; PiSharp's outer idle timer measures parsed updates, so partial SSE bytes without an update can time out earlier. Exact-head Linux CI for source 0b2c6e19b918ad0b72953f215f542a7a73ba9598 passed restore, format, warnings-as-errors build and 680/680 tests (0 skipped): https://github.com/PhilipGB/pisharp/actions/runs/36353845534."
       ],
       "dependencies": []
     },
     {
       "id": "settings-websocketconnecttimeoutms",
       "title": "Setting: websocketConnectTimeoutMs",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:64",
       "acceptance": [
-        "Support websocketConnectTimeoutMs with upstream type/default and user/trusted-project precedence",
-        "Test malformed settings, trust boundaries, reload and startup behaviour"
+        "Keep the handshake timeout tied to a supported WebSocket provider path",
+        "If the Codex Responses protocol enters scope, match Pi's 15000 ms default, zero-disabled behavior, precedence and handshake-only timing"
       ],
       "implementation": [],
-      "evidence": [],
+      "evidence": [
+        "Pinned Pi source 2b0a123de98318c2ff8069661721ce0c3794c34e defaults this setting to 15000 ms at the adapter boundary and forwards it only to openai-codex-responses WebSocket connection acquisition; zero disables the handshake timeout. PiSharp currently has no corresponding protocol, so a standalone setting would have no runtime effect."
+      ],
       "dependencies": []
     },
     {
@@ -2911,7 +2915,7 @@
         "ProviderRetrySettings parses a nonnegative provider timeout independently from provider retry count and merges it across user/trusted-project scopes. ProviderChatClientFactory passes the effective timeout to OpenAI NetworkTimeout and Anthropic Timeout; ProviderRequestTimeoutChatClient enforces total response and streaming deadlines. CLI-created agents disable the separate MAF retry loop so provider timeouts do not trigger requests outside the configured SDK retry count. /settings edits the user value and rebuilds the provider runtime for the next request."
       ],
       "evidence": [
-        "ProviderChatClientFactoryTests.ProviderTimeoutSettingCancelsAStalledLoopbackResponse verifies both real SDK adapters against delayed local HTTP servers; ProviderTimeoutProcessTests.SavedProviderTimeoutStopsARealCliRequest verifies persisted user settings and exactly one provider attempt in a real CLI process. Pi pinned source 2b0a123de98318c2ff8069661721ce0c3794c34e and PiSharp used the same local OpenAI Responses endpoint, 300 ms timeout, 5000 ms idle timeout and 1800 ms response delay: both issued one request and exited with timeout after 313 ms and 277 ms from request acceptance. UserSettingsTests and UserSettingsWriterTests cover malformed values, precedence and persistence; TerminalPtyTests covers editing through /settings. The outer streaming idle deadline observes parsed updates rather than Pi's wire bytes. Local format verification passed, warnings-as-errors build passed with 0 warnings/errors, and the full suite passed 680/680 with 0 skipped."
+        "ProviderChatClientFactoryTests.ProviderTimeoutSettingCancelsAStalledLoopbackResponse verifies both real SDK adapters against delayed local HTTP servers; ProviderTimeoutProcessTests.SavedProviderTimeoutStopsARealCliRequest verifies persisted user settings and exactly one provider attempt in a real CLI process. Pi pinned source 2b0a123de98318c2ff8069661721ce0c3794c34e and PiSharp used the same local OpenAI Responses endpoint, 300 ms timeout, 5000 ms idle timeout and 1800 ms response delay: both issued one request and exited with timeout after 313 ms and 277 ms from request acceptance. UserSettingsTests and UserSettingsWriterTests cover malformed values, precedence and persistence; TerminalPtyTests covers editing through /settings. The outer streaming idle deadline observes parsed updates rather than Pi's wire bytes. Exact-head Linux CI for source 0b2c6e19b918ad0b72953f215f542a7a73ba9598 passed restore, format, warnings-as-errors build and 680/680 tests (0 skipped): https://github.com/PhilipGB/pisharp/actions/runs/36353845534."
       ],
       "dependencies": []
     },
@@ -2929,7 +2933,7 @@
       ],
       "evidence": [
         "ProviderChatClientFactoryTests use local HTTP 5xx responses to verify one request at the default and exactly one retry when configured to one for both adapters; ProviderTimeoutProcessTests accepts every CLI request and verifies the configured default zero makes one attempt; UserSettingsTests and UserSettingsWriterTests cover scope, validation and persistence.",
-        "Source 718efcd2e2b046cb35b0cd6a40f1bddd74575018 passed Linux CI run 36344830971: format, warnings-as-errors build (0 warnings/errors), 669 tests (0 failed, 0 skipped). Provider-specific Pi request differentials and broader retry settings remain open. The current local format verification, warnings-as-errors build (0 warnings/errors), and full suite (680/680, 0 skipped) also pass."
+        "Source 718efcd2e2b046cb35b0cd6a40f1bddd74575018 passed Linux CI run 36344830971: format, warnings-as-errors build (0 warnings/errors), 669 tests (0 failed, 0 skipped). Provider-specific Pi request differentials and broader retry settings remain open. Follow-up source 0b2c6e19b918ad0b72953f215f542a7a73ba9598 passed exact-head Linux CI run 36353845534: format, warnings-as-errors build (0 warnings/errors), and 680 tests (0 failed, 0 skipped)."
       ],
       "dependencies": []
     },
