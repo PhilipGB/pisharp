@@ -21,7 +21,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
     Func<string, CancellationToken, Task<string>>? setThinkingLevelDuringRun = null,
     Func<bool, CancellationToken, Task>? persistRetryEnabled = null,
     Func<string?, CancellationToken, Task<bool>>? newSession = null,
-    Func<string, CancellationToken, Task<string?>>? forkSession = null,
+    Func<string, ConversationSession, string, CancellationToken, Task<string?>>? forkSession = null,
     Func<ConversationSession, string?, CancellationToken, Task<bool>>? cloneSession = null,
     Func<string, CancellationToken, Task<bool>>? switchSession = null,
     Func<PiSharp.Runtime.Resources.ResourceCatalog?>? getCurrentResources = null,
@@ -314,9 +314,10 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
 
     private async Task<string?> StartForkSessionAsync(string entryId, CancellationToken cancellationToken)
     {
-        _ = CurrentRun.Conversation.ForkAtUser(entryId);
+        var current = CurrentRun;
+        var (branchSnapshot, selectedText) = current.Conversation.ForkAtUser(entryId, current.SessionFile);
         await CancelActiveRunAsync();
-        return await forkSession!(entryId, cancellationToken);
+        return await forkSession!(entryId, branchSnapshot, selectedText, cancellationToken);
     }
 
     private async Task<bool> StartCloneSessionAsync(CancellationToken cancellationToken)

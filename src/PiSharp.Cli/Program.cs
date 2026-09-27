@@ -834,10 +834,11 @@ if (cli.Mode == "rpc")
         return false;
     }
 
-    async Task<string?> ForkRpcSessionAsync(string entryId, CancellationToken cancellationToken)
+    async Task<string?> ForkRpcSessionAsync(string entryId, ConversationSession branchSnapshot, string prompt,
+        CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        var forked = await sessionController.ForkAtUserAsync(conversation, sessionPath, entryId);
+        var forked = await sessionController.ForkPreparedAsync(conversation, sessionPath, entryId, branchSnapshot, prompt);
         AdoptRpcSession(forked);
         return forked.Prompt;
     }

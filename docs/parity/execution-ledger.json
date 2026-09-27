@@ -1562,7 +1562,8 @@
         "RpcSessionProcessTests covers new_session, switch_session, fork and clone through the actual CLI RPC process, including parent links and project/runtime rebinding; RpcModeTests covers active-run replacement settlement.",
         "Exact integrated source head 2f0250ee91a500cdb6b08dce2e940b849089ba26 passed Linux CI run 36217090057: format verification, warnings-as-errors build with 0 warnings/errors, and 574 tests (0 failed, 0 skipped).",
         "Current Pi 2b0a123de98318c2ff8069661721ce0c3794c34e agent-session-runtime.ts constructs SessionManager.open and checks its stored CWD before teardownCurrent; SessionManager._setSessionFile rejects a malformed nonempty session. The runtime replacement tests cover settling an active response before a valid replacement.",
-        "RpcSessionReplacementProcessTests.InvalidSwitchTargetDoesNotCancelAnActiveRun blocks a local OpenAI-compatible provider response, switches to malformed Pi JSONL, observes the correlated failure while the prompt remains active, then verifies normal turn_end, agent_end and agent_settled. Exact commit f509750da57bece3e64a3bcbb905e3852782afa4 passed Linux CI run 36289250296: format verification, warnings-as-errors build with 0 warnings/errors, and all 617 tests (0 failed, 0 skipped). RpcMissingSessionTargetProcessTests verifies active abort settlement before the response, lazy target creation, use of the replacement run, and persisted Pi JSONL messages. PiJsonlSessionFileStore tests verify atomic JSONL writes reject existing and externally changed targets. Exact source head bfb37df4d9d75a7462df5c8884ee172467b3e5d2 passed Linux CI run 36290986668: format, warnings-as-errors build with 0 warnings/errors, and 621 tests (0 failed, 0 skipped). A Pi process differential remains open."
+        "RpcSessionReplacementProcessTests.InvalidSwitchTargetDoesNotCancelAnActiveRun blocks a local OpenAI-compatible provider response, switches to malformed Pi JSONL, observes the correlated failure while the prompt remains active, then verifies normal turn_end, agent_end and agent_settled. Exact commit f509750da57bece3e64a3bcbb905e3852782afa4 passed Linux CI run 36289250296: format verification, warnings-as-errors build with 0 warnings/errors, and all 617 tests (0 failed, 0 skipped). RpcMissingSessionTargetProcessTests verifies active abort settlement before the response, lazy target creation, use of the replacement run, and persisted Pi JSONL messages. PiJsonlSessionFileStore tests verify atomic JSONL writes reject existing and externally changed targets. Exact source head bfb37df4d9d75a7462df5c8884ee172467b3e5d2 passed Linux CI run 36290986668: format, warnings-as-errors build with 0 warnings/errors, and 621 tests (0 failed, 0 skipped). A Pi process differential remains open.",
+        "Later integrated pushed source e955daffa03e768115af29ae1c90fa7c06070373 passed Linux CI run 36292314859: format, warnings-as-errors build with 0 warnings/errors, and 623/623 tests."
       ],
       "dependencies": []
     },
@@ -1574,16 +1575,18 @@
       "acceptance": [
         "Implement fork using shared canonical runtime with correlated responses/event ordering",
         "Test protocol through RPC process, including failures and cancellation",
-        "Remaining: active-tool interruption, persistence failures before cancellation and current-Pi process differential across session replacement paths."
+        "Remaining: persistence failures before cancellation and current-Pi process differential across session replacement paths."
       ],
       "implementation": [
-        "RpcSessionCommandHandler dispatches fork through the shared session branch operation and returns selected prompt text plus cancelled state."
+        "RpcSessionCommandHandler dispatches fork through the shared session branch operation and returns selected prompt text plus cancelled state.",
+        "RpcMode captures the selected fork branch and prompt before cancelling active work; the application opens and adopts the replacement from that snapshot after settlement."
       ],
       "evidence": [
         "RpcSessionProcessTests covers new_session, switch_session, fork and clone through the actual CLI RPC process, including parent links and project/runtime rebinding; RpcModeTests covers active-run replacement settlement.",
         "Exact integrated source head 2f0250ee91a500cdb6b08dce2e940b849089ba26 passed Linux CI run 36217090057: format verification, warnings-as-errors build with 0 warnings/errors, and 574 tests (0 failed, 0 skipped).",
         "Current Pi 2b0a123de98318c2ff8069661721ce0c3794c34e agent-session-runtime.ts validates fork entries and creates the replacement branch before teardownCurrent; regression test 8724-in-memory-fork-active-tool verifies an aborted active tool turn is not appended to the replacement session.",
-        "RpcSessionReplacementProcessTests.ForkDuringBlockedRunSettlesBeforeTheResponseAndOmitsTheAbortedTurn blocks an OpenAI-compatible provider stream, then verifies turn_end < agent_end < agent_settled < fork response and that get_messages on the replacement branch is empty. The first fixture commit d8ec4c8d failed 1/618 because the test queried before the RPC task returned after agent_settled; bfb37df4 adds an idle-state poll and exact-head Linux CI run 36290986668 passed 621/621. This fixture covers provider streaming, not an active tool. Pi process differential and active-tool coverage remain open."
+        "RpcSessionReplacementProcessTests.ForkDuringBlockedRunSettlesBeforeTheResponseAndOmitsTheAbortedTurn blocks an OpenAI-compatible provider stream, then verifies turn_end < agent_end < agent_settled < fork response and that get_messages on the replacement branch is empty. The first fixture commit d8ec4c8d failed 1/618 because the test queried before the RPC task returned after agent_settled; bfb37df4 adds an idle-state poll and exact-head Linux CI run 36290986668 passed 621/621. This fixture covers provider streaming, not an active tool. Pi process differential and active-tool coverage remain open.",
+        "RpcActiveToolForkProcessTests blocks a real Bash tool in the CLI RPC process, forks during execution, confirms the aborted assistant in agent_end followed by agent_settled and the correlated response, and verifies the replacement transcript is empty. Focused test passes 1/1 locally; exact-head CI for this slice is pending. Current Pi regression 8724-in-memory-fork-active-tool was inspected; no Pi process differential has been run."
       ],
       "dependencies": []
     },
@@ -1595,7 +1598,7 @@
       "acceptance": [
         "Implement clone using shared canonical runtime with correlated responses/event ordering",
         "Test protocol through RPC process, including failures and cancellation",
-        "Remaining: active-tool fork evidence, broader event-order/malformed-input cases and current-Pi process differential across session replacement paths."
+        "Remaining: exact-head CI for the active-tool fork snapshot slice, broader event-order/malformed-input cases and current-Pi process differential across session replacement paths."
       ],
       "implementation": [
         "RpcMode captures a clone branch before cancellation. ConversationSession.ForkForSessionReplacement omits unfinished run checkpoints; InteractiveSessionController validates the source and stages the child file before cancelling, then opens the replacement run after settlement."
@@ -1604,7 +1607,7 @@
         "RpcSessionProcessTests covers new_session, switch_session, fork and clone through the actual CLI RPC process, including parent links and project/runtime rebinding; RpcModeTests covers active-run replacement settlement.",
         "Exact integrated source head 2f0250ee91a500cdb6b08dce2e940b849089ba26 passed Linux CI run 36217090057: format verification, warnings-as-errors build with 0 warnings/errors, and 574 tests (0 failed, 0 skipped).",
         "Current Pi 2b0a123de98318c2ff8069661721ce0c3794c34e rpc-mode.ts routes clone through fork(currentLeaf, { position: \"at\" }); AgentSessionRuntime.fork creates the replacement branch before teardownCurrent cancels the active run. PiSharp now follows this ordering at the application boundary; no Pi process differential has been run.",
-        "RpcActiveCloneProcessTests verifies the accepted active prompt is copied without the aborted assistant or recovery notice and checks turn_end < agent_end < agent_settled < response. RpcClonePreflightProcessTests verifies a missing source path returns the Pi clone error while the active prompt continues and creates no child. Focused tests pass 2/2; local format/build are clean and the latest full run passed 623/623. One earlier full run had a single CompactionTests.MultiCycleParallelToolGraphSplitsOnlyAfterCompletedBatches failure (expected 3 requests, actual 4); focused rerun and subsequent full run passed. Exact-head CI is pending."
+        "RpcActiveCloneProcessTests verifies the accepted active prompt is copied without the aborted assistant or recovery notice and checks turn_end < agent_end < agent_settled < response. RpcClonePreflightProcessTests verifies a missing source path returns the Pi clone error while the active prompt continues and creates no child. Focused tests pass 2/2; local format/build are clean and the latest full run passed 623/623. One earlier full run had a single CompactionTests.MultiCycleParallelToolGraphSplitsOnlyAfterCompletedBatches failure (expected 3 requests, actual 4); focused rerun and subsequent full run passed. The pushed source including this clone slice, e955daffa03e768115af29ae1c90fa7c06070373, passed Linux CI run 36292314859: format, warnings-as-errors build with 0 warnings/errors, and 623/623 tests. The later active-tool fork snapshot edit remains unvalidated by exact-head CI."
       ],
       "dependencies": []
     },

@@ -32,6 +32,10 @@ internal sealed class InteractiveSessionController(
         return await CreateBranchAsync(source, sourcePath, forked, selected.Id, prompt);
     }
 
+    public Task<SessionBranchResult> ForkPreparedAsync(ConversationSession source, string? sourcePath,
+        string selectedEntryId, ConversationSession branchSnapshot, string prompt) =>
+        CreateBranchAsync(source, sourcePath, branchSnapshot, selectedEntryId, prompt);
+
     public async Task<SessionBranchResult> CloneAsync(ConversationSession source, string? sourcePath,
         ConversationSession? branchSnapshot = null)
     {
