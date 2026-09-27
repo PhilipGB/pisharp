@@ -175,6 +175,36 @@ public sealed class ConversationSessionTests
     }
 
     [Fact]
+    public async Task ConcurrentSessionLeasesInOneProcessWaitForTheCurrentWriter()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-local-lease-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        SessionFileLease? first = null;
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+        try
+        {
+            var sessionPath = Path.Combine(cwd, "session.json");
+            first = await SessionFileLease.AcquireAsync(sessionPath, timeout.Token);
+            var secondPending = SessionFileLease.AcquireAsync(sessionPath, timeout.Token);
+            await Task.Delay(50, timeout.Token);
+            var acquiredBeforeRelease = secondPending.IsCompleted;
+            if (acquiredBeforeRelease) await (await secondPending).DisposeAsync();
+            Assert.False(acquiredBeforeRelease, "A second writer in this process acquired the held session lease.");
+
+            var releasing = first;
+            first = null;
+            await releasing.DisposeAsync();
+            var second = await secondPending.WaitAsync(timeout.Token);
+            await second.DisposeAsync();
+        }
+        finally
+        {
+            if (first is not null) await first.DisposeAsync();
+            Directory.Delete(cwd, recursive: true);
+        }
+    }
+
+    [Fact]
     public void VersionOneTextIsMigratedButAmbiguousToolTurnsFailClosed()
     {
         var original = new ConversationSession(Path.GetTempPath(), "fixture", null);

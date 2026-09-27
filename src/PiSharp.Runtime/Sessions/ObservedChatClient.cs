@@ -223,7 +223,7 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
     private async Task<IReadOnlyList<ChatMessage>> PrepareRequestAsync(IReadOnlyList<ChatMessage> messages, bool force, CancellationToken cancellationToken)
     {
         var projected = projectContext is null ? messages : await projectContext(messages, force, cancellationToken);
-        return FilterImages(AttachReadImages(projected)).ToArray();
+        return FilterImages(AttachReadImages(AddMissingFunctionResults(projected))).ToArray();
     }
 
     private async Task<IReadOnlyList<ChatMessage>?> RecoverOverflowAsync(IReadOnlyList<ChatMessage> original,
@@ -233,7 +233,45 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
         var compacted = await projectContext(original, true, cancellationToken);
         if (ReferenceEquals(compacted, original)) return null;
         publish(new("model_context_overflow_recovery", Text: "Retrying the model request once with a shortened context."));
-        return FilterImages(AttachReadImages(compacted)).ToArray();
+        return FilterImages(AttachReadImages(AddMissingFunctionResults(compacted))).ToArray();
+    }
+
+    // Keep uncertain tool outcomes out of canonical history, but close incomplete calls in the
+    // provider-only projection so adapters receive a valid conversation after a process restart.
+    private static IReadOnlyList<ChatMessage> AddMissingFunctionResults(IReadOnlyList<ChatMessage> messages)
+    {
+        var projected = new List<ChatMessage>(messages.Count + 1);
+        var pendingCallIds = new List<string>();
+        var pendingCallSet = new HashSet<string>(StringComparer.Ordinal);
+
+        foreach (var message in messages)
+        {
+            if (message.Role != ChatRole.Tool && pendingCallIds.Count > 0)
+                AppendMissingResults();
+
+            projected.Add(message);
+            foreach (var content in message.Contents)
+            {
+                if (content is FunctionCallContent call && !string.IsNullOrEmpty(call.CallId) && pendingCallSet.Add(call.CallId))
+                    pendingCallIds.Add(call.CallId);
+                else if (content is FunctionResultContent result && pendingCallSet.Remove(result.CallId))
+                    pendingCallIds.Remove(result.CallId);
+            }
+        }
+
+        if (pendingCallIds.Count > 0)
+            AppendMissingResults();
+
+        return projected.Count == messages.Count ? messages : projected;
+
+        void AppendMissingResults()
+        {
+            foreach (var callId in pendingCallIds)
+                projected.Add(new ChatMessage(ChatRole.Tool,
+                    [new FunctionResultContent(callId, "No result provided")]));
+            pendingCallIds.Clear();
+            pendingCallSet.Clear();
+        }
     }
 
     private ChatOptions? ApplyCurrentReasoning(ChatOptions? options)

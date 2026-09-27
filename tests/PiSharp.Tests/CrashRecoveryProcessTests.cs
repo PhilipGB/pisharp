@@ -145,6 +145,7 @@ public sealed class CrashRecoveryProcessTests
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
         Process? interrupted = null;
         Process? recovered = null;
+        var continuationRequest = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
         var crashCommand = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
         var server = Task.Run(async () =>
         {
@@ -166,6 +167,8 @@ public sealed class CrashRecoveryProcessTests
             }, "tool_calls");
 
             var second = await listener.GetContextAsync().WaitAsync(timeout.Token);
+            using (var reader = new StreamReader(second.Request.InputStream))
+                continuationRequest.TrySetResult(await reader.ReadToEndAsync(timeout.Token));
             await WriteSseResponseAsync(second, "crash-window-recovered", new { role = "assistant", content = "resumed safely" }, "stop");
         }, timeout.Token);
 
@@ -223,6 +226,22 @@ public sealed class CrashRecoveryProcessTests
 
             await WriteRpcCommandAsync(recovered, new { id = "after-crash", type = "prompt", message = "continue" }, timeout.Token);
             await ReadRpcUntilAsync(recovered, lines, record => record.GetProperty("type").GetString() == "agent_settled", timeout.Token);
+            using (var request = JsonDocument.Parse(await continuationRequest.Task.WaitAsync(timeout.Token)))
+            {
+                var messages = request.RootElement.GetProperty("messages").EnumerateArray().ToArray();
+                var assistantIndex = Array.FindIndex(messages, message => message.GetProperty("role").GetString() == "assistant" &&
+                    message.TryGetProperty("tool_calls", out var calls) && calls.EnumerateArray().Any(call =>
+                        call.GetProperty("id").GetString() == "call-crash-window"));
+                Assert.True(assistantIndex >= 0, "The recovered provider request omitted the persisted assistant tool call.");
+                Assert.True(assistantIndex + 1 < messages.Length, "The recovered provider request ended after an incomplete tool call.");
+                var toolResult = messages[assistantIndex + 1];
+                Assert.Equal("tool", toolResult.GetProperty("role").GetString());
+                Assert.Equal("call-crash-window", toolResult.GetProperty("tool_call_id").GetString());
+                Assert.Contains("No result provided", toolResult.GetProperty("content").GetString(), StringComparison.Ordinal);
+                Assert.Contains(messages, message => message.GetProperty("role").GetString() == "user" &&
+                    message.TryGetProperty("content", out var content) && content.GetString()?.Contains(
+                        "Outcome UNKNOWN for bash", StringComparison.Ordinal) == true);
+            }
             var idle = false;
             for (var attempt = 0; attempt < 100 && !idle; attempt++)
             {
@@ -234,9 +253,9 @@ public sealed class CrashRecoveryProcessTests
             }
             Assert.True(idle);
             await WriteRpcCommandAsync(recovered, new { id = "recovered-messages", type = "get_messages" }, timeout.Token);
-            using var messages = await ReadRpcResponseAsync(recovered, lines, "recovered-messages", timeout.Token);
+            using var recoveredMessages = await ReadRpcResponseAsync(recovered, lines, "recovered-messages", timeout.Token);
             var messageTexts = new List<string>();
-            foreach (var message in messages.RootElement.GetProperty("data").GetProperty("messages").EnumerateArray())
+            foreach (var message in recoveredMessages.RootElement.GetProperty("data").GetProperty("messages").EnumerateArray())
             {
                 if (!message.TryGetProperty("content", out var content)) continue;
                 if (content.ValueKind == JsonValueKind.String) messageTexts.Add(content.GetString() ?? "");
@@ -245,6 +264,9 @@ public sealed class CrashRecoveryProcessTests
                         if (part.TryGetProperty("text", out var text)) messageTexts.Add(text.GetString() ?? "");
             }
             Assert.Contains(messageTexts, text => text.Contains("Outcome UNKNOWN for bash", StringComparison.Ordinal));
+            Assert.DoesNotContain(messageTexts, text => text.Contains("No result provided", StringComparison.Ordinal));
+            var recoveredSession = ConversationSession.Parse(await File.ReadAllTextAsync(sessionPath, timeout.Token));
+            Assert.DoesNotContain(recoveredSession.Tree.ActivePath(), node => node.Type == "tool_outcome");
 
             recovered.StandardInput.Close();
             await recovered.WaitForExitAsync(timeout.Token);
@@ -275,7 +297,7 @@ public sealed class CrashRecoveryProcessTests
     [Fact]
     public async Task ConcurrentProcessSaveWaitsForTheSessionLeaseAndPersistsTheToolOutcome()
     {
-        if (!OperatingSystem.IsLinux()) return;
+        if (!OperatingSystem.IsLinux() && !OperatingSystem.IsMacOS()) return;
         var root = Path.Combine(Path.GetTempPath(), "pisharp-session-lease-" + Guid.NewGuid().ToString("N"));
         var agentDirectory = Path.Combine(root, "agent");
         Directory.CreateDirectory(agentDirectory);
@@ -333,8 +355,10 @@ public sealed class CrashRecoveryProcessTests
             var output = process.StandardOutput.ReadToEndAsync();
             var error = process.StandardError.ReadToEndAsync();
             await ProcessTestHelpers.WaitForFileAsync(startedPath, timeout.Token);
-            var lease = new FileStream(sessionPath + ".lock", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite);
-            lease.Lock(0, 1);
+            var macOs = OperatingSystem.IsMacOS();
+            var lease = new FileStream(sessionPath + ".lock", FileMode.OpenOrCreate, FileAccess.ReadWrite,
+                macOs ? FileShare.None : FileShare.ReadWrite);
+            if (!macOs) lease.Lock(0, 1);
             try
             {
                 var inProgress = ConversationSession.Parse(await File.ReadAllTextAsync(sessionPath, timeout.Token));
@@ -349,7 +373,7 @@ public sealed class CrashRecoveryProcessTests
             }
             finally
             {
-                lease.Unlock(0, 1);
+                if (!macOs) lease.Unlock(0, 1);
                 await lease.DisposeAsync();
             }
 

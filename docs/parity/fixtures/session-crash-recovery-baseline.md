@@ -1,0 +1,16 @@
+# Session crash recovery and writer-lock differential
+
+Reference: installed Pi 0.87.1 and current Pi `main` at `2b0a123de98318c2ff8069661721ce0c3794c34e`. The paired process run is recorded in `/tmp/pi-session-recovery-diff-0a3h6tf8`; each CLI received the same OpenAI-compatible tool call, performed one append-only side effect, and was killed immediately after the side effect and before a tool result could be persisted. Both processes then reopened the same session and sent a continuation request through the local SSE fixture.
+
+| Observation | Pi | PiSharp |
+|---|---|---|
+| Persisted at crash | User message and assistant `toolUse` call; no tool result | User and assistant call plus durable `tool_intent`; no `tool_outcome` |
+| Startup recovery | Does not replay the tool; exposes the unfinished call | Appends `run_recovered` and a user warning that the Bash outcome is unknown; does not replay the tool |
+| Continuation request | `system, user, assistant(tool call), tool("No result provided"), user` | Same valid tool-result projection, followed by the recovery warning and new user prompt |
+| Side effect and process outcome | File contains exactly `x`; restarted CLI exits 0 | File contains exactly `x`; restarted CLI exits 0 |
+
+The request comparison exposed a provider-history gap: Pi inserts a synthetic tool result for an orphaned call, while PiSharp previously sent the recovery user message directly after the call. `ObservedChatClient` now fills missing results only in its provider-boundary projection, including the context-overflow retry path. The synthetic result is absent from RPC `get_messages` and the durable session; the recovery warning remains visible. This matches Pi's request shape while retaining PiSharp's stronger durable uncertainty warning and no-replay behavior. See Pi's pinned [session manager](https://github.com/earendil-works/pi/blob/2b0a123de98318c2ff8069661721ce0c3794c34e/packages/coding-agent/src/core/session-manager.ts) and [message transformer](https://github.com/earendil-works/pi/blob/2b0a123de98318c2ff8069661721ce0c3794c34e/packages/ai/src/api/transform-messages.ts).
+
+The concurrency audit found that the POSIX byte-range lock serialized separate processes but not two `SessionFileLease` acquisitions inside one Linux process. A fail-first unit test reproduced the race. PiSharp now combines a bounded, cancellation-aware per-path process semaphore with its existing OS-level lock and store hash fencing. The cross-process lock-wait fixture and new same-process lease fixture both pass. Current Pi's session manager appends JSONL rows without a sibling lock; PiSharp deliberately keeps stale-write protection.
+
+On macOS, [.NET documents `FileStream.Lock` as unsupported](https://learn.microsoft.com/en-us/dotnet/api/system.io.filestream.lock?view=net-10.0). PiSharp's macOS path instead uses `FileShare.None`'s exclusive `flock`, then explicitly verifies native lock support so an unsupported filesystem fails closed; the [.NET runtime implementation](https://github.com/dotnet/runtime/blob/main/src/libraries/System.Private.CoreLib/src/Microsoft/Win32/SafeHandles/SafeFileHandle.Unix.cs) otherwise ignores unsupported-lock errors when opening with `FileShare.None`. The cross-process fixture is enabled for Linux and macOS, but this run executed on Linux; the macOS path still needs a native macOS run.
