@@ -810,6 +810,13 @@ async Task<bool> SwitchProjectSessionAsync(string sessionReference, Cancellation
     return false;
 }
 
+Task ValidateRpcSessionSwitchAsync(string sessionReference, CancellationToken cancellationToken)
+{
+    cancellationToken.ThrowIfCancellationRequested();
+    projectSessionRuntimeFactory.ValidateExistingSwitchTarget(sessionReference, currentDirectory);
+    return Task.CompletedTask;
+}
+
 if (cli.Mode == "rpc")
 {
     void AdoptRpcSession(SessionBranchResult replacement)
@@ -858,7 +865,8 @@ if (cli.Mode == "rpc")
         getModelSnapshot: () => RpcModelProjector.Project(selection),
         persistAutoCompactionEnabled: rpcUserSettings.SetAutoCompactionEnabledAsync,
         projectModel: model => RpcModelProjector.Project(model,
-            model.Provider is { } providerId ? modelRuntime.GetProvider(providerId) : null)).ServeAsync();
+            model.Provider is { } providerId ? modelRuntime.GetProvider(providerId) : null),
+        validateSwitchSession: ValidateRpcSessionSwitchAsync).ServeAsync();
     return;
 }
 if (cli.Mode == "json")

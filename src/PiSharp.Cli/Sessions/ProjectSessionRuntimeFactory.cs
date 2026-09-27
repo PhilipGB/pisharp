@@ -12,6 +12,13 @@ internal sealed class ProjectSessionRuntimeFactory(
     ProjectTrust trustStore,
     ProviderModelRuntime modelRuntime)
 {
+    public void ValidateExistingSwitchTarget(string sessionReference, string invocationDirectory)
+    {
+        var path = Path.GetFullPath(sessionReference, invocationDirectory);
+        if (File.Exists(path))
+            _ = PiSessionStartupTarget.ReadWorkingDirectory(path, invocationDirectory);
+    }
+
     public async Task<ProjectSessionRuntime> OpenAsync(string sessionPath, string invocationDirectory,
         ModelSelection currentSelection, string currentThinking, bool keepSourceSessionDirectory = false,
         CancellationToken cancellationToken = default)

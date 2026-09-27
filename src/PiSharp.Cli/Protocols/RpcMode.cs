@@ -29,7 +29,8 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
     Func<bool, PromptDeliveryMode, CancellationToken, Task>? persistQueueMode = null,
     Func<JsonElement?>? getModelSnapshot = null,
     Func<bool, CancellationToken, Task>? persistAutoCompactionEnabled = null,
-    Func<ModelDescriptor, JsonElement>? projectModel = null)
+    Func<ModelDescriptor, JsonElement>? projectModel = null,
+    Func<string, CancellationToken, Task>? validateSwitchSession = null)
 {
     private readonly JsonLineWriter _writer = new(output);
     private RpcEventWriter? _events;
@@ -325,6 +326,8 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
 
     private async Task<bool> StartSwitchSessionAsync(string sessionPath, CancellationToken cancellationToken)
     {
+        if (validateSwitchSession is not null)
+            await validateSwitchSession(sessionPath, cancellationToken);
         await CancelActiveRunAsync();
         return await switchSession!(sessionPath, cancellationToken);
     }
