@@ -221,6 +221,7 @@ public sealed class ConversationSession
         var path = Tree.ActivePath();
         var compactAt = path.ToList().FindLastIndex(node => node.Type == "compaction");
         var from = 0;
+        var projectedNodes = path;
         var context = new List<ChatMessage>();
         if (compactAt >= 0)
         {
@@ -232,14 +233,15 @@ public sealed class ConversationSession
                 throw new InvalidDataException("Invalid compaction boundary.");
             if (PiJsonlSessionInterchange.CompactionSystemMessage(path[compactAt]) is { } systemMessage)
                 context.Add(systemMessage);
-            context.Add(new ChatMessage(ChatRole.User,
-                "[Summary of earlier conversation; original turns remain in session history.]\n" + compact.GetProperty("summary").GetString()));
+            context.Add(CompactionSummaryMessage(compact.GetProperty("summary").GetString() ?? ""));
+            projectedNodes = path.Skip(from).Where((node, offset) => from + offset >= compactAt ||
+                ContextMessageForNode(node)?.Role != ChatRole.System).ToList();
         }
         var edits = new Dictionary<string, JsonElement>(StringComparer.Ordinal);
-        foreach (var node in path.Skip(from))
+        foreach (var node in projectedNodes)
             if (PiJsonlSessionInterchange.TryGetContextEdit(node, out var targetId, out var replacement))
                 edits[targetId] = replacement;
-        foreach (var node in path.Skip(from))
+        foreach (var node in projectedNodes)
         {
             var message = ContextMessageForNode(node);
             if (message is null) continue;
@@ -249,6 +251,10 @@ public sealed class ConversationSession
         }
         return context;
     }
+
+    internal static ChatMessage CompactionSummaryMessage(string summary) => new(ChatRole.User,
+        "The conversation history before this point was compacted into the following summary:\n\n<summary>\n" +
+        summary + "\n</summary>");
 
     /// <summary>Keep the latest whole user turn; never split a tool call/result group.</summary>
     public CompactionPlan? PrepareCompaction(int? keepRecentTokens = null)

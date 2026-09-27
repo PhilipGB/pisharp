@@ -1197,13 +1197,13 @@
       "acceptance": [
         "Implement get_messages using shared canonical runtime with correlated responses/event ordering",
         "Test protocol through RPC process, including failures and cancellation",
-        "Remaining: Pi's provider-effective/system message projection, less common custom-message content, streamed partial tool-call fidelity and a pinned process differential."
+        "Remaining: partial tool-call streaming fidelity and a pinned process differential; Pi's generated system prompt remains separate from `session.messages`."
       ],
       "implementation": [
-        "RpcSessionCommandHandler uses ConversationSession.Snapshot() for canonical history; RpcEventWriter shares the active RpcEventProjector with reads so in-flight assistant text joins the Pi-shaped message array."
+        "RpcSessionCommandHandler uses ConversationSession.Snapshot() for one tree view; RpcSessionMessageProjector follows Pi's active compaction/context-edit projection and retains typed custom messages. RpcEventWriter merges the active assistant projector into that view so streamed text remains visible."
       ],
       "evidence": [
-        "RpcReadCommandsProcessTests.SessionReadCommandsReturnOneSnapshotWhileProviderRequestIsBlocked waits for an actual streamed message_update, confirms isStreaming and verifies get_messages includes the accepted user prompt, prior assistant history and Pi-shaped pending assistant text. Current Pi 2b0a123de98318c2ff8069661721ce0c3794c34e rpc-mode.ts returns session.messages while active and agent-loop.ts updates its partial message. Focused RPC/session tests pass 41/41; local format verification, warnings-as-errors build and full solution tests pass (627/627). Exact-head CI is pending. PiSharp has not yet compared provider-effective/system message projection, partial tool-call details or run a Pi process differential."
+        "RpcReadCommandsProcessTests.SessionReadCommandsReturnOneSnapshotWhileProviderRequestIsBlocked waits for a streamed message_update, confirms isStreaming and verifies all five read commands return current session data and pending assistant text. GetMessagesReturnsCompactedContextAndAppliedEditsInRpcProcess exercises the CLI RPC process against a compacted session with a context edit. RpcSessionMessageProjectorTests verifies Pi compactionSummary and custom-message shapes. Current Pi 2b0a123de98318c2ff8069661721ce0c3794c34e rpc-mode.ts returns session.messages; session-manager.ts builds the compaction-aware, context-edited projection. Focused RPC/session/compaction tests pass 44/44; local format and warnings-as-errors build pass with 0 warnings/errors; full suite passes 631/631. Exact-head CI for this slice is pending. Partial tool-call streaming fidelity and a pinned Pi process differential remain open; Pi's generated system prompt is separate from session.messages."
       ],
       "dependencies": []
     },

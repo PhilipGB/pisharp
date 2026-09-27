@@ -15,8 +15,7 @@ internal sealed class RpcEventProjector
 
     public JsonArray ProjectMessagesSnapshot(ConversationSession conversation, string? api)
     {
-        var canonical = new JsonArray(conversation.ActiveMessages()
-            .Select(message => (JsonNode?)PiJsonlSessionInterchange.ProjectRuntimeMessage(conversation, message, api)).ToArray());
+        var canonical = RpcSessionMessageProjector.Project(conversation, api);
         var messages = _assistantMessages.ReconcileRunMessages(canonical, includeUnpersisted: true);
         if (_assistantMessages.ActiveProviderMessage(conversation, api) is { } activeMessage)
             messages.Add(activeMessage);

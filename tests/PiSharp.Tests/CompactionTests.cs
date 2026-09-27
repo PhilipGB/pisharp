@@ -32,6 +32,26 @@ public sealed class CompactionTests
     }
 
     [Fact]
+    public void CompactionProjectionUsesPiSummaryTextAndDropsEarlierSystemMessages()
+    {
+        var conversation = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        conversation.Append(new ChatMessage(ChatRole.User, "old question"));
+        conversation.Append(new ChatMessage(ChatRole.Assistant, "old answer"));
+        conversation.Append(new ChatMessage(ChatRole.User, "retained question"));
+        conversation.Append(new ChatMessage(ChatRole.System, "old system instruction"));
+        conversation.Append(new ChatMessage(ChatRole.Assistant, "retained answer"));
+
+        var plan = Assert.IsType<ConversationSession.CompactionPlan>(conversation.PrepareCompaction());
+        conversation.AppendCompaction(plan, "summary of old turn");
+
+        var context = conversation.ContextMessages();
+        Assert.Equal(3, context.Count);
+        Assert.Equal("The conversation history before this point was compacted into the following summary:\n\n<summary>\nsummary of old turn\n</summary>", context[0].Text);
+        Assert.DoesNotContain(context, message => message.Text == "old system instruction");
+        Assert.Equal(["retained question", "retained answer"], context.Skip(1).Select(message => message.Text));
+    }
+
+    [Fact]
     public async Task ManualCompactionPreservesHistoryAndRestoresShortContextAfterRestartAndBranch()
     {
         var cwd = Path.Combine(Path.GetTempPath(), "pisharp-compact-" + Guid.NewGuid().ToString("N"));
@@ -50,7 +70,7 @@ public sealed class CompactionTests
             Assert.Contains("prioritize files", client.LastSummaryRequest);
             Assert.Equal(4, conversation.ActiveMessages().Count);
             Assert.Equal(3, conversation.ContextMessages().Count);
-            Assert.Contains("Summary of earlier conversation", conversation.ContextMessages()[0].Text);
+            Assert.Contains("compacted into the following summary", conversation.ContextMessages()[0].Text);
             Assert.Equal("second", conversation.ContextMessages()[1].Text);
             Assert.Null(conversation.PrepareCompaction());
             var reloaded = await store.LoadAsync(path);
@@ -119,7 +139,7 @@ public sealed class CompactionTests
             Assert.Contains(events, item => item.Type == "context_compacted");
             Assert.True(events.FindIndex(item => item.Type == "context_compacted") < events.FindIndex(item => item.Type == "prompt_accepted"));
             Assert.Equal(6, conversation.ActiveMessages().Count);
-            Assert.Equal("Summary of first turn", conversation.ContextMessages()[0].Text.Split('\n').Last());
+            Assert.Contains("Summary of first turn", conversation.ContextMessages()[0].Text);
             Assert.DoesNotContain(client.SeenMessages!, message => message.Text == new string('a', 3000));
             Assert.Equal(6, (await store.LoadAsync(path)).ActiveMessages().Count);
         }

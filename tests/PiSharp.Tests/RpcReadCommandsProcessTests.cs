@@ -11,6 +11,100 @@ namespace PiSharp.Tests;
 public sealed class RpcReadCommandsProcessTests
 {
     [Fact]
+    public async Task GetMessagesReturnsCompactedContextAndAppliedEditsInRpcProcess()
+    {
+        if (!OperatingSystem.IsLinux()) return;
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-rpc-context-session-" + Guid.NewGuid().ToString("N"));
+        var agentDirectory = Path.Combine(root, "agent");
+        var sessionDirectory = Path.Combine(root, "sessions");
+        Directory.CreateDirectory(agentDirectory);
+        using var listener = StartLoopbackListener(out var port);
+        var sessionPath = Path.Combine(sessionDirectory, "context.session.json");
+        var session = new ConversationSession(root, "read-context-fixture",
+            $"http://127.0.0.1:{port}/v1", "fixture");
+        session.Append(new ChatMessage(ChatRole.User, "old question"));
+        session.Append(new ChatMessage(ChatRole.Assistant, "old answer"));
+        session.Append(new ChatMessage(ChatRole.User, "retained question"));
+        session.Append(new ChatMessage(ChatRole.Assistant, "original answer"));
+        var plan = Assert.IsType<ConversationSession.CompactionPlan>(session.PrepareCompaction());
+        session.AppendCompaction(plan, "summary of old turn", tokensBefore: 1234);
+        var assistantEntry = session.Tree.ActivePath()
+            .Last(node => node.Type == "chat" && ConversationSession.RestoreEntry(node).Role == ChatRole.Assistant);
+        session.Tree.Append("context_edit", JsonSerializer.SerializeToElement(new
+        {
+            targetId = assistantEntry.Id,
+            replacement = new { content = "edited answer" }
+        }));
+        await new ConversationStore(root, sessionDirectory).SaveAsync(session, sessionPath);
+        await File.WriteAllTextAsync(Path.Combine(agentDirectory, "models.json"), JsonSerializer.Serialize(new
+        {
+            providers = new
+            {
+                fixture = new
+                {
+                    baseUrl = $"http://127.0.0.1:{port}/v1",
+                    apiKeyEnv = "PISHARP_FIXTURE_KEY",
+                    models = new[] { new { id = "read-context-fixture", api = "openai-completions" } }
+                }
+            }
+        }));
+
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+        Process? process = null;
+        try
+        {
+            var start = new ProcessStartInfo("dotnet")
+            {
+                WorkingDirectory = root,
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+            start.ArgumentList.Add(typeof(CliArguments).Assembly.Location);
+            foreach (var argument in new[] { "--mode", "rpc", "--provider", "fixture", "--model", "read-context-fixture",
+                "--offline", "--session", sessionPath, "--session-dir", sessionDirectory })
+                start.ArgumentList.Add(argument);
+            start.Environment["PISHARP_FIXTURE_KEY"] = "fixture-only-key";
+            start.Environment["PISHARP_AGENT_DIR"] = agentDirectory;
+            foreach (var name in new[] { "OPENAI_API_KEY", "PISHARP_API_KEY", "PISHARP_BASE_URL", "PISHARP_MODEL",
+                "PISHARP_AUTH_PATH", "PISHARP_MODELS_PATH", "PISHARP_SETTINGS_PATH", "PISHARP_PROVIDER" })
+                start.Environment.Remove(name);
+            process = Process.Start(start)!;
+            var stderr = process.StandardError.ReadToEndAsync();
+            var lines = new List<string>();
+
+            await WriteCommandAsync(process, new { id = "context", type = "get_messages" }, timeout.Token);
+            using var response = await ReadResponseAsync(process, lines, "context", timeout.Token);
+            Assert.True(response.RootElement.GetProperty("success").GetBoolean());
+            var messages = response.RootElement.GetProperty("data").GetProperty("messages");
+            Assert.Equal("compactionSummary", messages[0].GetProperty("role").GetString());
+            Assert.Equal("summary of old turn", messages[0].GetProperty("summary").GetString());
+            Assert.Equal(1234, messages[0].GetProperty("tokensBefore").GetInt32());
+            Assert.Equal("retained question", ReadMessageText(messages[1].GetProperty("content")));
+            Assert.Equal("edited answer", ReadMessageText(messages[2].GetProperty("content")));
+            Assert.DoesNotContain(messages.EnumerateArray(), message =>
+                message.TryGetProperty("content", out var content) &&
+                ReadMessageText(content) is "old question" or "original answer");
+
+            process.StandardInput.Close();
+            await process.WaitForExitAsync(timeout.Token);
+            Assert.Equal(0, process.ExitCode);
+            Assert.Equal(string.Empty, await stderr.WaitAsync(timeout.Token));
+        }
+        finally
+        {
+            if (process is { HasExited: false })
+            {
+                process.Kill(entireProcessTree: true);
+                await process.WaitForExitAsync();
+            }
+            process?.Dispose();
+            listener.Close();
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task SessionReadCommandsReturnOneSnapshotWhileProviderRequestIsBlocked()
     {
         if (!OperatingSystem.IsLinux()) return;

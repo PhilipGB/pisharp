@@ -1391,7 +1391,7 @@ public sealed class RpcModeTests
         var channel = Channel.CreateUnbounded<string>();
         using var output = new LockedWriter();
         var session = new ConversationSession(Path.GetTempPath(), "fixture", null);
-        session.Append(new ChatMessage(ChatRole.User, "inspect files"));
+        session.Append(new ChatMessage(ChatRole.User, "inspect files " + new string('x', 2048)));
         session.Append(new ChatMessage(ChatRole.Assistant,
         [
             new FunctionCallContent("read-call", "read", new Dictionary<string, object?> { ["path"] = "notes.md" }),
@@ -1410,7 +1410,7 @@ public sealed class RpcModeTests
         var run = await ConversationRun.OpenAsync(new PiAgent(new StubClient(), new CodingTools(Path.GetTempPath())), session);
         var serving = new RpcMode(new CommandReader(channel.Reader), output, run).ServeAsync();
         channel.Writer.TryWrite("{\"id\":9,\"type\":\"compact\",\"customInstructions\":\"retain decisions\"}");
-        await WaitForAsync(output, "\"estimatedTokensAfter\"");
+        await WaitForAsync(output, "\"id\":9");
         channel.Writer.TryWrite("{\"id\":10,\"type\":\"compact\"}");
         await WaitForAsync(output, "Already compacted");
         channel.Writer.Complete();
@@ -1420,7 +1420,7 @@ public sealed class RpcModeTests
         var lines = output.Lines();
         using var response = JsonDocument.Parse(Assert.Single(lines, line =>
             line.Contains("\"id\":9", StringComparison.Ordinal)));
-        Assert.True(response.RootElement.GetProperty("success").GetBoolean());
+        Assert.True(response.RootElement.GetProperty("success").GetBoolean(), response.RootElement.ToString());
         var data = response.RootElement.GetProperty("data");
         Assert.Equal("summary", data.GetProperty("summary").GetString());
         Assert.Equal(session.Tree.Entries[4].Id, data.GetProperty("firstKeptEntryId").GetString());
