@@ -23,6 +23,8 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, Func<IReadOn
         new("quietStartup", "Quiet startup", "Hide the startup banner on the next launch."),
         new("steeringMode", "Steering mode", "How queued steering messages are delivered during an agent turn."),
         new("followUpMode", "Follow-up mode", "How queued follow-up messages are delivered after an agent turn."),
+        new("httpIdleTimeoutMs", "HTTP idle timeout", "Maximum wait for provider response headers or body data; 0 disables this idle limit."),
+        new("retry.provider.timeoutMs", "Provider request timeout", "Maximum duration for one provider request, in milliseconds."),
         new("retry.provider.maxRetries", "Provider request retries", "Retry transient requests in the provider SDK before PiSharp handles the failure.")
     ];
 
@@ -66,11 +68,14 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, Func<IReadOn
 
             if (selected.Option.Value is not { } setting) return;
             var currentValue = GetValue(currentSettings, setting.Id);
-            if (setting.Id is "externalEditor" or "httpProxy")
+            if (setting.Id is "externalEditor" or "httpProxy" or "retry.provider.timeoutMs")
             {
-                Console.WriteLine(setting.Id == "httpProxy"
-                    ? $"HTTP proxy [{DisplayValue(currentValue)}]; enter an HTTP(S) URL or leave blank to clear:"
-                    : $"External editor command [{DisplayValue(currentValue)}]; leave blank to use VISUAL/EDITOR or the default:");
+                Console.WriteLine(setting.Id switch
+                {
+                    "httpProxy" => $"HTTP proxy [{DisplayValue(currentValue)}]; enter an HTTP(S) URL or leave blank to clear:",
+                    "retry.provider.timeoutMs" => $"Provider request timeout in milliseconds [{DisplayValue(currentValue)}]; enter a nonnegative integer or leave blank for the stream-idle default:",
+                    _ => $"External editor command [{DisplayValue(currentValue)}]; leave blank to use VISUAL/EDITOR or the default:"
+                });
                 var entered = await editor.ReadLineAsync(_ => Task.CompletedTask, enableApplicationActions: false);
                 if (entered is null) return;
                 var updatedValue = string.IsNullOrWhiteSpace(entered) ? null : entered.Trim();
@@ -127,6 +132,8 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, Func<IReadOn
         "steeringMode" => settings.SteeringMode?.ToSettingValue(),
         "followUpMode" => settings.FollowUpMode?.ToSettingValue(),
         "retry.provider.maxRetries" => settings.Retry?.Provider?.MaxRetries?.ToString(System.Globalization.CultureInfo.InvariantCulture),
+        "retry.provider.timeoutMs" => settings.Retry?.Provider?.TimeoutMs?.ToString(System.Globalization.CultureInfo.InvariantCulture),
+        "httpIdleTimeoutMs" => settings.HttpIdleTimeoutMs?.ToString(System.Globalization.CultureInfo.InvariantCulture),
         _ => null
     };
 
@@ -169,6 +176,23 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, Func<IReadOn
                 .Select(value => (value, (string?)value, value, value == "0"
                     ? "Disable provider retries and let PiSharp handle the failure."
                     : $"Allow up to {value} provider-level retry attempts.")));
+        }
+        else if (setting.Id == "httpIdleTimeoutMs")
+        {
+            (int Milliseconds, string Label)[] choices =
+            [
+                (30_000, "30 seconds"), (60_000, "1 minute"), (120_000, "2 minutes"),
+                (300_000, "5 minutes"), (0, "Disabled")
+            ];
+            if (currentValue is not null && int.TryParse(currentValue, out var current) &&
+                choices.All(choice => choice.Milliseconds != current))
+                values.Add((currentValue, currentValue, $"{currentValue} milliseconds", "Keep the current custom timeout."));
+            values.AddRange(choices.Select(choice =>
+                (choice.Milliseconds.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                    (string?)choice.Milliseconds.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                    choice.Label, choice.Milliseconds == 0
+                        ? "Disable the provider HTTP idle limit."
+                        : $"Allow up to {choice.Label} of idle time while waiting for provider response data.")));
         }
         else if (setting.Id == "theme")
         {

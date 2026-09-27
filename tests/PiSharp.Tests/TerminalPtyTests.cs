@@ -567,6 +567,9 @@ public sealed class TerminalPtyTests
             var followUpSaved = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var proxyPrompt = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var proxySaved = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var providerTimeoutPrompt = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var idleTimeoutSaved = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var providerTimeoutSaved = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var closed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var stdout = Task.Run(async () =>
             {
@@ -587,6 +590,9 @@ public sealed class TerminalPtyTests
                         if (current.Contains("Saved user setting followUpMode = one-at-a-time.", StringComparison.Ordinal)) followUpSaved.TrySetResult();
                         if (current.Contains("HTTP proxy [", StringComparison.Ordinal)) proxyPrompt.TrySetResult();
                         if (current.Contains("Saved user setting httpProxy = (configured).", StringComparison.Ordinal)) proxySaved.TrySetResult();
+                        if (current.Contains("Saved user setting httpIdleTimeoutMs = 0.", StringComparison.Ordinal)) idleTimeoutSaved.TrySetResult();
+                        if (current.Contains("Provider request timeout in milliseconds [", StringComparison.Ordinal)) providerTimeoutPrompt.TrySetResult();
+                        if (current.Contains("Saved user setting retry.provider.timeoutMs = 45000.", StringComparison.Ordinal)) providerTimeoutSaved.TrySetResult();
                         if (current.Contains("Settings closed.", StringComparison.Ordinal)) closed.TrySetResult();
                     }
                 }
@@ -617,6 +623,17 @@ public sealed class TerminalPtyTests
             await process.StandardInput.WriteAsync("https://proxy.example:8443\n");
             await process.StandardInput.FlushAsync();
             await proxySaved.Task.WaitAsync(TimeSpan.FromSeconds(12));
+            await process.StandardInput.WriteAsync("HTTP idle timeout\n");
+            await process.StandardInput.FlushAsync();
+            await process.StandardInput.WriteAsync("Disabled\n");
+            await process.StandardInput.FlushAsync();
+            await idleTimeoutSaved.Task.WaitAsync(TimeSpan.FromSeconds(12));
+            await process.StandardInput.WriteAsync("Provider request timeout\n");
+            await process.StandardInput.FlushAsync();
+            await providerTimeoutPrompt.Task.WaitAsync(TimeSpan.FromSeconds(12));
+            await process.StandardInput.WriteAsync("45000\n");
+            await process.StandardInput.FlushAsync();
+            await providerTimeoutSaved.Task.WaitAsync(TimeSpan.FromSeconds(12));
             await process.StandardInput.WriteAsync("\u001b");
             await process.StandardInput.FlushAsync();
             await closed.Task.WaitAsync(TimeSpan.FromSeconds(12));
@@ -644,6 +661,8 @@ public sealed class TerminalPtyTests
             Assert.Equal(PiSharp.Runtime.Sessions.PromptDeliveryMode.All, settings.SteeringMode);
             Assert.Equal(PiSharp.Runtime.Sessions.PromptDeliveryMode.OneAtATime, settings.FollowUpMode);
             Assert.Equal("https://proxy.example:8443", settings.HttpProxy);
+            Assert.Equal(0, settings.HttpIdleTimeoutMs);
+            Assert.Equal(45_000, settings.Retry?.Provider?.TimeoutMs);
             Assert.Equal(2048, settings.Compaction?.ReserveTokens);
         }
         finally { Directory.Delete(cwd, recursive: true); }

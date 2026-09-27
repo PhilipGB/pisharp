@@ -14,7 +14,7 @@ The current Pi settings reference at `2b0a123de98318c2ff8069661721ce0c3794c34e` 
 
 At the same Pi reference, `defaultThinkingLevel` is `medium`; PiSharp uses that fallback for reasoning-capable models and clamps it to `off` when a model does not support reasoning. The process fixture also verifies the initial Responses request sends `reasoning.effort: medium`.
 
-Pi separates agent-level retry settings from `retry.provider.maxRetries`, whose default is zero. PiSharp now validates and merges the provider retry count independently, and maps it to the OpenAI `ClientRetryPolicy` and Anthropic `MaxRetries`. `ProviderChatClientFactoryTests` use local HTTP 5xx responses to verify one request at the default and exactly one retry when configured to one for both adapters.
+Pi separates agent-level retry settings from `retry.provider.maxRetries`, whose default is zero. PiSharp validates and merges the provider retry count independently, maps it to the OpenAI `ClientRetryPolicy` and Anthropic `MaxRetries`, and disables the separate MAF provider retry loop for CLI-created agents so the configured SDK count is not exceeded. `ProviderChatClientFactoryTests` use local HTTP 5xx responses to verify one request at the default and exactly one retry when configured to one for both adapters; the persisted-settings CLI timeout process test counts all accepted requests and verifies one attempt at the default.
 
 ## User-wide HTTP proxy
 
@@ -24,4 +24,4 @@ At the pinned Pi revision, `httpProxy` is a global setting applied as the defaul
 
 ## Remaining settings work
 
-The rest of the settings schema and live reload behavior remain open. `httpIdleTimeoutMs`, `retry.provider.timeoutMs`, and `transport` still need adapter-specific mapping and runtime evidence; Pi's default idle timeout is 300000 ms and its supported transport values include `auto`, `sse`, `websocket`, and `websocket-cached`. Terminal/display, image-processing, resource/theme paths, branch summaries, telemetry, and trust/reload preferences still need source/default/precedence review and runtime evidence.
+The rest of the settings schema and live reload behavior remain open. Provider timeout settings now have SDK loopback, persisted CLI-process, parser/precedence, writer, PTY, and paired pinned-Pi process evidence; the parsed-update idle timer still differs from Pi's wire-byte dispatcher behavior. See [the timeout fixture](settings-provider-timeout-baseline.md). `transport` and `websocketConnectTimeoutMs` remain unsupported because the active PiSharp adapters do not include Pi's OpenAI Codex Responses WebSocket path. Terminal/display, image-processing, resource/theme paths, branch summaries, telemetry, and trust/reload preferences still need source/default/precedence review and runtime evidence.

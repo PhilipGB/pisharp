@@ -77,16 +77,20 @@ public sealed class UserSettingsTests
         try
         {
             var path = Path.Combine(root, "settings.json");
-            await File.WriteAllTextAsync(path, "{\"retry\":{\"maxRetries\":4,\"provider\":{\"maxRetries\":2}}}");
+            await File.WriteAllTextAsync(path, "{\"httpIdleTimeoutMs\":90000,\"retry\":{\"maxRetries\":4,\"provider\":{\"maxRetries\":2,\"timeoutMs\":45000}}}");
             var user = await UserSettings.LoadAsync(root, _ => null);
             Assert.Equal(4, user.Retry?.MaxRetries);
             Assert.Equal(2, user.Retry?.Provider?.MaxRetries);
+            Assert.Equal(45_000, user.Retry?.Provider?.TimeoutMs);
+            Assert.Equal(90_000, user.HttpIdleTimeoutMs);
             Assert.Equal(ProviderRetrySettings.DefaultMaxRetries, new ProviderRetrySettings().MaxRetries ?? ProviderRetrySettings.DefaultMaxRetries);
 
-            await File.WriteAllTextAsync(Path.Combine(root, ".pi", "settings.json"), "{\"retry\":{\"maxRetries\":1,\"provider\":{\"maxRetries\":0}}}");
+            await File.WriteAllTextAsync(Path.Combine(root, ".pi", "settings.json"), "{\"httpIdleTimeoutMs\":\"disabled\",\"retry\":{\"maxRetries\":1,\"provider\":{\"maxRetries\":0,\"timeoutMs\":2000}}}");
             var effective = user.Overlay(await UserSettings.LoadProjectAsync(root));
             Assert.Equal(1, effective.Retry?.MaxRetries);
             Assert.Equal(0, effective.Retry?.Provider?.MaxRetries);
+            Assert.Equal(2_000, effective.Retry?.Provider?.TimeoutMs);
+            Assert.Equal(0, effective.HttpIdleTimeoutMs);
 
             await File.WriteAllTextAsync(Path.Combine(root, ".pi", "settings.json"), "{\"retry\":{\"provider\":{}}}");
             Assert.Equal(2, user.Overlay(await UserSettings.LoadProjectAsync(root)).Retry?.Provider?.MaxRetries);
@@ -94,10 +98,21 @@ public sealed class UserSettingsTests
             foreach (var invalid in new[]
             {
                 "null", "[]", "{\"maxRetries\":-1}", "{\"maxRetries\":21}",
-                "{\"maxRetries\":1.5}", "{\"maxRetries\":1,\"maxRetries\":2}", "{\"timeoutMs\":1000}"
+                "{\"maxRetries\":1.5}", "{\"maxRetries\":1,\"maxRetries\":2}",
+                "{\"timeoutMs\":-1}", "{\"timeoutMs\":2147483648}", "{\"timeoutMs\":1000.5}",
+                "{\"timeoutMs\":1000,\"timeoutMs\":2000}"
             })
             {
                 await File.WriteAllTextAsync(path, "{\"retry\":{\"provider\":" + invalid + "}}");
+                await Assert.ThrowsAsync<InvalidDataException>(() => UserSettings.LoadAsync(root, _ => null));
+            }
+
+            await File.WriteAllTextAsync(path, "{\"httpIdleTimeoutMs\":1.5}");
+            Assert.Equal(1, (await UserSettings.LoadAsync(root, _ => null)).HttpIdleTimeoutMs);
+
+            foreach (var invalidIdleTimeout in new[] { "-1", "2147483648", "true", "\"later\"" })
+            {
+                await File.WriteAllTextAsync(path, "{\"httpIdleTimeoutMs\":" + invalidIdleTimeout + "}");
                 await Assert.ThrowsAsync<InvalidDataException>(() => UserSettings.LoadAsync(root, _ => null));
             }
         }

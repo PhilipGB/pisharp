@@ -273,6 +273,117 @@ public sealed class ProviderChatClientFactoryTests
         }
     }
 
+    [Theory]
+    [InlineData("openai-responses")]
+    [InlineData("anthropic-messages")]
+    public async Task ProviderTimeoutSettingCancelsAStalledLoopbackResponse(string protocol)
+    {
+        using var listener = StartLoopbackListener(out var port);
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(6));
+        var requests = 0;
+        var server = Task.Run(async () =>
+        {
+            var request = await listener.GetContextAsync().WaitAsync(deadline.Token);
+            Interlocked.Increment(ref requests);
+            try
+            {
+                await Task.Delay(2_500, deadline.Token);
+                request.Response.ContentType = "application/json";
+                await using var writer = new StreamWriter(request.Response.OutputStream);
+                await writer.WriteAsync(protocol == "openai-responses" ? """
+                    {"id":"resp_slow","object":"response","created_at":1,"model":"fixture-model","status":"completed","output":[{"id":"msg_1","type":"message","role":"assistant","status":"completed","content":[{"type":"output_text","text":"late","annotations":[]}]}]}
+                    """ : """
+                    {"id":"msg_slow","type":"message","role":"assistant","model":"fixture-model","content":[{"type":"text","text":"late"}],"stop_reason":"end_turn","stop_sequence":null,"usage":{"input_tokens":1,"output_tokens":1}}
+                    """);
+                await writer.FlushAsync();
+            }
+            catch (Exception error) when (error is IOException or HttpListenerException or ObjectDisposedException) { }
+            finally { request.Response.Close(); }
+        });
+        var selection = Selection("fixture", protocol == "openai-responses"
+            ? $"http://127.0.0.1:{port}/v1" : $"http://127.0.0.1:{port}", protocol);
+        var client = ProviderChatClientFactory.Create(selection,
+            new ProviderRetrySettings(TimeoutMs: 1_500), httpIdleTimeoutMs: 3_000);
+        var timer = System.Diagnostics.Stopwatch.StartNew();
+
+        var error = await Assert.ThrowsAsync<TimeoutException>(() => client.GetResponseAsync(
+            [new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User, "hello")],
+            cancellationToken: deadline.Token));
+
+        Assert.Contains("timed out", error.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.True(timer.Elapsed < TimeSpan.FromMilliseconds(2_200), $"The provider request took {timer.Elapsed}.");
+        await server.WaitAsync(deadline.Token);
+        Assert.Equal(1, requests);
+    }
+
+    [Theory]
+    [InlineData("openai-responses")]
+    [InlineData("anthropic-messages")]
+    public async Task ProviderStreamIdleSettingCancelsAStalledLoopbackStream(string protocol)
+    {
+        using var listener = StartLoopbackListener(out var port);
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(8));
+        var requests = 0;
+        var server = Task.Run(async () =>
+        {
+            var request = await listener.GetContextAsync().WaitAsync(deadline.Token);
+            Interlocked.Increment(ref requests);
+            using var reader = new StreamReader(request.Request.InputStream);
+            await reader.ReadToEndAsync(deadline.Token);
+            request.Response.ContentType = "text/event-stream";
+            request.Response.SendChunked = true;
+            await using var writer = new StreamWriter(request.Response.OutputStream);
+            try
+            {
+                if (protocol == "openai-responses")
+                {
+                    await writer.WriteAsync("data: {\"type\":\"response.created\",\"response\":{\"id\":\"resp_idle\",\"object\":\"response\",\"created_at\":1,\"model\":\"fixture-model\",\"status\":\"in_progress\",\"output\":[]}}\n\n");
+                    await writer.WriteAsync("data: {\"type\":\"response.output_text.delta\",\"item_id\":\"item_1\",\"output_index\":0,\"content_index\":0,\"delta\":\"first\"}\n\n");
+                }
+                else
+                {
+                    await writer.WriteAsync("event: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_idle\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"fixture-model\",\"content\":[],\"stop_reason\":null,\"stop_sequence\":null,\"usage\":{\"input_tokens\":1,\"output_tokens\":0}}}\n\n");
+                    await writer.WriteAsync("event: content_block_start\ndata: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"text\",\"text\":\"\"}}\n\n");
+                    await writer.WriteAsync("event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"first\"}}\n\n");
+                }
+                await writer.FlushAsync();
+                await Task.Delay(900, deadline.Token);
+                await writer.WriteAsync(protocol == "openai-responses"
+                    ? "data: {\"type\":\"response.completed\",\"response\":{\"id\":\"resp_idle\",\"object\":\"response\",\"created_at\":1,\"model\":\"fixture-model\",\"status\":\"completed\",\"output\":[]}}\n\ndata: [DONE]\n\n"
+                    : "event: message_stop\ndata: {\"type\":\"message_stop\"}\n\n");
+                await writer.FlushAsync();
+            }
+            catch (Exception error) when (error is IOException or HttpListenerException or ObjectDisposedException) { }
+            finally { request.Response.Close(); }
+        });
+        var selection = Selection("fixture", protocol == "openai-responses"
+            ? $"http://127.0.0.1:{port}/v1" : $"http://127.0.0.1:{port}", protocol);
+        var client = ProviderChatClientFactory.Create(selection,
+            new ProviderRetrySettings(TimeoutMs: 5_000), httpIdleTimeoutMs: 250);
+        var updates = 0;
+        var firstUpdate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var streaming = Task.Run(async () =>
+        {
+            await foreach (var _ in client.GetStreamingResponseAsync(
+                [new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User, "hello")],
+                cancellationToken: deadline.Token))
+            {
+                Interlocked.Increment(ref updates);
+                firstUpdate.TrySetResult();
+            }
+        });
+        await firstUpdate.Task.WaitAsync(deadline.Token);
+        var timer = System.Diagnostics.Stopwatch.StartNew();
+
+        var error = await Assert.ThrowsAsync<TimeoutException>(() => streaming);
+
+        Assert.Contains("no update", error.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.True(Volatile.Read(ref updates) > 0, "The provider did not emit the initial stream update.");
+        Assert.True(timer.Elapsed < TimeSpan.FromMilliseconds(700), $"The provider stream took {timer.Elapsed}.");
+        await server.WaitAsync(deadline.Token);
+        Assert.Equal(1, requests);
+    }
+
     [Fact]
     public async Task AnthropicMessagesUsesNativeHeadersAndBody()
     {

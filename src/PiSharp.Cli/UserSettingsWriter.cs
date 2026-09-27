@@ -53,6 +53,10 @@ internal static class UserSettingsWriter
                 value is null or "true" or "false",
             "retry.provider.maxRetries" => value is null ||
                 int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var retries) && retries is >= 0 and <= 20,
+            "retry.provider.timeoutMs" => value is null ||
+                int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var providerTimeout) && providerTimeout >= 0,
+            "httpIdleTimeoutMs" => value is null || string.Equals(value, "disabled", StringComparison.OrdinalIgnoreCase) ||
+                int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var idleTimeout) && idleTimeout >= 0,
             "httpProxy" when userScope => value is null || IsValidHttpProxy(value),
             "steeringMode" or "followUpMode" => value is null || PromptDeliveryModes.TryParseSettingValue(value, out _),
             "defaultProjectTrust" when userScope => value is null or "ask" or "always" or "never",
@@ -86,6 +90,9 @@ internal static class UserSettingsWriter
         "hideThinkingBlock" or "quietStartup" or "images.blockImages" or "compaction.enabled" or "retry.enabled" =>
             JsonValue.Create(value == "true"),
         "retry.provider.maxRetries" => JsonValue.Create(int.Parse(value!, NumberStyles.None, CultureInfo.InvariantCulture)),
+        "retry.provider.timeoutMs" => JsonValue.Create(int.Parse(value!, NumberStyles.None, CultureInfo.InvariantCulture)),
+        "httpIdleTimeoutMs" => JsonValue.Create(string.Equals(value, "disabled", StringComparison.OrdinalIgnoreCase)
+            ? 0 : int.Parse(value!, NumberStyles.None, CultureInfo.InvariantCulture)),
         _ => JsonValue.Create(value)
     };
 

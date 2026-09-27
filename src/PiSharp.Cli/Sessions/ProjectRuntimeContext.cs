@@ -100,7 +100,10 @@ internal sealed class ProjectRuntimeContext : IDisposable
             arguments.NoTools, Instructions, Prompts.System, Prompts.Append, Extensions.Registration.Tools,
             reasoning: ThinkingLevels.ToOptions(thinking, selection.Model.ThinkingLevelMap), blockImages: effectiveSettings.BlockImages == true,
             noBuiltinTools: arguments.NoBuiltinTools,
-            supportsImages: selection.Model.Input?.Contains("image", StringComparer.Ordinal) != false);
+            supportsImages: selection.Model.Input?.Contains("image", StringComparer.Ordinal) != false,
+            // ProviderChatClientFactory applies retry.provider.maxRetries inside the SDK adapter.
+            // Avoid adding PiAgent's independent fallback retry loop on top of that configured count.
+            retryPolicy: ProviderRetryPolicy.None);
     }
 
     public ExtensionCatalog TransferExtensions()

@@ -71,7 +71,7 @@ public sealed record CompactionSettings(bool? Enabled = null, int? ReserveTokens
     }
 }
 /// <summary>Provider SDK retries, kept separate from PiSharp's agent-level retry loop.</summary>
-public sealed record ProviderRetrySettings(int? MaxRetries = null)
+public sealed record ProviderRetrySettings(int? MaxRetries = null, int? TimeoutMs = null)
 {
     public const int DefaultMaxRetries = 0;
 
@@ -79,7 +79,7 @@ public sealed record ProviderRetrySettings(int? MaxRetries = null)
     {
         if (value.ValueKind != JsonValueKind.Object)
             throw new InvalidDataException("settings.json retry.provider must be an object.");
-        int? maxRetries = null;
+        int? maxRetries = null, timeoutMs = null;
         var seen = new HashSet<string>(StringComparer.Ordinal);
         foreach (var property in value.EnumerateObject())
         {
@@ -91,9 +91,15 @@ public sealed record ProviderRetrySettings(int? MaxRetries = null)
                 maxRetries = retries;
                 continue;
             }
+            if (property.Name == "timeoutMs" && property.Value.ValueKind == JsonValueKind.Number &&
+                property.Value.TryGetInt32(out var timeout) && timeout >= 0)
+            {
+                timeoutMs = timeout;
+                continue;
+            }
             throw new InvalidDataException($"settings.json retry.provider.{property.Name} is unsupported or invalid.");
         }
-        return new(maxRetries);
+        return new(maxRetries, timeoutMs);
     }
 }
 
@@ -153,8 +159,11 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
     string? DefaultThinkingLevel = null, IReadOnlyList<string>? DefaultTools = null, string? SessionDirectory = null,
     CompactionSettings? Compaction = null, bool? BlockImages = null, string? DefaultProjectTrust = null, bool? HideThinkingBlock = null, bool? QuietStartup = null, IReadOnlyList<string>? EnabledModels = null, string? ShellPath = null, string? ExternalEditor = null, string? Theme = null,
     RetrySettings? Retry = null, PromptDeliveryMode? SteeringMode = null, PromptDeliveryMode? FollowUpMode = null,
-    IReadOnlyDictionary<string, string>? ModelThinkingLevels = null, string? HttpProxy = null)
+    IReadOnlyDictionary<string, string>? ModelThinkingLevels = null, string? HttpProxy = null,
+    int? HttpIdleTimeoutMs = null)
 {
+    public const int DefaultHttpIdleTimeoutMs = 300_000;
+
     public static async Task<UserSettings> LoadAsync(string agentDirectory, Func<string, string?> environment,
         CancellationToken cancellationToken = default)
     {
@@ -175,10 +184,16 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         PromptDeliveryMode? steeringMode = null, followUpMode = null;
         bool? blockImages = null, hideThinkingBlock = null, quietStartup = null;
         string? httpProxy = null;
+        int? httpIdleTimeoutMs = null;
         var seen = new HashSet<string>(StringComparer.Ordinal);
         foreach (var property in document.RootElement.EnumerateObject())
         {
             if (!seen.Add(property.Name)) throw new InvalidDataException($"settings.json contains duplicate property '{property.Name}'.");
+            if (property.Name == "httpIdleTimeoutMs")
+            {
+                httpIdleTimeoutMs = ParseIdleTimeout(property.Value);
+                continue;
+            }
             if (property.Name == "quietStartup")
             {
                 if (property.Value.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
@@ -297,7 +312,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         }
         return new(provider, model, thinking, tools, sessionDirectory, compaction, blockImages, defaultTrust, hideThinkingBlock,
             quietStartup, enabledModels, shellPath, externalEditor, theme, retry, steeringMode, followUpMode,
-            modelThinkingLevels, httpProxy);
+            modelThinkingLevels, httpProxy, httpIdleTimeoutMs);
     }
 
     public static string GetSettingsPath(string agentDirectory, Func<string, string?> environment) =>
@@ -329,10 +344,12 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
             project.Retry.BaseDelayMs ?? Retry?.BaseDelayMs,
             project.Retry.MaxAgentDelayMs ?? Retry?.MaxAgentDelayMs,
             project.Retry.Provider is null ? Retry?.Provider : new ProviderRetrySettings(
-                project.Retry.Provider.MaxRetries ?? Retry?.Provider?.MaxRetries)),
+                project.Retry.Provider.MaxRetries ?? Retry?.Provider?.MaxRetries,
+                project.Retry.Provider.TimeoutMs ?? Retry?.Provider?.TimeoutMs)),
         project.SteeringMode ?? SteeringMode,
         project.FollowUpMode ?? FollowUpMode,
-        MergeModelThinkingLevels(ModelThinkingLevels, project.ModelThinkingLevels), HttpProxy);
+        MergeModelThinkingLevels(ModelThinkingLevels, project.ModelThinkingLevels), HttpProxy,
+        project.HttpIdleTimeoutMs ?? HttpIdleTimeoutMs);
 
     public string? GetModelThinkingLevel(string provider, string modelId) =>
         ModelThinkingLevels?.GetValueOrDefault($"{provider}/{modelId}");
@@ -442,6 +459,28 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         if (string.IsNullOrWhiteSpace(value) || value.Length > maxLength || value != value.Trim())
             throw new InvalidDataException($"settings.json {property} must be a nonempty string of at most {maxLength} characters.");
         return value;
+    }
+
+    private static int ParseIdleTimeout(JsonElement value)
+    {
+        if (value.ValueKind == JsonValueKind.String)
+        {
+            var text = value.GetString()?.Trim();
+            if (string.Equals(text, "disabled", StringComparison.OrdinalIgnoreCase)) return 0;
+            if (double.TryParse(text, System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture, out var parsedStringTimeout))
+                return NormalizeIdleTimeout(parsedStringTimeout);
+        }
+        if (value.ValueKind == JsonValueKind.Number && value.TryGetDouble(out var milliseconds))
+            return NormalizeIdleTimeout(milliseconds);
+        throw new InvalidDataException("settings.json httpIdleTimeoutMs must be a nonnegative number or 'disabled'.");
+    }
+
+    private static int NormalizeIdleTimeout(double milliseconds)
+    {
+        if (double.IsFinite(milliseconds) && milliseconds is >= 0 and <= int.MaxValue)
+            return (int)Math.Floor(milliseconds);
+        throw new InvalidDataException("settings.json httpIdleTimeoutMs must be a nonnegative number or 'disabled'.");
     }
 
     private static string ValidateHttpProxy(string? value)

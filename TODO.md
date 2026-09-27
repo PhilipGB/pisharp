@@ -31,7 +31,7 @@ The session crash-recovery and writer-concurrency findings are recorded in [`ses
 
 ## Exact next action
 
-Continue grouping Pi settings by runtime effect and ownership. Model thinking defaults, provider retry count, and the user-wide proxy default now have direct runtime evidence. Next audit provider timeout/transport behavior, then terminal/display and trust/reload/resource-discovery controls against the pinned schema. Keep unsupported schema families listed as explicit residuals and do not claim complete settings parity.
+Continue grouping Pi settings by runtime effect and ownership. Model thinking defaults, provider retry count, user-wide proxy, provider request timeout, and streaming update-idle timeout now have direct runtime evidence. Next audit `transport`/WebSocket support and timeout wire-byte fidelity, then terminal/display and trust/reload/resource-discovery controls against the pinned schema. Keep unsupported schema families listed as explicit residuals and do not claim complete settings parity.
 
 ## Architecture and residuals to preserve
 
