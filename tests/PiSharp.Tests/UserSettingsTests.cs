@@ -120,6 +120,41 @@ public sealed class UserSettingsTests
     }
 
     [Fact]
+    public async Task MarkdownCodeBlockIndentUsesTheDefaultAndTrustedProjectOverride()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-markdown-settings-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(Path.Combine(root, ".pi"));
+        try
+        {
+            var path = Path.Combine(root, "settings.json");
+            var unset = await UserSettings.LoadAsync(root, _ => null);
+            Assert.Null(unset.MarkdownCodeBlockIndent);
+            Assert.Equal("  ", UserSettings.DefaultMarkdownCodeBlockIndent);
+
+            await File.WriteAllTextAsync(path, "{\"markdown\":{\"codeBlockIndent\":\">>\"}}");
+            var user = await UserSettings.LoadAsync(root, _ => null);
+            Assert.Equal(">>", user.MarkdownCodeBlockIndent);
+
+            await File.WriteAllTextAsync(Path.Combine(root, ".pi", "settings.json"),
+                "{\"markdown\":{\"codeBlockIndent\":\"\"}}");
+            Assert.Equal("", user.Overlay(await UserSettings.LoadProjectAsync(root)).MarkdownCodeBlockIndent);
+
+            foreach (var invalid in new[]
+            {
+                "{\"markdown\":null}",
+                "{\"markdown\":{\"codeBlockIndent\":true}}",
+                "{\"markdown\":{\"unknown\":\"value\"}}",
+                "{\"markdown\":{\"codeBlockIndent\":\"x\",\"codeBlockIndent\":\"y\"}}"
+            })
+            {
+                await File.WriteAllTextAsync(path, invalid);
+                await Assert.ThrowsAsync<InvalidDataException>(() => UserSettings.LoadAsync(root, _ => null));
+            }
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [Fact]
     public async Task UserSettingsProvideValidatedDefaultsBelowCliAndEnvironmentOverrides()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-settings-" + Guid.NewGuid().ToString("N"));

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.AI;
 using PiSharp.Cli.Tui;
 using PiSharp.Runtime.Extensions;
@@ -427,6 +428,23 @@ public sealed class TerminalScreenTests
         var currentFrame = outputText[lastFrame..];
         Assert.Contains("\u001b[38;2;240;198;116m", currentFrame);
         Assert.DoesNotContain("\u001b[38;2;154;115;38m", currentFrame);
+    }
+
+    [Fact]
+    public void CodeBlockIndentChangeRendersPreviouslyCommittedMarkdownAgain()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        using var screen = new TerminalScreen(output, error, () => 80, () => 24);
+
+        screen.CommitAssistantText("```text\nline\n```");
+        screen.SetMarkdownCodeBlockIndent(">>");
+
+        var outputText = output.ToString();
+        var lastFrame = outputText.LastIndexOf("\u001b[2J\u001b[H", StringComparison.Ordinal);
+        Assert.True(lastFrame >= 0);
+        var visibleFrame = Regex.Replace(outputText[lastFrame..], "\\u001b\\[[0-9;]*m", "");
+        Assert.Contains("  │>>line", visibleFrame);
     }
 
     [Fact]

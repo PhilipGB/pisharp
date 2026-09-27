@@ -160,9 +160,10 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
     CompactionSettings? Compaction = null, bool? BlockImages = null, string? DefaultProjectTrust = null, bool? HideThinkingBlock = null, bool? QuietStartup = null, IReadOnlyList<string>? EnabledModels = null, string? ShellPath = null, string? ExternalEditor = null, string? Theme = null,
     RetrySettings? Retry = null, PromptDeliveryMode? SteeringMode = null, PromptDeliveryMode? FollowUpMode = null,
     IReadOnlyDictionary<string, string>? ModelThinkingLevels = null, string? HttpProxy = null,
-    int? HttpIdleTimeoutMs = null)
+    int? HttpIdleTimeoutMs = null, string? MarkdownCodeBlockIndent = null)
 {
     public const int DefaultHttpIdleTimeoutMs = 300_000;
+    public const string DefaultMarkdownCodeBlockIndent = "  ";
 
     public static async Task<UserSettings> LoadAsync(string agentDirectory, Func<string, string?> environment,
         CancellationToken cancellationToken = default)
@@ -185,6 +186,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         bool? blockImages = null, hideThinkingBlock = null, quietStartup = null;
         string? httpProxy = null;
         int? httpIdleTimeoutMs = null;
+        string? markdownCodeBlockIndent = null;
         var seen = new HashSet<string>(StringComparer.Ordinal);
         foreach (var property in document.RootElement.EnumerateObject())
         {
@@ -219,6 +221,20 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
                         imageSetting.Value.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
                         throw new InvalidDataException($"settings.json images.{imageSetting.Name} is unsupported, duplicate or invalid.");
                     blockImages = imageSetting.Value.GetBoolean();
+                }
+                continue;
+            }
+            if (property.Name == "markdown")
+            {
+                if (property.Value.ValueKind != JsonValueKind.Object)
+                    throw new InvalidDataException("settings.json markdown must be an object.");
+                var markdownKeys = new HashSet<string>(StringComparer.Ordinal);
+                foreach (var markdownSetting in property.Value.EnumerateObject())
+                {
+                    if (!markdownKeys.Add(markdownSetting.Name) || markdownSetting.Name != "codeBlockIndent" ||
+                        markdownSetting.Value.ValueKind != JsonValueKind.String)
+                        throw new InvalidDataException($"settings.json markdown.{markdownSetting.Name} is unsupported, duplicate or invalid.");
+                    markdownCodeBlockIndent = markdownSetting.Value.GetString();
                 }
                 continue;
             }
@@ -312,7 +328,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         }
         return new(provider, model, thinking, tools, sessionDirectory, compaction, blockImages, defaultTrust, hideThinkingBlock,
             quietStartup, enabledModels, shellPath, externalEditor, theme, retry, steeringMode, followUpMode,
-            modelThinkingLevels, httpProxy, httpIdleTimeoutMs);
+            modelThinkingLevels, httpProxy, httpIdleTimeoutMs, markdownCodeBlockIndent);
     }
 
     public static string GetSettingsPath(string agentDirectory, Func<string, string?> environment) =>
@@ -349,7 +365,8 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         project.SteeringMode ?? SteeringMode,
         project.FollowUpMode ?? FollowUpMode,
         MergeModelThinkingLevels(ModelThinkingLevels, project.ModelThinkingLevels), HttpProxy,
-        project.HttpIdleTimeoutMs ?? HttpIdleTimeoutMs);
+        project.HttpIdleTimeoutMs ?? HttpIdleTimeoutMs,
+        project.MarkdownCodeBlockIndent ?? MarkdownCodeBlockIndent);
 
     public string? GetModelThinkingLevel(string provider, string modelId) =>
         ModelThinkingLevels?.GetValueOrDefault($"{provider}/{modelId}");

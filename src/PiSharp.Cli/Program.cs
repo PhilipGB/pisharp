@@ -299,6 +299,7 @@ using var terminalScreen = editor is null ? null : new TerminalScreen(Console.Ou
     queryTerminalColors: !Console.IsInputRedirected && !Console.IsOutputRedirected);
 terminalScreen?.SetThemeResolver((foreground, background) =>
     ResolveConfiguredTheme(userSettings.Theme, foreground, background));
+terminalScreen?.SetMarkdownCodeBlockIndent(userSettings.MarkdownCodeBlockIndent ?? UserSettings.DefaultMarkdownCodeBlockIndent);
 terminalScreen?.Activate();
 editor?.AttachScreen(terminalScreen);
 void LoadSessionTranscript()
@@ -602,6 +603,8 @@ async Task<(UserSettings User, UserSettings? Project)> SaveSettingAsync(bool pro
         terminalThemeCatalog = new TerminalThemeCatalog(agentDirectory, trusted ? currentDirectory : null);
         terminalScreen?.SetTheme(ResolveConfiguredTheme(userSettings.Theme));
     }
+    else if (setting == "markdown.codeBlockIndent")
+        terminalScreen?.SetMarkdownCodeBlockIndent(userSettings.MarkdownCodeBlockIndent ?? UserSettings.DefaultMarkdownCodeBlockIndent);
     var displayValue = setting == "httpProxy" ? value is null ? "(default)" : "(configured)" : value ?? "(default)";
     Console.WriteLine($"Saved {(projectScope ? "project" : "user")} setting {setting} = {displayValue}.");
     return (baseUserSettings, projectSettings);
@@ -759,6 +762,7 @@ async Task ReloadResources()
         terminalSessionPicker = editor is null ? null : new TerminalSessionPicker(store, editor);
         terminalThemeCatalog = new TerminalThemeCatalog(agentDirectory, trusted ? currentDirectory : null);
         terminalScreen?.SetTheme(ResolveConfiguredTheme(userSettings.Theme));
+        terminalScreen?.SetMarkdownCodeBlockIndent(userSettings.MarkdownCodeBlockIndent ?? UserSettings.DefaultMarkdownCodeBlockIndent);
         agent = nextAgent;
         conversationRun = nextRun;
     }
@@ -817,6 +821,7 @@ void AdoptProjectSession(ProjectSessionRuntime replacement)
     terminalSessionPicker = editor is null ? null : new TerminalSessionPicker(store, editor);
     terminalThemeCatalog = new TerminalThemeCatalog(agentDirectory, trusted ? currentDirectory : null);
     terminalScreen?.SetTheme(ResolveConfiguredTheme(userSettings.Theme));
+    terminalScreen?.SetMarkdownCodeBlockIndent(userSettings.MarkdownCodeBlockIndent ?? UserSettings.DefaultMarkdownCodeBlockIndent);
     terminalScreen?.SetFooter(IdleFooter());
     LoadSessionTranscript();
 }

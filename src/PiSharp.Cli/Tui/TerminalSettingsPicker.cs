@@ -25,7 +25,8 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, Func<IReadOn
         new("followUpMode", "Follow-up mode", "How queued follow-up messages are delivered after an agent turn."),
         new("httpIdleTimeoutMs", "HTTP idle timeout", "Maximum wait for provider response headers or body data; 0 disables this idle limit."),
         new("retry.provider.timeoutMs", "Provider request timeout", "Maximum duration for one provider request, in milliseconds."),
-        new("retry.provider.maxRetries", "Provider request retries", "Retry transient requests in the provider SDK before PiSharp handles the failure.")
+        new("retry.provider.maxRetries", "Provider request retries", "Retry transient requests in the provider SDK before PiSharp handles the failure."),
+        new("markdown.codeBlockIndent", "Code block indent", "Literal prefix before each rendered code line.")
     ];
 
     public async Task ShowAsync(UserSettings userSettings, UserSettings? projectSettings,
@@ -68,17 +69,20 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, Func<IReadOn
 
             if (selected.Option.Value is not { } setting) return;
             var currentValue = GetValue(currentSettings, setting.Id);
-            if (setting.Id is "externalEditor" or "httpProxy" or "retry.provider.timeoutMs")
+            if (setting.Id is "externalEditor" or "httpProxy" or "retry.provider.timeoutMs" or "markdown.codeBlockIndent")
             {
                 Console.WriteLine(setting.Id switch
                 {
                     "httpProxy" => $"HTTP proxy [{DisplayValue(currentValue)}]; enter an HTTP(S) URL or leave blank to clear:",
                     "retry.provider.timeoutMs" => $"Provider request timeout in milliseconds [{DisplayValue(currentValue)}]; enter a nonnegative integer or leave blank for the stream-idle default:",
+                    "markdown.codeBlockIndent" => $"Literal code line prefix [{DisplayValue(currentValue, setting.Id)}]; type spaces exactly as they should appear or leave blank to inherit:",
                     _ => $"External editor command [{DisplayValue(currentValue)}]; leave blank to use VISUAL/EDITOR or the default:"
                 });
                 var entered = await editor.ReadLineAsync(_ => Task.CompletedTask, enableApplicationActions: false);
                 if (entered is null) return;
-                var updatedValue = string.IsNullOrWhiteSpace(entered) ? null : entered.Trim();
+                var updatedValue = setting.Id == "markdown.codeBlockIndent"
+                    ? entered.Length == 0 ? null : entered
+                    : string.IsNullOrWhiteSpace(entered) ? null : entered.Trim();
                 if (!string.Equals(updatedValue, currentValue, StringComparison.Ordinal))
                 {
                     var savedSettings = await save(scope.Value, setting.Id, updatedValue);
@@ -114,7 +118,7 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, Func<IReadOn
     private static TerminalSelectionOption<Setting?> ToOption(Setting setting, UserSettings settings)
     {
         var current = GetValue(settings, setting.Id);
-        return new(setting.Id, setting, $"{setting.Label} · {DisplayValue(current)}",
+        return new(setting.Id, setting, $"{setting.Label} · {DisplayValue(current, setting.Id)}",
             setting.Description, $"{setting.Label} {setting.Id} {current}");
     }
 
@@ -134,16 +138,24 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, Func<IReadOn
         "retry.provider.maxRetries" => settings.Retry?.Provider?.MaxRetries?.ToString(System.Globalization.CultureInfo.InvariantCulture),
         "retry.provider.timeoutMs" => settings.Retry?.Provider?.TimeoutMs?.ToString(System.Globalization.CultureInfo.InvariantCulture),
         "httpIdleTimeoutMs" => settings.HttpIdleTimeoutMs?.ToString(System.Globalization.CultureInfo.InvariantCulture),
+        "markdown.codeBlockIndent" => settings.MarkdownCodeBlockIndent,
         _ => null
     };
 
-    private static string DisplayValue(string? value) => value switch
+    private static string DisplayValue(string? value, string? settingId = null)
     {
-        null => "inherit/default",
-        "true" => "enabled",
-        "false" => "disabled",
-        _ => value
-    };
+        if (value is null) return "inherit/default";
+        if (settingId == "markdown.codeBlockIndent")
+            return value.Length == 0 ? "no prefix" : value.All(character => character == ' ')
+                ? $"{value.Length} space{(value.Length == 1 ? "" : "s")}"
+                : value == "\t" ? "tab" : $"{value.Length} character prefix";
+        return value switch
+        {
+            "true" => "enabled",
+            "false" => "disabled",
+            _ => value
+        };
+    }
 
     private static string KeyForValue(string? value) => value ?? "__inherit";
 

@@ -24,6 +24,7 @@ public sealed class UserSettingsWriterTests
             await UserSettingsWriter.SetAsync(path, "retry.provider.maxRetries", "2", userScope: true);
             await UserSettingsWriter.SetAsync(path, "retry.provider.timeoutMs", "120000", userScope: true);
             await UserSettingsWriter.SetAsync(path, "httpIdleTimeoutMs", "disabled", userScope: true);
+            await UserSettingsWriter.SetAsync(path, "markdown.codeBlockIndent", ">>", userScope: true);
             var settings = await UserSettings.LoadAsync(root, _ => null);
 
             Assert.True(settings.HideThinkingBlock);
@@ -37,6 +38,7 @@ public sealed class UserSettingsWriterTests
             Assert.Equal(2, settings.Retry?.Provider?.MaxRetries);
             Assert.Equal(120_000, settings.Retry?.Provider?.TimeoutMs);
             Assert.Equal(0, settings.HttpIdleTimeoutMs);
+            Assert.Equal(">>", settings.MarkdownCodeBlockIndent);
 
             await UserSettingsWriter.SetAsync(path, "images.blockImages", null, userScope: true);
             await UserSettingsWriter.SetAsync(path, "retry.enabled", null, userScope: true);
@@ -44,11 +46,13 @@ public sealed class UserSettingsWriterTests
             await UserSettingsWriter.SetAsync(path, "retry.provider.maxRetries", null, userScope: true);
             await UserSettingsWriter.SetAsync(path, "retry.provider.timeoutMs", null, userScope: true);
             await UserSettingsWriter.SetAsync(path, "httpIdleTimeoutMs", null, userScope: true);
+            await UserSettingsWriter.SetAsync(path, "markdown.codeBlockIndent", null, userScope: true);
             Assert.Null((await UserSettings.LoadAsync(root, _ => null)).BlockImages);
             var cleared = await UserSettings.LoadAsync(root, _ => null);
             Assert.Null(cleared.Retry);
             Assert.Null(cleared.SteeringMode);
             Assert.Null(cleared.Retry);
+            Assert.Null(cleared.MarkdownCodeBlockIndent);
             await Assert.ThrowsAsync<ArgumentException>(() =>
                 UserSettingsWriter.SetAsync(path, "followUpMode", "sometimes", userScope: true));
             await Assert.ThrowsAsync<ArgumentException>(() =>

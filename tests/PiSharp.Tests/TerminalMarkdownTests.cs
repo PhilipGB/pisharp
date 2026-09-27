@@ -58,6 +58,20 @@ public sealed class TerminalMarkdownTests
     }
 
     [Fact]
+    public void RendererUsesTheConfiguredCodeBlockIndentAsALiteralPrefix()
+    {
+        const string markdown = "```text\nline\n```";
+
+        var defaulted = StripSgr(TerminalMarkdownRenderer.Render(markdown));
+        var configured = StripSgr(TerminalMarkdownRenderer.Render(markdown, codeBlockIndent: ">>"));
+        var unindented = StripSgr(TerminalMarkdownRenderer.Render(markdown, codeBlockIndent: ""));
+
+        Assert.Contains("  │  line", defaulted);
+        Assert.Contains("  │>>line", configured);
+        Assert.Contains("  │line", unindented);
+    }
+
+    [Fact]
     public void MathExtensionLeavesCurrencyAndCodeSpansAsText()
     {
         const string markdown = "Costs $5 and $10; use `$x$`, $HOME, and $x + y$.";

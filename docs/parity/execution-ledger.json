@@ -2762,14 +2762,18 @@
     {
       "id": "settings-markdown-codeblockindent",
       "title": "Setting: markdown.codeBlockIndent",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:63",
       "acceptance": [
         "Support markdown.codeBlockIndent with upstream type/default and user/trusted-project precedence",
         "Test malformed settings, trust boundaries, reload and startup behaviour"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "UserSettings parses the nested string setting, preserves explicit empty prefixes and overlays trusted project over user scope. The /settings picker writes a literal prefix; TerminalScreen applies it at startup, re-renders stored/partial Markdown on edits, and refreshes it when resources reload. PiSharp keeps its existing code-block gutter."
+      ],
+      "evidence": [
+        "Pinned Pi settings docs and the interactive-mode.ts/markdown.ts source show the two-space default and code-line prefix behavior; see docs/parity/fixtures/settings-markdown-baseline.md. UserSettingsTests.MarkdownCodeBlockIndentUsesTheDefaultAndTrustedProjectOverride covers default, scope precedence, explicit empty value and malformed/duplicate keys. UserSettingsWriterTests covers persistence/removal, TerminalMarkdownTests covers output, TerminalScreenTests covers rerender, and TerminalPtyTests.SettingsPickerEditsUserScopeThroughLinuxPty saves the setting through the live UI. Local format verification passed, warnings-as-errors build passed with 0 warnings/errors, focused settings/screen tests passed 68/68, the PTY test passed 1/1, and the full suite passed 683/683 (0 skipped). PiSharp's gutter differs from Pi and paired rendered-screen differential evidence remains open."
+      ],
       "dependencies": []
     },
     {

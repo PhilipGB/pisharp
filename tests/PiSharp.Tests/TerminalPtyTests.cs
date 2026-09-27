@@ -570,6 +570,8 @@ public sealed class TerminalPtyTests
             var providerTimeoutPrompt = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var idleTimeoutSaved = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var providerTimeoutSaved = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var codeBlockIndentPrompt = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var codeBlockIndentSaved = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var closed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var stdout = Task.Run(async () =>
             {
@@ -593,6 +595,8 @@ public sealed class TerminalPtyTests
                         if (current.Contains("Saved user setting httpIdleTimeoutMs = 0.", StringComparison.Ordinal)) idleTimeoutSaved.TrySetResult();
                         if (current.Contains("Provider request timeout in milliseconds [", StringComparison.Ordinal)) providerTimeoutPrompt.TrySetResult();
                         if (current.Contains("Saved user setting retry.provider.timeoutMs = 45000.", StringComparison.Ordinal)) providerTimeoutSaved.TrySetResult();
+                        if (current.Contains("Literal code line prefix [", StringComparison.Ordinal)) codeBlockIndentPrompt.TrySetResult();
+                        if (current.Contains("Saved user setting markdown.codeBlockIndent = " + " > " + ".", StringComparison.Ordinal)) codeBlockIndentSaved.TrySetResult();
                         if (current.Contains("Settings closed.", StringComparison.Ordinal)) closed.TrySetResult();
                     }
                 }
@@ -634,6 +638,12 @@ public sealed class TerminalPtyTests
             await process.StandardInput.WriteAsync("45000\n");
             await process.StandardInput.FlushAsync();
             await providerTimeoutSaved.Task.WaitAsync(TimeSpan.FromSeconds(12));
+            await process.StandardInput.WriteAsync("Code block indent\n");
+            await process.StandardInput.FlushAsync();
+            await codeBlockIndentPrompt.Task.WaitAsync(TimeSpan.FromSeconds(12));
+            await process.StandardInput.WriteAsync(" > \n");
+            await process.StandardInput.FlushAsync();
+            await codeBlockIndentSaved.Task.WaitAsync(TimeSpan.FromSeconds(12));
             await process.StandardInput.WriteAsync("\u001b");
             await process.StandardInput.FlushAsync();
             await closed.Task.WaitAsync(TimeSpan.FromSeconds(12));
@@ -663,6 +673,7 @@ public sealed class TerminalPtyTests
             Assert.Equal("https://proxy.example:8443", settings.HttpProxy);
             Assert.Equal(0, settings.HttpIdleTimeoutMs);
             Assert.Equal(45_000, settings.Retry?.Provider?.TimeoutMs);
+            Assert.Equal(" > ", settings.MarkdownCodeBlockIndent);
             Assert.Equal(2048, settings.Compaction?.ReserveTokens);
         }
         finally { Directory.Delete(cwd, recursive: true); }

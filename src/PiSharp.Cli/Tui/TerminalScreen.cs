@@ -17,6 +17,7 @@ public sealed class TerminalScreen : IDisposable
     private readonly TerminalImageRenderer _images;
     private readonly TerminalScreenCompositor _compositor;
     private TerminalTheme _theme;
+    private string _markdownCodeBlockIndent = "  ";
     private TerminalTheme.Rgb? _terminalForeground;
     private TerminalTheme.Rgb? _terminalBackground;
     private Func<TerminalTheme.Rgb?, TerminalTheme.Rgb?, TerminalTheme>? _themeResolver;
@@ -227,6 +228,19 @@ public sealed class TerminalScreen : IDisposable
             _theme = theme.WithTerminalColors(_terminalForeground, _terminalBackground);
             _transcript.ReRenderMarkdown(RenderMarkdown);
             _transcript.ReRenderToolViews(_theme);
+            _liveAssistant = _liveAssistantSource.Length == 0 ? "" : RenderMarkdown(_liveAssistantSource);
+            RenderLocked();
+        }
+    }
+
+    internal void SetMarkdownCodeBlockIndent(string codeBlockIndent)
+    {
+        ArgumentNullException.ThrowIfNull(codeBlockIndent);
+        lock (_gate)
+        {
+            if (string.Equals(_markdownCodeBlockIndent, codeBlockIndent, StringComparison.Ordinal)) return;
+            _markdownCodeBlockIndent = codeBlockIndent;
+            _transcript.ReRenderMarkdown(RenderMarkdown);
             _liveAssistant = _liveAssistantSource.Length == 0 ? "" : RenderMarkdown(_liveAssistantSource);
             RenderLocked();
         }
@@ -566,7 +580,7 @@ public sealed class TerminalScreen : IDisposable
     private string GetTranscriptTextLocked() => _transcript.GetText();
 
     private string RenderMarkdown(string markdown) =>
-        TerminalMarkdownRenderer.Render(markdown, Math.Max(1, Columns() - 1), _theme);
+        TerminalMarkdownRenderer.Render(markdown, Math.Max(1, Columns() - 1), _theme, _markdownCodeBlockIndent);
 
     private void RenderLocked()
     {
