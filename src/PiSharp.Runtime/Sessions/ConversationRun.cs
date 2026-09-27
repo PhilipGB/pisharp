@@ -530,7 +530,10 @@ public sealed class ConversationRun
         ChatMessage? providerResponse = null;
         var turnToolResults = new List<ChatMessage>();
         var providerRequestModel = Conversation.Model;
+        var providerRequestProvider = Conversation.Provider;
         var providerRequestPricing = _pricing;
+        var interruptionType = "turn_interrupted";
+        string? interruptionError = null;
         void AppendAvailableProviderHistory()
         {
             var providerHistory = ObservedChatClient.NormalizeReadImagesForHistory(_agent.GetHistory(_execution));
@@ -573,12 +576,18 @@ public sealed class ConversationRun
 
         void Observe(AgentLifecycleEvent item)
         {
+            if (item.Type is "turn_failed" or "turn_interrupted")
+            {
+                interruptionType = item.Type;
+                interruptionError = item.Error;
+            }
             if (item.Type == "model_request_started")
             {
                 lock (_runtimeStateGate)
                 {
                     CompleteProviderTurnUnsafe();
                     providerRequestModel = _currentModel;
+                    providerRequestProvider = _currentProvider;
                     providerRequestPricing = _pricing;
                     _providerRequestModel = providerRequestModel;
                     _providerRequestPricing = providerRequestPricing;
@@ -704,26 +713,63 @@ public sealed class ConversationRun
                 : _agent.RunStreamingDurableAsync(promptMessage, _execution, cancellationToken, durable,
                     Observe, TakeSteeringForProvider, inFlightBudget is null ? null : inFlightBudget.ProjectAsync,
                     CreateBashSessionEnvironment());
-            await foreach (var update in updates)
+            var updateEnumerator = updates.GetAsyncEnumerator(cancellationToken);
+            Exception? streamError = null;
+            try
             {
-                if (!string.IsNullOrEmpty(update.Text))
+                while (true)
                 {
-                    partialText.Append(update.Text);
-                    if (durable is not null && (partialText.Length - lastProgress >= 512 ||
-                        DateTimeOffset.UtcNow - lastProgressAt >= TimeSpan.FromSeconds(2)))
+                    AgentResponseUpdate update;
+                    try
                     {
-                        await durable.ProgressAsync(partialText.ToString());
-                        lastProgress = partialText.Length;
-                        lastProgressAt = DateTimeOffset.UtcNow;
+                        if (!await updateEnumerator.MoveNextAsync()) break;
+                        update = updateEnumerator.Current;
                     }
+                    catch (OperationCanceledException error)
+                    {
+                        streamError = error;
+                        interruptionType = "turn_interrupted";
+                        interruptionError = "Request was aborted";
+                        throw;
+                    }
+                    catch (Exception error) when (cancellationToken.IsCancellationRequested)
+                    {
+                        streamError = error;
+                        interruptionType = "turn_interrupted";
+                        interruptionError = "Request was aborted";
+                        throw new OperationCanceledException("Request was aborted", error, cancellationToken);
+                    }
+                    catch (Exception error)
+                    {
+                        streamError = error;
+                        interruptionType = "turn_failed";
+                        interruptionError = error.Message;
+                        throw;
+                    }
+                    if (!string.IsNullOrEmpty(update.Text))
+                    {
+                        partialText.Append(update.Text);
+                        if (durable is not null && (partialText.Length - lastProgress >= 512 ||
+                            DateTimeOffset.UtcNow - lastProgressAt >= TimeSpan.FromSeconds(2)))
+                        {
+                            await durable.ProgressAsync(partialText.ToString());
+                            lastProgress = partialText.Length;
+                            lastProgressAt = DateTimeOffset.UtcNow;
+                        }
+                    }
+                    if (update.Contents is not null)
+                        foreach (var content in update.Contents)
+                            if (content is FunctionCallContent call) events.Add($"call:{call.Name}:{call.CallId}");
+                            else if (content is FunctionResultContent result) events.Add($"result:{result.CallId}:{(result.Exception is null ? "ok" : "error")}");
+                            else if (content is UsageContent usage)
+                                Conversation.AppendUsage(UsageRecord.Create(providerRequestModel, "model", usage.Details, providerRequestPricing));
+                    yield return update;
                 }
-                if (update.Contents is not null)
-                    foreach (var content in update.Contents)
-                        if (content is FunctionCallContent call) events.Add($"call:{call.Name}:{call.CallId}");
-                        else if (content is FunctionResultContent result) events.Add($"result:{result.CallId}:{(result.Exception is null ? "ok" : "error")}");
-                        else if (content is UsageContent usage)
-                            Conversation.AppendUsage(UsageRecord.Create(providerRequestModel, "model", usage.Details, providerRequestPricing));
-                yield return update;
+            }
+            finally
+            {
+                try { await updateEnumerator.DisposeAsync(); }
+                catch when (streamError is not null) { }
             }
             lock (_runtimeStateGate) CompleteProviderTurnUnsafe();
             completed = true;
@@ -772,9 +818,39 @@ public sealed class ConversationRun
                     JsonSerializer.SerializeToElement(history[index], AIJsonUtilities.DefaultOptions))).Any())
                     _execution = await _agent.RestoreHistoryAsync(canonicalHistory, CancellationToken.None);
                 _historyCount = canonicalHistory.Count;
-                if (!completed && accepted) Conversation.Tree.Append("interrupted", JsonSerializer.SerializeToElement(
-                    new { prompt, partialText = partialText.ToString(), partialAssistantText = partialAssistantText.ToString(), events, timestamp = DateTimeOffset.UtcNow }));
+                if (!completed && accepted)
+                {
+                    Conversation.Tree.Append("interrupted", JsonSerializer.SerializeToElement(
+                        new
+                        {
+                            prompt,
+                            partialText = partialText.ToString(),
+                            partialAssistantText = partialAssistantText.ToString(),
+                            events,
+                            terminalType = interruptionType,
+                            stopReason = interruptionType == "turn_interrupted" ? "aborted" : "error",
+                            errorMessage = interruptionError,
+                            provider = providerRequestProvider,
+                            model = providerRequestModel,
+                            timestamp = DateTimeOffset.UtcNow
+                        }));
+                    var interruptedHistory = Conversation.ContextMessages();
+                    _execution = await _agent.RestoreHistoryAsync(interruptedHistory, CancellationToken.None);
+                    _historyCount = interruptedHistory.Count;
+                }
                 if (started) await durable!.FinishAsync(completed);
+            }
+            catch (OperationCanceledException)
+            {
+                interruptionType = "turn_interrupted";
+                interruptionError = "Request was aborted";
+                throw;
+            }
+            catch (Exception error)
+            {
+                interruptionType = "turn_failed";
+                interruptionError = error.Message;
+                throw;
             }
             finally { _gate.Release(); }
         }
@@ -795,24 +871,56 @@ public sealed class ConversationRun
         var path = Conversation.Tree.ActivePath();
         var start = attemptStartHead is null ? -1 : path.ToList().FindIndex(node => node.Id == attemptStartHead);
         var firstAttemptEntry = start >= 0 ? start + 1 : Math.Clamp(attemptStartPathLength, 0, path.Count);
-        var attemptEntries = path.Skip(firstAttemptEntry).Where(node => node.Type == "chat").ToArray();
-        var failedAssistant = Array.FindLastIndex(attemptEntries, node =>
-            ConversationSession.RestoreEntry(node).Role == ChatRole.Assistant);
-        var changed = false;
-        var appended = new List<ConversationNode>();
-        if (failedAssistant >= 0)
+        var attemptEntries = path.Skip(firstAttemptEntry).ToArray();
+        var interrupted = attemptEntries.LastOrDefault(node => node.Type == "interrupted");
+        var omittedIds = new List<string>();
+        var matchingAssistant = -1;
+        if (interrupted is not null)
         {
-            var omitted = new List<string> { attemptEntries[failedAssistant].Id };
-            for (var index = failedAssistant + 1; index < attemptEntries.Length; index++)
-            {
-                var message = ConversationSession.RestoreEntry(attemptEntries[index]);
-                if (message.Role != ChatRole.Tool) break;
-                omitted.Add(attemptEntries[index].Id);
-            }
-            foreach (var entryId in omitted) appended.Add(Conversation.AppendContextOmission(entryId));
-            changed = true;
+            var partialText = PiJsonlSessionInterchange.StringProperty(interrupted.Payload, "partialAssistantText");
+            if (!string.IsNullOrEmpty(partialText)) omittedIds.Add(interrupted.Id);
+            matchingAssistant = string.IsNullOrEmpty(partialText) ? -1 : Array.FindLastIndex(attemptEntries,
+                node =>
+                {
+                    if (node.Type != "chat") return false;
+                    var message = ConversationSession.RestoreEntry(node);
+                    return message.Role == ChatRole.Assistant &&
+                        string.Equals(message.Text, partialText, StringComparison.Ordinal);
+                });
         }
-        if (changed && _save is not null) await _save(CancellationToken.None);
+        if (matchingAssistant >= 0)
+        {
+            for (var index = matchingAssistant; index < attemptEntries.Length; index++)
+            {
+                var entry = attemptEntries[index];
+                if (index == matchingAssistant)
+                    omittedIds.Add(entry.Id);
+                else
+                {
+                    if (entry.Type != "chat" || ConversationSession.RestoreEntry(entry).Role != ChatRole.Tool) break;
+                    omittedIds.Add(entry.Id);
+                }
+            }
+        }
+        else
+        {
+            var chatEntries = attemptEntries.Where(node => node.Type == "chat").ToArray();
+            var failedAssistant = Array.FindLastIndex(chatEntries,
+                node => ConversationSession.RestoreEntry(node).Role == ChatRole.Assistant);
+            if (failedAssistant >= 0)
+            {
+                omittedIds.Add(chatEntries[failedAssistant].Id);
+                for (var index = failedAssistant + 1; index < chatEntries.Length; index++)
+                {
+                    var message = ConversationSession.RestoreEntry(chatEntries[index]);
+                    if (message.Role != ChatRole.Tool) break;
+                    omittedIds.Add(chatEntries[index].Id);
+                }
+            }
+        }
+        var appended = omittedIds.Distinct(StringComparer.Ordinal)
+            .Select(Conversation.AppendContextOmission).ToList();
+        if (appended.Count > 0 && _save is not null) await _save(CancellationToken.None);
         foreach (var entry in appended)
             publish(new AgentLifecycleEvent("entry_appended")
             {

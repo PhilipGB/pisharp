@@ -7,12 +7,12 @@ namespace PiSharp.Cli.Protocols;
 
 internal static class RpcSessionEntryProjector
 {
-    public static IReadOnlyList<JsonElement> ProjectEntries(ConversationSession session) =>
-        PiJsonlSessionInterchange.ProjectEntries(session);
+    public static IReadOnlyList<JsonElement> ProjectEntries(ConversationSession session, string? api = null) =>
+        PiJsonlSessionInterchange.ProjectEntries(session, api);
 
-    public static IReadOnlyList<RpcSessionTreeNode> ProjectTree(ConversationSession session)
+    public static IReadOnlyList<RpcSessionTreeNode> ProjectTree(ConversationSession session, string? api = null)
     {
-        var entries = ProjectEntries(session);
+        var entries = ProjectEntries(session, api);
         var labels = ProjectLabels(entries);
         var nodes = new Dictionary<string, RpcSessionTreeNode>(StringComparer.Ordinal);
 

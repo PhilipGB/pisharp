@@ -68,7 +68,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
             forkSession is null ? null : StartForkSessionAsync,
             cloneSession is null ? null : StartCloneSessionAsync,
             switchSession is null ? null : StartSwitchSessionAsync,
-            getSystemMessage);
+            getSystemMessage, getApi);
         var commandDiscoveryCommands = new RpcCommandDiscoveryHandler(_writer, () => CurrentResources, () => CurrentExtensions);
         var promptCommandHandler = new RpcPromptCommandHandler(_writer, () => CurrentExtensions);
         try

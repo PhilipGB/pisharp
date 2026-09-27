@@ -241,10 +241,10 @@ public sealed class ConversationSession
         foreach (var node in projectedNodes)
             if (PiJsonlSessionInterchange.TryGetContextEdit(node, out var targetId, out var replacement))
                 edits[targetId] = replacement;
-        foreach (var node in projectedNodes)
+        foreach (var entry in ProjectContextEntries(projectedNodes))
         {
-            var message = ContextMessageForNode(node);
-            if (message is null) continue;
+            var node = entry.Node;
+            var message = entry.Message;
             if (edits.TryGetValue(node.Id, out var replacement))
                 message = PiJsonlSessionInterchange.ApplyContextEdit(node, message, replacement);
             if (message is not null) context.Add(message);
@@ -265,29 +265,28 @@ public sealed class ConversationSession
             node.Id == path[compactAt].Payload.GetProperty("firstKeptEntryId").GetString());
         if (keepRecentTokens < 0) throw new ArgumentOutOfRangeException(nameof(keepRecentTokens));
         // Select a user-turn boundary backwards; every tool call and result in a turn stays together.
-        var latestUser = path.ToList().FindLastIndex(node => ContextMessageForNode(node)?.Role == ChatRole.User);
+        var contextEntries = ProjectContextEntries(path);
+        var latestUser = contextEntries.LastOrDefault(item => item.Message.Role == ChatRole.User)?.Index ?? -1;
         if (latestUser <= first) return null;
         var boundary = latestUser;
         if (keepRecentTokens is int minimum)
         {
             long estimated = 0;
-            var turns = path.Skip(first).Select((node, index) => (node, index: index + first))
-                .Where(item => ContextMessageForNode(item.node)?.Role == ChatRole.User)
-                .Select(item => item.index).ToArray();
+            var turns = contextEntries.Where(item => item.Index >= first && item.Message.Role == ChatRole.User)
+                .Select(item => item.Index).ToArray();
             for (var i = turns.Length - 1; i >= 0; i--)
             {
                 var start = turns[i];
                 var end = i + 1 < turns.Length ? turns[i + 1] : path.Count;
-                foreach (var message in path.Skip(start).Take(end - start).Select(ContextMessageForNode)
-                             .Where(message => message is not null).Cast<ChatMessage>())
-                    estimated += AutoCompactionPolicy.Estimate([message], "") - 512;
+                foreach (var entry in contextEntries.Where(item => item.Index >= start && item.Index < end))
+                    estimated += AutoCompactionPolicy.Estimate([entry.Message], "") - 512;
                 boundary = start;
                 if (estimated >= minimum) break;
             }
         }
         if (boundary <= first) return null;
         var context = ContextMessages();
-        var keptCount = path.Skip(boundary).Count(node => ContextMessageForNode(node) is not null);
+        var keptCount = contextEntries.Count(item => item.Index >= boundary);
         return new CompactionPlan(path[boundary].Id, context.Take(context.Count - keptCount).ToArray());
     }
 
@@ -319,12 +318,32 @@ public sealed class ConversationSession
     private static ChatMessage? ContextMessageForNode(ConversationNode node)
     {
         if (node.Type == "chat") return Restore(node.Payload, node.Id);
+        if (node.Type == "interrupted" &&
+            PiJsonlSessionInterchange.StringProperty(node.Payload, "partialAssistantText") is { Length: > 0 } partialText)
+            return new ChatMessage(ChatRole.Assistant, partialText);
         if (node.Type is "custom_message" or "branch_summary")
             return PiJsonlSessionInterchange.ImportedContextMessage(node);
         if (node.Type != "bash_execution") return null;
         var execution = RestoreBashExecution(node.Payload, node.Id);
         return execution.ExcludeFromContext ? null : BashExecutionContextMessage(execution);
     }
+
+    private static List<ProjectedContextEntry> ProjectContextEntries(IReadOnlyList<ConversationNode> nodes)
+    {
+        var entries = new List<ProjectedContextEntry>();
+        foreach (var (node, index) in nodes.Select((node, index) => (node, index)))
+        {
+            var message = ContextMessageForNode(node);
+            if (message is null) continue;
+            if (node.Type == "interrupted" && message.Text.Length > 0 &&
+                entries.LastOrDefault(entry => entry.Message.Role == ChatRole.Assistant)?.Message.Text == message.Text)
+                continue;
+            entries.Add(new ProjectedContextEntry(node, index, message));
+        }
+        return entries;
+    }
+
+    private sealed record ProjectedContextEntry(ConversationNode Node, int Index, ChatMessage Message);
 
     private static BashExecutionRecord RestoreBashExecution(JsonElement payload, string id)
     {

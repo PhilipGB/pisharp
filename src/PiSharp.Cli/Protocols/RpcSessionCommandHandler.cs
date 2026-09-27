@@ -15,7 +15,8 @@ internal sealed class RpcSessionCommandHandler(
     Func<string, CancellationToken, Task<string?>>? forkSession,
     Func<CancellationToken, Task<bool>>? cloneSession,
     Func<string, CancellationToken, Task<bool>>? switchSession,
-    Func<JsonObject?>? getSystemMessage = null)
+    Func<JsonObject?>? getSystemMessage = null,
+    Func<string?>? getApi = null)
 {
     public async Task<bool> TryHandleAsync(string command, JsonElement root, JsonElement? id,
         CancellationToken cancellationToken)
@@ -196,7 +197,7 @@ internal sealed class RpcSessionCommandHandler(
 
             case "get_entries":
                 var entriesSnapshot = conversation.Snapshot();
-                var entries = RpcSessionEntryProjector.ProjectEntries(entriesSnapshot);
+                var entries = RpcSessionEntryProjector.ProjectEntries(entriesSnapshot, getApi?.Invoke());
                 var index = -1;
                 if (root.TryGetProperty("since", out var since))
                 {
@@ -226,7 +227,7 @@ internal sealed class RpcSessionCommandHandler(
                     type = "response",
                     command,
                     success = true,
-                    data = new { tree = RpcSessionEntryProjector.ProjectTree(treeSnapshot), leafId = treeSnapshot.Tree.HeadId }
+                    data = new { tree = RpcSessionEntryProjector.ProjectTree(treeSnapshot, getApi?.Invoke()), leafId = treeSnapshot.Tree.HeadId }
                 }, cancellationToken);
                 return true;
 

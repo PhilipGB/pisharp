@@ -124,11 +124,11 @@ public static class PiJsonlSessionInterchange
     }
 
     /// <summary>Projects stored entries to Pi v3 entry objects without adding a session header or branch anchor.</summary>
-    public static IReadOnlyList<JsonElement> ProjectEntries(ConversationSession session)
+    public static IReadOnlyList<JsonElement> ProjectEntries(ConversationSession session, string? api = null)
     {
         ArgumentNullException.ThrowIfNull(session);
         return session.Tree.Entries.Select(node =>
-            JsonSerializer.SerializeToElement(ProjectEntry(session, node))).ToArray();
+            JsonSerializer.SerializeToElement(ProjectEntry(session, node, api))).ToArray();
     }
 
     internal static JsonObject ProjectRuntimeMessage(ConversationSession session, ChatMessage message,
@@ -141,7 +141,7 @@ public static class PiJsonlSessionInterchange
         return projected;
     }
 
-    internal static JsonObject ProjectEntry(ConversationSession session, ConversationNode node)
+    internal static JsonObject ProjectEntry(ConversationSession session, ConversationNode node, string? api = null)
     {
         var raw = OriginalEntry(node);
         JsonObject record;
@@ -155,12 +155,37 @@ public static class PiJsonlSessionInterchange
         }
         else
         {
-            record = ExportNativeEntry(session, node);
+            record = ExportNativeEntry(session, node, api);
             record["id"] = node.Id;
             record["parentId"] = node.ParentId;
             record["timestamp"] = node.Timestamp.ToUniversalTime().ToString("O");
         }
         return record;
+    }
+
+    internal static JsonObject ProjectInterruptedMessage(ConversationSession session, ConversationNode node,
+        string? api = null)
+    {
+        var stopReason = StringProperty(node.Payload, "stopReason") ??
+            (StringProperty(node.Payload, "terminalType") == "turn_failed" ? "error" : "aborted");
+        var errorMessage = StringProperty(node.Payload, "errorMessage");
+        var content = new JsonArray();
+        var partialText = StringProperty(node.Payload, "partialAssistantText") ?? "";
+        if (partialText.Length > 0) content.Add(new JsonObject { ["type"] = "text", ["text"] = partialText });
+        var message = new JsonObject
+        {
+            ["role"] = "assistant",
+            ["content"] = content,
+            ["timestamp"] = node.Timestamp.ToUnixTimeMilliseconds(),
+            ["provider"] = StringProperty(node.Payload, "provider") ?? session.Provider,
+            ["model"] = StringProperty(node.Payload, "model") ?? session.Model,
+            ["api"] = StringProperty(node.Payload, "api") ?? api ?? "openai-responses",
+            ["stopReason"] = stopReason,
+            ["usage"] = EmptyUsage()
+        };
+        if (stopReason == "aborted") message["errorMessage"] = errorMessage ?? "Request was aborted";
+        else if (errorMessage is not null) message["errorMessage"] = errorMessage;
+        return message;
     }
 
     internal static JsonArray ProjectRunMessages(ConversationSession session, string? afterEntryId, string? api,
@@ -536,8 +561,10 @@ public static class PiJsonlSessionInterchange
         return result;
     }
 
-    private static JsonObject ExportNativeEntry(ConversationSession session, ConversationNode node)
+    private static JsonObject ExportNativeEntry(ConversationSession session, ConversationNode node, string? api = null)
     {
+        if (node.Type == "interrupted")
+            return new JsonObject { ["type"] = "message", ["message"] = ProjectInterruptedMessage(session, node, api) };
         if (node.Type == "chat")
         {
             var messageElement = node.Payload.GetProperty("Message");

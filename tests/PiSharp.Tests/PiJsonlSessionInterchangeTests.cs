@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Microsoft.Extensions.AI;
+using PiSharp.Cli.Protocols;
 using PiSharp.Runtime.Sessions;
 
 namespace PiSharp.Tests;
@@ -97,6 +98,66 @@ public sealed class PiJsonlSessionInterchangeTests
             message => message["role"]?.GetValue<string>() == "assistant");
         Assert.Equal("aborted", synthesizedAssistant["stopReason"]?.GetValue<string>());
         Assert.Equal("Request was aborted", synthesizedAssistant["errorMessage"]?.GetValue<string>());
+    }
+
+    [Fact]
+    public void InterruptedPartialIsPersistedAsAnAbortedPiMessageAndRestoredIntoModelContext()
+    {
+        var session = new ConversationSession(Path.GetTempPath(), "fixture-model", null, "fixture");
+        session.Append(new ChatMessage(ChatRole.User, "prompt"));
+        var parentId = session.Tree.HeadId;
+        var interrupted = session.Tree.Append("interrupted", JsonSerializer.SerializeToElement(new
+        {
+            prompt = "prompt",
+            partialText = "partial output",
+            partialAssistantText = "partial output",
+            terminalType = "turn_interrupted",
+            stopReason = "aborted",
+            provider = "fixture",
+            model = "fixture-model",
+            timestamp = DateTimeOffset.UtcNow
+        }));
+
+        var entry = Assert.Single(PiJsonlSessionInterchange.ProjectEntries(session),
+            item => item.GetProperty("id").GetString() == interrupted.Id);
+        Assert.Equal("message", entry.GetProperty("type").GetString());
+        Assert.Equal(parentId, entry.GetProperty("parentId").GetString());
+        var assistant = entry.GetProperty("message");
+        Assert.Equal("assistant", assistant.GetProperty("role").GetString());
+        Assert.Equal("partial output", assistant.GetProperty("content")[0].GetProperty("text").GetString());
+        Assert.Equal("aborted", assistant.GetProperty("stopReason").GetString());
+        Assert.Equal("Request was aborted", assistant.GetProperty("errorMessage").GetString());
+        Assert.Equal([ChatRole.User, ChatRole.Assistant], session.ContextMessages().Select(message => message.Role));
+        Assert.Equal("partial output", session.ContextMessages()[1].Text);
+
+        var roundTrip = PiJsonlSessionInterchange.Import(PiJsonlSessionInterchange.Export(session));
+        Assert.Equal(session.ContextMessages().Select(message => message.Text),
+            roundTrip.ContextMessages().Select(message => message.Text));
+    }
+
+    [Fact]
+    public void InterruptedProjectionDoesNotDuplicateAnAlreadyPersistedPartialAssistant()
+    {
+        var session = new ConversationSession(Path.GetTempPath(), "fixture-model", null, "fixture");
+        session.Append(new ChatMessage(ChatRole.User, "earlier prompt"));
+        session.Append(new ChatMessage(ChatRole.Assistant, "earlier answer"));
+        session.Append(new ChatMessage(ChatRole.User, "prompt"));
+        session.Append(new ChatMessage(ChatRole.Assistant, "partial output"));
+        session.Tree.Append("interrupted", JsonSerializer.SerializeToElement(new
+        {
+            partialAssistantText = "partial output"
+        }));
+
+        Assert.Equal(["earlier prompt", "earlier answer", "prompt", "partial output"],
+            session.ContextMessages().Select(message => message.Text));
+        var messages = RpcSessionMessageProjector.Project(session, "openai-completions");
+        Assert.Equal(2, messages
+            .OfType<System.Text.Json.Nodes.JsonObject>()
+            .Count(message => message["role"]?.GetValue<string>() == "assistant"));
+        Assert.Equal("aborted", messages.OfType<System.Text.Json.Nodes.JsonObject>()
+            .Last(message => message["role"]?.GetValue<string>() == "assistant")["stopReason"]?.GetValue<string>());
+        var plan = Assert.IsType<ConversationSession.CompactionPlan>(session.PrepareCompaction());
+        Assert.Equal(session.Tree.ActivePath()[2].Id, plan.FirstKeptEntryId);
     }
 
     [Fact]

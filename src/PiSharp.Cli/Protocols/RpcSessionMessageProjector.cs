@@ -49,6 +49,15 @@ internal static class RpcSessionMessageProjector
         {
             var message = ProjectNode(conversation, node, api);
             if (message is null) continue;
+            if (node.Type == "interrupted" && message["role"]?.GetValue<string>() == "assistant" &&
+                ReadText(message["content"]) is { Length: > 0 } partialText &&
+                messages.OfType<JsonObject>().LastOrDefault(item => item["role"]?.GetValue<string>() == "assistant") is { } existing &&
+                ReadText(existing["content"]) == partialText)
+            {
+                existing["stopReason"] = message["stopReason"]?.DeepClone();
+                existing["errorMessage"] = message["errorMessage"]?.DeepClone();
+                continue;
+            }
             if (edits.TryGetValue(node.Id, out var replacement) &&
                 message["role"]?.GetValue<string>() is "user" or "assistant" or "toolResult" or "custom")
             {
@@ -71,7 +80,10 @@ internal static class RpcSessionMessageProjector
                 ConversationSession.RestoreEntry(node), api, timestamp: node.Timestamp);
         }
 
-        var entry = PiJsonlSessionInterchange.ProjectEntry(conversation, node);
+        if (node.Type == "interrupted")
+            return PiJsonlSessionInterchange.ProjectInterruptedMessage(conversation, node, api);
+
+        var entry = PiJsonlSessionInterchange.ProjectEntry(conversation, node, api);
         if (node.Type == "bash_execution")
         {
             var bash = node.Payload.Deserialize<BashExecutionRecord>(new JsonSerializerOptions(JsonSerializerDefaults.Web));
@@ -106,6 +118,15 @@ internal static class RpcSessionMessageProjector
         }
         return null;
     }
+
+    private static string ReadText(JsonNode? content) => content switch
+    {
+        JsonValue value when value.TryGetValue<string>(out var text) => text,
+        JsonArray parts => string.Concat(parts.OfType<JsonObject>()
+            .Where(part => part["type"]?.GetValue<string>() == "text")
+            .Select(part => part["text"]?.GetValue<string>() ?? "")),
+        _ => ""
+    };
 
     private static JsonNode? ProjectReplacementContent(string role, JsonElement content)
     {
