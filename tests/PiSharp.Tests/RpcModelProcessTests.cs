@@ -252,7 +252,7 @@ public sealed class RpcModelProcessTests
         var agent = Path.Combine(root, "agent");
         Directory.CreateDirectory(agent);
         await File.WriteAllTextAsync(Path.Combine(agent, "models.json"), """
-            {"providers":{"fixture":{"baseUrl":"http://127.0.0.1:1/v1","apiKeyEnv":"PISHARP_FIXTURE_KEY","models":[{"id":"fixture-reasoning","reasoning":true}]}}}
+            {"providers":{"fixture":{"baseUrl":"http://127.0.0.1:1/v1","apiKeyEnv":"PISHARP_FIXTURE_KEY","models":[{"id":"fixture-reasoning","reasoning":true,"thinkingLevelMap":{"xhigh":"xhigh","max":"max"}}]}}}
             """);
         var sessionPath = Path.Combine(root, "restore.session.json");
         var session = new ConversationSession(root, "fixture-reasoning", "http://127.0.0.1:1/v1", "fixture");
@@ -291,7 +291,7 @@ public sealed class RpcModelProcessTests
                 line.Contains("\"id\":\"restored-state\"", StringComparison.Ordinal)));
             Assert.True(response.RootElement.GetProperty("success").GetBoolean());
             var state = response.RootElement.GetProperty("data");
-            Assert.Equal(["id", "name", "api", "provider", "baseUrl", "reasoning", "input", "cost",
+            Assert.Equal(["id", "name", "api", "provider", "baseUrl", "reasoning", "thinkingLevelMap", "input", "cost",
                     "contextWindow", "maxTokens"],
                 state.GetProperty("model").EnumerateObject().Select(property => property.Name));
             Assert.Equal("fixture-reasoning", state.GetProperty("model").GetProperty("id").GetString());
@@ -319,7 +319,7 @@ public sealed class RpcModelProcessTests
         var agent = Path.Combine(root, "agent");
         Directory.CreateDirectory(agent);
         await File.WriteAllTextAsync(Path.Combine(agent, "models.json"), """
-            {"providers":{"fixture":{"baseUrl":"http://127.0.0.1:1/v1","apiKeyEnv":"PISHARP_FIXTURE_KEY","models":[{"id":"fixture-model","reasoning":false},{"id":"fixture-next","reasoning":false},{"id":"fixture-reasoning","reasoning":true}]}}}
+            {"providers":{"fixture":{"baseUrl":"http://127.0.0.1:1/v1","apiKeyEnv":"PISHARP_FIXTURE_KEY","models":[{"id":"fixture-model","reasoning":false},{"id":"fixture-next","reasoning":false},{"id":"fixture-reasoning","reasoning":true,"thinkingLevelMap":{"xhigh":"xhigh","max":"max"}}]}}}
             """);
         Process? process = null;
         try

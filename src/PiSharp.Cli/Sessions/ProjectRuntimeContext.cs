@@ -97,7 +97,7 @@ internal sealed class ProjectRuntimeContext : IDisposable
         return new PiAgent(chat, new CodingTools(WorkingDirectory, effectiveSettings.ShellPath,
                 selection.Model.InputLimits?.Images?.Resize), arguments.Tools, arguments.ExcludeTools,
             arguments.NoTools, Instructions, Prompts.System, Prompts.Append, Extensions.Registration.Tools,
-            reasoning: ThinkingLevels.ToOptions(thinking), blockImages: effectiveSettings.BlockImages == true,
+            reasoning: ThinkingLevels.ToOptions(thinking, selection.Model.ThinkingLevelMap), blockImages: effectiveSettings.BlockImages == true,
             noBuiltinTools: arguments.NoBuiltinTools,
             supportsImages: selection.Model.Input?.Contains("image", StringComparer.Ordinal) != false);
     }

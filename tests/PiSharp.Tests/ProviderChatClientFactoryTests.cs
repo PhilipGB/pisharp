@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Sockets;
+using System.Text.Json;
 using PiSharp.Cli;
 using PiSharp.Runtime.Providers;
 using PiSharp.Runtime;
@@ -355,6 +356,45 @@ public sealed class ProviderChatClientFactoryTests
         Assert.Equal(expectedType, thinkingType);
         if (expectedType == "adaptive") Assert.Equal("high", effort);
         else Assert.True(budgetTokens >= 1024);
+        Assert.Equal("ok", response.Text);
+    }
+
+    [Fact]
+    public async Task OpenAiCompletionsUsesCanonicalThinkingMapValueInProviderRequest()
+    {
+        using var listener = StartLoopbackListener(out var port);
+        string? reasoningEffort = null;
+        var server = Task.Run(async () =>
+        {
+            var request = await listener.GetContextAsync();
+            using var reader = new StreamReader(request.Request.InputStream);
+            using var body = JsonDocument.Parse(await reader.ReadToEndAsync());
+            reasoningEffort = body.RootElement.GetProperty("reasoning_effort").GetString();
+            request.Response.ContentType = "application/json";
+            await using var writer = new StreamWriter(request.Response.OutputStream);
+            await writer.WriteAsync("""
+                {"id":"chatcmpl_map","object":"chat.completion","created":1,"model":"fixture-model","choices":[{"index":0,"message":{"role":"assistant","content":"ok"},"finish_reason":"stop"}],"usage":{"prompt_tokens":1,"completion_tokens":1,"total_tokens":2}}
+                """);
+            await writer.FlushAsync();
+            request.Response.Close();
+        });
+        using var mapDocument = JsonDocument.Parse("{\"high\":\"low\"}");
+        var map = mapDocument.RootElement.Clone();
+        var selection = Selection("fixture", $"http://127.0.0.1:{port}/v1", "openai-completions") with
+        {
+            Model = Selection("fixture", $"http://127.0.0.1:{port}/v1", "openai-completions").Model with
+            {
+                Reasoning = true,
+                ThinkingLevelMap = map
+            }
+        };
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var response = await ProviderChatClientFactory.Create(selection).GetResponseAsync(
+            [new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User, "hello")],
+            new Microsoft.Extensions.AI.ChatOptions { Reasoning = ThinkingLevels.ToOptions("high", map) }, deadline.Token);
+        await server.WaitAsync(deadline.Token);
+
+        Assert.Equal("low", reasoningEffort);
         Assert.Equal("ok", response.Text);
     }
 

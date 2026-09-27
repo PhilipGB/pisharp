@@ -23,7 +23,8 @@ internal sealed class ModelRuntimeController(
     {
         if (requireAuthenticated && !selection.Authenticated)
             throw new InvalidOperationException($"Provider '{selection.Provider.Id}' is not authenticated. Use /login {selection.Provider.Id}.");
-        var thinking = ThinkingLevels.ValidateForModel(thinkingLevel, selection.Model.Reasoning);
+        var thinking = ThinkingLevels.ValidateForModel(thinkingLevel, selection.Model.Reasoning,
+            selection.Model.ThinkingLevelMap);
         var settings = getSettings();
         var policy = settings.ResolveCompactionPolicy(selection.Model.ContextLength, getEnvironment,
             $"{selection.Provider.Id}/{selection.Model.Id}");
@@ -54,5 +55,5 @@ internal sealed record PreparedModelRuntime(ModelSelection Selection, string Thi
 {
     public bool SupportsImages => Selection.Model.Input?.Contains("image", StringComparer.Ordinal) != false;
     public ModelImageResizeOptions? ImageResizeOptions => Selection.Model.InputLimits?.Images?.Resize;
-    public ReasoningOptions? ReasoningOptions => ThinkingLevels.ToOptions(Thinking);
+    public ReasoningOptions? ReasoningOptions => ThinkingLevels.ToOptions(Thinking, Selection.Model.ThinkingLevelMap);
 }

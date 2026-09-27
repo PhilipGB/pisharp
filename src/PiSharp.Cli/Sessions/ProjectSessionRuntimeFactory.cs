@@ -63,7 +63,7 @@ internal sealed class ProjectSessionRuntimeFactory(
 
             var thinking = ThinkingLevels.ValidateForModel(
                 PiJsonlSessionInterchange.GetThinkingLevel(conversation) ?? currentThinking,
-                selection.Model.Reasoning);
+                selection.Model.Reasoning, selection.Model.ThinkingLevelMap);
             var chat = ProviderChatClientFactory.Create(selection);
             var agent = project.CreateAgent(chat, selection, thinking, arguments);
             var compaction = project.Settings.ResolveCompactionPolicy(selection.Model.ContextLength,

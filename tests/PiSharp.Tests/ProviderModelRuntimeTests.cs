@@ -549,7 +549,7 @@ public sealed class ProviderModelRuntimeTests
                 await process.StandardInput.WriteAsync("fixture-secret-not-for-transcript\n");
                 await process.StandardInput.FlushAsync();
                 await WaitFor("Authenticated fixture with api-key");
-                await process.StandardInput.WriteAsync("/model fixture/fixture-alt\n/thinking high\n/model\n\u001b[B\u001b[A\r/logout\nafter-logout\n/quit\n");
+                await process.StandardInput.WriteAsync("/model fixture/fixture-alt\n/thinking high\n/thinking\n/model\n\u001b[B\u001b[A\r/logout\nafter-logout\n/quit\n");
                 process.StandardInput.Close();
                 await process.WaitForExitAsync(timeout.Token);
                 await draining;
@@ -558,7 +558,8 @@ public sealed class ProviderModelRuntimeTests
                 Assert.Contains("browser authorization is not implemented", transcript);
                 Assert.Contains("Authenticated fixture with api-key", transcript);
                 Assert.Contains("Model: fixture/fixture-alt", transcript);
-                Assert.Contains("does not advertise reasoning support", transcript);
+                Assert.Contains("Thinking: off", transcript);
+                Assert.Contains("Thinking: off; available: off", transcript);
                 Assert.Contains("Logged out fixture", transcript);
                 var restoreBoundary = transcript.LastIndexOf("\u001b[?1049l", StringComparison.Ordinal);
                 Assert.True(restoreBoundary >= 0, "The interactive screen was not restored.");

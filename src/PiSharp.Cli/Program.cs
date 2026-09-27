@@ -92,7 +92,7 @@ try
         offline: cli.Offline || Environment.GetEnvironmentVariable("PI_OFFLINE") is { } offlineFlag &&
             offlineFlag.ToLowerInvariant() is "1" or "true" or "yes");
     selection = await modelRuntime.ResolveAsync(cli.Provider ?? (cli.Local ? "local" : null), cli.ModelOverride);
-    thinking = ThinkingLevels.ValidateForModel(thinking, selection.Model.Reasoning);
+    thinking = ThinkingLevels.ValidateForModel(thinking, selection.Model.Reasoning, selection.Model.ThinkingLevelMap);
     connection = selection.Connection;
 }
 catch (Exception error) when (error is ArgumentException or InvalidOperationException or InvalidDataException or IOException or System.Text.Json.JsonException)
@@ -230,7 +230,7 @@ try
     {
         selection = await modelRuntime.ResolveAsync(savedProvider, conversation.Model);
         connection = selection.Connection;
-        thinking = ThinkingLevels.ValidateForModel(thinking, selection.Model.Reasoning);
+        thinking = ThinkingLevels.ValidateForModel(thinking, selection.Model.Reasoning, selection.Model.ThinkingLevelMap);
         chat = ProviderChatClientFactory.Create(selection);
         contextPolicy = userSettings.ResolveCompactionPolicy(selection.Model.ContextLength, Environment.GetEnvironmentVariable, $"{selection.Provider.Id}/{selection.Model.Id}");
         modelPricing = ModelPricing.FromEnvironment(Environment.GetEnvironmentVariable) ?? selection.Model.Pricing;
@@ -462,7 +462,8 @@ async Task<string> SetRpcThinkingLevelAsync(string level, CancellationToken toke
 {
     token.ThrowIfCancellationRequested();
     var normalized = ThinkingLevels.Normalize(level);
-    var nextThinking = selection.Model.Reasoning == true ? normalized : "off";
+    var nextThinking = ThinkingLevels.ValidateForModel(normalized, selection.Model.Reasoning,
+        selection.Model.ThinkingLevelMap);
     if (nextThinking.Equals(thinking, StringComparison.Ordinal)) return thinking;
     await ReplaceModelRuntime(selection, nextThinking, recordModelChange: false);
     return thinking;
@@ -472,9 +473,11 @@ Task<string> SetRpcThinkingLevelDuringRunAsync(string level, CancellationToken t
 {
     token.ThrowIfCancellationRequested();
     var normalized = ThinkingLevels.Normalize(level);
-    var nextThinking = selection.Model.Reasoning == true ? normalized : "off";
+    var nextThinking = ThinkingLevels.ValidateForModel(normalized, selection.Model.Reasoning,
+        selection.Model.ThinkingLevelMap);
     if (nextThinking.Equals(thinking, StringComparison.Ordinal)) return Task.FromResult(thinking);
-    if (!conversationRun.SetThinkingLevelDuringRun(nextThinking, ThinkingLevels.ToOptions(nextThinking)))
+    if (!conversationRun.SetThinkingLevelDuringRun(nextThinking,
+        ThinkingLevels.ToOptions(nextThinking, selection.Model.ThinkingLevelMap)))
         throw new InvalidOperationException("The active run is already settling.");
     thinking = nextThinking;
     return Task.FromResult(thinking);
@@ -637,9 +640,16 @@ async Task HandleEditorApplicationAction(string action)
                     Console.WriteLine("Current model does not support thinking.");
                     return;
                 }
-                var thinkingIndex = Array.FindIndex(ThinkingLevels.All.ToArray(), level =>
+                var availableThinkingLevels = ThinkingLevels.AvailableForModel(selection.Model.Reasoning,
+                    selection.Model.ThinkingLevelMap);
+                if (availableThinkingLevels.Count == 0)
+                {
+                    Console.WriteLine("Current model has no available thinking levels.");
+                    return;
+                }
+                var thinkingIndex = Array.FindIndex(availableThinkingLevels.ToArray(), level =>
                     level.Equals(thinking, StringComparison.OrdinalIgnoreCase));
-                var nextThinking = ThinkingLevels.All[(thinkingIndex + 1 + ThinkingLevels.All.Count) % ThinkingLevels.All.Count];
+                var nextThinking = availableThinkingLevels[(thinkingIndex + 1 + availableThinkingLevels.Count) % availableThinkingLevels.Count];
                 await ReplaceModelRuntime(selection, nextThinking, recordModelChange: false);
                 Console.WriteLine($"Thinking level: {thinking}");
                 break;
@@ -864,7 +874,8 @@ if (cli.Mode == "rpc")
         extensionLease.Current.Registration, () => selection.Authenticated ? null :
             $"Provider '{selection.Provider.Id}' is not authenticated. Use /login {selection.Provider.Id} or configure {selection.Provider.ApiKeyEnvironment ?? "a credential"}.",
         SelectRpcModelAsync, () => conversationRun, () => thinking, () => modelRuntime.Scope.Count > 0,
-        SetRpcThinkingLevelAsync, () => ThinkingLevels.AvailableForModel(selection.Model.Reasoning),
+        SetRpcThinkingLevelAsync, () => ThinkingLevels.AvailableForModel(selection.Model.Reasoning,
+            selection.Model.ThinkingLevelMap),
         () => selection.Model.Reasoning == true, () => ProviderChatClientFactory.ResolveProtocol(selection),
         SetRpcThinkingLevelDuringRunAsync, rpcUserSettings.SetAutoRetryEnabledAsync, StartRpcSessionAsync,
         ForkRpcSessionAsync, CloneRpcSessionAsync, SwitchProjectSessionAsync,
@@ -1023,8 +1034,10 @@ else
                     case "/thinking":
                         if (argument.Length == 0)
                         {
+                            var available = ThinkingLevels.AvailableForModel(selection.Model.Reasoning,
+                                selection.Model.ThinkingLevelMap);
                             Console.WriteLine($"Thinking: {thinking}; available: " +
-                                (selection.Model.Reasoning == true ? string.Join(", ", ThinkingLevels.All) : "off"));
+                                (available.Count == 0 ? "none" : string.Join(", ", available)));
                             break;
                         }
                         await ReplaceModelRuntime(selection, argument, recordModelChange: false);
