@@ -11,6 +11,80 @@ namespace PiSharp.Tests;
 public sealed class RpcReadCommandsProcessTests
 {
     [Fact]
+    public async Task GetLastAssistantTextOmitsTextWhenSessionHasNoAssistant()
+    {
+        if (!OperatingSystem.IsLinux()) return;
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-rpc-last-text-" + Guid.NewGuid().ToString("N"));
+        var agentDirectory = Path.Combine(root, "agent");
+        var sessionDirectory = Path.Combine(root, "sessions");
+        Directory.CreateDirectory(agentDirectory);
+        using var listener = StartLoopbackListener(out var port);
+        var sessionPath = Path.Combine(sessionDirectory, "no-assistant.session.json");
+        var session = new ConversationSession(root, "read-last-text-fixture",
+            $"http://127.0.0.1:{port}/v1", "fixture");
+        session.Append(new ChatMessage(ChatRole.User, "question"));
+        await new ConversationStore(root, sessionDirectory).SaveAsync(session, sessionPath);
+        await File.WriteAllTextAsync(Path.Combine(agentDirectory, "models.json"), JsonSerializer.Serialize(new
+        {
+            providers = new
+            {
+                fixture = new
+                {
+                    baseUrl = $"http://127.0.0.1:{port}/v1",
+                    apiKeyEnv = "PISHARP_FIXTURE_KEY",
+                    models = new[] { new { id = "read-last-text-fixture", api = "openai-completions" } }
+                }
+            }
+        }));
+
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+        Process? process = null;
+        try
+        {
+            var start = new ProcessStartInfo("dotnet")
+            {
+                WorkingDirectory = root,
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+            start.ArgumentList.Add(typeof(CliArguments).Assembly.Location);
+            foreach (var argument in new[] { "--mode", "rpc", "--provider", "fixture", "--model", "read-last-text-fixture",
+                "--offline", "--session", sessionPath, "--session-dir", sessionDirectory })
+                start.ArgumentList.Add(argument);
+            start.Environment["PISHARP_FIXTURE_KEY"] = "fixture-only-key";
+            start.Environment["PISHARP_AGENT_DIR"] = agentDirectory;
+            foreach (var name in new[] { "OPENAI_API_KEY", "PISHARP_API_KEY", "PISHARP_BASE_URL", "PISHARP_MODEL",
+                "PISHARP_AUTH_PATH", "PISHARP_MODELS_PATH", "PISHARP_SETTINGS_PATH", "PISHARP_PROVIDER" })
+                start.Environment.Remove(name);
+            process = Process.Start(start)!;
+            var stderr = process.StandardError.ReadToEndAsync();
+            var lines = new List<string>();
+
+            await WriteCommandAsync(process, new { id = "last-text", type = "get_last_assistant_text" }, timeout.Token);
+            using var response = await ReadResponseAsync(process, lines, "last-text", timeout.Token);
+            Assert.True(response.RootElement.GetProperty("success").GetBoolean());
+            Assert.False(response.RootElement.GetProperty("data").TryGetProperty("text", out _));
+
+            process.StandardInput.Close();
+            await process.WaitForExitAsync(timeout.Token);
+            Assert.Equal(0, process.ExitCode);
+            Assert.Equal(string.Empty, await stderr.WaitAsync(timeout.Token));
+        }
+        finally
+        {
+            if (process is { HasExited: false })
+            {
+                process.Kill(entireProcessTree: true);
+                await process.WaitForExitAsync();
+            }
+            process?.Dispose();
+            listener.Close();
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task GetMessagesReturnsCompactedContextAndAppliedEditsInRpcProcess()
     {
         if (!OperatingSystem.IsLinux()) return;

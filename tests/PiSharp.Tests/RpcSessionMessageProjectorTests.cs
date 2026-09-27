@@ -56,6 +56,22 @@ public sealed class RpcSessionMessageProjectorTests
         Assert.Equal("fixture", message["details"]!["source"]!.GetValue<string>());
     }
 
+    [Fact]
+    public void LastAssistantTextSkipsEmptyAbortedMessagesAndAllowsNoAssistant()
+    {
+        var session = PiJsonlSessionInterchange.Import("""
+            {"type":"session","version":3,"id":"aborted-fixture","cwd":"/tmp","timestamp":"2026-09-27T00:00:00.000Z"}
+            {"type":"message","id":"user","parentId":null,"timestamp":"2026-09-27T00:00:01.000Z","message":{"role":"user","content":"question","timestamp":1790467201000}}
+            {"type":"message","id":"answer","parentId":"user","timestamp":"2026-09-27T00:00:02.000Z","message":{"role":"assistant","content":[{"type":"text","text":"last complete answer"}],"api":"openai-completions","provider":"fixture","model":"model","stopReason":"stop","timestamp":1790467202000}}
+            {"type":"message","id":"aborted","parentId":"answer","timestamp":"2026-09-27T00:00:03.000Z","message":{"role":"assistant","content":[],"api":"openai-completions","provider":"fixture","model":"model","stopReason":"aborted","timestamp":1790467203000}}
+            """, Path.GetTempPath());
+        var projector = new RpcEventProjector();
+
+        Assert.Equal("last complete answer", projector.GetLastAssistantTextSnapshot(session, null));
+        Assert.Null(projector.GetLastAssistantTextSnapshot(
+            new ConversationSession(Path.GetTempPath(), "fixture", null), null));
+    }
+
     private static string ReadText(JsonNode? content) => content switch
     {
         JsonValue value when value.TryGetValue<string>(out var text) => text,

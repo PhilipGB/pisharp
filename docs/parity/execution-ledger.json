@@ -1684,15 +1684,15 @@
       "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:37",
       "acceptance": [
-        "Implement get_last_assistant_text using shared canonical runtime with correlated responses/event ordering",
+        "Implement get_last_assistant_text using the Pi session projection and omit data.text when no assistant text exists",
         "Test protocol through RPC process, including failures and cancellation",
-        "Remaining: no-assistant/custom-message edge cases, error semantics and a pinned process differential."
+        "Remaining: broader error semantics and a pinned process differential."
       ],
       "implementation": [
-        "RpcEventWriter serves get_last_assistant_text from the same canonical plus in-flight assistant projection used by get_messages."
+        "RpcEventWriter serves this getter from the shared active session projection; RpcEventProjector skips Pi's empty aborted final assistant. RpcSessionCommandHandler omits the text property when no assistant exists."
       ],
       "evidence": [
-        "RpcReadCommandsProcessTests.SessionReadCommandsReturnOneSnapshotWhileProviderRequestIsBlocked verifies this command succeeds after a streamed message_update and returns the partial assistant text during the blocked provider call. Current Pi 2b0a123de98318c2ff8069661721ce0c3794c34e rpc-mode.ts handles the getter without a busy guard; no Pi process differential has been run."
+        "RpcReadCommandsProcessTests.SessionReadCommandsReturnOneSnapshotWhileProviderRequestIsBlocked verifies partial text during provider streaming; GetLastAssistantTextOmitsTextWhenSessionHasNoAssistant verifies the response omits data.text when absent. RpcSessionMessageProjectorTests verifies an empty aborted final assistant is skipped in favor of the previous assistant text. Current Pi 2b0a123de98318c2ff8069661721ce0c3794c34e AgentSession.getLastAssistantText skips empty aborted assistants and returns undefined when none exists. Focused RPC read/projector tests pass 6/6; full local validation passes 633/633 with format and warnings-as-errors build clean. Exact-head CI for this follow-on slice is pending; no Pi process differential has been run."
       ],
       "dependencies": []
     },

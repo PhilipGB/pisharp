@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using PiSharp.Runtime.Sessions;
 
 namespace PiSharp.Cli.Protocols;
@@ -175,16 +176,16 @@ internal sealed class RpcSessionCommandHandler(
 
             case "get_last_assistant_text":
                 var lastAssistantSnapshot = conversation.Snapshot();
+                var lastAssistantText = events().GetLastAssistantTextSnapshot(lastAssistantSnapshot);
                 await output.EmitAsync(new
                 {
                     id,
                     type = "response",
                     command,
                     success = true,
-                    data = new
-                    {
-                        text = events().GetLastAssistantTextSnapshot(lastAssistantSnapshot)
-                    }
+                    data = lastAssistantText is null
+                        ? new JsonObject()
+                        : new JsonObject { ["text"] = lastAssistantText }
                 }, cancellationToken);
                 return true;
 

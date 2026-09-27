@@ -25,7 +25,8 @@ internal sealed class RpcEventProjector
     public string? GetLastAssistantTextSnapshot(ConversationSession conversation, string? api)
     {
         var assistant = ProjectMessagesSnapshot(conversation, api).OfType<JsonObject>()
-            .LastOrDefault(message => message["role"]?.GetValue<string>() == "assistant");
+            .LastOrDefault(message => message["role"]?.GetValue<string>() == "assistant" &&
+                !(message["stopReason"]?.GetValue<string>() == "aborted" && IsEmptyContent(message["content"])));
         return assistant is null ? null : ReadText(assistant["content"]);
     }
 
@@ -37,6 +38,13 @@ internal sealed class RpcEventProjector
             .Where(part => part["type"]?.GetValue<string>() == "text")
             .Select(part => part["text"]?.GetValue<string>() ?? ""));
     }
+
+    private static bool IsEmptyContent(JsonNode? content) => content switch
+    {
+        JsonArray parts => parts.Count == 0,
+        JsonValue value when value.TryGetValue<string>(out var text) => text.Length == 0,
+        _ => false
+    };
 
     public IReadOnlyList<object> ProjectPrompt(AgentLifecycleEvent item, ConversationSession conversation) =>
         _assistantMessages.ProjectPrompt(item, conversation);
