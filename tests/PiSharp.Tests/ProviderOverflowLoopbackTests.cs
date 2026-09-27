@@ -246,6 +246,13 @@ public sealed class ProviderOverflowLoopbackTests
                 $"Loopback received {Volatile.Read(ref receivedRequests)} requests; server error: {serverError}; " +
                 $"provider error details: {events.LastOrDefault(item => item.Type == "model_request_failed")?.ProviderException}; " +
                 $"run events: {string.Join(" | ", events.Select(item => $"{item.Type}: {item.Error}"))}.");
+            if (api == "openai-completions")
+            {
+                var providerFailure = Assert.Single(events, item => item.Type == "model_request_failed");
+                var httpFailure = Assert.IsType<HttpRequestException>(providerFailure.ProviderException);
+                Assert.Equal(HttpStatusCode.BadRequest, httpFailure.StatusCode);
+                Assert.Contains("context_length_exceeded", httpFailure.Message, StringComparison.Ordinal);
+            }
             try { await server.WaitAsync(deadline.Token); }
             catch (OperationCanceledException error) when (deadline.IsCancellationRequested)
             {

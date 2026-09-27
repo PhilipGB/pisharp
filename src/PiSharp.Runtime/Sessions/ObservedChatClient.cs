@@ -73,8 +73,7 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
                 await using var toolCallEnumerator = toolCallCapture?.ReadAllAsync(cancellationToken)
                     .GetAsyncEnumerator(cancellationToken);
                 Task<bool>? toolCallMove = toolCallEnumerator?.MoveNextAsync().AsTask();
-                var enumerator = base.GetStreamingResponseAsync(requestMessages, options, cancellationToken)
-                    .GetAsyncEnumerator(cancellationToken);
+                IAsyncEnumerator<ChatResponseUpdate>? enumerator = null;
                 Exception? streamError = null;
 
                 void PublishToolCallDelta()
@@ -88,7 +87,27 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
 
                 try
                 {
-                    while (true)
+                    // Some SDK streams start the request while creating the enumerator, before
+                    // MoveNextAsync. Keep that setup failure inside the provider-error boundary.
+                    enumerator = base.GetStreamingResponseAsync(requestMessages, options, cancellationToken)
+                        .GetAsyncEnumerator(cancellationToken);
+                }
+                catch (OperationCanceledException error)
+                {
+                    streamError = error;
+                    ended = true;
+                    publish(new("model_request_interrupted"));
+                    throw;
+                }
+                catch (Exception error)
+                {
+                    streamError = error;
+                    failure = toolCallCapture?.ResponseFailure ?? error;
+                }
+
+                try
+                {
+                    while (enumerator is not null)
                     {
                         bool next;
                         try
@@ -158,8 +177,16 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
                 }
                 finally
                 {
-                    try { await enumerator.DisposeAsync(); }
+                    try
+                    {
+                        if (enumerator is not null) await enumerator.DisposeAsync();
+                    }
                     catch when (streamError is not null) { }
+                    catch (Exception error)
+                    {
+                        streamError = error;
+                        failure = toolCallCapture?.ResponseFailure ?? error;
+                    }
                 }
                 ended = true;
             }
