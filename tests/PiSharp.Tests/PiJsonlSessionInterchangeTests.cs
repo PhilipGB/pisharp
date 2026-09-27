@@ -268,6 +268,29 @@ public sealed class PiJsonlSessionInterchangeTests
             PiJsonlSessionInterchange.Import($"{{\"type\":\"session\",\"version\":\"3\",\"id\":\"x\",\"cwd\":\"{cwd}\"}}\n")).Message);
     }
 
+    [Fact]
+    public void MalformedLineKeepsFollowingOrphanInTheActiveHistoryAndPreservesItsPiParent()
+    {
+        var cwd = Path.GetFullPath(Path.GetTempPath());
+        var input = $$$"""
+            {"type":"session","version":3,"id":"session-orphan","timestamp":"2026-09-27T10:00:00.000Z","cwd":"{{{cwd}}}"}
+            {"type":"message","id":"entry-user","parentId":null,"timestamp":"2026-09-27T10:00:01.000Z","message":{"role":"user","content":"before corrupt row","timestamp":1780000000000}}
+            not-json
+            {"type":"message","id":"entry-assistant","parentId":"entry-missing","timestamp":"2026-09-27T10:00:03.000Z","message":{"role":"assistant","content":"survives as orphan","timestamp":1780000002000,"provider":"openai","model":"gpt-4o"}}
+            """;
+
+        var imported = PiJsonlSessionInterchange.Import(input);
+
+        Assert.Equal("entry-assistant", imported.Tree.HeadId);
+        Assert.Equal(["survives as orphan"], imported.ActiveMessages().Select(message => message.Text));
+        var exported = PiJsonlSessionInterchange.Export(imported);
+        using var orphan = JsonDocument.Parse(exported.Split('\n', StringSplitOptions.RemoveEmptyEntries)
+            .Single(line => line.Contains("entry-assistant", StringComparison.Ordinal)));
+        Assert.Equal("entry-missing", orphan.RootElement.GetProperty("parentId").GetString());
+        Assert.Equal(["survives as orphan"],
+            PiJsonlSessionInterchange.Import(exported).ActiveMessages().Select(message => message.Text));
+    }
+
     private static string V3Session(string cwd) => $$$"""
         {"type":"session","version":3,"id":"session-v3","timestamp":"2024-12-03T14:00:00.000Z","cwd":"{{{cwd}}}"}
         {"type":"message","id":"a-root","parentId":null,"timestamp":"2024-12-03T14:00:01.000Z","message":{"role":"system","content":"instructions","timestamp":1733234401000}}

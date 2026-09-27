@@ -211,7 +211,7 @@ public sealed class ProviderOverflowLoopbackTests
                 }
                 var responseBytes = Encoding.UTF8.GetBytes(responseBody);
                 request.Response.ContentLength64 = responseBytes.Length;
-                await request.Response.OutputStream.WriteAsync(responseBytes, deadline.Token);
+                request.Response.OutputStream.Write(responseBytes);
                 request.Response.Close();
             }
         }, deadline.Token);

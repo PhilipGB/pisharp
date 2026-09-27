@@ -44,23 +44,7 @@ public static class PiJsonlSessionInterchange
         if (version < 3)
             foreach (var entry in entries) MigrateHookMessage(entry);
 
-        var nodes = new List<ConversationNode>(entries.Length);
-        var seen = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var mutableEntry in entries)
-        {
-            var entry = JsonSerializer.SerializeToElement(mutableEntry);
-            var id = StringProperty(entry, "id");
-            var type = StringProperty(entry, "type");
-            if (string.IsNullOrWhiteSpace(id) || string.IsNullOrWhiteSpace(type) || !seen.Add(id))
-                throw new InvalidDataException("Pi session entries must have unique ids and a type.");
-            var parentId = StringProperty(entry, "parentId");
-            if (parentId is not null && !seen.Contains(parentId))
-                throw new InvalidDataException($"Pi session entry {id} refers to a missing or forward parent {parentId}.");
-            var timestamp = ParseTimestamp(StringProperty(entry, "timestamp"));
-            nodes.Add(ToNode(entry, id, parentId, type, timestamp));
-        }
-
-        var tree = new ConversationTree(nodes);
+        var tree = PiJsonlSessionTreeBuilder.Build(entries.Select(entry => JsonSerializer.SerializeToElement(entry)).ToArray());
         var activePath = tree.ActivePath();
         var model = "unknown";
         string? provider = null;
@@ -163,7 +147,9 @@ public static class PiJsonlSessionInterchange
         {
             record = JsonNode.Parse(original.GetRawText())!.AsObject();
             record["id"] = node.Id;
-            record["parentId"] = node.ParentId;
+            if (node.ParentId is not null || !TryProperty(original, "parentId", out var sourceParent) ||
+                sourceParent.ValueKind == JsonValueKind.Null)
+                record["parentId"] = node.ParentId;
         }
         else
         {
@@ -448,7 +434,7 @@ public static class PiJsonlSessionInterchange
     private static string? NodeString(JsonObject value, string key) => value[key] is JsonValue scalar &&
         scalar.TryGetValue<string>(out var text) ? text : null;
 
-    private static ConversationNode ToNode(JsonElement entry, string id, string? parentId, string type, DateTimeOffset timestamp)
+    internal static ConversationNode ToNode(JsonElement entry, string id, string? parentId, string type, DateTimeOffset timestamp)
     {
         if (type == "message" && TryProperty(entry, "message", out var message) && StringProperty(message, "role") != "bashExecution")
             return ConversationSession.ImportedPiMessage(id, parentId, timestamp, ToChatMessage(message), entry);
@@ -724,7 +710,7 @@ public static class PiJsonlSessionInterchange
         return false;
     }
 
-    private static string? StringProperty(JsonElement element, string name) =>
+    internal static string? StringProperty(JsonElement element, string name) =>
         TryProperty(element, name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
 
     private static int? IntProperty(JsonElement element, string name) =>
@@ -736,6 +722,6 @@ public static class PiJsonlSessionInterchange
     private static string? NodeString(JsonNode? node) =>
         node is JsonValue value && value.TryGetValue<string>(out var text) ? text : null;
 
-    private static DateTimeOffset ParseTimestamp(string? value) =>
+    internal static DateTimeOffset ParseTimestamp(string? value) =>
         DateTimeOffset.TryParse(value, out var timestamp) ? timestamp : DateTimeOffset.UnixEpoch;
 }
