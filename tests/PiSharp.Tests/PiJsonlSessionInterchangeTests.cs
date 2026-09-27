@@ -291,6 +291,31 @@ public sealed class PiJsonlSessionInterchangeTests
             PiJsonlSessionInterchange.Import(exported).ActiveMessages().Select(message => message.Text));
     }
 
+    [Fact]
+    public void ForwardParentEntryBuildsTheSameTreeShapeAndKeepsPhysicalEntryOrder()
+    {
+        var cwd = Path.GetFullPath(Path.GetTempPath());
+        var input = $$$"""
+            {"type":"session","version":3,"id":"session-forward","timestamp":"2026-09-27T10:00:00.000Z","cwd":"{{{cwd}}}"}
+            {"type":"message","id":"child-first","parentId":"parent-later","timestamp":"2026-09-27T10:00:01.000Z","message":{"role":"assistant","content":"child"}}
+            {"type":"message","id":"parent-later","parentId":null,"timestamp":"2026-09-27T10:00:02.000Z","message":{"role":"user","content":"parent"}}
+            """;
+
+        var imported = PiJsonlSessionInterchange.Import(input);
+        var entries = PiJsonlSessionInterchange.ProjectEntries(imported);
+        var child = Assert.Single(imported.Tree.Entries, entry => entry.Id == "child-first");
+        var parent = Assert.Single(imported.Tree.Entries, entry => entry.Id == "parent-later");
+
+        Assert.Equal(["child-first", "parent-later"],
+            entries.Select(entry => entry.GetProperty("id").GetString()));
+        Assert.Equal(parent.Id, child.ParentId);
+        Assert.Equal("parent-later", imported.Tree.HeadId);
+        Assert.Equal(["parent-later"], imported.Tree.ActivePath().Select(entry => entry.Id));
+        var restored = ConversationSession.Parse(imported.ToJson());
+        Assert.Equal(["child-first", "parent-later"], restored.Tree.Entries.Select(entry => entry.Id));
+        Assert.Equal(parent.Id, Assert.Single(restored.Tree.Entries, entry => entry.Id == child.Id).ParentId);
+    }
+
     private static string V3Session(string cwd) => $$$"""
         {"type":"session","version":3,"id":"session-v3","timestamp":"2024-12-03T14:00:00.000Z","cwd":"{{{cwd}}}"}
         {"type":"message","id":"a-root","parentId":null,"timestamp":"2024-12-03T14:00:01.000Z","message":{"role":"system","content":"instructions","timestamp":1733234401000}}

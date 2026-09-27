@@ -536,7 +536,7 @@ public sealed class ConversationSession
         foreach (var entry in entries.Where(entry => entry.Type == "usage"))
             ValidateUsage(entry.Payload.Deserialize<UsageRecord>() ??
                 throw new InvalidDataException($"Invalid usage record at {entry.Id}."), entry.Id);
-        var tree = new ConversationTree(entries);
+        var tree = ConversationTree.FromEntries(entries);
         foreach (var node in entries.Where(entry => entry.Type == "compaction"))
         {
             if (node.Payload.ValueKind != JsonValueKind.Object ||

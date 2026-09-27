@@ -70,6 +70,27 @@ public sealed class ConversationTreeTests
     }
 
     [Fact]
+    public void ImportedEntriesKeepPhysicalOrderAndResolveForwardParents()
+    {
+        var child = new ConversationNode("child", "parent", "chat", Text("child"), DateTimeOffset.UtcNow);
+        var parent = new ConversationNode("parent", null, "chat", Text("parent"), DateTimeOffset.UtcNow);
+
+        var tree = ConversationTree.FromEntries([child, parent], child.Id);
+
+        Assert.Equal([child.Id, parent.Id], tree.Entries.Select(entry => entry.Id));
+        Assert.Equal([parent.Id, child.Id], tree.ActivePath().Select(entry => entry.Id));
+    }
+
+    [Fact]
+    public void ImportedEntriesRejectParentCycles()
+    {
+        var first = new ConversationNode("first", "second", "chat", Text("first"), DateTimeOffset.UtcNow);
+        var second = new ConversationNode("second", "first", "chat", Text("second"), DateTimeOffset.UtcNow);
+
+        Assert.Throws<InvalidDataException>(() => ConversationTree.FromEntries([first, second]));
+    }
+
+    [Fact]
     public async Task ConcurrentAppendsRemainOneValidSelectedPath()
     {
         var tree = new ConversationTree();

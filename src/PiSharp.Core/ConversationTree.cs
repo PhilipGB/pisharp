@@ -19,6 +19,17 @@ public sealed class ConversationTree
         Select(headId ?? _entries.LastOrDefault()?.Id);
     }
 
+    public static ConversationTree FromEntries(IEnumerable<ConversationNode> entries, string? headId = null)
+    {
+        ArgumentNullException.ThrowIfNull(entries);
+        var materialized = entries.ToArray();
+        var tree = new ConversationTree();
+        foreach (var entry in materialized) tree.Add(entry, requireParentAlreadyAdded: false);
+        tree.ValidateLinksAndAcyclicity();
+        tree.Select(headId ?? materialized.LastOrDefault()?.Id);
+        return tree;
+    }
+
     public ConversationNode Append(string type, JsonElement payload, DateTimeOffset? at = null)
     {
         lock (_gate)
@@ -76,7 +87,7 @@ public sealed class ConversationTree
 
     public ConversationTree Clone()
     {
-        lock (_gate) return new ConversationTree(_entries, _headId);
+        lock (_gate) return FromEntries(_entries, _headId);
     }
 
     /// <summary>Copy one ancestor path through an entry (or an empty path for null).</summary>
@@ -94,15 +105,42 @@ public sealed class ConversationTree
         }
     }
 
-    private void Add(ConversationNode entry)
+    private void Add(ConversationNode entry, bool requireParentAlreadyAdded = true)
     {
         if (string.IsNullOrWhiteSpace(entry.Id) || string.IsNullOrWhiteSpace(entry.Type))
             throw new InvalidDataException("Session entry id and type are required.");
         if (_byId.ContainsKey(entry.Id)) throw new InvalidDataException($"Duplicate entry id: {entry.Id}");
-        if (entry.ParentId is not null && !_byId.ContainsKey(entry.ParentId))
+        if (requireParentAlreadyAdded && entry.ParentId is not null && !_byId.ContainsKey(entry.ParentId))
             throw new InvalidDataException($"Entry {entry.Id} refers to missing or forward parent {entry.ParentId}.");
         _byId.Add(entry.Id, entry);
         _entries.Add(entry);
+    }
+
+    private void ValidateLinksAndAcyclicity()
+    {
+        foreach (var entry in _entries)
+            if (entry.ParentId is not null && !_byId.ContainsKey(entry.ParentId))
+                throw new InvalidDataException($"Entry {entry.Id} refers to missing parent {entry.ParentId}.");
+
+        var states = new Dictionary<string, byte>(StringComparer.Ordinal);
+        foreach (var entry in _entries)
+        {
+            if (states.GetValueOrDefault(entry.Id) == 2) continue;
+            var path = new List<ConversationNode>();
+            var current = entry;
+            while (true)
+            {
+                var state = states.GetValueOrDefault(current.Id);
+                if (state == 1)
+                    throw new InvalidDataException($"Session entries contain a parent cycle at {current.Id}.");
+                if (state == 2) break;
+                states[current.Id] = 1;
+                path.Add(current);
+                if (current.ParentId is null) break;
+                current = _byId[current.ParentId];
+            }
+            foreach (var node in path) states[node.Id] = 2;
+        }
     }
 }
 

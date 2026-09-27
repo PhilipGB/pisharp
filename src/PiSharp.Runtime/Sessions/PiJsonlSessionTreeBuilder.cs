@@ -25,14 +25,11 @@ internal static class PiJsonlSessionTreeBuilder
                 // link for Pi projections, but root the entry in PiSharp's stricter conversation graph.
                 parentId = null;
             }
-            if (parentId is not null && !seen.Contains(parentId))
-                throw new InvalidDataException($"Pi session entry {id} refers to a forward parent {parentId}.");
-
             var timestamp = PiJsonlSessionInterchange.ParseTimestamp(
                 PiJsonlSessionInterchange.StringProperty(entry, "timestamp"));
             nodes.Add(PiJsonlSessionInterchange.ToNode(entry, id, parentId, type, timestamp));
         }
 
-        return new ConversationTree(nodes);
+        return ConversationTree.FromEntries(nodes);
     }
 }
