@@ -67,23 +67,27 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
             var producedOutput = false;
             Exception? failure = null;
             var responseUpdates = new List<ChatResponseUpdate>();
+            IProviderToolCallDeltaCapture? toolCallCapture = null;
+            IAsyncEnumerator<ProviderToolCallDelta>? toolCallEnumerator = null;
+            Task<bool>? toolCallMove = null;
+            IAsyncEnumerator<ChatResponseUpdate>? enumerator = null;
+            Exception? streamError = null;
+
+            void PublishToolCallDelta()
+            {
+                producedOutput = true;
+                publish(new AgentLifecycleEvent("model_content_update")
+                {
+                    StreamedToolCallDelta = toolCallEnumerator!.Current
+                });
+            }
+
             try
             {
-                using var toolCallCapture = toolCallDeltaSource?.BeginToolCallDeltaCapture();
-                await using var toolCallEnumerator = toolCallCapture?.ReadAllAsync(cancellationToken)
+                toolCallCapture = toolCallDeltaSource?.BeginToolCallDeltaCapture();
+                toolCallEnumerator = toolCallCapture?.ReadAllAsync(cancellationToken)
                     .GetAsyncEnumerator(cancellationToken);
-                Task<bool>? toolCallMove = toolCallEnumerator?.MoveNextAsync().AsTask();
-                IAsyncEnumerator<ChatResponseUpdate>? enumerator = null;
-                Exception? streamError = null;
-
-                void PublishToolCallDelta()
-                {
-                    producedOutput = true;
-                    publish(new AgentLifecycleEvent("model_content_update")
-                    {
-                        StreamedToolCallDelta = toolCallEnumerator!.Current
-                    });
-                }
+                toolCallMove = toolCallEnumerator?.MoveNextAsync().AsTask();
 
                 try
                 {
@@ -190,7 +194,39 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
                 }
                 ended = true;
             }
-            finally { if (!ended) publish(new("model_request_interrupted")); }
+            finally
+            {
+                if (toolCallCapture is not null)
+                {
+                    // Complete the channel, then finish any pending MoveNext before disposing the
+                    // async iterator. Concurrent MoveNextAsync/DisposeAsync can throw and mask the
+                    // provider's original pre-content response failure.
+                    toolCallCapture.Dispose();
+                    while (toolCallMove is not null)
+                    {
+                        bool hasNext;
+                        try { hasNext = await toolCallMove; }
+                        catch when (streamError is not null || failure is not null)
+                        {
+                            toolCallMove = null;
+                            break;
+                        }
+                        if (!hasNext)
+                        {
+                            toolCallMove = null;
+                            break;
+                        }
+                        PublishToolCallDelta();
+                        toolCallMove = toolCallEnumerator!.MoveNextAsync().AsTask();
+                    }
+                }
+                if (toolCallEnumerator is not null)
+                {
+                    try { await toolCallEnumerator.DisposeAsync(); }
+                    catch when (streamError is not null || failure is not null) { }
+                }
+                if (!ended) publish(new("model_request_interrupted"));
+            }
 
             if (failure is null)
             {
