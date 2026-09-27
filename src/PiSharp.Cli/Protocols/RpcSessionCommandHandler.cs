@@ -14,7 +14,8 @@ internal sealed class RpcSessionCommandHandler(
     Func<string?, CancellationToken, Task<bool>>? newSession,
     Func<string, CancellationToken, Task<string?>>? forkSession,
     Func<CancellationToken, Task<bool>>? cloneSession,
-    Func<string, CancellationToken, Task<bool>>? switchSession)
+    Func<string, CancellationToken, Task<bool>>? switchSession,
+    Func<JsonObject?>? getSystemMessage = null)
 {
     public async Task<bool> TryHandleAsync(string command, JsonElement root, JsonElement? id,
         CancellationToken cancellationToken)
@@ -157,7 +158,7 @@ internal sealed class RpcSessionCommandHandler(
                     success = true,
                     data = new
                     {
-                        messages = events().ProjectMessagesSnapshot(messagesSnapshot)
+                        messages = events().ProjectMessagesSnapshot(messagesSnapshot, getSystemMessage?.Invoke())
                     }
                 }, cancellationToken);
                 return true;

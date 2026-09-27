@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using PiSharp.Runtime.Sessions;
 using PiSharp.Runtime.Providers;
 using PiSharp.Runtime.Extensions;
@@ -32,7 +33,8 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
     Func<ModelDescriptor, JsonElement>? projectModel = null,
     Func<string, CancellationToken, Task>? validateSwitchSession = null,
     Func<ConversationSession, CancellationToken, Task<string?>>? prepareCloneSession = null,
-    Func<string?, CancellationToken, Task<IReadOnlyList<ModelDescriptor>>>? discoverCycleModels = null)
+    Func<string?, CancellationToken, Task<IReadOnlyList<ModelDescriptor>>>? discoverCycleModels = null,
+    Func<JsonObject?>? getSystemMessage = null)
 {
     private readonly JsonLineWriter _writer = new(output);
     private RpcEventWriter? _events;
@@ -58,13 +60,15 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
         var queueModeCommands = new RpcQueueModeCommandHandler(RespondAsync, () => CurrentRun, persistQueueMode);
         var stateCommands = new RpcStateCommandHandler(_writer, () => CurrentRun,
             () => getThinkingLevel?.Invoke(), () => _active is { IsCompleted: false },
-            () => getModelSnapshot?.Invoke());
+            () => getModelSnapshot?.Invoke(),
+            () => Events.ProjectMessagesSnapshot(CurrentRun.Conversation, getSystemMessage?.Invoke()).Count);
         var sessionCommands = new RpcSessionCommandHandler(_writer, RespondAsync, () => CurrentRun,
             () => _active is { IsCompleted: false }, () => Events, save,
             newSession is null ? null : StartNewSessionAsync,
             forkSession is null ? null : StartForkSessionAsync,
             cloneSession is null ? null : StartCloneSessionAsync,
-            switchSession is null ? null : StartSwitchSessionAsync);
+            switchSession is null ? null : StartSwitchSessionAsync,
+            getSystemMessage);
         var commandDiscoveryCommands = new RpcCommandDiscoveryHandler(_writer, () => CurrentResources, () => CurrentExtensions);
         var promptCommandHandler = new RpcPromptCommandHandler(_writer, () => CurrentExtensions);
         try

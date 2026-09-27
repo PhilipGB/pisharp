@@ -9,7 +9,8 @@ internal sealed class RpcStateCommandHandler(
     Func<ConversationRun> currentRun,
     Func<string?> getThinkingLevel,
     Func<bool> isStreaming,
-    Func<JsonElement?> getModel)
+    Func<JsonElement?> getModel,
+    Func<int>? getMessageCount = null)
 {
     public async Task<bool> TryHandleAsync(string command, JsonElement? id, CancellationToken cancellationToken)
     {
@@ -18,6 +19,7 @@ internal sealed class RpcStateCommandHandler(
         var run = currentRun();
         var conversation = run.Conversation;
         var queue = run.GetPendingPrompts();
+        var messageCount = getMessageCount?.Invoke() ?? conversation.ActiveMessages().Count;
         await output.EmitAsync(new
         {
             id,
@@ -35,7 +37,7 @@ internal sealed class RpcStateCommandHandler(
                 conversation.Id,
                 conversation.Name,
                 run.AutoCompactionEnabled,
-                conversation.ActiveMessages().Count,
+                messageCount,
                 queue.InDeliveryOrder.Count)
         }, cancellationToken);
         return true;

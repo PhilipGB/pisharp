@@ -112,12 +112,22 @@ public sealed class RpcActiveCloneProcessTests
                 throw new Xunit.Sdk.XunitException("RPC run did not become idle.");
             }
 
+            await process.StandardInput.WriteLineAsync("{\"id\":\"empty-state\",\"type\":\"get_state\"}");
+            await process.StandardInput.FlushAsync(timeout.Token);
+            var emptyState = await ReadResponseAsync("empty-state");
+            Assert.Equal(0, emptyState.GetProperty("data").GetProperty("messageCount").GetInt32());
+            await process.StandardInput.WriteLineAsync("{\"id\":\"empty-messages\",\"type\":\"get_messages\"}");
+            await process.StandardInput.FlushAsync(timeout.Token);
+            var emptyMessages = await ReadResponseAsync("empty-messages");
+            Assert.Equal(0, emptyMessages.GetProperty("data").GetProperty("messages").GetArrayLength());
+
             await process.StandardInput.WriteLineAsync("{\"id\":\"first-prompt\",\"type\":\"prompt\",\"message\":\"seed prompt\"}");
             await process.StandardInput.FlushAsync(timeout.Token);
             JsonElement record;
             do { record = await ReadRecordAsync(); }
             while (record.GetProperty("type").GetString() != "agent_settled");
             var initialState = await WaitForIdleStateAsync("initial-state");
+            Assert.Equal(3, initialState.GetProperty("data").GetProperty("messageCount").GetInt32());
             var sourcePath = initialState.GetProperty("data").GetProperty("sessionFile").GetString();
             Assert.False(string.IsNullOrWhiteSpace(sourcePath));
 
@@ -141,6 +151,7 @@ public sealed class RpcActiveCloneProcessTests
 
             releaseBlockedResponse.TrySetResult();
             var cloneState = await WaitForIdleStateAsync("clone-state");
+            Assert.Equal(4, cloneState.GetProperty("data").GetProperty("messageCount").GetInt32());
             var clonePath = cloneState.GetProperty("data").GetProperty("sessionFile").GetString();
             var cloneId = cloneState.GetProperty("data").GetProperty("sessionId").GetString();
             await process.StandardInput.WriteLineAsync("{\"id\":\"clone-messages\",\"type\":\"get_messages\"}");
@@ -161,7 +172,25 @@ public sealed class RpcActiveCloneProcessTests
             Assert.Equal(["seed prompt", "first reply", "block for clone"],
                 cloned.ActiveMessages().Select(message => message.Text));
             Assert.DoesNotContain(cloned.ActiveMessages(), message => message.Text.Contains("interrupted clone text", StringComparison.Ordinal));
-            Assert.Equal(3, messagesResponse.GetProperty("data").GetProperty("messages").GetArrayLength());
+            var projectedMessages = messagesResponse.GetProperty("data").GetProperty("messages");
+            Assert.Equal(4, projectedMessages.GetArrayLength());
+            var systemMessage = projectedMessages[0];
+            Assert.Equal("system", systemMessage.GetProperty("role").GetString());
+            Assert.Equal("", systemMessage.GetProperty("content").GetString());
+            Assert.Equal(["preamble"], systemMessage.GetProperty("sections").EnumerateObject()
+                .Select(section => section.Name));
+            Assert.Contains("You are PiSharp", systemMessage.GetProperty("sections").GetProperty("preamble").GetString());
+            Assert.True(systemMessage.GetProperty("timestamp").GetInt64() > 0);
+            var tools = systemMessage.GetProperty("toolsAdded");
+            Assert.Equal(["read", "bash", "edit", "write"], tools.EnumerateArray()
+                .Select(tool => tool.GetProperty("name").GetString()));
+            Assert.All(tools.EnumerateArray(), tool =>
+            {
+                Assert.Equal(tool.GetProperty("name").GetString(), tool.GetProperty("label").GetString());
+                Assert.True(tool.GetProperty("parameters").GetProperty("properties").ValueKind == JsonValueKind.Object);
+            });
+            Assert.Equal(["user", "assistant", "user"], projectedMessages.EnumerateArray().Skip(1)
+                .Select(message => message.GetProperty("role").GetString()));
 
             var records = lines.Select(line => JsonDocument.Parse(line)).ToArray();
             try

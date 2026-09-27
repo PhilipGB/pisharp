@@ -254,7 +254,10 @@ public sealed class RpcReadCommandsProcessTests
             await ReadUntilAsync(process, lines, record => record.GetProperty("type").GetString() == "message_update", timeout.Token);
             await WriteCommandAsync(process, new { id = "state-live", type = "get_state" }, timeout.Token);
             using (var state = await ReadResponseAsync(process, lines, "state-live", timeout.Token))
+            {
                 Assert.True(state.RootElement.GetProperty("data").GetProperty("isStreaming").GetBoolean());
+                Assert.Equal(4, state.RootElement.GetProperty("data").GetProperty("messageCount").GetInt32());
+            }
 
             var commandIds = new[] { "messages-live", "entries-live", "tree-live", "fork-messages-live", "last-assistant-live" };
             var commands = new object[]
@@ -273,14 +276,13 @@ public sealed class RpcReadCommandsProcessTests
                 foreach (var id in commandIds) Assert.True(responses[id].RootElement.GetProperty("success").GetBoolean(), id);
 
                 var messages = responses["messages-live"].RootElement.GetProperty("data").GetProperty("messages");
+                Assert.Equal(4, messages.GetArrayLength());
                 Assert.Contains(messages.EnumerateArray(), message => message.GetProperty("role").GetString() == "user" &&
                     ReadMessageText(message.GetProperty("content")) == "current pending prompt");
                 Assert.Contains(messages.EnumerateArray(), message => message.GetProperty("role").GetString() == "assistant" &&
                     ReadMessageText(message.GetProperty("content")) == "previous answer");
-                var partialAssistant = Assert.Single(messages.EnumerateArray(), message =>
-                    message.GetProperty("role").GetString() == "assistant" &&
+                Assert.DoesNotContain(messages.EnumerateArray(), message =>
                     ReadMessageText(message.GetProperty("content")) == "streamed fragment");
-                Assert.Equal("pending", partialAssistant.GetProperty("stopReason").GetString());
 
                 var entriesData = responses["entries-live"].RootElement.GetProperty("data");
                 var entries = entriesData.GetProperty("entries");
@@ -296,7 +298,7 @@ public sealed class RpcReadCommandsProcessTests
 
                 var forkMessages = responses["fork-messages-live"].RootElement.GetProperty("data").GetProperty("messages");
                 Assert.Contains(forkMessages.EnumerateArray(), message => message.GetProperty("text").GetString() == "current pending prompt");
-                Assert.Equal("streamed fragment", responses["last-assistant-live"].RootElement.GetProperty("data")
+                Assert.Equal("previous answer", responses["last-assistant-live"].RootElement.GetProperty("data")
                     .GetProperty("text").GetString());
             }
             finally

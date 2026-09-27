@@ -23,9 +23,6 @@ internal sealed class RpcAssistantMessageProjector
 
     public JsonObject? LastCompletedAssistantMessage { get; private set; }
 
-    public JsonObject? ActiveProviderMessage(ConversationSession conversation, string? api) =>
-        _providerRequestActive ? CreatePartialMessage(conversation, api) : null;
-
     public void BeginAgent()
     {
         _runMessages.Clear();

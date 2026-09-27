@@ -13,12 +13,12 @@ internal sealed class RpcEventProjector
 
     public void BeginTurn() => _assistantMessages.BeginTurn();
 
-    public JsonArray ProjectMessagesSnapshot(ConversationSession conversation, string? api)
+    public JsonArray ProjectMessagesSnapshot(ConversationSession conversation, string? api, JsonObject? systemMessage = null)
     {
         var canonical = RpcSessionMessageProjector.Project(conversation, api);
         var messages = _assistantMessages.ReconcileRunMessages(canonical, includeUnpersisted: true);
-        if (_assistantMessages.ActiveProviderMessage(conversation, api) is { } activeMessage)
-            messages.Add(activeMessage);
+        if (messages.Count > 0 && systemMessage is not null)
+            messages.Insert(0, systemMessage.DeepClone());
         return messages;
     }
 

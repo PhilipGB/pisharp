@@ -144,7 +144,7 @@ public sealed class RpcMissingSessionTargetProcessTests
                 do { currentState = await ReadRecordAsync(); }
                 while (!currentState.TryGetProperty("id", out var currentStateId) || currentStateId.GetString() != stateId);
                 idle = !currentState.GetProperty("data").GetProperty("isStreaming").GetBoolean();
-                if (idle) Assert.Equal(2, currentState.GetProperty("data").GetProperty("messageCount").GetInt32());
+                if (idle) Assert.Equal(3, currentState.GetProperty("data").GetProperty("messageCount").GetInt32());
                 else await Task.Delay(5, timeout.Token);
             }
             Assert.True(idle);

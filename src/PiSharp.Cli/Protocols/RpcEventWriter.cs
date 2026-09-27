@@ -10,10 +10,10 @@ internal sealed class RpcEventWriter(JsonLineWriter output)
     private RpcEventProjector? _activeProjector;
     private string? _activeApi;
 
-    public JsonArray ProjectMessagesSnapshot(ConversationSession conversation)
+    public JsonArray ProjectMessagesSnapshot(ConversationSession conversation, JsonObject? systemMessage = null)
     {
         lock (_projectorGate)
-            return (_activeProjector ?? new RpcEventProjector()).ProjectMessagesSnapshot(conversation, _activeApi);
+            return (_activeProjector ?? new RpcEventProjector()).ProjectMessagesSnapshot(conversation, _activeApi, systemMessage);
     }
 
     public string? GetLastAssistantTextSnapshot(ConversationSession conversation)

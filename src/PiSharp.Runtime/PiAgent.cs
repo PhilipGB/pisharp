@@ -13,6 +13,7 @@ public sealed class PiAgent
     private readonly ChatClientAgent _agent;
     private readonly ChatClientAgent _summarizer;
     private readonly MutableChatClient _chatClient;
+    private readonly IReadOnlyList<AIFunctionDeclaration> _toolDeclarations;
     private readonly SemaphoreSlim _runGate = new(1, 1);
     private ReasoningOptions? _reasoning;
     private DurableExecution? _active;
@@ -22,6 +23,13 @@ public sealed class PiAgent
     private readonly List<(ChatMessage Message, string? AfterCallId)> _injectedSteering = [];
     private int _providerRequestIndex;
     private int _supportsImages;
+    private long _systemMessageTimestamp;
+
+    public string SystemInstructions { get; }
+    public IReadOnlyList<AIFunctionDeclaration> ToolDeclarations => _toolDeclarations;
+    public long? SystemMessageTimestamp => Volatile.Read(ref _systemMessageTimestamp) is var timestamp && timestamp != 0
+        ? timestamp
+        : null;
 
     public PiAgent(IChatClient client, CodingTools tools, IReadOnlyList<string>? selectedTools = null, IReadOnlyList<string>? excludedTools = null, bool noTools = false, string? contextInstructions = null, string? systemPrompt = null, string? appendSystemPrompt = null,
         IReadOnlyCollection<AIFunction>? extensionTools = null, ProviderRetryPolicy? retryPolicy = null,
@@ -46,6 +54,10 @@ public sealed class PiAgent
         if (added.Any(tool => new[] { "read", "bash", "edit", "write", "grep", "find", "ls" }.Contains(tool.Name, StringComparer.Ordinal)) ||
             builtin.Concat(external).GroupBy(tool => tool.Name, StringComparer.Ordinal).Any(group => group.Count() > 1))
             throw new ArgumentException("Extension tool conflicts with a built-in tool name.");
+        var configuredTools = builtin.Concat(external).ToArray();
+        _toolDeclarations = configuredTools.OfType<AIFunctionDeclaration>().ToArray();
+        SystemInstructions = (systemPrompt ?? "You are PiSharp, a coding agent. Inspect files before modifying them when tools are available. Use only the tools provided for this run.") +
+            "\n\n" + (appendSystemPrompt ?? "") + "\n\n" + (contextInstructions ?? "");
         _agent = new ChatClientAgent(new ObservedChatClient(_chatClient, value => _events?.Invoke(value),
             retryPolicy ?? ProviderRetryPolicy.Default, TakeSteeringForRequest, blockImages, ProjectForRequestAsync,
             supportsImages, () => Volatile.Read(ref _reasoning), () => Volatile.Read(ref _supportsImages) != 0,
@@ -56,8 +68,8 @@ public sealed class PiAgent
                 AllowConcurrentInvocation = true,
                 ChatOptions = new ChatOptions
                 {
-                    Instructions = (systemPrompt ?? "You are PiSharp, a coding agent. Inspect files before modifying them when tools are available. Use only the tools provided for this run.") + "\n\n" + (appendSystemPrompt ?? "") + "\n\n" + (contextInstructions ?? ""),
-                    Tools = builtin.Concat(external).Select(tool => tool is AIFunction function ? new DurableToolFunction(function, () => _active, value => _events?.Invoke(value)) : tool).Cast<AITool>().ToArray(),
+                    Instructions = SystemInstructions,
+                    Tools = configuredTools.Select(tool => tool is AIFunction function ? new DurableToolFunction(function, () => _active, value => _events?.Invoke(value)) : tool).Cast<AITool>().ToArray(),
                     Reasoning = reasoning
                 }
             });
@@ -184,6 +196,7 @@ public sealed class PiAgent
         await _runGate.WaitAsync(cancellationToken);
         try
         {
+            Interlocked.CompareExchange(ref _systemMessageTimestamp, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), 0);
             _active = durable;
             _events = onEvent;
             _takeSteering = takeSteering;

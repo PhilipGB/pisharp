@@ -894,7 +894,8 @@ if (cli.Mode == "rpc")
             model.Provider is { } providerId ? modelRuntime.GetProvider(providerId) : null),
         validateSwitchSession: ValidateRpcSessionSwitchAsync,
         prepareCloneSession: PrepareRpcCloneAsync,
-        discoverCycleModels: GetRpcCycleModelsAsync).ServeAsync();
+        discoverCycleModels: GetRpcCycleModelsAsync,
+        getSystemMessage: () => RpcSystemMessageProjector.Project(agent)).ServeAsync();
     return;
 }
 if (cli.Mode == "json")
