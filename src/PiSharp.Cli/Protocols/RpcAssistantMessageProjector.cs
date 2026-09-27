@@ -11,6 +11,8 @@ internal sealed class RpcAssistantMessageProjector
     private readonly List<JsonObject> _content = [];
     private readonly List<JsonObject> _runMessages = [];
     private readonly Dictionary<string, JsonObject> _toolResults = new(StringComparer.Ordinal);
+    private readonly Dictionary<int, ActiveToolCall> _streamedToolCalls = [];
+    private readonly Dictionary<string, ActiveToolCall> _streamedToolCallsById = new(StringComparer.Ordinal);
     private readonly StringBuilder _activeContent = new();
     private string? _activeKind;
     private int _activeContentIndex = -1;
@@ -56,9 +58,11 @@ internal sealed class RpcAssistantMessageProjector
     public IReadOnlyList<object> ProjectUpdate(AgentLifecycleEvent item, ConversationSession conversation, string? api)
     {
         if (item.UsageSnapshot is { } usage) _usage = usage;
-        if (item.ProviderUpdate is not { } update) return [];
-
         var records = new List<object>();
+        if (item.StreamedToolCallDelta is { } toolCallDelta)
+            ProjectToolCallDelta(toolCallDelta, records, conversation, api);
+        if (item.ProviderUpdate is not { } update) return records;
+
         // A pre-content provider retry must not leave an unmatched message_start on the wire.
         var sawText = false;
         foreach (var content in update.Contents ?? [])
@@ -100,7 +104,11 @@ internal sealed class RpcAssistantMessageProjector
         FinishActiveContent(records, conversation, api);
         var contentIndex = _content.Count;
         foreach (var call in response.Contents.OfType<FunctionCallContent>())
-            ProjectToolCall(call, contentIndex++, records, conversation, api);
+        {
+            if (_streamedToolCallsById.TryGetValue(call.CallId, out var streamed))
+                CompleteStreamedToolCall(call, streamed, records);
+            else ProjectToolCall(call, contentIndex++, records, conversation, api);
+        }
 
         var message = PiJsonlSessionInterchange.ProjectRuntimeMessage(conversation, response, api,
             timestamp: _timestamp);
@@ -260,6 +268,107 @@ internal sealed class RpcAssistantMessageProjector
         }));
     }
 
+    private void ProjectToolCallDelta(ProviderToolCallDelta delta, List<object> records,
+        ConversationSession conversation, string? api)
+    {
+        EnsureStarted(records, conversation, api);
+        FinishActiveContent(records, conversation, api);
+        if (!_streamedToolCalls.TryGetValue(delta.Index, out var call))
+        {
+            call = new ActiveToolCall();
+            _streamedToolCalls.Add(delta.Index, call);
+        }
+        call.CallId = delta.CallId ?? call.CallId;
+        call.Name = delta.Name ?? call.Name;
+        if (delta.CallId is not null) _streamedToolCallsById[delta.CallId] = call;
+        if (!string.IsNullOrEmpty(delta.Arguments)) call.ArgumentFragments.Add(delta.Arguments);
+        if (!call.Started && call.CallId is not null && call.Name is not null)
+        {
+            call.ContentIndex = _content.Count;
+            call.Started = true;
+            _content.Add(new JsonObject
+            {
+                ["type"] = "toolCall",
+                ["id"] = call.CallId,
+                ["name"] = call.Name,
+                ["arguments"] = new JsonObject()
+            });
+            records.Add(MessageUpdate(new JsonObject
+            {
+                ["type"] = "toolcall_start",
+                ["contentIndex"] = call.ContentIndex,
+                ["id"] = call.CallId,
+                ["toolName"] = call.Name
+            }));
+            foreach (var fragment in call.ArgumentFragments)
+                records.Add(ToolCallDeltaUpdate(call.ContentIndex, fragment));
+        }
+        else if (call.Started && !string.IsNullOrEmpty(delta.Arguments))
+            records.Add(ToolCallDeltaUpdate(call.ContentIndex, delta.Arguments));
+        if (call.Started) RefreshPartialToolArguments(call);
+    }
+
+    private void CompleteStreamedToolCall(FunctionCallContent completed, ActiveToolCall streamed, List<object> records)
+    {
+        var toolCall = new JsonObject
+        {
+            ["type"] = "toolCall",
+            ["id"] = completed.CallId,
+            ["name"] = completed.Name,
+            ["arguments"] = JsonSerializer.SerializeToNode(completed.Arguments) ?? new JsonObject()
+        };
+        if (!streamed.Started)
+        {
+            streamed.CallId = completed.CallId;
+            streamed.Name = completed.Name;
+            streamed.ContentIndex = _content.Count;
+            streamed.Started = true;
+            _content.Add(toolCall.DeepClone().AsObject());
+            records.Add(MessageUpdate(new JsonObject
+            {
+                ["type"] = "toolcall_start",
+                ["contentIndex"] = streamed.ContentIndex,
+                ["id"] = completed.CallId,
+                ["toolName"] = completed.Name
+            }));
+            foreach (var fragment in streamed.ArgumentFragments)
+                records.Add(ToolCallDeltaUpdate(streamed.ContentIndex, fragment));
+        }
+        else _content[streamed.ContentIndex] = toolCall.DeepClone().AsObject();
+        records.Add(MessageUpdate(new JsonObject
+        {
+            ["type"] = "toolcall_end",
+            ["contentIndex"] = streamed.ContentIndex,
+            ["toolCall"] = toolCall
+        }));
+    }
+
+    private void RefreshPartialToolArguments(ActiveToolCall call)
+    {
+        try
+        {
+            if (JsonNode.Parse(string.Concat(call.ArgumentFragments)) is JsonObject arguments)
+                _content[call.ContentIndex]["arguments"] = arguments;
+        }
+        catch (JsonException) { }
+    }
+
+    private JsonObject ToolCallDeltaUpdate(int contentIndex, string delta) => MessageUpdate(new JsonObject
+    {
+        ["type"] = "toolcall_delta",
+        ["contentIndex"] = contentIndex,
+        ["delta"] = delta
+    });
+
+    private sealed class ActiveToolCall
+    {
+        public int ContentIndex { get; set; } = -1;
+        public string? CallId { get; set; }
+        public string? Name { get; set; }
+        public bool Started { get; set; }
+        public List<string> ArgumentFragments { get; } = [];
+    }
+
     private void EnsureStarted(List<object> records, ConversationSession conversation, string? api)
     {
         if (_messageStarted) return;
@@ -335,6 +444,8 @@ internal sealed class RpcAssistantMessageProjector
     private void ResetProviderMessage()
     {
         _content.Clear();
+        _streamedToolCalls.Clear();
+        _streamedToolCallsById.Clear();
         _activeKind = null;
         _activeContentIndex = -1;
         _activeContent.Clear();

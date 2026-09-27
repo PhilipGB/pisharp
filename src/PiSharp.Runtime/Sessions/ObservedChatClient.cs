@@ -11,7 +11,7 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
     bool blockImages = false,
     Func<IReadOnlyList<ChatMessage>, bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? projectContext = null,
     bool supportsImages = true, Func<ReasoningOptions?>? getReasoning = null,
-    Func<bool>? getSupportsImages = null) : DelegatingChatClient(inner)
+    Func<bool>? getSupportsImages = null, IProviderToolCallDeltaSource? toolCallDeltaSource = null) : DelegatingChatClient(inner)
 {
     public override async Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages,
         ChatOptions? options = null, CancellationToken cancellationToken = default)
@@ -69,17 +69,71 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
             var responseUpdates = new List<ChatResponseUpdate>();
             try
             {
+                using var toolCallCapture = toolCallDeltaSource?.BeginToolCallDeltaCapture();
+                await using var toolCallEnumerator = toolCallCapture?.ReadAllAsync(cancellationToken)
+                    .GetAsyncEnumerator(cancellationToken);
+                Task<bool>? toolCallMove = toolCallEnumerator?.MoveNextAsync().AsTask();
                 await using var enumerator = base.GetStreamingResponseAsync(requestMessages, options, cancellationToken)
                     .GetAsyncEnumerator(cancellationToken);
+
+                void PublishToolCallDelta()
+                {
+                    producedOutput = true;
+                    publish(new AgentLifecycleEvent("model_content_update")
+                    {
+                        StreamedToolCallDelta = toolCallEnumerator!.Current
+                    });
+                }
+
                 while (true)
                 {
                     bool next;
-                    try { next = await enumerator.MoveNextAsync(); }
+                    try
+                    {
+                        var responseMove = enumerator.MoveNextAsync().AsTask();
+                        while (toolCallMove is not null)
+                        {
+                            var completed = await Task.WhenAny(responseMove, toolCallMove);
+                            if (completed == responseMove) break;
+                            if (await toolCallMove)
+                            {
+                                PublishToolCallDelta();
+                                toolCallMove = toolCallEnumerator!.MoveNextAsync().AsTask();
+                            }
+                            else toolCallMove = null;
+                        }
+                        next = await responseMove;
+                    }
                     catch (OperationCanceledException) { ended = true; publish(new("model_request_interrupted")); throw; }
-                    catch (Exception error) { failure = error; break; }
-                    if (!next) break;
+                    catch (Exception error)
+                    {
+                        failure = error;
+                        while (toolCallMove is { IsCompletedSuccessfully: true })
+                        {
+                            if (!toolCallMove.Result) { toolCallMove = null; break; }
+                            PublishToolCallDelta();
+                            toolCallMove = toolCallEnumerator!.MoveNextAsync().AsTask();
+                        }
+                        break;
+                    }
+                    if (!next)
+                    {
+                        while (toolCallMove is not null)
+                        {
+                            if (!await toolCallMove) { toolCallMove = null; break; }
+                            PublishToolCallDelta();
+                            toolCallMove = toolCallEnumerator!.MoveNextAsync().AsTask();
+                        }
+                        break;
+                    }
                     var update = enumerator.Current;
                     responseUpdates.Add(update);
+                    while (toolCallMove is { IsCompletedSuccessfully: true })
+                    {
+                        if (!toolCallMove.Result) { toolCallMove = null; break; }
+                        PublishToolCallDelta();
+                        toolCallMove = toolCallEnumerator!.MoveNextAsync().AsTask();
+                    }
                     // A role/model/response-id SSE envelope has no content and must not
                     // suppress a safe retry before the provider emits text, reasoning or tools.
                     producedOutput |= update.Contents?.Any(content => content is not UsageContent) == true ||

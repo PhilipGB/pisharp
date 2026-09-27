@@ -48,7 +48,8 @@ public sealed class PiAgent
             throw new ArgumentException("Extension tool conflicts with a built-in tool name.");
         _agent = new ChatClientAgent(new ObservedChatClient(_chatClient, value => _events?.Invoke(value),
             retryPolicy ?? ProviderRetryPolicy.Default, TakeSteeringForRequest, blockImages, ProjectForRequestAsync,
-            supportsImages, () => Volatile.Read(ref _reasoning), () => Volatile.Read(ref _supportsImages) != 0), new ChatClientAgentOptions
+            supportsImages, () => Volatile.Read(ref _reasoning), () => Volatile.Read(ref _supportsImages) != 0,
+            _chatClient), new ChatClientAgentOptions
             {
                 Name = "PiSharp",
                 ChatHistoryProvider = _history,

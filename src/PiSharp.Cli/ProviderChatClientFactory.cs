@@ -34,12 +34,19 @@ public static class ProviderChatClientFactory
                         ? AnthropicThinkingMode.Adaptive : AnthropicThinkingMode.Extended);
         var options = new OpenAIClientOptions();
         if (selection.Connection.Endpoint is not null) options.Endpoint = selection.Connection.Endpoint;
+        OpenAiToolCallDeltaCapture? toolCallCapture = null;
+        if (protocol == "openai-completions")
+        {
+            toolCallCapture = new OpenAiToolCallDeltaCapture();
+            options.Transport = toolCallCapture.Transport;
+        }
         var client = new OpenAIClient(new ApiKeyCredential(selection.ApiKey), options);
         // The Responses adapter in the pinned OpenAI/MEAI SDK is still marked experimental.
 #pragma warning disable OPENAI001
-        return protocol == "openai-responses"
+        var chat = protocol == "openai-responses"
             ? new StatelessResponsesChatClient(client.GetResponsesClient().AsIChatClient(selection.Model.Id))
             : client.GetChatClient(selection.Model.Id).AsIChatClient();
 #pragma warning restore OPENAI001
+        return toolCallCapture is null ? chat : new OpenAiCompletionsToolCallDeltaClient(chat, toolCallCapture);
     }
 }

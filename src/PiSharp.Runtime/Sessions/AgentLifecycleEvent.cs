@@ -25,6 +25,9 @@ public sealed record AgentLifecycleEvent(string Type, string? Text = null, strin
     public ChatResponseUpdate? ProviderUpdate { get; init; }
 
     [JsonIgnore]
+    internal ProviderToolCallDelta? StreamedToolCallDelta { get; init; }
+
+    [JsonIgnore]
     public UsageDetails? ProviderUsage { get; init; }
 
     [JsonIgnore]

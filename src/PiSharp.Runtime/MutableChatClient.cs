@@ -1,8 +1,9 @@
 using Microsoft.Extensions.AI;
+using PiSharp.Runtime.Sessions;
 
 namespace PiSharp.Runtime;
 
-internal sealed class MutableChatClient(IChatClient client) : DelegatingChatClient(client)
+internal sealed class MutableChatClient(IChatClient client) : DelegatingChatClient(client), IProviderToolCallDeltaSource
 {
     private IChatClient _client = client;
 
@@ -18,4 +19,8 @@ internal sealed class MutableChatClient(IChatClient client) : DelegatingChatClie
 
     public override object? GetService(Type serviceType, object? serviceKey = null) =>
         Volatile.Read(ref _client).GetService(serviceType, serviceKey);
+
+    public IProviderToolCallDeltaCapture? BeginToolCallDeltaCapture() =>
+        Volatile.Read(ref _client) is IProviderToolCallDeltaSource source
+            ? source.BeginToolCallDeltaCapture() : null;
 }
