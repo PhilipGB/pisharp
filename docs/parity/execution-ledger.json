@@ -1574,7 +1574,7 @@
       "acceptance": [
         "Implement fork using shared canonical runtime with correlated responses/event ordering",
         "Test protocol through RPC process, including failures and cancellation",
-        "Remaining: exact response/event ordering, malformed-input behavior and current-Pi process differential across session replacement paths."
+        "Remaining: active-tool interruption, persistence failures before cancellation, missing-target switching and current-Pi process differential across session replacement paths."
       ],
       "implementation": [
         "RpcSessionCommandHandler dispatches fork through the shared session branch operation and returns selected prompt text plus cancelled state."
@@ -1582,7 +1582,8 @@
       "evidence": [
         "RpcSessionProcessTests covers new_session, switch_session, fork and clone through the actual CLI RPC process, including parent links and project/runtime rebinding; RpcModeTests covers active-run replacement settlement.",
         "Exact integrated source head 2f0250ee91a500cdb6b08dce2e940b849089ba26 passed Linux CI run 36217090057: format verification, warnings-as-errors build with 0 warnings/errors, and 574 tests (0 failed, 0 skipped).",
-        "Current Pi d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 rpc-mode.ts and agent-session-runtime.ts were inspected for command flow and project CWD behavior. This is scoped source plus PiSharp process evidence; protocol differential parity remains open."
+        "Current Pi 2b0a123de98318c2ff8069661721ce0c3794c34e agent-session-runtime.ts validates fork entries and creates the replacement branch before teardownCurrent; regression test 8724-in-memory-fork-active-tool verifies an aborted active tool turn is not appended to the replacement session.",
+        "RpcSessionReplacementProcessTests.ForkDuringBlockedRunSettlesBeforeTheResponseAndOmitsTheAbortedTurn blocks an OpenAI-compatible provider stream, then verifies turn_end < agent_end < agent_settled < fork response and that get_messages on the replacement branch is empty. This process fixture covers active provider streaming, not an active tool. Focused replacement tests pass 2/2; local format verification, warnings-as-errors build with 0 warnings/errors and 618/618 tests pass; exact-head CI is pending. Pi process differential and active-tool coverage remain open."
       ],
       "dependencies": []
     },
