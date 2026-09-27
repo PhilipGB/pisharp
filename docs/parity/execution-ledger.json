@@ -1197,13 +1197,13 @@
       "acceptance": [
         "Implement get_messages using shared canonical runtime with correlated responses/event ordering",
         "Test protocol through RPC process, including failures and cancellation",
-        "Remaining: partial tool-call streaming fidelity and a pinned process differential; Pi's generated system prompt remains separate from `session.messages`."
+        "Remaining: streamed partial tool-call fidelity and live-provider differential coverage; Pi's generated system prompt remains separate from `session.messages`."
       ],
       "implementation": [
         "RpcSessionCommandHandler uses ConversationSession.Snapshot() for one tree view; RpcSessionMessageProjector follows Pi's active compaction/context-edit projection and retains typed custom messages. RpcEventWriter merges the active assistant projector into that view so streamed text remains visible."
       ],
       "evidence": [
-        "RpcReadCommandsProcessTests.SessionReadCommandsReturnOneSnapshotWhileProviderRequestIsBlocked waits for a streamed message_update, confirms isStreaming and verifies all five read commands return current session data and pending assistant text. GetMessagesReturnsCompactedContextAndAppliedEditsInRpcProcess exercises the CLI RPC process against a compacted session with a context edit. RpcSessionMessageProjectorTests verifies Pi compactionSummary and custom-message shapes. Current Pi 2b0a123de98318c2ff8069661721ce0c3794c34e rpc-mode.ts returns session.messages; session-manager.ts builds the compaction-aware, context-edited projection. Focused RPC/session/compaction tests pass 44/44; local format and warnings-as-errors build pass with 0 warnings/errors; full suite passes 631/631. Exact-head CI for this slice is pending. Partial tool-call streaming fidelity and a pinned Pi process differential remain open; Pi's generated system prompt is separate from session.messages."
+        "RpcReadCommandsProcessTests.SessionReadCommandsReturnOneSnapshotWhileProviderRequestIsBlocked waits for a streamed message_update, confirms isStreaming and verifies all five read commands return current session data and pending assistant text. GetMessagesReturnsCompactedContextAndAppliedEditsInRpcProcess covers compacted context edits through the CLI. Pi/PiSharp process differential at 2b0a123de98318c2ff8069661721ce0c3794c34e returned structurally identical get_messages responses for a compaction system message, retained boundary, pre-boundary system filtering and context edit. Focused RPC/session/compaction tests pass 46/46; exact-head Linux CI run 36297279884 passed format, warnings-as-errors build and all 633 tests (0 failed, 0 skipped). Streamed partial tool-call fidelity and live-provider differential coverage remain open; Pi's generated system prompt is separate from session.messages."
       ],
       "dependencies": []
     },
@@ -1643,7 +1643,7 @@
       "acceptance": [
         "Implement get_entries using shared canonical runtime with correlated responses/event ordering",
         "Test protocol through RPC process, including failures and cancellation",
-        "Implemented subset: data.entries uses the shared Pi SessionEntry projection without a format marker, preserves append order, supports Pi since-cursor behavior and returns leafId; exact pinned differential and remaining entry variants are still required."
+        "Implemented subset: data.entries uses the shared Pi SessionEntry projection without a format marker, preserves append order, supports Pi since-cursor behavior and returns leafId. A pinned Pi/PiSharp process differential matched all entries and a since-cursor for a branched fixture with a label, custom message, context edit and session name; malformed inputs and broader entry variants remain open."
       ],
       "implementation": [
         "RpcSessionEntryProjector delegates to PiJsonlSessionInterchange.ProjectEntries, sharing native and imported Pi entry projection with v3 export.",
@@ -1653,7 +1653,7 @@
         "Earlier source inspection at Pi d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 found rpc-mode.ts returns getEntries() and leafId; core/session-manager.ts excludes the header and preserves Pi entry order.",
         "RpcSessionEntryProjectorTests and RpcModeTests cover native/imported projection, absence of the pisharp marker, append order, cursor response and Pi process output; exact full differential coverage remains open.",
         "Exact source head 6f9b0f910b655d45e57a8f887730107498d2b068 passed Linux CI run 36219218706: format verification, warnings-as-errors build with 0 warnings/errors, and 580 tests (0 failed, 0 skipped).",
-        "RpcReadCommandsProcessTests.SessionReadCommandsReturnOneSnapshotWhileProviderRequestIsBlocked verifies get_entries succeeds during a blocked provider request, includes the accepted user entry and reports the final projected entry as leafId. Current Pi 2b0a123de98318c2ff8069661721ce0c3794c34e rpc-mode.ts handles this getter without a busy guard; no process differential has been run."
+        "RpcReadCommandsProcessTests.SessionReadCommandsReturnOneSnapshotWhileProviderRequestIsBlocked verifies get_entries during a blocked provider request. A pinned Pi/PiSharp process differential at 2b0a123de98318c2ff8069661721ce0c3794c34e matched full entries and the since-cursor on a branched/labelled custom session; broader malformed-entry cases remain open."
       ],
       "dependencies": []
     },
@@ -1665,7 +1665,7 @@
       "acceptance": [
         "Implement get_tree using shared canonical runtime with correlated responses/event ordering",
         "Test protocol through RPC process, including failures and cancellation",
-        "Implemented subset: data.tree uses Pi-shaped nested {entry, children, label?, labelTimestamp?} nodes plus leafId. Exact pinned differential for every Pi entry/label/branch case remains required."
+        "Implemented subset: data.tree uses Pi-shaped nested {entry, children, label?, labelTimestamp?} nodes plus leafId. Pinned Pi/PiSharp process differential at 2b0a123de98318c2ff8069661721ce0c3794c34e matched the nested tree for branched/labelled/context-edited/custom-message entries; malformed and less common entry variants remain open."
       ],
       "implementation": [
         "RpcSessionEntryProjector builds nested nodes from the shared PiJsonlSessionInterchange entry projection, resolves latest labels including empty-label clears, and orders siblings by timestamp with append-order ties."
@@ -1674,7 +1674,7 @@
         "Earlier source inspection at Pi d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 found session-manager.ts builds nested tree nodes, resolves labels by append order and sorts siblings by timestamp.",
         "RpcSessionEntryProjectorTests, RpcModeTests and RpcSessionProcessTests cover nested shape, optional label properties, branch ordering, clear/latest label behavior and process output.",
         "Exact source head 6f9b0f910b655d45e57a8f887730107498d2b068 passed Linux CI run 36219218706: format verification, warnings-as-errors build with 0 warnings/errors, and 580 tests (0 failed, 0 skipped).",
-        "RpcReadCommandsProcessTests.SessionReadCommandsReturnOneSnapshotWhileProviderRequestIsBlocked verifies get_tree succeeds during the blocked run and its leafId is present in the nested projected tree. Current Pi 2b0a123de98318c2ff8069661721ce0c3794c34e rpc-mode.ts handles this getter without a busy guard; no process differential has been run."
+        "RpcReadCommandsProcessTests.SessionReadCommandsReturnOneSnapshotWhileProviderRequestIsBlocked verifies get_tree during a blocked run. Pinned Pi/PiSharp process differential at 2b0a123de98318c2ff8069661721ce0c3794c34e matched leaf ID, sibling order, labels and nested entries for a branched custom-message fixture."
       ],
       "dependencies": []
     },
@@ -1686,13 +1686,13 @@
       "acceptance": [
         "Implement get_last_assistant_text using the Pi session projection and omit data.text when no assistant text exists",
         "Test protocol through RPC process, including failures and cancellation",
-        "Remaining: broader error semantics and a pinned process differential."
+        "Remaining: broader error semantics and live-provider process coverage."
       ],
       "implementation": [
         "RpcEventWriter serves this getter from the shared active session projection; RpcEventProjector skips Pi's empty aborted final assistant. RpcSessionCommandHandler omits the text property when no assistant exists."
       ],
       "evidence": [
-        "RpcReadCommandsProcessTests.SessionReadCommandsReturnOneSnapshotWhileProviderRequestIsBlocked verifies partial text during provider streaming; GetLastAssistantTextOmitsTextWhenSessionHasNoAssistant verifies the response omits data.text when absent. RpcSessionMessageProjectorTests verifies an empty aborted final assistant is skipped in favor of the previous assistant text. Current Pi 2b0a123de98318c2ff8069661721ce0c3794c34e AgentSession.getLastAssistantText skips empty aborted assistants and returns undefined when none exists. Focused RPC read/projector tests pass 6/6; full local validation passes 633/633 with format and warnings-as-errors build clean. Exact-head CI for this follow-on slice is pending; no Pi process differential has been run."
+        "RpcReadCommandsProcessTests verifies partial assistant text during streaming and omission of data.text when no assistant exists; RpcSessionMessageProjectorTests verifies the previous assistant is selected after an empty aborted tail. Direct Pi/PiSharp process differentials at 2b0a123de98318c2ff8069661721ce0c3794c34e matched both cases. Focused RPC read/projector tests pass 6/6; exact-head Linux CI run 36297279884 passed format, warnings-as-errors build and 633/633. Broader error semantics and live-provider process coverage remain open."
       ],
       "dependencies": []
     },
