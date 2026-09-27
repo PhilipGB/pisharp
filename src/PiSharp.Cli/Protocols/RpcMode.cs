@@ -109,7 +109,6 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                     switch (type)
                     {
                         case "export_html":
-                            if (busy) { await RespondAsync(id, type, false, "Wait until the active prompt settles."); break; }
                             if (root.TryGetProperty("outputPath", out var outputPath) &&
                                 (outputPath.ValueKind != JsonValueKind.String || string.IsNullOrWhiteSpace(outputPath.GetString())))
                             { await RespondAsync(id, type, false, "outputPath must be a nonempty string."); break; }
@@ -118,7 +117,8 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                                 var path = Path.GetFullPath(root.TryGetProperty("outputPath", out outputPath)
                                     ? outputPath.GetString()! : Path.Combine(CurrentRun.Conversation.WorkingDirectory,
                                         $"pisharp-{CurrentRun.Conversation.Id[..12]}.html"));
-                                await SessionExport.ExportHtmlAsync(CurrentRun.Conversation, path, cancellationToken);
+                                var snapshot = CurrentRun.Conversation.Snapshot();
+                                await SessionExport.ExportHtmlAsync(snapshot, path, cancellationToken);
                                 await _writer.EmitAsync(new
                                 {
                                     id,
