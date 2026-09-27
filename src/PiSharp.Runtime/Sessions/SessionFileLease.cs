@@ -25,13 +25,15 @@ internal sealed class SessionFileLease : IAsyncDisposable
 
     public static async Task<SessionFileLease> AcquireAsync(string sessionPath, CancellationToken cancellationToken)
     {
-        var lockPath = Path.GetFullPath(sessionPath + ".lock");
+        var lockPath = ResolveLockPath(sessionPath + ".lock");
         var processLock = RentProcessLock(lockPath);
         var processLockHeld = false;
         FileStream? lease = null;
         var started = Stopwatch.GetTimestamp();
         try
         {
+            // POSIX record locks are process-scoped, so the OS lock alone does not serialize
+            // two handles in this process. Resolve aliases before choosing the process gate.
             processLockHeld = await processLock.Semaphore.WaitAsync(LockWaitLimit, cancellationToken);
             if (!processLockHeld)
                 throw new IOException($"Timed out waiting for the session file lock: {sessionPath}");
@@ -139,6 +141,26 @@ internal sealed class SessionFileLease : IAsyncDisposable
             processLock.ReferenceCount++;
             return processLock;
         }
+    }
+
+    private static string ResolveLockPath(string path)
+    {
+        var fullPath = Path.GetFullPath(path);
+        var current = Path.GetPathRoot(fullPath)!;
+        var segments = fullPath[current.Length..].Split(
+            [Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar], StringSplitOptions.RemoveEmptyEntries);
+        for (var index = 0; index < segments.Length; index++)
+        {
+            current = Path.Combine(current, segments[index]);
+            FileSystemInfo info = index == segments.Length - 1
+                ? new FileInfo(current)
+                : new DirectoryInfo(current);
+            // The lock file is created after its in-process gate is selected.
+            if (index == segments.Length - 1 && !info.Exists) continue;
+            if (info.ResolveLinkTarget(returnFinalTarget: true) is { } target)
+                current = Path.GetFullPath(target.FullName);
+        }
+        return Path.GetFullPath(current);
     }
 
     private static void ReturnProcessLock(ProcessLockEntry processLock)

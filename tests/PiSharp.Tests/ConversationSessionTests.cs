@@ -205,6 +205,41 @@ public sealed class ConversationSessionTests
     }
 
     [Fact]
+    public async Task ConcurrentSessionLeaseAliasesWaitForTheCurrentWriter()
+    {
+        if (!OperatingSystem.IsLinux()) return;
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-lease-alias-" + Guid.NewGuid().ToString("N"));
+        var alias = Path.Combine(Path.GetTempPath(), "pisharp-lease-link-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        SessionFileLease? first = null;
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+        try
+        {
+            Directory.CreateSymbolicLink(alias, cwd);
+            var directPath = Path.Combine(cwd, "session.json");
+            var aliasedPath = Path.Combine(alias, "session.json");
+            first = await SessionFileLease.AcquireAsync(directPath, timeout.Token);
+            var secondPending = SessionFileLease.AcquireAsync(aliasedPath, timeout.Token);
+            await Task.Delay(50, timeout.Token);
+            var acquiredBeforeRelease = secondPending.IsCompleted;
+            if (acquiredBeforeRelease) await (await secondPending).DisposeAsync();
+            Assert.False(acquiredBeforeRelease, "A symlink alias acquired the held session lease in this process.");
+
+            var releasing = first;
+            first = null;
+            await releasing.DisposeAsync();
+            var second = await secondPending.WaitAsync(timeout.Token);
+            await second.DisposeAsync();
+        }
+        finally
+        {
+            if (first is not null) await first.DisposeAsync();
+            if (Directory.Exists(alias)) Directory.Delete(alias);
+            Directory.Delete(cwd, recursive: true);
+        }
+    }
+
+    [Fact]
     public void VersionOneTextIsMigratedButAmbiguousToolTurnsFailClosed()
     {
         var original = new ConversationSession(Path.GetTempPath(), "fixture", null);
