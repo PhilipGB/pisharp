@@ -168,11 +168,13 @@ public sealed class ProviderOverflowLoopbackTests
         using var listener = StartLoopbackListener(out var port);
         using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(30));
         var bodies = new List<string>();
+        var receivedRequests = 0;
         var server = Task.Run(async () =>
         {
             for (var i = 0; i < 3; i++)
             {
                 var request = await listener.GetContextAsync().WaitAsync(deadline.Token);
+                Interlocked.Increment(ref receivedRequests);
                 Assert.Equal(api == "openai-responses" ? "/v1/responses" : "/v1/chat/completions", request.Request.Url?.AbsolutePath);
                 using var reader = new StreamReader(request.Request.InputStream);
                 bodies.Add(await reader.ReadToEndAsync(deadline.Token));
@@ -223,9 +225,14 @@ public sealed class ProviderOverflowLoopbackTests
             autoCompaction: new AutoCompactionPolicy(4000, 500));
         var events = new List<AgentLifecycleEvent>();
         await foreach (var item in run.RunEventsAsync("new prompt", deadline.Token)) events.Add(item);
-        await server.WaitAsync(deadline.Token);
         Assert.Contains(events, item => item.Type == "model_context_overflow_recovery");
         Assert.Contains(events, item => item.Type == "turn_completed");
+        try { await server.WaitAsync(deadline.Token); }
+        catch (OperationCanceledException error) when (deadline.IsCancellationRequested)
+        {
+            throw new TimeoutException($"Loopback received {Volatile.Read(ref receivedRequests)} requests; " +
+                $"run events were {string.Join(" | ", events.Select(item => $"{item.Type}: {item.Error}"))}.", error);
+        }
         Assert.Equal(3, bodies.Count);
         Assert.Contains(new string('P', 900), bodies[0]);
         Assert.Contains("Earlier answer summarized.", bodies[2]);
