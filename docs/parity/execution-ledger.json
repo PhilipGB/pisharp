@@ -2717,14 +2717,18 @@
     {
       "id": "settings-terminal-truecolor",
       "title": "Setting: terminal.trueColor",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:63",
       "acceptance": [
         "Support terminal.trueColor with upstream type/default and user/trusted-project precedence",
-        "Test malformed settings, trust boundaries, reload and startup behaviour"
+        "Test malformed settings, trust boundaries, startup colour mode and active theme refresh after setting changes"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "UserSettings parses boolean or auto values with user/trusted-project precedence. TerminalThemeCatalog applies explicit values at startup, after /settings changes, project adoption and resource reload; /settings edits the active theme mode."
+      ],
+      "evidence": [
+        "Pinned Pi settings.md defines boolean | auto, default auto; SettingsManager only emits a capability override for booleans, and resource-loader applies that override to theme color mode. See docs/parity/fixtures/settings-terminal-truecolor-baseline.md. UserSettingsTests covers types, malformed/duplicate/unknown values and precedence; ProjectRuntimeContextTests covers trusted versus untrusted project loading; UserSettingsWriterTests and TerminalPtyTests cover persistence and live editing; TerminalThemeTests covers built-in/custom theme output and automatic detection. Local format verification passes, the warnings-as-errors build reports 0 warnings/errors, focused settings/trust/theme/writer/PTY tests pass 13/13, and the full suite passes 685/685 (0 skipped). Exact-head Linux CI run 36356332794, attempt 2, passes restore, format, warnings-as-errors build and 685/685 tests (0 skipped). Attempt 1 failed CompactionTests.MultiCycleParallelToolGraphSplitsOnlyAfterCompletedBatches at 684/685 with 4 provider requests instead of 3; the unchanged failed-job rerun passed. Automatic NO_COLOR/TERM=dumb behavior remains different because PiSharp preserves its None color mode while Pi maps only truecolor/256color."
+      ],
       "dependencies": []
     },
     {
