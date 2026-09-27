@@ -10,7 +10,7 @@ namespace PiSharp.Tests;
 public sealed class RpcActiveModelSelectionProcessTests
 {
     [Fact]
-    public async Task RpcModelSelectionDuringBlockedToolTurnChangesTheNextProviderRequest()
+    public async Task RpcModelSelectionAndCycleDuringBlockedToolTurnChangeTheNextProviderRequest()
     {
         if (!OperatingSystem.IsLinux()) return;
         var root = Path.Combine(Path.GetTempPath(), "pisharp-rpc-active-model-" + Guid.NewGuid().ToString("N"));
@@ -48,8 +48,8 @@ public sealed class RpcActiveModelSelectionProcessTests
 
             var second = await listener.GetContextAsync().WaitAsync(timeout.Token);
             using (var request = await JsonDocument.ParseAsync(second.Request.InputStream, cancellationToken: timeout.Token))
-                Assert.Equal("model-two", request.RootElement.GetProperty("model").GetString());
-            await WriteSseResponseAsync(second, "model-two-final", "model-two",
+                Assert.Equal("model-three", request.RootElement.GetProperty("model").GetString());
+            await WriteSseResponseAsync(second, "model-three-final", "model-three",
                 new { role = "assistant", content = "switched" }, "stop");
         }, timeout.Token);
 
@@ -63,7 +63,7 @@ public sealed class RpcActiveModelSelectionProcessTests
                     {
                         baseUrl = $"http://127.0.0.1:{port}/v1",
                         apiKeyEnv = "PISHARP_FIXTURE_KEY",
-                        models = new[] { new { id = "model-one" }, new { id = "model-two" } }
+                        models = new[] { new { id = "model-one" }, new { id = "model-two" }, new { id = "model-three" } }
                     }
                 }
             }));
@@ -100,6 +100,8 @@ public sealed class RpcActiveModelSelectionProcessTests
                 modelId = "model-two"
             }, timeout.Token);
             await ReadUntilAsync(process, lines, rootElement => IsResponse(rootElement, "select-while-busy"), timeout.Token);
+            await WriteCommandAsync(process, new { id = "cycle-while-busy", type = "cycle_model" }, timeout.Token);
+            await ReadUntilAsync(process, lines, rootElement => IsResponse(rootElement, "cycle-while-busy"), timeout.Token);
 
             var fifoWriter = Task.Run(async () =>
             {
@@ -122,16 +124,23 @@ public sealed class RpcActiveModelSelectionProcessTests
             using var selected = JsonDocument.Parse(Assert.Single(lines, line => IsResponseLine(line, "select-while-busy")));
             Assert.True(selected.RootElement.GetProperty("success").GetBoolean());
             Assert.Equal("model-two", selected.RootElement.GetProperty("data").GetProperty("id").GetString());
+            using var cycled = JsonDocument.Parse(Assert.Single(lines, line => IsResponseLine(line, "cycle-while-busy")));
+            Assert.True(cycled.RootElement.GetProperty("success").GetBoolean());
+            Assert.Equal("model-three", cycled.RootElement.GetProperty("data").GetProperty("model").GetProperty("id").GetString());
+            Assert.Equal("off", cycled.RootElement.GetProperty("data").GetProperty("thinkingLevel").GetString());
+            Assert.False(cycled.RootElement.GetProperty("data").GetProperty("isScoped").GetBoolean());
             using var session = JsonDocument.Parse(await File.ReadAllTextAsync(sessionPath, timeout.Token));
             var entries = session.RootElement.GetProperty("Entries").EnumerateArray().ToArray();
-            var modelChangeIndex = Array.FindLastIndex(entries, entry => entry.GetProperty("Type").GetString() == "model_change");
-            var modelChange = entries[modelChangeIndex];
-            Assert.Equal("model-two", modelChange.GetProperty("Payload").GetProperty("model").GetString());
-            Assert.Equal("fixture", modelChange.GetProperty("Payload").GetProperty("provider").GetString());
+            var modelChanges = entries.Select((entry, index) => (entry, index))
+                .Where(item => item.entry.GetProperty("Type").GetString() == "model_change").ToArray();
+            Assert.Equal(["model-two", "model-three"], modelChanges.Select(item =>
+                item.entry.GetProperty("Payload").GetProperty("model").GetString()));
+            Assert.All(modelChanges, item => Assert.Equal("fixture", item.entry.GetProperty("Payload").GetProperty("provider").GetString()));
             var assistantResponseIndex = Array.FindIndex(entries, entry => entry.GetProperty("Type").GetString() == "chat" &&
                 entry.GetProperty("Payload").GetProperty("Message").GetProperty("role").GetString() == "assistant");
             var toolOutcomeIndex = Array.FindIndex(entries, entry => entry.GetProperty("Type").GetString() == "tool_outcome");
-            Assert.True(assistantResponseIndex >= 0 && assistantResponseIndex < modelChangeIndex && modelChangeIndex < toolOutcomeIndex);
+            Assert.True(assistantResponseIndex >= 0 && modelChanges[0].index > assistantResponseIndex &&
+                modelChanges[1].index > modelChanges[0].index && modelChanges[1].index < toolOutcomeIndex);
         }
         finally
         {
