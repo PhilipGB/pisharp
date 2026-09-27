@@ -141,7 +141,7 @@ public sealed class RpcCompactionProcessTests
     }
 
     [Fact]
-    public async Task RpcProcessReturnsPiCompactionResultAndUsesCustomInstructions()
+    public async Task RpcProcessUsesPiSplitTurnCompactionAndCustomInstructionsForHistoryOnly()
     {
         if (!OperatingSystem.IsLinux()) return;
         var root = Path.Combine(Path.GetTempPath(), "pisharp-rpc-compact-" + Guid.NewGuid().ToString("N"));
@@ -151,22 +151,26 @@ public sealed class RpcCompactionProcessTests
         var listener = StartLoopbackListener(out var port);
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(20));
         Process? process = null;
-        string? providerBody = null;
+        var providerBodies = new List<string>();
         var provider = Task.Run(async () =>
         {
-            var context = await listener.GetContextAsync().WaitAsync(timeout.Token);
-            using (var reader = new StreamReader(context.Request.InputStream))
-                providerBody = await reader.ReadToEndAsync(timeout.Token);
-            context.Response.StatusCode = (int)HttpStatusCode.OK;
-            context.Response.ContentType = "application/json";
-            await using (var writer = new StreamWriter(context.Response.OutputStream))
+            for (var index = 0; index < 2; index++)
             {
-                await writer.WriteAsync("""
-                    {"id":"compact-response","object":"chat.completion","created":1,"model":"rpc-compact-fixture","choices":[{"index":0,"message":{"role":"assistant","content":"summary from provider"},"finish_reason":"stop"}],"usage":{"prompt_tokens":14,"completion_tokens":4,"total_tokens":18}}
-                    """);
-                await writer.FlushAsync(timeout.Token);
+                var context = await listener.GetContextAsync().WaitAsync(timeout.Token);
+                using (var reader = new StreamReader(context.Request.InputStream))
+                    providerBodies.Add(await reader.ReadToEndAsync(timeout.Token));
+                context.Response.StatusCode = (int)HttpStatusCode.OK;
+                context.Response.ContentType = "application/json";
+                await using (var writer = new StreamWriter(context.Response.OutputStream))
+                {
+                    var response = index == 0
+                        ? """{"id":"compact-history","object":"chat.completion","created":1,"model":"rpc-compact-fixture","choices":[{"index":0,"message":{"role":"assistant","content":"history summary from provider"},"finish_reason":"stop"}],"usage":{"prompt_tokens":14,"completion_tokens":4,"total_tokens":18}}"""
+                        : """{"id":"compact-turn","object":"chat.completion","created":1,"model":"rpc-compact-fixture","choices":[{"index":0,"message":{"role":"assistant","content":"turn summary from provider"},"finish_reason":"stop"}],"usage":{"prompt_tokens":16,"completion_tokens":3,"total_tokens":19}}""";
+                    await writer.WriteAsync(response);
+                    await writer.FlushAsync(timeout.Token);
+                }
+                context.Response.Close();
             }
-            context.Response.Close();
         }, timeout.Token);
 
         try
@@ -188,9 +192,22 @@ public sealed class RpcCompactionProcessTests
             conversation.Append(new ChatMessage(ChatRole.User, "first question"));
             conversation.Append(new ChatMessage(ChatRole.Assistant, "first answer"));
             conversation.Append(new ChatMessage(ChatRole.User, "latest question"));
+            conversation.Append(new ChatMessage(ChatRole.Assistant,
+                [new FunctionCallContent("read-current", "read", new Dictionary<string, object?> { ["path"] = "current.txt" })]));
+            conversation.Append(new ChatMessage(ChatRole.Tool, [new FunctionResultContent("read-current", "current file contents")]));
+            var interrupted = conversation.Tree.Append("interrupted", JsonSerializer.SerializeToElement(new
+            {
+                prompt = "latest question",
+                partialAssistantText = "partial work on current.txt",
+                terminalType = "turn_interrupted",
+                stopReason = "aborted",
+                errorMessage = "Request was aborted"
+            }));
             var store = new ConversationStore(root, sessionDirectory);
             var sessionPath = store.NewPath(conversation);
             await store.SaveAsync(conversation, sessionPath);
+            await File.WriteAllTextAsync(Path.Combine(agentDirectory, "settings.json"),
+                "{\"compaction\":{\"keepRecentTokens\":1}}");
 
             var start = new ProcessStartInfo("dotnet")
             {
@@ -209,6 +226,7 @@ public sealed class RpcCompactionProcessTests
             start.Environment["PISHARP_AGENT_DIR"] = agentDirectory;
             start.Environment["PISHARP_SESSION_DIR"] = sessionDirectory;
             start.Environment["PISHARP_FIXTURE_KEY"] = "fixture-only-key";
+            start.Environment["PISHARP_CONTEXT_WINDOW_TOKENS"] = "32768";
             process = Process.Start(start)!;
             var output = process.StandardOutput.ReadToEndAsync();
             var error = process.StandardError.ReadToEndAsync();
@@ -219,7 +237,13 @@ public sealed class RpcCompactionProcessTests
 
             Assert.Equal(0, process.ExitCode);
             Assert.Equal("", await error.WaitAsync(timeout.Token));
-            Assert.Contains("preserve decisions", providerBody, StringComparison.Ordinal);
+            Assert.Equal(2, providerBodies.Count);
+            Assert.Contains("preserve decisions", providerBodies[0], StringComparison.Ordinal);
+            Assert.Contains("first question", providerBodies[0], StringComparison.Ordinal);
+            Assert.Contains("## Goal", providerBodies[0], StringComparison.Ordinal);
+            Assert.DoesNotContain("preserve decisions", providerBodies[1], StringComparison.Ordinal);
+            Assert.Contains("Original Request", providerBodies[1], StringComparison.Ordinal);
+            Assert.Contains("current.txt", providerBodies[1], StringComparison.Ordinal);
             var records = (await output.WaitAsync(timeout.Token)).Split('\n', StringSplitOptions.RemoveEmptyEntries)
                 .Select(line => JsonDocument.Parse(line)).ToArray();
             try
@@ -228,18 +252,21 @@ public sealed class RpcCompactionProcessTests
                     id.GetString() == "compact");
                 Assert.True(response.RootElement.GetProperty("success").GetBoolean());
                 var data = response.RootElement.GetProperty("data");
-                Assert.Equal("summary from provider", data.GetProperty("summary").GetString());
-                Assert.False(string.IsNullOrWhiteSpace(data.GetProperty("firstKeptEntryId").GetString()));
+                Assert.Equal("history summary from provider\n\n---\n\n**Turn Context (split turn):**\n\nturn summary from provider\n\n<read-files>\ncurrent.txt\n</read-files>",
+                    data.GetProperty("summary").GetString());
+                Assert.Equal(interrupted.Id, data.GetProperty("firstKeptEntryId").GetString());
                 Assert.True(data.GetProperty("tokensBefore").GetInt32() > 0);
                 Assert.True(data.GetProperty("estimatedTokensAfter").GetInt32() > 0);
-                Assert.Equal(14, data.GetProperty("usage").GetProperty("input").GetInt64());
-                Assert.Equal(4, data.GetProperty("usage").GetProperty("output").GetInt64());
-                Assert.Equal(18, data.GetProperty("usage").GetProperty("totalTokens").GetInt64());
+                Assert.Equal(30, data.GetProperty("usage").GetProperty("input").GetInt64());
+                Assert.Equal(7, data.GetProperty("usage").GetProperty("output").GetInt64());
+                Assert.Equal(37, data.GetProperty("usage").GetProperty("totalTokens").GetInt64());
                 Assert.True(data.GetProperty("details").ValueKind == JsonValueKind.Object);
-                Assert.Empty(data.GetProperty("details").GetProperty("readFiles").EnumerateArray());
+                Assert.Equal("current.txt", Assert.Single(data.GetProperty("details").GetProperty("readFiles").EnumerateArray()).GetString());
                 Assert.Empty(data.GetProperty("details").GetProperty("modifiedFiles").EnumerateArray());
                 var persisted = await store.LoadAsync(sessionPath, timeout.Token);
                 var persistedCompaction = Assert.Single(persisted.Tree.Entries, entry => entry.Type == "compaction");
+                Assert.Equal(interrupted.Id, persistedCompaction.Payload.GetProperty("firstKeptEntryId").GetString());
+                Assert.Contains(persisted.ContextMessages(), message => message.Text == "partial work on current.txt");
                 Assert.Equal(data.GetProperty("tokensBefore").GetInt32(),
                     persistedCompaction.Payload.GetProperty("tokensBefore").GetInt32());
                 Assert.True(JsonElement.DeepEquals(data.GetProperty("details"),

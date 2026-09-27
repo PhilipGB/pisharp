@@ -229,8 +229,14 @@ public sealed class ConversationSession
             var kept = compact.GetProperty("firstKeptEntryId").GetString();
             from = path.ToList().FindIndex(node => node.Id == kept);
             var piBoundary = PiJsonlSessionInterchange.OriginalEntry(path[compactAt]) is not null;
-            if (from < 0 || from >= compactAt || !piBoundary && ContextMessageForNode(path[from])?.Role != ChatRole.User)
+            if (from < 0 || from >= compactAt)
                 throw new InvalidDataException("Invalid compaction boundary.");
+            if (!piBoundary)
+            {
+                var role = ContextMessageForNode(path[from])?.Role;
+                if (role != ChatRole.User && role != ChatRole.Assistant)
+                    throw new InvalidDataException("Invalid compaction boundary.");
+            }
             if (PiJsonlSessionInterchange.CompactionSystemMessage(path[compactAt]) is { } systemMessage)
                 context.Add(systemMessage);
             context.Add(CompactionSummaryMessage(compact.GetProperty("summary").GetString() ?? ""));
@@ -256,38 +262,54 @@ public sealed class ConversationSession
         "The conversation history before this point was compacted into the following summary:\n\n<summary>\n" +
         summary + "\n</summary>");
 
-    /// <summary>Keep the latest whole user turn; never split a tool call/result group.</summary>
-    public CompactionPlan? PrepareCompaction(int? keepRecentTokens = null)
+    /// <summary>Plan against context-visible entry boundaries while retaining the canonical tree as source.</summary>
+    public CompactionPlan? PrepareCompaction(int? keepRecentTokens = null) =>
+        ConversationCompactionCoordinator.PreparePlan(this, keepRecentTokens);
+
+    internal IReadOnlyList<CompactionContextEntry> CompactionContextEntries(out string? previousSummary)
     {
         var path = Tree.ActivePath();
-        var compactAt = path.ToList().FindLastIndex(node => node.Type == "compaction");
-        var first = compactAt < 0 ? 0 : path.ToList().FindIndex(node =>
-            node.Id == path[compactAt].Payload.GetProperty("firstKeptEntryId").GetString());
-        if (keepRecentTokens < 0) throw new ArgumentOutOfRangeException(nameof(keepRecentTokens));
-        // Select a user-turn boundary backwards; every tool call and result in a turn stays together.
-        var contextEntries = ProjectContextEntries(path);
-        var latestUser = contextEntries.LastOrDefault(item => item.Message.Role == ChatRole.User)?.Index ?? -1;
-        if (latestUser <= first) return null;
-        var boundary = latestUser;
-        if (keepRecentTokens is int minimum)
+        var compactionIndex = path.ToList().FindLastIndex(node => node.Type == "compaction");
+        previousSummary = compactionIndex < 0
+            ? null
+            : path[compactionIndex].Payload.GetProperty("summary").GetString() ?? "";
+        var retainedFrom = 0;
+        if (compactionIndex >= 0)
         {
-            long estimated = 0;
-            var turns = contextEntries.Where(item => item.Index >= first && item.Message.Role == ChatRole.User)
-                .Select(item => item.Index).ToArray();
-            for (var i = turns.Length - 1; i >= 0; i--)
-            {
-                var start = turns[i];
-                var end = i + 1 < turns.Length ? turns[i + 1] : path.Count;
-                foreach (var entry in contextEntries.Where(item => item.Index >= start && item.Index < end))
-                    estimated += AutoCompactionPolicy.Estimate([entry.Message], "") - 512;
-                boundary = start;
-                if (estimated >= minimum) break;
-            }
+            var firstKeptId = path[compactionIndex].Payload.GetProperty("firstKeptEntryId").GetString();
+            retainedFrom = path.ToList().FindIndex(node => node.Id == firstKeptId);
+            if (retainedFrom < 0 || retainedFrom >= compactionIndex)
+                throw new InvalidDataException("Invalid compaction boundary.");
         }
-        if (boundary <= first) return null;
-        var context = ContextMessages();
-        var keptCount = contextEntries.Count(item => item.Index >= boundary);
-        return new CompactionPlan(path[boundary].Id, context.Take(context.Count - keptCount).ToArray());
+
+        var edits = new Dictionary<string, JsonElement>(StringComparer.Ordinal);
+        for (var index = retainedFrom; index < path.Count; index++)
+        {
+            if (index == compactionIndex) continue;
+            if (PiJsonlSessionInterchange.TryGetContextEdit(path[index], out var targetId, out var replacement))
+                edits[targetId] = replacement;
+        }
+
+        var projected = new List<CompactionContextEntry>();
+        if (compactionIndex >= 0)
+        {
+            var summary = previousSummary ?? "";
+            projected.Add(new CompactionContextEntry(path[compactionIndex].Id, compactionIndex,
+                [new ChatMessage(ChatRole.User, summary)], IsPreviousSummary: true));
+        }
+
+        for (var index = retainedFrom; index < path.Count; index++)
+        {
+            if (index == compactionIndex) continue;
+            var node = path[index];
+            var message = ContextMessageForNode(node);
+            if (message is null) continue;
+            if (compactionIndex >= 0 && index < compactionIndex && message.Role == ChatRole.System) continue;
+            if (edits.TryGetValue(node.Id, out var replacement))
+                message = PiJsonlSessionInterchange.ApplyContextEdit(node, message, replacement);
+            if (message is not null) projected.Add(new CompactionContextEntry(node.Id, index, [message]));
+        }
+        return projected;
     }
 
     public void AppendCompaction(CompactionPlan plan, string summary, int? keepRecentTokens = null,
@@ -567,8 +589,10 @@ public sealed class ConversationSession
             var path = tree.ActivePath();
             var boundary = path.ToList().FindIndex(entry => entry.Id == kept.GetString());
             var previous = path.ToList().FindLastIndex(entry => entry.Type == "compaction");
+            var boundaryRole = boundary >= 0 ? ContextMessageForNode(path[boundary])?.Role : null;
             if (boundary <= previous || boundary >= path.Count ||
-                PiJsonlSessionInterchange.OriginalEntry(node) is null && ContextMessageForNode(path[boundary])?.Role != ChatRole.User)
+                PiJsonlSessionInterchange.OriginalEntry(node) is null &&
+                boundaryRole != ChatRole.User && boundaryRole != ChatRole.Assistant)
                 throw new InvalidDataException($"Invalid compaction boundary at {node.Id}.");
         }
         tree.Select(document.HeadId); // An explicit null selection is distinct from the last appended entry.
@@ -603,7 +627,11 @@ public sealed class ConversationSession
             throw new InvalidDataException($"Invalid checkpoint {node.Type} at {node.Id}.");
     }
 
-    public sealed record CompactionPlan(string FirstKeptEntryId, IReadOnlyList<ChatMessage> MessagesToSummarize);
+    public sealed record CompactionPlan(string FirstKeptEntryId, IReadOnlyList<ChatMessage> MessagesToSummarize,
+        IReadOnlyList<ChatMessage>? TurnPrefixMessages = null, bool IsSplitTurn = false, string? PreviousSummary = null);
+
+    internal sealed record CompactionContextEntry(string? SourceEntryId, int SourceIndex,
+        IReadOnlyList<ChatMessage> Messages, bool IsPreviousSummary = false);
 
     private sealed record CompactionRecord(
         [property: JsonPropertyName("summary")] string Summary,

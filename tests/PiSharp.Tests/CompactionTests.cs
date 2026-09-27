@@ -69,6 +69,8 @@ public sealed class CompactionTests
                 save: token => store.SaveAsync(conversation, path, token));
             Assert.True(await run.CompactAsync("prioritize files"));
             Assert.Contains("prioritize files", client.LastSummaryRequest);
+            Assert.Contains("<conversation>", client.LastSummaryRequest);
+            Assert.Contains("## Goal", client.LastSummaryRequest);
             Assert.Equal(4, conversation.ActiveMessages().Count);
             Assert.Equal(3, conversation.ContextMessages().Count);
             Assert.Contains("compacted into the following summary", conversation.ContextMessages()[0].Text);
@@ -145,6 +147,40 @@ public sealed class CompactionTests
             Assert.Equal(6, (await store.LoadAsync(path)).ActiveMessages().Count);
         }
         finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Fact]
+    public async Task AutomaticCompactionUsesTheSplitTurnCoordinatorBeforeAcceptingTheNextPrompt()
+    {
+        var conversation = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        conversation.Append(new ChatMessage(ChatRole.User, "older question"));
+        conversation.Append(new ChatMessage(ChatRole.Assistant, "older answer"));
+        conversation.Append(new ChatMessage(ChatRole.User, new string('U', 100)));
+        conversation.Tree.Append("interrupted", JsonSerializer.SerializeToElement(new
+        {
+            prompt = "continue the current task",
+            partialAssistantText = new string('P', 80),
+            terminalType = "turn_interrupted",
+            stopReason = "aborted",
+            errorMessage = "Request was aborted"
+        }));
+        var client = new SummaryClient { SummaryResponses = ["older history summary", "current turn prefix summary"] };
+        var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(Path.GetTempPath())), conversation,
+            autoCompaction: new AutoCompactionPolicy(1024, 100, 15));
+        var events = new List<AgentLifecycleEvent>();
+
+        await foreach (var item in run.RunEventsAsync("continue")) events.Add(item);
+
+        Assert.Equal(2, client.SummaryRequests.Count);
+        var contextCompacted = Assert.Single(events, item => item.Type == "context_compacted");
+        var accepted = Assert.Single(events, item => item.Type == "prompt_accepted");
+        Assert.True(events.IndexOf(contextCompacted) < events.IndexOf(accepted));
+        Assert.Contains(conversation.Tree.Entries, entry => entry.Type == "compaction" &&
+            entry.Payload.GetProperty("summary").GetString() ==
+            "older history summary\n\n---\n\n**Turn Context (split turn):**\n\ncurrent turn prefix summary");
+        Assert.Contains(client.SeenMessages!, message => message.Text.Contains(new string('P', 80), StringComparison.Ordinal));
+        Assert.DoesNotContain(client.SeenMessages!, message => message.Text == "older question");
+        Assert.Equal(1, conversation.ContextMessages().Count(message => message.Text == new string('P', 80)));
     }
 
     [Fact]
@@ -703,12 +739,74 @@ public sealed class CompactionTests
         conversation.Append(new ChatMessage(ChatRole.User, "third"));
         var minimum = conversation.PrepareCompaction(0)!;
         Assert.Equal(5, minimum.MessagesToSummarize.Count);
-        var twoTurns = conversation.PrepareCompaction(300)!;
+        var twoTurns = conversation.PrepareCompaction(10)!;
         Assert.Equal(2, twoTurns.MessagesToSummarize.Count);
-        conversation.AppendCompaction(twoTurns, "First turn summary", 300);
+        conversation.AppendCompaction(twoTurns, "First turn summary", 10);
         Assert.Equal(6, conversation.ActiveMessages().Count);
         Assert.Equal(5, conversation.ContextMessages().Count);
         Assert.Null(conversation.PrepareCompaction(100000));
+    }
+
+    [Fact]
+    public async Task ManualCompactionSplitsAnInterruptedTurnAtTheAssistantAndSummarizesBothParts()
+    {
+        var conversation = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        conversation.Append(new ChatMessage(ChatRole.User, "older question"));
+        conversation.Append(new ChatMessage(ChatRole.Assistant, "older answer"));
+        conversation.Append(new ChatMessage(ChatRole.User, new string('U', 100)));
+        conversation.Append(new ChatMessage(ChatRole.Assistant,
+            [new FunctionCallContent("read-call", "read", new Dictionary<string, object?> { ["path"] = "current.txt" })]));
+        conversation.Append(new ChatMessage(ChatRole.Tool, [new FunctionResultContent("read-call", new string('R', 80))]));
+        var interrupted = conversation.Tree.Append("interrupted", JsonSerializer.SerializeToElement(new
+        {
+            prompt = "continue the current task",
+            partialAssistantText = new string('P', 80),
+            terminalType = "turn_interrupted",
+            stopReason = "aborted",
+            errorMessage = "Request was aborted"
+        }));
+
+        var plan = Assert.IsType<ConversationSession.CompactionPlan>(conversation.PrepareCompaction(15));
+        Assert.True(plan.IsSplitTurn);
+        Assert.Equal(interrupted.Id, plan.FirstKeptEntryId);
+        Assert.Equal(["older question", "older answer"], plan.MessagesToSummarize.Select(message => message.Text));
+        Assert.Equal(ChatRole.User, plan.TurnPrefixMessages![0].Role);
+        Assert.Equal(3, plan.TurnPrefixMessages!.Count);
+        Assert.Single(plan.TurnPrefixMessages.SelectMany(message => message.Contents).OfType<FunctionCallContent>());
+        Assert.Single(plan.TurnPrefixMessages.SelectMany(message => message.Contents).OfType<FunctionResultContent>());
+
+        var client = new SummaryClient
+        {
+            SummaryResponses = ["older history summary", "current turn prefix summary"],
+            SummaryUsage = new UsageDetails { InputTokenCount = 10, OutputTokenCount = 2, TotalTokenCount = 12 }
+        };
+        var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(Path.GetTempPath())), conversation,
+            autoCompaction: new AutoCompactionPolicy(5000, 1000, 15));
+        Assert.True(await run.CompactAsync("preserve important context"));
+
+        Assert.Equal(2, client.SummaryRequests.Count);
+        Assert.Contains("preserve important context", client.SummaryRequests[0], StringComparison.Ordinal);
+        Assert.Contains("## Goal", client.SummaryRequests[0], StringComparison.Ordinal);
+        Assert.Contains("older question", client.SummaryRequests[0], StringComparison.Ordinal);
+        Assert.Contains("Original Request", client.SummaryRequests[1], StringComparison.Ordinal);
+        Assert.Contains("current.txt", client.SummaryRequests[1], StringComparison.Ordinal);
+        Assert.DoesNotContain("preserve important context", client.SummaryRequests[1], StringComparison.Ordinal);
+        var compaction = Assert.Single(conversation.Tree.Entries, entry => entry.Type == "compaction");
+        Assert.Equal(interrupted.Id, compaction.Payload.GetProperty("firstKeptEntryId").GetString());
+        Assert.Equal("older history summary\n\n---\n\n**Turn Context (split turn):**\n\ncurrent turn prefix summary\n\n<read-files>\ncurrent.txt\n</read-files>",
+            compaction.Payload.GetProperty("summary").GetString());
+        var usage = Assert.Single(conversation.ActiveUsage(), item => item.Source == "compaction");
+        Assert.Equal(20, usage.InputTokens);
+        Assert.Equal(4, usage.OutputTokens);
+        Assert.Equal(24, usage.TotalTokens);
+        Assert.Equal("The conversation history before this point was compacted into the following summary:\n\n<summary>\n" +
+            compaction.Payload.GetProperty("summary").GetString() + "\n</summary>", conversation.ContextMessages()[0].Text);
+        Assert.Equal(new string('P', 80), conversation.ContextMessages().Last().Text);
+        var reloaded = ConversationSession.Parse(conversation.ToJson());
+        Assert.Equal(interrupted.Id, reloaded.Tree.ActivePath().Single(entry => entry.Type == "compaction")
+            .Payload.GetProperty("firstKeptEntryId").GetString());
+        Assert.Equal(conversation.ContextMessages().Select(message => message.Text),
+            reloaded.ContextMessages().Select(message => message.Text));
     }
 
     [Fact]
@@ -726,6 +824,38 @@ public sealed class CompactionTests
             save: _ => throw new IOException("checkpoint failed"));
         await Assert.ThrowsAsync<IOException>(() => saveFails.CompactAsync());
         Assert.Equal(before, conversation.Tree.HeadId);
+        Assert.Equal(4, conversation.ContextMessages().Count);
+    }
+
+    [Fact]
+    public async Task FailedTurnPrefixSummaryLeavesTheCanonicalBranchUntouched()
+    {
+        var conversation = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        conversation.Append(new ChatMessage(ChatRole.User, "older question"));
+        conversation.Append(new ChatMessage(ChatRole.Assistant, "older answer"));
+        conversation.Append(new ChatMessage(ChatRole.User, new string('U', 100)));
+        conversation.Tree.Append("interrupted", JsonSerializer.SerializeToElement(new
+        {
+            prompt = "continue the current task",
+            partialAssistantText = new string('P', 80),
+            terminalType = "turn_interrupted",
+            stopReason = "aborted",
+            errorMessage = "Request was aborted"
+        }));
+        var head = conversation.Tree.HeadId;
+        var client = new SummaryClient
+        {
+            SummaryResponses = ["older history summary", "unused"],
+            FailSummaryNumber = 2
+        };
+        var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(Path.GetTempPath())), conversation,
+            autoCompaction: new AutoCompactionPolicy(5000, 1000, 15));
+
+        await Assert.ThrowsAsync<IOException>(() => run.CompactAsync());
+
+        Assert.Equal(2, client.SummaryRequests.Count);
+        Assert.Equal(head, conversation.Tree.HeadId);
+        Assert.DoesNotContain(conversation.Tree.Entries, entry => entry.Type == "compaction");
         Assert.Equal(4, conversation.ContextMessages().Count);
     }
 
@@ -893,15 +1023,23 @@ public sealed class CompactionTests
     private sealed class SummaryClient : IChatClient
     {
         public bool FailSummary { get; init; }
+        public int? FailSummaryNumber { get; init; }
         public UsageDetails? SummaryUsage { get; init; }
         public string LastSummaryRequest { get; private set; } = "";
+        public IReadOnlyList<string>? SummaryResponses { get; init; }
+        public List<string> SummaryRequests { get; } = [];
         public List<ChatMessage>? SeenMessages { get; private set; }
         public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
             CancellationToken cancellationToken = default)
         {
             LastSummaryRequest = messages.Last().Text;
-            if (FailSummary) throw new IOException("summary provider failed");
-            return Task.FromResult(new ChatResponse([new ChatMessage(ChatRole.Assistant, "Summary of first turn")])
+            SummaryRequests.Add(LastSummaryRequest);
+            if (FailSummary || FailSummaryNumber == SummaryRequests.Count)
+                throw new IOException("summary provider failed");
+            var summary = SummaryResponses is { } responses && SummaryRequests.Count <= responses.Count
+                ? responses[SummaryRequests.Count - 1]
+                : "Summary of first turn";
+            return Task.FromResult(new ChatResponse([new ChatMessage(ChatRole.Assistant, summary)])
             {
                 Usage = SummaryUsage
             });

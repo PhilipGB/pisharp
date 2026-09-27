@@ -1,137 +1,107 @@
 # PiSharp
 
-Experimental .NET 10 coding-agent prototype built on Microsoft Agent Framework `ChatClientAgent` and Microsoft.Extensions.AI. PiSharp implements a growing subset of Pi's RPC, session, tool and provider behavior. Substantial gaps remain; full parity has not been established. Current work focuses on RPC and session behavior. See the [feature matrix](docs/parity/feature-matrix.md) for tracked coverage, the [execution ledger](docs/parity/execution-ledger.json) for evidence, and [continuation notes](docs/continuation.md) for active work.
+PiSharp is a C#/.NET coding agent inspired by [Pi](https://github.com/earendil-works/pi). It uses Microsoft Agent Framework (MAF) and Microsoft.Extensions.AI (M.E.AI) for agent and provider integration.
 
-## Quick start
+**Status:** active parity work; experimental and incomplete. PiSharp has its own canonical session format and translates Pi-compatible data at explicit boundaries. It is not a drop-in Pi replacement. See the [parity overview](docs/parity/feature-matrix.md) for verified coverage and open gaps.
+
+## Contents
+
+- [Run PiSharp](#run-pisharp)
+- [Providers and tools](#providers-and-tools)
+- [Sessions and resources](#sessions-and-resources)
+- [Safety](#safety)
+- [Parity and limitations](#parity-and-limitations)
+- [Build and test](#build-and-test)
+- [Contributor and agent workflow](#contributor-and-agent-workflow)
+
+## Run PiSharp
+
+Set a provider key, then start an interactive session or send one prompt:
 
 ```sh
-export OPENAI_API_KEY=... # or PISHARP_API_KEY
-export PISHARP_MODEL=gpt-4o-mini
-# Optional for a Chat Completions-compatible server (e.g. vLLM):
-# export PISHARP_BASE_URL=http://localhost:8000/v1
-
-dotnet run --project src/PiSharp.Cli -- --print 'Describe this repository'
+export OPENAI_API_KEY=...
 dotnet run --project src/PiSharp.Cli
+dotnet run --project src/PiSharp.Cli -- --print "Describe this repository"
 ```
 
-Run from the repository the agent should edit.
+Common options:
 
-**Tools and permissions.** The default tools are `read`, `bash`, `edit`, and `write`. Use `--tools read,grep,find,ls` to opt into experimental search/list tools, `--exclude-tools <names>` to remove tools, `--no-builtin-tools` (`-nbt`) to disable built-ins while retaining extensions, or `--no-tools` to disable both by default; an explicit allowlist takes precedence. Tools run with the local process's filesystem permissions. There is **no sandbox**.
+| Task | Example |
+| --- | --- |
+| Choose a provider or model | `pisharp --provider anthropic --model <model-id>` |
+| Continue the latest session | `pisharp --continue` |
+| Open a session or fork it | `pisharp --session <path-or-project-id>` / `pisharp --fork <path-or-project-id>` |
+| Run without saving a session | `pisharp --no-session` |
+| List discoverable models | `pisharp --list-models` |
+| Check local credential setup | `pisharp auth check --provider <id> --local` |
 
-**Image input.** Positional `@file` arguments in print, JSON, and initial interactive prompts accept UTF-8 text and PNG/JPEG/GIF/WebP images up to 20 MB. Image signatures are checked, and models declaring text-only input cause a safe refusal. The `read` tool also accepts PNG/JPEG/GIF/WebP/BMP, validates images with SkiaSharp, converts BMP to PNG, and resizes supported requests to 2000×2000 and a 4.5 MiB base64 ceiling. Model `inputLimits.images.resize` settings override these defaults for `read`; `@file` images use the defaults. Files over 20 MiB and decoded images above 32 million pixels are omitted. `images.blockImages` replaces images with a text placeholder for provider requests while retaining them in session history.
+Run `pisharp --help` for the full CLI. Interactive commands include `/model`, `/settings`, `/thinking`, `/sessions`, `/resume`, `/tree`, `/branch`, `/compact`, `/import` and `/export`.
 
-OpenAI Responses and Chat Completions loopbacks cover image passthrough, a high-entropy resized payload, save/reload, text-only models and `images.blockImages`. Sampling uses Skia cubic rather than Pi's Lanczos3. EXIF orientation, positional-image profile handling, broad provider transport and pinned image differentials remain open. Ctrl+V (Alt+V on Windows) reads and validates a supported clipboard image, writes it to a private temporary file, and inserts its path for the `read` tool; Linux Wayland/X11 and WSL PowerShell image paths have unit and PTY coverage. Live Windows/macOS clipboard integration and WSL text clipboard interop remain unverified.
+Start PiSharp from the project directory its tools should use. The terminal includes a persistent transcript/editor, streaming tool feedback, model/session/settings pickers, and keyboard and mouse input; key bindings are listed in [`docs/keybindings.md`](docs/keybindings.md).
 
-**Terminal.** The interactive UI keeps a persistent alternate-screen transcript, editor and footer while idle and during runs, with searchable model, session and settings overlays. The wrapped prompt supports history, multiline input (Alt+Enter while idle), bracketed paste and Tab completion for slash commands and filesystem paths, including `@` attachments. The path picker includes nested paths, directories and hidden entries except `.git`, preserves quotes and wrappers, and supports Unicode names. Mouse wheel events scroll the transcript and picker; drag selection copies visible text. While a run is active, Enter queues steering, Alt+Enter queues follow-up work, Alt+Up restores pending input, and Escape/Ctrl+C aborts while returning unsent messages and the draft to the editor. Ctrl+X and `/copy` prefer a terminal selection, then copy the latest assistant message. Linux input reads VT bytes directly and restores tty settings and mouse modes after suspend and exit. The interface remains **far short of Pi's full TUI**.
+For automation, `--mode json` emits PiSharp JSONL lifecycle records and `--mode rpc` accepts one JSON request per stdin line. See the [protocol contract](docs/protocol.md) for framing, commands, events and known differences.
 
-**Sessions.** The canonical PiSharp conversation tree checkpoints prompts, tool intentions and outcomes, and completed or interrupted turns. Pi JSONL v1-v3 import and v3 export are available through startup `--session <file.jsonl>`, confirmed `/import <path>`, and `/export-jsonl [path]`; imports rebind the runtime, trusted resources and session store to the Pi header CWD. Session-manager parity remains incomplete. A crash can leave an explicitly unknown tool outcome; recovery never automatically repeats the operation.
+## Providers and tools
 
-Inspect AGENTS/CLAUDE context files and native extensions before using the agent in an unfamiliar repository. `--help` lists implemented flags. Review model requests and generated commands before using PiSharp with sensitive files.
+Built-in provider profiles use separate credentials:
 
-Redirected stdin is trimmed and prepended to `@file` contents and the positional prompt (without a separator), even when a prompt is provided; RPC reserves stdin for JSON commands instead. Close piped stdin to allow the initial prompt to start.
+| Provider | API | Credential |
+| --- | --- | --- |
+| OpenAI | Responses | `OPENAI_API_KEY` |
+| Anthropic | Messages | `ANTHROPIC_API_KEY` |
+| xAI | Responses | `XAI_API_KEY` |
+| OpenRouter | Chat Completions | `OPENROUTER_API_KEY` |
+| Mistral | Chat Completions | `MISTRAL_API_KEY` |
 
-## Local llama-server testing
+Custom providers and static model metadata can be declared in `models.json` under `PISHARP_AGENT_DIR` (default `~/.pisharp/agent`). Provider discovery, model catalogues, reasoning and authentication are partial; OAuth login and refresh are not implemented. See the [settings inventory](docs/parity/detailed-inventory.md#settings-inventory) for the supported settings subset.
 
-The built-in `--local` profile is preconfigured for a llama-server at `http://192.168.0.97:8000` serving `Qwen3.8-27B-GGUF`. Set `PISHARP_BASE_URL` and `PISHARP_MODEL` when your server uses a different address or model.
+The default coding tools are `read`, `bash`, `edit` and `write`. `grep`, `find` and `ls` are opt-in. Use `--tools`, `--exclude-tools` or `--no-tools` to adjust the set. Images are supported on selected provider paths; RPC image prompts and broader multimodal parity remain open.
 
-```sh
-curl http://192.168.0.97:8000/v1/models
-dotnet run --project src/PiSharp.Cli -- --local
-dotnet run --project src/PiSharp.Cli -- --local --print 'Reply hello'
-```
+## Sessions and resources
 
-`--local` selects `http://192.168.0.97:8000/v1` and `Qwen3.8-27B-GGUF`. `--model <id>` overrides the startup model for this run; `--name <label>` names and immediately persists the selected session (also works with `--no-session` without persistence). An explicit model that conflicts with a saved session fails closed; use interactive `/model` after opening instead. An unauthenticated server needs no API key; the OpenAI SDK sends a placeholder token. If the server requires a key, set `PISHARP_API_KEY`. `PISHARP_MODEL` and `PISHARP_BASE_URL` override the local profile (the base URL must include `/v1`). **`OPENAI_API_KEY` is never sent to a custom endpoint:** `models.json` cannot redirect built-in OpenAI, OpenRouter, Mistral, xAI or Anthropic identities to another URL or reuse their credentials for another provider. Use a separate provider ID and provider-specific credentials. The endpoint uses unencrypted HTTP; do not send sensitive prompts or keys over an untrusted network. Enable llama.cpp’s tool-call-compatible chat template (typically `--jinja`) to test coding tools. `--list-models [pattern]`, interactive `/models [filter]` and RPC `get_available_models` query compatible `/models` endpoints; a listed ID may still be unloaded or unsupported. This is not Pi’s `/llama` router or hosted-provider catalogue. `--offline` or `PI_OFFLINE=1|true|yes` skips dynamic `/models` reads but does not block inference requests or make provider traffic local-only.
+Canonical sessions are stored per project under `~/.pisharp/sessions` (override with `--session-dir` or `PISHARP_SESSION_DIR`). They preserve branches and tool outcomes. Pi JSONL v1–v3 is an import/export interchange format, not PiSharp's backing store. See [session-format details](docs/session-format.md) and the [feature matrix](docs/parity/feature-matrix.md).
 
-Repeatable `-e`/`--extension <dll|directory>` explicitly loads .NET extension assemblies even under `--no-extensions`. **Extensions run arbitrary code with PiSharp's full OS privileges**; `--approve` is not required for an explicitly selected path, so only select code you trust. Pi TypeScript extensions are not supported.
-Redirected stdin is trimmed and prepended to `@file` content and the positional prompt (except RPC, where stdin carries commands). PiSharp rejects redirected initial input above 1M UTF-16 characters before provider execution; this safety limit is not a Pi compatibility guarantee.
-Resource discovery can be suppressed with `--no-skills` and `--no-prompt-templates`. Repeatable `--skill <SKILL.md|directory>` and `--prompt-template <file.md|directory>` explicitly load selected resources even when discovery is off; these paths are read as caller-selected model input, including paths within an otherwise untrusted project. Missing explicit paths fail startup. Do not select untrusted files.
-**Provider selection (experimental).** Use `--provider <id>`, `--model <id|provider/id>`, `--models <globs>` and `--thinking <level>`, or the interactive `/models`, `/model`, `/settings`, `/scoped-models`, `/thinking`, `/login` and `/logout` commands. Catalog, selection, reasoning and authentication behavior remain partial.
+PiSharp can load context instructions, skills, prompt templates and themes from user and trusted project locations. These features implement subsets of Pi's resource behavior. A trusted .NET extension can add MAF tools and terminal commands; see [extension setup and limits](docs/extensions.md).
 
-Built-in profiles use provider-specific credentials. OpenAI uses the Responses API through an experimental Microsoft.Extensions.AI adapter. xAI uses Responses at `https://api.x.ai/v1` with pinned Grok 4.3–4.7 metadata, does not require `/models`, and accepts `PISHARP_XAI_MODEL`. OpenRouter defaults to `openai/gpt-4o-mini` (`PISHARP_OPENROUTER_MODEL`); Mistral defaults to `mistral-small-latest` (`PISHARP_MISTRAL_MODEL`). Both use Chat Completions. Anthropic uses its native Messages API with pinned Sonnet 4.6, Opus 4.6 and Haiku 4.5 model/pricing metadata; its default is Sonnet, overridden with `PISHARP_ANTHROPIC_MODEL`. Unknown model overrides remain unpriced. Credentials are `OPENAI_API_KEY`, `XAI_API_KEY`, `OPENROUTER_API_KEY`, `MISTRAL_API_KEY` and `ANTHROPIC_API_KEY`.
+## Safety
 
-`models.json` under `PISHARP_AGENT_DIR` (default `~/.pisharp/agent`) can define providers with `baseUrl`, `apiKeyEnv` and static models (`id`, optional `reasoning`, `contextWindow`, `cost` and `inputLimits.images.resize`). The resize profile accepts `maxWidth`, `maxHeight`, `maxBytes` and `jpegQuality`; configured values override discovered values field by field for the selected model’s `read` tool. The file is limited to 1 MB and rejects duplicate IDs and invalid numeric metadata.
+- Built-in tools run with PiSharp's operating-system permissions. Project trust controls protected project resources; it does not sandbox tools.
+- Extensions execute arbitrary .NET code. Load only assemblies you trust.
+- Prompts, instructions, tool output and summaries may be sent to the selected provider. Review project resources before use.
+- `--api-key` is runtime-only but may be visible in process listings and shell history. Prefer provider-specific environment variables or `/login`.
+- A custom endpoint must use its own provider ID and credentials. PiSharp does not send `OPENAI_API_KEY` to a custom URL.
 
-Custom compatible providers default to Chat Completions. A configured model can select `"api":"openai-responses"` or `"api":"anthropic-messages"`; unsupported API identifiers fail before inference. Exact model selection does not need `/models`; fuzzy discovery does. Reasoning support varies by endpoint. Anthropic loopback tests cover native headers, usage, text, tool-result continuation, inline PNG transport and the SDK’s thinking payloads for pinned models. Custom Anthropic thinking behavior, live-account semantics and provider parity remain unverified.
+## Parity and limitations
 
-`auth.json` stores API keys privately and refuses public files on Linux; `/login` prompts without echo. `pisharp auth check --provider <id> [--model <configured-exact-id>] [--local]` checks local credential availability without network access or secret output (exit 0 available, 1 absent, 2 invalid configuration/flags). It does not validate remote acceptance or refresh credentials. `auth print-api-key --provider <id>` prints a configured API key only when explicitly requested; OAuth bearer printing is unsupported. Stored OAuth tokens are not used by the current API-key adapters, and `models.json` rejects OAuth declarations without a refresh adapter.
+PiSharp shares one MAF execution path across terminal, print, JSON and RPC modes. Its parity work prioritizes observable behavior, session recovery and maintainable C# boundaries. Major areas remain incomplete, including RPC wire compatibility, Pi session-manager recovery, provider/auth breadth, multimodal support, extensions, coding-tool edge cases and terminal rendering.
 
-PiSharp retains its canonical local history rather than trusting provider response IDs. This is not broad hosted-provider support or OAuth login/refresh. `--api-key` is runtime-only and may appear in process listings and shell history; prefer provider-specific environment variables or `/login`. Authentication-required providers fail closed when credentials are absent, including after `/logout`. Reasoning requests may be rejected by a provider. `PISHARP_MODEL` is an exact default override for the selected endpoint. These features do not establish provider parity.
+Use these documents for the current, detailed status:
 
-A validated user `settings.json` supports `defaultProvider`, `defaultModel`, `defaultThinkingLevel`, `defaultTools`, `enabledModels` (a bounded scope-pattern subset; `--models` overrides it and `--list-models` ignores it), `sessionDir`, `shellPath`, `externalEditor`, user-only `defaultProjectTrust` (`ask`/`always`/`never`), `images.blockImages`, `hideThinkingBlock` and `quietStartup`. `shellPath` selects the bash executable and expands a leading `~`; `externalEditor` receives a prompt file. Startup model-scope selection and cycling are still partial.
+- [Feature matrix](docs/parity/feature-matrix.md): capability status and evidence level.
+- [Detailed inventory](docs/parity/detailed-inventory.md): behavior, differences and residuals.
+- [Continuation notes](docs/continuation.md): current checkpoint, priorities and architecture risks.
+- [Parity fixtures](docs/parity/fixtures): pinned Pi comparisons and process evidence.
+- [Execution ledger](docs/parity/execution-ledger.json): machine-readable capability records.
 
-Compaction settings include `compaction.enabled`, `reserveTokens`, `keepRecentTokens` and exact `provider/model` `modelOverrides`. Pre-prompt compaction uses known model windows; an explicit context-window environment override takes precedence. `hideThinkingBlock` affects interactive stderr only, not stored reasoning or JSON events. `quietStartup` hides the terminal banner unless `--verbose` is used.
-
-Command-line settings override file values. `PISHARP_SESSION_DIR` takes precedence over `sessionDir`; provider model environment overrides take precedence over the settings model, while a saved session’s model is preserved. Trusted project `.pi/settings.json` overlays the supported subset except `defaultProjectTrust`; untrusted project settings are not read.
-
-Interactive `/settings` currently edits `defaultThinkingLevel`, `externalEditor`, `hideThinkingBlock`, `images.blockImages` and `compaction.enabled`; it also edits user-only `defaultProjectTrust` and `quietStartup`. Ctrl+G opens the configured editor, then `VISUAL`, `EDITOR`, `nano` (or `notepad` on Windows). Draft files are private, successful edits return to the prompt, and updates preserve unrelated JSON values through atomic replacement. Image blocking and compaction refresh the active runtime; other startup defaults apply on the next launch. The rest of the settings schema and editor controls are not implemented.
-
-## Sessions (PiSharp canonical format; incomplete Pi interoperability)
-
-PiSharp stores its canonical session tree separately from Pi JSONL. Sessions are grouped by working directory under `~/.pisharp/sessions/` (override storage with `--session-dir <dir>` or `PISHARP_SESSION_DIR`). `--continue` loads the most recently saved `.session.json`; `--session <path|project-id-prefix>` loads a known session by path or unambiguous project ID; a missing path creates a new session, while an unknown ID is rejected. `--fork <path|project-id-prefix>` copies an existing session's complete branch tree and selected head into the invocation project, records the source path as its parent, and leaves the source unchanged; a path may refer to a session from another project. `--no-session` uses an ephemeral conversation. CLI `--print` and interactive runs use the same MAF execution path.
-
-Session commands include `/tree` and `/branch <unique-prefix>` for navigating entries and selecting a branch. `/fork` opens a searchable selector of text-only user messages on the selected branch; choosing one creates a separate session before that message and prefills its prompt for editing. `/fork <user-message-id>` selects directly, and `/clone` copies the active branch to another file. `/sessions [filter]` searches project sessions by name, ID or model. `/resume [id-prefix|exact-name]` switches sessions; with no argument it opens a searchable picker. The `app.session.resume` action is configurable and has no default key.
-
-`/delete-session <id-prefix|exact-name>` requires typed confirmation, refuses the active session and permanently removes a session (there is no trash integration). `/new` creates a blank session, `/name <label>` renames it, `/model <id|provider/id>` selects a provider/model, and `/compact [instructions]` summarizes older complete turns without deleting raw history. `/export [path]` writes a private HTML export of all branches without overwriting files. `/session` displays the path, selected head, branch/message/tool counts, estimated context size and persisted provider token usage.
-
-Set both `PISHARP_INPUT_COST_PER_MILLION` and `PISHARP_OUTPUT_COST_PER_MILLION` (optionally `PISHARP_CACHED_INPUT_COST_PER_MILLION`) to calculate USD cost without inventing prices; cost remains unavailable when pricing is unknown.
-
-Model IDs can be discovered but are not validated before requests; branching across a model-change entry is rejected until per-branch provider switching exists.
-
-The session is saved atomically with private permissions before a tool runs, after its outcome, and after each turn or branch change; a tool error remains marked as a failure after reload. Crash-interrupted prompts and uncertain side effects are explicitly reported on restart; partial provider output between progress checkpoints can still be lost. Concurrent writers are rejected (not merged); legacy v1 text-only canonical sessions are upgraded on next save, but legacy tool turns are refused because they did not persist failure state. The PiSharp canonical store cannot open legacy MAF snapshot files. Pi JSONL v1-v3 is an explicit import/export interchange format, not the backing-store format. Files under `docs/parity/fixtures` are archived evidence, not session files. The saved model is selected automatically on continuation unless `PISHARP_MODEL` explicitly conflicts; changing the endpoint still requires matching `PISHARP_BASE_URL` and never forwards the cloud key to a custom URL.
-
-Standalone `pisharp --export <PiSharp-session-file> [output.html]` converts an existing PiSharp canonical session to escaped, private HTML without initializing a provider or running tools. It is not a converter for Pi JSONL. Interactive `/export` defaults to `pisharp-<session-prefix>.html` in the working directory; standalone `--export` derives `<input-stem>.html` beside its input. These exports contain potentially sensitive prompts, file contents, tool arguments and failures. Review them before sharing; the HTML format is PiSharp-owned and differs from Pi's viewer. Existing files are never replaced; on Linux, new exports use user-only permissions.
-
-Manual compaction requires at least two user turns. The latest whole turn and its tools stay in the model context; a separate tool-free MAF summarizer replaces earlier turns in **model context only**, leaving the canonical transcript and branches intact. Repeated compaction carries the previous summary. A pre-prompt context budget is available when `PISHARP_CONTEXT_WINDOW_TOKENS` is set to the model's window size or a configured/discovered model advertises a context window, optionally with `PISHARP_CONTEXT_RESERVE_TOKENS` (default min(16,384, one quarter of the window)). Before a prompt, the latest provider-reported post-compaction context usage plus the pending prompt triggers the same history-preserving summary, with a conservative UTF-16-length estimate as fallback; if the latest turn remains too large it rejects the prompt instead of truncating a tool group. Unknown model limits leave this feature disabled. It does not compact inside the MAF tool loop, reliably discover limits for every provider, split long turns, retry overflow, or summarize branches. Provider token counts (including compaction requests) are persisted when MAF supplies them; context size remains an estimate and costs require explicit prices. Summary requests may send sensitive tool output to the configured provider; no cloud key is sent to a custom endpoint.
-
-## Context instructions (experimental)
-
-At startup, PiSharp loads the first available `AGENTS.override.md`, `AGENTS.md`, `AGENTS.MD`, `CLAUDE.md` or `CLAUDE.MD` from `~/.pisharp/agent` (or `PISHARP_AGENT_DIR`) and each ancestor of the working directory. Files are limited to 64 KB; oversized files fail rather than being truncated. Context files load regardless of project trust unless `--no-context-files` (`-nc`) is supplied. They are untrusted model input, not executable configuration.
-
-`--system-prompt <literal|file>` replaces the discovered system prompt. Repeatable `--append-system-prompt <literal|file>` replaces discovered append sources and joins the supplied values in order. Existing file paths are read as UTF-8 with the same 64 KB cap and refreshed by `/reload`; these overrides are not saved in the session. Project `.pi/SYSTEM.md` and `.pi/APPEND_SYSTEM.md` require project trust, interactive confirmation or one-run `--approve`. `--no-approve` overrides a saved decision; noninteractive sessions without a decision deny protected project resources. `/trust yes|no|forget` persists the decision and rebuilds the agent; `/reload` refreshes instructions. Trust does **not** sandbox tools.
-
-A subset of user and trusted-project skills and prompt templates is discovered. `--no-skills` (`-ns`) and `--no-prompt-templates` (`-np`) independently disable discovery, including on `/reload`. Skill descriptions enter system context; `/skill:<name> [args]` loads full instructions on demand, and `/<template> [args]` expands a template before a terminal prompt. Print, JSON and RPC prompts also resolve these inputs; RPC `get_commands` lists discovered resources. Complex Agent Skills frontmatter and configurable discovery paths are not implemented.
-
-Built-in, user and trusted-project theme JSON files load for `/settings` selection and `/reload`, including the `light/dark` pair. CLI theme flags and settings-defined theme paths remain absent. A limited native .NET extension host can load trusted project and user DLLs; see [the extension notes](docs/extensions.md). Inspect context files before running PiSharp in an unfamiliar directory.
-
-## Native .NET extensions (experimental)
-
-A public class in a DLL implementing `PiSharp.Runtime.Extensions.IPiSharpExtension` can register `Microsoft.Extensions.AI.AIFunction` tools, per-tool terminal call/result renderers, and terminal-only slash commands. Place DLLs in `~/.pisharp/agent/extensions/` (or `PISHARP_AGENT_DIR/extensions/`) or, **only after project trust**, in `.pi/extensions/`. `--no-extensions` (`-ne`) disables both discovered locations for this run, including `/reload`; repeatable `-e`/`--extension <dll|directory>` still loads explicitly selected assemblies, even with discovery disabled. `index.dll` inside an immediate subdirectory is also supported. See [the extension API notes](docs/extensions.md) for renderer behavior and current limits. Example:
-
-```csharp
-public sealed class Example : PiSharp.Runtime.Extensions.IPiSharpExtension
-{
-    public void Configure(PiSharp.Runtime.Extensions.ExtensionRegistration registration)
-    {
-        registration.AddTool(Microsoft.Extensions.AI.AIFunctionFactory.Create(
-            (string text) => "Echo: " + text, name: "echo_ext"));
-        registration.AddCommand("hello", (args, cancellationToken) => Task.FromResult("Hello " + args));
-    }
-}
-```
-
-A plugin needs a public parameterless constructor. Tools run through the same MAF invocation/checkpoint path as built-ins; `--no-tools`, `--tools` and `--exclude-tools` also apply to extension tools. `/hello ...` runs only in interactive mode; `/reload` recreates the extension catalog. Duplicate/reserved command and tool names fail startup. **DLLs execute arbitrary code with PiSharp's OS permissions**: inspect them first. This is a PiSharp-owned .NET API, not the upstream TypeScript extension API; general lifecycle hooks, context transforms, custom providers, state, keybindings, interactive UI components, RPC commands, plugin resources/settings and Pi extension compatibility remain open.
-
-## Experimental JSONL and RPC modes
-
-`--mode json <prompt>` emits LF-framed `pisharp` session and streaming lifecycle records described in the [protocol contract](docs/protocol.md). `--mode rpc` reads one JSON command per stdin line, returns correlated `response` records, and emits events without a session header. Implemented commands include `prompt`, `steer`, `follow_up`, `clear_queue`, `abort`, `bash`, `abort_bash`, `get_state`, `get_messages`, `get_entries`, `get_tree`, `get_last_assistant_text`, `get_commands`, `get_available_models`, `set_model`, `cycle_model`, `set_thinking_level`, `cycle_thinking_level`, `get_available_thinking_levels`, `set_steering_mode`, `set_follow_up_mode`, `set_auto_compaction`, `set_auto_retry`, `abort_retry`, `set_session_name`, `get_session_stats`, `export_html`, `compact`, `new_session`, `switch_session`, `fork`, `clone`, and `get_fork_messages`.
-
-`prompt` accepts nonempty text; a prompt queued during a run requires `streamingBehavior: "steer"` or `"followUp"`. Session replacement rebinds to the stored project CWD. `get_entries` and `get_tree` return Pi-shaped entries and nested tree nodes. `set_session_name` persists a Pi `session_info` entry, then emits `session_info_changed` before its response. `compact` accepts `customInstructions`, cancels an active run, returns summary/cut-point/token/usage/file-detail data, and emits `compaction_start` and `compaction_end`; CLI-process tests cover success and abort.
-
-After a provider run initializes the prompt, `get_messages` includes a leading generated `system` message and `get_state.messageCount` counts it. This is an RPC-only projection: it is not persisted in the canonical session. PiSharp projects its actual MAF instructions under `sections.preamble` and includes the selected tool schemas; Pi's generated message has a richer section layout, so prompt-section parity remains open. A fresh session with no provider run has no generated message. An in-flight assistant remains in lifecycle events until `message_end`; it is not included in the session snapshot beforehand.
-
-RPC projects Pi-shaped `agent_start`, `agent_end`, `agent_settled`, `turn_start`, `turn_end`, `message_start`, `message_update`, `message_end`, tool execution, queue, thinking-level, session-name, and manual-compaction events. For each turn, prompt messages start and end before assistant messages; tool result messages follow `tool_execution_end`; `turn_end` and `agent_end.messages` reuse the emitted message snapshots. OpenAI Chat Completions raw SSE tool-argument fragments now appear as separate ordered `toolcall_delta` events while MAF's assembled call remains authoritative for execution. Other provider APIs and partial argument snapshots remain open. Unmapped events still use the `pisharp` wrapper, and response, error, cancellation, session and process differentials remain incomplete.
-
-RPC shares the Microsoft Agent Framework runtime and canonical session store with print and terminal modes. Queue changes emit top-level Pi-shaped `queue_update` snapshots; internal `prompt_queued` events are omitted. `steer` enters at the next provider boundary after the current response/tools, while `follow_up` waits behind steering; abort leaves unsent messages available to `clear_queue`. Both queue modes can be set over RPC and persisted. Changed thinking-level commands emit `thinking_level_changed` before their response, and active-run changes apply on the next provider request. Pi thinking-level maps are projected and canonical map values translate to M.E.AI effort where representable; arbitrary provider-specific values and API-specific effort semantics remain open. Images in RPC prompts remain unsupported.
-
-`get_session_stats` returns Pi-shaped message, token and cost totals during active runs; context usage is an estimate and can differ from Pi. `export_html` also works during active provider work: it writes a stable snapshot of the persisted conversation tree, so partial streamed assistant content is not included. Model projection includes thinking maps, prompt-cache metadata, sampling parameters, compatibility settings, input limits and pricing; credential fields and raw provider headers stay local. Compaction token estimates do not yet use Pi's usage-aware projected context.
-
-RPC and JSON are experimental subsets, not full Pi wire compatibility. The [feature matrix](docs/parity/feature-matrix.md) does not yet mark a capability Verified.
+Do not infer parity from a command name, passing unit test, or green CI run alone. Overall parity has not been established.
 
 ## Build and test
 
+Requires the .NET 10 SDK.
+
 ```sh
+dotnet restore PiSharp.slnx
+dotnet format PiSharp.slnx --verify-no-changes
 dotnet build PiSharp.slnx --warnaserror
 dotnet test PiSharp.slnx
 ```
 
-Deterministic tests cover MAF streaming/tool results, canonical branch persistence, Pi JSONL v1-v3 import/export, and local HTTP provider fixtures; no live-provider credentials are needed. Current-Pi process comparisons cover named RPC lifecycle, queue, model, message-read, clone, session-statistics, active HTML-export and streamed-tool-call slices. Their scope and evidence are recorded under [`docs/parity/fixtures`](docs/parity/fixtures), and do not establish broad parity. Session interchange and full-feature parity remain incomplete.
+Tests use deterministic agent and local HTTP fixtures; no live provider key is needed for the suite.
+
+## Contributor and agent workflow
+
+1. Start with [`TODO.md`](TODO.md) and [`docs/continuation.md`](docs/continuation.md), then inspect the current source and worktree. Treat checkpoint prose as historical until verified.
+2. Read the feature matrix, detailed inventory and execution ledger before choosing a parity gap. Compare current Pi documentation, implementation and tests for that capability.
+3. Add deterministic tests and process-level or differential evidence when behavior crosses a protocol or process boundary. Record limitations honestly.
+4. Extract a cohesive boundary when the next capability touches concentrated behavior; avoid broad refactors that are not needed for the slice.
+5. Validate the exact source head, commit a coherent slice, push regularly, and record the exact commit and CI result in the continuation notes.

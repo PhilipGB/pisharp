@@ -25,9 +25,9 @@ public sealed class ConversationRun
     private readonly PromptDeliveryController _promptDelivery;
     private readonly Queue<PendingRuntimeChange> _pendingRuntimeChanges = new();
     private readonly Queue<BashExecutionRecord> _pendingBashExecutions = new();
+    private readonly ConversationCompactionCoordinator _compactionCoordinator;
     private AgentSession _execution;
     private int _historyCount;
-    private int _isCompacting;
     private string _currentModel;
     private string? _currentProvider;
     private string _providerRequestModel;
@@ -38,7 +38,7 @@ public sealed class ConversationRun
     public Task PersistAsync(CancellationToken cancellationToken = default) =>
         _save?.Invoke(cancellationToken) ?? Task.CompletedTask;
     public bool AutoCompactionEnabled => Volatile.Read(ref _autoCompactionEnabled) != 0;
-    public bool IsCompacting => Volatile.Read(ref _isCompacting) != 0;
+    public bool IsCompacting => _compactionCoordinator.IsCompacting;
     public string CurrentModel { get { lock (_runtimeStateGate) return _currentModel; } }
     public string? CurrentProvider { get { lock (_runtimeStateGate) return _currentProvider; } }
     public UsageRecord CurrentProviderUsage(UsageDetails usage)
@@ -71,6 +71,10 @@ public sealed class ConversationRun
         _providerRequestModel = conversation.Model;
         _providerRequestPricing = pricing;
         _persistedThinkingLevel = reasoningLevel;
+        _compactionCoordinator = new ConversationCompactionCoordinator(Conversation, _agent,
+            () => _autoCompaction, () => _pricing, _save,
+            (messages, token) => _agent.RestoreHistoryAsync(messages, token),
+            (execution, count) => { _execution = execution; _historyCount = count; });
     }
 
     public static async Task<ConversationRun> OpenAsync(PiAgent agent, ConversationSession conversation,
@@ -433,37 +437,8 @@ public sealed class ConversationRun
             ? "Already compacted"
             : "Nothing to compact (session too small)";
 
-    // Called only while the run gate is held. A failed summary or save cannot switch active context.
-    private async Task<ConversationCompactionResult?> CompactCoreAsync(string? focus, CancellationToken cancellationToken)
-    {
-        var plan = Conversation.PrepareCompaction(_autoCompaction?.KeepRecentTokens);
-        if (plan is null) return null;
-        var tokensBefore = ConversationCompactionMetadata.EstimateTokens(Conversation.ContextMessages());
-        var details = ConversationCompactionMetadata.CollectDetails(Conversation, plan);
-        Volatile.Write(ref _isCompacting, 1);
-        try
-        {
-            var summary = await _agent.SummarizeAsync(plan.MessagesToSummarize, focus, cancellationToken);
-            var previousHead = Conversation.Tree.HeadId;
-            try
-            {
-                Conversation.AppendCompaction(plan, summary.Text, _autoCompaction?.KeepRecentTokens,
-                    tokensBefore, details);
-                var usage = summary.Usage is null ? null :
-                    UsageRecord.Create(Conversation.Model, "compaction", summary.Usage, _pricing);
-                if (usage is not null) Conversation.AppendUsage(usage);
-                var messages = Conversation.ContextMessages();
-                var restored = await _agent.RestoreHistoryAsync(messages, cancellationToken);
-                if (_save is not null) await _save(cancellationToken);
-                _execution = restored;
-                _historyCount = messages.Count;
-                return new ConversationCompactionResult(summary.Text, plan.FirstKeptEntryId, tokensBefore,
-                    ConversationCompactionMetadata.EstimateTokens(messages), usage, details);
-            }
-            catch { Conversation.Tree.Select(previousHead); throw; }
-        }
-        finally { Volatile.Write(ref _isCompacting, 0); }
-    }
+    private Task<ConversationCompactionResult?> CompactCoreAsync(string? focus, CancellationToken cancellationToken) =>
+        _compactionCoordinator.CompactAsync(focus, cancellationToken);
 
     /// <summary>Selection is durable in Conversation.HeadId; rebuild MAF state before the next run.</summary>
     public async Task SelectAsync(string? id, CancellationToken cancellationToken = default)

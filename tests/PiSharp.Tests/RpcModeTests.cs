@@ -1427,7 +1427,8 @@ public sealed class RpcModeTests
             line.Contains("\"id\":9", StringComparison.Ordinal)));
         Assert.True(response.RootElement.GetProperty("success").GetBoolean(), response.RootElement.ToString());
         var data = response.RootElement.GetProperty("data");
-        Assert.Equal("summary", data.GetProperty("summary").GetString());
+        Assert.Equal("summary\n\n<read-files>\nnotes.md\n</read-files>\n\n<modified-files>\nsrc/app.cs\n</modified-files>",
+            data.GetProperty("summary").GetString());
         Assert.Equal(session.Tree.Entries[4].Id, data.GetProperty("firstKeptEntryId").GetString());
         Assert.True(data.GetProperty("tokensBefore").GetInt32() > data.GetProperty("estimatedTokensAfter").GetInt32());
         var details = data.GetProperty("details");

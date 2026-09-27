@@ -45,7 +45,7 @@ internal static class ConversationCompactionMetadata
             }
         }
 
-        foreach (var message in plan.MessagesToSummarize)
+        foreach (var message in plan.MessagesToSummarize.Concat(plan.TurnPrefixMessages ?? []))
         {
             if (message.Role != ChatRole.Assistant) continue;
             foreach (var call in message.Contents.OfType<FunctionCallContent>())
@@ -74,6 +74,16 @@ internal static class ConversationCompactionMetadata
         read.ExceptWith(modified);
         return new ConversationCompactionDetails(read.Order(StringComparer.Ordinal).ToArray(),
             modified.Order(StringComparer.Ordinal).ToArray());
+    }
+
+    public static string FormatFileOperations(ConversationCompactionDetails details)
+    {
+        var sections = new List<string>();
+        if (details.ReadFiles.Count > 0)
+            sections.Add("<read-files>\n" + string.Join("\n", details.ReadFiles) + "\n</read-files>");
+        if (details.ModifiedFiles.Count > 0)
+            sections.Add("<modified-files>\n" + string.Join("\n", details.ModifiedFiles) + "\n</modified-files>");
+        return sections.Count == 0 ? "" : "\n\n" + string.Join("\n\n", sections);
     }
 
     private static long EstimateResultCharacters(object? value) => value switch
