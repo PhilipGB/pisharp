@@ -461,7 +461,8 @@ public sealed class CompactionTests
             var events = new List<AgentLifecycleEvent>();
             await foreach (var item in run.RunEventsAsync("read all three files")) events.Add(item);
             Assert.True(client.SecondRequestSawSummaryWithoutOrphans);
-            Assert.Equal(3, client.Requests);
+            Assert.True(client.Requests == 3,
+                $"Expected three provider requests but saw {client.Requests}: {string.Join(" | ", client.RequestSnapshots)}");
             Assert.Equal(2, client.Summaries);
             Assert.True(client.ContinuationSawSummaryWithoutOrphanedResults);
             Assert.Equal(2, events.Count(item => item.Type == "context_compacted_in_flight"));
