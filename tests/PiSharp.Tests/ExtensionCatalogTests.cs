@@ -34,6 +34,12 @@ public sealed class ExtensionCatalogTests
                 Assert.NotNull(trusted.Registration.GetToolRenderer("echo_ext"));
                 Assert.Single(trusted.Registration.UserBashHandlers);
                 Assert.Equal("extension: hello", await trusted.Registration.Commands["fixture"]("hello", CancellationToken.None));
+                var projectCommand = trusted.Registration.CommandInfo["fixture"];
+                Assert.Equal("Fixture extension command.", projectCommand.Description);
+                Assert.Equal(Path.Combine(project, "fixture.dll"), projectCommand.SourceInfo.Path);
+                Assert.Equal("auto", projectCommand.SourceInfo.Source);
+                Assert.Equal("project", projectCommand.SourceInfo.Scope);
+                Assert.Equal(Path.Combine(cwd, ".pi"), projectCommand.SourceInfo.BaseDir);
                 var client = new ExtensionClient();
                 var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(cwd),
                     extensionTools: trusted.Registration.Tools), new ConversationSession(cwd, "fixture", null));
@@ -65,7 +71,13 @@ public sealed class ExtensionCatalogTests
             var flags = CliArguments.Parse(["-ne", "-e", Path.Combine(project, "fixture.dll")]);
             using (var explicitOnly = ExtensionCatalog.Load(agent, cwd, false, discover: !flags.NoExtensions,
                 additionalPaths: flags.ExtensionPaths))
+            {
                 Assert.Equal("extension: explicit", await explicitOnly.Registration.Commands["fixture"]("explicit", CancellationToken.None));
+                var explicitCommand = explicitOnly.Registration.CommandInfo["fixture"];
+                Assert.Equal("cli", explicitCommand.SourceInfo.Source);
+                Assert.Equal("temporary", explicitCommand.SourceInfo.Scope);
+                Assert.Null(explicitCommand.SourceInfo.BaseDir);
+            }
             using (var explicitDirectory = ExtensionCatalog.Load(agent, cwd, false, discover: false,
                 additionalPaths: [project]))
                 Assert.Single(explicitDirectory.Registration.Tools);
@@ -77,6 +89,10 @@ public sealed class ExtensionCatalogTests
             Assert.Throws<ArgumentException>(() => CliArguments.Parse(["--extension"]));
             using var personal = ExtensionCatalog.Load(agent, cwd, false);
             Assert.Single(personal.Registration.Tools);
+            var personalCommand = personal.Registration.CommandInfo["fixture"];
+            Assert.Equal("auto", personalCommand.SourceInfo.Source);
+            Assert.Equal("user", personalCommand.SourceInfo.Scope);
+            Assert.Equal(agent, personalCommand.SourceInfo.BaseDir);
             Assert.Throws<ArgumentException>(() => ExtensionCatalog.Load(agent, cwd, true)); // duplicate names fail closed
         }
         finally { Directory.Delete(cwd, true); }
@@ -192,7 +208,9 @@ public sealed class FixtureExtension : IPiSharpExtension
                 "extension call: " + arguments["value"], PiSharpToolTextStyle.Accent),
             renderResult: (result, context) => PiSharpToolRenderView.FromText(
                 $"extension result: {context.Arguments["value"]} / {result.Text}", PiSharpToolTextStyle.Success)));
-        registration.AddCommand("fixture", (argument, _) => Task.FromResult("extension: " + argument));
+        registration.AddCommand("fixture", (argument, _) => Task.FromResult("extension: " + argument),
+            "Fixture extension command.");
+        registration.AddCommand("plain", (_, _) => Task.FromResult("plain"));
         registration.AddUserBashHandler(async (request, _) =>
         {
             if (request.Command != "fixture-bash") return null;

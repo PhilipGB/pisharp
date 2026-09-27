@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Runtime.Loader;
 using Microsoft.Extensions.AI;
+using PiSharp.Runtime.Resources;
 using PiSharp.Runtime.Tools;
 
 namespace PiSharp.Runtime.Extensions;
@@ -17,6 +18,8 @@ public sealed record UserBashContext(string Command, bool ExcludeFromContext, st
 
 public delegate Task<BashExecutionResult?> UserBashHandler(UserBashContext context, CancellationToken cancellationToken);
 
+public sealed record ExtensionCommandInfo(string? Description, ResourceSourceInfo SourceInfo);
+
 public sealed class ExtensionRegistration
 {
     private static readonly HashSet<string> s_reserved = new(StringComparer.Ordinal)
@@ -27,10 +30,13 @@ public sealed class ExtensionRegistration
     private readonly Dictionary<string, AIFunction> _tools = new(StringComparer.Ordinal);
     private readonly Dictionary<string, PiSharpToolRenderer> _toolRenderers = new(StringComparer.Ordinal);
     private readonly Dictionary<string, Func<string, CancellationToken, Task<string>>> _commands = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, ExtensionCommandInfo> _commandInfo = new(StringComparer.Ordinal);
     private readonly List<UserBashHandler> _userBashHandlers = [];
+    private ResourceSourceInfo? _currentSourceInfo;
     public IReadOnlyCollection<AIFunction> Tools => _tools.Values;
     public IReadOnlyDictionary<string, PiSharpToolRenderer> ToolRenderers => _toolRenderers;
     public IReadOnlyDictionary<string, Func<string, CancellationToken, Task<string>>> Commands => _commands;
+    public IReadOnlyDictionary<string, ExtensionCommandInfo> CommandInfo => _commandInfo;
     public IReadOnlyList<UserBashHandler> UserBashHandlers => _userBashHandlers;
 
     public void AddTool(AIFunction tool)
@@ -50,13 +56,28 @@ public sealed class ExtensionRegistration
     public PiSharpToolRenderer? GetToolRenderer(string name) =>
         _toolRenderers.TryGetValue(name, out var renderer) ? renderer : null;
 
-    public void AddCommand(string name, Func<string, CancellationToken, Task<string>> handler)
+    public void AddCommand(string name, Func<string, CancellationToken, Task<string>> handler) =>
+        AddCommand(name, handler, null);
+
+    public void AddCommand(string name, Func<string, CancellationToken, Task<string>> handler, string? description)
     {
         ArgumentNullException.ThrowIfNull(handler);
         if (string.IsNullOrWhiteSpace(name) || !name.All(c => char.IsAsciiLetterOrDigit(c) || c is '-' or '_'))
             throw new ArgumentException("Extension command names must be alphanumeric, '_' or '-'.", nameof(name));
         if (s_reserved.Contains(name) || !_commands.TryAdd(name, handler))
             throw new ArgumentException($"Reserved or duplicate extension command: {name}");
+        var sourceInfo = _currentSourceInfo ?? SourceInfoFromHandler(handler);
+        _commandInfo.Add(name, new(description, sourceInfo));
+    }
+
+    internal void SetCurrentSourceInfo(ResourceSourceInfo? sourceInfo) => _currentSourceInfo = sourceInfo;
+
+    private static ResourceSourceInfo SourceInfoFromHandler(Delegate handler)
+    {
+        var path = handler.Method.DeclaringType?.Assembly.Location;
+        return string.IsNullOrWhiteSpace(path)
+            ? new("<unknown>", "local", "temporary", "top-level", null)
+            : new(Path.GetFullPath(path), "local", "temporary", "top-level", Path.GetDirectoryName(path));
     }
 
     /// <summary>Registers a handler for direct RPC Bash. Return null to let the next handler or shell run.</summary>
@@ -95,20 +116,36 @@ public sealed class ExtensionCatalog : IDisposable
         var catalog = new ExtensionCatalog();
         try
         {
-            var selectedPaths = new List<string>();
+            var selectedPaths = new List<(string Path, ResourceSourceInfo SourceInfo)>();
+            var seenPaths = new HashSet<string>(OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
             foreach (var entry in additionalPaths ?? [])
             {
                 var path = Path.GetFullPath(entry, cwd);
-                if (Directory.Exists(path)) selectedPaths.AddRange(FindAssemblies(path));
+                IEnumerable<string> paths;
+                if (Directory.Exists(path)) paths = FindAssemblies(path);
                 else if (File.Exists(path) && Path.GetExtension(path).Equals(".dll", StringComparison.OrdinalIgnoreCase))
-                    selectedPaths.Add(path);
+                    paths = [path];
                 else throw new FileNotFoundException("Explicit extension must be a .dll file or an existing directory.", path);
+                foreach (var assemblyPath in paths)
+                    AddPath(assemblyPath, new(Path.GetFullPath(assemblyPath), "cli", "temporary", "top-level",
+                        null));
             }
             if (discover)
-                foreach (var root in new[] { Path.Combine(agentDirectory, "extensions"),
-                    projectTrusted ? Path.Combine(cwd, ".pi", "extensions") : null }.Where(path => path is not null))
-                    if (Directory.Exists(root)) selectedPaths.AddRange(FindAssemblies(root));
-            foreach (var path in selectedPaths.Distinct(StringComparer.Ordinal))
+            {
+                var userRoot = Path.Combine(agentDirectory, "extensions");
+                if (Directory.Exists(userRoot))
+                    foreach (var path in FindAssemblies(userRoot))
+                        AddPath(path, new(Path.GetFullPath(path), "auto", "user", "top-level", Path.GetFullPath(agentDirectory)));
+                if (projectTrusted)
+                {
+                    var projectRoot = Path.Combine(cwd, ".pi", "extensions");
+                    if (Directory.Exists(projectRoot))
+                        foreach (var path in FindAssemblies(projectRoot))
+                            AddPath(path, new(Path.GetFullPath(path), "auto", "project", "top-level",
+                                Path.GetFullPath(Path.Combine(cwd, ".pi"))));
+                }
+            }
+            foreach (var (path, sourceInfo) in selectedPaths)
             {
                 var context = new PluginLoadContext(path);
                 catalog._contexts.Add(context);
@@ -118,10 +155,18 @@ public sealed class ExtensionCatalog : IDisposable
                 {
                     if (Activator.CreateInstance(type) is not IPiSharpExtension extension)
                         throw new InvalidDataException($"Extension {type.FullName} needs a public parameterless constructor.");
-                    extension.Configure(catalog.Registration);
+                    catalog.Registration.SetCurrentSourceInfo(sourceInfo);
+                    try { extension.Configure(catalog.Registration); }
+                    finally { catalog.Registration.SetCurrentSourceInfo(null); }
                 }
             }
             return catalog;
+
+            void AddPath(string path, ResourceSourceInfo sourceInfo)
+            {
+                var fullPath = Path.GetFullPath(path);
+                if (seenPaths.Add(fullPath)) selectedPaths.Add((fullPath, sourceInfo with { Path = fullPath }));
+            }
         }
         catch { catalog.Dispose(); throw; }
     }

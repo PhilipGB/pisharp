@@ -29,7 +29,10 @@ public sealed class ProjectRuntimeContextTests
             using var trusted = await ProjectRuntimeContext.LoadAsync(trustedConfiguration, agent, arguments, null);
             Assert.True(trusted.Trusted);
             Assert.True(trusted.Settings.BlockImages);
-            Assert.Contains(trusted.Resources.Skills, skill => skill.Name == "private-guide");
+            var privateSkillResource = Assert.Single(trusted.Resources.Skills, skill => skill.Name == "private-guide");
+            Assert.Equal("auto", privateSkillResource.SourceInfo.Source);
+            Assert.Equal("project", privateSkillResource.SourceInfo.Scope);
+            Assert.Equal(Path.Combine(project, ".pi"), privateSkillResource.SourceInfo.BaseDir);
             Assert.Equal(Path.GetFullPath(Path.Combine(project, "custom-sessions")), trusted.Store.DirectoryPath);
 
             var untrustedConfiguration = await ProjectRuntimeConfiguration.LoadAsync(project, agent, arguments,

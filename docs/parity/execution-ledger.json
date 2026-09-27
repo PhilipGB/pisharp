@@ -913,17 +913,19 @@
       "source": "docs/parity/detailed-inventory.md:14",
       "acceptance": [
         "Loaded resource commands discoverable and completable; missing resource error",
-        "In progress: discovered and explicit skill/template commands, native terminal extension commands, and RPC get_commands for resources; lifecycle and Pi differential remain open",
+        "In progress: discovered/explicit skills and templates, native terminal extension commands, RPC command discovery with source metadata; extension invocation through RPC and complete upstream differential remain open.",
         "Verify command results, errors and PTY workflows",
-        "Remaining: complete Pi dynamic lifecycle and metadata, resource reload/diagnostic parity, extension commands in RPC discovery, upstream differential evidence."
+        "Remaining: complete Pi dynamic lifecycle, resource reload/diagnostic parity, RPC extension-command invocation, provider-specific command sources and broader differential evidence."
       ],
       "implementation": [
-        "src/PiSharp.Runtime/Resources/ResourceCatalog.cs: discovered/explicit skills and prompt templates, dynamic expansion",
-        "src/PiSharp.Cli/Program.cs: /skill:name, template and native extension terminal command dispatch; src/PiSharp.Cli/Protocols/RpcMode.cs: get_commands for discovered skills/templates"
+        "src/PiSharp.Runtime/Resources/ResourceCatalog.cs: discovers/expands prompt templates and skills while retaining Pi-shaped source metadata; project resource roots precede user roots.",
+        "src/PiSharp.Runtime/Extensions/ExtensionCatalog.cs: retains optional extension command descriptions and source metadata for explicit and auto-discovered assemblies.",
+        "src/PiSharp.Cli/Protocols/RpcCommandDiscoveryHandler.cs: projects resources and native extension commands through RPC get_commands; extension invocation through prompt remains open."
       ],
       "evidence": [
         "tests/PiSharp.Tests/ResourceCatalogTests.cs: resource discovery, explicit paths, expansion and precedence",
-        "tests/PiSharp.Tests/ExtensionCatalogTests.cs: native extension command fixture; tests/PiSharp.Tests/RpcModeTests.cs: get_commands"
+        "tests/PiSharp.Tests/ExtensionCatalogTests.cs: native extension command fixture; tests/PiSharp.Tests/RpcModeTests.cs: get_commands",
+        "RpcCommandDiscoveryProcessTests covers explicit prompt/skill/extension metadata, absent descriptions, Pi prompt fallback descriptions, auto-discovery scopes and project-before-user order. Direct Pi process inspection at 2b0a123de98318c2ff8069661721ce0c3794c34e confirmed these sourceInfo values and ordering; provider-specific command contributors and RPC extension invocation remain open."
       ],
       "dependencies": []
     },
@@ -1749,15 +1751,18 @@
       "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:37",
       "acceptance": [
-        "Implement get_commands using shared canonical runtime with correlated responses/event ordering",
-        "Test protocol through RPC process, including failures and cancellation",
-        "Remaining: Pi wire-compatible payloads, lifecycle/error semantics and pinned process differential."
+        "Match command entries, optional fields, sourceInfo values and auto-resource ordering for supported PiSharp resource and extension sources.",
+        "Verify the protocol in a CLI RPC process and compare with current Pi.",
+        "Remaining: invocation of discovered extension commands through prompt, provider-specific contributors, full command-list differential and broader error/lifecycle behavior."
       ],
       "implementation": [
-        "src/PiSharp.Cli/Protocols/RpcMode.cs: partial get_commands operation (PiSharp wire format)"
+        "src/PiSharp.Cli/Protocols/RpcCommandDiscoveryHandler.cs: owns get_commands response projection outside RpcMode.",
+        "src/PiSharp.Runtime/Resources/ResourceCatalog.cs and Extensions/ExtensionCatalog.cs: retain source, scope, origin, path, baseDir and optional description metadata for discovered commands."
       ],
       "evidence": [
-        "tests/PiSharp.Tests/RpcModeTests.cs: local protocol/command fixtures (coverage varies by operation)"
+        "tests/PiSharp.Tests/RpcCommandDiscoveryProcessTests.cs: real CLI process fixtures verify explicit and auto resource/extension command shapes, optional descriptions, prompt fallback description and source order.",
+        "Focused ResourceCatalogTests, ProjectRuntimeContextTests, ExtensionCatalogTests and RpcCommandDiscoveryProcessTests passed 10/10; dotnet format verification passed; dotnet build PiSharp.slnx --no-restore --warnaserror succeeded with 0 warnings/errors; dotnet test PiSharp.slnx --no-restore --no-build passed 646/646.",
+        "Direct current-Pi process inspection at 2b0a123de98318c2ff8069661721ce0c3794c34e confirmed explicit extension cli/temporary/top-level metadata, explicit local/temporary/top-level resource metadata, and project-before-user auto-resource order; see docs/parity/fixtures/rpc-get-commands-baseline.md. Current Pi process-list breadth and RPC extension command invocation remain open."
       ],
       "dependencies": []
     },

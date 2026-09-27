@@ -3,8 +3,9 @@ using System.Text.RegularExpressions;
 
 namespace PiSharp.Runtime.Resources;
 
-public sealed record SkillResource(string Name, string Description, string Path, bool ExplicitOnly);
-public sealed record PromptResource(string Name, string Description, string Template, string Path);
+public sealed record ResourceSourceInfo(string Path, string Source, string Scope, string Origin, string? BaseDir);
+public sealed record SkillResource(string Name, string Description, string Path, bool ExplicitOnly, ResourceSourceInfo SourceInfo);
+public sealed record PromptResource(string Name, string Description, string Template, string Path, ResourceSourceInfo SourceInfo);
 
 /// <summary>Discovers bounded user resources; project auto-discovery requires trust, while explicit paths are caller-selected.</summary>
 public sealed class ResourceCatalog
@@ -20,21 +21,21 @@ public sealed class ResourceCatalog
     {
         var skills = new List<SkillResource>();
         var prompts = new List<PromptResource>();
-        var skillRoots = new List<string>
-        {
-            Path.Combine(agentDirectory, "skills"),
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".agents", "skills")
-        };
-        var promptRoots = new List<string> { Path.Combine(agentDirectory, "prompts") };
+        var skillRoots = new List<string>();
+        var promptRoots = new List<string>();
         if (trusted)
         {
             skillRoots.Add(Path.Combine(cwd, ".pi", "skills"));
             skillRoots.Add(Path.Combine(cwd, ".agents", "skills"));
             promptRoots.Add(Path.Combine(cwd, ".pi", "prompts"));
         }
+        skillRoots.Add(Path.Combine(agentDirectory, "skills"));
+        skillRoots.Add(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".agents", "skills"));
+        promptRoots.Add(Path.Combine(agentDirectory, "prompts"));
         foreach (var root in (additionalSkills ?? []).Concat(discoverSkills ? skillRoots : []).Distinct(StringComparer.Ordinal))
         {
             var selected = Path.GetFullPath(root, cwd);
+            var explicitRoot = (additionalSkills ?? []).Any(path => PathsEqual(Path.GetFullPath(path, cwd), selected));
             if (!Directory.Exists(selected) && !File.Exists(selected))
             {
                 if ((additionalSkills ?? []).Contains(root)) throw new FileNotFoundException("Explicit skill path does not exist.", selected);
@@ -52,12 +53,14 @@ public sealed class ResourceCatalog
                     !Regex.IsMatch(name, "^[a-z0-9]+(?:-[a-z0-9]+)*$", RegexOptions.CultureInvariant) || name.Length > 64 ||
                     !metadata.TryGetValue("description", out var description) || description.Length is 0 or > 1024 ||
                     skills.Any(item => item.Name == name)) continue;
-                skills.Add(new(name, description, path, metadata.GetValueOrDefault("disable-model-invocation") == "true"));
+                skills.Add(new(name, description, path, metadata.GetValueOrDefault("disable-model-invocation") == "true",
+                    ProjectSourceInfo(path, selected, "skills", cwd, agentDirectory, explicitRoot)));
             }
         }
         foreach (var root in (additionalPrompts ?? []).Concat(discoverPrompts ? promptRoots : []).Distinct(StringComparer.Ordinal))
         {
             var selected = Path.GetFullPath(root, cwd);
+            var explicitRoot = (additionalPrompts ?? []).Any(path => PathsEqual(Path.GetFullPath(path, cwd), selected));
             if (!Directory.Exists(selected) && !File.Exists(selected))
             {
                 if ((additionalPrompts ?? []).Contains(root)) throw new FileNotFoundException("Explicit prompt template path does not exist.", selected);
@@ -74,8 +77,10 @@ public sealed class ResourceCatalog
                 if (!Regex.IsMatch(name, "^[a-zA-Z0-9_-]+$", RegexOptions.CultureInvariant) ||
                     prompts.Any(item => item.Name == name)) continue;
                 var (metadata, body) = Parse(await ReadBoundedAsync(path, cancellationToken));
-                prompts.Add(new(name, metadata.GetValueOrDefault("description") ??
-                    body.Split('\n').FirstOrDefault(line => !string.IsNullOrWhiteSpace(line)) ?? "", body, path));
+                var description = metadata.GetValueOrDefault("description");
+                if (string.IsNullOrEmpty(description)) description = PromptDescription(body);
+                prompts.Add(new(name, description, body, path,
+                    ProjectSourceInfo(path, selected, "prompts", cwd, agentDirectory, explicitRoot)));
             }
         }
         return new(skills, prompts);
@@ -136,6 +141,49 @@ public sealed class ResourceCatalog
         if (quote != '\0') throw new ArgumentException("Unclosed quote in template arguments.");
         if (word.Length > 0) result.Add(word.ToString());
         return result;
+    }
+
+    private static ResourceSourceInfo ProjectSourceInfo(string path, string selectedRoot, string kind,
+        string cwd, string agentDirectory, bool explicitRoot)
+    {
+        var fullPath = Path.GetFullPath(path);
+        if (explicitRoot)
+            return new(fullPath, "local", "temporary", "top-level", Path.GetDirectoryName(fullPath));
+
+        var userRoot = Path.Combine(agentDirectory, kind);
+        if (IsUnder(fullPath, userRoot))
+            return new(fullPath, "auto", "user", "top-level", Path.GetFullPath(agentDirectory));
+
+        var userAgentsRoot = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".agents");
+        if (IsUnder(fullPath, Path.Combine(userAgentsRoot, kind)))
+            return new(fullPath, "auto", "user", "top-level", Path.GetFullPath(userAgentsRoot));
+
+        var projectRoot = Path.Combine(cwd, ".pi", kind);
+        if (IsUnder(fullPath, projectRoot))
+            return new(fullPath, "auto", "project", "top-level", Path.GetFullPath(Path.Combine(cwd, ".pi")));
+
+        var projectAgentsRoot = Path.Combine(cwd, ".agents");
+        if (IsUnder(fullPath, Path.Combine(projectAgentsRoot, kind)))
+            return new(fullPath, "auto", "project", "top-level", Path.GetFullPath(projectAgentsRoot));
+
+        var baseDir = Directory.Exists(selectedRoot) ? Path.GetFullPath(selectedRoot) : Path.GetDirectoryName(fullPath);
+        return new(fullPath, "local", "temporary", "top-level", baseDir);
+    }
+
+    private static bool IsUnder(string path, string root)
+    {
+        var relative = Path.GetRelativePath(Path.GetFullPath(root), Path.GetFullPath(path));
+        return !Path.IsPathRooted(relative) && relative != ".." &&
+            !relative.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal);
+    }
+
+    private static bool PathsEqual(string left, string right) =>
+        string.Equals(left, right, OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+
+    private static string PromptDescription(string body)
+    {
+        var firstLine = body.Split('\n').FirstOrDefault(line => !string.IsNullOrWhiteSpace(line)) ?? "";
+        return firstLine.Length > 60 ? firstLine[..60] + "..." : firstLine;
     }
 
     private static (Dictionary<string, string> Metadata, string Body) Parse(string text)

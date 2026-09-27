@@ -25,6 +25,14 @@ public sealed class ResourceCatalogTests
             var untrusted = await ResourceCatalog.LoadAsync(project, agent, false);
             Assert.DoesNotContain(untrusted.Skills, skill => skill.Name == "project-secret");
             Assert.DoesNotContain(untrusted.Prompts, item => item.Name == "internal");
+            var userSkillSource = Assert.Single(untrusted.Skills, skill => skill.Name == "unit-guide").SourceInfo;
+            Assert.Equal(Path.Combine(userSkill, "SKILL.md"), userSkillSource.Path);
+            Assert.Equal("auto", userSkillSource.Source);
+            Assert.Equal("user", userSkillSource.Scope);
+            Assert.Equal(agent, userSkillSource.BaseDir);
+            var userPromptSource = Assert.Single(untrusted.Prompts).SourceInfo;
+            Assert.Equal("user", userPromptSource.Scope);
+            Assert.Equal(agent, userPromptSource.BaseDir);
             Assert.Contains("unit-guide", untrusted.SystemInstructions());
             Assert.DoesNotContain("Use references", untrusted.SystemInstructions());
             Assert.Equal("Review API compatibility and security: API compatibility", untrusted.ExpandPrompt("review", "\"API compatibility\""));
@@ -54,6 +62,8 @@ public sealed class ResourceCatalogTests
             Assert.Single(explicitResources.Skills);
             Assert.Equal("project-secret", explicitResources.Skills[0].Name);
             Assert.Single(explicitResources.Prompts);
+            Assert.Equal("temporary", explicitResources.Skills[0].SourceInfo.Scope);
+            Assert.Equal("temporary", explicitResources.Prompts[0].SourceInfo.Scope);
             Assert.Contains("Review value", await explicitResources.ResolveInputAsync("/review value"));
             Assert.Equal("Run a script", (await explicitResources.InvokeSkillAsync("project-secret", "")).Split('\n')[1]);
             var collidingSkill = Path.Combine(agent, "skills", "collision");
@@ -74,6 +84,10 @@ public sealed class ResourceCatalogTests
             Assert.Throws<ArgumentException>(() => PiSharp.Cli.CliArguments.Parse(["--skill"]));
             var trusted = await ResourceCatalog.LoadAsync(project, agent, true);
             Assert.Contains(trusted.Skills, skill => skill.Name == "project-secret");
+            var projectSkillSource = Assert.Single(trusted.Skills, skill => skill.Name == "project-secret").SourceInfo;
+            Assert.Equal("auto", projectSkillSource.Source);
+            Assert.Equal("project", projectSkillSource.Scope);
+            Assert.Equal(Path.Combine(project, ".pi"), projectSkillSource.BaseDir);
             Assert.DoesNotContain("project-secret", trusted.SystemInstructions());
             Assert.Contains("Run a script", await trusted.InvokeSkillAsync("project-secret", ""));
             Assert.Contains(trusted.Prompts, item => item.Name == "internal");

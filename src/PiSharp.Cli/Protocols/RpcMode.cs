@@ -65,6 +65,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
             forkSession is null ? null : StartForkSessionAsync,
             cloneSession is null ? null : StartCloneSessionAsync,
             switchSession is null ? null : StartSwitchSessionAsync);
+        var commandDiscoveryCommands = new RpcCommandDiscoveryHandler(_writer, () => CurrentResources, () => CurrentExtensions);
         try
         {
             while (await input.ReadLineAsync(cancellationToken) is { } line)
@@ -99,26 +100,9 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                     if (await retryCommands.TryHandleAsync(type, root, id, cancellationToken)) continue;
                     if (await sessionCommands.TryHandleAsync(type, root, id, cancellationToken)) continue;
                     if (await modelCommands.TryHandleAsync(type, root, id, busy, cancellationToken)) continue;
+                    if (await commandDiscoveryCommands.TryHandleAsync(type, id, cancellationToken)) continue;
                     switch (type)
                     {
-                        case "get_commands":
-                            await _writer.EmitAsync(new
-                            {
-                                id,
-                                type = "response",
-                                command = type,
-                                success = true,
-                                data = new
-                                {
-                                    commands = (CurrentExtensions?.Commands.Keys.Select(name =>
-                                            new { name, description = (string?)null, source = "extension" }) ?? [])
-                                        .Concat(CurrentResources?.Prompts.Select(item =>
-                                            new { name = item.Name, description = (string?)item.Description, source = "prompt" }) ?? [])
-                                        .Concat(CurrentResources?.Skills.Select(item =>
-                                            new { name = "skill:" + item.Name, description = (string?)item.Description, source = "skill" }) ?? []).ToArray()
-                                }
-                            }, cancellationToken);
-                            break;
                         case "export_html":
                             if (busy) { await RespondAsync(id, type, false, "Wait until the active prompt settles."); break; }
                             if (root.TryGetProperty("outputPath", out var outputPath) &&
