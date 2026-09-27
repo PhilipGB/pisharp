@@ -139,7 +139,9 @@ internal sealed class RpcAssistantMessageProjector
         var message = CreatePartialMessage(conversation, api);
         var interrupted = item.Type is "model_request_interrupted" or "turn_interrupted";
         message["stopReason"] = interrupted ? "aborted" : "error";
-        if (!interrupted && !string.IsNullOrWhiteSpace(item.Error))
+        if (interrupted)
+            message["errorMessage"] = string.IsNullOrWhiteSpace(item.Error) ? "Request was aborted" : item.Error;
+        else if (!string.IsNullOrWhiteSpace(item.Error))
             message["errorMessage"] = item.Error;
         records.Add(new JsonObject { ["type"] = "message_end", ["message"] = message.DeepClone() });
         LastCompletedAssistantMessage = message.DeepClone().AsObject();

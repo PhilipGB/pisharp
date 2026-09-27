@@ -180,6 +180,15 @@ public sealed class RpcMissingSessionTargetProcessTests
                     record.RootElement.TryGetProperty("id", out var id) && id.GetString() == "switch-missing");
                 Assert.True(turnEndIndex >= 0 && agentEndIndex > turnEndIndex && settledIndex > agentEndIndex && responseIndex > settledIndex);
                 Assert.False(replacementEvents[agentEndIndex].RootElement.GetProperty("willRetry").GetBoolean());
+                var aborted = replacementEvents[turnEndIndex].RootElement.GetProperty("message");
+                Assert.Equal("Request was aborted", aborted.GetProperty("errorMessage").GetString());
+                var assistantEnd = Assert.Single(replacementEvents.Take(responseIndex), record =>
+                    record.RootElement.GetProperty("type").GetString() == "message_end" &&
+                    record.RootElement.GetProperty("message").GetProperty("role").GetString() == "assistant");
+                Assert.True(JsonElement.DeepEquals(aborted, assistantEnd.RootElement.GetProperty("message")));
+                var finalAssistant = Assert.Single(replacementEvents[agentEndIndex].RootElement.GetProperty("messages").EnumerateArray(),
+                    message => message.GetProperty("role").GetString() == "assistant");
+                Assert.True(JsonElement.DeepEquals(aborted, finalAssistant));
             }
             finally { foreach (var record in records) record.Dispose(); }
         }

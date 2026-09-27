@@ -228,7 +228,9 @@ public static class PiJsonlSessionInterchange
                 string.Equals(ReadPiText(lastAssistant["content"]), partialText, StringComparison.Ordinal))
             {
                 lastAssistant["stopReason"] = terminalType == "turn_interrupted" ? "aborted" : "error";
-                if (terminalType == "turn_failed" && !string.IsNullOrEmpty(errorMessage))
+                if (terminalType == "turn_interrupted")
+                    lastAssistant["errorMessage"] = string.IsNullOrWhiteSpace(errorMessage) ? "Request was aborted" : errorMessage;
+                else if (!string.IsNullOrEmpty(errorMessage))
                     lastAssistant["errorMessage"] = errorMessage;
             }
             else
@@ -246,7 +248,9 @@ public static class PiJsonlSessionInterchange
                     ["stopReason"] = terminalType == "turn_interrupted" ? "aborted" : "error",
                     ["usage"] = EmptyUsage()
                 };
-                if (terminalType == "turn_failed" && !string.IsNullOrEmpty(errorMessage))
+                if (terminalType == "turn_interrupted")
+                    assistant["errorMessage"] = string.IsNullOrWhiteSpace(errorMessage) ? "Request was aborted" : errorMessage;
+                else if (!string.IsNullOrEmpty(errorMessage))
                     assistant["errorMessage"] = errorMessage;
                 messages.Add(assistant);
             }

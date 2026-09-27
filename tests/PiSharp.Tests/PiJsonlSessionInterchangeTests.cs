@@ -67,6 +67,39 @@ public sealed class PiJsonlSessionInterchangeTests
     }
 
     [Fact]
+    public void InterruptedRunProjectionUsesThePiAbortErrorForExistingAndSynthesizedAssistantMessages()
+    {
+        var withAssistant = new ConversationSession(Path.GetTempPath(), "fixture-model", null, "fixture");
+        withAssistant.Append(new ChatMessage(ChatRole.User, "prompt"));
+        var runStart = withAssistant.Tree.HeadId;
+        withAssistant.Append(new ChatMessage(ChatRole.Assistant, "partial"));
+        withAssistant.Tree.Append("interrupted", JsonSerializer.SerializeToElement(new
+        {
+            partialAssistantText = "partial"
+        }));
+
+        var projectedAssistant = Assert.Single(PiJsonlSessionInterchange.ProjectRunMessages(
+            withAssistant, runStart, "openai-completions", "turn_interrupted").OfType<System.Text.Json.Nodes.JsonObject>(),
+            message => message["role"]?.GetValue<string>() == "assistant");
+        Assert.Equal("aborted", projectedAssistant["stopReason"]?.GetValue<string>());
+        Assert.Equal("Request was aborted", projectedAssistant["errorMessage"]?.GetValue<string>());
+
+        var withoutAssistant = new ConversationSession(Path.GetTempPath(), "fixture-model", null, "fixture");
+        withoutAssistant.Append(new ChatMessage(ChatRole.User, "prompt"));
+        var emptyRunStart = withoutAssistant.Tree.HeadId;
+        withoutAssistant.Tree.Append("interrupted", JsonSerializer.SerializeToElement(new
+        {
+            partialAssistantText = ""
+        }));
+
+        var synthesizedAssistant = Assert.Single(PiJsonlSessionInterchange.ProjectRunMessages(
+            withoutAssistant, emptyRunStart, "openai-completions", "turn_interrupted").OfType<System.Text.Json.Nodes.JsonObject>(),
+            message => message["role"]?.GetValue<string>() == "assistant");
+        Assert.Equal("aborted", synthesizedAssistant["stopReason"]?.GetValue<string>());
+        Assert.Equal("Request was aborted", synthesizedAssistant["errorMessage"]?.GetValue<string>());
+    }
+
+    [Fact]
     public void NativeContextOmissionsFilterModelInputAndRoundTripAsPiEntries()
     {
         var session = new ConversationSession(Path.GetTempPath(), "fixture-model", null);
