@@ -66,6 +66,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
             cloneSession is null ? null : StartCloneSessionAsync,
             switchSession is null ? null : StartSwitchSessionAsync);
         var commandDiscoveryCommands = new RpcCommandDiscoveryHandler(_writer, () => CurrentResources, () => CurrentExtensions);
+        var promptCommandHandler = new RpcPromptCommandHandler(_writer, () => CurrentExtensions);
         try
         {
             while (await input.ReadLineAsync(cancellationToken) is { } line)
@@ -139,8 +140,11 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                             break;
                         case "prompt":
                             if (!root.TryGetProperty("message", out var message) || message.ValueKind != JsonValueKind.String ||
-                                string.IsNullOrWhiteSpace(message.GetString()) || root.TryGetProperty("images", out _))
-                            { await RespondAsync(id, type, false, "A nonempty text message is required; images are not supported."); break; }
+                                string.IsNullOrWhiteSpace(message.GetString()))
+                            { await RespondAsync(id, type, false, "A nonempty text message is required."); break; }
+                            if (promptCommandHandler.TryStart(message.GetString()!, id, cancellationToken)) break;
+                            if (root.TryGetProperty("images", out _))
+                            { await RespondAsync(id, type, false, "Images are not supported."); break; }
                             string? promptStreamingBehavior = null;
                             if (root.TryGetProperty("streamingBehavior", out var requestedBehavior))
                             {
@@ -243,6 +247,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
         }
         finally
         {
+            await promptCommandHandler.CancelAndWaitAsync();
             foreach (var operation in _bashOperations.Values)
             {
                 try { operation.Cancellation.Cancel(); }

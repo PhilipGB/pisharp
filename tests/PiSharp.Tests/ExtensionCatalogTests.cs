@@ -211,6 +211,8 @@ public sealed class FixtureExtension : IPiSharpExtension
         registration.AddCommand("fixture", (argument, _) => Task.FromResult("extension: " + argument),
             "Fixture extension command.");
         registration.AddCommand("plain", (_, _) => Task.FromResult("plain"));
+        registration.AddCommand("explode", (_, _) =>
+            Task.FromException<string>(new InvalidOperationException("fixture command failed")));
         registration.AddUserBashHandler(async (request, _) =>
         {
             if (request.Command != "fixture-bash") return null;

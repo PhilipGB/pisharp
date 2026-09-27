@@ -1753,7 +1753,7 @@
       "acceptance": [
         "Match command entries, optional fields, sourceInfo values and auto-resource ordering for supported PiSharp resource and extension sources.",
         "Verify the protocol in a CLI RPC process and compare with current Pi.",
-        "Remaining: invocation of discovered extension commands through prompt, provider-specific contributors, full command-list differential and broader error/lifecycle behavior."
+        "Remaining: provider-specific contributors, full command-list differential and broader get_commands error/lifecycle behavior."
       ],
       "implementation": [
         "src/PiSharp.Cli/Protocols/RpcCommandDiscoveryHandler.cs: owns get_commands response projection outside RpcMode.",
@@ -1762,9 +1762,32 @@
       "evidence": [
         "tests/PiSharp.Tests/RpcCommandDiscoveryProcessTests.cs: real CLI process fixtures verify explicit and auto resource/extension command shapes, optional descriptions, prompt fallback description and source order.",
         "Focused ResourceCatalogTests, ProjectRuntimeContextTests, ExtensionCatalogTests and RpcCommandDiscoveryProcessTests passed 10/10; dotnet format verification passed; dotnet build PiSharp.slnx --no-restore --warnaserror succeeded with 0 warnings/errors; dotnet test PiSharp.slnx --no-restore --no-build passed 646/646.",
-        "Direct current-Pi process inspection at 2b0a123de98318c2ff8069661721ce0c3794c34e confirmed explicit extension cli/temporary/top-level metadata, explicit local/temporary/top-level resource metadata, and project-before-user auto-resource order; see docs/parity/fixtures/rpc-get-commands-baseline.md. Current Pi process-list breadth and RPC extension command invocation remain open.",
+        "Direct current-Pi process inspection at 2b0a123de98318c2ff8069661721ce0c3794c34e confirmed explicit extension cli/temporary/top-level metadata, explicit local/temporary/top-level resource metadata, and project-before-user auto-resource order; see docs/parity/fixtures/rpc-get-commands-baseline.md. Current Pi process-list breadth remains open.",
+        "The later exact-head CI run 36308665526 passed format, warnings-as-errors build and 646/646 tests for d068fbb4. The following working-tree slice adds extension invocation separately; its local validation is tracked under rpc-extension-command-prompt.",
         "Exact-head CI run 36307485262 for ddf9b8ee9 passed format and warnings-as-errors build but failed 645/646 when the unrelated OpenAI Completions loopback deadline expired while awaiting request three. The test keeps its three-request/history assertions and now allows 30 seconds; its focused theory passes 2/2 and the full local suite passes 646/646. Exact-head CI for this test-only timeout adjustment is pending.",
         "The exact-head rerun for d8450ced7 failed the unrelated overflow fixture after 30 seconds, still while awaiting its third request; the earlier attempt failed CompactionTests.ParallelToolCallBatchCutsOnlyAfterBothResultsAndRetainsRawHistory (2 expected requests, 3 observed). Both failures reproduce only intermittently: focused overflow theory passed 2/2, focused compaction passed 8/8 isolated runs, and the full local suite passed 646/646. The overflow fixture now checks required lifecycle events before awaiting the server and includes received-request/event diagnostics; exact-head CI is pending."
+      ],
+      "dependencies": []
+    },
+    {
+      "id": "rpc-extension-command-prompt",
+      "title": "RPC / prompt: extension command dispatch",
+      "status": "in_progress",
+      "source": "docs/parity/detailed-inventory.md:14",
+      "acceptance": [
+        "Recognize registered /command args before resource expansion, image rejection and active-run queueing, and return handled without starting another agent run.",
+        "Preserve correlated success/error ordering and Pi-shaped extension_error behavior for a throwing handler.",
+        "Verify active-run behavior and output/event order in a deterministic real CLI process fixture."
+      ],
+      "implementation": [
+        "src/PiSharp.Cli/Protocols/RpcPromptCommandHandler.cs: owns extension command parsing, asynchronous execution, result/error projection and shutdown cancellation outside RpcMode.",
+        "src/PiSharp.Cli/Protocols/RpcMode.cs: dispatches extension commands before ordinary prompt image/resource/queue processing."
+      ],
+      "evidence": [
+        "tests/PiSharp.Tests/RpcExtensionCommandProcessTests.cs: barrier-controlled local provider and real CLI process verify active-run execution, handled success/failure, output and error ordering, no queue/extra agent run, and command dispatch before image rejection.",
+        "Pinned Pi 2b0a123de98318c2ff8069661721ce0c3794c34e source in AgentSession.prompt/_tryExecuteExtensionCommand and rpc-prompt-response-semantics.test.ts confirms commands run before active-run validation and errors emit extension_error while resolving handled. See docs/parity/fixtures/rpc-extension-command-baseline.md. This is source/test comparison, not a current-Pi process differential.",
+        "Focused RpcExtensionCommandProcessTests passed 1/1; dotnet format verification passed; dotnet build PiSharp.slnx --no-restore --warnaserror succeeded with 0 warnings/errors; dotnet test PiSharp.slnx --no-restore --no-build passed 647/647 locally. Exact-head CI is pending because this code is not pushed yet.",
+        "Returned extension text is projected through a PiSharp format event because PiSharp's extension command delegate returns text while Pi exposes extension UI/notification APIs. Shutdown/cancellation and broader extension lifecycle behavior remain open."
       ],
       "dependencies": []
     },

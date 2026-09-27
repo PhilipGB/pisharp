@@ -37,7 +37,7 @@ public sealed class RpcCommandDiscoveryProcessTests
             Assert.Equal("commands", rootElement.GetProperty("id").GetString());
             Assert.True(rootElement.GetProperty("success").GetBoolean());
             var commands = rootElement.GetProperty("data").GetProperty("commands").EnumerateArray().ToArray();
-            Assert.Equal(new[] { "fixture", "plain", "review", "long-description", "skill:quality-check" }, commands.Select(command =>
+            Assert.Equal(new[] { "fixture", "plain", "explode", "review", "long-description", "skill:quality-check" }, commands.Select(command =>
                 command.GetProperty("name").GetString()));
 
             var extension = commands[0];
@@ -52,16 +52,18 @@ public sealed class RpcCommandDiscoveryProcessTests
 
             Assert.False(commands[1].TryGetProperty("description", out _));
             Assert.Equal("extension", commands[1].GetProperty("source").GetString());
+            Assert.False(commands[2].TryGetProperty("description", out _));
+            Assert.Equal("extension", commands[2].GetProperty("source").GetString());
 
-            var prompt = commands[2];
+            var prompt = commands[3];
             Assert.Equal("Review a change", prompt.GetProperty("description").GetString());
             Assert.Equal("prompt", prompt.GetProperty("source").GetString());
             AssertSourceInfo(prompt.GetProperty("sourceInfo"), promptPath, Path.GetDirectoryName(promptPath)!);
 
-            Assert.Equal(new string('x', 60) + "...", commands[3].GetProperty("description").GetString());
-            AssertSourceInfo(commands[3].GetProperty("sourceInfo"), longPromptPath, Path.GetDirectoryName(longPromptPath)!);
+            Assert.Equal(new string('x', 60) + "...", commands[4].GetProperty("description").GetString());
+            AssertSourceInfo(commands[4].GetProperty("sourceInfo"), longPromptPath, Path.GetDirectoryName(longPromptPath)!);
 
-            var skill = commands[4];
+            var skill = commands[5];
             Assert.Equal("Check quality", skill.GetProperty("description").GetString());
             Assert.Equal("skill", skill.GetProperty("source").GetString());
             AssertSourceInfo(skill.GetProperty("sourceInfo"), skillPath, skillDirectory);
