@@ -573,6 +573,7 @@ public sealed class TerminalPtyTests
             var codeBlockIndentPrompt = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var codeBlockIndentSaved = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var trueColorSaved = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var skillCommandsSaved = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var closed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var stdout = Task.Run(async () =>
             {
@@ -599,6 +600,7 @@ public sealed class TerminalPtyTests
                         if (current.Contains("Literal code line prefix [", StringComparison.Ordinal)) codeBlockIndentPrompt.TrySetResult();
                         if (current.Contains("Saved user setting markdown.codeBlockIndent = " + " > " + ".", StringComparison.Ordinal)) codeBlockIndentSaved.TrySetResult();
                         if (current.Contains("Saved user setting terminal.trueColor = true.", StringComparison.Ordinal)) trueColorSaved.TrySetResult();
+                        if (current.Contains("Saved user setting enableSkillCommands = false.", StringComparison.Ordinal)) skillCommandsSaved.TrySetResult();
                         if (current.Contains("Settings closed.", StringComparison.Ordinal)) closed.TrySetResult();
                     }
                 }
@@ -649,6 +651,9 @@ public sealed class TerminalPtyTests
             await process.StandardInput.WriteAsync("Terminal true color\nEnabled\n");
             await process.StandardInput.FlushAsync();
             await trueColorSaved.Task.WaitAsync(TimeSpan.FromSeconds(12));
+            await process.StandardInput.WriteAsync("Skill commands\nDisabled\n");
+            await process.StandardInput.FlushAsync();
+            await skillCommandsSaved.Task.WaitAsync(TimeSpan.FromSeconds(12));
             await process.StandardInput.WriteAsync("\u001b");
             await process.StandardInput.FlushAsync();
             await closed.Task.WaitAsync(TimeSpan.FromSeconds(12));
@@ -681,6 +686,7 @@ public sealed class TerminalPtyTests
             Assert.Equal(" > ", settings.MarkdownCodeBlockIndent);
             Assert.Equal("true", settings.TerminalTrueColor);
             Assert.True(settings.TerminalTrueColorOverride);
+            Assert.False(settings.SkillCommandsEnabled);
             Assert.Equal(2048, settings.Compaction?.ReserveTokens);
         }
         finally { Directory.Delete(cwd, recursive: true); }

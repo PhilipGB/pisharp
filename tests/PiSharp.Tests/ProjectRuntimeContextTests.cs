@@ -16,7 +16,7 @@ public sealed class ProjectRuntimeContextTests
         Directory.CreateDirectory(privateSkill);
         Directory.CreateDirectory(agent);
         await File.WriteAllTextAsync(Path.Combine(project, ".pi", "settings.json"),
-            "{\"images\":{\"blockImages\":true},\"sessionDir\":\"custom-sessions\",\"terminal\":{\"trueColor\":true}}");
+            "{\"images\":{\"blockImages\":true},\"sessionDir\":\"custom-sessions\",\"terminal\":{\"trueColor\":true},\"enableSkillCommands\":false}");
         await File.WriteAllTextAsync(Path.Combine(privateSkill, "SKILL.md"),
             "---\nname: private-guide\ndescription: A trusted project guide\n---\nUse this guide.");
 
@@ -30,6 +30,7 @@ public sealed class ProjectRuntimeContextTests
             Assert.True(trusted.Trusted);
             Assert.True(trusted.Settings.BlockImages);
             Assert.Equal("true", trusted.Settings.TerminalTrueColor);
+            Assert.False(trusted.Settings.SkillCommandsEnabled);
             var privateSkillResource = Assert.Single(trusted.Resources.Skills, skill => skill.Name == "private-guide");
             Assert.Equal("auto", privateSkillResource.SourceInfo.Source);
             Assert.Equal("project", privateSkillResource.SourceInfo.Scope);
@@ -42,6 +43,7 @@ public sealed class ProjectRuntimeContextTests
             Assert.False(untrusted.Trusted);
             Assert.Null(untrusted.Settings.BlockImages);
             Assert.Null(untrusted.Settings.TerminalTrueColor);
+            Assert.True(untrusted.Settings.SkillCommandsEnabled);
             Assert.DoesNotContain(untrusted.Resources.Skills, skill => skill.Name == "private-guide");
         }
         finally { Directory.Delete(root, recursive: true); }

@@ -26,6 +26,7 @@ public sealed class UserSettingsWriterTests
             await UserSettingsWriter.SetAsync(path, "httpIdleTimeoutMs", "disabled", userScope: true);
             await UserSettingsWriter.SetAsync(path, "markdown.codeBlockIndent", ">>", userScope: true);
             await UserSettingsWriter.SetAsync(path, "terminal.trueColor", "true", userScope: true);
+            await UserSettingsWriter.SetAsync(path, "enableSkillCommands", "false", userScope: true);
             var settings = await UserSettings.LoadAsync(root, _ => null);
 
             Assert.True(settings.HideThinkingBlock);
@@ -42,6 +43,7 @@ public sealed class UserSettingsWriterTests
             Assert.Equal(">>", settings.MarkdownCodeBlockIndent);
             Assert.Equal("true", settings.TerminalTrueColor);
             Assert.True(settings.TerminalTrueColorOverride);
+            Assert.False(settings.SkillCommandsEnabled);
 
             await UserSettingsWriter.SetAsync(path, "images.blockImages", null, userScope: true);
             await UserSettingsWriter.SetAsync(path, "retry.enabled", null, userScope: true);
@@ -53,6 +55,7 @@ public sealed class UserSettingsWriterTests
             await UserSettingsWriter.SetAsync(path, "terminal.trueColor", "auto", userScope: true);
             Assert.Equal("auto", (await UserSettings.LoadAsync(root, _ => null)).TerminalTrueColor);
             await UserSettingsWriter.SetAsync(path, "terminal.trueColor", null, userScope: true);
+            await UserSettingsWriter.SetAsync(path, "enableSkillCommands", null, userScope: true);
             Assert.Null((await UserSettings.LoadAsync(root, _ => null)).BlockImages);
             var cleared = await UserSettings.LoadAsync(root, _ => null);
             Assert.Null(cleared.Retry);
@@ -60,6 +63,8 @@ public sealed class UserSettingsWriterTests
             Assert.Null(cleared.Retry);
             Assert.Null(cleared.MarkdownCodeBlockIndent);
             Assert.Null(cleared.TerminalTrueColor);
+            Assert.Null(cleared.EnableSkillCommands);
+            Assert.True(cleared.SkillCommandsEnabled);
             await Assert.ThrowsAsync<ArgumentException>(() =>
                 UserSettingsWriter.SetAsync(path, "followUpMode", "sometimes", userScope: true));
             await Assert.ThrowsAsync<ArgumentException>(() =>
@@ -106,12 +111,14 @@ public sealed class UserSettingsWriterTests
             await UserSettingsWriter.SetAsync(path, "defaultThinkingLevel", "high", userScope: false);
             await UserSettingsWriter.SetAsync(path, "externalEditor", "code --wait", userScope: false);
             await UserSettingsWriter.SetAsync(path, "terminal.trueColor", "false", userScope: false);
+            await UserSettingsWriter.SetAsync(path, "enableSkillCommands", "true", userScope: false);
 
             var settings = await UserSettings.LoadProjectAsync(root);
             Assert.True(settings.Compaction?.Enabled);
             Assert.Equal("high", settings.DefaultThinkingLevel);
             Assert.Equal("code --wait", settings.ExternalEditor);
             Assert.Equal("false", settings.TerminalTrueColor);
+            Assert.True(settings.SkillCommandsEnabled);
             await Assert.ThrowsAsync<ArgumentException>(() =>
                 UserSettingsWriter.SetAsync(path, "externalEditor", " bad ", userScope: false));
         }

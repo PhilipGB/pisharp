@@ -20,6 +20,25 @@ public sealed class EditorCompletionTests
     }
 
     [Fact]
+    public void SlashCompletionReadsDynamicSkillCommandRegistration()
+    {
+        var enabled = true;
+        var completion = new EditorCompletion(Path.GetTempPath(),
+            () => enabled ? ["/skill:explain"] : []);
+        var buffer = new EditorBuffer();
+        buffer.SetText("/skill:");
+
+        Assert.Equal(["/skill:explain"], completion.Complete(buffer));
+        enabled = false;
+        buffer.SetText("/skill:");
+        Assert.Empty(completion.Complete(buffer));
+
+        enabled = true;
+        buffer.SetText("/skill:");
+        Assert.Equal(["/skill:explain"], completion.Complete(buffer));
+    }
+
+    [Fact]
     public void EmptyPromptCanChooseAPathCompletion()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-complete-empty-" + Guid.NewGuid().ToString("N"));

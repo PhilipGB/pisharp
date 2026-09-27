@@ -278,9 +278,14 @@ if (!selection.Authenticated && cli.Mode != "rpc" &&
     return;
 }
 TerminalEditor? editor = !print && cli.Mode is not ("json" or "rpc") ? new TerminalEditor(() =>
-    resources.Skills.Select(item => "/skill:" + item.Name)
+{
+    var skillCommands = userSettings.SkillCommandsEnabled
+        ? resources.Skills.Select(item => "/skill:" + item.Name)
+        : Enumerable.Empty<string>();
+    return skillCommands
         .Concat(resources.Prompts.Select(item => "/" + item.Name))
-        .Concat(extensionLease.Current.Registration.Commands.Keys.Select(name => "/" + name)).ToArray(),
+        .Concat(extensionLease.Current.Registration.Commands.Keys.Select(name => "/" + name)).ToArray();
+},
     agentDirectory, () => currentDirectory) : null;
 var terminalThemeCatalog = new TerminalThemeCatalog(agentDirectory, trusted ? currentDirectory : null,
     trueColorOverride: userSettings.TerminalTrueColorOverride);

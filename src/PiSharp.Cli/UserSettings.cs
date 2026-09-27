@@ -160,7 +160,8 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
     CompactionSettings? Compaction = null, bool? BlockImages = null, string? DefaultProjectTrust = null, bool? HideThinkingBlock = null, bool? QuietStartup = null, IReadOnlyList<string>? EnabledModels = null, string? ShellPath = null, string? ExternalEditor = null, string? Theme = null,
     RetrySettings? Retry = null, PromptDeliveryMode? SteeringMode = null, PromptDeliveryMode? FollowUpMode = null,
     IReadOnlyDictionary<string, string>? ModelThinkingLevels = null, string? HttpProxy = null,
-    int? HttpIdleTimeoutMs = null, string? MarkdownCodeBlockIndent = null, string? TerminalTrueColor = null)
+    int? HttpIdleTimeoutMs = null, string? MarkdownCodeBlockIndent = null, string? TerminalTrueColor = null,
+    bool? EnableSkillCommands = null)
 {
     public const int DefaultHttpIdleTimeoutMs = 300_000;
     public const string DefaultMarkdownCodeBlockIndent = "  ";
@@ -171,6 +172,8 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         "false" => false,
         _ => null
     };
+
+    public bool SkillCommandsEnabled => EnableSkillCommands ?? true;
 
     public static async Task<UserSettings> LoadAsync(string agentDirectory, Func<string, string?> environment,
         CancellationToken cancellationToken = default)
@@ -190,7 +193,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         CompactionSettings? compaction = null;
         RetrySettings? retry = null;
         PromptDeliveryMode? steeringMode = null, followUpMode = null;
-        bool? blockImages = null, hideThinkingBlock = null, quietStartup = null;
+        bool? blockImages = null, hideThinkingBlock = null, quietStartup = null, enableSkillCommands = null;
         string? httpProxy = null;
         int? httpIdleTimeoutMs = null;
         string? markdownCodeBlockIndent = null;
@@ -216,6 +219,13 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
                 if (property.Value.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
                     throw new InvalidDataException("settings.json hideThinkingBlock must be a boolean.");
                 hideThinkingBlock = property.Value.GetBoolean();
+                continue;
+            }
+            if (property.Name == "enableSkillCommands")
+            {
+                if (property.Value.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
+                    throw new InvalidDataException("settings.json enableSkillCommands must be a boolean.");
+                enableSkillCommands = property.Value.GetBoolean();
                 continue;
             }
             if (property.Name == "images")
@@ -355,7 +365,8 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         }
         return new(provider, model, thinking, tools, sessionDirectory, compaction, blockImages, defaultTrust, hideThinkingBlock,
             quietStartup, enabledModels, shellPath, externalEditor, theme, retry, steeringMode, followUpMode,
-            modelThinkingLevels, httpProxy, httpIdleTimeoutMs, markdownCodeBlockIndent, terminalTrueColor);
+            modelThinkingLevels, httpProxy, httpIdleTimeoutMs, markdownCodeBlockIndent, terminalTrueColor,
+            enableSkillCommands);
     }
 
     public static string GetSettingsPath(string agentDirectory, Func<string, string?> environment) =>
@@ -394,7 +405,8 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         MergeModelThinkingLevels(ModelThinkingLevels, project.ModelThinkingLevels), HttpProxy,
         project.HttpIdleTimeoutMs ?? HttpIdleTimeoutMs,
         project.MarkdownCodeBlockIndent ?? MarkdownCodeBlockIndent,
-        project.TerminalTrueColor ?? TerminalTrueColor);
+        project.TerminalTrueColor ?? TerminalTrueColor,
+        project.EnableSkillCommands ?? EnableSkillCommands);
 
     public string? GetModelThinkingLevel(string provider, string modelId) =>
         ModelThinkingLevels?.GetValueOrDefault($"{provider}/{modelId}");

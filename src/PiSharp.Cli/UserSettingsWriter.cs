@@ -49,7 +49,7 @@ internal static class UserSettingsWriter
         var setting = string.Join('.', segments);
         var valid = setting switch
         {
-            "hideThinkingBlock" or "quietStartup" or "images.blockImages" or "compaction.enabled" or "retry.enabled" =>
+            "hideThinkingBlock" or "quietStartup" or "enableSkillCommands" or "images.blockImages" or "compaction.enabled" or "retry.enabled" =>
                 value is null or "true" or "false",
             "retry.provider.maxRetries" => value is null ||
                 int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var retries) && retries is >= 0 and <= 20,
@@ -89,7 +89,7 @@ internal static class UserSettingsWriter
     private static JsonNode? ParseValue(string setting, string? value) => setting switch
     {
         _ when value is null => null,
-        "hideThinkingBlock" or "quietStartup" or "images.blockImages" or "compaction.enabled" or "retry.enabled" =>
+        "hideThinkingBlock" or "quietStartup" or "enableSkillCommands" or "images.blockImages" or "compaction.enabled" or "retry.enabled" =>
             JsonValue.Create(value == "true"),
         "terminal.trueColor" when value is "true" or "false" => JsonValue.Create(value == "true"),
         "retry.provider.maxRetries" => JsonValue.Create(int.Parse(value!, NumberStyles.None, CultureInfo.InvariantCulture)),

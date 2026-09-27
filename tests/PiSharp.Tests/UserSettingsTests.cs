@@ -198,6 +198,40 @@ public sealed class UserSettingsTests
     }
 
     [Fact]
+    public async Task SkillCommandsDefaultOnAndFollowTrustedProjectOverrides()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-skill-command-settings-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(Path.Combine(root, ".pi"));
+        try
+        {
+            var path = Path.Combine(root, "settings.json");
+            var unset = await UserSettings.LoadAsync(root, _ => null);
+            Assert.Null(unset.EnableSkillCommands);
+            Assert.True(unset.SkillCommandsEnabled);
+
+            await File.WriteAllTextAsync(path, "{\"enableSkillCommands\":false}");
+            var user = await UserSettings.LoadAsync(root, _ => null);
+            Assert.False(user.SkillCommandsEnabled);
+
+            await File.WriteAllTextAsync(Path.Combine(root, ".pi", "settings.json"), "{\"enableSkillCommands\":true}");
+            var effective = user.Overlay(await UserSettings.LoadProjectAsync(root));
+            Assert.True(effective.SkillCommandsEnabled);
+
+            foreach (var invalid in new[]
+            {
+                "{\"enableSkillCommands\":\"false\"}",
+                "{\"enableSkillCommands\":0}",
+                "{\"enableSkillCommands\":true,\"enableSkillCommands\":false}"
+            })
+            {
+                await File.WriteAllTextAsync(path, invalid);
+                await Assert.ThrowsAsync<InvalidDataException>(() => UserSettings.LoadAsync(root, _ => null));
+            }
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [Fact]
     public async Task UserSettingsProvideValidatedDefaultsBelowCliAndEnvironmentOverrides()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-settings-" + Guid.NewGuid().ToString("N"));
