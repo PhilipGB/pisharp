@@ -68,6 +68,8 @@ User settings `<agent-dir>/settings.json`, trusted project `.pi/settings.json`, 
 
 `terminal.trueColor` now accepts the upstream boolean or `"auto"` in user and trusted-project settings. Explicit booleans select true-color or 256-color output for built-in and custom themes; `/settings` refreshes the active palette. Automatic mode retains PiSharp's existing `NO_COLOR` and `TERM=dumb` handling, which differs from Pi's two-mode capability model. Parsing, trust gating, picker persistence, and theme output are covered in [the setting fixture](fixtures/settings-terminal-truecolor-baseline.md).
 
+`enableSkillCommands` defaults to `true` and follows user/trusted-project precedence. `/settings` toggles live `/skill:name` completion entries; manually typed skill commands remain expandable when completion is disabled. Parser, trust, persistence, completion, PTY, and exact-head CI evidence are recorded in [the setting fixture](fixtures/settings-enable-skill-commands-baseline.md). The `extensions`, `skills`, `prompts`, and `themes` path arrays, their include/exclude patterns, and resource reload behavior remain open.
+
 | Group | Settings |
 |---|---|
 | Model/interaction | `defaultProvider`, `defaultModel`, `defaultThinkingLevel`, validated `modelThinkingLevels` user/project maps (per-model values apply at startup and RPC model changes; project overrides merge by provider/model), `thinkingBudgets`, `enabledModels`, `hideThinkingBlock`, `showCacheMissNotices`, `cacheWarming`, `steeringMode`, `followUpMode`, `externalEditor`, `doubleEscapeAction`, `treeFilterMode`, `defaultProjectTrust` |

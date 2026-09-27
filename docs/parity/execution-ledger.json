@@ -3047,14 +3047,19 @@
     {
       "id": "settings-enableskillcommands",
       "title": "Setting: enableSkillCommands",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:65",
       "acceptance": [
-        "Support enableSkillCommands with upstream type/default and user/trusted-project precedence",
-        "Test malformed settings, trust boundaries, reload and startup behaviour"
+        "Support the boolean default and user/trusted-project precedence",
+        "Toggle /skill:name slash-completion entries without changing manual skill-command expansion",
+        "Test malformed settings, trust boundaries, picker persistence, startup and live completion behavior"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "UserSettings defaults enableSkillCommands to true and overlays trusted project values over user values. /settings edits either permitted scope. The live editor completion callback hides or exposes /skill:name entries when the setting changes; manually entered /skill:name commands continue through the existing resource expansion path."
+      ],
+      "evidence": [
+        "UserSettingsTests.SkillCommandsDefaultOnAndFollowTrustedProjectOverrides covers default, precedence, invalid types and duplicate keys; ProjectRuntimeContextTests covers the project trust boundary; UserSettingsWriterTests covers JSON boolean persistence and removal; EditorCompletionTests.SlashCompletionReadsDynamicSkillCommandRegistration and TerminalPtyTests.SettingsPickerEditsUserScopeThroughLinuxPty cover live completion and picker behavior. Local focused tests passed 6/6, warnings-as-errors build passed with 0 warnings/errors, and the full suite passed 687/687 (0 skipped). Exact-head Linux CI run 36357426552 passed restore, format, warnings-as-errors build, and 687/687 tests at f45f0f720ffd48399f386c0cbcb9ccf4798bd08e."
+      ],
       "dependencies": []
     },
     {
