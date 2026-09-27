@@ -74,6 +74,13 @@ public sealed class ConversationSession
 
     public void Rename(string? name) => Name = name;
 
+    public ConversationSession Snapshot()
+    {
+        lock (_metadataGate)
+            return new ConversationSession(Id, WorkingDirectory, _model, _endpoint, _provider, Name,
+                Tree.Clone(), PiJsonlHeader, ParentSessionPath);
+    }
+
     public SessionNameChange BeginSessionNameChange(string name)
     {
         ArgumentNullException.ThrowIfNull(name);

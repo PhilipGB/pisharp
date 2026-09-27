@@ -13,6 +13,32 @@ internal sealed class RpcEventProjector
 
     public void BeginTurn() => _assistantMessages.BeginTurn();
 
+    public JsonArray ProjectMessagesSnapshot(ConversationSession conversation, string? api)
+    {
+        var canonical = new JsonArray(conversation.ActiveMessages()
+            .Select(message => (JsonNode?)PiJsonlSessionInterchange.ProjectRuntimeMessage(conversation, message, api)).ToArray());
+        var messages = _assistantMessages.ReconcileRunMessages(canonical, includeUnpersisted: true);
+        if (_assistantMessages.ActiveProviderMessage(conversation, api) is { } activeMessage)
+            messages.Add(activeMessage);
+        return messages;
+    }
+
+    public string? GetLastAssistantTextSnapshot(ConversationSession conversation, string? api)
+    {
+        var assistant = ProjectMessagesSnapshot(conversation, api).OfType<JsonObject>()
+            .LastOrDefault(message => message["role"]?.GetValue<string>() == "assistant");
+        return assistant is null ? null : ReadText(assistant["content"]);
+    }
+
+    private static string ReadText(JsonNode? content)
+    {
+        if (content is JsonValue value && value.TryGetValue<string>(out var text)) return text;
+        if (content is not JsonArray parts) return "";
+        return string.Concat(parts.OfType<JsonObject>()
+            .Where(part => part["type"]?.GetValue<string>() == "text")
+            .Select(part => part["text"]?.GetValue<string>() ?? ""));
+    }
+
     public IReadOnlyList<object> ProjectPrompt(AgentLifecycleEvent item, ConversationSession conversation) =>
         _assistantMessages.ProjectPrompt(item, conversation);
 

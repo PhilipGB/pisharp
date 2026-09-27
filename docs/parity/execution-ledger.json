@@ -618,7 +618,7 @@
         "Exact integrated source head 2f0250ee91a500cdb6b08dce2e940b849089ba26 passed Linux CI run 36217090057: format verification, warnings-as-errors build with 0 warnings/errors, and 574 tests (0 failed, 0 skipped). Cross-project switching is covered by RpcSessionProcessTests.SwitchSessionRebuildsTheRuntimeForTheRecordedProjectDirectory and TerminalPtyTests.PiJsonlImportConfirmsAndSwitchesTheActiveSessionThroughLinuxPty.",
         "PiSessionStartupTargetTests.RpcStartupForksForeignProjectSessionIntoTheInvocationProject exercises native and Pi JSONL foreign-project sources through the real CLI RPC process and verifies target cwd, parent path, transcript preservation and source immutability. Focused `ConversationTreeTests` and `PiSessionStartupTargetTests` pass 10/10. Full local format verification passed, warnings-as-errors build had 0 warnings/errors, and all 616 tests passed (0 failed, 0 skipped). Exact commit 9a0fbe66f89143e5a272ca88a22042011d23a261 passed Linux CI run 36288246889 with all 616 tests.",
         "Current Pi main 2b0a123de98318c2ff8069661721ce0c3794c34e SessionManager.forkFrom documents source-to-target-project copying and writes cwd from resolvedTargetCwd; main.ts supplies the invocation cwd.",
-        "CrashRecoveryProcessTests.CrashAfterToolSideEffectBeforeOutcomeCheckpointRecoversWithoutReplayingTool kills the Linux CLI after Bash performs a side effect but before tool_outcome persists, then opens the same session through RPC and verifies run_recovered records unknown bash outcome, the warning is visible, and the side effect remains single. ConcurrentProcessSaveWaitsForTheSessionLeaseAndPersistsTheToolOutcome holds the sibling OS file lock across Bash completion, confirms the CLI remains alive without persisting the outcome, releases the lock, and verifies tool_outcome and completed run persist. Focused process tests pass 2/2. Format verification passes, warnings-as-errors build has 0 warnings/errors, and the full solution suite passes 626/626. The first full run had one transient ParallelToolCallBatchCutsOnlyAfterBothResultsAndRetainsRawHistory request-count failure (expected 2, observed 3); its isolated rerun and the following full run passed. Current exact-head CI is pending. Current Pi session-manager.ts and file-operations.test.ts were inspected for malformed-tail parsing and file-load recovery semantics; no process differential has been run."
+        "CrashRecoveryProcessTests.CrashAfterToolSideEffectBeforeOutcomeCheckpointRecoversWithoutReplayingTool kills the Linux CLI after Bash performs a side effect but before tool_outcome persists, then opens the same session through RPC and verifies run_recovered records unknown bash outcome, the warning is visible, and the side effect remains single. ConcurrentProcessSaveWaitsForTheSessionLeaseAndPersistsTheToolOutcome holds the sibling OS file lock across Bash completion, confirms the CLI remains alive without persisting the outcome, releases the lock, and verifies tool_outcome and completed run persist. The two new process cases pass 2/2; the full CrashRecoveryProcessTests class passes 3/3. Format verification passes, warnings-as-errors build has 0 warnings/errors, and the full solution suite passes 626/626. The first full run had one transient ParallelToolCallBatchCutsOnlyAfterBothResultsAndRetainsRawHistory request-count failure (expected 2, observed 3); its isolated rerun and the following full run passed. Exact pushed head 6ce60a3de9238ceb21ccbbf931556ef07fed360f passed Linux CI run 36294313432 with format, build and all 626 tests. Current Pi session-manager.ts and file-operations.test.ts were inspected for malformed-tail parsing and file-load recovery semantics; no process differential has been run."
       ],
       "dependencies": []
     },
@@ -1197,13 +1197,13 @@
       "acceptance": [
         "Implement get_messages using shared canonical runtime with correlated responses/event ordering",
         "Test protocol through RPC process, including failures and cancellation",
-        "Remaining: Pi wire-compatible payloads, lifecycle/error semantics and pinned process differential."
+        "Remaining: Pi's provider-effective/system message projection, less common custom-message content, streamed partial tool-call fidelity and a pinned process differential."
       ],
       "implementation": [
-        "src/PiSharp.Cli/Protocols/RpcMode.cs: partial get_messages operation (PiSharp wire format)"
+        "RpcSessionCommandHandler uses ConversationSession.Snapshot() for canonical history; RpcEventWriter shares the active RpcEventProjector with reads so in-flight assistant text joins the Pi-shaped message array."
       ],
       "evidence": [
-        "tests/PiSharp.Tests/RpcModeTests.cs: local protocol/command fixtures (coverage varies by operation)"
+        "RpcReadCommandsProcessTests.SessionReadCommandsReturnOneSnapshotWhileProviderRequestIsBlocked waits for an actual streamed message_update, confirms isStreaming and verifies get_messages includes the accepted user prompt, prior assistant history and Pi-shaped pending assistant text. Current Pi 2b0a123de98318c2ff8069661721ce0c3794c34e rpc-mode.ts returns session.messages while active and agent-loop.ts updates its partial message. Focused RPC/session tests pass 41/41; local format verification, warnings-as-errors build and full solution tests pass (627/627). Exact-head CI is pending. PiSharp has not yet compared provider-effective/system message projection, partial tool-call details or run a Pi process differential."
       ],
       "dependencies": []
     },
@@ -1631,7 +1631,7 @@
       "evidence": [
         "RpcSessionProcessTests covers new_session, switch_session, fork and clone through the actual CLI RPC process, including parent links and project/runtime rebinding; RpcModeTests covers active-run replacement settlement.",
         "Exact integrated source head 2f0250ee91a500cdb6b08dce2e940b849089ba26 passed Linux CI run 36217090057: format verification, warnings-as-errors build with 0 warnings/errors, and 574 tests (0 failed, 0 skipped).",
-        "Current Pi d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 rpc-mode.ts and agent-session-runtime.ts were inspected for command flow and project CWD behavior. This is scoped source plus PiSharp process evidence; protocol differential parity remains open."
+        "Current Pi 2b0a123de98318c2ff8069661721ce0c3794c34e rpc-mode.ts allows get_fork_messages during active work. RpcReadCommandsProcessTests.SessionReadCommandsReturnOneSnapshotWhileProviderRequestIsBlocked verifies the accepted prompt appears in the correlated response while streaming. No Pi process differential has been run."
       ],
       "dependencies": []
     },
@@ -1650,9 +1650,10 @@
         "RpcSessionCommandHandler applies the cursor strictly after the matched ID and rejects malformed or unknown cursors."
       ],
       "evidence": [
-        "Current Pi main remains d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31. packages/coding-agent/src/modes/rpc/rpc-mode.ts returns getEntries() and leafId; core/session-manager.ts excludes the header and preserves Pi entry order.",
+        "Earlier source inspection at Pi d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 found rpc-mode.ts returns getEntries() and leafId; core/session-manager.ts excludes the header and preserves Pi entry order.",
         "RpcSessionEntryProjectorTests and RpcModeTests cover native/imported projection, absence of the pisharp marker, append order, cursor response and Pi process output; exact full differential coverage remains open.",
-        "Exact source head 6f9b0f910b655d45e57a8f887730107498d2b068 passed Linux CI run 36219218706: format verification, warnings-as-errors build with 0 warnings/errors, and 580 tests (0 failed, 0 skipped)."
+        "Exact source head 6f9b0f910b655d45e57a8f887730107498d2b068 passed Linux CI run 36219218706: format verification, warnings-as-errors build with 0 warnings/errors, and 580 tests (0 failed, 0 skipped).",
+        "RpcReadCommandsProcessTests.SessionReadCommandsReturnOneSnapshotWhileProviderRequestIsBlocked verifies get_entries succeeds during a blocked provider request, includes the accepted user entry and reports the final projected entry as leafId. Current Pi 2b0a123de98318c2ff8069661721ce0c3794c34e rpc-mode.ts handles this getter without a busy guard; no process differential has been run."
       ],
       "dependencies": []
     },
@@ -1670,9 +1671,10 @@
         "RpcSessionEntryProjector builds nested nodes from the shared PiJsonlSessionInterchange entry projection, resolves latest labels including empty-label clears, and orders siblings by timestamp with append-order ties."
       ],
       "evidence": [
-        "Current Pi main remains d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31. packages/coding-agent/src/core/session-manager.ts builds nested tree nodes, resolves labels by append order and sorts siblings by timestamp.",
+        "Earlier source inspection at Pi d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 found session-manager.ts builds nested tree nodes, resolves labels by append order and sorts siblings by timestamp.",
         "RpcSessionEntryProjectorTests, RpcModeTests and RpcSessionProcessTests cover nested shape, optional label properties, branch ordering, clear/latest label behavior and process output.",
-        "Exact source head 6f9b0f910b655d45e57a8f887730107498d2b068 passed Linux CI run 36219218706: format verification, warnings-as-errors build with 0 warnings/errors, and 580 tests (0 failed, 0 skipped)."
+        "Exact source head 6f9b0f910b655d45e57a8f887730107498d2b068 passed Linux CI run 36219218706: format verification, warnings-as-errors build with 0 warnings/errors, and 580 tests (0 failed, 0 skipped).",
+        "RpcReadCommandsProcessTests.SessionReadCommandsReturnOneSnapshotWhileProviderRequestIsBlocked verifies get_tree succeeds during the blocked run and its leafId is present in the nested projected tree. Current Pi 2b0a123de98318c2ff8069661721ce0c3794c34e rpc-mode.ts handles this getter without a busy guard; no process differential has been run."
       ],
       "dependencies": []
     },
@@ -1684,13 +1686,13 @@
       "acceptance": [
         "Implement get_last_assistant_text using shared canonical runtime with correlated responses/event ordering",
         "Test protocol through RPC process, including failures and cancellation",
-        "Remaining: Pi wire-compatible payloads, lifecycle/error semantics and pinned process differential."
+        "Remaining: no-assistant/custom-message edge cases, error semantics and a pinned process differential."
       ],
       "implementation": [
-        "src/PiSharp.Cli/Protocols/RpcMode.cs: partial get_last_assistant_text operation (PiSharp wire format)"
+        "RpcEventWriter serves get_last_assistant_text from the same canonical plus in-flight assistant projection used by get_messages."
       ],
       "evidence": [
-        "tests/PiSharp.Tests/RpcModeTests.cs: local protocol/command fixtures (coverage varies by operation)"
+        "RpcReadCommandsProcessTests.SessionReadCommandsReturnOneSnapshotWhileProviderRequestIsBlocked verifies this command succeeds after a streamed message_update and returns the partial assistant text during the blocked provider call. Current Pi 2b0a123de98318c2ff8069661721ce0c3794c34e rpc-mode.ts handles the getter without a busy guard; no Pi process differential has been run."
       ],
       "dependencies": []
     },

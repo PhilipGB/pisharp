@@ -21,6 +21,9 @@ internal sealed class RpcAssistantMessageProjector
 
     public JsonObject? LastCompletedAssistantMessage { get; private set; }
 
+    public JsonObject? ActiveProviderMessage(ConversationSession conversation, string? api) =>
+        _providerRequestActive ? CreatePartialMessage(conversation, api) : null;
+
     public void BeginAgent()
     {
         _runMessages.Clear();
@@ -153,7 +156,7 @@ internal sealed class RpcAssistantMessageProjector
     public JsonObject? GetToolResult(string callId) =>
         _toolResults.TryGetValue(callId, out var message) ? message.DeepClone().AsObject() : null;
 
-    public JsonArray ReconcileRunMessages(JsonArray canonicalMessages)
+    public JsonArray ReconcileRunMessages(JsonArray canonicalMessages, bool includeUnpersisted = false)
     {
         if (_runMessages.Count == 0) return canonicalMessages.DeepClone().AsArray();
         var result = new JsonArray();
@@ -165,6 +168,9 @@ internal sealed class RpcAssistantMessageProjector
                 projected = _runMessages[snapshotIndex++];
             result.Add(projected.DeepClone());
         }
+        if (includeUnpersisted)
+            for (; snapshotIndex < _runMessages.Count; snapshotIndex++)
+                result.Add(_runMessages[snapshotIndex].DeepClone());
         return result;
     }
 
@@ -274,7 +280,7 @@ internal sealed class RpcAssistantMessageProjector
         ["provider"] = conversation.Provider,
         ["model"] = conversation.Model,
         ["stopReason"] = "pending",
-        ["timestamp"] = _timestamp.ToUnixTimeMilliseconds(),
+        ["timestamp"] = (_timestamp == default ? DateTimeOffset.UtcNow : _timestamp).ToUnixTimeMilliseconds(),
         ["usage"] = ProjectUsage(_usage)
     };
 

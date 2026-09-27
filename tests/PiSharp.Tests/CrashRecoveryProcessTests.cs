@@ -238,9 +238,11 @@ public sealed class CrashRecoveryProcessTests
             var messageTexts = new List<string>();
             foreach (var message in messages.RootElement.GetProperty("data").GetProperty("messages").EnumerateArray())
             {
-                if (!message.TryGetProperty("contents", out var contents) || contents.ValueKind != JsonValueKind.Array) continue;
-                foreach (var content in contents.EnumerateArray())
-                    if (content.TryGetProperty("text", out var text)) messageTexts.Add(text.GetString() ?? "");
+                if (!message.TryGetProperty("content", out var content)) continue;
+                if (content.ValueKind == JsonValueKind.String) messageTexts.Add(content.GetString() ?? "");
+                else if (content.ValueKind == JsonValueKind.Array)
+                    foreach (var part in content.EnumerateArray())
+                        if (part.TryGetProperty("text", out var text)) messageTexts.Add(text.GetString() ?? "");
             }
             Assert.Contains(messageTexts, text => text.Contains("Outcome UNKNOWN for bash", StringComparison.Ordinal));
 

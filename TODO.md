@@ -6,8 +6,8 @@
 
 ## Current state
 
-- Latest pushed, exact-head CI-validated source: `1abca7f267666ce9a0343af0aab2fd97630ab313`; Linux CI run [36292985247](https://github.com/PhilipGB/pisharp/actions/runs/36292985247) passed format, warnings-as-errors build with 0 warnings/errors, and 624 tests (0 failed, 0 skipped). It includes the active-clone and active-tool fork snapshot/process coverage. The earlier local validation had one transient compaction request-count failure; focused rerun and a later full run passed.
-- The current session recovery/concurrency slice adds a post-side-effect crash recovery process case and a cross-process session-lock wait case. Focused crash/recovery and lock-contention tests pass 2/2. Format verification passes; warnings-as-errors build has 0 warnings/errors; the full suite passes 626/626. The first full invocation had one transient `ParallelToolCallBatchCutsOnlyAfterBothResultsAndRetainsRawHistory` request-count failure (expected 2, observed 3); its isolated rerun and the following full run passed. `SessionFileLease` shares bounded, cancellation-aware lock retry across native and Pi JSONL stores. Exact-head CI for this slice is pending.
+- Latest pushed, exact-head CI-validated source: `6ce60a3de9238ceb21ccbbf931556ef07fed360f`; Linux CI run [36294313432](https://github.com/PhilipGB/pisharp/actions/runs/36294313432) passed format, warnings-as-errors build with 0 warnings/errors, and 626 tests (0 failed, 0 skipped). It includes active clone/fork snapshot coverage plus crash-after-side-effect recovery and cross-process session-lock retry. The first local full invocation of the recovery slice had one transient compaction request-count failure; its isolated rerun and the next full run passed.
+- The current RPC read-snapshot slice removes busy rejection from `get_messages`, `get_fork_messages`, `get_last_assistant_text`, `get_entries`, and `get_tree`; each reads a locked `ConversationSession.Snapshot()`. `RpcEventWriter` shares the live assistant projector with reads, so `get_messages` uses Pi-shaped message objects and includes streamed assistant text, while `get_last_assistant_text` returns that current text. The Linux CLI process test blocks after a real `message_update`, confirms `isStreaming`, and checks all five reads against the accepted prompt/session state. Focused RPC/session checks pass 41/41; format verification and the warnings-as-errors build pass; the full suite passes 627/627. Exact-head CI is pending. Broader provider-effective context projection, streamed partial tool-call details, and a Pi process differential remain open.
 - The earlier `35be9dc8f8614dcdc66ceaab3136c8ad4301f406` run [36282903215](https://github.com/PhilipGB/pisharp/actions/runs/36282903215) failed 4/607 tests after format/build passed. Provider history reconciliation in `b71ed3119b3827a525515aa50d952f7b99d5a4f1` fixed the regressions; exact-head run [36286403870](https://github.com/PhilipGB/pisharp/actions/runs/36286403870) passed 612/612. `138820263` adds process-level abort lifecycle coverage and passed 613/613.
 - Current Pi `main` was refreshed on 2026-09-27 and remains `2b0a123de98318c2ff8069661721ce0c3794c34e`; durable parity baseline: `b3487650f6378f1b0d1643dd254445ceb4a98035`.
 - RPC model selection now uses the extracted `ModelRuntimeController`; model listing and `set_model` work during a blocked tool turn, and a process fixture verifies the next provider request uses the selected model. `cycle_model` shares the transition path; busy-cycle-specific process coverage, per-model thinking application and current-Pi process differentials remain open.
@@ -21,11 +21,11 @@
 
 ## Current priority
 
-Continue session crash/concurrency recovery against current Pi, then return to the highest-value remaining RPC and interoperability gaps. Do not pause at documentation or CI checkpoints.
+Continue the active RPC/session compatibility audit. Busy read availability and streamed text snapshots now have process coverage; provider-effective context projection, mutation/busy semantics and pinned Pi process differentials remain open. Then continue settings/resources/extensions, multimodal/provider/auth breadth, coding-tool residuals and final TUI/upstream audit.
 
 ## Exact next action
 
-Finish focused plus full validation for the session recovery/concurrency slice, commit and push it, inspect exact-head CI, then continue session interoperability and recovery comparisons. No Pi process differential has been run.
+Finish full local validation for the expanded RPC read-snapshot slice, commit and push it, inspect exact-head CI, then compare provider-effective `get_messages` content and remaining session getters against current Pi. Keep session recovery commit `6ce60a3de9238ceb21ccbbf931556ef07fed360f` as the latest exact-head CI-validated base until the RPC slice passes CI.
 
 ## Architecture and residuals to preserve
 

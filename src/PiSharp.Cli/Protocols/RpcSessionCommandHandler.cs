@@ -1,5 +1,4 @@
 using System.Text.Json;
-using Microsoft.Extensions.AI;
 using PiSharp.Runtime.Sessions;
 
 namespace PiSharp.Cli.Protocols;
@@ -144,7 +143,7 @@ internal sealed class RpcSessionCommandHandler(
                 return true;
 
             case "get_messages":
-                if (isBusy()) return await RejectBusyAsync(id, command);
+                var messagesSnapshot = conversation.Snapshot();
                 await output.EmitAsync(new
                 {
                     id,
@@ -153,14 +152,13 @@ internal sealed class RpcSessionCommandHandler(
                     success = true,
                     data = new
                     {
-                        messages = conversation.ActiveMessages().Select(message =>
-                            JsonSerializer.SerializeToElement(message, AIJsonUtilities.DefaultOptions)).ToArray()
+                        messages = events().ProjectMessagesSnapshot(messagesSnapshot)
                     }
                 }, cancellationToken);
                 return true;
 
             case "get_fork_messages":
-                if (isBusy()) return await RejectBusyAsync(id, command);
+                var forkMessagesSnapshot = conversation.Snapshot();
                 await output.EmitAsync(new
                 {
                     id,
@@ -169,14 +167,14 @@ internal sealed class RpcSessionCommandHandler(
                     success = true,
                     data = new
                     {
-                        messages = conversation.UserMessagesForForking()
+                        messages = forkMessagesSnapshot.UserMessagesForForking()
                             .Select(message => new { entryId = message.Id, text = message.Text }).ToArray()
                     }
                 }, cancellationToken);
                 return true;
 
             case "get_last_assistant_text":
-                if (isBusy()) return await RejectBusyAsync(id, command);
+                var lastAssistantSnapshot = conversation.Snapshot();
                 await output.EmitAsync(new
                 {
                     id,
@@ -185,15 +183,14 @@ internal sealed class RpcSessionCommandHandler(
                     success = true,
                     data = new
                     {
-                        text = conversation.ActiveMessages().LastOrDefault(message =>
-                            message.Role == ChatRole.Assistant)?.Text
+                        text = events().GetLastAssistantTextSnapshot(lastAssistantSnapshot)
                     }
                 }, cancellationToken);
                 return true;
 
             case "get_entries":
-                if (isBusy()) return await RejectBusyAsync(id, command);
-                var entries = RpcSessionEntryProjector.ProjectEntries(conversation);
+                var entriesSnapshot = conversation.Snapshot();
+                var entries = RpcSessionEntryProjector.ProjectEntries(entriesSnapshot);
                 var index = -1;
                 if (root.TryGetProperty("since", out var since))
                 {
@@ -211,19 +208,19 @@ internal sealed class RpcSessionCommandHandler(
                     type = "response",
                     command,
                     success = true,
-                    data = new { entries = entries.Skip(index + 1).ToArray(), leafId = conversation.Tree.HeadId }
+                    data = new { entries = entries.Skip(index + 1).ToArray(), leafId = entriesSnapshot.Tree.HeadId }
                 }, cancellationToken);
                 return true;
 
             case "get_tree":
-                if (isBusy()) return await RejectBusyAsync(id, command);
+                var treeSnapshot = conversation.Snapshot();
                 await output.EmitAsync(new
                 {
                     id,
                     type = "response",
                     command,
                     success = true,
-                    data = new { tree = RpcSessionEntryProjector.ProjectTree(conversation), leafId = conversation.Tree.HeadId }
+                    data = new { tree = RpcSessionEntryProjector.ProjectTree(treeSnapshot), leafId = treeSnapshot.Tree.HeadId }
                 }, cancellationToken);
                 return true;
 
