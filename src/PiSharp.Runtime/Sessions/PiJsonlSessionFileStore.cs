@@ -15,35 +15,22 @@ public sealed class PiJsonlSessionFileStore(string path)
         if (OperatingSystem.IsLinux())
             Directory.CreateDirectory(folder, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
         else Directory.CreateDirectory(folder);
-        var lockOptions = new FileStreamOptions
+        await using var lease = await SessionFileLease.AcquireAsync(_path, cancellationToken);
+        if (_knownHash is { } expected)
         {
-            Mode = FileMode.OpenOrCreate,
-            Access = FileAccess.ReadWrite,
-            Share = FileShare.ReadWrite
-        };
-        if (OperatingSystem.IsLinux()) lockOptions.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
-        await using var lease = new FileStream(_path + ".lock", lockOptions);
-        if (OperatingSystem.IsMacOS()) throw new PlatformNotSupportedException("Session file locking is not supported on macOS.");
-        lease.Lock(0, 1);
-        try
-        {
-            if (_knownHash is { } expected)
-            {
-                if (!File.Exists(_path) || Hash(await File.ReadAllBytesAsync(_path, cancellationToken)) != expected)
-                    throw new InvalidDataException("Session changed on disk; reopen before writing.");
-                if ((File.GetAttributes(_path) & FileAttributes.ReparsePoint) != 0)
-                    throw new InvalidDataException("Refusing to replace a symbolic-link session.");
-            }
-            else if (File.Exists(_path))
-            {
-                throw new InvalidDataException("Session already exists; refusing to replace an unloaded file.");
-            }
-
-            var snapshot = Encoding.UTF8.GetBytes(PiJsonlSessionInterchange.Export(session));
-            await AtomicSessionFileWriter.WriteAsync(snapshot, _path, folder, cancellationToken);
-            _knownHash = Hash(snapshot);
+            if (!File.Exists(_path) || Hash(await File.ReadAllBytesAsync(_path, cancellationToken)) != expected)
+                throw new InvalidDataException("Session changed on disk; reopen before writing.");
+            if ((File.GetAttributes(_path) & FileAttributes.ReparsePoint) != 0)
+                throw new InvalidDataException("Refusing to replace a symbolic-link session.");
         }
-        finally { lease.Unlock(0, 1); }
+        else if (File.Exists(_path))
+        {
+            throw new InvalidDataException("Session already exists; refusing to replace an unloaded file.");
+        }
+
+        var snapshot = Encoding.UTF8.GetBytes(PiJsonlSessionInterchange.Export(session));
+        await AtomicSessionFileWriter.WriteAsync(snapshot, _path, folder, cancellationToken);
+        _knownHash = Hash(snapshot);
     }
 
     private static string Hash(byte[] bytes) => Convert.ToHexString(SHA256.HashData(bytes));

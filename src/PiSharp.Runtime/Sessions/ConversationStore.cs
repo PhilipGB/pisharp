@@ -66,22 +66,16 @@ public sealed class ConversationStore(string workingDirectory, string? directory
         else Directory.CreateDirectory(folder);
         // Two CLI processes must not silently overwrite each other. Lock the sibling lock file
         // across the compare and atomic rename; reject stale copies rather than merging turns.
-        await using var lease = OpenLease(target);
-        if (OperatingSystem.IsMacOS()) throw new PlatformNotSupportedException("Session file locking is not supported on macOS.");
-        lease.Lock(0, 1);
-        try
+        await using var lease = await SessionFileLease.AcquireAsync(target, cancellationToken);
+        if (_knownHashes.TryGetValue(target, out var expected))
         {
-            if (_knownHashes.TryGetValue(target, out var expected))
-            {
-                if (!File.Exists(target) || Convert.ToHexString(SHA256.HashData(await File.ReadAllBytesAsync(target, cancellationToken))) != expected)
-                    throw new InvalidDataException("Session changed on disk; reopen before writing.");
-            }
-            else if (File.Exists(target)) throw new InvalidDataException("Session already exists; refusing to replace an unloaded file.");
-            var snapshot = Encoding.UTF8.GetBytes(session.ToJson());
-            await AtomicSessionFileWriter.WriteAsync(snapshot, target, folder, cancellationToken);
-            _knownHashes[target] = Convert.ToHexString(SHA256.HashData(snapshot));
+            if (!File.Exists(target) || Convert.ToHexString(SHA256.HashData(await File.ReadAllBytesAsync(target, cancellationToken))) != expected)
+                throw new InvalidDataException("Session changed on disk; reopen before writing.");
         }
-        finally { lease.Unlock(0, 1); }
+        else if (File.Exists(target)) throw new InvalidDataException("Session already exists; refusing to replace an unloaded file.");
+        var snapshot = Encoding.UTF8.GetBytes(session.ToJson());
+        await AtomicSessionFileWriter.WriteAsync(snapshot, target, folder, cancellationToken);
+        _knownHashes[target] = Convert.ToHexString(SHA256.HashData(snapshot));
     }
 
     public async Task ValidateUnchangedAsync(ConversationSession session, string path,
@@ -90,20 +84,14 @@ public sealed class ConversationStore(string workingDirectory, string? directory
         if (session.WorkingDirectory != WorkingDirectory)
             throw new InvalidDataException("Session belongs to another working directory.");
         var target = Path.GetFullPath(path);
-        await using var lease = OpenLease(target);
-        if (OperatingSystem.IsMacOS()) throw new PlatformNotSupportedException("Session file locking is not supported on macOS.");
-        lease.Lock(0, 1);
-        try
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            if (!_knownHashes.TryGetValue(target, out var expected) || !File.Exists(target))
-                throw new InvalidDataException("Session changed on disk; reopen before writing.");
-            if ((File.GetAttributes(target) & FileAttributes.ReparsePoint) != 0)
-                throw new InvalidDataException("Refusing to replace a symbolic-link session.");
-            var actual = Convert.ToHexString(SHA256.HashData(await File.ReadAllBytesAsync(target, cancellationToken)));
-            if (actual != expected) throw new InvalidDataException("Session changed on disk; reopen before writing.");
-        }
-        finally { lease.Unlock(0, 1); }
+        await using var lease = await SessionFileLease.AcquireAsync(target, cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
+        if (!_knownHashes.TryGetValue(target, out var expected) || !File.Exists(target))
+            throw new InvalidDataException("Session changed on disk; reopen before writing.");
+        if ((File.GetAttributes(target) & FileAttributes.ReparsePoint) != 0)
+            throw new InvalidDataException("Refusing to replace a symbolic-link session.");
+        var actual = Convert.ToHexString(SHA256.HashData(await File.ReadAllBytesAsync(target, cancellationToken)));
+        if (actual != expected) throw new InvalidDataException("Session changed on disk; reopen before writing.");
     }
 
     /// <summary>Delete a listed inactive project session only if its bytes still match the indexed snapshot.</summary>
@@ -115,38 +103,20 @@ public sealed class ConversationStore(string workingDirectory, string? directory
             !Path.GetFileName(target).EndsWith(".session.json", StringComparison.Ordinal) ||
             listing.Fingerprint.Length != 64)
             throw new InvalidDataException("Session deletion requires a catalog entry from this project directory.");
-        await using var lease = OpenLease(target);
-        if (OperatingSystem.IsMacOS()) throw new PlatformNotSupportedException("Session file locking is not supported on macOS.");
-        lease.Lock(0, 1);
-        try
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            if ((File.GetAttributes(target) & FileAttributes.ReparsePoint) != 0)
-                throw new InvalidDataException("Refusing to delete a symbolic-link session.");
-            var bytes = await File.ReadAllBytesAsync(target, cancellationToken);
-            var hash = Convert.ToHexString(SHA256.HashData(bytes));
-            if (hash != listing.Fingerprint || _knownHashes.TryGetValue(target, out var known) && hash != known)
-                throw new InvalidDataException("Session changed on disk; list sessions again before deletion.");
-            var session = ConversationSession.Parse(Encoding.UTF8.GetString(bytes));
-            if (session.WorkingDirectory != WorkingDirectory || session.Id != listing.Id)
-                throw new InvalidDataException("Session identity or working directory changed.");
-            cancellationToken.ThrowIfCancellationRequested();
-            File.Delete(target);
-            _knownHashes.Remove(target);
-        }
-        finally { lease.Unlock(0, 1); }
-    }
-
-    private static FileStream OpenLease(string target)
-    {
-        var options = new FileStreamOptions
-        {
-            Mode = FileMode.OpenOrCreate,
-            Access = FileAccess.ReadWrite,
-            Share = FileShare.ReadWrite
-        };
-        if (OperatingSystem.IsLinux()) options.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
-        return new FileStream(target + ".lock", options);
+        await using var lease = await SessionFileLease.AcquireAsync(target, cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
+        if ((File.GetAttributes(target) & FileAttributes.ReparsePoint) != 0)
+            throw new InvalidDataException("Refusing to delete a symbolic-link session.");
+        var bytes = await File.ReadAllBytesAsync(target, cancellationToken);
+        var hash = Convert.ToHexString(SHA256.HashData(bytes));
+        if (hash != listing.Fingerprint || _knownHashes.TryGetValue(target, out var known) && hash != known)
+            throw new InvalidDataException("Session changed on disk; list sessions again before deletion.");
+        var session = ConversationSession.Parse(Encoding.UTF8.GetString(bytes));
+        if (session.WorkingDirectory != WorkingDirectory || session.Id != listing.Id)
+            throw new InvalidDataException("Session identity or working directory changed.");
+        cancellationToken.ThrowIfCancellationRequested();
+        File.Delete(target);
+        _knownHashes.Remove(target);
     }
 
 }
