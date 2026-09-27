@@ -2772,21 +2772,23 @@
         "UserSettings parses the nested string setting, preserves explicit empty prefixes and overlays trusted project over user scope. The /settings picker writes a literal prefix; TerminalScreen applies it at startup, re-renders stored/partial Markdown on edits, and refreshes it when resources reload. PiSharp keeps its existing code-block gutter."
       ],
       "evidence": [
-        "Pinned Pi settings docs and the interactive-mode.ts/markdown.ts source show the two-space default and code-line prefix behavior; see docs/parity/fixtures/settings-markdown-baseline.md. UserSettingsTests.MarkdownCodeBlockIndentUsesTheDefaultAndTrustedProjectOverride covers default, scope precedence, explicit empty value and malformed/duplicate keys. UserSettingsWriterTests covers persistence/removal, TerminalMarkdownTests covers output, TerminalScreenTests covers rerender, and TerminalPtyTests.SettingsPickerEditsUserScopeThroughLinuxPty saves the setting through the live UI. Local format verification passed, warnings-as-errors build passed with 0 warnings/errors, focused settings/screen tests passed 68/68, the PTY test passed 1/1, and the full suite passed 683/683 (0 skipped). PiSharp's gutter differs from Pi and paired rendered-screen differential evidence remains open."
+        "Pinned Pi settings docs and the interactive-mode.ts/markdown.ts source show the two-space default and code-line prefix behavior; see docs/parity/fixtures/settings-markdown-baseline.md. UserSettingsTests.MarkdownCodeBlockIndentUsesTheDefaultAndTrustedProjectOverride covers default, scope precedence, explicit empty value and malformed/duplicate keys. UserSettingsWriterTests covers persistence/removal, TerminalMarkdownTests covers output, TerminalScreenTests covers rerender, and TerminalPtyTests.SettingsPickerEditsUserScopeThroughLinuxPty saves the setting through the live UI. Local format verification passed, warnings-as-errors build passed with 0 warnings/errors, focused settings/screen tests passed 68/68, the PTY test passed 1/1, and the full suite passed 683/683 (0 skipped). Exact-head Linux CI for source be36ea88b7d09c7a30f94f84222e773f5bc38535 passed run 36355353424: restore, format, warnings-as-errors build and 683/683 tests (0 skipped). PiSharp's gutter differs from Pi and paired rendered-screen differential evidence remains open."
       ],
       "dependencies": []
     },
     {
       "id": "settings-markdown-mermaid",
       "title": "Setting: markdown.mermaid",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:63",
       "acceptance": [
-        "Support markdown.mermaid with upstream type/default and user/trusted-project precedence",
-        "Test malformed settings, trust boundaries, reload and startup behaviour"
+        "Implement the actual Mermaid Markdown transformer before exposing its off/final/streaming control",
+        "Match streaming eligibility, fallback, width and trust/reload behavior when a renderer boundary is selected"
       ],
       "implementation": [],
-      "evidence": [],
+      "evidence": [
+        "Pinned Pi 2b0a123de98318c2ff8069661721ce0c3794c34e defines off/final/streaming with default streaming and installs a Markdown transformer backed by grok-mermaid 0.2.3. It only transforms eligible top-level Mermaid fences, handles incomplete diagrams in streaming mode, and leaves unsupported or over-width diagrams in source form. PiSharp has no diagram parser/layout engine; adding only a settings value would be a no-op. The fixture records this boundary and the remaining decision is the renderer implementation/dependency strategy."
+      ],
       "dependencies": []
     },
     {
