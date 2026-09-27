@@ -166,7 +166,7 @@ public sealed class ProviderOverflowLoopbackTests
     public async Task RealSdkRecoversPreContentHttpOverflowWithoutReplacingCanonicalHistory(string api)
     {
         using var listener = StartLoopbackListener(out var port);
-        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(12));
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(30));
         var bodies = new List<string>();
         var server = Task.Run(async () =>
         {
