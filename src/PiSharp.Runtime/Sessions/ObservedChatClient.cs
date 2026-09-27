@@ -73,8 +73,9 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
                 await using var toolCallEnumerator = toolCallCapture?.ReadAllAsync(cancellationToken)
                     .GetAsyncEnumerator(cancellationToken);
                 Task<bool>? toolCallMove = toolCallEnumerator?.MoveNextAsync().AsTask();
-                await using var enumerator = base.GetStreamingResponseAsync(requestMessages, options, cancellationToken)
+                var enumerator = base.GetStreamingResponseAsync(requestMessages, options, cancellationToken)
                     .GetAsyncEnumerator(cancellationToken);
+                Exception? streamError = null;
 
                 void PublishToolCallDelta()
                 {
@@ -85,65 +86,80 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
                     });
                 }
 
-                while (true)
+                try
                 {
-                    bool next;
-                    try
+                    while (true)
                     {
-                        var responseMove = enumerator.MoveNextAsync().AsTask();
-                        while (toolCallMove is not null)
+                        bool next;
+                        try
                         {
-                            var completed = await Task.WhenAny(responseMove, toolCallMove);
-                            if (completed == responseMove) break;
-                            if (await toolCallMove)
+                            var responseMove = enumerator.MoveNextAsync().AsTask();
+                            while (toolCallMove is not null)
                             {
+                                var completed = await Task.WhenAny(responseMove, toolCallMove);
+                                if (completed == responseMove) break;
+                                if (await toolCallMove)
+                                {
+                                    PublishToolCallDelta();
+                                    toolCallMove = toolCallEnumerator!.MoveNextAsync().AsTask();
+                                }
+                                else toolCallMove = null;
+                            }
+                            next = await responseMove;
+                        }
+                        catch (OperationCanceledException error)
+                        {
+                            streamError = error;
+                            ended = true;
+                            publish(new("model_request_interrupted"));
+                            throw;
+                        }
+                        catch (Exception error)
+                        {
+                            streamError = error;
+                            failure = error;
+                            while (toolCallMove is { IsCompletedSuccessfully: true })
+                            {
+                                if (!toolCallMove.Result) { toolCallMove = null; break; }
                                 PublishToolCallDelta();
                                 toolCallMove = toolCallEnumerator!.MoveNextAsync().AsTask();
                             }
-                            else toolCallMove = null;
+                            break;
                         }
-                        next = await responseMove;
-                    }
-                    catch (OperationCanceledException) { ended = true; publish(new("model_request_interrupted")); throw; }
-                    catch (Exception error)
-                    {
-                        failure = error;
+                        if (!next)
+                        {
+                            while (toolCallMove is not null)
+                            {
+                                if (!await toolCallMove) { toolCallMove = null; break; }
+                                PublishToolCallDelta();
+                                toolCallMove = toolCallEnumerator!.MoveNextAsync().AsTask();
+                            }
+                            break;
+                        }
+                        var update = enumerator.Current;
+                        responseUpdates.Add(update);
                         while (toolCallMove is { IsCompletedSuccessfully: true })
                         {
                             if (!toolCallMove.Result) { toolCallMove = null; break; }
                             PublishToolCallDelta();
                             toolCallMove = toolCallEnumerator!.MoveNextAsync().AsTask();
                         }
-                        break;
-                    }
-                    if (!next)
-                    {
-                        while (toolCallMove is not null)
+                        // A role/model/response-id SSE envelope has no content and must not
+                        // suppress a safe retry before the provider emits text, reasoning or tools.
+                        producedOutput |= update.Contents?.Any(content => content is not UsageContent) == true ||
+                            !string.IsNullOrEmpty(update.Text);
+                        publish(new AgentLifecycleEvent(string.IsNullOrEmpty(update.Text)
+                            ? "model_content_update" : "model_text_delta", Text: update.Text)
                         {
-                            if (!await toolCallMove) { toolCallMove = null; break; }
-                            PublishToolCallDelta();
-                            toolCallMove = toolCallEnumerator!.MoveNextAsync().AsTask();
-                        }
-                        break;
+                            ProviderUpdate = update
+                        });
+                        yield return update;
                     }
-                    var update = enumerator.Current;
-                    responseUpdates.Add(update);
-                    while (toolCallMove is { IsCompletedSuccessfully: true })
-                    {
-                        if (!toolCallMove.Result) { toolCallMove = null; break; }
-                        PublishToolCallDelta();
-                        toolCallMove = toolCallEnumerator!.MoveNextAsync().AsTask();
-                    }
-                    // A role/model/response-id SSE envelope has no content and must not
-                    // suppress a safe retry before the provider emits text, reasoning or tools.
-                    producedOutput |= update.Contents?.Any(content => content is not UsageContent) == true ||
-                        !string.IsNullOrEmpty(update.Text);
-                    publish(new AgentLifecycleEvent(string.IsNullOrEmpty(update.Text)
-                        ? "model_content_update" : "model_text_delta", Text: update.Text)
-                    {
-                        ProviderUpdate = update
-                    });
-                    yield return update;
+                }
+                finally
+                {
+                    try { await enumerator.DisposeAsync(); }
+                    catch when (streamError is not null) { }
                 }
                 ended = true;
             }
