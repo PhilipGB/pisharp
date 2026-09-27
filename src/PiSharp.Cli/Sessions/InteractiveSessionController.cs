@@ -49,7 +49,7 @@ internal sealed class InteractiveSessionController(
         if (sourcePath is not null)
         {
             if (!File.Exists(sourcePath))
-                throw new InvalidOperationException("This session has not been saved yet. Send a message before cloning or forking it.");
+                throw new InvalidOperationException("This session has not been saved yet. Wait for the first assistant response before cloning or forking it.");
             await store.ValidateUnchangedAsync(source, sourcePath, cancellationToken);
         }
         var path = noSession ? null : store.NewPath(branchSnapshot);
