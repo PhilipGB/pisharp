@@ -842,10 +842,17 @@ if (cli.Mode == "rpc")
         return forked.Prompt;
     }
 
-    async Task<bool> CloneRpcSessionAsync(CancellationToken cancellationToken)
+    async Task<string?> PrepareRpcCloneAsync(ConversationSession branchSnapshot, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        var cloned = await sessionController.CloneAsync(conversation, sessionPath);
+        return await sessionController.PrepareCloneAsync(conversation, sessionPath, branchSnapshot, cancellationToken);
+    }
+
+    async Task<bool> CloneRpcSessionAsync(ConversationSession branchSnapshot, string? branchPath,
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var cloned = await sessionController.ActivatePreparedCloneAsync(branchSnapshot, branchPath);
         AdoptRpcSession(cloned);
         return false;
     }
@@ -866,7 +873,8 @@ if (cli.Mode == "rpc")
         persistAutoCompactionEnabled: rpcUserSettings.SetAutoCompactionEnabledAsync,
         projectModel: model => RpcModelProjector.Project(model,
             model.Provider is { } providerId ? modelRuntime.GetProvider(providerId) : null),
-        validateSwitchSession: ValidateRpcSessionSwitchAsync).ServeAsync();
+        validateSwitchSession: ValidateRpcSessionSwitchAsync,
+        prepareCloneSession: PrepareRpcCloneAsync).ServeAsync();
     return;
 }
 if (cli.Mode == "json")

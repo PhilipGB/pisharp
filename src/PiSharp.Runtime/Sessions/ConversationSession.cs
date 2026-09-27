@@ -447,8 +447,40 @@ public sealed class ConversationSession
         string.Concat(message.Contents.OfType<TextContent>().Select(content => content.Text));
 
     public ConversationSession Fork(string? parentSessionPath = null) =>
-        new(Guid.NewGuid().ToString("N"), WorkingDirectory, Model, Endpoint, Provider, Name, Tree.CloneActivePath(),
-            parentSessionPath: parentSessionPath);
+        ForkPath(Tree.ActivePath(), parentSessionPath);
+
+    public ConversationSession ForkForSessionReplacement(string? parentSessionPath = null)
+    {
+        var path = Tree.ActivePath();
+        var start = path.LastOrDefault(node => node.Type == "run_started");
+        if (start is not null && start.Payload.TryGetProperty("runId", out var runIdValue) &&
+            runIdValue.ValueKind == JsonValueKind.String)
+        {
+            var runId = runIdValue.GetString();
+            var settled = path.Any(node => node.Type == "run_recovered" && HasRunId(node, runId)) ||
+                path.Any(node => node.Type == "run_finished" && HasRunId(node, runId) &&
+                    node.Payload.TryGetProperty("completed", out var completed) && completed.ValueKind == JsonValueKind.True);
+            if (!settled)
+                path = path.Where(node => !IsExecutionCheckpoint(node, runId)).ToArray();
+        }
+        return ForkPath(path, parentSessionPath);
+    }
+
+    private ConversationSession ForkPath(IReadOnlyList<ConversationNode> path, string? parentSessionPath)
+    {
+        var entries = path.Select((node, index) => node with { ParentId = index == 0 ? null : path[index - 1].Id }).ToArray();
+        var tree = new ConversationTree(entries, entries.LastOrDefault()?.Id);
+        return new ConversationSession(Guid.NewGuid().ToString("N"), WorkingDirectory, Model, Endpoint, Provider, Name,
+            tree, parentSessionPath: parentSessionPath);
+    }
+
+    private static bool IsExecutionCheckpoint(ConversationNode node, string? runId) =>
+        (node.Type is "run_started" or "run_finished" or "assistant_progress" or "tool_intent" or "tool_outcome" or "tool_skipped") &&
+        HasRunId(node, runId);
+
+    private static bool HasRunId(ConversationNode node, string? runId) =>
+        node.Payload.ValueKind == JsonValueKind.Object && node.Payload.TryGetProperty("runId", out var value) &&
+        value.ValueKind == JsonValueKind.String && value.GetString() == runId;
 
     public ConversationSession ForkInto(string workingDirectory, string? parentSessionPath = null) =>
         new(Guid.NewGuid().ToString("N"), Path.GetFullPath(workingDirectory), Model, Endpoint, Provider, Name,

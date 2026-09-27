@@ -66,14 +66,7 @@ public sealed class ConversationStore(string workingDirectory, string? directory
         else Directory.CreateDirectory(folder);
         // Two CLI processes must not silently overwrite each other. Lock the sibling lock file
         // across the compare and atomic rename; reject stale copies rather than merging turns.
-        var lockOptions = new FileStreamOptions
-        {
-            Mode = FileMode.OpenOrCreate,
-            Access = FileAccess.ReadWrite,
-            Share = FileShare.ReadWrite
-        };
-        if (OperatingSystem.IsLinux()) lockOptions.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
-        await using var lease = new FileStream(target + ".lock", lockOptions);
+        await using var lease = OpenLease(target);
         if (OperatingSystem.IsMacOS()) throw new PlatformNotSupportedException("Session file locking is not supported on macOS.");
         lease.Lock(0, 1);
         try
@@ -91,6 +84,28 @@ public sealed class ConversationStore(string workingDirectory, string? directory
         finally { lease.Unlock(0, 1); }
     }
 
+    public async Task ValidateUnchangedAsync(ConversationSession session, string path,
+        CancellationToken cancellationToken = default)
+    {
+        if (session.WorkingDirectory != WorkingDirectory)
+            throw new InvalidDataException("Session belongs to another working directory.");
+        var target = Path.GetFullPath(path);
+        await using var lease = OpenLease(target);
+        if (OperatingSystem.IsMacOS()) throw new PlatformNotSupportedException("Session file locking is not supported on macOS.");
+        lease.Lock(0, 1);
+        try
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!_knownHashes.TryGetValue(target, out var expected) || !File.Exists(target))
+                throw new InvalidDataException("Session changed on disk; reopen before writing.");
+            if ((File.GetAttributes(target) & FileAttributes.ReparsePoint) != 0)
+                throw new InvalidDataException("Refusing to replace a symbolic-link session.");
+            var actual = Convert.ToHexString(SHA256.HashData(await File.ReadAllBytesAsync(target, cancellationToken)));
+            if (actual != expected) throw new InvalidDataException("Session changed on disk; reopen before writing.");
+        }
+        finally { lease.Unlock(0, 1); }
+    }
+
     /// <summary>Delete a listed inactive project session only if its bytes still match the indexed snapshot.</summary>
     public async Task DeleteAsync(SessionListing listing, CancellationToken cancellationToken = default)
     {
@@ -100,9 +115,7 @@ public sealed class ConversationStore(string workingDirectory, string? directory
             !Path.GetFileName(target).EndsWith(".session.json", StringComparison.Ordinal) ||
             listing.Fingerprint.Length != 64)
             throw new InvalidDataException("Session deletion requires a catalog entry from this project directory.");
-        var lockOptions = new FileStreamOptions { Mode = FileMode.OpenOrCreate, Access = FileAccess.ReadWrite, Share = FileShare.ReadWrite };
-        if (OperatingSystem.IsLinux()) lockOptions.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
-        await using var lease = new FileStream(target + ".lock", lockOptions);
+        await using var lease = OpenLease(target);
         if (OperatingSystem.IsMacOS()) throw new PlatformNotSupportedException("Session file locking is not supported on macOS.");
         lease.Lock(0, 1);
         try
@@ -122,6 +135,18 @@ public sealed class ConversationStore(string workingDirectory, string? directory
             _knownHashes.Remove(target);
         }
         finally { lease.Unlock(0, 1); }
+    }
+
+    private static FileStream OpenLease(string target)
+    {
+        var options = new FileStreamOptions
+        {
+            Mode = FileMode.OpenOrCreate,
+            Access = FileAccess.ReadWrite,
+            Share = FileShare.ReadWrite
+        };
+        if (OperatingSystem.IsLinux()) options.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
+        return new FileStream(target + ".lock", options);
     }
 
 }

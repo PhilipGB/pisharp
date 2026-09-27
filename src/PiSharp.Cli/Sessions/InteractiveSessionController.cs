@@ -32,10 +32,31 @@ internal sealed class InteractiveSessionController(
         return await CreateBranchAsync(source, sourcePath, forked, selected.Id, prompt);
     }
 
-    public async Task<SessionBranchResult> CloneAsync(ConversationSession source, string? sourcePath)
+    public async Task<SessionBranchResult> CloneAsync(ConversationSession source, string? sourcePath,
+        ConversationSession? branchSnapshot = null)
     {
-        var clone = source.Fork(sourcePath);
+        var clone = branchSnapshot ?? source.Fork(sourcePath);
         return await CreateBranchAsync(source, sourcePath, clone, null, null);
+    }
+
+    public async Task<string?> PrepareCloneAsync(ConversationSession source, string? sourcePath,
+        ConversationSession branchSnapshot, CancellationToken cancellationToken)
+    {
+        if (sourcePath is not null)
+        {
+            if (!File.Exists(sourcePath))
+                throw new InvalidOperationException("This session has not been saved yet. Send a message before cloning or forking it.");
+            await store.ValidateUnchangedAsync(source, sourcePath, cancellationToken);
+        }
+        var path = noSession ? null : store.NewPath(branchSnapshot);
+        if (path is not null) await store.SaveAsync(branchSnapshot, path, cancellationToken);
+        return path;
+    }
+
+    public async Task<SessionBranchResult> ActivatePreparedCloneAsync(ConversationSession branchSnapshot, string? path)
+    {
+        var run = await openRun(branchSnapshot, path);
+        return new(branchSnapshot, run, path, null, null);
     }
 
     public async Task<SessionBranchResult> NewAsync(ConversationSession source, string? sourcePath,

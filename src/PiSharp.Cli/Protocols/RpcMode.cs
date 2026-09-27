@@ -22,7 +22,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
     Func<bool, CancellationToken, Task>? persistRetryEnabled = null,
     Func<string?, CancellationToken, Task<bool>>? newSession = null,
     Func<string, CancellationToken, Task<string?>>? forkSession = null,
-    Func<CancellationToken, Task<bool>>? cloneSession = null,
+    Func<ConversationSession, string?, CancellationToken, Task<bool>>? cloneSession = null,
     Func<string, CancellationToken, Task<bool>>? switchSession = null,
     Func<PiSharp.Runtime.Resources.ResourceCatalog?>? getCurrentResources = null,
     Func<ExtensionRegistration?>? getCurrentExtensions = null,
@@ -30,7 +30,8 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
     Func<JsonElement?>? getModelSnapshot = null,
     Func<bool, CancellationToken, Task>? persistAutoCompactionEnabled = null,
     Func<ModelDescriptor, JsonElement>? projectModel = null,
-    Func<string, CancellationToken, Task>? validateSwitchSession = null)
+    Func<string, CancellationToken, Task>? validateSwitchSession = null,
+    Func<ConversationSession, CancellationToken, Task<string?>>? prepareCloneSession = null)
 {
     private readonly JsonLineWriter _writer = new(output);
     private RpcEventWriter? _events;
@@ -320,8 +321,12 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
 
     private async Task<bool> StartCloneSessionAsync(CancellationToken cancellationToken)
     {
+        var current = CurrentRun;
+        var branchSnapshot = current.Conversation.ForkForSessionReplacement(current.SessionFile);
+        var branchPath = prepareCloneSession is null ? null :
+            await prepareCloneSession(branchSnapshot, cancellationToken);
         await CancelActiveRunAsync();
-        return await cloneSession!(cancellationToken);
+        return await cloneSession!(branchSnapshot, branchPath, cancellationToken);
     }
 
     private async Task<bool> StartSwitchSessionAsync(string sessionPath, CancellationToken cancellationToken)
