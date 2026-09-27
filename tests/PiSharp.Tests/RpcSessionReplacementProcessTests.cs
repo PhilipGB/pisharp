@@ -91,6 +91,20 @@ public sealed class RpcSessionReplacementProcessTests
             do { firstEvent = await ReadRecordAsync(); }
             while (firstEvent.GetProperty("type").GetString() != "agent_settled");
 
+            var idle = false;
+            for (var attempt = 0; attempt < 100 && !idle; attempt++)
+            {
+                var stateId = $"idle-{attempt}";
+                await process.StandardInput.WriteLineAsync(JsonSerializer.Serialize(new { id = stateId, type = "get_state" }));
+                await process.StandardInput.FlushAsync(timeout.Token);
+                JsonElement state;
+                do { state = await ReadRecordAsync(); }
+                while (!state.TryGetProperty("id", out var id) || id.GetString() != stateId);
+                idle = !state.GetProperty("data").GetProperty("isStreaming").GetBoolean();
+                if (!idle) await Task.Delay(5, timeout.Token);
+            }
+            Assert.True(idle);
+
             await process.StandardInput.WriteLineAsync("{\"id\":\"forkable\",\"type\":\"get_fork_messages\"}");
             await process.StandardInput.FlushAsync(timeout.Token);
             JsonElement forkable;

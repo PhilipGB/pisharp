@@ -85,7 +85,7 @@ public sealed class ConversationStore(string workingDirectory, string? directory
             }
             else if (File.Exists(target)) throw new InvalidDataException("Session already exists; refusing to replace an unloaded file.");
             var snapshot = Encoding.UTF8.GetBytes(session.ToJson());
-            await WriteLockedAsync(snapshot, target, folder, cancellationToken);
+            await AtomicSessionFileWriter.WriteAsync(snapshot, target, folder, cancellationToken);
             _knownHashes[target] = Convert.ToHexString(SHA256.HashData(snapshot));
         }
         finally { lease.Unlock(0, 1); }
@@ -124,27 +124,4 @@ public sealed class ConversationStore(string workingDirectory, string? directory
         finally { lease.Unlock(0, 1); }
     }
 
-    private static async Task WriteLockedAsync(byte[] snapshot, string target, string folder, CancellationToken cancellationToken)
-    {
-        var temp = Path.Combine(folder, ".pisharp-" + Guid.NewGuid().ToString("N") + ".tmp");
-        try
-        {
-            var options = new FileStreamOptions
-            {
-                Mode = FileMode.CreateNew,
-                Access = FileAccess.Write,
-                Share = FileShare.None,
-                Options = FileOptions.Asynchronous
-            };
-            if (OperatingSystem.IsLinux()) options.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
-            await using (var file = new FileStream(temp, options))
-            {
-                await file.WriteAsync(snapshot, cancellationToken);
-                file.Flush(flushToDisk: true);
-            }
-            cancellationToken.ThrowIfCancellationRequested();
-            File.Move(temp, target, overwrite: true);
-        }
-        finally { if (File.Exists(temp)) File.Delete(temp); }
-    }
 }

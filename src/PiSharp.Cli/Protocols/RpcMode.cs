@@ -376,7 +376,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
         var responded = false;
         try
         {
-            await Events.RunAsync(run, message, token, async item =>
+            await Events.RunAsync(CurrentRun, message, token, async item =>
             {
                 if (responded) return;
                 if (item.Type == "prompt_accepted")

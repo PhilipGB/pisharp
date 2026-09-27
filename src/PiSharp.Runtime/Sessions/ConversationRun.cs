@@ -37,6 +37,8 @@ public sealed class ConversationRun
     private string? _persistedThinkingLevel;
     public ConversationSession Conversation { get; }
     public string? SessionFile => _sessionFile;
+    public Task PersistAsync(CancellationToken cancellationToken = default) =>
+        _save?.Invoke(cancellationToken) ?? Task.CompletedTask;
     public bool AutoCompactionEnabled => Volatile.Read(ref _autoCompactionEnabled) != 0;
     public bool IsCompacting => Volatile.Read(ref _isCompacting) != 0;
     public string CurrentModel { get { lock (_promptQueueGate) return _currentModel; } }

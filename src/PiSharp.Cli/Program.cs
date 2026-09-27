@@ -851,7 +851,7 @@ if (cli.Mode == "rpc")
     }
 
     await new RpcMode(Console.In, Console.Out, conversationRun,
-        cancellationToken => sessionPath is null ? Task.CompletedTask : store.SaveAsync(conversation, sessionPath, cancellationToken),
+        cancellationToken => conversationRun.PersistAsync(cancellationToken),
         resources, GetRpcModelsAsync,
         extensionLease.Current.Registration, () => selection.Authenticated ? null :
             $"Provider '{selection.Provider.Id}' is not authenticated. Use /login {selection.Provider.Id} or configure {selection.Provider.ApiKeyEnvironment ?? "a credential"}.",

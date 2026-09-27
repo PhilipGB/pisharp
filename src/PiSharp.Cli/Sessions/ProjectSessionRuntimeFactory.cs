@@ -24,8 +24,10 @@ internal sealed class ProjectSessionRuntimeFactory(
         CancellationToken cancellationToken = default)
     {
         var path = Path.GetFullPath(sessionPath, invocationDirectory);
-        if (!File.Exists(path)) throw new FileNotFoundException("Session file was not found.", path);
-        var workingDirectory = PiSessionStartupTarget.ReadWorkingDirectory(path, invocationDirectory);
+        var targetExists = File.Exists(path);
+        var workingDirectory = targetExists
+            ? PiSessionStartupTarget.ReadWorkingDirectory(path, invocationDirectory)
+            : Path.GetFullPath(invocationDirectory);
         var configuration = await ProjectRuntimeConfiguration.LoadAsync(workingDirectory, agentDirectory, arguments,
             trustStore, interactiveTrust: false, TextReader.Null, TextWriter.Null, cancellationToken: cancellationToken);
         var sourceSessionDirectory = keepSourceSessionDirectory ? Path.GetDirectoryName(path) : null;
@@ -36,12 +38,21 @@ internal sealed class ProjectSessionRuntimeFactory(
         try
         {
             var isPiJsonl = path.EndsWith(".jsonl", StringComparison.OrdinalIgnoreCase);
-            var conversation = isPiJsonl
-                ? project.SessionImport.ImportFile(path)
-                : await project.Store.LoadAsync(path, cancellationToken);
+            var conversation = !targetExists
+                ? new ConversationSession(workingDirectory, currentSelection.Connection.Model,
+                    currentSelection.Connection.Endpoint?.ToString(), currentSelection.Provider.Id)
+                : isPiJsonl
+                    ? project.SessionImport.ImportFile(path)
+                    : await project.Store.LoadAsync(path, cancellationToken);
             destinationPath = arguments.NoSession ? null : isPiJsonl
-                ? project.SessionImport.CreateDestinationPath(conversation)
+                ? targetExists ? project.SessionImport.CreateDestinationPath(conversation) : path
                 : path;
+            var piJsonlStore = !targetExists && destinationPath is not null
+                ? new PiJsonlSessionFileStore(destinationPath)
+                : null;
+            Func<CancellationToken, Task>? save = destinationPath is null ? null : piJsonlStore is not null
+                ? token => piJsonlStore.SaveAsync(conversation, token)
+                : token => project.Store.SaveAsync(conversation, destinationPath, token);
 
             var selection = conversation.Model == "unknown"
                 ? currentSelection
@@ -59,14 +70,14 @@ internal sealed class ProjectSessionRuntimeFactory(
                 Environment.GetEnvironmentVariable, $"{selection.Provider.Id}/{selection.Model.Id}");
             var pricing = ModelPricing.FromEnvironment(Environment.GetEnvironmentVariable) ?? selection.Model.Pricing;
 
-            if (destinationPath is not null && (isPiJsonl || conversation.Model == "unknown"))
+            if (targetExists && destinationPath is not null && (isPiJsonl || conversation.Model == "unknown"))
             {
                 await project.Store.SaveAsync(conversation, destinationPath, cancellationToken);
                 createdImportedSession = isPiJsonl;
             }
 
             var run = await ConversationRun.OpenAsync(agent, conversation, cancellationToken,
-                save: destinationPath is null ? null : token => project.Store.SaveAsync(conversation, destinationPath, token),
+                save,
                 autoCompaction: compaction, pricing: pricing, sessionFile: destinationPath,
                 provider: selection.Provider.Id, reasoningLevel: thinking,
                 retryPolicy: project.Settings.Retry?.ResolvePolicy() ?? AgentRunRetryPolicy.Default,
