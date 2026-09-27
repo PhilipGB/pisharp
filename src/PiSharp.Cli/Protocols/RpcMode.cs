@@ -180,10 +180,10 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                                         "The active run requires streamingBehavior 'steer' or 'followUp'.");
                                     break;
                                 }
-                                var queued = promptStreamingBehavior == "steer"
-                                    ? CurrentRun.TrySteer(expanded) : CurrentRun.TryFollowUp(expanded);
-                                await RespondPromptAsync(id, queued, queued ? "queued" : null,
-                                    queued ? null : "The active run is already settling; submit the prompt again.");
+                                var currentRun = CurrentRun;
+                                currentRun.QueueRpcInput(expanded, promptStreamingBehavior == "steer",
+                                    item => PublishQueueUpdate(currentRun, item));
+                                await RespondPromptAsync(id, true, "queued");
                                 break;
                             }
                             string? preflightError;
@@ -215,7 +215,6 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                             break;
                         case "steer":
                         case "follow_up":
-                            if (!busy) { await RespondAsync(id, type, false, "There is no active run to queue input for."); break; }
                             if (!TryGetTextMessage(root, out var queuedMessage, out var queueError))
                             { await RespondAsync(id, type, false, queueError); break; }
                             string queuedExpanded;
@@ -227,12 +226,14 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                             }
                             catch (Exception error) when (error is ArgumentException or IOException)
                             { await RespondAsync(id, type, false, error.Message); break; }
-                            var added = type == "steer" ? CurrentRun.TrySteer(queuedExpanded) : CurrentRun.TryFollowUp(queuedExpanded);
-                            await RespondQueuedInputAsync(id, type, added,
-                                added ? null : "The active run is already settling.");
+                            var queueRun = CurrentRun;
+                            queueRun.QueueRpcInput(queuedExpanded, type == "steer",
+                                item => PublishQueueUpdate(queueRun, item));
+                            await RespondQueuedInputAsync(id, type, true);
                             break;
                         case "clear_queue":
-                            var pending = CurrentRun.ClearPendingPrompts();
+                            var clearRun = CurrentRun;
+                            var pending = clearRun.ClearPendingPrompts(item => PublishQueueUpdate(clearRun, item));
                             await _writer.EmitAsync(new
                             {
                                 id,
@@ -513,6 +514,9 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
 
     private Task RespondAsync(JsonElement? id, string command, bool success, string? error = null) =>
         _writer.EmitAsync(new { id, type = "response", command, success, error });
+
+    private void PublishQueueUpdate(ConversationRun currentRun, AgentLifecycleEvent item) =>
+        Events.EmitCommandLifecycleAsync(currentRun, item).GetAwaiter().GetResult();
 
     private Task RespondQueuedInputAsync(JsonElement? id, string command, bool success, string? error = null) =>
         success

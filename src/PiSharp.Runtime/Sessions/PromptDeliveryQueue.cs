@@ -10,6 +10,7 @@ internal sealed class PromptDeliveryQueue
     public PromptDeliveryMode SteeringMode { get; private set; } = PromptDeliveryMode.OneAtATime;
     public PromptDeliveryMode FollowUpMode { get; private set; } = PromptDeliveryMode.OneAtATime;
     public int Count => _steering.Count + _followUp.Count;
+    public int SteeringCount => _steering.Count;
 
     public void SetSteeringMode(PromptDeliveryMode mode) => SteeringMode = Validate(mode);
 
@@ -32,6 +33,8 @@ internal sealed class PromptDeliveryQueue
 
     public IReadOnlyList<string> TakeSteeringForProvider() => Take(_steering, SteeringMode);
 
+    public IReadOnlyList<string> TakeSteeringForProvider(int limit) => Take(_steering, SteeringMode, limit);
+
     public QueuedPromptBatch? TakeNextBatch()
     {
         if (_steering.Count > 0) return new(true, Take(_steering, SteeringMode));
@@ -39,10 +42,10 @@ internal sealed class PromptDeliveryQueue
         return null;
     }
 
-    private static IReadOnlyList<string> Take(Queue<string> queue, PromptDeliveryMode mode)
+    private static IReadOnlyList<string> Take(Queue<string> queue, PromptDeliveryMode mode, int? limit = null)
     {
-        if (queue.Count == 0) return [];
-        var count = mode == PromptDeliveryMode.All ? queue.Count : 1;
+        if (queue.Count == 0 || limit == 0) return [];
+        var count = Math.Min(limit ?? queue.Count, mode == PromptDeliveryMode.All ? queue.Count : 1);
         var messages = new string[count];
         for (var index = 0; index < count; index++) messages[index] = queue.Dequeue();
         return messages;

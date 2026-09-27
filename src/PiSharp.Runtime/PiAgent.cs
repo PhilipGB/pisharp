@@ -17,7 +17,7 @@ public sealed class PiAgent
     private ReasoningOptions? _reasoning;
     private DurableExecution? _active;
     private Action<AgentLifecycleEvent>? _events;
-    private Func<IReadOnlyList<ChatMessage>>? _takeSteering;
+    private Func<bool, IReadOnlyList<ChatMessage>>? _takeSteering;
     private Func<IReadOnlyList<ChatMessage>, bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? _projectContext;
     private readonly List<(ChatMessage Message, string? AfterCallId)> _injectedSteering = [];
     private int _providerRequestIndex;
@@ -64,8 +64,8 @@ public sealed class PiAgent
 
     private IReadOnlyList<ChatMessage> TakeSteeringForRequest(IEnumerable<ChatMessage> messages)
     {
-        if (_providerRequestIndex++ == 0) return [];
-        var steering = _takeSteering?.Invoke() ?? [];
+        var firstProviderRequest = _providerRequestIndex++ == 0;
+        var steering = _takeSteering?.Invoke(firstProviderRequest) ?? [];
         if (steering.Count == 0) return steering;
         var afterCallId = messages.SelectMany(message => message.Contents).OfType<FunctionResultContent>()
             .LastOrDefault()?.CallId;
@@ -151,7 +151,7 @@ public sealed class PiAgent
 
     internal IAsyncEnumerable<AgentResponseUpdate> RunStreamingDurableAsync(string prompt, AgentSession session,
         CancellationToken cancellationToken, DurableExecution? durable, Action<AgentLifecycleEvent>? onEvent = null,
-        Func<IReadOnlyList<ChatMessage>>? takeSteering = null,
+        Func<bool, IReadOnlyList<ChatMessage>>? takeSteering = null,
         Func<IReadOnlyList<ChatMessage>, bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? projectContext = null,
         IReadOnlyDictionary<string, string?>? bashSessionEnvironment = null) =>
         RunStreamingDurableAsync(new ChatMessage(ChatRole.User, prompt), session, cancellationToken, durable, onEvent,
@@ -159,7 +159,7 @@ public sealed class PiAgent
 
     internal IAsyncEnumerable<AgentResponseUpdate> RunStreamingDurableAsync(ChatMessage prompt, AgentSession session,
         CancellationToken cancellationToken, DurableExecution? durable,
-        Action<AgentLifecycleEvent>? onEvent = null, Func<IReadOnlyList<ChatMessage>>? takeSteering = null,
+        Action<AgentLifecycleEvent>? onEvent = null, Func<bool, IReadOnlyList<ChatMessage>>? takeSteering = null,
         Func<IReadOnlyList<ChatMessage>, bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? projectContext = null,
         IReadOnlyDictionary<string, string?>? bashSessionEnvironment = null) =>
         RunStreamingDurableCoreAsync(prompt, session, cancellationToken, durable, onEvent, takeSteering,
@@ -167,7 +167,7 @@ public sealed class PiAgent
 
     internal IAsyncEnumerable<AgentResponseUpdate> RunStreamingContinuationDurableAsync(AgentSession session,
         CancellationToken cancellationToken, DurableExecution? durable, Action<AgentLifecycleEvent>? onEvent = null,
-        Func<IReadOnlyList<ChatMessage>>? takeSteering = null,
+        Func<bool, IReadOnlyList<ChatMessage>>? takeSteering = null,
         Func<IReadOnlyList<ChatMessage>, bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? projectContext = null,
         IReadOnlyDictionary<string, string?>? bashSessionEnvironment = null) =>
         RunStreamingDurableCoreAsync(null, session, cancellationToken, durable, onEvent, takeSteering,
@@ -176,7 +176,7 @@ public sealed class PiAgent
     private async IAsyncEnumerable<AgentResponseUpdate> RunStreamingDurableCoreAsync(ChatMessage? prompt,
         AgentSession session,
         [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken, DurableExecution? durable,
-        Action<AgentLifecycleEvent>? onEvent, Func<IReadOnlyList<ChatMessage>>? takeSteering,
+        Action<AgentLifecycleEvent>? onEvent, Func<bool, IReadOnlyList<ChatMessage>>? takeSteering,
         Func<IReadOnlyList<ChatMessage>, bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? projectContext,
         IReadOnlyDictionary<string, string?>? bashSessionEnvironment)
     {

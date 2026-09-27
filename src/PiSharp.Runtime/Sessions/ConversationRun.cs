@@ -21,12 +21,10 @@ public sealed class ConversationRun
     private readonly AgentRunRetryController _retryController;
     private string? _reasoningLevel;
     private readonly SemaphoreSlim _gate = new(1, 1);
-    private readonly object _promptQueueGate = new();
-    private readonly PromptDeliveryQueue _promptQueue = new();
+    private readonly object _runtimeStateGate = new();
+    private readonly PromptDeliveryController _promptDelivery;
     private readonly Queue<PendingRuntimeChange> _pendingRuntimeChanges = new();
     private readonly Queue<BashExecutionRecord> _pendingBashExecutions = new();
-    private object? _promptLoopOwner;
-    private Action<AgentLifecycleEvent>? _promptQueueEvents;
     private AgentSession _execution;
     private int _historyCount;
     private int _isCompacting;
@@ -41,11 +39,11 @@ public sealed class ConversationRun
         _save?.Invoke(cancellationToken) ?? Task.CompletedTask;
     public bool AutoCompactionEnabled => Volatile.Read(ref _autoCompactionEnabled) != 0;
     public bool IsCompacting => Volatile.Read(ref _isCompacting) != 0;
-    public string CurrentModel { get { lock (_promptQueueGate) return _currentModel; } }
-    public string? CurrentProvider { get { lock (_promptQueueGate) return _currentProvider; } }
+    public string CurrentModel { get { lock (_runtimeStateGate) return _currentModel; } }
+    public string? CurrentProvider { get { lock (_runtimeStateGate) return _currentProvider; } }
     public UsageRecord CurrentProviderUsage(UsageDetails usage)
     {
-        lock (_promptQueueGate) return UsageRecord.Create(_providerRequestModel, "model", usage, _providerRequestPricing);
+        lock (_runtimeStateGate) return UsageRecord.Create(_providerRequestModel, "model", usage, _providerRequestPricing);
     }
 
     private ConversationRun(PiAgent agent, ConversationSession conversation, AgentSession execution, Func<CancellationToken, Task>? save,
@@ -64,8 +62,7 @@ public sealed class ConversationRun
         _provider = provider;
         _retryController = new AgentRunRetryController(retryPolicy, retryDelay);
         _reasoningLevel = reasoningLevel;
-        _promptQueue.SetSteeringMode(steeringMode);
-        _promptQueue.SetFollowUpMode(followUpMode);
+        _promptDelivery = new PromptDeliveryController(_runtimeStateGate, steeringMode, followUpMode);
         Conversation = conversation;
         _execution = execution;
         _historyCount = conversation.ContextMessages().Count;
@@ -102,66 +99,34 @@ public sealed class ConversationRun
     /// <summary>Compatibility alias: an additional RPC prompt is follow-up work.</summary>
     public bool TryQueuePrompt(string prompt) => TryFollowUp(prompt);
 
-    private bool TryQueue(string prompt, bool steering, string kind)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(prompt);
-        lock (_promptQueueGate)
-        {
-            if (_promptLoopOwner is null) return false;
-            _promptQueue.Enqueue(prompt, steering);
-            _promptQueueEvents?.Invoke(new("prompt_queued", Text: prompt, Tool: kind));
-            _promptQueueEvents?.Invoke(QueueEvent(_promptQueue.Snapshot()));
-            return true;
-        }
-    }
+    public void QueueRpcInput(string prompt, bool steering, Action<AgentLifecycleEvent> publishQueueUpdate)
+        => _promptDelivery.QueueRpcInput(prompt, steering, publishQueueUpdate);
 
-    public PendingPrompts GetPendingPrompts()
-    {
-        lock (_promptQueueGate) return _promptQueue.Snapshot();
-    }
+    private bool TryQueue(string prompt, bool steering, string kind)
+        => _promptDelivery.TryQueueActive(prompt, steering, kind);
+
+    public PendingPrompts GetPendingPrompts() => _promptDelivery.Snapshot();
 
     /// <summary>Remove and return input that has not reached the model, for editor restoration.</summary>
-    public PendingPrompts ClearPendingPrompts()
-    {
-        lock (_promptQueueGate)
-        {
-            var pending = _promptQueue.Clear();
-            _promptQueueEvents?.Invoke(QueueEvent(PendingPrompts.Empty));
-            return pending;
-        }
-    }
+    public PendingPrompts ClearPendingPrompts(Action<AgentLifecycleEvent>? publishQueueUpdate = null) =>
+        _promptDelivery.Clear(publishQueueUpdate);
 
-    public int PendingPromptCount
-    {
-        get { lock (_promptQueueGate) return _promptQueue.Count; }
-    }
+    public int PendingPromptCount => _promptDelivery.Count;
 
-    public PromptDeliveryMode SteeringMode
-    {
-        get { lock (_promptQueueGate) return _promptQueue.SteeringMode; }
-    }
+    public PromptDeliveryMode SteeringMode => _promptDelivery.SteeringMode;
 
-    public PromptDeliveryMode FollowUpMode
-    {
-        get { lock (_promptQueueGate) return _promptQueue.FollowUpMode; }
-    }
+    public PromptDeliveryMode FollowUpMode => _promptDelivery.FollowUpMode;
 
-    public void SetSteeringMode(PromptDeliveryMode mode)
-    {
-        lock (_promptQueueGate) _promptQueue.SetSteeringMode(mode);
-    }
+    public void SetSteeringMode(PromptDeliveryMode mode) => _promptDelivery.SetSteeringMode(mode);
 
-    public void SetFollowUpMode(PromptDeliveryMode mode)
-    {
-        lock (_promptQueueGate) _promptQueue.SetFollowUpMode(mode);
-    }
+    public void SetFollowUpMode(PromptDeliveryMode mode) => _promptDelivery.SetFollowUpMode(mode);
 
     public bool SetThinkingLevelDuringRun(string level, ReasoningOptions? reasoning)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(level);
-        lock (_promptQueueGate)
+        lock (_runtimeStateGate)
         {
-            if (_promptLoopOwner is null) return false;
+            if (!_promptDelivery.IsActive) return false;
             _agent.SetReasoningOptions(reasoning);
             Volatile.Write(ref _reasoningLevel, level);
             if (!string.Equals(_persistedThinkingLevel, level, StringComparison.Ordinal))
@@ -180,9 +145,9 @@ public sealed class ConversationRun
         ArgumentException.ThrowIfNullOrWhiteSpace(model);
         ArgumentException.ThrowIfNullOrWhiteSpace(thinkingLevel);
         ArgumentNullException.ThrowIfNull(activateRuntime);
-        lock (_promptQueueGate)
+        lock (_runtimeStateGate)
         {
-            if (_promptLoopOwner is null) return false;
+            if (!_promptDelivery.IsActive) return false;
             _currentModel = model;
             _currentProvider = provider;
             Conversation.SelectModel(model, endpoint, provider);
@@ -215,9 +180,6 @@ public sealed class ConversationRun
     {
         public string Text => string.Join("\n", Texts);
     }
-
-    private static AgentLifecycleEvent QueueEvent(PendingPrompts pending) => new("queue_update",
-        Text: JsonSerializer.Serialize(new { steering = pending.Steering, followUp = pending.FollowUp }));
 
     /// <summary>Authoritative ordered lifecycle, including actual model and tool boundaries.
     /// Queued prompts are additional turns in the same run. No completion is emitted when execution
@@ -338,67 +300,23 @@ public sealed class ConversationRun
     }
 
     private object BeginPromptLoop(Action<AgentLifecycleEvent> publish)
-    {
-        lock (_promptQueueGate)
-        {
-            if (_promptLoopOwner is not null) throw new InvalidOperationException("An agent run is already active.");
-            _promptLoopOwner = new object();
-            _promptQueueEvents = publish;
-            return _promptLoopOwner;
-        }
-    }
+        => _promptDelivery.Begin(publish);
 
-    private IReadOnlyList<ChatMessage> TakeSteeringForProvider()
-    {
-        lock (_promptQueueGate)
-        {
-            var prompts = _promptQueue.TakeSteeringForProvider();
-            if (prompts.Count == 0) return [];
-            _promptQueueEvents?.Invoke(QueueEvent(_promptQueue.Snapshot()));
-            var messages = new ChatMessage[prompts.Count];
-            for (var index = 0; index < prompts.Count; index++)
-            {
-                var message = new ChatMessage(ChatRole.User, prompts[index]);
-                messages[index] = message;
-                _promptQueueEvents?.Invoke(new AgentLifecycleEvent("steering_message_accepted", Text: prompts[index])
-                {
-                    PromptMessage = message,
-                    MessageTimestamp = DateTimeOffset.UtcNow
-                });
-            }
-            return messages;
-        }
-    }
+    private IReadOnlyList<ChatMessage> TakeSteeringForProvider(bool firstProviderRequest) =>
+        _promptDelivery.TakeSteeringForProvider(firstProviderRequest);
 
     private PromptBatch? TakeQueuedPromptOrClose(object owner)
     {
-        lock (_promptQueueGate)
-        {
-            if (!ReferenceEquals(_promptLoopOwner, owner)) return null;
-            PersistPendingRuntimeChangesUnsafe();
-            if (_promptQueue.TakeNextBatch() is { } batch)
-            {
-                _promptQueueEvents?.Invoke(QueueEvent(_promptQueue.Snapshot()));
-                return new PromptBatch(batch.Messages.Select(prompt => new ChatMessage(ChatRole.User, prompt)).ToArray(),
-                    batch.Messages);
-            }
-            _promptLoopOwner = null;
-            _promptQueueEvents = null;
-            return null;
-        }
+        var batch = _promptDelivery.TakeNextBatchOrClose(owner, PersistPendingRuntimeChangesUnsafe);
+        return batch is null ? null : new PromptBatch(
+            batch.Messages.Select(prompt => new ChatMessage(ChatRole.User, prompt)).ToArray(), batch.Messages);
     }
 
-    private void EndPromptLoop(object owner)
+    private void EndPromptLoop(object owner) => _promptDelivery.End(owner, () =>
     {
-        lock (_promptQueueGate)
-        {
-            if (!ReferenceEquals(_promptLoopOwner, owner)) return;
-            PersistPendingRuntimeChangesUnsafe();
-            FlushPendingBashExecutionsUnsafe();
-            _promptLoopOwner = null;
-            _promptQueueEvents = null;
-        }
-    }
+        PersistPendingRuntimeChangesUnsafe();
+        FlushPendingBashExecutionsUnsafe();
+    });
 
     private void PersistPendingRuntimeChangesUnsafe()
     {
@@ -426,9 +344,9 @@ public sealed class ConversationRun
         ArgumentNullException.ThrowIfNull(result);
         var execution = new BashExecutionRecord(command, result.Output, result.ExitCode, result.Cancelled,
             result.Truncated, result.FullOutputPath, excludeFromContext);
-        lock (_promptQueueGate)
+        lock (_runtimeStateGate)
         {
-            if (_promptLoopOwner is not null)
+            if (_promptDelivery.IsActive)
             {
                 _pendingBashExecutions.Enqueue(execution);
                 return false;
@@ -440,7 +358,7 @@ public sealed class ConversationRun
 
     private void FlushPendingBashExecutions()
     {
-        lock (_promptQueueGate) FlushPendingBashExecutionsUnsafe();
+        lock (_runtimeStateGate) FlushPendingBashExecutionsUnsafe();
     }
 
     private void FlushPendingBashExecutionsUnsafe()
@@ -657,7 +575,7 @@ public sealed class ConversationRun
         {
             if (item.Type == "model_request_started")
             {
-                lock (_promptQueueGate)
+                lock (_runtimeStateGate)
                 {
                     CompleteProviderTurnUnsafe();
                     providerRequestModel = _currentModel;
@@ -673,7 +591,7 @@ public sealed class ConversationRun
                 providerResponse = item.ProviderResponse;
                 if (providerResponse?.Contents.OfType<FunctionCallContent>().Any() == true)
                 {
-                    lock (_promptQueueGate)
+                    lock (_runtimeStateGate)
                     {
                         Conversation.Append(providerResponse);
                     }
@@ -807,7 +725,7 @@ public sealed class ConversationRun
                             Conversation.AppendUsage(UsageRecord.Create(providerRequestModel, "model", usage.Details, providerRequestPricing));
                 yield return update;
             }
-            lock (_promptQueueGate) CompleteProviderTurnUnsafe();
+            lock (_runtimeStateGate) CompleteProviderTurnUnsafe();
             completed = true;
         }
         finally
@@ -831,7 +749,7 @@ public sealed class ConversationRun
                 var appendedHistory = history.Skip(historyStartIndex).ToList();
                 if (!completed)
                     providerTurnHistory.RestoreMissingMessages(appendedHistory);
-                lock (_promptQueueGate)
+                lock (_runtimeStateGate)
                 {
                     PersistPendingRuntimeChangesUnsafe();
                     var canonicalTail = existing.Skip(historyStartIndex).ToList();
