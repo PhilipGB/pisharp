@@ -145,6 +145,41 @@ public sealed class UserSettingsTests
     }
 
     [Fact]
+    public async Task HttpProxyIsUserOnlyValidatedAndDoesNotOverrideProcessProxySettings()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-http-proxy-settings-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(Path.Combine(root, ".pi"));
+        try
+        {
+            var userPath = Path.Combine(root, "settings.json");
+            await File.WriteAllTextAsync(userPath, "{\"httpProxy\":\"http://proxy.example:8080\"}");
+            var settings = await UserSettings.LoadAsync(root, _ => null);
+            Assert.Equal("http://proxy.example:8080", settings.HttpProxy);
+            Assert.Equal(settings.HttpProxy, settings.Overlay(new UserSettings()).HttpProxy);
+
+            var environment = new Dictionary<string, string?> { ["HTTP_PROXY"] = "http://explicit.example:3128" };
+            settings.ApplyHttpProxyEnvironment(environment.GetValueOrDefault,
+                (name, value) => environment[name] = value);
+            Assert.Equal("http://explicit.example:3128", environment["HTTP_PROXY"]);
+            Assert.Equal("http://proxy.example:8080", environment["HTTPS_PROXY"]);
+
+            await File.WriteAllTextAsync(Path.Combine(root, ".pi", "settings.json"), "{\"httpProxy\":\"http://project.example:8080\"}");
+            await Assert.ThrowsAsync<InvalidDataException>(() => UserSettings.LoadProjectAsync(root));
+
+            foreach (var invalid in new[]
+            {
+                "null", "1", "\"relative-proxy\"", "\"ftp://proxy.example:21\"",
+                "\"http://proxy.example:8080?token=secret\"", "\"http://proxy.example:8080#fragment\""
+            })
+            {
+                await File.WriteAllTextAsync(userPath, "{\"httpProxy\":" + invalid + "}");
+                await Assert.ThrowsAsync<InvalidDataException>(() => UserSettings.LoadAsync(root, _ => null));
+            }
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [Fact]
     public async Task EnabledModelsUsesUserAndTrustedProjectPatternsBelowCliScope()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-enabled-models-" + Guid.NewGuid().ToString("N"));

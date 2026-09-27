@@ -53,6 +53,7 @@ internal static class UserSettingsWriter
                 value is null or "true" or "false",
             "retry.provider.maxRetries" => value is null ||
                 int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var retries) && retries is >= 0 and <= 20,
+            "httpProxy" when userScope => value is null || IsValidHttpProxy(value),
             "steeringMode" or "followUpMode" => value is null || PromptDeliveryModes.TryParseSettingValue(value, out _),
             "defaultProjectTrust" when userScope => value is null or "ask" or "always" or "never",
             "defaultThinkingLevel" => value is null || ThinkingLevels.IsValid(value),
@@ -74,6 +75,10 @@ internal static class UserSettingsWriter
             _ => !string.IsNullOrWhiteSpace(value[..separator]) && !string.IsNullOrWhiteSpace(value[(separator + 1)..])
         };
     }
+
+    private static bool IsValidHttpProxy(string value) => value.Length is > 0 and <= 2048 && value == value.Trim() &&
+        Uri.TryCreate(value, UriKind.Absolute, out var proxy) && (proxy.Scheme is "http" or "https") &&
+        !string.IsNullOrWhiteSpace(proxy.Host) && proxy.Query.Length == 0 && proxy.Fragment.Length == 0;
 
     private static JsonNode? ParseValue(string setting, string? value) => setting switch
     {

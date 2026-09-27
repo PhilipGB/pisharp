@@ -565,6 +565,8 @@ public sealed class TerminalPtyTests
             var themeSaved = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var steeringSaved = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var followUpSaved = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var proxyPrompt = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var proxySaved = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var closed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var stdout = Task.Run(async () =>
             {
@@ -583,6 +585,8 @@ public sealed class TerminalPtyTests
                         if (current.Contains("Saved user setting theme = light.", StringComparison.Ordinal)) themeSaved.TrySetResult();
                         if (current.Contains("Saved user setting steeringMode = all.", StringComparison.Ordinal)) steeringSaved.TrySetResult();
                         if (current.Contains("Saved user setting followUpMode = one-at-a-time.", StringComparison.Ordinal)) followUpSaved.TrySetResult();
+                        if (current.Contains("HTTP proxy [", StringComparison.Ordinal)) proxyPrompt.TrySetResult();
+                        if (current.Contains("Saved user setting httpProxy = (configured).", StringComparison.Ordinal)) proxySaved.TrySetResult();
                         if (current.Contains("Settings closed.", StringComparison.Ordinal)) closed.TrySetResult();
                     }
                 }
@@ -607,6 +611,12 @@ public sealed class TerminalPtyTests
             await process.StandardInput.WriteAsync("Follow-up mode\nOne at a time\n");
             await process.StandardInput.FlushAsync();
             await followUpSaved.Task.WaitAsync(TimeSpan.FromSeconds(12));
+            await process.StandardInput.WriteAsync("HTTP proxy\n");
+            await process.StandardInput.FlushAsync();
+            await proxyPrompt.Task.WaitAsync(TimeSpan.FromSeconds(12));
+            await process.StandardInput.WriteAsync("https://proxy.example:8443\n");
+            await process.StandardInput.FlushAsync();
+            await proxySaved.Task.WaitAsync(TimeSpan.FromSeconds(12));
             await process.StandardInput.WriteAsync("\u001b");
             await process.StandardInput.FlushAsync();
             await closed.Task.WaitAsync(TimeSpan.FromSeconds(12));
@@ -623,6 +633,8 @@ public sealed class TerminalPtyTests
             Assert.Contains("Saved user setting hideThinkingBlock = true", output);
             Assert.Contains("Saved user setting steeringMode = all", output);
             Assert.Contains("Saved user setting followUpMode = one-at-a-time", output);
+            Assert.Contains("Saved user setting httpProxy = (configured)", output);
+            Assert.DoesNotContain("Saved user setting httpProxy = https://proxy.example:8443", output);
             Assert.DoesNotContain("Agent error:", output);
             Assert.DoesNotContain("Exception:", await stderr);
             var settings = await PiSharp.Cli.UserSettings.LoadAsync(agent, _ => null);
@@ -631,6 +643,7 @@ public sealed class TerminalPtyTests
             Assert.Equal("code --wait", settings.ExternalEditor);
             Assert.Equal(PiSharp.Runtime.Sessions.PromptDeliveryMode.All, settings.SteeringMode);
             Assert.Equal(PiSharp.Runtime.Sessions.PromptDeliveryMode.OneAtATime, settings.FollowUpMode);
+            Assert.Equal("https://proxy.example:8443", settings.HttpProxy);
             Assert.Equal(2048, settings.Compaction?.ReserveTokens);
         }
         finally { Directory.Delete(cwd, recursive: true); }

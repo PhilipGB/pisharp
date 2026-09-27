@@ -13,6 +13,7 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, Func<IReadOn
     private static readonly Setting[] s_settings =
     [
         new("defaultProjectTrust", "Default project trust", "Fallback decision for protected project resources.", UserOnly: true),
+        new("httpProxy", "HTTP proxy", "User-wide HTTP proxy for PiSharp-managed HTTP clients; takes effect on the next launch.", UserOnly: true),
         new("defaultThinkingLevel", "Default thinking level", "Initial thinking level unless overridden by --thinking."),
         new("theme", "Theme", "Choose a terminal theme or follow the terminal appearance."),
         new("externalEditor", "External editor", "Command that edits the prompt file; blank uses VISUAL or EDITOR."),
@@ -65,15 +66,17 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, Func<IReadOn
 
             if (selected.Option.Value is not { } setting) return;
             var currentValue = GetValue(currentSettings, setting.Id);
-            if (setting.Id == "externalEditor")
+            if (setting.Id is "externalEditor" or "httpProxy")
             {
-                Console.WriteLine($"External editor command [{DisplayValue(currentValue)}]; leave blank to use VISUAL/EDITOR or the default:");
+                Console.WriteLine(setting.Id == "httpProxy"
+                    ? $"HTTP proxy [{DisplayValue(currentValue)}]; enter an HTTP(S) URL or leave blank to clear:"
+                    : $"External editor command [{DisplayValue(currentValue)}]; leave blank to use VISUAL/EDITOR or the default:");
                 var entered = await editor.ReadLineAsync(_ => Task.CompletedTask, enableApplicationActions: false);
                 if (entered is null) return;
-                var command = string.IsNullOrWhiteSpace(entered) ? null : entered.Trim();
-                if (!string.Equals(command, currentValue, StringComparison.Ordinal))
+                var updatedValue = string.IsNullOrWhiteSpace(entered) ? null : entered.Trim();
+                if (!string.Equals(updatedValue, currentValue, StringComparison.Ordinal))
                 {
-                    var savedSettings = await save(scope.Value, setting.Id, command);
+                    var savedSettings = await save(scope.Value, setting.Id, updatedValue);
                     userSettings = savedSettings.User;
                     projectSettings = savedSettings.Project;
                 }
@@ -113,6 +116,7 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, Func<IReadOn
     private static string? GetValue(UserSettings settings, string id) => id switch
     {
         "defaultProjectTrust" => settings.DefaultProjectTrust,
+        "httpProxy" => settings.HttpProxy is null ? null : "configured",
         "defaultThinkingLevel" => settings.DefaultThinkingLevel,
         "theme" => settings.Theme,
         "externalEditor" => settings.ExternalEditor,

@@ -116,4 +116,27 @@ public sealed class UserSettingsWriterTests
         }
         finally { Directory.Delete(root, recursive: true); }
     }
+
+    [Fact]
+    public async Task HttpProxyWriterEnforcesUserOnlyScopeAndRemovesTheSetting()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-http-proxy-write-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            var path = Path.Combine(root, "settings.json");
+            await UserSettingsWriter.SetAsync(path, "httpProxy", "https://proxy.example:8443", userScope: true);
+            Assert.Equal("https://proxy.example:8443", (await UserSettings.LoadAsync(root, _ => null)).HttpProxy);
+
+            await Assert.ThrowsAsync<ArgumentException>(() =>
+                UserSettingsWriter.SetAsync(Path.Combine(root, "project", "settings.json"), "httpProxy",
+                    "http://proxy.example:8080", userScope: false));
+            await Assert.ThrowsAsync<ArgumentException>(() =>
+                UserSettingsWriter.SetAsync(path, "httpProxy", "ftp://proxy.example:21", userScope: true));
+
+            await UserSettingsWriter.SetAsync(path, "httpProxy", null, userScope: true);
+            Assert.Null((await UserSettings.LoadAsync(root, _ => null)).HttpProxy);
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
 }

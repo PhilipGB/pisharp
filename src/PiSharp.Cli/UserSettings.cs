@@ -153,7 +153,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
     string? DefaultThinkingLevel = null, IReadOnlyList<string>? DefaultTools = null, string? SessionDirectory = null,
     CompactionSettings? Compaction = null, bool? BlockImages = null, string? DefaultProjectTrust = null, bool? HideThinkingBlock = null, bool? QuietStartup = null, IReadOnlyList<string>? EnabledModels = null, string? ShellPath = null, string? ExternalEditor = null, string? Theme = null,
     RetrySettings? Retry = null, PromptDeliveryMode? SteeringMode = null, PromptDeliveryMode? FollowUpMode = null,
-    IReadOnlyDictionary<string, string>? ModelThinkingLevels = null)
+    IReadOnlyDictionary<string, string>? ModelThinkingLevels = null, string? HttpProxy = null)
 {
     public static async Task<UserSettings> LoadAsync(string agentDirectory, Func<string, string?> environment,
         CancellationToken cancellationToken = default)
@@ -174,6 +174,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         RetrySettings? retry = null;
         PromptDeliveryMode? steeringMode = null, followUpMode = null;
         bool? blockImages = null, hideThinkingBlock = null, quietStartup = null;
+        string? httpProxy = null;
         var seen = new HashSet<string>(StringComparer.Ordinal);
         foreach (var property in document.RootElement.EnumerateObject())
         {
@@ -268,6 +269,9 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
                 case "sessionDir": sessionDirectory = Validate(value, property.Name, 1024); break;
                 case "shellPath": shellPath = Validate(value, property.Name, 1024); break;
                 case "externalEditor": externalEditor = Validate(value, property.Name, 4096); break;
+                case "httpProxy":
+                    httpProxy = ValidateHttpProxy(Validate(value, property.Name, 2048));
+                    break;
                 case "theme":
                     theme = Validate(value, property.Name, 128);
                     if (theme is null || !IsValidThemeSetting(theme))
@@ -293,7 +297,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         }
         return new(provider, model, thinking, tools, sessionDirectory, compaction, blockImages, defaultTrust, hideThinkingBlock,
             quietStartup, enabledModels, shellPath, externalEditor, theme, retry, steeringMode, followUpMode,
-            modelThinkingLevels);
+            modelThinkingLevels, httpProxy);
     }
 
     public static string GetSettingsPath(string agentDirectory, Func<string, string?> environment) =>
@@ -328,13 +332,21 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
                 project.Retry.Provider.MaxRetries ?? Retry?.Provider?.MaxRetries)),
         project.SteeringMode ?? SteeringMode,
         project.FollowUpMode ?? FollowUpMode,
-        MergeModelThinkingLevels(ModelThinkingLevels, project.ModelThinkingLevels));
+        MergeModelThinkingLevels(ModelThinkingLevels, project.ModelThinkingLevels), HttpProxy);
 
     public string? GetModelThinkingLevel(string provider, string modelId) =>
         ModelThinkingLevels?.GetValueOrDefault($"{provider}/{modelId}");
 
     public string? GetModelThinkingLevel(ModelSelection selection) =>
         GetModelThinkingLevel(selection.Provider.Id, selection.Model.Id);
+
+    /// <summary>Apply Pi's user-wide proxy default without overriding explicit process configuration.</summary>
+    public void ApplyHttpProxyEnvironment(Func<string, string?> getEnvironment, Action<string, string?> setEnvironment)
+    {
+        if (HttpProxy is null) return;
+        if (getEnvironment("HTTP_PROXY") is null) setEnvironment("HTTP_PROXY", HttpProxy);
+        if (getEnvironment("HTTPS_PROXY") is null) setEnvironment("HTTPS_PROXY", HttpProxy);
+    }
 
     private static bool IsValidThemeSetting(string value)
     {
@@ -392,6 +404,8 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         var settings = await LoadAsync(workingDirectory, _ => Path.Combine(workingDirectory, ".pi", "settings.json"), cancellationToken);
         if (settings.DefaultProjectTrust is not null)
             throw new InvalidDataException("defaultProjectTrust is only allowed in user settings.json.");
+        if (settings.HttpProxy is not null)
+            throw new InvalidDataException("httpProxy is only allowed in user settings.json.");
         return settings;
     }
     public AutoCompactionPolicy? ResolveCompaction(int? contextWindow, Func<string, string?> environment, string? modelKey = null) =>
@@ -428,5 +442,14 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         if (string.IsNullOrWhiteSpace(value) || value.Length > maxLength || value != value.Trim())
             throw new InvalidDataException($"settings.json {property} must be a nonempty string of at most {maxLength} characters.");
         return value;
+    }
+
+    private static string ValidateHttpProxy(string? value)
+    {
+        if (!Uri.TryCreate(value, UriKind.Absolute, out var proxy) ||
+            proxy.Scheme is not ("http" or "https") || string.IsNullOrWhiteSpace(proxy.Host) ||
+            proxy.Query.Length > 0 || proxy.Fragment.Length > 0)
+            throw new InvalidDataException("settings.json httpProxy must be an absolute HTTP or HTTPS proxy URL without a query or fragment.");
+        return value!;
     }
 }

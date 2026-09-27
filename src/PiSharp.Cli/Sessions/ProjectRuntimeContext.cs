@@ -16,6 +16,7 @@ internal sealed record ProjectRuntimeConfiguration(string WorkingDirectory, bool
     {
         var cwd = Path.GetFullPath(workingDirectory);
         var baseSettings = await UserSettings.LoadAsync(agentDirectory, Environment.GetEnvironmentVariable, cancellationToken);
+        baseSettings.ApplyHttpProxyEnvironment(Environment.GetEnvironmentVariable, Environment.SetEnvironmentVariable);
         var trusted = trustedOverride ?? await trustStore.ResolveAsync(cwd, arguments.ProjectTrustOverride,
             interactiveTrust, input, output, cancellationToken,
             defaultProjectTrust: baseSettings.DefaultProjectTrust ?? "ask");

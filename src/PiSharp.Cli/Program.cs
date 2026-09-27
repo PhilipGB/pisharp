@@ -601,7 +601,8 @@ async Task<(UserSettings User, UserSettings? Project)> SaveSettingAsync(bool pro
         terminalThemeCatalog = new TerminalThemeCatalog(agentDirectory, trusted ? currentDirectory : null);
         terminalScreen?.SetTheme(ResolveConfiguredTheme(userSettings.Theme));
     }
-    Console.WriteLine($"Saved {(projectScope ? "project" : "user")} setting {setting} = {value ?? "(default)"}.");
+    var displayValue = setting == "httpProxy" ? value is null ? "(default)" : "(configured)" : value ?? "(default)";
+    Console.WriteLine($"Saved {(projectScope ? "project" : "user")} setting {setting} = {displayValue}.");
     return (baseUserSettings, projectSettings);
 }
 

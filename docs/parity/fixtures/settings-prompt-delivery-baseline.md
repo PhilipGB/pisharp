@@ -1,4 +1,4 @@
-# Prompt-delivery settings
+# Prompt and network settings
 
 ## Pi reference
 
@@ -16,6 +16,12 @@ At the same Pi reference, `defaultThinkingLevel` is `medium`; PiSharp uses that 
 
 Pi separates agent-level retry settings from `retry.provider.maxRetries`, whose default is zero. PiSharp now validates and merges the provider retry count independently, and maps it to the OpenAI `ClientRetryPolicy` and Anthropic `MaxRetries`. `ProviderChatClientFactoryTests` use local HTTP 5xx responses to verify one request at the default and exactly one retry when configured to one for both adapters.
 
+## User-wide HTTP proxy
+
+At the pinned Pi revision, `httpProxy` is a global setting applied as the default for `HTTP_PROXY` and `HTTPS_PROXY`; an explicit process value takes precedence. PiSharp accepts this setting only in user `settings.json`, validates it as an absolute HTTP(S) URL, and applies it before provider clients are created. `/settings` edits it at user scope and hides the configured URL in its saved-status output.
+
+`HttpProxyProcessTests.UserHttpProxyRoutesAProviderRequestThroughTheConfiguredProxy` starts the CLI with inherited proxy variables cleared, points the provider at an unreachable model hostname, and confirms its real Responses request reaches a local TCP proxy as an absolute-form HTTP request. `UserSettingsTests` cover process-variable precedence, invalid values, and rejection from project settings. This proves PiSharp-managed provider traffic uses the configured proxy; it does not establish parity for every HTTP client in the process.
+
 ## Remaining settings work
 
-The rest of the settings schema and live reload behavior remain open. Provider timeout and transport settings still need adapter-specific mapping and runtime evidence. Terminal/display, image-processing, resource/theme paths, branch summaries, telemetry, and trust/reload preferences still need source/default/precedence review and runtime evidence.
+The rest of the settings schema and live reload behavior remain open. `httpIdleTimeoutMs`, `retry.provider.timeoutMs`, and `transport` still need adapter-specific mapping and runtime evidence; Pi's default idle timeout is 300000 ms and its supported transport values include `auto`, `sse`, `websocket`, and `websocket-cached`. Terminal/display, image-processing, resource/theme paths, branch summaries, telemetry, and trust/reload preferences still need source/default/precedence review and runtime evidence.
