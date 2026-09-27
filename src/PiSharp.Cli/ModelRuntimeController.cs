@@ -33,6 +33,14 @@ internal sealed class ModelRuntimeController(
             ProviderChatClientFactory.Create(selection), policy, pricing);
     }
 
+    public string ResolveThinkingLevelForModelSwitch(ModelSelection selection, string currentLevel)
+    {
+        var settings = getSettings();
+        var preferred = settings.GetModelThinkingLevel(selection) ?? settings.DefaultThinkingLevel ?? currentLevel;
+        return ThinkingLevels.ValidateForModel(preferred, selection.Model.Reasoning,
+            selection.Model.ThinkingLevelMap);
+    }
+
     public async Task ApplySelectionAsync(ModelSelection selection, string thinkingLevel,
         PiAgent activeAgent, ConversationRun activeRun, Action<PreparedModelRuntime> updateCurrent,
         Func<PreparedModelRuntime, Task> replaceIdle)

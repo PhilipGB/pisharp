@@ -29,8 +29,11 @@ public sealed class RpcActiveModelSelectionProcessTests
         {
             var first = await listener.GetContextAsync().WaitAsync(timeout.Token);
             using (var request = await JsonDocument.ParseAsync(first.Request.InputStream, cancellationToken: timeout.Token))
-                Assert.Equal("model-one", request.RootElement.GetProperty("model").GetString());
-            await WriteSseResponseAsync(first, "model-one-tool-call", "model-one",
+            {
+                Assert.Equal("model-three", request.RootElement.GetProperty("model").GetString());
+                Assert.Equal("low", request.RootElement.GetProperty("reasoning_effort").GetString());
+            }
+            await WriteSseResponseAsync(first, "model-three-tool-call", "model-three",
                 new
                 {
                     role = "assistant",
@@ -48,13 +51,19 @@ public sealed class RpcActiveModelSelectionProcessTests
 
             var second = await listener.GetContextAsync().WaitAsync(timeout.Token);
             using (var request = await JsonDocument.ParseAsync(second.Request.InputStream, cancellationToken: timeout.Token))
-                Assert.Equal("model-three", request.RootElement.GetProperty("model").GetString());
-            await WriteSseResponseAsync(second, "model-three-final", "model-three",
+            {
+                Assert.Equal("model-one", request.RootElement.GetProperty("model").GetString());
+                Assert.Equal("high", request.RootElement.GetProperty("reasoning_effort").GetString());
+            }
+            await WriteSseResponseAsync(second, "model-one-final", "model-one",
                 new { role = "assistant", content = "switched" }, "stop");
         }, timeout.Token);
 
         try
         {
+            await File.WriteAllTextAsync(Path.Combine(agentDirectory, "settings.json"), """
+                {"defaultThinkingLevel":"low","modelThinkingLevels":{"fixture/model-one":"high","fixture/model-two":"minimal"}}
+                """);
             await File.WriteAllTextAsync(Path.Combine(agentDirectory, "models.json"), JsonSerializer.Serialize(new
             {
                 providers = new
@@ -63,7 +72,12 @@ public sealed class RpcActiveModelSelectionProcessTests
                     {
                         baseUrl = $"http://127.0.0.1:{port}/v1",
                         apiKeyEnv = "PISHARP_FIXTURE_KEY",
-                        models = new[] { new { id = "model-one" }, new { id = "model-two" }, new { id = "model-three" } }
+                        models = new[]
+                        {
+                            new { id = "model-one", reasoning = true },
+                            new { id = "model-two", reasoning = true },
+                            new { id = "model-three", reasoning = true }
+                        }
                     }
                 }
             }));
@@ -75,8 +89,8 @@ public sealed class RpcActiveModelSelectionProcessTests
                 RedirectStandardError = true
             };
             start.ArgumentList.Add(typeof(CliArguments).Assembly.Location);
-            foreach (var argument in new[] { "--mode", "rpc", "--provider", "fixture", "--model", "model-one",
-                "--tools", "bash", "--offline", "--session", sessionPath })
+            foreach (var argument in new[] { "--mode", "rpc", "--provider", "fixture", "--model", "model-three",
+                "--models", "fixture/model-three,fixture/model-one", "--tools", "bash", "--offline", "--session", sessionPath })
                 start.ArgumentList.Add(argument);
             foreach (var name in new[] { "OPENAI_API_KEY", "PISHARP_API_KEY", "PISHARP_BASE_URL", "PISHARP_MODEL",
                 "PISHARP_AUTH_PATH", "PISHARP_MODELS_PATH", "PISHARP_SETTINGS_PATH", "PISHARP_FIXTURE_KEY" })
@@ -119,21 +133,31 @@ public sealed class RpcActiveModelSelectionProcessTests
             Assert.Equal(string.Empty, await stderr.WaitAsync(timeout.Token));
             using var available = JsonDocument.Parse(Assert.Single(lines, line => IsResponseLine(line, "available-while-busy")));
             Assert.True(available.RootElement.GetProperty("success").GetBoolean());
-            Assert.Contains(available.RootElement.GetProperty("data").GetProperty("models").EnumerateArray(),
+            var availableModels = available.RootElement.GetProperty("data").GetProperty("models").EnumerateArray().ToArray();
+            Assert.Equal(3, availableModels.Length);
+            Assert.Contains(availableModels,
                 model => model.GetProperty("id").GetString() == "model-two");
             using var selected = JsonDocument.Parse(Assert.Single(lines, line => IsResponseLine(line, "select-while-busy")));
             Assert.True(selected.RootElement.GetProperty("success").GetBoolean());
             Assert.Equal("model-two", selected.RootElement.GetProperty("data").GetProperty("id").GetString());
+            var selectedThinkingEvent = lines.FindIndex(line => line.Contains(
+                "\"type\":\"thinking_level_changed\",\"level\":\"minimal\"", StringComparison.Ordinal));
+            var selectedResponse = lines.FindIndex(line => IsResponseLine(line, "select-while-busy"));
+            Assert.True(selectedThinkingEvent >= 0 && selectedThinkingEvent < selectedResponse);
             using var cycled = JsonDocument.Parse(Assert.Single(lines, line => IsResponseLine(line, "cycle-while-busy")));
             Assert.True(cycled.RootElement.GetProperty("success").GetBoolean());
-            Assert.Equal("model-three", cycled.RootElement.GetProperty("data").GetProperty("model").GetProperty("id").GetString());
-            Assert.Equal("off", cycled.RootElement.GetProperty("data").GetProperty("thinkingLevel").GetString());
-            Assert.False(cycled.RootElement.GetProperty("data").GetProperty("isScoped").GetBoolean());
+            Assert.Equal("model-one", cycled.RootElement.GetProperty("data").GetProperty("model").GetProperty("id").GetString());
+            Assert.Equal("high", cycled.RootElement.GetProperty("data").GetProperty("thinkingLevel").GetString());
+            Assert.True(cycled.RootElement.GetProperty("data").GetProperty("isScoped").GetBoolean());
+            var cycledThinkingEvent = lines.FindIndex(line => line.Contains(
+                "\"type\":\"thinking_level_changed\",\"level\":\"high\"", StringComparison.Ordinal));
+            var cycleResponse = lines.FindIndex(line => IsResponseLine(line, "cycle-while-busy"));
+            Assert.True(cycledThinkingEvent >= 0 && cycledThinkingEvent < cycleResponse);
             using var session = JsonDocument.Parse(await File.ReadAllTextAsync(sessionPath, timeout.Token));
             var entries = session.RootElement.GetProperty("Entries").EnumerateArray().ToArray();
             var modelChanges = entries.Select((entry, index) => (entry, index))
                 .Where(item => item.entry.GetProperty("Type").GetString() == "model_change").ToArray();
-            Assert.Equal(["model-two", "model-three"], modelChanges.Select(item =>
+            Assert.Equal(["model-two", "model-one"], modelChanges.Select(item =>
                 item.entry.GetProperty("Payload").GetProperty("model").GetString()));
             Assert.All(modelChanges, item => Assert.Equal("fixture", item.entry.GetProperty("Payload").GetProperty("provider").GetString()));
             var assistantResponseIndex = Array.FindIndex(entries, entry => entry.GetProperty("Type").GetString() == "chat" &&

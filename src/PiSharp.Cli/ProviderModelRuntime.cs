@@ -227,8 +227,18 @@ public sealed class ProviderModelRuntime
     {
         var all = models.ToArray();
         if (_scope.Count == 0) return all;
-        return all.Where(model => _scope.Any(pattern => ModelScopeGlob.Matches(pattern,
-            $"{model.Provider}/{model.Id}") || ModelScopeGlob.Matches(pattern, model.Id))).ToArray();
+        var scoped = new List<ModelDescriptor>();
+        var included = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var pattern in _scope)
+        {
+            foreach (var model in all)
+            {
+                if (!ModelScopeGlob.Matches(pattern, $"{model.Provider}/{model.Id}") &&
+                    !ModelScopeGlob.Matches(pattern, model.Id)) continue;
+                if (included.Add($"{model.Provider}\0{model.Id}")) scoped.Add(model);
+            }
+        }
+        return scoped;
     }
 
     private static ModelDescriptor Merge(ProviderProfile provider, ModelDescriptor discovered)

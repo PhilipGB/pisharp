@@ -9,6 +9,7 @@ internal sealed class RpcModelCommandHandler(
     Func<JsonElement?, string, bool, string?, Task> respond,
     Func<RpcEventWriter> events,
     Func<string?, CancellationToken, Task<IReadOnlyList<ModelDescriptor>>>? discoverModels,
+    Func<string?, CancellationToken, Task<IReadOnlyList<ModelDescriptor>>>? discoverCycleModels,
     Func<ModelDescriptor, CancellationToken, Task<ModelDescriptor>>? setModel,
     Func<ModelDescriptor, JsonElement> projectModel,
     Func<ConversationRun> currentRun,
@@ -66,7 +67,12 @@ internal sealed class RpcModelCommandHandler(
                         await respond(id, command, false, $"Model not found: {requestedProvider}/{requestedModelId}");
                         return true;
                     }
+                    var previousThinking = getThinkingLevel?.Invoke();
                     var selectedModel = await setModel(candidate, cancellationToken);
+                    var selectedThinking = getThinkingLevel?.Invoke();
+                    if (selectedThinking is not null &&
+                        !string.Equals(previousThinking, selectedThinking, StringComparison.Ordinal))
+                        await events().EmitThinkingLevelChangedAsync(selectedThinking, cancellationToken);
                     await writer.EmitAsync(new
                     {
                         id,
@@ -82,10 +88,10 @@ internal sealed class RpcModelCommandHandler(
                 }
                 return true;
             case "cycle_model":
-                if (discoverModels is null) { await respond(id, command, false, "Model discovery is unavailable."); return true; }
+                if (discoverCycleModels is null) { await respond(id, command, false, "Model discovery is unavailable."); return true; }
                 try
                 {
-                    var models = (await discoverModels(null, cancellationToken))
+                    var models = (await discoverCycleModels(null, cancellationToken))
                         .Where(model => model.Available && !string.IsNullOrWhiteSpace(model.Provider)).ToArray();
                     if (models.Length <= 1)
                     {
@@ -99,7 +105,12 @@ internal sealed class RpcModelCommandHandler(
                         model.Id.Equals(current.CurrentModel, StringComparison.Ordinal));
                     if (currentIndex < 0) currentIndex = 0;
                     var candidate = models[(currentIndex + 1) % models.Length];
+                    var previousThinking = getThinkingLevel?.Invoke();
                     var selectedModel = await setModel(candidate, cancellationToken);
+                    var selectedThinking = getThinkingLevel?.Invoke();
+                    if (selectedThinking is not null &&
+                        !string.Equals(previousThinking, selectedThinking, StringComparison.Ordinal))
+                        await events().EmitThinkingLevelChangedAsync(selectedThinking, cancellationToken);
                     await writer.EmitAsync(new
                     {
                         id,
@@ -109,7 +120,7 @@ internal sealed class RpcModelCommandHandler(
                         data = new
                         {
                             model = projectModel(selectedModel),
-                            thinkingLevel = getThinkingLevel?.Invoke() ?? "off",
+                            thinkingLevel = selectedThinking ?? "off",
                             isScoped = isModelScoped?.Invoke() ?? false
                         }
                     }, cancellationToken);

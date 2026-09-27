@@ -121,7 +121,8 @@ public sealed record RetrySettings(bool? Enabled = null, int? MaxRetries = null,
 public sealed record UserSettings(string? DefaultProvider = null, string? DefaultModel = null,
     string? DefaultThinkingLevel = null, IReadOnlyList<string>? DefaultTools = null, string? SessionDirectory = null,
     CompactionSettings? Compaction = null, bool? BlockImages = null, string? DefaultProjectTrust = null, bool? HideThinkingBlock = null, bool? QuietStartup = null, IReadOnlyList<string>? EnabledModels = null, string? ShellPath = null, string? ExternalEditor = null, string? Theme = null,
-    RetrySettings? Retry = null, PromptDeliveryMode? SteeringMode = null, PromptDeliveryMode? FollowUpMode = null)
+    RetrySettings? Retry = null, PromptDeliveryMode? SteeringMode = null, PromptDeliveryMode? FollowUpMode = null,
+    IReadOnlyDictionary<string, string>? ModelThinkingLevels = null)
 {
     public static async Task<UserSettings> LoadAsync(string agentDirectory, Func<string, string?> environment,
         CancellationToken cancellationToken = default)
@@ -137,6 +138,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         string? provider = null, model = null, thinking = null, sessionDirectory = null, defaultTrust = null, shellPath = null,
             externalEditor = null, theme = null;
         IReadOnlyList<string>? tools = null, enabledModels = null;
+        IReadOnlyDictionary<string, string>? modelThinkingLevels = null;
         CompactionSettings? compaction = null;
         RetrySettings? retry = null;
         PromptDeliveryMode? steeringMode = null, followUpMode = null;
@@ -199,6 +201,11 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
                 enabledModels = patterns;
                 continue;
             }
+            if (property.Name == "modelThinkingLevels")
+            {
+                modelThinkingLevels = ParseModelThinkingLevels(property.Value);
+                continue;
+            }
             if (property.Name == "defaultTools")
             {
                 if (property.Value.ValueKind != JsonValueKind.Array)
@@ -254,7 +261,8 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
             }
         }
         return new(provider, model, thinking, tools, sessionDirectory, compaction, blockImages, defaultTrust, hideThinkingBlock,
-            quietStartup, enabledModels, shellPath, externalEditor, theme, retry, steeringMode, followUpMode);
+            quietStartup, enabledModels, shellPath, externalEditor, theme, retry, steeringMode, followUpMode,
+            modelThinkingLevels);
     }
 
     public static string GetSettingsPath(string agentDirectory, Func<string, string?> environment) =>
@@ -286,7 +294,14 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
             project.Retry.BaseDelayMs ?? Retry?.BaseDelayMs,
             project.Retry.MaxAgentDelayMs ?? Retry?.MaxAgentDelayMs),
         project.SteeringMode ?? SteeringMode,
-        project.FollowUpMode ?? FollowUpMode);
+        project.FollowUpMode ?? FollowUpMode,
+        MergeModelThinkingLevels(ModelThinkingLevels, project.ModelThinkingLevels));
+
+    public string? GetModelThinkingLevel(string provider, string modelId) =>
+        ModelThinkingLevels?.GetValueOrDefault($"{provider}/{modelId}");
+
+    public string? GetModelThinkingLevel(ModelSelection selection) =>
+        GetModelThinkingLevel(selection.Provider.Id, selection.Model.Id);
 
     private static bool IsValidThemeSetting(string value)
     {
@@ -311,6 +326,34 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         }
         return merged;
     }
+
+    private static IReadOnlyDictionary<string, string>? ParseModelThinkingLevels(JsonElement value)
+    {
+        if (value.ValueKind != JsonValueKind.Object || value.EnumerateObject().Count() > 512)
+            throw new InvalidDataException("settings.json modelThinkingLevels must be an object of at most 512 entries.");
+        var levels = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var property in value.EnumerateObject())
+        {
+            var separator = property.Name.IndexOf('/');
+            if (separator <= 0 || separator == property.Name.Length - 1 || property.Name.Length > 512 ||
+                property.Value.ValueKind != JsonValueKind.String ||
+                !ThinkingLevels.IsValid(property.Value.GetString()) ||
+                !levels.TryAdd(property.Name, property.Value.GetString()!.ToLowerInvariant()))
+                throw new InvalidDataException("settings.json modelThinkingLevels contains an invalid or duplicate provider/model entry.");
+        }
+        return levels;
+    }
+
+    private static IReadOnlyDictionary<string, string>? MergeModelThinkingLevels(
+        IReadOnlyDictionary<string, string>? global, IReadOnlyDictionary<string, string>? project)
+    {
+        if (project is null) return global;
+        var merged = global is null ? new Dictionary<string, string>(StringComparer.Ordinal) :
+            new Dictionary<string, string>(global, StringComparer.Ordinal);
+        foreach (var (model, level) in project) merged[model] = level;
+        return merged;
+    }
+
     public static async Task<UserSettings> LoadProjectAsync(string workingDirectory, CancellationToken cancellationToken = default)
     {
         var settings = await LoadAsync(workingDirectory, _ => Path.Combine(workingDirectory, ".pi", "settings.json"), cancellationToken);

@@ -135,6 +135,42 @@ public sealed class UserSettingsTests
     }
 
     [Fact]
+    public async Task ModelThinkingLevelsLoadValidateAndMergeTrustedProjectOverrides()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-model-thinking-settings-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(Path.Combine(root, ".pi"));
+        try
+        {
+            var userPath = Path.Combine(root, "settings.json");
+            await File.WriteAllTextAsync(userPath, """
+                {"defaultThinkingLevel":"low","modelThinkingLevels":{"fixture/model-one":"HIGH","fixture/model/variant":"minimal"}}
+                """);
+            var user = await UserSettings.LoadAsync(root, _ => null);
+            Assert.Equal("high", user.GetModelThinkingLevel("fixture", "model-one"));
+            Assert.Equal("minimal", user.GetModelThinkingLevel("fixture", "model/variant"));
+
+            await File.WriteAllTextAsync(Path.Combine(root, ".pi", "settings.json"), """
+                {"modelThinkingLevels":{"fixture/model-one":"max","fixture/model-two":"medium"}}
+                """);
+            var effective = user.Overlay(await UserSettings.LoadProjectAsync(root));
+            Assert.Equal("max", effective.GetModelThinkingLevel("fixture", "model-one"));
+            Assert.Equal("medium", effective.GetModelThinkingLevel("fixture", "model-two"));
+            Assert.Equal("minimal", effective.GetModelThinkingLevel("fixture", "model/variant"));
+
+            foreach (var invalid in new[]
+            {
+                "null", "[]", "{\"model-one\":\"high\"}", "{\"fixture/model-one\":\"sometimes\"}",
+                "{\"fixture/model-one\":null}", "{\"fixture/model-one\":\"high\",\"fixture/model-one\":\"low\"}"
+            })
+            {
+                await File.WriteAllTextAsync(userPath, "{\"modelThinkingLevels\":" + invalid + "}");
+                await Assert.ThrowsAsync<InvalidDataException>(() => UserSettings.LoadAsync(root, _ => null));
+            }
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [Fact]
     public async Task ShellPathLoadsFromUserSettingsAndTrustedProjectOverlay()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-shell-settings-" + Guid.NewGuid().ToString("N"));

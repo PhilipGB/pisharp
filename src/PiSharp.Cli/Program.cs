@@ -78,6 +78,7 @@ var trusted = projectConfiguration.Trusted;
 var baseUserSettings = projectConfiguration.BaseUserSettings;
 var projectSettings = projectConfiguration.ProjectSettings;
 var userSettings = projectConfiguration.Settings;
+var explicitThinking = cli.Thinking;
 cli = userSettings.ApplyDefaults(cli, Environment.GetEnvironmentVariable,
     preserveSessionModel: cli.Continue || cli.SessionPath is not null || cli.ForkSource is not null || cli.ListModels);
 using var catalogHttp = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
@@ -92,6 +93,7 @@ try
         offline: cli.Offline || Environment.GetEnvironmentVariable("PI_OFFLINE") is { } offlineFlag &&
             offlineFlag.ToLowerInvariant() is "1" or "true" or "yes");
     selection = await modelRuntime.ResolveAsync(cli.Provider ?? (cli.Local ? "local" : null), cli.ModelOverride);
+    thinking = explicitThinking ?? userSettings.GetModelThinkingLevel(selection) ?? cli.Thinking ?? "off";
     thinking = ThinkingLevels.ValidateForModel(thinking, selection.Model.Reasoning, selection.Model.ThinkingLevelMap);
     connection = selection.Connection;
 }
@@ -229,6 +231,8 @@ try
         !savedProvider.Equals(selection.Provider.Id, StringComparison.OrdinalIgnoreCase) || savedThinking is not null))
     {
         selection = await modelRuntime.ResolveAsync(savedProvider, conversation.Model);
+        if (savedThinking is null && explicitThinking is null)
+            thinking = userSettings.GetModelThinkingLevel(selection) ?? cli.Thinking ?? thinking;
         connection = selection.Connection;
         thinking = ThinkingLevels.ValidateForModel(thinking, selection.Model.Reasoning, selection.Model.ThinkingLevelMap);
         chat = ProviderChatClientFactory.Create(selection);
@@ -448,12 +452,15 @@ async Task ApplyModelSelectionAsync(ModelSelection nextSelection, string nextThi
 }
 
 async Task<IReadOnlyList<ModelDescriptor>> GetRpcModelsAsync(string? providerId, CancellationToken token) =>
+    (await modelRuntime.ListModelsAsync(providerId, token, includeOutOfScope: true)).Where(model => model.Available).ToArray();
+
+async Task<IReadOnlyList<ModelDescriptor>> GetRpcCycleModelsAsync(string? providerId, CancellationToken token) =>
     (await modelRuntime.ListModelsAsync(providerId, token)).Where(model => model.Available).ToArray();
 
 async Task<ModelDescriptor> SelectRpcModelAsync(ModelDescriptor model, CancellationToken token)
 {
     var nextSelection = await modelRuntimeController.ResolveRpcModelAsync(model, token);
-    var nextThinking = model.Reasoning == true ? thinking : "off";
+    var nextThinking = modelRuntimeController.ResolveThinkingLevelForModelSwitch(nextSelection, thinking);
     await ApplyModelSelectionAsync(nextSelection, nextThinking);
     return selection.Model;
 }
@@ -501,7 +508,7 @@ async Task SelectModelAsync()
     if (terminalModelPicker is null) return;
     var nextSelection = await terminalModelPicker.ShowAsync(selection, cli.Provider);
     if (nextSelection is null) return;
-    var nextThinking = nextSelection.Model.Reasoning == true ? thinking : "off";
+    var nextThinking = modelRuntimeController.ResolveThinkingLevelForModelSwitch(nextSelection, thinking);
     await ApplyModelSelectionAsync(nextSelection, nextThinking);
     Console.WriteLine($"Model: {selection.Provider.Id}/{selection.Model.Id} · thinking {thinking}");
 }
@@ -701,7 +708,7 @@ async Task HandleEditorApplicationAction(string action)
                 if (string.IsNullOrWhiteSpace(nextModel.Provider))
                     throw new InvalidOperationException("The model catalogue did not identify the selected provider.");
                 var nextSelection = await modelRuntime.ResolveAsync(nextModel.Provider, nextModel.Id);
-                var compatibleThinking = nextSelection.Model.Reasoning == true ? thinking : "off";
+                var compatibleThinking = modelRuntimeController.ResolveThinkingLevelForModelSwitch(nextSelection, thinking);
                 await ApplyModelSelectionAsync(nextSelection, compatibleThinking);
                 Console.WriteLine($"Model: {selection.Provider.Id}/{selection.Model.Id} · thinking {thinking}");
                 break;
@@ -886,7 +893,8 @@ if (cli.Mode == "rpc")
         projectModel: model => RpcModelProjector.Project(model,
             model.Provider is { } providerId ? modelRuntime.GetProvider(providerId) : null),
         validateSwitchSession: ValidateRpcSessionSwitchAsync,
-        prepareCloneSession: PrepareRpcCloneAsync).ServeAsync();
+        prepareCloneSession: PrepareRpcCloneAsync,
+        discoverCycleModels: GetRpcCycleModelsAsync).ServeAsync();
     return;
 }
 if (cli.Mode == "json")
@@ -1142,7 +1150,7 @@ else
                             break;
                         }
                         var nextSelection = await modelRuntime.ResolveAsync(null, argument, includeOutOfScope: true);
-                        var compatibleThinking = nextSelection.Model.Reasoning == true ? thinking : "off";
+                        var compatibleThinking = modelRuntimeController.ResolveThinkingLevelForModelSwitch(nextSelection, thinking);
                         await ApplyModelSelectionAsync(nextSelection, compatibleThinking);
                         Console.WriteLine($"Model: {selection.Provider.Id}/{selection.Model.Id} · thinking {thinking}");
                         break;

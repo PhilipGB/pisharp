@@ -31,7 +31,8 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
     Func<bool, CancellationToken, Task>? persistAutoCompactionEnabled = null,
     Func<ModelDescriptor, JsonElement>? projectModel = null,
     Func<string, CancellationToken, Task>? validateSwitchSession = null,
-    Func<ConversationSession, CancellationToken, Task<string?>>? prepareCloneSession = null)
+    Func<ConversationSession, CancellationToken, Task<string?>>? prepareCloneSession = null,
+    Func<string?, CancellationToken, Task<IReadOnlyList<ModelDescriptor>>>? discoverCycleModels = null)
 {
     private readonly JsonLineWriter _writer = new(output);
     private RpcEventWriter? _events;
@@ -47,7 +48,8 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
     public async Task ServeAsync(CancellationToken cancellationToken = default)
     {
         var modelCommands = new RpcModelCommandHandler(_writer, RespondAsync, () => Events,
-            discoverModels, setModel, projectModel ?? RpcModelProjector.Project, () => CurrentRun, getThinkingLevel, isModelScoped,
+            discoverModels, discoverCycleModels ?? discoverModels, setModel,
+            projectModel ?? RpcModelProjector.Project, () => CurrentRun, getThinkingLevel, isModelScoped,
             setThinkingLevel, setThinkingLevelDuringRun, getAvailableThinkingLevels, supportsThinking);
         var retryCommands = new RpcRetryCommandHandler(RespondAsync, () => CurrentRun, persistRetryEnabled);
         var compactionCommands = new RpcCompactionCommandHandler(_writer, RespondAsync, () => CurrentRun,

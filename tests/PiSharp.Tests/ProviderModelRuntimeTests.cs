@@ -34,6 +34,27 @@ public sealed class ProviderModelRuntimeTests
     }
 
     [Fact]
+    public async Task ModelScopePreservesPatternOrderAndRemovesDuplicates()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-model-scope-order-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(root, "models.json"), """
+                {"providers":{"fixture":{"baseUrl":"https://fixture.test/v1","apiKeyEnv":"FIXTURE_KEY","models":[{"id":"model-one"},{"id":"model-two"},{"id":"model-three"}]}}}
+                """);
+            using var http = new HttpClient(new ModelHandler());
+            var runtime = await ProviderModelRuntime.CreateAsync(root, false,
+                name => name == "FIXTURE_KEY" ? "fixture-key" : null, http,
+                scope: ["fixture/model-three", "fixture/model-one", "fixture/*"], offline: true);
+
+            Assert.Equal(["model-three", "model-one", "model-two"],
+                (await runtime.ListModelsAsync("fixture")).Select(model => model.Id));
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [Fact]
     public async Task ModelSpecificEndpointAndProviderProtocolStayOnTheSelectedProvider()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-provider-model-endpoint-" + Guid.NewGuid().ToString("N"));
