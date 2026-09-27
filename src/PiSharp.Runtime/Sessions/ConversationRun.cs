@@ -618,16 +618,8 @@ public sealed class ConversationRun
             var canonicalIndex = 0;
             foreach (var message in providerHistory)
             {
-                var matchIndex = -1;
-                for (var index = canonicalIndex; index < canonicalHistory.Count; index++)
-                {
-                    if (ProviderTurnHistoryReconciler.AreEquivalent(canonicalHistory[index], message))
-                    {
-                        matchIndex = index;
-                        break;
-                    }
-                }
-                if (matchIndex >= 0) canonicalIndex = matchIndex + 1;
+                var matchEnd = providerTurnHistory.FindEquivalentRangeEnd(canonicalHistory, canonicalIndex, message);
+                if (matchEnd >= 0) canonicalIndex = matchEnd;
                 else
                 {
                     Conversation.Append(message);
@@ -653,6 +645,9 @@ public sealed class ConversationRun
                 turnToolResults.Clear();
             }
             AppendAvailableProviderHistory();
+            foreach (var result in providerTurnHistory.MissingToolResults(Conversation.ContextMessages()))
+                foreach (var normalized in ObservedChatClient.NormalizeReadImagesForHistory([result]))
+                    Conversation.Append(normalized);
             PersistPendingRuntimeChangesUnsafe();
         }
 
@@ -674,17 +669,11 @@ public sealed class ConversationRun
             else if (item.Type == "model_request_completed")
             {
                 providerResponse = item.ProviderResponse;
-                if (providerResponse is not null)
+                if (providerResponse?.Contents.OfType<FunctionCallContent>().Any() == true)
                 {
                     lock (_promptQueueGate)
                     {
-                        var previousMessageCount = Conversation.ContextMessages().Count;
-                        AppendAvailableProviderHistory();
-                        var canonicalHistory = Conversation.ContextMessages();
-                        if (!canonicalHistory.Skip(previousMessageCount).Any(message => message.Role == ChatRole.Assistant))
-                        {
-                            Conversation.Append(providerResponse);
-                        }
+                        Conversation.Append(providerResponse);
                     }
                 }
                 item = item with
@@ -847,16 +836,8 @@ public sealed class ConversationRun
                     var canonicalIndex = 0;
                     foreach (var message in appendedHistory)
                     {
-                        var matchIndex = -1;
-                        for (var index = canonicalIndex; index < canonicalTail.Count; index++)
-                        {
-                            if (ProviderTurnHistoryReconciler.AreEquivalent(canonicalTail[index], message))
-                            {
-                                matchIndex = index;
-                                break;
-                            }
-                        }
-                        if (matchIndex >= 0) canonicalIndex = matchIndex + 1;
+                        var matchEnd = providerTurnHistory.FindEquivalentRangeEnd(canonicalTail, canonicalIndex, message);
+                        if (matchEnd >= 0) canonicalIndex = matchEnd;
                         else
                         {
                             Conversation.Append(message);

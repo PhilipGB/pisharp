@@ -13,15 +13,40 @@ internal sealed class ProviderTurnHistoryReconciler
         _completedMessages.AddRange(OrderToolResults(assistantMessage, toolResults));
     }
 
+    public IReadOnlyList<ChatMessage> MissingToolResults(IReadOnlyList<ChatMessage> canonicalHistory)
+    {
+        var knownCallIds = canonicalHistory.SelectMany(message => message.Contents.OfType<FunctionResultContent>())
+            .Select(result => result.CallId).ToHashSet(StringComparer.Ordinal);
+        var missing = new List<ChatMessage>();
+        foreach (var message in _completedMessages.Where(message => message.Role == ChatRole.Tool))
+        {
+            var results = message.Contents.OfType<FunctionResultContent>().ToArray();
+            var missingResults = results.Where(result => knownCallIds.Add(result.CallId)).ToArray();
+            if (missingResults.Length == 0) continue;
+            missing.Add(missingResults.Length == results.Length ? message : new ChatMessage(ChatRole.Tool, missingResults));
+        }
+        return missing;
+    }
+
+    public int FindEquivalentRangeEnd(IReadOnlyList<ChatMessage> history, int startIndex, ChatMessage message)
+    {
+        for (var index = startIndex; index < history.Count; index++)
+        {
+            if (AreEquivalent(history[index], message)) return index + 1;
+            if (MatchesToolResultGroup(history, index, message, out var end)) return end;
+        }
+        return -1;
+    }
+
     public void RestoreMissingMessages(List<ChatMessage> providerHistory)
     {
         var reconcileIndex = 0;
         foreach (var message in _completedMessages)
         {
-            var matchIndex = providerHistory.FindIndex(reconcileIndex, candidate => MessagesEqual(candidate, message));
-            if (matchIndex >= 0)
+            var matchEnd = FindEquivalentRangeEnd(providerHistory, reconcileIndex, message);
+            if (matchEnd >= 0)
             {
-                reconcileIndex = matchIndex + 1;
+                reconcileIndex = matchEnd;
                 continue;
             }
 
@@ -52,6 +77,32 @@ internal sealed class ProviderTurnHistoryReconciler
 
         return JsonElement.DeepEquals(JsonSerializer.SerializeToElement(left, AIJsonUtilities.DefaultOptions),
             JsonSerializer.SerializeToElement(right, AIJsonUtilities.DefaultOptions));
+    }
+
+    private static bool MatchesToolResultGroup(IReadOnlyList<ChatMessage> history, int startIndex,
+        ChatMessage expected, out int endIndex)
+    {
+        endIndex = startIndex;
+        if (expected.Role != ChatRole.Tool) return false;
+        var expectedResults = expected.Contents.OfType<FunctionResultContent>().ToArray();
+        if (expectedResults.Length == 0) return false;
+        var actualResults = new List<FunctionResultContent>();
+        var lastIndex = startIndex;
+        for (var index = startIndex; index < history.Count && history[index].Role == ChatRole.Tool; index++)
+        {
+            var results = history[index].Contents.OfType<FunctionResultContent>().ToArray();
+            if (results.Length == 0) return false;
+            actualResults.AddRange(results);
+            lastIndex = index + 1;
+        }
+        foreach (var expectedResult in expectedResults)
+        {
+            var matchIndex = actualResults.FindIndex(result => result.CallId == expectedResult.CallId);
+            if (matchIndex < 0) return false;
+            actualResults.RemoveAt(matchIndex);
+        }
+        if (actualResults.Count == 0) endIndex = lastIndex;
+        return true;
     }
 
     internal static bool AreEquivalent(ChatMessage left, ChatMessage right)

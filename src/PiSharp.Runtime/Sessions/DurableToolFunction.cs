@@ -69,7 +69,7 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
             ToolArguments = callArguments ?? displayArguments,
             ToolCallId = callContent?.CallId,
             ToolResultMessage = callContent is null ? null : new ChatMessage(ChatRole.Tool,
-                [new FunctionResultContent(callContent.CallId, resultText) { Exception = failure }])
+                [new FunctionResultContent(callContent.CallId, value) { Exception = failure }])
         });
         if (failure is not null) ExceptionDispatchInfo.Capture(failure).Throw();
         return value;
