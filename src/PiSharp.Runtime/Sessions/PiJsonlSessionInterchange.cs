@@ -14,7 +14,8 @@ public static class PiJsonlSessionInterchange
     private const int MaximumEntryBytes = 16 * 1024 * 1024;
 
     /// <summary>Imports Pi v1-v3 JSONL, migrating legacy links and retaining original Pi records for export.</summary>
-    public static ConversationSession Import(string jsonl, string? workingDirectoryOverride = null)
+    public static ConversationSession Import(string jsonl, string? workingDirectoryOverride = null,
+        string? workingDirectoryFallback = null)
     {
         ArgumentNullException.ThrowIfNull(jsonl);
         if (Encoding.UTF8.GetByteCount(jsonl) > MaximumFileBytes)
@@ -25,9 +26,10 @@ public static class PiJsonlSessionInterchange
             throw new InvalidDataException("The file does not begin with a Pi session header.");
         var header = records[0];
         var sessionId = StringProperty(header, "id");
-        var cwd = workingDirectoryOverride ?? StringProperty(header, "cwd");
-        if (string.IsNullOrWhiteSpace(sessionId) || string.IsNullOrWhiteSpace(cwd))
-            throw new InvalidDataException("The Pi session header must contain a session id and working directory.");
+        var cwd = workingDirectoryOverride ?? StringProperty(header, "cwd") ?? workingDirectoryFallback;
+        if (string.IsNullOrWhiteSpace(sessionId))
+            throw new InvalidDataException("The Pi session header must contain a session id.");
+        if (string.IsNullOrWhiteSpace(cwd)) cwd = Environment.CurrentDirectory;
         cwd = Path.GetFullPath(cwd);
 
         var version = 1;

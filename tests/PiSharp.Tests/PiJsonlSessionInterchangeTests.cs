@@ -316,6 +316,21 @@ public sealed class PiJsonlSessionInterchangeTests
         Assert.Equal(parent.Id, Assert.Single(restored.Tree.Entries, entry => entry.Id == child.Id).ParentId);
     }
 
+    [Fact]
+    public void SessionHeaderWithoutWorkingDirectoryUsesTheInvocationDirectory()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-jsonl-default-cwd-" + Guid.NewGuid().ToString("N"));
+        var input = """
+            {"type":"session","version":3,"id":"session-no-cwd","timestamp":"2026-09-27T10:00:00.000Z"}
+            {"type":"message","id":"entry-user","parentId":null,"timestamp":"2026-09-27T10:00:01.000Z","message":{"role":"user","content":"hello"}}
+            """;
+
+        var imported = PiJsonlSessionInterchange.Import(input, workingDirectoryFallback: cwd);
+
+        Assert.Equal(Path.GetFullPath(cwd), imported.WorkingDirectory);
+        Assert.Equal(["hello"], imported.ActiveMessages().Select(message => message.Text));
+    }
+
     private static string V3Session(string cwd) => $$$"""
         {"type":"session","version":3,"id":"session-v3","timestamp":"2024-12-03T14:00:00.000Z","cwd":"{{{cwd}}}"}
         {"type":"message","id":"a-root","parentId":null,"timestamp":"2024-12-03T14:00:01.000Z","message":{"role":"system","content":"instructions","timestamp":1733234401000}}

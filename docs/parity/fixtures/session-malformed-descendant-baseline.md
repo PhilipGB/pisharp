@@ -19,3 +19,9 @@ The PiSharp process returns the same response. The Pi loader appends a newline a
 A second v3 fixture places child-first before its parent-later entry. Both current Pi and PiSharp get_tree place child-first under parent-later, even though physical entry order remains unchanged. PiSharp ConversationTree.FromEntries now validates and resolves forward references while keeping the source order. Parent cycles fail closed to avoid infinite traversal.
 
 PiJsonlSessionRecoveryProcessTests covers the malformed-parent active message and the forward-parent tree shape. This remains scoped evidence: duplicate IDs, cycles, invalid message fields and broader malformed-entry behavior are not claimed equivalent.
+
+## Session header without `cwd`
+
+The current Pi loader accepts a session header with a valid `id` and no `cwd`. When the CLI opens it, the session runs in the invocation directory. PiSharp now gives JSONL import an explicit working-directory fallback: a caller's project/invocation directory is used only when the header omits `cwd`, while an explicit header path remains authoritative. A unit test covers the fallback, and a Linux CLI RPC process test verifies `get_messages` returns `hello` and the imported source bytes remain unchanged. Existing startup/import tests continue to cover explicit CWD ownership and cross-project rejection.
+
+Current source: [Pi `session-manager.ts` at `2b0a123de98318c2ff8069661721ce0c3794c34e`](https://github.com/earendil-works/pi/blob/2b0a123de98318c2ff8069661721ce0c3794c34e/packages/coding-agent/src/core/session-manager.ts).

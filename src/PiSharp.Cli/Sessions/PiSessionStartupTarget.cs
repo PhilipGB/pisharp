@@ -47,7 +47,7 @@ internal sealed record PiSessionStartupTarget(string WorkingDirectory, CliArgume
 
         var content = File.ReadAllText(sessionPath);
         var session = sessionPath.EndsWith(".jsonl", StringComparison.OrdinalIgnoreCase)
-            ? PiJsonlSessionInterchange.Import(content)
+            ? PiJsonlSessionInterchange.Import(content, workingDirectoryFallback: invocationPath)
             : ConversationSession.Parse(content);
         var workingDirectory = Path.GetFullPath(session.WorkingDirectory);
         if (!Directory.Exists(workingDirectory))

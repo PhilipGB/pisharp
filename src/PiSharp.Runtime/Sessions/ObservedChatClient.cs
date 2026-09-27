@@ -39,7 +39,7 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
             catch (OperationCanceledException) { publish(new("model_request_interrupted")); throw; }
             catch (Exception error)
             {
-                publish(new("model_request_failed", Error: error.Message));
+                publish(new("model_request_failed", Error: error.Message) { ProviderException = error });
                 if (!overflowRecovered && await RecoverOverflowAsync(original, error, cancellationToken) is { } shorter)
                 {
                     requestMessages = shorter;
@@ -163,7 +163,7 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
                 yield break;
             }
 
-            publish(new("model_request_failed", Error: failure.Message));
+            publish(new("model_request_failed", Error: failure.Message) { ProviderException = failure });
             if (!producedOutput && !overflowRecovered &&
                 await RecoverOverflowAsync(original, failure, cancellationToken) is { } shorter)
             {

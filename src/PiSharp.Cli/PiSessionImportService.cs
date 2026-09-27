@@ -12,7 +12,7 @@ internal sealed class PiSessionImportService(ConversationStore store, string pro
         var file = new FileInfo(path);
         if (!file.Exists) throw new FileNotFoundException("Pi session file was not found.", path);
         if (file.Length > MaximumImportBytes) throw new InvalidDataException("Pi session exceeds the 128 MiB import limit.");
-        var imported = PiJsonlSessionInterchange.Import(File.ReadAllText(path));
+        var imported = PiJsonlSessionInterchange.Import(File.ReadAllText(path), workingDirectoryFallback: _projectDirectory);
         var comparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
         if (!Path.GetFullPath(imported.WorkingDirectory).Equals(_projectDirectory, comparison))
             throw new InvalidDataException($"Pi session working directory '{imported.WorkingDirectory}' differs from this project. Start PiSharp there before importing.");
