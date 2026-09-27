@@ -308,6 +308,147 @@ public sealed class RpcAgentLifecycleProcessTests
         }
     }
 
+    [Fact]
+    public async Task RpcProcessAbortEndsPartialTurnBeforeAgentSettlement()
+    {
+        if (!OperatingSystem.IsLinux()) return;
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-rpc-agent-abort-" + Guid.NewGuid().ToString("N"));
+        var agentDirectory = Path.Combine(root, "agent");
+        Directory.CreateDirectory(agentDirectory);
+        var listener = StartLoopbackListener(out var port);
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+        var releaseResponse = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        Process? process = null;
+        var server = Task.Run(async () =>
+        {
+            var context = await listener.GetContextAsync().WaitAsync(timeout.Token);
+            context.Response.StatusCode = (int)HttpStatusCode.OK;
+            context.Response.ContentType = "text/event-stream";
+            context.Response.SendChunked = true;
+            await using var writer = new StreamWriter(context.Response.OutputStream);
+            var partial = new
+            {
+                id = "chatcmpl-rpc-abort",
+                @object = "chat.completion.chunk",
+                created = 1,
+                model = "rpc-event-fixture",
+                choices = new[] { new { index = 0, delta = new { role = "assistant", content = "partial" }, finish_reason = (string?)null } }
+            };
+            await writer.WriteAsync($"data: {JsonSerializer.Serialize(partial)}\n\n");
+            await writer.FlushAsync(timeout.Token);
+            await releaseResponse.Task.WaitAsync(timeout.Token);
+            context.Response.Close();
+        }, timeout.Token);
+
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(agentDirectory, "models.json"), JsonSerializer.Serialize(new
+            {
+                providers = new
+                {
+                    fixture = new
+                    {
+                        baseUrl = $"http://127.0.0.1:{port}/v1",
+                        apiKeyEnv = "PISHARP_FIXTURE_KEY",
+                        models = new[] { new { id = "rpc-event-fixture", api = "openai-completions" } }
+                    }
+                }
+            }));
+            var start = new ProcessStartInfo("dotnet")
+            {
+                WorkingDirectory = root,
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+            start.ArgumentList.Add(typeof(CliArguments).Assembly.Location);
+            foreach (var argument in new[] { "--mode", "rpc", "--provider", "fixture", "--model", "rpc-event-fixture", "--offline", "--no-session" })
+                start.ArgumentList.Add(argument);
+            foreach (var name in new[] { "OPENAI_API_KEY", "PISHARP_API_KEY", "PISHARP_BASE_URL", "PISHARP_MODEL",
+                "PISHARP_AUTH_PATH", "PISHARP_MODELS_PATH", "PISHARP_SETTINGS_PATH", "PISHARP_FIXTURE_KEY" })
+                start.Environment.Remove(name);
+            start.Environment["PISHARP_AGENT_DIR"] = agentDirectory;
+            start.Environment["PISHARP_FIXTURE_KEY"] = "fixture-only-key";
+            process = Process.Start(start)!;
+            var stderr = process.StandardError.ReadToEndAsync();
+            await process.StandardInput.WriteLineAsync("{\"id\":\"abort-prompt\",\"type\":\"prompt\",\"message\":\"hold open\"}");
+            await process.StandardInput.FlushAsync(timeout.Token);
+
+            var lines = new List<string>();
+            var abortSent = false;
+            var settled = false;
+            var abortResponded = false;
+            while (!settled || !abortResponded)
+            {
+                var line = await process.StandardOutput.ReadLineAsync(timeout.Token);
+                Assert.NotNull(line);
+                lines.Add(line!);
+                using var record = JsonDocument.Parse(line!);
+                var rootElement = record.RootElement;
+                if (rootElement.GetProperty("type").GetString() == "message_update" &&
+                    rootElement.GetProperty("assistantMessageEvent").GetProperty("type").GetString() == "text_delta" &&
+                    rootElement.GetProperty("assistantMessageEvent").GetProperty("delta").GetString() == "partial" && !abortSent)
+                {
+                    abortSent = true;
+                    await process.StandardInput.WriteLineAsync("{\"id\":\"abort-request\",\"type\":\"abort\"}");
+                    await process.StandardInput.FlushAsync(timeout.Token);
+                }
+                settled |= rootElement.GetProperty("type").GetString() == "agent_settled";
+                abortResponded |= rootElement.TryGetProperty("id", out var id) && id.GetString() == "abort-request";
+            }
+            releaseResponse.TrySetResult();
+            process.StandardInput.Close();
+            await process.WaitForExitAsync(timeout.Token);
+            await server;
+
+            Assert.True(abortSent);
+            Assert.Equal(0, process.ExitCode);
+            Assert.Equal("", await stderr.WaitAsync(timeout.Token));
+            var records = lines.Select(line => JsonDocument.Parse(line)).ToArray();
+            try
+            {
+                var types = records.Select(record => record.RootElement.GetProperty("type").GetString()).ToArray();
+                var turnEndIndex = Array.IndexOf(types, "turn_end");
+                var agentEndIndex = Array.IndexOf(types, "agent_end");
+                var settledIndex = Array.IndexOf(types, "agent_settled");
+                var responseIndex = Array.FindIndex(records, record =>
+                    record.RootElement.TryGetProperty("id", out var id) && id.GetString() == "abort-request");
+                var userMessageEnd = Assert.Single(records, record => record.RootElement.GetProperty("type").GetString() == "message_end" &&
+                    record.RootElement.GetProperty("message").GetProperty("role").GetString() == "user");
+                var assistantMessageEnd = Assert.Single(records, record => record.RootElement.GetProperty("type").GetString() == "message_end" &&
+                    record.RootElement.GetProperty("message").GetProperty("role").GetString() == "assistant");
+                Assert.True(turnEndIndex >= 0 && agentEndIndex > turnEndIndex && settledIndex > agentEndIndex && responseIndex > settledIndex);
+                var finalAssistant = assistantMessageEnd.RootElement.GetProperty("message");
+                Assert.Equal("aborted", finalAssistant.GetProperty("stopReason").GetString());
+                Assert.Equal("partial", finalAssistant.GetProperty("content")[0].GetProperty("text").GetString());
+                var agentEnd = records[agentEndIndex].RootElement;
+                Assert.False(agentEnd.GetProperty("willRetry").GetBoolean());
+                var messages = agentEnd.GetProperty("messages");
+                Assert.Equal(2, messages.GetArrayLength());
+                Assert.True(JsonElement.DeepEquals(userMessageEnd.RootElement.GetProperty("message"), messages[0]));
+                Assert.True(JsonElement.DeepEquals(finalAssistant, messages[1]));
+                Assert.True(JsonElement.DeepEquals(finalAssistant, records[turnEndIndex].RootElement.GetProperty("message")));
+                Assert.True(records[responseIndex].RootElement.GetProperty("success").GetBoolean());
+            }
+            finally { foreach (var record in records) record.Dispose(); }
+        }
+        finally
+        {
+            releaseResponse.TrySetResult();
+            timeout.Cancel();
+            listener.Close();
+            try { await server; }
+            catch (Exception error) when (error is OperationCanceledException or HttpListenerException or ObjectDisposedException or IOException) { }
+            if (process is { HasExited: false })
+            {
+                process.Kill(entireProcessTree: true);
+                await process.WaitForExitAsync();
+            }
+            process?.Dispose();
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
     private static async Task WriteSseResponseAsync(HttpListenerContext context, string id, string model,
         object delta, string finishReason)
     {
