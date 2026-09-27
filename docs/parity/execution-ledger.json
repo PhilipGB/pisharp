@@ -1073,14 +1073,15 @@
       "acceptance": [
         "Implement steer using shared canonical runtime with correlated responses/event ordering",
         "Test protocol through RPC process, including failures and cancellation",
-        "Remaining: idle queuing behavior, Pi wire-compatible events/payloads and pinned RPC process differential."
+        "Remaining: active-run failure/cancellation edges and broader Pi wire compatibility differentials."
       ],
       "implementation": [
-        "src/PiSharp.Cli/Protocols/RpcMode.cs: steer queues into the canonical active run and returns Pi-shaped success data with disposition queued; failed/settling queues return a correlated error."
+        "src/PiSharp.Cli/Protocols/RpcMode.cs and PromptDeliveryController: steer queues through the shared prompt delivery owner and returns Pi-shaped success data with disposition queued; failed/settling queues return a correlated error. Idle steering is included in the first provider request snapshot."
       ],
       "evidence": [
         "RpcModeTests.RpcSteeringFollowUpAndClearQueueExposeDistinctPendingInput verifies separate steering/follow-up queue contents and that both successful responses contain data.disposition=queued; existing lifecycle tests verify delivery order and persistence.",
-        "Focused RpcModeTests pass 18/18. Exact commit 036f194c0145f4d274fe871c386352097a372fc0 passed Linux CI run 36191653440 with format verification, warnings-as-errors build and all 530 tests (0 failed, 0 skipped). Full Pi RPC compatibility and idle queue behavior remain open."
+        "RpcIdleQueueProcessTests.IdleSteerAndFollowUpAreQueuedReportedAndClearedInRpcProcess verifies idle acceptance, queue_update before correlated responses, pending counts, and clear payloads. IdleQueuedSteeringAndFollowUpReachTheSameProviderRequestsAsPi compares subsequent request messages with current Pi 2b0a123de98318c2ff8069661721ce0c3794c34e.",
+        "Exact-head source 5b00b3d3e8b636b9eee4ee61b045fbeab21d79fb passed Linux CI run 36299233867; local validation passed format, warnings-as-errors build and 635/635 tests. Full active-run/error/cancellation differential coverage remains open."
       ],
       "dependencies": []
     },
@@ -1092,14 +1093,15 @@
       "acceptance": [
         "Implement follow_up using shared canonical runtime with correlated responses/event ordering",
         "Test protocol through RPC process, including failures and cancellation",
-        "Remaining: idle queuing behavior, Pi wire-compatible events/payloads and pinned RPC process differential."
+        "Remaining: active-run failure/cancellation edges and broader Pi wire compatibility differentials."
       ],
       "implementation": [
-        "src/PiSharp.Cli/Protocols/RpcMode.cs: follow_up queues into the canonical active run and returns Pi-shaped success data with disposition queued; failed/settling queues return a correlated error."
+        "src/PiSharp.Cli/Protocols/RpcMode.cs and PromptDeliveryController: follow_up queues through the shared prompt delivery owner and returns Pi-shaped success data with disposition queued; failed/settling queues return a correlated error."
       ],
       "evidence": [
         "RpcModeTests.RpcSteeringFollowUpAndClearQueueExposeDistinctPendingInput verifies separate steering/follow-up queue contents and that both successful responses contain data.disposition=queued; existing lifecycle tests verify delivery order and persistence.",
-        "Focused RpcModeTests pass 18/18. Exact commit 036f194c0145f4d274fe871c386352097a372fc0 passed Linux CI run 36191653440 with format verification, warnings-as-errors build and all 530 tests (0 failed, 0 skipped). Full Pi RPC compatibility and idle queue behavior remain open."
+        "RpcIdleQueueProcessTests.IdleSteerAndFollowUpAreQueuedReportedAndClearedInRpcProcess verifies idle acceptance, queue_update before correlated responses, pending counts, and clear payloads. IdleQueuedSteeringAndFollowUpReachTheSameProviderRequestsAsPi compares subsequent request messages with current Pi 2b0a123de98318c2ff8069661721ce0c3794c34e.",
+        "Exact-head source 5b00b3d3e8b636b9eee4ee61b045fbeab21d79fb passed Linux CI run 36299233867; local validation passed format, warnings-as-errors build and 635/635 tests. Full active-run/error/cancellation differential coverage remains open."
       ],
       "dependencies": []
     },
@@ -1129,13 +1131,14 @@
       "acceptance": [
         "Implement clear_queue using shared canonical runtime with correlated responses/event ordering",
         "Test protocol through RPC process, including failures and cancellation",
-        "Remaining: Pi wire-compatible payloads, lifecycle/error semantics and pinned process differential."
+        "Remaining: active-run lifecycle/error semantics and broader pinned process differential."
       ],
       "implementation": [
-        "src/PiSharp.Cli/Protocols/RpcMode.cs: partial clear_queue operation (PiSharp wire format)"
+        "src/PiSharp.Cli/Protocols/RpcMode.cs and PromptDeliveryController: clear_queue returns separate steering/followUp arrays and publishes the resulting queue snapshot before its correlated response."
       ],
       "evidence": [
-        "tests/PiSharp.Tests/RpcModeTests.cs: local protocol/command fixtures (coverage varies by operation)"
+        "RpcIdleQueueProcessTests.IdleSteerAndFollowUpAreQueuedReportedAndClearedInRpcProcess verifies empty queue_update before response, separate queue arrays, and zero pending count. Its fixture matched current Pi 2b0a123de98318c2ff8069661721ce0c3794c34e.",
+        "Exact-head source 5b00b3d3e8b636b9eee4ee61b045fbeab21d79fb passed Linux CI run 36299233867; local validation passed format, warnings-as-errors build and 635/635 tests."
       ],
       "dependencies": []
     },
@@ -1838,7 +1841,9 @@
         "RpcModeTests.PromptQueuesSecondRPCIsQueuedAfterTheCurrentTurn and RpcModeTests.RpcSteeringFollowUpAndClearQueueExposeDistinctPendingInput verify queue snapshots in real RPC mode, exact fields, and absence of prompt_queued on the wire.",
         "Focused local RPC/process tests: dotnet test tests/PiSharp.Tests/PiSharp.Tests.csproj --filter FullyQualifiedName~RpcModeTests|FullyQualifiedName~RpcModelProcessTests --no-restore => 22 passed, 0 failed, 0 skipped.",
         "Linux CI run 36197929103 on exact source head 24277bf3c5aa2f046183ef76d943dd7290f8fd9d passed format verification, warnings-as-errors build with 0 warnings/errors, and all 535 tests (0 failed, 0 skipped).",
-        "Focused RPC/process tests: dotnet test tests/PiSharp.Tests/PiSharp.Tests.csproj --filter FullyQualifiedName~RpcModeTests|FullyQualifiedName~RpcModelProcessTests --no-restore => 22 passed, 0 failed, 0 skipped."
+        "Focused RPC/process tests: dotnet test tests/PiSharp.Tests/PiSharp.Tests.csproj --filter FullyQualifiedName~RpcModeTests|FullyQualifiedName~RpcModelProcessTests --no-restore => 22 passed, 0 failed, 0 skipped.",
+        "RpcIdleQueueProcessTests compares queue_update and correlated response order, clear payload, pending count and queued-message provider request contents with current Pi 2b0a123de98318c2ff8069661721ce0c3794c34e.",
+        "Exact-head source 5b00b3d3e8b636b9eee4ee61b045fbeab21d79fb passed Linux CI run 36299233867; local format, warnings-as-errors build and 635/635 tests passed."
       ],
       "dependencies": []
     },
