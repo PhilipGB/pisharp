@@ -117,7 +117,7 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
                         catch (Exception error)
                         {
                             streamError = error;
-                            failure = error;
+                            failure = toolCallCapture?.ResponseFailure ?? error;
                             while (toolCallMove is { IsCompletedSuccessfully: true })
                             {
                                 if (!toolCallMove.Result) { toolCallMove = null; break; }

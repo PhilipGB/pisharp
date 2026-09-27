@@ -62,7 +62,22 @@ internal sealed class OpenAiToolCallDeltaCapture : IProviderToolCallDeltaSource
                     foreach (var header in original.Headers)
                         response.Content.Headers.TryAddWithoutValidation(header.Key, header.Value);
                 }
-                else capture.Complete();
+                else
+                {
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        // Preserve the HTTP error body when SDK stream cleanup masks its status.
+                        var original = response.Content;
+                        var body = await original.ReadAsByteArrayAsync(cancellationToken);
+                        var replacement = new ByteArrayContent(body);
+                        foreach (var header in original.Headers)
+                            replacement.Headers.TryAddWithoutValidation(header.Key, header.Value);
+                        response.Content = replacement;
+                        original.Dispose();
+                        capture.SetResponseFailure(response.StatusCode, Encoding.UTF8.GetString(body));
+                    }
+                    capture.Complete();
+                }
             }
             return response;
         }
@@ -190,6 +205,13 @@ internal sealed class OpenAiToolCallDeltaCapture : IProviderToolCallDeltaSource
         private readonly Channel<ProviderToolCallDelta> _events = Channel.CreateUnbounded<ProviderToolCallDelta>(
             new UnboundedChannelOptions { SingleReader = true });
         private int _completed;
+
+        public Exception? ResponseFailure { get; private set; }
+
+        public void SetResponseFailure(HttpStatusCode statusCode, string body) =>
+            ResponseFailure = new HttpRequestException(
+                $"Response status code does not indicate success: {(int)statusCode} ({statusCode}). {body}",
+                null, statusCode);
 
         public void Publish(ProviderToolCallDelta delta)
         {

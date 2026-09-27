@@ -4,6 +4,7 @@ internal sealed record ProviderToolCallDelta(int Index, string? CallId, string? 
 
 internal interface IProviderToolCallDeltaCapture : IDisposable
 {
+    Exception? ResponseFailure { get; }
     IAsyncEnumerable<ProviderToolCallDelta> ReadAllAsync(CancellationToken cancellationToken);
 }
 
