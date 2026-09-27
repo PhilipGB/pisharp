@@ -16,6 +16,7 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, Func<IReadOn
         new("httpProxy", "HTTP proxy", "User-wide HTTP proxy for PiSharp-managed HTTP clients; takes effect on the next launch.", UserOnly: true),
         new("defaultThinkingLevel", "Default thinking level", "Initial thinking level unless overridden by --thinking."),
         new("theme", "Theme", "Choose a terminal theme or follow the terminal appearance."),
+        new("terminal.trueColor", "Terminal true color", "Choose 24-bit colors, 256-color output, or detect terminal support."),
         new("externalEditor", "External editor", "Command that edits the prompt file; blank uses VISUAL or EDITOR."),
         new("hideThinkingBlock", "Hide thinking", "Hide reasoning blocks in the interactive transcript."),
         new("images.blockImages", "Block images", "Replace provider-bound images with text while preserving saved history."),
@@ -128,6 +129,7 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, Func<IReadOn
         "httpProxy" => settings.HttpProxy is null ? null : "configured",
         "defaultThinkingLevel" => settings.DefaultThinkingLevel,
         "theme" => settings.Theme,
+        "terminal.trueColor" => settings.TerminalTrueColor,
         "externalEditor" => settings.ExternalEditor,
         "hideThinkingBlock" => settings.HideThinkingBlock?.ToString().ToLowerInvariant(),
         "images.blockImages" => settings.BlockImages?.ToString().ToLowerInvariant(),
@@ -213,6 +215,12 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, Func<IReadOn
             if (currentValue is not null && !currentValue.Contains('/')) available.Add(currentValue);
             values.AddRange(available.Order(StringComparer.Ordinal)
                 .Select(name => (name, (string?)name, name, $"Use the {name} color palette.")));
+        }
+        else if (setting.Id == "terminal.trueColor")
+        {
+            values.Add(("auto", "auto", "Auto detect", "Use the terminal capability detected from the environment."));
+            values.Add(("true", "true", "Enabled", "Use 24-bit true-color theme values."));
+            values.Add(("false", "false", "Disabled", "Limit theme output to the 256-color palette."));
         }
         else
         {

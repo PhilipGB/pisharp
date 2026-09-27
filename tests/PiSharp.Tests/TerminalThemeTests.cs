@@ -112,6 +112,32 @@ public sealed class TerminalThemeTests
     }
 
     [Fact]
+    public void CatalogTrueColorOverrideAppliesToBuiltInAndCustomThemes()
+    {
+        var root = TempRoot();
+        try
+        {
+            var themeDirectory = Path.Combine(root, "themes");
+            Directory.CreateDirectory(themeDirectory);
+            File.WriteAllText(Path.Combine(themeDirectory, "ocean.json"), BuiltIn("ocean").ToJsonString());
+
+            var enabled = new TerminalThemeCatalog(root, environment: key => key == "TERM" ? "dumb" : null,
+                trueColorOverride: true);
+            Assert.StartsWith("\u001b[38;2;", enabled.Resolve("dark").Fg("mdHeading"));
+            Assert.StartsWith("\u001b[38;2;", enabled.Load("ocean").Fg("mdHeading"));
+
+            var disabled = new TerminalThemeCatalog(root, environment: key => key == "COLORTERM" ? "truecolor" : null,
+                trueColorOverride: false);
+            Assert.StartsWith("\u001b[38;5;", disabled.Resolve("dark").Fg("mdHeading"));
+            Assert.StartsWith("\u001b[38;5;", disabled.Load("ocean").Fg("mdHeading"));
+
+            var automatic = new TerminalThemeCatalog(root, environment: key => key == "TERM_PROGRAM" ? "kitty" : null);
+            Assert.StartsWith("\u001b[38;2;", automatic.Resolve("dark").Fg("mdHeading"));
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
     public void EmptyTokensUseTerminalDefaultsAndExposeConcreteAppearanceColors()
     {
         var root = BuiltIn("terminal-defaults");

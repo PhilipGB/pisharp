@@ -55,6 +55,7 @@ internal static class UserSettingsWriter
                 int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var retries) && retries is >= 0 and <= 20,
             "retry.provider.timeoutMs" => value is null ||
                 int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var providerTimeout) && providerTimeout >= 0,
+            "terminal.trueColor" => value is null or "auto" or "true" or "false",
             "markdown.codeBlockIndent" => true,
             "httpIdleTimeoutMs" => value is null || string.Equals(value, "disabled", StringComparison.OrdinalIgnoreCase) ||
                 int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var idleTimeout) && idleTimeout >= 0,
@@ -90,6 +91,7 @@ internal static class UserSettingsWriter
         _ when value is null => null,
         "hideThinkingBlock" or "quietStartup" or "images.blockImages" or "compaction.enabled" or "retry.enabled" =>
             JsonValue.Create(value == "true"),
+        "terminal.trueColor" when value is "true" or "false" => JsonValue.Create(value == "true"),
         "retry.provider.maxRetries" => JsonValue.Create(int.Parse(value!, NumberStyles.None, CultureInfo.InvariantCulture)),
         "retry.provider.timeoutMs" => JsonValue.Create(int.Parse(value!, NumberStyles.None, CultureInfo.InvariantCulture)),
         "httpIdleTimeoutMs" => JsonValue.Create(string.Equals(value, "disabled", StringComparison.OrdinalIgnoreCase)

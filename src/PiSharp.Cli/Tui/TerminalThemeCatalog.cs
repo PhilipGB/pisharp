@@ -12,11 +12,16 @@ internal sealed class TerminalThemeCatalog
     private readonly Func<string, string?> _environment;
 
     public TerminalThemeCatalog(string agentDirectory, string? trustedProjectDirectory = null,
-        Func<string, string?>? environment = null)
+        Func<string, string?>? environment = null, bool? trueColorOverride = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(agentDirectory);
         _environment = environment ?? Environment.GetEnvironmentVariable;
-        _mode = TerminalColorModeExtensions.Detect(_environment);
+        _mode = trueColorOverride switch
+        {
+            true => TerminalColorMode.TrueColor,
+            false => TerminalColorMode.Ansi256,
+            null => TerminalColorModeExtensions.Detect(_environment)
+        };
         _userThemeDirectory = Path.Combine(Path.GetFullPath(agentDirectory), "themes");
         _projectThemeDirectory = trustedProjectDirectory is null
             ? null

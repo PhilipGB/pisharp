@@ -160,10 +160,17 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
     CompactionSettings? Compaction = null, bool? BlockImages = null, string? DefaultProjectTrust = null, bool? HideThinkingBlock = null, bool? QuietStartup = null, IReadOnlyList<string>? EnabledModels = null, string? ShellPath = null, string? ExternalEditor = null, string? Theme = null,
     RetrySettings? Retry = null, PromptDeliveryMode? SteeringMode = null, PromptDeliveryMode? FollowUpMode = null,
     IReadOnlyDictionary<string, string>? ModelThinkingLevels = null, string? HttpProxy = null,
-    int? HttpIdleTimeoutMs = null, string? MarkdownCodeBlockIndent = null)
+    int? HttpIdleTimeoutMs = null, string? MarkdownCodeBlockIndent = null, string? TerminalTrueColor = null)
 {
     public const int DefaultHttpIdleTimeoutMs = 300_000;
     public const string DefaultMarkdownCodeBlockIndent = "  ";
+
+    public bool? TerminalTrueColorOverride => TerminalTrueColor switch
+    {
+        "true" => true,
+        "false" => false,
+        _ => null
+    };
 
     public static async Task<UserSettings> LoadAsync(string agentDirectory, Func<string, string?> environment,
         CancellationToken cancellationToken = default)
@@ -187,6 +194,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         string? httpProxy = null;
         int? httpIdleTimeoutMs = null;
         string? markdownCodeBlockIndent = null;
+        string? terminalTrueColor = null;
         var seen = new HashSet<string>(StringComparer.Ordinal);
         foreach (var property in document.RootElement.EnumerateObject())
         {
@@ -235,6 +243,25 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
                         markdownSetting.Value.ValueKind != JsonValueKind.String)
                         throw new InvalidDataException($"settings.json markdown.{markdownSetting.Name} is unsupported, duplicate or invalid.");
                     markdownCodeBlockIndent = markdownSetting.Value.GetString();
+                }
+                continue;
+            }
+            if (property.Name == "terminal")
+            {
+                if (property.Value.ValueKind != JsonValueKind.Object)
+                    throw new InvalidDataException("settings.json terminal must be an object.");
+                var terminalKeys = new HashSet<string>(StringComparer.Ordinal);
+                foreach (var terminalSetting in property.Value.EnumerateObject())
+                {
+                    if (!terminalKeys.Add(terminalSetting.Name) || terminalSetting.Name != "trueColor")
+                        throw new InvalidDataException($"settings.json terminal.{terminalSetting.Name} is unsupported or duplicated.");
+                    terminalTrueColor = terminalSetting.Value.ValueKind switch
+                    {
+                        JsonValueKind.True => "true",
+                        JsonValueKind.False => "false",
+                        JsonValueKind.String when terminalSetting.Value.GetString() == "auto" => "auto",
+                        _ => throw new InvalidDataException("settings.json terminal.trueColor must be a boolean or 'auto'.")
+                    };
                 }
                 continue;
             }
@@ -328,7 +355,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         }
         return new(provider, model, thinking, tools, sessionDirectory, compaction, blockImages, defaultTrust, hideThinkingBlock,
             quietStartup, enabledModels, shellPath, externalEditor, theme, retry, steeringMode, followUpMode,
-            modelThinkingLevels, httpProxy, httpIdleTimeoutMs, markdownCodeBlockIndent);
+            modelThinkingLevels, httpProxy, httpIdleTimeoutMs, markdownCodeBlockIndent, terminalTrueColor);
     }
 
     public static string GetSettingsPath(string agentDirectory, Func<string, string?> environment) =>
@@ -366,7 +393,8 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         project.FollowUpMode ?? FollowUpMode,
         MergeModelThinkingLevels(ModelThinkingLevels, project.ModelThinkingLevels), HttpProxy,
         project.HttpIdleTimeoutMs ?? HttpIdleTimeoutMs,
-        project.MarkdownCodeBlockIndent ?? MarkdownCodeBlockIndent);
+        project.MarkdownCodeBlockIndent ?? MarkdownCodeBlockIndent,
+        project.TerminalTrueColor ?? TerminalTrueColor);
 
     public string? GetModelThinkingLevel(string provider, string modelId) =>
         ModelThinkingLevels?.GetValueOrDefault($"{provider}/{modelId}");
