@@ -514,8 +514,9 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
         public TaskCompletionSource Completed { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
     }
 
-    private Task RespondAsync(JsonElement? id, string command, bool success, string? error = null) =>
-        _writer.EmitAsync(new { id, type = "response", command, success, error });
+    private Task RespondAsync(JsonElement? id, string command, bool success, string? error = null) => success
+        ? _writer.EmitAsync(new { id, type = "response", command, success = true })
+        : _writer.EmitAsync(new { id, type = "response", command, success = false, error });
 
     private void PublishQueueUpdate(ConversationRun currentRun, AgentLifecycleEvent item) =>
         Events.EmitCommandLifecycleAsync(currentRun, item).GetAwaiter().GetResult();

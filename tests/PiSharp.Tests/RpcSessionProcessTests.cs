@@ -404,4 +404,80 @@ public sealed class RpcSessionProcessTests
             Directory.Delete(root, recursive: true);
         }
     }
+
+    [Fact]
+    public async Task NewSessionTreatsNullAndEmptyParentAsAbsentAndOmitsMissingCorrelation()
+    {
+        if (!OperatingSystem.IsLinux()) return;
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-rpc-new-session-optional-parent-" + Guid.NewGuid().ToString("N"));
+        var agentDirectory = Path.Combine(root, "agent");
+        var sessionDirectory = Path.Combine(root, "sessions");
+        Directory.CreateDirectory(root);
+        Directory.CreateDirectory(agentDirectory);
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+        Process? process = null;
+        try
+        {
+            var start = new ProcessStartInfo("dotnet")
+            {
+                WorkingDirectory = root,
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+            start.ArgumentList.Add(typeof(CliArguments).Assembly.Location);
+            foreach (var argument in new[] { "--mode", "rpc", "--local", "--offline", "--session-dir", sessionDirectory })
+                start.ArgumentList.Add(argument);
+            foreach (var name in new[] { "OPENAI_API_KEY", "PISHARP_API_KEY", "PISHARP_BASE_URL", "PISHARP_MODEL",
+                "PISHARP_AUTH_PATH", "PISHARP_MODELS_PATH", "PISHARP_SETTINGS_PATH", "PISHARP_SESSION_DIR" })
+                start.Environment.Remove(name);
+            start.Environment["PISHARP_AGENT_DIR"] = agentDirectory;
+            process = Process.Start(start)!;
+            var error = process.StandardError.ReadToEndAsync();
+
+            async Task<JsonDocument> SendAsync(string request)
+            {
+                await process.StandardInput.WriteLineAsync(request);
+                await process.StandardInput.FlushAsync(timeout.Token);
+                var line = await process.StandardOutput.ReadLineAsync(timeout.Token);
+                return JsonDocument.Parse(Assert.IsType<string>(line));
+            }
+
+            using var nullParent = await SendAsync("{\"type\":\"new_session\",\"parentSession\":null}");
+            Assert.Equal("new_session", nullParent.RootElement.GetProperty("command").GetString());
+            Assert.True(nullParent.RootElement.GetProperty("success").GetBoolean());
+            Assert.False(nullParent.RootElement.TryGetProperty("id", out _));
+            Assert.False(nullParent.RootElement.TryGetProperty("error", out _));
+            Assert.False(nullParent.RootElement.GetProperty("data").GetProperty("cancelled").GetBoolean());
+
+            using var nullState = await SendAsync("{\"type\":\"get_state\"}");
+            Assert.False(nullState.RootElement.TryGetProperty("id", out _));
+            Assert.False(nullState.RootElement.TryGetProperty("error", out _));
+            var nullSessionPath = nullState.RootElement.GetProperty("data").GetProperty("sessionFile").GetString()!;
+            var store = new ConversationStore(root, sessionDirectory);
+            Assert.Null((await store.LoadAsync(nullSessionPath)).ParentSessionPath);
+
+            using var emptyParent = await SendAsync("{\"id\":\"empty-parent\",\"type\":\"new_session\",\"parentSession\":\"\"}");
+            Assert.True(emptyParent.RootElement.GetProperty("success").GetBoolean());
+            Assert.False(emptyParent.RootElement.GetProperty("data").GetProperty("cancelled").GetBoolean());
+            using var emptyState = await SendAsync("{\"id\":\"empty-state\",\"type\":\"get_state\"}");
+            var emptySessionPath = emptyState.RootElement.GetProperty("data").GetProperty("sessionFile").GetString()!;
+            Assert.Null((await store.LoadAsync(emptySessionPath)).ParentSessionPath);
+
+            process.StandardInput.Close();
+            await process.WaitForExitAsync(timeout.Token);
+            Assert.Equal(0, process.ExitCode);
+            Assert.Equal("", await error.WaitAsync(timeout.Token));
+        }
+        finally
+        {
+            if (process is { HasExited: false })
+            {
+                process.Kill(entireProcessTree: true);
+                await process.WaitForExitAsync();
+            }
+            process?.Dispose();
+            Directory.Delete(root, recursive: true);
+        }
+    }
 }

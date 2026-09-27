@@ -371,6 +371,7 @@ public sealed class RpcAgentLifecycleProcessTests
             start.Environment["PISHARP_FIXTURE_KEY"] = "fixture-only-key";
             process = Process.Start(start)!;
             var stderr = process.StandardError.ReadToEndAsync();
+            await process.StandardInput.WriteLineAsync("{\"type\":\"get_state\"}");
             await process.StandardInput.WriteLineAsync("{\"id\":\"abort-prompt\",\"type\":\"prompt\",\"message\":\"hold open\"}");
             await process.StandardInput.FlushAsync(timeout.Token);
 
@@ -408,6 +409,10 @@ public sealed class RpcAgentLifecycleProcessTests
             try
             {
                 var types = records.Select(record => record.RootElement.GetProperty("type").GetString()).ToArray();
+                var uncorrelatedState = Assert.Single(records, record =>
+                    record.RootElement.TryGetProperty("command", out var command) && command.GetString() == "get_state");
+                Assert.False(uncorrelatedState.RootElement.TryGetProperty("id", out _));
+                Assert.False(uncorrelatedState.RootElement.TryGetProperty("error", out _));
                 var turnEndIndex = Array.IndexOf(types, "turn_end");
                 var agentEndIndex = Array.IndexOf(types, "agent_end");
                 var settledIndex = Array.IndexOf(types, "agent_settled");
@@ -428,7 +433,10 @@ public sealed class RpcAgentLifecycleProcessTests
                 Assert.True(JsonElement.DeepEquals(userMessageEnd.RootElement.GetProperty("message"), messages[0]));
                 Assert.True(JsonElement.DeepEquals(finalAssistant, messages[1]));
                 Assert.True(JsonElement.DeepEquals(finalAssistant, records[turnEndIndex].RootElement.GetProperty("message")));
-                Assert.True(records[responseIndex].RootElement.GetProperty("success").GetBoolean());
+                var abortResponse = records[responseIndex].RootElement;
+                Assert.True(abortResponse.GetProperty("success").GetBoolean());
+                Assert.False(abortResponse.TryGetProperty("error", out _));
+                Assert.False(abortResponse.TryGetProperty("data", out _));
             }
             finally { foreach (var record in records) record.Dispose(); }
         }

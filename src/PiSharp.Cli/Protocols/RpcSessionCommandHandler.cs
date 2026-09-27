@@ -55,7 +55,7 @@ internal sealed class RpcSessionCommandHandler(
 
             case "new_session":
                 if (root.TryGetProperty("parentSession", out var parentSession) &&
-                    parentSession.ValueKind != JsonValueKind.String)
+                    parentSession.ValueKind is not (JsonValueKind.String or JsonValueKind.Null))
                 {
                     await respond(id, command, false, "parentSession must be a string.");
                     return true;
@@ -67,8 +67,12 @@ internal sealed class RpcSessionCommandHandler(
                 }
                 try
                 {
-                    var cancelled = await newSession(parentSession.ValueKind == JsonValueKind.String
-                        ? parentSession.GetString() : null, cancellationToken);
+                    var parentSessionPath = parentSession.ValueKind == JsonValueKind.String
+                        ? parentSession.GetString()
+                        : null;
+                    var cancelled = await newSession(string.IsNullOrEmpty(parentSessionPath)
+                        ? null
+                        : parentSessionPath, cancellationToken);
                     await output.EmitAsync(new
                     {
                         id,
