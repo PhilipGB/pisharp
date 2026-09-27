@@ -6,16 +6,28 @@
 
 ## Current state
 
-- Latest pushed, exact-head CI-validated source: `49233922512294af3dd4a34381fb0d7e1e52e78d`; Linux CI run [36276515605](https://github.com/PhilipGB/pisharp/actions/runs/36276515605) passed format, warnings-as-errors build, and 604 tests (0 failed, 0 skipped).
-- Current Pi `main`: `2b0a123de98318c2ff8069661721ce0c3794c34e`; durable baseline: `b3487650f6378f1b0d1643dd254445ceb4a98035`.
-- RPC model commands and `get_state` now share a Pi-shaped model projector. It preserves configured/discovered model metadata, Pi input limits, and provider/model compatibility merges while keeping headers and credentials out of output. Linux process tests cover rich and sparse models.
-- Major gaps remain in RPC behavior/differentials, session recovery/concurrency, settings/resources/extensions, multimodal/provider/auth breadth, coding tools, and TUI behavior. No overall parity claim is made.
-- Architecture remains concentrated: `Program.cs` is 1,144 lines and `RpcMode.cs` is 517 lines. The next model/runtime work should move state transitions into a cohesive controller.
+- Latest pushed, exact-head CI-validated source: `1388202638e287cc9099e410eff64487cda7cacc`; Linux CI run [36286810290](https://github.com/PhilipGB/pisharp/actions/runs/36286810290) passed format, warnings-as-errors build, and 613 tests (0 failed, 0 skipped).
+- The earlier `35be9dc8f8614dcdc66ceaab3136c8ad4301f406` run [36282903215](https://github.com/PhilipGB/pisharp/actions/runs/36282903215) failed 4/607 tests after format/build passed. Provider history reconciliation in `b71ed3119b3827a525515aa50d952f7b99d5a4f1` fixed the regressions; exact-head run [36286403870](https://github.com/PhilipGB/pisharp/actions/runs/36286403870) passed 612/612. `138820263` adds process-level abort lifecycle coverage and passed 613/613.
+- Current Pi `main` was refreshed on 2026-09-27 and remains `2b0a123de98318c2ff8069661721ce0c3794c34e`; durable parity baseline: `b3487650f6378f1b0d1643dd254445ceb4a98035`.
+- RPC model selection now uses the extracted `ModelRuntimeController`; model listing and `set_model` work during a blocked tool turn, and a process fixture verifies the next provider request uses the selected model. `cycle_model` shares the transition path; busy-cycle-specific process coverage, per-model thinking application and current-Pi process differentials remain open.
+- RPC abort process coverage verifies partial assistant output, `turn_end < agent_end < agent_settled < abort response`, `willRetry: false`, and consistent snapshots. Current Pi source and tests were inspected; no Pi process differential has been run.
+- Working-tree slice in progress: match Pi `--fork <path>` across project boundaries. Current Pi copies the full source entry tree into the invocation project and writes the target `cwd`; PiSharp now loads native or Pi JSONL sources, preserves every branch and the selected head, and rehomes the fork. Focused tree and cross-project fork tests pass 10/10. Full local validation passed format verification, warnings-as-errors build with 0 warnings/errors, and 616/616 tests (0 failed, 0 skipped); exact-head CI is pending.
+- No overall parity claim. Major gaps remain in RPC differentials, session recovery/concurrency, settings/resources/extensions, multimodal/provider/auth breadth, coding tools and TUI behavior.
+- Architecture remains concentrated: `Program.cs` is about 1,160 lines, `ConversationRun.cs` about 944 lines, and `RpcMode.cs` 517 lines. Extract cohesive responsibilities when the next capability touches them.
 
 ## Current priority
 
-RPC model selection behavior and lifecycle semantics, then session interoperability; continue extracting application behavior alongside each capability.
+Finish cross-project `--fork` compatibility, validate and record it, then continue session/RPC interoperability and recovery against current Pi. Do not pause at the documentation or CI checkpoint.
 
 ## Exact next action
 
-Compare current Pi's active `set_model`/`cycle_model` behavior with PiSharp, extract the shared model/runtime transition from `Program.cs`, and add deterministic coverage for switching during an active tool turn and using the selected model on the next provider request. Include `get_available_models` while busy in the same RPC compatibility pass.
+Complete full format/build/test validation for the current cross-project fork slice; commit, push and verify exact-head CI. Then compare active RPC session replacement (`switch_session`, `fork`, `clone`) cancellation, response/event order and failure behavior against current Pi `2b0a123de98318c2ff8069661721ce0c3794c34e`, adding process coverage for the highest-value remaining difference. Continue into session recovery/concurrency and later capability groups.
+
+## Architecture and residuals to preserve
+
+- Keep `Program.cs` a composition root; extract behavior at the boundary required by the next capability.
+- `ConversationRun.cs` remains the largest concentration risk; prefer cohesive queue, retry, compaction or provider-turn boundaries over mechanical splitting.
+- `PiJsonlSessionInterchange.cs` remains large; separate import/migration, mapping, export or I/O only when session interoperability requires it.
+- Keep RPC capability tests in focused classes rather than growing `RpcModeTests.cs` further.
+- Preserve tracked TUI gaps: word-aware wrapping, shared ANSI-aware visual-row layout, and nested Markdown style restoration. Current Pi system-theme/OSC palette updates are tracked for the theme/final-audit pass.
+- Before final parity, reread the feature matrix and ledger, audit current Pi `main`, collect required behavioral/differential evidence, and confirm exact-head CI.

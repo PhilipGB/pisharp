@@ -74,6 +74,11 @@ public sealed class ConversationTree
         lock (_gate) return new ConversationTree(ActivePath(), _headId);
     }
 
+    public ConversationTree Clone()
+    {
+        lock (_gate) return new ConversationTree(_entries, _headId);
+    }
+
     /// <summary>Copy one ancestor path through an entry (or an empty path for null).</summary>
     public ConversationTree ClonePath(string? headId)
     {

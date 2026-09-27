@@ -11,8 +11,7 @@ internal sealed record PiSessionStartupTarget(string WorkingDirectory, CliArgume
         var invocationPath = Path.GetFullPath(invocationDirectory);
         var sessionPath = ResolveSessionReference(arguments.SessionPath, invocationPath);
         var forkSource = ResolveSessionReference(arguments.ForkSource, invocationPath);
-        var sourcePath = sessionPath ?? forkSource;
-        var workingDirectory = sourcePath is null ? invocationPath : ReadWorkingDirectory(sourcePath, invocationPath);
+        var workingDirectory = sessionPath is null ? invocationPath : ReadWorkingDirectory(sessionPath, invocationPath);
 
         return new(workingDirectory, arguments with
         {

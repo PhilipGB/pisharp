@@ -195,9 +195,7 @@ try
             cli.ForkSource.EndsWith(".jsonl", StringComparison.OrdinalIgnoreCase)
             ? Path.GetFullPath(cli.ForkSource)
             : SessionCatalog.Resolve(await SessionCatalog.ListAsync(store), cli.ForkSource).Path;
-        conversation = sourcePath.EndsWith(".jsonl", StringComparison.OrdinalIgnoreCase)
-            ? projectRuntime.SessionImport.ImportFile(sourcePath).Fork(sourcePath)
-            : (await store.LoadAsync(sourcePath)).Fork(sourcePath);
+        conversation = await SessionForkFactory.CreateAsync(sourcePath, currentDirectory);
     }
     else if (sessionPath is not null && sessionPath.EndsWith(".jsonl", StringComparison.OrdinalIgnoreCase))
     {

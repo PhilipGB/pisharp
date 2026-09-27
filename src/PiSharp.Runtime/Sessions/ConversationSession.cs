@@ -450,6 +450,10 @@ public sealed class ConversationSession
         new(Guid.NewGuid().ToString("N"), WorkingDirectory, Model, Endpoint, Provider, Name, Tree.CloneActivePath(),
             parentSessionPath: parentSessionPath);
 
+    public ConversationSession ForkInto(string workingDirectory, string? parentSessionPath = null) =>
+        new(Guid.NewGuid().ToString("N"), Path.GetFullPath(workingDirectory), Model, Endpoint, Provider, Name,
+            Tree.Clone(), parentSessionPath: parentSessionPath);
+
     public string ToJson()
     {
         lock (_metadataGate)

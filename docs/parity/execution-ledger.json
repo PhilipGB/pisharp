@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "plan_received": false,
-  "source_note": "Original plan was announced after a heading but not appended. Conservative provisional inventory from pinned upstream feature matrix and detailed inventory; never treat as complete until reconciled with the missing plan and audited upstream. Durable parity baseline is b3487650f6378f1b0d1643dd254445ceb4a98035. Current Pi main was refreshed 2026-09-26 to 2b0a123de98318c2ff8069661721ce0c3794c34e; scoped queue-mode, RPC state and recovery-setting behavior was inspected against that head. Current deltas include TypeScript 7/Node type stripping, an overlay-close cursor-restoration fix, RPC listener snapshot dispatch, full-file read null-range rendering, and per-ref temporary extension cache paths; these are classified in docs/continuation.md. Current Pi SettingsSelectorComponent, SettingsList, and their tests were inspected. The reviewed TUI uses pi-tui 0.87.1 and Marked 18.0.11; Pi wraps ANSI-aware grapheme cells and breaks overlong tokens. Its pinned alt-screen implementation and tests cover SGR button-motion tracking, visible text drag selection/copy, wheel dispatch, grapheme snapping, and mouse-mode cleanup. Further provider, session, protocol, image, theme-CLI/search-path, autocomplete and extension deltas remain unaudited. Pi Packages remain excluded unless needed for a core capability.",
+  "plan_received": true,
+  "source_note": "The full continuation plan was recovered from the user on 2026-09-27. Conservative inventory from pinned upstream feature matrix and detailed inventory; never treat as complete until all required scope is reconciled and audited against upstream. Durable parity baseline is b3487650f6378f1b0d1643dd254445ceb4a98035. Current Pi main was verified 2026-09-27 at 2b0a123de98318c2ff8069661721ce0c3794c34e; scoped queue-mode, RPC state and recovery-setting behavior was inspected against that head. Current deltas include TypeScript 7/Node type stripping, an overlay-close cursor-restoration fix, RPC listener snapshot dispatch, full-file read null-range rendering, and per-ref temporary extension cache paths; these are classified in docs/continuation.md. Current Pi SettingsSelectorComponent, SettingsList, and their tests were inspected. The reviewed TUI uses pi-tui 0.87.1 and Marked 18.0.11; Pi wraps ANSI-aware grapheme cells and breaks overlong tokens. Its pinned alt-screen implementation and tests cover SGR button-motion tracking, visible text drag selection/copy, wheel dispatch, grapheme snapping, and mouse-mode cleanup. Further provider, session, protocol, image, theme-CLI/search-path, autocomplete and extension deltas remain unaudited. Pi Packages remain excluded unless needed for a core capability.",
   "baseline": "earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035",
   "required_ids": [
     "feature-agent-multi-turn-and-streaming",
@@ -608,13 +608,15 @@
       ],
       "implementation": [
         "src/PiSharp.Runtime/Sessions/PiJsonlSessionInterchange.cs: bounded Pi v1-v3 import and v3 export; migrates v1 links/compaction indexes and v1/v2 hookMessage roles; retains original records and maps messages, tool calls/results, images, Bash, compaction, context edits, model changes and session metadata.",
-        "src/PiSharp.Cli/PiSessionImportService.cs: bounds Pi JSONL file reads, validates the stored project CWD, and chooses collision-free destination paths. Program routes startup --session, /fork and confirmed /import through the service; cross-project runtime switching now rebuilds runtime/resources/session storage from the Pi header CWD; broader session-manager parity remains open."
+        "src/PiSharp.Cli/PiSessionImportService.cs validates and imports Pi JSONL into the project selected by startup --session, confirmed /import, or RPC switch_session. SessionForkFactory independently reads native or Pi JSONL fork sources and ConversationSession.ForkInto writes the full copied tree and selected head with the invocation project CWD; source files are not modified."
       ],
       "evidence": [
         "PiJsonlSessionInterchangeTests cover v1/v2 migrations, v3 branch/context-edit/compaction round trips, raw record retention, active-head restoration, malformed headers, private no-overwrite export and cancelled-write cleanup. TerminalPtyTests cover import confirmation/cancel/retry, startup --session, transcript restoration and JSONL export.",
         "Implementation commit 2a10535814e102d17ba4aaefc8bf3512a0a87432 passed focused session/PTY tests, format verification, warnings-as-errors build and all 526 tests; exact-head Linux CI run 36188382176 passed format, build and all 526 tests (0 failed, 0 skipped). Current Pi d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 v1-v3 migration and import sources/tests were inspected; broad session-manager parity is not verified.",
         "PiSessionImportServiceTests cover same-project validation, missing files, no-session mode and collision-free destinations. Commit 7ae23732cb176d76709cc9fb521b2f12170b5450 passed exact-head Linux CI run 36205110022 with format, warnings-as-errors build and all 541 tests. At that earlier service-extraction checkpoint, imported-CWD runtime switching was still open; it was implemented later in 0fd7e0da6.",
-        "Exact integrated source head 2f0250ee91a500cdb6b08dce2e940b849089ba26 passed Linux CI run 36217090057: format verification, warnings-as-errors build with 0 warnings/errors, and 574 tests (0 failed, 0 skipped). Cross-project switching is covered by RpcSessionProcessTests.SwitchSessionRebuildsTheRuntimeForTheRecordedProjectDirectory and TerminalPtyTests.PiJsonlImportConfirmsAndSwitchesTheActiveSessionThroughLinuxPty."
+        "Exact integrated source head 2f0250ee91a500cdb6b08dce2e940b849089ba26 passed Linux CI run 36217090057: format verification, warnings-as-errors build with 0 warnings/errors, and 574 tests (0 failed, 0 skipped). Cross-project switching is covered by RpcSessionProcessTests.SwitchSessionRebuildsTheRuntimeForTheRecordedProjectDirectory and TerminalPtyTests.PiJsonlImportConfirmsAndSwitchesTheActiveSessionThroughLinuxPty.",
+        "PiSessionStartupTargetTests.RpcStartupForksForeignProjectSessionIntoTheInvocationProject exercises native and Pi JSONL foreign-project sources through the real CLI RPC process and verifies target cwd, parent path, transcript preservation and source immutability. Focused `ConversationTreeTests` and `PiSessionStartupTargetTests` pass 10/10. Full local format verification passed, warnings-as-errors build had 0 warnings/errors, and all 616 tests passed (0 failed, 0 skipped). Exact-head CI is pending for this working-tree change.",
+        "Current Pi main 2b0a123de98318c2ff8069661721ce0c3794c34e SessionManager.forkFrom documents source-to-target-project copying and writes cwd from resolvedTargetCwd; main.ts supplies the invocation cwd."
       ],
       "dependencies": []
     },
@@ -632,12 +634,15 @@
         "src/PiSharp.Cli/Tui/TerminalForkPicker.cs: adapts the shared searchable list to active-branch forkable user messages, preselects the newest message, and bounds preview/search text.",
         "src/PiSharp.Cli/Program.cs: no-argument /fork and configurable app.session.fork route selected messages through the same fork path as direct /fork <id>; the selected prompt remains editable.",
         "src/PiSharp.Runtime/Sessions/PiJsonlSessionInterchange.cs: exports all PiSharp branches parent-first and adds a session_info anchor when required to restore the selected head in Pi.",
-        "src/PiSharp.Cli/Program.cs: confirmed /import <path.jsonl> replaces the active session after validation; /export-jsonl [path] writes a create-new file with user-only Unix permissions."
+        "src/PiSharp.Cli/Program.cs: confirmed /import <path.jsonl> replaces the active session after validation; /export-jsonl [path] writes a create-new file with user-only Unix permissions.",
+        "SessionForkFactory supports --fork from a native session or Pi JSONL path belonging to another project, copying the full entry tree and selected head into the invocation project and recording the source path as parent."
       ],
       "evidence": [
         "TerminalPtyTests.ForkPickerSearchesUserMessagesAndSeedsSelectedPromptThroughLinuxPty verifies searchable active-branch selection, selected prompt prefill, source preservation and the fork prefix; TerminalPtyTests.ForkFromEarlierUserTurnPreservesSourceAndSeedsEditableDraft verifies direct-ID selection; EditorKeymapTests.SessionSelectorShortcutCanBeConfiguredAndPreservesTheEditorDraft covers configurable app.session.fork dispatch and draft retention. Focused tests pass 3/3. Format verification passes, warnings-as-errors build reports 0 warnings/errors, and dotnet test PiSharp.slnx passes 424/424 with 0 skipped in the validated local working tree; exact-head commit ba25c8adbc861e0dece4372bf4c7f97424014fe1 passed Linux CI run 36136775710.",
         "PiJsonlSessionInterchangeTests.CurrentPiV3ImportPreservesBranchesContextEditsCompactionAndOriginalRecords round-trips inactive branches and the selected head. TerminalPtyTests.PiJsonlImportConfirmsAndSwitchesTheActiveSessionThroughLinuxPty covers confirmation and session switching; TerminalPtyTests covers export and visible imported transcript. Exact commit 2a10535814e102d17ba4aaefc8bf3512a0a87432 passed Linux CI run 36188382176 with all 526 tests; cross-project CWD rebinding is implemented; broader Pi session lifecycle/differentials remain open.",
-        "Exact integrated source head 2f0250ee91a500cdb6b08dce2e940b849089ba26 passed Linux CI run 36217090057: format verification, warnings-as-errors build with 0 warnings/errors, and 574 tests (0 failed, 0 skipped). Cross-project switching is covered by RpcSessionProcessTests.SwitchSessionRebuildsTheRuntimeForTheRecordedProjectDirectory and TerminalPtyTests.PiJsonlImportConfirmsAndSwitchesTheActiveSessionThroughLinuxPty."
+        "Exact integrated source head 2f0250ee91a500cdb6b08dce2e940b849089ba26 passed Linux CI run 36217090057: format verification, warnings-as-errors build with 0 warnings/errors, and 574 tests (0 failed, 0 skipped). Cross-project switching is covered by RpcSessionProcessTests.SwitchSessionRebuildsTheRuntimeForTheRecordedProjectDirectory and TerminalPtyTests.PiJsonlImportConfirmsAndSwitchesTheActiveSessionThroughLinuxPty.",
+        "PiSessionStartupTargetTests.RpcStartupForksForeignProjectSessionIntoTheInvocationProject covers both source formats through the CLI RPC process. Focused `ConversationTreeTests` and `PiSessionStartupTargetTests` pass 10/10. Full local format verification passed, warnings-as-errors build had 0 warnings/errors, and all 616 tests passed (0 failed, 0 skipped). Exact-head CI is pending for this working-tree change.",
+        "Current Pi main 2b0a123de98318c2ff8069661721ce0c3794c34e SessionManager.forkFrom writes the invocation/target CWD and parent source path in the child header."
       ],
       "dependencies": []
     },
@@ -963,13 +968,14 @@
         "Test parsed flags, conflict/recovery and process behaviour"
       ],
       "implementation": [
-        "Partial: src/PiSharp.Cli/CliArguments.cs and Program.cs implement --continue, --session, --session-dir, --no-session, --fork and --name, with project-local session catalog lookup. -r resume picker and --session-id are absent.",
+        "Partial: src/PiSharp.Cli/CliArguments.cs and Program.cs implement --continue, --session, --session-dir, --no-session, --fork and --name. Session ID lookup remains project-local; --fork also accepts a foreign-project file path.",
         "Startup --session also accepts Pi .jsonl files and migrates v1-v3 through PiJsonlSessionInterchange. Startup selection, confirmed /import, and RPC switch_session rebuild the project runtime, trust/resources and session store from the stored CWD; -r resume picker and --session-id remain absent."
       ],
       "evidence": [
         "tests/PiSharp.Tests/{CliProcessTests,TerminalPtyTests,ProviderModelRuntimeTests}.cs include process startup selection, fork and model conflict fixtures; docs/parity/detailed-inventory.md records the remaining interoperability and picker gaps. This does not prove Pi session equivalence.",
         "SessionPathArgumentTests and TerminalPtyTests cover .jsonl path arguments and startup import; exact implementation commit 2a10535814e102d17ba4aaefc8bf3512a0a87432 passed Linux CI run 36188382176 with 526 tests and no skips.",
-        "Exact integrated source head 2f0250ee91a500cdb6b08dce2e940b849089ba26 passed Linux CI run 36217090057: format verification, warnings-as-errors build with 0 warnings/errors, and 574 tests (0 failed, 0 skipped). Cross-project switching is covered by RpcSessionProcessTests.SwitchSessionRebuildsTheRuntimeForTheRecordedProjectDirectory and TerminalPtyTests.PiJsonlImportConfirmsAndSwitchesTheActiveSessionThroughLinuxPty."
+        "Exact integrated source head 2f0250ee91a500cdb6b08dce2e940b849089ba26 passed Linux CI run 36217090057: format verification, warnings-as-errors build with 0 warnings/errors, and 574 tests (0 failed, 0 skipped). Cross-project switching is covered by RpcSessionProcessTests.SwitchSessionRebuildsTheRuntimeForTheRecordedProjectDirectory and TerminalPtyTests.PiJsonlImportConfirmsAndSwitchesTheActiveSessionThroughLinuxPty.",
+        "PiSessionStartupTargetTests.RpcStartupForksForeignProjectSessionIntoTheInvocationProject covers native and Pi JSONL path sources in the real CLI RPC process. Focused `ConversationTreeTests` and `PiSessionStartupTargetTests` pass 10/10. Full local format verification passed, warnings-as-errors build had 0 warnings/errors, and all 616 tests passed (0 failed, 0 skipped). Exact-head CI is pending for the current change."
       ],
       "dependencies": []
     },
@@ -1207,10 +1213,10 @@
       "acceptance": [
         "Implement set_model using the shared canonical model/runtime operation with correlated responses and Pi Model data",
         "Test runtime replacement, exact-ID rejection and CLI process response fields",
-        "Remaining: active-run switching, per-model thinking behavior and pinned Pi process differential."
+        "Remaining: per-model thinking-level mapping, selection failure/retry details, and a pinned current-Pi process differential."
       ],
       "implementation": [
-        "RpcModelCommandHandler validates an exact available provider/model and returns the shared Pi-shaped projected Model object; it currently rejects set_model while busy, unlike current Pi.",
+        "RpcModelCommandHandler delegates model/runtime transitions to ModelRuntimeController; set_model is accepted during a run and the new selection applies to the following provider request.",
         "Program.cs resolves provider credentials and calls the shared runtime replacement operation, recording the selected model in the canonical session.",
         "RpcModelProjector is shared with get_available_models, cycle_model and get_state."
       ],
@@ -1222,7 +1228,10 @@
         "Exact commit 2683df75dbf4cac7e4b004e8d9546fbd3338093b passed Linux CI run 36193142003: format, warnings-as-errors build, and test suite.",
         "Current Pi main 2b0a123de98318c2ff8069661721ce0c3794c34e rpc-mode.ts/rpc-types.ts return complete Model values for set_model/cycle_model/get_available_models; model-config.ts/provider-composer.ts and model-registry.test.ts establish the exposed fields and provider/model compatibility merge rules.",
         "RpcModelProcessTests.ModelCommandsProjectPiModelMetadataAndApplySparseDefaultsInTheCliProcess exercises get_available_models, set_model, cycle_model and get_state in the CLI process. Rich/sparse output covers lower-camel Pi fields, model metadata, inputLimits, cost tiers, provider/model nested compat merging, unavailable-model rejection, and omission of secret headers and internal catalog fields.",
-        "Exact source head 49233922512294af3dd4a34381fb0d7e1e52e78d passed Linux CI run 36276515605: format passed, warnings-as-errors build passed with 0 warnings/errors, and 604 tests passed (0 failed, 0 skipped)."
+        "Exact source head 49233922512294af3dd4a34381fb0d7e1e52e78d passed Linux CI run 36276515605: format passed, warnings-as-errors build passed with 0 warnings/errors, and 604 tests passed (0 failed, 0 skipped).",
+        "RpcActiveModelSelectionProcessTests.RpcModelSelectionDuringBlockedToolTurnChangesTheNextProviderRequest verifies get_available_models and set_model while a tool is blocked, then confirms the next provider request uses model-two; this is PiSharp CLI process evidence, not a Pi process differential.",
+        "Commit 35be9dc8 allowed model changes during active RPC runs but its exact-head CI failed 4/607 tests; provider-history reconciliation in b71ed3119 fixed those regressions, and exact-head runs 36286403870 and 36286810290 passed 612/612 and 613/613 respectively.",
+        "Exact source head 1388202638e287cc9099e410eff64487cda7cacc passed Linux CI run 36286810290: format passed, warnings-as-errors build had 0 warnings/errors, and all 613 tests passed (0 failed, 0 skipped)."
       ],
       "dependencies": []
     },
@@ -1234,10 +1243,10 @@
       "acceptance": [
         "Implement cycle_model using shared catalog/runtime and current Pi result fields",
         "Test wraparound, null for at most one model, process selection and correlated responses",
-        "Remaining: active-run switching, scoped ordering/per-model thinking behavior and pinned Pi process differential."
+        "Remaining: a busy-cycle-specific process fixture, scoped ordering/per-model thinking behavior, and a pinned current-Pi process differential."
       ],
       "implementation": [
-        "RpcModelCommandHandler cycles the available provider/model sequence and returns null for a single choice; it currently rejects cycle_model while busy, unlike current Pi.",
+        "RpcModelCommandHandler delegates to ModelRuntimeController and can cycle during an active run; no busy-cycle-specific process fixture has been added yet.",
         "Program.cs resolves the next provider credentials and calls the shared runtime replacement operation, recording the selected model in the canonical session.",
         "RpcModelProjector returns the full Pi Model inside {model,thinkingLevel,isScoped}."
       ],
@@ -1248,7 +1257,9 @@
         "Exact commit 94805a8206306ae5aab166cbb523c8af786489b3 passed Linux CI run 36194265892: format, warnings-as-errors build, and test suite.",
         "Current Pi main 2b0a123de98318c2ff8069661721ce0c3794c34e rpc-mode.ts/rpc-types.ts return complete Model values for set_model/cycle_model/get_available_models; model-config.ts/provider-composer.ts and model-registry.test.ts establish the exposed fields and provider/model compatibility merge rules.",
         "RpcModelProcessTests.ModelCommandsProjectPiModelMetadataAndApplySparseDefaultsInTheCliProcess exercises get_available_models, set_model, cycle_model and get_state in the CLI process. Rich/sparse output covers lower-camel Pi fields, model metadata, inputLimits, cost tiers, provider/model nested compat merging, unavailable-model rejection, and omission of secret headers and internal catalog fields.",
-        "Exact source head 49233922512294af3dd4a34381fb0d7e1e52e78d passed Linux CI run 36276515605: format passed, warnings-as-errors build passed with 0 warnings/errors, and 604 tests passed (0 failed, 0 skipped)."
+        "Exact source head 49233922512294af3dd4a34381fb0d7e1e52e78d passed Linux CI run 36276515605: format passed, warnings-as-errors build passed with 0 warnings/errors, and 604 tests passed (0 failed, 0 skipped).",
+        "RpcActiveModelSelectionProcessTests.RpcModelSelectionDuringBlockedToolTurnChangesTheNextProviderRequest verifies get_available_models and set_model while a tool is blocked, then confirms the next provider request uses model-two; this is PiSharp CLI process evidence, not a Pi process differential.",
+        "Exact source head 1388202638e287cc9099e410eff64487cda7cacc passed Linux CI run 36286810290: format passed, warnings-as-errors build had 0 warnings/errors, and all 613 tests passed (0 failed, 0 skipped)."
       ],
       "dependencies": []
     },
@@ -1260,17 +1271,19 @@
       "acceptance": [
         "Implement get_available_models using the shared model catalog with correlated responses and Pi model fields",
         "Test rich/sparse model output and unavailable-model filtering through the CLI RPC process",
-        "Remaining: busy-state behavior, catalog cancellation/failure differentials, and a pinned Pi process differential."
+        "Remaining: catalog cancellation/failure behavior and a pinned current-Pi process differential."
       ],
       "implementation": [
-        "RpcModelCommandHandler projects the available catalog through RpcModelProjector and filters unavailable models at the shared runtime boundary; it currently rejects the command while busy, unlike current Pi."
+        "RpcModelCommandHandler projects the available catalog through RpcModelProjector without rejecting the command during an active run."
       ],
       "evidence": [
         "tests/PiSharp.Tests/RpcModeTests.cs: local protocol/command fixtures (coverage varies by operation)",
         "Current Pi main 2b0a123de98318c2ff8069661721ce0c3794c34e rpc-mode.ts returns the available snapshot without an active-run restriction.",
         "Current Pi main 2b0a123de98318c2ff8069661721ce0c3794c34e rpc-mode.ts/rpc-types.ts return complete Model values for set_model/cycle_model/get_available_models; model-config.ts/provider-composer.ts and model-registry.test.ts establish the exposed fields and provider/model compatibility merge rules.",
         "RpcModelProcessTests.ModelCommandsProjectPiModelMetadataAndApplySparseDefaultsInTheCliProcess exercises get_available_models, set_model, cycle_model and get_state in the CLI process. Rich/sparse output covers lower-camel Pi fields, model metadata, inputLimits, cost tiers, provider/model nested compat merging, unavailable-model rejection, and omission of secret headers and internal catalog fields.",
-        "Exact source head 49233922512294af3dd4a34381fb0d7e1e52e78d passed Linux CI run 36276515605: format passed, warnings-as-errors build passed with 0 warnings/errors, and 604 tests passed (0 failed, 0 skipped)."
+        "Exact source head 49233922512294af3dd4a34381fb0d7e1e52e78d passed Linux CI run 36276515605: format passed, warnings-as-errors build passed with 0 warnings/errors, and 604 tests passed (0 failed, 0 skipped).",
+        "RpcActiveModelSelectionProcessTests.RpcModelSelectionDuringBlockedToolTurnChangesTheNextProviderRequest verifies get_available_models and set_model while a tool is blocked, then confirms the next provider request uses model-two; this is PiSharp CLI process evidence, not a Pi process differential.",
+        "Exact source head 1388202638e287cc9099e410eff64487cda7cacc passed Linux CI run 36286810290: format passed, warnings-as-errors build had 0 warnings/errors, and all 613 tests passed (0 failed, 0 skipped)."
       ],
       "dependencies": []
     },
@@ -1726,10 +1739,12 @@
         "agent_end.messages uses the projected run message snapshots and retains willRetry; agent_settled remains payload-free and follows retry/queue settlement."
       ],
       "evidence": [
-        "Current Pi main d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 emits one agent_start and one final agent_end around the outer run, with turn_start/turn_end per model turn; queued follow-up messages continue inside that run (packages/agent/src/agent-loop.ts).",
+        "Current Pi main 2b0a123de98318c2ff8069661721ce0c3794c34e packages/agent/src/agent-loop.ts emits one agent_start and one final agent_end around the outer run, with turn_start/turn_end per model turn; packages/coding-agent/src/core/agent-session.ts and agent-session-concurrent.test.ts confirm willRetry:false after explicit abort.",
         "RpcModeTests.PromptReceivedDuringStreamingQueuesAnotherTurnBeforeSettlement verifies one agent boundary pair and two turn pairs for two queued prompts. RpcAgentLifecycleProcessTests verifies the real CLI process boundary order for an ordinary turn and a tool turn.",
         "RpcModeTests covers retry ordering, terminal provider errors and cancellation; these tests assert assistant snapshots match across message_end, turn_end and agent_end.messages. Process-level error/cancellation and pinned Pi differentials remain open.",
-        "Focused local RPC/JSON event tests passed 41/41; full local validation passed dotnet format --verify-no-changes, warnings-as-errors build with 0 warnings/errors, and 586 tests (0 failed, 0 skipped). RpcModeTests.RpcSteeringConsumedDuringToolLoopHasMessageBoundariesInNextTurn covers a steering user message between the next turn_start and assistant response. Exact-head CI for this work is pending."
+        "Focused local RPC/JSON event tests passed 41/41; full local validation passed dotnet format --verify-no-changes, warnings-as-errors build with 0 warnings/errors, and 586 tests (0 failed, 0 skipped). RpcModeTests.RpcSteeringConsumedDuringToolLoopHasMessageBoundariesInNextTurn covers a steering user message between the next turn_start and assistant response. Exact-head CI for this work is pending.",
+        "RpcAgentLifecycleProcessTests.RpcProcessAbortEndsPartialTurnBeforeAgentSettlement verifies partial assistant content, turn_end < agent_end < agent_settled < abort response, willRetry:false, and identical final assistant snapshots across message_end, turn_end and agent_end.messages.",
+        "Exact source head 1388202638e287cc9099e410eff64487cda7cacc passed Linux CI run 36286810290: format passed, warnings-as-errors build had 0 warnings/errors, and all 613 tests passed (0 failed, 0 skipped). PiSharp process evidence is not a pinned Pi process differential."
       ],
       "dependencies": []
     },

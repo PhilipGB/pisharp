@@ -41,6 +41,26 @@ public sealed class ConversationTreeTests
     }
 
     [Fact]
+    public void ClonePreservesAllBranchesAndSelectedHead()
+    {
+        var tree = new ConversationTree();
+        var root = tree.Append("user", Text("first"));
+        var earlierBranch = tree.Append("assistant", Text("earlier"));
+        tree.Select(root.Id);
+        var activeBranch = tree.Append("assistant", Text("active"));
+
+        var copy = tree.Clone();
+
+        Assert.Equal(tree.Entries.Select(entry => entry.Id), copy.Entries.Select(entry => entry.Id));
+        Assert.Equal(activeBranch.Id, copy.HeadId);
+        Assert.Equal([root.Id, activeBranch.Id], copy.ActivePath().Select(entry => entry.Id));
+        Assert.Equal(earlierBranch.Id, copy.Entries[1].Id);
+        copy.Append("user", Text("copy only"));
+        Assert.Equal(3, tree.Entries.Count);
+        Assert.Equal(activeBranch.Id, tree.HeadId);
+    }
+
+    [Fact]
     public void RejectsDanglingParentsAndDuplicateIds()
     {
         var node = new ConversationNode("id", "missing", "user", Text("hello"), DateTimeOffset.UtcNow);
