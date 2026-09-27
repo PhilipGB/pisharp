@@ -25,8 +25,7 @@ internal sealed class RpcModelCommandHandler(
         switch (command)
         {
             case "get_available_models":
-                if (busy) await respond(id, command, false, "Wait until the active prompt settles.");
-                else if (discoverModels is null) await respond(id, command, false, "Model discovery is unavailable.");
+                if (discoverModels is null) await respond(id, command, false, "Model discovery is unavailable.");
                 else
                 {
                     try
@@ -48,7 +47,6 @@ internal sealed class RpcModelCommandHandler(
                 }
                 return true;
             case "set_model":
-                if (busy) { await respond(id, command, false, "Wait until the active prompt settles."); return true; }
                 if (!root.TryGetProperty("provider", out var modelProvider) || modelProvider.ValueKind != JsonValueKind.String ||
                     string.IsNullOrWhiteSpace(modelProvider.GetString()) || !root.TryGetProperty("modelId", out var modelId) ||
                     modelId.ValueKind != JsonValueKind.String || string.IsNullOrWhiteSpace(modelId.GetString()))
@@ -84,7 +82,6 @@ internal sealed class RpcModelCommandHandler(
                 }
                 return true;
             case "cycle_model":
-                if (busy) { await respond(id, command, false, "Wait until the active prompt settles."); return true; }
                 if (discoverModels is null) { await respond(id, command, false, "Model discovery is unavailable."); return true; }
                 try
                 {
@@ -96,10 +93,10 @@ internal sealed class RpcModelCommandHandler(
                         return true;
                     }
                     if (setModel is null) { await respond(id, command, false, "Model selection is unavailable."); return true; }
-                    var current = currentRun().Conversation;
+                    var current = currentRun();
                     var currentIndex = Array.FindIndex(models, model =>
-                        model.Provider?.Equals(current.Provider, StringComparison.Ordinal) == true &&
-                        model.Id.Equals(current.Model, StringComparison.Ordinal));
+                        model.Provider?.Equals(current.CurrentProvider, StringComparison.Ordinal) == true &&
+                        model.Id.Equals(current.CurrentModel, StringComparison.Ordinal));
                     if (currentIndex < 0) currentIndex = 0;
                     var candidate = models[(currentIndex + 1) % models.Length];
                     var selectedModel = await setModel(candidate, cancellationToken);

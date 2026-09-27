@@ -496,8 +496,8 @@ public sealed class RpcModeTests
         channel.Writer.Complete();
         await serving.WaitAsync(TimeSpan.FromSeconds(5));
 
-        Assert.Single(session.Tree.Entries, entry => entry.Type == "thinking_level_change");
-        Assert.Equal("high", session.Tree.Entries.Last().Payload.GetProperty("thinkingLevel").GetString());
+        var thinkingChange = Assert.Single(session.Tree.Entries, entry => entry.Type == "thinking_level_change");
+        Assert.Equal("high", thinkingChange.Payload.GetProperty("thinkingLevel").GetString());
     }
 
     [Fact]

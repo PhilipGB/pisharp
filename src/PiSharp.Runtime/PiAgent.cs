@@ -1,5 +1,6 @@
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
+using PiSharp.Runtime.Providers;
 using PiSharp.Runtime.Sessions;
 using PiSharp.Runtime.Tools;
 namespace PiSharp.Runtime;
@@ -11,6 +12,7 @@ public sealed class PiAgent
     private readonly CodingTools _codingTools;
     private readonly ChatClientAgent _agent;
     private readonly ChatClientAgent _summarizer;
+    private readonly MutableChatClient _chatClient;
     private readonly SemaphoreSlim _runGate = new(1, 1);
     private ReasoningOptions? _reasoning;
     private DurableExecution? _active;
@@ -19,14 +21,17 @@ public sealed class PiAgent
     private Func<IReadOnlyList<ChatMessage>, bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? _projectContext;
     private readonly List<(ChatMessage Message, string? AfterCallId)> _injectedSteering = [];
     private int _providerRequestIndex;
+    private int _supportsImages;
 
     public PiAgent(IChatClient client, CodingTools tools, IReadOnlyList<string>? selectedTools = null, IReadOnlyList<string>? excludedTools = null, bool noTools = false, string? contextInstructions = null, string? systemPrompt = null, string? appendSystemPrompt = null,
         IReadOnlyCollection<AIFunction>? extensionTools = null, ProviderRetryPolicy? retryPolicy = null,
         ReasoningOptions? reasoning = null, bool blockImages = false, bool noBuiltinTools = false, bool supportsImages = true)
     {
         _codingTools = tools;
+        _chatClient = new MutableChatClient(client);
+        _supportsImages = supportsImages ? 1 : 0;
         _reasoning = reasoning;
-        _summarizer = new ChatClientAgent(client, new ChatClientAgentOptions
+        _summarizer = new ChatClientAgent(_chatClient, new ChatClientAgentOptions
         {
             Name = "PiSharpCompaction",
             ChatOptions = new ChatOptions
@@ -41,9 +46,9 @@ public sealed class PiAgent
         if (added.Any(tool => new[] { "read", "bash", "edit", "write", "grep", "find", "ls" }.Contains(tool.Name, StringComparer.Ordinal)) ||
             builtin.Concat(external).GroupBy(tool => tool.Name, StringComparer.Ordinal).Any(group => group.Count() > 1))
             throw new ArgumentException("Extension tool conflicts with a built-in tool name.");
-        _agent = new ChatClientAgent(new ObservedChatClient(client, value => _events?.Invoke(value),
+        _agent = new ChatClientAgent(new ObservedChatClient(_chatClient, value => _events?.Invoke(value),
             retryPolicy ?? ProviderRetryPolicy.Default, TakeSteeringForRequest, blockImages, ProjectForRequestAsync,
-            supportsImages, () => Volatile.Read(ref _reasoning)), new ChatClientAgentOptions
+            supportsImages, () => Volatile.Read(ref _reasoning), () => Volatile.Read(ref _supportsImages) != 0), new ChatClientAgentOptions
             {
                 Name = "PiSharp",
                 ChatHistoryProvider = _history,
@@ -108,6 +113,13 @@ public sealed class PiAgent
         await _agent.CreateSessionAsync(cancellationToken);
 
     public void SetReasoningOptions(ReasoningOptions? reasoning) => Volatile.Write(ref _reasoning, reasoning);
+
+    public void SetModelRuntime(IChatClient client, bool supportsImages, ModelImageResizeOptions? imageResizeOptions)
+    {
+        _chatClient.SetClient(client);
+        Volatile.Write(ref _supportsImages, supportsImages ? 1 : 0);
+        _codingTools.SetImageResizeOptions(imageResizeOptions);
+    }
 
     public Task<BashExecutionResult> ExecuteBashAsync(string command, Action<string>? onUpdate = null,
         CancellationToken cancellationToken = default) => _codingTools.ExecuteBashAsync(command, onUpdate, cancellationToken);

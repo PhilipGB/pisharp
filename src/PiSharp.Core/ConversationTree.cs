@@ -5,10 +5,12 @@ namespace PiSharp.Core;
 /// <summary>Append-only conversation tree. Selecting a parent never deletes its descendants.</summary>
 public sealed class ConversationTree
 {
+    private readonly object _gate = new();
     private readonly Dictionary<string, ConversationNode> _byId = new(StringComparer.Ordinal);
     private readonly List<ConversationNode> _entries = [];
-    public IReadOnlyList<ConversationNode> Entries => _entries;
-    public string? HeadId { get; private set; }
+    private string? _headId;
+    public IReadOnlyList<ConversationNode> Entries { get { lock (_gate) return _entries.ToArray(); } }
+    public string? HeadId { get { lock (_gate) return _headId; } }
 
     public ConversationTree(IEnumerable<ConversationNode>? entries = null, string? headId = null)
     {
@@ -19,54 +21,72 @@ public sealed class ConversationTree
 
     public ConversationNode Append(string type, JsonElement payload, DateTimeOffset? at = null)
     {
-        var entry = new ConversationNode(Guid.NewGuid().ToString("N"), HeadId, type, payload.Clone(), at ?? DateTimeOffset.UtcNow);
-        Add(entry);
-        HeadId = entry.Id;
-        return entry;
+        lock (_gate)
+        {
+            var entry = new ConversationNode(Guid.NewGuid().ToString("N"), _headId, type, payload.Clone(), at ?? DateTimeOffset.UtcNow);
+            Add(entry);
+            _headId = entry.Id;
+            return entry;
+        }
     }
 
     public void RollbackAppend(ConversationNode entry, string? previousHeadId)
     {
-        if (_entries.Count == 0 || !ReferenceEquals(_entries[^1], entry) || HeadId != entry.Id ||
-            entry.ParentId != previousHeadId)
-            throw new InvalidOperationException("Only the latest append can be rolled back from its selected branch.");
-        _entries.RemoveAt(_entries.Count - 1);
-        _byId.Remove(entry.Id);
-        HeadId = previousHeadId;
+        lock (_gate)
+        {
+            if (_entries.Count == 0 || !ReferenceEquals(_entries[^1], entry) || _headId != entry.Id ||
+                entry.ParentId != previousHeadId)
+                throw new InvalidOperationException("Only the latest append can be rolled back from its selected branch.");
+            _entries.RemoveAt(_entries.Count - 1);
+            _byId.Remove(entry.Id);
+            _headId = previousHeadId;
+        }
     }
 
     public void Select(string? id)
     {
-        if (id is not null && !_byId.ContainsKey(id)) throw new KeyNotFoundException($"No session entry with id {id}.");
-        HeadId = id;
+        lock (_gate)
+        {
+            if (id is not null && !_byId.ContainsKey(id)) throw new KeyNotFoundException($"No session entry with id {id}.");
+            _headId = id;
+        }
     }
 
     public IReadOnlyList<ConversationNode> ActivePath()
     {
-        var path = new List<ConversationNode>();
-        var id = HeadId;
-        while (id is not null)
+        lock (_gate)
         {
-            var entry = _byId[id];
-            path.Add(entry);
-            id = entry.ParentId;
+            var path = new List<ConversationNode>();
+            var id = _headId;
+            while (id is not null)
+            {
+                var entry = _byId[id];
+                path.Add(entry);
+                id = entry.ParentId;
+            }
+            path.Reverse();
+            return path;
         }
-        path.Reverse();
-        return path;
     }
 
-    public ConversationTree CloneActivePath() => new(ActivePath(), HeadId);
+    public ConversationTree CloneActivePath()
+    {
+        lock (_gate) return new ConversationTree(ActivePath(), _headId);
+    }
 
     /// <summary>Copy one ancestor path through an entry (or an empty path for null).</summary>
     public ConversationTree ClonePath(string? headId)
     {
-        if (headId is null) return new ConversationTree();
-        if (!_byId.ContainsKey(headId)) throw new KeyNotFoundException($"No session entry with id {headId}.");
-        var path = new List<ConversationNode>();
-        for (var current = headId; current is not null; current = _byId[current].ParentId)
-            path.Add(_byId[current]);
-        path.Reverse();
-        return new ConversationTree(path, headId);
+        lock (_gate)
+        {
+            if (headId is null) return new ConversationTree();
+            if (!_byId.ContainsKey(headId)) throw new KeyNotFoundException($"No session entry with id {headId}.");
+            var path = new List<ConversationNode>();
+            for (var current = headId; current is not null; current = _byId[current].ParentId)
+                path.Add(_byId[current]);
+            path.Reverse();
+            return new ConversationTree(path, headId);
+        }
     }
 
     private void Add(ConversationNode entry)

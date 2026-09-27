@@ -13,27 +13,38 @@ public sealed class ConversationRun
 {
     private readonly PiAgent _agent;
     private readonly Func<CancellationToken, Task>? _save;
-    private readonly AutoCompactionPolicy? _autoCompaction;
+    private AutoCompactionPolicy? _autoCompaction;
     private int _autoCompactionEnabled;
-    private readonly ModelPricing? _pricing;
+    private ModelPricing? _pricing;
     private readonly string? _sessionFile;
-    private readonly string? _provider;
+    private string? _provider;
     private readonly AgentRunRetryController _retryController;
     private string? _reasoningLevel;
     private readonly SemaphoreSlim _gate = new(1, 1);
     private readonly object _promptQueueGate = new();
     private readonly PromptDeliveryQueue _promptQueue = new();
-    private readonly Queue<string> _pendingThinkingChanges = new();
+    private readonly Queue<PendingRuntimeChange> _pendingRuntimeChanges = new();
     private readonly Queue<BashExecutionRecord> _pendingBashExecutions = new();
     private object? _promptLoopOwner;
     private Action<AgentLifecycleEvent>? _promptQueueEvents;
     private AgentSession _execution;
     private int _historyCount;
     private int _isCompacting;
+    private string _currentModel;
+    private string? _currentProvider;
+    private string _providerRequestModel;
+    private ModelPricing? _providerRequestPricing;
+    private string? _persistedThinkingLevel;
     public ConversationSession Conversation { get; }
     public string? SessionFile => _sessionFile;
     public bool AutoCompactionEnabled => Volatile.Read(ref _autoCompactionEnabled) != 0;
     public bool IsCompacting => Volatile.Read(ref _isCompacting) != 0;
+    public string CurrentModel { get { lock (_promptQueueGate) return _currentModel; } }
+    public string? CurrentProvider { get { lock (_promptQueueGate) return _currentProvider; } }
+    public UsageRecord CurrentProviderUsage(UsageDetails usage)
+    {
+        lock (_promptQueueGate) return UsageRecord.Create(_providerRequestModel, "model", usage, _providerRequestPricing);
+    }
 
     private ConversationRun(PiAgent agent, ConversationSession conversation, AgentSession execution, Func<CancellationToken, Task>? save,
         AutoCompactionPolicy? autoCompaction, ModelPricing? pricing, string? sessionFile, string? provider,
@@ -56,6 +67,11 @@ public sealed class ConversationRun
         Conversation = conversation;
         _execution = execution;
         _historyCount = conversation.ContextMessages().Count;
+        _currentModel = conversation.Model;
+        _currentProvider = conversation.Provider;
+        _providerRequestModel = conversation.Model;
+        _providerRequestPricing = pricing;
+        _persistedThinkingLevel = reasoningLevel;
     }
 
     public static async Task<ConversationRun> OpenAsync(PiAgent agent, ConversationSession conversation,
@@ -146,7 +162,36 @@ public sealed class ConversationRun
             if (_promptLoopOwner is null) return false;
             _agent.SetReasoningOptions(reasoning);
             Volatile.Write(ref _reasoningLevel, level);
-            _pendingThinkingChanges.Enqueue(level);
+            if (!string.Equals(_persistedThinkingLevel, level, StringComparison.Ordinal))
+            {
+                Conversation.AppendThinkingLevelChange(level);
+                _persistedThinkingLevel = level;
+            }
+            return true;
+        }
+    }
+
+    public bool TrySetModelDuringRun(string model, string? endpoint, string? provider,
+        ModelPricing? pricing, AutoCompactionPolicy? autoCompaction, string thinkingLevel,
+        ReasoningOptions? reasoning, Action activateRuntime)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(model);
+        ArgumentException.ThrowIfNullOrWhiteSpace(thinkingLevel);
+        ArgumentNullException.ThrowIfNull(activateRuntime);
+        lock (_promptQueueGate)
+        {
+            if (_promptLoopOwner is null) return false;
+            _currentModel = model;
+            _currentProvider = provider;
+            Conversation.SelectModel(model, endpoint, provider);
+            if (!string.Equals(_persistedThinkingLevel, thinkingLevel, StringComparison.Ordinal))
+            {
+                Conversation.AppendThinkingLevelChange(thinkingLevel);
+                _persistedThinkingLevel = thinkingLevel;
+            }
+            _agent.SetReasoningOptions(reasoning);
+            Volatile.Write(ref _reasoningLevel, thinkingLevel);
+            _pendingRuntimeChanges.Enqueue(new PendingModelChange(provider, pricing, autoCompaction, activateRuntime));
             return true;
         }
     }
@@ -227,7 +272,7 @@ public sealed class ConversationRun
                                 if (content is TextReasoningContent reasoning && !string.IsNullOrEmpty(reasoning.Text))
                                     Publish(new("reasoning_delta", Text: reasoning.Text));
                                 else if (content is UsageContent usage)
-                                    Publish(UsageEvent(UsageRecord.Create(Conversation.Model, "model", usage.Details, _pricing)));
+                                    Publish(UsageEvent(CurrentProviderUsage(usage.Details)));
                             }
                         },
                         (head, pathLength, token) => OmitFailedRetryContextAsync(head, pathLength, Publish, token),
@@ -328,7 +373,7 @@ public sealed class ConversationRun
         lock (_promptQueueGate)
         {
             if (!ReferenceEquals(_promptLoopOwner, owner)) return null;
-            PersistPendingThinkingChangesUnsafe();
+            PersistPendingRuntimeChangesUnsafe();
             if (_promptQueue.TakeNextBatch() is { } batch)
             {
                 _promptQueueEvents?.Invoke(QueueEvent(_promptQueue.Snapshot()));
@@ -346,21 +391,32 @@ public sealed class ConversationRun
         lock (_promptQueueGate)
         {
             if (!ReferenceEquals(_promptLoopOwner, owner)) return;
-            PersistPendingThinkingChangesUnsafe();
+            PersistPendingRuntimeChangesUnsafe();
             FlushPendingBashExecutionsUnsafe();
             _promptLoopOwner = null;
             _promptQueueEvents = null;
         }
     }
 
-    private void PersistPendingThinkingChangesUnsafe()
+    private void PersistPendingRuntimeChangesUnsafe()
     {
-        while (_pendingThinkingChanges.TryDequeue(out var level))
+        while (_pendingRuntimeChanges.TryDequeue(out var change))
         {
-            // RunStreamingAsync has finished before the branch is changed, so its canonical history append cannot race this entry.
-            Conversation.AppendThinkingLevelChange(level);
+            switch (change)
+            {
+                case PendingModelChange model:
+                    model.ActivateRuntime();
+                    _provider = model.Provider;
+                    _pricing = model.Pricing;
+                    _autoCompaction = model.AutoCompaction;
+                    break;
+            }
         }
     }
+
+    private abstract record PendingRuntimeChange;
+    private sealed record PendingModelChange(string? Provider, ModelPricing? Pricing,
+        AutoCompactionPolicy? AutoCompaction, Action ActivateRuntime) : PendingRuntimeChange;
 
     public bool RecordBashResult(string command, BashExecutionResult result, bool excludeFromContext = false)
     {
@@ -553,41 +609,94 @@ public sealed class ConversationRun
         var accepted = false;
         ChatMessage? providerResponse = null;
         var turnToolResults = new List<ChatMessage>();
-        void CompleteProviderTurn()
+        var providerRequestModel = Conversation.Model;
+        var providerRequestPricing = _pricing;
+        void AppendAvailableProviderHistory()
         {
-            if (providerResponse is null) return;
-            var toolResults = turnToolResults.ToArray();
-            providerTurnHistory.RecordCompletedTurn(providerResponse, toolResults);
-            onEvent?.Invoke(new AgentLifecycleEvent("assistant_turn_completed")
+            var providerHistory = ObservedChatClient.NormalizeReadImagesForHistory(_agent.GetHistory(_execution));
+            var canonicalHistory = Conversation.ContextMessages();
+            var canonicalIndex = 0;
+            foreach (var message in providerHistory)
             {
-                TurnMessage = providerResponse,
-                TurnToolResults = toolResults
-            });
-            providerResponse = null;
-            turnToolResults.Clear();
+                var matchIndex = -1;
+                for (var index = canonicalIndex; index < canonicalHistory.Count; index++)
+                {
+                    if (ProviderTurnHistoryReconciler.AreEquivalent(canonicalHistory[index], message))
+                    {
+                        matchIndex = index;
+                        break;
+                    }
+                }
+                if (matchIndex >= 0) canonicalIndex = matchIndex + 1;
+                else
+                {
+                    Conversation.Append(message);
+                    canonicalHistory.Add(message);
+                    canonicalIndex = canonicalHistory.Count;
+                }
+            }
+        }
+
+        void CompleteProviderTurnUnsafe()
+        {
+            if (providerResponse is not null)
+            {
+                var completedResponse = providerResponse;
+                var toolResults = turnToolResults.ToArray();
+                providerTurnHistory.RecordCompletedTurn(completedResponse, toolResults);
+                onEvent?.Invoke(new AgentLifecycleEvent("assistant_turn_completed")
+                {
+                    TurnMessage = completedResponse,
+                    TurnToolResults = toolResults
+                });
+                providerResponse = null;
+                turnToolResults.Clear();
+            }
+            AppendAvailableProviderHistory();
+            PersistPendingRuntimeChangesUnsafe();
         }
 
         void Observe(AgentLifecycleEvent item)
         {
             if (item.Type == "model_request_started")
             {
-                CompleteProviderTurn();
+                lock (_promptQueueGate)
+                {
+                    CompleteProviderTurnUnsafe();
+                    providerRequestModel = _currentModel;
+                    providerRequestPricing = _pricing;
+                    _providerRequestModel = providerRequestModel;
+                    _providerRequestPricing = providerRequestPricing;
+                }
                 partialAssistantText.Clear();
                 onEvent?.Invoke(new("assistant_turn_started"));
             }
             else if (item.Type == "model_request_completed")
             {
                 providerResponse = item.ProviderResponse;
+                if (providerResponse is not null)
+                {
+                    lock (_promptQueueGate)
+                    {
+                        var previousMessageCount = Conversation.ContextMessages().Count;
+                        AppendAvailableProviderHistory();
+                        var canonicalHistory = Conversation.ContextMessages();
+                        if (!canonicalHistory.Skip(previousMessageCount).Any(message => message.Role == ChatRole.Assistant))
+                        {
+                            Conversation.Append(providerResponse);
+                        }
+                    }
+                }
                 item = item with
                 {
                     ProviderThinkingLevel = Volatile.Read(ref _reasoningLevel),
                     UsageSnapshot = item.ProviderUsage is { } usage
-                        ? UsageRecord.Create(Conversation.Model, "model", usage, _pricing)
+                        ? UsageRecord.Create(providerRequestModel, "model", usage, providerRequestPricing)
                         : null
                 };
             }
             else if (item.ProviderUpdate?.Contents?.OfType<UsageContent>().LastOrDefault() is { } updateUsage)
-                item = item with { UsageSnapshot = UsageRecord.Create(Conversation.Model, "model", updateUsage.Details, _pricing) };
+                item = item with { UsageSnapshot = UsageRecord.Create(providerRequestModel, "model", updateUsage.Details, providerRequestPricing) };
             else if (item.Type == "tool_execution_finished" && item.ToolResultMessage is { } result)
                 turnToolResults.Add(result);
             else if (item.Type == "model_text_delta" && item.Text is not null) partialAssistantText.Append(item.Text);
@@ -668,13 +777,14 @@ public sealed class ConversationRun
                     });
                 }
             }
-            var inFlightBudget = !AutoCompactionEnabled || _autoCompaction is null ? null : new InFlightContextBudget(_autoCompaction,
+            var inFlightBudget = !AutoCompactionEnabled || _autoCompaction is null ? null : new InFlightContextBudget(
+                () => _autoCompaction ?? throw new InvalidOperationException("In-flight compaction policy was removed."),
                 (messages, token) => _agent.SummarizeAsync(messages, null, token),
                 async (summary, token) =>
                 {
                     Conversation.MarkInFlightProjection();
                     if (summary.Usage is not null)
-                        Conversation.AppendUsage(UsageRecord.Create(Conversation.Model, "compaction", summary.Usage, _pricing));
+                        Conversation.AppendUsage(UsageRecord.Create(CurrentModel, "compaction", summary.Usage, _pricing));
                     if (_save is not null) await _save(token);
                     onEvent?.Invoke(new("context_compacted_in_flight", Text: "Continuation request summarized; canonical history was not changed."));
                 });
@@ -703,10 +813,10 @@ public sealed class ConversationRun
                         if (content is FunctionCallContent call) events.Add($"call:{call.Name}:{call.CallId}");
                         else if (content is FunctionResultContent result) events.Add($"result:{result.CallId}:{(result.Exception is null ? "ok" : "error")}");
                         else if (content is UsageContent usage)
-                            Conversation.AppendUsage(UsageRecord.Create(Conversation.Model, "model", usage.Details, _pricing));
+                            Conversation.AppendUsage(UsageRecord.Create(providerRequestModel, "model", usage.Details, providerRequestPricing));
                 yield return update;
             }
-            CompleteProviderTurn();
+            lock (_promptQueueGate) CompleteProviderTurnUnsafe();
             completed = true;
         }
         finally
@@ -730,8 +840,31 @@ public sealed class ConversationRun
                 var appendedHistory = history.Skip(historyStartIndex).ToList();
                 if (!completed)
                     providerTurnHistory.RestoreMissingMessages(appendedHistory);
-                foreach (var message in appendedHistory)
-                    Conversation.Append(message);
+                lock (_promptQueueGate)
+                {
+                    PersistPendingRuntimeChangesUnsafe();
+                    var canonicalTail = existing.Skip(historyStartIndex).ToList();
+                    var canonicalIndex = 0;
+                    foreach (var message in appendedHistory)
+                    {
+                        var matchIndex = -1;
+                        for (var index = canonicalIndex; index < canonicalTail.Count; index++)
+                        {
+                            if (ProviderTurnHistoryReconciler.AreEquivalent(canonicalTail[index], message))
+                            {
+                                matchIndex = index;
+                                break;
+                            }
+                        }
+                        if (matchIndex >= 0) canonicalIndex = matchIndex + 1;
+                        else
+                        {
+                            Conversation.Append(message);
+                            canonicalTail.Add(message);
+                            canonicalIndex = canonicalTail.Count;
+                        }
+                    }
+                }
                 var canonicalHistory = Conversation.ContextMessages();
                 if (canonicalHistory.Count != history.Count || canonicalHistory.Where((message, index) => !JsonElement.DeepEquals(
                     JsonSerializer.SerializeToElement(message, AIJsonUtilities.DefaultOptions),

@@ -10,7 +10,8 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
     ProviderRetryPolicy retryPolicy, Func<IEnumerable<ChatMessage>, IReadOnlyList<ChatMessage>> takeSteering,
     bool blockImages = false,
     Func<IReadOnlyList<ChatMessage>, bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? projectContext = null,
-    bool supportsImages = true, Func<ReasoningOptions?>? getReasoning = null) : DelegatingChatClient(inner)
+    bool supportsImages = true, Func<ReasoningOptions?>? getReasoning = null,
+    Func<bool>? getSupportsImages = null) : DelegatingChatClient(inner)
 {
     public override async Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages,
         ChatOptions? options = null, CancellationToken cancellationToken = default)
@@ -149,7 +150,7 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
     // Keep the persisted function result intact. Provider clients see its text plus image content
     // in a following user message, matching Pi's image-bearing tool result on the wire.
     private IReadOnlyList<ChatMessage> AttachReadImages(IReadOnlyList<ChatMessage> messages) =>
-        ExpandReadImages(messages, supportsImages, flattenStructuredResults: true);
+        ExpandReadImages(messages, getSupportsImages?.Invoke() ?? supportsImages, flattenStructuredResults: true);
 
     internal static IReadOnlyList<ChatMessage> NormalizeReadImagesForHistory(IReadOnlyList<ChatMessage> messages) =>
         ExpandReadImages(messages, supportsImages: true, flattenStructuredResults: false);
@@ -246,7 +247,7 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
     // Never mutate the canonical messages: disabled images remain available if settings change later.
     private IEnumerable<ChatMessage> FilterImages(IEnumerable<ChatMessage> messages)
     {
-        if (!blockImages && supportsImages) return messages;
+        if (!blockImages && (getSupportsImages?.Invoke() ?? supportsImages)) return messages;
         return messages.Select(message =>
         {
             if (message.Role != ChatRole.User && message.Role != ChatRole.Tool ||

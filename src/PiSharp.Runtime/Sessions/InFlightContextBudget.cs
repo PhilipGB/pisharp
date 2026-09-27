@@ -4,7 +4,7 @@ namespace PiSharp.Runtime.Sessions;
 
 /// <summary>Bounds each continuation request without changing MAF history or the application-owned raw transcript.</summary>
 internal sealed class InFlightContextBudget(
-    AutoCompactionPolicy policy,
+    Func<AutoCompactionPolicy> getPolicy,
     Func<IReadOnlyList<ChatMessage>, CancellationToken, Task<PiAgent.CompactionSummary>> summarize,
     Func<PiAgent.CompactionSummary, CancellationToken, Task> onSummary)
 {
@@ -15,6 +15,7 @@ internal sealed class InFlightContextBudget(
 
     public async Task<IReadOnlyList<ChatMessage>> ProjectAsync(IReadOnlyList<ChatMessage> messages, bool force, CancellationToken cancellationToken)
     {
+        var policy = getPolicy();
         if (!force && AutoCompactionPolicy.Estimate(messages, "") <= policy.TriggerTokens) return messages;
 
         // Prefer whole-turn cuts. If the current turn alone is too large, only cut after

@@ -103,6 +103,8 @@ catch (Exception error) when (error is ArgumentException or InvalidOperationExce
 }
 async Task<IReadOnlyList<ModelDescriptor>> GetModelsAsync(CancellationToken token = default) =>
     await modelRuntime.ListModelsAsync(cli.Provider, token);
+var modelRuntimeController = new ModelRuntimeController(modelRuntime, () => userSettings,
+    Environment.GetEnvironmentVariable);
 if (cli.ListModels)
 {
     var models = await GetModelsAsync();
@@ -386,16 +388,14 @@ async Task Run(string input, IReadOnlyList<DataContent>? images = null)
     }
 }
 
-async Task ReplaceModelRuntime(ModelSelection nextSelection, string nextThinking, bool recordModelChange,
-    bool requireAuthenticated = true)
+async Task AdoptPreparedModelRuntime(PreparedModelRuntime prepared, bool recordModelChange)
 {
-    if (requireAuthenticated && !nextSelection.Authenticated)
-        throw new InvalidOperationException($"Provider '{nextSelection.Provider.Id}' is not authenticated. Use /login {nextSelection.Provider.Id}.");
-    nextThinking = ThinkingLevels.ValidateForModel(nextThinking, nextSelection.Model.Reasoning);
-    var nextConnection = nextSelection.Connection;
-    var nextChat = ProviderChatClientFactory.Create(nextSelection);
-    var nextPolicy = userSettings.ResolveCompactionPolicy(nextSelection.Model.ContextLength, Environment.GetEnvironmentVariable, $"{nextSelection.Provider.Id}/{nextSelection.Model.Id}");
-    var nextPricing = ModelPricing.FromEnvironment(Environment.GetEnvironmentVariable) ?? nextSelection.Model.Pricing;
+    var nextSelection = prepared.Selection;
+    var nextThinking = prepared.Thinking;
+    var nextConnection = prepared.Connection;
+    var nextChat = prepared.ChatClient;
+    var nextPolicy = prepared.ContextPolicy;
+    var nextPricing = prepared.Pricing;
     var nextAgent = projectRuntime.CreateAgent(nextChat, nextSelection, nextThinking, cli, userSettings);
     var previousHead = conversation.Tree.HeadId;
     var previousSelection = selection;
@@ -431,17 +431,32 @@ async Task ReplaceModelRuntime(ModelSelection nextSelection, string nextThinking
     }
 }
 
+Task ReplaceModelRuntime(ModelSelection nextSelection, string nextThinking, bool recordModelChange,
+    bool requireAuthenticated = true) => AdoptPreparedModelRuntime(
+        modelRuntimeController.Prepare(nextSelection, nextThinking, requireAuthenticated), recordModelChange);
+
+async Task ApplyModelSelectionAsync(ModelSelection nextSelection, string nextThinking)
+{
+    await modelRuntimeController.ApplySelectionAsync(nextSelection, nextThinking, agent, conversationRun,
+        prepared =>
+        {
+            selection = prepared.Selection;
+            connection = prepared.Connection;
+            chat = prepared.ChatClient;
+            contextPolicy = prepared.ContextPolicy;
+            modelPricing = prepared.Pricing;
+            thinking = prepared.Thinking;
+        }, prepared => AdoptPreparedModelRuntime(prepared, recordModelChange: true));
+}
+
 async Task<IReadOnlyList<ModelDescriptor>> GetRpcModelsAsync(string? providerId, CancellationToken token) =>
     (await modelRuntime.ListModelsAsync(providerId, token)).Where(model => model.Available).ToArray();
 
 async Task<ModelDescriptor> SelectRpcModelAsync(ModelDescriptor model, CancellationToken token)
 {
-    var providerId = model.Provider ?? throw new InvalidOperationException("The model catalogue did not identify the selected provider.");
-    var provider = modelRuntime.GetProvider(providerId);
-    var auth = await modelRuntime.ResolveAuthAsync(providerId, useRuntimeOverride: true, token);
-    var nextSelection = new ModelSelection(provider, model, auth.Key, auth.Authenticated, auth.Source);
+    var nextSelection = await modelRuntimeController.ResolveRpcModelAsync(model, token);
     var nextThinking = model.Reasoning == true ? thinking : "off";
-    await ReplaceModelRuntime(nextSelection, nextThinking, recordModelChange: true);
+    await ApplyModelSelectionAsync(nextSelection, nextThinking);
     return selection.Model;
 }
 
@@ -486,7 +501,7 @@ async Task SelectModelAsync()
     var nextSelection = await terminalModelPicker.ShowAsync(selection, cli.Provider);
     if (nextSelection is null) return;
     var nextThinking = nextSelection.Model.Reasoning == true ? thinking : "off";
-    await ReplaceModelRuntime(nextSelection, nextThinking, recordModelChange: true);
+    await ApplyModelSelectionAsync(nextSelection, nextThinking);
     Console.WriteLine($"Model: {selection.Provider.Id}/{selection.Model.Id} · thinking {thinking}");
 }
 
@@ -679,7 +694,7 @@ async Task HandleEditorApplicationAction(string action)
                     throw new InvalidOperationException("The model catalogue did not identify the selected provider.");
                 var nextSelection = await modelRuntime.ResolveAsync(nextModel.Provider, nextModel.Id);
                 var compatibleThinking = nextSelection.Model.Reasoning == true ? thinking : "off";
-                await ReplaceModelRuntime(nextSelection, compatibleThinking, recordModelChange: true);
+                await ApplyModelSelectionAsync(nextSelection, compatibleThinking);
                 Console.WriteLine($"Model: {selection.Provider.Id}/{selection.Model.Id} · thinking {thinking}");
                 break;
         }
@@ -1100,7 +1115,7 @@ else
                         }
                         var nextSelection = await modelRuntime.ResolveAsync(null, argument, includeOutOfScope: true);
                         var compatibleThinking = nextSelection.Model.Reasoning == true ? thinking : "off";
-                        await ReplaceModelRuntime(nextSelection, compatibleThinking, recordModelChange: true);
+                        await ApplyModelSelectionAsync(nextSelection, compatibleThinking);
                         Console.WriteLine($"Model: {selection.Provider.Id}/{selection.Model.Id} · thinking {thinking}");
                         break;
                     case "/fork":

@@ -12,11 +12,15 @@ public sealed class ConversationSession
 {
     public const int FormatVersion = 2;
     private static readonly JsonSerializerOptions BashExecutionJsonOptions = new(JsonSerializerDefaults.Web);
+    private readonly object _metadataGate = new();
+    private string _model;
+    private string? _provider;
+    private string? _endpoint;
     public string Id { get; }
     public string WorkingDirectory { get; }
-    public string Model { get; private set; }
-    public string? Provider { get; private set; }
-    public string? Endpoint { get; private set; }
+    public string Model { get { lock (_metadataGate) return _model; } }
+    public string? Provider { get { lock (_metadataGate) return _provider; } }
+    public string? Endpoint { get { lock (_metadataGate) return _endpoint; } }
     public string? Name { get; private set; }
     public string? ParentSessionPath { get; }
     internal JsonElement? PiJsonlHeader { get; }
@@ -33,9 +37,9 @@ public sealed class ConversationSession
     {
         Id = id;
         WorkingDirectory = cwd;
-        Model = model;
-        Provider = provider;
-        Endpoint = endpoint;
+        _model = model;
+        _provider = provider;
+        _endpoint = endpoint;
         Name = name;
         Tree = tree;
         PiJsonlHeader = piJsonlHeader?.Clone();
@@ -128,19 +132,25 @@ public sealed class ConversationSession
     public void SelectModel(string model, string? endpoint, string? provider = null)
     {
         if (string.IsNullOrWhiteSpace(model)) throw new ArgumentException("Model ID cannot be empty.", nameof(model));
-        Model = model;
-        Provider = provider;
-        Endpoint = endpoint;
-        Tree.Append("model_change", JsonSerializer.SerializeToElement(new { model, provider, endpoint }));
+        lock (_metadataGate)
+        {
+            _model = model;
+            _provider = provider;
+            _endpoint = endpoint;
+            Tree.Append("model_change", JsonSerializer.SerializeToElement(new { model, provider, endpoint }));
+        }
     }
 
     /// <summary>Rollback a model change that failed before becoming authoritative.</summary>
     public void RevertModel(string model, string? endpoint, string? previousHead, string? provider = null)
     {
-        Model = model;
-        Provider = provider;
-        Endpoint = endpoint;
-        Tree.Select(previousHead);
+        lock (_metadataGate)
+        {
+            _model = model;
+            _provider = provider;
+            _endpoint = endpoint;
+            Tree.Select(previousHead);
+        }
     }
 
     // M.E.AI deliberately does not serialize function exceptions. Capture failures explicitly
@@ -442,9 +452,12 @@ public sealed class ConversationSession
 
     public string ToJson()
     {
-        var document = new Document(FormatVersion, Id, WorkingDirectory, Model, Endpoint, Name, Tree.HeadId,
-            Tree.Entries.ToArray(), Provider, PiJsonlHeader, ParentSessionPath);
-        return JsonSerializer.Serialize(document);
+        lock (_metadataGate)
+        {
+            var document = new Document(FormatVersion, Id, WorkingDirectory, _model, _endpoint, Name, Tree.HeadId,
+                Tree.Entries.ToArray(), _provider, PiJsonlHeader, ParentSessionPath);
+            return JsonSerializer.Serialize(document);
+        }
     }
 
     public static ConversationSession Parse(string json)

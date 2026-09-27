@@ -53,4 +53,23 @@ internal sealed class ProviderTurnHistoryReconciler
         return JsonElement.DeepEquals(JsonSerializer.SerializeToElement(left, AIJsonUtilities.DefaultOptions),
             JsonSerializer.SerializeToElement(right, AIJsonUtilities.DefaultOptions));
     }
+
+    internal static bool AreEquivalent(ChatMessage left, ChatMessage right)
+    {
+        if (left.Role == ChatRole.Assistant && right.Role == ChatRole.Assistant)
+        {
+            if (!string.Equals(left.Text, right.Text, StringComparison.Ordinal)) return false;
+            var leftCalls = left.Contents.OfType<FunctionCallContent>().ToArray();
+            var rightCalls = right.Contents.OfType<FunctionCallContent>().ToArray();
+            if (leftCalls.Length > 0 || rightCalls.Length > 0)
+                return leftCalls.Length == rightCalls.Length && leftCalls.Zip(rightCalls, (leftCall, rightCall) =>
+                    leftCall.CallId == rightCall.CallId && leftCall.Name == rightCall.Name).All(equal => equal);
+            var leftOther = left.Contents.Where(content => content is not TextContent and not UsageContent).ToArray();
+            var rightOther = right.Contents.Where(content => content is not TextContent and not UsageContent).ToArray();
+            return JsonElement.DeepEquals(JsonSerializer.SerializeToElement(leftOther, AIJsonUtilities.DefaultOptions),
+                JsonSerializer.SerializeToElement(rightOther, AIJsonUtilities.DefaultOptions));
+        }
+
+        return MessagesEqual(left, right);
+    }
 }

@@ -48,4 +48,22 @@ public sealed class ConversationTreeTests
         var root = node with { ParentId = null };
         Assert.Throws<InvalidDataException>(() => new ConversationTree([root, root]));
     }
+
+    [Fact]
+    public async Task ConcurrentAppendsRemainOneValidSelectedPath()
+    {
+        var tree = new ConversationTree();
+        await Task.WhenAll(Enumerable.Range(0, 8).Select(worker => Task.Run(() =>
+        {
+            for (var index = 0; index < 100; index++)
+                tree.Append("chat", Text($"{worker}:{index}"));
+        })));
+
+        var entries = tree.Entries;
+        var path = tree.ActivePath();
+        Assert.Equal(800, entries.Count);
+        Assert.Equal(entries.Select(entry => entry.Id), path.Select(entry => entry.Id));
+        Assert.Equal(entries[^1].Id, tree.HeadId);
+        Assert.All(entries.Zip(entries.Skip(1)), pair => Assert.Equal(pair.First.Id, pair.Second.ParentId));
+    }
 }

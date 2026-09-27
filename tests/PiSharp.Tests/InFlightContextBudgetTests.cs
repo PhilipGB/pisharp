@@ -13,7 +13,7 @@ public sealed class InFlightContextBudgetTests
     public async Task CacheInvalidatesOnChangedPrefixContentButNotChangedRecentPrompt(string changedPart)
     {
         var summaries = 0;
-        var budget = new InFlightContextBudget(new AutoCompactionPolicy(2700, 300),
+        var budget = new InFlightContextBudget(() => new AutoCompactionPolicy(2700, 300),
             (_, _) => Task.FromResult(new PiAgent.CompactionSummary($"summary #{++summaries}", null)),
             (_, _) => Task.CompletedTask);
 
@@ -34,7 +34,7 @@ public sealed class InFlightContextBudgetTests
     public async Task OversizedActiveToolResultIsSummarizedInsteadOfKeptInTransientRequest()
     {
         var summaries = 0;
-        var budget = new InFlightContextBudget(new AutoCompactionPolicy(2700, 300),
+        var budget = new InFlightContextBudget(() => new AutoCompactionPolicy(2700, 300),
             (_, _) => Task.FromResult(new PiAgent.CompactionSummary($"summary #{++summaries}", null)),
             (_, _) => Task.CompletedTask);
         var raw = new ChatMessage[]
@@ -53,6 +53,31 @@ public sealed class InFlightContextBudgetTests
         Assert.Contains("summary #1", projected[0].Text);
         Assert.Single(raw.SelectMany(message => message.Contents).OfType<FunctionCallContent>());
         Assert.Single(raw.SelectMany(message => message.Contents).OfType<FunctionResultContent>());
+    }
+
+    [Fact]
+    public async Task ActivePolicyChangeAppliesToTheNextProviderRequest()
+    {
+        var policy = new AutoCompactionPolicy(100_000, 100);
+        var summaries = 0;
+        var budget = new InFlightContextBudget(() => policy,
+            (_, _) => Task.FromResult(new PiAgent.CompactionSummary($"summary #{++summaries}", null)),
+            (_, _) => Task.CompletedTask);
+        var history = new ChatMessage[]
+        {
+            new(ChatRole.User, new string('x', 3000)),
+            new(ChatRole.Assistant, "old answer"),
+            new(ChatRole.User, "continue")
+        };
+
+        var unchanged = await budget.ProjectAsync(history, force: false, CancellationToken.None);
+        policy = new AutoCompactionPolicy(2200, 500);
+        var projected = await budget.ProjectAsync(history, force: false, CancellationToken.None);
+
+        Assert.Same(history, unchanged);
+        Assert.Equal(1, summaries);
+        Assert.Contains("summary #1", projected[0].Text);
+        Assert.Equal("continue", projected[^1].Text);
     }
 
     private static ChatMessage[] History(string? changedPart, string recentPrompt) =>
