@@ -28,6 +28,15 @@ internal sealed class ProviderTurnHistoryReconciler
         return missing;
     }
 
+    public static ChatMessage? RetainUncheckpointedToolResults(ChatMessage message, HashSet<string> knownCallIds)
+    {
+        if (message.Role != ChatRole.Tool) return message;
+        var contents = message.Contents.Where(content => content is not FunctionResultContent result ||
+            knownCallIds.Add(result.CallId)).ToArray();
+        if (contents.Length == 0) return null;
+        return contents.Length == message.Contents.Count ? message : new ChatMessage(ChatRole.Tool, contents);
+    }
+
     public int FindEquivalentRangeEnd(IReadOnlyList<ChatMessage> history, int startIndex, ChatMessage message)
     {
         for (var index = startIndex; index < history.Count; index++)

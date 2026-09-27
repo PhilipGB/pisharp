@@ -82,6 +82,25 @@ public sealed class ProviderTurnHistoryReconcilerTests
     }
 
     [Fact]
+    public void RetainUncheckpointedToolResultsFiltersCallIdsAcrossDifferentGrouping()
+    {
+        var knownCallIds = new HashSet<string>(["call-a", "call-b"], StringComparer.Ordinal);
+        var repeated = ToolResult("call-b", "provider representation differs");
+        var grouped = new ChatMessage(ChatRole.Tool,
+        [
+            new FunctionResultContent("call-a", "first"),
+            new FunctionResultContent("call-c", "new result")
+        ]);
+
+        Assert.Null(ProviderTurnHistoryReconciler.RetainUncheckpointedToolResults(repeated, knownCallIds));
+        var retained = Assert.IsType<ChatMessage>(
+            ProviderTurnHistoryReconciler.RetainUncheckpointedToolResults(grouped, knownCallIds));
+        var result = Assert.Single(retained.Contents.OfType<FunctionResultContent>());
+        Assert.Equal("call-c", result.CallId);
+        Assert.Contains("call-c", knownCallIds);
+    }
+
+    [Fact]
     public void MissingToolResultsFillsOnlyResultsNotAlreadyCheckpointed()
     {
         var assistant = new ChatMessage(ChatRole.Assistant,

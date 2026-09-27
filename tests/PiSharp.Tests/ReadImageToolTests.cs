@@ -102,6 +102,7 @@ public sealed class ReadImageToolTests
             var firstTurn = "";
             await foreach (var update in run.RunStreamingAsync("inspect artwork", deadline.Token)) firstTurn += update.Text;
             Assert.Equal("seen 1", firstTurn);
+            Assert.Single(conversation.ActiveMessages().SelectMany(message => message.Contents).OfType<DataContent>());
             await store.SaveAsync(conversation, path, deadline.Token);
 
             var loaded = await store.LoadAsync(path, deadline.Token);

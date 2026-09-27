@@ -513,10 +513,20 @@ public sealed class ConversationRun
         {
             var providerHistory = ObservedChatClient.NormalizeReadImagesForHistory(_agent.GetHistory(_execution));
             var canonicalHistory = Conversation.ContextMessages();
+            var knownToolCallIds = canonicalHistory.SelectMany(message => message.Contents.OfType<FunctionResultContent>())
+                .Select(result => result.CallId).ToHashSet(StringComparer.Ordinal);
             var canonicalIndex = 0;
-            foreach (var message in providerHistory)
+            foreach (var providerMessage in providerHistory)
             {
-                var matchEnd = providerTurnHistory.FindEquivalentRangeEnd(canonicalHistory, canonicalIndex, message);
+                var matchEnd = providerTurnHistory.FindEquivalentRangeEnd(canonicalHistory, canonicalIndex, providerMessage);
+                if (matchEnd >= 0)
+                {
+                    canonicalIndex = matchEnd;
+                    continue;
+                }
+                var message = ProviderTurnHistoryReconciler.RetainUncheckpointedToolResults(providerMessage, knownToolCallIds);
+                if (message is null) continue;
+                matchEnd = providerTurnHistory.FindEquivalentRangeEnd(canonicalHistory, canonicalIndex, message);
                 if (matchEnd >= 0) canonicalIndex = matchEnd;
                 else
                 {
@@ -773,11 +783,21 @@ public sealed class ConversationRun
                 lock (_runtimeStateGate)
                 {
                     PersistPendingRuntimeChangesUnsafe();
+                    var knownToolCallIds = existing.SelectMany(message => message.Contents.OfType<FunctionResultContent>())
+                        .Select(result => result.CallId).ToHashSet(StringComparer.Ordinal);
                     var canonicalTail = existing.Skip(historyStartIndex).ToList();
                     var canonicalIndex = 0;
-                    foreach (var message in appendedHistory)
+                    foreach (var providerMessage in appendedHistory)
                     {
-                        var matchEnd = providerTurnHistory.FindEquivalentRangeEnd(canonicalTail, canonicalIndex, message);
+                        var matchEnd = providerTurnHistory.FindEquivalentRangeEnd(canonicalTail, canonicalIndex, providerMessage);
+                        if (matchEnd >= 0)
+                        {
+                            canonicalIndex = matchEnd;
+                            continue;
+                        }
+                        var message = ProviderTurnHistoryReconciler.RetainUncheckpointedToolResults(providerMessage, knownToolCallIds);
+                        if (message is null) continue;
+                        matchEnd = providerTurnHistory.FindEquivalentRangeEnd(canonicalTail, canonicalIndex, message);
                         if (matchEnd >= 0) canonicalIndex = matchEnd;
                         else
                         {
