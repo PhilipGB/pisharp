@@ -5,6 +5,7 @@ namespace PiSharp.Cli;
 
 public static class ThinkingLevels
 {
+    public const string Default = "medium";
     public static readonly IReadOnlyList<string> All = ["off", "minimal", "low", "medium", "high", "xhigh", "max"];
     private static readonly IReadOnlyList<string> s_offOnly = ["off"];
 

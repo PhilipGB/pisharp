@@ -70,9 +70,36 @@ public sealed record CompactionSettings(bool? Enabled = null, int? ReserveTokens
         return policy;
     }
 }
+/// <summary>Provider SDK retries, kept separate from PiSharp's agent-level retry loop.</summary>
+public sealed record ProviderRetrySettings(int? MaxRetries = null)
+{
+    public const int DefaultMaxRetries = 0;
+
+    public static ProviderRetrySettings Parse(JsonElement value)
+    {
+        if (value.ValueKind != JsonValueKind.Object)
+            throw new InvalidDataException("settings.json retry.provider must be an object.");
+        int? maxRetries = null;
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var property in value.EnumerateObject())
+        {
+            if (!seen.Add(property.Name))
+                throw new InvalidDataException($"settings.json retry.provider contains duplicate property '{property.Name}'.");
+            if (property.Name == "maxRetries" && property.Value.ValueKind == JsonValueKind.Number &&
+                property.Value.TryGetInt32(out var retries) && retries is >= 0 and <= 20)
+            {
+                maxRetries = retries;
+                continue;
+            }
+            throw new InvalidDataException($"settings.json retry.provider.{property.Name} is unsupported or invalid.");
+        }
+        return new(maxRetries);
+    }
+}
+
 /// <summary>Validated non-secret settings subset for the user and trusted project scopes.</summary>
 public sealed record RetrySettings(bool? Enabled = null, int? MaxRetries = null, int? BaseDelayMs = null,
-    int? MaxAgentDelayMs = null)
+    int? MaxAgentDelayMs = null, ProviderRetrySettings? Provider = null)
 {
     public static RetrySettings Parse(JsonElement value)
     {
@@ -80,6 +107,7 @@ public sealed record RetrySettings(bool? Enabled = null, int? MaxRetries = null,
             throw new InvalidDataException("settings.json retry must be an object.");
         bool? enabled = null;
         int? maxRetries = null, baseDelayMs = null, maxAgentDelayMs = null;
+        ProviderRetrySettings? provider = null;
         var seen = new HashSet<string>(StringComparer.Ordinal);
         foreach (var property in value.EnumerateObject())
         {
@@ -101,11 +129,14 @@ public sealed record RetrySettings(bool? Enabled = null, int? MaxRetries = null,
                     property.Value.TryGetInt32(out var maxDelay) && maxDelay is >= 0 and <= 300_000:
                     maxAgentDelayMs = maxDelay;
                     break;
+                case "provider":
+                    provider = ProviderRetrySettings.Parse(property.Value);
+                    break;
                 default:
                     throw new InvalidDataException($"settings.json retry.{property.Name} is unsupported or invalid.");
             }
         }
-        return new(enabled, maxRetries, baseDelayMs, maxAgentDelayMs);
+        return new(enabled, maxRetries, baseDelayMs, maxAgentDelayMs, provider);
     }
 
     public PiSharp.Runtime.Sessions.AgentRunRetryPolicy ResolvePolicy()
@@ -292,7 +323,9 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
             project.Retry.Enabled ?? Retry?.Enabled,
             project.Retry.MaxRetries ?? Retry?.MaxRetries,
             project.Retry.BaseDelayMs ?? Retry?.BaseDelayMs,
-            project.Retry.MaxAgentDelayMs ?? Retry?.MaxAgentDelayMs),
+            project.Retry.MaxAgentDelayMs ?? Retry?.MaxAgentDelayMs,
+            project.Retry.Provider is null ? Retry?.Provider : new ProviderRetrySettings(
+                project.Retry.Provider.MaxRetries ?? Retry?.Provider?.MaxRetries)),
         project.SteeringMode ?? SteeringMode,
         project.FollowUpMode ?? FollowUpMode,
         MergeModelThinkingLevels(ModelThinkingLevels, project.ModelThinkingLevels));

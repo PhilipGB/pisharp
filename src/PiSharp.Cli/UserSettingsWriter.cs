@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Globalization;
 using PiSharp.Runtime.Sessions;
 
 namespace PiSharp.Cli;
@@ -37,7 +38,7 @@ internal static class UserSettingsWriter
             root = new JsonObject();
         }
 
-        Set(root, segments, ParseValue(value));
+        Set(root, segments, ParseValue(setting, value));
         var bytes = System.Text.Encoding.UTF8.GetBytes(root.ToJsonString(s_jsonOptions) + "\n");
         if (bytes.Length > MaximumSettingsBytes) throw new InvalidDataException("settings.json exceeds 64KB.");
         await ReplaceAsync(target, bytes, cancellationToken);
@@ -50,6 +51,8 @@ internal static class UserSettingsWriter
         {
             "hideThinkingBlock" or "quietStartup" or "images.blockImages" or "compaction.enabled" or "retry.enabled" =>
                 value is null or "true" or "false",
+            "retry.provider.maxRetries" => value is null ||
+                int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var retries) && retries is >= 0 and <= 20,
             "steeringMode" or "followUpMode" => value is null || PromptDeliveryModes.TryParseSettingValue(value, out _),
             "defaultProjectTrust" when userScope => value is null or "ask" or "always" or "never",
             "defaultThinkingLevel" => value is null || ThinkingLevels.IsValid(value),
@@ -72,11 +75,12 @@ internal static class UserSettingsWriter
         };
     }
 
-    private static JsonNode? ParseValue(string? value) => value switch
+    private static JsonNode? ParseValue(string setting, string? value) => setting switch
     {
-        null => null,
-        "true" => JsonValue.Create(true),
-        "false" => JsonValue.Create(false),
+        _ when value is null => null,
+        "hideThinkingBlock" or "quietStartup" or "images.blockImages" or "compaction.enabled" or "retry.enabled" =>
+            JsonValue.Create(value == "true"),
+        "retry.provider.maxRetries" => JsonValue.Create(int.Parse(value!, NumberStyles.None, CultureInfo.InvariantCulture)),
         _ => JsonValue.Create(value)
     };
 

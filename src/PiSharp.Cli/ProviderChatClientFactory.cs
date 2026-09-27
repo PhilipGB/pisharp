@@ -1,4 +1,5 @@
 using System.ClientModel;
+using System.ClientModel.Primitives;
 using Anthropic;
 using Microsoft.Extensions.AI;
 using OpenAI;
@@ -24,15 +25,22 @@ public static class ProviderChatClientFactory
         return protocol;
     }
 
-    public static IChatClient Create(ModelSelection selection)
+    public static IChatClient Create(ModelSelection selection, ProviderRetrySettings? retrySettings = null)
     {
         var protocol = ResolveProtocol(selection);
+        var providerMaxRetries = retrySettings?.MaxRetries ?? ProviderRetrySettings.DefaultMaxRetries;
         if (protocol == "anthropic-messages")
-            return new AnthropicClient { ApiKey = selection.ApiKey, BaseUrl = selection.Connection.Endpoint?.ToString() ?? selection.Provider.Endpoint.ToString() }
+            return new AnthropicClient
+            {
+                ApiKey = selection.ApiKey,
+                BaseUrl = selection.Connection.Endpoint?.ToString() ?? selection.Provider.Endpoint.ToString(),
+                MaxRetries = providerMaxRetries
+            }
                 .AsIChatClient(selection.Model.Id, selection.Model.MaxOutputTokens ?? 16384,
                     thinkingMode: selection.Model.Id is "claude-sonnet-4-6" or "claude-opus-4-6"
                         ? AnthropicThinkingMode.Adaptive : AnthropicThinkingMode.Extended);
         var options = new OpenAIClientOptions();
+        options.RetryPolicy = new ClientRetryPolicy(providerMaxRetries);
         if (selection.Connection.Endpoint is not null) options.Endpoint = selection.Connection.Endpoint;
         OpenAiToolCallDeltaCapture? toolCallCapture = null;
         if (protocol == "openai-completions")

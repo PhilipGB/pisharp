@@ -182,7 +182,8 @@ internal sealed class AgentRunRetryController
                 publish(new("turn_failed", Error: error.Message)
                 {
                     TurnEndHead = getHead(),
-                    WillRetry = willRetry
+                    WillRetry = willRetry,
+                    FailureException = error
                 });
                 if (!willRetry)
                 {

@@ -30,7 +30,7 @@ internal sealed class ModelRuntimeController(
             $"{selection.Provider.Id}/{selection.Model.Id}");
         var pricing = ModelPricing.FromEnvironment(getEnvironment) ?? selection.Model.Pricing;
         return new PreparedModelRuntime(selection, thinking, selection.Connection,
-            ProviderChatClientFactory.Create(selection), policy, pricing);
+            ProviderChatClientFactory.Create(selection, settings.Retry?.Provider), policy, pricing);
     }
 
     public string ResolveThinkingLevelForModelSwitch(ModelSelection selection, string currentLevel)

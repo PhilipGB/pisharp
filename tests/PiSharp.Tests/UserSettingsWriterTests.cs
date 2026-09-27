@@ -21,6 +21,7 @@ public sealed class UserSettingsWriterTests
             await UserSettingsWriter.SetAsync(path, "retry.enabled", "false", userScope: true);
             await UserSettingsWriter.SetAsync(path, "steeringMode", "all", userScope: true);
             await UserSettingsWriter.SetAsync(path, "followUpMode", "one-at-a-time", userScope: true);
+            await UserSettingsWriter.SetAsync(path, "retry.provider.maxRetries", "2", userScope: true);
             var settings = await UserSettings.LoadAsync(root, _ => null);
 
             Assert.True(settings.HideThinkingBlock);
@@ -31,16 +32,21 @@ public sealed class UserSettingsWriterTests
             Assert.False(settings.Retry?.Enabled);
             Assert.Equal(PromptDeliveryMode.All, settings.SteeringMode);
             Assert.Equal(PromptDeliveryMode.OneAtATime, settings.FollowUpMode);
+            Assert.Equal(2, settings.Retry?.Provider?.MaxRetries);
 
             await UserSettingsWriter.SetAsync(path, "images.blockImages", null, userScope: true);
             await UserSettingsWriter.SetAsync(path, "retry.enabled", null, userScope: true);
             await UserSettingsWriter.SetAsync(path, "steeringMode", null, userScope: true);
+            await UserSettingsWriter.SetAsync(path, "retry.provider.maxRetries", null, userScope: true);
             Assert.Null((await UserSettings.LoadAsync(root, _ => null)).BlockImages);
             var cleared = await UserSettings.LoadAsync(root, _ => null);
             Assert.Null(cleared.Retry);
             Assert.Null(cleared.SteeringMode);
+            Assert.Null(cleared.Retry);
             await Assert.ThrowsAsync<ArgumentException>(() =>
                 UserSettingsWriter.SetAsync(path, "followUpMode", "sometimes", userScope: true));
+            await Assert.ThrowsAsync<ArgumentException>(() =>
+                UserSettingsWriter.SetAsync(path, "retry.provider.maxRetries", "21", userScope: true));
         }
         finally { Directory.Delete(root, recursive: true); }
     }

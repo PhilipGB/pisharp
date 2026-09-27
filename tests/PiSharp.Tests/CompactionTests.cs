@@ -430,7 +430,14 @@ public sealed class CompactionTests
             Assert.Single(events, item => item.Type == "context_compacted_in_flight");
             var contents = conversation.ActiveMessages().SelectMany(message => message.Contents).ToArray();
             Assert.Equal(2, contents.OfType<FunctionCallContent>().Count());
-            Assert.Equal(2, contents.OfType<FunctionResultContent>().Count());
+            var functionResults = contents.OfType<FunctionResultContent>().ToArray();
+            Assert.True(functionResults.Length == 2,
+                $"Expected two canonical tool results but saw {functionResults.Length}: " +
+                string.Join(" | ", functionResults.Select(result =>
+                    $"{result.CallId}: {result.Result?.ToString()?.Length ?? 0} chars, exception={result.Exception?.Message}")) +
+                $". Tool events: {string.Join(" | ", events.Where(item => item.ToolResultMessage is not null).Select(item =>
+                    string.Join(", ", item.ToolResultMessage!.Contents.OfType<FunctionResultContent>().Select(result =>
+                        $"{result.CallId}: {result.Result?.ToString()?.Length ?? 0} chars, exception={result.Exception?.Message}"))))}.");
             Assert.Contains(contents.OfType<FunctionResultContent>(), result => result.Result?.ToString()?.Contains(new string('X', 4000), StringComparison.Ordinal) == true);
             Assert.Contains(contents.OfType<FunctionResultContent>(), result => result.Result?.ToString()?.Contains(new string('Y', 4000), StringComparison.Ordinal) == true);
         }

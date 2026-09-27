@@ -9,6 +9,8 @@ public sealed class ThinkingLevelsTests
     [Fact]
     public void OrdinaryReasoningModelsDoNotExposeExtendedLevelsWithoutMapEntries()
     {
+        Assert.Equal("medium", ThinkingLevels.Default);
+        Assert.Equal("off", ThinkingLevels.ValidateForModel(ThinkingLevels.Default, supportsReasoning: false));
         Assert.Equal(["off", "minimal", "low", "medium", "high"],
             ThinkingLevels.AvailableForModel(true));
         Assert.Equal("high", ThinkingLevels.ValidateForModel("max", true));

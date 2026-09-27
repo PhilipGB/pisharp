@@ -93,7 +93,7 @@ try
         offline: cli.Offline || Environment.GetEnvironmentVariable("PI_OFFLINE") is { } offlineFlag &&
             offlineFlag.ToLowerInvariant() is "1" or "true" or "yes");
     selection = await modelRuntime.ResolveAsync(cli.Provider ?? (cli.Local ? "local" : null), cli.ModelOverride);
-    thinking = explicitThinking ?? userSettings.GetModelThinkingLevel(selection) ?? cli.Thinking ?? "off";
+    thinking = explicitThinking ?? userSettings.GetModelThinkingLevel(selection) ?? cli.Thinking ?? ThinkingLevels.Default;
     thinking = ThinkingLevels.ValidateForModel(thinking, selection.Model.Reasoning, selection.Model.ThinkingLevelMap);
     connection = selection.Connection;
 }
@@ -119,7 +119,7 @@ if (cli.ListModels)
     return;
 }
 IChatClient chat;
-try { chat = ProviderChatClientFactory.Create(selection); }
+try { chat = ProviderChatClientFactory.Create(selection, userSettings.Retry?.Provider); }
 catch (Exception error) when (error is NotSupportedException or InvalidOperationException)
 {
     Console.Error.WriteLine(error.Message);
@@ -235,7 +235,7 @@ try
             thinking = userSettings.GetModelThinkingLevel(selection) ?? cli.Thinking ?? thinking;
         connection = selection.Connection;
         thinking = ThinkingLevels.ValidateForModel(thinking, selection.Model.Reasoning, selection.Model.ThinkingLevelMap);
-        chat = ProviderChatClientFactory.Create(selection);
+        chat = ProviderChatClientFactory.Create(selection, userSettings.Retry?.Provider);
         contextPolicy = userSettings.ResolveCompactionPolicy(selection.Model.ContextLength, Environment.GetEnvironmentVariable, $"{selection.Provider.Id}/{selection.Model.Id}");
         modelPricing = ModelPricing.FromEnvironment(Environment.GetEnvironmentVariable) ?? selection.Model.Pricing;
         agent = projectRuntime.CreateAgent(chat, selection, thinking, cli, userSettings);
@@ -590,7 +590,11 @@ async Task<(UserSettings User, UserSettings? Project)> SaveSettingAsync(bool pro
         ProjectSettings = projectSettings,
         Settings = userSettings
     };
-    if (setting is "images.blockImages" or "compaction.enabled")
+    if (setting == "steeringMode")
+        conversationRun.SetSteeringMode(userSettings.SteeringMode ?? PromptDeliveryMode.OneAtATime);
+    else if (setting == "followUpMode")
+        conversationRun.SetFollowUpMode(userSettings.FollowUpMode ?? PromptDeliveryMode.OneAtATime);
+    if (setting is "images.blockImages" or "compaction.enabled" or "retry.provider.maxRetries")
         await ReplaceModelRuntime(selection, thinking, recordModelChange: false);
     if (setting == "theme")
     {

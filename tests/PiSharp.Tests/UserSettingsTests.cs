@@ -70,6 +70,41 @@ public sealed class UserSettingsTests
     }
 
     [Fact]
+    public async Task ProviderRetrySettingsAreSeparateValidatedAndMergedByScope()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-provider-retry-settings-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(Path.Combine(root, ".pi"));
+        try
+        {
+            var path = Path.Combine(root, "settings.json");
+            await File.WriteAllTextAsync(path, "{\"retry\":{\"maxRetries\":4,\"provider\":{\"maxRetries\":2}}}");
+            var user = await UserSettings.LoadAsync(root, _ => null);
+            Assert.Equal(4, user.Retry?.MaxRetries);
+            Assert.Equal(2, user.Retry?.Provider?.MaxRetries);
+            Assert.Equal(ProviderRetrySettings.DefaultMaxRetries, new ProviderRetrySettings().MaxRetries ?? ProviderRetrySettings.DefaultMaxRetries);
+
+            await File.WriteAllTextAsync(Path.Combine(root, ".pi", "settings.json"), "{\"retry\":{\"maxRetries\":1,\"provider\":{\"maxRetries\":0}}}");
+            var effective = user.Overlay(await UserSettings.LoadProjectAsync(root));
+            Assert.Equal(1, effective.Retry?.MaxRetries);
+            Assert.Equal(0, effective.Retry?.Provider?.MaxRetries);
+
+            await File.WriteAllTextAsync(Path.Combine(root, ".pi", "settings.json"), "{\"retry\":{\"provider\":{}}}");
+            Assert.Equal(2, user.Overlay(await UserSettings.LoadProjectAsync(root)).Retry?.Provider?.MaxRetries);
+
+            foreach (var invalid in new[]
+            {
+                "null", "[]", "{\"maxRetries\":-1}", "{\"maxRetries\":21}",
+                "{\"maxRetries\":1.5}", "{\"maxRetries\":1,\"maxRetries\":2}", "{\"timeoutMs\":1000}"
+            })
+            {
+                await File.WriteAllTextAsync(path, "{\"retry\":{\"provider\":" + invalid + "}}");
+                await Assert.ThrowsAsync<InvalidDataException>(() => UserSettings.LoadAsync(root, _ => null));
+            }
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [Fact]
     public async Task UserSettingsProvideValidatedDefaultsBelowCliAndEnvironmentOverrides()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-settings-" + Guid.NewGuid().ToString("N"));

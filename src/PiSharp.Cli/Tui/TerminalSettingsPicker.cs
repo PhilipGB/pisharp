@@ -1,4 +1,5 @@
 using PiSharp.Cli;
+using PiSharp.Runtime.Sessions;
 
 namespace PiSharp.Cli.Tui;
 
@@ -18,7 +19,10 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, Func<IReadOn
         new("hideThinkingBlock", "Hide thinking", "Hide reasoning blocks in the interactive transcript."),
         new("images.blockImages", "Block images", "Replace provider-bound images with text while preserving saved history."),
         new("compaction.enabled", "Automatic compaction", "Summarize older whole turns before a prompt when the context budget is known."),
-        new("quietStartup", "Quiet startup", "Hide the startup banner on the next launch.")
+        new("quietStartup", "Quiet startup", "Hide the startup banner on the next launch."),
+        new("steeringMode", "Steering mode", "How queued steering messages are delivered during an agent turn."),
+        new("followUpMode", "Follow-up mode", "How queued follow-up messages are delivered after an agent turn."),
+        new("retry.provider.maxRetries", "Provider request retries", "Retry transient requests in the provider SDK before PiSharp handles the failure.")
     ];
 
     public async Task ShowAsync(UserSettings userSettings, UserSettings? projectSettings,
@@ -116,6 +120,9 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, Func<IReadOn
         "images.blockImages" => settings.BlockImages?.ToString().ToLowerInvariant(),
         "compaction.enabled" => settings.Compaction?.Enabled?.ToString().ToLowerInvariant(),
         "quietStartup" => settings.QuietStartup?.ToString().ToLowerInvariant(),
+        "steeringMode" => settings.SteeringMode?.ToSettingValue(),
+        "followUpMode" => settings.FollowUpMode?.ToSettingValue(),
+        "retry.provider.maxRetries" => settings.Retry?.Provider?.MaxRetries?.ToString(System.Globalization.CultureInfo.InvariantCulture),
         _ => null
     };
 
@@ -144,6 +151,20 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, Func<IReadOn
         else if (setting.Id == "defaultThinkingLevel")
         {
             values.AddRange(ThinkingLevels.All.Select(level => (level, (string?)level, level, $"Use {level} as the default thinking level.")));
+        }
+        else if (setting.Id is "steeringMode" or "followUpMode")
+        {
+            values.Add(("one-at-a-time", "one-at-a-time", "One at a time", "Deliver one queued message at each available boundary."));
+            values.Add(("all", "all", "All together", "Deliver all queued messages together at each available boundary."));
+        }
+        else if (setting.Id == "retry.provider.maxRetries")
+        {
+            var counts = Enumerable.Range(0, 4).Select(value => value.ToString(System.Globalization.CultureInfo.InvariantCulture)).ToHashSet(StringComparer.Ordinal);
+            if (currentValue is not null) counts.Add(currentValue);
+            values.AddRange(counts.OrderBy(value => int.Parse(value, System.Globalization.CultureInfo.InvariantCulture))
+                .Select(value => (value, (string?)value, value, value == "0"
+                    ? "Disable provider retries and let PiSharp handle the failure."
+                    : $"Allow up to {value} provider-level retry attempts.")));
         }
         else if (setting.Id == "theme")
         {

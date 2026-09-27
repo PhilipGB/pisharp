@@ -156,6 +156,124 @@ public sealed class ProviderChatClientFactoryTests
     }
 
     [Fact]
+    public async Task OpenAiProviderRetrySettingControlsSdkRetries()
+    {
+        using (var listener = StartLoopbackListener(out var port))
+        {
+            var server = Task.Run(async () =>
+            {
+                var request = await listener.GetContextAsync();
+                request.Response.StatusCode = 503;
+                await using var writer = new StreamWriter(request.Response.OutputStream);
+                await writer.WriteAsync("{\"error\":{\"message\":\"temporary\"}}");
+                await writer.FlushAsync();
+                request.Response.Close();
+            });
+            using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            var selection = Selection("fixture", $"http://127.0.0.1:{port}/v1", "openai-responses");
+            await Assert.ThrowsAnyAsync<Exception>(() => ProviderChatClientFactory.Create(selection).GetResponseAsync(
+                [new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User, "hello")], cancellationToken: deadline.Token));
+            await server.WaitAsync(deadline.Token);
+        }
+
+        using (var listener = StartLoopbackListener(out var port))
+        {
+            var requests = 0;
+            var server = Task.Run(async () =>
+            {
+                for (var index = 0; index < 2; index++)
+                {
+                    var request = await listener.GetContextAsync();
+                    requests++;
+                    if (index == 0)
+                    {
+                        request.Response.StatusCode = 503;
+                        await using var writer = new StreamWriter(request.Response.OutputStream);
+                        await writer.WriteAsync("{\"error\":{\"message\":\"temporary\"}}");
+                        await writer.FlushAsync();
+                    }
+                    else
+                    {
+                        request.Response.ContentType = "application/json";
+                        await using var writer = new StreamWriter(request.Response.OutputStream);
+                        await writer.WriteAsync("""
+                            {"id":"resp_retry","object":"response","created_at":1,"model":"fixture-model","status":"completed","output":[{"id":"msg_1","type":"message","role":"assistant","status":"completed","content":[{"type":"output_text","text":"retried","annotations":[]}]}],"usage":{"input_tokens":1,"output_tokens":1,"total_tokens":2}}
+                            """);
+                        await writer.FlushAsync();
+                    }
+                    request.Response.Close();
+                }
+            });
+            using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+            var selection = Selection("fixture", $"http://127.0.0.1:{port}/v1", "openai-responses");
+            var response = await ProviderChatClientFactory.Create(selection, new ProviderRetrySettings(MaxRetries: 1))
+                .GetResponseAsync([new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User, "hello")], cancellationToken: deadline.Token);
+            await server.WaitAsync(deadline.Token);
+            Assert.Equal("retried", response.Text);
+            Assert.Equal(2, requests);
+        }
+    }
+
+    [Fact]
+    public async Task AnthropicProviderRetrySettingControlsSdkRetries()
+    {
+        using (var listener = StartLoopbackListener(out var port))
+        {
+            var server = Task.Run(async () =>
+            {
+                var request = await listener.GetContextAsync();
+                request.Response.StatusCode = 500;
+                await using var writer = new StreamWriter(request.Response.OutputStream);
+                await writer.WriteAsync("{\"error\":{\"message\":\"temporary\"}}");
+                await writer.FlushAsync();
+                request.Response.Close();
+            });
+            using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            var selection = Selection("fixture", $"http://127.0.0.1:{port}", "anthropic-messages");
+            await Assert.ThrowsAnyAsync<Exception>(() => ProviderChatClientFactory.Create(selection).GetResponseAsync(
+                [new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User, "hello")], cancellationToken: deadline.Token));
+            await server.WaitAsync(deadline.Token);
+        }
+
+        using (var listener = StartLoopbackListener(out var port))
+        {
+            var requests = 0;
+            var server = Task.Run(async () =>
+            {
+                for (var index = 0; index < 2; index++)
+                {
+                    var request = await listener.GetContextAsync();
+                    requests++;
+                    if (index == 0)
+                    {
+                        request.Response.StatusCode = 500;
+                        await using var writer = new StreamWriter(request.Response.OutputStream);
+                        await writer.WriteAsync("{\"error\":{\"message\":\"temporary\"}}");
+                        await writer.FlushAsync();
+                    }
+                    else
+                    {
+                        request.Response.ContentType = "application/json";
+                        await using var writer = new StreamWriter(request.Response.OutputStream);
+                        await writer.WriteAsync("""
+                            {"id":"msg_retry","type":"message","role":"assistant","model":"fixture-model","content":[{"type":"text","text":"retried"}],"stop_reason":"end_turn","stop_sequence":null,"usage":{"input_tokens":1,"output_tokens":1}}
+                            """);
+                        await writer.FlushAsync();
+                    }
+                    request.Response.Close();
+                }
+            });
+            using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+            var selection = Selection("fixture", $"http://127.0.0.1:{port}", "anthropic-messages");
+            var response = await ProviderChatClientFactory.Create(selection, new ProviderRetrySettings(MaxRetries: 1))
+                .GetResponseAsync([new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User, "hello")], cancellationToken: deadline.Token);
+            await server.WaitAsync(deadline.Token);
+            Assert.Equal("retried", response.Text);
+            Assert.Equal(2, requests);
+        }
+    }
+
+    [Fact]
     public async Task AnthropicMessagesUsesNativeHeadersAndBody()
     {
         using var listener = StartLoopbackListener(out var port);

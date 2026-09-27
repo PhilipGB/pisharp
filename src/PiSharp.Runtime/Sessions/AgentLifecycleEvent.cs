@@ -28,6 +28,9 @@ public sealed record AgentLifecycleEvent(string Type, string? Text = null, strin
     internal Exception? ProviderException { get; init; }
 
     [JsonIgnore]
+    internal Exception? FailureException { get; init; }
+
+    [JsonIgnore]
     internal ProviderToolCallDelta? StreamedToolCallDelta { get; init; }
 
     [JsonIgnore]

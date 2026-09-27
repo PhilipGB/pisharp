@@ -19,6 +19,8 @@ public sealed class TerminalPtyTests
         using var listener = StartLoopbackListener(out var port);
         var requests = new List<string>();
         using var serverTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+        var firstRequestReceived = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseFirstResponse = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var server = Task.Run(async () =>
         {
             for (var index = 0; index < 2; index++)
@@ -28,6 +30,11 @@ public sealed class TerminalPtyTests
                 Assert.Equal("Bearer pty-fixture-key", request.Request.Headers["Authorization"]);
                 using var reader = new StreamReader(request.Request.InputStream);
                 requests.Add(await reader.ReadToEndAsync(serverTimeout.Token));
+                if (index == 0)
+                {
+                    firstRequestReceived.TrySetResult();
+                    await releaseFirstResponse.Task.WaitAsync(serverTimeout.Token);
+                }
                 request.Response.ContentType = "text/event-stream";
                 request.Response.KeepAlive = false;
                 await using var writer = new StreamWriter(request.Response.OutputStream);
@@ -51,7 +58,7 @@ public sealed class TerminalPtyTests
         try
         {
             var models = """
-                {"providers":{"fixture":{"baseUrl":"http://127.0.0.1:PORT/v1","apiKeyEnv":"PISHARP_FIXTURE_KEY","models":[{"id":"fixture-model","api":"openai-responses"}]}}}
+                {"providers":{"fixture":{"baseUrl":"http://127.0.0.1:PORT/v1","apiKeyEnv":"PISHARP_FIXTURE_KEY","models":[{"id":"fixture-model","api":"openai-responses","reasoning":true}]}}}
                 """.Replace("PORT", port.ToString(System.Globalization.CultureInfo.InvariantCulture), StringComparison.Ordinal);
             await File.WriteAllTextAsync(Path.Combine(agent, "models.json"), models);
             var start = new ProcessStartInfo("/usr/bin/script")
@@ -72,7 +79,14 @@ public sealed class TerminalPtyTests
             Assert.NotNull(process);
 
             var output = new StringBuilder();
+            var idleReady = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var idleAfterReply = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var settingsScopeShown = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var steeringOptionsShown = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var steeringSaved = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var settingsClosed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var firstSteeringQueued = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var bothSteeringQueued = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var drain = Task.Run(async () =>
             {
                 var buffer = new char[1024];
@@ -83,8 +97,22 @@ public sealed class TerminalPtyTests
                     {
                         output.Append(buffer, 0, count);
                         var captured = output.ToString();
-                        var replyAt = captured.IndexOf("PTY_REPLY_OK", StringComparison.Ordinal);
                         const string idleFooter = "Ctrl+L models · Ctrl+P cycle";
+                        if (captured.Contains(idleFooter, StringComparison.Ordinal)) idleReady.TrySetResult();
+                        if (captured.Contains("Settings scope", StringComparison.Ordinal)) settingsScopeShown.TrySetResult();
+                        if (captured.Contains("Deliver all queued messages together", StringComparison.Ordinal))
+                            steeringOptionsShown.TrySetResult();
+                        if (captured.Contains("Saved user setting steeringMode = all.", StringComparison.Ordinal))
+                            steeringSaved.TrySetResult();
+                        if (captured.Contains("Settings closed.", StringComparison.Ordinal)) settingsClosed.TrySetResult();
+                        const string queuedMessage = "Queued steering message.";
+                        var queuedCount = 0;
+                        for (var position = 0; (position = captured.IndexOf(queuedMessage, position, StringComparison.Ordinal)) >= 0;
+                            position += queuedMessage.Length)
+                            queuedCount++;
+                        if (queuedCount >= 1) firstSteeringQueued.TrySetResult();
+                        if (queuedCount >= 2) bothSteeringQueued.TrySetResult();
+                        var replyAt = captured.IndexOf("PTY_REPLY_OK", StringComparison.Ordinal);
                         if (replyAt >= 0 && captured.IndexOf(idleFooter, replyAt + "PTY_REPLY_OK".Length,
                                 StringComparison.Ordinal) >= 0)
                             idleAfterReply.TrySetResult();
@@ -93,10 +121,33 @@ public sealed class TerminalPtyTests
             });
             var stderr = process.StandardError.ReadToEndAsync();
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(20));
-            await process.StandardInput.WriteAsync("Use echo_ext with value pty.\n");
+            await idleReady.Task.WaitAsync(timeout.Token);
+            await process.StandardInput.WriteAsync("/settings\n");
             await process.StandardInput.FlushAsync();
             try
             {
+                await settingsScopeShown.Task.WaitAsync(timeout.Token);
+                await process.StandardInput.WriteAsync("\n");
+                await process.StandardInput.FlushAsync();
+                await process.StandardInput.WriteAsync("Steering mode\n");
+                await process.StandardInput.FlushAsync();
+                await steeringOptionsShown.Task.WaitAsync(timeout.Token);
+                await process.StandardInput.WriteAsync("All together\n");
+                await process.StandardInput.FlushAsync();
+                await steeringSaved.Task.WaitAsync(timeout.Token);
+                await process.StandardInput.WriteAsync("\u001b");
+                await process.StandardInput.FlushAsync();
+                await settingsClosed.Task.WaitAsync(timeout.Token);
+                await process.StandardInput.WriteAsync("Use echo_ext with value pty.\n");
+                await process.StandardInput.FlushAsync();
+                await firstRequestReceived.Task.WaitAsync(timeout.Token);
+                await process.StandardInput.WriteAsync("steering one\n");
+                await process.StandardInput.FlushAsync();
+                await firstSteeringQueued.Task.WaitAsync(timeout.Token);
+                await process.StandardInput.WriteAsync("steering two\n");
+                await process.StandardInput.FlushAsync();
+                await bothSteeringQueued.Task.WaitAsync(timeout.Token);
+                releaseFirstResponse.TrySetResult();
                 await idleAfterReply.Task.WaitAsync(timeout.Token);
                 await process.StandardInput.WriteAsync("/quit\n");
                 await process.StandardInput.FlushAsync();
@@ -123,12 +174,19 @@ public sealed class TerminalPtyTests
             Assert.Contains("\u001b[?1049l", terminalOutput);
             Assert.Contains("function_call_output", requests[1]);
             Assert.Contains("extension: pty", requests[1]);
+            Assert.Contains("steering one", requests[1]);
+            Assert.Contains("steering two", requests[1]);
+            Assert.True(requests[1].IndexOf("steering one", StringComparison.Ordinal) <
+                requests[1].IndexOf("steering two", StringComparison.Ordinal));
+            using var firstRequest = System.Text.Json.JsonDocument.Parse(requests[0]);
+            Assert.Equal("medium", firstRequest.RootElement.GetProperty("reasoning").GetProperty("effort").GetString());
             Assert.DoesNotContain("Agent error:", terminalOutput);
             Assert.DoesNotContain("Unhandled exception", await stderr);
         }
         finally
         {
             if (process is { HasExited: false }) process.Kill(entireProcessTree: true);
+            releaseFirstResponse.TrySetResult();
             await serverTimeout.CancelAsync();
             Directory.Delete(root, recursive: true);
         }
@@ -505,6 +563,8 @@ public sealed class TerminalPtyTests
             var editorPrompt = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var externalEditorSaved = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var themeSaved = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var steeringSaved = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var followUpSaved = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var closed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var stdout = Task.Run(async () =>
             {
@@ -521,6 +581,8 @@ public sealed class TerminalPtyTests
                         if (current.Contains("External editor command [", StringComparison.Ordinal)) editorPrompt.TrySetResult();
                         if (current.Contains("Saved user setting externalEditor = code --wait.", StringComparison.Ordinal)) externalEditorSaved.TrySetResult();
                         if (current.Contains("Saved user setting theme = light.", StringComparison.Ordinal)) themeSaved.TrySetResult();
+                        if (current.Contains("Saved user setting steeringMode = all.", StringComparison.Ordinal)) steeringSaved.TrySetResult();
+                        if (current.Contains("Saved user setting followUpMode = one-at-a-time.", StringComparison.Ordinal)) followUpSaved.TrySetResult();
                         if (current.Contains("Settings closed.", StringComparison.Ordinal)) closed.TrySetResult();
                     }
                 }
@@ -539,6 +601,12 @@ public sealed class TerminalPtyTests
             await process.StandardInput.WriteAsync("Theme\nlight\n");
             await process.StandardInput.FlushAsync();
             await themeSaved.Task.WaitAsync(TimeSpan.FromSeconds(12));
+            await process.StandardInput.WriteAsync("Steering mode\nall\n");
+            await process.StandardInput.FlushAsync();
+            await steeringSaved.Task.WaitAsync(TimeSpan.FromSeconds(12));
+            await process.StandardInput.WriteAsync("Follow-up mode\nOne at a time\n");
+            await process.StandardInput.FlushAsync();
+            await followUpSaved.Task.WaitAsync(TimeSpan.FromSeconds(12));
             await process.StandardInput.WriteAsync("\u001b");
             await process.StandardInput.FlushAsync();
             await closed.Task.WaitAsync(TimeSpan.FromSeconds(12));
@@ -553,12 +621,16 @@ public sealed class TerminalPtyTests
             Assert.Contains("Settings scope", output);
             Assert.Contains("Hide thinking", output);
             Assert.Contains("Saved user setting hideThinkingBlock = true", output);
+            Assert.Contains("Saved user setting steeringMode = all", output);
+            Assert.Contains("Saved user setting followUpMode = one-at-a-time", output);
             Assert.DoesNotContain("Agent error:", output);
             Assert.DoesNotContain("Exception:", await stderr);
             var settings = await PiSharp.Cli.UserSettings.LoadAsync(agent, _ => null);
             Assert.True(settings.HideThinkingBlock);
             Assert.Equal("light", settings.Theme);
             Assert.Equal("code --wait", settings.ExternalEditor);
+            Assert.Equal(PiSharp.Runtime.Sessions.PromptDeliveryMode.All, settings.SteeringMode);
+            Assert.Equal(PiSharp.Runtime.Sessions.PromptDeliveryMode.OneAtATime, settings.FollowUpMode);
             Assert.Equal(2048, settings.Compaction?.ReserveTokens);
         }
         finally { Directory.Delete(cwd, recursive: true); }

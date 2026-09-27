@@ -241,11 +241,13 @@ public sealed class ProviderOverflowLoopbackTests
             Assert.True(events.Any(item => item.Type == "model_context_overflow_recovery"),
                 $"Loopback received {Volatile.Read(ref receivedRequests)} requests; server error: {serverError}; " +
                 $"provider error details: {events.LastOrDefault(item => item.Type == "model_request_failed")?.ProviderException}; " +
-                $"run events: {string.Join(" | ", events.Select(item => $"{item.Type}: {item.Error}"))}.");
+                $"run events: {string.Join(" | ", events.Select(item => $"{item.Type}: {item.Error}"))}; " +
+                $"turn exception: {events.LastOrDefault(item => item.Type == "turn_failed")?.FailureException}.");
             Assert.True(events.Any(item => item.Type == "turn_completed"),
                 $"Loopback received {Volatile.Read(ref receivedRequests)} requests; server error: {serverError}; " +
                 $"provider error details: {events.LastOrDefault(item => item.Type == "model_request_failed")?.ProviderException}; " +
-                $"run events: {string.Join(" | ", events.Select(item => $"{item.Type}: {item.Error}"))}.");
+                $"run events: {string.Join(" | ", events.Select(item => $"{item.Type}: {item.Error}"))}; " +
+                $"turn exception: {events.LastOrDefault(item => item.Type == "turn_failed")?.FailureException}.");
             if (api == "openai-completions")
             {
                 var providerFailure = Assert.Single(events, item => item.Type == "model_request_failed");
