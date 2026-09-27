@@ -1302,7 +1302,7 @@ public sealed class RpcModeTests
     }
 
     [Fact]
-    public async Task SessionStatisticsCountActiveBranchAndExposeUnknownBillingThroughRpc()
+    public async Task SessionStatisticsKeepLocalBranchViewAndRpcProjectsPiTotalsAcrossBranches()
     {
         var session = new ConversationSession(Path.GetTempPath(), "fixture", null);
         session.Append(new ChatMessage(ChatRole.User, "question"));
@@ -1329,8 +1329,13 @@ public sealed class RpcModeTests
         await serving.WaitAsync(TimeSpan.FromSeconds(5));
         using var response = JsonDocument.Parse(Assert.Single(output.Lines()));
         var data = response.RootElement.GetProperty("data");
-        Assert.Equal(2, data.GetProperty("Leaves").GetInt32());
-        Assert.Equal(JsonValueKind.Null, data.GetProperty("BilledTokens").ValueKind);
+        Assert.Equal(1, data.GetProperty("userMessages").GetInt32());
+        Assert.Equal(2, data.GetProperty("assistantMessages").GetInt32());
+        Assert.Equal(1, data.GetProperty("toolCalls").GetInt32());
+        Assert.Equal(1, data.GetProperty("toolResults").GetInt32());
+        Assert.Equal(4, data.GetProperty("totalMessages").GetInt32());
+        Assert.Equal(0, data.GetProperty("tokens").GetProperty("total").GetInt64());
+        Assert.Equal(0m, data.GetProperty("cost").GetDecimal());
     }
 
     [Fact]

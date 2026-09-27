@@ -1510,7 +1510,7 @@
       "id": "rpc-bash",
       "title": "RPC / event: bash",
       "status": "in_progress",
-      "source": "docs/parity/detailed-inventory.md:36",
+      "source": "docs/parity/detailed-inventory.md:43",
       "acceptance": [
         "Implement bash using shared canonical runtime with correlated responses/event ordering",
         "Test protocol through RPC process, including failures and cancellation"
@@ -1555,15 +1555,21 @@
       "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:36",
       "acceptance": [
-        "Implement get_session_stats using shared canonical runtime with correlated responses/event ordering",
-        "Test protocol through RPC process, including failures and cancellation",
-        "Remaining: Pi wire-compatible payloads, lifecycle/error semantics and pinned process differential."
+        "Return Pi-shaped sessionFile/sessionId, message counts, token totals, cost and optional contextUsage fields",
+        "Allow get_session_stats during an active provider run and preserve the active operation",
+        "Remaining: match Pi contextUsage estimates, including imported post-compaction usage, and verify broader extension/error semantics."
       ],
       "implementation": [
-        "src/PiSharp.Cli/Protocols/RpcMode.cs: partial get_session_stats operation (PiSharp wire format)"
+        "RpcSessionStatsProjector projects Pi response keys from a cloned session snapshot, adds the generated live system message to totalMessages, includes the current session path and available model context window, and counts canonical plus imported Pi messages/tool content across all branches.",
+        "Usage totals include native usage records and original Pi JSONL usage on assistant/tool-result messages, compaction, branch_summary, and standalone usage entries. get_session_stats no longer rejects an active provider run."
       ],
       "evidence": [
-        "tests/PiSharp.Tests/RpcModeTests.cs: local protocol/command fixtures (coverage varies by operation)"
+        "Current Pi 2b0a123de98318c2ff8069661721ce0c3794c34e AgentSession.getSessionStats aggregates session entries and RPC returns the result without a busy-state restriction.",
+        "RpcSessionStatsProjectorTests.ProjectsPiStatsAcrossAllBranchesAndUsageEntries and AggregatesUsageFromImportedPiMessagesAndEntryKinds cover native and imported Pi usage across branches, messages, compaction, branch summaries, and standalone usage records.",
+        "Current Pi test/agent-session-stats.test.ts covers assistant and tool-result message usage, compaction/branch_summary usage, standalone usage entries, and post-compaction context usage; PiSharp preserves original Pi records and its stats projector aggregates their billing totals.",
+        "RpcReadCommandsProcessTests.SessionReadCommandsReturnOneSnapshotWhileProviderRequestIsBlocked queries statistics during a held provider stream and verifies the Pi response shape/counts and that the run remains active.",
+        "Paired current-Pi/PiSharp CLI processes during a blocked provider stream match active response availability, user/assistant/tool/total counts, token/cost totals and contextWindow. Pi estimated 1422 context tokens while PiSharp estimated 817; this approximation remains open. The same probe found Pi accepts active export_html while PiSharp still rejects it; see docs/parity/fixtures/rpc-get-session-stats-baseline.md.",
+        "Focused RPC stats/read tests pass 6/6; dotnet format PiSharp.slnx --verify-no-changes passes; dotnet build PiSharp.slnx --warnaserror reports 0 warnings/errors; final dotnet test PiSharp.slnx --no-build --no-restore passes 658/658 (0 failed, 0 skipped). Earlier full runs exposed one obsolete RPC response assertion, which was updated, and two request-count failures (compaction expected 3/actual 4; multi-tool expected 2/actual 3); each request-count test passed in isolation and the final full run passed. Exact-head CI follows push."
       ],
       "dependencies": []
     },

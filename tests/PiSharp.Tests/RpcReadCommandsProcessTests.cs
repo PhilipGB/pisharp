@@ -201,7 +201,7 @@ public sealed class RpcReadCommandsProcessTests
                 {
                     baseUrl = $"http://127.0.0.1:{port}/v1",
                     apiKeyEnv = "PISHARP_FIXTURE_KEY",
-                    models = new[] { new { id = "read-snapshot-fixture", api = "openai-completions" } }
+                    models = new[] { new { id = "read-snapshot-fixture", api = "openai-completions", contextWindow = 8192 } }
                 }
             }
         }));
@@ -259,14 +259,15 @@ public sealed class RpcReadCommandsProcessTests
                 Assert.Equal(4, state.RootElement.GetProperty("data").GetProperty("messageCount").GetInt32());
             }
 
-            var commandIds = new[] { "messages-live", "entries-live", "tree-live", "fork-messages-live", "last-assistant-live" };
+            var commandIds = new[] { "messages-live", "entries-live", "tree-live", "fork-messages-live", "last-assistant-live", "stats-live" };
             var commands = new object[]
             {
                 new { id = commandIds[0], type = "get_messages" },
                 new { id = commandIds[1], type = "get_entries" },
                 new { id = commandIds[2], type = "get_tree" },
                 new { id = commandIds[3], type = "get_fork_messages" },
-                new { id = commandIds[4], type = "get_last_assistant_text" }
+                new { id = commandIds[4], type = "get_last_assistant_text" },
+                new { id = commandIds[5], type = "get_session_stats" }
             };
             foreach (var command in commands) await WriteCommandAsync(process, command, timeout.Token);
             var responses = new Dictionary<string, JsonDocument>(StringComparer.Ordinal);
@@ -300,6 +301,15 @@ public sealed class RpcReadCommandsProcessTests
                 Assert.Contains(forkMessages.EnumerateArray(), message => message.GetProperty("text").GetString() == "current pending prompt");
                 Assert.Equal("previous answer", responses["last-assistant-live"].RootElement.GetProperty("data")
                     .GetProperty("text").GetString());
+
+                var stats = responses["stats-live"].RootElement.GetProperty("data");
+                Assert.Equal(["sessionFile", "sessionId", "userMessages", "assistantMessages", "toolCalls", "toolResults",
+                    "totalMessages", "tokens", "cost", "contextUsage"], stats.EnumerateObject().Select(property => property.Name));
+                Assert.Equal(2, stats.GetProperty("userMessages").GetInt32());
+                Assert.Equal(1, stats.GetProperty("assistantMessages").GetInt32());
+                Assert.Equal(4, stats.GetProperty("totalMessages").GetInt32());
+                Assert.Equal(8192, stats.GetProperty("contextUsage").GetProperty("contextWindow").GetInt32());
+                Assert.True(stats.GetProperty("contextUsage").GetProperty("tokens").GetInt64() > 0);
             }
             finally
             {

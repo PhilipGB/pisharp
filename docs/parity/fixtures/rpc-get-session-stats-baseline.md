@@ -1,0 +1,11 @@
+# RPC `get_session_stats` active-run comparison
+
+Reference: Pi `0.87.1`, source `earendil-works/pi@2b0a123de98318c2ff8069661721ce0c3794c34e`.
+
+Paired Pi/PiSharp CLI processes queried `get_session_stats` while a second provider request was blocked after a partial assistant delta. Pi accepted the read during the active run. PiSharp previously returned `Wait until the active prompt settles.`; its RPC now returns the same Pi-shaped data while leaving the provider run active.
+
+With the loopback fixture's 8192-token model, both returned two user messages, one assistant message, no tool calls/results, four total messages (including the live system message), zero reported usage and cost, and matching `sessionId`/`sessionFile` field shapes. Paths and IDs naturally differ between the two temporary process trees. Pi reported `contextUsage.tokens: 1422` (17.36%); PiSharp reported 817 (9.97%). Context usage remains approximate because PiSharp uses its local context estimator and instruction prompt. Exact context estimation is open.
+
+Current Pi's `AgentSession.getSessionStats()` aggregates entries across the session, and the RPC handler returns it without a busy-state check. PiSharp's `RpcSessionStatsProjector` aggregates native usage nodes and original Pi JSONL usage attached to assistant/tool-result messages, compaction, branch summaries, and standalone usage entries. It snapshots the canonical tree, adds the generated system message to `totalMessages`, and projects Pi's message/tool/token/cost fields. Projector tests cover native branch aggregation and imported Pi entry shapes; the blocked-provider process test covers the correlated active-run response. Pi's `agent-session-stats.test.ts` also covers usage attached to these entries and post-compaction context accounting. PiSharp's imported post-compaction context usage remains open.
+
+The same paired process probe found the next active-read gap: Pi accepts `export_html` while the run is blocked and creates the requested file; PiSharp currently returns `Wait until the active prompt settles.` and creates no file. See the next continuation action.
