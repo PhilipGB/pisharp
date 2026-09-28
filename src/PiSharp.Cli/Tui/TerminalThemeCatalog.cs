@@ -13,12 +13,17 @@ internal sealed class TerminalThemeCatalog
     private readonly string _userBaseDirectory;
     private readonly IReadOnlyList<string>? _userThemePaths;
     private readonly IReadOnlyList<string>? _projectThemePaths;
+    private readonly bool _discoverThemes;
+    private readonly IReadOnlyList<string>? _explicitThemePaths;
+    private readonly string _explicitThemeBaseDirectory;
     private readonly TerminalColorMode _mode;
     private readonly Func<string, string?> _environment;
 
     public TerminalThemeCatalog(string agentDirectory, string? trustedProjectDirectory = null,
         Func<string, string?>? environment = null, bool? trueColorOverride = null,
-        IReadOnlyList<string>? userThemePaths = null, IReadOnlyList<string>? projectThemePaths = null)
+        IReadOnlyList<string>? userThemePaths = null, IReadOnlyList<string>? projectThemePaths = null,
+        bool discoverThemes = true, IReadOnlyList<string>? explicitThemePaths = null,
+        string? explicitThemeBaseDirectory = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(agentDirectory);
         _environment = environment ?? Environment.GetEnvironmentVariable;
@@ -32,6 +37,9 @@ internal sealed class TerminalThemeCatalog
         _userThemeDirectory = Path.Combine(_userBaseDirectory, "themes");
         _userThemePaths = userThemePaths;
         _projectThemePaths = trustedProjectDirectory is null ? null : projectThemePaths;
+        _discoverThemes = discoverThemes;
+        _explicitThemePaths = explicitThemePaths;
+        _explicitThemeBaseDirectory = Path.GetFullPath(explicitThemeBaseDirectory ?? Environment.CurrentDirectory);
         _projectBaseDirectory = trustedProjectDirectory is null
             ? null
             : Path.Combine(Path.GetFullPath(trustedProjectDirectory), ".pi");
@@ -131,19 +139,28 @@ internal sealed class TerminalThemeCatalog
     private IEnumerable<string> ThemeFiles()
     {
         var seen = new HashSet<string>(OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
-        if (_projectBaseDirectory is not null)
+        if (_discoverThemes)
         {
-            foreach (var path in ConfiguredThemeFiles(_projectThemePaths, _projectBaseDirectory))
+            if (_projectBaseDirectory is not null)
+            {
+                foreach (var path in ConfiguredThemeFiles(_projectThemePaths, _projectBaseDirectory))
+                    if (seen.Add(path)) yield return path;
+                foreach (var path in ThemeFilesIn(_projectThemeDirectory, recursive: false))
+                    if (seen.Add(path) && LocalResourcePathRules.IsEnabledByOverrides(path, _projectThemePaths, _projectBaseDirectory))
+                        yield return path;
+            }
+            foreach (var path in ConfiguredThemeFiles(_userThemePaths, _userBaseDirectory))
                 if (seen.Add(path)) yield return path;
-            foreach (var path in ThemeFilesIn(_projectThemeDirectory, recursive: false))
-                if (seen.Add(path) && LocalResourcePathRules.IsEnabledByOverrides(path, _projectThemePaths, _projectBaseDirectory))
+            foreach (var path in ThemeFilesIn(_userThemeDirectory, recursive: false))
+                if (seen.Add(path) && LocalResourcePathRules.IsEnabledByOverrides(path, _userThemePaths, _userBaseDirectory))
                     yield return path;
         }
-        foreach (var path in ConfiguredThemeFiles(_userThemePaths, _userBaseDirectory))
-            if (seen.Add(path)) yield return path;
-        foreach (var path in ThemeFilesIn(_userThemeDirectory, recursive: false))
-            if (seen.Add(path) && LocalResourcePathRules.IsEnabledByOverrides(path, _userThemePaths, _userBaseDirectory))
-                yield return path;
+        foreach (var entry in _explicitThemePaths ?? [])
+        {
+            var path = Path.GetFullPath(entry, _explicitThemeBaseDirectory);
+            foreach (var file in ThemeFilesIn(path, recursive: true))
+                if (seen.Add(file)) yield return file;
+        }
     }
 
     private static IEnumerable<string> ConfiguredThemeFiles(IReadOnlyList<string>? entries, string baseDirectory)

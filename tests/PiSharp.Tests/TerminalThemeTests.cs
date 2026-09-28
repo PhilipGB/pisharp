@@ -214,6 +214,51 @@ public sealed class TerminalThemeTests
     }
 
     [Fact]
+    public void ExplicitThemePathsLoadRelativeToInvocationDirectoryEvenWhenDiscoveryIsDisabled()
+    {
+        var root = TempRoot();
+        var invocation = Path.Combine(root, "invocation");
+        var agent = Path.Combine(root, "agent");
+        var project = Path.Combine(root, "project");
+        var explicitFile = Path.Combine(invocation, "themes", "ocean.json");
+        var explicitNested = Path.Combine(invocation, "more-themes", "nested", "forest.json");
+        Directory.CreateDirectory(Path.GetDirectoryName(explicitFile)!);
+        Directory.CreateDirectory(Path.GetDirectoryName(explicitNested)!);
+        Directory.CreateDirectory(Path.Combine(agent, "themes"));
+        Directory.CreateDirectory(Path.Combine(project, ".pi", "themes"));
+        try
+        {
+            var ocean = BuiltIn("ocean");
+            ocean["colors"]!["mdHeading"] = "#123456";
+            File.WriteAllText(explicitFile, ocean.ToJsonString());
+            var forest = BuiltIn("forest");
+            forest["colors"]!["mdHeading"] = "#456789";
+            File.WriteAllText(explicitNested, forest.ToJsonString());
+            File.WriteAllText(Path.Combine(agent, "themes", "user.json"), BuiltIn("user-theme").ToJsonString());
+            File.WriteAllText(Path.Combine(project, ".pi", "themes", "project.json"), BuiltIn("project-theme").ToJsonString());
+
+            var catalog = new TerminalThemeCatalog(agent, project, environment: _ => null, trueColorOverride: true,
+                userThemePaths: ["configured-user"], projectThemePaths: ["configured-project"],
+                discoverThemes: false, explicitThemePaths: ["themes/ocean.json", "more-themes"],
+                explicitThemeBaseDirectory: invocation);
+
+            var names = catalog.GetAvailableNames();
+            Assert.Contains("dark", names);
+            Assert.Contains("light", names);
+            Assert.Contains("system", names);
+            Assert.Contains("ocean", names);
+            Assert.Contains("forest", names);
+            Assert.DoesNotContain("user-theme", names);
+            Assert.DoesNotContain("project-theme", names);
+            Assert.DoesNotContain("configured-user", names);
+            Assert.DoesNotContain("configured-project", names);
+            Assert.Equal("\u001b[38;2;18;52;86m", catalog.Load("ocean").Fg("mdHeading"));
+            Assert.Equal("\u001b[38;2;69;103;137m", catalog.Load("forest").Fg("mdHeading"));
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
     public void ThemePairTracksTerminalAppearanceAndNoColorIsRespected()
     {
         var root = TempRoot();

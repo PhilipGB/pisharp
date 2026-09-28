@@ -33,7 +33,7 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, Func<IReadOn
 
     public async Task ShowAsync(UserSettings userSettings, UserSettings? projectSettings,
         Func<bool, string, string?, Task<(UserSettings User, UserSettings? Project)>> save,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default, Func<string?>? activeThemeSetting = null)
     {
         ArgumentNullException.ThrowIfNull(userSettings);
         ArgumentNullException.ThrowIfNull(save);
@@ -53,7 +53,8 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, Func<IReadOn
             cancellationToken.ThrowIfCancellationRequested();
             var currentSettings = scope.Value ? projectSettings! : userSettings;
             var options = s_settings.Where(setting => !setting.UserOnly || !scope.Value)
-                .Select(setting => ToOption(setting, currentSettings)).ToList();
+                .Select(setting => ToOption(setting, currentSettings,
+                    setting.Id == "theme" ? activeThemeSetting?.Invoke() : null)).ToList();
             if (projectOptions is not null)
                 options.Insert(0, new TerminalSelectionOption<Setting?>("__scope", null,
                     "Change settings scope", "Choose user or current project settings.", "scope user project"));
@@ -70,7 +71,9 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, Func<IReadOn
             }
 
             if (selected.Option.Value is not { } setting) return;
-            var currentValue = GetValue(currentSettings, setting.Id);
+            var currentValue = setting.Id == "theme"
+                ? activeThemeSetting?.Invoke() ?? GetValue(currentSettings, setting.Id)
+                : GetValue(currentSettings, setting.Id);
             if (setting.Id is "externalEditor" or "httpProxy" or "retry.provider.timeoutMs" or "markdown.codeBlockIndent")
             {
                 Console.WriteLine(setting.Id switch
@@ -117,9 +120,12 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, Func<IReadOn
         }
     }
 
-    private static TerminalSelectionOption<Setting?> ToOption(Setting setting, UserSettings settings)
+    private static TerminalSelectionOption<Setting?> ToOption(Setting setting, UserSettings settings,
+        string? activeThemeSetting)
     {
-        var current = GetValue(settings, setting.Id);
+        var current = setting.Id == "theme" && activeThemeSetting is not null
+            ? activeThemeSetting
+            : GetValue(settings, setting.Id);
         return new(setting.Id, setting, $"{setting.Label} · {DisplayValue(current, setting.Id)}",
             setting.Description, $"{setting.Label} {setting.Id} {current}");
     }

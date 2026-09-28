@@ -38,7 +38,7 @@ if (cli.Version)
 }
 if (cli.Help)
 {
-    Console.WriteLine("PiSharp (incomplete implementation)\nUsage: pisharp [--local | --provider <id>] [--model <id>] [--models <globs>] [--thinking <level>] [--api-key <key>] [--list-models [pattern]] [--system-prompt <text|file>] [--append-system-prompt <text|file>] [--no-context-files] [--no-extensions] [-e|--extension <path>] [--no-skills] [--skill <path>] [--no-prompt-templates] [--prompt-template <path>] [--offline] [--verbose] [-a|--approve|-na|--no-approve] [--mode text|interactive|print|json|rpc] [-p|--print] [-h|--help] [-v|--version] [-c|--continue | --session <path|project-id> | --fork <path|project-id> | --no-session] [--session-dir <dir>] [--name <label>] [prompt] [@files...]\n--tools <read,bash,edit,write,grep,find,ls> selects tools (grep/find/ls are opt-in); --exclude-tools <names> removes tools; --no-tools disables defaults (including extension tools); --no-builtin-tools disables only default built-ins.\nProviders and static model metadata may be configured in $PISHARP_AGENT_DIR/models.json. Credentials are read from environment or private auth.json; --api-key is runtime-only.\nOffline credential status: pisharp auth check --provider <id> [--model <configured-exact-id>] [--local]; explicit pisharp auth print-api-key --provider <id> prints an API key to stdout.\nStandalone private HTML: pisharp --export <PiSharp-session-file> [output.html]; never overwrites.\n--local uses http://192.168.0.97:8000/v1 and Qwen3.8-27B-GGUF (no API key required).\nInteractive: /model, /models, /settings, /thinking, /scoped-models, /login, /logout, /tree, /branch, /fork, /clone, /new, /sessions, /resume, /delete-session, /compact, /copy, /export, /export-jsonl, /import, /name, /session, /trust, /reload, /hotkeys, /quit.");
+    Console.WriteLine("PiSharp (incomplete implementation)\nUsage: pisharp [--local | --provider <id>] [--model <id>] [--models <globs>] [--thinking <level>] [--api-key <key>] [--list-models [pattern]] [--system-prompt <text|file>] [--append-system-prompt <text|file>] [--no-context-files] [--no-extensions] [-e|--extension <path>] [--no-skills] [--skill <path>] [--no-prompt-templates] [--prompt-template <path>] [--theme <path>] [--use-theme <name[/name]>] [--no-themes] [--offline] [--verbose] [-a|--approve|-na|--no-approve] [--mode text|interactive|print|json|rpc] [-p|--print] [-h|--help] [-v|--version] [-c|--continue | --session <path|project-id> | --fork <path|project-id> | --no-session] [--session-dir <dir>] [--name <label>] [prompt] [@files...]\n--tools <read,bash,edit,write,grep,find,ls> selects tools (grep/find/ls are opt-in); --exclude-tools <names> removes tools; --no-tools disables defaults (including extension tools); --no-builtin-tools disables only default built-ins.\nProviders and static model metadata may be configured in $PISHARP_AGENT_DIR/models.json. Credentials are read from environment or private auth.json; --api-key is runtime-only.\nOffline credential status: pisharp auth check --provider <id> [--model <configured-exact-id>] [--local]; explicit pisharp auth print-api-key --provider <id> prints an API key to stdout.\nStandalone private HTML: pisharp --export <PiSharp-session-file> [output.html]; never overwrites.\n--local uses http://192.168.0.97:8000/v1 and Qwen3.8-27B-GGUF (no API key required).\nInteractive: /model, /models, /settings, /thinking, /scoped-models, /login, /logout, /tree, /branch, /fork, /clone, /new, /sessions, /resume, /delete-session, /compact, /copy, /export, /export-jsonl, /import, /name, /session, /trust, /reload, /hotkeys, /quit.");
     return;
 }
 var invocationDirectory = Environment.CurrentDirectory;
@@ -289,10 +289,20 @@ TerminalEditor? editor = !print && cli.Mode is not ("json" or "rpc") ? new Termi
         .Concat(extensionLease.Current.Registration.Commands.Keys.Select(name => "/" + name)).ToArray();
 },
     agentDirectory, () => currentDirectory) : null;
+string? cliThemeOverride = editor is null ? null : cli.UseTheme;
+string? ActiveThemeSetting() => cliThemeOverride ?? userSettings.Theme;
 TerminalThemeCatalog CreateTerminalThemeCatalog() => new(agentDirectory, trusted ? currentDirectory : null,
     trueColorOverride: userSettings.TerminalTrueColorOverride,
-    userThemePaths: baseUserSettings.Themes, projectThemePaths: projectSettings?.Themes);
+    userThemePaths: baseUserSettings.Themes, projectThemePaths: projectSettings?.Themes,
+    discoverThemes: !cli.NoThemes, explicitThemePaths: cli.ThemePaths,
+    explicitThemeBaseDirectory: invocationDirectory);
 var terminalThemeCatalog = CreateTerminalThemeCatalog();
+foreach (var themePath in cli.ThemePaths ?? [])
+{
+    var resolvedThemePath = Path.GetFullPath(themePath, invocationDirectory);
+    if (!File.Exists(resolvedThemePath) && !Directory.Exists(resolvedThemePath))
+        Console.Error.WriteLine($"Theme path does not exist: {resolvedThemePath}");
+}
 TerminalTheme ResolveConfiguredTheme(string? themeSetting, TerminalColorState? terminalColors = null)
 {
     var colors = terminalColors ?? new TerminalColorState();
@@ -305,12 +315,12 @@ TerminalTheme ResolveConfiguredTheme(string? themeSetting, TerminalColorState? t
 }
 bool ThemeFollowsTerminalAppearance(string? themeSetting) => themeSetting is null or "" or "system" ||
     themeSetting.Count(character => character == '/') == 1;
-var initialTerminalTheme = ResolveConfiguredTheme(userSettings.Theme);
+var initialTerminalTheme = ResolveConfiguredTheme(ActiveThemeSetting());
 using var terminalScreen = editor is null ? null : new TerminalScreen(Console.Out, Console.Error,
     getColumns: null, getRows: null, imageRenderer: new TerminalImageRenderer(), theme: initialTerminalTheme,
     queryTerminalColors: !Console.IsInputRedirected && !Console.IsOutputRedirected,
-    followTerminalAppearance: ThemeFollowsTerminalAppearance(userSettings.Theme));
-terminalScreen?.SetThemeResolver(colors => ResolveConfiguredTheme(userSettings.Theme, colors));
+    followTerminalAppearance: ThemeFollowsTerminalAppearance(ActiveThemeSetting()));
+terminalScreen?.SetThemeResolver(colors => ResolveConfiguredTheme(ActiveThemeSetting(), colors));
 terminalScreen?.SetMarkdownCodeBlockIndent(userSettings.MarkdownCodeBlockIndent ?? UserSettings.DefaultMarkdownCodeBlockIndent);
 terminalScreen?.Activate();
 editor?.AttachScreen(terminalScreen);
@@ -318,9 +328,9 @@ void RefreshTerminalTheme()
 {
     if (terminalScreen is null) return;
     terminalThemeCatalog = CreateTerminalThemeCatalog();
-    terminalScreen.SetThemeResolver(colors => ResolveConfiguredTheme(userSettings.Theme, colors));
-    terminalScreen.SetTheme(ResolveConfiguredTheme(userSettings.Theme, terminalScreen.CurrentTerminalColors));
-    terminalScreen.SetTerminalAppearanceFollowing(ThemeFollowsTerminalAppearance(userSettings.Theme));
+    terminalScreen.SetThemeResolver(colors => ResolveConfiguredTheme(ActiveThemeSetting(), colors));
+    terminalScreen.SetTheme(ResolveConfiguredTheme(ActiveThemeSetting(), terminalScreen.CurrentTerminalColors));
+    terminalScreen.SetTerminalAppearanceFollowing(ThemeFollowsTerminalAppearance(ActiveThemeSetting()));
 }
 void LoadSessionTranscript()
 {
@@ -605,6 +615,7 @@ async Task<(UserSettings User, UserSettings? Project)> SaveSettingAsync(bool pro
     else
         baseUserSettings = await UserSettings.LoadAsync(agentDirectory, Environment.GetEnvironmentVariable);
     userSettings = baseUserSettings.Overlay(projectSettings ?? new UserSettings());
+    if (setting == "theme") cliThemeOverride = null;
     projectConfiguration = projectConfiguration with
     {
         BaseUserSettings = baseUserSettings,
@@ -632,7 +643,8 @@ async Task<(UserSettings User, UserSettings? Project)> SaveSettingAsync(bool pro
 async Task SelectSettingsAsync()
 {
     if (terminalSettingsPicker is null) return;
-    await terminalSettingsPicker.ShowAsync(baseUserSettings, projectSettings, SaveSettingAsync);
+    await terminalSettingsPicker.ShowAsync(baseUserSettings, projectSettings, SaveSettingAsync,
+        activeThemeSetting: ActiveThemeSetting);
     Console.WriteLine("Settings closed.");
 }
 

@@ -2,7 +2,8 @@ namespace PiSharp.Cli;
 
 public sealed record CliArguments(bool Help, bool Local, bool Print, bool Continue, bool NoSession, string? SessionPath, string Prompt,
     IReadOnlyList<string>? Tools, IReadOnlyList<string>? ExcludeTools, bool NoTools, string Mode, bool? ProjectTrustOverride = null, string? SessionDirectory = null, bool ListModels = false, string? ModelOverride = null, string? SessionName = null, string? ForkSource = null,
-    string? Provider = null, IReadOnlyList<string>? ScopedModels = null, string? Thinking = null, string? ApiKey = null, IReadOnlyList<string>? FileArguments = null, string? SystemPrompt = null, IReadOnlyList<string>? AppendSystemPrompts = null, bool NoContextFiles = false, bool NoBuiltinTools = false, bool NoExtensions = false, bool NoSkills = false, bool NoPromptTemplates = false, bool Version = false, bool Offline = false, IReadOnlyList<string>? SkillPaths = null, IReadOnlyList<string>? PromptTemplatePaths = null, IReadOnlyList<string>? ExtensionPaths = null, string? ListModelsFilter = null, bool Verbose = false)
+    string? Provider = null, IReadOnlyList<string>? ScopedModels = null, string? Thinking = null, string? ApiKey = null, IReadOnlyList<string>? FileArguments = null, string? SystemPrompt = null, IReadOnlyList<string>? AppendSystemPrompts = null, bool NoContextFiles = false, bool NoBuiltinTools = false, bool NoExtensions = false, bool NoSkills = false, bool NoPromptTemplates = false, bool Version = false, bool Offline = false, IReadOnlyList<string>? SkillPaths = null, IReadOnlyList<string>? PromptTemplatePaths = null, IReadOnlyList<string>? ExtensionPaths = null, string? ListModelsFilter = null, bool Verbose = false,
+    IReadOnlyList<string>? ThemePaths = null, string? UseTheme = null, bool NoThemes = false)
 {
     private static IReadOnlyList<string> ParseToolNames(string[] arguments, ref int index, string flag)
     {
@@ -12,14 +13,15 @@ public sealed record CliArguments(bool Help, bool Local, bool Print, bool Contin
 
     public static CliArguments Parse(string[] arguments)
     {
-        bool help = false, local = false, print = false, resume = false, noSession = false, noTools = false, afterSeparator = false, listModels = false, noContextFiles = false, noBuiltinTools = false, noExtensions = false, noSkills = false, noPromptTemplates = false, version = false, offline = false, verbose = false;
+        bool help = false, local = false, print = false, resume = false, noSession = false, noTools = false, afterSeparator = false, listModels = false, noContextFiles = false, noBuiltinTools = false, noExtensions = false, noSkills = false, noPromptTemplates = false, version = false, offline = false, verbose = false, noThemes = false;
         bool? trust = null;
         string? sessionPath = null, sessionDirectory = null, modelOverride = null, sessionName = null, forkSource = null;
-        string? provider = null, thinking = null, apiKey = null, systemPrompt = null, listModelsFilter = null;
+        string? provider = null, thinking = null, apiKey = null, systemPrompt = null, listModelsFilter = null, useTheme = null;
         var appendSystemPrompts = new List<string>();
         var skillPaths = new List<string>();
         var promptTemplatePaths = new List<string>();
         var extensionPaths = new List<string>();
+        var themePaths = new List<string>();
         var mode = "interactive";
         IReadOnlyList<string>? tools = null, excludeTools = null, scopedModels = null;
         var prompt = new List<string>();
@@ -66,6 +68,17 @@ public sealed record CliArguments(bool Help, bool Local, bool Print, bool Contin
                 case "--no-skills": case "-ns": noSkills = true; break;
                 case "--no-prompt-templates": case "-np": noPromptTemplates = true; break;
                 case "--no-extensions": case "-ne": noExtensions = true; break;
+                case "--theme":
+                    if (++i >= arguments.Length || string.IsNullOrWhiteSpace(arguments[i]) || arguments[i].StartsWith('-'))
+                        throw new ArgumentException("--theme requires a file or directory path.");
+                    themePaths.Add(arguments[i]);
+                    break;
+                case "--use-theme":
+                    if (++i >= arguments.Length || string.IsNullOrWhiteSpace(arguments[i]) || arguments[i].StartsWith('-'))
+                        throw new ArgumentException("--use-theme requires a theme name.");
+                    useTheme = arguments[i];
+                    break;
+                case "--no-themes": noThemes = true; break;
                 case "--no-builtin-tools": case "-nbt": noBuiltinTools = true; break;
                 case "--no-tools": case "-nt": noTools = true; break;
                 case "--tools":
@@ -153,6 +166,7 @@ public sealed record CliArguments(bool Help, bool Local, bool Print, bool Contin
         if (local && provider is not null && !provider.Equals("local", StringComparison.OrdinalIgnoreCase))
             throw new ArgumentException("--local cannot be combined with a provider other than local.");
         return new CliArguments(help, local, print, resume, noSession, sessionPath, string.Join(" ", prompt), tools, excludeTools, noTools, mode, trust, sessionDirectory, listModels, modelOverride, sessionName, forkSource,
-            provider, scopedModels, thinking, apiKey, fileArguments, systemPrompt, appendSystemPrompts, noContextFiles, noBuiltinTools, noExtensions, noSkills, noPromptTemplates, version, offline, skillPaths, promptTemplatePaths, extensionPaths, listModelsFilter, verbose);
+            provider, scopedModels, thinking, apiKey, fileArguments, systemPrompt, appendSystemPrompts, noContextFiles, noBuiltinTools, noExtensions, noSkills, noPromptTemplates, version, offline, skillPaths, promptTemplatePaths, extensionPaths, listModelsFilter, verbose,
+            themePaths, useTheme, noThemes);
     }
 }
