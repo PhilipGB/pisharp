@@ -99,6 +99,45 @@ public sealed class ExtensionCatalogTests
     }
 
     [Fact]
+    public void ConfiguredExtensionPathsAreScopeRelativeFilteredAndTrustGated()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-configured-extension-" + Guid.NewGuid().ToString("N"));
+        var agent = Path.Combine(cwd, "agent");
+        var assemblyPath = typeof(FixtureExtension).Assembly.Location;
+        var userConfigured = Path.Combine(agent, "custom-extensions", "fixture.dll");
+        var userAuto = Path.Combine(agent, "extensions", "fixture.dll");
+        var projectConfigured = Path.Combine(cwd, ".pi", "custom-extensions", "fixture.dll");
+        Directory.CreateDirectory(Path.GetDirectoryName(userConfigured)!);
+        Directory.CreateDirectory(Path.GetDirectoryName(userAuto)!);
+        Directory.CreateDirectory(Path.GetDirectoryName(projectConfigured)!);
+        try
+        {
+            File.Copy(assemblyPath, userConfigured);
+            File.Copy(assemblyPath, userAuto);
+            File.Copy(assemblyPath, projectConfigured);
+
+            using (var user = ExtensionCatalog.Load(agent, cwd, projectTrusted: false,
+                userPaths: ["custom-extensions", "!extensions/**"]))
+            {
+                var command = user.Registration.CommandInfo["fixture"];
+                Assert.Equal("local", command.SourceInfo.Source);
+                Assert.Equal("user", command.SourceInfo.Scope);
+                Assert.Equal(Path.GetFullPath(agent), command.SourceInfo.BaseDir);
+            }
+
+            using (var untrusted = ExtensionCatalog.Load(agent, cwd, projectTrusted: false, discover: false,
+                projectPaths: ["custom-extensions"]))
+                Assert.Empty(untrusted.Registration.Commands);
+
+            using var trusted = ExtensionCatalog.Load(agent, cwd, projectTrusted: true, discover: false,
+                projectPaths: ["custom-extensions"]);
+            Assert.Equal(Path.GetFullPath(projectConfigured), trusted.Registration.CommandInfo["fixture"].SourceInfo.Path);
+            Assert.Equal("project", trusted.Registration.CommandInfo["fixture"].SourceInfo.Scope);
+        }
+        finally { Directory.Delete(cwd, true); }
+    }
+
+    [Fact]
     public void RegistrationRejectsReservedNamesAndBuiltInToolsCannotBeShadowed()
     {
         var registration = new ExtensionRegistration();

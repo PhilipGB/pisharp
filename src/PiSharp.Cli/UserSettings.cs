@@ -171,7 +171,9 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
     RetrySettings? Retry = null, PromptDeliveryMode? SteeringMode = null, PromptDeliveryMode? FollowUpMode = null,
     IReadOnlyDictionary<string, string>? ModelThinkingLevels = null, string? HttpProxy = null,
     int? HttpIdleTimeoutMs = null, string? MarkdownCodeBlockIndent = null, string? TerminalTrueColor = null,
-    bool? EnableSkillCommands = null)
+    bool? EnableSkillCommands = null, IReadOnlyList<string>? Extensions = null,
+    IReadOnlyList<string>? Skills = null, IReadOnlyList<string>? Prompts = null,
+    IReadOnlyList<string>? Themes = null)
 {
     public const int DefaultHttpIdleTimeoutMs = 300_000;
     public const string DefaultMarkdownCodeBlockIndent = "  ";
@@ -199,6 +201,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         string? provider = null, model = null, thinking = null, sessionDirectory = null, defaultTrust = null, shellPath = null,
             externalEditor = null, theme = null;
         IReadOnlyList<string>? tools = null, enabledModels = null;
+        IReadOnlyList<string>? extensions = null, skills = null, prompts = null, themes = null;
         IReadOnlyDictionary<string, string>? modelThinkingLevels = null;
         CompactionSettings? compaction = null;
         RetrySettings? retry = null;
@@ -311,6 +314,18 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
                 enabledModels = patterns;
                 continue;
             }
+            if (property.Name is "extensions" or "skills" or "prompts" or "themes")
+            {
+                var parsed = ParseResourcePaths(property.Value, property.Name);
+                switch (property.Name)
+                {
+                    case "extensions": extensions = parsed; break;
+                    case "skills": skills = parsed; break;
+                    case "prompts": prompts = parsed; break;
+                    case "themes": themes = parsed; break;
+                }
+                continue;
+            }
             if (property.Name == "modelThinkingLevels")
             {
                 modelThinkingLevels = ParseModelThinkingLevels(property.Value);
@@ -376,7 +391,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         return new(provider, model, thinking, tools, sessionDirectory, compaction, blockImages, defaultTrust, hideThinkingBlock,
             quietStartup, enabledModels, shellPath, externalEditor, theme, retry, steeringMode, followUpMode,
             modelThinkingLevels, httpProxy, httpIdleTimeoutMs, markdownCodeBlockIndent, terminalTrueColor,
-            enableSkillCommands);
+            enableSkillCommands, extensions, skills, prompts, themes);
     }
 
     public static string GetSettingsPath(string agentDirectory, Func<string, string?> environment) =>
@@ -416,7 +431,11 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         project.HttpIdleTimeoutMs ?? HttpIdleTimeoutMs,
         project.MarkdownCodeBlockIndent ?? MarkdownCodeBlockIndent,
         project.TerminalTrueColor ?? TerminalTrueColor,
-        project.EnableSkillCommands ?? EnableSkillCommands);
+        project.EnableSkillCommands ?? EnableSkillCommands,
+        MergeResourcePaths(Extensions, project.Extensions),
+        MergeResourcePaths(Skills, project.Skills),
+        MergeResourcePaths(Prompts, project.Prompts),
+        MergeResourcePaths(Themes, project.Themes));
 
     public string? GetModelThinkingLevel(string provider, string modelId) =>
         ModelThinkingLevels?.GetValueOrDefault($"{provider}/{modelId}");
@@ -440,6 +459,25 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         if (value.IndexOf('/', separator + 1) >= 0) return false;
         return !string.IsNullOrWhiteSpace(value[..separator]) && !string.IsNullOrWhiteSpace(value[(separator + 1)..]);
     }
+
+    private static IReadOnlyList<string>? ParseResourcePaths(JsonElement value, string setting)
+    {
+        if (value.ValueKind != JsonValueKind.Array || value.GetArrayLength() > 512)
+            throw new InvalidDataException($"settings.json {setting} must be an array of at most 512 paths or patterns.");
+        var entries = new List<string>();
+        foreach (var item in value.EnumerateArray())
+        {
+            if (item.ValueKind != JsonValueKind.String || item.GetString() is not { } entry ||
+                entry.Length is 0 or > 4096 || entry != entry.Trim() || entry.Any(char.IsControl) ||
+                entry is "!" or "+" or "-")
+                throw new InvalidDataException($"settings.json {setting} contains an invalid path or pattern.");
+            entries.Add(entry);
+        }
+        return entries;
+    }
+
+    private static IReadOnlyList<string>? MergeResourcePaths(IReadOnlyList<string>? user,
+        IReadOnlyList<string>? project) => user is null ? project : project is null ? user : [.. user, .. project];
 
     private static IReadOnlyDictionary<string, CompactionSettings>? MergeOverrides(
         IReadOnlyDictionary<string, CompactionSettings>? global, IReadOnlyDictionary<string, CompactionSettings>? project)

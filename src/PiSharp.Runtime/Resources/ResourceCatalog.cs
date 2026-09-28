@@ -17,74 +17,189 @@ public sealed class ResourceCatalog
 
     public static async Task<ResourceCatalog> LoadAsync(string cwd, string agentDirectory, bool trusted,
         CancellationToken cancellationToken = default, bool discoverSkills = true, bool discoverPrompts = true,
-        IReadOnlyList<string>? additionalSkills = null, IReadOnlyList<string>? additionalPrompts = null)
+        IReadOnlyList<string>? additionalSkills = null, IReadOnlyList<string>? additionalPrompts = null,
+        IReadOnlyList<string>? userSkills = null, IReadOnlyList<string>? projectSkills = null,
+        IReadOnlyList<string>? userPrompts = null, IReadOnlyList<string>? projectPrompts = null)
     {
         var skills = new List<SkillResource>();
         var prompts = new List<PromptResource>();
-        var skillRoots = new List<string>();
-        var promptRoots = new List<string>();
+        var skillFiles = new List<(string Path, ResourceSourceInfo Source)>();
+        var promptFiles = new List<(string Path, ResourceSourceInfo Source)>();
+        var seenSkills = new HashSet<string>(OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
+        var seenPrompts = new HashSet<string>(OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
+
+        AddCliPaths(additionalSkills, "skill", cwd, skillFiles, seenSkills);
+        AddCliPaths(additionalPrompts, "prompt template", cwd, promptFiles, seenPrompts);
+
         if (trusted)
         {
-            skillRoots.Add(Path.Combine(cwd, ".pi", "skills"));
-            skillRoots.Add(Path.Combine(cwd, ".agents", "skills"));
-            promptRoots.Add(Path.Combine(cwd, ".pi", "prompts"));
+            AddConfiguredPaths(projectSkills, Path.Combine(cwd, ".pi"), "project", "skills", skillFiles, seenSkills);
+            AddConfiguredPaths(projectPrompts, Path.Combine(cwd, ".pi"), "project", "prompts", promptFiles, seenPrompts);
         }
-        skillRoots.Add(Path.Combine(agentDirectory, "skills"));
-        skillRoots.Add(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".agents", "skills"));
-        promptRoots.Add(Path.Combine(agentDirectory, "prompts"));
-        foreach (var root in (additionalSkills ?? []).Concat(discoverSkills ? skillRoots : []).Distinct(StringComparer.Ordinal))
+        AddConfiguredPaths(userSkills, agentDirectory, "user", "skills", skillFiles, seenSkills);
+        AddConfiguredPaths(userPrompts, agentDirectory, "user", "prompts", promptFiles, seenPrompts);
+
+        if (discoverSkills)
         {
-            var selected = Path.GetFullPath(root, cwd);
-            var explicitRoot = (additionalSkills ?? []).Any(path => PathsEqual(Path.GetFullPath(path, cwd), selected));
-            if (!Directory.Exists(selected) && !File.Exists(selected))
+            if (trusted)
             {
-                if ((additionalSkills ?? []).Contains(root)) throw new FileNotFoundException("Explicit skill path does not exist.", selected);
-                continue;
+                AddAutoPaths(Path.Combine(cwd, ".pi", "skills"), projectSkills, Path.Combine(cwd, ".pi"),
+                    "project", "skills", skillFiles, seenSkills, skillPaths: true);
+                AddAutoPaths(Path.Combine(cwd, ".agents", "skills"), projectSkills, Path.Combine(cwd, ".pi"),
+                    "project", "skills", skillFiles, seenSkills, skillPaths: true);
             }
-            IEnumerable<string> paths = File.Exists(selected) ? [selected] : Directory.EnumerateFiles(selected, "SKILL.md", SearchOption.AllDirectories)
-                .Order(StringComparer.Ordinal).Take(1000);
-            foreach (var path in paths)
-            {
-                if (!Path.GetFileName(path).Equals("SKILL.md", StringComparison.OrdinalIgnoreCase))
-                    throw new InvalidDataException("Explicit skill file must be named SKILL.md.");
-                cancellationToken.ThrowIfCancellationRequested();
-                var (metadata, _) = Parse(await ReadBoundedAsync(path, cancellationToken));
-                if (!metadata.TryGetValue("name", out var name) ||
-                    !Regex.IsMatch(name, "^[a-z0-9]+(?:-[a-z0-9]+)*$", RegexOptions.CultureInvariant) || name.Length > 64 ||
-                    !metadata.TryGetValue("description", out var description) || description.Length is 0 or > 1024 ||
-                    skills.Any(item => item.Name == name)) continue;
-                skills.Add(new(name, description, path, metadata.GetValueOrDefault("disable-model-invocation") == "true",
-                    ProjectSourceInfo(path, selected, "skills", cwd, agentDirectory, explicitRoot)));
-            }
+            AddAutoPaths(Path.Combine(agentDirectory, "skills"), userSkills, agentDirectory,
+                "user", "skills", skillFiles, seenSkills, skillPaths: true);
+            AddAutoPaths(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".agents", "skills"),
+                userSkills, agentDirectory, "user", "skills", skillFiles, seenSkills, skillPaths: true);
         }
-        foreach (var root in (additionalPrompts ?? []).Concat(discoverPrompts ? promptRoots : []).Distinct(StringComparer.Ordinal))
+
+        if (discoverPrompts)
         {
-            var selected = Path.GetFullPath(root, cwd);
-            var explicitRoot = (additionalPrompts ?? []).Any(path => PathsEqual(Path.GetFullPath(path, cwd), selected));
-            if (!Directory.Exists(selected) && !File.Exists(selected))
-            {
-                if ((additionalPrompts ?? []).Contains(root)) throw new FileNotFoundException("Explicit prompt template path does not exist.", selected);
-                continue;
-            }
-            IEnumerable<string> paths = File.Exists(selected) ? [selected] : Directory.EnumerateFiles(selected, "*.md", SearchOption.TopDirectoryOnly)
-                .Order(StringComparer.Ordinal).Take(1000);
-            foreach (var path in paths)
-            {
-                if (!Path.GetExtension(path).Equals(".md", StringComparison.OrdinalIgnoreCase))
-                    throw new InvalidDataException("Explicit prompt template must be a .md file.");
-                cancellationToken.ThrowIfCancellationRequested();
-                var name = Path.GetFileNameWithoutExtension(path);
-                if (!Regex.IsMatch(name, "^[a-zA-Z0-9_-]+$", RegexOptions.CultureInvariant) ||
-                    prompts.Any(item => item.Name == name)) continue;
-                var (metadata, body) = Parse(await ReadBoundedAsync(path, cancellationToken));
-                var description = metadata.GetValueOrDefault("description");
-                if (string.IsNullOrEmpty(description)) description = PromptDescription(body);
-                prompts.Add(new(name, description, body, path,
-                    ProjectSourceInfo(path, selected, "prompts", cwd, agentDirectory, explicitRoot)));
-            }
+            if (trusted)
+                AddAutoPaths(Path.Combine(cwd, ".pi", "prompts"), projectPrompts, Path.Combine(cwd, ".pi"),
+                    "project", "prompts", promptFiles, seenPrompts);
+            AddAutoPaths(Path.Combine(agentDirectory, "prompts"), userPrompts, agentDirectory,
+                "user", "prompts", promptFiles, seenPrompts);
         }
+
+        foreach (var (path, source) in skillFiles)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var (metadata, _) = Parse(await ReadBoundedAsync(path, cancellationToken));
+            if (!metadata.TryGetValue("name", out var name) ||
+                !Regex.IsMatch(name, "^[a-z0-9]+(?:-[a-z0-9]+)*$", RegexOptions.CultureInvariant) || name.Length > 64 ||
+                !metadata.TryGetValue("description", out var description) || description.Length is 0 or > 1024 ||
+                skills.Any(item => item.Name == name)) continue;
+            skills.Add(new(name, description, path, metadata.GetValueOrDefault("disable-model-invocation") == "true", source));
+        }
+
+        foreach (var (path, source) in promptFiles)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var name = Path.GetFileNameWithoutExtension(path);
+            if (!Regex.IsMatch(name, "^[a-zA-Z0-9_-]+$", RegexOptions.CultureInvariant) ||
+                prompts.Any(item => item.Name == name)) continue;
+            var (metadata, body) = Parse(await ReadBoundedAsync(path, cancellationToken));
+            var description = metadata.GetValueOrDefault("description");
+            if (string.IsNullOrEmpty(description)) description = PromptDescription(body);
+            prompts.Add(new(name, description, body, path, source));
+        }
+
         return new(skills, prompts);
+
+        void AddCliPaths(IReadOnlyList<string>? roots, string description, string baseDirectory,
+            List<(string Path, ResourceSourceInfo Source)> target, HashSet<string> seen)
+        {
+            foreach (var root in roots ?? [])
+            {
+                var selected = LocalResourcePathRules.ResolvePath(root, baseDirectory);
+                if (!Directory.Exists(selected) && !File.Exists(selected))
+                    throw new FileNotFoundException($"Explicit {description} path does not exist.", selected);
+                var paths = EnumerateResourceFiles(selected, description == "skill" ? "skills" : "prompts").ToArray();
+                if (paths.Length == 0 && File.Exists(selected))
+                    throw new InvalidDataException(description == "skill"
+                        ? "Explicit skill file must be named SKILL.md."
+                        : "Explicit prompt template must be a .md file.");
+                foreach (var path in paths)
+                {
+                    if (description == "skill" && !Path.GetFileName(path).Equals("SKILL.md", StringComparison.OrdinalIgnoreCase))
+                        throw new InvalidDataException("Explicit skill file must be named SKILL.md.");
+                    var source = new ResourceSourceInfo(Path.GetFullPath(path), "local", "temporary", "top-level",
+                        Path.GetDirectoryName(Path.GetFullPath(path)));
+                    AddPath(target, seen, path, source);
+                }
+            }
+        }
+
+        void AddConfiguredPaths(IReadOnlyList<string>? entries, string baseDirectory, string scope, string kind,
+            List<(string Path, ResourceSourceInfo Source)> target, HashSet<string> seen)
+        {
+            var fullBase = Path.GetFullPath(baseDirectory);
+            var candidates = LocalResourcePathRules.GetPaths(entries)
+                .SelectMany(entry => EnumerateResourceFiles(LocalResourcePathRules.ResolvePath(entry, fullBase), kind,
+                    recursive: kind == "prompts"))
+                .Distinct(PathComparer()).ToArray();
+            foreach (var path in LocalResourcePathRules.ApplyOverrides(candidates, entries, fullBase, skillPaths: kind == "skills"))
+            {
+                var source = new ResourceSourceInfo(Path.GetFullPath(path), "local", scope, "top-level", fullBase);
+                AddPath(target, seen, path, source);
+            }
+        }
+
+        void AddAutoPaths(string root, IReadOnlyList<string>? entries, string baseDirectory, string scope, string kind,
+            List<(string Path, ResourceSourceInfo Source)> target, HashSet<string> seen, bool skillPaths = false)
+        {
+            var fullBase = Path.GetFullPath(baseDirectory);
+            var candidates = EnumerateResourceFiles(root, kind);
+            foreach (var path in LocalResourcePathRules.ApplyOverrides(candidates, entries, fullBase, skillPaths))
+            {
+                var source = ProjectSourceInfo(path, root, kind, cwd, agentDirectory, explicitRoot: false);
+                AddPath(target, seen, path, source with { Scope = scope });
+            }
+        }
+
+        static void AddPath(List<(string Path, ResourceSourceInfo Source)> target, HashSet<string> seen,
+            string path, ResourceSourceInfo source)
+        {
+            var fullPath = Path.GetFullPath(path);
+            if (seen.Add(fullPath)) target.Add((fullPath, source with { Path = fullPath }));
+        }
     }
+
+    private static IReadOnlyList<string> EnumerateResourceFiles(string path, string kind, bool recursive = false)
+    {
+        if (File.Exists(path))
+        {
+            var valid = kind switch
+            {
+                "skills" => Path.GetFileName(path).Equals("SKILL.md", StringComparison.OrdinalIgnoreCase),
+                "prompts" => Path.GetExtension(path).Equals(".md", StringComparison.OrdinalIgnoreCase),
+                _ => false
+            };
+            return valid ? [Path.GetFullPath(path)] : [];
+        }
+        if (!Directory.Exists(path)) return [];
+
+        var result = new List<string>();
+        var pending = new Stack<string>();
+        var visitedDirectories = 0;
+        pending.Push(Path.GetFullPath(path));
+        while (pending.Count > 0 && result.Count < 1000 && visitedDirectories++ < 10_000)
+        {
+            var directory = pending.Pop();
+            string[] entries;
+            try { entries = Directory.GetFileSystemEntries(directory).Order(StringComparer.Ordinal).ToArray(); }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException) { continue; }
+            foreach (var entry in entries)
+            {
+                var name = Path.GetFileName(entry);
+                if (name.StartsWith(".", StringComparison.Ordinal) || name.Equals("node_modules", StringComparison.Ordinal))
+                    continue;
+                FileAttributes attributes;
+                try { attributes = File.GetAttributes(entry); }
+                catch (Exception error) when (error is IOException or UnauthorizedAccessException) { continue; }
+                if ((attributes & FileAttributes.Directory) != 0)
+                {
+                    if ((attributes & FileAttributes.ReparsePoint) == 0 && (kind == "skills" || recursive))
+                        pending.Push(entry);
+                    continue;
+                }
+                var match = kind switch
+                {
+                    "skills" => name.Equals("SKILL.md", StringComparison.OrdinalIgnoreCase),
+                    "prompts" => Path.GetExtension(name).Equals(".md", StringComparison.OrdinalIgnoreCase),
+                    _ => false
+                };
+                if (match) result.Add(Path.GetFullPath(entry));
+                if (result.Count == 1000) break;
+            }
+        }
+        return result.Order(StringComparer.Ordinal).ToArray();
+    }
+
+    private static StringComparer PathComparer() => OperatingSystem.IsWindows()
+        ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
 
     public string SystemInstructions()
     {
@@ -176,9 +291,6 @@ public sealed class ResourceCatalog
         return !Path.IsPathRooted(relative) && relative != ".." &&
             !relative.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal);
     }
-
-    private static bool PathsEqual(string left, string right) =>
-        string.Equals(left, right, OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
 
     private static string PromptDescription(string body)
     {

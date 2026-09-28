@@ -111,7 +111,8 @@ public sealed class ExtensionCatalog : IDisposable
     private ExtensionCatalog() { }
 
     public static ExtensionCatalog Load(string agentDirectory, string cwd, bool projectTrusted, bool discover = true,
-        IReadOnlyList<string>? additionalPaths = null)
+        IReadOnlyList<string>? additionalPaths = null, IReadOnlyList<string>? userPaths = null,
+        IReadOnlyList<string>? projectPaths = null)
     {
         var catalog = new ExtensionCatalog();
         try
@@ -130,20 +131,25 @@ public sealed class ExtensionCatalog : IDisposable
                     AddPath(assemblyPath, new(Path.GetFullPath(assemblyPath), "cli", "temporary", "top-level",
                         null));
             }
+            if (projectTrusted)
+                AddConfiguredPaths(projectPaths, Path.Combine(cwd, ".pi"), "project");
+            AddConfiguredPaths(userPaths, agentDirectory, "user");
             if (discover)
             {
-                var userRoot = Path.Combine(agentDirectory, "extensions");
-                if (Directory.Exists(userRoot))
-                    foreach (var path in FindAssemblies(userRoot))
-                        AddPath(path, new(Path.GetFullPath(path), "auto", "user", "top-level", Path.GetFullPath(agentDirectory)));
                 if (projectTrusted)
                 {
                     var projectRoot = Path.Combine(cwd, ".pi", "extensions");
                     if (Directory.Exists(projectRoot))
-                        foreach (var path in FindAssemblies(projectRoot))
+                        foreach (var path in LocalResourcePathRules.ApplyOverrides(FindAssemblies(projectRoot), projectPaths,
+                            Path.GetFullPath(Path.Combine(cwd, ".pi"))))
                             AddPath(path, new(Path.GetFullPath(path), "auto", "project", "top-level",
                                 Path.GetFullPath(Path.Combine(cwd, ".pi"))));
                 }
+                var userRoot = Path.Combine(agentDirectory, "extensions");
+                if (Directory.Exists(userRoot))
+                    foreach (var path in LocalResourcePathRules.ApplyOverrides(FindAssemblies(userRoot), userPaths,
+                        Path.GetFullPath(agentDirectory)))
+                        AddPath(path, new(Path.GetFullPath(path), "auto", "user", "top-level", Path.GetFullPath(agentDirectory)));
             }
             foreach (var (path, sourceInfo) in selectedPaths)
             {
@@ -167,6 +173,16 @@ public sealed class ExtensionCatalog : IDisposable
                 var fullPath = Path.GetFullPath(path);
                 if (seenPaths.Add(fullPath)) selectedPaths.Add((fullPath, sourceInfo with { Path = fullPath }));
             }
+
+            void AddConfiguredPaths(IReadOnlyList<string>? entries, string baseDirectory, string scope)
+            {
+                var fullBase = Path.GetFullPath(baseDirectory);
+                var candidates = LocalResourcePathRules.GetPaths(entries)
+                    .SelectMany(entry => EnumerateConfiguredAssemblies(LocalResourcePathRules.ResolvePath(entry, fullBase)))
+                    .Distinct(OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal).ToArray();
+                foreach (var path in LocalResourcePathRules.ApplyOverrides(candidates, entries, fullBase))
+                    AddPath(path, new(Path.GetFullPath(path), "local", scope, "top-level", fullBase));
+            }
         }
         catch { catalog.Dispose(); throw; }
     }
@@ -175,6 +191,16 @@ public sealed class ExtensionCatalog : IDisposable
         Directory.EnumerateFiles(root, "*.dll", SearchOption.TopDirectoryOnly)
             .Concat(Directory.EnumerateDirectories(root).Select(path => Path.Combine(path, "index.dll"))
                 .Where(File.Exists)).Order(StringComparer.Ordinal).Take(100).Select(Path.GetFullPath).ToArray();
+
+    private static IEnumerable<string> EnumerateConfiguredAssemblies(string root)
+    {
+        if (File.Exists(root))
+            return Path.GetExtension(root).Equals(".dll", StringComparison.OrdinalIgnoreCase) ? [Path.GetFullPath(root)] : [];
+        if (!Directory.Exists(root)) return [];
+        var rootIndex = Path.Combine(root, "index.dll");
+        if (File.Exists(rootIndex)) return [Path.GetFullPath(rootIndex)];
+        return FindAssemblies(root);
+    }
 
     public void Dispose()
     {

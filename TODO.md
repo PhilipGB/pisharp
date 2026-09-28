@@ -33,11 +33,11 @@
 
 ## Current priority
 
-The 2026-09-28 bounded RPC audit is [`rpc-residual-audit-2026-09-28.md`](docs/parity/rpc-residual-audit-2026-09-28.md): all 33 current Pi command names have PiSharp dispatch/handler references and no command-surface change appeared since the prior audit. The session crash-recovery and writer-concurrency evidence is [`session-crash-recovery-baseline.md`](docs/parity/fixtures/session-crash-recovery-baseline.md), refreshed against current Pi `6f7551516b84278eb9da1c340c8e7bc66be1a6ba`; PiSharp retains its stronger stale-write fencing and the Linux path-alias race remains closed at `84aa91b2d`. Proceed to the configured resource-path settings and provider/theme residuals; keep broader session-manager and macOS native lock behavior open.
+The 2026-09-28 bounded RPC audit is [`rpc-residual-audit-2026-09-28.md`](docs/parity/rpc-residual-audit-2026-09-28.md): all 33 current Pi command names have PiSharp dispatch/handler references and no command-surface change appeared since the prior audit. The session crash-recovery and writer-concurrency evidence is [`session-crash-recovery-baseline.md`](docs/parity/fixtures/session-crash-recovery-baseline.md), refreshed against current Pi `6f7551516b84278eb9da1c340c8e7bc66be1a6ba`; PiSharp retains its stronger stale-write fencing and the Linux path-alias race remains closed at `84aa91b2d`. Configured resource path arrays are implemented locally with scoped roots, trust, patterns, and reload evidence in [`settings-resource-paths-baseline.md`](docs/parity/fixtures/settings-resource-paths-baseline.md); exact-head CI is pending. Keep broader session-manager and macOS native lock behavior open.
 
 ## Exact next action
 
-Continue grouping settings by runtime effect and ownership. Next implement and validate the configured local resource path arrays for `extensions`, `skills`, `prompts`, and `themes`, preserving user/project additive scope, trusted-project gating, `!` glob exclusions, `+` exact inclusion, `-` exact exclusion, and reload behavior. Then return to provider transport/timeout residuals and unsupported theme/rendering controls. Keep package sources excluded and do not claim complete parity.
+Verify the resource-path source head in exact-head CI. Then audit the provider timeout wire-byte discrepancy and current theme/rendering residuals against current Pi, implementing the next bounded gap with differential evidence. Keep package sources excluded and do not claim complete parity.
 
 ## Architecture and residuals to preserve
 

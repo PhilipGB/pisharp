@@ -568,6 +568,44 @@ public sealed class UserSettingsTests
         finally { Directory.Delete(root, true); }
     }
 
+    [Fact]
+    public async Task LocalResourcePathArraysMergeAcrossScopesAndRejectInvalidEntries()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-resource-path-settings-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(Path.Combine(root, ".pi"));
+        try
+        {
+            var globalPath = Path.Combine(root, "settings.json");
+            await File.WriteAllTextAsync(globalPath,
+                "{\"extensions\":[\"user-ext\",\"!extensions/blocked/**\"],\"skills\":[\"user-skills\"],\"prompts\":[\"user-prompts\"],\"themes\":[\"user-themes\"]}");
+            var user = await UserSettings.LoadAsync(root, _ => null);
+            await File.WriteAllTextAsync(Path.Combine(root, ".pi", "settings.json"),
+                "{\"extensions\":[\"project-ext\"],\"skills\":[\"project-skills\"],\"prompts\":[\"project-prompts\"],\"themes\":[\"project-themes\"]}");
+            var project = await UserSettings.LoadProjectAsync(root);
+            var effective = user.Overlay(project);
+
+            Assert.Equal(new[] { "user-ext", "!extensions/blocked/**", "project-ext" }, effective.Extensions);
+            Assert.Equal(new[] { "user-skills", "project-skills" }, effective.Skills);
+            Assert.Equal(new[] { "user-prompts", "project-prompts" }, effective.Prompts);
+            Assert.Equal(new[] { "user-themes", "project-themes" }, effective.Themes);
+            Assert.Equal(new[] { "user-ext", "!extensions/blocked/**" }, user.Extensions);
+            Assert.Equal(new[] { "project-ext" }, project.Extensions);
+
+            foreach (var invalid in new[]
+            {
+                "{\"extensions\":\"extension.dll\"}",
+                "{\"skills\":[\"\"]}",
+                "{\"prompts\":[true]}",
+                "{\"themes\":[\"!\"]}"
+            })
+            {
+                await File.WriteAllTextAsync(globalPath, invalid);
+                await Assert.ThrowsAsync<InvalidDataException>(() => UserSettings.LoadAsync(root, _ => null));
+            }
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
     [Theory]
     [InlineData("{\"defaultThinkingLevel\":\"ultra\"}")]
     [InlineData("{\"defaultProjectTrust\":\"maybe\"}")]

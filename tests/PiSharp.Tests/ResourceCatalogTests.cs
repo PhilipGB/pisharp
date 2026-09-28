@@ -96,6 +96,67 @@ public sealed class ResourceCatalogTests
     }
 
     [Fact]
+    public async Task ConfiguredResourcePathsUseScopedBasesAndTrustWhilePatternsFilterAutoDiscovery()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-configured-resources-" + Guid.NewGuid().ToString("N"));
+        var project = Path.Combine(root, "project");
+        var agent = Path.Combine(root, "agent");
+        try
+        {
+            async Task WriteSkill(string directory, string name)
+            {
+                Directory.CreateDirectory(directory);
+                await File.WriteAllTextAsync(Path.Combine(directory, "SKILL.md"),
+                    $"---\nname: {name}\ndescription: {name} description\n---\n{name} body");
+            }
+
+            await WriteSkill(Path.Combine(agent, "custom-skills", "active"), "user-configured");
+            await WriteSkill(Path.Combine(agent, "custom-skills", "disabled"), "user-disabled");
+            await WriteSkill(Path.Combine(agent, "skills", "blocked", "skip"), "user-auto-skip");
+            await WriteSkill(Path.Combine(agent, "skills", "blocked", "keep"), "user-auto-keep");
+            await WriteSkill(Path.Combine(project, ".pi", "custom-skills", "project"), "project-configured");
+            await WriteSkill(Path.Combine(project, ".pi", "skills", "blocked", "skip"), "project-auto-skip");
+            Directory.CreateDirectory(Path.Combine(agent, "custom-prompts"));
+            Directory.CreateDirectory(Path.Combine(agent, "prompts"));
+            Directory.CreateDirectory(Path.Combine(project, ".pi", "custom-prompts"));
+            await File.WriteAllTextAsync(Path.Combine(agent, "custom-prompts", "user-review.md"), "User prompt");
+            await File.WriteAllTextAsync(Path.Combine(agent, "prompts", "blocked.md"), "Hidden auto prompt");
+            await File.WriteAllTextAsync(Path.Combine(project, ".pi", "custom-prompts", "project-review.md"), "Project prompt");
+
+            IReadOnlyList<string> userSkills = ["custom-skills", "+skills/blocked/keep/SKILL.md",
+                "!skills/blocked/**", "-custom-skills/disabled/SKILL.md"];
+            IReadOnlyList<string> projectSkills = ["custom-skills", "!skills/blocked/**"];
+            IReadOnlyList<string> userPrompts = ["custom-prompts", "!prompts/blocked.md"];
+            IReadOnlyList<string> projectPrompts = ["custom-prompts"];
+
+            var untrusted = await ResourceCatalog.LoadAsync(project, agent, false,
+                userSkills: userSkills, projectSkills: projectSkills, userPrompts: userPrompts, projectPrompts: projectPrompts);
+            Assert.Contains(untrusted.Skills, skill => skill.Name == "user-configured");
+            Assert.Contains(untrusted.Skills, skill => skill.Name == "user-auto-keep");
+            Assert.DoesNotContain(untrusted.Skills, skill => skill.Name is "user-disabled" or "user-auto-skip" or "project-configured" or "project-auto-skip");
+            Assert.Contains(untrusted.Prompts, prompt => prompt.Name == "user-review");
+            Assert.DoesNotContain(untrusted.Prompts, prompt => prompt.Name is "blocked" or "project-review");
+            var userSource = Assert.Single(untrusted.Skills, skill => skill.Name == "user-configured").SourceInfo;
+            Assert.Equal("local", userSource.Source);
+            Assert.Equal("user", userSource.Scope);
+            Assert.Equal(Path.GetFullPath(agent), userSource.BaseDir);
+            var autoSource = Assert.Single(untrusted.Skills, skill => skill.Name == "user-auto-keep").SourceInfo;
+            Assert.Equal("auto", autoSource.Source);
+
+            var trusted = await ResourceCatalog.LoadAsync(project, agent, true,
+                userSkills: userSkills, projectSkills: projectSkills, userPrompts: userPrompts, projectPrompts: projectPrompts);
+            Assert.Contains(trusted.Skills, skill => skill.Name == "project-configured");
+            Assert.DoesNotContain(trusted.Skills, skill => skill.Name == "project-auto-skip");
+            Assert.Contains(trusted.Prompts, prompt => prompt.Name == "project-review");
+            var projectSource = Assert.Single(trusted.Skills, skill => skill.Name == "project-configured").SourceInfo;
+            Assert.Equal("local", projectSource.Source);
+            Assert.Equal("project", projectSource.Scope);
+            Assert.Equal(Path.Combine(Path.GetFullPath(project), ".pi"), projectSource.BaseDir);
+        }
+        finally { if (Directory.Exists(root)) Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
     public async Task OversizedAndInvalidUtf8ResourcesFailClosed()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-resources-" + Guid.NewGuid().ToString("N"));

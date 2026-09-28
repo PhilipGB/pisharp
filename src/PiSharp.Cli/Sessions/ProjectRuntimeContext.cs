@@ -68,7 +68,9 @@ internal sealed class ProjectRuntimeContext : IDisposable
         var instructions = arguments.NoContextFiles ? "" : await ContextInstructions.LoadAsync(cwd, agentDirectory, cancellationToken);
         var resources = await ResourceCatalog.LoadAsync(cwd, agentDirectory, configuration.Trusted, cancellationToken,
             discoverSkills: !arguments.NoSkills, discoverPrompts: !arguments.NoPromptTemplates,
-            additionalSkills: arguments.SkillPaths, additionalPrompts: arguments.PromptTemplatePaths);
+            additionalSkills: arguments.SkillPaths, additionalPrompts: arguments.PromptTemplatePaths,
+            userSkills: configuration.BaseUserSettings.Skills, projectSkills: configuration.ProjectSettings?.Skills,
+            userPrompts: configuration.BaseUserSettings.Prompts, projectPrompts: configuration.ProjectSettings?.Prompts);
         instructions += "\n" + resources.SystemInstructions();
 
         var sessionDirectory = sessionDirectoryOverride ?? arguments.SessionDirectory ?? configuredSessionDirectory ??
@@ -80,7 +82,8 @@ internal sealed class ProjectRuntimeContext : IDisposable
         try
         {
             extensions = ExtensionCatalog.Load(agentDirectory, cwd, configuration.Trusted, discover: !arguments.NoExtensions,
-                additionalPaths: arguments.ExtensionPaths);
+                additionalPaths: arguments.ExtensionPaths, userPaths: configuration.BaseUserSettings.Extensions,
+                projectPaths: configuration.ProjectSettings?.Extensions);
             return new ProjectRuntimeContext(configuration, prompts, instructions,
                 resources, extensions, store, sessionImport);
         }

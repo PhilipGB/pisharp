@@ -1,4 +1,5 @@
 using System.Text.Json;
+using PiSharp.Runtime.Resources;
 
 namespace PiSharp.Cli.Tui;
 
@@ -8,11 +9,16 @@ internal sealed class TerminalThemeCatalog
     private static readonly string[] s_builtinNames = ["dark", "light"];
     private readonly string? _projectThemeDirectory;
     private readonly string? _userThemeDirectory;
+    private readonly string? _projectBaseDirectory;
+    private readonly string _userBaseDirectory;
+    private readonly IReadOnlyList<string>? _userThemePaths;
+    private readonly IReadOnlyList<string>? _projectThemePaths;
     private readonly TerminalColorMode _mode;
     private readonly Func<string, string?> _environment;
 
     public TerminalThemeCatalog(string agentDirectory, string? trustedProjectDirectory = null,
-        Func<string, string?>? environment = null, bool? trueColorOverride = null)
+        Func<string, string?>? environment = null, bool? trueColorOverride = null,
+        IReadOnlyList<string>? userThemePaths = null, IReadOnlyList<string>? projectThemePaths = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(agentDirectory);
         _environment = environment ?? Environment.GetEnvironmentVariable;
@@ -22,10 +28,16 @@ internal sealed class TerminalThemeCatalog
             false => TerminalColorMode.Ansi256,
             null => TerminalColorModeExtensions.Detect(_environment)
         };
-        _userThemeDirectory = Path.Combine(Path.GetFullPath(agentDirectory), "themes");
+        _userBaseDirectory = Path.GetFullPath(agentDirectory);
+        _userThemeDirectory = Path.Combine(_userBaseDirectory, "themes");
+        _userThemePaths = userThemePaths;
+        _projectThemePaths = trustedProjectDirectory is null ? null : projectThemePaths;
+        _projectBaseDirectory = trustedProjectDirectory is null
+            ? null
+            : Path.Combine(Path.GetFullPath(trustedProjectDirectory), ".pi");
         _projectThemeDirectory = trustedProjectDirectory is null
             ? null
-            : Path.Combine(Path.GetFullPath(trustedProjectDirectory), ".pi", "themes");
+            : Path.Combine(_projectBaseDirectory!, "themes");
     }
 
     public IReadOnlyList<string> GetAvailableNames()
@@ -116,13 +128,45 @@ internal sealed class TerminalThemeCatalog
 
     private IEnumerable<string> ThemeFiles()
     {
-        foreach (var directory in new[] { _projectThemeDirectory, _userThemeDirectory })
+        var seen = new HashSet<string>(OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
+        if (_projectBaseDirectory is not null)
         {
-            if (directory is null || !Directory.Exists(directory)) continue;
-            string[] files;
-            try { files = Directory.GetFiles(directory, "*.json", SearchOption.TopDirectoryOnly); }
-            catch (Exception error) when (IsThemeLoadError(error)) { continue; }
-            foreach (var path in files.Order(StringComparer.Ordinal)) yield return path;
+            foreach (var path in ConfiguredThemeFiles(_projectThemePaths, _projectBaseDirectory))
+                if (seen.Add(path)) yield return path;
+            foreach (var path in ThemeFilesIn(_projectThemeDirectory, recursive: false))
+                if (seen.Add(path) && LocalResourcePathRules.IsEnabledByOverrides(path, _projectThemePaths, _projectBaseDirectory))
+                    yield return path;
+        }
+        foreach (var path in ConfiguredThemeFiles(_userThemePaths, _userBaseDirectory))
+            if (seen.Add(path)) yield return path;
+        foreach (var path in ThemeFilesIn(_userThemeDirectory, recursive: false))
+            if (seen.Add(path) && LocalResourcePathRules.IsEnabledByOverrides(path, _userThemePaths, _userBaseDirectory))
+                yield return path;
+    }
+
+    private static IEnumerable<string> ConfiguredThemeFiles(IReadOnlyList<string>? entries, string baseDirectory)
+    {
+        var candidates = LocalResourcePathRules.GetPaths(entries)
+            .SelectMany(entry => ThemeFilesIn(LocalResourcePathRules.ResolvePath(entry, baseDirectory), recursive: true))
+            .Distinct(OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
+        return LocalResourcePathRules.ApplyOverrides(candidates, entries, baseDirectory);
+    }
+
+    private static IReadOnlyList<string> ThemeFilesIn(string? path, bool recursive)
+    {
+        if (path is null) return [];
+        if (File.Exists(path))
+            return Path.GetExtension(path).Equals(".json", StringComparison.OrdinalIgnoreCase) ? [Path.GetFullPath(path)] : [];
+        if (!Directory.Exists(path)) return [];
+        try
+        {
+            return Directory.EnumerateFiles(path, "*.json", recursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly)
+                .Where(file => !Path.GetFileName(file).StartsWith(".", StringComparison.Ordinal))
+                .Order(StringComparer.Ordinal).Take(1000).Select(Path.GetFullPath).ToArray();
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+        {
+            return [];
         }
     }
 

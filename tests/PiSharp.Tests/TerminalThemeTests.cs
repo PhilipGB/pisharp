@@ -77,6 +77,47 @@ public sealed class TerminalThemeTests
     }
 
     [Fact]
+    public void ConfiguredThemePathsUseScopedBasesPatternsAndProjectPrecedence()
+    {
+        var root = TempRoot();
+        var agent = Path.Combine(root, "agent");
+        var project = Path.Combine(root, "workspace");
+        var userCustom = Path.Combine(agent, "custom-themes");
+        var userAuto = Path.Combine(agent, "themes");
+        var projectCustom = Path.Combine(project, ".pi", "custom-themes");
+        Directory.CreateDirectory(userCustom);
+        Directory.CreateDirectory(userAuto);
+        Directory.CreateDirectory(projectCustom);
+        try
+        {
+            var userOcean = BuiltIn("ocean");
+            userOcean["colors"]!["mdHeading"] = "#111111";
+            File.WriteAllText(Path.Combine(userCustom, "custom.json"), userOcean.ToJsonString());
+            var projectOcean = BuiltIn("ocean");
+            projectOcean["colors"]!["mdHeading"] = "#222222";
+            File.WriteAllText(Path.Combine(projectCustom, "custom.json"), projectOcean.ToJsonString());
+            File.WriteAllText(Path.Combine(userAuto, "keep.json"), BuiltIn("force-kept").ToJsonString());
+            File.WriteAllText(Path.Combine(userAuto, "deny.json"), BuiltIn("force-denied").ToJsonString());
+
+            IReadOnlyList<string> userPaths = ["custom-themes", "+themes/keep.json", "+themes/deny.json",
+                "!themes/*.json", "-themes/deny.json"];
+            IReadOnlyList<string> projectPaths = ["custom-themes", "!themes/blocked/**"];
+            var trusted = new TerminalThemeCatalog(agent, project,
+                key => key == "COLORTERM" ? "truecolor" : null,
+                userThemePaths: userPaths, projectThemePaths: projectPaths);
+            Assert.Equal("\u001b[38;2;34;34;34m", trusted.Load("ocean").Fg("mdHeading"));
+            var trustedNames = trusted.GetAvailableNames();
+            Assert.Contains("force-kept", trustedNames);
+            Assert.DoesNotContain("force-denied", trustedNames);
+
+            var untrusted = new TerminalThemeCatalog(agent, userThemePaths: userPaths, projectThemePaths: projectPaths,
+                environment: key => key == "COLORTERM" ? "truecolor" : null);
+            Assert.Equal("\u001b[38;2;17;17;17m", untrusted.Load("ocean").Fg("mdHeading"));
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
     public void ThemePairTracksTerminalAppearanceAndNoColorIsRespected()
     {
         var root = TempRoot();

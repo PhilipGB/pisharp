@@ -13,12 +13,19 @@ public sealed class ProjectRuntimeContextTests
         var project = Path.Combine(root, "project");
         var agent = Path.Combine(root, "agent");
         var privateSkill = Path.Combine(project, ".pi", "skills", "private");
+        var configuredSkill = Path.Combine(project, ".pi", "configured-skills", "first");
+        var configuredPrompts = Path.Combine(project, ".pi", "configured-prompts");
         Directory.CreateDirectory(privateSkill);
         Directory.CreateDirectory(agent);
         await File.WriteAllTextAsync(Path.Combine(project, ".pi", "settings.json"),
-            "{\"images\":{\"blockImages\":true},\"sessionDir\":\"custom-sessions\",\"terminal\":{\"trueColor\":true},\"enableSkillCommands\":false}");
+            "{\"images\":{\"blockImages\":true},\"sessionDir\":\"custom-sessions\",\"terminal\":{\"trueColor\":true},\"enableSkillCommands\":false,\"skills\":[\"configured-skills\"],\"prompts\":[\"configured-prompts\"]}");
         await File.WriteAllTextAsync(Path.Combine(privateSkill, "SKILL.md"),
             "---\nname: private-guide\ndescription: A trusted project guide\n---\nUse this guide.");
+        Directory.CreateDirectory(configuredSkill);
+        Directory.CreateDirectory(configuredPrompts);
+        await File.WriteAllTextAsync(Path.Combine(configuredSkill, "SKILL.md"),
+            "---\nname: configured-first\ndescription: A configured project guide\n---\nUse this configured guide.");
+        await File.WriteAllTextAsync(Path.Combine(configuredPrompts, "configured-review.md"), "Review configured resources.");
 
         try
         {
@@ -36,6 +43,10 @@ public sealed class ProjectRuntimeContextTests
             Assert.Equal("project", privateSkillResource.SourceInfo.Scope);
             Assert.Equal(Path.Combine(project, ".pi"), privateSkillResource.SourceInfo.BaseDir);
             Assert.Equal(Path.GetFullPath(Path.Combine(project, "custom-sessions")), trusted.Store.DirectoryPath);
+            var configuredResource = Assert.Single(trusted.Resources.Skills, skill => skill.Name == "configured-first");
+            Assert.Equal("local", configuredResource.SourceInfo.Source);
+            Assert.Equal("project", configuredResource.SourceInfo.Scope);
+            Assert.Contains(trusted.Resources.Prompts, prompt => prompt.Name == "configured-review");
 
             var untrustedConfiguration = await ProjectRuntimeConfiguration.LoadAsync(project, agent, arguments,
                 trust, interactiveTrust: false, TextReader.Null, TextWriter.Null, trustedOverride: false);
@@ -45,6 +56,20 @@ public sealed class ProjectRuntimeContextTests
             Assert.Null(untrusted.Settings.TerminalTrueColor);
             Assert.True(untrusted.Settings.SkillCommandsEnabled);
             Assert.DoesNotContain(untrusted.Resources.Skills, skill => skill.Name == "private-guide");
+            Assert.DoesNotContain(untrusted.Resources.Skills, skill => skill.Name == "configured-first");
+            Assert.DoesNotContain(untrusted.Resources.Prompts, prompt => prompt.Name == "configured-review");
+
+            var secondSkill = Path.Combine(project, ".pi", "configured-skills-next", "next");
+            Directory.CreateDirectory(secondSkill);
+            await File.WriteAllTextAsync(Path.Combine(secondSkill, "SKILL.md"),
+                "---\nname: configured-second\ndescription: A reloaded project guide\n---\nUse the reloaded guide.");
+            await File.WriteAllTextAsync(Path.Combine(project, ".pi", "settings.json"),
+                "{\"skills\":[\"configured-skills-next\"]}");
+            var reloadedConfiguration = await ProjectRuntimeConfiguration.LoadAsync(project, agent, arguments,
+                trust, interactiveTrust: false, TextReader.Null, TextWriter.Null, trustedOverride: true);
+            using var reloaded = await ProjectRuntimeContext.LoadAsync(reloadedConfiguration, agent, arguments, null);
+            Assert.Contains(reloaded.Resources.Skills, skill => skill.Name == "configured-second");
+            Assert.DoesNotContain(reloaded.Resources.Skills, skill => skill.Name == "configured-first");
         }
         finally { Directory.Delete(root, recursive: true); }
     }

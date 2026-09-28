@@ -3001,53 +3001,69 @@
     {
       "id": "settings-extensions",
       "title": "Setting: extensions",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:65",
       "acceptance": [
         "Support extensions with upstream type/default and user/trusted-project precedence",
         "Test malformed settings, trust boundaries, reload and startup behaviour"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "UserSettings parses additive user/project extension arrays. ExtensionCatalog resolves each scope against its own base directory, applies ! glob filters and exact +/- overrides to configured and auto-discovered assemblies, and skips project entries without trust. Project runtime reload rereads settings and builds a fresh extension catalog."
+      ],
+      "evidence": [
+        "UserSettingsTests.LocalResourcePathArraysMergeAcrossScopesAndRejectInvalidEntries and ExtensionCatalogTests.ConfiguredExtensionPathsAreScopeRelativeFilteredAndTrustGated cover parsing, relative bases, auto-path filters and project trust. Current Pi 6f7551516b84278eb9da1c340c8e7bc66be1a6ba source/docs/tests were inspected; see docs/parity/fixtures/settings-resource-paths-baseline.md. Focused resource/settings tests pass 61/61; format passes; warnings-as-errors build has 0 warnings/errors; full suite passes 696/696 (0 skipped). Exact-head CI is pending."
+      ],
       "dependencies": []
     },
     {
       "id": "settings-skills",
       "title": "Setting: skills",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:65",
       "acceptance": [
         "Support skills with upstream type/default and user/trusted-project precedence",
         "Test malformed settings, trust boundaries, reload and startup behaviour"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "UserSettings parses additive user/project skill arrays. ResourceCatalog resolves configured roots relative to the user agent directory or trusted project .pi directory, filters configured and auto-discovered skills with ! glob exclusions and exact +/- overrides, and preserves source scope metadata."
+      ],
+      "evidence": [
+        "ResourceCatalogTests.ConfiguredResourcePathsUseScopedBasesAndTrustWhilePatternsFilterAutoDiscovery and ProjectRuntimeContextTests.LoadsProjectScopedSettingsResourcesAndStoreUnderTheTrustDecision cover scoped roots, trust and reload. Current Pi 6f7551516b84278eb9da1c340c8e7bc66be1a6ba source/docs/tests were inspected; see docs/parity/fixtures/settings-resource-paths-baseline.md. Focused resource/settings tests pass 61/61; format passes; warnings-as-errors build has 0 warnings/errors; full suite passes 696/696 (0 skipped). Exact-head CI is pending."
+      ],
       "dependencies": []
     },
     {
       "id": "settings-prompts",
       "title": "Setting: prompts",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:65",
       "acceptance": [
         "Support prompts with upstream type/default and user/trusted-project precedence",
         "Test malformed settings, trust boundaries, reload and startup behaviour"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "UserSettings parses additive user/project prompt arrays. ResourceCatalog resolves configured files and directories against the owning scope, applies ! glob and exact +/- filters to configured and automatic prompts, and rebuilds prompts from current settings when the project runtime reloads."
+      ],
+      "evidence": [
+        "ResourceCatalogTests.ConfiguredResourcePathsUseScopedBasesAndTrustWhilePatternsFilterAutoDiscovery and ProjectRuntimeContextTests.LoadsProjectScopedSettingsResourcesAndStoreUnderTheTrustDecision cover scoped paths, trust and reload. Current Pi 6f7551516b84278eb9da1c340c8e7bc66be1a6ba source/docs/tests were inspected; see docs/parity/fixtures/settings-resource-paths-baseline.md. Focused resource/settings tests pass 61/61; format passes; warnings-as-errors build has 0 warnings/errors; full suite passes 696/696 (0 skipped). Exact-head CI is pending."
+      ],
       "dependencies": []
     },
     {
       "id": "settings-themes",
       "title": "Setting: themes",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:65",
       "acceptance": [
         "Support themes with upstream type/default and user/trusted-project precedence",
         "Test malformed settings, trust boundaries, reload and startup behaviour"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "UserSettings parses additive user/project theme arrays. TerminalThemeCatalog resolves configured files/directories from their scope bases, applies ! glob and exact +/- filters to configured and auto-discovered themes, keeps trusted-project themes ahead of user themes, and is recreated after project runtime reload."
+      ],
+      "evidence": [
+        "TerminalThemeTests.ConfiguredThemePathsUseScopedBasesPatternsAndProjectPrecedence covers scoped paths, pattern class ordering, project trust and theme selection; Program.cs rebuilds the catalog on startup, settings refresh, project adoption and /reload. Current Pi 6f7551516b84278eb9da1c340c8e7bc66be1a6ba source/docs/tests were inspected; see docs/parity/fixtures/settings-resource-paths-baseline.md. Focused resource/settings tests pass 61/61; format passes; warnings-as-errors build has 0 warnings/errors; full suite passes 696/696 (0 skipped). Full Pi minimatch/process differential remains open; exact-head CI is pending."
+      ],
       "dependencies": []
     },
     {
