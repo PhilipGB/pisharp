@@ -384,6 +384,84 @@ public sealed class ProviderChatClientFactoryTests
         Assert.Equal(1, requests);
     }
 
+    [Theory]
+    [InlineData("openai-responses")]
+    [InlineData("openai-completions")]
+    [InlineData("anthropic-messages")]
+    public async Task ProviderStreamIdleDeadlineResetsOnSseBytesBeforeTheNextParsedUpdate(string protocol)
+    {
+        using var listener = StartLoopbackListener(out var port);
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(8));
+        var server = Task.Run(async () =>
+        {
+            var request = await listener.GetContextAsync().WaitAsync(deadline.Token);
+            using var reader = new StreamReader(request.Request.InputStream);
+            await reader.ReadToEndAsync(deadline.Token);
+            request.Response.ContentType = "text/event-stream";
+            request.Response.SendChunked = true;
+            await using var writer = new StreamWriter(request.Response.OutputStream);
+            try
+            {
+                var initialEvents = protocol switch
+                {
+                    "openai-responses" => "data: {\"type\":\"response.created\",\"response\":{\"id\":\"resp_wire\",\"object\":\"response\",\"created_at\":1,\"model\":\"fixture-model\",\"status\":\"in_progress\",\"output\":[]}}\n\n",
+                    "openai-completions" => "data: {\"id\":\"chatcmpl_wire\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"fixture-model\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"first\"},\"finish_reason\":null}]}\n\n",
+                    _ => "event: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_wire\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"fixture-model\",\"content\":[],\"stop_reason\":null,\"stop_sequence\":null,\"usage\":{\"input_tokens\":1,\"output_tokens\":0}}}\n\nevent: content_block_start\ndata: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"text\",\"text\":\"\"}}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"first\"}}\n\n"
+                };
+                await writer.WriteAsync(initialEvents);
+                await writer.FlushAsync();
+                await Task.Delay(50, deadline.Token);
+
+                var partialEvent = protocol switch
+                {
+                    "openai-responses" => "data: {\"type\":\"response.output_text.delta\",\"item_id\":\"item_1\",\"output_index\":0,\"content_index\":0,\"delta\":\"wire activity\"}",
+                    "openai-completions" => "data: {\"id\":\"chatcmpl_wire\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"fixture-model\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"wire activity\"},\"finish_reason\":null}]}",
+                    _ => "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"wire activity\"}}"
+                };
+                for (var offset = 0; offset < partialEvent.Length; offset += 10)
+                {
+                    await writer.WriteAsync(partialEvent.AsMemory(offset, Math.Min(10, partialEvent.Length - offset)), deadline.Token);
+                    await writer.FlushAsync(deadline.Token);
+                    await Task.Delay(80, deadline.Token);
+                }
+                await writer.WriteAsync("\n\n");
+                var finalEvents = protocol switch
+                {
+                    "openai-responses" => "data: {\"type\":\"response.completed\",\"response\":{\"id\":\"resp_wire\",\"object\":\"response\",\"created_at\":1,\"model\":\"fixture-model\",\"status\":\"completed\",\"output\":[]}}\n\ndata: [DONE]\n\n",
+                    "openai-completions" => "data: {\"id\":\"chatcmpl_wire\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"fixture-model\",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n",
+                    _ => "event: content_block_stop\ndata: {\"type\":\"content_block_stop\",\"index\":0}\n\nevent: message_delta\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\",\"stop_sequence\":null},\"usage\":{\"output_tokens\":2}}\n\nevent: message_stop\ndata: {\"type\":\"message_stop\"}\n\n"
+                };
+                await writer.WriteAsync(finalEvents);
+                await writer.FlushAsync();
+            }
+            catch (Exception error) when (error is IOException or HttpListenerException or ObjectDisposedException) { }
+            finally { request.Response.Close(); }
+        });
+
+        var selection = Selection("fixture", protocol == "anthropic-messages"
+            ? $"http://127.0.0.1:{port}" : $"http://127.0.0.1:{port}/v1", protocol);
+        var client = ProviderChatClientFactory.Create(selection,
+            new ProviderRetrySettings(TimeoutMs: 5_000), httpIdleTimeoutMs: 250);
+        var firstUpdate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var text = new System.Text.StringBuilder();
+        var streaming = Task.Run(async () =>
+        {
+            await foreach (var update in client.GetStreamingResponseAsync(
+                [new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User, "hello")],
+                cancellationToken: deadline.Token))
+            {
+                firstUpdate.TrySetResult();
+                text.Append(update.Text);
+            }
+        });
+        await firstUpdate.Task.WaitAsync(deadline.Token);
+
+        await streaming.WaitAsync(deadline.Token);
+        await server.WaitAsync(deadline.Token);
+
+        Assert.Contains("wire activity", text.ToString());
+    }
+
     [Fact]
     public async Task AnthropicMessagesUsesNativeHeadersAndBody()
     {

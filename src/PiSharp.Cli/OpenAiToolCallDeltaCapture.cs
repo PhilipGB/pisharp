@@ -21,7 +21,9 @@ internal sealed class OpenAiToolCallDeltaCapture : IProviderToolCallDeltaSource
 
     public OpenAiToolCallDeltaCapture()
     {
-        Transport = new HttpClientPipelineTransport(new HttpClient(new CaptureHandler(this), disposeHandler: true));
+        Transport = new HttpClientPipelineTransport(
+            new HttpClient(new CaptureHandler(this,
+                new ProviderWireActivityHandler(new HttpClientHandler())), disposeHandler: true));
     }
 
     public PipelineTransport Transport { get; }
@@ -40,7 +42,8 @@ internal sealed class OpenAiToolCallDeltaCapture : IProviderToolCallDeltaSource
         capture.Complete();
     }
 
-    private sealed class CaptureHandler(OpenAiToolCallDeltaCapture owner) : DelegatingHandler(new HttpClientHandler())
+    private sealed class CaptureHandler(OpenAiToolCallDeltaCapture owner, HttpMessageHandler innerHandler)
+        : DelegatingHandler(innerHandler)
     {
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
             CancellationToken cancellationToken)

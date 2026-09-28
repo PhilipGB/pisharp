@@ -48,6 +48,12 @@ internal sealed class ProviderRequestTimeoutChatClient : DelegatingChatClient, I
         requestTimeout.CancelAfter(_requestTimeoutMs);
         using var idleTimeout = CancellationTokenSource.CreateLinkedTokenSource(requestTimeout.Token);
         if (_idleTimeoutMs > 0) idleTimeout.CancelAfter(_idleTimeoutMs);
+        using var wireActivity = ProviderWireActivity.Observe(() =>
+        {
+            if (_idleTimeoutMs <= 0) return;
+            try { idleTimeout.CancelAfter(_idleTimeoutMs); }
+            catch (ObjectDisposedException) { }
+        });
         var source = base.GetStreamingResponseAsync(messages, options, idleTimeout.Token);
         await using var updates = source.GetAsyncEnumerator(idleTimeout.Token);
         while (true)
@@ -67,7 +73,6 @@ internal sealed class ProviderRequestTimeoutChatClient : DelegatingChatClient, I
                 throw CreateTimeout(requestTimeout, idleTimeout, error);
             }
             if (!moved) yield break;
-            if (_idleTimeoutMs > 0) idleTimeout.CancelAfter(_idleTimeoutMs);
             yield return updates.Current;
         }
     }

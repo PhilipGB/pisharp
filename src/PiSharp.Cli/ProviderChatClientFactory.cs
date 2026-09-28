@@ -43,7 +43,8 @@ public static class ProviderChatClientFactory
                 ApiKey = selection.ApiKey,
                 BaseUrl = selection.Connection.Endpoint?.ToString() ?? selection.Provider.Endpoint.ToString(),
                 MaxRetries = providerMaxRetries,
-                Timeout = sdkTimeout
+                Timeout = sdkTimeout,
+                Handlers = [new ProviderWireActivityHandler()]
             };
             anthropicClient.HttpClient.Timeout = Timeout.InfiniteTimeSpan;
             var anthropicChat = anthropicClient.AsIChatClient(selection.Model.Id,
@@ -56,6 +57,9 @@ public static class ProviderChatClientFactory
         options.NetworkTimeout = sdkTimeout;
         options.RetryPolicy = new ClientRetryPolicy(providerMaxRetries);
         if (selection.Connection.Endpoint is not null) options.Endpoint = selection.Connection.Endpoint;
+        if (protocol == "openai-responses")
+            options.Transport = new HttpClientPipelineTransport(
+                new HttpClient(new ProviderWireActivityHandler(new HttpClientHandler()), disposeHandler: true));
         OpenAiToolCallDeltaCapture? toolCallCapture = null;
         if (protocol == "openai-completions")
         {
