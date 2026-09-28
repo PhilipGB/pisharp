@@ -1,0 +1,5746 @@
+[
+  {
+    "id": "amazon.nova-2-lite-v1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 1000000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.33,
+      "output": 2.75,
+      "cachedInput": 0.0825,
+      "cachedWrite": 0.33
+    },
+    "provider": "amazon-bedrock",
+    "name": "Nova 2 Lite",
+    "maxOutputTokens": 65535,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com"
+  },
+  {
+    "id": "amazon.nova-lite-v1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 300000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.06,
+      "output": 0.24,
+      "cachedInput": 0.015,
+      "cachedWrite": 0.06
+    },
+    "provider": "amazon-bedrock",
+    "name": "Nova Lite",
+    "maxOutputTokens": 10000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com"
+  },
+  {
+    "id": "amazon.nova-micro-v1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 128000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.035,
+      "output": 0.14,
+      "cachedInput": 0.00875,
+      "cachedWrite": 0.035
+    },
+    "provider": "amazon-bedrock",
+    "name": "Nova Micro",
+    "maxOutputTokens": 10000,
+    "input": [
+      "text"
+    ],
+    "api": "bedrock-converse-stream",
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com"
+  },
+  {
+    "id": "amazon.nova-pro-v1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 300000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.8,
+      "output": 3.2,
+      "cachedInput": 0.2,
+      "cachedWrite": 0.8
+    },
+    "provider": "amazon-bedrock",
+    "name": "Nova Pro",
+    "maxOutputTokens": 10000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com"
+  },
+  {
+    "id": "anthropic.claude-fable-5",
+    "owner": "amazon-bedrock",
+    "contextLength": 1000000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 10,
+      "output": 50,
+      "cachedInput": 1,
+      "cachedWrite": 12.5
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Fable 5",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "off": null,
+      "xhigh": "xhigh",
+      "max": "max"
+    }
+  },
+  {
+    "id": "anthropic.claude-fable-5-1",
+    "owner": "amazon-bedrock",
+    "contextLength": 1000000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 10,
+      "output": 50,
+      "cachedInput": 0.25,
+      "cachedWrite": 12.5
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Fable 5.1",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "off": null,
+      "xhigh": "xhigh",
+      "max": "max"
+    }
+  },
+  {
+    "id": "anthropic.claude-haiku-4-5-20251001-v1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 200000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 1,
+      "output": 5,
+      "cachedInput": 0.1,
+      "cachedWrite": 1.25
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Haiku 4.5",
+    "maxOutputTokens": 64000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "anthropic.claude-opus-4-1-20250805-v1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 200000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 15,
+      "output": 75,
+      "cachedInput": 1.5,
+      "cachedWrite": 18.75
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Opus 4.1",
+    "maxOutputTokens": 32000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com"
+  },
+  {
+    "id": "anthropic.claude-opus-4-5-20251101-v1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 200000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 5,
+      "output": 25,
+      "cachedInput": 0.5,
+      "cachedWrite": 6.25
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Opus 4.5",
+    "maxOutputTokens": 64000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "anthropic.claude-opus-4-6-v1",
+    "owner": "amazon-bedrock",
+    "contextLength": 1000000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 5.5,
+      "output": 27.5,
+      "cachedInput": 0.55,
+      "cachedWrite": 6.875
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Opus 4.6",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "max": "max"
+    },
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "anthropic.claude-opus-4-7",
+    "owner": "amazon-bedrock",
+    "contextLength": 1000000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 5,
+      "output": 25,
+      "cachedInput": 0.5,
+      "cachedWrite": 6.25
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Opus 4.7",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "xhigh": "xhigh",
+      "max": "max"
+    }
+  },
+  {
+    "id": "anthropic.claude-opus-4-8",
+    "owner": "amazon-bedrock",
+    "contextLength": 1000000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 5,
+      "output": 25,
+      "cachedInput": 0.5,
+      "cachedWrite": 6.25
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Opus 4.8",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "xhigh": "xhigh",
+      "max": "max"
+    }
+  },
+  {
+    "id": "anthropic.claude-opus-5-5",
+    "owner": "amazon-bedrock",
+    "contextLength": 1000000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 4,
+      "output": 20,
+      "cachedInput": 0.2,
+      "cachedWrite": 5
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Opus 5.5",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "xhigh": "xhigh",
+      "max": "max"
+    }
+  },
+  {
+    "id": "anthropic.claude-sonnet-4-5-20250929-v1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 200000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 3,
+      "output": 15,
+      "cachedInput": 0.3,
+      "cachedWrite": 3.75
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Sonnet 4.5",
+    "maxOutputTokens": 64000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "anthropic.claude-sonnet-4-6",
+    "owner": "amazon-bedrock",
+    "contextLength": 1000000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 3.3,
+      "output": 16.5,
+      "cachedInput": 0.33,
+      "cachedWrite": 4.125
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Sonnet 4.6",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "max": "max"
+    },
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "anthropic.claude-sonnet-5",
+    "owner": "amazon-bedrock",
+    "contextLength": 1000000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 2,
+      "output": 10,
+      "cachedInput": 0.2,
+      "cachedWrite": 2.5
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Sonnet 5",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "xhigh": "xhigh",
+      "max": "max"
+    }
+  },
+  {
+    "id": "apac.amazon.nova-lite-v1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 300000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.063,
+      "output": 0.252,
+      "cachedInput": 0.01575,
+      "cachedWrite": 0.063
+    },
+    "provider": "amazon-bedrock",
+    "name": "Nova Lite (APAC)",
+    "maxOutputTokens": 10000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com"
+  },
+  {
+    "id": "apac.amazon.nova-micro-v1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 128000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.037,
+      "output": 0.148,
+      "cachedInput": 0.00925,
+      "cachedWrite": 0.037
+    },
+    "provider": "amazon-bedrock",
+    "name": "Nova Micro (APAC)",
+    "maxOutputTokens": 10000,
+    "input": [
+      "text"
+    ],
+    "api": "bedrock-converse-stream",
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com"
+  },
+  {
+    "id": "apac.amazon.nova-pro-v1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 300000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.84,
+      "output": 3.36,
+      "cachedInput": 0.21,
+      "cachedWrite": 0.84
+    },
+    "provider": "amazon-bedrock",
+    "name": "Nova Pro (APAC)",
+    "maxOutputTokens": 10000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com"
+  },
+  {
+    "id": "apac.anthropic.claude-sonnet-4-20250514-v1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 200000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 3,
+      "output": 15,
+      "cachedInput": 0.3,
+      "cachedWrite": 3.75
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Sonnet 4 (APAC)",
+    "maxOutputTokens": 64000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com"
+  },
+  {
+    "id": "au.anthropic.claude-haiku-4-5-20251001-v1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 200000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 1.1,
+      "output": 5.5,
+      "cachedInput": 0.11,
+      "cachedWrite": 1.375
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Haiku 4.5 (AU)",
+    "maxOutputTokens": 64000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "au.anthropic.claude-opus-4-6-v1",
+    "owner": "amazon-bedrock",
+    "contextLength": 1000000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 5.5,
+      "output": 27.5,
+      "cachedInput": 0.55,
+      "cachedWrite": 6.875
+    },
+    "provider": "amazon-bedrock",
+    "name": "AU Anthropic Claude Opus 4.6",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "max": "max"
+    },
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "au.anthropic.claude-opus-4-7",
+    "owner": "amazon-bedrock",
+    "contextLength": 1000000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 5.5,
+      "output": 27.5,
+      "cachedInput": 0.55,
+      "cachedWrite": 6.875
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Opus 4.7 (AU)",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "xhigh": "xhigh",
+      "max": "max"
+    }
+  },
+  {
+    "id": "au.anthropic.claude-opus-4-8",
+    "owner": "amazon-bedrock",
+    "contextLength": 1000000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 5.5,
+      "output": 27.5,
+      "cachedInput": 0.55,
+      "cachedWrite": 6.875
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Opus 4.8 (AU)",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "xhigh": "xhigh",
+      "max": "max"
+    }
+  },
+  {
+    "id": "au.anthropic.claude-opus-5",
+    "owner": "amazon-bedrock",
+    "contextLength": 1000000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 5.5,
+      "output": 27.5,
+      "cachedInput": 0.55,
+      "cachedWrite": 6.875
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Opus 5 (AU)",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "xhigh": "xhigh",
+      "max": "max"
+    }
+  },
+  {
+    "id": "au.anthropic.claude-opus-5-5",
+    "owner": "amazon-bedrock",
+    "contextLength": 1000000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 4.4,
+      "output": 22,
+      "cachedInput": 0.22,
+      "cachedWrite": 5.5
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Opus 5.5 (AU)",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "xhigh": "xhigh",
+      "max": "max"
+    }
+  },
+  {
+    "id": "au.anthropic.claude-sonnet-4-5-20250929-v1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 200000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 3.3,
+      "output": 16.5,
+      "cachedInput": 0.33,
+      "cachedWrite": 4.125
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Sonnet 4.5 (AU)",
+    "maxOutputTokens": 64000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "au.anthropic.claude-sonnet-4-6",
+    "owner": "amazon-bedrock",
+    "contextLength": 1000000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 3.3,
+      "output": 16.5,
+      "cachedInput": 0.33,
+      "cachedWrite": 4.125
+    },
+    "provider": "amazon-bedrock",
+    "name": "AU Anthropic Claude Sonnet 4.6",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "max": "max"
+    },
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "au.anthropic.claude-sonnet-5",
+    "owner": "amazon-bedrock",
+    "contextLength": 1000000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 2.2,
+      "output": 11,
+      "cachedInput": 0.22,
+      "cachedWrite": 2.75
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Sonnet 5 (AU)",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "xhigh": "xhigh",
+      "max": "max"
+    }
+  },
+  {
+    "id": "ca.amazon.nova-lite-v1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 300000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.064,
+      "output": 0.256,
+      "cachedInput": 0.016,
+      "cachedWrite": 0.064
+    },
+    "provider": "amazon-bedrock",
+    "name": "Nova Lite (CA)",
+    "maxOutputTokens": 10000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com"
+  },
+  {
+    "id": "deepseek.v3-v1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 163840,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.58,
+      "output": 1.68,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "amazon-bedrock",
+    "name": "DeepSeek-V3.1",
+    "maxOutputTokens": 81920,
+    "input": [
+      "text"
+    ],
+    "api": "bedrock-converse-stream",
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "deepseek.v3.2",
+    "owner": "amazon-bedrock",
+    "contextLength": 163840,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.62,
+      "output": 1.85,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "amazon-bedrock",
+    "name": "DeepSeek V3.2",
+    "maxOutputTokens": 81920,
+    "input": [
+      "text"
+    ],
+    "api": "bedrock-converse-stream",
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "eu.amazon.nova-2-lite-v1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 1000000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.374,
+      "output": 3.157,
+      "cachedInput": 0.0935,
+      "cachedWrite": 0.374
+    },
+    "provider": "amazon-bedrock",
+    "name": "Nova 2 Lite (EU)",
+    "maxOutputTokens": 65535,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.eu-central-1.amazonaws.com"
+  },
+  {
+    "id": "eu.amazon.nova-lite-v1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 300000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.069,
+      "output": 0.276,
+      "cachedInput": 0.01725,
+      "cachedWrite": 0.069
+    },
+    "provider": "amazon-bedrock",
+    "name": "Nova Lite (EU)",
+    "maxOutputTokens": 10000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.eu-central-1.amazonaws.com"
+  },
+  {
+    "id": "eu.amazon.nova-micro-v1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 128000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.04,
+      "output": 0.16,
+      "cachedInput": 0.01,
+      "cachedWrite": 0.04
+    },
+    "provider": "amazon-bedrock",
+    "name": "Nova Micro (EU)",
+    "maxOutputTokens": 10000,
+    "input": [
+      "text"
+    ],
+    "api": "bedrock-converse-stream",
+    "baseUrl": "https://bedrock-runtime.eu-central-1.amazonaws.com"
+  },
+  {
+    "id": "eu.amazon.nova-pro-v1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 300000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.92,
+      "output": 3.68,
+      "cachedInput": 0.23,
+      "cachedWrite": 0.92
+    },
+    "provider": "amazon-bedrock",
+    "name": "Nova Pro (EU)",
+    "maxOutputTokens": 10000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.eu-central-1.amazonaws.com"
+  },
+  {
+    "id": "eu.anthropic.claude-fable-5",
+    "owner": "amazon-bedrock",
+    "contextLength": 1000000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 11,
+      "output": 55,
+      "cachedInput": 1.1,
+      "cachedWrite": 13.75
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Fable 5 (EU)",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.eu-central-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "off": null,
+      "xhigh": "xhigh",
+      "max": "max"
+    }
+  },
+  {
+    "id": "eu.anthropic.claude-haiku-4-5-20251001-v1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 200000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 1.1,
+      "output": 5.5,
+      "cachedInput": 0.11,
+      "cachedWrite": 1.375
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Haiku 4.5 (EU)",
+    "maxOutputTokens": 64000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.eu-central-1.amazonaws.com",
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "eu.anthropic.claude-opus-4-5-20251101-v1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 200000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 5.5,
+      "output": 27.5,
+      "cachedInput": 0.55,
+      "cachedWrite": 6.875
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Opus 4.5 (EU)",
+    "maxOutputTokens": 64000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.eu-central-1.amazonaws.com",
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "eu.anthropic.claude-opus-4-6-v1",
+    "owner": "amazon-bedrock",
+    "contextLength": 1000000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 5.5,
+      "output": 27.5,
+      "cachedInput": 0.55,
+      "cachedWrite": 6.875
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Opus 4.6 (EU)",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.eu-central-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "max": "max"
+    },
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "eu.anthropic.claude-opus-4-7",
+    "owner": "amazon-bedrock",
+    "contextLength": 1000000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 5.5,
+      "output": 27.5,
+      "cachedInput": 0.55,
+      "cachedWrite": 6.875
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Opus 4.7 (EU)",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.eu-central-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "xhigh": "xhigh",
+      "max": "max"
+    }
+  },
+  {
+    "id": "eu.anthropic.claude-opus-4-8",
+    "owner": "amazon-bedrock",
+    "contextLength": 1000000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 5.5,
+      "output": 27.5,
+      "cachedInput": 0.55,
+      "cachedWrite": 6.875
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Opus 4.8 (EU)",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.eu-central-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "xhigh": "xhigh",
+      "max": "max"
+    }
+  },
+  {
+    "id": "eu.anthropic.claude-opus-5",
+    "owner": "amazon-bedrock",
+    "contextLength": 1000000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 5.5,
+      "output": 27.5,
+      "cachedInput": 0.55,
+      "cachedWrite": 6.875
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Opus 5 (EU)",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.eu-central-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "xhigh": "xhigh",
+      "max": "max"
+    }
+  },
+  {
+    "id": "eu.anthropic.claude-opus-5-5",
+    "owner": "amazon-bedrock",
+    "contextLength": 1000000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 4.4,
+      "output": 22,
+      "cachedInput": 0.22,
+      "cachedWrite": 5.5
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Opus 5.5 (EU)",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.eu-central-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "xhigh": "xhigh",
+      "max": "max"
+    }
+  },
+  {
+    "id": "eu.anthropic.claude-sonnet-4-20250514-v1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 200000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 3,
+      "output": 15,
+      "cachedInput": 0.3,
+      "cachedWrite": 3.75
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Sonnet 4 (EU)",
+    "maxOutputTokens": 64000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.eu-central-1.amazonaws.com"
+  },
+  {
+    "id": "eu.anthropic.claude-sonnet-4-5-20250929-v1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 200000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 3.3,
+      "output": 16.5,
+      "cachedInput": 0.33,
+      "cachedWrite": 4.125
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Sonnet 4.5 (EU)",
+    "maxOutputTokens": 64000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.eu-central-1.amazonaws.com",
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "eu.anthropic.claude-sonnet-4-6",
+    "owner": "amazon-bedrock",
+    "contextLength": 1000000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 3.3,
+      "output": 16.5,
+      "cachedInput": 0.33,
+      "cachedWrite": 4.125
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Sonnet 4.6 (EU)",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.eu-central-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "max": "max"
+    },
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "eu.anthropic.claude-sonnet-5",
+    "owner": "amazon-bedrock",
+    "contextLength": 1000000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 2.2,
+      "output": 11,
+      "cachedInput": 0.22,
+      "cachedWrite": 2.75
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Sonnet 5 (EU)",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.eu-central-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "xhigh": "xhigh",
+      "max": "max"
+    }
+  },
+  {
+    "id": "eu.mistral.pixtral-large-2502-v1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 128000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": false,
+    "pricing": {
+      "input": 2,
+      "output": 6,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "amazon-bedrock",
+    "name": "Pixtral Large (25.02) (EU)",
+    "maxOutputTokens": 8192,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.eu-central-1.amazonaws.com"
+  },
+  {
+    "id": "global.amazon.nova-2-lite-v1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 1000000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.3,
+      "output": 2.5,
+      "cachedInput": 0.075,
+      "cachedWrite": 0.3
+    },
+    "provider": "amazon-bedrock",
+    "name": "Nova 2 Lite (Global)",
+    "maxOutputTokens": 65535,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com"
+  },
+  {
+    "id": "global.anthropic.claude-fable-5",
+    "owner": "amazon-bedrock",
+    "contextLength": 1000000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 10,
+      "output": 50,
+      "cachedInput": 1,
+      "cachedWrite": 12.5
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Fable 5 (Global)",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "off": null,
+      "xhigh": "xhigh",
+      "max": "max"
+    }
+  },
+  {
+    "id": "global.anthropic.claude-fable-5-1",
+    "owner": "amazon-bedrock",
+    "contextLength": 1000000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 10,
+      "output": 50,
+      "cachedInput": 0.25,
+      "cachedWrite": 12.5
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Fable 5.1 (Global)",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "off": null,
+      "xhigh": "xhigh",
+      "max": "max"
+    }
+  },
+  {
+    "id": "global.anthropic.claude-haiku-4-5-20251001-v1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 200000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 1,
+      "output": 5,
+      "cachedInput": 0.1,
+      "cachedWrite": 1.25
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Haiku 4.5 (Global)",
+    "maxOutputTokens": 64000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "global.anthropic.claude-opus-4-5-20251101-v1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 200000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 5,
+      "output": 25,
+      "cachedInput": 0.5,
+      "cachedWrite": 6.25
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Opus 4.5 (Global)",
+    "maxOutputTokens": 64000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "global.anthropic.claude-opus-4-6-v1",
+    "owner": "amazon-bedrock",
+    "contextLength": 1000000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 5,
+      "output": 25,
+      "cachedInput": 0.5,
+      "cachedWrite": 6.25
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Opus 4.6 (Global)",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "max": "max"
+    },
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "global.anthropic.claude-opus-4-7",
+    "owner": "amazon-bedrock",
+    "contextLength": 1000000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 5,
+      "output": 25,
+      "cachedInput": 0.5,
+      "cachedWrite": 6.25
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Opus 4.7 (Global)",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "xhigh": "xhigh",
+      "max": "max"
+    }
+  },
+  {
+    "id": "global.anthropic.claude-opus-4-8",
+    "owner": "amazon-bedrock",
+    "contextLength": 1000000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 5,
+      "output": 25,
+      "cachedInput": 0.5,
+      "cachedWrite": 6.25
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Opus 4.8 (Global)",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "xhigh": "xhigh",
+      "max": "max"
+    }
+  },
+  {
+    "id": "global.anthropic.claude-opus-5",
+    "owner": "amazon-bedrock",
+    "contextLength": 1000000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 5,
+      "output": 25,
+      "cachedInput": 0.5,
+      "cachedWrite": 6.25
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Opus 5 (Global)",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "xhigh": "xhigh",
+      "max": "max"
+    }
+  },
+  {
+    "id": "global.anthropic.claude-opus-5-5",
+    "owner": "amazon-bedrock",
+    "contextLength": 1000000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 4,
+      "output": 20,
+      "cachedInput": 0.2,
+      "cachedWrite": 5
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Opus 5.5 (Global)",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "xhigh": "xhigh",
+      "max": "max"
+    }
+  },
+  {
+    "id": "global.anthropic.claude-sonnet-4-20250514-v1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 200000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 3,
+      "output": 15,
+      "cachedInput": 0.3,
+      "cachedWrite": 3.75
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Sonnet 4 (Global)",
+    "maxOutputTokens": 64000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com"
+  },
+  {
+    "id": "global.anthropic.claude-sonnet-4-5-20250929-v1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 200000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 3,
+      "output": 15,
+      "cachedInput": 0.3,
+      "cachedWrite": 3.75
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Sonnet 4.5 (Global)",
+    "maxOutputTokens": 64000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "global.anthropic.claude-sonnet-4-6",
+    "owner": "amazon-bedrock",
+    "contextLength": 1000000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 3,
+      "output": 15,
+      "cachedInput": 0.3,
+      "cachedWrite": 3.75
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Sonnet 4.6 (Global)",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "max": "max"
+    },
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "global.anthropic.claude-sonnet-5",
+    "owner": "amazon-bedrock",
+    "contextLength": 1000000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 2,
+      "output": 10,
+      "cachedInput": 0.2,
+      "cachedWrite": 2.5
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Sonnet 5 (Global)",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "xhigh": "xhigh",
+      "max": "max"
+    }
+  },
+  {
+    "id": "global.anthropic.claude-sonnet-5-5",
+    "owner": "amazon-bedrock",
+    "contextLength": 1000000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 2,
+      "output": 10,
+      "cachedInput": 0.2,
+      "cachedWrite": 2.5
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Sonnet 5.5 (Global)",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "xhigh": "xhigh",
+      "max": "max"
+    }
+  },
+  {
+    "id": "global.moonshotai.kimi-k3",
+    "owner": "amazon-bedrock",
+    "contextLength": 1048576,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 3,
+      "output": 15,
+      "cachedInput": 0.3,
+      "cachedWrite": 3.75
+    },
+    "provider": "amazon-bedrock",
+    "name": "Kimi K3 (Global)",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "global.openai.gpt-5.6-luna",
+    "owner": "amazon-bedrock",
+    "contextLength": 1050000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.2,
+      "output": 1.2,
+      "cachedInput": 0.02,
+      "cachedWrite": 0.25
+    },
+    "provider": "amazon-bedrock",
+    "name": "GPT-5.6 Luna (Global)",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "xhigh": "xhigh"
+    },
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "global.openai.gpt-5.6-sol",
+    "owner": "amazon-bedrock",
+    "contextLength": 1050000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 4,
+      "output": 20,
+      "cachedInput": 0.4,
+      "cachedWrite": 5
+    },
+    "provider": "amazon-bedrock",
+    "name": "GPT-5.6 Sol (Global)",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "xhigh": "xhigh"
+    }
+  },
+  {
+    "id": "global.openai.gpt-5.6-terra",
+    "owner": "amazon-bedrock",
+    "contextLength": 1050000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 2,
+      "output": 12,
+      "cachedInput": 0.2,
+      "cachedWrite": 2.5
+    },
+    "provider": "amazon-bedrock",
+    "name": "GPT-5.6 Terra (Global)",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "xhigh": "xhigh"
+    }
+  },
+  {
+    "id": "global.openai.gpt-6-astra",
+    "owner": "amazon-bedrock",
+    "contextLength": 1050000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 10,
+      "output": 50,
+      "cachedInput": 1,
+      "cachedWrite": 12.5
+    },
+    "provider": "amazon-bedrock",
+    "name": "GPT-6 Astra (Global)",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "xhigh": "xhigh"
+    },
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "global.openai.gpt-6-luna",
+    "owner": "amazon-bedrock",
+    "contextLength": 1050000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.1,
+      "output": 0.5,
+      "cachedInput": 0.01,
+      "cachedWrite": 0.125
+    },
+    "provider": "amazon-bedrock",
+    "name": "GPT-6 Luna (Global)",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "xhigh": "xhigh"
+    },
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "global.openai.gpt-6-sol",
+    "owner": "amazon-bedrock",
+    "contextLength": 1050000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 2,
+      "output": 10,
+      "cachedInput": 0.2,
+      "cachedWrite": 2.5
+    },
+    "provider": "amazon-bedrock",
+    "name": "GPT-6 Sol (Global)",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "xhigh": "xhigh"
+    },
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "global.xai.grok-4.6",
+    "owner": "amazon-bedrock",
+    "contextLength": 500000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 2,
+      "output": 6,
+      "cachedInput": 0.5,
+      "cachedWrite": 0
+    },
+    "provider": "amazon-bedrock",
+    "name": "Grok 4.6 (Global)",
+    "maxOutputTokens": 500000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com"
+  },
+  {
+    "id": "google.gemma-4-26b-a4b",
+    "owner": "amazon-bedrock",
+    "contextLength": 262144,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.13,
+      "output": 0.4,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "amazon-bedrock",
+    "name": "Gemma 4 26B A4B IT",
+    "maxOutputTokens": 32768,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "google.gemma-4-31b",
+    "owner": "amazon-bedrock",
+    "contextLength": 262144,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.14,
+      "output": 0.4,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "amazon-bedrock",
+    "name": "Gemma 4 31B IT",
+    "maxOutputTokens": 32768,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "google.gemma-4-e2b",
+    "owner": "amazon-bedrock",
+    "contextLength": 131072,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.04,
+      "output": 0.08,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "amazon-bedrock",
+    "name": "Gemma 4 E2B IT",
+    "maxOutputTokens": 8192,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "in.openai.gpt-5.6-luna",
+    "owner": "amazon-bedrock",
+    "contextLength": 1050000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.22,
+      "output": 1.32,
+      "cachedInput": 0.022,
+      "cachedWrite": 0.275
+    },
+    "provider": "amazon-bedrock",
+    "name": "GPT-5.6 Luna (India)",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "xhigh": "xhigh"
+    },
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "in.openai.gpt-5.6-terra",
+    "owner": "amazon-bedrock",
+    "contextLength": 1050000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 2.2,
+      "output": 13.2,
+      "cachedInput": 0.22,
+      "cachedWrite": 2.75
+    },
+    "provider": "amazon-bedrock",
+    "name": "GPT-5.6 Terra (India)",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "xhigh": "xhigh"
+    }
+  },
+  {
+    "id": "jp.amazon.nova-2-lite-v1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 1000000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.396,
+      "output": 3.311,
+      "cachedInput": 0.099,
+      "cachedWrite": 0.396
+    },
+    "provider": "amazon-bedrock",
+    "name": "Nova 2 Lite (JP)",
+    "maxOutputTokens": 65535,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com"
+  },
+  {
+    "id": "jp.anthropic.claude-haiku-4-5-20251001-v1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 200000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 1.1,
+      "output": 5.5,
+      "cachedInput": 0.11,
+      "cachedWrite": 1.375
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Haiku 4.5 (JP)",
+    "maxOutputTokens": 64000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "jp.anthropic.claude-opus-4-7",
+    "owner": "amazon-bedrock",
+    "contextLength": 1000000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 5.5,
+      "output": 27.5,
+      "cachedInput": 0.55,
+      "cachedWrite": 6.875
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Opus 4.7 (JP)",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "xhigh": "xhigh",
+      "max": "max"
+    }
+  },
+  {
+    "id": "jp.anthropic.claude-opus-4-8",
+    "owner": "amazon-bedrock",
+    "contextLength": 1000000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 5.5,
+      "output": 27.5,
+      "cachedInput": 0.55,
+      "cachedWrite": 6.875
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Opus 4.8 (JP)",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "xhigh": "xhigh",
+      "max": "max"
+    }
+  },
+  {
+    "id": "jp.anthropic.claude-opus-5",
+    "owner": "amazon-bedrock",
+    "contextLength": 1000000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 5.5,
+      "output": 27.5,
+      "cachedInput": 0.55,
+      "cachedWrite": 6.875
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Opus 5 (JP)",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "xhigh": "xhigh",
+      "max": "max"
+    }
+  },
+  {
+    "id": "jp.anthropic.claude-opus-5-5",
+    "owner": "amazon-bedrock",
+    "contextLength": 1000000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 4.4,
+      "output": 22,
+      "cachedInput": 0.22,
+      "cachedWrite": 5.5
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Opus 5.5 (JP)",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "xhigh": "xhigh",
+      "max": "max"
+    }
+  },
+  {
+    "id": "jp.anthropic.claude-sonnet-4-5-20250929-v1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 200000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 3.3,
+      "output": 16.5,
+      "cachedInput": 0.33,
+      "cachedWrite": 4.125
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Sonnet 4.5 (JP)",
+    "maxOutputTokens": 64000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "jp.anthropic.claude-sonnet-4-6",
+    "owner": "amazon-bedrock",
+    "contextLength": 1000000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 3.3,
+      "output": 16.5,
+      "cachedInput": 0.33,
+      "cachedWrite": 4.125
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Sonnet 4.6 (JP)",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "max": "max"
+    },
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "jp.anthropic.claude-sonnet-5",
+    "owner": "amazon-bedrock",
+    "contextLength": 1000000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 2.2,
+      "output": 11,
+      "cachedInput": 0.22,
+      "cachedWrite": 2.75
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Sonnet 5 (JP)",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "xhigh": "xhigh",
+      "max": "max"
+    }
+  },
+  {
+    "id": "meta.llama3-1-70b-instruct-v1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 128000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.72,
+      "output": 0.72,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "amazon-bedrock",
+    "name": "Llama 3.1 70B Instruct",
+    "maxOutputTokens": 4096,
+    "input": [
+      "text"
+    ],
+    "api": "bedrock-converse-stream",
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com"
+  },
+  {
+    "id": "meta.llama3-1-8b-instruct-v1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 128000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.22,
+      "output": 0.22,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "amazon-bedrock",
+    "name": "Llama 3.1 8B Instruct",
+    "maxOutputTokens": 4096,
+    "input": [
+      "text"
+    ],
+    "api": "bedrock-converse-stream",
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com"
+  },
+  {
+    "id": "meta.llama3-3-70b-instruct-v1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 128000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.72,
+      "output": 0.72,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "amazon-bedrock",
+    "name": "Llama 3.3 70B Instruct",
+    "maxOutputTokens": 4096,
+    "input": [
+      "text"
+    ],
+    "api": "bedrock-converse-stream",
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com"
+  },
+  {
+    "id": "meta.llama4-maverick-17b-instruct-v1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 1000000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.24,
+      "output": 0.97,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "amazon-bedrock",
+    "name": "Llama 4 Maverick 17B Instruct",
+    "maxOutputTokens": 8192,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com"
+  },
+  {
+    "id": "meta.llama4-scout-17b-instruct-v1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 10000000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.17,
+      "output": 0.66,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "amazon-bedrock",
+    "name": "Llama 4 Scout 17B Instruct",
+    "maxOutputTokens": 8192,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com"
+  },
+  {
+    "id": "minimax.minimax-m2",
+    "owner": "amazon-bedrock",
+    "contextLength": 204608,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.3,
+      "output": 1.2,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "amazon-bedrock",
+    "name": "MiniMax-M2",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text"
+    ],
+    "api": "bedrock-converse-stream",
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "minimax.minimax-m2.1",
+    "owner": "amazon-bedrock",
+    "contextLength": 196608,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.3,
+      "output": 1.2,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "amazon-bedrock",
+    "name": "MiniMax-M2.1",
+    "maxOutputTokens": 131072,
+    "input": [
+      "text"
+    ],
+    "api": "bedrock-converse-stream",
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "minimax.minimax-m2.5",
+    "owner": "amazon-bedrock",
+    "contextLength": 196608,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.3,
+      "output": 1.2,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "amazon-bedrock",
+    "name": "MiniMax-M2.5",
+    "maxOutputTokens": 98304,
+    "input": [
+      "text"
+    ],
+    "api": "bedrock-converse-stream",
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "mistral.devstral-2-123b",
+    "owner": "amazon-bedrock",
+    "contextLength": 262144,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.4,
+      "output": 2,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "amazon-bedrock",
+    "name": "Devstral 2 123B",
+    "maxOutputTokens": 8192,
+    "input": [
+      "text"
+    ],
+    "api": "bedrock-converse-stream",
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "mistral.magistral-small-2509",
+    "owner": "amazon-bedrock",
+    "contextLength": 128000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.5,
+      "output": 1.5,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "amazon-bedrock",
+    "name": "Magistral Small 1.2",
+    "maxOutputTokens": 40000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "mistral.ministral-3-14b-instruct",
+    "owner": "amazon-bedrock",
+    "contextLength": 128000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.2,
+      "output": 0.2,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "amazon-bedrock",
+    "name": "Ministral 14B 3.0",
+    "maxOutputTokens": 4096,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "mistral.ministral-3-3b-instruct",
+    "owner": "amazon-bedrock",
+    "contextLength": 256000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.1,
+      "output": 0.1,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "amazon-bedrock",
+    "name": "Ministral 3 3B",
+    "maxOutputTokens": 8192,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "mistral.ministral-3-8b-instruct",
+    "owner": "amazon-bedrock",
+    "contextLength": 128000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.15,
+      "output": 0.15,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "amazon-bedrock",
+    "name": "Ministral 3 8B",
+    "maxOutputTokens": 4096,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "mistral.mistral-large-3-675b-instruct",
+    "owner": "amazon-bedrock",
+    "contextLength": 262144,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.5,
+      "output": 1.5,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "amazon-bedrock",
+    "name": "Mistral Large 3",
+    "maxOutputTokens": 8192,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "mistral.pixtral-large-2502-v1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 128000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": false,
+    "pricing": {
+      "input": 2,
+      "output": 6,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "amazon-bedrock",
+    "name": "Pixtral Large (25.02)",
+    "maxOutputTokens": 8192,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com"
+  },
+  {
+    "id": "mistral.voxtral-mini-3b-2507",
+    "owner": "amazon-bedrock",
+    "contextLength": 32768,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.04,
+      "output": 0.04,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "amazon-bedrock",
+    "name": "Voxtral Mini 3B 2507",
+    "maxOutputTokens": 4096,
+    "input": [
+      "text"
+    ],
+    "api": "bedrock-converse-stream",
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "mistral.voxtral-small-24b-2507",
+    "owner": "amazon-bedrock",
+    "contextLength": 32768,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.1,
+      "output": 0.3,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "amazon-bedrock",
+    "name": "Voxtral Small 24B 2507",
+    "maxOutputTokens": 8192,
+    "input": [
+      "text"
+    ],
+    "api": "bedrock-converse-stream",
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "moonshot.kimi-k2-thinking",
+    "owner": "amazon-bedrock",
+    "contextLength": 262144,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.6,
+      "output": 2.5,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "amazon-bedrock",
+    "name": "Kimi K2 Thinking",
+    "maxOutputTokens": 16000,
+    "input": [
+      "text"
+    ],
+    "api": "bedrock-converse-stream",
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "moonshotai.kimi-k2.5",
+    "owner": "amazon-bedrock",
+    "contextLength": 262144,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.6,
+      "output": 3,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "amazon-bedrock",
+    "name": "Kimi K2.5",
+    "maxOutputTokens": 16384,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "nvidia.nemotron-nano-12b-v2",
+    "owner": "amazon-bedrock",
+    "contextLength": 131072,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.2,
+      "output": 0.6,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "amazon-bedrock",
+    "name": "NVIDIA Nemotron Nano 12B v2 VL BF16",
+    "maxOutputTokens": 8192,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "nvidia.nemotron-nano-3-30b",
+    "owner": "amazon-bedrock",
+    "contextLength": 262144,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.06,
+      "output": 0.24,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "amazon-bedrock",
+    "name": "NVIDIA Nemotron Nano 3 30B",
+    "maxOutputTokens": 8192,
+    "input": [
+      "text"
+    ],
+    "api": "bedrock-converse-stream",
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "nvidia.nemotron-nano-9b-v2",
+    "owner": "amazon-bedrock",
+    "contextLength": 131072,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.06,
+      "output": 0.23,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "amazon-bedrock",
+    "name": "NVIDIA Nemotron Nano 9B v2",
+    "maxOutputTokens": 8192,
+    "input": [
+      "text"
+    ],
+    "api": "bedrock-converse-stream",
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "nvidia.nemotron-super-3-120b",
+    "owner": "amazon-bedrock",
+    "contextLength": 262144,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.15,
+      "output": 0.65,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "amazon-bedrock",
+    "name": "NVIDIA Nemotron 3 Super 120B A12B",
+    "maxOutputTokens": 131072,
+    "input": [
+      "text"
+    ],
+    "api": "bedrock-converse-stream",
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "openai.gpt-5.4",
+    "owner": "amazon-bedrock",
+    "contextLength": 1000000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 2.75,
+      "output": 16.5,
+      "cachedInput": 0.275,
+      "cachedWrite": 0
+    },
+    "provider": "amazon-bedrock",
+    "name": "GPT-5.4",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "xhigh": "xhigh"
+    },
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "openai.gpt-5.5",
+    "owner": "amazon-bedrock",
+    "contextLength": 1000000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 5.5,
+      "output": 33,
+      "cachedInput": 0.55,
+      "cachedWrite": 0
+    },
+    "provider": "amazon-bedrock",
+    "name": "GPT-5.5",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "xhigh": "xhigh"
+    },
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "openai.gpt-5.6-luna",
+    "owner": "amazon-bedrock",
+    "contextLength": 1050000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.22,
+      "output": 1.32,
+      "cachedInput": 0.022,
+      "cachedWrite": 0.275
+    },
+    "provider": "amazon-bedrock",
+    "name": "GPT-5.6 Luna",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "xhigh": "xhigh"
+    },
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "openai.gpt-5.6-sol",
+    "owner": "amazon-bedrock",
+    "contextLength": 1050000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 4.4,
+      "output": 22,
+      "cachedInput": 0.44,
+      "cachedWrite": 5.5
+    },
+    "provider": "amazon-bedrock",
+    "name": "GPT-5.6 Sol",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "xhigh": "xhigh"
+    },
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "openai.gpt-5.6-terra",
+    "owner": "amazon-bedrock",
+    "contextLength": 1050000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 2.2,
+      "output": 13.2,
+      "cachedInput": 0.22,
+      "cachedWrite": 2.75
+    },
+    "provider": "amazon-bedrock",
+    "name": "GPT-5.6 Terra",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "xhigh": "xhigh"
+    },
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "openai.gpt-6-astra",
+    "owner": "amazon-bedrock",
+    "contextLength": 1050000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 11,
+      "output": 55,
+      "cachedInput": 1.1,
+      "cachedWrite": 13.75
+    },
+    "provider": "amazon-bedrock",
+    "name": "GPT-6 Astra",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "xhigh": "xhigh"
+    },
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "openai.gpt-6-luna",
+    "owner": "amazon-bedrock",
+    "contextLength": 1050000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.11,
+      "output": 0.55,
+      "cachedInput": 0.011,
+      "cachedWrite": 0.1375
+    },
+    "provider": "amazon-bedrock",
+    "name": "GPT-6 Luna",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "xhigh": "xhigh"
+    },
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "openai.gpt-6-sol",
+    "owner": "amazon-bedrock",
+    "contextLength": 1050000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 2.2,
+      "output": 11,
+      "cachedInput": 0.22,
+      "cachedWrite": 2.75
+    },
+    "provider": "amazon-bedrock",
+    "name": "GPT-6 Sol",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "xhigh": "xhigh"
+    },
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "openai.gpt-oss-120b",
+    "owner": "amazon-bedrock",
+    "contextLength": 131072,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.15,
+      "output": 0.6,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "amazon-bedrock",
+    "name": "gpt-oss-120b",
+    "maxOutputTokens": 131072,
+    "input": [
+      "text"
+    ],
+    "api": "bedrock-converse-stream",
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "openai.gpt-oss-120b-1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 131072,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.15,
+      "output": 0.6,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "amazon-bedrock",
+    "name": "gpt-oss-120b",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text"
+    ],
+    "api": "bedrock-converse-stream",
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "openai.gpt-oss-20b",
+    "owner": "amazon-bedrock",
+    "contextLength": 131072,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.07,
+      "output": 0.3,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "amazon-bedrock",
+    "name": "gpt-oss-20b",
+    "maxOutputTokens": 131072,
+    "input": [
+      "text"
+    ],
+    "api": "bedrock-converse-stream",
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "openai.gpt-oss-20b-1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 131072,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.07,
+      "output": 0.3,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "amazon-bedrock",
+    "name": "gpt-oss-20b",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text"
+    ],
+    "api": "bedrock-converse-stream",
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "openai.gpt-oss-safeguard-120b",
+    "owner": "amazon-bedrock",
+    "contextLength": 128000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.15,
+      "output": 0.6,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "amazon-bedrock",
+    "name": "GPT OSS Safeguard 120B",
+    "maxOutputTokens": 16384,
+    "input": [
+      "text"
+    ],
+    "api": "bedrock-converse-stream",
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "openai.gpt-oss-safeguard-20b",
+    "owner": "amazon-bedrock",
+    "contextLength": 128000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.07,
+      "output": 0.2,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "amazon-bedrock",
+    "name": "GPT OSS Safeguard 20B",
+    "maxOutputTokens": 16384,
+    "input": [
+      "text"
+    ],
+    "api": "bedrock-converse-stream",
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "qwen.qwen3-235b-a22b-2507-v1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 262144,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.22,
+      "output": 0.88,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "amazon-bedrock",
+    "name": "Qwen3 235B-A22B Instruct 2507",
+    "maxOutputTokens": 131072,
+    "input": [
+      "text"
+    ],
+    "api": "bedrock-converse-stream",
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "qwen.qwen3-32b-v1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 32768,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.15,
+      "output": 0.6,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "amazon-bedrock",
+    "name": "Qwen3 32B",
+    "maxOutputTokens": 16384,
+    "input": [
+      "text"
+    ],
+    "api": "bedrock-converse-stream",
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "qwen.qwen3-coder-30b-a3b-v1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 262144,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.15,
+      "output": 0.6,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "amazon-bedrock",
+    "name": "Qwen3-Coder 30B-A3B Instruct",
+    "maxOutputTokens": 131072,
+    "input": [
+      "text"
+    ],
+    "api": "bedrock-converse-stream",
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "qwen.qwen3-coder-480b-a35b-v1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 131072,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.45,
+      "output": 1.8,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "amazon-bedrock",
+    "name": "Qwen3-Coder 480B-A35B Instruct",
+    "maxOutputTokens": 65536,
+    "input": [
+      "text"
+    ],
+    "api": "bedrock-converse-stream",
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "qwen.qwen3-coder-next",
+    "owner": "amazon-bedrock",
+    "contextLength": 262144,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.5,
+      "output": 1.2,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "amazon-bedrock",
+    "name": "Qwen3 Coder Next",
+    "maxOutputTokens": 65536,
+    "input": [
+      "text"
+    ],
+    "api": "bedrock-converse-stream",
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "qwen.qwen3-next-80b-a3b",
+    "owner": "amazon-bedrock",
+    "contextLength": 262144,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.15,
+      "output": 1.2,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "amazon-bedrock",
+    "name": "Qwen3-Next 80B-A3B Instruct",
+    "maxOutputTokens": 262000,
+    "input": [
+      "text"
+    ],
+    "api": "bedrock-converse-stream",
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "qwen.qwen3-vl-235b-a22b",
+    "owner": "amazon-bedrock",
+    "contextLength": 262144,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.53,
+      "output": 2.66,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "amazon-bedrock",
+    "name": "Qwen3 VL 235B A22B Instruct",
+    "maxOutputTokens": 262000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "us-gov.openai.gpt-oss-120b-1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 128000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.18,
+      "output": 0.72,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "amazon-bedrock",
+    "name": "gpt-oss-120b (GovCloud)",
+    "maxOutputTokens": 16384,
+    "input": [
+      "text"
+    ],
+    "api": "bedrock-converse-stream",
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "us-gov.openai.gpt-oss-20b-1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 128000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.084,
+      "output": 0.36,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "amazon-bedrock",
+    "name": "gpt-oss-20b (GovCloud)",
+    "maxOutputTokens": 16384,
+    "input": [
+      "text"
+    ],
+    "api": "bedrock-converse-stream",
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "us.amazon.nova-2-lite-v1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 1000000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.33,
+      "output": 2.75,
+      "cachedInput": 0.0825,
+      "cachedWrite": 0.33
+    },
+    "provider": "amazon-bedrock",
+    "name": "Nova 2 Lite (US)",
+    "maxOutputTokens": 65535,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com"
+  },
+  {
+    "id": "us.amazon.nova-lite-v1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 300000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.06,
+      "output": 0.24,
+      "cachedInput": 0.015,
+      "cachedWrite": 0.06
+    },
+    "provider": "amazon-bedrock",
+    "name": "Nova Lite (US)",
+    "maxOutputTokens": 10000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com"
+  },
+  {
+    "id": "us.amazon.nova-micro-v1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 128000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.035,
+      "output": 0.14,
+      "cachedInput": 0.00875,
+      "cachedWrite": 0.035
+    },
+    "provider": "amazon-bedrock",
+    "name": "Nova Micro (US)",
+    "maxOutputTokens": 10000,
+    "input": [
+      "text"
+    ],
+    "api": "bedrock-converse-stream",
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com"
+  },
+  {
+    "id": "us.amazon.nova-premier-v1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 1000000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": false,
+    "pricing": {
+      "input": 2.5,
+      "output": 12.5,
+      "cachedInput": 0.625,
+      "cachedWrite": 2.5
+    },
+    "provider": "amazon-bedrock",
+    "name": "Nova Premier (US)",
+    "maxOutputTokens": 10000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com"
+  },
+  {
+    "id": "us.amazon.nova-pro-v1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 300000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.8,
+      "output": 3.2,
+      "cachedInput": 0.2,
+      "cachedWrite": 0.8
+    },
+    "provider": "amazon-bedrock",
+    "name": "Nova Pro (US)",
+    "maxOutputTokens": 10000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com"
+  },
+  {
+    "id": "us.anthropic.claude-fable-5",
+    "owner": "amazon-bedrock",
+    "contextLength": 1000000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 11,
+      "output": 55,
+      "cachedInput": 1.1,
+      "cachedWrite": 13.75
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Fable 5 (US)",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "off": null,
+      "xhigh": "xhigh",
+      "max": "max"
+    }
+  },
+  {
+    "id": "us.anthropic.claude-fable-5-1",
+    "owner": "amazon-bedrock",
+    "contextLength": 1000000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 11,
+      "output": 55,
+      "cachedInput": 0.275,
+      "cachedWrite": 13.75
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Fable 5.1 (US)",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "off": null,
+      "xhigh": "xhigh",
+      "max": "max"
+    }
+  },
+  {
+    "id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 200000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 1.1,
+      "output": 5.5,
+      "cachedInput": 0.11,
+      "cachedWrite": 1.375
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Haiku 4.5 (US)",
+    "maxOutputTokens": 64000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "us.anthropic.claude-opus-4-1-20250805-v1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 200000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 15,
+      "output": 75,
+      "cachedInput": 1.5,
+      "cachedWrite": 18.75
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Opus 4.1 (US)",
+    "maxOutputTokens": 32000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com"
+  },
+  {
+    "id": "us.anthropic.claude-opus-4-5-20251101-v1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 200000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 5.5,
+      "output": 27.5,
+      "cachedInput": 0.55,
+      "cachedWrite": 6.875
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Opus 4.5 (US)",
+    "maxOutputTokens": 64000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "us.anthropic.claude-opus-4-6-v1",
+    "owner": "amazon-bedrock",
+    "contextLength": 1000000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 5.5,
+      "output": 27.5,
+      "cachedInput": 0.55,
+      "cachedWrite": 6.875
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Opus 4.6 (US)",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "max": "max"
+    },
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "us.anthropic.claude-opus-4-7",
+    "owner": "amazon-bedrock",
+    "contextLength": 1000000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 5.5,
+      "output": 27.5,
+      "cachedInput": 0.55,
+      "cachedWrite": 6.875
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Opus 4.7 (US)",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "xhigh": "xhigh",
+      "max": "max"
+    }
+  },
+  {
+    "id": "us.anthropic.claude-opus-4-8",
+    "owner": "amazon-bedrock",
+    "contextLength": 1000000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 5.5,
+      "output": 27.5,
+      "cachedInput": 0.55,
+      "cachedWrite": 6.875
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Opus 4.8 (US)",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "xhigh": "xhigh",
+      "max": "max"
+    }
+  },
+  {
+    "id": "us.anthropic.claude-opus-5",
+    "owner": "amazon-bedrock",
+    "contextLength": 1000000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 5.5,
+      "output": 27.5,
+      "cachedInput": 0.55,
+      "cachedWrite": 6.875
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Opus 5 (US)",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "xhigh": "xhigh",
+      "max": "max"
+    }
+  },
+  {
+    "id": "us.anthropic.claude-opus-5-5",
+    "owner": "amazon-bedrock",
+    "contextLength": 1000000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 4.4,
+      "output": 22,
+      "cachedInput": 0.22,
+      "cachedWrite": 5.5
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Opus 5.5 (US)",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "xhigh": "xhigh",
+      "max": "max"
+    }
+  },
+  {
+    "id": "us.anthropic.claude-sonnet-4-20250514-v1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 200000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 3,
+      "output": 15,
+      "cachedInput": 0.3,
+      "cachedWrite": 3.75
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Sonnet 4 (US)",
+    "maxOutputTokens": 64000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com"
+  },
+  {
+    "id": "us.anthropic.claude-sonnet-4-5-20250929-v1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 200000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 3.3,
+      "output": 16.5,
+      "cachedInput": 0.33,
+      "cachedWrite": 4.125
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Sonnet 4.5 (US)",
+    "maxOutputTokens": 64000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "us.anthropic.claude-sonnet-4-6",
+    "owner": "amazon-bedrock",
+    "contextLength": 1000000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 3.3,
+      "output": 16.5,
+      "cachedInput": 0.33,
+      "cachedWrite": 4.125
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Sonnet 4.6 (US)",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "max": "max"
+    },
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "us.anthropic.claude-sonnet-5",
+    "owner": "amazon-bedrock",
+    "contextLength": 1000000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 2.2,
+      "output": 11,
+      "cachedInput": 0.22,
+      "cachedWrite": 2.75
+    },
+    "provider": "amazon-bedrock",
+    "name": "Claude Sonnet 5 (US)",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "xhigh": "xhigh",
+      "max": "max"
+    }
+  },
+  {
+    "id": "us.meta.llama3-1-70b-instruct-v1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 128000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.72,
+      "output": 0.72,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "amazon-bedrock",
+    "name": "Llama 3.1 70B Instruct (US)",
+    "maxOutputTokens": 4096,
+    "input": [
+      "text"
+    ],
+    "api": "bedrock-converse-stream",
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com"
+  },
+  {
+    "id": "us.meta.llama3-1-8b-instruct-v1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 128000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.22,
+      "output": 0.22,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "amazon-bedrock",
+    "name": "Llama 3.1 8B Instruct (US)",
+    "maxOutputTokens": 4096,
+    "input": [
+      "text"
+    ],
+    "api": "bedrock-converse-stream",
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com"
+  },
+  {
+    "id": "us.meta.llama3-3-70b-instruct-v1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 128000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.72,
+      "output": 0.72,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "amazon-bedrock",
+    "name": "Llama 3.3 70B Instruct (US)",
+    "maxOutputTokens": 4096,
+    "input": [
+      "text"
+    ],
+    "api": "bedrock-converse-stream",
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com"
+  },
+  {
+    "id": "us.meta.llama4-maverick-17b-instruct-v1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 1000000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.24,
+      "output": 0.97,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "amazon-bedrock",
+    "name": "Llama 4 Maverick 17B Instruct (US)",
+    "maxOutputTokens": 8192,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com"
+  },
+  {
+    "id": "us.meta.llama4-scout-17b-instruct-v1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 10000000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.17,
+      "output": 0.66,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "amazon-bedrock",
+    "name": "Llama 4 Scout 17B Instruct (US)",
+    "maxOutputTokens": 8192,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com"
+  },
+  {
+    "id": "us.mistral.pixtral-large-2502-v1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 128000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": false,
+    "pricing": {
+      "input": 2,
+      "output": 6,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "amazon-bedrock",
+    "name": "Pixtral Large (25.02) (US)",
+    "maxOutputTokens": 8192,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com"
+  },
+  {
+    "id": "us.moonshotai.kimi-k3",
+    "owner": "amazon-bedrock",
+    "contextLength": 1048576,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 3.3,
+      "output": 16.5,
+      "cachedInput": 0.33,
+      "cachedWrite": 4.125
+    },
+    "provider": "amazon-bedrock",
+    "name": "Kimi K3 (US)",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "us.openai.gpt-5.6-luna",
+    "owner": "amazon-bedrock",
+    "contextLength": 1050000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.22,
+      "output": 1.32,
+      "cachedInput": 0.022,
+      "cachedWrite": 0.275
+    },
+    "provider": "amazon-bedrock",
+    "name": "GPT-5.6 Luna (US)",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "xhigh": "xhigh"
+    },
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "us.openai.gpt-5.6-sol",
+    "owner": "amazon-bedrock",
+    "contextLength": 1050000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 4.4,
+      "output": 22,
+      "cachedInput": 0.44,
+      "cachedWrite": 5.5
+    },
+    "provider": "amazon-bedrock",
+    "name": "GPT-5.6 Sol (US)",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "xhigh": "xhigh"
+    }
+  },
+  {
+    "id": "us.openai.gpt-5.6-terra",
+    "owner": "amazon-bedrock",
+    "contextLength": 1050000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 2.2,
+      "output": 13.2,
+      "cachedInput": 0.22,
+      "cachedWrite": 2.75
+    },
+    "provider": "amazon-bedrock",
+    "name": "GPT-5.6 Terra (US)",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "xhigh": "xhigh"
+    }
+  },
+  {
+    "id": "us.openai.gpt-6-astra",
+    "owner": "amazon-bedrock",
+    "contextLength": 1050000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 11,
+      "output": 55,
+      "cachedInput": 1.1,
+      "cachedWrite": 13.75
+    },
+    "provider": "amazon-bedrock",
+    "name": "GPT-6 Astra (US)",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "xhigh": "xhigh"
+    },
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "us.openai.gpt-6-luna",
+    "owner": "amazon-bedrock",
+    "contextLength": 1050000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.11,
+      "output": 0.55,
+      "cachedInput": 0.011,
+      "cachedWrite": 0.1375
+    },
+    "provider": "amazon-bedrock",
+    "name": "GPT-6 Luna (US)",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "xhigh": "xhigh"
+    },
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "us.openai.gpt-6-sol",
+    "owner": "amazon-bedrock",
+    "contextLength": 1050000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 2.2,
+      "output": 11,
+      "cachedInput": 0.22,
+      "cachedWrite": 2.75
+    },
+    "provider": "amazon-bedrock",
+    "name": "GPT-6 Sol (US)",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "thinkingLevelMap": {
+      "xhigh": "xhigh"
+    },
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "us.writer.palmyra-x4-v1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 122880,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 2.5,
+      "output": 10,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "amazon-bedrock",
+    "name": "Palmyra X4 (US)",
+    "maxOutputTokens": 8192,
+    "input": [
+      "text"
+    ],
+    "api": "bedrock-converse-stream",
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com"
+  },
+  {
+    "id": "us.writer.palmyra-x5-v1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 1040000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.6,
+      "output": 6,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "amazon-bedrock",
+    "name": "Palmyra X5 (US)",
+    "maxOutputTokens": 8192,
+    "input": [
+      "text"
+    ],
+    "api": "bedrock-converse-stream",
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com"
+  },
+  {
+    "id": "us.xai.grok-4.6",
+    "owner": "amazon-bedrock",
+    "contextLength": 500000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 2.2,
+      "output": 6.6,
+      "cachedInput": 0.55,
+      "cachedWrite": 0
+    },
+    "provider": "amazon-bedrock",
+    "name": "Grok 4.6 (US)",
+    "maxOutputTokens": 500000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com"
+  },
+  {
+    "id": "writer.palmyra-x4-v1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 122880,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 2.5,
+      "output": 10,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "amazon-bedrock",
+    "name": "Palmyra X4",
+    "maxOutputTokens": 8192,
+    "input": [
+      "text"
+    ],
+    "api": "bedrock-converse-stream",
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com"
+  },
+  {
+    "id": "writer.palmyra-x5-v1:0",
+    "owner": "amazon-bedrock",
+    "contextLength": 1040000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.6,
+      "output": 6,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "amazon-bedrock",
+    "name": "Palmyra X5",
+    "maxOutputTokens": 8192,
+    "input": [
+      "text"
+    ],
+    "api": "bedrock-converse-stream",
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com"
+  },
+  {
+    "id": "xai.grok-4.3",
+    "owner": "amazon-bedrock",
+    "contextLength": 1000000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 1.25,
+      "output": 2.5,
+      "cachedInput": 0.2,
+      "cachedWrite": 0
+    },
+    "provider": "amazon-bedrock",
+    "name": "Grok 4.3",
+    "maxOutputTokens": 131072,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "xai.grok-4.6",
+    "owner": "amazon-bedrock",
+    "contextLength": 500000,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 2.2,
+      "output": 6.6,
+      "cachedInput": 0.55,
+      "cachedWrite": 0
+    },
+    "provider": "amazon-bedrock",
+    "name": "Grok 4.6",
+    "maxOutputTokens": 500000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "bedrock-converse-stream",
+    "inputLimits": {
+      "images": {
+        "maxPerMessage": 20,
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "zai.glm-4.7",
+    "owner": "amazon-bedrock",
+    "contextLength": 202752,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.6,
+      "output": 2.2,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "amazon-bedrock",
+    "name": "GLM-4.7",
+    "maxOutputTokens": 131072,
+    "input": [
+      "text"
+    ],
+    "api": "bedrock-converse-stream",
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "zai.glm-4.7-flash",
+    "owner": "amazon-bedrock",
+    "contextLength": 202752,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.07,
+      "output": 0.4,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "amazon-bedrock",
+    "name": "GLM-4.7-Flash",
+    "maxOutputTokens": 131072,
+    "input": [
+      "text"
+    ],
+    "api": "bedrock-converse-stream",
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  },
+  {
+    "id": "zai.glm-5",
+    "owner": "amazon-bedrock",
+    "contextLength": 202752,
+    "status": "pinned Pi main c90d9ea586194003211f10cded3c14f74a4f81e1",
+    "reasoning": true,
+    "pricing": {
+      "input": 1,
+      "output": 3.2,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "amazon-bedrock",
+    "name": "GLM-5",
+    "maxOutputTokens": 131072,
+    "input": [
+      "text"
+    ],
+    "api": "bedrock-converse-stream",
+    "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+    "compatibility": {
+      "supportsStrictMode": true
+    }
+  }
+]

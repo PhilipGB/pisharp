@@ -22,7 +22,9 @@ public static class ProviderChatClientFactory
             throw new NotSupportedException($"Model '{selection.Provider.Id}/{selection.Model.Id}' requires unsupported API '{protocol}'.");
         if (protocol == "google-vertex" && selection.Provider.Id != "google-vertex")
             throw new NotSupportedException($"Model '{selection.Provider.Id}/{selection.Model.Id}' requires unsupported API '{protocol}'.");
-        if (protocol is not ("openai-responses" or "openai-completions" or "anthropic-messages" or "mistral-conversations" or "azure-openai-responses" or "openai-codex-responses" or "google-generative-ai" or "google-vertex"))
+        if (protocol == "bedrock-converse-stream" && selection.Provider.Id != "amazon-bedrock")
+            throw new NotSupportedException($"Model '{selection.Provider.Id}/{selection.Model.Id}' requires unsupported API '{protocol}'.");
+        if (protocol is not ("openai-responses" or "openai-completions" or "anthropic-messages" or "mistral-conversations" or "azure-openai-responses" or "openai-codex-responses" or "google-generative-ai" or "google-vertex" or "bedrock-converse-stream"))
             throw new NotSupportedException($"Model '{selection.Provider.Id}/{selection.Model.Id}' requires unsupported API '{protocol}'.");
         if (protocol == "azure-openai-responses")
             _ = AzureOpenAiEndpoint.RequireConfigured(selection.Connection.Endpoint ?? selection.Provider.Endpoint);
@@ -44,7 +46,11 @@ public static class ProviderChatClientFactory
         var requestTimeout = configuredTimeout ?? (idleTimeout == 0 ? int.MaxValue : idleTimeout);
         var sdkTimeout = TimeSpan.FromMilliseconds(requestTimeout);
         IChatClient providerClient;
-        if (protocol == "google-generative-ai")
+        if (protocol == "bedrock-converse-stream")
+        {
+            providerClient = BedrockConverseChatClientFactory.Create(selection);
+        }
+        else if (protocol == "google-generative-ai")
         {
             providerClient = GoogleGenAiChatClientFactory.Create(selection);
         }

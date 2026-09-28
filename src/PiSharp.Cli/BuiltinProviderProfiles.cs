@@ -87,6 +87,18 @@ internal static class BuiltinProviderProfiles
             reordered.Insert(0, chosen);
             codexModels = reordered;
         }
+        var bedrockModels = BedrockModelCatalog.Load().ToList();
+        var bedrockDefault = environment("PISHARP_BEDROCK_MODEL") ?? "global.anthropic.claude-sonnet-4-6";
+        var bedrockDefaultIndex = bedrockModels.FindIndex(model => model.Id == bedrockDefault);
+        if (bedrockDefaultIndex >= 0)
+        {
+            var chosen = bedrockModels[bedrockDefaultIndex];
+            bedrockModels.RemoveAt(bedrockDefaultIndex);
+            bedrockModels.Insert(0, chosen);
+        }
+        else
+            bedrockModels.Insert(0, new(bedrockDefault, "amazon-bedrock", null, "configured",
+                Provider: "amazon-bedrock", Api: "bedrock-converse-stream"));
         return new(StringComparer.OrdinalIgnoreCase)
         {
             ["openai"] = new("openai", "OpenAI", new Uri("https://api.openai.com/v1"), true, false,
@@ -109,6 +121,10 @@ internal static class BuiltinProviderProfiles
             ["google-vertex"] = new("google-vertex", "Google Vertex AI", new Uri("https://aiplatform.googleapis.com"),
                 true, false, "GOOGLE_CLOUD_API_KEY", null, googleVertexModels, Api: "google-vertex",
                 GoogleVertex: googleVertex),
+            ["amazon-bedrock"] = new("amazon-bedrock", "Amazon Bedrock",
+                new Uri("https://bedrock-runtime.us-east-1.amazonaws.com"), true, false,
+                BedrockProviderOptions.BearerTokenEnvironment, null, bedrockModels,
+                Api: "bedrock-converse-stream", Bedrock: BedrockProviderOptions.FromEnvironment(environment)),
             ["openai-codex"] = new("openai-codex", "OpenAI Codex", new Uri("https://chatgpt.com/backend-api"),
                 true, true, null, null, codexModels, Api: "openai-codex-responses", ApiKeySupported: false),
             ["xai"] = new("xai", "xAI", new Uri("https://api.x.ai/v1"), true, false,

@@ -8,7 +8,7 @@ public sealed record ProviderProfile(string Id, string Name, Uri Endpoint, bool 
     bool OAuthSupported, string? ApiKeyEnvironment, string? ConfiguredApiKey,
     IReadOnlyList<ModelDescriptor> Models, string? Api = null, JsonElement? Compatibility = null,
     AzureOpenAiProviderOptions? AzureOpenAi = null, bool ApiKeySupported = true,
-    GoogleVertexProviderOptions? GoogleVertex = null);
+    GoogleVertexProviderOptions? GoogleVertex = null, BedrockProviderOptions? Bedrock = null);
 
 public sealed record ModelSelection(ProviderProfile Provider, ModelDescriptor Model, string ApiKey,
     bool Authenticated, string AuthSource,
@@ -120,6 +120,8 @@ public sealed class ProviderModelRuntime
             return (_environment(provider.ApiKeyEnvironment)!, true, provider.ApiKeyEnvironment);
         if (provider.GoogleVertex?.HasConfiguredApplicationDefaultCredentials == true)
             return (GoogleVertexProviderOptions.AdcCredentialMarker, true, GoogleVertexProviderOptions.AdcAuthSource);
+        if (provider.Bedrock?.AmbientAuthSource is { } bedrockAuthSource)
+            return (string.Empty, true, bedrockAuthSource);
         return provider.AuthRequired ? ("not-configured", false, "authentication required") :
             ("not-needed", true, "not required");
     }
@@ -144,7 +146,7 @@ public sealed class ProviderModelRuntime
                 continue;
             }
             // These built-ins use pinned, provider-owned catalogues rather than generic /models discovery.
-            if (_offline || provider.Id is "xai" or "anthropic" or "mistral" or "azure-openai-responses" or "openai-codex" or "google" or "google-vertex")
+            if (_offline || provider.Id is "xai" or "anthropic" or "mistral" or "azure-openai-responses" or "openai-codex" or "google" or "google-vertex" or "amazon-bedrock")
             {
                 result.AddRange(provider.Models.Select(model => model with { Provider = provider.Id }));
                 continue;

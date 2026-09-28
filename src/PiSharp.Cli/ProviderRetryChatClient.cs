@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Net;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
+using Amazon.Runtime;
 using Microsoft.Extensions.AI;
 using PiSharp.Runtime.Sessions;
 
@@ -177,12 +178,21 @@ internal static class ProviderRequestRetryPolicy
     private static bool TryParseHeaderNumber(string value, out double number) =>
         double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out number) && double.IsFinite(number);
 
-    private static int? GetStatusCode(Exception error) => error switch
+    private static int? GetStatusCode(Exception error)
     {
-        ClientResultException clientError when clientError.Status > 0 => clientError.Status,
-        HttpRequestException { StatusCode: { } status } => (int)status,
-        _ => null
-    };
+        for (Exception? current = error; current is not null; current = current.InnerException)
+        {
+            var status = current switch
+            {
+                ClientResultException clientError when clientError.Status > 0 => clientError.Status,
+                HttpRequestException { StatusCode: { } httpStatus } => (int)httpStatus,
+                AmazonServiceException { StatusCode: not HttpStatusCode.OK } awsError => (int)awsError.StatusCode,
+                _ => (int?)null
+            };
+            if (status is not null) return status;
+        }
+        return null;
+    }
 }
 
 internal sealed record ProviderRetryResponse(int StatusCode, string? ShouldRetry, string? RetryAfterMs, string? RetryAfter);
