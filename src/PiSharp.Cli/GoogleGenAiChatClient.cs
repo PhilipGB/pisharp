@@ -53,7 +53,7 @@ internal static class GoogleVertexChatClientFactory
         return new GoogleGenAiChatClient(http, endpoint, selection.ApiKey, selection.Model, requestOptions);
     }
 
-    private static Uri RegionalEndpoint(string? location)
+    internal static Uri RegionalEndpoint(string? location)
     {
         if (string.IsNullOrWhiteSpace(location))
             throw new InvalidOperationException("Google Vertex ADC requires GOOGLE_CLOUD_LOCATION.");

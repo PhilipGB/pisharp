@@ -18,7 +18,8 @@ public sealed record ModelSelection(ProviderProfile Provider, ModelDescriptor Mo
     {
         get
         {
-            var endpoint = Model.BaseUrl is { } baseUrl ? new Uri(baseUrl) : Provider.Endpoint;
+            var endpoint = Model.BaseUrl is { } baseUrl && !baseUrl.Contains("{location}", StringComparison.Ordinal)
+                ? new Uri(baseUrl) : Provider.Endpoint;
             return new ConnectionSettings(Model.Id,
                 ProviderModelRuntime.IsOfficialOpenAiEndpoint(endpoint) ? null : endpoint, ApiKey);
         }
