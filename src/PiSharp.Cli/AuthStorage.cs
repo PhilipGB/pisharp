@@ -4,7 +4,7 @@ using System.Text.RegularExpressions;
 namespace PiSharp.Cli;
 
 public sealed record StoredCredential(string Type, string? Key = null, string? Access = null,
-    string? Refresh = null, long? Expires = null)
+    string? Refresh = null, long? Expires = null, string? AccountId = null)
 {
     public string? Secret => Type == "oauth" ? Access : Key;
 }
@@ -41,10 +41,11 @@ public sealed class AuthStorage(string path)
 
     /// <summary>Stores a pre-issued OAuth bearer token. Browser authorization and refresh are provider-adapter responsibilities.</summary>
     public async Task StoreOAuthAsync(string provider, string accessToken, string? refreshToken = null,
-        long? expires = null, CancellationToken cancellationToken = default)
+        long? expires = null, string? accountId = null, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(accessToken)) throw new ArgumentException("OAuth access token cannot be empty.", nameof(accessToken));
-        await StoreAsync(provider, new StoredCredential("oauth", Access: accessToken, Refresh: refreshToken, Expires: expires), cancellationToken);
+        await StoreAsync(provider, new StoredCredential("oauth", Access: accessToken, Refresh: refreshToken,
+            Expires: expires, AccountId: accountId), cancellationToken);
     }
 
     public async Task DeleteAsync(string provider, CancellationToken cancellationToken = default)

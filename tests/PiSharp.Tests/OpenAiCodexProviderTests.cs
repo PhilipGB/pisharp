@@ -27,6 +27,8 @@ public sealed class OpenAiCodexProviderTests
             Assert.Equal(8, models.Count);
             Assert.Equal("openai-codex", gpt55.Provider);
             Assert.Equal("openai-codex-responses", gpt55.Api);
+            Assert.True(selection.Provider.OAuthSupported);
+            Assert.False(selection.Provider.ApiKeySupported);
             Assert.Equal(["text", "image"], gpt55.Input);
             Assert.Equal(272_000, gpt55.ContextLength);
             Assert.Equal(128_000, gpt55.MaxOutputTokens);
@@ -85,7 +87,9 @@ public sealed class OpenAiCodexProviderTests
         var provider = new ProviderProfile("openai-codex", "OpenAI Codex",
             new Uri($"http://127.0.0.1:{port}/backend-api"), true, false, null, null, [model], Api: "openai-codex-responses");
         var token = CreateToken("account-fixture");
-        var selection = new ModelSelection(provider, model, token, true, "fixture token");
+        var refreshedToken = CreateToken("account-refreshed");
+        var selection = new ModelSelection(provider, model, token, true, "fixture token",
+            _ => Task.FromResult((refreshedToken, "account-refreshed")));
         using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10));
         var output = new StringBuilder();
         await foreach (var update in ProviderChatClientFactory.Create(selection).GetStreamingResponseAsync(
@@ -101,8 +105,8 @@ public sealed class OpenAiCodexProviderTests
 
         Assert.Equal("Codex response", output.ToString());
         Assert.Equal("/backend-api/codex/responses", requestPath);
-        Assert.Equal($"Bearer {token}", authorization);
-        Assert.Equal("account-fixture", accountId);
+        Assert.Equal($"Bearer {refreshedToken}", authorization);
+        Assert.Equal("account-refreshed", accountId);
         Assert.Equal("pi", originator);
         Assert.Equal("responses=experimental", beta);
         Assert.Equal("codex-session-fixture", sessionId);

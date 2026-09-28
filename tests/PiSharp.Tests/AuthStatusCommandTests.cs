@@ -6,6 +6,46 @@ namespace PiSharp.Tests;
 public sealed class AuthStatusCommandTests
 {
     [Fact]
+    public async Task ExpiredCodexOAuthIsReportedWithoutNetworkRefreshOrTokenOutput()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-auth-status-codex-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        var token = CreateCodexToken("account-status");
+        try
+        {
+            await new AuthStorage(Path.Combine(root, "auth.json")).StoreOAuthAsync("openai-codex",
+                token, "refresh-status", DateTimeOffset.UtcNow.AddSeconds(-1).ToUnixTimeMilliseconds(),
+                "account-status");
+            using var output = new StringWriter();
+            using var error = new StringWriter();
+
+            var status = await AuthStatusCommand.RunAsync(["check", "--provider", "openai-codex"],
+                root, _ => null, output, error);
+            var print = await AuthStatusCommand.RunAsync(["print-api-key", "--provider", "openai-codex"],
+                root, _ => null, output, error);
+
+            Assert.Equal(0, status);
+            Assert.Contains("credential available", output.ToString());
+            Assert.Contains("refresh on request", output.ToString());
+            Assert.Equal(1, print);
+            Assert.DoesNotContain(token, output.ToString());
+            Assert.DoesNotContain(token, error.ToString());
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    private static string CreateCodexToken(string accountId)
+    {
+        static string Encode(byte[] value) => Convert.ToBase64String(value).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+        var header = Encode(System.Text.Encoding.UTF8.GetBytes("{}"));
+        var payload = Encode(System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(new Dictionary<string, object>
+        {
+            ["https://api.openai.com/auth"] = new Dictionary<string, string> { ["chatgpt_account_id"] = accountId }
+        }));
+        return $"{header}.{payload}.fixture-signature";
+    }
+
+    [Fact]
     public async Task OfflineStatusRequiresConfiguredProviderAndNeverPrintsOrBorrowsCredentials()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-auth-command-" + Guid.NewGuid().ToString("N"));

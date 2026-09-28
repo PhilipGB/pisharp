@@ -7,10 +7,11 @@ namespace PiSharp.Cli;
 public sealed record ProviderProfile(string Id, string Name, Uri Endpoint, bool AuthRequired,
     bool OAuthSupported, string? ApiKeyEnvironment, string? ConfiguredApiKey,
     IReadOnlyList<ModelDescriptor> Models, string? Api = null, JsonElement? Compatibility = null,
-    AzureOpenAiProviderOptions? AzureOpenAi = null);
+    AzureOpenAiProviderOptions? AzureOpenAi = null, bool ApiKeySupported = true);
 
 public sealed record ModelSelection(ProviderProfile Provider, ModelDescriptor Model, string ApiKey,
-    bool Authenticated, string AuthSource)
+    bool Authenticated, string AuthSource,
+    Func<CancellationToken, Task<(string Access, string AccountId)>>? OAuthCredentialResolver = null)
 {
     public ConnectionSettings Connection
     {
@@ -28,6 +29,7 @@ public sealed class ProviderModelRuntime
 {
     private readonly Dictionary<string, ProviderProfile> _providers;
     private readonly AuthStorage _auth;
+    private readonly ProviderOAuthCoordinator _oauth;
     private readonly Func<string, string?> _environment;
     private readonly HttpClient _http;
     private readonly string? _runtimeApiKey;
@@ -35,10 +37,12 @@ public sealed class ProviderModelRuntime
     private IReadOnlyList<string> _scope;
 
     private ProviderModelRuntime(Dictionary<string, ProviderProfile> providers, AuthStorage auth,
+        ProviderOAuthCoordinator oauth,
         Func<string, string?> environment, HttpClient http, string? runtimeApiKey, IReadOnlyList<string>? scope, bool offline)
     {
         _providers = providers;
         _auth = auth;
+        _oauth = oauth;
         _environment = environment;
         _http = http;
         _runtimeApiKey = runtimeApiKey;
@@ -71,7 +75,9 @@ public sealed class ProviderModelRuntime
             catch (JsonException error) { throw new InvalidDataException("Invalid models.json JSON.", error); }
         }
         var authPath = environment("PISHARP_AUTH_PATH") ?? Path.Combine(agentDirectory, "auth.json");
-        return new ProviderModelRuntime(providers, new AuthStorage(authPath), environment, http, runtimeApiKey, scope, offline);
+        var auth = new AuthStorage(authPath);
+        return new ProviderModelRuntime(providers, auth, new ProviderOAuthCoordinator(auth, http),
+            environment, http, runtimeApiKey, scope, offline);
     }
 
     public ProviderProfile GetProvider(string id) => _providers.TryGetValue(id, out var provider) ? provider :
@@ -84,7 +90,8 @@ public sealed class ProviderModelRuntime
     }
 
     public async Task<(string Key, bool Authenticated, string Source)> ResolveAuthAsync(string providerId,
-        bool useRuntimeOverride = false, CancellationToken cancellationToken = default)
+        bool useRuntimeOverride = false, CancellationToken cancellationToken = default,
+        bool allowOAuthRefresh = true)
     {
         var provider = GetProvider(providerId);
         if (useRuntimeOverride && !string.IsNullOrWhiteSpace(_runtimeApiKey))
@@ -92,10 +99,18 @@ public sealed class ProviderModelRuntime
         var stored = await _auth.ReadAsync(provider.Id, cancellationToken);
         if (stored is not null)
         {
-            // A stored credential owns the provider: never fall back to ambient credentials or
-            // send a bearer token through an API-key-only adapter (Pi resolves OAuth via its handler).
+            // A stored credential owns the provider: never fall back to ambient credentials.
             if (stored.Type == "oauth")
-                return ("not-configured", false, provider.OAuthSupported ? "OAuth adapter unavailable" : "OAuth unsupported for provider");
+            {
+                if (!provider.OAuthSupported)
+                    return ("not-configured", false, "OAuth unsupported for provider");
+                if (!_oauth.Supports(provider.Id))
+                    return ("not-configured", false, "OAuth adapter unavailable");
+                return await _oauth.ResolveAsync(provider.Id, stored, allowOAuthRefresh, cancellationToken)
+                    .ConfigureAwait(false);
+            }
+            if (!provider.ApiKeySupported)
+                return ("not-configured", false, "API key authentication unsupported for provider");
             return (stored.Key!, true, "stored API key");
         }
         if (!string.IsNullOrWhiteSpace(provider.ConfiguredApiKey)) return (provider.ConfiguredApiKey, true, "models.json");
@@ -196,20 +211,29 @@ public sealed class ProviderModelRuntime
             Available = auth.Authenticated && model.Available,
             UnavailableReason = auth.Authenticated ? model.UnavailableReason : auth.Source
         };
-        return new ModelSelection(explicitProvider, model, auth.Key, auth.Authenticated, auth.Source);
+        Func<CancellationToken, Task<(string Access, string AccountId)>>? oauthCredentialResolver = null;
+        if (auth.Source.StartsWith("stored OAuth", StringComparison.Ordinal) &&
+            explicitProvider.Id.Equals("openai-codex", StringComparison.OrdinalIgnoreCase))
+            oauthCredentialResolver = cancellationToken =>
+                _oauth.ResolveCredentialAsync(explicitProvider.Id, cancellationToken);
+        return new ModelSelection(explicitProvider, model, auth.Key, auth.Authenticated, auth.Source,
+            oauthCredentialResolver);
     }
 
     public Task LoginApiKeyAsync(string provider, string secret, CancellationToken cancellationToken = default)
     {
-        _ = GetProvider(provider);
+        var profile = GetProvider(provider);
+        if (!profile.ApiKeySupported)
+            throw new InvalidOperationException($"Provider '{provider}' requires its OAuth login flow.");
         return _auth.StoreApiKeyAsync(provider, secret, cancellationToken);
     }
 
-    public Task LoginOAuthAsync(string provider, string accessToken, CancellationToken cancellationToken = default)
+    public Task LoginOAuthAsync(string provider, IProviderOAuthInteraction interaction,
+        CancellationToken cancellationToken = default)
     {
         var profile = GetProvider(provider);
         if (!profile.OAuthSupported) throw new InvalidOperationException($"Provider '{provider}' has no configured OAuth adapter.");
-        return _auth.StoreOAuthAsync(provider, accessToken, cancellationToken: cancellationToken);
+        return _oauth.LoginAsync(profile.Id, interaction, cancellationToken);
     }
 
     public async Task<bool> LogoutAsync(string provider, CancellationToken cancellationToken = default)

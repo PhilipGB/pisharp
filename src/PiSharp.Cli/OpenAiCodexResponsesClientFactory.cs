@@ -22,7 +22,8 @@ internal static class OpenAiCodexResponsesClientFactory
             RetryPolicy = new ClientRetryPolicy(0),
             Transport = new HttpClientPipelineTransport(new HttpClient(
                 new OpenAiCodexRequestHandler(selection.ApiKey, requestContext,
-                    new ProviderWireActivityHandler(new HttpClientHandler { AllowAutoRedirect = false })),
+                    new ProviderWireActivityHandler(new HttpClientHandler { AllowAutoRedirect = false }),
+                    selection.OAuthCredentialResolver),
                 disposeHandler: true))
         };
         var client = new OpenAIClient(new ApiKeyCredential(selection.ApiKey), options);
@@ -105,13 +106,16 @@ internal sealed class OpenAiCodexRequestHandler : DelegatingHandler
     private readonly string _accessToken;
     private readonly string _accountId;
     private readonly OpenAiCodexRequestContext _requestContext;
+    private readonly Func<CancellationToken, Task<(string Access, string AccountId)>>? _credentialResolver;
 
     public OpenAiCodexRequestHandler(string accessToken, OpenAiCodexRequestContext requestContext,
-        HttpMessageHandler innerHandler) : base(innerHandler)
+        HttpMessageHandler innerHandler,
+        Func<CancellationToken, Task<(string Access, string AccountId)>>? credentialResolver = null) : base(innerHandler)
     {
         _accessToken = accessToken;
         _accountId = ExtractAccountId(accessToken);
         _requestContext = requestContext;
+        _credentialResolver = credentialResolver;
     }
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
@@ -119,10 +123,18 @@ internal sealed class OpenAiCodexRequestHandler : DelegatingHandler
     {
         if (request.RequestUri is { } requestUri) request.RequestUri = ResolveCodexUri(requestUri);
 
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
+        var accessToken = _accessToken;
+        var accountId = _accountId;
+        if (_credentialResolver is not null)
+        {
+            var current = await _credentialResolver(cancellationToken).ConfigureAwait(false);
+            accessToken = current.Access;
+            accountId = current.AccountId;
+        }
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
         request.Headers.Remove("api-key");
         request.Headers.Remove("chatgpt-account-id");
-        request.Headers.TryAddWithoutValidation("chatgpt-account-id", _accountId);
+        request.Headers.TryAddWithoutValidation("chatgpt-account-id", accountId);
         request.Headers.Remove("originator");
         request.Headers.TryAddWithoutValidation("originator", "pi");
         request.Headers.Remove("OpenAI-Beta");

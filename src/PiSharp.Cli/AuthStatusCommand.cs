@@ -37,10 +37,11 @@ public static class AuthStatusCommand
             if (modelId is not null && (string.IsNullOrWhiteSpace(modelId) ||
                 !provider.Models.Any(model => model.Id.Equals(modelId, StringComparison.OrdinalIgnoreCase))))
                 throw new ArgumentException($"Model '{modelId}' is not configured for provider '{provider.Id}'; auth check does not contact a model catalog.");
-            var (key, authenticated, source) = await runtime.ResolveAuthAsync(provider.Id);
+            var (key, authenticated, source) = await runtime.ResolveAuthAsync(provider.Id,
+                allowOAuthRefresh: false);
             if (printing)
             {
-                if (!authenticated || source == "not required" || source == "stored OAuth")
+                if (!authenticated || source == "not required" || source.StartsWith("stored OAuth", StringComparison.Ordinal))
                 {
                     await error.WriteLineAsync("No API key is available for the requested provider.");
                     return 1;

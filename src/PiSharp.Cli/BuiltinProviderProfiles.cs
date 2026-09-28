@@ -81,7 +81,7 @@ internal static class BuiltinProviderProfiles
                 "AZURE_OPENAI_API_KEY", null, azureModels, Api: "azure-openai-responses",
                 AzureOpenAi: AzureOpenAiProviderOptions.FromEnvironment(environment)),
             ["openai-codex"] = new("openai-codex", "OpenAI Codex", new Uri("https://chatgpt.com/backend-api"),
-                true, false, null, null, codexModels, Api: "openai-codex-responses"),
+                true, true, null, null, codexModels, Api: "openai-codex-responses", ApiKeySupported: false),
             ["xai"] = new("xai", "xAI", new Uri("https://api.x.ai/v1"), true, false,
                 "XAI_API_KEY", null, xaiModels)
         };

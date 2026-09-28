@@ -1122,11 +1122,17 @@ else
                         var loginProfile = modelRuntime.GetProvider(loginProvider);
                         if (loginType == "oauth" && !loginProfile.OAuthSupported)
                             throw new InvalidOperationException($"Provider '{loginProvider}' has no configured OAuth adapter; browser authorization is not implemented.");
-                        Console.Error.Write($"{(loginType == "oauth" ? "OAuth access token" : "API key")} for {loginProvider}: ");
-                        var secret = ReadSecret();
-                        if (string.IsNullOrWhiteSpace(secret)) throw new ArgumentException("Credential cannot be empty.");
-                        if (loginType == "oauth") await modelRuntime.LoginOAuthAsync(loginProvider, secret);
-                        else await modelRuntime.LoginApiKeyAsync(loginProvider, secret);
+                        if (loginType == "api-key" && !loginProfile.ApiKeySupported)
+                            throw new InvalidOperationException($"Provider '{loginProvider}' requires its OAuth login flow.");
+                        if (loginType == "oauth")
+                            await modelRuntime.LoginOAuthAsync(loginProvider, new ConsoleProviderOAuthInteraction());
+                        else
+                        {
+                            Console.Error.Write($"API key for {loginProvider}: ");
+                            var secret = ReadSecret();
+                            if (string.IsNullOrWhiteSpace(secret)) throw new ArgumentException("Credential cannot be empty.");
+                            await modelRuntime.LoginApiKeyAsync(loginProvider, secret);
+                        }
                         Console.WriteLine($"Authenticated {loginProvider} with {loginType}; credential value was not displayed.");
                         if (loginProvider.Equals(selection.Provider.Id, StringComparison.OrdinalIgnoreCase))
                             await ReplaceModelRuntime(await modelRuntime.ResolveAsync(selection.Provider.Id, selection.Model.Id), thinking, false);
