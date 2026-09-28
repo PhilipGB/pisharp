@@ -27,7 +27,8 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, Func<IReadOn
         new("followUpMode", "Follow-up mode", "How queued follow-up messages are delivered after an agent turn."),
         new("httpIdleTimeoutMs", "HTTP idle timeout", "Maximum wait for provider response headers or body data; 0 disables this idle limit."),
         new("retry.provider.timeoutMs", "Provider request timeout", "Maximum duration for one provider request, in milliseconds."),
-        new("retry.provider.maxRetries", "Provider request retries", "Retry transient requests in the provider SDK before PiSharp handles the failure."),
+        new("retry.provider.maxRetries", "Provider request retries", "Retry transient provider requests before PiSharp handles the failure."),
+        new("retry.provider.maxRetryDelayMs", "Provider retry delay limit", "Fail rather than wait when a provider requests a longer delay; 0 removes the limit."),
         new("markdown.codeBlockIndent", "Code block indent", "Literal prefix before each rendered code line.")
     ];
 
@@ -146,6 +147,7 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, Func<IReadOn
         "steeringMode" => settings.SteeringMode?.ToSettingValue(),
         "followUpMode" => settings.FollowUpMode?.ToSettingValue(),
         "retry.provider.maxRetries" => settings.Retry?.Provider?.MaxRetries?.ToString(System.Globalization.CultureInfo.InvariantCulture),
+        "retry.provider.maxRetryDelayMs" => settings.Retry?.Provider?.MaxRetryDelayMs?.ToString("G", System.Globalization.CultureInfo.InvariantCulture),
         "retry.provider.timeoutMs" => settings.Retry?.Provider?.TimeoutMs?.ToString(System.Globalization.CultureInfo.InvariantCulture),
         "httpIdleTimeoutMs" => settings.HttpIdleTimeoutMs?.ToString(System.Globalization.CultureInfo.InvariantCulture),
         "markdown.codeBlockIndent" => settings.MarkdownCodeBlockIndent,
@@ -198,6 +200,25 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, Func<IReadOn
                 .Select(value => (value, (string?)value, value, value == "0"
                     ? "Disable provider retries and let PiSharp handle the failure."
                     : $"Allow up to {value} provider-level retry attempts.")));
+        }
+        else if (setting.Id == "retry.provider.maxRetryDelayMs")
+        {
+            (double Milliseconds, string Label)[] choices =
+            [
+                (0, "No limit"), (1_000, "1 second"), (5_000, "5 seconds"),
+                (30_000, "30 seconds"), (60_000, "60 seconds (default)")
+            ];
+            if (currentValue is not null && double.TryParse(currentValue, System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture, out var current) &&
+                choices.All(choice => choice.Milliseconds != current))
+                values.Add((currentValue, currentValue, $"{currentValue} milliseconds", "Keep the current custom retry-delay limit."));
+            values.AddRange(choices.Select(choice =>
+            {
+                var value = choice.Milliseconds.ToString("G", System.Globalization.CultureInfo.InvariantCulture);
+                return (value, (string?)value, choice.Label, choice.Milliseconds == 0
+                    ? "Accept any server-requested retry delay."
+                    : $"Fail when a server requests more than {choice.Label} of waiting.");
+            }));
         }
         else if (setting.Id == "httpIdleTimeoutMs")
         {

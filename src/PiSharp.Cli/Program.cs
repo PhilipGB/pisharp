@@ -627,7 +627,7 @@ async Task<(UserSettings User, UserSettings? Project)> SaveSettingAsync(bool pro
     else if (setting == "followUpMode")
         conversationRun.SetFollowUpMode(userSettings.FollowUpMode ?? PromptDeliveryMode.OneAtATime);
     if (setting is "images.blockImages" or "compaction.enabled" or "retry.provider.maxRetries" or
-        "retry.provider.timeoutMs" or "httpIdleTimeoutMs")
+        "retry.provider.maxRetryDelayMs" or "retry.provider.timeoutMs" or "httpIdleTimeoutMs")
         await ReplaceModelRuntime(selection, thinking, recordModelChange: false);
     if (setting is "theme" or "terminal.trueColor")
     {

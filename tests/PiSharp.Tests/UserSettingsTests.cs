@@ -77,30 +77,42 @@ public sealed class UserSettingsTests
         try
         {
             var path = Path.Combine(root, "settings.json");
-            await File.WriteAllTextAsync(path, "{\"httpIdleTimeoutMs\":90000,\"retry\":{\"maxRetries\":4,\"provider\":{\"maxRetries\":2,\"timeoutMs\":45000}}}");
+            await File.WriteAllTextAsync(path, "{\"httpIdleTimeoutMs\":90000,\"retry\":{\"maxRetries\":4,\"provider\":{\"maxRetries\":2,\"timeoutMs\":45000,\"maxRetryDelayMs\":1250.5}}}");
             var user = await UserSettings.LoadAsync(root, _ => null);
             Assert.Equal(4, user.Retry?.MaxRetries);
             Assert.Equal(2, user.Retry?.Provider?.MaxRetries);
             Assert.Equal(45_000, user.Retry?.Provider?.TimeoutMs);
+            Assert.Equal(1_250.5, user.Retry?.Provider?.MaxRetryDelayMs);
             Assert.Equal(90_000, user.HttpIdleTimeoutMs);
             Assert.Equal(ProviderRetrySettings.DefaultMaxRetries, new ProviderRetrySettings().MaxRetries ?? ProviderRetrySettings.DefaultMaxRetries);
+            Assert.Equal(60_000, new ProviderRetrySettings().MaxRetryDelayMs ?? ProviderRetrySettings.DefaultMaxRetryDelayMs);
 
-            await File.WriteAllTextAsync(Path.Combine(root, ".pi", "settings.json"), "{\"httpIdleTimeoutMs\":\"disabled\",\"retry\":{\"maxRetries\":1,\"provider\":{\"maxRetries\":0,\"timeoutMs\":2000}}}");
+            await File.WriteAllTextAsync(Path.Combine(root, ".pi", "settings.json"), "{\"httpIdleTimeoutMs\":\"disabled\",\"retry\":{\"maxRetries\":1,\"provider\":{\"maxRetries\":0,\"timeoutMs\":2000,\"maxRetryDelayMs\":0}}}");
             var effective = user.Overlay(await UserSettings.LoadProjectAsync(root));
             Assert.Equal(1, effective.Retry?.MaxRetries);
             Assert.Equal(0, effective.Retry?.Provider?.MaxRetries);
             Assert.Equal(2_000, effective.Retry?.Provider?.TimeoutMs);
+            Assert.Equal(0, effective.Retry?.Provider?.MaxRetryDelayMs);
             Assert.Equal(0, effective.HttpIdleTimeoutMs);
 
             await File.WriteAllTextAsync(Path.Combine(root, ".pi", "settings.json"), "{\"retry\":{\"provider\":{}}}");
             Assert.Equal(2, user.Overlay(await UserSettings.LoadProjectAsync(root)).Retry?.Provider?.MaxRetries);
+            Assert.Equal(1_250.5, user.Overlay(await UserSettings.LoadProjectAsync(root)).Retry?.Provider?.MaxRetryDelayMs);
+
+            await File.WriteAllTextAsync(path, "{\"retry\":{\"maxDelayMs\":5000,\"provider\":{\"maxRetryDelayMs\":7000}}}");
+            Assert.Equal(7_000, (await UserSettings.LoadAsync(root, _ => null)).Retry?.Provider?.MaxRetryDelayMs);
+            await File.WriteAllTextAsync(path, "{\"retry\":{\"maxDelayMs\":5000}}");
+            Assert.Equal(5_000, (await UserSettings.LoadAsync(root, _ => null)).Retry?.Provider?.MaxRetryDelayMs);
 
             foreach (var invalid in new[]
             {
                 "null", "[]", "{\"maxRetries\":-1}", "{\"maxRetries\":21}",
                 "{\"maxRetries\":1.5}", "{\"maxRetries\":1,\"maxRetries\":2}",
                 "{\"timeoutMs\":-1}", "{\"timeoutMs\":2147483648}", "{\"timeoutMs\":1000.5}",
-                "{\"timeoutMs\":1000,\"timeoutMs\":2000}"
+                "{\"timeoutMs\":1000,\"timeoutMs\":2000}",
+                "{\"maxRetryDelayMs\":-1}", "{\"maxRetryDelayMs\":\"1000\"}",
+                "{\"maxRetryDelayMs\":1000,\"maxRetryDelayMs\":2000}",
+                "{\"maxRetryDelayMs\":1e309}"
             })
             {
                 await File.WriteAllTextAsync(path, "{\"retry\":{\"provider\":" + invalid + "}}");

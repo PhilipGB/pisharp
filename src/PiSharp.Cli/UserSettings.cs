@@ -80,91 +80,6 @@ public sealed record CompactionSettings(bool? Enabled = null, int? ReserveTokens
         return policy;
     }
 }
-/// <summary>Provider SDK retries, kept separate from PiSharp's agent-level retry loop.</summary>
-public sealed record ProviderRetrySettings(int? MaxRetries = null, int? TimeoutMs = null)
-{
-    public const int DefaultMaxRetries = 0;
-
-    public static ProviderRetrySettings Parse(JsonElement value)
-    {
-        if (value.ValueKind != JsonValueKind.Object)
-            throw new InvalidDataException("settings.json retry.provider must be an object.");
-        int? maxRetries = null, timeoutMs = null;
-        var seen = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var property in value.EnumerateObject())
-        {
-            if (!seen.Add(property.Name))
-                throw new InvalidDataException($"settings.json retry.provider contains duplicate property '{property.Name}'.");
-            if (property.Name == "maxRetries" && property.Value.ValueKind == JsonValueKind.Number &&
-                property.Value.TryGetInt32(out var retries) && retries is >= 0 and <= 20)
-            {
-                maxRetries = retries;
-                continue;
-            }
-            if (property.Name == "timeoutMs" && property.Value.ValueKind == JsonValueKind.Number &&
-                property.Value.TryGetInt32(out var timeout) && timeout >= 0)
-            {
-                timeoutMs = timeout;
-                continue;
-            }
-            throw new InvalidDataException($"settings.json retry.provider.{property.Name} is unsupported or invalid.");
-        }
-        return new(maxRetries, timeoutMs);
-    }
-}
-
-/// <summary>Validated non-secret settings subset for the user and trusted project scopes.</summary>
-public sealed record RetrySettings(bool? Enabled = null, int? MaxRetries = null, int? BaseDelayMs = null,
-    int? MaxAgentDelayMs = null, ProviderRetrySettings? Provider = null)
-{
-    public static RetrySettings Parse(JsonElement value)
-    {
-        if (value.ValueKind != JsonValueKind.Object)
-            throw new InvalidDataException("settings.json retry must be an object.");
-        bool? enabled = null;
-        int? maxRetries = null, baseDelayMs = null, maxAgentDelayMs = null;
-        ProviderRetrySettings? provider = null;
-        var seen = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var property in value.EnumerateObject())
-        {
-            if (!seen.Add(property.Name)) throw new InvalidDataException($"settings.json retry contains duplicate property '{property.Name}'.");
-            switch (property.Name)
-            {
-                case "enabled" when property.Value.ValueKind is JsonValueKind.True or JsonValueKind.False:
-                    enabled = property.Value.GetBoolean();
-                    break;
-                case "maxRetries" when property.Value.ValueKind == JsonValueKind.Number &&
-                    property.Value.TryGetInt32(out var retries) && retries is >= 0 and <= 20:
-                    maxRetries = retries;
-                    break;
-                case "baseDelayMs" when property.Value.ValueKind == JsonValueKind.Number &&
-                    property.Value.TryGetInt32(out var baseDelay) && baseDelay is >= 0 and <= 60_000:
-                    baseDelayMs = baseDelay;
-                    break;
-                case "maxAgentDelayMs" when property.Value.ValueKind == JsonValueKind.Number &&
-                    property.Value.TryGetInt32(out var maxDelay) && maxDelay is >= 0 and <= 300_000:
-                    maxAgentDelayMs = maxDelay;
-                    break;
-                case "provider":
-                    provider = ProviderRetrySettings.Parse(property.Value);
-                    break;
-                default:
-                    throw new InvalidDataException($"settings.json retry.{property.Name} is unsupported or invalid.");
-            }
-        }
-        return new(enabled, maxRetries, baseDelayMs, maxAgentDelayMs, provider);
-    }
-
-    public PiSharp.Runtime.Sessions.AgentRunRetryPolicy ResolvePolicy()
-    {
-        var defaults = PiSharp.Runtime.Sessions.AgentRunRetryPolicy.Default;
-        var baseDelay = TimeSpan.FromMilliseconds(BaseDelayMs ?? (int)defaults.BaseDelay.TotalMilliseconds);
-        var maximum = TimeSpan.FromMilliseconds(MaxAgentDelayMs ?? (int)defaults.MaxDelay.TotalMilliseconds);
-        if (baseDelay > maximum) baseDelay = maximum;
-        return new(Enabled ?? defaults.Enabled, MaxRetries ?? defaults.MaxRetries, baseDelay, maximum);
-    }
-}
-
 public sealed record UserSettings(string? DefaultProvider = null, string? DefaultModel = null,
     string? DefaultThinkingLevel = null, IReadOnlyList<string>? DefaultTools = null, string? SessionDirectory = null,
     CompactionSettings? Compaction = null, bool? BlockImages = null, string? DefaultProjectTrust = null, bool? HideThinkingBlock = null, bool? QuietStartup = null, IReadOnlyList<string>? EnabledModels = null, string? ShellPath = null, string? ExternalEditor = null, string? Theme = null,
@@ -417,14 +332,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         project.ShellPath ?? ShellPath,
         project.ExternalEditor ?? ExternalEditor,
         project.Theme ?? Theme,
-        project.Retry is null ? Retry : new RetrySettings(
-            project.Retry.Enabled ?? Retry?.Enabled,
-            project.Retry.MaxRetries ?? Retry?.MaxRetries,
-            project.Retry.BaseDelayMs ?? Retry?.BaseDelayMs,
-            project.Retry.MaxAgentDelayMs ?? Retry?.MaxAgentDelayMs,
-            project.Retry.Provider is null ? Retry?.Provider : new ProviderRetrySettings(
-                project.Retry.Provider.MaxRetries ?? Retry?.Provider?.MaxRetries,
-                project.Retry.Provider.TimeoutMs ?? Retry?.Provider?.TimeoutMs)),
+        RetrySettings.Merge(Retry, project.Retry),
         project.SteeringMode ?? SteeringMode,
         project.FollowUpMode ?? FollowUpMode,
         MergeModelThinkingLevels(ModelThinkingLevels, project.ModelThinkingLevels), HttpProxy,

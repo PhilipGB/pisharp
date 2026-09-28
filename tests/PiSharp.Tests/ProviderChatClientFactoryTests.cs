@@ -156,7 +156,7 @@ public sealed class ProviderChatClientFactoryTests
     }
 
     [Fact]
-    public async Task OpenAiProviderRetrySettingControlsSdkRetries()
+    public async Task OpenAiProviderRetrySettingControlsTotalAttemptCount()
     {
         using (var listener = StartLoopbackListener(out var port))
         {
@@ -215,7 +215,7 @@ public sealed class ProviderChatClientFactoryTests
     }
 
     [Fact]
-    public async Task AnthropicProviderRetrySettingControlsSdkRetries()
+    public async Task AnthropicProviderRetrySettingControlsTotalAttemptCount()
     {
         using (var listener = StartLoopbackListener(out var port))
         {
@@ -271,6 +271,161 @@ public sealed class ProviderChatClientFactoryTests
             Assert.Equal("retried", response.Text);
             Assert.Equal(2, requests);
         }
+    }
+
+    [Theory]
+    [InlineData("openai-responses")]
+    [InlineData("anthropic-messages")]
+    public async Task ProviderRetryDelayAboveConfiguredMaximumFailsWithoutAnotherRequest(string protocol)
+    {
+        using var listener = StartLoopbackListener(out var port);
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(8));
+        var requests = 0;
+        var server = Task.Run(async () =>
+        {
+            var request = await listener.GetContextAsync().WaitAsync(deadline.Token);
+            Interlocked.Increment(ref requests);
+            request.Response.StatusCode = 429;
+            request.Response.Headers[HttpResponseHeader.RetryAfter] = "1";
+            request.Response.ContentType = "application/json";
+            await using var writer = new StreamWriter(request.Response.OutputStream);
+            await writer.WriteAsync(protocol == "anthropic-messages"
+                ? "{\"type\":\"error\",\"error\":{\"type\":\"rate_limit_error\",\"message\":\"rate limited\"}}"
+                : "{\"error\":{\"message\":\"rate limited\"}}");
+            await writer.FlushAsync();
+            request.Response.Close();
+            listener.Stop();
+        });
+
+        var selection = Selection("fixture", protocol == "anthropic-messages"
+            ? $"http://127.0.0.1:{port}"
+            : $"http://127.0.0.1:{port}/v1", protocol);
+        var error = await Assert.ThrowsAnyAsync<Exception>(() => ProviderChatClientFactory.Create(selection,
+            new ProviderRetrySettings(MaxRetries: 1, MaxRetryDelayMs: 100))
+            .GetResponseAsync([new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User, "hello")],
+                cancellationToken: deadline.Token));
+        await server.WaitAsync(deadline.Token);
+
+        Assert.Contains("Server requested 1s retry delay (max: 1s)", error.Message);
+        Assert.Equal(1, requests);
+    }
+
+    [Fact]
+    public async Task ProviderRetryCanRestartAStreamBeforeItsFirstUpdate()
+    {
+        using var listener = StartLoopbackListener(out var port);
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var requests = 0;
+        var server = Task.Run(async () =>
+        {
+            for (var attempt = 0; attempt < 2; attempt++)
+            {
+                var request = await listener.GetContextAsync().WaitAsync(deadline.Token);
+                Interlocked.Increment(ref requests);
+                if (attempt == 0)
+                {
+                    request.Response.StatusCode = 429;
+                    request.Response.Headers["Retry-After-Ms"] = "0";
+                    request.Response.ContentType = "application/json";
+                    await using var errorWriter = new StreamWriter(request.Response.OutputStream);
+                    await errorWriter.WriteAsync("{\"error\":{\"message\":\"rate limited\"}}");
+                    await errorWriter.FlushAsync();
+                    request.Response.Close();
+                    continue;
+                }
+
+                request.Response.ContentType = "text/event-stream";
+                await using var writer = new StreamWriter(request.Response.OutputStream);
+                await writer.WriteAsync("data: {\"type\":\"response.created\",\"response\":{\"id\":\"resp_1\",\"object\":\"response\",\"created_at\":1,\"model\":\"fixture-model\",\"status\":\"in_progress\",\"output\":[]}}\n\n");
+                await writer.WriteAsync("data: {\"type\":\"response.output_text.delta\",\"item_id\":\"item_1\",\"output_index\":0,\"content_index\":0,\"delta\":\"hello\"}\n\n");
+                await writer.WriteAsync("data: {\"type\":\"response.completed\",\"response\":{\"id\":\"resp_1\",\"object\":\"response\",\"created_at\":1,\"model\":\"fixture-model\",\"status\":\"completed\",\"output\":[]}}\n\n");
+                await writer.WriteAsync("data: [DONE]\n\n");
+                await writer.FlushAsync();
+                request.Response.Close();
+            }
+        });
+
+        var client = ProviderChatClientFactory.Create(Selection("fixture", $"http://127.0.0.1:{port}/v1", "openai-responses"),
+            new ProviderRetrySettings(MaxRetries: 1));
+        var text = "";
+        await foreach (var update in client.GetStreamingResponseAsync(
+            [new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User, "hello")],
+            cancellationToken: deadline.Token))
+            text += update.Text;
+        await server.WaitAsync(deadline.Token);
+
+        Assert.Equal("hello", text);
+        Assert.Equal(2, requests);
+    }
+
+    [Theory]
+    [InlineData("openai-responses")]
+    [InlineData("anthropic-messages")]
+    public async Task ProviderRetryHonorsNoRetryResponseHeader(string protocol)
+    {
+        using var listener = StartLoopbackListener(out var port);
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(6));
+        var server = Task.Run(async () =>
+        {
+            var request = await listener.GetContextAsync().WaitAsync(deadline.Token);
+            request.Response.StatusCode = 429;
+            request.Response.Headers[HttpResponseHeader.RetryAfter] = "1";
+            request.Response.Headers["x-should-retry"] = "false";
+            request.Response.ContentType = "application/json";
+            await using var writer = new StreamWriter(request.Response.OutputStream);
+            await writer.WriteAsync(protocol == "anthropic-messages"
+                ? "{\"type\":\"error\",\"error\":{\"type\":\"rate_limit_error\",\"message\":\"rate limited\"}}"
+                : "{\"error\":{\"message\":\"rate limited\"}}");
+            await writer.FlushAsync();
+            request.Response.Close();
+            listener.Stop();
+        });
+
+        var selection = Selection("fixture", protocol == "anthropic-messages"
+            ? $"http://127.0.0.1:{port}"
+            : $"http://127.0.0.1:{port}/v1", protocol);
+        var error = await Assert.ThrowsAnyAsync<Exception>(() => ProviderChatClientFactory.Create(selection,
+            new ProviderRetrySettings(MaxRetries: 1, MaxRetryDelayMs: 100))
+            .GetResponseAsync([new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User, "hello")],
+                cancellationToken: deadline.Token));
+        await server.WaitAsync(deadline.Token);
+
+        Assert.DoesNotContain("Server requested", error.Message);
+        Assert.Contains("rate limited", error.Message);
+    }
+
+    [Fact]
+    public async Task DisabledProviderRetryDelayLimitWaitRemainsCancellable()
+    {
+        using var listener = StartLoopbackListener(out var port);
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(6));
+        using var requestCancellation = new CancellationTokenSource();
+        var requests = 0;
+        var server = Task.Run(async () =>
+        {
+            var request = await listener.GetContextAsync().WaitAsync(deadline.Token);
+            Interlocked.Increment(ref requests);
+            request.Response.StatusCode = 429;
+            request.Response.Headers["Retry-After-Ms"] = "5000";
+            request.Response.ContentType = "application/json";
+            await using var writer = new StreamWriter(request.Response.OutputStream);
+            await writer.WriteAsync("{\"error\":{\"message\":\"rate limited\"}}");
+            await writer.FlushAsync();
+            request.Response.Close();
+            listener.Stop();
+        });
+
+        var client = ProviderChatClientFactory.Create(Selection("fixture", $"http://127.0.0.1:{port}/v1", "openai-responses"),
+            new ProviderRetrySettings(MaxRetries: 1, MaxRetryDelayMs: 0));
+        var requestTask = client.GetResponseAsync(
+            [new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User, "hello")],
+            cancellationToken: requestCancellation.Token);
+        await server.WaitAsync(deadline.Token);
+        await Task.Delay(50, deadline.Token);
+        requestCancellation.Cancel();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => requestTask);
+        Assert.Equal(1, requests);
     }
 
     [Theory]

@@ -77,9 +77,15 @@ internal sealed class OpenAiToolCallDeltaCapture : IProviderToolCallDeltaSource
                             replacement.Headers.TryAddWithoutValidation(header.Key, header.Value);
                         response.Content = replacement;
                         original.Dispose();
-                        capture.SetResponseFailure(response.StatusCode, Encoding.UTF8.GetString(body));
+                        var shouldRetry = response.Headers.TryGetValues("x-should-retry", out var values)
+                            ? values.FirstOrDefault() : null;
+                        if (!ProviderRequestRetryPolicy.IsRetryableStatus((int)response.StatusCode, shouldRetry))
+                        {
+                            capture.SetResponseFailure(response.StatusCode, Encoding.UTF8.GetString(body));
+                            capture.Complete();
+                        }
                     }
-                    capture.Complete();
+                    else capture.Complete();
                 }
             }
             return response;

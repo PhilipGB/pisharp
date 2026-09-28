@@ -40,6 +40,7 @@ internal sealed class ProviderWireActivityHandler : DelegatingHandler
     {
         var observe = ProviderWireActivity.CurrentObserver;
         var response = await base.SendAsync(request, cancellationToken);
+        ProviderRetryResponseCapture.Observe(response);
         if (observe is null || response.Content is not { } content) return response;
 
         var observedContent = new ObservedContent(content, observe);

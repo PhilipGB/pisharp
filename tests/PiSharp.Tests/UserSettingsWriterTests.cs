@@ -22,6 +22,7 @@ public sealed class UserSettingsWriterTests
             await UserSettingsWriter.SetAsync(path, "steeringMode", "all", userScope: true);
             await UserSettingsWriter.SetAsync(path, "followUpMode", "one-at-a-time", userScope: true);
             await UserSettingsWriter.SetAsync(path, "retry.provider.maxRetries", "2", userScope: true);
+            await UserSettingsWriter.SetAsync(path, "retry.provider.maxRetryDelayMs", "2500.5", userScope: true);
             await UserSettingsWriter.SetAsync(path, "retry.provider.timeoutMs", "120000", userScope: true);
             await UserSettingsWriter.SetAsync(path, "httpIdleTimeoutMs", "disabled", userScope: true);
             await UserSettingsWriter.SetAsync(path, "markdown.codeBlockIndent", ">>", userScope: true);
@@ -38,6 +39,7 @@ public sealed class UserSettingsWriterTests
             Assert.Equal(PromptDeliveryMode.All, settings.SteeringMode);
             Assert.Equal(PromptDeliveryMode.OneAtATime, settings.FollowUpMode);
             Assert.Equal(2, settings.Retry?.Provider?.MaxRetries);
+            Assert.Equal(2_500.5, settings.Retry?.Provider?.MaxRetryDelayMs);
             Assert.Equal(120_000, settings.Retry?.Provider?.TimeoutMs);
             Assert.Equal(0, settings.HttpIdleTimeoutMs);
             Assert.Equal(">>", settings.MarkdownCodeBlockIndent);
@@ -49,6 +51,7 @@ public sealed class UserSettingsWriterTests
             await UserSettingsWriter.SetAsync(path, "retry.enabled", null, userScope: true);
             await UserSettingsWriter.SetAsync(path, "steeringMode", null, userScope: true);
             await UserSettingsWriter.SetAsync(path, "retry.provider.maxRetries", null, userScope: true);
+            await UserSettingsWriter.SetAsync(path, "retry.provider.maxRetryDelayMs", null, userScope: true);
             await UserSettingsWriter.SetAsync(path, "retry.provider.timeoutMs", null, userScope: true);
             await UserSettingsWriter.SetAsync(path, "httpIdleTimeoutMs", null, userScope: true);
             await UserSettingsWriter.SetAsync(path, "markdown.codeBlockIndent", null, userScope: true);
@@ -71,6 +74,10 @@ public sealed class UserSettingsWriterTests
                 UserSettingsWriter.SetAsync(path, "retry.provider.maxRetries", "21", userScope: true));
             await Assert.ThrowsAsync<ArgumentException>(() =>
                 UserSettingsWriter.SetAsync(path, "retry.provider.timeoutMs", "-1", userScope: true));
+            await Assert.ThrowsAsync<ArgumentException>(() =>
+                UserSettingsWriter.SetAsync(path, "retry.provider.maxRetryDelayMs", "-1", userScope: true));
+            await Assert.ThrowsAsync<ArgumentException>(() =>
+                UserSettingsWriter.SetAsync(path, "retry.provider.maxRetryDelayMs", "NaN", userScope: true));
             await Assert.ThrowsAsync<ArgumentException>(() =>
                 UserSettingsWriter.SetAsync(path, "httpIdleTimeoutMs", "sometimes", userScope: true));
             await Assert.ThrowsAsync<ArgumentException>(() =>

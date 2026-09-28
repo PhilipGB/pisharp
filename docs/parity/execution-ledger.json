@@ -176,7 +176,7 @@
       "implementation": [
         "src/PiSharp.Runtime/PiAgent.cs: ChatClientAgent/AgentSession runtime composes observed per-provider-request retries without replacing the MAF tool loop.",
         "src/PiSharp.Runtime/Sessions/ObservedChatClient.cs and ProviderRetryPolicy.cs: default bounded transient retry before any streamed content; retry/partial/interruption lifecycle events; no replay after partial text, reasoning, or tool-call content.",
-        "ProviderRetryPolicy now classifies System.ClientModel.ClientResultException and HttpRequestException statuses: 408/409/429/5xx transient, 400/401/403 permanent; no-response transport remains transient. Anthropic SDK-specific errors and upstream Retry-After/abort/backoff policy are still unhandled.",
+        "src/PiSharp.Runtime/Sessions/ProviderRetryPolicy.cs classifies transient statuses for the MAF fallback path. The CLI provider boundary now separately handles OpenAI and Anthropic SDK errors, x-should-retry and Retry-After headers, and cancellable backoff; see docs/parity/fixtures/settings-provider-retry-delay-baseline.md.",
         "src/PiSharp.Runtime/Sessions/ConversationRun.cs: bounded lifecycle stream runs queued text prompts as later MAF turns, emits per-turn completion and one run completion/settlement, and preserves canonical session history.",
         "src/PiSharp.Cli/Protocols/RpcMode.cs: an RPC prompt received during streaming queues into the active application run rather than claiming completion or starting a competing run.",
         "tests/PiSharp.Tests/AgentIntegrationTests.cs, AgentLifecycleTests.cs, RpcModeTests.cs: deterministic fake-provider coverage for streamed text/tools/results, tool continuation, retry, partial failure, interruption, queued multi-turn session history, and RPC workflow."
@@ -191,7 +191,8 @@
         "dotnet test PiSharp.slnx --no-build => 110 passed, 0 failed (deterministic suite).",
         "dotnet build PiSharp.slnx --no-restore --warnaserror => succeeded with 0 warnings and 0 errors; dotnet format PiSharp.slnx --verify-no-changes --no-restore => passed after formatting.",
         "python3 -Werror::ResourceWarning -m unittest discover -s tools/autonomy -p 'test_*.py' -v => 8 passed.",
-        "Scope note: this verifies this ledger slice through PiSharp application behavior; it does not claim byte-for-byte Pi protocol parity or distinct steering/follow-up semantics, which remain separate tasks."
+        "Scope note: this verifies this ledger slice through PiSharp application behavior; it does not claim byte-for-byte Pi protocol parity or distinct steering/follow-up semantics, which remain separate tasks.",
+        "ProviderChatClientFactoryTests and ProviderRetryChatClientTests exercise provider-level transient status/header behavior and ensure a streamed request is not replayed after its first update; the paired current-Pi retry helper and settings tests are recorded in settings-provider-retry-delay-baseline.md. This remains bounded adapter evidence, not broad retry parity."
       ],
       "dependencies": []
     },
@@ -2966,14 +2967,22 @@
     {
       "id": "settings-retry-provider-maxretrydelayms",
       "title": "Setting: retry.provider.maxRetryDelayMs",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/detailed-inventory.md:64",
       "acceptance": [
         "Support retry.provider.maxRetryDelayMs with upstream type/default and user/trusted-project precedence",
         "Test malformed settings, trust boundaries, reload and startup behaviour"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "src/PiSharp.Cli/RetrySettings.cs: extracted retry parsing and field-level user/trusted-project merge; validates finite nonnegative provider delay limits, applies the 60000 ms default, and migrates legacy retry.maxDelayMs unless the nested value is set.",
+        "src/PiSharp.Cli/ProviderRetryChatClient.cs and ProviderWireActivity.cs: provider-boundary retry policy for OpenAI Responses/Completions and Anthropic Messages, with SDK retries disabled, retry-header capture, cancellable delay, and no replay after streamed output.",
+        "src/PiSharp.Cli/ProviderChatClientFactory.cs, UserSettingsWriter.cs, Tui/TerminalSettingsPicker.cs, Program.cs: wiring, persistence, /settings editing, and active-runtime refresh."
+      ],
+      "evidence": [
+        "docs/parity/fixtures/settings-provider-retry-delay-baseline.md records current Pi 04efdfc38078f952a0436a3363e50744226ec824 source behavior and upstream test results (provider retry tests 8/8; settings merge regression 1/1).",
+        "Focused PiSharp provider/settings/PTY suite passed 37/37 with 0 skipped. Tests cover OpenAI and Anthropic server-delay caps and retry override headers, OpenAI stream retry before first update, no replay after an update, cancellable unlimited backoff, malformed settings, migration precedence, trusted-project field merge, writer behavior, and Linux /settings persistence.",
+        "Full suite, final formatting check, and exact-head Linux CI are pending the source commit."
+      ],
       "dependencies": []
     },
     {
