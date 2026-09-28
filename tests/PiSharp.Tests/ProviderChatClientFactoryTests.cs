@@ -16,7 +16,7 @@ public sealed class ProviderChatClientFactoryTests
         Assert.Equal("openai-responses", ProviderChatClientFactory.ResolveProtocol(official));
         Assert.Equal("openai-completions", ProviderChatClientFactory.ResolveProtocol(Selection("openai", "https://api.openai.com/v1", "openai-completions")));
         Assert.Equal("openai-completions", ProviderChatClientFactory.ResolveProtocol(Selection("openrouter", "https://openrouter.ai/api/v1")));
-        Assert.Equal("openai-completions", ProviderChatClientFactory.ResolveProtocol(Selection("mistral", "https://api.mistral.ai/v1")));
+        Assert.Equal("mistral-conversations", ProviderChatClientFactory.ResolveProtocol(Selection("mistral", "https://api.mistral.ai/v1")));
         Assert.Equal("openai-responses", ProviderChatClientFactory.ResolveProtocol(Selection("custom", "http://localhost:1234/v1", "openai-responses")));
         Assert.Equal("anthropic-messages", ProviderChatClientFactory.ResolveProtocol(Selection("anthropic", "https://api.anthropic.com")));
         Assert.Equal("anthropic-messages", ProviderChatClientFactory.ResolveProtocol(Selection("custom", "http://localhost:1234", "anthropic-messages")));

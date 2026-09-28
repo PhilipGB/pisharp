@@ -15,9 +15,10 @@ public static class ProviderChatClientFactory
         {
             "openai" or "xai" => "openai-responses",
             "anthropic" => "anthropic-messages",
+            "mistral" => "mistral-conversations",
             _ => "openai-completions"
         });
-        if (protocol is not ("openai-responses" or "openai-completions" or "anthropic-messages"))
+        if (protocol is not ("openai-responses" or "openai-completions" or "anthropic-messages" or "mistral-conversations"))
             throw new NotSupportedException($"Model '{selection.Provider.Id}/{selection.Model.Id}' requires unsupported API '{protocol}'.");
         // The official OpenAI identity must never be redirected by catalog metadata to an alternate endpoint.
         if (selection.Provider.Id == "openai" && !ProviderModelRuntime.IsOfficialOpenAiEndpoint(selection.Provider.Endpoint))
@@ -65,9 +66,17 @@ public static class ProviderChatClientFactory
                 options.Transport = new HttpClientPipelineTransport(
                     new HttpClient(new ProviderWireActivityHandler(new HttpClientHandler()), disposeHandler: true));
             OpenAiToolCallDeltaCapture? toolCallCapture = null;
-            if (protocol == "openai-completions")
+            MistralChatRequestContext? mistralContext = null;
+            if (protocol is "openai-completions" or "mistral-conversations")
             {
-                toolCallCapture = new OpenAiToolCallDeltaCapture();
+                HttpMessageHandler? handler = null;
+                if (protocol == "mistral-conversations")
+                {
+                    mistralContext = new MistralChatRequestContext();
+                    handler = new MistralChatCompatibilityHandler(mistralContext,
+                        new ProviderWireActivityHandler(new HttpClientHandler()));
+                }
+                toolCallCapture = new OpenAiToolCallDeltaCapture(handler);
                 options.Transport = toolCallCapture.Transport;
             }
             var client = new OpenAIClient(new ApiKeyCredential(selection.ApiKey), options);
@@ -78,6 +87,8 @@ public static class ProviderChatClientFactory
                 : client.GetChatClient(selection.Model.Id).AsIChatClient();
 #pragma warning restore OPENAI001
             providerClient = toolCallCapture is null ? chat : new OpenAiCompletionsToolCallDeltaClient(chat, toolCallCapture);
+            if (mistralContext is not null)
+                providerClient = new MistralChatOptionsClient(providerClient, selection.Model, mistralContext);
         }
         var timeoutClient = new ProviderRequestTimeoutChatClient(providerClient, requestTimeout, idleTimeout);
         return new ProviderRetryChatClient(timeoutClient, providerMaxRetries,

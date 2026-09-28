@@ -19,11 +19,11 @@ internal sealed class OpenAiToolCallDeltaCapture : IProviderToolCallDeltaSource
 {
     private Capture? _active;
 
-    public OpenAiToolCallDeltaCapture()
+    public OpenAiToolCallDeltaCapture(HttpMessageHandler? innerHandler = null)
     {
         Transport = new HttpClientPipelineTransport(
             new HttpClient(new CaptureHandler(this,
-                new ProviderWireActivityHandler(new HttpClientHandler())), disposeHandler: true));
+                innerHandler ?? new ProviderWireActivityHandler(new HttpClientHandler())), disposeHandler: true));
     }
 
     public PipelineTransport Transport { get; }
