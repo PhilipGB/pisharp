@@ -1,0 +1,868 @@
+[
+  {
+    "id": "codestral-latest",
+    "owner": "mistral",
+    "contextLength": 256000,
+    "status": "pinned catalogue",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.3,
+      "output": 0.9,
+      "cachedInput": 0.03,
+      "cachedWrite": 0
+    },
+    "provider": "mistral",
+    "name": "Codestral (latest)",
+    "maxOutputTokens": 4096,
+    "input": [
+      "text"
+    ],
+    "api": "mistral-conversations"
+  },
+  {
+    "id": "devstral-2512",
+    "owner": "mistral",
+    "contextLength": 262144,
+    "status": "pinned catalogue",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.4,
+      "output": 2,
+      "cachedInput": 0.04,
+      "cachedWrite": 0
+    },
+    "provider": "mistral",
+    "name": "Devstral 2",
+    "maxOutputTokens": 262144,
+    "input": [
+      "text"
+    ],
+    "api": "mistral-conversations"
+  },
+  {
+    "id": "devstral-latest",
+    "owner": "mistral",
+    "contextLength": 262144,
+    "status": "pinned catalogue",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.4,
+      "output": 2,
+      "cachedInput": 0.04,
+      "cachedWrite": 0
+    },
+    "provider": "mistral",
+    "name": "Devstral 2",
+    "maxOutputTokens": 262144,
+    "input": [
+      "text"
+    ],
+    "api": "mistral-conversations"
+  },
+  {
+    "id": "devstral-medium-2507",
+    "owner": "mistral",
+    "contextLength": 128000,
+    "status": "pinned catalogue",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.4,
+      "output": 2,
+      "cachedInput": 0.04,
+      "cachedWrite": 0
+    },
+    "provider": "mistral",
+    "name": "Devstral Medium",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text"
+    ],
+    "api": "mistral-conversations"
+  },
+  {
+    "id": "devstral-medium-latest",
+    "owner": "mistral",
+    "contextLength": 262144,
+    "status": "pinned catalogue",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.4,
+      "output": 2,
+      "cachedInput": 0.04,
+      "cachedWrite": 0
+    },
+    "provider": "mistral",
+    "name": "Devstral 2 (latest)",
+    "maxOutputTokens": 262144,
+    "input": [
+      "text"
+    ],
+    "api": "mistral-conversations"
+  },
+  {
+    "id": "devstral-small-2505",
+    "owner": "mistral",
+    "contextLength": 128000,
+    "status": "pinned catalogue",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.1,
+      "output": 0.3,
+      "cachedInput": 0.01,
+      "cachedWrite": 0
+    },
+    "provider": "mistral",
+    "name": "Devstral Small 2505",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text"
+    ],
+    "api": "mistral-conversations"
+  },
+  {
+    "id": "devstral-small-2507",
+    "owner": "mistral",
+    "contextLength": 128000,
+    "status": "pinned catalogue",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.1,
+      "output": 0.3,
+      "cachedInput": 0.01,
+      "cachedWrite": 0
+    },
+    "provider": "mistral",
+    "name": "Devstral Small",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text"
+    ],
+    "api": "mistral-conversations"
+  },
+  {
+    "id": "labs-devstral-small-2512",
+    "owner": "mistral",
+    "contextLength": 256000,
+    "status": "pinned catalogue",
+    "reasoning": false,
+    "pricing": {
+      "input": 0,
+      "output": 0,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "mistral",
+    "name": "Devstral Small 2",
+    "maxOutputTokens": 256000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "mistral-conversations",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    }
+  },
+  {
+    "id": "magistral-medium-latest",
+    "owner": "mistral",
+    "contextLength": 128000,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 2,
+      "output": 5,
+      "cachedInput": 0.2,
+      "cachedWrite": 0
+    },
+    "provider": "mistral",
+    "name": "Magistral Medium (latest)",
+    "maxOutputTokens": 16384,
+    "input": [
+      "text"
+    ],
+    "api": "mistral-conversations"
+  },
+  {
+    "id": "magistral-small",
+    "owner": "mistral",
+    "contextLength": 128000,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.5,
+      "output": 1.5,
+      "cachedInput": 0.05,
+      "cachedWrite": 0
+    },
+    "provider": "mistral",
+    "name": "Magistral Small",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text"
+    ],
+    "api": "mistral-conversations"
+  },
+  {
+    "id": "ministral-3b-latest",
+    "owner": "mistral",
+    "contextLength": 128000,
+    "status": "pinned catalogue",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.04,
+      "output": 0.04,
+      "cachedInput": 0.004,
+      "cachedWrite": 0
+    },
+    "provider": "mistral",
+    "name": "Ministral 3B (latest)",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text"
+    ],
+    "api": "mistral-conversations"
+  },
+  {
+    "id": "ministral-8b-latest",
+    "owner": "mistral",
+    "contextLength": 128000,
+    "status": "pinned catalogue",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.1,
+      "output": 0.1,
+      "cachedInput": 0.01,
+      "cachedWrite": 0
+    },
+    "provider": "mistral",
+    "name": "Ministral 8B (latest)",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text"
+    ],
+    "api": "mistral-conversations"
+  },
+  {
+    "id": "mistral-large-2411",
+    "owner": "mistral",
+    "contextLength": 131072,
+    "status": "pinned catalogue",
+    "reasoning": false,
+    "pricing": {
+      "input": 2,
+      "output": 6,
+      "cachedInput": 0.2,
+      "cachedWrite": 0
+    },
+    "provider": "mistral",
+    "name": "Mistral Large 2.1",
+    "maxOutputTokens": 16384,
+    "input": [
+      "text"
+    ],
+    "api": "mistral-conversations"
+  },
+  {
+    "id": "mistral-large-2512",
+    "owner": "mistral",
+    "contextLength": 262144,
+    "status": "pinned catalogue",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.5,
+      "output": 1.5,
+      "cachedInput": 0.05,
+      "cachedWrite": 0
+    },
+    "provider": "mistral",
+    "name": "Mistral Large 3",
+    "maxOutputTokens": 262144,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "mistral-conversations",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    }
+  },
+  {
+    "id": "mistral-large-latest",
+    "owner": "mistral",
+    "contextLength": 262144,
+    "status": "pinned catalogue",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.5,
+      "output": 1.5,
+      "cachedInput": 0.05,
+      "cachedWrite": 0
+    },
+    "provider": "mistral",
+    "name": "Mistral Large (latest)",
+    "maxOutputTokens": 262144,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "mistral-conversations",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    }
+  },
+  {
+    "id": "mistral-medium-2505",
+    "owner": "mistral",
+    "contextLength": 131072,
+    "status": "pinned catalogue",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.4,
+      "output": 2,
+      "cachedInput": 0.04,
+      "cachedWrite": 0
+    },
+    "provider": "mistral",
+    "name": "Mistral Medium 3",
+    "maxOutputTokens": 131072,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "mistral-conversations",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    }
+  },
+  {
+    "id": "mistral-medium-2508",
+    "owner": "mistral",
+    "contextLength": 262144,
+    "status": "pinned catalogue",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.4,
+      "output": 2,
+      "cachedInput": 0.04,
+      "cachedWrite": 0
+    },
+    "provider": "mistral",
+    "name": "Mistral Medium 3.1",
+    "maxOutputTokens": 262144,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "mistral-conversations",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    }
+  },
+  {
+    "id": "mistral-medium-2604",
+    "owner": "mistral",
+    "contextLength": 262144,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 1.5,
+      "output": 7.5,
+      "cachedInput": 0.15,
+      "cachedWrite": 0
+    },
+    "provider": "mistral",
+    "name": "Mistral Medium 3.5",
+    "maxOutputTokens": 262144,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "mistral-conversations",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "thinkingLevelMap": {
+      "off": "none",
+      "minimal": null,
+      "low": null,
+      "medium": null,
+      "high": "high",
+      "xhigh": null,
+      "max": null
+    }
+  },
+  {
+    "id": "mistral-medium-3.5",
+    "owner": "mistral",
+    "contextLength": 262144,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 1.5,
+      "output": 7.5,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "mistral",
+    "name": "Mistral Medium 3.5",
+    "maxOutputTokens": 262144,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "mistral-conversations",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "thinkingLevelMap": {
+      "off": "none",
+      "minimal": null,
+      "low": null,
+      "medium": null,
+      "high": "high",
+      "xhigh": null,
+      "max": null
+    }
+  },
+  {
+    "id": "mistral-medium-latest",
+    "owner": "mistral",
+    "contextLength": 262144,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 1.5,
+      "output": 7.5,
+      "cachedInput": 0.15,
+      "cachedWrite": 0
+    },
+    "provider": "mistral",
+    "name": "Mistral Medium (latest)",
+    "maxOutputTokens": 262144,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "mistral-conversations",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "thinkingLevelMap": {
+      "off": "none",
+      "minimal": null,
+      "low": null,
+      "medium": null,
+      "high": "high",
+      "xhigh": null,
+      "max": null
+    }
+  },
+  {
+    "id": "mistral-nemo",
+    "owner": "mistral",
+    "contextLength": 128000,
+    "status": "pinned catalogue",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.15,
+      "output": 0.15,
+      "cachedInput": 0.015,
+      "cachedWrite": 0
+    },
+    "provider": "mistral",
+    "name": "Mistral Nemo",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text"
+    ],
+    "api": "mistral-conversations"
+  },
+  {
+    "id": "mistral-small-2506",
+    "owner": "mistral",
+    "contextLength": 128000,
+    "status": "pinned catalogue",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.1,
+      "output": 0.3,
+      "cachedInput": 0.01,
+      "cachedWrite": 0
+    },
+    "provider": "mistral",
+    "name": "Mistral Small 3.2",
+    "maxOutputTokens": 16384,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "mistral-conversations",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    }
+  },
+  {
+    "id": "mistral-small-2603",
+    "owner": "mistral",
+    "contextLength": 256000,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.15,
+      "output": 0.6,
+      "cachedInput": 0.015,
+      "cachedWrite": 0
+    },
+    "provider": "mistral",
+    "name": "Mistral Small 4",
+    "maxOutputTokens": 256000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "mistral-conversations",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "thinkingLevelMap": {
+      "off": "none",
+      "minimal": null,
+      "low": null,
+      "medium": null,
+      "high": "high",
+      "xhigh": null,
+      "max": null
+    }
+  },
+  {
+    "id": "mistral-small-latest",
+    "owner": "mistral",
+    "contextLength": 256000,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.15,
+      "output": 0.6,
+      "cachedInput": 0.015,
+      "cachedWrite": 0
+    },
+    "provider": "mistral",
+    "name": "Mistral Small (latest)",
+    "maxOutputTokens": 256000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "mistral-conversations",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "thinkingLevelMap": {
+      "off": "none",
+      "minimal": null,
+      "low": null,
+      "medium": null,
+      "high": "high",
+      "xhigh": null,
+      "max": null
+    }
+  },
+  {
+    "id": "open-mistral-7b",
+    "owner": "mistral",
+    "contextLength": 8000,
+    "status": "pinned catalogue",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.25,
+      "output": 0.25,
+      "cachedInput": 0.025,
+      "cachedWrite": 0
+    },
+    "provider": "mistral",
+    "name": "Mistral 7B",
+    "maxOutputTokens": 8000,
+    "input": [
+      "text"
+    ],
+    "api": "mistral-conversations"
+  },
+  {
+    "id": "open-mistral-nemo",
+    "owner": "mistral",
+    "contextLength": 128000,
+    "status": "pinned catalogue",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.15,
+      "output": 0.15,
+      "cachedInput": 0.015,
+      "cachedWrite": 0
+    },
+    "provider": "mistral",
+    "name": "Open Mistral Nemo",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text"
+    ],
+    "api": "mistral-conversations"
+  },
+  {
+    "id": "open-mixtral-8x22b",
+    "owner": "mistral",
+    "contextLength": 64000,
+    "status": "pinned catalogue",
+    "reasoning": false,
+    "pricing": {
+      "input": 2,
+      "output": 6,
+      "cachedInput": 0.2,
+      "cachedWrite": 0
+    },
+    "provider": "mistral",
+    "name": "Mixtral 8x22B",
+    "maxOutputTokens": 64000,
+    "input": [
+      "text"
+    ],
+    "api": "mistral-conversations"
+  },
+  {
+    "id": "open-mixtral-8x7b",
+    "owner": "mistral",
+    "contextLength": 32000,
+    "status": "pinned catalogue",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.7,
+      "output": 0.7,
+      "cachedInput": 0.07,
+      "cachedWrite": 0
+    },
+    "provider": "mistral",
+    "name": "Mixtral 8x7B",
+    "maxOutputTokens": 32000,
+    "input": [
+      "text"
+    ],
+    "api": "mistral-conversations"
+  },
+  {
+    "id": "pixtral-12b",
+    "owner": "mistral",
+    "contextLength": 128000,
+    "status": "pinned catalogue",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.15,
+      "output": 0.15,
+      "cachedInput": 0.015,
+      "cachedWrite": 0
+    },
+    "provider": "mistral",
+    "name": "Pixtral 12B",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "mistral-conversations",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    }
+  },
+  {
+    "id": "pixtral-large-latest",
+    "owner": "mistral",
+    "contextLength": 128000,
+    "status": "pinned catalogue",
+    "reasoning": false,
+    "pricing": {
+      "input": 2,
+      "output": 6,
+      "cachedInput": 0.2,
+      "cachedWrite": 0
+    },
+    "provider": "mistral",
+    "name": "Pixtral Large (latest)",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "mistral-conversations",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    }
+  },
+  {
+    "id": "voxtral-small-latest",
+    "owner": "mistral",
+    "contextLength": 32000,
+    "status": "pinned catalogue",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.1,
+      "output": 0.3,
+      "cachedInput": 0.01,
+      "cachedWrite": 0
+    },
+    "provider": "mistral",
+    "name": "Voxtral Small (latest)",
+    "maxOutputTokens": 32000,
+    "input": [
+      "text"
+    ],
+    "api": "mistral-conversations"
+  },
+  {
+    "id": "zai-glm-5-2",
+    "owner": "mistral",
+    "contextLength": 1000000,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 1.4,
+      "output": 4.4,
+      "cachedInput": 0.14,
+      "cachedWrite": 0
+    },
+    "provider": "mistral",
+    "name": "GLM-5.2",
+    "maxOutputTokens": 131072,
+    "input": [
+      "text"
+    ],
+    "api": "mistral-conversations",
+    "thinkingLevelMap": {
+      "off": "none",
+      "minimal": null,
+      "low": null,
+      "medium": null,
+      "high": "high",
+      "xhigh": null,
+      "max": "max"
+    }
+  },
+  {
+    "id": "zai-glm-5-3",
+    "owner": "mistral",
+    "contextLength": 1000000,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 1.4,
+      "output": 4.4,
+      "cachedInput": 0.14,
+      "cachedWrite": 0
+    },
+    "provider": "mistral",
+    "name": "GLM-5.3",
+    "maxOutputTokens": 131072,
+    "input": [
+      "text"
+    ],
+    "api": "mistral-conversations",
+    "thinkingLevelMap": {
+      "off": null,
+      "minimal": null,
+      "low": "low",
+      "medium": null,
+      "high": "high",
+      "xhigh": null,
+      "max": "max"
+    }
+  }
+]

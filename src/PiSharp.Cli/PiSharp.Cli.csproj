@@ -16,6 +16,7 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Tui\Themes\*.json" LogicalName="PiSharp.Cli.Tui.Themes.%(Filename)%(Extension)" />
+    <EmbeddedResource Include="Providers\Data\mistral-models.json" LogicalName="PiSharp.Cli.Providers.Data.mistral-models.json" />
   </ItemGroup>
 
   <ItemGroup>

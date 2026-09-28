@@ -4,7 +4,7 @@
 
 ## Reference state
 
-The durable parity baseline is `earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035`. Current upstream `main` was refreshed on 2026-09-28 to `c1449660c83fd00a7c71d5f7e1bd29fafd400550`. Feature-specific records below retain their historical source pins; they are not claims about today's upstream SHA. The current bounded RPC audit, compaction-source checks, terminal-wrap comparison, and shell-command-prefix audit are recorded below; this remains far short of the final full audit.
+The durable parity baseline is `earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035`. Current upstream `main` was refreshed on 2026-09-28 to `cd5ff1125981f0fc37a56df25eee7310286a3f89`. Feature-specific records below retain their historical source pins; they are not claims about today's upstream SHA. The current bounded RPC audit, compaction-source checks, terminal-wrap comparison, shell-command-prefix audit, and provider/auth breadth audit are recorded below; this remains far short of the final full audit.
 
 ## Latest exact-head evidence
 

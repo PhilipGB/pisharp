@@ -38,6 +38,19 @@ internal static class BuiltinProviderProfiles
         }
         else
             anthropicModels.Insert(0, new(anthropicDefault, "anthropic", null, "configured", Provider: "anthropic", Api: "anthropic-messages"));
+        var mistralDefault = environment("PISHARP_MISTRAL_MODEL") ?? "mistral-small-latest";
+        var mistralModels = MistralModelCatalog.Load().ToList();
+        var mistralDefaultIndex = mistralModels.FindIndex(model =>
+            model.Id.Equals(mistralDefault, StringComparison.OrdinalIgnoreCase));
+        if (mistralDefaultIndex >= 0)
+        {
+            var chosen = mistralModels[mistralDefaultIndex];
+            mistralModels.RemoveAt(mistralDefaultIndex);
+            mistralModels.Insert(0, chosen);
+        }
+        else
+            mistralModels.Insert(0, new(mistralDefault, "mistral", null, "configured",
+                Provider: "mistral", Api: "mistral-conversations"));
         return new(StringComparer.OrdinalIgnoreCase)
         {
             ["openai"] = new("openai", "OpenAI", new Uri("https://api.openai.com/v1"), true, false,
@@ -46,8 +59,7 @@ internal static class BuiltinProviderProfiles
                 "OPENROUTER_API_KEY", null, [new(environment("PISHARP_OPENROUTER_MODEL") ?? "openai/gpt-4o-mini", "openrouter", null, "catalog default", false, Provider: "openrouter")]),
             ["mistral"] = new("mistral", "Mistral", new Uri("https://api.mistral.ai/v1"), true, false,
                 "MISTRAL_API_KEY", null,
-                [new(environment("PISHARP_MISTRAL_MODEL") ?? "mistral-small-latest", "mistral", null,
-                    "catalog default", false, Provider: "mistral", Api: "mistral-conversations")],
+                mistralModels,
                 Api: "mistral-conversations"),
             ["anthropic"] = new("anthropic", "Anthropic", new Uri("https://api.anthropic.com"), true, false,
                 "ANTHROPIC_API_KEY", null,

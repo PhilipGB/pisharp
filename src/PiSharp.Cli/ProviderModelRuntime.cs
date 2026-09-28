@@ -123,9 +123,8 @@ public sealed class ProviderModelRuntime
                 }));
                 continue;
             }
-            // Neither xAI nor Anthropic uses the OpenAI-compatible /models endpoint here.
-            // Report the configured static catalogue rather than probe with the wrong protocol.
-            if (_offline || provider.Id is "xai" or "anthropic")
+            // These built-ins use pinned, provider-owned catalogues rather than generic /models discovery.
+            if (_offline || provider.Id is "xai" or "anthropic" or "mistral")
             {
                 result.AddRange(provider.Models.Select(model => model with { Provider = provider.Id }));
                 continue;

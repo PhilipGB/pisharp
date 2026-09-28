@@ -587,13 +587,11 @@ public sealed class ConversationRun
             }
             else if (item.Type == "model_request_completed")
             {
-                providerResponse = item.ProviderResponse;
-                if (providerResponse?.Contents.OfType<FunctionCallContent>().Any() == true)
+                lock (_runtimeStateGate)
                 {
-                    lock (_runtimeStateGate)
-                    {
+                    providerResponse = item.ProviderResponse;
+                    if (providerResponse?.Contents.OfType<FunctionCallContent>().Any() == true)
                         Conversation.Append(providerResponse);
-                    }
                 }
                 item = item with
                 {
@@ -606,7 +604,11 @@ public sealed class ConversationRun
             else if (item.ProviderUpdate?.Contents?.OfType<UsageContent>().LastOrDefault() is { } updateUsage)
                 item = item with { UsageSnapshot = UsageRecord.Create(providerRequestModel, "model", updateUsage.Details, providerRequestPricing) };
             else if (item.Type == "tool_execution_finished" && item.ToolResultMessage is { } result)
-                turnToolResults.Add(result);
+            {
+                // MAF can finish parallel tools on different continuations; serialize the turn
+                // snapshot with CompleteProviderTurnUnsafe so no result is lost during closure.
+                lock (_runtimeStateGate) turnToolResults.Add(result);
+            }
             else if (item.Type == "model_text_delta" && item.Text is not null) partialAssistantText.Append(item.Text);
             onEvent?.Invoke(item);
         }

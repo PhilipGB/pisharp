@@ -481,7 +481,15 @@ public sealed class CompactionTests
             Assert.Equal(2, events.Count(item => item.Type == "context_compacted_in_flight"));
             Assert.Contains(events, item => item.Type == "turn_completed");
             var contents = conversation.ActiveMessages().SelectMany(message => message.Contents).ToArray();
-            Assert.Equal(3, contents.OfType<FunctionCallContent>().Count());
+            var toolCalls = contents.OfType<FunctionCallContent>().ToArray();
+            Assert.True(toolCalls.Length == 3,
+                $"Expected three canonical tool calls but saw {toolCalls.Length}: " +
+                string.Join(" | ", toolCalls.Select(call => $"{call.Name}:{call.CallId}")) +
+                ". Canonical assistant messages: " + string.Join(" | ", conversation.ActiveMessages()
+                    .Where(message => message.Role == ChatRole.Assistant && message.Contents.OfType<FunctionCallContent>().Any())
+                    .Select(message => string.Join(",", message.Contents.OfType<FunctionCallContent>()
+                        .Select(call => $"{call.Name}:{call.CallId}")))) +
+                $". Provider snapshots: {string.Join(" | ", client.RequestSnapshots)}.");
             Assert.Equal(3, contents.OfType<FunctionResultContent>().Count());
             foreach (var marker in new[] { 'X', 'Y', 'Z' })
                 Assert.Contains(contents.OfType<FunctionResultContent>(), result =>
@@ -1060,7 +1068,15 @@ public sealed class CompactionTests
         {
             var request = Interlocked.Increment(ref _requests);
             _requestSnapshots.Enqueue(string.Join("; ", messages.Select(message =>
-                $"{message.Role}[{string.Join(',', message.Contents.Select(content => content.GetType().Name))}] {message.Text[..Math.Min(message.Text.Length, 80)]}")));
+            {
+                var content = string.Join(',', message.Contents.Select(item => item switch
+                {
+                    FunctionCallContent call => $"call:{call.Name}:{call.CallId}",
+                    FunctionResultContent result => $"result:{result.CallId}",
+                    _ => item.GetType().Name
+                }));
+                return $"{message.Role}[{content}] {message.Text[..Math.Min(message.Text.Length, 80)]}";
+            })));
             if (request == 1)
                 yield return new ChatResponseUpdate(ChatRole.Assistant,
                 [
