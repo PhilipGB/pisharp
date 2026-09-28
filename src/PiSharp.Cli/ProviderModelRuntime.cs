@@ -7,7 +7,8 @@ namespace PiSharp.Cli;
 public sealed record ProviderProfile(string Id, string Name, Uri Endpoint, bool AuthRequired,
     bool OAuthSupported, string? ApiKeyEnvironment, string? ConfiguredApiKey,
     IReadOnlyList<ModelDescriptor> Models, string? Api = null, JsonElement? Compatibility = null,
-    AzureOpenAiProviderOptions? AzureOpenAi = null, bool ApiKeySupported = true);
+    AzureOpenAiProviderOptions? AzureOpenAi = null, bool ApiKeySupported = true,
+    GoogleVertexProviderOptions? GoogleVertex = null);
 
 public sealed record ModelSelection(ProviderProfile Provider, ModelDescriptor Model, string ApiKey,
     bool Authenticated, string AuthSource,
@@ -116,6 +117,8 @@ public sealed class ProviderModelRuntime
         if (!string.IsNullOrWhiteSpace(provider.ConfiguredApiKey)) return (provider.ConfiguredApiKey, true, "models.json");
         if (provider.ApiKeyEnvironment is not null && !string.IsNullOrWhiteSpace(_environment(provider.ApiKeyEnvironment)))
             return (_environment(provider.ApiKeyEnvironment)!, true, provider.ApiKeyEnvironment);
+        if (provider.GoogleVertex?.HasConfiguredApplicationDefaultCredentials == true)
+            return (GoogleVertexProviderOptions.AdcCredentialMarker, true, GoogleVertexProviderOptions.AdcAuthSource);
         return provider.AuthRequired ? ("not-configured", false, "authentication required") :
             ("not-needed", true, "not required");
     }
@@ -140,7 +143,7 @@ public sealed class ProviderModelRuntime
                 continue;
             }
             // These built-ins use pinned, provider-owned catalogues rather than generic /models discovery.
-            if (_offline || provider.Id is "xai" or "anthropic" or "mistral" or "azure-openai-responses" or "openai-codex" or "google")
+            if (_offline || provider.Id is "xai" or "anthropic" or "mistral" or "azure-openai-responses" or "openai-codex" or "google" or "google-vertex")
             {
                 result.AddRange(provider.Models.Select(model => model with { Provider = provider.Id }));
                 continue;

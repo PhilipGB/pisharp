@@ -1,0 +1,549 @@
+[
+  {
+    "id": "gemini-2.5-flash",
+    "owner": "google-vertex",
+    "contextLength": 1048576,
+    "status": "current Pi catalog",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.3,
+      "output": 2.5,
+      "cacheRead": 0.03,
+      "cacheWrite": 0
+    },
+    "provider": "google-vertex",
+    "name": "Gemini 2.5 Flash",
+    "maxOutputTokens": 65536,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "google-vertex",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://{location}-aiplatform.googleapis.com"
+  },
+  {
+    "id": "gemini-2.5-flash-lite",
+    "owner": "google-vertex",
+    "contextLength": 1048576,
+    "status": "current Pi catalog",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.1,
+      "output": 0.4,
+      "cacheRead": 0.01,
+      "cacheWrite": 0
+    },
+    "provider": "google-vertex",
+    "name": "Gemini 2.5 Flash-Lite",
+    "maxOutputTokens": 65535,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "google-vertex",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://{location}-aiplatform.googleapis.com"
+  },
+  {
+    "id": "gemini-2.5-pro",
+    "owner": "google-vertex",
+    "contextLength": 1048576,
+    "status": "current Pi catalog",
+    "reasoning": true,
+    "pricing": {
+      "input": 1.25,
+      "output": 10,
+      "cacheRead": 0.125,
+      "cacheWrite": 0
+    },
+    "provider": "google-vertex",
+    "name": "Gemini 2.5 Pro",
+    "maxOutputTokens": 65536,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "google-vertex",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://{location}-aiplatform.googleapis.com"
+  },
+  {
+    "id": "gemini-3-flash-preview",
+    "owner": "google-vertex",
+    "contextLength": 1048576,
+    "status": "current Pi catalog",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.5,
+      "output": 3,
+      "cacheRead": 0.05,
+      "cacheWrite": 0
+    },
+    "provider": "google-vertex",
+    "name": "Gemini 3 Flash Preview",
+    "maxOutputTokens": 65536,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "google-vertex",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://{location}-aiplatform.googleapis.com",
+    "thinkingLevelMap": {
+      "off": null,
+      "minimal": "minimal",
+      "low": "low",
+      "medium": "medium",
+      "high": "high",
+      "xhigh": null,
+      "max": null
+    }
+  },
+  {
+    "id": "gemini-3.1-flash-lite",
+    "owner": "google-vertex",
+    "contextLength": 1048576,
+    "status": "current Pi catalog",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.25,
+      "output": 1.5,
+      "cacheRead": 0.025,
+      "cacheWrite": 0
+    },
+    "provider": "google-vertex",
+    "name": "Gemini 3.1 Flash Lite",
+    "maxOutputTokens": 65536,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "google-vertex",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://{location}-aiplatform.googleapis.com",
+    "thinkingLevelMap": {
+      "off": null,
+      "minimal": "minimal",
+      "low": "low",
+      "medium": "medium",
+      "high": "high",
+      "xhigh": null,
+      "max": null
+    }
+  },
+  {
+    "id": "gemini-3.1-pro-preview",
+    "owner": "google-vertex",
+    "contextLength": 1048576,
+    "status": "current Pi catalog",
+    "reasoning": true,
+    "pricing": {
+      "input": 2,
+      "output": 12,
+      "cacheRead": 0.2,
+      "cacheWrite": 0
+    },
+    "provider": "google-vertex",
+    "name": "Gemini 3.1 Pro Preview",
+    "maxOutputTokens": 65536,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "google-vertex",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://{location}-aiplatform.googleapis.com",
+    "thinkingLevelMap": {
+      "off": null,
+      "minimal": null,
+      "low": "low",
+      "medium": "medium",
+      "high": "high",
+      "xhigh": null,
+      "max": null
+    }
+  },
+  {
+    "id": "gemini-3.1-pro-preview-customtools",
+    "owner": "google-vertex",
+    "contextLength": 1048576,
+    "status": "current Pi catalog",
+    "reasoning": true,
+    "pricing": {
+      "input": 2,
+      "output": 12,
+      "cacheRead": 0.2,
+      "cacheWrite": 0
+    },
+    "provider": "google-vertex",
+    "name": "Gemini 3.1 Pro Preview Custom Tools",
+    "maxOutputTokens": 65536,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "google-vertex",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://{location}-aiplatform.googleapis.com",
+    "thinkingLevelMap": {
+      "off": null,
+      "minimal": null,
+      "low": "low",
+      "medium": "medium",
+      "high": "high",
+      "xhigh": null,
+      "max": null
+    }
+  },
+  {
+    "id": "gemini-3.5-flash",
+    "owner": "google-vertex",
+    "contextLength": 1048576,
+    "status": "current Pi catalog",
+    "reasoning": true,
+    "pricing": {
+      "input": 1.5,
+      "output": 9,
+      "cacheRead": 0.15,
+      "cacheWrite": 0
+    },
+    "provider": "google-vertex",
+    "name": "Gemini 3.5 Flash",
+    "maxOutputTokens": 65536,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "google-vertex",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://{location}-aiplatform.googleapis.com",
+    "thinkingLevelMap": {
+      "off": null,
+      "minimal": "minimal",
+      "low": "low",
+      "medium": "medium",
+      "high": "high",
+      "xhigh": null,
+      "max": null
+    }
+  },
+  {
+    "id": "gemini-3.5-flash-lite",
+    "owner": "google-vertex",
+    "contextLength": 1048576,
+    "status": "current Pi catalog",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.3,
+      "output": 2.5,
+      "cacheRead": 0.03,
+      "cacheWrite": 0
+    },
+    "provider": "google-vertex",
+    "name": "Gemini 3.5 Flash Lite",
+    "maxOutputTokens": 65536,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "google-vertex",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://{location}-aiplatform.googleapis.com",
+    "thinkingLevelMap": {
+      "off": null,
+      "minimal": "minimal",
+      "low": "low",
+      "medium": "medium",
+      "high": "high",
+      "xhigh": null,
+      "max": null
+    }
+  },
+  {
+    "id": "gemini-3.6-flash",
+    "owner": "google-vertex",
+    "contextLength": 1048576,
+    "status": "current Pi catalog",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.75,
+      "output": 3.75,
+      "cacheRead": 0.075,
+      "cacheWrite": 0
+    },
+    "provider": "google-vertex",
+    "name": "Gemini 3.6 Flash",
+    "maxOutputTokens": 65536,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "google-vertex",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://{location}-aiplatform.googleapis.com",
+    "thinkingLevelMap": {
+      "off": null,
+      "minimal": "minimal",
+      "low": "low",
+      "medium": "medium",
+      "high": "high",
+      "xhigh": null,
+      "max": null
+    }
+  },
+  {
+    "id": "gemini-3.7-flash",
+    "owner": "google-vertex",
+    "contextLength": 1048576,
+    "status": "current Pi catalog",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.75,
+      "output": 3.75,
+      "cacheRead": 0.075,
+      "cacheWrite": 0
+    },
+    "provider": "google-vertex",
+    "name": "Gemini 3.7 Flash",
+    "maxOutputTokens": 65536,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "google-vertex",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://{location}-aiplatform.googleapis.com",
+    "thinkingLevelMap": {
+      "off": null,
+      "minimal": null,
+      "low": "low",
+      "medium": "medium",
+      "high": "high",
+      "xhigh": null,
+      "max": null
+    }
+  },
+  {
+    "id": "gemini-3.8-flash",
+    "owner": "google-vertex",
+    "contextLength": 1048576,
+    "status": "current Pi catalog",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.75,
+      "output": 3.75,
+      "cacheRead": 0.075,
+      "cacheWrite": 0
+    },
+    "provider": "google-vertex",
+    "name": "Gemini 3.8 Flash",
+    "maxOutputTokens": 65536,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "google-vertex",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://{location}-aiplatform.googleapis.com",
+    "thinkingLevelMap": {
+      "off": null,
+      "minimal": null,
+      "low": "low",
+      "medium": "medium",
+      "high": "high",
+      "xhigh": null,
+      "max": null
+    }
+  },
+  {
+    "id": "gemini-flash-latest",
+    "owner": "google-vertex",
+    "contextLength": 1048576,
+    "status": "current Pi catalog",
+    "reasoning": true,
+    "pricing": {
+      "input": 1.5,
+      "output": 9,
+      "cacheRead": 0.15,
+      "cacheWrite": 0
+    },
+    "provider": "google-vertex",
+    "name": "Gemini Flash Latest",
+    "maxOutputTokens": 65536,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "google-vertex",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://{location}-aiplatform.googleapis.com",
+    "thinkingLevelMap": {
+      "off": null,
+      "minimal": "minimal",
+      "low": "low",
+      "medium": "medium",
+      "high": "high",
+      "xhigh": null,
+      "max": null
+    }
+  },
+  {
+    "id": "gemini-flash-lite-latest",
+    "owner": "google-vertex",
+    "contextLength": 1048576,
+    "status": "current Pi catalog",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.25,
+      "output": 1.5,
+      "cacheRead": 0.025,
+      "cacheWrite": 0
+    },
+    "provider": "google-vertex",
+    "name": "Gemini Flash-Lite Latest",
+    "maxOutputTokens": 65536,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "google-vertex",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://{location}-aiplatform.googleapis.com",
+    "thinkingLevelMap": {
+      "off": null,
+      "minimal": "minimal",
+      "low": "low",
+      "medium": "medium",
+      "high": "high",
+      "xhigh": null,
+      "max": null
+    }
+  }
+]

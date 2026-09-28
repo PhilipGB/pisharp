@@ -104,7 +104,13 @@ internal static class ProviderProfileLoader
                      StringComparison.OrdinalIgnoreCase) ||
                  models.Any(model => !string.Equals(model.Api, existing.Api, StringComparison.Ordinal))))
                 throw new InvalidDataException("The built-in google provider must retain its Gemini API protocol and credential environment.");
-            foreach (var reserved in providers.Values.Where(profile => profile.Id is "openai" or "openrouter" or "mistral" or "xai" or "anthropic" or "azure-openai-responses" or "openai-codex" or "google"))
+            if (existing?.Id == "google-vertex" &&
+                (!string.Equals(api, existing.Api, StringComparison.Ordinal) ||
+                 !string.Equals(apiKeyEnvironment ?? existing.ApiKeyEnvironment, existing.ApiKeyEnvironment,
+                     StringComparison.OrdinalIgnoreCase) ||
+                 models.Any(model => !string.Equals(model.Api, existing.Api, StringComparison.Ordinal))))
+                throw new InvalidDataException("The built-in google-vertex provider must retain its Vertex API protocol and credential environment.");
+            foreach (var reserved in providers.Values.Where(profile => profile.Id is "openai" or "openrouter" or "mistral" or "xai" or "anthropic" or "azure-openai-responses" or "openai-codex" or "google" or "google-vertex"))
                 if (apiKeyEnvironment?.Equals(reserved.ApiKeyEnvironment, StringComparison.OrdinalIgnoreCase) == true &&
                     (!item.Name.Equals(reserved.Id, StringComparison.OrdinalIgnoreCase) || !SameEndpoint(endpoint, reserved.Endpoint)))
                     throw new InvalidDataException($"Provider '{item.Name}' cannot borrow {reserved.ApiKeyEnvironment}; use its own credential environment variable.");
@@ -114,7 +120,7 @@ internal static class ProviderProfileLoader
             providers[canonicalId] = new(canonicalId, String(value, "name") ?? existing?.Name ?? item.Name,
                 endpoint, authHeader, false, apiKeyEnvironment,
                 String(value, "apiKey"), models.Count == 0 ? existing?.Models ?? [] : models, api, compatibility,
-                existing?.AzureOpenAi);
+                existing?.AzureOpenAi, GoogleVertex: existing?.GoogleVertex);
         }
     }
 

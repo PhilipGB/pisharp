@@ -63,6 +63,19 @@ internal static class BuiltinProviderProfiles
             reordered.Insert(0, chosen);
             googleModels = reordered;
         }
+        var googleVertexModels = GoogleVertexModelCatalog.Load().ToList();
+        var googleVertexDefault = environment("PISHARP_GOOGLE_VERTEX_MODEL") ?? "gemini-3.5-flash";
+        var googleVertexDefaultIndex = googleVertexModels.FindIndex(model => model.Id == googleVertexDefault);
+        if (googleVertexDefaultIndex >= 0)
+        {
+            var chosen = googleVertexModels[googleVertexDefaultIndex];
+            googleVertexModels.RemoveAt(googleVertexDefaultIndex);
+            googleVertexModels.Insert(0, chosen);
+        }
+        else
+            googleVertexModels.Insert(0, new(googleVertexDefault, "google-vertex", null, "configured",
+                Provider: "google-vertex", Api: "google-vertex"));
+        var googleVertex = GoogleVertexProviderOptions.FromEnvironment(environment);
         var codexModels = OpenAiCodexModelCatalog.Load();
         var codexDefault = environment("PISHARP_OPENAI_CODEX_MODEL") ?? "gpt-5.5";
         var codexDefaultIndex = codexModels.ToList().FindIndex(model => model.Id == codexDefault);
@@ -93,6 +106,9 @@ internal static class BuiltinProviderProfiles
                 AzureOpenAi: AzureOpenAiProviderOptions.FromEnvironment(environment)),
             ["google"] = new("google", "Google", new Uri("https://generativelanguage.googleapis.com/v1beta"), true, false,
                 "GEMINI_API_KEY", null, googleModels, Api: "google-generative-ai"),
+            ["google-vertex"] = new("google-vertex", "Google Vertex AI", new Uri("https://aiplatform.googleapis.com"),
+                true, false, "GOOGLE_CLOUD_API_KEY", null, googleVertexModels, Api: "google-vertex",
+                GoogleVertex: googleVertex),
             ["openai-codex"] = new("openai-codex", "OpenAI Codex", new Uri("https://chatgpt.com/backend-api"),
                 true, true, null, null, codexModels, Api: "openai-codex-responses", ApiKeySupported: false),
             ["xai"] = new("xai", "xAI", new Uri("https://api.x.ai/v1"), true, false,

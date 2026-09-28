@@ -20,8 +20,56 @@ internal static class GoogleGenAiChatClientFactory
     }
 }
 
+internal static class GoogleVertexChatClientFactory
+{
+    public static IChatClient Create(ModelSelection selection)
+    {
+        var providerOptions = selection.Provider.GoogleVertex ??
+            throw new InvalidOperationException("Google Vertex configuration is unavailable.");
+        var modelEndpoint = selection.Model.BaseUrl;
+        var isCustomEndpoint = !string.IsNullOrWhiteSpace(modelEndpoint) &&
+            !modelEndpoint.Contains("{location}", StringComparison.Ordinal);
+        var endpoint = isCustomEndpoint ? new Uri(modelEndpoint!) :
+            selection.AuthSource == GoogleVertexProviderOptions.AdcAuthSource
+                ? RegionalEndpoint(providerOptions.Location)
+                : selection.Provider.Endpoint;
+
+        GoogleVertexRequestOptions requestOptions;
+        if (selection.AuthSource == GoogleVertexProviderOptions.AdcAuthSource)
+        {
+            if (string.IsNullOrWhiteSpace(providerOptions.Project) || string.IsNullOrWhiteSpace(providerOptions.Location))
+                throw new InvalidOperationException("Google Vertex ADC requires GOOGLE_CLOUD_PROJECT and GOOGLE_CLOUD_LOCATION.");
+            var tokenProvider = new GoogleVertexAccessTokenProvider(providerOptions);
+            requestOptions = new(providerOptions.Project, providerOptions.Location, !isCustomEndpoint,
+                AccessTokenProvider: tokenProvider.GetAccessTokenAsync);
+        }
+        else
+        {
+            requestOptions = new(providerOptions.Project, providerOptions.Location, IncludeProjectLocation: false);
+        }
+
+        var handler = new ProviderWireActivityHandler(new HttpClientHandler { AllowAutoRedirect = false });
+        var http = new HttpClient(handler, disposeHandler: true) { Timeout = Timeout.InfiniteTimeSpan };
+        return new GoogleGenAiChatClient(http, endpoint, selection.ApiKey, selection.Model, requestOptions);
+    }
+
+    private static Uri RegionalEndpoint(string? location)
+    {
+        if (string.IsNullOrWhiteSpace(location))
+            throw new InvalidOperationException("Google Vertex ADC requires GOOGLE_CLOUD_LOCATION.");
+        var host = location switch
+        {
+            "global" => "aiplatform.googleapis.com",
+            "us" or "eu" => $"aiplatform.{location}.rep.googleapis.com",
+            _ => $"{location}-aiplatform.googleapis.com"
+        };
+        return new Uri($"https://{host}");
+    }
+}
+
 /// <summary>Maps MAF chat history to Google's generateContent SSE protocol.</summary>
-internal sealed class GoogleGenAiChatClient(HttpClient http, Uri endpoint, string apiKey, ModelDescriptor model)
+internal sealed class GoogleGenAiChatClient(HttpClient http, Uri endpoint, string apiKey, ModelDescriptor model,
+    GoogleVertexRequestOptions? vertex = null)
     : IChatClient
 {
     private const string SignatureKey = "pisharp.google.thoughtSignature";
@@ -29,6 +77,8 @@ internal sealed class GoogleGenAiChatClient(HttpClient http, Uri endpoint, strin
     private const string SignatureModelKey = "pisharp.google.signatureModel";
     private static readonly JsonSerializerOptions s_jsonOptions = new(JsonSerializerDefaults.Web);
     private readonly string _modelId = model.Id;
+    private string SignatureProvider => vertex is null ? "google" : "google-vertex";
+    private string ServiceName => vertex is null ? "Google GenAI" : "Google Vertex";
 
     public async Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
         CancellationToken cancellationToken = default)
@@ -41,16 +91,27 @@ internal sealed class GoogleGenAiChatClient(HttpClient http, Uri endpoint, strin
         ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         var request = BuildRequest(messages.ToArray(), options);
-        using var message = new HttpRequestMessage(HttpMethod.Post, BuildStreamUri(endpoint, _modelId));
+        var requestUri = vertex is null ? BuildStreamUri(endpoint, _modelId) :
+            BuildVertexStreamUri(endpoint, _modelId, vertex);
+        using var message = new HttpRequestMessage(HttpMethod.Post, requestUri);
         message.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/event-stream"));
-        message.Headers.TryAddWithoutValidation("x-goog-api-key", apiKey);
         message.Headers.TryAddWithoutValidation("User-Agent", "PiSharp");
+        var authSecret = apiKey;
+        if (vertex?.AccessTokenProvider is { } accessTokenProvider)
+        {
+            authSecret = await accessTokenProvider(cancellationToken).ConfigureAwait(false);
+            message.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authSecret);
+        }
+        else
+        {
+            message.Headers.TryAddWithoutValidation("x-goog-api-key", apiKey);
+        }
         message.Content = new StringContent(request.ToJsonString(), Encoding.UTF8, "application/json");
 
         using var response = await http.SendAsync(message, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
             .ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
-            throw await CreateProviderExceptionAsync(response, apiKey, cancellationToken).ConfigureAwait(false);
+            throw await CreateProviderExceptionAsync(response, authSecret, ServiceName, cancellationToken).ConfigureAwait(false);
 
         await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
         using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: false,
@@ -90,7 +151,7 @@ internal sealed class GoogleGenAiChatClient(HttpClient http, Uri endpoint, strin
             yield return lastUpdate;
         }
         if (!sawResponse)
-            throw new InvalidDataException("Google GenAI returned an empty streaming response.");
+            throw new InvalidDataException($"{ServiceName} returned an empty streaming response.");
     }
 
     public object? GetService(Type serviceType, object? serviceKey = null) =>
@@ -240,7 +301,7 @@ internal sealed class GoogleGenAiChatClient(HttpClient http, Uri endpoint, strin
         using var document = JsonDocument.Parse(json);
         var root = document.RootElement;
         if (root.TryGetProperty("error", out var error))
-            throw new InvalidDataException("Google GenAI stream error: " + ReadString(error, "message"));
+            throw new InvalidDataException($"{ServiceName} stream error: " + ReadString(error, "message"));
 
         if (root.TryGetProperty("responseId", out var id) && id.ValueKind == JsonValueKind.String)
             responseId = id.GetString() ?? responseId;
@@ -413,12 +474,12 @@ internal sealed class GoogleGenAiChatClient(HttpClient http, Uri endpoint, strin
         if (!IsValidSignature(signature)) return;
         content.AdditionalProperties ??= new AdditionalPropertiesDictionary();
         content.AdditionalProperties[SignatureKey] = signature!;
-        content.AdditionalProperties[SignatureProviderKey] = "google";
+        content.AdditionalProperties[SignatureProviderKey] = SignatureProvider;
         content.AdditionalProperties[SignatureModelKey] = _modelId;
     }
 
     private bool IsSameModel(AdditionalPropertiesDictionary? properties) =>
-        TryReadString(properties, SignatureProviderKey, out var provider) && provider == "google" &&
+        TryReadString(properties, SignatureProviderKey, out var provider) && provider == SignatureProvider &&
         TryReadString(properties, SignatureModelKey, out var modelId) && modelId == _modelId;
 
     private static bool TryReadString(AdditionalPropertiesDictionary? properties, string key, out string value)
@@ -560,8 +621,26 @@ internal sealed class GoogleGenAiChatClient(HttpClient http, Uri endpoint, strin
         return new UriBuilder(baseUri) { Path = path, Query = "alt=sse" }.Uri;
     }
 
+    internal static Uri BuildVertexStreamUri(Uri baseUri, string modelId, GoogleVertexRequestOptions options)
+    {
+        if (options.IncludeProjectLocation &&
+            (string.IsNullOrWhiteSpace(options.Project) || string.IsNullOrWhiteSpace(options.Location)))
+            throw new InvalidOperationException("Google Vertex ADC requires a project and location.");
+        var path = baseUri.AbsolutePath.TrimEnd('/');
+        if (!ContainsApiVersion(path) && !string.IsNullOrEmpty(options.ApiVersion))
+            path += "/" + options.ApiVersion;
+        path += options.IncludeProjectLocation
+            ? $"/projects/{Uri.EscapeDataString(options.Project!)}/locations/{Uri.EscapeDataString(options.Location!)}/publishers/google/models/{Uri.EscapeDataString(modelId)}"
+            : $"/publishers/google/models/{Uri.EscapeDataString(modelId)}";
+        return new UriBuilder(baseUri) { Path = path + ":streamGenerateContent", Query = "alt=sse" }.Uri;
+    }
+
+    private static bool ContainsApiVersion(string path) => path.Split('/', StringSplitOptions.RemoveEmptyEntries)
+        .Any(part => System.Text.RegularExpressions.Regex.IsMatch(part, "^v\\d+(?:beta\\d*)?$",
+            System.Text.RegularExpressions.RegexOptions.CultureInvariant));
+
     private static async Task<HttpRequestException> CreateProviderExceptionAsync(HttpResponseMessage response,
-        string secret, CancellationToken cancellationToken)
+        string secret, string serviceName, CancellationToken cancellationToken)
     {
         var body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
         string detail;
@@ -574,7 +653,7 @@ internal sealed class GoogleGenAiChatClient(HttpClient http, Uri endpoint, strin
         catch (JsonException) { detail = body; }
         detail = detail.Replace(secret, "[redacted]", StringComparison.Ordinal);
         if (detail.Length > 2048) detail = detail[..2048];
-        return new HttpRequestException($"Google GenAI request failed with HTTP {(int)response.StatusCode}: {detail}",
+        return new HttpRequestException($"{serviceName} request failed with HTTP {(int)response.StatusCode}: {detail}",
             null, response.StatusCode);
     }
 

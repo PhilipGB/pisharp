@@ -41,7 +41,8 @@ public static class AuthStatusCommand
                 allowOAuthRefresh: false);
             if (printing)
             {
-                if (!authenticated || source == "not required" || source.StartsWith("stored OAuth", StringComparison.Ordinal))
+                if (!authenticated || source == "not required" || source.StartsWith("stored OAuth", StringComparison.Ordinal) ||
+                    source == GoogleVertexProviderOptions.AdcAuthSource)
                 {
                     await error.WriteLineAsync("No API key is available for the requested provider.");
                     return 1;

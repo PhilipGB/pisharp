@@ -20,7 +20,9 @@ public static class ProviderChatClientFactory
         });
         if (protocol == "google-generative-ai" && selection.Provider.Id != "google")
             throw new NotSupportedException($"Model '{selection.Provider.Id}/{selection.Model.Id}' requires unsupported API '{protocol}'.");
-        if (protocol is not ("openai-responses" or "openai-completions" or "anthropic-messages" or "mistral-conversations" or "azure-openai-responses" or "openai-codex-responses" or "google-generative-ai"))
+        if (protocol == "google-vertex" && selection.Provider.Id != "google-vertex")
+            throw new NotSupportedException($"Model '{selection.Provider.Id}/{selection.Model.Id}' requires unsupported API '{protocol}'.");
+        if (protocol is not ("openai-responses" or "openai-completions" or "anthropic-messages" or "mistral-conversations" or "azure-openai-responses" or "openai-codex-responses" or "google-generative-ai" or "google-vertex"))
             throw new NotSupportedException($"Model '{selection.Provider.Id}/{selection.Model.Id}' requires unsupported API '{protocol}'.");
         if (protocol == "azure-openai-responses")
             _ = AzureOpenAiEndpoint.RequireConfigured(selection.Connection.Endpoint ?? selection.Provider.Endpoint);
@@ -45,6 +47,10 @@ public static class ProviderChatClientFactory
         if (protocol == "google-generative-ai")
         {
             providerClient = GoogleGenAiChatClientFactory.Create(selection);
+        }
+        else if (protocol == "google-vertex")
+        {
+            providerClient = GoogleVertexChatClientFactory.Create(selection);
         }
         else if (protocol == "openai-codex-responses")
         {
