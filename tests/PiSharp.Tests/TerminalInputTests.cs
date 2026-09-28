@@ -108,10 +108,13 @@ public sealed class TerminalInputTests
     }
 
     [Theory]
-    [InlineData("\u001b]10;rgb:aaaa/bbbb/cccc\aX", 10, 170, 187, 204)]
-    [InlineData("\u001b]11;rgb:0000/1111/2222\u001b\\X", 11, 0, 17, 34)]
-    [InlineData("\u001b]10;#AABBCC\aX", 10, 170, 187, 204)]
-    public void EmitsValidatedTerminalColorReports(string input, int slot, byte red, byte green, byte blue)
+    [InlineData("\u001b]10;rgb:aaaa/bbbb/cccc\aX", 10, 170, 187, 204, null)]
+    [InlineData("\u001b]11;rgb:0000/1111/2222\u001b\\X", 11, 0, 17, 34, null)]
+    [InlineData("\u001b]10;#AABBCC\aX", 10, 170, 187, 204, null)]
+    [InlineData("\u001b]4;13;#ff0080\aX", 4, 255, 0, 128, 13)]
+    [InlineData("\u001b]4;1;#ffff00000000\aX", 4, 255, 0, 0, 1)]
+    public void EmitsValidatedTerminalColorReports(string input, int slot, byte red, byte green, byte blue,
+        int? paletteIndex = null)
     {
         var reader = new TerminalInput(new MemoryStream(Encoding.UTF8.GetBytes(input)));
         TerminalColorResponse? response = null;
@@ -122,7 +125,24 @@ public sealed class TerminalInputTests
         Assert.Null(report.Key);
         Assert.Null(report.Text);
         Assert.NotNull(response);
-        Assert.Equal(new TerminalColorResponse(slot, new TerminalTheme.Rgb(red, green, blue)), response!.Value);
+        Assert.Equal(new TerminalColorResponse(slot, new TerminalTheme.Rgb(red, green, blue), paletteIndex), response!.Value);
+        Assert.Equal('X', reader.Read().Key?.KeyChar);
+    }
+
+    [Fact]
+    public void ConsumesDa1AndTerminalAppearanceReports()
+    {
+        var reader = new TerminalInput(new MemoryStream(Encoding.UTF8.GetBytes("\u001b[?997;2n\u001b[?62;22cX")));
+        string? appearance = null;
+        var deviceAttributes = 0;
+        reader.TerminalColorSchemeReceived += value => appearance = value;
+        reader.TerminalDeviceAttributesReceived += () => deviceAttributes++;
+
+        Assert.Null(reader.Read().Key);
+        Assert.Null(reader.Read().Key);
+
+        Assert.Equal("light", appearance);
+        Assert.Equal(1, deviceAttributes);
         Assert.Equal('X', reader.Read().Key?.KeyChar);
     }
 

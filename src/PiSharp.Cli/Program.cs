@@ -293,25 +293,35 @@ TerminalThemeCatalog CreateTerminalThemeCatalog() => new(agentDirectory, trusted
     trueColorOverride: userSettings.TerminalTrueColorOverride,
     userThemePaths: baseUserSettings.Themes, projectThemePaths: projectSettings?.Themes);
 var terminalThemeCatalog = CreateTerminalThemeCatalog();
-TerminalTheme ResolveConfiguredTheme(string? themeSetting, TerminalTheme.Rgb? terminalForeground = null,
-    TerminalTheme.Rgb? terminalBackground = null)
+TerminalTheme ResolveConfiguredTheme(string? themeSetting, TerminalColorState? terminalColors = null)
 {
-    try { return terminalThemeCatalog.Resolve(themeSetting, terminalForeground, terminalBackground); }
+    var colors = terminalColors ?? new TerminalColorState();
+    try { return terminalThemeCatalog.Resolve(themeSetting, colors); }
     catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidDataException or System.Text.Json.JsonException or ArgumentException or FormatException)
     {
         Console.Error.WriteLine($"Could not load theme '{themeSetting}': {error.Message}. Using terminal appearance defaults.");
-        return terminalThemeCatalog.Resolve(null, terminalForeground, terminalBackground);
+        return terminalThemeCatalog.Resolve(null, colors);
     }
 }
+bool ThemeFollowsTerminalAppearance(string? themeSetting) => themeSetting is null or "" or "system" ||
+    themeSetting.Count(character => character == '/') == 1;
 var initialTerminalTheme = ResolveConfiguredTheme(userSettings.Theme);
 using var terminalScreen = editor is null ? null : new TerminalScreen(Console.Out, Console.Error,
     getColumns: null, getRows: null, imageRenderer: new TerminalImageRenderer(), theme: initialTerminalTheme,
-    queryTerminalColors: !Console.IsInputRedirected && !Console.IsOutputRedirected);
-terminalScreen?.SetThemeResolver((foreground, background) =>
-    ResolveConfiguredTheme(userSettings.Theme, foreground, background));
+    queryTerminalColors: !Console.IsInputRedirected && !Console.IsOutputRedirected,
+    followTerminalAppearance: ThemeFollowsTerminalAppearance(userSettings.Theme));
+terminalScreen?.SetThemeResolver(colors => ResolveConfiguredTheme(userSettings.Theme, colors));
 terminalScreen?.SetMarkdownCodeBlockIndent(userSettings.MarkdownCodeBlockIndent ?? UserSettings.DefaultMarkdownCodeBlockIndent);
 terminalScreen?.Activate();
 editor?.AttachScreen(terminalScreen);
+void RefreshTerminalTheme()
+{
+    if (terminalScreen is null) return;
+    terminalThemeCatalog = CreateTerminalThemeCatalog();
+    terminalScreen.SetThemeResolver(colors => ResolveConfiguredTheme(userSettings.Theme, colors));
+    terminalScreen.SetTheme(ResolveConfiguredTheme(userSettings.Theme, terminalScreen.CurrentTerminalColors));
+    terminalScreen.SetTerminalAppearanceFollowing(ThemeFollowsTerminalAppearance(userSettings.Theme));
+}
 void LoadSessionTranscript()
 {
     if (terminalScreen is null) return;
@@ -610,8 +620,7 @@ async Task<(UserSettings User, UserSettings? Project)> SaveSettingAsync(bool pro
         await ReplaceModelRuntime(selection, thinking, recordModelChange: false);
     if (setting is "theme" or "terminal.trueColor")
     {
-        terminalThemeCatalog = CreateTerminalThemeCatalog();
-        terminalScreen?.SetTheme(ResolveConfiguredTheme(userSettings.Theme));
+        RefreshTerminalTheme();
     }
     else if (setting == "markdown.codeBlockIndent")
         terminalScreen?.SetMarkdownCodeBlockIndent(userSettings.MarkdownCodeBlockIndent ?? UserSettings.DefaultMarkdownCodeBlockIndent);
@@ -770,8 +779,7 @@ async Task ReloadResources()
         sessionController = new InteractiveSessionController(store, cli.NoSession,
             (branch, path) => OpenRunAsync(agent, branch, path));
         terminalSessionPicker = editor is null ? null : new TerminalSessionPicker(store, editor);
-        terminalThemeCatalog = CreateTerminalThemeCatalog();
-        terminalScreen?.SetTheme(ResolveConfiguredTheme(userSettings.Theme));
+        RefreshTerminalTheme();
         terminalScreen?.SetMarkdownCodeBlockIndent(userSettings.MarkdownCodeBlockIndent ?? UserSettings.DefaultMarkdownCodeBlockIndent);
         agent = nextAgent;
         conversationRun = nextRun;
@@ -829,8 +837,7 @@ void AdoptProjectSession(ProjectSessionRuntime replacement)
     sessionController = new InteractiveSessionController(store, cli.NoSession,
         (branch, path) => OpenRunAsync(agent, branch, path));
     terminalSessionPicker = editor is null ? null : new TerminalSessionPicker(store, editor);
-    terminalThemeCatalog = CreateTerminalThemeCatalog();
-    terminalScreen?.SetTheme(ResolveConfiguredTheme(userSettings.Theme));
+    RefreshTerminalTheme();
     terminalScreen?.SetMarkdownCodeBlockIndent(userSettings.MarkdownCodeBlockIndent ?? UserSettings.DefaultMarkdownCodeBlockIndent);
     terminalScreen?.SetFooter(IdleFooter());
     LoadSessionTranscript();

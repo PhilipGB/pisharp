@@ -39,6 +39,9 @@ internal sealed class TerminalTheme
     private static readonly Regex s_oklch = new(
         "^oklch\\(\\s*([+-]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:e[+-]?\\d+)?)(%)?\\s+([+-]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:e[+-]?\\d+)?)\\s+([+-]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:e[+-]?\\d+)?)(?:deg)?\\s*\\)$",
         RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+    private static readonly Regex s_okhsl = new(
+        "^okhsl\\(\\s*([+-]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:e[+-]?\\d+)?)(?:deg)?\\s+([+-]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:e[+-]?\\d+)?)(%)?\\s+([+-]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:e[+-]?\\d+)?)(%)?\\s*\\)$",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
     private static readonly Lazy<TerminalTheme> s_default = new(() => TerminalThemeCatalog.LoadBuiltIn("dark", TerminalColorModeExtensions.Detect(Environment.GetEnvironmentVariable)));
 
     private readonly IReadOnlyDictionary<string, string> _foreground;
@@ -48,9 +51,12 @@ internal sealed class TerminalTheme
     private readonly Rgb? _terminalForeground;
     private readonly Rgb? _terminalBackground;
     private readonly string? _declaredAppearance;
+    private readonly HashSet<string> _dimTokens;
+    private readonly string? _appearanceHint;
 
     private TerminalTheme(string name, string? declaredAppearance, TerminalColorMode mode,
-        Dictionary<string, ColorValue> colors, Rgb? terminalForeground, Rgb? terminalBackground)
+        Dictionary<string, ColorValue> colors, Rgb? terminalForeground, Rgb? terminalBackground,
+        IEnumerable<string>? dimTokens = null, string? appearanceHint = null)
     {
         Name = name;
         Mode = mode;
@@ -58,6 +64,8 @@ internal sealed class TerminalTheme
         _palette = new(colors, StringComparer.Ordinal);
         _terminalForeground = terminalForeground;
         _terminalBackground = terminalBackground;
+        _dimTokens = dimTokens?.ToHashSet(StringComparer.Ordinal) ?? [];
+        _appearanceHint = appearanceHint;
         var backgroundTokens = s_backgroundTokens.ToHashSet(StringComparer.Ordinal);
         var ansi = new Dictionary<string, string>(StringComparer.Ordinal);
         var concrete = new Dictionary<string, Rgb>(StringComparer.Ordinal);
@@ -81,7 +89,7 @@ internal sealed class TerminalTheme
         _background = s_backgroundTokens.ToDictionary(token => token, token => ansi[token], StringComparer.Ordinal);
         _concrete = concrete;
 
-        Appearance = declaredAppearance ?? DetectAppearance(foregroundColors, backgroundColors);
+        Appearance = declaredAppearance ?? DetectAppearance(foregroundColors, backgroundColors) ?? appearanceHint ?? "dark";
     }
 
     public static TerminalTheme Default => s_default.Value;
@@ -93,10 +101,14 @@ internal sealed class TerminalTheme
 
     internal TerminalTheme WithTerminalColors(Rgb? foreground, Rgb? background) =>
         new(Name, _declaredAppearance, Mode, new(_palette, StringComparer.Ordinal),
-            foreground ?? _terminalForeground, background ?? _terminalBackground);
+            foreground ?? _terminalForeground, background ?? _terminalBackground, _dimTokens, _appearanceHint);
+
+    internal TerminalTheme WithTerminalColors(Rgb? foreground, Rgb? background, string? appearanceHint) =>
+        new(Name, _declaredAppearance, Mode, new(_palette, StringComparer.Ordinal),
+            foreground ?? _terminalForeground, background ?? _terminalBackground, _dimTokens, appearanceHint ?? _appearanceHint);
 
     internal string Fg(string token) => _foreground.TryGetValue(token, out var value)
-        ? value
+        ? _dimTokens.Contains(token) ? value + "\u001b[2m" : value
         : throw new ArgumentOutOfRangeException(nameof(token), token, "Unknown foreground theme token.");
 
     internal string Bg(string token) => _background.TryGetValue(token, out var value)
@@ -108,11 +120,14 @@ internal sealed class TerminalTheme
     {
         var output = new System.Text.StringBuilder();
         if (bold) output.Append("\u001b[1m");
-        if (dim) output.Append("\u001b[2m");
+        if (dim || (!background && _dimTokens.Contains(token))) output.Append("\u001b[2m");
         if (italic) output.Append("\u001b[3m");
         if (underline) output.Append("\u001b[4m");
         if (strikethrough) output.Append("\u001b[9m");
-        output.Append(background ? Bg(token) : Fg(token)).Append(text).Append("\u001b[0m");
+        output.Append(background ? Bg(token) : _foreground.TryGetValue(token, out var foreground)
+            ? foreground
+            : throw new ArgumentOutOfRangeException(nameof(token), token, "Unknown foreground theme token."))
+            .Append(text).Append("\u001b[0m");
         return output.ToString();
     }
 
@@ -183,10 +198,25 @@ internal sealed class TerminalTheme
         foreach (var (token, value) in rawColors)
             resolved[token] = Resolve(label, value, vars, new HashSet<string>(StringComparer.Ordinal));
 
-        var env = environment ?? Environment.GetEnvironmentVariable;
-        var detectedForeground = TerminalThemeCatalog.ForegroundFromEnvironment(env);
-        var detectedBackground = TerminalThemeCatalog.BackgroundFromEnvironment(env);
-        return new(name, appearance, mode, resolved, detectedForeground, detectedBackground);
+        var environmentAppearance = TerminalSystemTheme.DetectColorFgBg((environment ?? Environment.GetEnvironmentVariable)("COLORFGBG"));
+        return new(name, appearance, mode, resolved, null, null, appearanceHint: environmentAppearance);
+    }
+
+    internal static TerminalTheme FromSystemTheme(string appearance, TerminalColorMode mode,
+        IReadOnlyDictionary<string, object> colors, Rgb? terminalForeground, Rgb? terminalBackground,
+        IEnumerable<string> dimTokens)
+    {
+        var parsed = new Dictionary<string, ColorValue>(StringComparer.Ordinal);
+        foreach (var (token, value) in colors)
+        {
+            parsed[token] = value switch
+            {
+                string text => ColorValue.ParseString(text),
+                int index when index is >= 0 and <= 255 => ColorValue.Indexed(index),
+                _ => throw new InvalidDataException($"System theme returned an invalid color for '{token}'.")
+            };
+        }
+        return new("system", appearance, mode, parsed, terminalForeground, terminalBackground, dimTokens);
     }
 
     internal static TerminalTheme FromEmbedded(string name, TerminalColorMode mode,
@@ -199,14 +229,14 @@ internal sealed class TerminalTheme
         return Parse(name, reader.ReadToEnd(), mode, environment);
     }
 
-    private string DetectAppearance(IReadOnlyList<Rgb> foregroundColors, IReadOnlyList<Rgb> backgroundColors)
+    private string? DetectAppearance(IReadOnlyList<Rgb> foregroundColors, IReadOnlyList<Rgb> backgroundColors)
     {
         var foregroundLightness = AverageOklabLightness(foregroundColors);
         var backgroundLightness = AverageOklabLightness(backgroundColors);
         if (foregroundLightness is { } fg && backgroundLightness is { } bg) return bg < fg ? "dark" : "light";
         if (backgroundLightness is { } onlyBackground) return onlyBackground < 0.5 ? "dark" : "light";
         if (foregroundLightness is { } onlyForeground) return onlyForeground > 0.5 ? "dark" : "light";
-        return _terminalBackground is { } background && background.Luminance >= 0.5 ? "light" : "dark";
+        return _terminalBackground is { } background ? background.Luminance >= 0.5 ? "light" : "dark" : null;
     }
 
     private static double? AverageOklabLightness(IReadOnlyList<Rgb> colors)
@@ -287,6 +317,19 @@ internal sealed class TerminalTheme
                 if (!double.IsFinite(lightness) || !double.IsFinite(chroma) || !double.IsFinite(hue) || lightness is < 0 or > 1 || chroma < 0)
                     throw new InvalidDataException($"Invalid OKLCH color '{value}'.");
                 return new(false, false, null, false, 0, FromOklch(lightness, chroma, hue));
+            }
+            match = s_okhsl.Match(value);
+            if (match.Success)
+            {
+                var hue = double.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture);
+                var saturation = double.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture) /
+                    (match.Groups[3].Success ? 100 : 1);
+                var lightness = double.Parse(match.Groups[4].Value, CultureInfo.InvariantCulture) /
+                    (match.Groups[5].Success ? 100 : 1);
+                if (!double.IsFinite(hue) || !double.IsFinite(saturation) || !double.IsFinite(lightness) ||
+                    saturation is < 0 or > 1 || lightness is < 0 or > 1)
+                    throw new InvalidDataException($"Invalid OKHSL color '{value}'.");
+                return new(false, false, null, false, 0, TerminalColorSpace.OkhslToRgb(hue, saturation, lightness));
             }
             return new(false, true, value, false, 0, default);
         }

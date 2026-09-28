@@ -1111,6 +1111,80 @@ public sealed class TerminalPtyTests
     }
 
     [Fact]
+    public async Task TerminalColorQueriesWorkThroughLinuxPty()
+    {
+        if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-terminal-colors-pty-" + Guid.NewGuid().ToString("N"));
+        var agent = Path.Combine(cwd, "agent");
+        Directory.CreateDirectory(agent);
+        try
+        {
+            var start = new ProcessStartInfo("/usr/bin/script")
+            {
+                WorkingDirectory = cwd,
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+            start.ArgumentList.Add("-q");
+            start.ArgumentList.Add("-e");
+            start.ArgumentList.Add("-c");
+            start.ArgumentList.Add($"stty rows 24 cols 80; exec dotnet {ShellQuote(typeof(CliArguments).Assembly.Location)} --local --no-session --no-tools");
+            start.ArgumentList.Add("/dev/null");
+            start.Environment["PISHARP_AGENT_DIR"] = agent;
+            using var process = Process.Start(start);
+            Assert.NotNull(process);
+
+            var output = new StringBuilder();
+            var outputLock = new object();
+            var firstQuery = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var idleReady = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var drain = Task.Run(async () =>
+            {
+                var buffer = new char[1024];
+                int count;
+                while ((count = await process.StandardOutput.ReadAsync(buffer)) > 0)
+                {
+                    lock (outputLock)
+                    {
+                        output.Append(buffer, 0, count);
+                        var captured = output.ToString();
+                        if (CountOccurrences(captured, "\u001b]10;?") >= 1) firstQuery.TrySetResult();
+                        if (captured.Contains("Ctrl+L models · Ctrl+P cycle", StringComparison.Ordinal)) idleReady.TrySetResult();
+                    }
+                }
+                lock (outputLock) return output.ToString();
+            });
+            var stderr = process.StandardError.ReadToEndAsync();
+
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(12));
+            await Task.WhenAll(firstQuery.Task, idleReady.Task).WaitAsync(timeout.Token);
+            await Task.Delay(150, timeout.Token);
+            var dark = new StringBuilder("\u001b]10;#f8f8f2\a\u001b]11;#282a36\a");
+            for (var index = 0; index < 16; index++)
+                dark.Append("\u001b]4;").Append(index).Append(";#").Append(index.ToString("x2")).Append(index.ToString("x2")).Append(index.ToString("x2")).Append('\a');
+            dark.Append("\u001b[?62;22c");
+            await process.StandardInput.WriteAsync(dark.ToString());
+            await process.StandardInput.FlushAsync();
+
+            await process.StandardInput.WriteAsync("/quit\n");
+            await process.StandardInput.FlushAsync();
+            process.StandardInput.Close();
+            await process.WaitForExitAsync(timeout.Token);
+
+            var capturedOutput = await drain;
+            Assert.Equal(0, process.ExitCode);
+            Assert.Contains("\u001b[?2031h", capturedOutput);
+            Assert.Contains("\u001b[?2031l", capturedOutput);
+            Assert.Contains("\u001b]4;15;?", capturedOutput);
+            Assert.Contains("\u001b[c", capturedOutput);
+            Assert.Equal(1, CountOccurrences(capturedOutput, "\u001b]10;?"));
+            Assert.DoesNotContain("Agent error:", await stderr);
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Fact]
     public async Task InteractiveCommandsRenderAndExitThroughLinuxPty()
     {
         if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
@@ -1311,6 +1385,14 @@ public sealed class TerminalPtyTests
     }
 
     private static string ShellQuote(string value) => "'" + value.Replace("'", "'\\''", StringComparison.Ordinal) + "'";
+
+    private static int CountOccurrences(string text, string value)
+    {
+        var count = 0;
+        for (var index = 0; (index = text.IndexOf(value, index, StringComparison.Ordinal)) >= 0; index += value.Length)
+            count++;
+        return count;
+    }
 
     private static byte[] CreatePng()
     {

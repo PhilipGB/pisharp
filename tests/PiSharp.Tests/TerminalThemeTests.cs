@@ -35,6 +35,102 @@ public sealed class TerminalThemeTests
     }
 
     [Fact]
+    public void ThemeFilesResolveOkhslColorsLikePi()
+    {
+        var root = BuiltIn("nebula");
+        root["colors"]!["success"] = "okhsl(231 68% 55%)";
+
+        var theme = TerminalTheme.Parse("nebula", root.ToJsonString(), TerminalColorMode.TrueColor, _ => null);
+
+        Assert.Equal("\u001b[38;2;59;142;180m", theme.Fg("success"));
+    }
+
+    [Fact]
+    public void SystemThemeIsAvailableAsARealTheme()
+    {
+        var root = TempRoot();
+        try
+        {
+            var catalog = new TerminalThemeCatalog(root, environment: _ => null);
+            var theme = catalog.Resolve("system");
+
+            Assert.Equal("system", theme.Name);
+            Assert.Equal("dark", theme.Appearance);
+            Assert.Equal("\u001b[39m", theme.Fg("text"));
+            Assert.StartsWith("\u001b[38;5;", theme.Fg("error"));
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
+    public void SystemThemeMatchesThePinnedPiPaletteAndReadabilityVector()
+    {
+        var root = TempRoot();
+        try
+        {
+            var palette = new[]
+            {
+                "21222c", "ff5555", "50fa7b", "f1fa8c", "bd93f9", "ff79c6", "8be9fd", "f8f8f2",
+                "6272a4", "ff6e6e", "69ff94", "ffffa5", "d6acff", "ff92df", "a4ffff", "ffffff"
+            }.Select(HexColor).ToArray();
+            var background = HexColor("282a36");
+            var foreground = HexColor("f8f8f2");
+            var colors = new TerminalColorState(foreground, background, palette);
+            var catalog = new TerminalThemeCatalog(root, environment: _ => null, trueColorOverride: true);
+
+            var theme = catalog.Resolve("system", colors);
+
+            Assert.Equal("dark", theme.Appearance);
+            Assert.Equal(new TerminalTheme.Rgb(249, 117, 111), theme.GetConcreteColor("error"));
+            Assert.Equal(new TerminalTheme.Rgb(69, 35, 108), theme.GetConcreteColor("selectedBg"));
+            Assert.Equal(foreground, theme.GetConcreteColor("text"));
+            Assert.True(TerminalSystemTheme.Contrast(theme.GetConcreteColor("text"), background) >= 4.5);
+            Assert.True(TerminalSystemTheme.Contrast(theme.GetConcreteColor("text"), theme.GetConcreteColor("selectedBg")) >= 4.5);
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
+    public void SystemThemeUsesReportedAppearanceThenColorFgBgThenDarkFallback()
+    {
+        var root = TempRoot();
+        try
+        {
+            var catalog = new TerminalThemeCatalog(root, environment: key => key == "COLORFGBG" ? "15;0" : null);
+
+            Assert.Equal("dark", catalog.Resolve("system").Appearance);
+            Assert.Equal("light", catalog.Resolve("system", new(AppearanceReport: "light")).Appearance);
+            Assert.StartsWith("\u001b[38;5;1m", catalog.Resolve("system", new(AppearanceReport: "light")).Fg("error"));
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
+    public void SystemThemeMatchesPinnedPiLightAndBackgroundOnlyFixtures()
+    {
+        var root = TempRoot();
+        try
+        {
+            var catalog = new TerminalThemeCatalog(root, environment: _ => null, trueColorOverride: true);
+            var light = catalog.Resolve("system", new(
+                HexColor("657b83"), HexColor("fdf6e3")));
+            var backgroundOnly = catalog.Resolve("system", new(
+                Background: HexColor("1e1e1e")));
+
+            Assert.Equal("light", light.Appearance);
+            Assert.Equal(HexColor("4a5a60"), light.GetConcreteColor("text"));
+            Assert.Equal(HexColor("c6253c"), light.GetConcreteColor("error"));
+            Assert.Equal(HexColor("dfe7eb"), light.GetConcreteColor("selectedBg"));
+            Assert.Equal("dark", backgroundOnly.Appearance);
+            Assert.Equal(HexColor("dddfe0"), backgroundOnly.GetConcreteColor("text"));
+            Assert.Equal(HexColor("eb777a"), backgroundOnly.GetConcreteColor("error"));
+            Assert.True(TerminalSystemTheme.Contrast(backgroundOnly.GetConcreteColor("text"), HexColor("1e1e1e")) >= 4.5);
+            Assert.True(TerminalSystemTheme.Contrast(backgroundOnly.GetConcreteColor("text"), backgroundOnly.GetConcreteColor("selectedBg")) >= 4.5);
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
     public void MissingAndCircularThemeVariablesAreRejected()
     {
         var missing = BuiltIn("missing-var");
@@ -192,8 +288,8 @@ public sealed class TerminalThemeTests
         root["colors"]!["userMessageBg"] = "";
         var reported = TerminalTheme.Parse("reported-defaults", root.ToJsonString(), TerminalColorMode.TrueColor,
             key => key == "COLORFGBG" ? "7;0" : null);
-        Assert.Equal(new TerminalTheme.Rgb(192, 192, 192), reported.GetConcreteColor("text"));
-        Assert.Equal(new TerminalTheme.Rgb(0, 0, 0), reported.GetConcreteColor("userMessageBg"));
+        Assert.Equal(new TerminalTheme.Rgb(0, 0, 0), reported.GetConcreteColor("text"));
+        Assert.Equal(new TerminalTheme.Rgb(255, 255, 255), reported.GetConcreteColor("userMessageBg"));
     }
 
     private static JsonObject BuiltIn(string name)
@@ -215,4 +311,9 @@ public sealed class TerminalThemeTests
         Directory.CreateDirectory(root);
         return root;
     }
+
+    private static TerminalTheme.Rgb HexColor(string value) => new(
+        byte.Parse(value[..2], System.Globalization.NumberStyles.HexNumber),
+        byte.Parse(value[2..4], System.Globalization.NumberStyles.HexNumber),
+        byte.Parse(value[4..6], System.Globalization.NumberStyles.HexNumber));
 }

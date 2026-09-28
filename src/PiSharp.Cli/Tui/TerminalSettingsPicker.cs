@@ -6,7 +6,7 @@ namespace PiSharp.Cli.Tui;
 /// <summary>Edits supported settings through the reusable searchable terminal selection overlay.</summary>
 internal sealed class TerminalSettingsPicker(TerminalEditor editor, Func<IReadOnlyList<string>>? themeNames = null)
 {
-    private readonly Func<IReadOnlyList<string>> _themeNames = themeNames ?? (() => ["dark", "light"]);
+    private readonly Func<IReadOnlyList<string>> _themeNames = themeNames ?? (() => ["system", "dark", "light"]);
 
     private sealed record Setting(string Id, string Label, string Description, bool UserOnly = false);
 
@@ -15,7 +15,7 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, Func<IReadOn
         new("defaultProjectTrust", "Default project trust", "Fallback decision for protected project resources.", UserOnly: true),
         new("httpProxy", "HTTP proxy", "User-wide HTTP proxy for PiSharp-managed HTTP clients; takes effect on the next launch.", UserOnly: true),
         new("defaultThinkingLevel", "Default thinking level", "Initial thinking level unless overridden by --thinking."),
-        new("theme", "Theme", "Choose a terminal theme or follow the terminal appearance."),
+        new("theme", "Theme", "Choose the system theme, a named theme, or a light/dark pair."),
         new("terminal.trueColor", "Terminal true color", "Choose 24-bit colors, 256-color output, or detect terminal support."),
         new("enableSkillCommands", "Skill commands", "Show /skill:name entries in slash command completion."),
         new("externalEditor", "External editor", "Command that edits the prompt file; blank uses VISUAL or EDITOR."),

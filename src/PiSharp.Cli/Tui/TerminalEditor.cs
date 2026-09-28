@@ -47,11 +47,17 @@ public sealed class TerminalEditor
         if (_input is not null) return _input;
         _input = TerminalInput.OpenConsole();
         _input.TerminalColorReceived += HandleTerminalColorResponse;
+        _input.TerminalDeviceAttributesReceived += HandleTerminalDeviceAttributes;
+        _input.TerminalColorSchemeReceived += HandleTerminalColorScheme;
         return _input;
     }
 
     private void HandleTerminalColorResponse(TerminalColorResponse response) =>
         _screen?.HandleTerminalColorResponse(response);
+
+    private void HandleTerminalDeviceAttributes() => _screen?.HandleTerminalDeviceAttributes();
+
+    private void HandleTerminalColorScheme(string appearance) => _screen?.HandleTerminalColorScheme(appearance);
 
     internal TerminalSelection<T>? ShowSelectionList<T>(string title,
         IReadOnlyList<TerminalSelectionOption<T>> options, string? selectedKey = null,

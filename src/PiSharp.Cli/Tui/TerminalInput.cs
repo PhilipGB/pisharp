@@ -13,6 +13,8 @@ public sealed class TerminalInput
     private readonly bool _standardInput;
 
     internal event Action<TerminalColorResponse>? TerminalColorReceived;
+    internal event Action? TerminalDeviceAttributesReceived;
+    internal event Action<string>? TerminalColorSchemeReceived;
 
     public TerminalInput(Stream input) => _input = input;
     private TerminalInput() => _standardInput = true;
@@ -60,6 +62,16 @@ public sealed class TerminalInput
                 if (value is >= 0x40 and <= 0x7E) break;
             }
             var code = sequence.ToString();
+            if (code.StartsWith('?') && code.EndsWith('c'))
+            {
+                TerminalDeviceAttributesReceived?.Invoke();
+                return new(null, null);
+            }
+            if (code is "?997;1n" or "?997;2n")
+            {
+                TerminalColorSchemeReceived?.Invoke(code == "?997;2n" ? "light" : "dark");
+                return new(null, null);
+            }
             if (code == "200~") return Paste();
             if (TryDecodeSgrMouse(code, out var mouse)) return new(null, null, mouse);
             if (TryDecodeModifiedKey(code, out var modifiedKey)) return Key(modifiedKey.Key, modifiedKey.KeyChar,

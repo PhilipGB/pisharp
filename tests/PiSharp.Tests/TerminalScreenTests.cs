@@ -490,17 +490,73 @@ public sealed class TerminalScreenTests
         {
             var catalog = new TerminalThemeCatalog(root, environment: key => key == "COLORTERM" ? "truecolor" : null);
             using var screen = new TerminalScreen(output, error, () => 80, () => 24, new TerminalImageRenderer(),
-                catalog.Resolve("light/dark"));
-            screen.SetThemeResolver((foreground, background) => catalog.Resolve("light/dark", foreground, background));
+                catalog.Resolve("light/dark"), queryTerminalColors: true);
+            screen.SetThemeResolver(colors => catalog.Resolve("light/dark", colors));
             screen.CommitAssistantText("# Theme follows OSC 11");
 
             screen.HandleTerminalColorResponse(new(11, new TerminalTheme.Rgb(255, 255, 255)));
+            screen.HandleTerminalDeviceAttributes();
 
             var outputText = output.ToString();
             var lastFrame = outputText.LastIndexOf("\u001b[2J\u001b[H", StringComparison.Ordinal);
             Assert.Contains("\u001b[38;2;154;115;38m", outputText[lastFrame..]);
         }
         finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
+    public void SystemThemeRequeriesAppearanceAndRendersCommittedMarkdownAgain()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-system-theme-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            var catalog = new TerminalThemeCatalog(root, environment: _ => null, trueColorOverride: true);
+            using var screen = new TerminalScreen(output, error, () => 80, () => 24, new TerminalImageRenderer(),
+                catalog.Resolve(null), queryTerminalColors: true, followTerminalAppearance: true);
+            screen.SetThemeResolver(colors => catalog.Resolve(null, colors));
+            screen.CommitAssistantText("# Terminal appearance");
+
+            SendColor(screen, "10;#f8f8f2");
+            SendColor(screen, "11;#282a36");
+            for (var index = 0; index < 16; index++) SendColor(screen, $"4;{index};#{index:x2}{index:x2}{index:x2}");
+            screen.HandleTerminalDeviceAttributes();
+            var darkHeading = screen.CurrentTheme.GetConcreteColor("mdHeading");
+            Assert.Equal("dark", screen.CurrentTheme.Appearance);
+
+            screen.HandleTerminalColorScheme("light");
+            SendColor(screen, "10;#1e1e1e");
+            SendColor(screen, "11;#fdf6e3");
+            screen.HandleTerminalDeviceAttributes();
+
+            Assert.Equal("light", screen.CurrentTheme.Appearance);
+            Assert.NotEqual(darkHeading, screen.CurrentTheme.GetConcreteColor("mdHeading"));
+            var lightHeadingAnsi = screen.CurrentTheme.Fg("mdHeading");
+            var lastFrame = output.ToString().LastIndexOf("\u001b[2J\u001b[H", StringComparison.Ordinal);
+            Assert.True(lastFrame >= 0);
+            Assert.Contains(lightHeadingAnsi, output.ToString()[lastFrame..]);
+            Assert.Equal(2, Count(output.ToString(), "\u001b]10;?"));
+
+            screen.Dispose();
+            Assert.Contains("\u001b[?2031l", output.ToString());
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    private static void SendColor(TerminalScreen screen, string payload)
+    {
+        Assert.True(TerminalColorResponse.TryParse(payload, out var response));
+        screen.HandleTerminalColorResponse(response);
+    }
+
+    private static int Count(string text, string value)
+    {
+        var count = 0;
+        for (var index = 0; (index = text.IndexOf(value, index, StringComparison.Ordinal)) >= 0; index += value.Length)
+            count++;
+        return count;
     }
 
     private static byte[] CreateImage(int width, int height)

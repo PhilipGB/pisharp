@@ -48,13 +48,14 @@ internal sealed class TerminalThemeCatalog
             try { names.Add(ReadTheme(path).Name); }
             catch (Exception error) when (IsThemeLoadError(error)) { }
         }
-        return names.Order(StringComparer.Ordinal).ToArray();
+        return ["system", .. names.Order(StringComparer.Ordinal)];
     }
 
     public TerminalTheme Load(string name)
     {
         if (string.IsNullOrWhiteSpace(name) || name.Contains('/'))
             throw new InvalidDataException("Theme names must be nonempty and cannot contain '/'.");
+        if (name == "system") return TerminalSystemTheme.Create(_mode, new(), DetectAppearance(_environment));
         foreach (var path in ThemeFiles())
         {
             try
@@ -74,11 +75,15 @@ internal sealed class TerminalThemeCatalog
     public TerminalTheme Resolve(string? themeSetting, TerminalTheme.Rgb? terminalForeground = null,
         TerminalTheme.Rgb? terminalBackground = null)
     {
-        var appearance = terminalBackground is { } background && background.Luminance >= 0.5
-            ? "light"
-            : terminalBackground is not null ? "dark" : DetectAppearance(_environment);
-        if (string.IsNullOrWhiteSpace(themeSetting))
-            return LoadBuiltIn(appearance, _mode, _environment).WithTerminalColors(terminalForeground, terminalBackground);
+        return Resolve(themeSetting, new(terminalForeground, terminalBackground));
+    }
+
+    public TerminalTheme Resolve(string? themeSetting, TerminalColorState terminalColors)
+    {
+        ArgumentNullException.ThrowIfNull(terminalColors);
+        var appearance = TerminalSystemTheme.DetectAppearance(terminalColors, _environment("COLORFGBG"));
+        if (string.IsNullOrWhiteSpace(themeSetting) || themeSetting == "system")
+            return TerminalSystemTheme.Create(_mode, terminalColors, appearance);
         var slash = themeSetting.IndexOf('/');
         var name = slash < 0
             ? themeSetting
@@ -86,7 +91,7 @@ internal sealed class TerminalThemeCatalog
                 ? (appearance == "light" ? themeSetting[..slash] : themeSetting[(slash + 1)..]).Trim()
                 : "";
         if (name.Length == 0) throw new InvalidDataException($"Invalid theme setting '{themeSetting}'.");
-        return Load(name).WithTerminalColors(terminalForeground, terminalBackground);
+        return Load(name).WithTerminalColors(terminalColors.Foreground, terminalColors.Background, appearance);
     }
 
     internal static TerminalTheme LoadBuiltIn(string name, TerminalColorMode mode,
@@ -96,11 +101,8 @@ internal sealed class TerminalThemeCatalog
         return TerminalTheme.FromEmbedded(name, mode, environment);
     }
 
-    internal static string DetectAppearance(Func<string, string?> environment)
-    {
-        var background = BackgroundFromEnvironment(environment);
-        return background is { } color && color.Luminance >= 0.5 ? "light" : "dark";
-    }
+    internal static string DetectAppearance(Func<string, string?> environment) =>
+        TerminalSystemTheme.DetectColorFgBg(environment("COLORFGBG")) ?? "dark";
 
     internal static TerminalTheme.Rgb? BackgroundFromEnvironment(Func<string, string?> environment)
     {

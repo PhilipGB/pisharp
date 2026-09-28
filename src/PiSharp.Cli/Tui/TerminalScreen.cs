@@ -18,9 +18,9 @@ public sealed class TerminalScreen : IDisposable
     private readonly TerminalScreenCompositor _compositor;
     private TerminalTheme _theme;
     private string _markdownCodeBlockIndent = "  ";
-    private TerminalTheme.Rgb? _terminalForeground;
-    private TerminalTheme.Rgb? _terminalBackground;
-    private Func<TerminalTheme.Rgb?, TerminalTheme.Rgb?, TerminalTheme>? _themeResolver;
+    private TerminalColorState _terminalColors;
+    private TerminalColorQueryController? _terminalColorQuery;
+    private Func<TerminalColorState, TerminalTheme>? _themeResolver;
     private readonly ScreenWriter _out;
     private readonly ScreenWriter _error;
     private readonly TerminalMouseRouter _mouse = new();
@@ -62,7 +62,7 @@ public sealed class TerminalScreen : IDisposable
 
     internal TerminalScreen(TextWriter originalOut, TextWriter originalError,
         Func<int>? getColumns, Func<int>? getRows, TerminalImageRenderer imageRenderer, TerminalTheme theme,
-        bool queryTerminalColors)
+        bool queryTerminalColors, bool followTerminalAppearance = false)
     {
         ArgumentNullException.ThrowIfNull(originalOut);
         ArgumentNullException.ThrowIfNull(originalError);
@@ -72,8 +72,7 @@ public sealed class TerminalScreen : IDisposable
         _originalError = originalError;
         _images = imageRenderer;
         _theme = theme;
-        _terminalForeground = theme.TerminalForeground;
-        _terminalBackground = theme.TerminalBackground;
+        _terminalColors = new(theme.TerminalForeground, theme.TerminalBackground);
         _getColumns = getColumns ?? ReadColumns;
         _getRows = getRows ?? ReadRows;
         _compositor = new(_originalOut, _images);
@@ -81,9 +80,10 @@ public sealed class TerminalScreen : IDisposable
         _error = new(this, isError: true);
         try
         {
-            _originalOut.Write("\u001b[?1049h\u001b[?25l" + TerminalMouseMode.Enable +
-                (queryTerminalColors ? "\u001b]10;?\u0007\u001b]11;?\u0007" : ""));
+            _originalOut.Write("\u001b[?1049h\u001b[?25l" + TerminalMouseMode.Enable);
             lock (_gate) RenderLocked();
+            _terminalColorQuery = new(_originalOut, HandleTerminalColorStateChanged, initialColors: _terminalColors);
+            _terminalColorQuery.Start(queryTerminalColors, followTerminalAppearance);
         }
         catch
         {
@@ -100,6 +100,7 @@ public sealed class TerminalScreen : IDisposable
     internal int TerminalWidth => Columns();
     internal int TerminalHeight => Rows();
     internal TerminalTheme CurrentTheme { get { lock (_gate) return _theme; } }
+    internal TerminalColorState CurrentTerminalColors => _terminalColorQuery?.Current ?? _terminalColors;
     internal bool ToolResultsExpanded { get { lock (_gate) return _transcript.IsExpanded; } }
     internal string? SelectedText
     {
@@ -225,7 +226,7 @@ public sealed class TerminalScreen : IDisposable
         lock (_gate)
         {
             if (!_active) return;
-            _theme = theme.WithTerminalColors(_terminalForeground, _terminalBackground);
+            _theme = theme.WithTerminalColors(_terminalColors.Foreground, _terminalColors.Background);
             _transcript.ReRenderMarkdown(RenderMarkdown);
             _transcript.ReRenderToolViews(_theme);
             _liveAssistant = _liveAssistantSource.Length == 0 ? "" : RenderMarkdown(_liveAssistantSource);
@@ -246,7 +247,7 @@ public sealed class TerminalScreen : IDisposable
         }
     }
 
-    internal void SetThemeResolver(Func<TerminalTheme.Rgb?, TerminalTheme.Rgb?, TerminalTheme> resolver)
+    internal void SetThemeResolver(Func<TerminalColorState, TerminalTheme> resolver)
     {
         ArgumentNullException.ThrowIfNull(resolver);
         lock (_gate) _themeResolver = resolver;
@@ -254,28 +255,28 @@ public sealed class TerminalScreen : IDisposable
 
     internal void HandleTerminalColorResponse(TerminalColorResponse response)
     {
+        _terminalColorQuery?.HandleColorResponse(response);
+    }
+
+    internal void HandleTerminalDeviceAttributes() => _terminalColorQuery?.HandleDeviceAttributes();
+
+    internal void HandleTerminalColorScheme(string appearance) => _terminalColorQuery?.HandleAppearanceReport(appearance);
+
+    internal void SetTerminalAppearanceFollowing(bool enabled) => _terminalColorQuery?.SetFollowAppearance(enabled);
+
+    private void HandleTerminalColorStateChanged(TerminalColorState colors)
+    {
         lock (_gate)
         {
-            if (!_active) return;
-            if (response.Slot == 10)
-            {
-                if (_terminalForeground == response.Color) return;
-                _terminalForeground = response.Color;
-            }
-            else
-            {
-                if (_terminalBackground == response.Color) return;
-                _terminalBackground = response.Color;
-            }
-
+            if (!_active || colors.SameAs(_terminalColors)) return;
+            _terminalColors = colors;
             try
             {
-                _theme = _themeResolver?.Invoke(_terminalForeground, _terminalBackground) ??
-                    _theme.WithTerminalColors(_terminalForeground, _terminalBackground);
+                _theme = _themeResolver?.Invoke(colors) ?? _theme.WithTerminalColors(colors.Foreground, colors.Background);
             }
             catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidDataException or System.Text.Json.JsonException or ArgumentException or FormatException)
             {
-                _theme = _theme.WithTerminalColors(_terminalForeground, _terminalBackground);
+                _theme = _theme.WithTerminalColors(colors.Foreground, colors.Background);
             }
             _transcript.ReRenderMarkdown(RenderMarkdown);
             _transcript.ReRenderToolViews(_theme);
@@ -533,6 +534,7 @@ public sealed class TerminalScreen : IDisposable
 
     public void Dispose()
     {
+        _terminalColorQuery?.Dispose();
         IReadOnlyList<TerminalTranscriptBuffer.CapturedChunk> captured;
         bool truncated;
         lock (_gate)
