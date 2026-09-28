@@ -51,10 +51,11 @@ public static class ProviderChatClientFactory
                 Handlers = [new ProviderWireActivityHandler()]
             };
             anthropicClient.HttpClient.Timeout = Timeout.InfiniteTimeSpan;
-            providerClient = anthropicClient.AsIChatClient(selection.Model.Id,
+            providerClient = new AnthropicThinkingSignatureClient(anthropicClient.AsIChatClient(selection.Model.Id,
                 selection.Model.MaxOutputTokens ?? 16384,
                 thinkingMode: selection.Model.Id is "claude-sonnet-4-6" or "claude-opus-4-6"
-                    ? AnthropicThinkingMode.Adaptive : AnthropicThinkingMode.Extended);
+                    ? AnthropicThinkingMode.Adaptive : AnthropicThinkingMode.Extended),
+                AllowsEmptyThinkingSignature(selection.Model.Compatibility));
         }
         else
         {
@@ -112,4 +113,9 @@ public static class ProviderChatClientFactory
         return new ProviderRetryChatClient(timeoutClient, providerMaxRetries,
             retrySettings?.MaxRetryDelayMs ?? ProviderRetrySettings.DefaultMaxRetryDelayMs);
     }
+
+    private static bool AllowsEmptyThinkingSignature(System.Text.Json.JsonElement? compatibility) =>
+        compatibility is { ValueKind: System.Text.Json.JsonValueKind.Object } value &&
+        value.TryGetProperty("allowEmptySignature", out var allowEmpty) &&
+        allowEmpty.ValueKind == System.Text.Json.JsonValueKind.True;
 }
