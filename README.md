@@ -48,6 +48,7 @@ Built-in provider profiles use separate credentials:
 | Provider | API | Credential |
 | --- | --- | --- |
 | OpenAI | Responses | `OPENAI_API_KEY` |
+| Azure OpenAI | Responses | `AZURE_OPENAI_API_KEY` |
 | Anthropic | Messages | `ANTHROPIC_API_KEY` |
 | xAI | Responses | `XAI_API_KEY` |
 | OpenRouter | Chat Completions | `OPENROUTER_API_KEY` |
