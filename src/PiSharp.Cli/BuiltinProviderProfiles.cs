@@ -99,6 +99,8 @@ internal static class BuiltinProviderProfiles
         else
             bedrockModels.Insert(0, new(bedrockDefault, "amazon-bedrock", null, "configured",
                 Provider: "amazon-bedrock", Api: "bedrock-converse-stream"));
+        var radiusGateway = RadiusProviderOptions.FromEnvironment(environment);
+        var radiusModels = RadiusModelCatalog.LoadBuiltin(radiusGateway);
         return new(StringComparer.OrdinalIgnoreCase)
         {
             ["openai"] = new("openai", "OpenAI", new Uri("https://api.openai.com/v1"), true, false,
@@ -125,6 +127,8 @@ internal static class BuiltinProviderProfiles
                 new Uri("https://bedrock-runtime.us-east-1.amazonaws.com"), true, false,
                 BedrockProviderOptions.BearerTokenEnvironment, null, bedrockModels,
                 Api: "bedrock-converse-stream", Bedrock: BedrockProviderOptions.FromEnvironment(environment)),
+            ["radius"] = new("radius", "Radius", radiusGateway, true, true,
+                "RADIUS_API_KEY", null, radiusModels, Api: "pi-messages"),
             ["openai-codex"] = new("openai-codex", "OpenAI Codex", new Uri("https://chatgpt.com/backend-api"),
                 true, true, null, null, codexModels, Api: "openai-codex-responses", ApiKeySupported: false),
             ["xai"] = new("xai", "xAI", new Uri("https://api.x.ai/v1"), true, false,

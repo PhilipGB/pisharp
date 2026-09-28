@@ -11,20 +11,22 @@ namespace PiSharp.Cli;
 
 internal static class PiMessagesChatClientFactory
 {
-    public static IChatClient Create(ModelSelection selection)
+    public static IChatClient Create(ModelSelection selection, HttpMessageHandler? innerHandler = null)
     {
         var endpoint = selection.Model.BaseUrl ?? selection.Connection.Endpoint?.ToString() ??
             selection.Provider.Endpoint.ToString();
         var baseUri = ProviderProfileLoader.ParseEndpoint(endpoint, "Pi Messages base URL");
-        var handler = new ProviderWireActivityHandler(new HttpClientHandler { AllowAutoRedirect = false });
+        var handler = new ProviderWireActivityHandler(innerHandler ?? new HttpClientHandler { AllowAutoRedirect = false });
         var http = new HttpClient(handler, disposeHandler: true) { Timeout = Timeout.InfiniteTimeSpan };
         var apiKey = selection.ApiKey is "not-needed" or "not-configured" ? string.Empty : selection.ApiKey;
-        return new PiMessagesChatClient(http, baseUri, selection.Model, apiKey);
+        return new PiMessagesChatClient(http, baseUri, selection.Model, apiKey,
+            selection.OAuthCredentialResolver);
     }
 }
 
 /// <summary>Implements Pi's JSON request and SSE response protocol over the MAF chat boundary.</summary>
-internal sealed class PiMessagesChatClient(HttpClient http, Uri baseUri, ModelDescriptor model, string apiKey)
+internal sealed class PiMessagesChatClient(HttpClient http, Uri baseUri, ModelDescriptor model, string apiKey,
+    Func<CancellationToken, Task<(string Access, string AccountId)>>? oauthCredentialResolver = null)
     : IChatClient
 {
     private static readonly JsonSerializerOptions s_jsonOptions = new(JsonSerializerDefaults.Web);
@@ -40,7 +42,27 @@ internal sealed class PiMessagesChatClient(HttpClient http, Uri baseUri, ModelDe
     public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
         ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(apiKey))
+        var requestApiKey = apiKey;
+        if (oauthCredentialResolver is not null)
+        {
+            string? credentialError = null;
+            try
+            {
+                requestApiKey = (await oauthCredentialResolver(cancellationToken).ConfigureAwait(false)).Access;
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
+            catch (Exception error)
+            {
+                credentialError = SecretRedactor.Redact(error.Message, apiKey);
+            }
+            if (credentialError is not null)
+            {
+                yield return CreateFailureUpdate(credentialError, null);
+                yield break;
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(requestApiKey))
         {
             yield return CreateFailureUpdate($"No API key provided for provider '{model.Provider ?? "custom"}'.", null);
             yield break;
@@ -49,7 +71,7 @@ internal sealed class PiMessagesChatClient(HttpClient http, Uri baseUri, ModelDe
         var requestUri = BuildRequestUri(options);
         using var request = new HttpRequestMessage(HttpMethod.Post, requestUri);
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/event-stream"));
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", requestApiKey);
         request.Content = new StringContent(
             PiMessagesRequestMapper.Build(_modelId, messages, options).ToJsonString(s_jsonOptions),
             Encoding.UTF8, "application/json");
@@ -70,7 +92,7 @@ internal sealed class PiMessagesChatClient(HttpClient http, Uri baseUri, ModelDe
         {
             if (requestError is OperationCanceledException && cancellationToken.IsCancellationRequested)
                 throw requestError;
-            yield return CreateFailureUpdate(SecretRedactor.Redact(requestError.Message, apiKey), null);
+            yield return CreateFailureUpdate(SecretRedactor.Redact(requestError.Message, requestApiKey), null);
             yield break;
         }
 
@@ -93,7 +115,7 @@ internal sealed class PiMessagesChatClient(HttpClient http, Uri baseUri, ModelDe
             if (bodyError is OperationCanceledException && cancellationToken.IsCancellationRequested)
                 throw bodyError;
 
-            yield return CreateHttpFailureUpdate(responseLease, requestUri, body, responseHeaders);
+            yield return CreateHttpFailureUpdate(responseLease, requestUri, body, responseHeaders, requestApiKey);
             yield break;
         }
 
@@ -112,7 +134,7 @@ internal sealed class PiMessagesChatClient(HttpClient http, Uri baseUri, ModelDe
         {
             if (streamOpenError is OperationCanceledException && cancellationToken.IsCancellationRequested)
                 throw streamOpenError;
-            yield return CreateFailureUpdate(SecretRedactor.Redact(streamOpenError.Message, apiKey), responseHeaders);
+            yield return CreateFailureUpdate(SecretRedactor.Redact(streamOpenError.Message, requestApiKey), responseHeaders);
             yield break;
         }
 
@@ -179,7 +201,7 @@ internal sealed class PiMessagesChatClient(HttpClient http, Uri baseUri, ModelDe
         {
             if (readError is OperationCanceledException && cancellationToken.IsCancellationRequested)
                 throw readError;
-            yield return CreateFailureUpdate(SecretRedactor.Redact(readError.Message, apiKey), responseHeaders);
+            yield return CreateFailureUpdate(SecretRedactor.Redact(readError.Message, requestApiKey), responseHeaders);
             yield break;
         }
 
@@ -221,45 +243,45 @@ internal sealed class PiMessagesChatClient(HttpClient http, Uri baseUri, ModelDe
                 return false;
             case "text_start":
             case "thinking_start":
-            {
-                var index = ReadIndex(root);
-                state.Blocks[index] = new BlockState(type == "text_start");
-                return false;
-            }
+                {
+                    var index = ReadIndex(root);
+                    state.Blocks[index] = new BlockState(type == "text_start");
+                    return false;
+                }
             case "text_delta":
-            {
-                var index = ReadIndex(root);
-                var delta = ReadString(root, "delta") ?? string.Empty;
-                if (!state.Blocks.TryGetValue(index, out var block)) state.Blocks[index] = block = new BlockState(text: true);
-                block.Content.Append(delta);
-                update = CreateUpdate([new TextContent(delta)], headers);
-                return true;
-            }
+                {
+                    var index = ReadIndex(root);
+                    var delta = ReadString(root, "delta") ?? string.Empty;
+                    if (!state.Blocks.TryGetValue(index, out var block)) state.Blocks[index] = block = new BlockState(text: true);
+                    block.Content.Append(delta);
+                    update = CreateUpdate([new TextContent(delta)], headers);
+                    return true;
+                }
             case "thinking_delta":
-            {
-                var index = ReadIndex(root);
-                var delta = ReadString(root, "delta") ?? string.Empty;
-                if (!state.Blocks.TryGetValue(index, out var block)) state.Blocks[index] = block = new BlockState(text: false);
-                block.Content.Append(delta);
-                update = CreateUpdate([new TextReasoningContent(delta)], headers);
-                return true;
-            }
+                {
+                    var index = ReadIndex(root);
+                    var delta = ReadString(root, "delta") ?? string.Empty;
+                    if (!state.Blocks.TryGetValue(index, out var block)) state.Blocks[index] = block = new BlockState(text: false);
+                    block.Content.Append(delta);
+                    update = CreateUpdate([new TextReasoningContent(delta)], headers);
+                    return true;
+                }
             case "text_end":
-            {
-                var index = ReadIndex(root);
-                var signature = ReadString(root, "contentSignature");
-                if (signature is not null) state.TextSignatures[index.ToString(System.Globalization.CultureInfo.InvariantCulture)] = signature;
-                return false;
-            }
+                {
+                    var index = ReadIndex(root);
+                    var signature = ReadString(root, "contentSignature");
+                    if (signature is not null) state.TextSignatures[index.ToString(System.Globalization.CultureInfo.InvariantCulture)] = signature;
+                    return false;
+                }
             case "thinking_end":
-            {
-                var index = ReadIndex(root);
-                var signature = ReadString(root, "contentSignature");
-                var redacted = ReadBoolean(root, "redacted");
-                if (signature is not null) state.ThinkingSignatures[index.ToString(System.Globalization.CultureInfo.InvariantCulture)] = signature;
-                if (redacted) state.RedactedThinking[index.ToString(System.Globalization.CultureInfo.InvariantCulture)] = true;
-                if (redacted && (!state.Blocks.TryGetValue(index, out var block) || block.Content.Length == 0))
-                    update = CreateUpdate([new TextReasoningContent("[Reasoning redacted]")
+                {
+                    var index = ReadIndex(root);
+                    var signature = ReadString(root, "contentSignature");
+                    var redacted = ReadBoolean(root, "redacted");
+                    if (signature is not null) state.ThinkingSignatures[index.ToString(System.Globalization.CultureInfo.InvariantCulture)] = signature;
+                    if (redacted) state.RedactedThinking[index.ToString(System.Globalization.CultureInfo.InvariantCulture)] = true;
+                    if (redacted && (!state.Blocks.TryGetValue(index, out var block) || block.Content.Length == 0))
+                        update = CreateUpdate([new TextReasoningContent("[Reasoning redacted]")
                     {
                         ProtectedData = signature,
                         AdditionalProperties = new AdditionalPropertiesDictionary
@@ -267,38 +289,38 @@ internal sealed class PiMessagesChatClient(HttpClient http, Uri baseUri, ModelDe
                             [PiMessagesRequestMapper.RedactedThinkingKey] = true
                         }
                     }], headers);
-                return update is not null;
-            }
+                    return update is not null;
+                }
             case "toolcall_start":
-            {
-                var index = ReadIndex(root);
-                state.ToolCalls[index] = new ToolCallState(ReadString(root, "id") ?? string.Empty,
-                    ReadString(root, "toolName") ?? string.Empty);
-                return false;
-            }
+                {
+                    var index = ReadIndex(root);
+                    state.ToolCalls[index] = new ToolCallState(ReadString(root, "id") ?? string.Empty,
+                        ReadString(root, "toolName") ?? string.Empty);
+                    return false;
+                }
             case "toolcall_delta":
-            {
-                var index = ReadIndex(root);
-                if (!state.ToolCalls.TryGetValue(index, out var call))
-                    state.ToolCalls[index] = call = new ToolCallState(string.Empty, string.Empty);
-                call.Arguments.Append(ReadString(root, "delta"));
-                return false;
-            }
+                {
+                    var index = ReadIndex(root);
+                    if (!state.ToolCalls.TryGetValue(index, out var call))
+                        state.ToolCalls[index] = call = new ToolCallState(string.Empty, string.Empty);
+                    call.Arguments.Append(ReadString(root, "delta"));
+                    return false;
+                }
             case "toolcall_end":
-            {
-                var index = ReadIndex(root);
-                if (!root.TryGetProperty("toolCall", out var toolCall) || toolCall.ValueKind != JsonValueKind.Object)
-                    throw new InvalidDataException("Pi Messages toolcall_end event has no toolCall object.");
-                state.ToolCalls.TryGetValue(index, out var started);
-                var id = ReadString(toolCall, "id") ?? started?.Id ?? string.Empty;
-                var name = ReadString(toolCall, "name") ?? started?.Name ?? string.Empty;
-                var arguments = toolCall.TryGetProperty("arguments", out var args) && args.ValueKind == JsonValueKind.Object
-                    ? JsonSerializer.Deserialize<Dictionary<string, object?>>(args.GetRawText(), s_jsonOptions) ?? []
-                    : new Dictionary<string, object?>();
-                state.ToolCalls.Remove(index);
-                update = CreateUpdate([new FunctionCallContent(id, name, arguments)], headers);
-                return true;
-            }
+                {
+                    var index = ReadIndex(root);
+                    if (!root.TryGetProperty("toolCall", out var toolCall) || toolCall.ValueKind != JsonValueKind.Object)
+                        throw new InvalidDataException("Pi Messages toolcall_end event has no toolCall object.");
+                    state.ToolCalls.TryGetValue(index, out var started);
+                    var id = ReadString(toolCall, "id") ?? started?.Id ?? string.Empty;
+                    var name = ReadString(toolCall, "name") ?? started?.Name ?? string.Empty;
+                    var arguments = toolCall.TryGetProperty("arguments", out var args) && args.ValueKind == JsonValueKind.Object
+                        ? JsonSerializer.Deserialize<Dictionary<string, object?>>(args.GetRawText(), s_jsonOptions) ?? []
+                        : new Dictionary<string, object?>();
+                    state.ToolCalls.Remove(index);
+                    update = CreateUpdate([new FunctionCallContent(id, name, arguments)], headers);
+                    return true;
+                }
             case "done":
             case "error":
                 terminal = true;
@@ -353,9 +375,9 @@ internal sealed class PiMessagesChatClient(HttpClient http, Uri baseUri, ModelDe
     }
 
     private ChatResponseUpdate CreateHttpFailureUpdate(HttpResponseMessage response, Uri requestUri, string body,
-        IReadOnlyDictionary<string, string> headers)
+        IReadOnlyDictionary<string, string> headers, string requestApiKey)
     {
-        var safeBody = SecretRedactor.Redact(body, apiKey);
+        var safeBody = SecretRedactor.Redact(body, requestApiKey);
         string? code = null;
         string? providerMessage = null;
         JsonElement? errorDetails = null;

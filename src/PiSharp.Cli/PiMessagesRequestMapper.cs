@@ -131,26 +131,26 @@ internal static class PiMessagesRequestMapper
             switch (item)
             {
                 case TextContent text:
-                {
-                    var block = new JsonObject { ["type"] = "text", ["text"] = text.Text };
-                    Add(block, "textSignature", ReadString(text.AdditionalProperties, TextSignatureKey) ??
-                        ReadIndexedString(textSignatures, contentIndex));
-                    content.Add(block);
-                    contentIndex++;
-                    break;
-                }
+                    {
+                        var block = new JsonObject { ["type"] = "text", ["text"] = text.Text };
+                        Add(block, "textSignature", ReadString(text.AdditionalProperties, TextSignatureKey) ??
+                            ReadIndexedString(textSignatures, contentIndex));
+                        content.Add(block);
+                        contentIndex++;
+                        break;
+                    }
                 case TextReasoningContent reasoning:
-                {
-                    var block = new JsonObject { ["type"] = "thinking", ["thinking"] = reasoning.Text };
-                    Add(block, "thinkingSignature", reasoning.ProtectedData ??
-                        ReadIndexedString(thinkingSignatures, contentIndex));
-                    if (ReadBoolean(reasoning.AdditionalProperties, RedactedThinkingKey) == true ||
-                        ReadIndexedBoolean(redactedThinking, contentIndex))
-                        block["redacted"] = true;
-                    content.Add(block);
-                    contentIndex++;
-                    break;
-                }
+                    {
+                        var block = new JsonObject { ["type"] = "thinking", ["thinking"] = reasoning.Text };
+                        Add(block, "thinkingSignature", reasoning.ProtectedData ??
+                            ReadIndexedString(thinkingSignatures, contentIndex));
+                        if (ReadBoolean(reasoning.AdditionalProperties, RedactedThinkingKey) == true ||
+                            ReadIndexedBoolean(redactedThinking, contentIndex))
+                            block["redacted"] = true;
+                        content.Add(block);
+                        contentIndex++;
+                        break;
+                    }
                 case FunctionCallContent call:
                     content.Add(new JsonObject
                     {

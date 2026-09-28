@@ -305,7 +305,8 @@ public sealed class OpenAiCodexOAuthAdapter : IProviderOAuthAdapter
         Process.Start(new ProcessStartInfo(uri.ToString()) { UseShellExecute = true });
 }
 
-public sealed class OpenAiCodexOAuthCallbackServerFactory : IProviderOAuthCallbackServerFactory
+/// <summary>Runs state-checked loopback callbacks for browser-based provider OAuth flows.</summary>
+public class ProviderOAuthCallbackServerFactory : IProviderOAuthCallbackServerFactory
 {
     public IProviderOAuthCallbackServer Start(Uri redirectUri, string expectedState)
     {
@@ -349,8 +350,8 @@ public sealed class OpenAiCodexOAuthCallbackServerFactory : IProviderOAuthCallba
                     status = HttpStatusCode.NotFound;
 
                 var body = status == HttpStatusCode.OK
-                    ? "<!doctype html><html><body>OpenAI sign-in complete. You can close this window.</body></html>"
-                    : "<!doctype html><html><body>OpenAI sign-in callback was invalid. Return to PiSharp and try again.</body></html>";
+                    ? "<!doctype html><html><body>Sign-in complete. You can close this window.</body></html>"
+                    : "<!doctype html><html><body>Sign-in callback was invalid. Return to PiSharp and try again.</body></html>";
                 context.Response.StatusCode = (int)status;
                 context.Response.ContentType = "text/html; charset=utf-8";
                 var bytes = Encoding.UTF8.GetBytes(body);
@@ -358,7 +359,7 @@ public sealed class OpenAiCodexOAuthCallbackServerFactory : IProviderOAuthCallba
                 await context.Response.OutputStream.WriteAsync(bytes, cancellationToken).ConfigureAwait(false);
                 context.Response.Close();
                 if (code?.StartsWith("oauth-error:", StringComparison.Ordinal) == true)
-                    throw new InvalidOperationException("OpenAI Codex authorization was denied.");
+                    throw new InvalidOperationException("Provider authorization was denied.");
                 if (code is not null) return code;
             }
         }
@@ -370,3 +371,6 @@ public sealed class OpenAiCodexOAuthCallbackServerFactory : IProviderOAuthCallba
         }
     }
 }
+
+/// <summary>Compatibility name for the callback server used by OpenAI Codex.</summary>
+public sealed class OpenAiCodexOAuthCallbackServerFactory : ProviderOAuthCallbackServerFactory { }

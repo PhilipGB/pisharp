@@ -25,7 +25,7 @@ public sealed class ConsoleProviderOAuthInteraction : IProviderOAuthInteraction
         switch (notice.Kind)
         {
             case "auth_url":
-                Console.Error.WriteLine($"OpenAI Codex authorization: {notice.Url}");
+                Console.Error.WriteLine($"Authorization URL: {notice.Url}");
                 Console.Error.WriteLine(notice.Message);
                 break;
             case "device_code":

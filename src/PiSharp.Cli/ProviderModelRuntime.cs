@@ -78,7 +78,10 @@ public sealed class ProviderModelRuntime
         }
         var authPath = environment("PISHARP_AUTH_PATH") ?? Path.Combine(agentDirectory, "auth.json");
         var auth = new AuthStorage(authPath);
-        return new ProviderModelRuntime(providers, auth, new ProviderOAuthCoordinator(auth, http),
+        var oauthAdapters = new List<IProviderOAuthAdapter> { new OpenAiCodexOAuthAdapter(http) };
+        if (providers.TryGetValue("radius", out var radius))
+            oauthAdapters.Add(new RadiusOAuthAdapter(http, radius.Endpoint));
+        return new ProviderModelRuntime(providers, auth, new ProviderOAuthCoordinator(auth, http, oauthAdapters),
             environment, http, runtimeApiKey, scope, offline);
     }
 
@@ -134,9 +137,24 @@ public sealed class ProviderModelRuntime
         foreach (var provider in providers)
         {
             var auth = await ResolveAuthAsync(provider.Id, useRuntimeOverride: providerId is not null, cancellationToken);
+            var providerModels = provider.Models;
+            if (provider.Id == "radius" && !_offline)
+            {
+                try
+                {
+                    var refreshed = await RadiusModelCatalog.LoadAsync(_http, provider.Id, provider.Endpoint,
+                        auth.Authenticated ? auth.Key : null, cancellationToken).ConfigureAwait(false);
+                    providerModels = RadiusModelCatalog.Merge(provider.Models, refreshed);
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
+                catch (Exception error) when (error is HttpRequestException or TaskCanceledException or InvalidDataException or JsonException)
+                {
+                    // Keep the pinned public catalogue available if the gateway cannot be refreshed.
+                }
+            }
             if (!auth.Authenticated)
             {
-                result.AddRange(provider.Models.Select(model => model with
+                result.AddRange(providerModels.Select(model => model with
                 {
                     Provider = provider.Id,
                     Available = false,
@@ -146,9 +164,9 @@ public sealed class ProviderModelRuntime
                 continue;
             }
             // These built-ins use pinned, provider-owned catalogues rather than generic /models discovery.
-            if (_offline || provider.Id is "xai" or "anthropic" or "mistral" or "azure-openai-responses" or "openai-codex" or "google" or "google-vertex" or "amazon-bedrock")
+            if (_offline || provider.Id is "xai" or "anthropic" or "mistral" or "azure-openai-responses" or "openai-codex" or "google" or "google-vertex" or "amazon-bedrock" or "radius")
             {
-                result.AddRange(provider.Models.Select(model => model with { Provider = provider.Id }));
+                result.AddRange(providerModels.Select(model => model with { Provider = provider.Id }));
                 continue;
             }
             try
@@ -157,14 +175,14 @@ public sealed class ProviderModelRuntime
                     IsOfficialOpenAiEndpoint(provider.Endpoint) ? null : provider.Endpoint,
                     auth.Key, cancellationToken);
                 var merged = discovered.Select(model => Merge(provider, model)).ToList();
-                foreach (var configured in provider.Models.Where(model => merged.All(item => item.Id != model.Id)))
+                foreach (var configured in providerModels.Where(model => merged.All(item => item.Id != model.Id)))
                     merged.Add(configured with { Provider = provider.Id, Available = false, UnavailableReason = "not advertised by provider", Status = configured.Status ?? "unavailable" });
                 result.AddRange(merged);
             }
             catch (Exception error) when (error is HttpRequestException or TaskCanceledException or InvalidDataException or JsonException)
             {
                 var safe = SecretRedactor.Redact(error.Message, auth.Key, _runtimeApiKey, provider.ConfiguredApiKey);
-                result.AddRange(provider.Models.Select(model => model with
+                result.AddRange(providerModels.Select(model => model with
                 {
                     Provider = provider.Id,
                     Available = false,
@@ -199,7 +217,7 @@ public sealed class ProviderModelRuntime
         // do not implement that endpoint, and it must not consume a prompt's first response.
         var configured = (includeOutOfScope ? explicitProvider.Models : ApplyScope(explicitProvider.Models)).Where(item =>
             item.Id.Equals(reference, StringComparison.OrdinalIgnoreCase)).ToArray();
-        var models = configured.Length == 1 ? configured :
+        var models = configured.Length == 1 && explicitProvider.Id != "radius" ? configured :
             await ListModelsAsync(explicitProvider.Id, cancellationToken, includeOutOfScope);
         var matches = models.Where(item => item.Id.Equals(reference, StringComparison.OrdinalIgnoreCase)).ToArray();
         if (matches.Length == 0)
@@ -219,7 +237,7 @@ public sealed class ProviderModelRuntime
         };
         Func<CancellationToken, Task<(string Access, string AccountId)>>? oauthCredentialResolver = null;
         if (auth.Source.StartsWith("stored OAuth", StringComparison.Ordinal) &&
-            explicitProvider.Id.Equals("openai-codex", StringComparison.OrdinalIgnoreCase))
+            explicitProvider.Id is "openai-codex" or "radius")
             oauthCredentialResolver = cancellationToken =>
                 _oauth.ResolveCredentialAsync(explicitProvider.Id, cancellationToken);
         return new ModelSelection(explicitProvider, model, auth.Key, auth.Authenticated, auth.Source,
