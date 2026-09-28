@@ -20,4 +20,6 @@ For process-level comparison, the Pi bundle built from pinned source `2b0a123de9
 
 PiSharp now rearms its idle timer when provider SDKs read response-body bytes, so partial SSE payloads no longer need to parse into a `ChatResponseUpdate` to keep the stream alive. This is behavioral evidence for all three active HTTP adapters, not exact dispatcher equivalence: the observer sees bytes at the .NET content-stream read boundary (including transport buffering and SDK read cadence), while Pi's Undici timers are attached to response headers and socket-body activity. The existing paired process timeout comparison below exercises the total request deadline, not a cross-process streaming idle comparison.
 
+Source commit `67c283d6c90815414be8bf58446d7365f506e5ad` passed exact-head Linux CI [run 36403312164](https://github.com/PhilipGB/pisharp/actions/runs/36403312164): restore, format, warnings-as-errors build, and 699/699 tests (0 skipped).
+
 `transport` remains unsupported in PiSharp: the active C# adapters do not include Pi's `openai-codex-responses` WebSocket implementation, so exposing the setting would currently create a no-op control. WebSocket transport and `websocketConnectTimeoutMs` remain separate ledger items.
