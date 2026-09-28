@@ -276,6 +276,18 @@ public sealed class CodingToolsTests : IDisposable
     }
 
     [Fact]
+    public async Task ShellCommandPrefixRunsOnceForToolAndDirectBashExecution()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        const string prefix = "export PISHARP_PREFIX_COUNT=$((${PISHARP_PREFIX_COUNT:-0} + 1))";
+        var tools = new CodingTools(_dir, shellCommandPrefix: prefix);
+
+        Assert.Equal("1\n", await tools.Bash("printf '%s\\n' \"$PISHARP_PREFIX_COUNT\""));
+        var direct = await tools.ExecuteBashAsync("printf '%s\\n' \"$PISHARP_PREFIX_COUNT\"");
+        Assert.Equal("1\n", direct.Output);
+    }
+
+    [Fact]
     public async Task BashHonorsShellPathAndRejectsInvalidTimeoutsAndWorkingDirectories()
     {
         if (OperatingSystem.IsWindows() || !File.Exists("/bin/sh")) return;

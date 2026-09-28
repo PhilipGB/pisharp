@@ -17,8 +17,9 @@ public sealed class ProjectRuntimeContextTests
         var configuredPrompts = Path.Combine(project, ".pi", "configured-prompts");
         Directory.CreateDirectory(privateSkill);
         Directory.CreateDirectory(agent);
+        await File.WriteAllTextAsync(Path.Combine(agent, "settings.json"), "{\"shellCommandPrefix\":\"export PISHARP_PREFIX=user\"}");
         await File.WriteAllTextAsync(Path.Combine(project, ".pi", "settings.json"),
-            "{\"images\":{\"blockImages\":true},\"sessionDir\":\"custom-sessions\",\"terminal\":{\"trueColor\":true},\"enableSkillCommands\":false,\"skills\":[\"configured-skills\"],\"prompts\":[\"configured-prompts\"]}");
+            "{\"images\":{\"blockImages\":true},\"sessionDir\":\"custom-sessions\",\"terminal\":{\"trueColor\":true},\"enableSkillCommands\":false,\"shellCommandPrefix\":\"export PISHARP_PREFIX=project\",\"skills\":[\"configured-skills\"],\"prompts\":[\"configured-prompts\"]}");
         await File.WriteAllTextAsync(Path.Combine(privateSkill, "SKILL.md"),
             "---\nname: private-guide\ndescription: A trusted project guide\n---\nUse this guide.");
         Directory.CreateDirectory(configuredSkill);
@@ -38,6 +39,7 @@ public sealed class ProjectRuntimeContextTests
             Assert.True(trusted.Settings.BlockImages);
             Assert.Equal("true", trusted.Settings.TerminalTrueColor);
             Assert.False(trusted.Settings.SkillCommandsEnabled);
+            Assert.Equal("export PISHARP_PREFIX=project", trusted.Settings.ShellCommandPrefix);
             var privateSkillResource = Assert.Single(trusted.Resources.Skills, skill => skill.Name == "private-guide");
             Assert.Equal("auto", privateSkillResource.SourceInfo.Source);
             Assert.Equal("project", privateSkillResource.SourceInfo.Scope);
@@ -48,13 +50,16 @@ public sealed class ProjectRuntimeContextTests
             Assert.Equal("project", configuredResource.SourceInfo.Scope);
             Assert.Contains(trusted.Resources.Prompts, prompt => prompt.Name == "configured-review");
 
+            await File.WriteAllTextAsync(Path.Combine(project, ".pi", "settings.json"), "{\"shellCommandPrefix\":42}");
             var untrustedConfiguration = await ProjectRuntimeConfiguration.LoadAsync(project, agent, arguments,
                 trust, interactiveTrust: false, TextReader.Null, TextWriter.Null, trustedOverride: false);
             using var untrusted = await ProjectRuntimeContext.LoadAsync(untrustedConfiguration, agent, arguments, null);
             Assert.False(untrusted.Trusted);
+            Assert.Null(untrusted.ProjectSettings);
             Assert.Null(untrusted.Settings.BlockImages);
             Assert.Null(untrusted.Settings.TerminalTrueColor);
             Assert.True(untrusted.Settings.SkillCommandsEnabled);
+            Assert.Equal("export PISHARP_PREFIX=user", untrusted.Settings.ShellCommandPrefix);
             Assert.DoesNotContain(untrusted.Resources.Skills, skill => skill.Name == "private-guide");
             Assert.DoesNotContain(untrusted.Resources.Skills, skill => skill.Name == "configured-first");
             Assert.DoesNotContain(untrusted.Resources.Prompts, prompt => prompt.Name == "configured-review");

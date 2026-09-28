@@ -342,6 +342,10 @@ void LoadSessionTranscript()
     history.LoadHistory(conversation);
 }
 LoadSessionTranscript();
+InteractiveTranscript CreateInteractiveTranscript(bool interactive = true) => new(Console.Out, Console.Error, interactive,
+    hideThinking: userSettings.HideThinkingBlock == true, screen: terminalScreen,
+    toolRenderer: name => extensionLease.Current.Registration.GetToolRenderer(name),
+    workingDirectory: currentDirectory);
 var terminalClipboard = new TerminalClipboard(writeTerminalControl: value =>
 {
     if (terminalScreen is { IsActive: true }) terminalScreen.WriteControl(value);
@@ -362,10 +366,7 @@ async Task Run(string input, IReadOnlyList<DataContent>? images = null)
     editor?.AttachScreen(terminalScreen);
     var monitor = Task.CompletedTask;
     var monitorStarted = false;
-    var transcript = new InteractiveTranscript(Console.Out, Console.Error, interactive: !print,
-        hideThinking: userSettings.HideThinkingBlock == true, screen: terminalScreen,
-        toolRenderer: name => extensionLease.Current.Registration.GetToolRenderer(name),
-        workingDirectory: currentDirectory);
+    var transcript = CreateInteractiveTranscript(interactive: !print);
     try
     {
         if (!selection.Authenticated)
@@ -386,6 +387,11 @@ async Task Run(string input, IReadOnlyList<DataContent>? images = null)
                 {
                     try
                     {
+                        if (InteractiveBashExecutor.TryParse(text, out var command, out var excludeFromContext))
+                        {
+                            await ExecuteInteractiveBashAsync(command, excludeFromContext, token);
+                            return true;
+                        }
                         var queued = await resources.ResolveInputAsync(text, token);
                         var accepted = followUp ? conversationRun.TryFollowUp(queued) : conversationRun.TrySteer(queued);
                         if (accepted) Console.Error.WriteLine(followUp ? "Queued follow-up." : "Queued steering message.");
@@ -419,6 +425,13 @@ async Task Run(string input, IReadOnlyList<DataContent>? images = null)
         activeRun = null;
         terminalScreen?.SetFooter(IdleFooter());
     }
+}
+
+async Task ExecuteInteractiveBashAsync(string command, bool excludeFromContext, CancellationToken cancellationToken)
+{
+    await InteractiveBashExecutor.ExecuteAsync(conversationRun, command, excludeFromContext,
+        CreateInteractiveTranscript(), sessionPath is null ? null : token => store.SaveAsync(conversation, sessionPath, token),
+        cancellationToken);
 }
 
 async Task AdoptPreparedModelRuntime(PreparedModelRuntime prepared, bool recordModelChange)
@@ -998,6 +1011,14 @@ else
         var line = await editor!.ReadLineAsync(HandleEditorApplicationAction);
         if (line is null || line.Trim() is "/quit" or "/exit") break;
         if (string.IsNullOrWhiteSpace(line)) continue;
+        if (InteractiveBashExecutor.TryParse(line, out var bashCommand, out var excludeFromContext))
+        {
+            using var bashCancellation = new CancellationTokenSource();
+            activeRun = bashCancellation;
+            try { await ExecuteInteractiveBashAsync(bashCommand, excludeFromContext, bashCancellation.Token); }
+            finally { activeRun = null; }
+            continue;
+        }
         if (line.StartsWith('/'))
         {
             try

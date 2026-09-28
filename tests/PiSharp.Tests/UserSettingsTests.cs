@@ -1,3 +1,4 @@
+using System.Text.Json;
 using PiSharp.Cli;
 using PiSharp.Runtime.Sessions;
 
@@ -403,6 +404,37 @@ public sealed class UserSettingsTests
             await File.WriteAllTextAsync(Path.Combine(root, "settings.json"), "{\"shellPath\":\"user-shell\"}");
             await File.WriteAllTextAsync(Path.Combine(root, ".pi", "settings.json"), "{\"shellPath\":\"project-shell\"}");
             Assert.Equal("project-shell", user.Overlay(await UserSettings.LoadProjectAsync(root)).ShellPath);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [Fact]
+    public async Task ShellCommandPrefixIsAnOptionalStringAndTrustedProjectValueOverridesUserValue()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-shell-prefix-settings-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(Path.Combine(root, ".pi"));
+        try
+        {
+            var userPath = Path.Combine(root, "settings.json");
+            var projectPath = Path.Combine(root, ".pi", "settings.json");
+            var userPrefix = " export PISHARP_PREFIX=user\n";
+            await File.WriteAllTextAsync(userPath, "{\"shellCommandPrefix\":" + JsonSerializer.Serialize(userPrefix) + "}");
+            var user = await UserSettings.LoadAsync(root, _ => null);
+            Assert.Equal(userPrefix, user.ShellCommandPrefix);
+            Assert.Equal(userPrefix, user.Overlay(new UserSettings()).ShellCommandPrefix);
+
+            const string projectPrefix = "export PISHARP_PREFIX=project";
+            await File.WriteAllTextAsync(projectPath, "{\"shellCommandPrefix\":" + JsonSerializer.Serialize(projectPrefix) + "}");
+            Assert.Equal(projectPrefix, (await UserSettings.LoadProjectAsync(root)).ShellCommandPrefix);
+            Assert.Equal(projectPrefix, user.Overlay(await UserSettings.LoadProjectAsync(root)).ShellCommandPrefix);
+
+            await File.WriteAllTextAsync(userPath, "{\"shellCommandPrefix\":\"\"}");
+            Assert.Equal("", (await UserSettings.LoadAsync(root, _ => null)).ShellCommandPrefix);
+            foreach (var invalid in new[] { "null", "1", "[]", "{}" })
+            {
+                await File.WriteAllTextAsync(userPath, "{\"shellCommandPrefix\":" + invalid + "}");
+                await Assert.ThrowsAsync<InvalidDataException>(() => UserSettings.LoadAsync(root, _ => null));
+            }
         }
         finally { Directory.Delete(root, true); }
     }

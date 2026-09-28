@@ -13,7 +13,7 @@ public sealed class UserSettingsWriterTests
         try
         {
             var path = Path.Combine(root, "settings.json");
-            await File.WriteAllTextAsync(path, "{\"quietStartup\":true,\"compaction\":{\"reserveTokens\":2048}}\n");
+            await File.WriteAllTextAsync(path, "{\"quietStartup\":true,\"shellCommandPrefix\":\"export PISHARP_PREFIX=kept\",\"compaction\":{\"reserveTokens\":2048}}\n");
 
             await UserSettingsWriter.SetAsync(path, "hideThinkingBlock", "true", userScope: true);
             await UserSettingsWriter.SetAsync(path, "images.blockImages", "false", userScope: true);
@@ -33,6 +33,7 @@ public sealed class UserSettingsWriterTests
             Assert.True(settings.HideThinkingBlock);
             Assert.False(settings.BlockImages);
             Assert.True(settings.QuietStartup);
+            Assert.Equal("export PISHARP_PREFIX=kept", settings.ShellCommandPrefix);
             Assert.False(settings.Compaction?.Enabled);
             Assert.Equal(2048, settings.Compaction?.ReserveTokens);
             Assert.False(settings.Retry?.Enabled);

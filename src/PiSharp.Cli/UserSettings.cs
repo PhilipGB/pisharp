@@ -88,7 +88,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
     int? HttpIdleTimeoutMs = null, string? MarkdownCodeBlockIndent = null, string? TerminalTrueColor = null,
     bool? EnableSkillCommands = null, IReadOnlyList<string>? Extensions = null,
     IReadOnlyList<string>? Skills = null, IReadOnlyList<string>? Prompts = null,
-    IReadOnlyList<string>? Themes = null)
+    IReadOnlyList<string>? Themes = null, string? ShellCommandPrefix = null)
 {
     public const int DefaultHttpIdleTimeoutMs = 300_000;
     public const string DefaultMarkdownCodeBlockIndent = "  ";
@@ -126,6 +126,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         int? httpIdleTimeoutMs = null;
         string? markdownCodeBlockIndent = null;
         string? terminalTrueColor = null;
+        string? shellCommandPrefix = null;
         var seen = new HashSet<string>(StringComparer.Ordinal);
         foreach (var property in document.RootElement.EnumerateObject())
         {
@@ -272,6 +273,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
                     if (defaultTrust is not ("ask" or "always" or "never"))
                         throw new InvalidDataException("settings.json defaultProjectTrust must be ask, always or never.");
                     break;
+                case "shellCommandPrefix": shellCommandPrefix = value; break;
                 case "defaultProvider": provider = Validate(value, property.Name, 128); break;
                 case "defaultModel": model = Validate(value, property.Name, 256); break;
                 case "sessionDir": sessionDirectory = Validate(value, property.Name, 1024); break;
@@ -306,7 +308,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         return new(provider, model, thinking, tools, sessionDirectory, compaction, blockImages, defaultTrust, hideThinkingBlock,
             quietStartup, enabledModels, shellPath, externalEditor, theme, retry, steeringMode, followUpMode,
             modelThinkingLevels, httpProxy, httpIdleTimeoutMs, markdownCodeBlockIndent, terminalTrueColor,
-            enableSkillCommands, extensions, skills, prompts, themes);
+            enableSkillCommands, extensions, skills, prompts, themes, shellCommandPrefix);
     }
 
     public static string GetSettingsPath(string agentDirectory, Func<string, string?> environment) =>
@@ -343,7 +345,8 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         MergeResourcePaths(Extensions, project.Extensions),
         MergeResourcePaths(Skills, project.Skills),
         MergeResourcePaths(Prompts, project.Prompts),
-        MergeResourcePaths(Themes, project.Themes));
+        MergeResourcePaths(Themes, project.Themes),
+        project.ShellCommandPrefix ?? ShellCommandPrefix);
 
     public string? GetModelThinkingLevel(string provider, string modelId) =>
         ModelThinkingLevels?.GetValueOrDefault($"{provider}/{modelId}");

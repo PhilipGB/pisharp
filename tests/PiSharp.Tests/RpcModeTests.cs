@@ -589,6 +589,36 @@ public sealed class RpcModeTests
     }
 
     [Fact]
+    public async Task RpcBashUsesTheSharedShellCommandPrefixAndPersistsTheUnprefixedCommand()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-rpc-bash-prefix-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            const string command = "printf '%s' \"$PISHARP_PREFIX\"";
+            var channel = Channel.CreateUnbounded<string>();
+            using var output = new LockedWriter();
+            var run = await ConversationRun.OpenAsync(new PiAgent(new StubClient(),
+                new CodingTools(root, shellCommandPrefix: "export PISHARP_PREFIX=from-prefix")),
+                new ConversationSession(root, "fixture", null));
+            var serving = new RpcMode(new CommandReader(channel.Reader), output, run).ServeAsync();
+
+            channel.Writer.TryWrite(JsonSerializer.Serialize(new { id = "bash-prefix", type = "bash", command }));
+            await WaitForAsync(output, "\"id\":\"bash-prefix\"");
+            channel.Writer.Complete();
+            await serving.WaitAsync(TimeSpan.FromSeconds(5));
+
+            using var response = JsonDocument.Parse(Assert.Single(output.Lines(),
+                line => line.Contains("\"command\":\"bash\"", StringComparison.Ordinal)));
+            Assert.Equal("from-prefix", response.RootElement.GetProperty("data").GetProperty("output").GetString());
+            var bashEntry = Assert.Single(run.Conversation.Tree.ActivePath(), entry => entry.Type == "bash_execution");
+            Assert.Equal(command, bashEntry.Payload.GetProperty("command").GetString());
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
     public async Task UserBashHandlerCanStreamAndReplaceDirectBash()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-rpc-user-bash-" + Guid.NewGuid().ToString("N"));

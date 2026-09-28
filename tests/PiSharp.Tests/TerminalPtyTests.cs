@@ -10,6 +10,97 @@ namespace PiSharp.Tests;
 public sealed class TerminalPtyTests
 {
     [Fact]
+    public async Task BangCommandsUseTheConfiguredPrefixAndDoubleBangExcludesContext()
+    {
+        if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-bang-bash-" + Guid.NewGuid().ToString("N"));
+        var agent = Path.Combine(root, "agent");
+        var sessionPath = Path.Combine(root, "bang.session.json");
+        Directory.CreateDirectory(agent);
+        await File.WriteAllTextAsync(Path.Combine(agent, "settings.json"),
+            "{\"quietStartup\":true,\"shellCommandPrefix\":\"export PISHARP_BANG_PREFIX=prefix-ready\"}");
+        Process? process = null;
+        try
+        {
+            var start = new ProcessStartInfo("/usr/bin/script")
+            {
+                WorkingDirectory = root,
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+            start.ArgumentList.Add("-q");
+            start.ArgumentList.Add("-e");
+            start.ArgumentList.Add("-c");
+            start.ArgumentList.Add($"stty rows 24 cols 80; exec dotnet {ShellQuote(typeof(CliArguments).Assembly.Location)} --local --offline --session {ShellQuote(sessionPath)} --no-tools");
+            start.ArgumentList.Add("/dev/null");
+            foreach (var name in new[] { "OPENAI_API_KEY", "PISHARP_API_KEY", "PISHARP_BASE_URL", "PISHARP_MODEL", "PISHARP_SETTINGS_PATH" })
+                start.Environment.Remove(name);
+            start.Environment["PISHARP_AGENT_DIR"] = agent;
+            process = Process.Start(start);
+            Assert.NotNull(process);
+
+            var output = new StringBuilder();
+            var outputLock = new object();
+            var idle = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var normalResult = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var excludedResult = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var stdout = Task.Run(async () =>
+            {
+                var buffer = new char[1024];
+                while (true)
+                {
+                    var count = await process.StandardOutput.ReadAsync(buffer);
+                    if (count == 0) break;
+                    lock (outputLock)
+                    {
+                        output.Append(buffer, 0, count);
+                        var current = output.ToString();
+                        if (current.Contains("Ctrl+L models · Ctrl+P cycle", StringComparison.Ordinal)) idle.TrySetResult();
+                        if (current.Contains("bang-result:prefix-ready", StringComparison.Ordinal)) normalResult.TrySetResult();
+                        if (current.Contains("excluded-result:prefix-ready", StringComparison.Ordinal)) excludedResult.TrySetResult();
+                    }
+                }
+                lock (outputLock) return output.ToString();
+            });
+            var stderr = process.StandardError.ReadToEndAsync();
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+            await idle.Task.WaitAsync(timeout.Token);
+            await process.StandardInput.WriteAsync("!printf '%s\\n' \"bang-result:$PISHARP_BANG_PREFIX\"\n");
+            await process.StandardInput.FlushAsync();
+            await normalResult.Task.WaitAsync(timeout.Token);
+            await process.StandardInput.WriteAsync("!!printf '%s\\n' \"excluded-result:$PISHARP_BANG_PREFIX\"\n");
+            await process.StandardInput.FlushAsync();
+            await excludedResult.Task.WaitAsync(timeout.Token);
+            await process.StandardInput.WriteAsync("/quit\n");
+            await process.StandardInput.FlushAsync();
+            process.StandardInput.Close();
+            await process.WaitForExitAsync(timeout.Token);
+            var captured = await stdout;
+            _ = await stderr;
+
+            Assert.Equal(0, process.ExitCode);
+            Assert.Contains("bang-result:prefix-ready", captured);
+            Assert.Contains("excluded-result:prefix-ready", captured);
+            var session = PiSharp.Runtime.Sessions.ConversationSession.Parse(await File.ReadAllTextAsync(sessionPath));
+            var executions = session.Tree.ActivePath().Where(entry => entry.Type == "bash_execution").ToArray();
+            Assert.Equal(2, executions.Length);
+            Assert.Equal("printf '%s\\n' \"bang-result:$PISHARP_BANG_PREFIX\"", executions[0].Payload.GetProperty("command").GetString());
+            Assert.False(executions[0].Payload.GetProperty("excludeFromContext").GetBoolean());
+            Assert.Equal("printf '%s\\n' \"excluded-result:$PISHARP_BANG_PREFIX\"", executions[1].Payload.GetProperty("command").GetString());
+            Assert.True(executions[1].Payload.GetProperty("excludeFromContext").GetBoolean());
+            Assert.Contains(session.ContextMessages(), message => message.Text.Contains("bang-result:prefix-ready", StringComparison.Ordinal));
+            Assert.DoesNotContain(session.ContextMessages(), message => message.Text.Contains("excluded-result:prefix-ready", StringComparison.Ordinal));
+        }
+        finally
+        {
+            if (process is { HasExited: false }) process.Kill(entireProcessTree: true);
+            process?.Dispose();
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task ActiveRunStreamsExtensionToolThroughLinuxPtyAndRestoresTheTerminal()
     {
         if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;

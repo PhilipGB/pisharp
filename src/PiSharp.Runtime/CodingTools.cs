@@ -22,16 +22,18 @@ public sealed class CodingTools
         ["PI_SESSION_ID", "PI_SESSION_FILE", "PI_PROVIDER", "PI_MODEL", "PI_REASONING_LEVEL"];
     private readonly string _cwd;
     private readonly string? _shellPath;
+    private readonly string? _shellCommandPrefix;
     private ModelImageResizeOptions? _imageResizeOptions;
     private readonly ConcurrentDictionary<Guid, CancellationTokenSource> _runningBash = new();
     private static readonly FileMutationQueue s_mutations = new();
 
     public CodingTools(string workingDirectory, string? shellPath = null,
-        ModelImageResizeOptions? imageResizeOptions = null)
+        ModelImageResizeOptions? imageResizeOptions = null, string? shellCommandPrefix = null)
     {
         _cwd = Path.GetFullPath(workingDirectory);
         _shellPath = shellPath;
         _imageResizeOptions = imageResizeOptions;
+        _shellCommandPrefix = shellCommandPrefix;
     }
 
     public void SetImageResizeOptions(ModelImageResizeOptions? options) => Volatile.Write(ref _imageResizeOptions, options);
@@ -297,7 +299,8 @@ public sealed class CodingTools
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutSource.Token, abortSource.Token);
         using var process = new Process
         {
-            StartInfo = CreateStartInfo(shell, command, _cwd, out var processGroup, sessionEnvironment)
+            StartInfo = CreateStartInfo(shell, _shellCommandPrefix is { Length: > 0 } prefix
+                ? $"{prefix}\n{command}" : command, _cwd, out var processGroup, sessionEnvironment)
         };
         using var pumpStop = new CancellationTokenSource();
         await using var output = new ShellOutputBuffer(normalizeOutput);
