@@ -52,6 +52,17 @@ internal static class BuiltinProviderProfiles
             mistralModels.Insert(0, new(mistralDefault, "mistral", null, "configured",
                 Provider: "mistral", Api: "mistral-conversations"));
         var azureModels = AzureOpenAiModelCatalog.Load();
+        var googleModels = GoogleGenAiModelCatalog.Load();
+        var googleDefault = environment("PISHARP_GOOGLE_MODEL") ?? "gemini-3.5-flash";
+        var googleDefaultIndex = googleModels.ToList().FindIndex(model => model.Id == googleDefault);
+        if (googleDefaultIndex > 0)
+        {
+            var reordered = googleModels.ToList();
+            var chosen = reordered[googleDefaultIndex];
+            reordered.RemoveAt(googleDefaultIndex);
+            reordered.Insert(0, chosen);
+            googleModels = reordered;
+        }
         var codexModels = OpenAiCodexModelCatalog.Load();
         var codexDefault = environment("PISHARP_OPENAI_CODEX_MODEL") ?? "gpt-5.5";
         var codexDefaultIndex = codexModels.ToList().FindIndex(model => model.Id == codexDefault);
@@ -80,6 +91,8 @@ internal static class BuiltinProviderProfiles
                 AzureOpenAiEndpoint.FromEnvironment(environment), true, false,
                 "AZURE_OPENAI_API_KEY", null, azureModels, Api: "azure-openai-responses",
                 AzureOpenAi: AzureOpenAiProviderOptions.FromEnvironment(environment)),
+            ["google"] = new("google", "Google", new Uri("https://generativelanguage.googleapis.com/v1beta"), true, false,
+                "GEMINI_API_KEY", null, googleModels, Api: "google-generative-ai"),
             ["openai-codex"] = new("openai-codex", "OpenAI Codex", new Uri("https://chatgpt.com/backend-api"),
                 true, true, null, null, codexModels, Api: "openai-codex-responses", ApiKeySupported: false),
             ["xai"] = new("xai", "xAI", new Uri("https://api.x.ai/v1"), true, false,

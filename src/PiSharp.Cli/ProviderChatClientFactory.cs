@@ -18,7 +18,9 @@ public static class ProviderChatClientFactory
             "mistral" => "mistral-conversations",
             _ => "openai-completions"
         });
-        if (protocol is not ("openai-responses" or "openai-completions" or "anthropic-messages" or "mistral-conversations" or "azure-openai-responses" or "openai-codex-responses"))
+        if (protocol == "google-generative-ai" && selection.Provider.Id != "google")
+            throw new NotSupportedException($"Model '{selection.Provider.Id}/{selection.Model.Id}' requires unsupported API '{protocol}'.");
+        if (protocol is not ("openai-responses" or "openai-completions" or "anthropic-messages" or "mistral-conversations" or "azure-openai-responses" or "openai-codex-responses" or "google-generative-ai"))
             throw new NotSupportedException($"Model '{selection.Provider.Id}/{selection.Model.Id}' requires unsupported API '{protocol}'.");
         if (protocol == "azure-openai-responses")
             _ = AzureOpenAiEndpoint.RequireConfigured(selection.Connection.Endpoint ?? selection.Provider.Endpoint);
@@ -40,7 +42,11 @@ public static class ProviderChatClientFactory
         var requestTimeout = configuredTimeout ?? (idleTimeout == 0 ? int.MaxValue : idleTimeout);
         var sdkTimeout = TimeSpan.FromMilliseconds(requestTimeout);
         IChatClient providerClient;
-        if (protocol == "openai-codex-responses")
+        if (protocol == "google-generative-ai")
+        {
+            providerClient = GoogleGenAiChatClientFactory.Create(selection);
+        }
+        else if (protocol == "openai-codex-responses")
         {
             providerClient = OpenAiCodexResponsesClientFactory.Create(selection, sdkTimeout);
         }

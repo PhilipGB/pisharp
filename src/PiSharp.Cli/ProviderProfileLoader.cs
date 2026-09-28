@@ -98,7 +98,13 @@ internal static class ProviderProfileLoader
             if (existing is not null && item.Name is not ("local" or "custom" or "openai") &&
                 !SameEndpoint(existing.Endpoint, endpoint))
                 throw new InvalidDataException($"Built-in provider '{item.Name}' cannot use a custom endpoint; choose a new provider ID.");
-            foreach (var reserved in providers.Values.Where(profile => profile.Id is "openai" or "openrouter" or "mistral" or "xai" or "anthropic" or "azure-openai-responses" or "openai-codex"))
+            if (existing?.Id == "google" &&
+                (!string.Equals(api, existing.Api, StringComparison.Ordinal) ||
+                 !string.Equals(apiKeyEnvironment ?? existing.ApiKeyEnvironment, existing.ApiKeyEnvironment,
+                     StringComparison.OrdinalIgnoreCase) ||
+                 models.Any(model => !string.Equals(model.Api, existing.Api, StringComparison.Ordinal))))
+                throw new InvalidDataException("The built-in google provider must retain its Gemini API protocol and credential environment.");
+            foreach (var reserved in providers.Values.Where(profile => profile.Id is "openai" or "openrouter" or "mistral" or "xai" or "anthropic" or "azure-openai-responses" or "openai-codex" or "google"))
                 if (apiKeyEnvironment?.Equals(reserved.ApiKeyEnvironment, StringComparison.OrdinalIgnoreCase) == true &&
                     (!item.Name.Equals(reserved.Id, StringComparison.OrdinalIgnoreCase) || !SameEndpoint(endpoint, reserved.Endpoint)))
                     throw new InvalidDataException($"Provider '{item.Name}' cannot borrow {reserved.ApiKeyEnvironment}; use its own credential environment variable.");

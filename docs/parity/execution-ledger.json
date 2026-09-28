@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "plan_received": true,
-  "source_note": "The full continuation plan was recovered from the user on 2026-09-27. Conservative inventory from pinned upstream feature matrix and detailed inventory; never treat as complete until all required scope is reconciled and audited against upstream. Durable parity baseline is b3487650f6378f1b0d1643dd254445ceb4a98035. Current Pi main was refreshed 2026-09-28 at 11894012dd461232eb075bc890538b6866860a10; provider source under packages/ai and packages/coding-agent has no changes since cd5ff1125981f0fc37a56df25eee7310286a3f89; the refreshed bounded RPC audit found all 33 command names represented in PiSharp handlers and no command-surface change since 2b0a123de98318c2ff8069661721ce0c3794c34e. Current compaction source, settings, upstream tests, and an RPC process replay were checked against c1449660c83fd00a7c71d5f7e1bd29fafd400550. The final current-Pi audit and broad feature coverage remain incomplete. Current deltas include TypeScript 7/Node type stripping, an overlay-close cursor-restoration fix, RPC listener snapshot dispatch, full-file read null-range rendering, and per-ref temporary extension cache paths; these are classified in docs/continuation.md. Current Pi SettingsSelectorComponent, SettingsList, and their tests were inspected. The reviewed TUI uses pi-tui 0.87.1 and Marked 18.0.11; Pi wraps ANSI-aware grapheme cells and breaks overlong tokens. Its pinned alt-screen implementation and tests cover SGR button-motion tracking, visible text drag selection/copy, wheel dispatch, grapheme snapping, and mouse-mode cleanup. Further provider and broader session-manager, protocol, image, theme-CLI/search-path, autocomplete and extension deltas remain unaudited; the bounded crash-recovery and writer-concurrency slice was refreshed at the current Pi pin. Pi Packages remain excluded unless needed for a core capability. Shell-command-prefix compatibility is implemented at 92281f3912ca3c9f68ec95e27c4a29e06ba02dcb with trusted-scope, direct-Bash, coding-tool, RPC and PTY evidence; exact-head Linux CI run 36435658026 passed restore, format, warnings-as-errors build, and 748/748 tests (0 skipped). The Mistral reasoning-map change at dc84c1ac0afd15721071507a3a06b5e3d0cad614 is represented in PiSharp; the OpenCode/Qwen empty-thinking-signature change at c1449660c83fd00a7c71d5f7e1bd29fafd400550 is implemented in PiSharp source 66561e1db1942624f7310bd50f68195c80ee66bf and passed exact-head CI run 36454550166 (768/768). Current Pi Mistral metadata was refreshed at 11894012dd461232eb075bc890538b6866860a10.",
+  "source_note": "The full continuation plan was recovered from the user on 2026-09-27. Conservative inventory from pinned upstream feature matrix and detailed inventory; never treat as complete until all required scope is reconciled and audited against upstream. Durable parity baseline is b3487650f6378f1b0d1643dd254445ceb4a98035. Current Pi main was refreshed 2026-09-28 at 11894012dd461232eb075bc890538b6866860a10; provider source under packages/ai and packages/coding-agent has no changes since cd5ff1125981f0fc37a56df25eee7310286a3f89; the refreshed bounded RPC audit found all 33 command names represented in PiSharp handlers and no command-surface change since 2b0a123de98318c2ff8069661721ce0c3794c34e. Current compaction source, settings, upstream tests, and an RPC process replay were checked against c1449660c83fd00a7c71d5f7e1bd29fafd400550. The final current-Pi audit and broad feature coverage remain incomplete. Current deltas include TypeScript 7/Node type stripping, an overlay-close cursor-restoration fix, RPC listener snapshot dispatch, full-file read null-range rendering, and per-ref temporary extension cache paths; these are classified in docs/continuation.md. Current Pi SettingsSelectorComponent, SettingsList, and their tests were inspected. The reviewed TUI uses pi-tui 0.87.1 and Marked 18.0.11; Pi wraps ANSI-aware grapheme cells and breaks overlong tokens. Its pinned alt-screen implementation and tests cover SGR button-motion tracking, visible text drag selection/copy, wheel dispatch, grapheme snapping, and mouse-mode cleanup. Further provider and broader session-manager, protocol, image, theme-CLI/search-path, autocomplete and extension deltas remain unaudited; the bounded crash-recovery and writer-concurrency slice was refreshed at the current Pi pin. Pi Packages remain excluded unless needed for a core capability. Shell-command-prefix compatibility is implemented at 92281f3912ca3c9f68ec95e27c4a29e06ba02dcb with trusted-scope, direct-Bash, coding-tool, RPC and PTY evidence; exact-head Linux CI run 36435658026 passed restore, format, warnings-as-errors build, and 748/748 tests (0 skipped). The Mistral reasoning-map change at dc84c1ac0afd15721071507a3a06b5e3d0cad614 is represented in PiSharp; the OpenCode/Qwen empty-thinking-signature change at c1449660c83fd00a7c71d5f7e1bd29fafd400550 is implemented in PiSharp source 66561e1db1942624f7310bd50f68195c80ee66bf and passed exact-head CI run 36454550166 (768/768). Current Pi Mistral metadata was refreshed at 11894012dd461232eb075bc890538b6866860a10. Latest PiSharp checkpoint: eecb324e7085f138bf756884f45e1fba6a292d7c; exact-head Linux CI run 36462567719 passed format, warnings-as-errors build, and 779/779 tests (0 skipped). Codex Responses SSE and Codex browser/device OAuth are implemented; material residuals include WebSocket/cached transport, manual-code fallback, broader Codex image/tool/usage/error evidence, Google GenAI/Vertex, Bedrock, Pi Messages, and the other seven built-in OAuth flows. Current Pi main is 11894012dd461232eb075bc890538b6866860a10 with no provider-source changes since cd5ff1125981f0fc37a56df25eee7310286a3f89. Exact next action: implement Google GenAI as a cohesive provider boundary with deterministic real-HTTP/SSE evidence, then validate, commit, push and verify exact-head CI.",
   "baseline": "earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035",
   "required_ids": [
     "feature-agent-multi-turn-and-streaming",
@@ -3206,6 +3206,62 @@
       ],
       "evidence": [
         "AzureOpenAiProviderTests exercise a deterministic local real-SDK boundary and the embedded catalog. Exact-head Linux CI run 36452261244 passed format, warnings-as-errors build (0 warnings/errors), and 764/764 tests (0 skipped). Provider-wide Pi differential coverage for images/tools/usage/errors and hosted OAuth remains incomplete."
+      ],
+      "dependencies": []
+    },
+    {
+      "id": "provider-api-openai-codex-responses",
+      "title": "Provider API: OpenAI Codex Responses",
+      "status": "in_progress",
+      "source": "docs/parity/fixtures/provider-auth-breadth-audit-2026-09-28.md",
+      "acceptance": [
+        "Use the Codex account-scoped Responses SSE endpoint, required account/auth headers, session affinity, and current-Pi model metadata.",
+        "Preserve MAF canonical history while verifying text, reasoning, tools, images, stream lifecycle, usage, cache fields, errors, retry behavior and cancellation.",
+        "Compare SSE behavior with current Pi and implement WebSocket/cached transport where material; do not claim full Codex parity from SSE coverage alone."
+      ],
+      "implementation": [
+        "Implemented at 531392ad4 with OpenAiCodexResponsesClientFactory, account-scoped request handling, session affinity and an embedded current-Pi model catalog. Codex OAuth integration landed at eecb324e7; API keys are rejected for this subscription provider."
+      ],
+      "evidence": [
+        "OpenAiCodexProviderTests exercises the real Responses SDK over a deterministic loopback, checking account-scoped headers, request projection, session affinity and SSE. Exact-head Linux CI at eecb324e7085f138bf756884f45e1fba6a292d7c passed run 36462567719: format, warnings-as-errors build, 779/779 tests (0 skipped). Upstream provider sources remain unchanged at Pi 11894012dd461232eb075bc890538b6866860a10 since audit pin cd5ff1125981f0fc37a56df25eee7310286a3f89. WebSocket/cached transport, manual-code fallback and broad image/tool/usage/error differential evidence remain open."
+      ],
+      "dependencies": []
+    },
+    {
+      "id": "provider-auth-openai-codex-oauth",
+      "title": "Provider auth: OpenAI Codex OAuth",
+      "status": "in_progress",
+      "source": "docs/parity/fixtures/provider-auth-breadth-audit-2026-09-28.md",
+      "acceptance": [
+        "Support browser PKCE and device-code login, private durable credentials, serialized refresh, restart persistence, logout and account-derived request authentication.",
+        "Verify invalid, expired, denied, cancelled and concurrent refresh behavior, plus precedence and refusal of API-key fallback for Codex subscriptions.",
+        "Match remaining current-Pi login interactions, including manual-code fallback, and retain provider-specific auth differential evidence."
+      ],
+      "implementation": [
+        "Implemented at eecb324e7 through OpenAiCodexOAuthAdapter and the provider OAuth boundary. Browser PKCE/device-code flows, private credential persistence, serialized refresh and request-time account auth are active; Codex rejects API-key authentication."
+      ],
+      "evidence": [
+        "OpenAiCodexOAuthTests covers device and browser flows, callback state/denial, PKCE exchange, credential restart, concurrent refresh, cancellation, failed/invalid refresh, API-key refusal and dynamic request auth; AuthStatusCommandTests verifies offline secret-free status. Exact-head Linux CI run 36462567719 passed 779/779 tests (0 skipped). Manual-code fallback and OAuth flows for the other seven current-Pi built-ins remain open."
+      ],
+      "dependencies": [
+        "provider-api-openai-codex-responses"
+      ]
+    },
+    {
+      "id": "provider-api-google-genai",
+      "title": "Provider API: Google GenAI",
+      "status": "in_progress",
+      "source": "docs/parity/fixtures/provider-auth-breadth-audit-2026-09-28.md",
+      "acceptance": [
+        "Use the Google GenAI generateContent SSE endpoint and x-goog-api-key authentication with a current-Pi model catalog.",
+        "Preserve canonical MAF history while verifying text, reasoning/signatures, function calls/results, images, usage, finish reasons, errors, retries and cancellation.",
+        "Compare the adapter and provider-specific semantics against current Pi; do not claim full Google or overall provider parity from local fixtures alone."
+      ],
+      "implementation": [
+        "A dedicated REST/SSE client and embedded 22-model snapshot are implemented from Pi 11894012dd461232eb075bc890538b6866860a10. The Google protocol is restricted to the built-in google profile, and profile loading preserves its protocol and credential identity."
+      ],
+      "evidence": [
+        "GoogleGenAiProviderTests and ProviderChatClientFactoryTests pass 33/33 locally, covering the embedded catalog, deterministic HTTP/SSE, MAF tool continuation, signatures, Gemini-version image routing and custom-provider rejection. Formatting and warnings-as-errors build pass. The first full-suite run reported 781/783 before the custom-provider guard was restored; the affected suites passed 33/33 afterward. Exact-head CI and current-Pi Google differential coverage remain outstanding."
       ],
       "dependencies": []
     }
