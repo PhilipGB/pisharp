@@ -6,7 +6,8 @@ namespace PiSharp.Cli;
 
 public sealed record ProviderProfile(string Id, string Name, Uri Endpoint, bool AuthRequired,
     bool OAuthSupported, string? ApiKeyEnvironment, string? ConfiguredApiKey,
-    IReadOnlyList<ModelDescriptor> Models, string? Api = null, JsonElement? Compatibility = null);
+    IReadOnlyList<ModelDescriptor> Models, string? Api = null, JsonElement? Compatibility = null,
+    AzureOpenAiProviderOptions? AzureOpenAi = null);
 
 public sealed record ModelSelection(ProviderProfile Provider, ModelDescriptor Model, string ApiKey,
     bool Authenticated, string AuthSource)
@@ -124,7 +125,7 @@ public sealed class ProviderModelRuntime
                 continue;
             }
             // These built-ins use pinned, provider-owned catalogues rather than generic /models discovery.
-            if (_offline || provider.Id is "xai" or "anthropic" or "mistral")
+            if (_offline || provider.Id is "xai" or "anthropic" or "mistral" or "azure-openai-responses")
             {
                 result.AddRange(provider.Models.Select(model => model with { Provider = provider.Id }));
                 continue;

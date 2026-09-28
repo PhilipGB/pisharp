@@ -18,8 +18,10 @@ public static class ProviderChatClientFactory
             "mistral" => "mistral-conversations",
             _ => "openai-completions"
         });
-        if (protocol is not ("openai-responses" or "openai-completions" or "anthropic-messages" or "mistral-conversations"))
+        if (protocol is not ("openai-responses" or "openai-completions" or "anthropic-messages" or "mistral-conversations" or "azure-openai-responses"))
             throw new NotSupportedException($"Model '{selection.Provider.Id}/{selection.Model.Id}' requires unsupported API '{protocol}'.");
+        if (protocol == "azure-openai-responses")
+            _ = AzureOpenAiEndpoint.RequireConfigured(selection.Connection.Endpoint ?? selection.Provider.Endpoint);
         // The official OpenAI identity must never be redirected by catalog metadata to an alternate endpoint.
         if (selection.Provider.Id == "openai" && !ProviderModelRuntime.IsOfficialOpenAiEndpoint(selection.Provider.Endpoint))
             throw new InvalidOperationException("The built-in OpenAI identity requires the official endpoint.");
@@ -61,12 +63,26 @@ public static class ProviderChatClientFactory
                 NetworkTimeout = sdkTimeout,
                 RetryPolicy = new ClientRetryPolicy(0)
             };
-            if (selection.Connection.Endpoint is not null) options.Endpoint = selection.Connection.Endpoint;
+            if (protocol == "azure-openai-responses")
+                options.Endpoint = AzureOpenAiEndpoint.RequireConfigured(
+                    selection.Connection.Endpoint ?? selection.Provider.Endpoint);
+            else if (selection.Connection.Endpoint is not null) options.Endpoint = selection.Connection.Endpoint;
             if (protocol == "openai-responses")
                 options.Transport = new HttpClientPipelineTransport(
                     new HttpClient(new ProviderWireActivityHandler(new HttpClientHandler()), disposeHandler: true));
             OpenAiToolCallDeltaCapture? toolCallCapture = null;
             MistralChatRequestContext? mistralContext = null;
+            AzureOpenAiRequestContext? azureContext = null;
+            if (protocol == "azure-openai-responses")
+            {
+                azureContext = new AzureOpenAiRequestContext();
+                var azureOptions = selection.Provider.AzureOpenAi ??
+                    new AzureOpenAiProviderOptions("v1", new Dictionary<string, string>(StringComparer.Ordinal));
+                options.Transport = new HttpClientPipelineTransport(new HttpClient(
+                    new AzureOpenAiRequestHandler(selection.ApiKey, azureOptions, azureContext,
+                        new ProviderWireActivityHandler(new HttpClientHandler { AllowAutoRedirect = false })),
+                    disposeHandler: true));
+            }
             if (protocol is "openai-completions" or "mistral-conversations")
             {
                 HttpMessageHandler? handler = null;
@@ -82,13 +98,15 @@ public static class ProviderChatClientFactory
             var client = new OpenAIClient(new ApiKeyCredential(selection.ApiKey), options);
             // The Responses adapter in the pinned OpenAI/MEAI SDK is still marked experimental.
 #pragma warning disable OPENAI001
-            var chat = protocol == "openai-responses"
+            var chat = protocol is "openai-responses" or "azure-openai-responses"
                 ? new StatelessResponsesChatClient(client.GetResponsesClient().AsIChatClient(selection.Model.Id))
                 : client.GetChatClient(selection.Model.Id).AsIChatClient();
 #pragma warning restore OPENAI001
             providerClient = toolCallCapture is null ? chat : new OpenAiCompletionsToolCallDeltaClient(chat, toolCallCapture);
             if (mistralContext is not null)
                 providerClient = new MistralChatOptionsClient(providerClient, selection.Model, mistralContext);
+            if (azureContext is not null)
+                providerClient = new AzureOpenAiChatOptionsClient(providerClient, azureContext);
         }
         var timeoutClient = new ProviderRequestTimeoutChatClient(providerClient, requestTimeout, idleTimeout);
         return new ProviderRetryChatClient(timeoutClient, providerMaxRetries,

@@ -1,0 +1,1621 @@
+[
+  {
+    "id": "gpt-4",
+    "owner": "azure-openai-responses",
+    "contextLength": 8192,
+    "status": "pinned catalogue",
+    "reasoning": false,
+    "pricing": {
+      "input": 30,
+      "output": 60,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "azure-openai-responses",
+    "name": "GPT-4",
+    "maxOutputTokens": 8192,
+    "input": [
+      "text"
+    ],
+    "api": "azure-openai-responses",
+    "inputLimits": null,
+    "thinkingLevelMap": null,
+    "promptCache": null,
+    "samplingParameters": null,
+    "compatibility": null
+  },
+  {
+    "id": "gpt-4-turbo",
+    "owner": "azure-openai-responses",
+    "contextLength": 128000,
+    "status": "pinned catalogue",
+    "reasoning": false,
+    "pricing": {
+      "input": 10,
+      "output": 30,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "azure-openai-responses",
+    "name": "GPT-4 Turbo",
+    "maxOutputTokens": 4096,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "azure-openai-responses",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "thinkingLevelMap": null,
+    "promptCache": null,
+    "samplingParameters": null,
+    "compatibility": null
+  },
+  {
+    "id": "gpt-4.1",
+    "owner": "azure-openai-responses",
+    "contextLength": 1047576,
+    "status": "pinned catalogue",
+    "reasoning": false,
+    "pricing": {
+      "input": 2,
+      "output": 8,
+      "cachedInput": 0.5,
+      "cachedWrite": 0
+    },
+    "provider": "azure-openai-responses",
+    "name": "GPT-4.1",
+    "maxOutputTokens": 32768,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "azure-openai-responses",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "thinkingLevelMap": null,
+    "promptCache": null,
+    "samplingParameters": null,
+    "compatibility": null
+  },
+  {
+    "id": "gpt-4.1-mini",
+    "owner": "azure-openai-responses",
+    "contextLength": 1047576,
+    "status": "pinned catalogue",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.4,
+      "output": 1.6,
+      "cachedInput": 0.1,
+      "cachedWrite": 0
+    },
+    "provider": "azure-openai-responses",
+    "name": "GPT-4.1 mini",
+    "maxOutputTokens": 32768,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "azure-openai-responses",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "thinkingLevelMap": null,
+    "promptCache": null,
+    "samplingParameters": null,
+    "compatibility": null
+  },
+  {
+    "id": "gpt-4.1-nano",
+    "owner": "azure-openai-responses",
+    "contextLength": 1047576,
+    "status": "pinned catalogue",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.1,
+      "output": 0.4,
+      "cachedInput": 0.025,
+      "cachedWrite": 0
+    },
+    "provider": "azure-openai-responses",
+    "name": "GPT-4.1 nano",
+    "maxOutputTokens": 32768,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "azure-openai-responses",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "thinkingLevelMap": null,
+    "promptCache": null,
+    "samplingParameters": null,
+    "compatibility": null
+  },
+  {
+    "id": "gpt-4o",
+    "owner": "azure-openai-responses",
+    "contextLength": 128000,
+    "status": "pinned catalogue",
+    "reasoning": false,
+    "pricing": {
+      "input": 2.5,
+      "output": 10,
+      "cachedInput": 1.25,
+      "cachedWrite": 0
+    },
+    "provider": "azure-openai-responses",
+    "name": "GPT-4o",
+    "maxOutputTokens": 16384,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "azure-openai-responses",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "thinkingLevelMap": null,
+    "promptCache": null,
+    "samplingParameters": null,
+    "compatibility": null
+  },
+  {
+    "id": "gpt-4o-2024-05-13",
+    "owner": "azure-openai-responses",
+    "contextLength": 128000,
+    "status": "pinned catalogue",
+    "reasoning": false,
+    "pricing": {
+      "input": 5,
+      "output": 15,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "azure-openai-responses",
+    "name": "GPT-4o (2024-05-13)",
+    "maxOutputTokens": 4096,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "azure-openai-responses",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "thinkingLevelMap": null,
+    "promptCache": null,
+    "samplingParameters": null,
+    "compatibility": null
+  },
+  {
+    "id": "gpt-4o-2024-08-06",
+    "owner": "azure-openai-responses",
+    "contextLength": 128000,
+    "status": "pinned catalogue",
+    "reasoning": false,
+    "pricing": {
+      "input": 2.5,
+      "output": 10,
+      "cachedInput": 1.25,
+      "cachedWrite": 0
+    },
+    "provider": "azure-openai-responses",
+    "name": "GPT-4o (2024-08-06)",
+    "maxOutputTokens": 16384,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "azure-openai-responses",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "thinkingLevelMap": null,
+    "promptCache": null,
+    "samplingParameters": null,
+    "compatibility": null
+  },
+  {
+    "id": "gpt-4o-2024-11-20",
+    "owner": "azure-openai-responses",
+    "contextLength": 128000,
+    "status": "pinned catalogue",
+    "reasoning": false,
+    "pricing": {
+      "input": 2.5,
+      "output": 10,
+      "cachedInput": 1.25,
+      "cachedWrite": 0
+    },
+    "provider": "azure-openai-responses",
+    "name": "GPT-4o (2024-11-20)",
+    "maxOutputTokens": 16384,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "azure-openai-responses",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "thinkingLevelMap": null,
+    "promptCache": null,
+    "samplingParameters": null,
+    "compatibility": null
+  },
+  {
+    "id": "gpt-4o-mini",
+    "owner": "azure-openai-responses",
+    "contextLength": 128000,
+    "status": "pinned catalogue",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.15,
+      "output": 0.6,
+      "cachedInput": 0.075,
+      "cachedWrite": 0
+    },
+    "provider": "azure-openai-responses",
+    "name": "GPT-4o mini",
+    "maxOutputTokens": 16384,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "azure-openai-responses",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "thinkingLevelMap": null,
+    "promptCache": null,
+    "samplingParameters": null,
+    "compatibility": null
+  },
+  {
+    "id": "gpt-5",
+    "owner": "azure-openai-responses",
+    "contextLength": 400000,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 1.25,
+      "output": 10,
+      "cachedInput": 0.125,
+      "cachedWrite": 0
+    },
+    "provider": "azure-openai-responses",
+    "name": "GPT-5",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "azure-openai-responses",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "thinkingLevelMap": {
+      "off": null
+    },
+    "promptCache": null,
+    "samplingParameters": null,
+    "compatibility": {
+      "supportsOpenAIGrammarTools": true
+    }
+  },
+  {
+    "id": "gpt-5-chat-latest",
+    "owner": "azure-openai-responses",
+    "contextLength": 128000,
+    "status": "pinned catalogue",
+    "reasoning": false,
+    "pricing": {
+      "input": 1.25,
+      "output": 10,
+      "cachedInput": 0.125,
+      "cachedWrite": 0
+    },
+    "provider": "azure-openai-responses",
+    "name": "GPT-5 Chat Latest",
+    "maxOutputTokens": 16384,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "azure-openai-responses",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "thinkingLevelMap": {
+      "off": null
+    },
+    "promptCache": null,
+    "samplingParameters": null,
+    "compatibility": {
+      "supportsOpenAIGrammarTools": true
+    }
+  },
+  {
+    "id": "gpt-5-mini",
+    "owner": "azure-openai-responses",
+    "contextLength": 400000,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.25,
+      "output": 2,
+      "cachedInput": 0.025,
+      "cachedWrite": 0
+    },
+    "provider": "azure-openai-responses",
+    "name": "GPT-5 Mini",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "azure-openai-responses",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "thinkingLevelMap": {
+      "off": null
+    },
+    "promptCache": null,
+    "samplingParameters": null,
+    "compatibility": {
+      "supportsOpenAIGrammarTools": true
+    }
+  },
+  {
+    "id": "gpt-5-nano",
+    "owner": "azure-openai-responses",
+    "contextLength": 400000,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.05,
+      "output": 0.4,
+      "cachedInput": 0.005,
+      "cachedWrite": 0
+    },
+    "provider": "azure-openai-responses",
+    "name": "GPT-5 Nano",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "azure-openai-responses",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "thinkingLevelMap": {
+      "off": null
+    },
+    "promptCache": null,
+    "samplingParameters": null,
+    "compatibility": {
+      "supportsOpenAIGrammarTools": true
+    }
+  },
+  {
+    "id": "gpt-5-pro",
+    "owner": "azure-openai-responses",
+    "contextLength": 400000,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 15,
+      "output": 120,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "azure-openai-responses",
+    "name": "GPT-5 Pro",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "azure-openai-responses",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "thinkingLevelMap": {
+      "off": null
+    },
+    "promptCache": null,
+    "samplingParameters": null,
+    "compatibility": {
+      "supportsOpenAIGrammarTools": true
+    }
+  },
+  {
+    "id": "gpt-5.1",
+    "owner": "azure-openai-responses",
+    "contextLength": 400000,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 1.25,
+      "output": 10,
+      "cachedInput": 0.125,
+      "cachedWrite": 0
+    },
+    "provider": "azure-openai-responses",
+    "name": "GPT-5.1",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "azure-openai-responses",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "thinkingLevelMap": {
+      "off": null
+    },
+    "promptCache": null,
+    "samplingParameters": null,
+    "compatibility": {
+      "supportsOpenAIGrammarTools": true
+    }
+  },
+  {
+    "id": "gpt-5.2",
+    "owner": "azure-openai-responses",
+    "contextLength": 400000,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 1.75,
+      "output": 14,
+      "cachedInput": 0.175,
+      "cachedWrite": 0
+    },
+    "provider": "azure-openai-responses",
+    "name": "GPT-5.2",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "azure-openai-responses",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "thinkingLevelMap": {
+      "off": null,
+      "xhigh": "xhigh"
+    },
+    "promptCache": null,
+    "samplingParameters": null,
+    "compatibility": {
+      "supportsOpenAIGrammarTools": true
+    }
+  },
+  {
+    "id": "gpt-5.2-chat-latest",
+    "owner": "azure-openai-responses",
+    "contextLength": 128000,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 1.75,
+      "output": 14,
+      "cachedInput": 0.175,
+      "cachedWrite": 0
+    },
+    "provider": "azure-openai-responses",
+    "name": "GPT-5.2 Chat",
+    "maxOutputTokens": 16384,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "azure-openai-responses",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "thinkingLevelMap": {
+      "off": null,
+      "xhigh": "xhigh"
+    },
+    "promptCache": null,
+    "samplingParameters": null,
+    "compatibility": {
+      "supportsOpenAIGrammarTools": true
+    }
+  },
+  {
+    "id": "gpt-5.2-pro",
+    "owner": "azure-openai-responses",
+    "contextLength": 400000,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 21,
+      "output": 168,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "azure-openai-responses",
+    "name": "GPT-5.2 Pro",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "azure-openai-responses",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "thinkingLevelMap": {
+      "off": null,
+      "xhigh": "xhigh"
+    },
+    "promptCache": null,
+    "samplingParameters": null,
+    "compatibility": {
+      "supportsOpenAIGrammarTools": true
+    }
+  },
+  {
+    "id": "gpt-5.3-chat-latest",
+    "owner": "azure-openai-responses",
+    "contextLength": 128000,
+    "status": "pinned catalogue",
+    "reasoning": false,
+    "pricing": {
+      "input": 1.75,
+      "output": 14,
+      "cachedInput": 0.175,
+      "cachedWrite": 0
+    },
+    "provider": "azure-openai-responses",
+    "name": "GPT-5.3 Chat (latest)",
+    "maxOutputTokens": 16384,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "azure-openai-responses",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "thinkingLevelMap": {
+      "off": null,
+      "xhigh": "xhigh"
+    },
+    "promptCache": null,
+    "samplingParameters": null,
+    "compatibility": {
+      "supportsOpenAIGrammarTools": true
+    }
+  },
+  {
+    "id": "gpt-5.3-codex",
+    "owner": "azure-openai-responses",
+    "contextLength": 400000,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 1.75,
+      "output": 14,
+      "cachedInput": 0.175,
+      "cachedWrite": 0
+    },
+    "provider": "azure-openai-responses",
+    "name": "GPT-5.3 Codex",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "azure-openai-responses",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "thinkingLevelMap": {
+      "off": null,
+      "xhigh": "xhigh"
+    },
+    "promptCache": null,
+    "samplingParameters": null,
+    "compatibility": {
+      "supportsOpenAIGrammarTools": true
+    }
+  },
+  {
+    "id": "gpt-5.3-codex-spark",
+    "owner": "azure-openai-responses",
+    "contextLength": 128000,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 1.75,
+      "output": 14,
+      "cachedInput": 0.175,
+      "cachedWrite": 0
+    },
+    "provider": "azure-openai-responses",
+    "name": "GPT-5.3 Codex Spark",
+    "maxOutputTokens": 32000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "azure-openai-responses",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "thinkingLevelMap": {
+      "off": null,
+      "xhigh": "xhigh"
+    },
+    "promptCache": null,
+    "samplingParameters": null,
+    "compatibility": {
+      "supportsOpenAIGrammarTools": true
+    }
+  },
+  {
+    "id": "gpt-5.4",
+    "owner": "azure-openai-responses",
+    "contextLength": 1050000,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 2.5,
+      "output": 15,
+      "cachedInput": 0.25,
+      "cachedWrite": 0
+    },
+    "provider": "azure-openai-responses",
+    "name": "GPT-5.4",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "azure-openai-responses",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "thinkingLevelMap": {
+      "off": null,
+      "xhigh": "xhigh"
+    },
+    "promptCache": null,
+    "samplingParameters": null,
+    "compatibility": {
+      "supportsOpenAIGrammarTools": true
+    }
+  },
+  {
+    "id": "gpt-5.4-mini",
+    "owner": "azure-openai-responses",
+    "contextLength": 400000,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.75,
+      "output": 4.5,
+      "cachedInput": 0.075,
+      "cachedWrite": 0
+    },
+    "provider": "azure-openai-responses",
+    "name": "GPT-5.4 mini",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "azure-openai-responses",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "thinkingLevelMap": {
+      "off": null,
+      "xhigh": "xhigh"
+    },
+    "promptCache": null,
+    "samplingParameters": null,
+    "compatibility": {
+      "supportsOpenAIGrammarTools": true
+    }
+  },
+  {
+    "id": "gpt-5.4-nano",
+    "owner": "azure-openai-responses",
+    "contextLength": 400000,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.2,
+      "output": 1.25,
+      "cachedInput": 0.02,
+      "cachedWrite": 0
+    },
+    "provider": "azure-openai-responses",
+    "name": "GPT-5.4 nano",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "azure-openai-responses",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "thinkingLevelMap": {
+      "off": null,
+      "xhigh": "xhigh"
+    },
+    "promptCache": null,
+    "samplingParameters": null,
+    "compatibility": {
+      "supportsOpenAIGrammarTools": true
+    }
+  },
+  {
+    "id": "gpt-5.4-pro",
+    "owner": "azure-openai-responses",
+    "contextLength": 1050000,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 30,
+      "output": 180,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "azure-openai-responses",
+    "name": "GPT-5.4 Pro",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "azure-openai-responses",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "thinkingLevelMap": {
+      "off": null,
+      "xhigh": "xhigh"
+    },
+    "promptCache": null,
+    "samplingParameters": null,
+    "compatibility": {
+      "supportsOpenAIGrammarTools": true
+    }
+  },
+  {
+    "id": "gpt-5.5",
+    "owner": "azure-openai-responses",
+    "contextLength": 1050000,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 5,
+      "output": 30,
+      "cachedInput": 0.5,
+      "cachedWrite": 0
+    },
+    "provider": "azure-openai-responses",
+    "name": "GPT-5.5",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "azure-openai-responses",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "thinkingLevelMap": {
+      "off": null,
+      "xhigh": "xhigh"
+    },
+    "promptCache": null,
+    "samplingParameters": null,
+    "compatibility": {
+      "supportsOpenAIGrammarTools": true
+    }
+  },
+  {
+    "id": "gpt-5.5-pro",
+    "owner": "azure-openai-responses",
+    "contextLength": 1050000,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 30,
+      "output": 180,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "azure-openai-responses",
+    "name": "GPT-5.5 Pro",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "azure-openai-responses",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "thinkingLevelMap": {
+      "off": null,
+      "xhigh": "xhigh",
+      "minimal": null,
+      "low": null
+    },
+    "promptCache": null,
+    "samplingParameters": null,
+    "compatibility": {
+      "supportsOpenAIGrammarTools": true
+    }
+  },
+  {
+    "id": "gpt-5.6-luna",
+    "owner": "azure-openai-responses",
+    "contextLength": 1050000,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.2,
+      "output": 1.2,
+      "cachedInput": 0.02,
+      "cachedWrite": 0.25
+    },
+    "provider": "azure-openai-responses",
+    "name": "GPT-5.6 Luna",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "azure-openai-responses",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "thinkingLevelMap": {
+      "off": null,
+      "xhigh": "xhigh",
+      "max": "max"
+    },
+    "promptCache": null,
+    "samplingParameters": null,
+    "compatibility": {
+      "supportsOpenAIGrammarTools": true
+    }
+  },
+  {
+    "id": "gpt-5.6-sol",
+    "owner": "azure-openai-responses",
+    "contextLength": 1050000,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 4,
+      "output": 20,
+      "cachedInput": 0.4,
+      "cachedWrite": 5
+    },
+    "provider": "azure-openai-responses",
+    "name": "GPT-5.6 Sol",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "azure-openai-responses",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "thinkingLevelMap": {
+      "off": null,
+      "xhigh": "xhigh",
+      "max": "max"
+    },
+    "promptCache": null,
+    "samplingParameters": null,
+    "compatibility": {
+      "supportsOpenAIGrammarTools": true
+    }
+  },
+  {
+    "id": "gpt-5.6-terra",
+    "owner": "azure-openai-responses",
+    "contextLength": 1050000,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 2,
+      "output": 12,
+      "cachedInput": 0.2,
+      "cachedWrite": 2.5
+    },
+    "provider": "azure-openai-responses",
+    "name": "GPT-5.6 Terra",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "azure-openai-responses",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "thinkingLevelMap": {
+      "off": null,
+      "xhigh": "xhigh",
+      "max": "max"
+    },
+    "promptCache": null,
+    "samplingParameters": null,
+    "compatibility": {
+      "supportsOpenAIGrammarTools": true
+    }
+  },
+  {
+    "id": "gpt-6-astra",
+    "owner": "azure-openai-responses",
+    "contextLength": 272000,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 10,
+      "output": 50,
+      "cachedInput": 1,
+      "cachedWrite": 12.5
+    },
+    "provider": "azure-openai-responses",
+    "name": "GPT-6 Astra",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "azure-openai-responses",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "thinkingLevelMap": {
+      "off": null,
+      "minimal": null,
+      "low": "low",
+      "medium": "medium",
+      "high": "high",
+      "xhigh": "xhigh",
+      "max": "max"
+    },
+    "promptCache": null,
+    "samplingParameters": null,
+    "compatibility": {
+      "supportsOpenAIGrammarTools": true
+    }
+  },
+  {
+    "id": "gpt-6-luna",
+    "owner": "azure-openai-responses",
+    "contextLength": 272000,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.1,
+      "output": 0.5,
+      "cachedInput": 0.01,
+      "cachedWrite": 0.125
+    },
+    "provider": "azure-openai-responses",
+    "name": "GPT-6 Luna",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "azure-openai-responses",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "thinkingLevelMap": {
+      "off": "none",
+      "minimal": null,
+      "low": "low",
+      "medium": "medium",
+      "high": "high",
+      "xhigh": "xhigh",
+      "max": "max"
+    },
+    "promptCache": null,
+    "samplingParameters": null,
+    "compatibility": {
+      "supportsOpenAIGrammarTools": true
+    }
+  },
+  {
+    "id": "gpt-6-sol",
+    "owner": "azure-openai-responses",
+    "contextLength": 272000,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 2,
+      "output": 10,
+      "cachedInput": 0.2,
+      "cachedWrite": 2.5
+    },
+    "provider": "azure-openai-responses",
+    "name": "GPT-6 Sol",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "azure-openai-responses",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "thinkingLevelMap": {
+      "off": "none",
+      "minimal": null,
+      "low": "low",
+      "medium": "medium",
+      "high": "high",
+      "xhigh": "xhigh",
+      "max": "max"
+    },
+    "promptCache": null,
+    "samplingParameters": null,
+    "compatibility": {
+      "supportsOpenAIGrammarTools": true
+    }
+  },
+  {
+    "id": "gpt-daybreak-blue-latest",
+    "owner": "azure-openai-responses",
+    "contextLength": 1050000,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 4,
+      "output": 20,
+      "cachedInput": 0.4,
+      "cachedWrite": 5
+    },
+    "provider": "azure-openai-responses",
+    "name": "Daybreak Blue",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "azure-openai-responses",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "thinkingLevelMap": null,
+    "promptCache": null,
+    "samplingParameters": null,
+    "compatibility": null
+  },
+  {
+    "id": "gpt-daybreak-red-latest",
+    "owner": "azure-openai-responses",
+    "contextLength": 400000,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 12.5,
+      "output": 75,
+      "cachedInput": 1.25,
+      "cachedWrite": 15.625
+    },
+    "provider": "azure-openai-responses",
+    "name": "Daybreak Red",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "azure-openai-responses",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "thinkingLevelMap": null,
+    "promptCache": null,
+    "samplingParameters": null,
+    "compatibility": null
+  },
+  {
+    "id": "gpt-realtime-2.1",
+    "owner": "azure-openai-responses",
+    "contextLength": 128000,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 4,
+      "output": 24,
+      "cachedInput": 0.4,
+      "cachedWrite": 0
+    },
+    "provider": "azure-openai-responses",
+    "name": "GPT-Realtime-2.1",
+    "maxOutputTokens": 32000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "azure-openai-responses",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "thinkingLevelMap": null,
+    "promptCache": null,
+    "samplingParameters": null,
+    "compatibility": null
+  },
+  {
+    "id": "o1",
+    "owner": "azure-openai-responses",
+    "contextLength": 200000,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 15,
+      "output": 60,
+      "cachedInput": 7.5,
+      "cachedWrite": 0
+    },
+    "provider": "azure-openai-responses",
+    "name": "o1",
+    "maxOutputTokens": 100000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "azure-openai-responses",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "thinkingLevelMap": null,
+    "promptCache": null,
+    "samplingParameters": null,
+    "compatibility": null
+  },
+  {
+    "id": "o1-pro",
+    "owner": "azure-openai-responses",
+    "contextLength": 200000,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 150,
+      "output": 600,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "azure-openai-responses",
+    "name": "o1-pro",
+    "maxOutputTokens": 100000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "azure-openai-responses",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "thinkingLevelMap": null,
+    "promptCache": null,
+    "samplingParameters": null,
+    "compatibility": null
+  },
+  {
+    "id": "o3",
+    "owner": "azure-openai-responses",
+    "contextLength": 200000,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 2,
+      "output": 8,
+      "cachedInput": 0.5,
+      "cachedWrite": 0
+    },
+    "provider": "azure-openai-responses",
+    "name": "o3",
+    "maxOutputTokens": 100000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "azure-openai-responses",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "thinkingLevelMap": null,
+    "promptCache": null,
+    "samplingParameters": null,
+    "compatibility": null
+  },
+  {
+    "id": "o3-mini",
+    "owner": "azure-openai-responses",
+    "contextLength": 200000,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 1.1,
+      "output": 4.4,
+      "cachedInput": 0.55,
+      "cachedWrite": 0
+    },
+    "provider": "azure-openai-responses",
+    "name": "o3-mini",
+    "maxOutputTokens": 100000,
+    "input": [
+      "text"
+    ],
+    "api": "azure-openai-responses",
+    "inputLimits": null,
+    "thinkingLevelMap": null,
+    "promptCache": null,
+    "samplingParameters": null,
+    "compatibility": null
+  },
+  {
+    "id": "o3-pro",
+    "owner": "azure-openai-responses",
+    "contextLength": 200000,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 20,
+      "output": 80,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "azure-openai-responses",
+    "name": "o3-pro",
+    "maxOutputTokens": 100000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "azure-openai-responses",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "thinkingLevelMap": null,
+    "promptCache": null,
+    "samplingParameters": null,
+    "compatibility": null
+  },
+  {
+    "id": "o4-mini",
+    "owner": "azure-openai-responses",
+    "contextLength": 200000,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 1.1,
+      "output": 4.4,
+      "cachedInput": 0.275,
+      "cachedWrite": 0
+    },
+    "provider": "azure-openai-responses",
+    "name": "o4-mini",
+    "maxOutputTokens": 100000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "azure-openai-responses",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "thinkingLevelMap": null,
+    "promptCache": null,
+    "samplingParameters": null,
+    "compatibility": null
+  }
+]

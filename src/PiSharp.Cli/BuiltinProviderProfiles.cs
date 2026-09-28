@@ -51,6 +51,7 @@ internal static class BuiltinProviderProfiles
         else
             mistralModels.Insert(0, new(mistralDefault, "mistral", null, "configured",
                 Provider: "mistral", Api: "mistral-conversations"));
+        var azureModels = AzureOpenAiModelCatalog.Load();
         return new(StringComparer.OrdinalIgnoreCase)
         {
             ["openai"] = new("openai", "OpenAI", new Uri("https://api.openai.com/v1"), true, false,
@@ -64,6 +65,10 @@ internal static class BuiltinProviderProfiles
             ["anthropic"] = new("anthropic", "Anthropic", new Uri("https://api.anthropic.com"), true, false,
                 "ANTHROPIC_API_KEY", null,
                 anthropicModels),
+            ["azure-openai-responses"] = new("azure-openai-responses", "Azure OpenAI",
+                AzureOpenAiEndpoint.FromEnvironment(environment), true, false,
+                "AZURE_OPENAI_API_KEY", null, azureModels, Api: "azure-openai-responses",
+                AzureOpenAi: AzureOpenAiProviderOptions.FromEnvironment(environment)),
             ["xai"] = new("xai", "xAI", new Uri("https://api.x.ai/v1"), true, false,
                 "XAI_API_KEY", null, xaiModels)
         };

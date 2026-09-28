@@ -98,7 +98,7 @@ internal static class ProviderProfileLoader
             if (existing is not null && item.Name is not ("local" or "custom" or "openai") &&
                 !SameEndpoint(existing.Endpoint, endpoint))
                 throw new InvalidDataException($"Built-in provider '{item.Name}' cannot use a custom endpoint; choose a new provider ID.");
-            foreach (var reserved in providers.Values.Where(profile => profile.Id is "openai" or "openrouter" or "mistral" or "xai" or "anthropic"))
+            foreach (var reserved in providers.Values.Where(profile => profile.Id is "openai" or "openrouter" or "mistral" or "xai" or "anthropic" or "azure-openai-responses"))
                 if (apiKeyEnvironment?.Equals(reserved.ApiKeyEnvironment, StringComparison.OrdinalIgnoreCase) == true &&
                     (!item.Name.Equals(reserved.Id, StringComparison.OrdinalIgnoreCase) || !SameEndpoint(endpoint, reserved.Endpoint)))
                     throw new InvalidDataException($"Provider '{item.Name}' cannot borrow {reserved.ApiKeyEnvironment}; use its own credential environment variable.");
@@ -107,7 +107,8 @@ internal static class ProviderProfileLoader
                 throw new InvalidDataException("models.json cannot enable OAuth without a provider-specific refresh adapter.");
             providers[canonicalId] = new(canonicalId, String(value, "name") ?? existing?.Name ?? item.Name,
                 endpoint, authHeader, false, apiKeyEnvironment,
-                String(value, "apiKey"), models.Count == 0 ? existing?.Models ?? [] : models, api, compatibility);
+                String(value, "apiKey"), models.Count == 0 ? existing?.Models ?? [] : models, api, compatibility,
+                existing?.AzureOpenAi);
         }
     }
 
