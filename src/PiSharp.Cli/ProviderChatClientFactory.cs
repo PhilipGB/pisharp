@@ -24,7 +24,7 @@ public static class ProviderChatClientFactory
             throw new NotSupportedException($"Model '{selection.Provider.Id}/{selection.Model.Id}' requires unsupported API '{protocol}'.");
         if (protocol == "bedrock-converse-stream" && selection.Provider.Id != "amazon-bedrock")
             throw new NotSupportedException($"Model '{selection.Provider.Id}/{selection.Model.Id}' requires unsupported API '{protocol}'.");
-        if (protocol is not ("openai-responses" or "openai-completions" or "anthropic-messages" or "mistral-conversations" or "azure-openai-responses" or "openai-codex-responses" or "google-generative-ai" or "google-vertex" or "bedrock-converse-stream"))
+        if (protocol is not ("openai-responses" or "openai-completions" or "anthropic-messages" or "mistral-conversations" or "azure-openai-responses" or "openai-codex-responses" or "google-generative-ai" or "google-vertex" or "bedrock-converse-stream" or "pi-messages"))
             throw new NotSupportedException($"Model '{selection.Provider.Id}/{selection.Model.Id}' requires unsupported API '{protocol}'.");
         if (protocol == "azure-openai-responses")
             _ = AzureOpenAiEndpoint.RequireConfigured(selection.Connection.Endpoint ?? selection.Provider.Endpoint);
@@ -49,6 +49,10 @@ public static class ProviderChatClientFactory
         if (protocol == "bedrock-converse-stream")
         {
             providerClient = BedrockConverseChatClientFactory.Create(selection);
+        }
+        else if (protocol == "pi-messages")
+        {
+            providerClient = PiMessagesChatClientFactory.Create(selection);
         }
         else if (protocol == "google-generative-ai")
         {
