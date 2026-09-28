@@ -52,7 +52,7 @@ internal sealed class TranscriptSearchController
 
         _selection = Math.Clamp(_selection, 0, _matchCount - 1);
         var selected = matches[_selection];
-        return new(HighlightMatches(text, matches, _selection), _matchCount, selected.TextStart);
+        return new(HighlightMatches(text, matches, _selection), _matchCount, selected.RawStart);
     }
 
     private static SearchProjection CreateProjection(string text)
@@ -61,7 +61,12 @@ internal sealed class TranscriptSearchController
         var rawOffsets = new List<int>(text.Length + 1);
         for (var offset = 0; offset < text.Length;)
         {
-            if (TryReadSgr(text, offset, out var sequenceLength))
+            if (TerminalImageRenderer.TryReadMarker(text, offset, out var markerLength, out _, out _))
+            {
+                offset += markerLength;
+                continue;
+            }
+            if (TerminalTextLayout.TryReadEscape(text, offset, out var sequenceLength))
             {
                 offset += sequenceLength;
                 continue;
@@ -90,7 +95,7 @@ internal sealed class TranscriptSearchController
                 break;
             }
             var end = start + query.Length;
-            matches.Add(new(start, projection.RawOffsets[start], projection.RawOffsets[end]));
+            matches.Add(new(projection.RawOffsets[start], projection.RawOffsets[end]));
             cursor = Math.Max(start + 1, end);
         }
         return matches;
@@ -113,20 +118,8 @@ internal sealed class TranscriptSearchController
         return output.ToString();
     }
 
-    private static bool TryReadSgr(string text, int offset, out int length)
-    {
-        length = 0;
-        if (offset + 2 >= text.Length || text[offset] != '\u001b' || text[offset + 1] != '[') return false;
-        var end = text.IndexOf('m', offset + 2);
-        if (end < 0) return false;
-        for (var index = offset + 2; index < end; index++)
-            if (text[index] is not (>= '0' and <= '9') and not ';') return false;
-        length = end - offset + 1;
-        return true;
-    }
-
     private sealed record SearchProjection(string Text, int[] RawOffsets);
-    private readonly record struct SearchMatch(int TextStart, int RawStart, int RawEnd);
+    private readonly record struct SearchMatch(int RawStart, int RawEnd);
 }
 
 internal readonly record struct TranscriptSearchState(int MatchCount, int SelectedMatch, bool HasMoreMatches);

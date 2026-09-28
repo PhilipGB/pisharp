@@ -50,7 +50,8 @@ internal static class TerminalMarkdownRenderer
             case CodeBlock code:
                 return RenderCodeBlock(code, null, theme, codeBlockIndent);
             case HeadingBlock heading:
-                return theme.Style("mdHeading", TerminalMarkdownInlineRenderer.Render(heading.Inline?.FirstChild, styled: true, theme), bold: true);
+                return TerminalMarkdownInlineRenderer.Render(heading.Inline?.FirstChild, styled: true, theme: theme,
+                    baseStyle: "\u001b[1m" + theme.Fg("mdHeading"));
             case ParagraphBlock paragraph:
                 return TerminalMarkdownInlineRenderer.Render(paragraph.Inline?.FirstChild, styled: true, theme);
             case Markdig.Extensions.Tables.Table table:

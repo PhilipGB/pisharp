@@ -27,17 +27,17 @@ internal sealed class TerminalScreenCompositor
         var transcriptHeight = Math.Max(1, height - editorHeight - footerHeight);
         var editor = EditorViewport.Layout(editorText, editorCursor, columns, editorHeight);
         var transcriptWidth = Math.Max(1, columns - 1);
-        var visibleTranscript = transcriptText;
+        var transcriptLayout = TerminalTextLayout.Create(transcriptText, transcriptWidth);
+        var visibleLayout = transcriptLayout;
         var highlightedSearch = search.Highlight(transcriptText);
         if (search.Query.Length > 0 && highlightedSearch.MatchCount > 0)
         {
-            var totalRows = TerminalTranscriptViewport.CountVisualRows(transcriptText, transcriptWidth);
-            var selectedRow = TerminalTranscriptViewport.VisualRowAt(transcriptText, highlightedSearch.SelectedTextStart, transcriptWidth);
-            scrollOffset = TerminalTranscriptViewport.ScrollOffsetToShow(totalRows, selectedRow, transcriptHeight);
-            visibleTranscript = highlightedSearch.HighlightedText;
+            var selectedRow = transcriptLayout.VisualRowAt(highlightedSearch.SelectedTextStart);
+            scrollOffset = TerminalTranscriptViewport.ScrollOffsetToShow(transcriptLayout.RowCount, selectedRow, transcriptHeight);
+            visibleLayout = TerminalTextLayout.Create(highlightedSearch.HighlightedText, transcriptWidth);
         }
 
-        var transcriptRows = TerminalTranscriptViewport.WrapWindow(visibleTranscript, transcriptWidth,
+        var transcriptRows = TerminalTranscriptViewport.WrapWindow(visibleLayout,
             transcriptHeight, scrollOffset, out scrollOffset, out var firstVisualRow);
         var rows = Enumerable.Repeat("", height).ToArray();
         var transcriptStart = scrollOffset > 0 ? 0 : transcriptHeight - transcriptRows.Count;

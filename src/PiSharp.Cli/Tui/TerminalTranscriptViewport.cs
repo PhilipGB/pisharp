@@ -11,86 +11,26 @@ internal static class TerminalTranscriptViewport
     public static List<string> WrapWindow(string text, int width, int maxRows, int scrollOffset,
         out int actualScrollOffset, out int firstVisualRow)
     {
-        var capacity = Math.Max(1, maxRows + Math.Clamp(scrollOffset, 0, MaximumScrollOffset));
-        var rows = new Queue<string>(capacity);
-        var totalRows = 0;
-        void Add(string value)
-        {
-            if (rows.Count == capacity) rows.Dequeue();
-            rows.Enqueue(value);
-            totalRows++;
-        }
+        return WrapWindow(TerminalTextLayout.Create(text, width), maxRows, scrollOffset,
+            out actualScrollOffset, out firstVisualRow);
+    }
 
-        foreach (var line in TerminalTextLayout.Wrap(text, width)) Add(line);
-        actualScrollOffset = Math.Min(scrollOffset, Math.Max(0, totalRows - maxRows));
-        var end = rows.Count - actualScrollOffset;
+    public static List<string> WrapWindow(TerminalTextLayout.LayoutResult layout, int maxRows, int scrollOffset,
+        out int actualScrollOffset, out int firstVisualRow)
+    {
+        ArgumentNullException.ThrowIfNull(layout);
+        var totalRows = layout.RowCount;
+        actualScrollOffset = Math.Min(Math.Clamp(scrollOffset, 0, MaximumScrollOffset), Math.Max(0, totalRows - maxRows));
+        var end = totalRows - actualScrollOffset;
         var start = Math.Max(0, end - maxRows);
-        firstVisualRow = totalRows - rows.Count + start;
-        return rows.Skip(start).Take(end - start).ToList();
+        firstVisualRow = start;
+        return layout.Rows.Skip(start).Take(Math.Max(0, end - start)).ToList();
     }
 
-    public static int CountVisualRows(string text, int width)
-    {
-        var rows = 1;
-        var used = 0;
-        for (var offset = 0; offset < text.Length;)
-        {
-            if (TerminalImageRenderer.TryReadMarker(text, offset, out var markerLength, out _, out _))
-            {
-                offset += markerLength;
-                continue;
-            }
-            if (text[offset] == '\n')
-            {
-                rows++;
-                used = 0;
-                offset++;
-                continue;
-            }
-            var element = StringInfo.GetNextTextElement(text, offset);
-            var cells = Math.Max(0, TerminalCells.Width(element));
-            if (used + cells > width && used > 0)
-            {
-                rows++;
-                used = 0;
-            }
-            used += cells;
-            offset += element.Length;
-        }
-        return rows;
-    }
+    public static int CountVisualRows(string text, int width) => TerminalTextLayout.Create(text, width).RowCount;
 
-    public static int VisualRowAt(string text, int index, int width)
-    {
-        var row = 0;
-        var used = 0;
-        for (var offset = 0; offset < index;)
-        {
-            if (TerminalImageRenderer.TryReadMarker(text, offset, out var markerLength, out _, out _))
-            {
-                offset += markerLength;
-                continue;
-            }
-            if (text[offset] == '\n')
-            {
-                row++;
-                used = 0;
-                offset++;
-                continue;
-            }
-            var element = StringInfo.GetNextTextElement(text, offset);
-            if (offset + element.Length > index) return row;
-            var cells = Math.Max(0, TerminalCells.Width(element));
-            if (used + cells > width && used > 0)
-            {
-                row++;
-                used = 0;
-            }
-            used += cells;
-            offset += element.Length;
-        }
-        return row;
-    }
+    public static int VisualRowAt(string text, int index, int width) =>
+        TerminalTextLayout.Create(text, width).VisualRowAt(index);
 
     public static int ScrollOffsetToShow(int totalRows, int selectedRow, int viewportHeight)
     {

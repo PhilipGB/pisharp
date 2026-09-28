@@ -10,19 +10,28 @@ internal static class TerminalMarkdownInlineRenderer
 {
     private const string Reset = "\u001b[0m";
 
-    public static string Render(Inline? first, bool styled, TerminalTheme? theme = null)
+    public static string Render(Inline? first, bool styled, TerminalTheme? theme = null, string? baseStyle = null)
     {
         theme ??= TerminalTheme.Default;
         var output = new StringBuilder();
+        var style = new InlineStyleWriter(output);
+        if (styled && !string.IsNullOrEmpty(baseStyle)) style.Push(baseStyle);
+        AppendInlines(style, first, styled, theme);
+        if (styled && !string.IsNullOrEmpty(baseStyle)) style.Pop();
+        return output.ToString();
+    }
+
+    private static void AppendInlines(InlineStyleWriter output, Inline? first, bool styled, TerminalTheme theme)
+    {
         for (var inline = first; inline is not null; inline = inline.NextSibling)
         {
             switch (inline)
             {
                 case LiteralInline literal:
-                    AppendVisible(output, literal.Content.ToString());
+                    output.Append(Visible(literal.Content.ToString()));
                     break;
                 case CodeInline code:
-                    AppendStyled(output, Visible(code.Content), styled ? theme.Fg("mdCode") : "");
+                    AppendStyled(output, Visible(code.Content), styled ? theme.Fg("mdCode") : "", "\u001b[39m");
                     break;
                 case MathInline math:
                     var (opening, closing) = math.Delimiter switch
@@ -32,13 +41,13 @@ internal static class TerminalMarkdownInlineRenderer
                         _ => (new string('$', Math.Max(1, math.DelimiterCount)),
                             new string('$', Math.Max(1, math.DelimiterCount)))
                     };
-                    AppendStyled(output, Visible(opening + math.Content.ToString() + closing), styled ? theme.Fg("mdCode") : "");
+                    AppendStyled(output, Visible(opening + math.Content.ToString() + closing), styled ? theme.Fg("mdCode") : "", "\u001b[39m");
                     break;
                 case TaskList task:
-                    AppendVisible(output, task.Checked ? "[x]" : "[ ]");
+                    output.Append(task.Checked ? "[x]" : "[ ]");
                     break;
                 case AutolinkInline autoLink:
-                    AppendVisible(output, autoLink.Url);
+                    output.Append(Visible(autoLink.Url));
                     break;
                 case LinkInline link:
                     RenderLink(output, link, styled, theme);
@@ -47,23 +56,22 @@ internal static class TerminalMarkdownInlineRenderer
                     RenderEmphasis(output, emphasis, styled, theme);
                     break;
                 case LineBreakInline:
-                    output.Append('\n');
+                    output.Append("\n");
                     break;
                 case HtmlInline html:
-                    AppendVisible(output, html.Tag);
+                    output.Append(Visible(html.Tag));
                     break;
                 case HtmlEntityInline entity:
-                    AppendVisible(output, entity.Transcoded.ToString());
+                    output.Append(Visible(entity.Transcoded.ToString()));
                     break;
                 case ContainerInline container:
-                    output.Append(Render(container.FirstChild, styled, theme));
+                    AppendInlines(output, container.FirstChild, styled, theme);
                     break;
                 default:
-                    AppendVisible(output, inline.ToString() ?? "");
+                    output.Append(Visible(inline.ToString() ?? ""));
                     break;
             }
         }
-        return output.ToString();
     }
 
     public static string Visible(string text)
@@ -73,23 +81,45 @@ internal static class TerminalMarkdownInlineRenderer
         return output.ToString();
     }
 
-    private static void RenderLink(StringBuilder output, LinkInline link, bool styled, TerminalTheme theme)
+    public static string StyleVisible(string text, string? baseStyle = null, string? childStyle = null)
     {
-        var label = Render(link.FirstChild, styled, theme);
+        var output = new StringBuilder(text.Length + 32);
+        var writer = new InlineStyleWriter(output);
+        if (!string.IsNullOrEmpty(baseStyle)) writer.Push(baseStyle);
+        if (!string.IsNullOrEmpty(childStyle)) writer.Push(childStyle);
+        writer.Append(Visible(text));
+        if (!string.IsNullOrEmpty(childStyle)) writer.Pop();
+        if (!string.IsNullOrEmpty(baseStyle)) writer.Pop();
+        return output.ToString();
+    }
+
+    private static void RenderLink(InlineStyleWriter output, LinkInline link, bool styled, TerminalTheme theme)
+    {
+        var label = Render(link.FirstChild, styled: false, theme: theme);
         var url = Visible(link.Url ?? "");
         if (link.IsImage)
         {
-            output.Append("[image: ").Append(label).Append(']');
-            if (url.Length > 0) output.Append(' ').Append(styled ? theme.Style("mdLinkUrl", $"({url})", dim: true) : $"({url})");
+            output.Append("[image: ");
+            AppendInlines(output, link.FirstChild, styled, theme);
+            output.Append("]");
+            if (url.Length > 0)
+            {
+                output.Append(" ");
+                AppendStyled(output, $"({url})", styled ? "\u001b[2m" + theme.Fg("mdLinkUrl") : "", "\u001b[22m\u001b[39m");
+            }
             return;
         }
 
-        AppendStyled(output, label, styled ? "\u001b[4m" + theme.Fg("mdLink") : "");
+        AppendStyledChildren(output, link.FirstChild, styled, theme,
+            styled ? "\u001b[4m" + theme.Fg("mdLink") : "", "\u001b[24m\u001b[39m");
         if (url.Length > 0 && !string.Equals(label, url, StringComparison.Ordinal))
-            output.Append(' ').Append(styled ? theme.Style("mdLinkUrl", $"({url})", dim: true) : $"({url})");
+        {
+            output.Append(" ");
+            AppendStyled(output, $"({url})", styled ? "\u001b[2m" + theme.Fg("mdLinkUrl") : "", "\u001b[22m\u001b[39m");
+        }
     }
 
-    private static void RenderEmphasis(StringBuilder output, EmphasisInline emphasis, bool styled, TerminalTheme theme)
+    private static void RenderEmphasis(InlineStyleWriter output, EmphasisInline emphasis, bool styled, TerminalTheme theme)
     {
         var delimiter = emphasis.DelimiterChar;
         var count = emphasis.DelimiterCount;
@@ -99,13 +129,54 @@ internal static class TerminalMarkdownInlineRenderer
         var closing = !styled ? "" : delimiter == '~' && count >= 2
             ? "\u001b[29m"
             : count >= 2 ? "\u001b[22m" : "\u001b[23m";
-        output.Append(opening).Append(Render(emphasis.FirstChild, styled, theme)).Append(closing);
+        AppendStyledChildren(output, emphasis.FirstChild, styled, theme, opening, closing);
     }
 
-    private static void AppendStyled(StringBuilder output, string text, string opening)
+    private static void AppendStyledChildren(InlineStyleWriter output, Inline? first, bool styled,
+        TerminalTheme theme, string opening, string closing = "\u001b[0m")
     {
-        if (opening.Length > 0) output.Append(opening).Append(text).Append(Reset);
-        else output.Append(text);
+        if (opening.Length == 0)
+        {
+            AppendInlines(output, first, styled, theme);
+            return;
+        }
+        output.Push(opening, closing);
+        AppendInlines(output, first, styled, theme);
+        output.Pop();
+    }
+
+    private static void AppendStyled(InlineStyleWriter output, string text, string opening,
+        string closing = "\u001b[0m")
+    {
+        if (opening.Length == 0)
+        {
+            output.Append(text);
+            return;
+        }
+        output.Push(opening, closing);
+        output.Append(text);
+        output.Pop();
+    }
+
+    private sealed class InlineStyleWriter(StringBuilder output)
+    {
+        private readonly List<(string Opening, string Closing)> _styles = [];
+
+        public void Append(string value) => output.Append(value);
+
+        public void Push(string opening, string closing = Reset)
+        {
+            output.Append(opening);
+            _styles.Add((opening, closing));
+        }
+
+        public void Pop()
+        {
+            var closing = _styles[^1].Closing;
+            _styles.RemoveAt(_styles.Count - 1);
+            output.Append(closing);
+            foreach (var (opening, _) in _styles) output.Append(opening);
+        }
     }
 
     private static void AppendVisible(StringBuilder output, string text)

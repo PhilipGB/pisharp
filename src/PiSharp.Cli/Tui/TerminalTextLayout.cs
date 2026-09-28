@@ -51,18 +51,54 @@ internal static class TerminalTextLayout
         return Math.Max(maximum, current);
     }
 
-    public static IReadOnlyList<string> Wrap(string text, int width)
+    public sealed class LayoutResult
+    {
+        private readonly int[] _rowStarts;
+        private readonly int _sourceLength;
+
+        internal LayoutResult(IReadOnlyList<string> rows, int[] rowStarts, int sourceLength)
+        {
+            Rows = rows;
+            _rowStarts = rowStarts;
+            _sourceLength = sourceLength;
+        }
+
+        public IReadOnlyList<string> Rows { get; }
+        public int RowCount => Rows.Count;
+
+        public int VisualRowAt(int sourceIndex)
+        {
+            sourceIndex = Math.Clamp(sourceIndex, 0, _sourceLength);
+            var low = 0;
+            var high = _rowStarts.Length;
+            while (low < high)
+            {
+                var middle = low + (high - low) / 2;
+                if (_rowStarts[middle] <= sourceIndex) low = middle + 1;
+                else high = middle;
+            }
+            return Math.Clamp(low - 1, 0, Rows.Count - 1);
+        }
+    }
+
+    public static IReadOnlyList<string> Wrap(string text, int width) => Create(text, width).Rows;
+
+    public static LayoutResult Create(string text, int width)
     {
         ArgumentNullException.ThrowIfNull(text);
         ArgumentOutOfRangeException.ThrowIfLessThan(width, 1);
-        if (text.Length == 0) return [""];
+        if (text.Length == 0) return new([""], [0], 0);
 
-        var lines = new List<string>();
+        var tokens = Tokenize(text);
+        var rows = new List<string>();
+        var rowStarts = new List<int> { 0 };
         var line = new StringBuilder();
         var activeSgr = new List<string>();
         string? activeHyperlinkOpen = null;
         string? activeHyperlinkClose = null;
         var used = 0;
+        var hasContent = false;
+        var pendingWhitespace = new List<WrapToken>();
 
         void StartLine()
         {
@@ -70,50 +106,34 @@ internal static class TerminalTextLayout
             if (activeHyperlinkOpen is not null) line.Append(activeHyperlinkOpen);
         }
 
-        void FinishLine()
+        void FinishLine(int nextSourceIndex)
         {
             if (activeHyperlinkClose is not null) line.Append(activeHyperlinkClose);
             line.Append(SgrReset);
-            lines.Add(line.ToString());
+            rows.Add(line.ToString());
             line.Clear();
+            rowStarts.Add(nextSourceIndex);
             used = 0;
-            StartLine();
+            hasContent = false;
         }
 
-        void AppendElement(string element)
+        void ProcessState(string value)
         {
-            var safe = Sanitize(element);
-            var cells = TerminalCells.Width(safe);
-            if (cells > width)
+            for (var offset = 0; offset < value.Length;)
             {
-                safe = "?";
-                cells = 1;
-            }
-            if (used > 0 && used + cells > width) FinishLine();
-            line.Append(safe);
-            used += cells;
-        }
-
-        for (var offset = 0; offset < text.Length;)
-        {
-            if (TerminalImageRenderer.TryReadMarker(text, offset, out var markerLength, out _, out _))
-            {
-                line.Append(text, offset, markerLength);
-                offset += markerLength;
-                continue;
-            }
-            if (TryReadEscape(text, offset, out var length, out var kind, out var payload))
-            {
-                var sequence = text.Substring(offset, length);
+                if (!TryReadEscape(value, offset, out var length, out var kind, out var payload))
+                {
+                    offset++;
+                    continue;
+                }
+                var sequence = value.Substring(offset, length);
                 if (kind == EscapeKind.Sgr)
                 {
-                    line.Append(sequence);
                     if (ResetsSgr(payload)) activeSgr.Clear();
                     if (payload.Length > 0 && payload != "0") activeSgr.Add(sequence);
                 }
                 else if (kind == EscapeKind.Hyperlink)
                 {
-                    line.Append(sequence);
                     if (HyperlinkTarget(payload).Length == 0)
                     {
                         activeHyperlinkOpen = null;
@@ -127,37 +147,264 @@ internal static class TerminalTextLayout
                     }
                 }
                 offset += length;
-                continue;
             }
+        }
 
-            if (text[offset] is '\r' or '\n')
-            {
-                FinishLine();
-                offset += text[offset] == '\r' && offset + 1 < text.Length && text[offset + 1] == '\n' ? 2 : 1;
-                continue;
-            }
+        void AppendControl(string value)
+        {
+            line.Append(value);
+            ProcessState(value);
+        }
 
-            if (text[offset] == '\t')
+        void AppendAtom(WrapAtom atom)
+        {
+            AppendControl(atom.Prefix);
+            if (atom.Kind == WrapKind.Tab)
             {
                 var spaces = 4 - used % 4;
-                for (var index = 0; index < spaces; index++) AppendElement(" ");
+                line.Append(' ', spaces);
+                used += spaces;
+                hasContent = true;
+            }
+            else if (atom.Kind == WrapKind.Marker)
+            {
+                line.Append(atom.Content);
+                hasContent = true;
+            }
+            else
+            {
+                var content = atom.Content;
+                var cells = atom.Width;
+                if (cells > width)
+                {
+                    content = "?";
+                    cells = 1;
+                }
+                line.Append(content);
+                used += cells;
+                hasContent = true;
+            }
+            AppendControl(atom.Suffix);
+        }
+
+        void AppendToken(WrapToken token)
+        {
+            foreach (var atom in token.Atoms) AppendAtom(atom);
+        }
+
+        void ProcessSkippedWhitespace()
+        {
+            foreach (var token in pendingWhitespace)
+                foreach (var atom in token.Atoms)
+                {
+                    ProcessState(atom.Prefix);
+                    ProcessState(atom.Suffix);
+                }
+            pendingWhitespace.Clear();
+        }
+
+        int PendingWhitespaceWidth()
+        {
+            var column = used;
+            foreach (var token in pendingWhitespace)
+                foreach (var atom in token.Atoms)
+                    column += atom.Kind == WrapKind.Tab ? 4 - column % 4 : atom.Width;
+            return column - used;
+        }
+
+        foreach (var token in tokens)
+        {
+            if (token.Kind is WrapKind.Whitespace or WrapKind.Tab)
+            {
+                pendingWhitespace.Add(token);
+                continue;
+            }
+
+            if (token.Kind == WrapKind.Newline)
+            {
+                var newline = token.Atoms[0];
+                FinishLine(newline.SourceEnd);
+                ProcessSkippedWhitespace();
+                ProcessState(newline.Prefix);
+                ProcessState(newline.Suffix);
+                StartLine();
+                continue;
+            }
+
+            if (token.Kind == WrapKind.Control)
+            {
+                AppendToken(token);
+                continue;
+            }
+
+            var pendingWidth = PendingWhitespaceWidth();
+            var overlongWord = token.Kind == WrapKind.Word && token.Width > width;
+            if (overlongWord)
+            {
+                if (hasContent && pendingWhitespace.Count > 0)
+                {
+                    FinishLine(token.SourceStart);
+                    ProcessSkippedWhitespace();
+                    StartLine();
+                }
+                else if (!hasContent && pendingWhitespace.Count > 0 &&
+                         pendingWidth + (token.Atoms.FirstOrDefault(atom => atom.Width > 0)?.Width ?? 0) > width)
+                {
+                    ProcessSkippedWhitespace();
+                    StartLine();
+                }
+                else
+                {
+                    foreach (var whitespace in pendingWhitespace) AppendToken(whitespace);
+                    pendingWhitespace.Clear();
+                }
+            }
+            else if (used + pendingWidth + token.Width > width)
+            {
+                if (hasContent)
+                {
+                    FinishLine(token.SourceStart);
+                    ProcessSkippedWhitespace();
+                    StartLine();
+                }
+                else
+                {
+                    ProcessSkippedWhitespace();
+                    StartLine();
+                }
+            }
+            else
+            {
+                foreach (var whitespace in pendingWhitespace) AppendToken(whitespace);
+                pendingWhitespace.Clear();
+            }
+
+            if (token.Kind == WrapKind.Word && token.Width > width)
+            {
+                foreach (var atom in token.Atoms)
+                {
+                    if (atom.Width <= width && hasContent && used + atom.Width > width)
+                    {
+                        FinishLine(atom.SourceStart);
+                        StartLine();
+                    }
+                    AppendAtom(atom);
+                }
+            }
+            else
+            {
+                AppendToken(token);
+            }
+        }
+
+        // Wrapping whitespace is deliberately omitted at the end, as it is before a soft wrap.
+        if (line.Length > 0 || rows.Count == 0 || text[^1] is '\r' or '\n')
+        {
+            if (activeHyperlinkClose is not null) line.Append(activeHyperlinkClose);
+            line.Append(SgrReset);
+            rows.Add(line.ToString());
+        }
+        return new(rows, rowStarts.ToArray(), text.Length);
+    }
+
+    private static List<WrapToken> Tokenize(string text)
+    {
+        var tokens = new List<WrapToken>();
+        var pendingControls = new StringBuilder();
+        WrapToken? current = null;
+
+        void FlushCurrent()
+        {
+            if (current is null) return;
+            tokens.Add(current);
+            current = null;
+        }
+
+        void AddContent(WrapKind kind, string content, int width, int sourceStart, int sourceEnd)
+        {
+            if (kind is WrapKind.Cjk or WrapKind.Marker or WrapKind.Tab)
+            {
+                FlushCurrent();
+                tokens.Add(new(kind, [new(pendingControls.ToString(), content, "", width, sourceStart, sourceEnd, kind)]));
+                pendingControls.Clear();
+                return;
+            }
+            if (current?.Kind != kind)
+            {
+                FlushCurrent();
+                current = new(kind);
+            }
+            current.Atoms.Add(new(pendingControls.ToString(), content, "", width, sourceStart, sourceEnd, kind));
+            pendingControls.Clear();
+            current.Width += width;
+        }
+
+        for (var offset = 0; offset < text.Length;)
+        {
+            if (TerminalImageRenderer.TryReadMarker(text, offset, out var markerLength, out _, out _))
+            {
+                AddContent(WrapKind.Marker, text.Substring(offset, markerLength), 0, offset, offset + markerLength);
+                offset += markerLength;
+                continue;
+            }
+            if (TryReadEscape(text, offset, out var escapeLength, out _, out _))
+            {
+                pendingControls.Append(text, offset, escapeLength);
+                offset += escapeLength;
+                continue;
+            }
+            if (text[offset] is '\r' or '\n')
+            {
+                FlushCurrent();
+                var newlineLength = text[offset] == '\r' && offset + 1 < text.Length && text[offset + 1] == '\n' ? 2 : 1;
+                tokens.Add(new(WrapKind.Newline,
+                    [new(pendingControls.ToString(), "", "", 0, offset, offset + newlineLength, WrapKind.Newline)]));
+                pendingControls.Clear();
+                offset += newlineLength;
+                continue;
+            }
+            if (text[offset] == '\t')
+            {
+                AddContent(WrapKind.Tab, "\t", 0, offset, offset + 1);
                 offset++;
                 continue;
             }
 
             var element = StringInfo.GetNextTextElement(text, offset);
-            AppendElement(element);
+            var safe = Sanitize(element);
+            var kind = safe.EnumerateRunes().All(Rune.IsWhiteSpace) ? WrapKind.Whitespace
+                : IsCjkBreak(safe) ? WrapKind.Cjk
+                : WrapKind.Word;
+            AddContent(kind, safe, TerminalCells.Width(safe), offset, offset + element.Length);
             offset += element.Length;
         }
 
-        if (line.Length > 0 || lines.Count == 0 || text[^1] is '\r' or '\n')
+        FlushCurrent();
+        if (pendingControls.Length > 0)
         {
-            if (activeHyperlinkClose is not null) line.Append(activeHyperlinkClose);
-            line.Append(SgrReset);
-            lines.Add(line.ToString());
+            if (tokens.Count > 0)
+                tokens[^1].Atoms[^1].Suffix = pendingControls.ToString();
+            else
+                tokens.Add(new(WrapKind.Control,
+                    [new(pendingControls.ToString(), "", "", 0, text.Length, text.Length, WrapKind.Control)]));
         }
-        return lines;
+        return tokens;
     }
+
+    private static bool IsCjkBreak(string element) => element.EnumerateRunes().Any(rune =>
+        rune.Value is >= 0x2E80 and <= 0x2FFF or
+            >= 0x3040 and <= 0x30FF or
+            >= 0x3100 and <= 0x312F or
+            >= 0x3130 and <= 0x318F or
+            >= 0x31A0 and <= 0x31BF or
+            >= 0x31F0 and <= 0x31FF or
+            >= 0x3400 and <= 0x4DBF or
+            >= 0x4E00 and <= 0x9FFF or
+            >= 0xA960 and <= 0xA97F or
+            >= 0xAC00 and <= 0xD7FF or
+            >= 0xF900 and <= 0xFAFF or
+            >= 0xFF66 and <= 0xFF9D or
+            >= 0x20000 and <= 0x323AF);
 
     public static string StripFormatting(string text)
     {
@@ -302,6 +549,9 @@ internal static class TerminalTextLayout
         return output.ToString();
     }
 
+    internal static bool TryReadEscape(string text, int offset, out int length) =>
+        TryReadEscape(text, offset, out length, out _, out _);
+
     private static bool TryReadEscape(string text, int offset, out int length, out EscapeKind kind, out string payload)
     {
         length = 0;
@@ -358,6 +608,40 @@ internal static class TerminalTextLayout
         if (parameterSeparator < 0) return "";
         var targetSeparator = payload.IndexOf(';', parameterSeparator + 1);
         return targetSeparator < 0 ? "" : payload[(targetSeparator + 1)..];
+    }
+
+    private enum WrapKind { Word, Whitespace, Tab, Newline, Cjk, Marker, Control }
+
+    private sealed class WrapToken
+    {
+        public WrapToken(WrapKind kind)
+        {
+            Kind = kind;
+            Atoms = [];
+        }
+
+        public WrapToken(WrapKind kind, List<WrapAtom> atoms)
+        {
+            Kind = kind;
+            Atoms = atoms;
+            Width = atoms.Sum(atom => atom.Width);
+        }
+
+        public WrapKind Kind { get; }
+        public List<WrapAtom> Atoms { get; }
+        public int Width { get; set; }
+        public int SourceStart => Atoms.Count == 0 ? 0 : Atoms[0].SourceStart;
+    }
+
+    private sealed class WrapAtom(string prefix, string content, string suffix, int width, int sourceStart, int sourceEnd, WrapKind kind)
+    {
+        public string Prefix { get; } = prefix;
+        public string Content { get; } = content;
+        public string Suffix { get; set; } = suffix;
+        public int Width { get; } = width;
+        public int SourceStart { get; } = sourceStart;
+        public int SourceEnd { get; } = sourceEnd;
+        public WrapKind Kind { get; } = kind;
     }
 
     private enum EscapeKind { Other, Sgr, Hyperlink }

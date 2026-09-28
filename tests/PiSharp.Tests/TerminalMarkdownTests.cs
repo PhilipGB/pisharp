@@ -36,6 +36,23 @@ public sealed class TerminalMarkdownTests
     }
 
     [Fact]
+    public void InlineStylesRestoreEnclosingSgrStateAfterNestedSpans()
+    {
+        var theme = TerminalThemeCatalog.LoadBuiltIn("dark", TerminalColorMode.TrueColor);
+        var bold = TerminalMarkdownRenderer.Render("**before `code` after**", theme: theme);
+        var link = TerminalMarkdownRenderer.Render("*before [link `code` tail](https://example.test) after*", theme: theme);
+        var heading = TerminalMarkdownRenderer.Render("# before `code` after", theme: theme);
+        var nested = TerminalMarkdownRenderer.Render("**bold _italic `code` italic_ bold**", theme: theme);
+
+        AssertStyleAt(bold, "after", bold: true);
+        AssertStyleAt(link, "tail", italic: true, underline: true, foreground: true);
+        AssertStyleAt(link, "after", italic: true);
+        AssertStyleAt(heading, "after", bold: true, foreground: true);
+        AssertStyleAt(nested, "italic", bold: true, italic: true, occurrence: 1);
+        AssertStyleAt(nested, "bold", bold: true, italic: false, occurrence: 1);
+    }
+
+    [Fact]
     public void RendererKeepsRawHtmlVisibleAndDoesNotEmitModelEscapeSequences()
     {
         var rendered = TerminalMarkdownRenderer.Render("before \u001b[2J after\n\n<script>safe text</script>");
@@ -94,4 +111,57 @@ public sealed class TerminalMarkdownTests
     }
 
     private static string StripSgr(string text) => Regex.Replace(text, "\\u001b\\[[0-9;]*m", "");
+
+    private static void AssertStyleAt(string text, string target, bool? bold = null, bool? italic = null,
+        bool? underline = null, bool? foreground = null, int occurrence = 0)
+    {
+        var offset = 0;
+        for (var index = 0; index <= occurrence; index++)
+        {
+            offset = text.IndexOf(target, offset, StringComparison.Ordinal);
+            Assert.NotEqual(-1, offset);
+            if (index < occurrence) offset += target.Length;
+        }
+
+        var state = default(SgrState);
+        for (var index = 0; index < offset;)
+        {
+            if (index + 1 < text.Length && text[index] == '\u001b' && text[index + 1] == '[')
+            {
+                var end = text.IndexOf('m', index + 2);
+                if (end < 0 || end >= offset) break;
+                foreach (var parameter in text[(index + 2)..end].Split(';'))
+                {
+                    var value = parameter.Length == 0 ? 0 : int.Parse(parameter);
+                    state = value switch
+                    {
+                        0 => default,
+                        1 => state with { Bold = true },
+                        3 => state with { Italic = true },
+                        4 => state with { Underline = true },
+                        9 => state with { Strike = true },
+                        22 => state with { Bold = false },
+                        23 => state with { Italic = false },
+                        24 => state with { Underline = false },
+                        29 => state with { Strike = false },
+                        39 => state with { Foreground = false },
+                        38 or >= 30 and <= 37 or >= 90 and <= 97 => state with { Foreground = true },
+                        _ => state
+                    };
+                }
+                index = end + 1;
+                continue;
+            }
+            index++;
+        }
+
+        if (bold is { } expectedBold) Assert.Equal(expectedBold, state.Bold);
+        if (italic is { } expectedItalic) Assert.Equal(expectedItalic, state.Italic);
+        if (underline is { } expectedUnderline) Assert.Equal(expectedUnderline, state.Underline);
+        if (foreground is { } expectedForeground)
+            Assert.True(expectedForeground == state.Foreground,
+                $"Foreground state before '{target}': {string.Join(' ', Regex.Matches(text[..offset], "\\u001b\\[[0-9;]*m").Select(match => match.Value))}");
+    }
+
+    private readonly record struct SgrState(bool Bold, bool Italic, bool Underline, bool Strike, bool Foreground);
 }
