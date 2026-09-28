@@ -18,6 +18,7 @@
     <EmbeddedResource Include="Tui\Themes\*.json" LogicalName="PiSharp.Cli.Tui.Themes.%(Filename)%(Extension)" />
     <EmbeddedResource Include="Providers\Data\mistral-models.json" LogicalName="PiSharp.Cli.Providers.Data.mistral-models.json" />
     <EmbeddedResource Include="Providers\Data\azure-openai-responses-models.json" LogicalName="PiSharp.Cli.Providers.Data.azure-openai-responses-models.json" />
+    <EmbeddedResource Include="Providers\Data\openai-codex-responses-models.json" LogicalName="PiSharp.Cli.Providers.Data.openai-codex-responses-models.json" />
   </ItemGroup>
 
   <ItemGroup>

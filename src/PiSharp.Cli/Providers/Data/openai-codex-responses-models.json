@@ -1,0 +1,405 @@
+[
+  {
+    "id": "gpt-5.5",
+    "owner": "openai-codex",
+    "contextLength": 272000,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 5,
+      "output": 30,
+      "cachedInput": 0.5,
+      "cachedWrite": 0,
+      "tiers": [
+        {
+          "inputTokensAbove": 272000,
+          "input": 10,
+          "output": 45,
+          "cachedInput": 1,
+          "cachedWrite": 0
+        }
+      ]
+    },
+    "provider": "openai-codex",
+    "name": "GPT-5.5",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "openai-codex-responses",
+    "baseUrl": "https://chatgpt.com/backend-api",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "thinkingLevelMap": {
+      "xhigh": "xhigh",
+      "minimal": "low"
+    },
+    "compatibility": {
+      "supportsOpenAIGrammarTools": true,
+      "supportsToolSearch": true,
+      "supportsMidConvoSystemMessages": true
+    }
+  },
+  {
+    "id": "gpt-5.3-codex-spark",
+    "owner": "openai-codex",
+    "contextLength": 128000,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 1.75,
+      "output": 14,
+      "cachedInput": 0.175,
+      "cachedWrite": 0
+    },
+    "provider": "openai-codex",
+    "name": "GPT-5.3 Codex Spark",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text"
+    ],
+    "api": "openai-codex-responses",
+    "baseUrl": "https://chatgpt.com/backend-api",
+    "inputLimits": null,
+    "thinkingLevelMap": {
+      "xhigh": "xhigh",
+      "minimal": "low"
+    },
+    "compatibility": {
+      "supportsOpenAIGrammarTools": true
+    }
+  },
+  {
+    "id": "gpt-5.6-luna",
+    "owner": "openai-codex",
+    "contextLength": 272000,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.2,
+      "output": 1.2,
+      "cachedInput": 0.02,
+      "cachedWrite": 0.25,
+      "tiers": [
+        {
+          "inputTokensAbove": 272000,
+          "input": 0.4,
+          "output": 1.8,
+          "cachedInput": 0.04,
+          "cachedWrite": 0.5
+        }
+      ]
+    },
+    "provider": "openai-codex",
+    "name": "GPT-5.6 Luna",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "openai-codex-responses",
+    "baseUrl": "https://chatgpt.com/backend-api",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "thinkingLevelMap": {
+      "xhigh": "xhigh",
+      "max": "max",
+      "minimal": "low"
+    },
+    "compatibility": {
+      "supportsOpenAIGrammarTools": true,
+      "supportsAdditionalTools": true,
+      "supportsToolSearch": true,
+      "supportsMidConvoSystemMessages": true
+    }
+  },
+  {
+    "id": "gpt-5.6-sol",
+    "owner": "openai-codex",
+    "contextLength": 272000,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 4,
+      "output": 20,
+      "cachedInput": 0.4,
+      "cachedWrite": 5,
+      "tiers": [
+        {
+          "inputTokensAbove": 272000,
+          "input": 8,
+          "output": 30,
+          "cachedInput": 0.8,
+          "cachedWrite": 10
+        }
+      ]
+    },
+    "provider": "openai-codex",
+    "name": "GPT-5.6 Sol",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "openai-codex-responses",
+    "baseUrl": "https://chatgpt.com/backend-api",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "thinkingLevelMap": {
+      "xhigh": "xhigh",
+      "max": "max",
+      "minimal": "low"
+    },
+    "compatibility": {
+      "supportsOpenAIGrammarTools": true,
+      "supportsAdditionalTools": true,
+      "supportsToolSearch": true,
+      "supportsMidConvoSystemMessages": true
+    }
+  },
+  {
+    "id": "gpt-5.6-terra",
+    "owner": "openai-codex",
+    "contextLength": 272000,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 2,
+      "output": 12,
+      "cachedInput": 0.2,
+      "cachedWrite": 2.5,
+      "tiers": [
+        {
+          "inputTokensAbove": 272000,
+          "input": 4,
+          "output": 18,
+          "cachedInput": 0.4,
+          "cachedWrite": 5
+        }
+      ]
+    },
+    "provider": "openai-codex",
+    "name": "GPT-5.6 Terra",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "openai-codex-responses",
+    "baseUrl": "https://chatgpt.com/backend-api",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "thinkingLevelMap": {
+      "xhigh": "xhigh",
+      "max": "max",
+      "minimal": "low"
+    },
+    "compatibility": {
+      "supportsOpenAIGrammarTools": true,
+      "supportsAdditionalTools": true,
+      "supportsToolSearch": true,
+      "supportsMidConvoSystemMessages": true
+    }
+  },
+  {
+    "id": "gpt-6-astra",
+    "owner": "openai-codex",
+    "contextLength": 272000,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 10,
+      "output": 50,
+      "cachedInput": 1,
+      "cachedWrite": 12.5,
+      "tiers": [
+        {
+          "inputTokensAbove": 272000,
+          "input": 20,
+          "output": 75,
+          "cachedInput": 2,
+          "cachedWrite": 25
+        }
+      ]
+    },
+    "provider": "openai-codex",
+    "name": "GPT-6 Astra",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "openai-codex-responses",
+    "baseUrl": "https://chatgpt.com/backend-api",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "thinkingLevelMap": {
+      "off": null,
+      "minimal": "low",
+      "low": "low",
+      "medium": "medium",
+      "high": "high",
+      "xhigh": "xhigh",
+      "max": "max"
+    },
+    "compatibility": {
+      "supportsOpenAIGrammarTools": true,
+      "supportsAdditionalTools": true,
+      "supportsToolSearch": true,
+      "supportsMidConvoSystemMessages": true
+    }
+  },
+  {
+    "id": "gpt-6-luna",
+    "owner": "openai-codex",
+    "contextLength": 272000,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.1,
+      "output": 0.5,
+      "cachedInput": 0.01,
+      "cachedWrite": 0.125,
+      "tiers": [
+        {
+          "inputTokensAbove": 272000,
+          "input": 0.2,
+          "output": 0.75,
+          "cachedInput": 0.02,
+          "cachedWrite": 0.25
+        }
+      ]
+    },
+    "provider": "openai-codex",
+    "name": "GPT-6 Luna",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "openai-codex-responses",
+    "baseUrl": "https://chatgpt.com/backend-api",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "thinkingLevelMap": {
+      "off": "none",
+      "minimal": "low",
+      "low": "low",
+      "medium": "medium",
+      "high": "high",
+      "xhigh": "xhigh",
+      "max": "max"
+    },
+    "compatibility": {
+      "supportsOpenAIGrammarTools": true,
+      "supportsAdditionalTools": true,
+      "supportsToolSearch": true,
+      "supportsMidConvoSystemMessages": true
+    }
+  },
+  {
+    "id": "gpt-6-sol",
+    "owner": "openai-codex",
+    "contextLength": 272000,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 2,
+      "output": 10,
+      "cachedInput": 0.2,
+      "cachedWrite": 2.5,
+      "tiers": [
+        {
+          "inputTokensAbove": 272000,
+          "input": 4,
+          "output": 15,
+          "cachedInput": 0.4,
+          "cachedWrite": 5
+        }
+      ]
+    },
+    "provider": "openai-codex",
+    "name": "GPT-6 Sol",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "openai-codex-responses",
+    "baseUrl": "https://chatgpt.com/backend-api",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "thinkingLevelMap": {
+      "off": "none",
+      "minimal": "low",
+      "low": "low",
+      "medium": "medium",
+      "high": "high",
+      "xhigh": "xhigh",
+      "max": "max"
+    },
+    "compatibility": {
+      "supportsOpenAIGrammarTools": true,
+      "supportsAdditionalTools": true,
+      "supportsToolSearch": true,
+      "supportsMidConvoSystemMessages": true
+    }
+  }
+]
