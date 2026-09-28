@@ -5,8 +5,11 @@ using Microsoft.Extensions.AI;
 namespace PiSharp.Runtime.Sessions;
 
 /// <summary>Explicit context budget for a model whose window size is known. Never assume a default model limit.</summary>
-public sealed record AutoCompactionPolicy(int ContextWindowTokens, int ReserveTokens = 16_384, int? KeepRecentTokens = null)
+public sealed record AutoCompactionPolicy(int ContextWindowTokens, int ReserveTokens = 16_384,
+    int? KeepRecentTokens = null)
 {
+    public const int DefaultReserveTokens = 16_384;
+
     public static AutoCompactionPolicy? FromEnvironment(Func<string, string?> get)
     {
         var windowText = get("PISHARP_CONTEXT_WINDOW_TOKENS");
@@ -16,7 +19,7 @@ public sealed record AutoCompactionPolicy(int ContextWindowTokens, int ReserveTo
         var reserveText = get("PISHARP_CONTEXT_RESERVE_TOKENS");
         if (reserveText is not null && (!int.TryParse(reserveText, out var parsed) || parsed < 0))
             throw new ArgumentException("PISHARP_CONTEXT_RESERVE_TOKENS must be a nonnegative integer.");
-        var reserve = reserveText is null ? Math.Min(16_384, window / 4) : int.Parse(reserveText);
+        var reserve = reserveText is null ? DefaultReserveTokens : int.Parse(reserveText);
         var policy = new AutoCompactionPolicy(window, reserve);
         _ = policy.TriggerTokens;
         return policy;
@@ -26,8 +29,8 @@ public sealed record AutoCompactionPolicy(int ContextWindowTokens, int ReserveTo
     {
         get
         {
-            if (ContextWindowTokens <= 0 || ReserveTokens < 0 || ReserveTokens >= ContextWindowTokens)
-                throw new ArgumentOutOfRangeException(nameof(ReserveTokens), "Reserve must be nonnegative and smaller than the context window.");
+            if (ContextWindowTokens <= 0 || ReserveTokens < 0)
+                throw new ArgumentOutOfRangeException(nameof(ReserveTokens), "Context window must be positive and reserve must be nonnegative.");
             return ContextWindowTokens - ReserveTokens;
         }
     }

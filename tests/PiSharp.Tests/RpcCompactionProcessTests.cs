@@ -45,6 +45,8 @@ public sealed class RpcCompactionProcessTests
                     }
                 }
             }));
+            await File.WriteAllTextAsync(Path.Combine(agentDirectory, "settings.json"),
+                "{\"compaction\":{\"keepRecentTokens\":1}}");
             var conversation = new ConversationSession(root, "rpc-compact-abort-fixture",
                 $"http://127.0.0.1:{port}/v1", "fixture");
             conversation.Append(new ChatMessage(ChatRole.User, "first question"));

@@ -1,5 +1,7 @@
 # Bounded RPC residual audit — 2026-09-27
 
+Superseded for current-source coverage by [the 2026-09-28 audit](rpc-residual-audit-2026-09-28.md), pinned to Pi main `6f7551516b84278eb9da1c340c8e7bc66be1a6ba`. This file preserves the findings and source pin of the earlier audit.
+
 Reference: current Pi `2b0a123de98318c2ff8069661721ce0c3794c34e` (0.87.1). Scope was the public command union in `packages/coding-agent/src/modes/rpc/rpc-types.ts`, Pi dispatch in `rpc-mode.ts`, PiSharp dispatch/handlers under `src/PiSharp.Cli/Protocols`, and the open RPC notes in the detailed inventory. This was a bounded interface/residual audit, not a full process differential of every command.
 
 All 33 top-level command names in Pi's union have a PiSharp dispatch path. Existing Pi/PiSharp process or deterministic evidence covers the central prompt/queue, model/thinking, session/tree, compact, retry, Bash, stats, export and resource-command workflows. The current split-turn compact result and process evidence is in [the compaction fixture](fixtures/rpc-compact-baseline.md).

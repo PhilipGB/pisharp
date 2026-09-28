@@ -9,6 +9,7 @@ internal sealed class ConversationCompactionCoordinator(
     ConversationSession conversation,
     PiAgent agent,
     Func<AutoCompactionPolicy?> getPolicy,
+    Func<int?> getKeepRecentTokens,
     Func<ModelPricing?> getPricing,
     Func<CancellationToken, Task>? save,
     Func<IReadOnlyList<ChatMessage>, CancellationToken, Task<AgentSession>> restoreHistory,
@@ -21,7 +22,8 @@ internal sealed class ConversationCompactionCoordinator(
     public async Task<ConversationCompactionResult?> CompactAsync(string? focus, CancellationToken cancellationToken)
     {
         var policy = getPolicy();
-        var plan = PreparePlan(conversation, policy?.KeepRecentTokens);
+        var keepRecentTokens = policy?.KeepRecentTokens ?? getKeepRecentTokens();
+        var plan = PreparePlan(conversation, keepRecentTokens);
         if (plan is null) return null;
 
         var tokensBefore = EstimateContextTokens();
@@ -35,7 +37,7 @@ internal sealed class ConversationCompactionCoordinator(
             var previousHead = conversation.Tree.HeadId;
             try
             {
-                conversation.AppendCompaction(plan, summaryText, policy?.KeepRecentTokens, tokensBefore, details);
+                conversation.AppendCompaction(plan, summaryText, keepRecentTokens, tokensBefore, details);
                 var usage = summary.Usage is null ? null :
                     UsageRecord.Create(conversation.Model, "compaction", summary.Usage, getPricing());
                 if (usage is not null) conversation.AppendUsage(usage);
@@ -88,6 +90,20 @@ internal sealed class ConversationCompactionCoordinator(
                 accumulatedTokens += EstimateEntryTokens(entries[index]);
                 if (accumulatedTokens < keepRecentTokens.Value) continue;
                 cutIndex = cutPoints.FirstOrDefault(candidate => candidate >= index, cutPoints[^1]);
+                var recoveryBoundary = conversation.RecoveryOmittedAssistantAfter(entries[cutIndex].SourceIndex);
+                if (recoveryBoundary is not null)
+                {
+                    var recoveryTurnStart = FindTurnStart(entries, cutIndex, start);
+                    var recoverySplitTurn = recoveryTurnStart >= start;
+                    var recoveryHistoryEnd = recoverySplitTurn ? recoveryTurnStart : cutIndex + 1;
+                    var recoveryHistory = SummarizableMessages(entries, start, recoveryHistoryEnd);
+                    var recoveryTurnPrefix = recoverySplitTurn
+                        ? SummarizableMessages(entries, recoveryTurnStart, cutIndex + 1)
+                        : [];
+                    if (recoveryHistory.Count > 0 || recoveryTurnPrefix.Count > 0)
+                        return new ConversationSession.CompactionPlan(recoveryBoundary, recoveryHistory,
+                            recoveryTurnPrefix, recoverySplitTurn, previousSummary);
+                }
                 break;
             }
         }

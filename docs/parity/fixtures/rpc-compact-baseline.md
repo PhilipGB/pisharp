@@ -1,6 +1,8 @@
 # RPC split-turn compact differential
 
-Reference: Pi `2b0a123de98318c2ff8069661721ce0c3794c34e` (0.87.1), checked 2026-09-27. Both CLI processes compacted the same deterministic transcript through a loopback OpenAI-compatible provider: an earlier user/assistant exchange, a current user request, a `read(current.txt)` call and result, and an interrupted assistant message. Both used `keepRecentTokens: 1` and the custom focus `preserve decisions`. The Pi CLI used an SSE provider response; PiSharp used its SDK's JSON response path.
+Paired reference: Pi `2b0a123de98318c2ff8069661721ce0c3794c34e` (0.87.1), checked 2026-09-27. Both CLI processes compacted the same deterministic transcript through a loopback OpenAI-compatible provider: an earlier user/assistant exchange, a current user request, a `read(current.txt)` call and result, and an interrupted assistant message. Both used `keepRecentTokens: 1` and the custom focus `preserve decisions`. The Pi CLI used an SSE provider response; PiSharp used its SDK's JSON response path.
+
+Current-main check: Pi `6f7551516b84278eb9da1c340c8e7bc66be1a6ba`, verified 2026-09-28. A current `pi --mode rpc` process replayed that transcript against a loopback SSE endpoint. It made two summary requests; the custom focus appeared in the history request only; `firstKeptEntryId` resolved to the aborted assistant message; and the response contained the split-turn summary, `current.txt` details, and 30/7/37 aggregate usage. Pi's estimates were 25 tokens before and 41 after in this run. The current PiSharp process regression, `RpcProcessUsesPiSplitTurnCompactionAndCustomInstructionsForHistoryOnly`, verifies the matching boundary, summary, file detail, usage, persisted entry, and event order. Exact token-estimate comparison for identical process/session state remains open; the historical paired run below recorded different inputs and estimates.
 
 ## Matched behavior
 

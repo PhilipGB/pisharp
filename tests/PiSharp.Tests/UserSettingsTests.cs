@@ -433,6 +433,7 @@ public sealed class UserSettingsTests
             Assert.Null(settings.ResolveCompaction(null, _ => null));
             Assert.Equal(7952, settings.ResolveCompaction(10000, _ => null)!.TriggerTokens);
             Assert.Equal(512, settings.ResolveCompaction(10000, _ => null)!.KeepRecentTokens);
+            Assert.Equal(512, settings.ResolveCompactionKeepRecentTokens());
             Assert.Equal(4000, settings.ResolveCompaction(10000, name => name switch
             {
                 "PISHARP_CONTEXT_WINDOW_TOKENS" => "5000",
@@ -443,7 +444,11 @@ public sealed class UserSettingsTests
             var disabled = await UserSettings.LoadAsync(root, _ => null);
             Assert.Null(disabled.ResolveCompaction(10000, _ => null));
             Assert.False(disabled.AutoCompactionEnabled(_ => null));
-            Assert.Equal(7500, disabled.ResolveCompactionPolicy(10000, _ => null)!.TriggerTokens);
+            Assert.Equal(-6384, disabled.ResolveCompactionPolicy(10000, _ => null)!.TriggerTokens);
+            Assert.Equal(20_000, disabled.ResolveCompactionPolicy(10000, _ => null)!.KeepRecentTokens);
+            Assert.Equal(20_000, disabled.ResolveCompactionKeepRecentTokens());
+            Assert.Equal(20_000, disabled.ResolveCompactionKeepRecentTokens("openai/unknown"));
+            Assert.Equal(49_152, disabled.ResolveCompactionPolicy(65536, _ => null)!.TriggerTokens);
             Assert.True(disabled.AutoCompactionEnabled(name => name == "PISHARP_CONTEXT_WINDOW_TOKENS" ? "10000" : null));
             Assert.Equal(4000, disabled.ResolveCompaction(10000, name => name switch
             {
@@ -496,6 +501,7 @@ public sealed class UserSettingsTests
             var merged = global.Overlay(await UserSettings.LoadProjectAsync(root));
             Assert.Equal(7000, merged.ResolveCompaction(10000, _ => null, "openai/large")!.TriggerTokens);
             Assert.Equal(800, merged.ResolveCompaction(10000, _ => null, "openai/large")!.KeepRecentTokens);
+            Assert.Equal(20_000, merged.ResolveCompactionKeepRecentTokens("other/one"));
             Assert.Equal(7500, merged.ResolveCompaction(10000, _ => null, "other/one")!.TriggerTokens);
             Assert.Equal(9000, merged.ResolveCompaction(10000, _ => null, "openai/other")!.TriggerTokens);
             Assert.Equal(8000, merged.ResolveCompaction(10000, name => name switch

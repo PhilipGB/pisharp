@@ -97,6 +97,19 @@ public sealed class CompactionTests
     }
 
     [Fact]
+    public async Task ManualCompactionUsesPiDefaultRecentTokenBudgetWithoutAContextWindow()
+    {
+        var conversation = Seed(Path.GetTempPath());
+        var client = new SummaryClient();
+        var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(Path.GetTempPath())),
+            conversation, keepRecentTokens: 20_000);
+
+        Assert.False(await run.CompactAsync());
+        Assert.Empty(client.SummaryRequests);
+        Assert.DoesNotContain(conversation.Tree.ActivePath(), entry => entry.Type == "compaction");
+    }
+
+    [Fact]
     public async Task CompactionUsageIsPersistedAndIncludedInSessionBilling()
     {
         var conversation = Seed(Path.GetTempPath());
@@ -672,9 +685,16 @@ public sealed class CompactionTests
         Assert.Null(AutoCompactionPolicy.FromEnvironment(_ => null));
         Assert.Throws<ArgumentException>(() => AutoCompactionPolicy.FromEnvironment(name =>
             name == "PISHARP_CONTEXT_WINDOW_TOKENS" ? "invalid" : null));
-        Assert.Throws<ArgumentOutOfRangeException>(() => new AutoCompactionPolicy(1024, 1024).TriggerTokens);
+        Assert.Equal(0, new AutoCompactionPolicy(1024, 1024).TriggerTokens);
+        Assert.Throws<ArgumentOutOfRangeException>(() => new AutoCompactionPolicy(1024, -1).TriggerTokens);
         var policy = AutoCompactionPolicy.FromEnvironment(name => name == "PISHARP_CONTEXT_WINDOW_TOKENS" ? "2048" : null);
-        Assert.Equal(1536, policy!.TriggerTokens);
+        Assert.Equal(-14_336, policy!.TriggerTokens);
+        Assert.Equal(1536, AutoCompactionPolicy.FromEnvironment(name => name switch
+        {
+            "PISHARP_CONTEXT_WINDOW_TOKENS" => "2048",
+            "PISHARP_CONTEXT_RESERVE_TOKENS" => "512",
+            _ => null
+        })!.TriggerTokens);
         Assert.Null(ModelPricing.FromEnvironment(_ => null));
         var pricing = ModelPricing.FromEnvironment(name => name switch
         {
@@ -753,6 +773,104 @@ public sealed class CompactionTests
         Assert.Equal(6, conversation.ActiveMessages().Count);
         Assert.Equal(5, conversation.ContextMessages().Count);
         Assert.Null(conversation.PrepareCompaction(100000));
+    }
+
+    [Fact]
+    public void RecentTokenBudgetFallsBackBeforeOversizedTrailingToolResults()
+    {
+        var conversation = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        conversation.Append(new ChatMessage(ChatRole.User, "old history"));
+        conversation.Append(new ChatMessage(ChatRole.Assistant, "old answer"));
+        conversation.Append(new ChatMessage(ChatRole.User, "read the large file"));
+        var currentUserId = conversation.Tree.ActivePath().Last().Id;
+        conversation.Append(new ChatMessage(ChatRole.Assistant,
+            [new FunctionCallContent("call-1", "read", new Dictionary<string, object?> { ["path"] = "big.txt" })]));
+        var toolCallId = conversation.Tree.ActivePath().Last().Id;
+        conversation.Append(new ChatMessage(ChatRole.Tool,
+            [new FunctionResultContent("call-1", new string('x', 8000))]));
+
+        var plan = Assert.IsType<ConversationSession.CompactionPlan>(conversation.PrepareCompaction(1000));
+
+        Assert.Equal(toolCallId, plan.FirstKeptEntryId);
+        Assert.Equal(["old history", "old answer"], plan.MessagesToSummarize.Select(message => message.Text));
+        Assert.Equal(["read the large file"], plan.TurnPrefixMessages!.Select(message => message.Text));
+        Assert.True(plan.IsSplitTurn);
+        Assert.NotEqual(currentUserId, plan.FirstKeptEntryId);
+    }
+
+    [Fact]
+    public void CompactionMovesBoundaryPastClosedRecoveryOmissionSuffix()
+    {
+        var conversation = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        conversation.Append(new ChatMessage(ChatRole.User, "older question"));
+        conversation.Append(new ChatMessage(ChatRole.Assistant, "older answer"));
+        conversation.Append(new ChatMessage(ChatRole.User, new string('U', 100)));
+        var currentUserId = conversation.Tree.ActivePath().Last().Id;
+        conversation.Append(new ChatMessage(ChatRole.Assistant,
+            [new FunctionCallContent("failed-call", "read", new Dictionary<string, object?> { ["path"] = "current.txt" })]));
+        var failedAssistantId = conversation.Tree.ActivePath().Last().Id;
+        conversation.Append(new ChatMessage(ChatRole.Tool,
+            [new FunctionResultContent("failed-call", new string('R', 100))]));
+        var toolResultId = conversation.Tree.ActivePath().Last().Id;
+        var interrupted = conversation.Tree.Append("interrupted", JsonSerializer.SerializeToElement(new
+        {
+            prompt = "continue the current task",
+            partialAssistantText = "partial output",
+            terminalType = "turn_interrupted",
+            stopReason = "aborted",
+            errorMessage = "Request was aborted"
+        }));
+        conversation.AppendContextOmission(failedAssistantId);
+        conversation.AppendContextOmission(toolResultId);
+        conversation.AppendContextOmission(interrupted.Id);
+
+        var plan = Assert.IsType<ConversationSession.CompactionPlan>(conversation.PrepareCompaction(15));
+
+        Assert.Equal(failedAssistantId, plan.FirstKeptEntryId);
+        Assert.True(plan.IsSplitTurn);
+        Assert.Equal(["older question", "older answer"], plan.MessagesToSummarize.Select(message => message.Text));
+        Assert.Equal([new string('U', 100)], plan.TurnPrefixMessages!.Select(message => message.Text));
+        Assert.NotEqual(currentUserId, plan.FirstKeptEntryId);
+    }
+
+    [Fact]
+    public void CompactionProjectionDoesNotCountAnInterruptedAssistantTwice()
+    {
+        var conversation = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        conversation.Append(new ChatMessage(ChatRole.User, "older question"));
+        conversation.Append(new ChatMessage(ChatRole.Assistant, "older answer"));
+        conversation.Append(new ChatMessage(ChatRole.User, "current request"));
+        conversation.Append(new ChatMessage(ChatRole.Assistant, "partial answer"));
+        var assistantId = conversation.Tree.ActivePath().Last().Id;
+        conversation.Tree.Append("interrupted", JsonSerializer.SerializeToElement(new
+        {
+            prompt = "current request",
+            partialAssistantText = "partial answer",
+            terminalType = "turn_interrupted",
+            stopReason = "aborted",
+            errorMessage = "Request was aborted"
+        }));
+
+        var plan = Assert.IsType<ConversationSession.CompactionPlan>(conversation.PrepareCompaction(1));
+
+        Assert.Equal(assistantId, plan.FirstKeptEntryId);
+        Assert.Equal(["current request"], plan.TurnPrefixMessages!.Select(message => message.Text));
+        Assert.Equal(4, conversation.ContextMessages().Count);
+    }
+
+    [Fact]
+    public void RecoveryOmissionFallbackDoesNotAdvanceAcrossVisibleInput()
+    {
+        var conversation = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        conversation.Append(new ChatMessage(ChatRole.User, "current request"));
+        var currentRequestId = conversation.Tree.ActivePath().Last().Id;
+        conversation.Append(new ChatMessage(ChatRole.Assistant, "failed attempt"));
+        var failedAssistantId = conversation.Tree.ActivePath().Last().Id;
+        conversation.AppendContextOmission(failedAssistantId);
+        conversation.Append(new ChatMessage(ChatRole.User, "new unsent input"));
+
+        Assert.Null(conversation.RecoveryOmittedAssistantAfter(
+            conversation.Tree.ActivePath().ToList().FindIndex(node => node.Id == currentRequestId)));
     }
 
     [Fact]

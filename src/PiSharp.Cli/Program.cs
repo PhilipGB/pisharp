@@ -179,7 +179,9 @@ Task<ConversationRun> OpenRunAsync(PiAgent runningAgent, ConversationSession ses
         retryPolicy: runSettings.Retry?.ResolvePolicy() ?? AgentRunRetryPolicy.Default,
         steeringMode: runSettings.SteeringMode ?? PromptDeliveryMode.OneAtATime,
         followUpMode: runSettings.FollowUpMode ?? PromptDeliveryMode.OneAtATime,
-        autoCompactionEnabled: runSettings.AutoCompactionEnabled(Environment.GetEnvironmentVariable));
+        autoCompactionEnabled: runSettings.AutoCompactionEnabled(Environment.GetEnvironmentVariable),
+        keepRecentTokens: runSettings.ResolveCompactionKeepRecentTokens(
+            $"{runModel.Provider.Id}/{runModel.Model.Id}"));
 }
 var sessionPath = cli.NoSession || cli.ForkSource is not null ? null : cli.SessionPath is not null &&
     (cli.SessionPath.Contains(Path.DirectorySeparatorChar) || cli.SessionPath.EndsWith(".session.json", StringComparison.Ordinal) ||

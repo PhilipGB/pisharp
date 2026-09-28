@@ -26,10 +26,11 @@ internal sealed class ModelRuntimeController(
         var thinking = ThinkingLevels.ValidateForModel(thinkingLevel, selection.Model.Reasoning,
             selection.Model.ThinkingLevelMap);
         var settings = getSettings();
-        var policy = settings.ResolveCompactionPolicy(selection.Model.ContextLength, getEnvironment,
-            $"{selection.Provider.Id}/{selection.Model.Id}");
+        var modelKey = $"{selection.Provider.Id}/{selection.Model.Id}";
+        var policy = settings.ResolveCompactionPolicy(selection.Model.ContextLength, getEnvironment, modelKey);
+        var keepRecentTokens = settings.ResolveCompactionKeepRecentTokens(modelKey);
         var pricing = ModelPricing.FromEnvironment(getEnvironment) ?? selection.Model.Pricing;
-        return new PreparedModelRuntime(selection, thinking, selection.Connection,
+        return new PreparedModelRuntime(selection, thinking, selection.Connection, keepRecentTokens,
             ProviderChatClientFactory.Create(selection, settings.Retry?.Provider, settings.HttpIdleTimeoutMs), policy, pricing);
     }
 
@@ -48,7 +49,7 @@ internal sealed class ModelRuntimeController(
         var prepared = Prepare(selection, thinkingLevel);
         if (activeRun.TrySetModelDuringRun(prepared.Selection.Model.Id,
             prepared.Connection.Endpoint?.ToString(), prepared.Selection.Provider.Id,
-            prepared.Pricing, prepared.ContextPolicy, prepared.Thinking, prepared.ReasoningOptions,
+            prepared.Pricing, prepared.ContextPolicy, prepared.KeepRecentTokens, prepared.Thinking, prepared.ReasoningOptions,
             () => activeAgent.SetModelRuntime(prepared.ChatClient, prepared.SupportsImages, prepared.ImageResizeOptions)))
         {
             updateCurrent(prepared);
@@ -59,7 +60,8 @@ internal sealed class ModelRuntimeController(
 }
 
 internal sealed record PreparedModelRuntime(ModelSelection Selection, string Thinking,
-    ConnectionSettings Connection, IChatClient ChatClient, AutoCompactionPolicy? ContextPolicy, ModelPricing? Pricing)
+    ConnectionSettings Connection, int KeepRecentTokens, IChatClient ChatClient,
+    AutoCompactionPolicy? ContextPolicy, ModelPricing? Pricing)
 {
     public bool SupportsImages => Selection.Model.Input?.Contains("image", StringComparer.Ordinal) != false;
     public ModelImageResizeOptions? ImageResizeOptions => Selection.Model.InputLimits?.Images?.Resize;

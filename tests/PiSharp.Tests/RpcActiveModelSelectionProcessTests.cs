@@ -57,12 +57,24 @@ public sealed class RpcActiveModelSelectionProcessTests
             }
             await WriteSseResponseAsync(second, "model-one-final", "model-one",
                 new { role = "assistant", content = "switched" }, "stop");
+
+            var compact = await listener.GetContextAsync().WaitAsync(timeout.Token);
+            using (var request = await JsonDocument.ParseAsync(compact.Request.InputStream, cancellationToken: timeout.Token))
+                Assert.Equal("model-one", request.RootElement.GetProperty("model").GetString());
+            compact.Response.StatusCode = (int)HttpStatusCode.OK;
+            compact.Response.ContentType = "application/json";
+            await using (var writer = new StreamWriter(compact.Response.OutputStream))
+            {
+                await writer.WriteAsync("""{"id":"model-one-compaction","object":"chat.completion","created":1,"model":"model-one","choices":[{"index":0,"message":{"role":"assistant","content":"compacted current model"},"finish_reason":"stop"}],"usage":{"prompt_tokens":12,"completion_tokens":4,"total_tokens":16}}""");
+                await writer.FlushAsync();
+            }
+            compact.Response.Close();
         }, timeout.Token);
 
         try
         {
             await File.WriteAllTextAsync(Path.Combine(agentDirectory, "settings.json"), """
-                {"defaultThinkingLevel":"low","modelThinkingLevels":{"fixture/model-one":"high","fixture/model-two":"minimal"}}
+                {"defaultThinkingLevel":"low","modelThinkingLevels":{"fixture/model-one":"high","fixture/model-two":"minimal"},"compaction":{"keepRecentTokens":20000,"modelOverrides":{"fixture/model-one":{"keepRecentTokens":1},"fixture/model-two":{"keepRecentTokens":2}}}}
                 """);
             await File.WriteAllTextAsync(Path.Combine(agentDirectory, "models.json"), JsonSerializer.Serialize(new
             {
@@ -125,6 +137,8 @@ public sealed class RpcActiveModelSelectionProcessTests
             }, timeout.Token);
             await fifoWriter.WaitAsync(timeout.Token);
             await ReadUntilAsync(process, lines, rootElement => rootElement.GetProperty("type").GetString() == "agent_settled", timeout.Token);
+            await WriteCommandAsync(process, new { id = "compact-current-model", type = "compact" }, timeout.Token);
+            await ReadUntilAsync(process, lines, rootElement => IsResponse(rootElement, "compact-current-model"), timeout.Token);
             process.StandardInput.Close();
             await process.WaitForExitAsync(timeout.Token);
             await server;
@@ -153,6 +167,9 @@ public sealed class RpcActiveModelSelectionProcessTests
                 "\"type\":\"thinking_level_changed\",\"level\":\"high\"", StringComparison.Ordinal));
             var cycleResponse = lines.FindIndex(line => IsResponseLine(line, "cycle-while-busy"));
             Assert.True(cycledThinkingEvent >= 0 && cycledThinkingEvent < cycleResponse);
+            using var compacted = JsonDocument.Parse(Assert.Single(lines, line => IsResponseLine(line, "compact-current-model")));
+            Assert.True(compacted.RootElement.GetProperty("success").GetBoolean(), compacted.RootElement.GetRawText());
+            Assert.Contains("compacted current model", compacted.RootElement.GetProperty("data").GetProperty("summary").GetString());
             using var session = JsonDocument.Parse(await File.ReadAllTextAsync(sessionPath, timeout.Token));
             var entries = session.RootElement.GetProperty("Entries").EnumerateArray().ToArray();
             var modelChanges = entries.Select((entry, index) => (entry, index))

@@ -7,6 +7,16 @@ namespace PiSharp.Cli;
 public sealed record CompactionSettings(bool? Enabled = null, int? ReserveTokens = null, int? KeepRecentTokens = null,
     IReadOnlyDictionary<string, CompactionSettings>? ModelOverrides = null)
 {
+    public const int DefaultReserveTokens = AutoCompactionPolicy.DefaultReserveTokens;
+    public const int DefaultKeepRecentTokens = 20_000;
+
+    public int ResolveKeepRecentTokens(string? modelKey = null)
+    {
+        var modelOverride = modelKey is not null && ModelOverrides is not null &&
+            ModelOverrides.TryGetValue(modelKey, out var matched) ? matched : null;
+        return modelOverride?.KeepRecentTokens ?? KeepRecentTokens ?? DefaultKeepRecentTokens;
+    }
+
     public static CompactionSettings Parse(JsonElement value, bool overrideEntry = false)
     {
         if (value.ValueKind != JsonValueKind.Object)
@@ -60,12 +70,12 @@ public sealed record CompactionSettings(bool? Enabled = null, int? ReserveTokens
     {
         var modelOverride = modelKey is not null && ModelOverrides is not null &&
             ModelOverrides.TryGetValue(modelKey, out var matched) ? matched : null;
-        var recent = modelOverride?.KeepRecentTokens ?? KeepRecentTokens;
+        var recent = ResolveKeepRecentTokens(modelKey);
         var explicitPolicy = AutoCompactionPolicy.FromEnvironment(environment);
         if (explicitPolicy is not null) return explicitPolicy with { KeepRecentTokens = recent };
         if (honorEnabledSetting && Enabled == false || contextWindow is null) return null;
         var policy = new AutoCompactionPolicy(contextWindow.Value,
-            modelOverride?.ReserveTokens ?? ReserveTokens ?? Math.Min(16_384, contextWindow.Value / 4), recent);
+            modelOverride?.ReserveTokens ?? ReserveTokens ?? DefaultReserveTokens, recent);
         _ = policy.TriggerTokens;
         return policy;
     }
@@ -487,6 +497,8 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
     public AutoCompactionPolicy? ResolveCompactionPolicy(int? contextWindow, Func<string, string?> environment,
         string? modelKey = null) =>
         (Compaction ?? new CompactionSettings()).ResolvePolicy(contextWindow, environment, modelKey);
+    public int ResolveCompactionKeepRecentTokens(string? modelKey = null) =>
+        (Compaction ?? new CompactionSettings()).ResolveKeepRecentTokens(modelKey);
     public bool AutoCompactionEnabled(Func<string, string?> environment) =>
         (Compaction ?? new CompactionSettings()).Enabled != false ||
         environment("PISHARP_CONTEXT_WINDOW_TOKENS") is not null;

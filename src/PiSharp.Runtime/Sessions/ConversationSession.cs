@@ -291,6 +291,7 @@ public sealed class ConversationSession
         }
 
         var projected = new List<CompactionContextEntry>();
+        string? lastAssistantText = null;
         if (compactionIndex >= 0)
         {
             var summary = previousSummary ?? "";
@@ -307,9 +308,67 @@ public sealed class ConversationSession
             if (compactionIndex >= 0 && index < compactionIndex && message.Role == ChatRole.System) continue;
             if (edits.TryGetValue(node.Id, out var replacement))
                 message = PiJsonlSessionInterchange.ApplyContextEdit(node, message, replacement);
-            if (message is not null) projected.Add(new CompactionContextEntry(node.Id, index, [message]));
+            if (message is null) continue;
+            if (node.Type == "interrupted" && message.Role == ChatRole.Assistant && message.Text.Length > 0 &&
+                lastAssistantText == message.Text)
+                continue;
+            if (message.Role == ChatRole.Assistant) lastAssistantText = message.Text;
+            projected.Add(new CompactionContextEntry(node.Id, index, [message]));
         }
         return projected;
+    }
+
+    /// <summary>
+    /// Return the first omitted assistant attempt when every context-visible entry after a
+    /// candidate boundary is closed by recovery omission edits. This keeps compaction from
+    /// stopping immediately before an invisible failed-attempt suffix.
+    /// </summary>
+    internal string? RecoveryOmittedAssistantAfter(int sourceIndex)
+    {
+        var path = Tree.ActivePath();
+        if (sourceIndex < 0 || sourceIndex >= path.Count - 1) return null;
+
+        var compactIndex = path.ToList().FindLastIndex(node => node.Type == "compaction");
+        var retainedFrom = 0;
+        if (compactIndex >= 0)
+        {
+            var firstKeptId = path[compactIndex].Payload.GetProperty("firstKeptEntryId").GetString();
+            retainedFrom = path.ToList().FindIndex(node => node.Id == firstKeptId);
+            if (retainedFrom < 0 || retainedFrom >= compactIndex || sourceIndex < retainedFrom) return null;
+        }
+
+        var edits = new Dictionary<string, JsonElement>(StringComparer.Ordinal);
+        for (var index = retainedFrom; index < path.Count; index++)
+            if (index != compactIndex && PiJsonlSessionInterchange.TryGetContextEdit(path[index], out var targetId, out var replacement))
+                edits[targetId] = replacement;
+
+        var suffix = path.Skip(sourceIndex + 1).ToArray();
+        ChatMessage? Project(ConversationNode node)
+        {
+            var message = ContextMessageForNode(node);
+            return message is not null && edits.TryGetValue(node.Id, out var replacement)
+                ? PiJsonlSessionInterchange.ApplyContextEdit(node, message, replacement)
+                : message;
+        }
+
+        bool IsIntrinsicallyVisible(ConversationNode node) =>
+            node.Type != "context_edit" && ContextMessageForNode(node) is not null;
+
+        bool IsOmitted(ConversationNode node) =>
+            IsIntrinsicallyVisible(node) && Project(node) is null;
+
+        var omittedIds = suffix.Where(IsOmitted).Select(node => node.Id).ToHashSet(StringComparer.Ordinal);
+        var hasExternalReplacement = suffix.Any(node =>
+            PiJsonlSessionInterchange.TryGetContextEdit(node, out var targetId, out var replacement) &&
+            replacement.ValueKind != JsonValueKind.Null && !omittedIds.Contains(targetId));
+        var hasOmittedAssistant = suffix.Any(node => omittedIds.Contains(node.Id) &&
+            ContextMessageForNode(node)?.Role == ChatRole.Assistant);
+        if (!hasOmittedAssistant || hasExternalReplacement || suffix.Any(node =>
+                node.Type == "compaction" || IsIntrinsicallyVisible(node) && !omittedIds.Contains(node.Id)))
+            return null;
+
+        return suffix.First(node => omittedIds.Contains(node.Id) &&
+            ContextMessageForNode(node)?.Role == ChatRole.Assistant).Id;
     }
 
     public void AppendCompaction(CompactionPlan plan, string summary, int? keepRecentTokens = null,
