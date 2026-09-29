@@ -105,6 +105,8 @@ internal sealed class ProjectRuntimeContext : IDisposable
             extensionToolRegistrations: Extensions.Registration.ToolDefinitions,
             noBuiltinTools: arguments.NoBuiltinTools,
             supportsImages: selection.Model.Input?.Contains("image", StringComparer.Ordinal) != false,
+            extensionToolCallHooks: Extensions.Registration.ToolCallHooks,
+            extensionToolResultHooks: Extensions.Registration.ToolResultHooks,
             // ProviderChatClientFactory applies retry.provider.maxRetries inside the SDK adapter.
             // Avoid adding PiAgent's independent fallback retry loop on top of that configured count.
             retryPolicy: ProviderRetryPolicy.None);

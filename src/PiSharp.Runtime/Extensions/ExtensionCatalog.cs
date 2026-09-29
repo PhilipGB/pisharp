@@ -33,6 +33,8 @@ public sealed class ExtensionRegistration
     private readonly Dictionary<string, Func<string, CancellationToken, Task<string>>> _commands = new(StringComparer.Ordinal);
     private readonly Dictionary<string, ExtensionCommandInfo> _commandInfo = new(StringComparer.Ordinal);
     private readonly List<UserBashHandler> _userBashHandlers = [];
+    private readonly List<PiSharpToolCallHook> _toolCallHooks = [];
+    private readonly List<PiSharpToolResultHook> _toolResultHooks = [];
     private ResourceSourceInfo? _currentSourceInfo;
     public IReadOnlyCollection<AIFunction> Tools => _tools.Values;
     public IReadOnlyCollection<PiSharpToolRegistration> ToolDefinitions => _toolDefinitions.Values;
@@ -40,6 +42,8 @@ public sealed class ExtensionRegistration
     public IReadOnlyDictionary<string, Func<string, CancellationToken, Task<string>>> Commands => _commands;
     public IReadOnlyDictionary<string, ExtensionCommandInfo> CommandInfo => _commandInfo;
     public IReadOnlyList<UserBashHandler> UserBashHandlers => _userBashHandlers;
+    public IReadOnlyList<PiSharpToolCallHook> ToolCallHooks => _toolCallHooks;
+    public IReadOnlyList<PiSharpToolResultHook> ToolResultHooks => _toolResultHooks;
 
     public void AddTool(AIFunction tool)
     {
@@ -76,6 +80,20 @@ public sealed class ExtensionRegistration
 
     public PiSharpToolRenderer? GetToolRenderer(string name) =>
         _toolRenderers.TryGetValue(name, out var renderer) ? renderer : null;
+
+    /// <summary>Registers an asynchronous policy hook for model-issued and nested tool calls.</summary>
+    public void AddToolCallHook(PiSharpToolCallHook hook)
+    {
+        ArgumentNullException.ThrowIfNull(hook);
+        _toolCallHooks.Add(hook);
+    }
+
+    /// <summary>Registers an asynchronous result hook for model-issued and nested tool calls.</summary>
+    public void AddToolResultHook(PiSharpToolResultHook hook)
+    {
+        ArgumentNullException.ThrowIfNull(hook);
+        _toolResultHooks.Add(hook);
+    }
 
     public void AddCommand(string name, Func<string, CancellationToken, Task<string>> handler) =>
         AddCommand(name, handler, null);

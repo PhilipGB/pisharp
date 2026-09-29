@@ -136,8 +136,16 @@ public sealed class PiSharpToolExecutionContext
         Action<string>? nestedUpdate = null) =>
         new(_loadout, _scope, toolCallId, parentToolCallId, operationId, toolName, arguments, nestedUpdate);
 
-    internal sealed record NestedInvocation(PiSharpToolExecutionContext Parent, string CallId,
-        string ParentCallId, Action<PiSharpToolExecutionResult>? OnUpdate);
+    internal sealed class NestedInvocation(PiSharpToolExecutionContext parent, string callId,
+        string parentCallId, Action<PiSharpToolExecutionResult>? onUpdate)
+    {
+        public PiSharpToolExecutionContext Parent { get; } = parent;
+        public string CallId { get; } = callId;
+        public string ParentCallId { get; } = parentCallId;
+        public Action<PiSharpToolExecutionResult>? OnUpdate { get; } = onUpdate;
+        public bool IsError { get; set; }
+        public string? Error { get; set; }
+    }
 
     private sealed class ToolInvocationScope(Func<IReadOnlyDictionary<string, AIFunction>> functions,
         Action<AgentLifecycleEvent> publish)
@@ -200,8 +208,9 @@ public sealed class PiSharpToolExecutionContext
                 var value = await function.InvokeAsync(functionArguments, cancellationToken);
                 ToolResultOutput.TryRead(value, out var structuredText, out var details);
                 var text = structuredText.Length > 0 ? structuredText : value?.ToString() ?? string.Empty;
-                var result = new PiSharpToolExecutionResult(callId, name, value, text, false, Details: details);
-                FinishCall(record, isError: false, error: null);
+                var result = new PiSharpToolExecutionResult(callId, name, value, text, nested.IsError,
+                    nested.Error, details);
+                FinishCall(record, nested.IsError, nested.Error);
                 return result;
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)

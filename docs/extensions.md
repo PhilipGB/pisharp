@@ -21,6 +21,31 @@ Call and result renderers receive a stable tool-call ID, working directory, safe
 
 Return `null`, an empty view, or throw to use PiSharp's standard presentation. The host catches renderer exceptions and preserves tool execution/results. Render callbacks are synchronous and receive completed results; partial update rendering, stateful invalidation, custom interactive widgets and image-component composition are not implemented yet.
 
+## Tool call and result hooks
+
+Extensions can register asynchronous hooks that run for both model-issued and nested tool calls:
+
+```csharp
+registration.AddToolCallHook(async (context, cancellationToken) =>
+{
+    if (context.ToolName == "deploy" && !await IsApprovedAsync(context.Arguments, cancellationToken))
+        return PiSharpToolCallDecision.Block("Deployment was not approved.");
+
+    // Changes are passed through normal tool argument binding and execution.
+    context.Arguments["environment"] = "staging";
+    return PiSharpToolCallDecision.Allow;
+});
+
+registration.AddToolResultHook((context, cancellationToken) =>
+{
+    if (!context.IsError && context.ToolName == "deploy")
+        context.Result = "Deployment request recorded.";
+    return ValueTask.CompletedTask;
+});
+```
+
+Call hooks run in registration order before tool execution. Each receives the tool name, stable call ID, optional parent call ID and mutable argument dictionary; the first blocked decision prevents the tool from running and returns its error through the normal tool lifecycle. Result hooks also run in registration order after execution, including failed or blocked calls. They can replace the result or set `IsError` and `Error`; nested callers receive that explicit status. The host passes cancellation to every hook. These hooks are a policy extension point, not a built-in approval dialog or security sandbox. Native extensions remain trusted in-process code with the application's operating-system permissions.
+
 ## Current boundaries
 
-The .NET API does not aim for TypeScript source compatibility. Extension lifecycle hooks, context transforms, custom providers, extension keybindings, general extension UI, resource registration and settings remain open parity work. See the [parity ledger](parity/execution-ledger.json) for implementation evidence and current gaps.
+The .NET API does not aim for TypeScript source compatibility. Context transforms, custom providers, extension keybindings, general extension UI, resource registration and settings remain open parity work. Tool output schemas and a complete structured-result contract are also open. See the [parity ledger](parity/execution-ledger.json) for implementation evidence and current gaps.

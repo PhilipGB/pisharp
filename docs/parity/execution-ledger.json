@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "plan_received": true,
-  "source_note": "PiSharp main is 03a6d3b416ccf2e70c90db3e6f134bc2c2d63b94. Exact-head Linux CI run 36544238320 passed restore, format, warnings-as-errors build (0 warnings/errors), and 815/815 tests (0 skipped). Current Pi main is da19b63c775086f3a3dc372eb77f3e981d36c952. The committed slice implements registered/callable/declared tool projections, five exposure states, per-AgentSession loadouts and request-time MAF declaration projection; declaration persistence, nested execution, tool search, Codemode, MCP and virtual models remain open. Current Pi additions include configurable fullscreen wheel scrolling and restored llama.cpp context-window handling; both are recorded as in-scope residuals. The current Pi build fetched 28 live Radius models while PiSharp bundles a 25-model fallback at Pi revision fd889a274; its runtime gateway refresh remains in place, so offline fallback freshness is a category 4 residual. Overall parity is incomplete.",
+  "source_note": "The last pushed PiSharp checkpoint is ae05045b105bf23bee228dc6238c415d8978d4fa. Exact-head Linux CI run 36549801185 passed restore, format, warnings-as-errors build (0 warnings/errors), and 821/821 tests (0 skipped). This slice adds reusable asynchronous extension call/result hooks and allow/block decisions to root and nested tool invocations; focused coverage, format verification, warnings-as-errors build, and all 821 local tests pass. Exact-head CI runs on push. The source persists per-session loadouts through branch selection and Pi JSONL export/import/resume, and executes bounded nested calls through the shared wrapped MAF functions with parent-linked lifecycle, durable outcomes, compaction and presentation projections. Current Pi main is 4259686d9290c0d73ae7192b796aee3e530a9779. Since da19b63c7, upstream serializes MCP OAuth refresh across processes and resolves built-in MCP, llama.cpp, Codemode and tool-search modules as builtin:<name> extension resources; both changes are classified in the current orchestration audit. The bounded provider/auth review found no wholly absent major provider/API family; six OAuth profiles and category 3/4 semantics/differentials remain. Overall parity is incomplete.",
   "baseline": "earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035",
   "required_ids": [
     "feature-agent-multi-turn-and-streaming",
@@ -3390,14 +3390,14 @@
         "Support session-scoped active tools, prepare-loadout description/declaration changes and transcript persistence across resume/fork"
       ],
       "implementation": [
-        "src/PiSharp.Runtime/Extensions/ToolRegistry.cs defines five exposure states, immutable registered/callable/declared snapshots, atomic session loadouts, defaults, namespaces and prepare-loadout description/declaration projections.",
-        "src/PiSharp.Runtime/Extensions/ExtensionCatalog.cs retains tool registration metadata; src/PiSharp.Runtime/PiAgent.cs owns one loadout per MAF AgentSession and projects declarations at each request through ObservedChatClient.",
-        "PiSharpToolExecutionContext lets an active tool change its session loadout; DurableToolFunction rejects model calls that are neither active nor callable. Active tool state is not yet persisted through transcript, resume, tree or fork."
+        "src/PiSharp.Runtime/Extensions/ToolRegistry.cs defines five exposure states, immutable registered/callable/declared snapshots, atomic session loadouts, activation defaults, namespaces and prepare-loadout description/declaration projections.",
+        "PiSharpToolExecutionContext changes the active loadout; ConversationRun persists active names as tree events and restores the selected branch state; ConversationSession and PiJsonlSessionInterchange preserve loadout changes through Pi JSONL export/import and resume.",
+        "DurableToolFunction rejects invocations outside the active/callable view. ToolSelectionTests cover branch navigation, export/import and resume; full local suite passes 821/821."
       ],
       "evidence": [
-        "Current Pi exposure/loadout rules and tests were refreshed at da19b63c775086f3a3dc372eb77f3e981d36c952. Current upstream build succeeds; agent loop passes 37/37, Codemode 57/57, MCP 34/34, and focused coding-agent orchestration/virtual-model/MCP tests 120/120.",
-        "ToolLoadoutTests and ToolSelectionTests pass 13/13, including a model-only tool activating a deferred tool for the next request, per-session isolation and a hidden-tool invocation rejection. dotnet format PiSharp.slnx --verify-no-changes --no-restore passes; dotnet build PiSharp.slnx --no-restore --warnaserror reports 0 warnings/errors; dotnet test PiSharp.slnx --no-build --no-restore passes 815/815 (0 skipped).",
-        "Exact PiSharp head 03a6d3b416ccf2e70c90db3e6f134bc2c2d63b94 passes Linux CI run 36544238320: restore, format, warnings-as-errors build (0 warnings/errors), and 815/815 tests (0 skipped)."
+        "Current Pi loadout, nested-call and built-in extension resource contracts were refreshed at 4259686d9290c0d73ae7192b796aee3e530a9779. The targeted tests added/changed by the current upstream refresh pass 7/7 (172 unrelated tests filtered).",
+        "PiSharp ToolLoadoutTests and ToolSelectionTests plus the complete suite pass locally: 821 passed, 0 failed, 0 skipped; format verification and warnings-as-errors build pass.",
+        "Exact PiSharp head ae05045b105bf23bee228dc6238c415d8978d4fa passes Linux CI run 36549801185: restore, format, warnings-as-errors build (0 warnings/errors), and 821/821 tests (0 skipped)."
       ],
       "dependencies": []
     },
@@ -3411,9 +3411,15 @@
         "Emit correlated child IDs and parent-linked call/start/update/end events",
         "Persist bounded nested-call metadata on the parent result and include it in compaction/export/presentation"
       ],
-      "implementation": [],
+      "implementation": [
+        "src/PiSharp.Runtime/Extensions/PiSharpToolExecutionContext.cs invokes the same wrapped AIFunctions as model calls, derives hierarchical child IDs, carries parent identity, cancellation and progress, and bounds nested-call count, argument snapshots and error text.",
+        "DurableToolFunction applies the common argument binding, loadout guard, durable tool intent/outcome and lifecycle wrapper to root and nested calls. ConversationRun/ConversationSession persist the nested records; compaction, Pi JSONL, HTML export and TUI presentation consume them.",
+        "ExtensionRegistration accepts ordered asynchronous call/result hooks. The shared PiSharpToolHookPipeline runs call hooks before argument binding/execution, applies mutations, and blocks calls on a denied decision; result hooks can replace outputs or set explicit error state. DurableToolFunction uses the same pipeline for model and nested calls and propagates nested error state to the parent tool API.",
+        "NestedToolExecutionTests, CompactionNestedToolCallsTests and focused RPC/session-process tests cover nested success/failure, root-only provider history, lifecycle parent IDs, JSONL roundtrip and compaction file operations."
+      ],
       "evidence": [
-        "Current Pi nested execution source/tests were refreshed at da19b63c775086f3a3dc372eb77f3e981d36c952. PiSharp now exposes the session loadout in the active tool invocation context, but it still has no nested execute API, parent-linked child lifecycle, bounded nested-call record or persistence/export projection."
+        "At last pushed PiSharp head ae05045b105bf23bee228dc6238c415d8978d4fa, exact-head Linux CI run 36549801185 passed with 821/821 tests. This slice passes local format verification, warnings-as-errors build (0 warnings/errors), and 821/821 tests; NestedToolExecutionTests verifies ordered call/result hooks, argument mutation, blocked calls not invoking the tool, result replacement, nested call identity and persistence. Exact-head CI runs on push.",
+        "The common root/nested execution pipeline now has reusable asynchronous extension call/result hooks and an allow/block decision point. Structured output schemas and complete returned-error result contracts remain open, so the broader orchestration/result work stays in progress."
       ],
       "dependencies": [
         "tool-exposure-loadout"
@@ -3431,7 +3437,8 @@
       ],
       "implementation": [],
       "evidence": [
-        "Current Pi AgentToolResult, ToolDefinition and tool-result event contracts were inspected at 8562bcf66a8eeefdf75ddd231ca9d7aa7d64f86e. PiSharp has ToolResultOutput details but no general structured output schema/error-result contract."
+        "Current Pi AgentToolResult, ToolDefinition, ToolResultEventBase and before/after tool-hook contracts were inspected at 4259686d9290c0d73ae7192b796aee3e530a9779.",
+        "PiSharp ToolResultOutput currently extracts text and UI/event details from existing structured outputs. Nested thrown failures return IsError outcomes, but registered tools have no outputSchema/structuredContent contract and no explicit returned error result; root thrown exceptions remain a distinct FunctionResultContent.Exception. Full result semantics remain unimplemented."
       ],
       "dependencies": []
     },
@@ -3447,7 +3454,8 @@
       ],
       "implementation": [],
       "evidence": [
-        "Current Pi tool-search.ts uses BM25 and the common active-tool API; coding-agent tool-search/MCP tests were inspected at 8562bcf66a8eeefdf75ddd231ca9d7aa7d64f86e. PiSharp has no tool-search runtime."
+        "Current Pi BM25 search is packages/coding-agent/src/extensions/tool-search/tool.ts; builtin:<tool-search> is now loaded as an extension resource at 4259686d9290c0d73ae7192b796aee3e530a9779. Search and declaration changes share the loadout contract.",
+        "PiSharp currently has no tool-search runtime. Its deferred/codemode registrations can be activated by the generic session loadout API, which provides the intended consumer boundary."
       ],
       "dependencies": [
         "tool-exposure-loadout"
@@ -3465,7 +3473,8 @@
       ],
       "implementation": [],
       "evidence": [
-        "Current Pi uses a fresh QuickJS/WASM instance on a worker and tests isolation, time/memory limits and nested calls. PiSharp has no sandboxed code runtime; implementation must not evaluate generated code in-process."
+        "Current Pi Codemode uses an isolated QuickJS/WASM worker and is now resolved as builtin:codemode at 4259686d9290c0d73ae7192b796aee3e530a9779. The previous pin da19b63 package tests passed 57/57; the current refresh did not rerun the full Codemode suite.",
+        "PiSharp has no sandboxed code runtime. Do not evaluate model-generated programs in the PiSharp process; Codemode depends on shared nested calls, structured results and tool discovery."
       ],
       "dependencies": [
         "tool-exposure-loadout",
@@ -3486,7 +3495,8 @@
       ],
       "implementation": [],
       "evidence": [
-        "Pi mcp package tests passed 34/34 at 8562bcf66a8eeefdf75ddd231ca9d7aa7d64f86e. PiSharp has no MCP client/runtime. The first agent/Codemode runs in the refreshed checkout failed because npm dependencies were stale; exact rerun is pending npm ci."
+        "Current Pi MCP tools share exposure, nested execution, hooks and extension registration; builtin:mcp is resolved only after project trust at 4259686d9290c0d73ae7192b796aee3e530a9779.",
+        "Upstream commit 1d74741e1 serializes MCP OAuth refreshes across processes with per-server lockfiles and waits for refresh completion during shutdown. The two new MCP OAuth refresh tests pass 2/2 at the current pin; PiSharp has no MCP runtime or OAuth store yet."
       ],
       "dependencies": [
         "tool-exposure-loadout",
@@ -3506,7 +3516,8 @@
       ],
       "implementation": [],
       "evidence": [
-        "Current Pi virtual-models.ts and both virtual-model test suites were inspected at 8562bcf66a8eeefdf75ddd231ca9d7aa7d64f86e. PiSharp has no logical-versus-physical model contract; ModelRuntimeController currently switches concrete provider runtime directly."
+        "Current Pi virtual-model registration and routing contracts were inspected at 4259686d9290c0d73ae7192b796aee3e530a9779; prior focused current-Pi virtual-model suites passed 120/120 at da19b63, and the 4259686 refresh did not change virtual-model source.",
+        "PiSharp has no logical-versus-physical model contract. ModelRuntimeController currently selects concrete provider runtimes, so routing/persistence/attribution remain unimplemented."
       ],
       "dependencies": [
         "extension-orchestration-api"
@@ -3522,9 +3533,13 @@
         "Provide keybinding/UI, provider/model/virtual-model, MCP-server, resources and tool exposure/loadout registration boundaries",
         "Keep native plugin trust explicit and make built-in Codemode/MCP/tool search consumers of the same contracts"
       ],
-      "implementation": [],
+      "implementation": [
+        "PiSharp ExtensionRegistration exposes native tools, commands, safe terminal renderers and direct RPC Bash handlers. PiSharpToolRegistration now also supplies exposure, namespace, default activation, loadout projection and nested invocation controls.",
+        "PiSharpToolExecutionContext and the durable wrapper provide shared nested execution and lifecycle/persistence, but there is no general extension event lifecycle, tool-call/result hook pipeline, permission-decision API, context transform, extension state, provider/model, MCP server, resource, keybinding or interactive UI registration contract."
+      ],
       "evidence": [
-        "PiSharp ExtensionRegistration currently exposes native tools, commands, renderers and direct-Bash handlers. Current Pi extension registration surfaces were inspected at 8562bcf66a8eeefdf75ddd231ca9d7aa7d64f86e; broad lifecycle parity remains absent."
+        "Current Pi ExtensionAPI, AgentSession tool hooks, virtual-model registration, MCP server registration and builtin extension-resource loading were inspected at 4259686d9290c0d73ae7192b796aee3e530a9779. The current upstream targeted resource/OAuth tests pass 7/7.",
+        "PiSharp exact head ae05045b105bf23bee228dc6238c415d8978d4fa passes Linux CI run 36549801185 with 821/821 tests; broad reusable extension lifecycle and tool permission hooks remain absent."
       ],
       "dependencies": [
         "tool-exposure-loadout",
@@ -3532,17 +3547,36 @@
       ]
     },
     {
+      "id": "extensions-builtin-resource-loading",
+      "title": "Extensions: built-in extension resource resolution",
+      "status": "not_started",
+      "source": "earendil-works/pi@4259686d9290c0d73ae7192b796aee3e530a9779; packages/coding-agent/src/core/resource-loader.ts, package-manager.ts and source-info.ts",
+      "acceptance": [
+        "Resolve core built-ins as builtin:<name> extension resources with stable source identity and diagnostics.",
+        "Apply global and trusted-project enable/disable precedence, --no-extensions and explicit builtin loading after project trust resolution.",
+        "Keep package-manager installation/distribution excluded while using shared extension loading for in-scope built-in Codemode, MCP, tool-search and llama.cpp capabilities."
+      ],
+      "implementation": [],
+      "evidence": [
+        "Current Pi package-manager, resource-loader and source-info behavior was inspected at 4259686d9290c0d73ae7192b796aee3e530a9779. Its new resource/package-manager tests pass 5/5 in a targeted run; all five resource tests and two OAuth tests across the changed files pass (7/7 total, 172 filtered).",
+        "PiSharp currently has native DLL discovery for user/trusted-project extensions but no builtin:<name> resource model or built-in extension composition through that loader."
+      ],
+      "dependencies": [
+        "extension-orchestration-api"
+      ]
+    },
+    {
       "id": "settings-fullscreenwheelscrolllines",
       "title": "Setting: fullscreenWheelScrollLines",
       "status": "not_started",
-      "source": "earendil-works/pi@da19b63c775086f3a3dc372eb77f3e981d36c952; packages/coding-agent/src/core/settings-manager.ts and packages/tui/src/wheel-scroll.ts",
+      "source": "earendil-works/pi@4259686d9290c0d73ae7192b796aee3e530a9779; packages/coding-agent/src/core/settings-manager.ts and packages/tui/src/wheel-scroll.ts",
       "acceptance": [
         "Support the current Pi auto mode and integer 1-100 fullscreen wheel line setting with matching default and settings scope.",
         "Apply fixed and accelerated wheel movement in the active fullscreen TUI and settings UI."
       ],
       "implementation": [],
       "evidence": [
-        "Current Pi TUI and coding-agent tests for fullscreen input/settings pass; the Pi TUI package test command and the focused coding-agent settings/Llama command both exit successfully at da19b63c775086f3a3dc372eb77f3e981d36c952. PiSharp has no matching setting yet."
+        "Current Pi TUI and coding-agent tests for fullscreen input/settings pass; the Pi TUI package test command and the focused coding-agent settings/Llama command both exit successfully at 4259686d9290c0d73ae7192b796aee3e530a9779. PiSharp has no matching setting yet."
       ],
       "dependencies": []
     },
@@ -3550,14 +3584,14 @@
       "id": "provider-llama-context-cache-reload",
       "title": "Provider semantics: llama.cpp context window after reload",
       "status": "not_started",
-      "source": "earendil-works/pi@da19b63c775086f3a3dc372eb77f3e981d36c952; packages/coding-agent/src/extensions/llama/provider.ts",
+      "source": "earendil-works/pi@4259686d9290c0d73ae7192b796aee3e530a9779; packages/coding-agent/src/extensions/llama/provider.ts",
       "acceptance": [
         "After llama.cpp catalog refresh, resolve context size from live runtime metadata, configured --ctx-size/-c/-ctx arguments, restored cached metadata, training metadata, then the 128000 fallback.",
         "Keep chat and classifier model context windows consistent across reload and verify the precedence with deterministic tests."
       ],
       "implementation": [],
       "evidence": [
-        "Pi llama-extension tests pass within the focused 79/79 coding-agent settings/Llama run at da19b63c775086f3a3dc372eb77f3e981d36c952. The PiSharp generic local endpoint path has no persisted llama.cpp catalog context metadata or tested refresh precedence."
+        "Pi llama-extension tests pass within the focused 79/79 coding-agent settings/Llama run at 4259686d9290c0d73ae7192b796aee3e530a9779. The PiSharp generic local endpoint path has no persisted llama.cpp catalog context metadata or tested refresh precedence."
       ],
       "dependencies": []
     }

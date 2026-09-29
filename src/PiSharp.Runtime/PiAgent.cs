@@ -108,6 +108,7 @@ public sealed class PiAgent
     private readonly MutableChatClient _chatClient;
     private readonly IReadOnlyList<AIFunctionDeclaration> _toolDeclarations;
     private readonly PiSharpToolRegistry _toolRegistry;
+    private readonly PiSharpToolHookPipeline _toolHooks;
     private readonly IReadOnlyList<string>? _initialActiveToolNames;
     private readonly ConditionalWeakTable<AgentSession, ToolLoadout> _sessionToolLoadouts = new();
     private readonly IReadOnlyDictionary<string, AIFunction> _runtimeToolFunctions;
@@ -142,9 +143,12 @@ public sealed class PiAgent
     public PiAgent(IChatClient client, CodingTools tools, IReadOnlyList<string>? selectedTools = null, IReadOnlyList<string>? excludedTools = null, bool noTools = false, string? contextInstructions = null, string? systemPrompt = null, string? appendSystemPrompt = null,
         IReadOnlyCollection<AIFunction>? extensionTools = null, ProviderRetryPolicy? retryPolicy = null,
         ReasoningOptions? reasoning = null, bool blockImages = false, bool noBuiltinTools = false, bool supportsImages = true,
-        IReadOnlyCollection<PiSharpToolRegistration>? extensionToolRegistrations = null)
+        IReadOnlyCollection<PiSharpToolRegistration>? extensionToolRegistrations = null,
+        IReadOnlyList<PiSharpToolCallHook>? extensionToolCallHooks = null,
+        IReadOnlyList<PiSharpToolResultHook>? extensionToolResultHooks = null)
     {
         _codingTools = tools;
+        _toolHooks = new PiSharpToolHookPipeline(extensionToolCallHooks, extensionToolResultHooks);
         _chatClient = new MutableChatClient(client);
         _supportsImages = supportsImages ? 1 : 0;
         _reasoning = reasoning;
@@ -199,7 +203,7 @@ public sealed class PiAgent
         _runtimeToolFunctions = allRegistrations.ToDictionary(registration => registration.Function.Name,
             registration => (AIFunction)new DurableToolFunction(registration.Function, () => _active,
                 value => _events?.Invoke(value), () => Volatile.Read(ref _currentToolLoadout),
-                () => _runtimeToolFunctions!), StringComparer.Ordinal);
+                () => _runtimeToolFunctions!, _toolHooks), StringComparer.Ordinal);
         var initialSnapshot = _toolRegistry.CreateLoadout(_initialActiveToolNames).Snapshot;
         _toolDeclarations = Array.AsReadOnly(initialSnapshot.Declared.Select(declaration =>
             (AIFunctionDeclaration)(string.Equals(declaration.Description, declaration.Registration.Function.Description,
