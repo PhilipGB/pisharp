@@ -69,3 +69,9 @@ The registry/loadout, nested execution, structured-result, built-in registration
 ## Historical evidence status — 2026-09-29
 
 The earlier snapshot below refers to Pi `4df1574`, PiSharp `2411ed0df` and its historical Codemode working tree. It is retained as historical evidence and is superseded by the current checkpoint at the top of this document. No current parity claim derives from that snapshot. This capability family still lacks complete paired Pi/PiSharp process differentials; Codemode optional globals and broader sandbox semantics, remaining MCP lifecycle, virtual models and broader loadout/fork/result differentials remain open.
+
+## Refresh at Pi 1b347794e2a630e4359f2584f4eea388145d0ddf
+
+Remote HEAD was verified on 2026-09-29. Commits after 6a4af07d were inspected by path: fddc968 changes native-provider configured detection with stored credentials and is queued for provider/auth work; ba7d5fb adds a lightweight model import entry for durable consumers (distribution/import boundary, no routing semantic change). The remaining commits concern the experimental durable package and are excluded. Virtual-model source/docs/tests remain the current behavioural specification. GPT-6.1 Sol catalog/default change 12c416e remains queued for provider/catalog work.
+
+PiSharp ebce1a0 introduces the logical/physical foundation but has no dedicated virtual-model evidence. The active work adds VirtualModelRoutingTests, then closes demonstrated gaps. Source inspection finds ConversationRun and ordinary PiAgent runs serialized by their gates, but PiAgent.SummarizeAsync uses the same routed client without taking the run gate. Direct requests therefore cannot safely rely on ordinary-run serialization. A deterministic overlapping state-save/direct-request test exercises this boundary before choosing a fix. Future classifier/Codemode calls must use request-local physical dispatch.

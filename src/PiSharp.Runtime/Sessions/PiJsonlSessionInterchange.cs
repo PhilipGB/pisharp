@@ -138,7 +138,8 @@ public static class PiJsonlSessionInterchange
     {
         var node = new ConversationNode("rpc", null, "chat", default, timestamp ?? DateTimeOffset.UtcNow);
         var projected = ExportMessage(session, node, message)["message"]!.DeepClone().AsObject();
-        if (message.Role == ChatRole.Assistant && !string.IsNullOrWhiteSpace(api)) projected["api"] = api;
+        if (message.Role == ChatRole.Assistant && MessageProperty(message, "pisharp.api") is null &&
+            !string.IsNullOrWhiteSpace(api)) projected["api"] = api;
         if (message.Role == ChatRole.Tool && toolName is not null) projected["toolName"] = toolName;
         return projected;
     }
@@ -574,6 +575,8 @@ public static class PiJsonlSessionInterchange
             if (StringProperty(message, "model") is { } model) properties["pisharp.model"] = model;
             if (StringProperty(message, "thinkingLevel") is { } thinking) properties["pisharp.thinkingLevel"] = thinking;
             if (StringProperty(message, "api") is { } api) properties["pisharp.api"] = api;
+            if (StringProperty(message, "stopReason") is { } stopReason) properties["pisharp.stopReason"] = stopReason;
+            if (StringProperty(message, "errorMessage") is { } errorMessage) properties["pisharp.errorMessage"] = errorMessage;
             if (properties.Count > 0) result.AdditionalProperties = properties;
         }
         return result;
@@ -801,7 +804,7 @@ public static class PiJsonlSessionInterchange
     }
 
     private static string? MessageProperty(ChatMessage message, string name) =>
-        message.AdditionalProperties?.TryGetValue(name, out var value) == true ? value as string : null;
+        ChatMessageProperties.String(message.AdditionalProperties, name);
 
     private static void AppendLine(StringBuilder output, JsonObject record) => output.Append(record.ToJsonString()).Append('\n');
 

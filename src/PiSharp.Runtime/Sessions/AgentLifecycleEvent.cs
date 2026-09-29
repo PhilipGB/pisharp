@@ -56,6 +56,9 @@ public sealed record AgentLifecycleEvent(string Type, string? Text = null, strin
     public string? ProviderProviderId { get; init; }
 
     [JsonIgnore]
+    public string? ProviderApi { get; init; }
+
+    [JsonIgnore]
     public ModelPricing? ProviderPricing { get; init; }
 
     [JsonIgnore]

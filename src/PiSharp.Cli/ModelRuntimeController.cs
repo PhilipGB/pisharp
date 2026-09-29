@@ -46,7 +46,8 @@ internal sealed class ModelRuntimeController(
         return async request =>
         {
             var previous = await FindPreviousPhysicalAsync(request.Messages, request.CancellationToken).ConfigureAwait(false);
-            var state = request.Session.ActiveVirtualModelState(logicalSelection.Provider.Id, logicalSelection.Model.Id);
+            var state = request.Reason == "direct" ? null :
+                request.Session.ActiveVirtualModelState(logicalSelection.Provider.Id, logicalSelection.Model.Id);
             var routingRequest = new VirtualModelRouteRequest(logicalSelection.Model, request.ThinkingLevel,
                 request.Reason, request.Messages, previous.Model, previous.ThinkingLevel,
                 request.Failed?.Model, request.Failed?.ThinkingLevel, request.Failed?.Message, state);
@@ -61,6 +62,8 @@ internal sealed class ModelRuntimeController(
             if (!physicalSelection.Authenticated)
                 throw new InvalidOperationException($"Virtual model {logicalSelection.Provider.Id}/{logicalSelection.Model.Id} routed to {route.Provider}/{route.Model}, which has no credentials.");
             var physical = physicalSelection with { Model = targetModel };
+            targetModel = targetModel with { Api = ProviderChatClientFactory.ResolveProtocol(physical) };
+            physical = physical with { Model = targetModel };
             var thinking = ThinkingLevels.ValidateForModel(route.ThinkingLevel, targetModel.Reasoning,
                 targetModel.ThinkingLevelMap);
             var settings = getSettings();
@@ -80,19 +83,17 @@ internal sealed class ModelRuntimeController(
     {
         foreach (var message in messages.Reverse())
         {
-            if (message.Role != ChatRole.Assistant || message.AdditionalProperties is not { } properties) continue;
-            var provider = PropertyString(properties, "pisharp.provider");
-            var model = PropertyString(properties, "pisharp.model");
+            if (message.Role != ChatRole.Assistant || message.AdditionalProperties is not { } properties ||
+                ChatMessageProperties.String(properties, "pisharp.stopReason") is "error" or "aborted") continue;
+            var provider = ChatMessageProperties.String(properties, "pisharp.provider");
+            var model = ChatMessageProperties.String(properties, "pisharp.model");
             if (provider is null || model is null) continue;
             var descriptor = await providers.FindPhysicalModelAsync(provider, model, cancellationToken).ConfigureAwait(false);
             if (descriptor is not null)
-                return (descriptor, PropertyString(properties, "pisharp.thinkingLevel"));
+                return (descriptor, ChatMessageProperties.String(properties, "pisharp.thinkingLevel"));
         }
         return (null, null);
     }
-
-    private static string? PropertyString(IDictionary<string, object?> properties, string name) =>
-        properties.TryGetValue(name, out var value) ? value as string : null;
 
     public string ResolveThinkingLevelForModelSwitch(ModelSelection selection, string currentLevel)
     {

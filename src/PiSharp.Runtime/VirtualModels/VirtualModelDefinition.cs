@@ -52,7 +52,9 @@ public sealed class VirtualModelRegistry
             Reasoning: levels.Any(level => level != "off"), Provider: definition.Provider,
             Name: string.IsNullOrWhiteSpace(definition.Name) ? definition.Id : definition.Name,
             MaxOutputTokens: definition.MaxOutputTokens is > 0 ? definition.MaxOutputTokens : null,
-            Input: definition.Input ?? ["text", "image"], Api: VirtualModelContract.Api);
+            Input: definition.Input ?? ["text", "image"], Api: VirtualModelContract.Api,
+            ThinkingLevelMap: JsonSerializer.SerializeToElement(s_thinkingLevels.ToDictionary(
+                level => level, level => levels.Contains(level, StringComparer.Ordinal) ? level : null)));
         var key = (definition.Provider, definition.Id);
         lock (_gate)
         {

@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "plan_received": true,
-  "source_note": "Latest exact-head CI-verified PiSharp checkpoint is 71c5fd6f7e92e4cbb4878e2e032ae2935fbc92e6; Linux CI run 36623595889 passed restore, format, warnings-as-errors build and 866/866 tests (0 skipped). Commit 71c5 adds live MCP enable/disable, exposure and OAuth login/logout, load-time extension server registration with config precedence, and concurrent connection startup with a shared 10-second wait. Later extension registrations and a rich interactive /mcp manager remain open. Next: logical/physical virtual-model routing, Codemode classifier/usage and the remaining full audit. Current Pi main is 6a4af07d6145c88dad4e3472acebe75cc57af88; GPT-6.1 Sol catalog/default is queued for provider work. Cross-process rotating OAuth refresh has Linux evidence; native macOS locking remains unverified.",
+  "source_note": "PiSharp ebce1a01302836d757d91dc90b2859af96bae6b8 passed exact-head Linux CI run [36630000370](https://github.com/PhilipGB/pisharp/actions/runs/36630000370): restore, format, warnings-as-errors build with zero warnings/errors, and 866/866 tests (0 skipped). Current upstream Pi is 1b347794e2a630e4359f2584f4eea388145d0ddf (verified from remote HEAD). MCP lifecycle is materially implemented; richer manager UI, post-load extension registration and native macOS lock verification remain residuals. Virtual-model routing is the active capability. The foundation includes VirtualModelRegistry and registration contracts, per-request RoutedChatClient routing, request hints, physical identity/pricing/context-policy lifecycle propagation, and branch-projected pi.virtual-model-state. No dedicated virtual-model tests landed in this checkpoint; behavioural parity is unverified. Next: add deterministic routing/provider-loop tests, establish concurrency semantics, and close logical/physical identity, retry, branch persistence and physical usage/context gaps before classifiers and Codemode model access.",
   "baseline": "earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035",
   "required_ids": [
     "feature-agent-multi-turn-and-streaming",
@@ -3551,10 +3551,15 @@
         "Route every user/continuation/retry/direct request to a validated physical model/thinking level with correct credentials",
         "Persist router state on the session branch; preserve resume/tree/fork, physical response attribution, context/compaction/image capability and usage/cost behavior"
       ],
-      "implementation": [],
+      "implementation": [
+        "Registry and request contracts distinguish selected logical models from physical dispatch. RoutedChatClient dispatches through each validated request client and carries per-attempt retry/completion identity; direct requests do not alter agent routing lifecycle.",
+        "Physical assistant metadata survives streamed canonical checkpointing, native serialization and Pi JSONL export/import. Virtual catalog thinking maps preserve offered levels; direct state is omitted; previous-response lookup skips failed/aborted assistants. Raw tool delta capture binds to the selected physical provider.",
+        "RPC accepts pi-virtual selections and projects physical provider/model/API on live assistant messages while retaining logical model state. Route-aware physical context compaction, branch transitions and remaining virtual-model semantics are still open."
+      ],
       "evidence": [
         "Current Pi virtual-model registration and routing contracts were inspected at 4259686d9290c0d73ae7192b796aee3e530a9779; prior focused current-Pi virtual-model suites passed 120/120 at da19b63, and the 4259686 refresh did not change virtual-model source.",
-        "PiSharp has no logical-versus-physical model contract. ModelRuntimeController currently selects concrete provider runtimes, so routing/persistence/attribution remain unimplemented."
+        "ebce1a0 adds the first-class registry, per-request logical/physical routing contracts, physical lifecycle identity/pricing/context policy and branch-projected pi.virtual-model-state. Exact-head CI 36630000370 passes 866/866 existing tests; dedicated routing and process evidence is still required.",
+        "docs/parity/fixtures/virtual-model-foundation-2026-09-29.md: 21/21 dedicated local tests including CLI/RPC process evidence; current-Pi reference tests 27/27; paired current-Pi/PiSharp process projection matches selected model, dispatched model sequence, assistant identity, reasons, previous model and evolving state. Full local suite passes 887/887 with 0 skipped (TERM=xterm-256color); format verification and zero-warning build pass. New exact-head CI pending."
       ],
       "dependencies": [
         "extension-orchestration-api"

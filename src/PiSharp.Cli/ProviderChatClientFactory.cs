@@ -12,6 +12,7 @@ public static class ProviderChatClientFactory
 {
     public static string ResolveProtocol(ModelSelection selection)
     {
+        if (selection.Model.Api == VirtualModelContract.Api) return VirtualModelContract.Api;
         var protocol = selection.Model.Api ?? selection.Provider.Api ?? (selection.Provider.Id switch
         {
             "openai" or "xai" => "openai-responses",

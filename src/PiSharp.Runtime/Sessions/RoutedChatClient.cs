@@ -37,7 +37,7 @@ internal sealed class RoutedChatClient(MutableChatClient inner, Action<AgentLife
     {
         var requestMessages = messages.ToArray();
         var (route, routedMessages, routedOptions) = await PrepareRouteAsync(requestMessages, options, cancellationToken);
-        var response = await base.GetResponseAsync(routedMessages, routedOptions, cancellationToken);
+        var response = await (route?.ChatClient ?? inner).GetResponseAsync(routedMessages, routedOptions, cancellationToken);
         return route is null ? response : ApplyPhysicalIdentity(response, route);
     }
 
@@ -46,10 +46,14 @@ internal sealed class RoutedChatClient(MutableChatClient inner, Action<AgentLife
     {
         var requestMessages = messages.ToArray();
         var (route, routedMessages, routedOptions) = await PrepareRouteAsync(requestMessages, options, cancellationToken);
-        await foreach (var update in base.GetStreamingResponseAsync(routedMessages, routedOptions, cancellationToken)
+        await foreach (var update in (route?.ChatClient ?? inner).GetStreamingResponseAsync(routedMessages, routedOptions, cancellationToken)
             .WithCancellation(cancellationToken).ConfigureAwait(false))
         {
-            if (route is not null && string.IsNullOrWhiteSpace(update.ModelId)) update.ModelId = route.Model.Id;
+            if (route is not null)
+            {
+                update.ModelId = route.Model.Id;
+                update.AdditionalProperties = PhysicalProperties(update.AdditionalProperties, route);
+            }
             yield return update;
         }
     }
@@ -61,6 +65,13 @@ internal sealed class RoutedChatClient(MutableChatClient inner, Action<AgentLife
 
     public IProviderToolCallDeltaCapture? BeginToolCallDeltaCapture() =>
         inner.BeginToolCallDeltaCapture();
+
+    public IProviderToolCallDeltaCapture? BeginToolCallDeltaCapture(ChatOptions? options)
+    {
+        if (VirtualModelRequestHints.ReadHint(options)?.Execution is not { } execution)
+            return inner.BeginToolCallDeltaCapture();
+        return execution.ToolCallCapture = new RoutedToolCallDeltaCapture();
+    }
 
     private async Task<(VirtualModelRequestRoute? Route, IReadOnlyList<ChatMessage> Messages, ChatOptions? Options)> PrepareRouteAsync(
         IReadOnlyList<ChatMessage> messages, ChatOptions? options, CancellationToken cancellationToken)
@@ -74,45 +85,62 @@ internal sealed class RoutedChatClient(MutableChatClient inner, Action<AgentLife
         var session = Volatile.Read(ref _session) ??
             throw new InvalidOperationException("Virtual model requests require an active conversation session.");
         var hint = VirtualModelRequestHints.ReadHint(options);
-        Volatile.Write(ref _currentRoute, null);
-        var route = await router(new VirtualModelRequestContext(session, messages,
+        if (hint?.Reason is not null and not "direct") Volatile.Write(ref _currentRoute, null);
+        VirtualModelRequestRoute route;
+        try
+        {
+            route = await router(new VirtualModelRequestContext(session, messages,
             hint?.Reason ?? "direct", hint?.ThinkingLevel ?? Volatile.Read(ref _thinkingLevel),
-            hint?.Failed, cancellationToken)).ConfigureAwait(false);
-        inner.SetClient(route.ChatClient);
-        Volatile.Write(ref _currentRoute, route);
+                hint?.Failed, cancellationToken)).ConfigureAwait(false);
+        }
+        catch
+        {
+            hint?.Execution?.ToolCallCapture?.Bind(null);
+            throw;
+        }
+        if (hint?.Execution is { } execution) execution.Route = route;
+        if (hint?.Reason is not null and not "direct") Volatile.Write(ref _currentRoute, route);
         if (route.State is { } state && (hint?.Reason ?? "direct") != "direct")
         {
             session.AppendVirtualModelState(route.LogicalProvider ?? session.Provider ?? "",
                 route.LogicalModel ?? session.Model, state);
             if (Volatile.Read(ref _save) is { } save) await save(cancellationToken).ConfigureAwait(false);
         }
-        publish(new AgentLifecycleEvent("model_request_routed")
+        if (hint?.Reason is not null and not "direct") publish(new AgentLifecycleEvent("model_request_routed")
         {
             ProviderModelId = route.Model.Id,
             ProviderProviderId = route.Provider,
+            ProviderApi = route.Model.Api,
             ProviderPricing = route.Pricing,
             ProviderContextPolicy = route.ContextPolicy,
             ProviderThinkingLevel = route.ThinkingLevel
         });
+        if (hint?.Execution?.ToolCallCapture is { } capture)
+            capture.Bind((route.ChatClient as IProviderToolCallDeltaSource)?.BeginToolCallDeltaCapture());
         var routedMessages = ObservedChatClient.FilterImagesForModel(messages, blockImages: false,
             supportsImages: route.Model.Input?.Contains("image", StringComparer.Ordinal) != false);
         return (route, routedMessages, VirtualModelRequestHints.ForPhysicalModel(options, route));
     }
 
-    private static ChatResponse ApplyPhysicalIdentity(ChatResponse response, VirtualModelRequestRoute route)
+    internal static ChatResponse ApplyPhysicalIdentity(ChatResponse response, VirtualModelRequestRoute route)
     {
         response.ModelId = route.Model.Id;
         foreach (var message in response.Messages.Where(message => message.Role == ChatRole.Assistant))
         {
-            var properties = new AdditionalPropertiesDictionary();
-            if (message.AdditionalProperties is { } existing)
-                foreach (var (key, value) in existing) properties[key] = value;
-            properties["pisharp.provider"] = route.Provider;
-            properties["pisharp.model"] = route.Model.Id;
-            properties["pisharp.thinkingLevel"] = route.ThinkingLevel;
-            properties["pisharp.api"] = route.Model.Api;
-            message.AdditionalProperties = properties;
+            message.AdditionalProperties = PhysicalProperties(message.AdditionalProperties, route);
         }
         return response;
     }
+
+    private static AdditionalPropertiesDictionary PhysicalProperties(AdditionalPropertiesDictionary? existing,
+        VirtualModelRequestRoute route)
+    {
+        var properties = existing?.Clone() ?? new AdditionalPropertiesDictionary();
+        properties["pisharp.provider"] = route.Provider;
+        properties["pisharp.model"] = route.Model.Id;
+        properties["pisharp.thinkingLevel"] = route.ThinkingLevel;
+        properties["pisharp.api"] = route.Model.Api;
+        return properties;
+    }
+
 }

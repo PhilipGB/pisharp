@@ -17,8 +17,14 @@ public sealed record VirtualModelRequestRoute(IChatClient ChatClient, ModelDescr
 
 public delegate Task<VirtualModelRequestRoute> VirtualModelRequestRouter(VirtualModelRequestContext request);
 
+internal sealed class VirtualModelRequestExecution
+{
+    public VirtualModelRequestRoute? Route { get; set; }
+    public RoutedToolCallDeltaCapture? ToolCallCapture { get; set; }
+}
+
 internal sealed record VirtualModelRequestHint(string Reason, string ThinkingLevel,
-    VirtualModelFailedRequest? Failed = null);
+    VirtualModelFailedRequest? Failed = null, VirtualModelRequestExecution? Execution = null);
 
 internal static class VirtualModelRequestHints
 {

@@ -20,6 +20,16 @@ internal sealed class RpcAssistantMessageProjector
     private bool _providerRequestActive;
     private DateTimeOffset _timestamp;
     private UsageRecord? _usage;
+    private string? _physicalProvider;
+    private string? _physicalModel;
+    private string? _physicalApi;
+
+    public void SetPhysicalRoute(AgentLifecycleEvent item)
+    {
+        _physicalProvider = item.ProviderProviderId;
+        _physicalModel = item.ProviderModelId;
+        _physicalApi = item.ProviderApi;
+    }
 
     public JsonObject? LastCompletedAssistantMessage { get; private set; }
 
@@ -384,9 +394,9 @@ internal sealed class RpcAssistantMessageProjector
     {
         ["role"] = "assistant",
         ["content"] = new JsonArray(_content.Select(content => (JsonNode?)content.DeepClone()).ToArray()),
-        ["api"] = string.IsNullOrWhiteSpace(api) ? "openai-responses" : api,
-        ["provider"] = conversation.Provider,
-        ["model"] = conversation.Model,
+        ["api"] = _physicalApi ?? (string.IsNullOrWhiteSpace(api) ? "openai-responses" : api),
+        ["provider"] = _physicalProvider ?? conversation.Provider,
+        ["model"] = _physicalModel ?? conversation.Model,
         ["stopReason"] = "pending",
         ["timestamp"] = (_timestamp == default ? DateTimeOffset.UtcNow : _timestamp).ToUnixTimeMilliseconds(),
         ["usage"] = ProjectUsage(_usage)
@@ -452,5 +462,8 @@ internal sealed class RpcAssistantMessageProjector
         _providerRequestActive = false;
         _timestamp = default;
         _usage = null;
+        _physicalProvider = null;
+        _physicalModel = null;
+        _physicalApi = null;
     }
 }

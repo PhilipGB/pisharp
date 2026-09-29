@@ -642,7 +642,8 @@ public sealed class ConversationRun
                 lock (_runtimeStateGate)
                 {
                     providerResponse = item.ProviderResponse;
-                    if (providerResponse?.Contents.OfType<FunctionCallContent>().Any() == true)
+                    if (providerResponse is not null && (item.ProviderProviderId is not null ||
+                        providerResponse.Contents.OfType<FunctionCallContent>().Any()))
                         Conversation.Append(providerResponse);
                 }
                 item = item with

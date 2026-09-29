@@ -26,9 +26,9 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
         VirtualModelFailedRequest? failedRequest = null;
         for (var retries = 0; ; retries++)
         {
+            var requestOptions = AddRouteHint(options, routeReason, getReasoning?.Invoke(), failedRequest);
             try
             {
-                var requestOptions = AddRouteHint(options, routeReason, getReasoning?.Invoke(), failedRequest);
                 var response = await base.GetResponseAsync(requestMessages, requestOptions, cancellationToken);
                 publish(new("model_request_completed")
                 {
@@ -36,6 +36,7 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
                     ProviderUsage = response.Usage,
                     ProviderResponseId = response.ResponseId,
                     ProviderModelId = response.ModelId,
+                    ProviderProviderId = VirtualModelRequestHints.ReadHint(requestOptions)?.Execution?.Route?.Provider,
                     ProviderFinishReason = response.FinishReason?.Value
                 });
                 return response;
@@ -44,7 +45,7 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
             catch (Exception error)
             {
                 publish(new("model_request_failed", Error: error.Message) { ProviderException = error });
-                failedRequest = FailedRequest(routedChatClient, error);
+                failedRequest = FailedRequest(requestOptions, error);
                 routeReason = "retry";
                 if (!overflowRecovered && await RecoverOverflowAsync(original, error, cancellationToken) is { } shorter)
                 {
@@ -71,6 +72,7 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
         VirtualModelFailedRequest? failedRequest = null;
         for (var retries = 0; ; retries++)
         {
+            var requestOptions = AddRouteHint(options, routeReason, getReasoning?.Invoke(), failedRequest);
             var ended = false;
             var producedOutput = false;
             Exception? failure = null;
@@ -92,7 +94,9 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
 
             try
             {
-                toolCallCapture = toolCallDeltaSource?.BeginToolCallDeltaCapture();
+                toolCallCapture = routedChatClient is { HasRouter: true }
+                    ? routedChatClient.BeginToolCallDeltaCapture(requestOptions)
+                    : toolCallDeltaSource?.BeginToolCallDeltaCapture();
                 toolCallEnumerator = toolCallCapture?.ReadAllAsync(cancellationToken)
                     .GetAsyncEnumerator(cancellationToken);
                 toolCallMove = toolCallEnumerator?.MoveNextAsync().AsTask();
@@ -101,7 +105,6 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
                 {
                     // Some SDK streams start the request while creating the enumerator, before
                     // MoveNextAsync. Keep that setup failure inside the provider-error boundary.
-                    var requestOptions = AddRouteHint(options, routeReason, getReasoning?.Invoke(), failedRequest);
                     enumerator = base.GetStreamingResponseAsync(requestMessages, requestOptions, cancellationToken)
                         .GetAsyncEnumerator(cancellationToken);
                 }
@@ -240,19 +243,22 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
             if (failure is null)
             {
                 var response = responseUpdates.ToChatResponse();
+                var physicalRoute = VirtualModelRequestHints.ReadHint(requestOptions)?.Execution?.Route;
+                if (physicalRoute is not null) RoutedChatClient.ApplyPhysicalIdentity(response, physicalRoute);
                 publish(new("model_request_completed")
                 {
                     ProviderResponse = response.Messages.LastOrDefault(),
                     ProviderUsage = response.Usage,
                     ProviderResponseId = response.ResponseId,
                     ProviderModelId = response.ModelId,
+                    ProviderProviderId = VirtualModelRequestHints.ReadHint(requestOptions)?.Execution?.Route?.Provider,
                     ProviderFinishReason = response.FinishReason?.Value
                 });
                 yield break;
             }
 
             publish(new("model_request_failed", Error: failure.Message) { ProviderException = failure });
-            failedRequest = FailedRequest(routedChatClient, failure);
+            failedRequest = FailedRequest(requestOptions, failure);
             routeReason = "retry";
             if (!producedOutput && !overflowRecovered &&
                 await RecoverOverflowAsync(original, failure, cancellationToken) is { } shorter)
@@ -444,16 +450,16 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
         _ => "off"
     };
 
-    private static VirtualModelFailedRequest? FailedRequest(RoutedChatClient? routed, Exception error)
+    private static VirtualModelFailedRequest? FailedRequest(ChatOptions? options, Exception error)
     {
-        if (routed?.CurrentRoute is not { } route) return null;
+        if (VirtualModelRequestHints.ReadHint(options)?.Execution?.Route is not { } route) return null;
         return new(route.Provider, route.Model, route.ThinkingLevel,
             new ChatMessage(ChatRole.Assistant, error.Message), error.Message);
     }
 
     private ChatOptions? AddRouteHint(ChatOptions? options, string reason, ReasoningOptions? reasoning,
         VirtualModelFailedRequest? failed) => routedChatClient is { HasRouter: true }
-        ? VirtualModelRequestHints.WithHint(options, new(reason, ThinkingLevel(reasoning), failed))
+        ? VirtualModelRequestHints.WithHint(options, new(reason, ThinkingLevel(reasoning), failed, new VirtualModelRequestExecution()))
         : options;
 
     // Filter at the final provider boundary, including persisted history and subsequent tool-loop requests.

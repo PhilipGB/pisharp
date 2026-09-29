@@ -64,6 +64,12 @@ internal sealed class RpcEventProjector
             return [];
         }
 
+        if (item.Type == "model_request_routed")
+        {
+            _assistantMessages.SetPhysicalRoute(item);
+            return [];
+        }
+
         if (item.Type is "model_text_delta" or "model_content_update")
             return _assistantMessages.ProjectUpdate(item, conversation, api);
 
