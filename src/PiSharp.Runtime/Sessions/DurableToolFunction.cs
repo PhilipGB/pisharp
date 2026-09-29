@@ -1,17 +1,22 @@
 using System.Runtime.ExceptionServices;
 using Microsoft.Extensions.AI;
 using PiSharp.Runtime;
+using PiSharp.Runtime.Extensions;
 using PiSharp.Runtime.Tools;
 
 namespace PiSharp.Runtime.Sessions;
 
 /// <summary>Tool lifecycle originates here, at invocation time rather than from inferred model updates.</summary>
 internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecution?> current,
-    Action<AgentLifecycleEvent> publish) : DelegatingAIFunction(inner)
+    Action<AgentLifecycleEvent> publish, Func<ToolLoadout?>? currentLoadout = null) : DelegatingAIFunction(inner)
 {
     protected override async ValueTask<object?> InvokeCoreAsync(AIFunctionArguments arguments, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        var loadout = currentLoadout?.Invoke();
+        var snapshot = loadout?.Snapshot;
+        var isCallable = snapshot is null || snapshot.ActiveToolNames.Contains(Name, StringComparer.Ordinal) ||
+            snapshot.Callable.Any(tool => string.Equals(tool.Function.Name, Name, StringComparison.Ordinal));
         var callContent = FunctionInvokingChatClient.CurrentContext?.CallContent;
         var callArguments = callContent is { Arguments: { } argumentsContent }
             ? argumentsContent.ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal)
@@ -30,25 +35,48 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
         IDictionary<object, object?>? context = null;
         object? previousUpdate = null;
         var hadUpdate = false;
-        if (Name == "bash")
+        object? previousPiSharpContext = null;
+        var hadPiSharpContext = false;
+        if (Name == "bash" || loadout is not null)
         {
             context = arguments.Context ??= new Dictionary<object, object?>();
-            hadUpdate = context.TryGetValue(CodingTools.BashOutputContextKey, out previousUpdate);
-            context[CodingTools.BashOutputContextKey] = (Action<string>)(text =>
-                publish(new AgentLifecycleEvent("tool_execution_update", Text: text, Tool: Name, OperationId: id)
-                {
-                    ToolArguments = callArguments ?? displayArguments,
-                    ToolCallId = callContent?.CallId
-                }));
+            if (Name == "bash")
+            {
+                hadUpdate = context.TryGetValue(CodingTools.BashOutputContextKey, out previousUpdate);
+                context[CodingTools.BashOutputContextKey] = (Action<string>)(text =>
+                    publish(new AgentLifecycleEvent("tool_execution_update", Text: text, Tool: Name, OperationId: id)
+                    {
+                        ToolArguments = callArguments ?? displayArguments,
+                        ToolCallId = callContent?.CallId
+                    }));
+            }
+            if (loadout is not null)
+            {
+                hadPiSharpContext = context.TryGetValue(PiSharpToolExecutionContext.ContextKey, out previousPiSharpContext);
+                context[PiSharpToolExecutionContext.ContextKey] = new PiSharpToolExecutionContext(loadout);
+            }
         }
-        try { value = await base.InvokeCoreAsync(arguments, cancellationToken); }
+        try
+        {
+            if (!isCallable)
+                throw new InvalidOperationException($"Tool '{Name}' is not active or callable in this session.");
+            value = await base.InvokeCoreAsync(arguments, cancellationToken);
+        }
         catch (Exception error) { failure = error; }
         finally
         {
             if (context is not null)
             {
-                if (hadUpdate) context[CodingTools.BashOutputContextKey] = previousUpdate!;
-                else context.Remove(CodingTools.BashOutputContextKey);
+                if (Name == "bash")
+                {
+                    if (hadUpdate) context[CodingTools.BashOutputContextKey] = previousUpdate!;
+                    else context.Remove(CodingTools.BashOutputContextKey);
+                }
+                if (loadout is not null)
+                {
+                    if (hadPiSharpContext) context[PiSharpToolExecutionContext.ContextKey] = previousPiSharpContext!;
+                    else context.Remove(PiSharpToolExecutionContext.ContextKey);
+                }
             }
         }
         var hasStructuredOutput = ToolResultOutput.TryRead(value, out var resultText, out var details);

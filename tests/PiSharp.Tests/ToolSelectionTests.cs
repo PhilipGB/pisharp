@@ -1,5 +1,7 @@
 using PiSharp.Cli;
 using PiSharp.Runtime;
+using PiSharp.Runtime.Extensions;
+using Microsoft.Extensions.AI;
 
 namespace PiSharp.Tests;
 
@@ -99,6 +101,61 @@ public sealed class ToolSelectionTests
         Assert.Empty(provider.ToolNames);
     }
 
+    [Fact]
+    public async Task ToolLoadoutChangesAffectTheNextRequestAndStayScopedToTheirSession()
+    {
+        var provider = new LoadoutScriptClient();
+        var switchTool = AIFunctionFactory.Create((AIFunctionArguments arguments) =>
+        {
+            PiSharpToolExecutionContext.Get(arguments)!.SetActiveTools(["deferred"]);
+            return "activated";
+        }, name: "switch_tools");
+        var deferredTool = AIFunctionFactory.Create(() => "deferred", name: "deferred");
+        var agent = new PiAgent(provider, new CodingTools(Path.GetTempPath()), noBuiltinTools: true,
+            extensionToolRegistrations:
+            [
+                new(switchTool, ToolExposure.ModelOnly, PrepareLoadout: loadout => new ToolLoadoutChanges(
+                    Descriptions: new Dictionary<string, string>
+                    {
+                        ["switch_tools"] = $"Controls: {string.Join(", ", loadout.Callable.Select(tool => tool.Function.Name))}"
+                    })),
+                new(deferredTool, ToolExposure.Deferred)
+            ]);
+        var firstSession = await agent.CreateSessionAsync();
+        var secondSession = await agent.CreateSessionAsync();
+        var firstLoadout = agent.GetToolLoadout(firstSession);
+        var secondLoadout = agent.GetToolLoadout(secondSession);
+
+        Assert.Equal(["switch_tools"], firstLoadout.Snapshot.ActiveToolNames);
+        Assert.Equal(["switch_tools"], secondLoadout.Snapshot.ActiveToolNames);
+        await foreach (var _ in agent.RunStreamingAsync("switch tools", firstSession)) { }
+
+        Assert.Equal(["switch_tools"], provider.RequestToolNames[0]);
+        Assert.Equal(["deferred"], provider.RequestToolNames[1]);
+        Assert.Equal("Controls: deferred", provider.RequestToolDescriptions[0]["switch_tools"]);
+        Assert.Equal(["deferred"], firstLoadout.Snapshot.ActiveToolNames);
+        Assert.Equal(["switch_tools"], secondLoadout.Snapshot.ActiveToolNames);
+    }
+
+    [Fact]
+    public async Task HiddenToolCannotRunEvenWhenAProviderReturnsItsName()
+    {
+        var invoked = false;
+        var provider = new HiddenToolCallClient();
+        var hidden = AIFunctionFactory.Create(() =>
+        {
+            invoked = true;
+            return "should not run";
+        }, name: "hidden_tool");
+        var agent = new PiAgent(provider, new CodingTools(Path.GetTempPath()), noBuiltinTools: true,
+            extensionToolRegistrations: [new(hidden, ToolExposure.Hidden)]);
+
+        await foreach (var _ in agent.RunStreamingAsync("try hidden", await agent.CreateSessionAsync())) { }
+
+        Assert.False(invoked);
+        Assert.All(provider.RequestToolNames, names => Assert.Empty(names));
+    }
+
     private sealed class ToolCaptureClient : Microsoft.Extensions.AI.IChatClient
     {
         public IReadOnlyList<string> ToolNames { get; private set; } = [];
@@ -111,6 +168,58 @@ public sealed class ToolSelectionTests
             yield return new Microsoft.Extensions.AI.ChatResponseUpdate(Microsoft.Extensions.AI.ChatRole.Assistant, "done");
             await Task.CompletedTask;
         }
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
+    }
+
+    private sealed class LoadoutScriptClient : Microsoft.Extensions.AI.IChatClient
+    {
+        public List<string[]> RequestToolNames { get; } = [];
+        public List<Dictionary<string, string>> RequestToolDescriptions { get; } = [];
+
+        public Task<Microsoft.Extensions.AI.ChatResponse> GetResponseAsync(IEnumerable<Microsoft.Extensions.AI.ChatMessage> messages,
+            Microsoft.Extensions.AI.ChatOptions? options = null, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
+        public async IAsyncEnumerable<Microsoft.Extensions.AI.ChatResponseUpdate> GetStreamingResponseAsync(
+            IEnumerable<Microsoft.Extensions.AI.ChatMessage> messages, Microsoft.Extensions.AI.ChatOptions? options = null,
+            [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            RequestToolNames.Add(options?.Tools?.Select(tool => tool.Name).ToArray() ?? []);
+            RequestToolDescriptions.Add(options?.Tools?.ToDictionary(tool => tool.Name,
+                tool => tool.Description ?? string.Empty, StringComparer.Ordinal) ?? new Dictionary<string, string>());
+            if (RequestToolNames.Count == 1)
+                yield return new Microsoft.Extensions.AI.ChatResponseUpdate(Microsoft.Extensions.AI.ChatRole.Assistant,
+                    [new Microsoft.Extensions.AI.FunctionCallContent("switch", "switch_tools", new Dictionary<string, object?>())]);
+            else
+                yield return new Microsoft.Extensions.AI.ChatResponseUpdate(Microsoft.Extensions.AI.ChatRole.Assistant, "done");
+            await Task.CompletedTask;
+        }
+
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
+    }
+
+    private sealed class HiddenToolCallClient : Microsoft.Extensions.AI.IChatClient
+    {
+        private int _requests;
+        public List<string[]> RequestToolNames { get; } = [];
+
+        public Task<Microsoft.Extensions.AI.ChatResponse> GetResponseAsync(IEnumerable<Microsoft.Extensions.AI.ChatMessage> messages,
+            Microsoft.Extensions.AI.ChatOptions? options = null, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
+        public async IAsyncEnumerable<Microsoft.Extensions.AI.ChatResponseUpdate> GetStreamingResponseAsync(
+            IEnumerable<Microsoft.Extensions.AI.ChatMessage> messages, Microsoft.Extensions.AI.ChatOptions? options = null,
+            [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            RequestToolNames.Add(options?.Tools?.Select(tool => tool.Name).ToArray() ?? []);
+            if (++_requests == 1)
+                yield return new Microsoft.Extensions.AI.ChatResponseUpdate(Microsoft.Extensions.AI.ChatRole.Assistant,
+                    [new Microsoft.Extensions.AI.FunctionCallContent("hidden", "hidden_tool", new Dictionary<string, object?>())]);
+            else
+                yield return new Microsoft.Extensions.AI.ChatResponseUpdate(Microsoft.Extensions.AI.ChatRole.Assistant, "done");
+            await Task.CompletedTask;
+        }
+
         public object? GetService(Type serviceType, object? serviceKey = null) => null;
         public void Dispose() { }
     }

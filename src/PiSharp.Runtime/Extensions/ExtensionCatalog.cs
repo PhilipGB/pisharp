@@ -28,12 +28,14 @@ public sealed class ExtensionRegistration
         "compact", "export", "export-jsonl", "import", "session", "trust", "reload", "quit", "exit"
     };
     private readonly Dictionary<string, AIFunction> _tools = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, PiSharpToolRegistration> _toolDefinitions = new(StringComparer.Ordinal);
     private readonly Dictionary<string, PiSharpToolRenderer> _toolRenderers = new(StringComparer.Ordinal);
     private readonly Dictionary<string, Func<string, CancellationToken, Task<string>>> _commands = new(StringComparer.Ordinal);
     private readonly Dictionary<string, ExtensionCommandInfo> _commandInfo = new(StringComparer.Ordinal);
     private readonly List<UserBashHandler> _userBashHandlers = [];
     private ResourceSourceInfo? _currentSourceInfo;
     public IReadOnlyCollection<AIFunction> Tools => _tools.Values;
+    public IReadOnlyCollection<PiSharpToolRegistration> ToolDefinitions => _toolDefinitions.Values;
     public IReadOnlyDictionary<string, PiSharpToolRenderer> ToolRenderers => _toolRenderers;
     public IReadOnlyDictionary<string, Func<string, CancellationToken, Task<string>>> Commands => _commands;
     public IReadOnlyDictionary<string, ExtensionCommandInfo> CommandInfo => _commandInfo;
@@ -42,7 +44,17 @@ public sealed class ExtensionRegistration
     public void AddTool(AIFunction tool)
     {
         ArgumentNullException.ThrowIfNull(tool);
-        if (!_tools.TryAdd(tool.Name, tool)) throw new ArgumentException($"Duplicate extension tool: {tool.Name}");
+        AddTool(new PiSharpToolRegistration(tool));
+    }
+
+    /// <summary>Registers a tool with exposure, namespace, and loadout behavior.</summary>
+    public void AddTool(PiSharpToolRegistration definition)
+    {
+        ArgumentNullException.ThrowIfNull(definition);
+        ArgumentNullException.ThrowIfNull(definition.Function);
+        if (!_tools.TryAdd(definition.Function.Name, definition.Function))
+            throw new ArgumentException($"Duplicate extension tool: {definition.Function.Name}");
+        _toolDefinitions.Add(definition.Function.Name, definition);
     }
 
     /// <summary>Registers an extension tool with optional safe terminal call/result renderers.</summary>
@@ -51,6 +63,15 @@ public sealed class ExtensionRegistration
         ArgumentNullException.ThrowIfNull(renderer);
         AddTool(tool);
         _toolRenderers.Add(tool.Name, renderer);
+    }
+
+    /// <summary>Registers a configured extension tool with optional safe terminal renderers.</summary>
+    public void AddTool(PiSharpToolRegistration definition, PiSharpToolRenderer renderer)
+    {
+        ArgumentNullException.ThrowIfNull(definition);
+        ArgumentNullException.ThrowIfNull(renderer);
+        AddTool(definition);
+        _toolRenderers.Add(definition.Function.Name, renderer);
     }
 
     public PiSharpToolRenderer? GetToolRenderer(string name) =>

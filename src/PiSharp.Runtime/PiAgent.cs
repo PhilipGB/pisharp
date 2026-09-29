@@ -1,5 +1,7 @@
+using System.Runtime.CompilerServices;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
+using PiSharp.Runtime.Extensions;
 using PiSharp.Runtime.Providers;
 using PiSharp.Runtime.Sessions;
 using PiSharp.Runtime.Tools;
@@ -105,6 +107,10 @@ public sealed class PiAgent
     private readonly ChatClientAgent _summarizer;
     private readonly MutableChatClient _chatClient;
     private readonly IReadOnlyList<AIFunctionDeclaration> _toolDeclarations;
+    private readonly PiSharpToolRegistry _toolRegistry;
+    private readonly IReadOnlyList<string>? _initialActiveToolNames;
+    private readonly ConditionalWeakTable<AgentSession, ToolLoadout> _sessionToolLoadouts = new();
+    private readonly IReadOnlyDictionary<string, AIFunction> _runtimeToolFunctions;
     private readonly SemaphoreSlim _runGate = new(1, 1);
     private ReasoningOptions? _reasoning;
     private DurableExecution? _active;
@@ -115,16 +121,24 @@ public sealed class PiAgent
     private int _providerRequestIndex;
     private int _supportsImages;
     private long _systemMessageTimestamp;
+    private ToolLoadout? _currentToolLoadout;
 
     public string SystemInstructions { get; }
     public IReadOnlyList<AIFunctionDeclaration> ToolDeclarations => _toolDeclarations;
+    /// <summary>Gets the independent tool loadout associated with one agent session.</summary>
+    public ToolLoadout GetToolLoadout(AgentSession session)
+    {
+        ArgumentNullException.ThrowIfNull(session);
+        return _sessionToolLoadouts.GetValue(session, _ => _toolRegistry.CreateLoadout(_initialActiveToolNames));
+    }
     public long? SystemMessageTimestamp => Volatile.Read(ref _systemMessageTimestamp) is var timestamp && timestamp != 0
         ? timestamp
         : null;
 
     public PiAgent(IChatClient client, CodingTools tools, IReadOnlyList<string>? selectedTools = null, IReadOnlyList<string>? excludedTools = null, bool noTools = false, string? contextInstructions = null, string? systemPrompt = null, string? appendSystemPrompt = null,
         IReadOnlyCollection<AIFunction>? extensionTools = null, ProviderRetryPolicy? retryPolicy = null,
-        ReasoningOptions? reasoning = null, bool blockImages = false, bool noBuiltinTools = false, bool supportsImages = true)
+        ReasoningOptions? reasoning = null, bool blockImages = false, bool noBuiltinTools = false, bool supportsImages = true,
+        IReadOnlyCollection<PiSharpToolRegistration>? extensionToolRegistrations = null)
     {
         _codingTools = tools;
         _chatClient = new MutableChatClient(client);
@@ -138,21 +152,61 @@ public sealed class PiAgent
                 Instructions = SummarizationSystemPrompt
             }
         });
-        var added = extensionTools?.ToArray() ?? [];
-        var builtin = tools.Create(selectedTools?.Where(name => added.All(tool => tool.Name != name)).ToArray(), excludedTools, noTools || noBuiltinTools);
-        var external = added.Where(tool => (selectedTools?.Contains(tool.Name) ?? !noTools) &&
-            excludedTools?.Contains(tool.Name) != true).Cast<AITool>().ToArray();
-        if (added.Any(tool => new[] { "read", "bash", "edit", "write", "grep", "find", "ls" }.Contains(tool.Name, StringComparer.Ordinal)) ||
-            builtin.Concat(external).GroupBy(tool => tool.Name, StringComparer.Ordinal).Any(group => group.Count() > 1))
+        var registeredExtensions = new List<PiSharpToolRegistration>();
+        foreach (var function in extensionTools ?? [])
+        {
+            ArgumentNullException.ThrowIfNull(function);
+            registeredExtensions.Add(new(function));
+        }
+        foreach (var definition in extensionToolRegistrations ?? [])
+        {
+            ArgumentNullException.ThrowIfNull(definition);
+            ArgumentNullException.ThrowIfNull(definition.Function);
+            registeredExtensions.Add(definition);
+        }
+        var extensionNames = registeredExtensions.Select(registration => registration.Function.Name)
+            .ToHashSet(StringComparer.Ordinal);
+        var builtin = selectedTools is null
+            ? (!noTools && !noBuiltinTools
+                ? tools.CreateAll().OfType<AIFunction>().Where(function => excludedTools?.Contains(function.Name) != true).ToArray()
+                : [])
+            : tools.Create(selectedTools.Where(name => !extensionNames.Contains(name)).ToArray(), excludedTools,
+                noTools || noBuiltinTools).OfType<AIFunction>().ToArray();
+        var external = registeredExtensions.Where(registration =>
+                (selectedTools?.Contains(registration.Function.Name) ?? !noTools) &&
+                excludedTools?.Contains(registration.Function.Name) != true)
+            .ToArray();
+        var reservedBuiltinNames = new[] { "read", "bash", "edit", "write", "grep", "find", "ls" };
+        if (registeredExtensions.Any(registration => reservedBuiltinNames.Contains(registration.Function.Name, StringComparer.Ordinal)) ||
+            builtin.Select(function => function.Name).Concat(external.Select(registration => registration.Function.Name))
+                .GroupBy(name => name, StringComparer.Ordinal).Any(group => group.Count() > 1))
             throw new ArgumentException("Extension tool conflicts with a built-in tool name.");
-        var configuredTools = builtin.Concat(external).ToArray();
-        _toolDeclarations = configuredTools.OfType<AIFunctionDeclaration>().ToArray();
+        var configuredTools = builtin.Cast<AITool>().Concat(external.Select(registration => (AITool)registration.Function)).ToArray();
+        var defaultBuiltinNames = new HashSet<string>(["read", "bash", "edit", "write"], StringComparer.Ordinal);
+        var allRegistrations = builtin.Select(function => new PiSharpToolRegistration(function,
+                DefaultActive: defaultBuiltinNames.Contains(function.Name)))
+            .Concat(external)
+            .ToArray();
+        _toolRegistry = new PiSharpToolRegistry(allRegistrations);
+        _initialActiveToolNames = selectedTools is null
+            ? null
+            : selectedTools.Where(name => _toolRegistry.Registered.Any(registration =>
+                string.Equals(registration.Function.Name, name, StringComparison.Ordinal))).ToArray();
+        _runtimeToolFunctions = allRegistrations.ToDictionary(registration => registration.Function.Name,
+            registration => (AIFunction)new DurableToolFunction(registration.Function, () => _active,
+                value => _events?.Invoke(value), () => Volatile.Read(ref _currentToolLoadout)), StringComparer.Ordinal);
+        var initialSnapshot = _toolRegistry.CreateLoadout(_initialActiveToolNames).Snapshot;
+        _toolDeclarations = Array.AsReadOnly(initialSnapshot.Declared.Select(declaration =>
+            (AIFunctionDeclaration)(string.Equals(declaration.Description, declaration.Registration.Function.Description,
+                StringComparison.Ordinal)
+                ? declaration.Registration.Function
+                : new DescribedAIFunction(declaration.Registration.Function, declaration.Description))).ToArray());
         SystemInstructions = (systemPrompt ?? "You are PiSharp, a coding agent. Inspect files before modifying them when tools are available. Use only the tools provided for this run.") +
             "\n\n" + (appendSystemPrompt ?? "") + "\n\n" + (contextInstructions ?? "");
         _agent = new ChatClientAgent(new ObservedChatClient(_chatClient, value => _events?.Invoke(value),
             retryPolicy ?? ProviderRetryPolicy.Default, TakeSteeringForRequest, blockImages, ProjectForRequestAsync,
             supportsImages, () => Volatile.Read(ref _reasoning), () => Volatile.Read(ref _supportsImages) != 0,
-            _chatClient), new ChatClientAgentOptions
+            _chatClient, GetToolsForRequest), new ChatClientAgentOptions
             {
                 Name = "PiSharp",
                 ChatHistoryProvider = _history,
@@ -160,7 +214,7 @@ public sealed class PiAgent
                 ChatOptions = new ChatOptions
                 {
                     Instructions = SystemInstructions,
-                    Tools = configuredTools.Select(tool => tool is AIFunction function ? new DurableToolFunction(function, () => _active, value => _events?.Invoke(value)) : tool).Cast<AITool>().ToArray(),
+                    Tools = configuredTools.Select(tool => tool is AIFunction function ? _runtimeToolFunctions[function.Name] : tool).ToArray(),
                     Reasoning = reasoning
                 }
             });
@@ -175,6 +229,19 @@ public sealed class PiAgent
             .LastOrDefault()?.CallId;
         _injectedSteering.AddRange(steering.Select(message => (message, afterCallId)));
         return steering;
+    }
+
+    private IReadOnlyList<AITool> GetToolsForRequest()
+    {
+        var snapshot = Volatile.Read(ref _currentToolLoadout)?.Snapshot;
+        if (snapshot is null) return [];
+        return Array.AsReadOnly<AITool>(snapshot.Declared.Select(declaration =>
+        {
+            var function = _runtimeToolFunctions[declaration.Registration.Function.Name];
+            return string.Equals(declaration.Description, function.Description, StringComparison.Ordinal)
+                ? function
+                : new DescribedAIFunction(function, declaration.Description);
+        }).ToArray());
     }
 
     private Task<IReadOnlyList<ChatMessage>> ProjectForRequestAsync(IReadOnlyList<ChatMessage> messages, bool force, CancellationToken token) =>
@@ -296,6 +363,7 @@ public sealed class PiAgent
         try
         {
             Interlocked.CompareExchange(ref _systemMessageTimestamp, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), 0);
+            Volatile.Write(ref _currentToolLoadout, GetToolLoadout(session));
             _active = durable;
             _events = onEvent;
             _takeSteering = takeSteering;
@@ -324,7 +392,15 @@ public sealed class PiAgent
                 _history.SetMessages(session, ObservedChatClient.NormalizeReadImagesForHistory(_history.GetMessages(session)).ToList());
             }
         }
-        finally { _projectContext = null; _takeSteering = null; _events = null; _active = null; _runGate.Release(); }
+        finally
+        {
+            _projectContext = null;
+            _takeSteering = null;
+            _events = null;
+            _active = null;
+            Volatile.Write(ref _currentToolLoadout, null);
+            _runGate.Release();
+        }
     }
 
     private void PersistInjectedSteering(AgentSession session)

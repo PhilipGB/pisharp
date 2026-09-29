@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "plan_received": true,
-  "source_note": "Current PiSharp main is 3a7cb31cea47d9c7df33ff70144c8dac4fa72b9e. Exact-head Linux CI run 36487198225 passed restore, format, warnings-as-errors build, and 807/807 tests (0 skipped). Current Pi main is 8562bcf66a8eeefdf75ddd231ca9d7aa7d64f86e. Bedrock Converse, Pi Messages, and Radius OAuth are implemented; provider work is bounded to six other OAuth flows and provider-specific semantics/differentials. The new material gaps are shared tool exposure/loadouts, nested execution and persistence, tool search, sandboxed Codemode, MCP, and virtual models. See docs/parity/fixtures/tool-orchestration-virtual-model-audit-2026-09-29.md; final audit remains incomplete.",
+  "source_note": "PiSharp main is 74fb2a19ec25e407587b494c5dbbdb657235ae1; exact-head Linux CI run 36540854429 failed at build because the fail-first ToolLoadoutTests were committed before the registry contracts. The current local worktree adds the registry/loadout slice and passes format, warnings-as-errors build, and 815/815 full tests (0 skipped); these changes are not yet pushed or covered by exact-head CI. Current Pi main is da19b63c775086f3a3dc372eb77f3e981d36c952. Current Pi additions include configurable fullscreen wheel scrolling and restored llama.cpp context-window handling; both are recorded as in-scope residuals. The major open families remain nested execution/persistence, tool search, sandboxed Codemode, MCP and virtual models; overall parity is incomplete. The current Pi build fetched 28 live Radius models while PiSharp bundles a 25-model fallback at Pi revision fd889a274; its runtime gateway refresh remains in place, so offline fallback freshness is a category 4 residual.",
   "baseline": "earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035",
   "required_ids": [
     "feature-agent-multi-turn-and-streaming",
@@ -168,7 +168,9 @@
     "codemode-runtime",
     "mcp-runtime",
     "virtual-model-routing-persistence",
-    "extension-orchestration-api"
+    "extension-orchestration-api",
+    "settings-fullscreenwheelscrolllines",
+    "provider-llama-context-cache-reload"
   ],
   "final_audit": {
     "complete": false,
@@ -339,7 +341,8 @@
         "Full-suite runs exposed a duplicate canonical read:third tool call under the parallel-tool compaction test while the isolated case passed. ConversationRun now serializes concurrent MAF tool-result collection and provider-turn closure with _runtimeStateGate; targeted parallel-history/reconciler tests pass 10/10 and the post-fix full suite passes 754/754. Keep exact-head CI as the remaining verification.",
         "Mistral catalog/history checkpoint source 6c41414514bcea481c7c288308021332d63f03e1 passed exact-head Linux CI run 36446757583: restore, format, warnings-as-errors build, 754/754 tests, 0 skipped. This reconciles the prior pending note.",
         "AzureOpenAiProviderTests cover configured endpoint validation, API-key header, deployment/API-version request mapping, Responses streaming, per-session prompt-cache key, and the embedded 43-model snapshot. Exact source head ec1ea0f212f2a1964c891ce4a90c286020f3bcca passed Linux CI run 36452261244 with 764/764 tests, 0 skipped. No full Pi process differential or provider-wide image/tool/usage/error coverage is claimed.",
-        "AnthropicThinkingSignatureCompatibilityTests uses the real Anthropic .NET SDK with a local /v1/messages loopback and covers compat enabled/disabled, signed content, and whitespace normalization (4/4). The initial disabled-compat case failed before the request projection. Current Pi 11894012dd461232eb075bc890538b6866860a10 tests anthropic-empty-thinking-signature-compat.test.ts and qwen-token-plan-models.test.ts pass 98/98. Exact source head 66561e1db1942624f7310bd50f68195c80ee66bf passed Linux CI run 36454550166: format, warnings-as-errors build (0 warnings/errors), 768/768 tests, 0 skipped."
+        "AnthropicThinkingSignatureCompatibilityTests uses the real Anthropic .NET SDK with a local /v1/messages loopback and covers compat enabled/disabled, signed content, and whitespace normalization (4/4). The initial disabled-compat case failed before the request projection. Current Pi 11894012dd461232eb075bc890538b6866860a10 tests anthropic-empty-thinking-signature-compat.test.ts and qwen-token-plan-models.test.ts pass 98/98. Exact source head 66561e1db1942624f7310bd50f68195c80ee66bf passed Linux CI run 36454550166: format, warnings-as-errors build (0 warnings/errors), 768/768 tests, 0 skipped.",
+        "At current Pi da19b63c7, the build-time Radius API returned 28 models; PiSharp src/PiSharp.Cli/Providers/Data/radius-models.json contains 25 fallback entries pinned to fd889a274. RadiusModelCatalog.LoadAsync still refreshes /v1/config at runtime, leaving offline bundled-catalog freshness as a category 4 residual."
       ],
       "dependencies": []
     },
@@ -3386,9 +3389,14 @@
         "Implement direct/model-only/codemode/deferred/hidden exposure and activation defaults",
         "Support session-scoped active tools, prepare-loadout description/declaration changes and transcript persistence across resume/fork"
       ],
-      "implementation": [],
+      "implementation": [
+        "src/PiSharp.Runtime/Extensions/ToolRegistry.cs defines five exposure states, immutable registered/callable/declared snapshots, atomic session loadouts, defaults, namespaces and prepare-loadout description/declaration projections.",
+        "src/PiSharp.Runtime/Extensions/ExtensionCatalog.cs retains tool registration metadata; src/PiSharp.Runtime/PiAgent.cs owns one loadout per MAF AgentSession and projects declarations at each request through ObservedChatClient.",
+        "PiSharpToolExecutionContext lets an active tool change its session loadout; DurableToolFunction rejects model calls that are neither active nor callable. Active tool state is not yet persisted through transcript, resume, tree or fork."
+      ],
       "evidence": [
-        "Current Pi types, agent-loop declaration deltas, and agent-session-tool-orchestration tests were inspected at 8562bcf66a8eeefdf75ddd231ca9d7aa7d64f86e. PiSharp currently binds one static tool array in PiAgent; no equivalent registry/loadout exists."
+        "Current Pi exposure/loadout rules and tests were refreshed at da19b63c775086f3a3dc372eb77f3e981d36c952. Current upstream build succeeds; agent loop passes 37/37, Codemode 57/57, MCP 34/34, and focused coding-agent orchestration/virtual-model/MCP tests 120/120.",
+        "ToolLoadoutTests and ToolSelectionTests pass 13/13, including a model-only tool activating a deferred tool for the next request, per-session isolation and a hidden-tool invocation rejection. dotnet format PiSharp.slnx --verify-no-changes --no-restore passes; dotnet build PiSharp.slnx --no-restore --warnaserror reports 0 warnings/errors; dotnet test PiSharp.slnx --no-build --no-restore passes 815/815 (0 skipped)."
       ],
       "dependencies": []
     },
@@ -3404,7 +3412,7 @@
       ],
       "implementation": [],
       "evidence": [
-        "Current Pi nested-tool-calls.ts, agent-session.ts, compaction and HTML projection were inspected at 8562bcf66a8eeefdf75ddd231ca9d7aa7d64f86e. PiSharp DurableToolFunction only records top-level tool lifecycle."
+        "Current Pi nested execution source/tests were refreshed at da19b63c775086f3a3dc372eb77f3e981d36c952. PiSharp now exposes the session loadout in the active tool invocation context, but it still has no nested execute API, parent-linked child lifecycle, bounded nested-call record or persistence/export projection."
       ],
       "dependencies": [
         "tool-exposure-loadout"
@@ -3521,6 +3529,36 @@
         "tool-exposure-loadout",
         "tool-nested-execution"
       ]
+    },
+    {
+      "id": "settings-fullscreenwheelscrolllines",
+      "title": "Setting: fullscreenWheelScrollLines",
+      "status": "not_started",
+      "source": "earendil-works/pi@da19b63c775086f3a3dc372eb77f3e981d36c952; packages/coding-agent/src/core/settings-manager.ts and packages/tui/src/wheel-scroll.ts",
+      "acceptance": [
+        "Support the current Pi auto mode and integer 1-100 fullscreen wheel line setting with matching default and settings scope.",
+        "Apply fixed and accelerated wheel movement in the active fullscreen TUI and settings UI."
+      ],
+      "implementation": [],
+      "evidence": [
+        "Current Pi TUI and coding-agent tests for fullscreen input/settings pass; the Pi TUI package test command and the focused coding-agent settings/Llama command both exit successfully at da19b63c775086f3a3dc372eb77f3e981d36c952. PiSharp has no matching setting yet."
+      ],
+      "dependencies": []
+    },
+    {
+      "id": "provider-llama-context-cache-reload",
+      "title": "Provider semantics: llama.cpp context window after reload",
+      "status": "not_started",
+      "source": "earendil-works/pi@da19b63c775086f3a3dc372eb77f3e981d36c952; packages/coding-agent/src/extensions/llama/provider.ts",
+      "acceptance": [
+        "After llama.cpp catalog refresh, resolve context size from live runtime metadata, configured --ctx-size/-c/-ctx arguments, restored cached metadata, training metadata, then the 128000 fallback.",
+        "Keep chat and classifier model context windows consistent across reload and verify the precedence with deterministic tests."
+      ],
+      "implementation": [],
+      "evidence": [
+        "Pi llama-extension tests pass within the focused 79/79 coding-agent settings/Llama run at da19b63c775086f3a3dc372eb77f3e981d36c952. The PiSharp generic local endpoint path has no persisted llama.cpp catalog context metadata or tested refresh precedence."
+      ],
+      "dependencies": []
     }
   ]
 }

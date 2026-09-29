@@ -40,18 +40,7 @@ public sealed class CodingTools
 
     public IList<AITool> Create(IReadOnlyList<string>? requested = null, IReadOnlyList<string>? excluded = null, bool noTools = false)
     {
-        var search = new SearchTools(_cwd);
-        var listing = new DirectoryListingTool(_cwd);
-        var available = new Dictionary<string, AITool>(StringComparer.Ordinal)
-        {
-            ["read"] = AIFunctionFactory.Create(ReadForTool, name: "read"),
-            ["bash"] = AIFunctionFactory.Create(BashForTool, name: "bash"),
-            ["edit"] = AIFunctionFactory.Create(EditForTool, name: "edit"),
-            ["write"] = AIFunctionFactory.Create(Write, name: "write"),
-            ["grep"] = AIFunctionFactory.Create(search.GrepForTool, name: "grep"),
-            ["find"] = AIFunctionFactory.Create(search.FindForTool, name: "find"),
-            ["ls"] = AIFunctionFactory.Create(listing.ListForTool, name: "ls")
-        };
+        var available = CreateAll().ToDictionary(tool => tool.Name, StringComparer.Ordinal);
         var names = requested ?? (noTools ? [] : ["read", "bash", "edit", "write"]);
         var disabled = excluded is null ? null : new HashSet<string>(excluded, StringComparer.Ordinal);
         var selected = new List<AITool>();
@@ -61,6 +50,23 @@ public sealed class CodingTools
             if (disabled?.Contains(name) != true) selected.Add(tool);
         }
         return selected;
+    }
+
+    /// <summary>Creates every built-in tool for registry, discovery, and dynamic loadout use.</summary>
+    public IReadOnlyList<AITool> CreateAll()
+    {
+        var search = new SearchTools(_cwd);
+        var listing = new DirectoryListingTool(_cwd);
+        return Array.AsReadOnly<AITool>(
+        [
+            AIFunctionFactory.Create(ReadForTool, name: "read"),
+            AIFunctionFactory.Create(BashForTool, name: "bash"),
+            AIFunctionFactory.Create(EditForTool, name: "edit"),
+            AIFunctionFactory.Create(Write, name: "write"),
+            AIFunctionFactory.Create(search.GrepForTool, name: "grep"),
+            AIFunctionFactory.Create(search.FindForTool, name: "find"),
+            AIFunctionFactory.Create(listing.ListForTool, name: "ls")
+        ]);
     }
 
     private string Resolve(string path) => Path.GetFullPath(path, _cwd);

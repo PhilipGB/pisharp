@@ -100,8 +100,9 @@ internal sealed class ProjectRuntimeContext : IDisposable
         var effectiveSettings = settings ?? Settings;
         return new PiAgent(chat, new CodingTools(WorkingDirectory, effectiveSettings.ShellPath,
                 selection.Model.InputLimits?.Images?.Resize, effectiveSettings.ShellCommandPrefix), arguments.Tools, arguments.ExcludeTools,
-            arguments.NoTools, Instructions, Prompts.System, Prompts.Append, Extensions.Registration.Tools,
+            arguments.NoTools, Instructions, Prompts.System, Prompts.Append,
             reasoning: ThinkingLevels.ToOptions(thinking, selection.Model.ThinkingLevelMap), blockImages: effectiveSettings.BlockImages == true,
+            extensionToolRegistrations: Extensions.Registration.ToolDefinitions,
             noBuiltinTools: arguments.NoBuiltinTools,
             supportsImages: selection.Model.Input?.Contains("image", StringComparer.Ordinal) != false,
             // ProviderChatClientFactory applies retry.provider.maxRetries inside the SDK adapter.

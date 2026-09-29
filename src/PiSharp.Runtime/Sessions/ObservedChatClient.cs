@@ -11,7 +11,8 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
     bool blockImages = false,
     Func<IReadOnlyList<ChatMessage>, bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? projectContext = null,
     bool supportsImages = true, Func<ReasoningOptions?>? getReasoning = null,
-    Func<bool>? getSupportsImages = null, IProviderToolCallDeltaSource? toolCallDeltaSource = null) : DelegatingChatClient(inner)
+    Func<bool>? getSupportsImages = null, IProviderToolCallDeltaSource? toolCallDeltaSource = null,
+    Func<IReadOnlyList<AITool>>? getToolsForRequest = null) : DelegatingChatClient(inner)
 {
     public override async Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages,
         ChatOptions? options = null, CancellationToken cancellationToken = default)
@@ -19,7 +20,7 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
         publish(new("model_request_started"));
         var original = WithSteering(messages).ToArray();
         var requestMessages = await PrepareRequestAsync(original, force: false, cancellationToken);
-        options = ApplyCurrentReasoning(options);
+        options = ApplyCurrentToolLoadout(ApplyCurrentReasoning(options));
         var overflowRecovered = false;
         for (var retries = 0; ; retries++)
         {
@@ -59,7 +60,7 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
         publish(new("model_request_started"));
         var original = WithSteering(messages).ToArray();
         var requestMessages = await PrepareRequestAsync(original, force: false, cancellationToken);
-        options = ApplyCurrentReasoning(options);
+        options = ApplyCurrentToolLoadout(ApplyCurrentReasoning(options));
         var overflowRecovered = false;
         for (var retries = 0; ; retries++)
         {
@@ -451,5 +452,13 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
             return messages;
         }
         return messages.Concat(steering);
+    }
+
+    private ChatOptions? ApplyCurrentToolLoadout(ChatOptions? options)
+    {
+        if (getToolsForRequest is null) return options;
+        var requestOptions = options?.Clone() ?? new ChatOptions();
+        requestOptions.Tools = getToolsForRequest().ToList();
+        return requestOptions;
     }
 }

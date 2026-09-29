@@ -41,8 +41,8 @@ public sealed class ToolLoadoutTests
 
         Assert.Equal(["deferred", "model"], loadout.Snapshot.ActiveToolNames);
         Assert.Equal(["deferred", "model"], Names(loadout.Snapshot.Declared.Select(tool => tool.Registration)));
-        Assert.Equal(["direct", "deferred"], Names(loadout.Snapshot.Callable));
-        Assert.DoesNotContain("hidden", Names(loadout.Snapshot.Registered));
+        Assert.Equal(["deferred"], Names(loadout.Snapshot.Callable));
+        Assert.Contains("hidden", Names(loadout.Snapshot.Registered));
     }
 
     [Fact]
@@ -68,25 +68,26 @@ public sealed class ToolLoadoutTests
 
         Assert.Equal(["orchestrate"], Names(snapshot.Declared.Select(tool => tool.Registration)));
         Assert.Equal("Can call: echo, helper", snapshot.Declared[0].Description);
+        Assert.Equal(["echo", "orchestrate"], snapshot.ActiveToolNames);
         Assert.Equal(["echo", "helper"], Names(snapshot.Callable));
     }
 
     [Fact]
-    public void DefaultInactiveToolsStayCallableAndLoadoutChangesAreAtomic()
+    public void DefaultInactiveDeferredToolsStayCallableAndUnknownNamesAreIgnored()
     {
         var loadout = new PiSharpToolRegistry(
         [
-            new PiSharpToolRegistration(Function("search"), ToolExposure.Direct, DefaultActive: false),
+            new PiSharpToolRegistration(Function("search"), ToolExposure.Deferred, DefaultActive: false),
             Registration("hidden", ToolExposure.Hidden)
         ]).CreateLoadout();
         var before = loadout.Snapshot;
 
         Assert.Empty(before.Declared);
         Assert.Equal(["search"], Names(before.Callable));
-        Assert.Throws<ArgumentException>(() => loadout.SetActiveTools(["search", "missing"]));
+        Assert.Throws<ArgumentNullException>(() => loadout.SetActiveTools(null!));
         Assert.Same(before, loadout.Snapshot);
 
-        loadout.SetActiveTools(["search"]);
+        loadout.SetActiveTools(["search", "missing"]);
         Assert.Equal(["search"], Names(loadout.Snapshot.Declared.Select(tool => tool.Registration)));
         Assert.Empty(before.ActiveToolNames);
     }
@@ -99,6 +100,25 @@ public sealed class ToolLoadoutTests
             Registration("duplicate", ToolExposure.Direct),
             Registration("duplicate", ToolExposure.Deferred)
         ]));
+    }
+
+    [Fact]
+    public void ExtensionRegistrationRetainsToolExposureAndNamespace()
+    {
+        var tool = Function("deferred");
+        var definition = new PiSharpToolRegistration(tool, ToolExposure.Deferred,
+            Namespace: new PiSharpToolNamespace("mcp__docs", "Documentation tools."));
+        var extension = new ExtensionRegistration();
+
+        extension.AddTool(definition);
+
+        Assert.Same(tool, Assert.Single(extension.Tools));
+        Assert.Same(definition, Assert.Single(extension.ToolDefinitions));
+        var loadout = new PiSharpToolRegistry(extension.ToolDefinitions).CreateLoadout();
+        Assert.Equal(ToolExposure.Deferred, loadout.Snapshot.GetExposure("deferred"));
+        Assert.Equal("mcp__docs", loadout.Snapshot.GetNamespace("deferred")?.Name);
+        Assert.Empty(loadout.Snapshot.Declared);
+        Assert.Equal(["deferred"], Names(loadout.Snapshot.Callable));
     }
 
     private static PiSharpToolRegistration Registration(string name, ToolExposure exposure) =>
