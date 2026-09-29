@@ -33,8 +33,15 @@ internal sealed class DurableExecution(ConversationSession conversation, Func<Ca
         return id;
     }
 
-    public Task EndToolAsync(string id, object? result, Exception? error) => CheckpointAsync("tool_outcome",
-        new { runId = RunId, operationId = id, result = result?.ToString(), error = error?.Message }, CancellationToken.None);
+    public Task EndToolAsync(string id, object? result, Exception? error, string? returnedError = null) => CheckpointAsync("tool_outcome",
+        new
+        {
+            runId = RunId,
+            operationId = id,
+            result = result?.ToString(),
+            error = error?.Message ?? returnedError,
+            returnedError = returnedError is not null && error is null
+        }, CancellationToken.None);
 
     public Task FinishAsync(bool completed) => CheckpointAsync("run_finished",
         new { runId = RunId, completed }, CancellationToken.None);

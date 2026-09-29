@@ -1,4 +1,5 @@
 using System.Runtime.ExceptionServices;
+using System.Text.Json;
 using Microsoft.Extensions.AI;
 using PiSharp.Runtime;
 using PiSharp.Runtime.Extensions;
@@ -10,8 +11,10 @@ namespace PiSharp.Runtime.Sessions;
 internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecution?> current,
     Action<AgentLifecycleEvent> publish, Func<ToolLoadout?>? currentLoadout = null,
     Func<IReadOnlyDictionary<string, AIFunction>>? allToolFunctions = null,
-    PiSharpToolHookPipeline? toolHooks = null) : DelegatingAIFunction(inner)
+    PiSharpToolHookPipeline? toolHooks = null, JsonElement? outputSchema = null) : DelegatingAIFunction(inner)
 {
+    private readonly ToolResultSchemaValidator _outputValidator = new(outputSchema);
+
     protected override async ValueTask<object?> InvokeCoreAsync(AIFunctionArguments arguments, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -114,6 +117,11 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
         var resultArguments = invocationArguments.ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal);
         var resultContext = new PiSharpToolResultContext(Name, toolCallId, parentToolCallId,
             resultArguments, value, failure);
+        if (ToolResultOutput.TryReadContract(value, out var returned) && returned.IsError)
+        {
+            resultContext.IsError = true;
+            resultContext.Error = returned.Error ?? returned.Text;
+        }
         try
         {
             if (toolHooks is not null)
@@ -135,6 +143,35 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
         }
         value = resultContext.Result;
         failure = resultContext.Exception;
+        ToolResultOutput.TryReadContract(value, out var contract);
+        if (failure is null && contract is not null && contract.IsError != resultContext.IsError)
+        {
+            contract = contract with
+            {
+                IsError = resultContext.IsError,
+                Error = resultContext.IsError ? resultContext.Error : null
+            };
+            value = contract;
+        }
+        else if (failure is null && resultContext.IsError && contract is null)
+        {
+            ToolResultOutput.TryRead(value, out var returnedText, out var returnedDetails);
+            contract = new PiSharpToolResult(returnedText.Length > 0 ? returnedText : value?.ToString() ?? string.Empty,
+                returnedDetails, IsError: true, Error: resultContext.Error);
+            value = contract;
+        }
+        if (failure is null && !resultContext.IsError)
+        {
+            try { _outputValidator.Validate(value); }
+            catch (Exception error)
+            {
+                failure = error;
+                value = null;
+                contract = null;
+                resultContext.IsError = true;
+                resultContext.Error = error.Message;
+            }
+        }
         if (failure is not null)
         {
             resultContext.IsError = true;
@@ -147,10 +184,11 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
         }
         var hasStructuredOutput = ToolResultOutput.TryRead(value, out var resultText, out var details);
         if (!hasStructuredOutput) resultText = value?.ToString();
-        var durableFailure = failure ?? (resultContext.IsError
-            ? new InvalidOperationException(resultContext.Error ?? "Tool returned an error result.")
-            : null);
-        try { if (execution is not null) await execution.EndToolAsync(id, resultText, durableFailure); }
+        try
+        {
+            if (execution is not null) await execution.EndToolAsync(id, resultText, failure,
+                resultContext.IsError && failure is null ? resultContext.Error ?? "Tool returned an error result." : null);
+        }
         catch (Exception error)
         {
             publish(new("tool_outcome_unknown", Tool: Name, OperationId: id, IsError: true, Error: error.Message));
@@ -158,11 +196,19 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
         }
         IReadOnlyList<Microsoft.Extensions.AI.DataContent>? toolImages =
             ReadToolOutput.TryRead(value, out var readOutput) && readOutput.TryCreateImageContent(out var image) ? [image] : null;
+        if (contract?.Images is { Count: > 0 })
+            toolImages = contract.Images.Select(item => item.ToDataContent()).OfType<Microsoft.Extensions.AI.DataContent>().ToArray();
+        if (nestedInvocation is null && contract?.Terminate == true &&
+            FunctionInvokingChatClient.CurrentContext is { FunctionCount: 1 } invocationContext)
+            invocationContext.Terminate = true;
         publish(new("tool_execution_finished", Text: resultText, Tool: Name, OperationId: id,
             IsError: resultContext.IsError, Error: resultContext.Error,
             Details: hasStructuredOutput ? details : null)
         {
             Images = toolImages,
+            StructuredContent = contract?.StructuredContent,
+            ToolUsage = contract?.Usage,
+            Terminate = contract?.Terminate,
             ToolArguments = displayArguments,
             ToolCallId = toolCallId,
             ParentToolCallId = parentToolCallId,

@@ -203,16 +203,28 @@ internal sealed class RpcEventProjector
 
     private static JsonObject ProjectToolEnd(AgentLifecycleEvent item)
     {
+        var content = new JsonArray(new JsonObject { ["type"] = "text", ["text"] = item.Text ?? "" });
+        foreach (var image in item.Images ?? [])
+            content.Add(new JsonObject
+            {
+                ["type"] = "image",
+                ["mimeType"] = image.MediaType,
+                ["data"] = Convert.ToBase64String(image.Data.Span)
+            });
+        var result = new JsonObject
+        {
+            ["content"] = content,
+            ["details"] = JsonSerializer.SerializeToNode(item.Details) ?? new JsonObject()
+        };
+        if (item.StructuredContent is { } structured) result["structuredContent"] = JsonNode.Parse(structured.GetRawText());
+        if (item.ToolUsage is { } usage) result["usage"] = PiJsonlSessionInterchange.ProjectToolUsage(usage);
+        if (item.Terminate == true) result["terminate"] = true;
         var projected = new JsonObject
         {
             ["type"] = "tool_execution_end",
             ["toolCallId"] = item.ToolCallId ?? item.OperationId ?? "unknown-call",
             ["toolName"] = item.Tool,
-            ["result"] = new JsonObject
-            {
-                ["content"] = new JsonArray(new JsonObject { ["type"] = "text", ["text"] = item.Text ?? "" }),
-                ["details"] = JsonSerializer.SerializeToNode(item.Details) ?? new JsonObject()
-            },
+            ["result"] = result,
             ["isError"] = item.IsError ?? false
         };
         if (item.ParentToolCallId is not null) projected["parentToolCallId"] = item.ParentToolCallId;

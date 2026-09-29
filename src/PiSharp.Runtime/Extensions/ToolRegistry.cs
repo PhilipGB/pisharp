@@ -22,7 +22,8 @@ public sealed record PiSharpToolRegistration(
     bool? DefaultActive = null,
     PiSharpToolNamespace? Namespace = null,
     Func<ToolLoadoutSnapshot, ToolLoadoutChanges?>? PrepareLoadout = null,
-    bool AllowNestedInvocation = true);
+    bool AllowNestedInvocation = true,
+    System.Text.Json.JsonElement? OutputSchema = null);
 
 /// <summary>Changes an active loadout's model-facing declaration projection.</summary>
 public sealed record ToolLoadoutChanges(

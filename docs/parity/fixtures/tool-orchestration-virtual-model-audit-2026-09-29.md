@@ -1,6 +1,8 @@
 # Current Pi tool orchestration and virtual-model audit
 
-Reference: `earendil-works/pi@4259686d9290c0d73ae7192b796aee3e530a9779` (2026-09-29), refreshed from `8562bcf66a8eeefdf75ddd231ca9d7aa7d64f86e`. PiSharp source is `ae05045b105bf23bee228dc6238c415d8978d4fa`; exact-head Linux CI run `36549801185` passed restore, format, warnings-as-errors build (0 warnings/errors) and 821/821 tests (0 skipped).
+Reference: `earendil-works/pi@4df1574339bfbd1a9750ff485bb618da397ba135` (2026-09-29), refreshed from `4259686d9290c0d73ae7192b796aee3e530a9779`. PiSharp pre-slice source is `159921fae0719055157b8839458133fed5fdc748`; exact-head Linux CI run `36553831726` passed restore, format, warnings-as-errors build and 821/821 tests (0 skipped). The structured-result slice passes 824/824 local tests; exact-head CI is pending.
+
+The only new upstream commit, `4df1574`, consolidates the OAuth callback server and sign-in page for Anthropic, OpenAI Codex, OpenRouter, Radius and MCP. This favors shared callback/PKCE infrastructure in the later provider/auth work and does not change the orchestration sequence. PiSharp's current result slice adds `PiSharpToolResult`, output-schema validation, returned errors distinct from exceptions, model text/image projection, native/Pi JSONL preservation and single-call termination. Multi-call termination and complete RPC projection remain open.
 
 Pi Packages/package-manager distribution remains excluded. The source directories below are in scope because Pi exposes their capabilities through the coding-agent runtime and extension API.
 

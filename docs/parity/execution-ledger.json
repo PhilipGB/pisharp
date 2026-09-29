@@ -3435,10 +3435,14 @@
         "Preserve explicit tool error state, usage, progress updates and termination through provider/session/export paths",
         "Keep thrown exceptions and returned error results behaviorally distinct where Pi does"
       ],
-      "implementation": [],
+      "implementation": [
+        "PiSharpToolResult separates model-facing text/images, UI details, structured JSON, returned error state, usage and termination. PiSharpToolRegistration carries an output schema; JsonSchema.Net validates successful structured content after result hooks on root and nested calls.",
+        "DurableToolFunction keeps returned errors separate from thrown exceptions in checkpoints and canonical FunctionResultContent, and single-call termination stops MAF continuation. ObservedChatClient projects model text/images while Pi JSONL preserves the structured contract."
+      ],
       "evidence": [
         "Current Pi AgentToolResult, ToolDefinition, ToolResultEventBase and before/after tool-hook contracts were inspected at 4259686d9290c0d73ae7192b796aee3e530a9779.",
-        "PiSharp ToolResultOutput currently extracts text and UI/event details from existing structured outputs. Nested thrown failures return IsError outcomes, but registered tools have no outputSchema/structuredContent contract and no explicit returned error result; root thrown exceptions remain a distinct FunctionResultContent.Exception. Full result semantics remain unimplemented."
+        "ToolResultContractTests covers returned-error separation, nested structured/image results, provider text/image projection, native and Pi JSONL round trips, output-schema rejection and single-call termination. Focused neighboring suites pass 32/32 and the full local suite passes 824/824, 0 skipped. Exact-head CI for this slice is pending.",
+        "Multi-call termination, full RPC result projection, output-schema error policy and current-Pi process differentials remain open; the capability stays in progress."
       ],
       "dependencies": []
     },

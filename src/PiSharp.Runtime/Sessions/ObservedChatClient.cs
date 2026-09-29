@@ -371,6 +371,9 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
                         replaced = true;
                         contents.Add(new FunctionResultContent(structuredResult.CallId, structuredText)
                         { Exception = structuredResult.Exception });
+                        if (ToolResultOutput.TryReadContract(structuredResult.Result, out var contract) &&
+                            contract.Images is { Count: > 0 })
+                            attachments.AddRange(contract.Images.Select(image => image.ToDataContent()).OfType<DataContent>());
                     }
                     else contents.Add(content);
                 }

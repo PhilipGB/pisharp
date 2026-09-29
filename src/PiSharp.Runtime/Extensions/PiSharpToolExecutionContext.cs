@@ -31,7 +31,11 @@ public sealed record PiSharpToolExecutionResult(
     string Text,
     bool IsError,
     string? Error = null,
-    object? Details = null);
+    object? Details = null,
+    JsonElement? StructuredContent = null,
+    IReadOnlyList<PiSharpToolImage>? Images = null,
+    Microsoft.Extensions.AI.UsageDetails? Usage = null,
+    bool Terminate = false);
 
 /// <summary>
 /// Per-invocation access to the session's tool registry, active loadout, nested execution and progress channel.
@@ -206,10 +210,12 @@ public sealed class PiSharpToolExecutionContext
             try
             {
                 var value = await function.InvokeAsync(functionArguments, cancellationToken);
-                ToolResultOutput.TryRead(value, out var structuredText, out var details);
-                var text = structuredText.Length > 0 ? structuredText : value?.ToString() ?? string.Empty;
+                var hasStructuredOutput = ToolResultOutput.TryRead(value, out var structuredText, out var details);
+                var text = hasStructuredOutput ? structuredText : value?.ToString() ?? string.Empty;
+                ToolResultOutput.TryReadContract(value, out var contract);
                 var result = new PiSharpToolExecutionResult(callId, name, value, text, nested.IsError,
-                    nested.Error, details);
+                    nested.Error, details, contract?.StructuredContent, contract?.Images, contract?.Usage,
+                    contract?.Terminate ?? false);
                 FinishCall(record, nested.IsError, nested.Error);
                 return result;
             }

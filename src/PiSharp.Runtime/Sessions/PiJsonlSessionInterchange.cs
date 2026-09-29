@@ -299,6 +299,14 @@ public static class PiJsonlSessionInterchange
         ["cost"] = new JsonObject { ["input"] = 0, ["output"] = 0, ["cacheRead"] = 0, ["cacheWrite"] = 0, ["total"] = 0 }
     };
 
+    internal static JsonObject ProjectToolUsage(UsageDetails usage) => new()
+    {
+        ["input"] = usage.InputTokenCount ?? 0,
+        ["output"] = usage.OutputTokenCount ?? 0,
+        ["cacheRead"] = usage.CachedInputTokenCount ?? 0,
+        ["totalTokens"] = usage.TotalTokenCount ?? (usage.InputTokenCount ?? 0) + (usage.OutputTokenCount ?? 0)
+    };
+
     /// <summary>Writes Pi JSONL without replacing an existing export; files are user-private on Unix.</summary>
     public static async Task ExportToFileAsync(ConversationSession session, string path,
         CancellationToken cancellationToken = default)
@@ -519,6 +527,9 @@ public static class PiJsonlSessionInterchange
         if (role == ChatRole.Tool)
         {
             var callId = StringProperty(message, "toolCallId") ?? "unknown-call";
+            if (TryProperty(message, "piSharpToolResult", out var preserved) &&
+                PiSharp.Runtime.Tools.ToolResultOutput.TryReadContract(preserved, out var contract))
+                return new ChatMessage(ChatRole.Tool, [new FunctionResultContent(callId, contract)]);
             var toolContent = contentOverride ?? (TryProperty(message, "content", out var toolValue) ? toolValue : default);
             var toolResult = new FunctionResultContent(callId, ReadContent(toolContent));
             if (BoolProperty(message, "isError")) toolResult.Exception = new ToolFailureException("Pi session records a failed tool result.");
@@ -683,8 +694,18 @@ public static class PiJsonlSessionInterchange
                     });
                     break;
                 case FunctionResultContent result:
-                    var resultText = result.Result is string value ? value : result.Result?.ToString() ?? "";
+                    var resultText = ToolResultOutput.TryRead(result.Result, out var structuredText, out _)
+                        ? structuredText : result.Result is string value ? value : result.Result?.ToString() ?? "";
                     if (role == "toolResult") content.Add(new JsonObject { ["type"] = "text", ["text"] = resultText });
+                    if (role == "toolResult" && ToolResultOutput.TryReadContract(result.Result, out var toolOutput) &&
+                        toolOutput.Images is { Count: > 0 })
+                        foreach (var image in toolOutput.Images)
+                            content.Add(new JsonObject
+                            {
+                                ["type"] = "image",
+                                ["mimeType"] = image.MimeType,
+                                ["data"] = image.DataBase64
+                            });
                     break;
             }
         }
@@ -715,7 +736,12 @@ public static class PiJsonlSessionInterchange
             var result = message.Contents.OfType<FunctionResultContent>().FirstOrDefault();
             messageObject["toolCallId"] = result?.CallId ?? "unknown-call";
             messageObject["toolName"] = "tool";
-            messageObject["isError"] = result?.Exception is not null;
+            PiSharpToolResult? contract = null;
+            if (result is not null && ToolResultOutput.TryReadContract(result.Result, out var parsed)) contract = parsed;
+            messageObject["isError"] = result?.Exception is not null || contract?.IsError == true;
+            if (contract is not null) messageObject["piSharpToolResult"] = JsonSerializer.SerializeToNode(contract);
+            if (contract?.Usage is { } toolUsage) messageObject["usage"] = ProjectToolUsage(toolUsage);
+            if (contract?.Terminate == true) messageObject["terminate"] = true;
         }
         if (ConversationSession.NestedToolCallsFor(node) is { } nestedToolCalls)
             messageObject["nestedCalls"] = JsonSerializer.SerializeToNode(nestedToolCalls);

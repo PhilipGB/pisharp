@@ -20,6 +20,15 @@ public sealed record AgentLifecycleEvent(string Type, string? Text = null, strin
     public IReadOnlyList<DataContent>? Images { get; init; }
 
     [JsonIgnore]
+    public JsonElement? StructuredContent { get; init; }
+
+    [JsonIgnore]
+    public UsageDetails? ToolUsage { get; init; }
+
+    [JsonIgnore]
+    public bool? Terminate { get; init; }
+
+    [JsonIgnore]
     public ChatMessage? ProviderResponse { get; init; }
 
     [JsonIgnore]

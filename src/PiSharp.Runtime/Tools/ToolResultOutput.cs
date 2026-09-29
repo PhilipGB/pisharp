@@ -1,12 +1,45 @@
 using System.Text.Json;
 using PiSharp.Core;
+using PiSharp.Runtime.Extensions;
 
 namespace PiSharp.Runtime.Tools;
 
 internal static class ToolResultOutput
 {
+    public static bool TryReadContract(object? value, out PiSharpToolResult result)
+    {
+        if (value is PiSharpToolResult typed)
+        {
+            result = typed;
+            return true;
+        }
+        try
+        {
+            if (value is string serialized)
+            {
+                using var document = JsonDocument.Parse(serialized);
+                return TryReadContract(document.RootElement, out result);
+            }
+            if (value is JsonElement json && json.ValueKind == JsonValueKind.Object &&
+                json.TryGetProperty("piSharpToolResult", out var marker) && marker.ValueKind == JsonValueKind.True)
+            {
+                result = json.Deserialize<PiSharpToolResult>(new JsonSerializerOptions(JsonSerializerDefaults.Web))!;
+                return result is not null;
+            }
+        }
+        catch (JsonException) { }
+        result = null!;
+        return false;
+    }
+
     public static bool TryRead(object? value, out string text, out object? details)
     {
+        if (TryReadContract(value, out var contract))
+        {
+            text = contract.Text;
+            details = contract.Details;
+            return true;
+        }
         if (ReadToolOutput.TryRead(value, out var readOutput))
         {
             text = readOutput.Text;

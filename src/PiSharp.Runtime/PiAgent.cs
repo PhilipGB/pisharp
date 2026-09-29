@@ -203,7 +203,7 @@ public sealed class PiAgent
         _runtimeToolFunctions = allRegistrations.ToDictionary(registration => registration.Function.Name,
             registration => (AIFunction)new DurableToolFunction(registration.Function, () => _active,
                 value => _events?.Invoke(value), () => Volatile.Read(ref _currentToolLoadout),
-                () => _runtimeToolFunctions!, _toolHooks), StringComparer.Ordinal);
+                () => _runtimeToolFunctions!, _toolHooks, registration.OutputSchema), StringComparer.Ordinal);
         var initialSnapshot = _toolRegistry.CreateLoadout(_initialActiveToolNames).Snapshot;
         _toolDeclarations = Array.AsReadOnly(initialSnapshot.Declared.Select(declaration =>
             (AIFunctionDeclaration)(string.Equals(declaration.Description, declaration.Registration.Function.Description,
