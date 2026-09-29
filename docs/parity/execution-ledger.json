@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "plan_received": true,
-  "source_note": "PiSharp main is 74fb2a19ec25e407587b494c5dbbdb657235ae1; exact-head Linux CI run 36540854429 failed at build because the fail-first ToolLoadoutTests were committed before the registry contracts. The current local worktree adds the registry/loadout slice and passes format, warnings-as-errors build, and 815/815 full tests (0 skipped); these changes are not yet pushed or covered by exact-head CI. Current Pi main is da19b63c775086f3a3dc372eb77f3e981d36c952. Current Pi additions include configurable fullscreen wheel scrolling and restored llama.cpp context-window handling; both are recorded as in-scope residuals. The major open families remain nested execution/persistence, tool search, sandboxed Codemode, MCP and virtual models; overall parity is incomplete. The current Pi build fetched 28 live Radius models while PiSharp bundles a 25-model fallback at Pi revision fd889a274; its runtime gateway refresh remains in place, so offline fallback freshness is a category 4 residual.",
+  "source_note": "PiSharp main is 03a6d3b416ccf2e70c90db3e6f134bc2c2d63b94. Exact-head Linux CI run 36544238320 passed restore, format, warnings-as-errors build (0 warnings/errors), and 815/815 tests (0 skipped). Current Pi main is da19b63c775086f3a3dc372eb77f3e981d36c952. The committed slice implements registered/callable/declared tool projections, five exposure states, per-AgentSession loadouts and request-time MAF declaration projection; declaration persistence, nested execution, tool search, Codemode, MCP and virtual models remain open. Current Pi additions include configurable fullscreen wheel scrolling and restored llama.cpp context-window handling; both are recorded as in-scope residuals. The current Pi build fetched 28 live Radius models while PiSharp bundles a 25-model fallback at Pi revision fd889a274; its runtime gateway refresh remains in place, so offline fallback freshness is a category 4 residual. Overall parity is incomplete.",
   "baseline": "earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035",
   "required_ids": [
     "feature-agent-multi-turn-and-streaming",
@@ -3396,7 +3396,8 @@
       ],
       "evidence": [
         "Current Pi exposure/loadout rules and tests were refreshed at da19b63c775086f3a3dc372eb77f3e981d36c952. Current upstream build succeeds; agent loop passes 37/37, Codemode 57/57, MCP 34/34, and focused coding-agent orchestration/virtual-model/MCP tests 120/120.",
-        "ToolLoadoutTests and ToolSelectionTests pass 13/13, including a model-only tool activating a deferred tool for the next request, per-session isolation and a hidden-tool invocation rejection. dotnet format PiSharp.slnx --verify-no-changes --no-restore passes; dotnet build PiSharp.slnx --no-restore --warnaserror reports 0 warnings/errors; dotnet test PiSharp.slnx --no-build --no-restore passes 815/815 (0 skipped)."
+        "ToolLoadoutTests and ToolSelectionTests pass 13/13, including a model-only tool activating a deferred tool for the next request, per-session isolation and a hidden-tool invocation rejection. dotnet format PiSharp.slnx --verify-no-changes --no-restore passes; dotnet build PiSharp.slnx --no-restore --warnaserror reports 0 warnings/errors; dotnet test PiSharp.slnx --no-build --no-restore passes 815/815 (0 skipped).",
+        "Exact PiSharp head 03a6d3b416ccf2e70c90db3e6f134bc2c2d63b94 passes Linux CI run 36544238320: restore, format, warnings-as-errors build (0 warnings/errors), and 815/815 tests (0 skipped)."
       ],
       "dependencies": []
     },
