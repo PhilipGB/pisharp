@@ -4,6 +4,17 @@ Reference: `earendil-works/pi@4df1574339bfbd1a9750ff485bb618da397ba135` (2026-09
 
 The only new upstream commit, `4df1574`, consolidates the OAuth callback server and sign-in page for Anthropic, OpenAI Codex, OpenRouter, Radius and MCP. This favors shared callback/PKCE infrastructure in the later provider/auth work and does not change the orchestration sequence. PiSharp has `PiSharpToolResult`, output-schema validation, returned errors distinct from exceptions, model text/image projection, native/Pi JSONL preservation and single-call termination. The current Codemode slice adds a separate Node process running QuickJS/WASM, bounded output/time/guest memory, nested calls through the shared pipeline, and branch/JSONL store persistence. Multi-call termination, optional model/classifier globals, broader differentials, MCP and virtual models remain open.
 
+## Current Pi source refresh — 2026-09-29
+
+Live `origin/main` was refreshed from `5257d0d5f3ab7d42550804f32c67a77b49f485d4` to `9a100c7cc4707f013438b13969c6671bc0a33c4c`. This is a scoped source review of MCP refresh, classifier models/usage and Codemode accounting; it is not the final full audit. The current Pi test suite was not run at this new pin.
+
+- `1d74741e1777f7cc147d65bdfbcd08bb752972cd` holds a per-server lock from token read through refresh persistence, reuses credentials another process already rotated, bounds refresh requests and waits for refresh completion at shutdown. PiSharp now ports this lifecycle at the SDK HTTP-client boundary; see [the MCP refresh fixture](mcp-oauth-refresh-2026-09-29.md).
+- `33e203354391ba26937cd1e8a210b4db10e82c66` adds Jev classifier models for Vercel AI Gateway and OpenCode Zen. These remain classifier catalog entries (not chat models), use TypeSafe-compatible System One endpoints and the provider's bearer credentials. PiSharp has no classifier catalog or classifier request boundary yet.
+- `89a5c7bdaaf79cad6b3a432ddbe6a869a8e0e690` reports System One input/output token counts and catalog-priced cost when present, retaining usage even when answer parsing later fails. PiSharp has no classifier usage accounting yet.
+- `9a100c7cc4707f013438b13969c6671bc0a33c4c` aggregates nested tool/model usage into Codemode results and reports per-classifier call cost. PiSharp's Codemode model/classifier globals and their usage/cost propagation remain open.
+
+The unimplemented current-Pi capabilities above are separate from the older bounded Codemode evidence below. Virtual-model logical/physical routing and branch persistence remain a major open family.
+
 Pi Packages/package-manager distribution remains excluded. The source directories below are in scope because Pi exposes their capabilities through the coding-agent runtime and extension API.
 
 ## Upstream refresh after the orchestration audit

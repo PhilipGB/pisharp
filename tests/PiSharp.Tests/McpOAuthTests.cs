@@ -1,4 +1,6 @@
 using System.Text.Json;
+using System.Text;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using ModelContextProtocol.Authentication;
@@ -8,8 +10,20 @@ using PiSharp.Runtime.Mcp;
 
 namespace PiSharp.Tests;
 
+[CollectionDefinition("MCP OAuth", DisableParallelization = true)]
+public sealed class McpOAuthTestCollection { }
+
+[Collection("MCP OAuth")]
 public sealed class McpOAuthTests
 {
+    private static string FindRepositoryRoot()
+    {
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+        while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "PiSharp.slnx")))
+            directory = directory.Parent;
+        return directory?.FullName ?? throw new DirectoryNotFoundException("Could not find PiSharp repository root.");
+    }
+
     [Fact]
     public async Task ExplicitLoginUsesLoopbackCodeAndPersistsSdkTokens()
     {
@@ -253,6 +267,258 @@ public sealed class McpOAuthTests
     }
 
     [Fact]
+    public async Task ConcurrentOAuthRefreshesUseTheRotatedTokenFromTheFirstProcess()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-mcp-oauth-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        var serverUrl = new Uri("https://mcp.example.test/mcp");
+        var endpoint = new Uri("https://auth.example.test/token");
+        var firstCache = new McpTokenCache(root).ForServerWithRefresh(serverUrl);
+        var secondCache = new McpTokenCache(root).ForServerWithRefresh(serverUrl);
+        await firstCache.StoreTokensAsync(new TokenContainer
+        {
+            TokenType = "Bearer",
+            AccessToken = "access-1",
+            RefreshToken = "refresh-1",
+            ExpiresIn = 60,
+            ObtainedAt = DateTimeOffset.UtcNow.AddHours(-1)
+        }, default);
+        Assert.Equal("access-1", (await firstCache.GetTokensAsync(default))?.AccessToken);
+        Assert.Equal("access-1", (await secondCache.GetTokensAsync(default))?.AccessToken);
+
+        var tokenEndpoint = new RotatingTokenEndpoint();
+        var firstHandler = new McpOAuthRefreshHandler(firstCache, tokenEndpoint);
+        using var firstHttp = new HttpClient(firstHandler);
+        using var secondHttp = new HttpClient(new McpOAuthRefreshHandler(secondCache, tokenEndpoint));
+        var request = () => new HttpRequestMessage(HttpMethod.Post, endpoint)
+        {
+            Content = new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["grant_type"] = "refresh_token",
+                ["refresh_token"] = "refresh-1"
+            })
+        };
+
+        try
+        {
+            var firstRefresh = firstHttp.SendAsync(request());
+            await tokenEndpoint.FirstRequest.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            var secondRefresh = secondHttp.SendAsync(request());
+            tokenEndpoint.ContinueFirstRequest.TrySetResult();
+
+            using var firstResponse = await firstRefresh.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.Equal(HttpStatusCode.OK, firstResponse.StatusCode);
+            var settled = firstHandler.WaitForSettledAsync();
+            Assert.False(settled.IsCompleted);
+            using var cancelled = new CancellationTokenSource();
+            cancelled.Cancel();
+            await firstCache.StoreTokensAsync(new TokenContainer
+            {
+                TokenType = "Bearer",
+                AccessToken = "access-2",
+                RefreshToken = "refresh-2",
+                ExpiresIn = 3600,
+                ObtainedAt = DateTimeOffset.UtcNow
+            }, cancelled.Token);
+            await settled.WaitAsync(TimeSpan.FromSeconds(5));
+
+            using var secondResponse = await secondRefresh.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.Equal(HttpStatusCode.OK, secondResponse.StatusCode);
+            using var refreshed = JsonDocument.Parse(await secondResponse.Content.ReadAsStringAsync());
+            Assert.Equal("access-2", refreshed.RootElement.GetProperty("access_token").GetString());
+            Assert.Equal("refresh-2", refreshed.RootElement.GetProperty("refresh_token").GetString());
+            await secondCache.StoreTokensAsync(new TokenContainer
+            {
+                TokenType = "Bearer",
+                AccessToken = "access-2",
+                RefreshToken = "refresh-2",
+                ExpiresIn = refreshed.RootElement.GetProperty("expires_in").GetInt32(),
+                ObtainedAt = DateTimeOffset.UtcNow
+            }, default);
+
+            Assert.Equal(1, tokenEndpoint.RefreshRequests);
+            Assert.Equal("refresh-2", (await new McpTokenCache(root).ForServer(serverUrl)
+                .GetTokensAsync(default))?.RefreshToken);
+        }
+        finally
+        {
+            tokenEndpoint.ContinueFirstRequest.TrySetResult();
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task MCPRefreshLockSerializesSeparateProcesses()
+    {
+        if (!OperatingSystem.IsLinux()) return;
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-mcp-oauth-process-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        using var reservation = new TcpListener(IPAddress.Loopback, 0);
+        reservation.Start();
+        var port = ((IPEndPoint)reservation.LocalEndpoint).Port;
+        reservation.Stop();
+        var origin = "http://127.0.0.1:" + port;
+        var serverUrl = new Uri(origin + "/mcp");
+        using var listener = new HttpListener();
+        listener.Prefixes.Add(origin + "/");
+        listener.Start();
+        var releaseFirst = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var firstRequest = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var stopServer = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var refreshRequests = 0;
+        var readyFiles = new[] { Path.Combine(root, "ready-1"), Path.Combine(root, "ready-2") };
+        var children = new List<Process>();
+        var server = Task.Run(async () =>
+        {
+            try
+            {
+                while (!stopServer.Task.IsCompleted)
+                {
+                    var pending = listener.GetContextAsync();
+                    if (await Task.WhenAny(pending, stopServer.Task) != pending) break;
+                    var context = await pending;
+                    refreshRequests++;
+                    using var reader = new StreamReader(context.Request.InputStream);
+                    var form = await reader.ReadToEndAsync();
+                    if (refreshRequests == 1)
+                    {
+                        firstRequest.TrySetResult(form);
+                        await releaseFirst.Task;
+                        context.Response.StatusCode = 200;
+                        context.Response.ContentType = "application/json";
+                        var body = Encoding.UTF8.GetBytes(
+                            "{\"access_token\":\"access-2\",\"refresh_token\":\"refresh-2\",\"token_type\":\"Bearer\",\"expires_in\":3600}");
+                        context.Response.ContentLength64 = body.Length;
+                        await context.Response.OutputStream.WriteAsync(body);
+                    }
+                    else
+                    {
+                        context.Response.StatusCode = 400;
+                        context.Response.ContentLength64 = 0;
+                    }
+                    context.Response.Close();
+                }
+            }
+            catch (Exception error) when (error is HttpListenerException or ObjectDisposedException or
+                OperationCanceledException)
+            { }
+        });
+
+        try
+        {
+            await new McpTokenCache(root).ForServer(serverUrl).StoreTokensAsync(new TokenContainer
+            {
+                TokenType = "Bearer",
+                AccessToken = "access-1",
+                RefreshToken = "refresh-1",
+                ExpiresIn = 60,
+                ObtainedAt = DateTimeOffset.UtcNow.AddHours(-1)
+            }, default);
+            var project = Path.Combine(FindRepositoryRoot(), "tests", "PiSharp.Tests", "PiSharp.Tests.csproj");
+            foreach (var ready in readyFiles)
+            {
+                var start = new ProcessStartInfo("dotnet")
+                {
+                    WorkingDirectory = FindRepositoryRoot(),
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true
+                };
+                start.ArgumentList.Add("test");
+                start.ArgumentList.Add(project);
+                start.ArgumentList.Add("--no-build");
+                start.ArgumentList.Add("--no-restore");
+                start.ArgumentList.Add("--filter");
+                start.ArgumentList.Add("FullyQualifiedName~McpOAuthRefreshProcessProbe");
+                start.Environment["PISHARP_MCP_REFRESH_TEST_AGENT_DIR"] = root;
+                start.Environment["PISHARP_MCP_REFRESH_TEST_SERVER_URL"] = serverUrl.AbsoluteUri;
+                start.Environment["PISHARP_MCP_REFRESH_TEST_ENDPOINT"] = origin + "/token";
+                start.Environment["PISHARP_MCP_REFRESH_TEST_READY_FILE"] = ready;
+                children.Add(Process.Start(start) ?? throw new InvalidOperationException("Could not start refresh test process."));
+            }
+
+            var submittedForm = await firstRequest.Task.WaitAsync(TimeSpan.FromSeconds(20));
+            Assert.Contains("refresh_token=refresh-1", submittedForm, StringComparison.Ordinal);
+            var deadline = Stopwatch.StartNew();
+            while (readyFiles.Any(path => !File.Exists(path)))
+            {
+                if (deadline.Elapsed > TimeSpan.FromSeconds(20))
+                    throw new TimeoutException("Both MCP refresh processes did not load the initial token.");
+                await Task.Delay(25);
+            }
+            releaseFirst.TrySetResult();
+
+            foreach (var child in children)
+            {
+                var stdout = child.StandardOutput.ReadToEndAsync();
+                var stderr = child.StandardError.ReadToEndAsync();
+                await child.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(25));
+                Assert.True(child.ExitCode == 0,
+                    "Child refresh process failed. stdout: " + await stdout + " stderr: " + await stderr);
+            }
+            stopServer.TrySetResult();
+            await server.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.Equal(1, refreshRequests);
+            Assert.Equal("refresh-2", (await new McpTokenCache(root).ForServer(serverUrl)
+                .GetTokensAsync(default))?.RefreshToken);
+        }
+        finally
+        {
+            releaseFirst.TrySetResult();
+            stopServer.TrySetResult();
+            listener.Close();
+            foreach (var child in children)
+                try
+                {
+                    if (!child.HasExited)
+                    {
+                        child.Kill(entireProcessTree: true);
+                        child.WaitForExit(5000);
+                    }
+                    child.Dispose();
+                }
+                catch (InvalidOperationException) { }
+            try { await server; }
+            catch (Exception error) when (error is HttpListenerException or ObjectDisposedException) { }
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task McpOAuthRefreshProcessProbe()
+    {
+        var agentDirectory = Environment.GetEnvironmentVariable("PISHARP_MCP_REFRESH_TEST_AGENT_DIR");
+        if (string.IsNullOrEmpty(agentDirectory)) return;
+        var serverUrl = new Uri(Environment.GetEnvironmentVariable("PISHARP_MCP_REFRESH_TEST_SERVER_URL")!);
+        var endpoint = new Uri(Environment.GetEnvironmentVariable("PISHARP_MCP_REFRESH_TEST_ENDPOINT")!);
+        var readyFile = Environment.GetEnvironmentVariable("PISHARP_MCP_REFRESH_TEST_READY_FILE")!;
+        var tokenCache = new McpTokenCache(agentDirectory).ForServerWithRefresh(serverUrl);
+        Assert.Equal("access-1", (await tokenCache.GetTokensAsync(default))?.AccessToken);
+        await File.WriteAllTextAsync(readyFile, "ready");
+        using var http = new HttpClient(new McpOAuthRefreshHandler(tokenCache));
+        using var request = new HttpRequestMessage(HttpMethod.Post, endpoint)
+        {
+            Content = new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["grant_type"] = "refresh_token",
+                ["refresh_token"] = "refresh-1"
+            })
+        };
+        using var response = await http.SendAsync(request).WaitAsync(TimeSpan.FromSeconds(20));
+        response.EnsureSuccessStatusCode();
+        using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var root = document.RootElement;
+        await tokenCache.StoreTokensAsync(new TokenContainer
+        {
+            TokenType = root.GetProperty("token_type").GetString()!,
+            AccessToken = root.GetProperty("access_token").GetString()!,
+            RefreshToken = root.GetProperty("refresh_token").GetString(),
+            ExpiresIn = root.GetProperty("expires_in").GetInt32(),
+            ObtainedAt = DateTimeOffset.UtcNow
+        }, default);
+    }
+
+    [Fact]
     public async Task LogoutDeletesOnlyConfiguredServerCredentials()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-mcp-oauth-" + Guid.NewGuid().ToString("N"));
@@ -305,5 +571,30 @@ public sealed class McpOAuthTests
             oauth = new { clientId = "client" }
         });
         Assert.Throws<ArgumentException>(() => McpConfiguration.Parse("test", mixed, "mcp.json", "global"));
+    }
+
+    private sealed class RotatingTokenEndpoint : HttpMessageHandler
+    {
+        public TaskCompletionSource FirstRequest { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource ContinueFirstRequest { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public int RefreshRequests => Volatile.Read(ref _refreshRequests);
+        private int _refreshRequests;
+
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            if (Interlocked.Increment(ref _refreshRequests) == 1)
+            {
+                FirstRequest.TrySetResult();
+                await ContinueFirstRequest.Task.WaitAsync(cancellationToken);
+            }
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                RequestMessage = request,
+                Content = new StringContent(
+                    "{\"access_token\":\"access-2\",\"refresh_token\":\"refresh-2\",\"token_type\":\"Bearer\",\"expires_in\":3600}",
+                    Encoding.UTF8, "application/json")
+            };
+        }
     }
 }

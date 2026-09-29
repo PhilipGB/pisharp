@@ -22,6 +22,7 @@ public static class McpRuntime
             cancellationToken.ThrowIfCancellationRequested();
             McpClient? client = null;
             IClientTransport? transport = null;
+            McpOAuthRefreshHandler? refreshHandler = null;
             try
             {
                 using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -47,18 +48,26 @@ public static class McpRuntime
                         key.Equals("Authorization", StringComparison.OrdinalIgnoreCase)) ? null :
                         (server.OAuth is { } configured ? McpOAuthSettings.Parse(configured) :
                             new McpOAuthSettings(null, null, null, []));
-                    transport = new HttpClientTransport(new HttpClientTransportOptions
+                    var options = new HttpClientTransportOptions
                     {
                         Name = server.Name,
                         Endpoint = server.Url!,
                         TransportMode = HttpTransportMode.StreamableHttp,
-                        OAuth = oauth?.CreateOptions(server.Url!, new McpTokenCache(configuration.AgentDirectory),
-                            oauth.CallbackUrl ?? new Uri("http://127.0.0.1:38119/callback"),
-                            (_, _) => throw new McpSignInRequiredException()),
                         AdditionalHeaders = server.Headers.ToDictionary(item => item.Key,
                             item => Expand(item.Value), StringComparer.Ordinal),
                         ConnectionTimeout = server.Timeout
-                    });
+                    };
+                    if (oauth is null) transport = new HttpClientTransport(options);
+                    else
+                    {
+                        var tokenCache = new McpTokenCache(configuration.AgentDirectory)
+                            .ForServerWithRefresh(server.Url!);
+                        options.OAuth = oauth.CreateOptions(server.Url!, tokenCache,
+                            oauth.CallbackUrl ?? new Uri("http://127.0.0.1:38119/callback"),
+                            (_, _) => throw new McpSignInRequiredException());
+                        refreshHandler = new McpOAuthRefreshHandler(tokenCache);
+                        transport = new HttpClientTransport(options, new HttpClient(refreshHandler), ownsHttpClient: true);
+                    }
                 }
                 client = await McpClient.CreateAsync(transport, new McpClientOptions
                 {
@@ -94,9 +103,10 @@ public static class McpRuntime
                 }
                 if (client.ServerCapabilities.Resources is not null && server.Exposure != McpToolExposure.Hidden)
                     resourceServers.Add((server.Name, client, server.Timeout, MapExposure(server.Exposure)));
-                catalog.OwnConnection(client);
+                catalog.OwnConnection(new RuntimeConnection(client, refreshHandler));
                 client = null;
                 transport = null;
+                refreshHandler = null;
             }
             catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
             {
@@ -114,6 +124,7 @@ public static class McpRuntime
             }
             finally
             {
+                if (refreshHandler is not null) await refreshHandler.WaitForSettledAsync();
                 if (client is not null) await client.DisposeAsync();
                 else if (transport is IAsyncDisposable disposable) await disposable.DisposeAsync();
             }
@@ -152,6 +163,16 @@ public static class McpRuntime
         McpToolExposure.Codemode => ToolExposure.CodeMode,
         _ => ToolExposure.Hidden
     };
+
+    private sealed class RuntimeConnection(McpClient client, McpOAuthRefreshHandler? refreshHandler)
+        : IAsyncDisposable
+    {
+        public async ValueTask DisposeAsync()
+        {
+            if (refreshHandler is not null) await refreshHandler.WaitForSettledAsync();
+            await client.DisposeAsync();
+        }
+    }
 
     private static PiSharpToolRenderView RenderResult(PiSharpToolRenderResult result,
         PiSharpToolRenderContext context)

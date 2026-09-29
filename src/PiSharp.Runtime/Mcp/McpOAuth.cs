@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
-using System.Diagnostics;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using ModelContextProtocol.Authentication;
@@ -36,7 +37,7 @@ public sealed record McpOAuthSettings(string? ClientId, string? ClientSecret, Ur
             (Read("scope") ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
     }
 
-    public ClientOAuthOptions CreateOptions(Uri serverUrl, McpTokenCache cache, Uri redirectUri,
+    public ClientOAuthOptions CreateOptions(Uri serverUrl, ITokenCache cache, Uri redirectUri,
         Func<AuthorizationCallbackContext, CancellationToken, Task<AuthorizationResult?>> callback)
     {
         return new ClientOAuthOptions
@@ -48,7 +49,7 @@ public sealed record McpOAuthSettings(string? ClientId, string? ClientSecret, Ur
                     Environment.GetEnvironmentVariable(match.Groups[1].Value) ??
                     throw new InvalidOperationException("Missing MCP OAuth secret environment variable.")),
             Scopes = Scopes,
-            TokenCache = cache.ForServer(serverUrl),
+            TokenCache = cache,
             AuthorizationCallbackHandler = callback
         };
     }
@@ -59,14 +60,20 @@ public sealed class McpTokenCache(string agentDirectory)
 {
     private static readonly ConcurrentDictionary<string, SemaphoreSlim> s_gates =
         new(OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
+    private static readonly ConcurrentDictionary<string, SemaphoreSlim> s_refreshGates =
+        new(OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
     private static readonly JsonSerializerOptions s_json = new(JsonSerializerDefaults.Web) { WriteIndented = true };
     private readonly string _path = Path.Combine(agentDirectory, "mcp-auth.json");
+    private readonly ConcurrentDictionary<string, McpRefreshFileLease> _pendingRefreshes = new(StringComparer.Ordinal);
 
-    public ITokenCache ForServer(Uri url) => new ServerCache(this, Key(url));
+    public ITokenCache ForServer(Uri url) => ForServerWithRefresh(url);
+
+    internal ServerCache ForServerWithRefresh(Uri url) => new(this, Key(url));
 
     public async Task<bool> RemoveAsync(Uri url, CancellationToken cancellationToken = default)
     {
         var key = Key(url);
+        await using var refreshLease = await AcquireRefreshLockAsync(key, cancellationToken);
         return await EditAsync(values => values.Remove(key), cancellationToken);
     }
 
@@ -91,62 +98,135 @@ public sealed class McpTokenCache(string agentDirectory)
         await gate.WaitAsync(cancellationToken);
         try
         {
-            if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS())
-                Directory.CreateDirectory(Path.GetDirectoryName(_path)!, UnixFileMode.UserRead |
-                    UnixFileMode.UserWrite | UnixFileMode.UserExecute);
-            else Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
-            var options = new FileStreamOptions
-            {
-                Mode = FileMode.OpenOrCreate,
-                Access = FileAccess.ReadWrite,
-                Share = FileShare.ReadWrite
-            };
-            if (!OperatingSystem.IsWindows()) options.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
-            await using var lease = new FileStream(_path + ".lock", options);
-            if (OperatingSystem.IsMacOS())
-                throw new PlatformNotSupportedException("MCP credential locking is not supported on macOS.");
-            var elapsed = Stopwatch.StartNew();
-            while (true)
-                try { lease.Lock(0, 1); break; }
-                catch (IOException) when (elapsed.Elapsed < TimeSpan.FromSeconds(10))
-                { await Task.Delay(25, cancellationToken); }
+            await using var lease = await McpFileLock.AcquireAsync(_path + ".lock", TimeSpan.FromSeconds(10),
+                TimeSpan.FromMilliseconds(25), cancellationToken);
+            var values = await ReadAsync(cancellationToken);
+            if (!edit(values)) return false;
+            var temporary = _path + "." + Guid.NewGuid().ToString("N") + ".tmp";
             try
             {
-                var values = await ReadAsync(cancellationToken);
-                if (!edit(values)) return false;
-                var temporary = _path + "." + Guid.NewGuid().ToString("N") + ".tmp";
-                try
+                var create = new FileStreamOptions
                 {
-                    var create = new FileStreamOptions
-                    {
-                        Mode = FileMode.CreateNew,
-                        Access = FileAccess.Write,
-                        Options = FileOptions.Asynchronous
-                    };
-                    if (!OperatingSystem.IsWindows()) create.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
-                    await using (var stream = new FileStream(temporary, create))
-                    {
-                        await JsonSerializer.SerializeAsync(stream, values, s_json, cancellationToken);
-                        stream.Flush(flushToDisk: true);
-                    }
-                    File.Move(temporary, _path, overwrite: true);
+                    Mode = FileMode.CreateNew,
+                    Access = FileAccess.Write,
+                    Options = FileOptions.Asynchronous
+                };
+                if (!OperatingSystem.IsWindows()) create.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
+                await using (var stream = new FileStream(temporary, create))
+                {
+                    await JsonSerializer.SerializeAsync(stream, values, s_json, cancellationToken);
+                    stream.Flush(flushToDisk: true);
                 }
-                finally { if (File.Exists(temporary)) File.Delete(temporary); }
-                return true;
+                File.Move(temporary, _path, overwrite: true);
             }
-            finally { lease.Unlock(0, 1); }
+            finally { if (File.Exists(temporary)) File.Delete(temporary); }
+            return true;
         }
         finally { gate.Release(); }
     }
 
-    private sealed class ServerCache(McpTokenCache owner, string key) : ITokenCache
+    internal async Task<McpRefreshFileLease> AcquireRefreshLockAsync(Uri url,
+        CancellationToken cancellationToken) => await AcquireRefreshLockAsync(Key(url), cancellationToken);
+
+    private async Task<McpRefreshFileLease> AcquireRefreshLockAsync(string key,
+        CancellationToken cancellationToken)
     {
-        public async ValueTask<TokenContainer?> GetTokensAsync(CancellationToken cancellationToken) =>
-            (await owner.ReadAsync(cancellationToken)).GetValueOrDefault(key);
+        var path = Path.GetFullPath(_path);
+        var gateKey = path + "\0" + key;
+        var gate = s_refreshGates.GetOrAdd(gateKey, _ => new SemaphoreSlim(1, 1));
+        await gate.WaitAsync(cancellationToken);
+        try
+        {
+            var suffix = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(key)))[..16];
+            var lockPath = Path.Combine(Path.GetDirectoryName(path)!, "mcp-auth-refresh-" + suffix + ".lock");
+            var fileLock = await McpFileLock.AcquireAsync(lockPath, TimeSpan.FromSeconds(25),
+                TimeSpan.FromMilliseconds(50), cancellationToken);
+            return new McpRefreshFileLease(fileLock, gate);
+        }
+        catch
+        {
+            gate.Release();
+            throw;
+        }
+    }
+
+    internal async Task<TokenContainer?> ReadTokensAsync(Uri url, CancellationToken cancellationToken) =>
+        (await ReadAsync(cancellationToken)).GetValueOrDefault(Key(url));
+
+    internal void TrackPendingRefresh(Uri url, McpRefreshFileLease lease)
+    {
+        if (!_pendingRefreshes.TryAdd(Key(url), lease))
+            throw new InvalidOperationException("An MCP OAuth token grant is already being persisted.");
+    }
+
+    internal bool HasPendingRefresh(Uri url) => _pendingRefreshes.ContainsKey(Key(url));
+
+    internal async Task WaitForPendingRefreshAsync(Uri url)
+    {
+        var key = Key(url);
+        while (_pendingRefreshes.TryGetValue(key, out var lease))
+            await lease.Settled;
+    }
+
+    private async ValueTask StoreAsync(string key, TokenContainer tokens, CancellationToken cancellationToken)
+    {
+        _pendingRefreshes.TryGetValue(key, out var pending);
+        try
+        {
+            await EditAsync(values => { values[key] = tokens; return true; },
+                pending is null ? cancellationToken : CancellationToken.None);
+        }
+        finally
+        {
+            if (pending is not null)
+            {
+                await pending.DisposeAsync();
+                _pendingRefreshes.TryRemove(key, out _);
+            }
+        }
+    }
+
+    internal sealed class ServerCache(McpTokenCache owner, string key) : ITokenCache
+    {
+        private TokenContainer? _lastObserved;
+        internal McpTokenCache Owner => owner;
+        internal string Key => key;
+        internal TokenContainer? LastObserved => Volatile.Read(ref _lastObserved);
+
+        public async ValueTask<TokenContainer?> GetTokensAsync(CancellationToken cancellationToken)
+        {
+            var tokens = (await owner.ReadAsync(cancellationToken)).GetValueOrDefault(key);
+            Volatile.Write(ref _lastObserved, tokens);
+            return tokens;
+        }
 
         public async ValueTask StoreTokensAsync(TokenContainer tokens, CancellationToken cancellationToken)
         {
-            await owner.EditAsync(values => { values[key] = tokens; return true; }, cancellationToken);
+            await owner.StoreAsync(key, tokens, cancellationToken);
+        }
+    }
+}
+
+internal sealed class McpRefreshFileLease(McpFileLock fileLock, SemaphoreSlim gate) : IAsyncDisposable
+{
+    private int _disposed;
+    private readonly TaskCompletionSource _settled = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    public Task Settled => _settled.Task;
+
+    public ValueTask DisposeAsync()
+    {
+        Dispose();
+        return ValueTask.CompletedTask;
+    }
+
+    public void Dispose()
+    {
+        if (Interlocked.Exchange(ref _disposed, 1) != 0) return;
+        try { fileLock.Dispose(); }
+        finally
+        {
+            gate.Release();
+            _settled.TrySetResult();
         }
     }
 }

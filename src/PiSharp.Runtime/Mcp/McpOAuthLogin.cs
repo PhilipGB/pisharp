@@ -33,7 +33,8 @@ public static class McpOAuthLogin
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         deadline.CancelAfter(timeout);
         var authorizationStarted = false;
-        var options = settings.CreateOptions(server.Url, new McpTokenCache(agentDirectory), callback,
+        var tokenCache = new McpTokenCache(agentDirectory).ForServerWithRefresh(server.Url);
+        var options = settings.CreateOptions(server.Url, tokenCache, callback,
             async (context, token) =>
             {
                 authorizationStarted = true;
@@ -74,16 +75,29 @@ public static class McpOAuthLogin
                     };
                 }
             });
-        await using var transport = new HttpClientTransport(new HttpClientTransportOptions
+        var transportOptions = new HttpClientTransportOptions
         {
             Name = server.Name,
             Endpoint = server.Url,
             TransportMode = HttpTransportMode.StreamableHttp,
             OAuth = options,
             ConnectionTimeout = server.Timeout
-        });
-        await using var client = await McpClient.CreateAsync(transport, cancellationToken: deadline.Token);
-        await output.WriteLineAsync((authorizationStarted ? "Signed in to" : "Already connected to") +
-            " MCP server \"" + server.Name + "\".");
+        };
+        var refreshHandler = new McpOAuthRefreshHandler(tokenCache);
+        var transport = new HttpClientTransport(transportOptions,
+            new HttpClient(refreshHandler), ownsHttpClient: true);
+        McpClient? client = null;
+        try
+        {
+            client = await McpClient.CreateAsync(transport, cancellationToken: deadline.Token);
+            await output.WriteLineAsync((authorizationStarted ? "Signed in to" : "Already connected to") +
+                " MCP server \"" + server.Name + "\".");
+        }
+        finally
+        {
+            await refreshHandler.WaitForSettledAsync();
+            if (client is not null) await client.DisposeAsync();
+            await transport.DisposeAsync();
+        }
     }
 }
