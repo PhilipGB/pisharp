@@ -1,10 +1,75 @@
 using PiSharp.Runtime.Extensions;
 using PiSharp.Runtime.Mcp;
+using PiSharp.Runtime.Tools;
+using System.Net.Http;
 
 namespace PiSharp.Tests;
 
 public sealed class McpRuntimeLifecycleTests
 {
+    [Fact]
+    public async Task ExpiredHttpSessionRetriesTheToolCallOnANewSessionOnce()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-mcp-expired-session-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        await using var server = new McpLifecycleHttpServer(expireFirstToolCall: true);
+        try
+        {
+            await WriteHttpConfigurationAsync(root, server.Endpoint);
+            var configuration = await McpConfiguration.LoadAsync(root, root, false);
+            using var catalog = ExtensionCatalog.Load(root, root, false, discover: false);
+            Assert.Empty(await McpRuntime.RegisterAsync(configuration, catalog, root));
+            var echo = catalog.Registration.ToolDefinitions.Single(tool =>
+                tool.Function.Name == "mcp__fixture__echo");
+            var result = Assert.IsType<PiSharpToolResult>(await echo.Function.InvokeAsync(
+                new Microsoft.Extensions.AI.AIFunctionArguments(new Dictionary<string, object?>
+                {
+                    ["value"] = "first"
+                })));
+
+            Assert.Equal("reconnected:first", result.Text);
+            Assert.Equal(2, server.InitializeCount);
+            Assert.Equal(2, server.ToolCallCount);
+            Assert.Equal(["session-1", "session-2"], server.ToolCallSessions);
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
+    public async Task TransientResourceReadRetriesButTransientToolCallIsNotReplayed()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-mcp-safe-retry-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        await using var server = new McpLifecycleHttpServer(transientFirstResourceRead: true,
+            transientFirstToolCall: true);
+        try
+        {
+            await WriteHttpConfigurationAsync(root, server.Endpoint);
+            var configuration = await McpConfiguration.LoadAsync(root, root, false);
+            using var catalog = ExtensionCatalog.Load(root, root, false, discover: false);
+            Assert.Empty(await McpRuntime.RegisterAsync(configuration, catalog, root));
+            var read = catalog.Registration.ToolDefinitions.Single(tool =>
+                tool.Function.Name == "read_mcp_resource");
+            Assert.True(ToolResultOutput.TryReadContract(await read.Function.InvokeAsync(
+                new Microsoft.Extensions.AI.AIFunctionArguments(new Dictionary<string, object?>
+                {
+                    ["server"] = "fixture",
+                    ["uri"] = "fixture://note"
+                })), out var readResult));
+            Assert.Equal("fixture resource", readResult.Text);
+            Assert.Equal(2, server.ResourceReadCount);
+            Assert.Equal(1, server.InitializeCount);
+
+            var echo = catalog.Registration.ToolDefinitions.Single(tool =>
+                tool.Function.Name == "mcp__fixture__echo");
+            await Assert.ThrowsAnyAsync<HttpRequestException>(async () =>
+                await echo.Function.InvokeAsync(new Microsoft.Extensions.AI.AIFunctionArguments(
+                    new Dictionary<string, object?> { ["value"] = "uncertain" })));
+            Assert.Equal(1, server.ToolCallCount);
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
     [Fact]
     public async Task DroppedStdioConnectionReconnectsForTheNextToolCall()
     {
@@ -53,4 +118,19 @@ public sealed class McpRuntimeLifecycleTests
         }
         finally { Directory.Delete(root, recursive: true); }
     }
+
+    private static Task WriteHttpConfigurationAsync(string root, string endpoint) =>
+        File.WriteAllTextAsync(Path.Combine(root, "mcp.json"), System.Text.Json.JsonSerializer.Serialize(new
+        {
+            mcpServers = new Dictionary<string, object>
+            {
+                ["fixture"] = new
+                {
+                    url = endpoint,
+                    headers = new Dictionary<string, string> { ["Authorization"] = "Bearer fixture" },
+                    exposure = "direct",
+                    timeout = 10
+                }
+            }
+        }));
 }
