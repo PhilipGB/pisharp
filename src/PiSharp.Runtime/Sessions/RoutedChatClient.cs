@@ -19,6 +19,7 @@ internal sealed class RoutedChatClient(MutableChatClient inner, Action<AgentLife
         Task<IReadOnlyList<ChatMessage>>>? prepare) => Volatile.Write(ref _prepareContext, prepare);
 
     public VirtualModelRequestRoute? CurrentRoute => Volatile.Read(ref _currentRoute);
+    public string SelectedThinkingLevel => Volatile.Read(ref _thinkingLevel);
     public bool HasRouter => Volatile.Read(ref _router) is not null;
 
     public void SetRouter(VirtualModelRequestRouter? router)

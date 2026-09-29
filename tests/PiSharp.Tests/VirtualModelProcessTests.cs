@@ -176,14 +176,23 @@ public sealed class VirtualModelFixtureExtension : IPiSharpExtension
         if (Environment.GetEnvironmentVariable("PISHARP_VIRTUAL_FIXTURE_LOG") is not { } log) return;
         registration.RegisterVirtualModel(new("test-router", "auto", "Auto", async (request, cancellationToken) =>
         {
-            var state = request.State is { ValueKind: JsonValueKind.Number } value ? value.GetInt32() : 0;
-            await File.AppendAllTextAsync(log, JsonSerializer.Serialize(new
-            { reason = request.Reason, state, previous = request.PreviousModel?.Id }) + "\n", cancellationToken);
+            var identityScenario = Environment.GetEnvironmentVariable("PISHARP_VIRTUAL_FIXTURE_STATE") == "1";
+            var state = identityScenario
+                ? request.State is { } objectState ? objectState.GetProperty("phase").GetInt32() : 0
+                : request.State is { ValueKind: JsonValueKind.Number } value ? value.GetInt32() : 0;
+            var trace = new Dictionary<string, object?>
+            { ["reason"] = request.Reason, ["state"] = state, ["previous"] = request.PreviousModel?.Id };
+            if (Environment.GetEnvironmentVariable("PISHARP_VIRTUAL_FIXTURE_THINKING") is not null)
+                trace["thinking"] = request.ThinkingLevel;
+            await File.AppendAllTextAsync(log, JsonSerializer.Serialize(trace) + "\n", cancellationToken);
             var contextScenario = Environment.GetEnvironmentVariable("PISHARP_VIRTUAL_FIXTURE_CONTEXT") == "1";
             var model = contextScenario
                 ? request.Reason == "direct" || state == 0 ? "large" : "small"
                 : request.Reason == "continuation" ? "large" : "small";
-            return new("physical", model, "off", JsonSerializer.SerializeToElement(state + 1));
-        }));
+            var nextState = identityScenario
+                ? request.PreviousModel?.Id == "large" ? request.State : JsonSerializer.SerializeToElement(new { phase = 1 })
+                : JsonSerializer.SerializeToElement(state + 1);
+            return new("physical", model, "off", nextState);
+        }, ThinkingLevels: ["off", "minimal", "max"]));
     }
 }

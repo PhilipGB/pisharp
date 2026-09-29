@@ -26,7 +26,7 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
         VirtualModelFailedRequest? failedRequest = null;
         for (var retries = 0; ; retries++)
         {
-            var requestOptions = AddRouteHint(options, routeReason, getReasoning?.Invoke(), failedRequest);
+            var requestOptions = AddRouteHint(options, routeReason, failedRequest);
             try
             {
                 var response = await base.GetResponseAsync(requestMessages, requestOptions, cancellationToken);
@@ -72,7 +72,7 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
         VirtualModelFailedRequest? failedRequest = null;
         for (var retries = 0; ; retries++)
         {
-            var requestOptions = AddRouteHint(options, routeReason, getReasoning?.Invoke(), failedRequest);
+            var requestOptions = AddRouteHint(options, routeReason, failedRequest);
             var ended = false;
             var producedOutput = false;
             Exception? failure = null;
@@ -441,15 +441,6 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
             ? "user" : "continuation";
     }
 
-    private static string ThinkingLevel(ReasoningOptions? reasoning) => reasoning?.Effort switch
-    {
-        ReasoningEffort.Low => "low",
-        ReasoningEffort.Medium => "medium",
-        ReasoningEffort.High => "high",
-        ReasoningEffort.ExtraHigh => "xhigh",
-        _ => "off"
-    };
-
     private static VirtualModelFailedRequest? FailedRequest(ChatOptions? options, Exception error)
     {
         if (VirtualModelRequestHints.ReadHint(options)?.Execution?.Route is not { } route) return null;
@@ -457,9 +448,9 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
             new ChatMessage(ChatRole.Assistant, error.Message), error.Message);
     }
 
-    private ChatOptions? AddRouteHint(ChatOptions? options, string reason, ReasoningOptions? reasoning,
+    private ChatOptions? AddRouteHint(ChatOptions? options, string reason,
         VirtualModelFailedRequest? failed) => routedChatClient is { HasRouter: true }
-        ? VirtualModelRequestHints.WithHint(options, new(reason, ThinkingLevel(reasoning), failed, new VirtualModelRequestExecution()))
+        ? VirtualModelRequestHints.WithHint(options, new(reason, routedChatClient.SelectedThinkingLevel, failed, new VirtualModelRequestExecution()))
         : options;
 
     // Filter at the final provider boundary, including persisted history and subsequent tool-loop requests.

@@ -260,8 +260,6 @@ public sealed class ConversationSession
     {
         if (string.IsNullOrWhiteSpace(provider) || string.IsNullOrWhiteSpace(modelId))
             throw new ArgumentException("Virtual model provider and id cannot be empty.");
-        var current = ActiveVirtualModelState(provider, modelId);
-        if (current is { } existing && JsonElement.DeepEquals(existing, state)) return;
         Tree.Append("virtual_model_state", JsonSerializer.SerializeToElement(new
         {
             provider,

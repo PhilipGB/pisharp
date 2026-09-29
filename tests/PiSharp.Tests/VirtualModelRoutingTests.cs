@@ -128,6 +128,26 @@ public sealed class VirtualModelRoutingTests
         Assert.Null(Session().ActiveVirtualModelState("router", "auto"));
     }
 
+    [Theory]
+    [InlineData("minimal", "low")]
+    [InlineData("max", "xhigh")]
+    public async Task ProviderLoopPreservesExactSelectedVirtualThinkingLevel(string selected, string mapped)
+    {
+        var session = Session();
+        var physical = new RecordingClient();
+        var requests = new List<VirtualModelRequestContext>();
+        var agent = new PiAgent(physical, new CodingTools(Path.GetTempPath()), noTools: true,
+            reasoning: PiSharp.Cli.ThinkingLevels.ToOptions(mapped), virtualModelRequestRouter: request =>
+            {
+                requests.Add(request);
+                return Task.FromResult(Route(physical));
+            });
+        var run = await ConversationRun.OpenAsync(agent, session, reasoningLevel: selected);
+        await foreach (var _ in run.RunEventsAsync("hello")) { }
+        Assert.Equal(selected, Assert.Single(requests).ThinkingLevel);
+        Assert.Equal("high", session.ActiveMessages().Last().AdditionalProperties!["pisharp.thinkingLevel"]!.ToString());
+    }
+
     [Fact]
     public async Task ProviderLoopRetriesUsingFailedPhysicalRequestThenChangesRouteOnNextTurn()
     {

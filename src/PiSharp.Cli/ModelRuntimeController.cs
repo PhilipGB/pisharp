@@ -73,7 +73,7 @@ internal sealed class ModelRuntimeController(
             return new VirtualModelRequestRoute(
                 ProviderChatClientFactory.Create(physical, settings.Retry?.Provider, settings.HttpIdleTimeoutMs),
                 targetModel, physical.Provider.Id, thinking,
-                ThinkingLevels.ToOptions(thinking, targetModel.ThinkingLevelMap), pricing, policy, route.State,
+                ThinkingLevels.ToOptions(thinking, targetModel.ThinkingLevelMap), pricing, policy, route.State is { } replacement && state is { } input && replacement.Equals(input) ? null : route.State,
                 logicalSelection.Provider.Id, logicalSelection.Model.Id);
         };
     }

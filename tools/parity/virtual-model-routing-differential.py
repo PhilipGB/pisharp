@@ -3,6 +3,8 @@ parser=argparse.ArgumentParser(description='Replay virtual routing against built
 parser.add_argument('--pi',type=pathlib.Path,required=True,help='Pi checkout after npm ci and npm run build')
 parser.add_argument('--pisharp',type=pathlib.Path,default=pathlib.Path(__file__).resolve().parents[2],help='PiSharp checkout after dotnet build (including test fixture assembly)')
 parser.add_argument('--context-compaction',action='store_true',help='Route a later turn to a smaller physical window and compare canonical compaction')
+parser.add_argument('--state-identity',action='store_true',help='Compare fresh equal state replacement with returning the same input state')
+parser.add_argument('--thinking',choices=['minimal','max'],help='Compare exact logical thinking selection across provider requests')
 parser.add_argument('--output',type=pathlib.Path,required=True)
 args=parser.parse_args()
 pi=args.pi.resolve()
@@ -38,14 +40,17 @@ for name in ['pi','pisharp']:
 import { Type } from '@earendil-works/pi-ai';
 export default function(pi) {
 pi.registerTool({name:'echo_ext',label:'Echo',description:'Echo fixture',parameters:Type.Object({value:Type.String()}),async execute(id,params) {return {content:[{type:'text',text:'extension: '+params.value}],details:{}};}});
-pi.registerVirtualModel({provider:'test-router',id:'auto',name:'Auto',route(request,ctx) {const state=request.state??0;appendFileSync(process.env.PISHARP_VIRTUAL_FIXTURE_LOG,JSON.stringify({reason:request.reason,state,previous:request.previous?.model.id??null})+'\\n');return {model:ctx.modelRegistry.find('physical',process.env.PISHARP_VIRTUAL_FIXTURE_CONTEXT==='1'?(request.reason==='direct'||state===0?'large':'small'):(request.reason==='continuation'?'large':'small')),thinkingLevel:'off',state:state+1};}});
+pi.registerVirtualModel({provider:'test-router',id:'auto',name:'Auto',thinkingLevels:['off','minimal','max'],route(request,ctx) {const identity=process.env.PISHARP_VIRTUAL_FIXTURE_STATE==='1';const state=identity?(request.state?.phase??0):(request.state??0);appendFileSync(process.env.PISHARP_VIRTUAL_FIXTURE_LOG,JSON.stringify({reason:request.reason,state,previous:request.previous?.model.id??null,...(process.env.PISHARP_VIRTUAL_FIXTURE_THINKING?{thinking:request.thinkingLevel}:{})})+'\\n');return {model:ctx.modelRegistry.find('physical',process.env.PISHARP_VIRTUAL_FIXTURE_CONTEXT==='1'?(request.reason==='direct'||state===0?'large':'small'):(request.reason==='continuation'?'large':'small')),thinkingLevel:'off',state:identity?(request.previous?.model.id==='large'?request.state:{phase:1}):state+1};}});
 }''')
   env['PI_CODING_AGENT_DIR']=str(agent);cmd=['node',str(pi/'packages/coding-agent/dist/cli.js')]
  else:
   ext=sharp/'tests/PiSharp.Tests/bin/Debug/net10.0/PiSharp.Tests.dll';env['PISHARP_AGENT_DIR']=str(agent);cmd=['dotnet',str(sharp/'src/PiSharp.Cli/bin/Debug/net10.0/PiSharp.Cli.dll')]
  env['PISHARP_VIRTUAL_FIXTURE_LOG']=str(log)
  if context_scenario:env['PISHARP_VIRTUAL_FIXTURE_CONTEXT']='1'
+ if args.thinking:env['PISHARP_VIRTUAL_FIXTURE_THINKING']=args.thinking
+ if args.state_identity:env['PISHARP_VIRTUAL_FIXTURE_STATE']='1'
  cmd+=['--mode','rpc','--provider','test-router','--model','auto','--offline','--no-session','--no-extensions','--extension',str(ext),'--tools','echo_ext']
+ if args.thinking:cmd+=['--thinking',args.thinking]
  p=subprocess.Popen(cmd,cwd=root,env=env,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True); q=queue.Queue(); errors=[]; records=[]
  def readout():
   for line in p.stdout:q.put(json.loads(line))
@@ -72,9 +77,10 @@ pi.registerVirtualModel({provider:'test-router',id:'auto',name:'Auto',route(requ
   send({'type':'prompt','message':'next turn','streamingBehavior':'followUp'});until(lambda x:x['type']=='agent_end')
   send({'type':'get_state','id':'state'});state=until(lambda x:x.get('id')=='state')['data']['model']
   send({'type':'get_messages','id':'messages'});messages=until(lambda x:x.get('id')=='messages')['data']['messages']
-  if context_scenario:
+  if context_scenario or args.state_identity:
    send({'type':'get_entries','id':'entries'});entries=until(lambda x:x.get('id')=='entries')['data']['entries']
   outputs[name]={'selected':{'provider':state['provider'],'model':state['id']},'wireModels':wires,'assistants':[{'provider':m['provider'],'model':m['model'],'api':m['api']} for m in messages if m['role']=='assistant'],'routes':[json.loads(line) for line in log.read_text().splitlines()]}
+  if args.state_identity:outputs[name]['stateEntries']=sum(entry['type']=='custom' and entry.get('customType')=='pi.virtual-model-state' for entry in entries)
   if context_scenario:outputs[name]['compactions']=sum(entry['type']=='compaction' for entry in entries)
  finally:
   p.stdin.close()

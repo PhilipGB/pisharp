@@ -84,6 +84,28 @@ public sealed class VirtualModelControllerTests
         Assert.Equal(new[] { "low", "high" }, ThinkingLevels.AvailableForModel(model.Reasoning, model.ThinkingLevelMap));
     }
 
+    [Fact]
+    public async Task FreshEqualStateIsRecordedButReturningInputStateRetainsExistingEntry()
+    {
+        using var fixture = await Fixture.CreateAsync();
+        var retainInput = false;
+        fixture.Registry.Register(new("router", "auto", "Auto", (request, _) =>
+            Task.FromResult(new VirtualModelRoute("physical", "small", "off",
+                retainInput ? request.State : JsonSerializer.SerializeToElement(new { phase = request.State!.Value.GetProperty("phase").GetInt32() })))), "test");
+        var router = await fixture.RouterAsync();
+        var session = new ConversationSession(fixture.Root, "auto", null, "router");
+        session.AppendVirtualModelState("router", "auto", JsonSerializer.SerializeToElement(new { phase = 1 }));
+        var route = await router(new(session, [], "user", "off", null, default));
+        Assert.NotNull(route.State);
+        session.AppendVirtualModelState("router", "auto", route.State.Value);
+        Assert.Equal(2, session.Tree.ActivePath().Count(node => node.Type == "virtual_model_state"));
+        retainInput = true;
+        route = await router(new(session, [], "user", "off", null, default));
+        Assert.Null(route.State);
+        Assert.Equal(2, session.Tree.ActivePath().Count(node => node.Type == "virtual_model_state"));
+        Assert.Equal(1, session.ActiveVirtualModelState("router", "auto")!.Value.GetProperty("phase").GetInt32());
+    }
+
     private sealed class Fixture(string root, HttpClient http, ProviderModelRuntime providers, VirtualModelRegistry registry) : IDisposable
     {
         public string Root => root;
