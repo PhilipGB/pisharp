@@ -23,5 +23,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Fixtures/mcp_fixture.py" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="Fixtures/mcp_reconnect_fixture.py" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

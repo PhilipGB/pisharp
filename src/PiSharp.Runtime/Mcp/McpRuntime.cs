@@ -16,70 +16,22 @@ public static class McpRuntime
         ExtensionCatalog catalog, string workingDirectory, CancellationToken cancellationToken = default)
     {
         var errors = new List<string>(configuration.Errors);
-        var resourceServers = new List<(string Name, McpClient Client, TimeSpan Timeout, ToolExposure Exposure)>();
+        var resourceServers = new List<(string Name, McpServerConnection Connection, TimeSpan Timeout, ToolExposure Exposure)>();
         foreach (var server in configuration.Servers.Where(server => server.Enabled))
         {
             cancellationToken.ThrowIfCancellationRequested();
-            McpClient? client = null;
-            IClientTransport? transport = null;
-            McpOAuthRefreshHandler? refreshHandler = null;
+            var connection = new McpServerConnection(server.Name, server.Url is not null,
+                token => OpenServerAsync(server, configuration.AgentDirectory, workingDirectory, token));
+            catalog.OwnConnection(connection);
             try
             {
                 using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
                 deadline.CancelAfter(server.Timeout);
-                if (server.Command is { } command)
-                {
-                    var environment = StdioClientTransportOptions.GetDefaultEnvironmentVariables();
-                    foreach (var (key, value) in server.Environment) environment[key] = Expand(value);
-                    transport = new StdioClientTransport(new StdioClientTransportOptions
-                    {
-                        Name = server.Name,
-                        Command = Expand(command),
-                        Arguments = server.Arguments.Select(Expand).ToArray(),
-                        WorkingDirectory = server.WorkingDirectory is null ? workingDirectory :
-                            Path.GetFullPath(Expand(server.WorkingDirectory), workingDirectory),
-                        InheritEnvironmentVariables = false,
-                        EnvironmentVariables = environment
-                    });
-                }
-                else
-                {
-                    var oauth = server.Headers.Keys.Any(key =>
-                        key.Equals("Authorization", StringComparison.OrdinalIgnoreCase)) ? null :
-                        (server.OAuth is { } configured ? McpOAuthSettings.Parse(configured) :
-                            new McpOAuthSettings(null, null, null, []));
-                    var options = new HttpClientTransportOptions
-                    {
-                        Name = server.Name,
-                        Endpoint = server.Url!,
-                        TransportMode = HttpTransportMode.StreamableHttp,
-                        AdditionalHeaders = server.Headers.ToDictionary(item => item.Key,
-                            item => Expand(item.Value), StringComparer.Ordinal),
-                        ConnectionTimeout = server.Timeout
-                    };
-                    if (oauth is null) transport = new HttpClientTransport(options);
-                    else
-                    {
-                        var tokenCache = new McpTokenCache(configuration.AgentDirectory)
-                            .ForServerWithRefresh(server.Url!);
-                        options.OAuth = oauth.CreateOptions(server.Url!, tokenCache,
-                            oauth.CallbackUrl ?? new Uri("http://127.0.0.1:38119/callback"),
-                            (_, _) => throw new McpSignInRequiredException());
-                        refreshHandler = new McpOAuthRefreshHandler(tokenCache);
-                        transport = new HttpClientTransport(options, new HttpClient(refreshHandler), ownsHttpClient: true);
-                    }
-                }
-                client = await McpClient.CreateAsync(transport, new McpClientOptions
-                {
-                    DiscoverProbeTimeout = TimeSpan.FromMilliseconds(750)
-                }, cancellationToken: deadline.Token);
-                var tools = client.ServerCapabilities.Tools is null
-                    ? []
-                    : await client.ListToolsAsync(cancellationToken: deadline.Token);
+                await connection.ConnectAsync(deadline.Token);
                 var namedTools = new List<(McpClientTool Tool, string Name)>();
                 var taken = catalog.Registration.ToolDefinitions.Select(item => item.Function.Name)
                     .ToHashSet(StringComparer.Ordinal);
-                foreach (var tool in tools)
+                foreach (var tool in connection.Tools)
                 {
                     var name = NameFor(server.Name, tool.Name, taken);
                     taken.Add(name);
@@ -88,7 +40,7 @@ public static class McpRuntime
                 foreach (var (tool, name) in namedTools)
                 {
                     var exposure = server.ExposureFor(tool.Name);
-                    var function = new McpToolFunction(tool, name, server.Timeout);
+                    var function = new McpToolFunction(tool, connection, name, server.Timeout);
                     var registration = new PiSharpToolRegistration(function, MapExposure(exposure),
                         DefaultActive: exposure == McpToolExposure.Direct,
                         Namespace: new PiSharpToolNamespace("mcp__" + server.Name,
@@ -101,12 +53,8 @@ public static class McpRuntime
                             PiSharpToolCallDisplay.Format(label, arguments, context.IsExpanded),
                         renderResult: RenderResult));
                 }
-                if (client.ServerCapabilities.Resources is not null && server.Exposure != McpToolExposure.Hidden)
-                    resourceServers.Add((server.Name, client, server.Timeout, MapExposure(server.Exposure)));
-                catalog.OwnConnection(new RuntimeConnection(client, refreshHandler));
-                client = null;
-                transport = null;
-                refreshHandler = null;
+                if (connection.HasResources && server.Exposure != McpToolExposure.Hidden)
+                    resourceServers.Add((server.Name, connection, server.Timeout, MapExposure(server.Exposure)));
             }
             catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
             {
@@ -122,12 +70,6 @@ public static class McpRuntime
                 // Connection errors may contain server credentials or authorization headers.
                 errors.Add("MCP server " + server.Name + " could not connect (" + error.GetType().Name + ").");
             }
-            finally
-            {
-                if (refreshHandler is not null) await refreshHandler.WaitForSettledAsync();
-                if (client is not null) await client.DisposeAsync();
-                else if (transport is IAsyncDisposable disposable) await disposable.DisposeAsync();
-            }
         }
         if (resourceServers.Count > 0)
         {
@@ -137,6 +79,74 @@ public static class McpRuntime
             else new McpResourceTools(resourceServers).Configure(catalog.Registration);
         }
         return errors;
+    }
+
+    private static async Task<McpConnectedServer> OpenServerAsync(McpServerConfiguration server,
+        string agentDirectory, string workingDirectory, CancellationToken cancellationToken)
+    {
+        McpClient? client = null;
+        IClientTransport? transport = null;
+        McpOAuthRefreshHandler? refreshHandler = null;
+        try
+        {
+            if (server.Command is { } command)
+            {
+                var environment = StdioClientTransportOptions.GetDefaultEnvironmentVariables();
+                foreach (var (key, value) in server.Environment) environment[key] = Expand(value);
+                transport = new StdioClientTransport(new StdioClientTransportOptions
+                {
+                    Name = server.Name,
+                    Command = Expand(command),
+                    Arguments = server.Arguments.Select(Expand).ToArray(),
+                    WorkingDirectory = server.WorkingDirectory is null ? workingDirectory :
+                        Path.GetFullPath(Expand(server.WorkingDirectory), workingDirectory),
+                    InheritEnvironmentVariables = false,
+                    EnvironmentVariables = environment
+                });
+            }
+            else
+            {
+                var oauth = server.Headers.Keys.Any(key =>
+                    key.Equals("Authorization", StringComparison.OrdinalIgnoreCase)) ? null :
+                    (server.OAuth is { } configured ? McpOAuthSettings.Parse(configured) :
+                        new McpOAuthSettings(null, null, null, []));
+                var options = new HttpClientTransportOptions
+                {
+                    Name = server.Name,
+                    Endpoint = server.Url!,
+                    TransportMode = HttpTransportMode.StreamableHttp,
+                    AdditionalHeaders = server.Headers.ToDictionary(item => item.Key,
+                        item => Expand(item.Value), StringComparer.Ordinal),
+                    ConnectionTimeout = server.Timeout
+                };
+                if (oauth is null) transport = new HttpClientTransport(options);
+                else
+                {
+                    var tokenCache = new McpTokenCache(agentDirectory).ForServerWithRefresh(server.Url!);
+                    options.OAuth = oauth.CreateOptions(server.Url!, tokenCache,
+                        oauth.CallbackUrl ?? new Uri("http://127.0.0.1:38119/callback"),
+                        (_, _) => throw new McpSignInRequiredException());
+                    refreshHandler = new McpOAuthRefreshHandler(tokenCache);
+                    transport = new HttpClientTransport(options, new HttpClient(refreshHandler), ownsHttpClient: true);
+                }
+            }
+            client = await McpClient.CreateAsync(transport, new McpClientOptions
+            {
+                DiscoverProbeTimeout = TimeSpan.FromMilliseconds(750)
+            }, cancellationToken: cancellationToken);
+            var tools = client.ServerCapabilities.Tools is null
+                ? []
+                : await client.ListToolsAsync(cancellationToken: cancellationToken);
+            return new McpConnectedServer(client, refreshHandler, tools,
+                client.ServerCapabilities.Resources is not null);
+        }
+        catch
+        {
+            if (refreshHandler is not null) await refreshHandler.WaitForSettledAsync();
+            if (client is not null) await client.DisposeAsync();
+            else if (transport is IAsyncDisposable disposable) await disposable.DisposeAsync();
+            throw;
+        }
     }
 
     private static string Sanitize(string name) => new(name.Select(character =>
@@ -164,16 +174,6 @@ public static class McpRuntime
         _ => ToolExposure.Hidden
     };
 
-    private sealed class RuntimeConnection(McpClient client, McpOAuthRefreshHandler? refreshHandler)
-        : IAsyncDisposable
-    {
-        public async ValueTask DisposeAsync()
-        {
-            if (refreshHandler is not null) await refreshHandler.WaitForSettledAsync();
-            await client.DisposeAsync();
-        }
-    }
-
     private static PiSharpToolRenderView RenderResult(PiSharpToolRenderResult result,
         PiSharpToolRenderContext context)
     {
@@ -194,7 +194,8 @@ public static class McpRuntime
     }
 }
 
-internal sealed class McpToolFunction(McpClientTool tool, string name, TimeSpan timeout) : DelegatingAIFunction(tool)
+internal sealed class McpToolFunction(McpClientTool tool, McpServerConnection connection, string name,
+    TimeSpan timeout) : DelegatingAIFunction(tool)
 {
     public override string Name => name;
 
@@ -204,7 +205,7 @@ internal sealed class McpToolFunction(McpClientTool tool, string name, TimeSpan 
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         deadline.CancelAfter(timeout);
         var values = arguments.ToDictionary(item => item.Key, item => item.Value, StringComparer.Ordinal);
-        var result = await tool.CallAsync(values, cancellationToken: deadline.Token);
+        var result = await connection.CallToolAsync(tool.Name, values, deadline.Token);
         var lines = new List<string>();
         var images = new List<PiSharpToolImage>();
         foreach (var content in result.Content)

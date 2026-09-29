@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "plan_received": true,
-  "source_note": "The latest CI-verified PiSharp checkpoint is 49d706f0651c5260e254e7ba81e7aa2e640f6770. Exact-head Linux CI run 36577388693 passed restore, format, warnings-as-errors build and 849/849 tests (0 skipped). The MCP CLI follow-up passed 843/843 locally; exact-head CI run 36572820941 failed twice at 842/843 in different existing timing tests. The OAuth follow-up passed 848/848 locally and in exact-head CI. The current-Pi defaultTools modifier follow-up passed 849/849 locally and in exact-head CI. Current Pi main is 5257d0d5f3ab7d42550804f32c67a77b49f485d4. The defaultTools modifier slice passed exact-head CI; a source-matched tool-call rendering follow-up passed 36/36 focused and 852/852 full locally and awaits exact-head CI. MCP CLI/config source is unchanged in the latest Pi delta. MCP TUI management, cross-process OAuth refresh coordination, reconnect, virtual models, Codemode optional globals and broader differentials remain. Overall parity is incomplete.",
+  "source_note": "Latest exact-head PiSharp checkpoint is 0bafc7b4eadff3ee010c767cf49ad282f9acb0cd. Exact-head Linux CI run 36589486599 passed restore, format, warnings-as-errors build and 855/855 tests (0 skipped). Current Pi main is 02eed88fd8912e54a804ddebd409e2e4c08ac5ef. Targeted current-Pi source tests pass AI sign-in/Responses 10/10, MCP extension/command/OAuth 28/28, and resource-loader 50/50; the last suite used generated model data fetched from current live catalogs. MCP refresh coordination is implemented with two-process Linux evidence; reconnect/recovery, /mcp management and extension-registered MCP remain. Virtual models and Codemode classifier semantics remain open. Overall parity and the final audit are incomplete.",
   "baseline": "earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035",
   "required_ids": [
     "feature-agent-multi-turn-and-streaming",
@@ -170,7 +170,8 @@
     "virtual-model-routing-persistence",
     "extension-orchestration-api",
     "settings-fullscreenwheelscrolllines",
-    "provider-llama-context-cache-reload"
+    "provider-llama-context-cache-reload",
+    "provider-auth-openai-chatgpt-oauth"
   ],
   "final_audit": {
     "complete": false,
@@ -3496,6 +3497,23 @@
       ]
     },
     {
+      "id": "provider-auth-openai-chatgpt-oauth",
+      "title": "Provider auth: OpenAI Sign in with ChatGPT",
+      "status": "not_started",
+      "source": "earendil-works/pi@02eed88fd8912e54a804ddebd409e2e4c08ac5ef; packages/ai/src/auth/oauth/openai-chatgpt.ts and packages/ai/src/api/openai-responses.ts",
+      "acceptance": [
+        "Add the alternative OpenAI Responses subscription sign-in route with PKCE, loopback/manual callback, private credentials and serialized refresh.",
+        "Preserve request-field compatibility, token usage-limit guidance and API-key/Codex credential identity boundaries."
+      ],
+      "implementation": [],
+      "evidence": [
+        "Current Pi source at 02eed88fd8912e54a804ddebd409e2e4c08ac5ef adds Sign in with ChatGPT for OpenAI Responses. Focused Pi AI sign-in and Responses compatibility tests pass 10/10; PiSharp has no matching route."
+      ],
+      "dependencies": [
+        "provider-api-openai-codex-responses"
+      ]
+    },
+    {
       "id": "mcp-runtime",
       "title": "MCP: configuration, client, transports and integration",
       "status": "in_progress",
@@ -3509,8 +3527,8 @@
         "McpConfiguration loads global and trusted-project mcp.json with project precedence, enabled flags, exposure overrides, transport settings and bounded timeouts. McpRuntime uses the official C# SDK for stdio and Streamable HTTP, expands environment references without logging credential values, and registers tools and resource operations in the existing extension catalog. Clients are disposed with the extension lease. HTTP servers without an Authorization header use SDK OAuth with a noninteractive startup callback; explicit CLI login uses a loopback authorization-code callback, and logout deletes URL-bound tokens. A private atomic mcp-auth.json cache persists SDK token and client registration fields. Local CLI add/list/remove uses an atomic config editor with same-process and interprocess locking; CLI status probes servers without selecting a chat model."
       ],
       "evidence": [
-        "Current Pi MCP tools share exposure, nested execution, hooks and extension registration; builtin:mcp is resolved only after project trust at 4259686d9290c0d73ae7192b796aee3e530a9779. The live upstream was refreshed to 9a100c7cc4707f013438b13969c6671bc0a33c4c; the MCP source still includes these contracts.",
-        "Upstream commit 1d74741e1777f7cc147d65bdfbcd08bb752972cd serializes rotating OAuth refreshes across processes and waits for refresh completion during shutdown. PiSharp injects a per-server coordinating HTTP handler around the SDK token endpoint, rereads URL-bound credentials after taking the process lock, reuses a token rotated by another process, keeps the lock through SDK cache persistence, and waits for active grants/cache writes before MCP client shutdown. A real two-child-process regression confirms that two clients loading the same expired refresh token cause one authorization-server refresh; a second provider-level test covers stale-token reuse and shutdown settling. Focused OAuth tests pass 8/8. The full local suite passes 855/855 with 0 skipped after a prior parallel run failed one existing OpenAI Completions stream-idle timeout at 854/855; the isolated case passed 1/1 and the later full rerun passed. Format and warnings-as-errors build pass with zero diagnostics; exact-head CI is pending. The native macOS refresh and token-cache lock path is implemented but has only been verified on Linux; see fixtures/mcp-oauth-refresh-2026-09-29.md.",
+        "Current Pi MCP tools share exposure, nested execution, hooks and extension registration; builtin:mcp is resolved after trust at 4259686d9290c0d73ae7192b796aee3e530a9779. A refreshed source/test audit at 02eed88fd8912e54a804ddebd409e2e4c08ac5ef confirms Pi MCP lifecycle semantics and the /mcp manager; the upstream MCP extension/command/OAuth tests pass 28/28 at this source pin.",
+        "Upstream commit 1d74741e1777f7cc147d65bdfbcd08bb752972cd serializes rotating OAuth refreshes across processes and waits for refresh completion during shutdown. PiSharp injects a per-server coordinating HTTP handler around the SDK token endpoint, rereads URL-bound credentials after taking the process lock, reuses a token rotated by another process, keeps the lock through SDK cache persistence, and waits for active grants/cache writes before MCP client shutdown. A real two-child-process regression confirms that two clients loading the same expired refresh token cause one authorization-server refresh; a second provider-level test covers stale-token reuse and shutdown settling. Focused OAuth tests pass 8/8. The full local suite passes 855/855 with 0 skipped after a prior parallel run failed one existing OpenAI Completions stream-idle timeout at 854/855; the isolated case passed 1/1 and the later full rerun passed. Format and warnings-as-errors build pass with zero diagnostics; exact-head Linux CI run 36589486599 for PiSharp commit 0bafc7b4eadff3ee010c767cf49ad282f9acb0cd passed 855/855 tests. The native macOS refresh and token-cache lock path is implemented but has only been verified on Linux; see fixtures/mcp-oauth-refresh-2026-09-29.md.",
         "McpConfigurationTests and McpRuntimeTests pass against a deterministic stdio JSON-RPC fixture for configuration trust/precedence, tool schema/result/error forwarding, resource list/template/read and a resource-only server. An overlapping build coincided with one PTY exit timeout in an intermediate full run; that PTY case passed 1/1 in isolation. The original MCP slice passed exact-head Linux CI run 36570045364 with 838/838. A trust regression confirms that a project containing only .pi/mcp.json requires trust; focused trust/configuration tests pass 6/6 and the full local suite passes 839/839 with zero skipped. The trust follow-up passed exact-head Linux CI run 36570799597 with 839/839. McpCommandTests cover add/list/remove, invalid input, private config files and concurrent task/process edits; focused MCP command/config/runtime tests pass 9/9. An initial full local run passed 842/843; an existing RPC auto-compaction test hit its five-second timeout, then passed 1/1 in isolation. The sequential full rerun passed 843/843 with zero skipped. Exact-head CI run 36572820941 failed twice at 842/843 in different existing timing tests while MCP CLI tests passed. McpOAuthTests cover URL-isolated private tokens, concurrent edits, scoped logout, invalid config and an HTTP OAuth challenge/code/token/reconnect path; focused 5/5 and sequential full 848/848 passed locally with zero skipped. Exact-head Linux CI run 36576153201 passed 848/848 for the OAuth checkpoint."
       ],
       "dependencies": [
@@ -3564,17 +3582,19 @@
     {
       "id": "extensions-builtin-resource-loading",
       "title": "Extensions: built-in extension resource resolution",
-      "status": "not_started",
-      "source": "earendil-works/pi@4259686d9290c0d73ae7192b796aee3e530a9779; packages/coding-agent/src/core/resource-loader.ts, package-manager.ts and source-info.ts",
+      "status": "in_progress",
+      "source": "earendil-works/pi@02eed88fd8912e54a804ddebd409e2e4c08ac5ef; packages/coding-agent/src/core/resource-loader.ts, packages/coding-agent/src/core/settings-manager.ts, package-manager.ts and source-info.ts",
       "acceptance": [
         "Resolve core built-ins as builtin:<name> extension resources with stable source identity and diagnostics.",
         "Apply global and trusted-project enable/disable precedence, --no-extensions and explicit builtin loading after project trust resolution.",
         "Keep package-manager installation/distribution excluded while using shared extension loading for in-scope built-in Codemode, MCP, tool-search and llama.cpp capabilities."
       ],
-      "implementation": [],
+      "implementation": [
+        "PiSharp ExtensionCatalog resolves registered builtin:<name> definitions through normal source identity, explicit loading, --no-extensions and user/trusted-project enable/disable rules. Tool-search and Codemode use this path. MCP is still initialized by a separate runtime call, so builtin:mcp source ownership and lifecycle are not unified; duplicate built-in replacement also lacks Pi's warning behavior."
+      ],
       "evidence": [
-        "Current Pi package-manager, resource-loader and source-info behavior was inspected at 4259686d9290c0d73ae7192b796aee3e530a9779. Its new resource/package-manager tests pass 5/5 in a targeted run; all five resource tests and two OAuth tests across the changed files pass (7/7 total, 172 filtered).",
-        "PiSharp currently has native DLL discovery for user/trusted-project extensions but no builtin:<name> resource model or built-in extension composition through that loader."
+        "ExtensionCatalogTests.BuiltinsUseExtensionRegistrationAndRespectExplicitTrustAndDisableRules covers normal registration, stable builtin source identity, discovery disable, wildcard exclusion, explicit re-enable, trusted-project disable and explicit loading despite --no-extensions. ProjectRuntimeContextTests also verifies explicit builtin:tool-search loading with --no-extensions in an untrusted project.",
+        "Current Pi commit 9d1a650 adds a warning when a replaceable built-in is overridden. At Pi source 02eed88fd8912e54a804ddebd409e2e4c08ac5ef, resource-loader tests passed 50/50 after ignored generated model data was hydrated from live catalogs; this is targeted test evidence, not a reproducible catalog snapshot."
       ],
       "dependencies": [
         "extension-orchestration-api"

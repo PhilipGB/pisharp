@@ -1,14 +1,13 @@
 using System.ComponentModel;
 using System.Text.Json;
 using Microsoft.Extensions.AI;
-using ModelContextProtocol.Client;
 using ModelContextProtocol.Protocol;
 using PiSharp.Runtime.Extensions;
 
 namespace PiSharp.Runtime.Mcp;
 
 internal sealed class McpResourceTools(
-    IReadOnlyList<(string Name, McpClient Client, TimeSpan Timeout, ToolExposure Exposure)> servers)
+    IReadOnlyList<(string Name, McpServerConnection Connection, TimeSpan Timeout, ToolExposure Exposure)> servers)
 {
     private static readonly JsonSerializerOptions s_json = new(JsonSerializerDefaults.Web);
 
@@ -38,7 +37,7 @@ internal sealed class McpResourceTools(
             try
             {
                 using var deadline = Deadline(selected.Timeout, cancellationToken);
-                foreach (var item in await selected.Client.ListResourcesAsync(cancellationToken: deadline.Token))
+                foreach (var item in await selected.Connection.ListResourcesAsync(deadline.Token))
                     if (!IsApp(item.Uri, item.MimeType))
                         resources.Add(new
                         {
@@ -68,7 +67,7 @@ internal sealed class McpResourceTools(
             try
             {
                 using var deadline = Deadline(selected.Timeout, cancellationToken);
-                foreach (var item in await selected.Client.ListResourceTemplatesAsync(cancellationToken: deadline.Token))
+                foreach (var item in await selected.Connection.ListResourceTemplatesAsync(deadline.Token))
                     if (!IsApp(item.UriTemplate, item.MimeType))
                         templates.Add(new
                         {
@@ -97,7 +96,7 @@ internal sealed class McpResourceTools(
         var selected = Select(server).Single();
         if (IsApp(uri, null)) throw new ArgumentException("MCP App resources are not supported.", nameof(uri));
         using var deadline = Deadline(selected.Timeout, cancellationToken);
-        var result = await selected.Client.ReadResourceAsync(uri, cancellationToken: deadline.Token);
+        var result = await selected.Connection.ReadResourceAsync(uri, deadline.Token);
         var text = new List<string>();
         var images = new List<PiSharpToolImage>();
         foreach (var content in result.Contents)
@@ -117,7 +116,7 @@ internal sealed class McpResourceTools(
         return new PiSharpToolResult(string.Join("\n", text), StructuredContent: json, Images: images);
     }
 
-    private IEnumerable<(string Name, McpClient Client, TimeSpan Timeout, ToolExposure Exposure)> Select(string? name)
+    private IEnumerable<(string Name, McpServerConnection Connection, TimeSpan Timeout, ToolExposure Exposure)> Select(string? name)
     {
         if (name is null) return servers;
         var selected = servers.Where(server => server.Name == name).ToArray();

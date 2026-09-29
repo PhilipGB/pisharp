@@ -1,5 +1,11 @@
 # Provider and authentication breadth audit
 
+## Current source update — 2026-09-29
+
+Pi `02eed88fd8912e54a804ddebd409e2e4c08ac5ef` adds OpenAI Sign in with ChatGPT as an alternative OpenAI Responses authentication route. The new `openai-chatgpt` flow uses PKCE, a loopback callback, refresh tokens and a direct OpenAI Responses credential; it omits request fields the subscription endpoint rejects and points usage-limit errors to the ChatGPT usage page. PiSharp has no matching route; it is tracked separately and remains lower priority than MCP lifecycle and virtual models. Focused upstream sign-in and Responses tests pass 10/10 at this source pin.
+
+The six OAuth profiles listed below remain the prior provider breadth result; refresh the inventory again before starting provider work.
+
 ## Current reconciliation — 2026-09-29
 
 This current section supersedes older gap statements below. PiSharp `main` is `ae05045b105bf23bee228dc6238c415d8978d4fa`; exact-head Linux CI run [36549801185](https://github.com/PhilipGB/pisharp/actions/runs/36549801185) passed restore, format, warnings-as-errors build, and 821/821 tests (0 skipped). Current Pi is `4259686d9290c0d73ae7192b796aee3e530a9779`.
