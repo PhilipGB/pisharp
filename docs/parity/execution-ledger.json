@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "plan_received": true,
-  "source_note": "The last pushed PiSharp checkpoint is 2411ed0df28dba6e364b6d635d841a4183169971. Exact-head Linux CI run 36559856822 passed restore, format, warnings-as-errors build and 827/827 tests (0 skipped). The working Codemode slice uses a separate Node process and bounded QuickJS/WASM guest, shared nested execution, tool discovery and branch-local store persistence; local format, warnings-as-errors build and 831/831 tests pass, with exact-head CI pending. Current Pi main is 4df1574339bfbd1a9750ff485bb618da397ba135. MCP, virtual models, Codemode optional globals and broader current-Pi differentials remain. Overall parity is incomplete.",
+  "source_note": "The last pushed PiSharp checkpoint is d6a9170f4c002e313562c2ae3f22541fdeb54ace. Exact-head Linux CI run 36563161748 passed restore, format, warnings-as-errors build and 831/831 tests (0 skipped). The Codemode semantic follow-up passes a zero-warning build and 834/834 local tests: inactive default selection, callable deferred tools with codemode-only selection, bounded declarations, Pi-shaped nested values and a paired current-Pi sandbox process comparison. Exact-head CI remains pending for that follow-up. Current Pi main is 4df1574339bfbd1a9750ff485bb618da397ba135. MCP, virtual models, Codemode optional globals and broader differentials remain. Overall parity is incomplete.",
   "baseline": "earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035",
   "required_ids": [
     "feature-agent-multi-turn-and-streaming",
@@ -3480,13 +3480,13 @@
         "Use an intentional sandbox boundary with no host globals, resource limits, timeout, cancellation and recursion prevention"
       ],
       "implementation": [
-        "Builtin codemode registers through ExtensionCatalog as builtin:codemode. The model script runs in a separate Node process inside a fresh QuickJS/WASM VM with no Node globals, a 32 MiB guest heap, 30-second deadline, bounded text/images/store/calls, and process kill on cancellation or completion.",
+        "Builtin codemode registers inactive through ExtensionCatalog as builtin:codemode and can be selected through --tools or the session loadout. The model script runs in a separate Node process inside a fresh QuickJS/WASM VM with no Node globals, a 32 MiB guest heap, 30-second deadline, bounded text/images/store/calls, and process kill on cancellation or completion.",
         "Only session-callable tools enter the guest tool table; nested invocations use PiSharpToolExecutionContext.ExecuteToolAsync and preserve root/nested hooks, durable outcomes and parent identities. The guest uses the shared ToolSearchRanker for searchTools and describeTool; recursion is not callable.",
         "Successful scripts publish a bounded branch-local store snapshot, restored after tree navigation, native/Pi JSONL import/export and resume. Node.js 22.19+ is a runtime dependency; CI pins Node 24."
       ],
       "evidence": [
         "Current Pi Codemode uses an isolated QuickJS/WASM worker and is now resolved as builtin:codemode at 4259686d9290c0d73ae7192b796aee3e530a9779. The previous pin da19b63 package tests passed 57/57; the current refresh did not rerun the full Codemode suite.",
-        "CodemodeTests uses a fake MAF provider and real Node/QuickJS worker for nested tool calls, search/description, recursion exclusion, store and JSONL resume. Direct worker tests cover missing host globals, image output, script error rollback, cancellation of an infinite loop and outstanding nested call, console/exit, and structured nested results. Focused tests pass 4/4; local format, warnings-as-errors build and full suite pass 831/831 with 0 skipped. Exact-head CI, a paired current-Pi differential, optional model/classifier globals and broader sandbox semantics remain open."
+        "CodemodeTests uses a fake MAF provider and real Node/QuickJS worker for nested tool calls, search/description, recursion exclusion, store and JSONL resume. Direct worker tests cover missing host globals, image output, script error rollback, cancellation of an infinite loop and outstanding nested call, console/exit, structured nested results, errors and discovery-name isolation. Exact-head Linux CI run 36563161748 passed 831/831 at d6a9170f4. The follow-up adds inactive default selection, declaration samples, Pi-shaped nested values and a bounded paired process comparison recorded in fixtures/codemode-sandbox-differential-2026-09-29.md. Local full suite passes 834/834 with 0 skipped; exact-head CI, optional model/classifier globals and broader sandbox semantics remain open."
       ],
       "dependencies": [
         "tool-exposure-loadout",

@@ -11,6 +11,23 @@ namespace PiSharp.Tests;
 public sealed class CodemodeTests
 {
     [Fact]
+    public void CodemodeRegistersInactiveByDefault()
+    {
+        var registration = new ExtensionRegistration();
+        CodemodeBuiltin.Configure(registration);
+        var registry = new PiSharpToolRegistry(registration.ToolDefinitions);
+        Assert.Empty(registry.CreateLoadout().Snapshot.Declared);
+        Assert.Equal("codemode", Assert.Single(registry.CreateLoadout(["codemode"]).Snapshot.Declared)
+            .Registration.Function.Name);
+        registration.AddTool(new PiSharpToolRegistration(AIFunctionFactory.Create(Echo, name: "echo"),
+            ToolExposure.CodeMode));
+        registry = new PiSharpToolRegistry(registration.ToolDefinitions);
+        var description = Assert.Single(registry.CreateLoadout(["codemode"]).Snapshot.Declared).Description;
+        Assert.Contains("declare const tools", description);
+        Assert.Contains("echo(args:", description);
+    }
+
+    [Fact]
     public async Task BuiltinRunsNestedToolAndPersistsStoreAcrossResume()
     {
         var cwd = Path.Combine(Path.GetTempPath(), "pisharp-codemode-" + Guid.NewGuid().ToString("N"));
@@ -21,15 +38,18 @@ public sealed class CodemodeTests
             registration.AddTool(new PiSharpToolRegistration(AIFunctionFactory.Create(Echo, name: "echo"),
                 ToolExposure.CodeMode));
             CodemodeBuiltin.Configure(registration);
-            var client = new ScriptClient("const matches=await searchTools('return value'); " +
-                "const info=await describeTool('echo'); text(matches[0].name+':'+info.name); " +
-                "text(typeof tools.codemode); store('answer', 42); text(await tools.echo({value:'nested'}))");
+            var client = new ScriptClient("const matches=await searchTools('return value',{limit:1}); " +
+                "const info=await describeTool('echo'); " +
+                "text(matches[0].name+':'+(info.includes('declare const tools')?'decl':'missing')); " +
+                "text(typeof tools.codemode); store('answer', 42); text(await tools.echo({value:'nested'})); return load('answer')");
             var conversation = new ConversationSession(cwd, "fixture", null);
-            var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(cwd), noBuiltinTools: true,
+            var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(cwd),
+                selectedTools: ["codemode"], noBuiltinTools: true,
                 extensionToolRegistrations: registration.ToolDefinitions), conversation);
             var events = new List<AgentLifecycleEvent>();
             await foreach (var item in run.RunEventsAsync("run script")) events.Add(item);
-            Assert.Equal("echo:echo\nundefined\nnested", client.Result);
+            Assert.Equal(["codemode"], client.RequestTools[0]);
+            Assert.Equal("echo:decl\nundefined\nnested\n42", client.Result);
             Assert.Contains(events, item => item.Type == "tool_execution_finished" && item.Tool == "echo" &&
                 item.ParentToolCallId == "script-call");
             Assert.Equal(42, conversation.ActiveCodemodeStore()!["answer"].GetInt32());
@@ -43,6 +63,7 @@ public sealed class CodemodeTests
             Assert.Equal(42, imported.ActiveCodemodeStore()!["answer"].GetInt32());
             var resumedClient = new ScriptClient("text(load('answer'))");
             var resumed = await ConversationRun.OpenAsync(new PiAgent(resumedClient, new CodingTools(cwd),
+                selectedTools: ["codemode"],
                 noBuiltinTools: true, extensionToolRegistrations: registration.ToolDefinitions), imported);
             await foreach (var _ in resumed.RunEventsAsync("resume")) { }
             Assert.Equal("42", resumedClient.Result);
@@ -61,6 +82,10 @@ public sealed class CodemodeTests
             context, new Dictionary<string, System.Text.Json.JsonElement>(), CancellationToken.None);
         Assert.True(denied.Ok, denied.Error);
         Assert.Equal("undefined\nundefined\nundefined", denied.Text);
+        var returned = await CodemodeSandbox.ExecuteAsync("text('start'); return {answer:7}", context,
+            new Dictionary<string, System.Text.Json.JsonElement>(), CancellationToken.None);
+        Assert.True(returned.Ok, returned.Error);
+        Assert.Equal("start\n{\"answer\":7}", returned.Text);
         var early = await CodemodeSandbox.ExecuteAsync("console.log('early'); exit(); text('late')", context,
             new Dictionary<string, System.Text.Json.JsonElement>(), CancellationToken.None);
         Assert.True(early.Ok, early.Error);
@@ -74,6 +99,11 @@ public sealed class CodemodeTests
             new Dictionary<string, System.Text.Json.JsonElement>(), CancellationToken.None);
         Assert.False(failed.Ok);
         Assert.Null(failed.Store);
+        Assert.Contains("boom", failed.Error);
+        var partial = await CodemodeSandbox.ExecuteAsync("text('before'); throw new Error('boom')", context,
+            new Dictionary<string, System.Text.Json.JsonElement>(), CancellationToken.None);
+        Assert.False(partial.Ok);
+        Assert.Equal("before", partial.Text);
         using var timeout = new CancellationTokenSource(TimeSpan.FromMilliseconds(500));
         var stopped = await CodemodeSandbox.ExecuteAsync("while(true) {}", context,
             new Dictionary<string, System.Text.Json.JsonElement>(), timeout.Token);
@@ -113,14 +143,51 @@ public sealed class CodemodeTests
     {
         var function = AIFunctionFactory.Create(() => new PiSharpToolResult("reported",
             StructuredContent: System.Text.Json.JsonSerializer.SerializeToElement(new { answer = 7 })), name: "report");
-        var registry = new PiSharpToolRegistry([new PiSharpToolRegistration(function, ToolExposure.CodeMode)]);
+        var outputSchema = System.Text.Json.JsonSerializer.SerializeToElement(new
+        {
+            type = "object",
+            properties = new { answer = new { type = "integer" } },
+            required = new[] { "answer" }
+        });
+        var registry = new PiSharpToolRegistry([new PiSharpToolRegistration(function, ToolExposure.CodeMode,
+            OutputSchema: outputSchema)]);
         var context = PiSharpToolExecutionContext.CreateRoot(registry.CreateLoadout(),
             () => new Dictionary<string, AIFunction> { ["report"] = function }, _ => { }, "test", null,
             "codemode", new Dictionary<string, object?>());
-        var result = await CodemodeSandbox.ExecuteAsync("text((await tools.report({})).structuredContent.answer)", context,
+        var result = await CodemodeSandbox.ExecuteAsync("text((await tools.report({})).answer)", context,
             new Dictionary<string, System.Text.Json.JsonElement>(), CancellationToken.None);
         Assert.True(result.Ok, result.Error);
         Assert.Equal("7", result.Text);
+    }
+
+    [Fact]
+    public async Task FailedNestedCallRejectsInsideScript()
+    {
+        var function = AIFunctionFactory.Create((Func<string>)(() =>
+            throw new InvalidOperationException("blocked")), name: "fail");
+        var registry = new PiSharpToolRegistry([new PiSharpToolRegistration(function, ToolExposure.CodeMode)]);
+        var context = PiSharpToolExecutionContext.CreateRoot(registry.CreateLoadout(),
+            () => new Dictionary<string, AIFunction> { ["fail"] = function }, _ => { }, "test", null,
+            "codemode", new Dictionary<string, object?>());
+        var result = await CodemodeSandbox.ExecuteAsync(
+            "try { await tools.fail({}) } catch(error) { text(error.message) }", context,
+            new Dictionary<string, System.Text.Json.JsonElement>(), CancellationToken.None);
+        Assert.True(result.Ok, result.Error);
+        Assert.Equal("blocked", result.Text);
+    }
+
+    [Fact]
+    public async Task DiscoveryBridgeCannotShadowAnAllowedTool()
+    {
+        var function = AIFunctionFactory.Create(() => "ordinary tool", name: "__search_tools");
+        var registry = new PiSharpToolRegistry([new PiSharpToolRegistration(function, ToolExposure.CodeMode)]);
+        var context = PiSharpToolExecutionContext.CreateRoot(registry.CreateLoadout(),
+            () => new Dictionary<string, AIFunction> { ["__search_tools"] = function }, _ => { }, "test", null,
+            "codemode", new Dictionary<string, object?>());
+        var result = await CodemodeSandbox.ExecuteAsync("text(await tools['__search_tools']({}))", context,
+            new Dictionary<string, System.Text.Json.JsonElement>(), CancellationToken.None);
+        Assert.True(result.Ok, result.Error);
+        Assert.Equal("ordinary tool", result.Text);
     }
 
     [Description("Return the given value.")]
@@ -129,6 +196,7 @@ public sealed class CodemodeTests
     private sealed class ScriptClient(string code) : IChatClient
     {
         private int _requests;
+        public List<string[]> RequestTools { get; } = [];
         public string? Result { get; private set; }
         public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
             CancellationToken cancellationToken = default) => throw new NotSupportedException();
@@ -136,6 +204,7 @@ public sealed class CodemodeTests
         public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
             ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
+            RequestTools.Add(options?.Tools?.OfType<AIFunction>().Select(tool => tool.Name).ToArray() ?? []);
             if (Interlocked.Increment(ref _requests) == 1)
                 yield return new ChatResponseUpdate(ChatRole.Assistant,
                     [new FunctionCallContent("script-call", "codemode", new Dictionary<string, object?>

@@ -184,7 +184,9 @@ public sealed class PiAgent
             : tools.Create(selectedTools.Where(name => !extensionNames.Contains(name)).ToArray(), excludedTools,
                 noTools || noBuiltinTools).OfType<AIFunction>().ToArray();
         var external = registeredExtensions.Where(registration =>
-                (selectedTools?.Contains(registration.Function.Name) ?? !noTools) &&
+                (selectedTools is null ? !noTools :
+                    selectedTools.Contains(registration.Function.Name, StringComparer.Ordinal) ||
+                    (!noTools && registration.Exposure is ToolExposure.CodeMode or ToolExposure.Deferred)) &&
                 excludedTools?.Contains(registration.Function.Name) != true)
             .ToArray();
         var reservedBuiltinNames = new[] { "read", "bash", "edit", "write", "grep", "find", "ls" };

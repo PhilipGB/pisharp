@@ -26,7 +26,7 @@ const vm = await QuickJS.create({
 
 const bridge = vm.newFunction('bridge', (kind, id, name, payload) => {
   const type = kind.toString();
-  if (type === 'call') send({ type, id: id.toNumber(), name: name.toString(), args: payload?.isUndefined ? null : payload?.toString() });
+  if (type === 'call' || type === 'global') send({ type, id: id.toNumber(), name: name.toString(), args: payload?.isUndefined ? null : payload?.toString() });
   else if (type === 'output') send({ type, value: id.toString() });
   else if (type === 'image') send({ type, data: id.toString(), mimeType: name.toString() });
   else if (type === 'done') send({ type, ok: id.toBoolean(), value: name?.isUndefined ? null : name?.toString(), store: payload?.toString() });
@@ -58,7 +58,7 @@ const prelude = `(function(bridge, toolsJson, storeJson) {
     if (!(item.jsName in tools)) tools[item.jsName] = invoke;
   }
   Object.freeze(tools);
-  Object.defineProperty(globalThis, 'ALL_TOOLS', { value: Object.freeze(JSON.parse(toolsJson).map(item => Object.freeze({ name: item.name, description: item.description }))) });
+  Object.defineProperty(globalThis, 'ALL_TOOLS', { value: Object.freeze(JSON.parse(toolsJson).map(item => Object.freeze({ name: item.jsName, description: item.description }))) });
   Object.defineProperty(globalThis, 'text', { value: output });
   Object.defineProperty(globalThis, 'console', { value: Object.freeze({
     log: (...args) => output(args.map(value => typeof value === 'string' ? value : JSON.stringify(value)).join(' ')),
@@ -74,15 +74,15 @@ const prelude = `(function(bridge, toolsJson, storeJson) {
     if (!match || match[2].length > 4194304) throw new TypeError('image expects a supported base64 data URL up to 4 MiB');
     bridge('image', match[2], match[1]);
   } });
-  Object.defineProperty(globalThis, 'searchTools', { value: query => new Promise((resolve, reject) => {
+  Object.defineProperty(globalThis, 'searchTools', { value: (query, options) => new Promise((resolve, reject) => {
     const id = ++nextId;
     pending.set(id, { resolve, reject });
-    bridge('call', id, '__search_tools', JSON.stringify(query));
+    bridge('global', id, 'searchTools', JSON.stringify([query, options]));
   }) });
   Object.defineProperty(globalThis, 'describeTool', { value: name => new Promise((resolve, reject) => {
     const id = ++nextId;
     pending.set(id, { resolve, reject });
-    bridge('call', id, '__describe_tool', JSON.stringify(name));
+    bridge('global', id, 'describeTool', JSON.stringify(name));
   }) });
   Object.defineProperty(globalThis, 'store', { value: (key, value) => {
     if (typeof key !== 'string' || key.length > 256) throw new TypeError('store key must be a string of at most 256 characters');
@@ -103,7 +103,8 @@ const prelude = `(function(bridge, toolsJson, storeJson) {
   }
   function run(fn) {
     Promise.resolve().then(() => fn(tools)).then(value => done(true, JSON.stringify(value)),
-      error => error === EXIT ? done(true, undefined) : done(false, String(error && (error.stack || error.message) || error)));
+      error => error === EXIT ? done(true, undefined) : done(false,
+        error instanceof Error ? (error.name + ': ' + error.message + (error.stack ? '\\n' + error.stack : '')) : String(error)));
   }
   function settle(id, ok, payload) {
     const call = pending.get(id);

@@ -31,8 +31,8 @@ internal static class CodemodeSandbox
             .Select(tool => new
             {
                 name = tool.Function.Name,
-                jsName = JavascriptIdentifier(tool.Function.Name),
-                description = tool.Function.Description ?? string.Empty
+                jsName = CodemodeToolCatalog.JavascriptIdentifier(tool.Function.Name),
+                description = CodemodeToolCatalog.RenderToolSample(tool)
             }).ToArray();
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         deadline.CancelAfter(TimeSpan.FromSeconds(30));
@@ -102,6 +102,7 @@ internal static class CodemodeSandbox
                             break;
                         }
                     case "call":
+                    case "global":
                         {
                             if (++callCount > MaximumCalls)
                                 return new(false, string.Join('\n', output), "Codemode call limit exceeded.");
@@ -110,14 +111,24 @@ internal static class CodemodeSandbox
                             var args = root.GetProperty("args").GetString();
                             if (args?.Length > MaximumCallArguments)
                                 return new(false, string.Join('\n', output), "Codemode call arguments exceed the limit.");
-                            outstanding.Add(DispatchAsync(id, name, args, context, process, writeGate, token));
+                            outstanding.Add(DispatchAsync(id, name, args, root.GetProperty("type").GetString() == "global",
+                                context, process, writeGate, token));
                             break;
                         }
                     case "done":
                         {
                             var ok = root.GetProperty("ok").GetBoolean();
                             var value = root.GetProperty("value").GetString();
-                            if (ok && output.Count == 0 && value is not null) output.Add(value);
+                            if (ok && value is not null)
+                            {
+                                using var returned = JsonDocument.Parse(value);
+                                var rendered = returned.RootElement.ValueKind == JsonValueKind.String
+                                    ? returned.RootElement.GetString() ?? "" : returned.RootElement.GetRawText();
+                                outputLength += rendered.Length;
+                                if (outputLength > MaximumOutputCharacters)
+                                    return new(false, string.Join('\n', output), "Codemode output limit exceeded.");
+                                output.Add(rendered);
+                            }
                             var changed = ok ? JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(
                                 root.GetProperty("store").GetString() ?? "{}", s_json) : null;
                             return new(ok, string.Join('\n', output), ok ? null : value, changed, images);
@@ -145,34 +156,57 @@ internal static class CodemodeSandbox
         }
     }
 
-    private static async Task DispatchAsync(int id, string name, string? args, PiSharpToolExecutionContext context,
+    private static async Task DispatchAsync(int id, string name, string? args, bool isGlobal,
+        PiSharpToolExecutionContext context,
         Process process, SemaphoreSlim writeGate, CancellationToken cancellationToken)
     {
         bool ok;
         string? payload;
         try
         {
-            if (name is "__search_tools" or "__describe_tool")
+            if (isGlobal)
             {
-                var query = args is null ? null : JsonSerializer.Deserialize<string>(args, s_json);
+                if (name is not ("searchTools" or "describeTool"))
+                    throw new ArgumentException("Unknown Codemode global.");
+                using var parsed = JsonDocument.Parse(args ?? "null");
+                var input = parsed.RootElement;
+                var query = name == "searchTools"
+                    ? input.ValueKind == JsonValueKind.Array && input.GetArrayLength() > 0 &&
+                      input[0].ValueKind == JsonValueKind.String ? input[0].GetString() : null
+                    : input.ValueKind == JsonValueKind.String ? input.GetString() : null;
                 if (string.IsNullOrWhiteSpace(query) || query.Length > 512)
                     throw new ArgumentException("A name or query of at most 512 characters is required.");
+                var limit = 8;
+                string? toolNamespace = null;
+                if (name == "searchTools" && input.GetArrayLength() > 1 && input[1].ValueKind != JsonValueKind.Null)
+                {
+                    if (input[1].ValueKind != JsonValueKind.Object)
+                        throw new ArgumentException("Search options must be an object.");
+                    if (input[1].TryGetProperty("limit", out var limitValue) &&
+                        (!limitValue.TryGetInt32(out limit) || limit is < 1 or > 16))
+                        throw new ArgumentException("Search limit must be between 1 and 16.");
+                    if (input[1].TryGetProperty("namespace", out var namespaceValue))
+                    {
+                        if (namespaceValue.ValueKind != JsonValueKind.String)
+                            throw new ArgumentException("Search namespace must be a string.");
+                        toolNamespace = namespaceValue.GetString();
+                    }
+                }
                 var candidates = context.Snapshot.Callable.Where(tool => tool.Function.Name != "codemode")
+                    .Where(tool => toolNamespace is null || tool.Namespace?.Name == toolNamespace)
                     .Take(2000).ToArray();
-                object result = name == "__search_tools"
-                    ? ToolSearchRanker.Rank(query, candidates, 8, cancellationToken)
-                        .Select(tool => new { name = tool.Function.Name, description = tool.Function.Description })
-                        .ToArray()
-                    : candidates.Where(tool => tool.Function.Name == query)
+                ok = true;
+                payload = name == "searchTools"
+                    ? JsonSerializer.Serialize(ToolSearchRanker.Rank(query, candidates, limit, cancellationToken)
                         .Select(tool => new
                         {
-                            name = tool.Function.Name,
-                            description = tool.Function.Description,
-                            inputSchema = tool.Function.JsonSchema,
-                            outputSchema = tool.OutputSchema
-                        }).FirstOrDefault() ?? throw new ArgumentException("Tool is not callable.");
-                ok = true;
-                payload = JsonSerializer.Serialize(result, s_json);
+                            name = CodemodeToolCatalog.JavascriptIdentifier(tool.Function.Name),
+                            description = CodemodeToolCatalog.RenderToolSample(tool)
+                        }).ToArray(), s_json)
+                    : candidates.Where(tool => tool.Function.Name == query ||
+                            CodemodeToolCatalog.JavascriptIdentifier(tool.Function.Name) == query)
+                        .Select(CodemodeToolCatalog.RenderToolSample).FirstOrDefault() is { } sample
+                            ? JsonSerializer.Serialize(sample, s_json) : null;
             }
             else
             {
@@ -186,10 +220,23 @@ internal static class CodemodeSandbox
                         property => property.Name, property => (object?)property.Value.Clone(), StringComparer.Ordinal);
                 }
                 var result = await context.ExecuteToolAsync(name, arguments, cancellationToken);
-                ok = !result.IsError;
-                payload = ok ? JsonSerializer.Serialize(result.StructuredContent is { } structured
-                    ? new { text = result.Text, structuredContent = structured, details = result.Details, images = result.Images }
-                    : result.Value ?? result.Text, s_json) : result.Error ?? result.Text;
+                var hasOutputSchema = context.Snapshot.Callable.Any(tool => tool.Function.Name == name &&
+                    tool.OutputSchema is not null);
+                if (hasOutputSchema && result.StructuredContent is { } structured)
+                {
+                    ok = true;
+                    payload = structured.GetRawText();
+                }
+                else
+                {
+                    ok = !result.IsError;
+                    payload = ok ? JsonSerializer.Serialize(result.Text, s_json) : result.Error ?? result.Text;
+                }
+            }
+            if (payload is { Length: > 4 * 1024 * 1024 })
+            {
+                ok = false;
+                payload = "Nested tool result exceeds the Codemode transfer limit.";
             }
         }
         catch (Exception error) when (error is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
@@ -207,11 +254,4 @@ internal static class CodemodeSandbox
         finally { writeGate.Release(); }
     }
 
-    private static string JavascriptIdentifier(string name)
-    {
-        var chars = name.Select((character, index) =>
-            char.IsAsciiLetter(character) || character is '_' or '$' || index > 0 && char.IsAsciiDigit(character)
-                ? character : '_').ToArray();
-        return new(chars);
-    }
 }

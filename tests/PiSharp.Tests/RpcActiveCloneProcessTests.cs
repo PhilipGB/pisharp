@@ -182,7 +182,7 @@ public sealed class RpcActiveCloneProcessTests
             Assert.Contains("You are PiSharp", systemMessage.GetProperty("sections").GetProperty("preamble").GetString());
             Assert.True(systemMessage.GetProperty("timestamp").GetInt64() > 0);
             var tools = systemMessage.GetProperty("toolsAdded");
-            Assert.Equal(["read", "bash", "edit", "write", "codemode"], tools.EnumerateArray()
+            Assert.Equal(["read", "bash", "edit", "write"], tools.EnumerateArray()
                 .Select(tool => tool.GetProperty("name").GetString()));
             Assert.All(tools.EnumerateArray(), tool =>
             {

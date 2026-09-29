@@ -39,7 +39,7 @@ Run `pisharp --help` for the full CLI. Interactive commands include `/model`, `/
 
 Start PiSharp from the project directory its tools should use. The terminal includes a persistent transcript/editor, streaming tool feedback, model/session/settings pickers, and keyboard and mouse input; key bindings are listed in [`docs/keybindings.md`](docs/keybindings.md).
 
-The built-in `codemode` tool requires Node.js 22.19 or newer on `PATH`. Model JavaScript runs inside a bundled QuickJS/WASM VM in a separate process; normal coding tools and provider use do not require Node.js.
+The built-in `codemode` tool is registered but inactive by default. Enable it with, for example, `--tools read,bash,edit,write,codemode`. It requires Node.js 22.19 or newer on `PATH`. Model JavaScript runs inside a bundled QuickJS/WASM VM in a separate process; normal coding tools and provider use do not require Node.js.
 
 For automation, `--mode json` emits PiSharp JSONL lifecycle records and `--mode rpc` accepts one JSON request per stdin line. See the [protocol contract](docs/protocol.md) for framing, commands, events and known differences.
 
