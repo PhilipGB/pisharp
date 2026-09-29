@@ -123,6 +123,13 @@ public sealed class ExtensionRegistration
 
     internal void SetCurrentSourceInfo(ResourceSourceInfo? sourceInfo) => _currentSourceInfo = sourceInfo;
 
+    public void SetToolDefaultActive(string name, bool active)
+    {
+        if (!_toolDefinitions.TryGetValue(name, out var definition))
+            throw new ArgumentException("Unknown tool: " + name, nameof(name));
+        _toolDefinitions[name] = definition with { DefaultActive = active };
+    }
+
     private static ResourceSourceInfo SourceInfoFromHandler(Delegate handler)
     {
         var path = handler.Method.DeclaringType?.Assembly.Location;
@@ -157,9 +164,23 @@ public sealed class ExtensionLease(ExtensionCatalog initial) : IDisposable
 public sealed class ExtensionCatalog : IDisposable
 {
     private readonly List<AssemblyLoadContext> _contexts = [];
+    private readonly List<IAsyncDisposable> _ownedConnections = [];
     public ExtensionRegistration Registration { get; } = new();
 
     private ExtensionCatalog() { }
+
+    public void OwnConnection(IAsyncDisposable connection) => _ownedConnections.Add(connection);
+
+    public void EnableBuiltinIfAllowed(BuiltinExtensionDefinition builtin,
+        IReadOnlyList<string>? userPaths, IReadOnlyList<string>? projectPaths)
+    {
+        if (!IsBuiltinEnabled(builtin.Name, userPaths, projectPaths) ||
+            Registration.ToolDefinitions.Any(tool => tool.Function.Name ==
+                (builtin.Name == "tool-search" ? "tool_search" : builtin.Name))) return;
+        Registration.SetCurrentSourceInfo(new("builtin:" + builtin.Name, "builtin", "builtin", "top-level", null));
+        try { builtin.Configure(Registration); }
+        finally { Registration.SetCurrentSourceInfo(null); }
+    }
 
     public static ExtensionCatalog Load(string agentDirectory, string cwd, bool projectTrusted, bool discover = true,
         IReadOnlyList<string>? additionalPaths = null, IReadOnlyList<string>? userPaths = null,
@@ -301,6 +322,9 @@ public sealed class ExtensionCatalog : IDisposable
 
     public void Dispose()
     {
+        foreach (var connection in _ownedConnections)
+            connection.DisposeAsync().AsTask().GetAwaiter().GetResult();
+        _ownedConnections.Clear();
         foreach (var context in _contexts) context.Unload();
         _contexts.Clear();
     }

@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "plan_received": true,
-  "source_note": "The last pushed PiSharp checkpoint is d6a9170f4c002e313562c2ae3f22541fdeb54ace. Exact-head Linux CI run 36563161748 passed restore, format, warnings-as-errors build and 831/831 tests (0 skipped). The Codemode semantic follow-up passes a zero-warning build and 834/834 local tests: inactive default selection, callable deferred tools with codemode-only selection, bounded declarations, Pi-shaped nested values and a paired current-Pi sandbox process comparison. Exact-head CI remains pending for that follow-up. Current Pi main is 4df1574339bfbd1a9750ff485bb618da397ba135. MCP, virtual models, Codemode optional globals and broader differentials remain. Overall parity is incomplete.",
+  "source_note": "The latest CI-verified PiSharp checkpoint is f33d27f52b2180b4782296f99b9493045fdd7a1e. Exact-head Linux CI run 36566106086 passed restore, format, warnings-as-errors build and 834/834 tests (0 skipped). The local MCP slice passes a warnings-as-errors build and 838/838 tests, including a deterministic stdio fixture; exact-head CI is pending. Current Pi main is 4df1574339bfbd1a9750ff485bb618da397ba135. MCP management, OAuth, reconnect, virtual models, Codemode optional globals and broader differentials remain. Overall parity is incomplete.",
   "baseline": "earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035",
   "required_ids": [
     "feature-agent-multi-turn-and-streaming",
@@ -3486,7 +3486,7 @@
       ],
       "evidence": [
         "Current Pi Codemode uses an isolated QuickJS/WASM worker and is now resolved as builtin:codemode at 4259686d9290c0d73ae7192b796aee3e530a9779. The previous pin da19b63 package tests passed 57/57; the current refresh did not rerun the full Codemode suite.",
-        "CodemodeTests uses a fake MAF provider and real Node/QuickJS worker for nested tool calls, search/description, recursion exclusion, store and JSONL resume. Direct worker tests cover missing host globals, image output, script error rollback, cancellation of an infinite loop and outstanding nested call, console/exit, structured nested results, errors and discovery-name isolation. Exact-head Linux CI run 36563161748 passed 831/831 at d6a9170f4. The follow-up adds inactive default selection, declaration samples, Pi-shaped nested values and a bounded paired process comparison recorded in fixtures/codemode-sandbox-differential-2026-09-29.md. Local full suite passes 834/834 with 0 skipped; exact-head CI, optional model/classifier globals and broader sandbox semantics remain open."
+        "CodemodeTests uses a fake MAF provider and real Node/QuickJS worker for nested tool calls, search/description, recursion exclusion, store and JSONL resume. Direct worker tests cover missing host globals, image output, script error rollback, cancellation of an infinite loop and outstanding nested call, console/exit, structured nested results, errors and discovery-name isolation. The semantic follow-up adds inactive default selection, declaration samples, Pi-shaped nested values and a bounded paired process comparison recorded in fixtures/codemode-sandbox-differential-2026-09-29.md. Exact-head Linux CI run 36566106086 passed 834/834 at f33d27f52; optional model/classifier globals and broader sandbox semantics remain open."
       ],
       "dependencies": [
         "tool-exposure-loadout",
@@ -3505,10 +3505,13 @@
         "Lifecycle, timeout/cancel, reconnect, server/tool conflicts, trust and process cleanup",
         "MCP OAuth, safe server-bound credential storage, /mcp management, pi mcp CLI and extension server registration"
       ],
-      "implementation": [],
+      "implementation": [
+        "McpConfiguration loads global and trusted-project mcp.json with project precedence, enabled flags, exposure overrides, transport settings and bounded timeouts. McpRuntime uses the official C# SDK for stdio and Streamable HTTP, expands environment references without logging credential values, and registers tools and resource operations in the existing extension catalog. Clients are disposed with the extension lease. OAuth settings are rejected explicitly until implemented."
+      ],
       "evidence": [
         "Current Pi MCP tools share exposure, nested execution, hooks and extension registration; builtin:mcp is resolved only after project trust at 4259686d9290c0d73ae7192b796aee3e530a9779.",
-        "Upstream commit 1d74741e1 serializes MCP OAuth refreshes across processes with per-server lockfiles and waits for refresh completion during shutdown. The two new MCP OAuth refresh tests pass 2/2 at the current pin; PiSharp has no MCP runtime or OAuth store yet."
+        "Upstream commit 1d74741e1 serializes MCP OAuth refreshes across processes with per-server lockfiles and waits for refresh completion during shutdown. The two new MCP OAuth refresh tests pass 2/2 at the current pin; PiSharp has no MCP OAuth store yet.",
+        "McpConfigurationTests and McpRuntimeTests pass 4/4 locally against a deterministic stdio JSON-RPC fixture for configuration trust/precedence, tool schema/result/error forwarding, resource list/template/read and a resource-only server. An overlapping build coincided with one PTY exit timeout in an intermediate full run; that PTY case passed 1/1 in isolation, and a sequential final full suite passed 838/838 with zero skipped. Exact-head CI is pending."
       ],
       "dependencies": [
         "tool-exposure-loadout",

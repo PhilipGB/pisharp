@@ -2,6 +2,7 @@ using Microsoft.Extensions.AI;
 using PiSharp.Runtime.Codemode;
 using PiSharp.Runtime;
 using PiSharp.Runtime.Extensions;
+using PiSharp.Runtime.Mcp;
 using PiSharp.Runtime.Resources;
 using PiSharp.Runtime.Sessions;
 using PiSharp.Runtime.Tools;
@@ -86,6 +87,31 @@ internal sealed class ProjectRuntimeContext : IDisposable
                 additionalPaths: arguments.ExtensionPaths, userPaths: configuration.BaseUserSettings.Extensions,
                 projectPaths: configuration.ProjectSettings?.Extensions,
                 builtins: [ToolSearchBuiltin.Definition, CodemodeBuiltin.Definition]);
+            var mcp = await McpConfiguration.LoadAsync(agentDirectory, cwd, configuration.Trusted, cancellationToken);
+            var mcpErrors = await McpRuntime.RegisterAsync(mcp, extensions, cwd, cancellationToken);
+            foreach (var error in mcpErrors) Console.Error.WriteLine(error);
+            var connectedMcp = extensions.Registration.ToolDefinitions.Where(tool =>
+                tool.Function.Name.StartsWith("mcp__", StringComparison.Ordinal)).ToArray();
+            var mcpRegistrations = connectedMcp.Concat(extensions.Registration.ToolDefinitions.Where(tool =>
+                tool.Function.Name is "list_mcp_resources" or "list_mcp_resource_templates" or "read_mcp_resource"))
+                .ToArray();
+            var projectPaths = configuration.Trusted ? configuration.ProjectSettings?.Extensions : null;
+            if (mcpRegistrations.Any(tool => tool.Exposure == ToolExposure.Deferred))
+                extensions.EnableBuiltinIfAllowed(ToolSearchBuiltin.Definition,
+                    configuration.BaseUserSettings.Extensions, projectPaths);
+            var codemodeDeferred = mcp.Servers.Any(server =>
+                connectedMcp.Any(tool => tool.Function.Name.StartsWith("mcp__" + server.Name + "__", StringComparison.Ordinal)) &&
+                (server.Exposure == McpToolExposure.CodemodeDeferred ||
+                    server.ToolExposure.Values.Contains(McpToolExposure.CodemodeDeferred)));
+            if (mcp.AutoEnableCodemode &&
+                (mcpRegistrations.Any(tool => tool.Exposure == ToolExposure.CodeMode) || codemodeDeferred))
+            {
+                extensions.EnableBuiltinIfAllowed(CodemodeBuiltin.Definition,
+                    configuration.BaseUserSettings.Extensions, projectPaths);
+                if (extensions.Registration.ToolSourceInfo.TryGetValue("codemode", out var codemodeSource) &&
+                    codemodeSource.Path == "builtin:codemode")
+                    extensions.Registration.SetToolDefaultActive("codemode", true);
+            }
             return new ProjectRuntimeContext(configuration, prompts, instructions,
                 resources, extensions, store, sessionImport);
         }

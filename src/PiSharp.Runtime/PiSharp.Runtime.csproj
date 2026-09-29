@@ -9,13 +9,13 @@
   <ItemGroup>
     <PackageReference Include="JsonSchema.Net" Version="9.4.0" />
     <PackageReference Include="Microsoft.Agents.AI" Version="1.21.0" />
+    <PackageReference Include="ModelContextProtocol.Core" Version="2.2.0" />
     <PackageReference Include="System.ClientModel" Version="1.14.0" />
     <PackageReference Include="SkiaSharp" Version="4.151.1" />
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="Codemode/Engine/**/*" CopyToOutputDirectory="PreserveNewest"
-             Link="Codemode/Engine/%(RecursiveDir)%(Filename)%(Extension)" />
+    <Content Include="Codemode/Engine/**/*" CopyToOutputDirectory="PreserveNewest" Link="Codemode/Engine/%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
 
   <PropertyGroup>

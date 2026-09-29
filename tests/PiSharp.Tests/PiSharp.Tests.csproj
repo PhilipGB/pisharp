@@ -21,4 +21,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\PiSharp.Cli\PiSharp.Cli.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Fixtures/mcp_fixture.py" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>
