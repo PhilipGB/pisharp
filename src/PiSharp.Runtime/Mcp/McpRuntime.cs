@@ -24,8 +24,6 @@ public static class McpRuntime
             IClientTransport? transport = null;
             try
             {
-                if (server.OAuth is not null)
-                    throw new NotSupportedException("MCP OAuth is not configured yet.");
                 using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
                 deadline.CancelAfter(server.Timeout);
                 if (server.Command is { } command)
@@ -45,11 +43,18 @@ public static class McpRuntime
                 }
                 else
                 {
+                    var oauth = server.Headers.Keys.Any(key =>
+                        key.Equals("Authorization", StringComparison.OrdinalIgnoreCase)) ? null :
+                        (server.OAuth is { } configured ? McpOAuthSettings.Parse(configured) :
+                            new McpOAuthSettings(null, null, null, []));
                     transport = new HttpClientTransport(new HttpClientTransportOptions
                     {
                         Name = server.Name,
                         Endpoint = server.Url!,
                         TransportMode = HttpTransportMode.StreamableHttp,
+                        OAuth = oauth?.CreateOptions(server.Url!, new McpTokenCache(configuration.AgentDirectory),
+                            oauth.CallbackUrl ?? new Uri("http://127.0.0.1:38119/callback"),
+                            (_, _) => throw new McpSignInRequiredException()),
                         AdditionalHeaders = server.Headers.ToDictionary(item => item.Key,
                             item => Expand(item.Value), StringComparer.Ordinal),
                         ConnectionTimeout = server.Timeout
@@ -91,6 +96,11 @@ public static class McpRuntime
             catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
             {
                 errors.Add("MCP server " + server.Name + " timed out.");
+            }
+            catch (McpSignInRequiredException)
+            {
+                errors.Add("MCP server " + server.Name + " needs authorization. Run pisharp mcp login " +
+                    server.Name + ".");
             }
             catch (Exception error) when (error is not OperationCanceledException)
             {

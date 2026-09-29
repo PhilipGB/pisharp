@@ -39,6 +39,7 @@ public sealed record McpServerConfiguration(
 public sealed record McpConfiguration(IReadOnlyList<McpServerConfiguration> Servers,
     bool AutoEnableCodemode, IReadOnlyList<string> Errors)
 {
+    public string AgentDirectory { get; init; } = "";
     private const int MaximumConfigBytes = 1024 * 1024;
     private static readonly Regex s_serverName = new("^[A-Za-z0-9_-]+$", RegexOptions.CultureInvariant);
 
@@ -50,7 +51,7 @@ public sealed record McpConfiguration(IReadOnlyList<McpServerConfiguration> Serv
         var autoEnable = true;
         await ReadAsync(Path.Combine(agentDirectory, "mcp.json"), "global");
         if (projectTrusted) await ReadAsync(Path.Combine(workingDirectory, ".pi", "mcp.json"), "project");
-        return new(servers.Values.ToArray(), autoEnable, errors);
+        return new(servers.Values.ToArray(), autoEnable, errors) { AgentDirectory = agentDirectory };
 
         async Task ReadAsync(string path, string scope)
         {
@@ -122,6 +123,11 @@ public sealed record McpConfiguration(IReadOnlyList<McpServerConfiguration> Serv
             ? auth.ValueKind == JsonValueKind.Object ? auth.Clone()
                 : throw new ArgumentException($"MCP server {name} oauth must be an object.")
             : (JsonElement?)null;
+        if (oauth is not null && command is not null)
+            throw new ArgumentException($"MCP server {name} OAuth requires HTTP.");
+        if (oauth is not null && headers.Keys.Any(key => key.Equals("Authorization", StringComparison.OrdinalIgnoreCase)))
+            throw new ArgumentException($"MCP server {name} cannot combine OAuth with an Authorization header.");
+        if (oauth is not null) McpOAuthSettings.Parse(oauth.Value);
         return new(name, path, scope, enabled, exposure, overrides, TimeSpan.FromSeconds(timeout), command,
             arguments, workingDirectory, environment, url, headers, oauth);
     }
