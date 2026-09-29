@@ -98,6 +98,16 @@ public sealed class PiSharpToolExecutionContext
         });
     }
 
+    /// <summary>Make additional tools visible on the next model request.</summary>
+    public void ActivateTools(IEnumerable<string> toolNames)
+    {
+        _loadout.ActivateTools(toolNames);
+        _scope.Publish(new AgentLifecycleEvent("tool_loadout_changed")
+        {
+            ToolLoadoutNames = Snapshot.ActiveToolNames
+        });
+    }
+
     /// <summary>Emit progress for this invocation, including its call and parent identities.</summary>
     public void ReportProgress(string text)
     {

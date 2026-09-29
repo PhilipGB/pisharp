@@ -20,6 +20,10 @@ public delegate Task<BashExecutionResult?> UserBashHandler(UserBashContext conte
 
 public sealed record ExtensionCommandInfo(string? Description, ResourceSourceInfo SourceInfo);
 
+/// <summary>A capability registered through the same extension surface as loaded assemblies.</summary>
+public sealed record BuiltinExtensionDefinition(string Name, Action<ExtensionRegistration> Configure,
+    bool AutoEnable = true, Func<ExtensionRegistration, bool>? ShouldAutoEnable = null);
+
 public sealed class ExtensionRegistration
 {
     private static readonly HashSet<string> s_reserved = new(StringComparer.Ordinal)
@@ -29,6 +33,7 @@ public sealed class ExtensionRegistration
     };
     private readonly Dictionary<string, AIFunction> _tools = new(StringComparer.Ordinal);
     private readonly Dictionary<string, PiSharpToolRegistration> _toolDefinitions = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, ResourceSourceInfo> _toolSourceInfo = new(StringComparer.Ordinal);
     private readonly Dictionary<string, PiSharpToolRenderer> _toolRenderers = new(StringComparer.Ordinal);
     private readonly Dictionary<string, Func<string, CancellationToken, Task<string>>> _commands = new(StringComparer.Ordinal);
     private readonly Dictionary<string, ExtensionCommandInfo> _commandInfo = new(StringComparer.Ordinal);
@@ -38,6 +43,7 @@ public sealed class ExtensionRegistration
     private ResourceSourceInfo? _currentSourceInfo;
     public IReadOnlyCollection<AIFunction> Tools => _tools.Values;
     public IReadOnlyCollection<PiSharpToolRegistration> ToolDefinitions => _toolDefinitions.Values;
+    public IReadOnlyDictionary<string, ResourceSourceInfo> ToolSourceInfo => _toolSourceInfo;
     public IReadOnlyDictionary<string, PiSharpToolRenderer> ToolRenderers => _toolRenderers;
     public IReadOnlyDictionary<string, Func<string, CancellationToken, Task<string>>> Commands => _commands;
     public IReadOnlyDictionary<string, ExtensionCommandInfo> CommandInfo => _commandInfo;
@@ -59,6 +65,12 @@ public sealed class ExtensionRegistration
         if (!_tools.TryAdd(definition.Function.Name, definition.Function))
             throw new ArgumentException($"Duplicate extension tool: {definition.Function.Name}");
         _toolDefinitions.Add(definition.Function.Name, definition);
+        var assemblyPath = definition.Function.GetType().Assembly.Location;
+        _toolSourceInfo.Add(definition.Function.Name, _currentSourceInfo ??
+            (string.IsNullOrWhiteSpace(assemblyPath)
+                ? new("<unknown>", "local", "temporary", "top-level", null)
+                : new(Path.GetFullPath(assemblyPath), "local", "temporary", "top-level",
+                    Path.GetDirectoryName(assemblyPath))));
     }
 
     /// <summary>Registers an extension tool with optional safe terminal call/result renderers.</summary>
@@ -151,15 +163,23 @@ public sealed class ExtensionCatalog : IDisposable
 
     public static ExtensionCatalog Load(string agentDirectory, string cwd, bool projectTrusted, bool discover = true,
         IReadOnlyList<string>? additionalPaths = null, IReadOnlyList<string>? userPaths = null,
-        IReadOnlyList<string>? projectPaths = null)
+        IReadOnlyList<string>? projectPaths = null, IReadOnlyList<BuiltinExtensionDefinition>? builtins = null)
     {
         var catalog = new ExtensionCatalog();
         try
         {
             var selectedPaths = new List<(string Path, ResourceSourceInfo SourceInfo)>();
+            var selectedBuiltins = new List<BuiltinExtensionDefinition>();
+            var builtinByName = (builtins ?? []).ToDictionary(builtin => builtin.Name, StringComparer.Ordinal);
+            var seenBuiltins = new HashSet<string>(StringComparer.Ordinal);
             var seenPaths = new HashSet<string>(OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
             foreach (var entry in additionalPaths ?? [])
             {
+                if (entry.StartsWith("builtin:", StringComparison.Ordinal))
+                {
+                    AddBuiltin(entry);
+                    continue;
+                }
                 var path = Path.GetFullPath(entry, cwd);
                 IEnumerable<string> paths;
                 if (Directory.Exists(path)) paths = FindAssemblies(path);
@@ -205,7 +225,27 @@ public sealed class ExtensionCatalog : IDisposable
                     finally { catalog.Registration.SetCurrentSourceInfo(null); }
                 }
             }
+            if (discover)
+                foreach (var builtin in builtins ?? [])
+                    if (builtin.AutoEnable && (builtin.ShouldAutoEnable?.Invoke(catalog.Registration) ?? true) &&
+                        IsBuiltinEnabled(builtin.Name, userPaths, projectTrusted ? projectPaths : null))
+                        AddBuiltin("builtin:" + builtin.Name);
+            foreach (var builtin in selectedBuiltins)
+            {
+                catalog.Registration.SetCurrentSourceInfo(new("builtin:" + builtin.Name, "builtin", "builtin",
+                    "top-level", null));
+                try { builtin.Configure(catalog.Registration); }
+                finally { catalog.Registration.SetCurrentSourceInfo(null); }
+            }
             return catalog;
+
+            void AddBuiltin(string identifier)
+            {
+                var name = identifier["builtin:".Length..];
+                if (!builtinByName.TryGetValue(name, out var builtin))
+                    throw new FileNotFoundException($"Unknown built-in extension: {identifier}", identifier);
+                if (seenBuiltins.Add(name)) selectedBuiltins.Add(builtin);
+            }
 
             void AddPath(string path, ResourceSourceInfo sourceInfo)
             {
@@ -217,13 +257,31 @@ public sealed class ExtensionCatalog : IDisposable
             {
                 var fullBase = Path.GetFullPath(baseDirectory);
                 var candidates = LocalResourcePathRules.GetPaths(entries)
+                    .Where(entry => !entry.StartsWith("builtin:", StringComparison.Ordinal))
                     .SelectMany(entry => EnumerateConfiguredAssemblies(LocalResourcePathRules.ResolvePath(entry, fullBase)))
                     .Distinct(OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal).ToArray();
                 foreach (var path in LocalResourcePathRules.ApplyOverrides(candidates, entries, fullBase))
                     AddPath(path, new(Path.GetFullPath(path), "local", scope, "top-level", fullBase));
+                foreach (var entry in LocalResourcePathRules.GetPaths(entries).Where(entry =>
+                    entry.StartsWith("builtin:", StringComparison.Ordinal)))
+                    if (IsBuiltinEnabled(entry["builtin:".Length..], userPaths, projectTrusted ? projectPaths : null))
+                        AddBuiltin(entry);
             }
         }
         catch { catalog.Dispose(); throw; }
+    }
+
+    private static bool IsBuiltinEnabled(string name, IReadOnlyList<string>? userPaths,
+        IReadOnlyList<string>? projectPaths)
+    {
+        var identity = "builtin:" + name;
+        var overrides = LocalResourcePathRules.GetOverrides(userPaths)
+            .Concat(LocalResourcePathRules.GetOverrides(projectPaths)).ToArray();
+        if (overrides.Any(entry => entry[0] == '-' && entry[1..] == identity)) return false;
+        if (overrides.Any(entry => entry[0] == '+' && entry[1..] == identity)) return true;
+        return !overrides.Any(entry => entry[0] == '!' &&
+            System.IO.Enumeration.FileSystemName.MatchesSimpleExpression(entry.AsSpan(1), identity,
+                ignoreCase: false));
     }
 
     private static IEnumerable<string> FindAssemblies(string root) =>

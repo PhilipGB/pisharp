@@ -14,6 +14,44 @@ namespace PiSharp.Tests;
 public sealed class ExtensionCatalogTests
 {
     [Fact]
+    public void BuiltinsUseExtensionRegistrationAndRespectExplicitTrustAndDisableRules()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-builtin-extension-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        try
+        {
+            var tool = AIFunctionFactory.Create(() => "ready", name: "fixture_builtin");
+            BuiltinExtensionDefinition[] builtins = [new("fixture", registration => registration.AddTool(tool))];
+            using (var discovered = ExtensionCatalog.Load(cwd, cwd, false, builtins: builtins))
+            {
+                Assert.Equal("fixture_builtin", Assert.Single(discovered.Registration.Tools).Name);
+                var source = discovered.Registration.ToolSourceInfo["fixture_builtin"];
+                Assert.Equal("builtin:fixture", source.Path);
+                Assert.Equal("builtin", source.Source);
+            }
+            using (var disabled = ExtensionCatalog.Load(cwd, cwd, false, discover: false, builtins: builtins))
+                Assert.Empty(disabled.Registration.Tools);
+            using (var excluded = ExtensionCatalog.Load(cwd, cwd, false, userPaths: ["!builtin:*"], builtins: builtins))
+                Assert.Empty(excluded.Registration.Tools);
+            using (var included = ExtensionCatalog.Load(cwd, cwd, false,
+                userPaths: ["!builtin:*", "+builtin:fixture"], builtins: builtins))
+                Assert.Single(included.Registration.Tools);
+            using (var projectUntrusted = ExtensionCatalog.Load(cwd, cwd, false,
+                projectPaths: ["-builtin:fixture"], builtins: builtins))
+                Assert.Single(projectUntrusted.Registration.Tools);
+            using (var projectTrusted = ExtensionCatalog.Load(cwd, cwd, true,
+                projectPaths: ["-builtin:fixture"], builtins: builtins))
+                Assert.Empty(projectTrusted.Registration.Tools);
+            using (var explicitLoad = ExtensionCatalog.Load(cwd, cwd, false, discover: false,
+                additionalPaths: ["builtin:fixture"], userPaths: ["-builtin:fixture"], builtins: builtins))
+                Assert.Single(explicitLoad.Registration.Tools);
+            Assert.Throws<FileNotFoundException>(() => ExtensionCatalog.Load(cwd, cwd, false,
+                additionalPaths: ["builtin:missing"], builtins: builtins));
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Fact]
     public async Task ProjectAssembliesNeedTrustAndUserAssembliesDoNot()
     {
         var cwd = Path.Combine(Path.GetTempPath(), "pisharp-extension-" + Guid.NewGuid().ToString("N"));

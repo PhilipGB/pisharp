@@ -63,6 +63,19 @@ public sealed class ProjectRuntimeContextTests
             Assert.DoesNotContain(untrusted.Resources.Skills, skill => skill.Name == "private-guide");
             Assert.DoesNotContain(untrusted.Resources.Skills, skill => skill.Name == "configured-first");
             Assert.DoesNotContain(untrusted.Resources.Prompts, prompt => prompt.Name == "configured-review");
+            Assert.Empty(untrusted.Extensions.Registration.ToolDefinitions);
+
+            var explicitBuiltinArguments = CliArguments.Parse(["--no-extensions", "--extension", "builtin:tool-search"]);
+            var explicitBuiltinConfiguration = await ProjectRuntimeConfiguration.LoadAsync(project, agent,
+                explicitBuiltinArguments, trust, interactiveTrust: false, TextReader.Null, TextWriter.Null,
+                trustedOverride: false);
+            using (var explicitBuiltin = await ProjectRuntimeContext.LoadAsync(explicitBuiltinConfiguration,
+                agent, explicitBuiltinArguments, null))
+            {
+                Assert.Equal("tool_search", Assert.Single(explicitBuiltin.Extensions.Registration.Tools).Name);
+                Assert.Equal("builtin:tool-search", explicitBuiltin.Extensions.Registration
+                    .ToolSourceInfo["tool_search"].Path);
+            }
 
             var secondSkill = Path.Combine(project, ".pi", "configured-skills-next", "next");
             Directory.CreateDirectory(secondSkill);

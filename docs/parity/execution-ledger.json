@@ -3441,8 +3441,8 @@
       ],
       "evidence": [
         "Current Pi AgentToolResult, ToolDefinition, ToolResultEventBase and before/after tool-hook contracts were inspected at 4259686d9290c0d73ae7192b796aee3e530a9779.",
-        "ToolResultContractTests covers returned-error separation, nested structured/image results, provider text/image projection, native and Pi JSONL round trips, output-schema rejection and single-call termination. Focused neighboring suites pass 32/32 and the full local suite passes 824/824, 0 skipped. Exact-head CI for this slice is pending.",
-        "Multi-call termination, full RPC result projection, output-schema error policy and current-Pi process differentials remain open; the capability stays in progress."
+        "ToolResultContractTests covers returned-error separation, nested structured/image results, provider text/image projection, native and Pi JSONL round trips, RPC structured/image/usage projection, output-schema rejection and single-call termination. Exact-head Linux CI run 36558027552 passed 824/824 tests, 0 skipped.",
+        "Multi-call termination, full protocol/provider differential coverage and output-schema error policy remain open; the capability stays in progress."
       ],
       "dependencies": []
     },
@@ -3456,10 +3456,14 @@
         "Activate matching deferred/codemode tools for the next request without exposing the whole registry",
         "Verify invocation, model context size, cancellation/errors and branch persistence"
       ],
-      "implementation": [],
+      "implementation": [
+        "ToolSearchBuiltin registers tool_search through ExtensionRegistration, ranks bounded callable deferred/codemode tools by name, description, parameter schema and namespace, and omits already-declared or unreachable tools.",
+        "Search matches call PiSharpToolExecutionContext.ActivateTools, which appends to the atomic session loadout and emits the normal tool_loadout_changed event for branch/JSONL persistence. Search returns a schema-validated PiSharpToolResult with loaded names."
+      ],
       "evidence": [
         "Current Pi BM25 search is packages/coding-agent/src/extensions/tool-search/tool.ts; builtin:<tool-search> is now loaded as an extension resource at 4259686d9290c0d73ae7192b796aee3e530a9779. Search and declaration changes share the loadout contract.",
-        "PiSharp currently has no tool-search runtime. Its deferred/codemode registrations can be activated by the generic session loadout API, which provides the intended consumer boundary."
+        "ToolSearchTests uses a fake provider loop to prove search changes the next request's declarations, executes the loaded tool, excludes an unrelated CodeMode tool, and preserves the active loadout through branch navigation, Pi JSONL and resume. Ranking tests cover name, parameter and namespace metadata. Focused built-in/search/project-runtime tests pass 4/4; full local solution passes 827/827, 0 skipped. Exact-head CI is pending.",
+        "Current-Pi process differential, model-context sizing, high-volume cancellation/error behavior and broader search semantics remain open."
       ],
       "dependencies": [
         "tool-exposure-loadout"
@@ -3539,11 +3543,11 @@
       ],
       "implementation": [
         "PiSharp ExtensionRegistration exposes native tools, commands, safe terminal renderers and direct RPC Bash handlers. PiSharpToolRegistration now also supplies exposure, namespace, default activation, loadout projection and nested invocation controls.",
-        "PiSharpToolExecutionContext and the durable wrapper provide shared nested execution and lifecycle/persistence, but there is no general extension event lifecycle, tool-call/result hook pipeline, permission-decision API, context transform, extension state, provider/model, MCP server, resource, keybinding or interactive UI registration contract."
+        "PiSharpToolExecutionContext and the durable wrapper provide shared nested execution, lifecycle/persistence and call/result hooks with allow/block decisions. ExtensionCatalog now loads built-ins through ExtensionRegistration with builtin: source identity, trust-gated configured paths, explicit loading, disable rules and reload construction. Context transforms, extension state, provider/model, MCP server, resource, keybinding and interactive UI registration remain open."
       ],
       "evidence": [
         "Current Pi ExtensionAPI, AgentSession tool hooks, virtual-model registration, MCP server registration and builtin extension-resource loading were inspected at 4259686d9290c0d73ae7192b796aee3e530a9779. The current upstream targeted resource/OAuth tests pass 7/7.",
-        "PiSharp exact head ae05045b105bf23bee228dc6238c415d8978d4fa passes Linux CI run 36549801185 with 821/821 tests; broad reusable extension lifecycle and tool permission hooks remain absent."
+        "PiSharp exact head e71d6f19252b4c5ed8a8b800b975f678927a1d78 passes Linux CI run 36558027552 with 824/824 tests. ExtensionCatalogTests and ProjectRuntimeContextTests cover builtin: identity, explicit loading, trust and disable behavior; the current built-in/search slice passes 827/827 local tests and awaits exact-head CI. Broader extension lifecycle and permission UI remain absent."
       ],
       "dependencies": [
         "tool-exposure-loadout",

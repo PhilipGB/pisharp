@@ -197,4 +197,16 @@ public sealed class ToolLoadout
             Volatile.Write(ref _snapshot, next);
         }
     }
+
+    /// <summary>Add declarations without losing another tool's concurrent loadout change.</summary>
+    public void ActivateTools(IEnumerable<string> toolNames)
+    {
+        ArgumentNullException.ThrowIfNull(toolNames);
+        var names = toolNames.ToArray();
+        lock (_gate)
+        {
+            var next = _registry.CreateSnapshot(_snapshot.ActiveToolNames.Concat(names));
+            Volatile.Write(ref _snapshot, next);
+        }
+    }
 }

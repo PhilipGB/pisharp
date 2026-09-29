@@ -83,7 +83,8 @@ internal sealed class ProjectRuntimeContext : IDisposable
         {
             extensions = ExtensionCatalog.Load(agentDirectory, cwd, configuration.Trusted, discover: !arguments.NoExtensions,
                 additionalPaths: arguments.ExtensionPaths, userPaths: configuration.BaseUserSettings.Extensions,
-                projectPaths: configuration.ProjectSettings?.Extensions);
+                projectPaths: configuration.ProjectSettings?.Extensions,
+                builtins: [ToolSearchBuiltin.Definition]);
             return new ProjectRuntimeContext(configuration, prompts, instructions,
                 resources, extensions, store, sessionImport);
         }
