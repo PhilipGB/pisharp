@@ -16,11 +16,14 @@ public sealed class ConversationRun
     private readonly PiAgent _agent;
     private readonly Func<CancellationToken, Task>? _save;
     private AutoCompactionPolicy? _autoCompaction;
+    private AutoCompactionPolicy? _logicalContextPolicy;
+    private readonly VirtualModelPhysicalContextResolver? _physicalContextResolver;
     private int? _keepRecentTokens;
     private int _autoCompactionEnabled;
     private ModelPricing? _pricing;
     private readonly string? _sessionFile;
     private string? _provider;
+    private string? _providerApi;
     private readonly AgentRunRetryController _retryController;
     private string? _reasoningLevel;
     private readonly SemaphoreSlim _gate = new(1, 1);
@@ -55,16 +58,19 @@ public sealed class ConversationRun
         PromptDeliveryMode followUpMode,
         bool autoCompactionEnabled,
         int? keepRecentTokens,
-        Func<TimeSpan, CancellationToken, Task>? retryDelay)
+        Func<TimeSpan, CancellationToken, Task>? retryDelay, VirtualModelPhysicalContextResolver? physicalContextResolver, string? providerApi)
     {
         _agent = agent;
         _save = save;
         _autoCompaction = autoCompaction;
+        _logicalContextPolicy = autoCompaction;
+        _physicalContextResolver = physicalContextResolver;
         _keepRecentTokens = keepRecentTokens;
         _autoCompactionEnabled = autoCompactionEnabled ? 1 : 0;
         _pricing = pricing;
         _sessionFile = sessionFile is null ? null : Path.GetFullPath(sessionFile);
         _provider = provider;
+        _providerApi = providerApi;
         _retryController = new AgentRunRetryController(retryPolicy, retryDelay);
         _reasoningLevel = reasoningLevel;
         _promptDelivery = new PromptDeliveryController(_runtimeStateGate, steeringMode, followUpMode);
@@ -90,16 +96,31 @@ public sealed class ConversationRun
         Func<TimeSpan, CancellationToken, Task>? retryDelay = null,
         PromptDeliveryMode steeringMode = PromptDeliveryMode.OneAtATime,
         PromptDeliveryMode followUpMode = PromptDeliveryMode.OneAtATime,
-        bool autoCompactionEnabled = true, int? keepRecentTokens = null)
+        bool autoCompactionEnabled = true, int? keepRecentTokens = null,
+        VirtualModelPhysicalContextResolver? physicalContextResolver = null, string? providerApi = null)
     {
         if (autoCompaction is not null) _ = autoCompaction.TriggerTokens;
         if (conversation.RecoverIncomplete() && save is not null) await save(cancellationToken);
         var execution = await agent.RestoreHistoryAsync(conversation.ContextMessages(), cancellationToken);
         if (conversation.ActiveToolLoadout() is { } activeTools) agent.RestoreToolLoadout(execution, activeTools);
         if (conversation.ActiveCodemodeStore() is { } codemodeStore) agent.RestoreCodemodeStore(execution, codemodeStore);
-        return new ConversationRun(agent, conversation, execution, save, autoCompaction, pricing, sessionFile, provider,
+        var run = new ConversationRun(agent, conversation, execution, save, autoCompaction, pricing, sessionFile, provider,
             reasoningLevel, retryPolicy ?? AgentRunRetryPolicy.Default, steeringMode, followUpMode,
-            autoCompactionEnabled, keepRecentTokens, retryDelay);
+            autoCompactionEnabled, keepRecentTokens, retryDelay, physicalContextResolver, providerApi);
+        await run.RestorePhysicalContextPolicyAsync(cancellationToken);
+        return run;
+    }
+
+    public Task<VirtualModelPhysicalContext?> GetPhysicalContextAsync(CancellationToken cancellationToken = default) =>
+        _agent.HasVirtualModelRouter && _physicalContextResolver is not null
+            ? _physicalContextResolver(Conversation.Snapshot().ActiveMessages(), cancellationToken)
+            : Task.FromResult<VirtualModelPhysicalContext?>(null);
+
+    private async Task RestorePhysicalContextPolicyAsync(CancellationToken cancellationToken)
+    {
+        if (!_agent.HasVirtualModelRouter || _physicalContextResolver is null) return;
+        var context = await GetPhysicalContextAsync(cancellationToken);
+        _autoCompaction = context is null ? _logicalContextPolicy : context.ContextPolicy;
     }
 
     private async Task<AgentSession> RestoreExecutionAsync(IEnumerable<ChatMessage> messages, CancellationToken token)
@@ -168,7 +189,7 @@ public sealed class ConversationRun
 
     public bool TrySetModelDuringRun(string model, string? endpoint, string? provider,
         ModelPricing? pricing, AutoCompactionPolicy? autoCompaction, int keepRecentTokens, string thinkingLevel,
-        ReasoningOptions? reasoning, Action activateRuntime)
+        ReasoningOptions? reasoning, Action activateRuntime, string? providerApi = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(model);
         ArgumentException.ThrowIfNullOrWhiteSpace(thinkingLevel);
@@ -188,7 +209,7 @@ public sealed class ConversationRun
             Volatile.Write(ref _reasoningLevel, thinkingLevel);
             _agent.SetVirtualModelThinkingLevel(thinkingLevel);
             _pendingRuntimeChanges.Enqueue(new PendingModelChange(provider, pricing, autoCompaction,
-                keepRecentTokens, activateRuntime));
+                keepRecentTokens, activateRuntime, providerApi));
             return true;
         }
     }
@@ -357,8 +378,10 @@ public sealed class ConversationRun
                 case PendingModelChange model:
                     model.ActivateRuntime();
                     _provider = model.Provider;
+                    _providerApi = model.ProviderApi;
                     _pricing = model.Pricing;
                     _autoCompaction = model.AutoCompaction;
+                    _logicalContextPolicy = model.AutoCompaction;
                     _keepRecentTokens = model.KeepRecentTokens;
                     break;
             }
@@ -367,7 +390,7 @@ public sealed class ConversationRun
 
     private abstract record PendingRuntimeChange;
     private sealed record PendingModelChange(string? Provider, ModelPricing? Pricing,
-        AutoCompactionPolicy? AutoCompaction, int KeepRecentTokens, Action ActivateRuntime) : PendingRuntimeChange;
+        AutoCompactionPolicy? AutoCompaction, int KeepRecentTokens, Action ActivateRuntime, string? ProviderApi) : PendingRuntimeChange;
 
     public bool RecordBashResult(string command, BashExecutionResult result, bool excludeFromContext = false)
     {
@@ -420,6 +443,7 @@ public sealed class ConversationRun
                 await publishEvent(new AgentLifecycleEvent("compaction_start") { CompactionReason = "manual" });
             try
             {
+                await RestorePhysicalContextPolicyAsync(cancellationToken);
                 var result = await CompactCoreAsync(focus, cancellationToken);
                 var error = result is null ? CompactionUnavailableError() : null;
                 if (publishEvent is not null)
@@ -485,6 +509,7 @@ public sealed class ConversationRun
                 if (Conversation.RecoverIncomplete() && _save is not null) await _save(cancellationToken);
                 var history = Conversation.ContextMessages();
                 var restored = await RestoreExecutionAsync(history, cancellationToken);
+                await RestorePhysicalContextPolicyAsync(cancellationToken);
                 _execution = restored;
                 _historyCount = history.Count;
             }
@@ -534,6 +559,7 @@ public sealed class ConversationRun
         var turnToolResults = new List<ChatMessage>();
         var providerRequestModel = Conversation.Model;
         var providerRequestProvider = Conversation.Provider;
+        var providerRequestApi = _providerApi;
         var providerRequestPricing = _pricing;
         var providerRequestThinking = _reasoningLevel;
         _agent.SetVirtualModelSession(Conversation, _reasoningLevel ?? "off", _save);
@@ -619,6 +645,7 @@ public sealed class ConversationRun
                     CompleteProviderTurnUnsafe();
                     providerRequestModel = _currentModel;
                     providerRequestProvider = _currentProvider;
+                    providerRequestApi = _providerApi;
                     providerRequestPricing = _pricing;
                     _providerRequestModel = providerRequestModel;
                     _providerRequestPricing = providerRequestPricing;
@@ -634,6 +661,7 @@ public sealed class ConversationRun
                     providerRequestProvider = item.ProviderProviderId ?? providerRequestProvider;
                     providerRequestPricing = item.ProviderPricing;
                     providerRequestThinking = item.ProviderThinkingLevel;
+                    providerRequestApi = item.ProviderApi ?? providerRequestApi;
                     _providerRequestModel = providerRequestModel;
                     _providerRequestPricing = providerRequestPricing;
                     _autoCompaction = item.ProviderContextPolicy;
@@ -644,12 +672,16 @@ public sealed class ConversationRun
                 lock (_runtimeStateGate)
                 {
                     providerResponse = item.ProviderResponse;
-                    if (providerResponse is not null && (item.ProviderProviderId is not null ||
+                    if (providerResponse is not null && item.ProviderProviderId is null && providerRequestApi is not null)
+                        providerResponse = ChatMessageProperties.WithProviderIdentity(providerResponse,
+                            providerRequestProvider, providerRequestModel, providerRequestApi, _reasoningLevel);
+                    if (providerResponse is not null && (providerRequestApi is not null || item.ProviderProviderId is not null ||
                         providerResponse.Contents.OfType<FunctionCallContent>().Any()))
                         Conversation.Append(providerResponse);
                 }
                 item = item with
                 {
+                    ProviderResponse = providerResponse,
                     ProviderThinkingLevel = providerRequestThinking,
                     UsageSnapshot = item.ProviderUsage is { } usage
                         ? UsageRecord.Create(providerRequestModel, "model", usage, providerRequestPricing)
@@ -684,6 +716,7 @@ public sealed class ConversationRun
                 _execution = restored;
                 _historyCount = history.Count;
             }
+            await RestorePhysicalContextPolicyAsync(cancellationToken);
             var estimatedPrompt = retryContinuation ? "" : prompt;
             var contextTriggerTokens = _autoCompaction?.TriggerTokens;
             if (AutoCompactionEnabled && contextTriggerTokens is > 0 &&

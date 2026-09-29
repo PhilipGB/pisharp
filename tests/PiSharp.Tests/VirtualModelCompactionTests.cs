@@ -106,6 +106,64 @@ public sealed class VirtualModelCompactionTests
     }
 
     [Fact]
+    public async Task BranchSelectionRestoresSuccessfulPhysicalPolicyInsteadOfLastDispatchedBranch()
+    {
+        var session = new ConversationSession(Path.GetTempPath(), "auto", null, "router");
+        session.SelectModel("auto", null, "router");
+        var root = session.Tree.HeadId;
+        var large = new Client("large answer", inputTokens: 9000);
+        var small = new Client("small answer");
+        var reasons = new List<string>();
+        var agent = new PiAgent(large, new CodingTools(Path.GetTempPath()), noTools: true,
+            virtualModelRequestRouter: request =>
+            {
+                reasons.Add(request.Reason);
+                var isSmall = request.Messages.Last().Text == "small branch";
+                return Task.FromResult(new VirtualModelRequestRoute(isSmall ? small : large,
+                    new ModelDescriptor(isSmall ? "small" : "large", null, isSmall ? 5000 : 50000, null,
+                        Provider: "physical", Api: "test-api"), "physical", "off", null, null,
+                    new AutoCompactionPolicy(isSmall ? 5000 : 50000, ReserveTokens: 0, KeepRecentTokens: 1),
+                    JsonSerializer.SerializeToElement(isSmall ? 2 : 1)));
+            });
+        VirtualModelPhysicalContextResolver resolver = (messages, _) =>
+        {
+            var previous = messages.LastOrDefault(message => message.Role == ChatRole.Assistant);
+            var model = previous is null ? null : ChatMessageProperties.String(previous.AdditionalProperties!, "pisharp.model");
+            return Task.FromResult(model is null ? null : new VirtualModelPhysicalContext(
+                new ModelDescriptor(model, null, model == "small" ? 5000 : 50000, null),
+                new AutoCompactionPolicy(model == "small" ? 5000 : 50000, ReserveTokens: 0, KeepRecentTokens: 1)));
+        };
+        var run = await ConversationRun.OpenAsync(agent, session, physicalContextResolver: resolver);
+        await foreach (var _ in run.RunEventsAsync("large branch")) { }
+        var largeHead = session.Tree.HeadId;
+        await run.SelectAsync(root);
+        await foreach (var _ in run.RunEventsAsync("small branch")) { }
+        Assert.Equal(2, session.ActiveVirtualModelState("router", "auto")!.Value.GetInt32());
+        await run.SelectAsync(largeHead);
+        Assert.Equal(1, session.ActiveVirtualModelState("router", "auto")!.Value.GetInt32());
+        var events = new List<AgentLifecycleEvent>();
+        await foreach (var item in run.RunEventsAsync("continue large branch")) events.Add(item);
+        Assert.DoesNotContain(events, item => item.Type == "turn_failed");
+        Assert.Equal(new[] { "user", "user", "user" }, reasons);
+        Assert.Equal(2, large.Calls);
+        Assert.Equal(1, small.Calls);
+        Assert.DoesNotContain(session.Tree.ActivePath(), node => node.Type == "compaction");
+        foreach (var copy in new[] { ConversationSession.Parse(session.ToJson()), session.Fork(),
+            session.ForkInto(Path.GetTempPath()), session.Snapshot() })
+        {
+            var resumed = await ConversationRun.OpenAsync(agent, copy,
+                autoCompaction: new AutoCompactionPolicy(5000, ReserveTokens: 0, KeepRecentTokens: 1),
+                physicalContextResolver: resolver);
+            await foreach (var item in resumed.RunEventsAsync("continue restored large branch"))
+                Assert.NotEqual("turn_failed", item.Type);
+            Assert.DoesNotContain(copy.Tree.ActivePath(), node => node.Type == "compaction");
+            Assert.Equal(1, copy.ActiveVirtualModelState("router", "auto")!.Value.GetInt32());
+            Assert.Equal("auto", copy.Model);
+        }
+        Assert.DoesNotContain("direct", reasons);
+    }
+
+    [Fact]
     public void CanonicalHistoryRemovesOnlyRecognizedFrameworkAttributionAndPreservesOwnedMetadata()
     {
         var attribution = new AgentRequestMessageSourceAttribution(new AgentRequestMessageSourceType("ChatHistory"),
@@ -132,7 +190,7 @@ public sealed class VirtualModelCompactionTests
         Assert.Same(unrelated, ChatMessageProperties.WithoutRequestAttribution(unrelated));
     }
 
-    private sealed class Client(string answer, Action<IReadOnlyList<ChatMessage>>? inspect = null) : IChatClient
+    private sealed class Client(string answer, Action<IReadOnlyList<ChatMessage>>? inspect = null, long inputTokens = 10) : IChatClient
     {
         public int Calls { get; private set; }
         public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
@@ -141,7 +199,7 @@ public sealed class VirtualModelCompactionTests
             Calls++;
             inspect?.Invoke(messages.ToArray());
             return Task.FromResult(new ChatResponse(new ChatMessage(ChatRole.Assistant, answer))
-            { Usage = new UsageDetails { InputTokenCount = 10, OutputTokenCount = 2, TotalTokenCount = 12 } });
+            { Usage = new UsageDetails { InputTokenCount = inputTokens, OutputTokenCount = 2, TotalTokenCount = inputTokens + 2 } });
         }
         public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
             ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)

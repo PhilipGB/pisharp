@@ -132,6 +132,9 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                             { await RespondAsync(id, type, false, error.Message); }
                             break;
                         case "get_session_stats":
+                            var physicalContext = await CurrentRun.GetPhysicalContextAsync(cancellationToken);
+                            var contextModel = physicalContext is not null && projectModel is not null
+                                ? projectModel(physicalContext.Model) : getModelSnapshot?.Invoke();
                             await _writer.EmitAsync(new
                             {
                                 id,
@@ -139,7 +142,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                                 command = type,
                                 success = true,
                                 data = RpcSessionStatsProjector.Project(CurrentRun.Conversation, CurrentRun.SessionFile,
-                                    getModelSnapshot?.Invoke(), getSystemMessage?.Invoke())
+                                    contextModel, getSystemMessage?.Invoke())
                             }, cancellationToken);
                             break;
                         case "prompt":

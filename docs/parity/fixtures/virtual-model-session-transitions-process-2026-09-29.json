@@ -1,0 +1,204 @@
+{
+  "pi": {
+    "selected": {
+      "provider": "test-router",
+      "model": "auto"
+    },
+    "wireModels": [
+      "small",
+      "large",
+      "small",
+      "small",
+      "small",
+      "small",
+      "small",
+      "small",
+      "small"
+    ],
+    "assistants": [
+      {
+        "provider": "physical",
+        "model": "small",
+        "api": "openai-completions"
+      },
+      {
+        "provider": "physical",
+        "model": "large",
+        "api": "openai-completions"
+      },
+      {
+        "provider": "physical",
+        "model": "small",
+        "api": "openai-completions"
+      },
+      {
+        "provider": "physical",
+        "model": "small",
+        "api": "openai-completions"
+      },
+      {
+        "provider": "physical",
+        "model": "small",
+        "api": "openai-completions"
+      },
+      {
+        "provider": "physical",
+        "model": "small",
+        "api": "openai-completions"
+      },
+      {
+        "provider": "physical",
+        "model": "small",
+        "api": "openai-completions"
+      }
+    ],
+    "routes": [
+      {
+        "reason": "user",
+        "state": 0,
+        "previous": null
+      },
+      {
+        "reason": "continuation",
+        "state": 1,
+        "previous": "small"
+      },
+      {
+        "reason": "user",
+        "state": 2,
+        "previous": "large"
+      },
+      {
+        "reason": "user",
+        "state": 3,
+        "previous": "small"
+      },
+      {
+        "reason": "user",
+        "state": 2,
+        "previous": "large"
+      },
+      {
+        "reason": "user",
+        "state": 3,
+        "previous": "small"
+      },
+      {
+        "reason": "user",
+        "state": 4,
+        "previous": "small"
+      },
+      {
+        "reason": "user",
+        "state": 5,
+        "previous": "small"
+      }
+    ],
+    "contextWindow": 32000,
+    "logicalLimits": {
+      "contextWindow": 0,
+      "maxTokens": 0
+    }
+  },
+  "pisharp": {
+    "selected": {
+      "provider": "test-router",
+      "model": "auto"
+    },
+    "wireModels": [
+      "small",
+      "large",
+      "small",
+      "small",
+      "small",
+      "small",
+      "small",
+      "small",
+      "small"
+    ],
+    "assistants": [
+      {
+        "provider": "physical",
+        "model": "small",
+        "api": "openai-completions"
+      },
+      {
+        "provider": "physical",
+        "model": "large",
+        "api": "openai-completions"
+      },
+      {
+        "provider": "physical",
+        "model": "small",
+        "api": "openai-completions"
+      },
+      {
+        "provider": "physical",
+        "model": "small",
+        "api": "openai-completions"
+      },
+      {
+        "provider": "physical",
+        "model": "small",
+        "api": "openai-completions"
+      },
+      {
+        "provider": "physical",
+        "model": "small",
+        "api": "openai-completions"
+      },
+      {
+        "provider": "physical",
+        "model": "small",
+        "api": "openai-completions"
+      }
+    ],
+    "routes": [
+      {
+        "reason": "user",
+        "state": 0,
+        "previous": null
+      },
+      {
+        "reason": "continuation",
+        "state": 1,
+        "previous": "small"
+      },
+      {
+        "reason": "user",
+        "state": 2,
+        "previous": "large"
+      },
+      {
+        "reason": "user",
+        "state": 3,
+        "previous": "small"
+      },
+      {
+        "reason": "user",
+        "state": 2,
+        "previous": "large"
+      },
+      {
+        "reason": "user",
+        "state": 3,
+        "previous": "small"
+      },
+      {
+        "reason": "user",
+        "state": 4,
+        "previous": "small"
+      },
+      {
+        "reason": "user",
+        "state": 5,
+        "previous": "small"
+      }
+    ],
+    "contextWindow": 32000,
+    "logicalLimits": {
+      "contextWindow": 0,
+      "maxTokens": 0
+    }
+  }
+}

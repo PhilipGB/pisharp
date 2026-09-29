@@ -7,6 +7,18 @@ namespace PiSharp.Runtime.Sessions;
 /// <summary>Reads metadata consistently before and after native session serialization.</summary>
 internal static class ChatMessageProperties
 {
+    public static ChatMessage WithProviderIdentity(ChatMessage message, string? provider, string model,
+        string api, string? thinkingLevel)
+    {
+        var copy = message.Clone();
+        copy.AdditionalProperties = message.AdditionalProperties?.Clone() ?? new();
+        copy.AdditionalProperties["pisharp.provider"] = provider;
+        copy.AdditionalProperties["pisharp.model"] = model;
+        copy.AdditionalProperties["pisharp.api"] = api;
+        copy.AdditionalProperties["pisharp.thinkingLevel"] = thinkingLevel;
+        return copy;
+    }
+
     // MAF annotates replayed messages with the component that supplied them for this run.
     // That typed, transient annotation is separate from application-owned message metadata.
     public static ChatMessage WithoutRequestAttribution(ChatMessage message)

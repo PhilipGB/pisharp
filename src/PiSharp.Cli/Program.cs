@@ -190,7 +190,9 @@ Task<ConversationRun> OpenRunAsync(PiAgent runningAgent, ConversationSession ses
         followUpMode: runSettings.FollowUpMode ?? PromptDeliveryMode.OneAtATime,
         autoCompactionEnabled: runSettings.AutoCompactionEnabled(Environment.GetEnvironmentVariable),
         keepRecentTokens: runSettings.ResolveCompactionKeepRecentTokens(
-            $"{runModel.Provider.Id}/{runModel.Model.Id}"));
+            $"{runModel.Provider.Id}/{runModel.Model.Id}"),
+        physicalContextResolver: modelRuntimeController.ResolvePhysicalContextAsync,
+        providerApi: ProviderChatClientFactory.ResolveProtocol(runModel));
 }
 var sessionPath = cli.NoSession || cli.ForkSource is not null ? null : cli.SessionPath is not null &&
     (cli.SessionPath.Contains(Path.DirectorySeparatorChar) || cli.SessionPath.EndsWith(".session.json", StringComparison.Ordinal) ||
@@ -469,7 +471,8 @@ async Task AdoptPreparedModelRuntime(PreparedModelRuntime prepared, bool recordM
             conversation.AppendThinkingLevelChange(nextThinking);
         contextPolicy = nextPolicy;
         modelPricing = nextPricing;
-        var nextRun = await OpenRunAsync(nextAgent, conversation, sessionPath, nextSelection.Provider.Id, nextThinking);
+        var nextRun = await OpenRunAsync(nextAgent, conversation, sessionPath, nextSelection.Provider.Id, nextThinking,
+            targetSelection: nextSelection);
         if (sessionPath is not null) await store.SaveAsync(conversation, sessionPath);
         selection = nextSelection;
         connection = nextConnection;

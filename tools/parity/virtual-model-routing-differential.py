@@ -3,6 +3,7 @@ parser=argparse.ArgumentParser(description='Replay virtual routing against built
 parser.add_argument('--pi',type=pathlib.Path,required=True,help='Pi checkout after npm ci and npm run build')
 parser.add_argument('--pisharp',type=pathlib.Path,default=pathlib.Path(__file__).resolve().parents[2],help='PiSharp checkout after dotnet build (including test fixture assembly)')
 parser.add_argument('--context-compaction',action='store_true',help='Route a later turn to a smaller physical window and compare canonical compaction')
+parser.add_argument('--session-transitions',action='store_true',help='Replay virtual state through clone, fork and session resume')
 parser.add_argument('--state-identity',action='store_true',help='Compare fresh equal state replacement with returning the same input state')
 parser.add_argument('--thinking',choices=['minimal','max'],help='Compare exact logical thinking selection across provider requests')
 parser.add_argument('--output',type=pathlib.Path,required=True)
@@ -49,14 +50,20 @@ pi.registerVirtualModel({provider:'test-router',id:'auto',name:'Auto',thinkingLe
  if context_scenario:env['PISHARP_VIRTUAL_FIXTURE_CONTEXT']='1'
  if args.thinking:env['PISHARP_VIRTUAL_FIXTURE_THINKING']=args.thinking
  if args.state_identity:env['PISHARP_VIRTUAL_FIXTURE_STATE']='1'
- cmd+=['--mode','rpc','--provider','test-router','--model','auto','--offline','--no-session','--no-extensions','--extension',str(ext),'--tools','echo_ext']
+ cmd+=['--mode','rpc','--provider','test-router','--model','auto','--offline','--no-extensions','--extension',str(ext),'--tools','echo_ext']
+ if args.session_transitions:cmd+=['--session-dir',str(root/'sessions'),'--session',str(root/('original.jsonl' if name=='pi' else 'original.session.json'))]
+ else:cmd+=['--no-session']
  if args.thinking:cmd+=['--thinking',args.thinking]
- p=subprocess.Popen(cmd,cwd=root,env=env,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True); q=queue.Queue(); errors=[]; records=[]
- def readout():
-  for line in p.stdout:q.put(json.loads(line))
-  q.put(None)
- def readerr():errors.extend(p.stderr.readlines())
- threading.Thread(target=readout,daemon=True).start();threading.Thread(target=readerr,daemon=True).start()
+ def start_process():
+  child=subprocess.Popen(cmd,cwd=root,env=env,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+  child_queue=queue.Queue();child_errors=[]
+  def readout():
+   for line in child.stdout:child_queue.put(json.loads(line))
+   child_queue.put(None)
+  def readerr():child_errors.extend(child.stderr.readlines())
+  threading.Thread(target=readout,daemon=True).start();threading.Thread(target=readerr,daemon=True).start()
+  return child,child_queue,child_errors
+ p,q,errors=start_process();records=[]
  def send(obj):p.stdin.write(json.dumps(obj)+'\n');p.stdin.flush()
  def until(predicate):
   deadline=time.monotonic()+45
@@ -75,11 +82,36 @@ pi.registerVirtualModel({provider:'test-router',id:'auto',name:'Auto',thinkingLe
     send({'type':'get_state','id':'settled'})
     if not until(lambda x:x.get('id')=='settled')['data']['isStreaming']:break
   send({'type':'prompt','message':'next turn','streamingBehavior':'followUp'});until(lambda x:x['type']=='agent_end')
+  if args.session_transitions:
+   if name=='pisharp':
+    until(lambda x:x['type']=='agent_settled')
+    while True:
+     send({'type':'get_state','id':'settled'})
+     if not until(lambda x:x.get('id')=='settled')['data']['isStreaming']:break
+   send({'type':'get_state','id':'original'});original=until(lambda x:x.get('id')=='original')['data']['sessionFile']
+   send({'type':'get_fork_messages','id':'fork-messages'});fork_messages=until(lambda x:x.get('id')=='fork-messages')['data']['messages']
+   fork_id=fork_messages[-1]['entryId']
+   for command in [{'type':'clone'},{'type':'fork','entryId':fork_id},{'type':'switch_session','sessionPath':original},{'type':'restart'},{'type':'set_model','provider':'physical','modelId':'small'},{'type':'set_model','provider':'test-router','modelId':'auto'}]:
+    if command['type']=='restart':
+     p.stdin.close();p.wait(timeout=5);p,q,errors=start_process()
+    else:
+     command['id']='transition';send(command);until(lambda x:x.get('id')=='transition')
+    send({'type':'prompt','message':command['type']+' turn'});until(lambda x:x['type']=='agent_end')
+    if name=='pisharp':
+     until(lambda x:x['type']=='agent_settled')
+     while True:
+      send({'type':'get_state','id':'settled'})
+      if not until(lambda x:x.get('id')=='settled')['data']['isStreaming']:break
   send({'type':'get_state','id':'state'});state=until(lambda x:x.get('id')=='state')['data']['model']
   send({'type':'get_messages','id':'messages'});messages=until(lambda x:x.get('id')=='messages')['data']['messages']
+  if args.session_transitions:
+   send({'type':'get_session_stats','id':'stats'});stats=until(lambda x:x.get('id')=='stats')['data']
   if context_scenario or args.state_identity:
    send({'type':'get_entries','id':'entries'});entries=until(lambda x:x.get('id')=='entries')['data']['entries']
   outputs[name]={'selected':{'provider':state['provider'],'model':state['id']},'wireModels':wires,'assistants':[{'provider':m['provider'],'model':m['model'],'api':m['api']} for m in messages if m['role']=='assistant'],'routes':[json.loads(line) for line in log.read_text().splitlines()]}
+  if args.session_transitions:
+   outputs[name]['contextWindow']=stats.get('contextUsage',{}).get('contextWindow')
+   outputs[name]['logicalLimits']={'contextWindow':state['contextWindow'],'maxTokens':state['maxTokens']}
   if args.state_identity:outputs[name]['stateEntries']=sum(entry['type']=='custom' and entry.get('customType')=='pi.virtual-model-state' for entry in entries)
   if context_scenario:outputs[name]['compactions']=sum(entry['type']=='compaction' for entry in entries)
  finally:

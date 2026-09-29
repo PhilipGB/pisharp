@@ -15,6 +15,12 @@ public sealed record VirtualModelRequestRoute(IChatClient ChatClient, ModelDescr
     AutoCompactionPolicy? ContextPolicy, JsonElement? State = null,
     string? LogicalProvider = null, string? LogicalModel = null);
 
+/// <summary>Resolves the limits of the latest successful physical response on the selected branch.</summary>
+public sealed record VirtualModelPhysicalContext(ModelDescriptor Model, AutoCompactionPolicy? ContextPolicy);
+
+public delegate Task<VirtualModelPhysicalContext?> VirtualModelPhysicalContextResolver(
+    IReadOnlyList<ChatMessage> messages, CancellationToken cancellationToken);
+
 public delegate Task<VirtualModelRequestRoute> VirtualModelRequestRouter(VirtualModelRequestContext request);
 
 internal sealed class VirtualModelRequestExecution

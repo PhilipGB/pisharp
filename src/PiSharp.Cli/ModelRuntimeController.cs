@@ -78,6 +78,15 @@ internal sealed class ModelRuntimeController(
         };
     }
 
+    public async Task<VirtualModelPhysicalContext?> ResolvePhysicalContextAsync(
+        IReadOnlyList<ChatMessage> messages, CancellationToken cancellationToken)
+    {
+        var previous = await FindPreviousPhysicalAsync(messages, cancellationToken).ConfigureAwait(false);
+        if (previous.Model is not { } model) return null;
+        return new(model, getSettings().ResolveCompactionPolicy(model.ContextLength, getEnvironment,
+            $"{model.Provider}/{model.Id}"));
+    }
+
     private async Task<(ModelDescriptor? Model, string? ThinkingLevel)> FindPreviousPhysicalAsync(
         IReadOnlyList<ChatMessage> messages, CancellationToken cancellationToken)
     {
@@ -112,7 +121,7 @@ internal sealed class ModelRuntimeController(
             prepared.Connection.Endpoint?.ToString(), prepared.Selection.Provider.Id,
             prepared.Pricing, prepared.ContextPolicy, prepared.KeepRecentTokens, prepared.Thinking, prepared.ReasoningOptions,
             () => activeAgent.SetModelRuntime(prepared.ChatClient, prepared.SupportsImages, prepared.ImageResizeOptions,
-                prepared.VirtualModelRouter)))
+                prepared.VirtualModelRouter), providerApi: ProviderChatClientFactory.ResolveProtocol(prepared.Selection)))
         {
             updateCurrent(prepared);
             return;

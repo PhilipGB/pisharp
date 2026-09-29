@@ -4,6 +4,7 @@ using System.Text.Json.Serialization;
 using PiSharp.Cli;
 using PiSharp.Runtime.Providers;
 using PiSharp.Runtime.Sessions;
+using PiSharp.Runtime.VirtualModels;
 
 namespace PiSharp.Cli.Protocols;
 
@@ -28,8 +29,8 @@ internal static class RpcModelProjector
             RpcModelInputLimits.From(model.InputLimits),
             RpcModelCostSnapshot.From(model.Pricing ?? new ModelPricing(0, 0, 0, CachedWrite: 0)),
             SafeMetadata(model.PromptCache),
-            model.ContextLength ?? 128000,
-            model.MaxOutputTokens ?? 16384,
+            model.ContextLength ?? (model.Api == VirtualModelContract.Api ? 0 : 128000),
+            model.MaxOutputTokens ?? (model.Api == VirtualModelContract.Api ? 0 : 16384),
             model.SamplingParameters is { } sampling ? SafeMetadata(sampling) : null,
             SafeMetadata(model.Compatibility ?? provider?.Compatibility));
         return JsonSerializer.SerializeToElement(snapshot);

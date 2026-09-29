@@ -106,10 +106,47 @@ public sealed class VirtualModelControllerTests
         Assert.Equal(1, session.ActiveVirtualModelState("router", "auto")!.Value.GetProperty("phase").GetInt32());
     }
 
+    [Fact]
+    public async Task RestoredContextUsesLatestSuccessfulPhysicalModelAndCatalogLimits()
+    {
+        using var fixture = await Fixture.CreateAsync();
+        var controller = new ModelRuntimeController(fixture.Providers, () => new UserSettings(), _ => null);
+        static ChatMessage Assistant(string id, string? stop = null) => new(ChatRole.Assistant, "answer")
+        {
+            AdditionalProperties = new()
+            {
+                ["pisharp.provider"] = JsonSerializer.SerializeToElement("physical"),
+                ["pisharp.model"] = JsonSerializer.SerializeToElement(id),
+                ["pisharp.stopReason"] = stop
+            }
+        };
+        var large = await controller.ResolvePhysicalContextAsync([Assistant("large"), Assistant("small", "error")], default);
+        Assert.Equal("large", large!.Model.Id);
+        Assert.Equal(64000, large.ContextPolicy!.ContextWindowTokens);
+        var small = await controller.ResolvePhysicalContextAsync([Assistant("large"), Assistant("small")], default);
+        Assert.Equal(32000, small!.ContextPolicy!.ContextWindowTokens);
+        var unknown = await controller.ResolvePhysicalContextAsync([Assistant("small"), Assistant("unknown")], default);
+        Assert.Equal("unknown", unknown!.Model.Id);
+        Assert.Equal(128000, unknown.ContextPolicy!.ContextWindowTokens);
+        Assert.Null(await controller.ResolvePhysicalContextAsync([Assistant("small", "aborted")], default));
+    }
+
+    [Fact]
+    public void VirtualRpcMetadataKeepsUnknownLogicalLimits()
+    {
+        var registry = new VirtualModelRegistry();
+        registry.Register(new("router", "auto", "Auto", (_, _) =>
+            Task.FromResult(new VirtualModelRoute("physical", "small", "off"))), "test");
+        var projected = PiSharp.Cli.Protocols.RpcModelProjector.Project(registry.Get("router", "auto")!.Model);
+        Assert.Equal(0, projected.GetProperty("contextWindow").GetInt32());
+        Assert.Equal(0, projected.GetProperty("maxTokens").GetInt32());
+    }
+
     private sealed class Fixture(string root, HttpClient http, ProviderModelRuntime providers, VirtualModelRegistry registry) : IDisposable
     {
         public string Root => root;
         public VirtualModelRegistry Registry => registry;
+        public ProviderModelRuntime Providers => providers;
         public static async Task<Fixture> CreateAsync()
         {
             var root = Path.Combine(Path.GetTempPath(), "pisharp-virtual-" + Guid.NewGuid().ToString("N"));
@@ -118,7 +155,7 @@ public sealed class VirtualModelControllerTests
                 {"providers":{
                   "physical":{"baseUrl":"http://localhost:12345/v1","apiKey":"fixture-key","api":"openai-completions","models":[
                     {"id":"small","contextWindow":32000,"maxTokens":1000,"reasoning":false,"input":["text"],"cost":{"input":2,"output":10}},
-                    {"id":"large","contextWindow":64000,"reasoning":true}]},
+                    {"id":"large","contextWindow":64000,"reasoning":true}, {"id":"unknown"}]},
                   "unavailable":{"baseUrl":"http://localhost:12346/v1","api":"openai-completions","models":[{"id":"small"}]}
                 }}
                 """);

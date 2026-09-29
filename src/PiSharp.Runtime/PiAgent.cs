@@ -378,6 +378,8 @@ public sealed class PiAgent
         _codingTools.SetImageResizeOptions(imageResizeOptions);
     }
 
+    internal bool HasVirtualModelRouter => _routedChatClient.HasRouter;
+
     internal void SetVirtualModelSession(ConversationSession session, string thinkingLevel,
         Func<CancellationToken, Task>? save) => _routedChatClient.SetSession(session, thinkingLevel, save);
 

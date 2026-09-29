@@ -89,7 +89,9 @@ internal sealed class ProjectSessionRuntimeFactory(
                 retryPolicy: project.Settings.Retry?.ResolvePolicy() ?? AgentRunRetryPolicy.Default,
                 steeringMode: project.Settings.SteeringMode ?? PromptDeliveryMode.OneAtATime,
                 followUpMode: project.Settings.FollowUpMode ?? PromptDeliveryMode.OneAtATime,
-                autoCompactionEnabled: project.Settings.AutoCompactionEnabled(Environment.GetEnvironmentVariable));
+                autoCompactionEnabled: project.Settings.AutoCompactionEnabled(Environment.GetEnvironmentVariable),
+                physicalContextResolver: controller.ResolvePhysicalContextAsync,
+                providerApi: ProviderChatClientFactory.ResolveProtocol(selection));
             return new ProjectSessionRuntime(project, conversation, run, destinationPath, selection, chat, agent,
                 thinking, compaction, pricing);
         }
