@@ -1,6 +1,6 @@
 # Current Pi tool orchestration and virtual-model audit
 
-Current reference is `earendil-works/pi@1ff5b6fddf69c322c6937781a720f97e87c93774`, scoped-refresh state recorded below. PiSharp `84fa47d56198bc05a99a247f653ac05e4574d303` passed exact-head Linux CI run [36593272926](https://github.com/PhilipGB/pisharp/actions/runs/36593272926): restore, format, warnings-as-errors build and 856/856 tests (0 skipped). This document tracks remaining orchestration work and does not claim a complete current-Pi audit.
+Current reference is `earendil-works/pi@8eb2bccf2603c28907ef3a583a04cafb1af284ae`, scoped-refresh state recorded below. PiSharp `84fa47d56198bc05a99a247f653ac05e4574d303` passed exact-head Linux CI run [36593272926](https://github.com/PhilipGB/pisharp/actions/runs/36593272926): restore, format, warnings-as-errors build and 856/856 tests (0 skipped). Retry commit `bb11cd92` failed exact-head run [36599543703](https://github.com/PhilipGB/pisharp/actions/runs/36599543703) only at formatting; after the formatter repair, local format/build/full tests pass (858/858), with exact-head CI pending. This document tracks remaining orchestration work and does not claim a complete current-Pi audit.
 
 Since the prior scoped pin `02eed88`, current Pi added `1ff5b6f`, which raises the maximum Bash output returned to Codemode scripts to 1 MiB. MCP source is unchanged across this refresh; the upstream MCP lifecycle tests last passed 28/28 at `02eed88`, so that is the behavioral test evidence. PiSharp has `PiSharpToolResult`, output-schema validation, returned errors distinct from exceptions, model text/image projection, native/Pi JSONL preservation and single-call termination. The current Codemode slice adds a separate Node process running QuickJS/WASM, bounded output/time/guest memory, nested calls through the shared pipeline, and branch/JSONL store persistence. Multi-call termination, optional model/classifier globals, the new 1 MiB Bash-output behavior, broader differentials, MCP and virtual models remain open.
 
@@ -16,6 +16,10 @@ Live `origin/main` was refreshed from `5257d0d5f3ab7d42550804f32c67a77b49f485d4`
 ## Current Pi source refresh — 2026-09-29 (post-checkpoint)
 
 Upstream `main` advanced from `02eed88fd8912e54a804ddebd409e2e4c08ac5ef` to `1ff5b6fddf69c322c6937781a720f97e87c93774`. Its only commit changes Codemode Bash output handling, allowing up to 1 MiB to be returned to scripts. MCP source did not change; MCP behavior remains supported by the targeted 28/28 upstream extension/command/OAuth test lane at `02eed88`. This refresh is scoped, not a complete audit.
+
+## Current Pi source refresh — 2026-09-29 (dependency update)
+
+Upstream `main` advanced from `1ff5b6fddf69c322c6937781a720f97e87c93774` to `8eb2bccf2603c28907ef3a583a04cafb1af284ae`. The sole commit updates Vitest and Gondolin's Undici dependency versions; it changes no runtime source or capability contract. The 1 MiB Codemode Bash-output behavior from `1ff5b6f` remains the latest in-scope orchestration change in this refresh.
 
 ## Current Pi source refresh — 2026-09-29 (continued)
 

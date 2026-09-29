@@ -54,10 +54,12 @@ internal sealed class McpLifecycleHttpServer : IAsyncDisposable
             HttpListenerContext context;
             try { context = await _listener.GetContextAsync().WaitAsync(_stop.Token); }
             catch (Exception error) when (error is OperationCanceledException or HttpListenerException or
-                ObjectDisposedException) { return; }
+                ObjectDisposedException)
+            { return; }
             try { await HandleAsync(context); }
             catch (Exception error) when (error is IOException or HttpListenerException or ObjectDisposedException or
-                OperationCanceledException) { }
+                OperationCanceledException)
+            { }
         }
     }
 
@@ -231,7 +233,8 @@ internal sealed class McpLifecycleHttpServer : IAsyncDisposable
         _listener.Close();
         try { await _serve; }
         catch (Exception error) when (error is OperationCanceledException or HttpListenerException or
-            ObjectDisposedException) { }
+            ObjectDisposedException)
+        { }
         _stop.Dispose();
     }
 }
