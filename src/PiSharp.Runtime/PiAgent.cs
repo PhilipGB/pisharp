@@ -351,12 +351,18 @@ public sealed class PiAgent
                 (previousSummary is null ? "" : $"<previous-summary>\n{previousSummary}\n</previous-summary>\n\n") +
                 (previousSummary is null ? SummarizationPrompt : UpdateSummarizationPrompt) +
                 (string.IsNullOrEmpty(focus) ? "" : $"\n\nAdditional focus: {focus}");
-        var response = await _summarizer.RunAsync(request, cancellationToken: cancellationToken);
+        var directOptions = _routedChatClient.HasRouter ? _routedChatClient.CreateDirectRequestOptions(messages) : null;
+        var response = await _summarizer.RunAsync(request,
+            options: directOptions is null ? null : new ChatClientAgentRunOptions(directOptions),
+            cancellationToken: cancellationToken);
         if (string.IsNullOrWhiteSpace(response.Text)) throw new InvalidDataException("Summarizer returned an empty response.");
-        return new CompactionSummary(response.Text, response.Usage);
+        var route = VirtualModelRequestHints.ReadHint(directOptions)?.Execution?.Route;
+        return new CompactionSummary(response.Text, response.Usage,
+            route is not null && response.Usage is { } usage
+                ? [UsageRecord.Create(route.Model.Id, "compaction", usage, route.Pricing)] : null);
     }
 
-    public sealed record CompactionSummary(string Text, UsageDetails? Usage);
+    public sealed record CompactionSummary(string Text, UsageDetails? Usage, IReadOnlyList<UsageRecord>? PhysicalUsage = null);
 
     public async Task<AgentSession> CreateSessionAsync(CancellationToken cancellationToken = default) =>
         await _agent.CreateSessionAsync(cancellationToken);
@@ -375,6 +381,9 @@ public sealed class PiAgent
     internal void SetVirtualModelSession(ConversationSession session, string thinkingLevel,
         Func<CancellationToken, Task>? save) => _routedChatClient.SetSession(session, thinkingLevel, save);
 
+    internal void SetVirtualModelContextPreparation(Func<IReadOnlyList<ChatMessage>, VirtualModelRequestRoute,
+        CancellationToken, Task<IReadOnlyList<ChatMessage>>>? prepare) => _routedChatClient.SetContextPreparation(prepare);
+
     internal void SetVirtualModelThinkingLevel(string thinkingLevel) => _routedChatClient.SetThinkingLevel(thinkingLevel);
 
     public Task<BashExecutionResult> ExecuteBashAsync(string command, Action<string>? onUpdate = null,
@@ -382,7 +391,8 @@ public sealed class PiAgent
 
     public void AbortBash() => _codingTools.AbortBash();
 
-    public IReadOnlyList<ChatMessage> GetHistory(AgentSession session) => _history.GetMessages(session).ToArray();
+    public IReadOnlyList<ChatMessage> GetHistory(AgentSession session) =>
+        _history.GetMessages(session).Select(ChatMessageProperties.WithoutRequestAttribution).ToArray();
 
     public void AppendToHistory(AgentSession session, ChatMessage message)
     {

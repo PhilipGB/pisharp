@@ -13,6 +13,10 @@ internal sealed class RoutedChatClient(MutableChatClient inner, Action<AgentLife
     private Func<CancellationToken, Task>? _save;
     private string _thinkingLevel = "off";
     private VirtualModelRequestRoute? _currentRoute;
+    private Func<IReadOnlyList<ChatMessage>, VirtualModelRequestRoute, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? _prepareContext;
+
+    public void SetContextPreparation(Func<IReadOnlyList<ChatMessage>, VirtualModelRequestRoute, CancellationToken,
+        Task<IReadOnlyList<ChatMessage>>>? prepare) => Volatile.Write(ref _prepareContext, prepare);
 
     public VirtualModelRequestRoute? CurrentRoute => Volatile.Read(ref _currentRoute);
     public bool HasRouter => Volatile.Read(ref _router) is not null;
@@ -29,6 +33,9 @@ internal sealed class RoutedChatClient(MutableChatClient inner, Action<AgentLife
         Volatile.Write(ref _thinkingLevel, thinkingLevel);
         Volatile.Write(ref _save, save);
     }
+
+    public ChatOptions CreateDirectRequestOptions(IReadOnlyList<ChatMessage> messages) => VirtualModelRequestHints.WithHint(null,
+        new("direct", Volatile.Read(ref _thinkingLevel), Execution: new VirtualModelRequestExecution(), RoutingMessages: messages));
 
     public void SetThinkingLevel(string level) => Volatile.Write(ref _thinkingLevel, level);
 
@@ -89,7 +96,7 @@ internal sealed class RoutedChatClient(MutableChatClient inner, Action<AgentLife
         VirtualModelRequestRoute route;
         try
         {
-            route = await router(new VirtualModelRequestContext(session, messages,
+            route = await router(new VirtualModelRequestContext(session, hint?.RoutingMessages ?? messages,
             hint?.Reason ?? "direct", hint?.ThinkingLevel ?? Volatile.Read(ref _thinkingLevel),
                 hint?.Failed, cancellationToken)).ConfigureAwait(false);
         }
@@ -115,6 +122,8 @@ internal sealed class RoutedChatClient(MutableChatClient inner, Action<AgentLife
             ProviderContextPolicy = route.ContextPolicy,
             ProviderThinkingLevel = route.ThinkingLevel
         });
+        if (hint?.Reason is not null and not "direct" && Volatile.Read(ref _prepareContext) is { } prepare)
+            messages = await prepare(messages, route, cancellationToken).ConfigureAwait(false);
         if (hint?.Execution?.ToolCallCapture is { } capture)
             capture.Bind((route.ChatClient as IProviderToolCallDeltaSource)?.BeginToolCallDeltaCapture());
         var routedMessages = ObservedChatClient.FilterImagesForModel(messages, blockImages: false,

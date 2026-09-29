@@ -179,7 +179,11 @@ public sealed class VirtualModelFixtureExtension : IPiSharpExtension
             var state = request.State is { ValueKind: JsonValueKind.Number } value ? value.GetInt32() : 0;
             await File.AppendAllTextAsync(log, JsonSerializer.Serialize(new
             { reason = request.Reason, state, previous = request.PreviousModel?.Id }) + "\n", cancellationToken);
-            return new("physical", request.Reason == "continuation" ? "large" : "small", "off", JsonSerializer.SerializeToElement(state + 1));
+            var contextScenario = Environment.GetEnvironmentVariable("PISHARP_VIRTUAL_FIXTURE_CONTEXT") == "1";
+            var model = contextScenario
+                ? request.Reason == "direct" || state == 0 ? "large" : "small"
+                : request.Reason == "continuation" ? "large" : "small";
+            return new("physical", model, "off", JsonSerializer.SerializeToElement(state + 1));
         }));
     }
 }

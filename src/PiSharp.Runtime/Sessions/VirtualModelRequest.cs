@@ -24,7 +24,8 @@ internal sealed class VirtualModelRequestExecution
 }
 
 internal sealed record VirtualModelRequestHint(string Reason, string ThinkingLevel,
-    VirtualModelFailedRequest? Failed = null, VirtualModelRequestExecution? Execution = null);
+    VirtualModelFailedRequest? Failed = null, VirtualModelRequestExecution? Execution = null,
+    IReadOnlyList<ChatMessage>? RoutingMessages = null);
 
 internal static class VirtualModelRequestHints
 {

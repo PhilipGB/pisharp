@@ -545,6 +545,8 @@ public sealed class ConversationRun
             return callId is not null && nestedCallsByCallId.TryGetValue(callId, out var nested) ? nested : null;
         }
 
+        VirtualModelContextCoordinator? virtualContext = null;
+        IReadOnlyList<JsonElement>? expectedProviderPrefix = null;
         void AppendAvailableProviderHistory()
         {
             var providerHistory = ObservedChatClient.NormalizeReadImagesForHistory(_agent.GetHistory(_execution));
@@ -552,7 +554,7 @@ public sealed class ConversationRun
             var knownToolCallIds = canonicalHistory.SelectMany(message => message.Contents.OfType<FunctionResultContent>())
                 .Select(result => result.CallId).ToHashSet(StringComparer.Ordinal);
             var canonicalIndex = 0;
-            foreach (var providerMessage in providerHistory)
+            foreach (var providerMessage in virtualContext?.HasCompacted == true ? providerHistory.Skip(_historyCount) : providerHistory)
             {
                 var matchEnd = providerTurnHistory.FindEquivalentRangeEnd(canonicalHistory, canonicalIndex, providerMessage);
                 if (matchEnd >= 0)
@@ -746,6 +748,14 @@ public sealed class ConversationRun
                     });
                 }
             }
+            virtualContext = new VirtualModelContextCoordinator(Conversation,
+                token => _compactionCoordinator.CompactAsync(null, token, adoptExecutionHistory: false),
+                () => AutoCompactionEnabled, Observe, () =>
+                {
+                    expectedProviderPrefix ??= _agent.GetHistory(_execution).Take(_historyCount)
+                        .Select(message => JsonSerializer.SerializeToElement(message, AIJsonUtilities.DefaultOptions)).ToArray();
+                });
+            _agent.SetVirtualModelContextPreparation(virtualContext.PrepareAsync);
             var inFlightBudget = !AutoCompactionEnabled || _autoCompaction is null || _autoCompaction.TriggerTokens <= 0
                 ? null : new InFlightContextBudget(
                 () => _autoCompaction ?? throw new InvalidOperationException("In-flight compaction policy was removed."),
@@ -753,8 +763,8 @@ public sealed class ConversationRun
                 async (summary, token) =>
                 {
                     Conversation.MarkInFlightProjection();
-                    if (summary.Usage is not null)
-                        Conversation.AppendUsage(UsageRecord.Create(CurrentModel, "compaction", summary.Usage, _pricing));
+                    foreach (var record in CompactionUsageAccounting.Records(summary, CurrentModel, _pricing))
+                        Conversation.AppendUsage(record);
                     if (_save is not null) await _save(token);
                     onEvent?.Invoke(new("context_compacted_in_flight", Text: "Continuation request summarized; canonical history was not changed."));
                 });
@@ -834,11 +844,14 @@ public sealed class ConversationRun
         {
             try
             {
+                _agent.SetVirtualModelContextPreparation(null);
                 var history = _agent.GetHistory(_execution);
                 if (history.Count < _historyCount) throw new InvalidDataException("MAF discarded canonical conversation history.");
                 var existing = Conversation.ContextMessages();
-                if (existing.Count < _historyCount || Enumerable.Range(0, _historyCount).Any(index =>
-                    !JsonElement.DeepEquals(JsonSerializer.SerializeToElement(existing[index], AIJsonUtilities.DefaultOptions),
+                var expectedPrefix = virtualContext?.HasCompacted == true ? expectedProviderPrefix! :
+                    existing.Take(_historyCount).Select(message => JsonSerializer.SerializeToElement(message, AIJsonUtilities.DefaultOptions)).ToArray();
+                if (expectedPrefix.Count < _historyCount || Enumerable.Range(0, _historyCount).Any(index =>
+                    !JsonElement.DeepEquals(expectedPrefix[index],
                         JsonSerializer.SerializeToElement(history[index], AIJsonUtilities.DefaultOptions))))
                     throw new InvalidDataException("MAF changed existing canonical conversation history.");
                 var promptInConversation = promptMessage is not null && existing.Count > _historyCount &&
@@ -856,7 +869,7 @@ public sealed class ConversationRun
                     PersistPendingRuntimeChangesUnsafe();
                     var knownToolCallIds = existing.SelectMany(message => message.Contents.OfType<FunctionResultContent>())
                         .Select(result => result.CallId).ToHashSet(StringComparer.Ordinal);
-                    var canonicalTail = existing.Skip(historyStartIndex).ToList();
+                    var canonicalTail = (virtualContext?.HasCompacted == true ? existing : existing.Skip(historyStartIndex)).ToList();
                     var canonicalIndex = 0;
                     foreach (var providerMessage in appendedHistory)
                     {

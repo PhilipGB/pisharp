@@ -1,0 +1,74 @@
+{
+  "pi": {
+    "selected": {
+      "provider": "test-router",
+      "model": "auto"
+    },
+    "wireModels": [
+      "large",
+      "large",
+      "small"
+    ],
+    "assistants": [
+      {
+        "provider": "physical",
+        "model": "small",
+        "api": "openai-completions"
+      }
+    ],
+    "routes": [
+      {
+        "reason": "user",
+        "state": 0,
+        "previous": null
+      },
+      {
+        "reason": "user",
+        "state": 1,
+        "previous": "large"
+      },
+      {
+        "reason": "direct",
+        "state": 0,
+        "previous": "large"
+      }
+    ],
+    "compactions": 1
+  },
+  "pisharp": {
+    "selected": {
+      "provider": "test-router",
+      "model": "auto"
+    },
+    "wireModels": [
+      "large",
+      "large",
+      "small"
+    ],
+    "assistants": [
+      {
+        "provider": "physical",
+        "model": "small",
+        "api": "openai-completions"
+      }
+    ],
+    "routes": [
+      {
+        "reason": "user",
+        "state": 0,
+        "previous": null
+      },
+      {
+        "reason": "user",
+        "state": 1,
+        "previous": "large"
+      },
+      {
+        "reason": "direct",
+        "state": 0,
+        "previous": "large"
+      }
+    ],
+    "compactions": 1
+  }
+}

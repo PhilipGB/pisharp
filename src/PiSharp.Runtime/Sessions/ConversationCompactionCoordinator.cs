@@ -19,7 +19,8 @@ internal sealed class ConversationCompactionCoordinator(
 
     public bool IsCompacting => Volatile.Read(ref _isCompacting) != 0;
 
-    public async Task<ConversationCompactionResult?> CompactAsync(string? focus, CancellationToken cancellationToken)
+    public async Task<ConversationCompactionResult?> CompactAsync(string? focus, CancellationToken cancellationToken,
+        bool adoptExecutionHistory = true)
     {
         var policy = getPolicy();
         var keepRecentTokens = policy?.KeepRecentTokens ?? getKeepRecentTokens();
@@ -38,13 +39,13 @@ internal sealed class ConversationCompactionCoordinator(
             try
             {
                 conversation.AppendCompaction(plan, summaryText, keepRecentTokens, tokensBefore, details);
-                var usage = summary.Usage is null ? null :
-                    UsageRecord.Create(conversation.Model, "compaction", summary.Usage, getPricing());
-                if (usage is not null) conversation.AppendUsage(usage);
+                var usageRecords = CompactionUsageAccounting.Records(summary, conversation.Model, getPricing());
+                var usage = CompactionUsageAccounting.Aggregate(usageRecords);
+                foreach (var record in usageRecords) conversation.AppendUsage(record);
                 var messages = conversation.ContextMessages();
-                var restored = await restoreHistory(messages, cancellationToken);
+                var restored = adoptExecutionHistory ? await restoreHistory(messages, cancellationToken) : null;
                 if (save is not null) await save(cancellationToken);
-                adoptHistory(restored, messages.Count);
+                if (restored is not null) adoptHistory(restored, messages.Count);
                 return new ConversationCompactionResult(summaryText, plan.FirstKeptEntryId, tokensBefore,
                     ConversationCompactionMetadata.EstimateTokens(messages), usage, details);
             }
@@ -129,18 +130,21 @@ internal sealed class ConversationCompactionCoordinator(
 
         var historyText = plan.PreviousSummary ?? "No prior history.";
         UsageDetails? usage = null;
+        var physicalUsage = new List<UsageRecord>();
         if (plan.MessagesToSummarize.Count > 0)
         {
             var history = await agent.SummarizeAsync(plan.MessagesToSummarize, focus, cancellationToken,
                 previousSummary: plan.PreviousSummary);
             historyText = history.Text;
             usage = history.Usage;
+            if (history.PhysicalUsage is { } historyUsage) physicalUsage.AddRange(historyUsage);
         }
 
         var turn = await agent.SummarizeAsync(plan.TurnPrefixMessages ?? [], null, cancellationToken, turnPrefix: true);
         usage = AddUsage(usage, turn.Usage);
+        if (turn.PhysicalUsage is { } turnUsage) physicalUsage.AddRange(turnUsage);
         return new PiAgent.CompactionSummary(
-            $"{historyText}\n\n---\n\n**Turn Context (split turn):**\n\n{turn.Text}", usage);
+            $"{historyText}\n\n---\n\n**Turn Context (split turn):**\n\n{turn.Text}", usage, physicalUsage.Count > 0 ? physicalUsage : null);
     }
 
     private int EstimateContextTokens()
