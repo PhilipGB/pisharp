@@ -95,6 +95,7 @@ public sealed class ConversationRun
         if (conversation.RecoverIncomplete() && save is not null) await save(cancellationToken);
         var execution = await agent.RestoreHistoryAsync(conversation.ContextMessages(), cancellationToken);
         if (conversation.ActiveToolLoadout() is { } activeTools) agent.RestoreToolLoadout(execution, activeTools);
+        if (conversation.ActiveCodemodeStore() is { } codemodeStore) agent.RestoreCodemodeStore(execution, codemodeStore);
         return new ConversationRun(agent, conversation, execution, save, autoCompaction, pricing, sessionFile, provider,
             reasoningLevel, retryPolicy ?? AgentRunRetryPolicy.Default, steeringMode, followUpMode,
             autoCompactionEnabled, keepRecentTokens, retryDelay);
@@ -111,6 +112,8 @@ public sealed class ConversationRun
     {
         if (Conversation.ActiveToolLoadout() is { } activeTools)
             _agent.RestoreToolLoadout(execution, activeTools);
+        if (Conversation.ActiveCodemodeStore() is { } codemodeStore)
+            _agent.RestoreCodemodeStore(execution, codemodeStore);
     }
 
     /// <summary>Queue guidance ahead of follow-up work on the active application run.</summary>
@@ -593,6 +596,10 @@ public sealed class ConversationRun
             {
                 lock (_runtimeStateGate) Conversation.AppendToolLoadout(activeTools);
             }
+            if (item.Type == "codemode_store_changed" && item.CodemodeStore is { } codemodeStore)
+            {
+                lock (_runtimeStateGate) Conversation.AppendCodemodeStore(codemodeStore);
+            }
             if (item.Type is "turn_failed" or "turn_interrupted")
             {
                 interruptionType = item.Type;
@@ -734,6 +741,8 @@ public sealed class ConversationRun
                 });
             if (Conversation.ActiveToolLoadout() is { } activeToolNames)
                 _agent.RestoreToolLoadout(_execution, activeToolNames);
+            if (Conversation.ActiveCodemodeStore() is { } codemodeStore)
+                _agent.RestoreCodemodeStore(_execution, codemodeStore);
             var updates = promptMessage is null
                 ? _agent.RunStreamingContinuationDurableAsync(_execution, cancellationToken, durable,
                     Observe, TakeSteeringForProvider, inFlightBudget is null ? null : inFlightBudget.ProjectAsync,

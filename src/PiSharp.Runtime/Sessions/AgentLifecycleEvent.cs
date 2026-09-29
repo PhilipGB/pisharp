@@ -95,6 +95,9 @@ public sealed record AgentLifecycleEvent(string Type, string? Text = null, strin
     public IReadOnlyList<string>? ToolLoadoutNames { get; init; }
 
     [JsonIgnore]
+    public IReadOnlyDictionary<string, JsonElement>? CodemodeStore { get; init; }
+
+    [JsonIgnore]
     public ChatMessage? ToolResultMessage { get; init; }
 
     [JsonIgnore]

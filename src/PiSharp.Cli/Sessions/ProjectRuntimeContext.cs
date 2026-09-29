@@ -1,4 +1,5 @@
 using Microsoft.Extensions.AI;
+using PiSharp.Runtime.Codemode;
 using PiSharp.Runtime;
 using PiSharp.Runtime.Extensions;
 using PiSharp.Runtime.Resources;
@@ -84,7 +85,7 @@ internal sealed class ProjectRuntimeContext : IDisposable
             extensions = ExtensionCatalog.Load(agentDirectory, cwd, configuration.Trusted, discover: !arguments.NoExtensions,
                 additionalPaths: arguments.ExtensionPaths, userPaths: configuration.BaseUserSettings.Extensions,
                 projectPaths: configuration.ProjectSettings?.Extensions,
-                builtins: [ToolSearchBuiltin.Definition]);
+                builtins: [ToolSearchBuiltin.Definition, CodemodeBuiltin.Definition]);
             return new ProjectRuntimeContext(configuration, prompts, instructions,
                 resources, extensions, store, sessionImport);
         }

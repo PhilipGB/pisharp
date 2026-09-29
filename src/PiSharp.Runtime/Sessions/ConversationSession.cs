@@ -211,6 +211,36 @@ public sealed class ConversationSession
         Tree.Append("tool_loadout", JsonSerializer.SerializeToElement(new { activeTools = names }));
     }
 
+    /// <summary>Reads the selected branch's last successful Codemode store snapshot.</summary>
+    internal IReadOnlyDictionary<string, JsonElement>? ActiveCodemodeStore()
+    {
+        var payload = Tree.ActivePath().Select(node => RuntimePayload(node, "codemode_store"))
+            .LastOrDefault(value => value is not null);
+        if (payload is null) return null;
+        if (!payload.Value.TryGetProperty("values", out var values) || values.ValueKind != JsonValueKind.Object)
+            throw new InvalidDataException("Invalid Codemode store in the selected conversation branch.");
+        return values.EnumerateObject().ToDictionary(item => item.Name, item => item.Value.Clone(),
+            StringComparer.Ordinal);
+    }
+
+    internal void AppendCodemodeStore(IReadOnlyDictionary<string, JsonElement> values)
+    {
+        ArgumentNullException.ThrowIfNull(values);
+        if (JsonSerializer.Serialize(ActiveCodemodeStore()) == JsonSerializer.Serialize(values)) return;
+        Tree.Append("codemode_store", JsonSerializer.SerializeToElement(new { values }));
+    }
+
+    private static JsonElement? RuntimePayload(ConversationNode node, string kind)
+    {
+        if (node.Type == kind) return node.Payload;
+        if (PiJsonlSessionInterchange.OriginalEntry(node) is not { } entry ||
+            PiJsonlSessionInterchange.StringProperty(entry, "type") != "custom" ||
+            PiJsonlSessionInterchange.StringProperty(entry, "customType") != "pisharp." + kind ||
+            !entry.TryGetProperty("data", out var payload) || payload.ValueKind != JsonValueKind.Object)
+            return null;
+        return payload.Clone();
+    }
+
     internal static PiSharpNestedToolCalls? NestedToolCallsFor(ConversationNode node)
     {
         if (node.Type != "chat" || node.Payload.ValueKind != JsonValueKind.Object) return null;

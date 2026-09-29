@@ -13,6 +13,11 @@
     <PackageReference Include="SkiaSharp" Version="4.151.1" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="Codemode/Engine/**/*" CopyToOutputDirectory="PreserveNewest"
+             Link="Codemode/Engine/%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>

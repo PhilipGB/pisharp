@@ -136,6 +136,9 @@ public sealed class PiAgent
     internal void RestoreToolLoadout(AgentSession session, IEnumerable<string> activeToolNames) =>
         GetToolLoadout(session).SetActiveTools(activeToolNames);
 
+    internal void RestoreCodemodeStore(AgentSession session, IReadOnlyDictionary<string, System.Text.Json.JsonElement> values) =>
+        GetToolLoadout(session).SetCodemodeStore(values);
+
     public long? SystemMessageTimestamp => Volatile.Read(ref _systemMessageTimestamp) is var timestamp && timestamp != 0
         ? timestamp
         : null;

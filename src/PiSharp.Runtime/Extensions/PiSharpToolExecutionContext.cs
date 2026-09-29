@@ -88,6 +88,17 @@ public sealed class PiSharpToolExecutionContext
     /// <summary>The immutable tool set visible to this invocation.</summary>
     public ToolLoadoutSnapshot Snapshot => _loadout.Snapshot;
 
+    public IReadOnlyDictionary<string, JsonElement> CodemodeStore => _loadout.CodemodeStore;
+
+    public void SetCodemodeStore(IReadOnlyDictionary<string, JsonElement> values)
+    {
+        _loadout.SetCodemodeStore(values);
+        _scope.Publish(new AgentLifecycleEvent("codemode_store_changed")
+        {
+            CodemodeStore = _loadout.CodemodeStore
+        });
+    }
+
     /// <summary>Replace the declarations used for the next model request in this session.</summary>
     public void SetActiveTools(IEnumerable<string> toolNames)
     {

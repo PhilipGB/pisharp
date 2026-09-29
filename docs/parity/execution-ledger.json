@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "plan_received": true,
-  "source_note": "The last pushed PiSharp checkpoint is ae05045b105bf23bee228dc6238c415d8978d4fa. Exact-head Linux CI run 36549801185 passed restore, format, warnings-as-errors build (0 warnings/errors), and 821/821 tests (0 skipped). This slice adds reusable asynchronous extension call/result hooks and allow/block decisions to root and nested tool invocations; focused coverage, format verification, warnings-as-errors build, and all 821 local tests pass. Exact-head CI runs on push. The source persists per-session loadouts through branch selection and Pi JSONL export/import/resume, and executes bounded nested calls through the shared wrapped MAF functions with parent-linked lifecycle, durable outcomes, compaction and presentation projections. Current Pi main is 4259686d9290c0d73ae7192b796aee3e530a9779. Since da19b63c7, upstream serializes MCP OAuth refresh across processes and resolves built-in MCP, llama.cpp, Codemode and tool-search modules as builtin:<name> extension resources; both changes are classified in the current orchestration audit. The bounded provider/auth review found no wholly absent major provider/API family; six OAuth profiles and category 3/4 semantics/differentials remain. Overall parity is incomplete.",
+  "source_note": "The last pushed PiSharp checkpoint is 2411ed0df28dba6e364b6d635d841a4183169971. Exact-head Linux CI run 36559856822 passed restore, format, warnings-as-errors build and 827/827 tests (0 skipped). The working Codemode slice uses a separate Node process and bounded QuickJS/WASM guest, shared nested execution, tool discovery and branch-local store persistence; local format, warnings-as-errors build and 831/831 tests pass, with exact-head CI pending. Current Pi main is 4df1574339bfbd1a9750ff485bb618da397ba135. MCP, virtual models, Codemode optional globals and broader current-Pi differentials remain. Overall parity is incomplete.",
   "baseline": "earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035",
   "required_ids": [
     "feature-agent-multi-turn-and-streaming",
@@ -3462,7 +3462,7 @@
       ],
       "evidence": [
         "Current Pi BM25 search is packages/coding-agent/src/extensions/tool-search/tool.ts; builtin:<tool-search> is now loaded as an extension resource at 4259686d9290c0d73ae7192b796aee3e530a9779. Search and declaration changes share the loadout contract.",
-        "ToolSearchTests uses a fake provider loop to prove search changes the next request's declarations, executes the loaded tool, excludes an unrelated CodeMode tool, and preserves the active loadout through branch navigation, Pi JSONL and resume. Ranking tests cover name, parameter and namespace metadata. Focused built-in/search/project-runtime tests pass 4/4; full local solution passes 827/827, 0 skipped. Exact-head CI is pending.",
+        "ToolSearchTests uses a fake provider loop to prove search changes the next request's declarations, executes the loaded tool, excludes an unrelated CodeMode tool, and preserves the active loadout through branch navigation, Pi JSONL and resume. Ranking tests cover name, parameter and namespace metadata. Focused built-in/search/project-runtime tests pass 4/4; exact-head Linux CI run 36559856822 passed 827/827, 0 skipped.",
         "Current-Pi process differential, model-context sizing, high-volume cancellation/error behavior and broader search semantics remain open."
       ],
       "dependencies": [
@@ -3479,10 +3479,14 @@
         "Provide tool declarations, search/discovery, bounded result handling, per-session store and optional model/classifier access",
         "Use an intentional sandbox boundary with no host globals, resource limits, timeout, cancellation and recursion prevention"
       ],
-      "implementation": [],
+      "implementation": [
+        "Builtin codemode registers through ExtensionCatalog as builtin:codemode. The model script runs in a separate Node process inside a fresh QuickJS/WASM VM with no Node globals, a 32 MiB guest heap, 30-second deadline, bounded text/images/store/calls, and process kill on cancellation or completion.",
+        "Only session-callable tools enter the guest tool table; nested invocations use PiSharpToolExecutionContext.ExecuteToolAsync and preserve root/nested hooks, durable outcomes and parent identities. The guest uses the shared ToolSearchRanker for searchTools and describeTool; recursion is not callable.",
+        "Successful scripts publish a bounded branch-local store snapshot, restored after tree navigation, native/Pi JSONL import/export and resume. Node.js 22.19+ is a runtime dependency; CI pins Node 24."
+      ],
       "evidence": [
         "Current Pi Codemode uses an isolated QuickJS/WASM worker and is now resolved as builtin:codemode at 4259686d9290c0d73ae7192b796aee3e530a9779. The previous pin da19b63 package tests passed 57/57; the current refresh did not rerun the full Codemode suite.",
-        "PiSharp has no sandboxed code runtime. Do not evaluate model-generated programs in the PiSharp process; Codemode depends on shared nested calls, structured results and tool discovery."
+        "CodemodeTests uses a fake MAF provider and real Node/QuickJS worker for nested tool calls, search/description, recursion exclusion, store and JSONL resume. Direct worker tests cover missing host globals, image output, script error rollback, cancellation of an infinite loop and outstanding nested call, console/exit, and structured nested results. Focused tests pass 4/4; local format, warnings-as-errors build and full suite pass 831/831 with 0 skipped. Exact-head CI, a paired current-Pi differential, optional model/classifier globals and broader sandbox semantics remain open."
       ],
       "dependencies": [
         "tool-exposure-loadout",
