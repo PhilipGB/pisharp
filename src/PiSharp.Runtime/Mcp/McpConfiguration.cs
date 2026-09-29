@@ -82,7 +82,7 @@ public sealed record McpConfiguration(IReadOnlyList<McpServerConfiguration> Serv
         }
     }
 
-    private static McpServerConfiguration Parse(string name, JsonElement value, string path, string scope)
+    internal static McpServerConfiguration Parse(string name, JsonElement value, string path, string scope)
     {
         if (!s_serverName.IsMatch(name)) throw new ArgumentException($"Invalid MCP server name: {name}");
         if (value.ValueKind != JsonValueKind.Object) throw new ArgumentException($"MCP server {name} must be an object.");
