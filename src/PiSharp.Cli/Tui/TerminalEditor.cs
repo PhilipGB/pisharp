@@ -44,11 +44,16 @@ public sealed class TerminalEditor
 
     private TerminalInput EnsureInput()
     {
-        if (_input is not null) return _input;
+        if (_input is not null)
+        {
+            _screen?.AttachTerminalInput(_input);
+            return _input;
+        }
         _input = TerminalInput.OpenConsole();
         _input.TerminalColorReceived += HandleTerminalColorResponse;
         _input.TerminalDeviceAttributesReceived += HandleTerminalDeviceAttributes;
         _input.TerminalColorSchemeReceived += HandleTerminalColorScheme;
+        _screen?.AttachTerminalInput(_input);
         return _input;
     }
 
@@ -128,6 +133,8 @@ public sealed class TerminalEditor
         Action abort, CancellationToken cancellationToken = default,
         Func<string, Task>? dispatchApplicationAction = null)
     {
+        if (next.IsEndOfStream) return false;
+        if (next.IsControl) return true;
         if (next.Mouse is { } mouse)
         {
             var result = _screen?.HandleMouse(mouse) ?? default;
@@ -339,7 +346,7 @@ public sealed class TerminalEditor
                         await dispatchApplicationAction("app.message.copy");
                     continue;
                 }
-                if (next.Key is null && next.Text is null)
+                if (next.IsEndOfStream)
                 {
                     ClearLine();
                     Console.WriteLine();

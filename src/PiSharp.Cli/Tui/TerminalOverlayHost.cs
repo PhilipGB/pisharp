@@ -19,7 +19,7 @@ internal sealed class TerminalOverlayHost(TerminalInput input)
                 var content = list.Render(screen.TerminalWidth, screen.TerminalHeight);
                 screen.SetOverlay(content);
                 var next = input.Read();
-                if (next.Key is null && next.Text is null && next.Mouse is null) return null;
+                if (next.IsEndOfStream) return null;
                 var mouseContentLine = next.Mouse is { } mouse
                     ? TerminalOverlayLayout.ContentLineAt(content, screen.TerminalWidth, screen.TerminalHeight,
                         mouse.Column, mouse.Row)

@@ -5,6 +5,75 @@ namespace PiSharp.Tests;
 
 public sealed class TerminalInputTests
 {
+    [Theory]
+    [InlineData("\u001b]10;rgb:aaaa/bbbb/cccc\a")]
+    [InlineData("\u001b[?61;1;21;22c")]
+    [InlineData("\u001b[?997;2n")]
+    [InlineData("\u001b[99~")]
+    public void BlockingReadSkipsProtocolTrafficAndReturnsTheNextUserInput(string protocol)
+    {
+        var input = new TerminalInput(new MemoryStream(Encoding.UTF8.GetBytes(protocol + "X")));
+        Assert.Equal('X', input.Read().Key?.KeyChar);
+    }
+
+    [Theory]
+    [InlineData("\u001b]11;#282a36\a")]
+    [InlineData("\u001b[?62;22c")]
+    [InlineData("\u001b[?997;1n")]
+    [InlineData("\u001b[99~")]
+    public void PollingConsumesProtocolTrafficWithoutReportingUserInputOrBlocking(string protocol)
+    {
+        var input = new TerminalInput(new MemoryStream(Encoding.UTF8.GetBytes(protocol)));
+        Assert.False(input.TryRead(0, out _));
+    }
+
+    [Theory]
+    [InlineData("X")]
+    [InlineData("😀")]
+    [InlineData("\u001b[A")]
+    [InlineData("\u001b[200~draft\u001b[201~")]
+    public void PendingReplyCompletionRetainsGenuineInputAndStopsAtTheDaFence(string userInput)
+    {
+        var reader = new TerminalInput(new MemoryStream(Encoding.UTF8.GetBytes("\u001b]11;#282a36\a" + userInput + "\u001b[?62;22cY")));
+        var pending = true;
+        reader.TerminalDeviceAttributesReceived += () => pending = false;
+        reader.CompletePendingReplies(() => pending, 100);
+        Assert.True(pending);
+        var actual = reader.Read();
+        var expected = new TerminalInput(new MemoryStream(Encoding.UTF8.GetBytes(userInput))).Read();
+        Assert.Equal(expected, actual);
+        reader.CompletePendingReplies(() => pending, 100);
+        Assert.False(pending);
+        Assert.Equal('Y', reader.Read().Key?.KeyChar);
+    }
+
+    [Fact]
+    public async Task ActiveEditorStopsOnlyForExplicitEofAndIgnoresEmptyControlEvents()
+    {
+        var editor = new TerminalEditor();
+        Task<bool> Queue(string text, bool followUp, CancellationToken token) => throw new InvalidOperationException();
+        Assert.True(await editor.HandleActiveInputAsync(new(null, null), Queue, () => [], () => { }));
+        Assert.False(await editor.HandleActiveInputAsync(TerminalInputEvent.EndOfStream, Queue, () => [], () => { }));
+    }
+
+    [Fact]
+    public void RealEofIsExplicitAndDifferentFromAnEmptyControlEvent()
+    {
+        var input = new TerminalInput(new MemoryStream());
+        Assert.True(input.Read().IsEndOfStream);
+        Assert.False(new TerminalInputEvent(null, null).IsEndOfStream);
+    }
+
+    [Fact]
+    public void PollingSkipsReportsAndStillReturnsAvailableUserInput()
+    {
+        var input = new TerminalInput(new MemoryStream(Encoding.UTF8.GetBytes("\u001b]11;#282a36\a\u001b[?62;22cX")));
+        Assert.True(input.TryRead(0, out var next));
+        Assert.False(next.IsEndOfStream);
+        Assert.Equal('X', next.Key?.KeyChar);
+        Assert.False(input.TryRead(0, out _));
+    }
+
     [Fact]
     public void DecodesArrowsModifiersEscapeAndUnicodeWithoutLeakingSequences()
     {
@@ -18,7 +87,6 @@ public sealed class TerminalInputTests
         Assert.True(newline?.Modifiers.HasFlag(ConsoleModifiers.Alt));
         // ESC Z is Alt+Z, whereas CSI Z means Shift+Tab.
         Assert.True(reader.Read().Key?.Modifiers.HasFlag(ConsoleModifiers.Alt));
-        Assert.Null(reader.Read().Key); // Unknown CSI is ignored, not inserted into the editor.
         Assert.Equal("😀", reader.Read().Text);
         Assert.Equal(ConsoleKey.Escape, new TerminalInput(new MemoryStream([27])).Read().Key?.Key);
         Assert.Null(reader.Read().Key);
@@ -102,9 +170,8 @@ public sealed class TerminalInputTests
     {
         var reader = new TerminalInput(new MemoryStream(Encoding.UTF8.GetBytes(input)));
         var reply = reader.Read();
-        Assert.Null(reply.Key);
-        Assert.Null(reply.Text);
-        Assert.Equal('X', reader.Read().Key?.KeyChar);
+        Assert.False(reply.IsEndOfStream);
+        Assert.Equal('X', reply.Key?.KeyChar);
     }
 
     [Theory]
@@ -122,11 +189,11 @@ public sealed class TerminalInputTests
 
         var report = reader.Read();
 
-        Assert.Null(report.Key);
-        Assert.Null(report.Text);
+        Assert.False(report.IsEndOfStream);
+        Assert.Equal('X', report.Key?.KeyChar);
         Assert.NotNull(response);
         Assert.Equal(new TerminalColorResponse(slot, new TerminalTheme.Rgb(red, green, blue), paletteIndex), response!.Value);
-        Assert.Equal('X', reader.Read().Key?.KeyChar);
+        Assert.True(reader.Read().IsEndOfStream);
     }
 
     [Fact]
@@ -138,20 +205,19 @@ public sealed class TerminalInputTests
         reader.TerminalColorSchemeReceived += value => appearance = value;
         reader.TerminalDeviceAttributesReceived += () => deviceAttributes++;
 
-        Assert.Null(reader.Read().Key);
-        Assert.Null(reader.Read().Key);
-
+        var next = reader.Read();
+        Assert.False(next.IsEndOfStream);
+        Assert.Equal('X', next.Key?.KeyChar);
         Assert.Equal("light", appearance);
         Assert.Equal(1, deviceAttributes);
-        Assert.Equal('X', reader.Read().Key?.KeyChar);
+        Assert.True(reader.Read().IsEndOfStream);
     }
 
     [Fact]
     public void TruncatedOscIsDiscardedAndOversizedOscIsRejected()
     {
         var truncated = new TerminalInput(new MemoryStream(Encoding.UTF8.GetBytes("\u001b]11;rgb:abcd")));
-        Assert.Null(truncated.Read().Text);
-        Assert.Null(truncated.Read().Key);
+        Assert.True(truncated.Read().IsEndOfStream);
         var oversized = new TerminalInput(new MemoryStream(Encoding.UTF8.GetBytes("\u001b]11;" + new string('x', 4096) + "\a")));
         Assert.Throws<InvalidDataException>(() => oversized.Read());
     }

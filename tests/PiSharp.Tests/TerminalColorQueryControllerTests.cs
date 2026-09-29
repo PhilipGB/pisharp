@@ -88,6 +88,21 @@ public sealed class TerminalColorQueryControllerTests
         Assert.Single(changes);
     }
 
+    [Fact]
+    public void ShutdownCompletionConsumesRepliesThroughDaAndDoesNotConsumeFollowingInput()
+    {
+        using var output = new StringWriter();
+        using var query = new TerminalColorQueryController(output, _ => { });
+        var input = new TerminalInput(new MemoryStream(Encoding.UTF8.GetBytes("\u001b]11;#282a36\a\u001b[?62;22cX")));
+        input.TerminalColorReceived += query.HandleColorResponse;
+        input.TerminalDeviceAttributesReceived += query.HandleDeviceAttributes;
+        query.Start(queryColors: true, followAppearance: true);
+        query.CompletePendingReplies(input);
+        Assert.False(query.HasPendingReplies);
+        Assert.Contains("\u001b[?2031l", output.ToString());
+        Assert.Equal('X', input.Read().Key?.KeyChar);
+    }
+
     private static void Send(TerminalColorQueryController query, string payload)
     {
         Assert.True(TerminalColorResponse.TryParse(payload, out var response), payload);

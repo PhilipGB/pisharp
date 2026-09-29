@@ -1207,6 +1207,80 @@ public sealed class TerminalPtyTests
         finally { Directory.Delete(cwd, recursive: true); }
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task ImmediateQuitLeavesNoTerminalRepliesAndRestoresTtyThroughLinuxPty(bool reply)
+    {
+        if (!OperatingSystem.IsLinux()) return;
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-terminal-shutdown-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(Path.Combine(cwd, "agent"));
+        try
+        {
+            var start = new ProcessStartInfo("python3")
+            {
+                WorkingDirectory = cwd,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+            start.ArgumentList.Add("-c");
+            start.ArgumentList.Add("""
+                import os, pty, select, subprocess, sys, termios, time, fcntl, struct, tty
+                master, slave = pty.openpty()
+                fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack('HHHH', 24, 80, 0, 0))
+                original = termios.tcgetattr(slave)
+                env = dict(os.environ, TERM='xterm-256color', PISHARP_AGENT_DIR=os.path.join(os.getcwd(), 'agent'))
+                env.pop('NO_COLOR', None)
+                child = subprocess.Popen(['dotnet', sys.argv[1], '--local', '--no-session', '--no-tools'],
+                    stdin=slave, stdout=slave, stderr=slave, env=env, start_new_session=True)
+                output = b''
+                deadline = time.monotonic() + 12
+                def receive():
+                    global output
+                    assert time.monotonic() < deadline, repr(output[-2000:])
+                    ready, _, _ = select.select([master], [], [], min(.2, max(0, deadline-time.monotonic())))
+                    if not ready: return
+                    output += os.read(master, 65536)
+                try:
+                    while b'\x1b[c' not in output or b'Ctrl+L models' not in output:
+                        receive()
+                    replies = b'\x1b]10;#f8f8f2\x07\x1b]11;#282a36\x07'
+                    replies += b''.join(('\x1b]4;%d;#262626\x07' % i).encode() for i in range(16))
+                    replies += b'\x1b[?61;1;21;22c'
+                    quit_started = time.monotonic()
+                    os.write(master, b'/quit\n' + (replies if sys.argv[2] == 'True' else b''))
+                    while child.poll() is None:
+                        receive()
+                    assert child.wait() == 0, repr(output[-2000:])
+                    assert time.monotonic()-quit_started < 2, 'shutdown did not stay bounded'
+                    assert termios.tcgetattr(slave) == original, 'tty mode was not restored'
+                    tty.setraw(slave, when=termios.TCSANOW)
+                    os.set_blocking(slave, False)
+                    try: remaining = os.read(slave, 65536)
+                    except BlockingIOError: remaining = b''
+                    assert remaining == b'', 'terminal replies leaked to parent: ' + repr(remaining)
+                    for sequence in [b'\x1b[?2004l', b'\x1b[?1006l', b'\x1b[?1002l', b'\x1b[?1000l',
+                        b'\x1b[?25h', b'\x1b[?1049l', b'\x1b[?2031l']:
+                        assert sequence in output, 'missing cleanup: ' + repr(sequence)
+                    print('TTY_AND_QUERY_SHUTDOWN_OK')
+                finally:
+                    if child.poll() is None: child.kill()
+                    child.wait()
+                    os.close(master); os.close(slave)
+                """);
+            start.ArgumentList.Add(typeof(CliArguments).Assembly.Location);
+            start.ArgumentList.Add(reply.ToString());
+            using var process = Process.Start(start)!;
+            var output = process.StandardOutput.ReadToEndAsync();
+            var error = process.StandardError.ReadToEndAsync();
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+            await process.WaitForExitAsync(timeout.Token);
+            Assert.True(process.ExitCode == 0, await error);
+            Assert.Contains("TTY_AND_QUERY_SHUTDOWN_OK", await output);
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
+    }
+
     [Fact]
     public async Task TerminalColorQueriesWorkThroughLinuxPty()
     {
@@ -1225,10 +1299,14 @@ public sealed class TerminalPtyTests
             };
             start.ArgumentList.Add("-q");
             start.ArgumentList.Add("-e");
+            start.ArgumentList.Add("-E");
+            start.ArgumentList.Add("never");
             start.ArgumentList.Add("-c");
             start.ArgumentList.Add($"stty rows 24 cols 80; exec dotnet {ShellQuote(typeof(CliArguments).Assembly.Location)} --local --no-session --no-tools");
             start.ArgumentList.Add("/dev/null");
             start.Environment["PISHARP_AGENT_DIR"] = agent;
+            start.Environment["TERM"] = "xterm-256color";
+            start.Environment.Remove("NO_COLOR");
             using var process = Process.Start(start);
             Assert.NotNull(process);
 
@@ -1236,6 +1314,8 @@ public sealed class TerminalPtyTests
             var outputLock = new object();
             var firstQuery = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var idleReady = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var firstReplyAlive = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var sessionResponse = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var drain = Task.Run(async () =>
             {
                 var buffer = new char[1024];
@@ -1246,6 +1326,8 @@ public sealed class TerminalPtyTests
                     {
                         output.Append(buffer, 0, count);
                         var captured = output.ToString();
+                        if (captured.Contains("FIRST_REPLY_ALIVE", StringComparison.Ordinal)) firstReplyAlive.TrySetResult();
+                        if (captured.Contains("(ephemeral) ·", StringComparison.Ordinal)) sessionResponse.TrySetResult();
                         if (CountOccurrences(captured, "\u001b]10;?") >= 1) firstQuery.TrySetResult();
                         if (captured.Contains("Ctrl+L models · Ctrl+P cycle", StringComparison.Ordinal)) idleReady.TrySetResult();
                     }
@@ -1256,14 +1338,21 @@ public sealed class TerminalPtyTests
 
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(12));
             await Task.WhenAll(firstQuery.Task, idleReady.Task).WaitAsync(timeout.Token);
-            await Task.Delay(150, timeout.Token);
-            var dark = new StringBuilder("\u001b]10;#f8f8f2\a\u001b]11;#282a36\a");
+            await process.StandardInput.WriteAsync("\u001b]10;#f8f8f2\aFIRST_REPLY_ALIVE");
+            await process.StandardInput.FlushAsync();
+            Assert.Same(firstReplyAlive.Task, await Task.WhenAny(firstReplyAlive.Task, process.WaitForExitAsync(timeout.Token)).WaitAsync(timeout.Token));
+            Assert.False(process.HasExited);
+            var dark = new StringBuilder("\u001b]11;#282a36\a");
             for (var index = 0; index < 16; index++)
                 dark.Append("\u001b]4;").Append(index).Append(";#").Append(index.ToString("x2")).Append(index.ToString("x2")).Append(index.ToString("x2")).Append('\a');
             dark.Append("\u001b[?62;22c");
             await process.StandardInput.WriteAsync(dark.ToString());
             await process.StandardInput.FlushAsync();
 
+            await process.StandardInput.WriteAsync("\u0015/session\n");
+            await process.StandardInput.FlushAsync();
+            Assert.Same(sessionResponse.Task, await Task.WhenAny(sessionResponse.Task, process.WaitForExitAsync(timeout.Token)).WaitAsync(timeout.Token));
+            Assert.False(process.HasExited);
             await process.StandardInput.WriteAsync("/quit\n");
             await process.StandardInput.FlushAsync();
             process.StandardInput.Close();

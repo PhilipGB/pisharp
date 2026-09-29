@@ -20,6 +20,7 @@ public sealed class TerminalScreen : IDisposable
     private string _markdownCodeBlockIndent = "  ";
     private TerminalColorState _terminalColors;
     private TerminalColorQueryController? _terminalColorQuery;
+    private TerminalInput? _terminalInput;
     private Func<TerminalColorState, TerminalTheme>? _themeResolver;
     private readonly ScreenWriter _out;
     private readonly ScreenWriter _error;
@@ -252,6 +253,8 @@ public sealed class TerminalScreen : IDisposable
         ArgumentNullException.ThrowIfNull(resolver);
         lock (_gate) _themeResolver = resolver;
     }
+
+    internal void AttachTerminalInput(TerminalInput input) => _terminalInput = input;
 
     internal void HandleTerminalColorResponse(TerminalColorResponse response)
     {
@@ -557,7 +560,22 @@ public sealed class TerminalScreen : IDisposable
 
     public void Dispose()
     {
-        _terminalColorQuery?.Dispose();
+        try
+        {
+            if (!Console.IsInputRedirected && _terminalColorQuery is { HasPendingReplies: true } query)
+            {
+                var input = _terminalInput ?? TerminalInput.OpenConsole();
+                using var mode = TerminalMode.Enter(this);
+                if (_terminalInput is null)
+                {
+                    input.TerminalColorReceived += query.HandleColorResponse;
+                    input.TerminalDeviceAttributesReceived += query.HandleDeviceAttributes;
+                }
+                query.CompletePendingReplies(input);
+            }
+        }
+        catch (IOException) { }
+        finally { _terminalColorQuery?.Dispose(); }
         IReadOnlyList<TerminalTranscriptBuffer.CapturedChunk> captured;
         bool truncated;
         lock (_gate)

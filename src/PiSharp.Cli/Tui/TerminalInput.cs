@@ -11,6 +11,9 @@ public sealed class TerminalInput
     private const int MaxPasteBytes = 2 * 1024 * 1024;
     private readonly Stream? _input;
     private readonly bool _standardInput;
+    private readonly Queue<byte> _retainedBytes = new();
+    private List<byte>? _replyBytes;
+    private long? _protocolDeadline;
 
     internal event Action<TerminalColorResponse>? TerminalColorReceived;
     internal event Action? TerminalDeviceAttributesReceived;
@@ -22,26 +25,73 @@ public sealed class TerminalInput
 
     private int ReadByte()
     {
-        if (!_standardInput) return _input!.ReadByte();
-        var bytes = new byte[1];
-        return read(0, bytes, 1) == 1 ? bytes[0] : -1;
+        if (_protocolDeadline is not null && !Available(100)) throw new TimeoutException();
+        int value;
+        if (_retainedBytes.TryDequeue(out var retained)) value = retained;
+        else if (!_standardInput) value = _input!.ReadByte();
+        else
+        {
+            var bytes = new byte[1];
+            nint count;
+            do { count = read(0, bytes, 1); } while (count < 0 && Marshal.GetLastPInvokeError() == 4);
+            if (count < 0) throw new IOException("Could not read terminal input.");
+            value = count == 1 ? bytes[0] : -1;
+        }
+        if (value >= 0) _replyBytes?.Add((byte)value);
+        return value;
     }
 
+    // Blocking reads skip protocol traffic; polling never waits for user input after consuming it.
     public bool TryRead(int timeoutMilliseconds, out TerminalInputEvent value)
     {
-        if (!Available(timeoutMilliseconds))
+        var timeout = timeoutMilliseconds;
+        while (Available(timeout))
         {
-            value = new(null, null);
-            return false;
+            value = ReadNext();
+            if (!value.IsControl) return true;
+            timeout = 0;
         }
-        value = Read();
-        return true;
+        value = new(null, null);
+        return false;
     }
 
     public TerminalInputEvent Read()
     {
+        TerminalInputEvent value;
+        do { value = ReadNext(); } while (value.IsControl);
+        return value;
+    }
+
+    internal void CompletePendingReplies(Func<bool> hasPendingReplies, int timeoutMilliseconds)
+    {
+        if (_retainedBytes.Count > 0) return;
+        _protocolDeadline = Environment.TickCount64 + timeoutMilliseconds;
+        _replyBytes = [];
+        try
+        {
+            while (hasPendingReplies() && Available(timeoutMilliseconds))
+            {
+                _replyBytes.Clear();
+                var next = ReadNext();
+                if (next.IsControl) continue;
+                RetainReplyBytes();
+                break;
+            }
+        }
+        catch (TimeoutException) { RetainReplyBytes(); }
+        finally { _protocolDeadline = null; _replyBytes = null; }
+    }
+
+    private void RetainReplyBytes()
+    {
+        // Preserve user bytes, including an incomplete key/paste, for the next input reader.
+        foreach (var value in _replyBytes!) _retainedBytes.Enqueue(value);
+    }
+
+    private TerminalInputEvent ReadNext()
+    {
         var first = ReadByte();
-        if (first < 0) return new(null, null);
+        if (first < 0) return TerminalInputEvent.EndOfStream;
         if (first == 27) return Escape();
         return ByteToEvent(first);
     }
@@ -173,7 +223,7 @@ public sealed class TerminalInput
         for (var i = 0; i < 4096 && Available(60); i++)
         {
             var value = ReadByte();
-            if (value < 0) return new(null, null);
+            if (value < 0) return TerminalInputEvent.EndOfStream;
             if (value == 7 || (escape && value == '\\'))
             {
                 if (escape && payload.Length > 0 && payload[^1] == '\u001b') payload.Length--;
@@ -196,7 +246,7 @@ public sealed class TerminalInput
         while (bytes.Count < MaxPasteBytes)
         {
             var value = ReadByte();
-            if (value < 0) return new(null, null);
+            if (value < 0) return TerminalInputEvent.EndOfStream;
             if (value == end[matched])
             {
                 if (++matched == end.Length)
@@ -233,7 +283,7 @@ public sealed class TerminalInput
         for (var i = 1; i < length; i++)
         {
             var next = ReadByte();
-            if (next < 0) return new(null, null);
+            if (next < 0) return TerminalInputEvent.EndOfStream;
             bytes[i] = (byte)next;
         }
         return new(null, Encoding.UTF8.GetString(bytes));
@@ -294,10 +344,17 @@ public sealed class TerminalInput
 
     private bool Available(int milliseconds)
     {
+        if (_protocolDeadline is { } deadline)
+        {
+            var remaining = deadline - Environment.TickCount64;
+            if (remaining <= 0) return false;
+            milliseconds = (int)Math.Min(milliseconds, remaining);
+        }
+        if (_retainedBytes.Count > 0) return true;
         if (!_standardInput && _input!.CanSeek) return _input.Position < _input.Length;
         if (!OperatingSystem.IsLinux()) return false;
         var descriptors = new[] { new PollFd { FileDescriptor = 0, Events = 1 } };
-        return poll(descriptors, 1, milliseconds) > 0 && (descriptors[0].ReturnedEvents & 1) != 0;
+        return poll(descriptors, 1, milliseconds) > 0 && (descriptors[0].ReturnedEvents & (1 | 16)) != 0;
     }
 
     private static TerminalInputEvent Key(ConsoleKey key, char character = '\0', bool shift = false, bool alt = false, bool control = false) =>
@@ -313,7 +370,12 @@ public sealed class TerminalInput
     private static extern nint read(int fd, [Out] byte[] buffer, nuint count);
 }
 
-public sealed record TerminalInputEvent(ConsoleKeyInfo? Key, string? Text, TerminalMouseEvent? Mouse = null);
+public sealed record TerminalInputEvent(ConsoleKeyInfo? Key, string? Text, TerminalMouseEvent? Mouse = null,
+    bool IsEndOfStream = false)
+{
+    public static TerminalInputEvent EndOfStream { get; } = new(null, null, IsEndOfStream: true);
+    internal bool IsControl => !IsEndOfStream && Key is null && Text is null && Mouse is null;
+}
 
 /// <summary>SGR mouse report coordinates are one-based terminal columns and rows.</summary>
 public readonly record struct TerminalMouseEvent(int Button, int Column, int Row, bool IsRelease)
