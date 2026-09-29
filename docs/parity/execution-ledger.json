@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "plan_received": true,
-  "source_note": "The latest CI-verified PiSharp checkpoint is ba4c6412986dd4867f8cfbb5b9eab01aa1c152cd. Exact-head Linux CI run 36576153201 passed restore, format, warnings-as-errors build and 848/848 tests (0 skipped). The MCP CLI follow-up passed 843/843 locally; exact-head CI run 36572820941 failed twice at 842/843 in different existing timing tests. The OAuth follow-up passed 848/848 locally and in exact-head CI. The current-Pi defaultTools modifier follow-up passes the 849/849 local full suite and awaits exact-head CI. Current Pi main is 5257d0d5f3ab7d42550804f32c67a77b49f485d4; the three newer commits add defaultTools modifiers and richer tool-call rendering while MCP CLI/config source is unchanged. MCP TUI management, cross-process OAuth refresh coordination, reconnect, virtual models, Codemode optional globals and broader differentials remain. Overall parity is incomplete.",
+  "source_note": "The latest CI-verified PiSharp checkpoint is 49d706f0651c5260e254e7ba81e7aa2e640f6770. Exact-head Linux CI run 36577388693 passed restore, format, warnings-as-errors build and 849/849 tests (0 skipped). The MCP CLI follow-up passed 843/843 locally; exact-head CI run 36572820941 failed twice at 842/843 in different existing timing tests. The OAuth follow-up passed 848/848 locally and in exact-head CI. The current-Pi defaultTools modifier follow-up passed 849/849 locally and in exact-head CI. Current Pi main is 5257d0d5f3ab7d42550804f32c67a77b49f485d4. The defaultTools modifier slice passed exact-head CI; a source-matched tool-call rendering follow-up passed 36/36 focused and 852/852 full locally and awaits exact-head CI. MCP CLI/config source is unchanged in the latest Pi delta. MCP TUI management, cross-process OAuth refresh coordination, reconnect, virtual models, Codemode optional globals and broader differentials remain. Overall parity is incomplete.",
   "baseline": "earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035",
   "required_ids": [
     "feature-agent-multi-turn-and-streaming",
@@ -2190,7 +2190,7 @@
         "Partial: src/PiSharp.Cli/UserSettings.cs validates defaultProvider in user settings and trusted project overlays; CLI/runtime wiring applies selected defaults, with Pi schema and reload parity still open."
       ],
       "evidence": [
-        "Current Pi 5257d0d5f3ab7d42550804f32c67a77b49f485d4 settings-manager.ts and its defaultTools tests specify modifier-only layering and resolution. A new PiSharp test failed first because +codemode/-write passed through raw, then focused UserSettingsTests passed 44/44 with in-memory and file-backed user/project vectors; the sequential full suite passed 849/849 with zero skipped. ProjectSettingsProcessTests covers the trust boundary. A paired Pi/PiSharp process differential remains open."
+        "Current Pi 5257d0d5f3ab7d42550804f32c67a77b49f485d4 settings-manager.ts and its defaultTools tests specify modifier-only layering and resolution. A new PiSharp test failed first because +codemode/-write passed through raw, then focused UserSettingsTests passed 44/44 with in-memory and file-backed user/project vectors; the sequential full suite and exact-head CI run 36577388693 passed 849/849 with zero skipped. ProjectSettingsProcessTests covers the trust boundary. A paired Pi/PiSharp process differential remains open."
       ],
       "dependencies": []
     },
@@ -2207,7 +2207,7 @@
         "Partial: src/PiSharp.Cli/UserSettings.cs validates defaultModel in user settings and trusted project overlays; CLI/runtime wiring applies selected defaults, with Pi schema and reload parity still open."
       ],
       "evidence": [
-        "Current Pi 5257d0d5f3ab7d42550804f32c67a77b49f485d4 settings-manager.ts and its defaultTools tests specify modifier-only layering and resolution. A new PiSharp test failed first because +codemode/-write passed through raw, then focused UserSettingsTests passed 44/44 with in-memory and file-backed user/project vectors; the sequential full suite passed 849/849 with zero skipped. ProjectSettingsProcessTests covers the trust boundary. A paired Pi/PiSharp process differential remains open."
+        "Current Pi 5257d0d5f3ab7d42550804f32c67a77b49f485d4 settings-manager.ts and its defaultTools tests specify modifier-only layering and resolution. A new PiSharp test failed first because +codemode/-write passed through raw, then focused UserSettingsTests passed 44/44 with in-memory and file-backed user/project vectors; the sequential full suite and exact-head CI run 36577388693 passed 849/849 with zero skipped. ProjectSettingsProcessTests covers the trust boundary. A paired Pi/PiSharp process differential remains open."
       ],
       "dependencies": []
     },
@@ -2428,7 +2428,7 @@
         "UserSettings loads defaultTools from user and trusted-project files. Plain lists replace inherited selections; modifier-only project lists append, and startup resolves +name/-name in order against the inherited or built-in read/bash/edit/write selection. CLI --tools still overrides settings. Other Pi schema and reload parity remains open."
       ],
       "evidence": [
-        "Current Pi 5257d0d5f3ab7d42550804f32c67a77b49f485d4 settings-manager.ts and its defaultTools tests specify modifier-only layering and resolution. A new PiSharp test failed first because +codemode/-write passed through raw, then focused UserSettingsTests passed 44/44 with in-memory and file-backed user/project vectors; the sequential full suite passed 849/849 with zero skipped. ProjectSettingsProcessTests covers the trust boundary. A paired Pi/PiSharp process differential remains open."
+        "Current Pi 5257d0d5f3ab7d42550804f32c67a77b49f485d4 settings-manager.ts and its defaultTools tests specify modifier-only layering and resolution. A new PiSharp test failed first because +codemode/-write passed through raw, then focused UserSettingsTests passed 44/44 with in-memory and file-backed user/project vectors; the sequential full suite and exact-head CI run 36577388693 passed 849/849 with zero skipped. ProjectSettingsProcessTests covers the trust boundary. A paired Pi/PiSharp process differential remains open."
       ],
       "dependencies": []
     },
@@ -2445,7 +2445,7 @@
         "Partial: src/PiSharp.Cli/UserSettings.cs validates sessionDir in user settings and trusted project overlays; CLI/runtime wiring applies selected defaults, with Pi schema and reload parity still open."
       ],
       "evidence": [
-        "Current Pi 5257d0d5f3ab7d42550804f32c67a77b49f485d4 settings-manager.ts and its defaultTools tests specify modifier-only layering and resolution. A new PiSharp test failed first because +codemode/-write passed through raw, then focused UserSettingsTests passed 44/44 with in-memory and file-backed user/project vectors; the sequential full suite passed 849/849 with zero skipped. ProjectSettingsProcessTests covers the trust boundary. A paired Pi/PiSharp process differential remains open."
+        "Current Pi 5257d0d5f3ab7d42550804f32c67a77b49f485d4 settings-manager.ts and its defaultTools tests specify modifier-only layering and resolution. A new PiSharp test failed first because +codemode/-write passed through raw, then focused UserSettingsTests passed 44/44 with in-memory and file-backed user/project vectors; the sequential full suite and exact-head CI run 36577388693 passed 849/849 with zero skipped. ProjectSettingsProcessTests covers the trust boundary. A paired Pi/PiSharp process differential remains open."
       ],
       "dependencies": []
     },

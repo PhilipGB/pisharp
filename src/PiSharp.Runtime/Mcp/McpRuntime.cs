@@ -80,12 +80,17 @@ public static class McpRuntime
                 {
                     var exposure = server.ExposureFor(tool.Name);
                     var function = new McpToolFunction(tool, name, server.Timeout);
-                    catalog.Registration.AddTool(new PiSharpToolRegistration(function, MapExposure(exposure),
+                    var registration = new PiSharpToolRegistration(function, MapExposure(exposure),
                         DefaultActive: exposure == McpToolExposure.Direct,
                         Namespace: new PiSharpToolNamespace("mcp__" + server.Name,
                             "Tools from MCP server " + server.Name),
                         AllowNestedInvocation: exposure is McpToolExposure.Codemode or McpToolExposure.CodemodeDeferred,
-                        OutputSchema: tool.ProtocolTool.OutputSchema));
+                        OutputSchema: tool.ProtocolTool.OutputSchema);
+                    var label = server.Name + "/" + tool.Name;
+                    catalog.Registration.AddTool(registration, new PiSharpToolRenderer(
+                        renderCall: (arguments, context) =>
+                            PiSharpToolCallDisplay.Format(label, arguments, context.IsExpanded),
+                        renderResult: RenderResult));
                 }
                 if (client.ServerCapabilities.Resources is not null && server.Exposure != McpToolExposure.Hidden)
                     resourceServers.Add((server.Name, client, server.Timeout, MapExposure(server.Exposure)));
@@ -147,6 +152,25 @@ public static class McpRuntime
         McpToolExposure.Codemode => ToolExposure.CodeMode,
         _ => ToolExposure.Hidden
     };
+
+    private static PiSharpToolRenderView RenderResult(PiSharpToolRenderResult result,
+        PiSharpToolRenderContext context)
+    {
+        var output = (result.IsError ? result.Error ?? result.Text : result.Text)?.Trim();
+        if (string.IsNullOrEmpty(output))
+            return PiSharpToolRenderView.FromText("← (no output)", PiSharpToolTextStyle.Muted);
+        var lines = output.Replace("\t", "    ", StringComparison.Ordinal).Split('\n');
+        var shown = context.IsExpanded ? lines : lines.Take(5).ToArray();
+        var spans = new List<PiSharpToolTextSpan>
+        {
+            new("← ", PiSharpToolTextStyle.Muted),
+            new(string.Join('\n', shown), result.IsError ? PiSharpToolTextStyle.Error : PiSharpToolTextStyle.Output)
+        };
+        if (shown.Length < lines.Length)
+            spans.Add(new($"\n... ({lines.Length - shown.Length} more lines; expand to view)",
+                PiSharpToolTextStyle.Muted));
+        return new(spans);
+    }
 }
 
 internal sealed class McpToolFunction(McpClientTool tool, string name, TimeSpan timeout) : DelegatingAIFunction(tool)

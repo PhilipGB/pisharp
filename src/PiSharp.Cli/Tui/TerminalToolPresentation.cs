@@ -19,7 +19,7 @@ internal sealed class TerminalToolPresentation(Func<string, PiSharpToolRenderer?
     private readonly Dictionary<string, IReadOnlyDictionary<string, object?>> _argumentsByCall = new(StringComparer.Ordinal);
     private readonly Queue<string> _callOrder = new();
 
-    public PiSharpToolRenderView RenderCall(AgentLifecycleEvent update)
+    public PiSharpToolRenderView RenderCall(AgentLifecycleEvent update, bool? expanded = null)
     {
         var tool = update.Tool ?? "tool";
         var arguments = SnapshotArguments(update.ToolArguments);
@@ -31,7 +31,8 @@ internal sealed class TerminalToolPresentation(Func<string, PiSharpToolRenderer?
             try
             {
                 var returned = custom(arguments,
-                    Context(update, arguments, executionStarted: true, argumentsComplete: true, isPartial: false, isError: false));
+                    Context(update, arguments, executionStarted: true, argumentsComplete: true, isPartial: false,
+                        isError: false, expanded));
                 if (returned is not null)
                 {
                     var view = SnapshotView(returned);
@@ -52,6 +53,9 @@ internal sealed class TerminalToolPresentation(Func<string, PiSharpToolRenderer?
             spans.Add(new(" · ", PiSharpToolTextStyle.Muted));
             spans.Add(new(summary, PiSharpToolTextStyle.Output));
         }
+        else if (renderer?.RenderCall is null && arguments.Count > 0)
+            spans.AddRange(PiSharpToolCallDisplay.Format(tool, arguments, expanded ?? isExpanded?.Invoke() ?? false)
+                .Spans.Skip(1));
         if (update.OperationId is { } id)
         {
             spans.Add(new(" (", PiSharpToolTextStyle.Muted));
@@ -61,18 +65,29 @@ internal sealed class TerminalToolPresentation(Func<string, PiSharpToolRenderer?
         return new(spans);
     }
 
-    public PiSharpToolRenderView RenderResult(AgentLifecycleEvent update, bool isError)
+    public PiSharpToolRenderView RenderResult(AgentLifecycleEvent update, bool isError) =>
+        RenderResultCore(update, isError, TakeArguments(update), null);
+
+    public (PiSharpToolRenderView Collapsed, PiSharpToolRenderView Expanded) RenderResultViews(
+        AgentLifecycleEvent update, bool isError)
+    {
+        var arguments = TakeArguments(update);
+        return (RenderResultCore(update, isError, arguments, false),
+            RenderResultCore(update, isError, arguments, true));
+    }
+
+    private PiSharpToolRenderView RenderResultCore(AgentLifecycleEvent update, bool isError,
+        IReadOnlyDictionary<string, object?> arguments, bool? expanded)
     {
         var tool = update.Tool ?? "tool";
         var renderer = Resolve(tool);
-        var arguments = TakeArguments(update);
         if (renderer?.RenderResult is { } custom)
         {
             try
             {
                 var result = new PiSharpToolRenderResult(update.Text, update.Details, update.Images, isError, update.Error);
                 var returned = custom(result, Context(update, arguments, executionStarted: true,
-                    argumentsComplete: true, isPartial: false, isError: isError));
+                    argumentsComplete: true, isPartial: false, isError: isError, expanded));
                 if (returned is not null)
                 {
                     var view = SnapshotView(returned);
@@ -136,8 +151,9 @@ internal sealed class TerminalToolPresentation(Func<string, PiSharpToolRenderer?
 
     private PiSharpToolRenderContext Context(AgentLifecycleEvent update,
         IReadOnlyDictionary<string, object?> arguments, bool executionStarted, bool argumentsComplete,
-        bool isPartial, bool isError) => new(update.Tool ?? "tool", update.OperationId,
-        workingDirectory, arguments, executionStarted, argumentsComplete, isPartial, isExpanded?.Invoke() ?? false, isError);
+        bool isPartial, bool isError, bool? expanded = null) => new(update.Tool ?? "tool", update.OperationId,
+        workingDirectory, arguments, executionStarted, argumentsComplete, isPartial,
+        expanded ?? isExpanded?.Invoke() ?? false, isError);
 
     private void RememberArguments(string operationId, IReadOnlyDictionary<string, object?> arguments)
     {

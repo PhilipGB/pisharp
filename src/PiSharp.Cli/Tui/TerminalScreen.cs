@@ -464,9 +464,32 @@ public sealed class TerminalScreen : IDisposable
         }
     }
 
-    internal void AppendToolResult(PiSharpToolRenderView view, IReadOnlyList<DataContent>? images = null)
+    internal void AppendToolCall(PiSharpToolRenderView collapsed, PiSharpToolRenderView expanded)
     {
-        ArgumentNullException.ThrowIfNull(view);
+        ArgumentNullException.ThrowIfNull(collapsed);
+        ArgumentNullException.ThrowIfNull(expanded);
+        lock (_gate)
+        {
+            if (!_active) return;
+            string RenderExpanded(TerminalTheme theme) => Environment.NewLine +
+                EnsureTrailingNewline(TerminalToolPresentation.Render(expanded, theme));
+            string RenderCollapsed(TerminalTheme theme) => Environment.NewLine +
+                EnsureTrailingNewline(TerminalToolPresentation.Render(collapsed, theme));
+            _transcript.AppendThemed(RenderExpanded(_theme), isError: true, isToolResult: true,
+                RenderExpanded, RenderCollapsed(_theme), collapsedPreviewText: RenderCollapsed(_theme),
+                collapsedRenderer: RenderCollapsed);
+            RenderLocked();
+        }
+    }
+
+    internal void AppendToolResult(PiSharpToolRenderView view, IReadOnlyList<DataContent>? images = null) =>
+        AppendToolResult(view, view, images);
+
+    internal void AppendToolResult(PiSharpToolRenderView collapsed, PiSharpToolRenderView expanded,
+        IReadOnlyList<DataContent>? images = null)
+    {
+        ArgumentNullException.ThrowIfNull(collapsed);
+        ArgumentNullException.ThrowIfNull(expanded);
         lock (_gate)
         {
             if (!_active) return;
@@ -481,14 +504,14 @@ public sealed class TerminalScreen : IDisposable
                     capturedImageText.Append(Environment.NewLine).Append(fallback);
                 }
             }
-            string Render(TerminalTheme theme) => EnsureTrailingNewline(
-                TerminalToolPresentation.Render(view, theme) + activeImageText);
+            string RenderExpanded(TerminalTheme theme) => EnsureTrailingNewline(
+                TerminalToolPresentation.Render(expanded, theme) + activeImageText);
             string RenderCollapsed(TerminalTheme theme) => EnsureTrailingNewline(
-                TerminalToolPresentation.Render(view, theme) + capturedImageText);
-            var rendered = Render(_theme);
-            var captured = EnsureTrailingNewline(TerminalToolPresentation.Render(view, theme: null) + capturedImageText);
+                TerminalToolPresentation.Render(collapsed, theme) + capturedImageText);
+            var rendered = RenderExpanded(_theme);
+            var captured = EnsureTrailingNewline(TerminalToolPresentation.Render(expanded, theme: null) + capturedImageText);
             if (rendered.Length == 0) return;
-            _transcript.AppendThemed(rendered, isError: true, isToolResult: true, Render, captured,
+            _transcript.AppendThemed(rendered, isError: true, isToolResult: true, RenderExpanded, captured,
                 collapsedPreviewText: RenderCollapsed(_theme), collapsedRenderer: RenderCollapsed);
             RenderLocked();
         }

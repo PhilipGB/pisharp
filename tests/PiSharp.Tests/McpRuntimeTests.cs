@@ -2,6 +2,7 @@ using Microsoft.Extensions.AI;
 using PiSharp.Runtime.Extensions;
 using PiSharp.Runtime.Mcp;
 using PiSharp.Runtime.Tools;
+using PiSharp.Cli.Tui;
 
 namespace PiSharp.Tests;
 
@@ -66,6 +67,23 @@ public sealed class McpRuntimeTests
                 tool.Function.Name == "mcp__fixture__echo");
             Assert.Equal(ToolExposure.Direct, echo.Exposure);
             Assert.Equal("fixture", echo.Namespace?.Name["mcp__".Length..]);
+            var renderer = catalog.Registration.GetToolRenderer("mcp__fixture__echo");
+            Assert.NotNull(renderer);
+            var arguments = new Dictionary<string, object?> { ["value"] = "hello" };
+            var renderContext = new PiSharpToolRenderContext("mcp__fixture__echo", "call", root,
+                arguments, true, true, false, false, false);
+            var callView = renderer.RenderCall!(arguments, renderContext);
+            Assert.Contains("fixture/echo", TerminalToolPresentation.Render(callView!, null));
+            Assert.Contains("value=\"hello\"", TerminalToolPresentation.Render(callView!, null));
+            var sixLines = string.Join('\n', Enumerable.Range(1, 6).Select(index => "line " + index));
+            var resultView = renderer.RenderResult!(new PiSharpToolRenderResult(sixLines, null, null, false),
+                renderContext);
+            Assert.Contains("line 5", TerminalToolPresentation.Render(resultView!, null));
+            Assert.DoesNotContain("line 6", TerminalToolPresentation.Render(resultView!, null));
+            Assert.Contains("1 more line", TerminalToolPresentation.Render(resultView!, null));
+            var expandedView = renderer.RenderResult!(new PiSharpToolRenderResult(sixLines, null, null, false),
+                renderContext with { IsExpanded = true });
+            Assert.Contains("line 6", TerminalToolPresentation.Render(expandedView!, null));
             Assert.True(echo.Function.JsonSchema.TryGetProperty("properties", out var properties));
             Assert.True(properties.TryGetProperty("value", out _));
             Assert.Equal("echo", echo.OutputSchema?.GetProperty("required")[0].GetString());

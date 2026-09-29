@@ -51,12 +51,14 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
                                 ToolArguments = call.Arguments is { } arguments
                                     ? new Dictionary<string, object?>(arguments, StringComparer.Ordinal) : null
                             };
-                            target.AppendToolCall(_toolPresentation.RenderCall(update));
+                            target.AppendToolCall(_toolPresentation.RenderCall(update, expanded: false),
+                                _toolPresentation.RenderCall(update, expanded: true));
                             if (call.Exception is not null)
                             {
                                 var failed = new AgentLifecycleEvent("tool_execution_finished", Tool: call.Name,
                                     OperationId: call.CallId, IsError: true, Error: call.Exception.Message);
-                                target.AppendToolResult(_toolPresentation.RenderResult(failed, isError: true));
+                                var views = _toolPresentation.RenderResultViews(failed, isError: true);
+                                target.AppendToolResult(views.Collapsed, views.Expanded);
                             }
                         }
                     }
@@ -72,7 +74,8 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
                     var update = new AgentLifecycleEvent("tool_execution_finished", Text: ToolResultText(result.Result),
                         Tool: name, OperationId: result.CallId, IsError: failed,
                         Error: result.Exception?.Message, Details: result.Result);
-                    target.AppendToolResult(_toolPresentation.RenderResult(update, failed), images);
+                    var views = _toolPresentation.RenderResultViews(update, failed);
+                    target.AppendToolResult(views.Collapsed, views.Expanded, images);
                     if (nestedCalls.TryGetValue(result.CallId, out var nested))
                         target.AppendToolResult(RenderNestedToolCalls(nested));
                 }
@@ -109,7 +112,7 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
                 status.WriteLine(Safe(update.Text));
                 break;
             case "tool_execution_started" when interactive:
-                WriteToolCall(_toolPresentation.RenderCall(update));
+                WriteToolCall(update);
                 break;
             case "tool_execution_update" when interactive && update.Tool == "bash" && !string.IsNullOrEmpty(update.Text):
                 WriteBashUpdate(update);
@@ -186,7 +189,7 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
         }
         else
         {
-            WriteToolResult(_toolPresentation.RenderResult(update, update.IsError == true), update.Images);
+            WriteToolResultViews(update);
         }
         if (update.NestedToolCalls is { } nestedCalls) WriteToolResult(RenderNestedToolCalls(nestedCalls), null);
     }
@@ -211,17 +214,27 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
         return new PiSharpToolRenderView(spans);
     }
 
-    private void WriteToolCall(PiSharpToolRenderView view)
+    private void WriteToolCall(AgentLifecycleEvent update)
     {
         if (!interactive) return;
-        if (screen is null) status.WriteLine(Environment.NewLine + TerminalToolPresentation.Render(view, theme: null));
-        else screen.AppendToolCall(view);
+        var collapsed = _toolPresentation.RenderCall(update, expanded: false);
+        if (screen is null)
+            status.WriteLine(Environment.NewLine + TerminalToolPresentation.Render(collapsed, theme: null));
+        else screen.AppendToolCall(collapsed, _toolPresentation.RenderCall(update, expanded: true));
     }
 
     private void WriteToolResult(PiSharpToolRenderView view, IReadOnlyList<Microsoft.Extensions.AI.DataContent>? images)
     {
         if (screen is null) status.WriteLine(TerminalToolPresentation.Render(view, theme: null));
         else screen.AppendToolResult(view, images);
+    }
+
+    private void WriteToolResultViews(AgentLifecycleEvent update)
+    {
+        var views = _toolPresentation.RenderResultViews(update, update.IsError == true);
+        if (screen is null)
+            status.WriteLine(TerminalToolPresentation.Render(views.Collapsed, theme: null));
+        else screen.AppendToolResult(views.Collapsed, views.Expanded, update.Images);
     }
 
     private string Safe(string value) => interactive ? TerminalSafeText.Normalize(value) : value;
