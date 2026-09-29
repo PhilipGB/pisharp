@@ -12,7 +12,7 @@ public sealed class ProjectTrust(string agentDirectory)
     {
         var directory = System.IO.Path.GetFullPath(cwd);
         var pi = System.IO.Path.Combine(directory, ".pi");
-        if (new[] { "settings.json", "extensions", "skills", "prompts", "themes", "SYSTEM.md", "APPEND_SYSTEM.md" }
+        if (new[] { "settings.json", "mcp.json", "extensions", "skills", "prompts", "themes", "SYSTEM.md", "APPEND_SYSTEM.md" }
             .Any(name => File.Exists(System.IO.Path.Combine(pi, name)) || Directory.Exists(System.IO.Path.Combine(pi, name)))) return true;
         var homeSkills = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".agents", "skills");
         for (var parent = new DirectoryInfo(directory); parent is not null; parent = parent.Parent)

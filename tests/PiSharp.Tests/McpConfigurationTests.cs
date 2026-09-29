@@ -1,9 +1,32 @@
 using PiSharp.Runtime.Mcp;
+using PiSharp.Runtime.Resources;
 
 namespace PiSharp.Tests;
 
 public sealed class McpConfigurationTests
 {
+    [Fact]
+    public async Task ProjectMcpFileAloneRequiresExplicitTrust()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-mcp-trust-" + Guid.NewGuid().ToString("N"));
+        var agent = Path.Combine(root, "agent");
+        var project = Path.Combine(root, "project");
+        Directory.CreateDirectory(Path.Combine(project, ".pi"));
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(project, ".pi", "mcp.json"),
+                """{"mcpServers":{"project":{"command":"fixture"}}}""");
+            var trust = new ProjectTrust(agent);
+            Assert.True(ProjectTrust.HasProtectedResources(project));
+            Assert.False(await trust.ResolveAsync(project, null, false, TextReader.Null, TextWriter.Null));
+            Assert.Empty((await McpConfiguration.LoadAsync(agent, project, false)).Servers);
+            await trust.SetAsync(project, true);
+            Assert.True(await trust.ResolveAsync(project, null, false, TextReader.Null, TextWriter.Null));
+            Assert.Equal("project", Assert.Single((await McpConfiguration.LoadAsync(agent, project, true)).Servers).Name);
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
     [Fact]
     public async Task TrustedProjectOverridesGlobalAndUntrustedProjectIsIgnored()
     {
