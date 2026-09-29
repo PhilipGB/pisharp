@@ -1,5 +1,13 @@
 # Provider and authentication breadth audit
 
+## Current reconciliation — 2026-09-29
+
+This current section supersedes older gap statements below. PiSharp `main` is `3a7cb31cea47d9c7df33ff70144c8dac4fa72b9e`; exact-head Linux CI run [36487198225](https://github.com/PhilipGB/pisharp/actions/runs/36487198225) passed restore, format, warnings-as-errors build and 807/807 tests (0 skipped). Current Pi is `8562bcf66a8eeefdf75ddd231ca9d7aa7d64f86e`.
+
+PiSharp now has 11 cloud profiles across the ten inventoried chat API families. Amazon Bedrock Converse, Pi Messages and Radius/OAuth are implemented. There is no remaining wholly absent major provider API family in the current inventory. Of Pi's eight built-in OAuth providers, Codex and Radius are implemented; Anthropic, GitHub Copilot, Kimi Coding, Meta, OpenRouter and xAI remain. Provider-specific image/tool/reasoning/cache/usage/error behavior, paired current-Pi differentials, Codex WebSocket/cached transport, manual-code fallback and Google ADC metadata-server status are category 3/4 residuals to weigh against the absent tool-orchestration, Codemode, MCP and virtual-model capabilities.
+
+The higher-impact gap requirements are in [the current-Pi tool-orchestration and virtual-model audit](tool-orchestration-virtual-model-audit-2026-09-29.md). Provider records below preserve historical implementation evidence; their former “next implement Bedrock/Pi Messages” statements are no longer current.
+
 Reference: `earendil-works/pi@c90d9ea586194003211f10cded3c14f74a4f81e1`, refreshed 2026-09-28. Since provider audit pin `cd5ff1125981f0fc37a56df25eee7310286a3f89`, current `main` adds Claude Sonnet 5.5 model metadata; provider implementation source is unchanged. Refresh generated catalogs from the current checkout. Pi Packages remain excluded. This is a bounded audit of the provider/auth phase, not the final compatibility audit.
 
 ## Current Pi surface
@@ -20,7 +28,7 @@ Most online catalog discovery uses a generic OpenAI-compatible `/models` request
 
 ## Open material work
 
-- Implement Bedrock Converse, then Pi Messages. Google GenAI and Vertex have deterministic adapters and exact-head CI, but paired current-Pi differentials and broader image/tool/reasoning/usage/error behavior remain open. Vertex ADC currently detects configured credential files; service-account profile UX and metadata-server status remain open. Codex Responses is present over SSE; WebSocket/cached transport and the browser-flow manual-code fallback remain explicit Codex gaps.
+- Keep provider work bounded to the six remaining OAuth profiles and recorded category 3/4 semantics/differentials. Bedrock Converse, Pi Messages, Radius and Radius OAuth are implemented. Move now to the shared tool-exposure/loadout/nested-execution substrate, then Codemode, tool search, MCP and virtual models; do not let provider micro-parity delay those absent major capabilities.
 - Extend OAuth from the working Codex profile to the remaining seven current-Pi built-ins. Verify each flow, credential precedence, environment/config resolution, logout, refresh and provider-specific request authentication before exposing it.
 - Carry current provider semantics through streaming, tool/image content, error bodies, retry headers, cache-affinity fields, usage/cache metadata, and model discovery. Codex, Azure and Mistral still need broader per-provider evidence; a generic OpenAI-compatible response is not evidence for these contracts.
 - Keep the checked-in Mistral model snapshot aligned with current Pi's generated catalog. The snapshot covers model metadata, while Mistral session affinity, `prompt_cache_key`, usage and error-wire behavior remain open.

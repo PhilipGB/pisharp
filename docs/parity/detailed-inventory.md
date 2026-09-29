@@ -1,5 +1,11 @@
 # Detailed reference interface inventory — interfaces originally inventoried at 7c696c00 (current Pi pin b3487650; TUI delta reviewed 2026-09-25)
 
+## Current audit checkpoint — 2026-09-29
+
+PiSharp `3a7cb31cea47d9c7df33ff70144c8dac4fa72b9e` is exact-head CI green at run `36487198225` (807/807, 0 skipped). Current Pi is `8562bcf66a8eeefdf75ddd231ca9d7aa7d64f86e`. Bedrock Converse, Pi Messages and Radius/OAuth have landed; older provider paragraphs retain historical implementation evidence, not current gap status. The provider/auth residual classification is in [the refreshed breadth audit](fixtures/provider-auth-breadth-audit-2026-09-28.md).
+
+The new in-scope capability family is tool orchestration: shared registered/callable/declared tool sets, five exposure states, per-session loadouts, nested execution through the normal hook/validation/permission pipeline, bounded parent-linked call persistence, structured results/errors, tool search, sandboxed Codemode and MCP. Virtual models add a distinct logical selection with per-request physical routing and branch state. The source/test boundary and implementation order are in [the 2026-09-29 audit](fixtures/tool-orchestration-virtual-model-audit-2026-09-29.md). These capabilities are not present in PiSharp yet.
+
 Supplement to the authoritative [feature matrix](feature-matrix.md). These are *interfaces*, not claims of implementation. Default status for every item listed here is **Not started** unless the matrix explicitly records an in-progress subset. No item is Verified by its appearance in this file. Each group requires contract/error/PTY scenarios before verification. Source references below use `packages/coding-agent/docs/` unless qualified otherwise. Installed Pi reports version `0.87.1`; pinned checkout builds the same version, but the commit hash is the reproducible target.
 
 ## Built-in interactive commands (`slash-commands.md`, `src/core/slash-commands.ts`)

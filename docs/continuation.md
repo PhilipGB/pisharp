@@ -2,11 +2,21 @@
 
 `TODO.md` is the concise implementation handoff. The feature matrix tracks scope, the detailed inventory records interfaces, and `execution-ledger.json` holds per-capability evidence. Pi Packages remain excluded unless a core capability depends on them.
 
+## Current checkpoint — 2026-09-29
+
+PiSharp `main` is clean at `3a7cb31cea47d9c7df33ff70144c8dac4fa72b9e`; exact-head Linux CI run [36487198225](https://github.com/PhilipGB/pisharp/actions/runs/36487198225) passed restore, format verification, warnings-as-errors build, and 807/807 tests (0 skipped). Amazon Bedrock Converse, Pi Messages, and Radius OAuth have landed since the older provider tracker entries below.
+
+Current Pi `main` is `8562bcf66a8eeefdf75ddd231ca9d7aa7d64f86e`. Since the prior `c90d9ea586194003211f10cded3c14f74a4f81e1` checkout, upstream added virtual models, generalized tool exposure/loadouts and nested tool calls, sandboxed Codemode, tool search, and an MCP client/integration. The in-scope boundaries and current-Pi test evidence are recorded in [the 2026-09-29 audit](parity/fixtures/tool-orchestration-virtual-model-audit-2026-09-29.md). The next implementation slice is the shared tool registry/loadout and nested execution pipeline; provider/auth is bounded to remaining OAuth and provider semantic/differential gaps.
+
+The older exact-head and per-feature paragraphs below are historical evidence. Their source pins and statements that Bedrock/Pi Messages are unimplemented are superseded by this checkpoint; they are retained to preserve the evidence trail.
+
 ## Reference state
 
 The durable parity baseline is `earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035`. Current upstream `main` was refreshed on 2026-09-28 to `c90d9ea586194003211f10cded3c14f74a4f81e1`, which adds Claude Sonnet 5.5 model metadata; provider implementation source under `packages/ai` and `packages/coding-agent` is unchanged from the earlier `cd5ff1125981f0fc37a56df25eee7310286a3f89` audit. Feature-specific records below retain their historical source pins; they are not claims about today's upstream SHA. The current bounded RPC audit, compaction-source checks, terminal-wrap comparison, shell-command-prefix audit, and provider/auth breadth audit are recorded below; this remains far short of the final full audit.
 
 ## Latest exact-head evidence
+
+At PiSharp source head `3a7cb31cea47d9c7df33ff70144c8dac4fa72b9e`, exact-head Linux CI run [36487198225](https://github.com/PhilipGB/pisharp/actions/runs/36487198225) passed restore, format verification, warnings-as-errors build, and 807/807 tests (0 skipped). Current Pi is `8562bcf66a8eeefdf75ddd231ca9d7aa7d64f86e`; current-Pi tool-orchestration, MCP, Codemode, and virtual-model validation is being refreshed against that SHA.
 
 At PiSharp source head `584a7d1eb74dfb1fc2624f00a5246806db37c548`, exact-head Linux CI run [36472207899](https://github.com/PhilipGB/pisharp/actions/runs/36472207899) passed format, warnings-as-errors build and 790/790 tests (0 skipped). This includes Google Vertex loopback coverage for API-key and ADC paths, regional endpoints, request schema and secret-safe auth status. Vertex remains in progress pending a paired current-Pi differential and broader provider semantics. Current Pi is `c90d9ea586194003211f10cded3c14f74a4f81e1`; provider implementation source is unchanged since audit pin `cd5ff1125981f0fc37a56df25eee7310286a3f89`. OpenAI Codex Responses uses its account-scoped SSE boundary and static catalog, with browser PKCE/device-code OAuth, private credential persistence and serialized refresh; its earlier exact-head CI run [36462567719](https://github.com/PhilipGB/pisharp/actions/runs/36462567719) passed 779/779. Codex WebSocket/cached transport, manual-code fallback and wider image/tool/usage/error differentials remain open. Bedrock Converse is next.
 

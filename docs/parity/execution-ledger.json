@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "plan_received": true,
-  "source_note": "The full continuation plan was recovered from the user on 2026-09-27. Conservative inventory from pinned upstream feature matrix and detailed inventory; never treat as complete until all required scope is reconciled and audited against upstream. Durable parity baseline is b3487650f6378f1b0d1643dd254445ceb4a98035. Current Pi main was refreshed 2026-09-28 at 11894012dd461232eb075bc890538b6866860a10; provider source under packages/ai and packages/coding-agent has no changes since cd5ff1125981f0fc37a56df25eee7310286a3f89; the refreshed bounded RPC audit found all 33 command names represented in PiSharp handlers and no command-surface change since 2b0a123de98318c2ff8069661721ce0c3794c34e. Current compaction source, settings, upstream tests, and an RPC process replay were checked against c1449660c83fd00a7c71d5f7e1bd29fafd400550. The final current-Pi audit and broad feature coverage remain incomplete. Current deltas include TypeScript 7/Node type stripping, an overlay-close cursor-restoration fix, RPC listener snapshot dispatch, full-file read null-range rendering, and per-ref temporary extension cache paths; these are classified in docs/continuation.md. Current Pi SettingsSelectorComponent, SettingsList, and their tests were inspected. The reviewed TUI uses pi-tui 0.87.1 and Marked 18.0.11; Pi wraps ANSI-aware grapheme cells and breaks overlong tokens. Its pinned alt-screen implementation and tests cover SGR button-motion tracking, visible text drag selection/copy, wheel dispatch, grapheme snapping, and mouse-mode cleanup. Further provider and broader session-manager, protocol, image, theme-CLI/search-path, autocomplete and extension deltas remain unaudited; the bounded crash-recovery and writer-concurrency slice was refreshed at the current Pi pin. Pi Packages remain excluded unless needed for a core capability. Shell-command-prefix compatibility is implemented at 92281f3912ca3c9f68ec95e27c4a29e06ba02dcb with trusted-scope, direct-Bash, coding-tool, RPC and PTY evidence; exact-head Linux CI run 36435658026 passed restore, format, warnings-as-errors build, and 748/748 tests (0 skipped). The Mistral reasoning-map change at dc84c1ac0afd15721071507a3a06b5e3d0cad614 is represented in PiSharp; the OpenCode/Qwen empty-thinking-signature change at c1449660c83fd00a7c71d5f7e1bd29fafd400550 is implemented in PiSharp source 66561e1db1942624f7310bd50f68195c80ee66bf and passed exact-head CI run 36454550166 (768/768). Current Pi Mistral metadata was refreshed at 11894012dd461232eb075bc890538b6866860a10. Latest PiSharp checkpoint: eecb324e7085f138bf756884f45e1fba6a292d7c; exact-head Linux CI run 36462567719 passed format, warnings-as-errors build, and 779/779 tests (0 skipped). Codex Responses SSE and Codex browser/device OAuth are implemented; material residuals include WebSocket/cached transport, manual-code fallback, broader Codex image/tool/usage/error evidence, Google GenAI/Vertex, Bedrock, Pi Messages, and the other seven built-in OAuth flows. Current Pi main is 11894012dd461232eb075bc890538b6866860a10 with no provider-source changes since cd5ff1125981f0fc37a56df25eee7310286a3f89. Exact next action: implement Google GenAI as a cohesive provider boundary with deterministic real-HTTP/SSE evidence, then validate, commit, push and verify exact-head CI. Latest PiSharp checkpoint: 584a7d1eb74dfb1fc2624f00a5246806db37c548; exact-head Linux CI run 36472207899 passed format, warnings-as-errors build, and 790/790 tests (0 skipped). Current Pi main is c90d9ea586194003211f10cded3c14f74a4f81e1; provider implementation source remains unchanged since cd5ff1125981f0fc37a56df25eee7310286a3f89, while generated model metadata must be refreshed. Google GenAI and Vertex are implemented but remain in progress pending paired current-Pi differentials and broader provider behavior. Exact next action: implement Bedrock Converse behind an AWS SDK-backed protocol boundary, cover bearer token and AWS credential-chain auth plus streaming/tool/image/reasoning/usage behavior, validate and continue to Pi Messages.",
+  "source_note": "Current PiSharp main is 3a7cb31cea47d9c7df33ff70144c8dac4fa72b9e. Exact-head Linux CI run 36487198225 passed restore, format, warnings-as-errors build, and 807/807 tests (0 skipped). Current Pi main is 8562bcf66a8eeefdf75ddd231ca9d7aa7d64f86e. Bedrock Converse, Pi Messages, and Radius OAuth are implemented; provider work is bounded to six other OAuth flows and provider-specific semantics/differentials. The new material gaps are shared tool exposure/loadouts, nested execution and persistence, tool search, sandboxed Codemode, MCP, and virtual models. See docs/parity/fixtures/tool-orchestration-virtual-model-audit-2026-09-29.md; final audit remains incomplete.",
   "baseline": "earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035",
   "required_ids": [
     "feature-agent-multi-turn-and-streaming",
@@ -156,7 +156,19 @@
     "settings-collapsechangelog",
     "settings-enableinstalltelemetry",
     "settings-enableanalytics",
-    "settings-warnings-anthropicextrausage"
+    "settings-warnings-anthropicextrausage",
+    "provider-api-bedrock-converse",
+    "provider-api-pi-messages",
+    "provider-profile-radius",
+    "provider-auth-radius-oauth",
+    "tool-exposure-loadout",
+    "tool-nested-execution",
+    "tool-result-contracts",
+    "tool-search-runtime",
+    "codemode-runtime",
+    "mcp-runtime",
+    "virtual-model-routing-persistence",
+    "extension-orchestration-api"
   ],
   "final_audit": {
     "complete": false,
@@ -3241,7 +3253,7 @@
         "Implemented at eecb324e7 through OpenAiCodexOAuthAdapter and the provider OAuth boundary. Browser PKCE/device-code flows, private credential persistence, serialized refresh and request-time account auth are active; Codex rejects API-key authentication."
       ],
       "evidence": [
-        "OpenAiCodexOAuthTests covers device and browser flows, callback state/denial, PKCE exchange, credential restart, concurrent refresh, cancellation, failed/invalid refresh, API-key refusal and dynamic request auth; AuthStatusCommandTests verifies offline secret-free status. Exact-head Linux CI run 36462567719 passed 779/779 tests (0 skipped). Manual-code fallback and OAuth flows for the other seven current-Pi built-ins remain open."
+        "OpenAiCodexOAuthTests covers device and browser flows, callback state/denial, PKCE exchange, credential restart, concurrent refresh, cancellation, failed/invalid refresh, API-key refusal and dynamic request auth; AuthStatusCommandTests verifies offline secret-free status. Exact-head Linux CI run 36462567719 passed 779/779 tests (0 skipped). Manual-code fallback and OAuth flows for the six other current-Pi built-ins remain open."
       ],
       "dependencies": [
         "provider-api-openai-codex-responses"
@@ -3286,6 +3298,228 @@
       ],
       "dependencies": [
         "provider-api-google-genai"
+      ]
+    },
+    {
+      "id": "provider-api-bedrock-converse",
+      "title": "Provider API: Amazon Bedrock Converse",
+      "status": "in_progress",
+      "source": "docs/parity/fixtures/provider-auth-breadth-audit-2026-09-28.md",
+      "acceptance": [
+        "Current Pi bedrock-converse-stream profile and catalog behavior",
+        "AWS credential-chain and bearer-token auth, streaming, tools, images, reasoning, usage and errors",
+        "Paired current-Pi request/result differentials for material wire behavior"
+      ],
+      "implementation": [
+        "Implemented behind the Amazon Bedrock Converse SDK boundary with static model catalog and configured credential/bearer routes."
+      ],
+      "evidence": [
+        "BedrockProviderTests and BedrockModelCatalogTests are included in current PiSharp head 3a7cb31cea47d9c7df33ff70144c8dac4fa72b9e; exact-head Linux CI run 36487198225 passed 807/807 (0 skipped). Broad paired current-Pi provider differentials remain open."
+      ],
+      "dependencies": []
+    },
+    {
+      "id": "provider-api-pi-messages",
+      "title": "Provider API: Pi Messages",
+      "status": "in_progress",
+      "source": "docs/parity/fixtures/provider-auth-breadth-audit-2026-09-28.md",
+      "acceptance": [
+        "Current Pi pi-messages request/response and SSE semantics",
+        "Catalog/model selection, auth, tools, images, reasoning, usage and errors",
+        "Paired current-Pi request/result differentials for material wire behavior"
+      ],
+      "implementation": [
+        "Implemented through a Pi Messages-specific request/response and streaming boundary; Radius consumes this API family."
+      ],
+      "evidence": [
+        "PiMessagesProviderTests is included in current PiSharp head 3a7cb31cea47d9c7df33ff70144c8dac4fa72b9e; exact-head Linux CI run 36487198225 passed 807/807 (0 skipped). Current Pi focused Pi Messages/Radius provider suites passed 16/16 at the previous refreshed pin fd889a2741891ee45116cb6131052d7fad220886; rerun against 8562bcf66a8eeefdf75ddd231ca9d7aa7d64f86e remains required."
+      ],
+      "dependencies": []
+    },
+    {
+      "id": "provider-profile-radius",
+      "title": "Provider profile: Radius",
+      "status": "in_progress",
+      "source": "docs/parity/fixtures/provider-auth-breadth-audit-2026-09-28.md",
+      "acceptance": [
+        "Built-in Radius gateway and provider identity",
+        "Dynamic catalog retrieval and current model baseline",
+        "Endpoint/key ownership and safe override behavior"
+      ],
+      "implementation": [
+        "Implemented Radius profile, embedded 25-model catalog snapshot, dynamic gateway catalog and configured gateway identity."
+      ],
+      "evidence": [
+        "RadiusProviderTests is included in current PiSharp head 3a7cb31cea47d9c7df33ff70144c8dac4fa72b9e; exact-head Linux CI run 36487198225 passed 807/807 (0 skipped). Current Pi provider suites were previously 16/16 at fd889a274; rerun against current 8562bcf66 remains required."
+      ],
+      "dependencies": [
+        "provider-api-pi-messages"
+      ]
+    },
+    {
+      "id": "provider-auth-radius-oauth",
+      "title": "Provider auth: Radius OAuth",
+      "status": "in_progress",
+      "source": "docs/parity/fixtures/provider-auth-breadth-audit-2026-09-28.md",
+      "acceptance": [
+        "Browser PKCE and device authorization flows",
+        "Private durable credential persistence and server/account identity binding",
+        "Serialized refresh, request-time bearer resolution, cancellation and safe status"
+      ],
+      "implementation": [
+        "Implemented Radius browser/device OAuth and request-time token refresh."
+      ],
+      "evidence": [
+        "RadiusProviderTests covers browser/device flows, persistence, shared refresh, request-time credentials and cancellation; included in exact-head Linux CI run 36487198225 (807/807, 0 skipped). No paired current-Pi OAuth process differential yet."
+      ],
+      "dependencies": [
+        "provider-profile-radius"
+      ]
+    },
+    {
+      "id": "tool-exposure-loadout",
+      "title": "Tools: exposure registry and per-session loadouts",
+      "status": "in_progress",
+      "source": "docs/parity/fixtures/tool-orchestration-virtual-model-audit-2026-09-29.md",
+      "acceptance": [
+        "Represent registered, callable and model-declared tools separately",
+        "Implement direct/model-only/codemode/deferred/hidden exposure and activation defaults",
+        "Support session-scoped active tools, prepare-loadout description/declaration changes and transcript persistence across resume/fork"
+      ],
+      "implementation": [],
+      "evidence": [
+        "Current Pi types, agent-loop declaration deltas, and agent-session-tool-orchestration tests were inspected at 8562bcf66a8eeefdf75ddd231ca9d7aa7d64f86e. PiSharp currently binds one static tool array in PiAgent; no equivalent registry/loadout exists."
+      ],
+      "dependencies": []
+    },
+    {
+      "id": "tool-nested-execution",
+      "title": "Tools: shared nested execution pipeline",
+      "status": "in_progress",
+      "source": "docs/parity/fixtures/tool-orchestration-virtual-model-audit-2026-09-29.md",
+      "acceptance": [
+        "Run nested calls through schema validation, before/after hooks, permission checks, cancellation and progress",
+        "Emit correlated child IDs and parent-linked call/start/update/end events",
+        "Persist bounded nested-call metadata on the parent result and include it in compaction/export/presentation"
+      ],
+      "implementation": [],
+      "evidence": [
+        "Current Pi nested-tool-calls.ts, agent-session.ts, compaction and HTML projection were inspected at 8562bcf66a8eeefdf75ddd231ca9d7aa7d64f86e. PiSharp DurableToolFunction only records top-level tool lifecycle."
+      ],
+      "dependencies": [
+        "tool-exposure-loadout"
+      ]
+    },
+    {
+      "id": "tool-result-contracts",
+      "title": "Tools: structured output and explicit failure results",
+      "status": "in_progress",
+      "source": "docs/parity/fixtures/tool-orchestration-virtual-model-audit-2026-09-29.md",
+      "acceptance": [
+        "Expose schema-backed machine-readable results separately from model-facing text/images and UI details",
+        "Preserve explicit tool error state, usage, progress updates and termination through provider/session/export paths",
+        "Keep thrown exceptions and returned error results behaviorally distinct where Pi does"
+      ],
+      "implementation": [],
+      "evidence": [
+        "Current Pi AgentToolResult, ToolDefinition and tool-result event contracts were inspected at 8562bcf66a8eeefdf75ddd231ca9d7aa7d64f86e. PiSharp has ToolResultOutput details but no general structured output schema/error-result contract."
+      ],
+      "dependencies": []
+    },
+    {
+      "id": "tool-search-runtime",
+      "title": "Tools: discovery and deferred tool search",
+      "status": "in_progress",
+      "source": "docs/parity/fixtures/tool-orchestration-virtual-model-audit-2026-09-29.md",
+      "acceptance": [
+        "Index names, descriptions, parameter schema and namespace with bounded ranked search",
+        "Activate matching deferred/codemode tools for the next request without exposing the whole registry",
+        "Verify invocation, model context size, cancellation/errors and branch persistence"
+      ],
+      "implementation": [],
+      "evidence": [
+        "Current Pi tool-search.ts uses BM25 and the common active-tool API; coding-agent tool-search/MCP tests were inspected at 8562bcf66a8eeefdf75ddd231ca9d7aa7d64f86e. PiSharp has no tool-search runtime."
+      ],
+      "dependencies": [
+        "tool-exposure-loadout"
+      ]
+    },
+    {
+      "id": "codemode-runtime",
+      "title": "Codemode: isolated programmatic tool orchestration",
+      "status": "in_progress",
+      "source": "docs/parity/fixtures/tool-orchestration-virtual-model-audit-2026-09-29.md",
+      "acceptance": [
+        "Model-visible script tool invokes only allowed registry tools through the shared nested pipeline",
+        "Provide tool declarations, search/discovery, bounded result handling, per-session store and optional model/classifier access",
+        "Use an intentional sandbox boundary with no host globals, resource limits, timeout, cancellation and recursion prevention"
+      ],
+      "implementation": [],
+      "evidence": [
+        "Current Pi uses a fresh QuickJS/WASM instance on a worker and tests isolation, time/memory limits and nested calls. PiSharp has no sandboxed code runtime; implementation must not evaluate generated code in-process."
+      ],
+      "dependencies": [
+        "tool-exposure-loadout",
+        "tool-nested-execution",
+        "tool-result-contracts",
+        "tool-search-runtime"
+      ]
+    },
+    {
+      "id": "mcp-runtime",
+      "title": "MCP: configuration, client, transports and integration",
+      "status": "in_progress",
+      "source": "docs/parity/fixtures/tool-orchestration-virtual-model-audit-2026-09-29.md",
+      "acceptance": [
+        "Global and trusted-project config with precedence, stdio and streamable HTTP, enable/disable, shared tool exposure and resources",
+        "Lifecycle, timeout/cancel, reconnect, server/tool conflicts, trust and process cleanup",
+        "MCP OAuth, safe server-bound credential storage, /mcp management, pi mcp CLI and extension server registration"
+      ],
+      "implementation": [],
+      "evidence": [
+        "Pi mcp package tests passed 34/34 at 8562bcf66a8eeefdf75ddd231ca9d7aa7d64f86e. PiSharp has no MCP client/runtime. The first agent/Codemode runs in the refreshed checkout failed because npm dependencies were stale; exact rerun is pending npm ci."
+      ],
+      "dependencies": [
+        "tool-exposure-loadout",
+        "tool-nested-execution",
+        "tool-result-contracts"
+      ]
+    },
+    {
+      "id": "virtual-model-routing-persistence",
+      "title": "Models: virtual logical model routing and persistence",
+      "status": "in_progress",
+      "source": "docs/parity/fixtures/tool-orchestration-virtual-model-audit-2026-09-29.md",
+      "acceptance": [
+        "Register/select logical virtual models while preserving identity in session and model-change state",
+        "Route every user/continuation/retry/direct request to a validated physical model/thinking level with correct credentials",
+        "Persist router state on the session branch; preserve resume/tree/fork, physical response attribution, context/compaction/image capability and usage/cost behavior"
+      ],
+      "implementation": [],
+      "evidence": [
+        "Current Pi virtual-models.ts and both virtual-model test suites were inspected at 8562bcf66a8eeefdf75ddd231ca9d7aa7d64f86e. PiSharp has no logical-versus-physical model contract; ModelRuntimeController currently switches concrete provider runtime directly."
+      ],
+      "dependencies": [
+        "extension-orchestration-api"
+      ]
+    },
+    {
+      "id": "extension-orchestration-api",
+      "title": "Extensions: lifecycle and orchestration contracts",
+      "status": "in_progress",
+      "source": "docs/parity/fixtures/tool-orchestration-virtual-model-audit-2026-09-29.md",
+      "acceptance": [
+        "Audit and implement reusable lifecycle hooks, context transforms, tool hooks, nested execution and per-session state",
+        "Provide keybinding/UI, provider/model/virtual-model, MCP-server, resources and tool exposure/loadout registration boundaries",
+        "Keep native plugin trust explicit and make built-in Codemode/MCP/tool search consumers of the same contracts"
+      ],
+      "implementation": [],
+      "evidence": [
+        "PiSharp ExtensionRegistration currently exposes native tools, commands, renderers and direct-Bash handlers. Current Pi extension registration surfaces were inspected at 8562bcf66a8eeefdf75ddd231ca9d7aa7d64f86e; broad lifecycle parity remains absent."
+      ],
+      "dependencies": [
+        "tool-exposure-loadout",
+        "tool-nested-execution"
       ]
     }
   ]
