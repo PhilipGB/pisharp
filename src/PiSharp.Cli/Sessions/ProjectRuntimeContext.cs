@@ -83,31 +83,39 @@ internal sealed class ProjectRuntimeContext : IDisposable
         ExtensionCatalog? extensions = null;
         try
         {
+            var mcpManager = new McpRuntimeManager();
+            var userExtensionPaths = arguments.NoExtensions ? null : configuration.BaseUserSettings.Extensions;
+            var projectExtensionPaths = arguments.NoExtensions ? null : configuration.ProjectSettings?.Extensions;
             extensions = ExtensionCatalog.Load(agentDirectory, cwd, configuration.Trusted, discover: !arguments.NoExtensions,
-                additionalPaths: arguments.ExtensionPaths, userPaths: configuration.BaseUserSettings.Extensions,
-                projectPaths: configuration.ProjectSettings?.Extensions,
-                builtins: [ToolSearchBuiltin.Definition, CodemodeBuiltin.Definition]);
+                additionalPaths: arguments.ExtensionPaths, userPaths: userExtensionPaths,
+                projectPaths: projectExtensionPaths,
+                builtins: [ToolSearchBuiltin.Definition, CodemodeBuiltin.Definition,
+                    McpBuiltin.CreateDefinition(mcpManager)]);
             var mcp = await McpConfiguration.LoadAsync(agentDirectory, cwd, configuration.Trusted, cancellationToken);
-            var mcpErrors = await McpRuntime.RegisterAsync(mcp, extensions, cwd, cancellationToken);
+            var mcpErrors = extensions.LoadedBuiltins.Contains("mcp")
+                ? await McpRuntime.RegisterAsync(mcp, extensions, cwd, cancellationToken, mcpManager)
+                : Array.Empty<string>();
             foreach (var error in mcpErrors) Console.Error.WriteLine(error);
             var connectedMcp = extensions.Registration.ToolDefinitions.Where(tool =>
                 tool.Function.Name.StartsWith("mcp__", StringComparison.Ordinal)).ToArray();
             var mcpRegistrations = connectedMcp.Concat(extensions.Registration.ToolDefinitions.Where(tool =>
                 tool.Function.Name is "list_mcp_resources" or "list_mcp_resource_templates" or "read_mcp_resource"))
                 .ToArray();
-            var projectPaths = configuration.Trusted ? configuration.ProjectSettings?.Extensions : null;
-            if (mcpRegistrations.Any(tool => tool.Exposure == ToolExposure.Deferred))
+            var projectPaths = configuration.Trusted ? projectExtensionPaths : null;
+            var explicitBuiltins = (arguments.ExtensionPaths ?? []).ToHashSet(StringComparer.Ordinal);
+            if (mcpRegistrations.Any(tool => tool.Exposure == ToolExposure.Deferred) &&
+                (!arguments.NoExtensions || explicitBuiltins.Contains("builtin:tool-search")))
                 extensions.EnableBuiltinIfAllowed(ToolSearchBuiltin.Definition,
-                    configuration.BaseUserSettings.Extensions, projectPaths);
+                    userExtensionPaths, projectPaths);
             var codemodeDeferred = mcp.Servers.Any(server =>
                 connectedMcp.Any(tool => tool.Function.Name.StartsWith("mcp__" + server.Name + "__", StringComparison.Ordinal)) &&
                 (server.Exposure == McpToolExposure.CodemodeDeferred ||
                     server.ToolExposure.Values.Contains(McpToolExposure.CodemodeDeferred)));
-            if (mcp.AutoEnableCodemode &&
+            if (mcp.AutoEnableCodemode && (!arguments.NoExtensions || explicitBuiltins.Contains("builtin:codemode")) &&
                 (mcpRegistrations.Any(tool => tool.Exposure == ToolExposure.CodeMode) || codemodeDeferred))
             {
                 extensions.EnableBuiltinIfAllowed(CodemodeBuiltin.Definition,
-                    configuration.BaseUserSettings.Extensions, projectPaths);
+                    userExtensionPaths, projectPaths);
                 if (extensions.Registration.ToolSourceInfo.TryGetValue("codemode", out var codemodeSource) &&
                     codemodeSource.Path == "builtin:codemode")
                     extensions.Registration.SetToolDefaultActive("codemode", true);

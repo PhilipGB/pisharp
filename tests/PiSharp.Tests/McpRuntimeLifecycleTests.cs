@@ -98,10 +98,14 @@ public sealed class McpRuntimeLifecycleTests
                 }));
 
             var configuration = await McpConfiguration.LoadAsync(root, root, false);
-            using var catalog = ExtensionCatalog.Load(root, root, false, discover: false);
-            Assert.Empty(await McpRuntime.RegisterAsync(configuration, catalog, root));
+            var manager = new McpRuntimeManager();
+            using var catalog = ExtensionCatalog.Load(root, root, false, discover: false,
+                additionalPaths: ["builtin:mcp"], builtins: [McpBuiltin.CreateDefinition(manager)]);
+            Assert.Empty(await McpRuntime.RegisterAsync(configuration, catalog, root, manager: manager));
+            Assert.Contains("mcp", catalog.LoadedBuiltins);
             Assert.Contains(catalog.Registration.ToolDefinitions, tool =>
                 tool.Function.Name == "mcp__notify__echo");
+            Assert.Equal("builtin:mcp", catalog.Registration.ToolSourceInfo["mcp__notify__echo"].Path);
 
             var echo = catalog.Registration.ToolDefinitions.Single(tool =>
                 tool.Function.Name == "mcp__notify__echo");
@@ -122,6 +126,9 @@ public sealed class McpRuntimeLifecycleTests
                 tool.Function.Name == "mcp__notify__echo").Exposure);
             var added = catalog.Registration.ToolDefinitions.Single(tool =>
                 tool.Function.Name == "mcp__notify__added");
+            Assert.Equal("builtin:mcp", catalog.Registration.ToolSourceInfo["mcp__notify__added"].Path);
+            Assert.Contains("notify: connected", await catalog.Registration.Commands["mcp"]("status",
+                CancellationToken.None), StringComparison.Ordinal);
             var addedResult = Assert.IsType<PiSharpToolResult>(await added.Function.InvokeAsync(
                 new Microsoft.Extensions.AI.AIFunctionArguments(new Dictionary<string, object?>
                 {
@@ -131,6 +138,7 @@ public sealed class McpRuntimeLifecycleTests
 
             var listResources = catalog.Registration.ToolDefinitions.Single(tool =>
                 tool.Function.Name == "list_mcp_resources");
+            Assert.Equal("builtin:mcp", catalog.Registration.ToolSourceInfo["list_mcp_resources"].Path);
             Assert.True(ToolResultOutput.TryReadContract(await listResources.Function.InvokeAsync(
                 new Microsoft.Extensions.AI.AIFunctionArguments(new Dictionary<string, object?>
                 {
@@ -165,8 +173,10 @@ public sealed class McpRuntimeLifecycleTests
             }));
 
             var configuration = await McpConfiguration.LoadAsync(root, root, false);
-            using var catalog = ExtensionCatalog.Load(root, root, false, discover: false);
-            Assert.Empty(await McpRuntime.RegisterAsync(configuration, catalog, root));
+            var manager = new McpRuntimeManager();
+            using var catalog = ExtensionCatalog.Load(root, root, false, discover: false,
+                additionalPaths: ["builtin:mcp"], builtins: [McpBuiltin.CreateDefinition(manager)]);
+            Assert.Empty(await McpRuntime.RegisterAsync(configuration, catalog, root, manager: manager));
             var echo = catalog.Registration.ToolDefinitions.Single(tool =>
                 tool.Function.Name == "mcp__reconnect__echo");
             var firstArguments = new Microsoft.Extensions.AI.AIFunctionArguments(new Dictionary<string, object?>
@@ -178,6 +188,10 @@ public sealed class McpRuntimeLifecycleTests
                 await echo.Function.InvokeAsync(firstArguments);
             });
 
+            Assert.Contains("reconnect: disconnected", await catalog.Registration.Commands["mcp"]("status",
+                CancellationToken.None), StringComparison.Ordinal);
+            Assert.Equal("Reconnected MCP server reconnect.", await catalog.Registration.Commands["mcp"](
+                "reconnect reconnect", CancellationToken.None));
             var secondResult = Assert.IsType<PiSharpToolResult>(await echo.Function.InvokeAsync(
                 new Microsoft.Extensions.AI.AIFunctionArguments(new Dictionary<string, object?>
                 {

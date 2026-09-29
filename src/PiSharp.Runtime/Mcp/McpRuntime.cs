@@ -14,10 +14,12 @@ namespace PiSharp.Runtime.Mcp;
 public static class McpRuntime
 {
     public static async Task<IReadOnlyList<string>> RegisterAsync(McpConfiguration configuration,
-        ExtensionCatalog catalog, string workingDirectory, CancellationToken cancellationToken = default)
+        ExtensionCatalog catalog, string workingDirectory, CancellationToken cancellationToken = default,
+        McpRuntimeManager? manager = null)
     {
         var errors = new List<string>(configuration.Errors);
         var resourceServers = new List<(string Name, McpServerConnection Connection, TimeSpan Timeout, ToolExposure Exposure)>();
+        foreach (var server in configuration.Servers) manager?.Register(server, null);
         foreach (var server in configuration.Servers.Where(server => server.Enabled))
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -31,6 +33,7 @@ public static class McpRuntime
                         return Task.CompletedTask;
                     }, token));
             catalog.OwnConnection(connection);
+            manager?.Register(server, connection);
             try
             {
                 using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -60,7 +63,13 @@ public static class McpRuntime
             var reserved = new[] { "list_mcp_resources", "list_mcp_resource_templates", "read_mcp_resource" };
             if (catalog.Registration.ToolDefinitions.Any(tool => reserved.Contains(tool.Function.Name, StringComparer.Ordinal)))
                 errors.Add("MCP resource tools could not register because a tool name is already in use.");
-            else new McpResourceTools(resourceServers).Configure(catalog.Registration);
+            else
+            {
+                var source = new ResourceSourceInfo("builtin:mcp", "builtin", "builtin", "top-level", null);
+                catalog.Registration.SetCurrentSourceInfo(source);
+                try { new McpResourceTools(resourceServers).Configure(catalog.Registration); }
+                finally { catalog.Registration.SetCurrentSourceInfo(null); }
+            }
         }
         return errors;
     }
@@ -92,7 +101,7 @@ public static class McpRuntime
                     PiSharpToolCallDisplay.Format(label, arguments, context.IsExpanded),
                 renderResult: RenderResult));
         }
-        var source = new ResourceSourceInfo("mcp:" + server.Name, "local", "temporary", "top-level", null);
+        var source = new ResourceSourceInfo("builtin:mcp", "builtin", "builtin", "top-level", null);
         registration.ReplaceOwnedTools(owner, definitions, source, renderers);
     }
 
@@ -196,21 +205,29 @@ public static class McpRuntime
                 finally { resourcesRefreshGate.Release(); }
             }
 
-            ValueTask QueueToolsRefreshAsync(CancellationToken token)
+            ValueTask QueueToolsRefreshAsync(CancellationToken _)
             {
                 var current = connected;
                 if (current is null)
                     Interlocked.Exchange(ref pendingToolsRefresh, 1);
-                else current.TrackRefresh(() => RefreshToolsAsync(token).AsTask());
+                else current.TrackRefresh(async () =>
+                {
+                    using var deadline = new CancellationTokenSource(server.Timeout);
+                    await RefreshToolsAsync(deadline.Token);
+                });
                 return ValueTask.CompletedTask;
             }
 
-            ValueTask QueueResourcesRefreshAsync(CancellationToken token)
+            ValueTask QueueResourcesRefreshAsync(CancellationToken _)
             {
                 var current = connected;
                 if (current is null)
                     Interlocked.Exchange(ref pendingResourcesRefresh, 1);
-                else current.TrackRefresh(() => RefreshResourcesAsync(token).AsTask());
+                else current.TrackRefresh(async () =>
+                {
+                    using var deadline = new CancellationTokenSource(server.Timeout);
+                    await RefreshResourcesAsync(deadline.Token);
+                });
                 return ValueTask.CompletedTask;
             }
 

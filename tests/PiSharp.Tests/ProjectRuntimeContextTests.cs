@@ -17,7 +17,8 @@ public sealed class ProjectRuntimeContextTests
         var configuredPrompts = Path.Combine(project, ".pi", "configured-prompts");
         Directory.CreateDirectory(privateSkill);
         Directory.CreateDirectory(agent);
-        await File.WriteAllTextAsync(Path.Combine(agent, "settings.json"), "{\"shellCommandPrefix\":\"export PISHARP_PREFIX=user\"}");
+        await File.WriteAllTextAsync(Path.Combine(agent, "settings.json"),
+            "{\"shellCommandPrefix\":\"export PISHARP_PREFIX=user\",\"extensions\":[\"builtin:mcp\",\"builtin:tool-search\"]}");
         await File.WriteAllTextAsync(Path.Combine(project, ".pi", "settings.json"),
             "{\"images\":{\"blockImages\":true},\"sessionDir\":\"custom-sessions\",\"terminal\":{\"trueColor\":true},\"enableSkillCommands\":false,\"shellCommandPrefix\":\"export PISHARP_PREFIX=project\",\"skills\":[\"configured-skills\"],\"prompts\":[\"configured-prompts\"]}");
         await File.WriteAllTextAsync(Path.Combine(privateSkill, "SKILL.md"),
@@ -36,6 +37,7 @@ public sealed class ProjectRuntimeContextTests
                 trust, interactiveTrust: false, TextReader.Null, TextWriter.Null, trustedOverride: true);
             using var trusted = await ProjectRuntimeContext.LoadAsync(trustedConfiguration, agent, arguments, null);
             Assert.True(trusted.Trusted);
+            Assert.Empty(trusted.Extensions.LoadedBuiltins);
             Assert.True(trusted.Settings.BlockImages);
             Assert.Equal("true", trusted.Settings.TerminalTrueColor);
             Assert.False(trusted.Settings.SkillCommandsEnabled);
@@ -64,6 +66,7 @@ public sealed class ProjectRuntimeContextTests
             Assert.DoesNotContain(untrusted.Resources.Skills, skill => skill.Name == "configured-first");
             Assert.DoesNotContain(untrusted.Resources.Prompts, prompt => prompt.Name == "configured-review");
             Assert.Empty(untrusted.Extensions.Registration.ToolDefinitions);
+            Assert.Empty(untrusted.Extensions.LoadedBuiltins);
 
             var explicitBuiltinArguments = CliArguments.Parse(["--no-extensions", "--extension", "builtin:tool-search"]);
             var explicitBuiltinConfiguration = await ProjectRuntimeConfiguration.LoadAsync(project, agent,
@@ -73,8 +76,23 @@ public sealed class ProjectRuntimeContextTests
                 agent, explicitBuiltinArguments, null))
             {
                 Assert.Equal("tool_search", Assert.Single(explicitBuiltin.Extensions.Registration.Tools).Name);
+                Assert.Contains("tool-search", explicitBuiltin.Extensions.LoadedBuiltins);
+                Assert.DoesNotContain("mcp", explicitBuiltin.Extensions.LoadedBuiltins);
                 Assert.Equal("builtin:tool-search", explicitBuiltin.Extensions.Registration
                     .ToolSourceInfo["tool_search"].Path);
+            }
+
+            var explicitMcpArguments = CliArguments.Parse(["--no-extensions", "--extension", "builtin:mcp"]);
+            var explicitMcpConfiguration = await ProjectRuntimeConfiguration.LoadAsync(project, agent,
+                explicitMcpArguments, trust, interactiveTrust: false, TextReader.Null, TextWriter.Null,
+                trustedOverride: false);
+            using (var explicitMcp = await ProjectRuntimeContext.LoadAsync(explicitMcpConfiguration,
+                agent, explicitMcpArguments, null))
+            {
+                Assert.Contains("mcp", explicitMcp.Extensions.LoadedBuiltins);
+                Assert.Equal("builtin:mcp", explicitMcp.Extensions.Registration.CommandInfo["mcp"].SourceInfo.Path);
+                Assert.Equal("No MCP servers configured.", await explicitMcp.Extensions.Registration.Commands["mcp"](
+                    "", CancellationToken.None));
             }
 
             var secondSkill = Path.Combine(project, ".pi", "configured-skills-next", "next");

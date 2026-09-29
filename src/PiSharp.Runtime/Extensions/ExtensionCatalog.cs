@@ -272,7 +272,9 @@ public sealed class ExtensionCatalog : IDisposable
 {
     private readonly List<AssemblyLoadContext> _contexts = [];
     private readonly List<IAsyncDisposable> _ownedConnections = [];
+    private readonly HashSet<string> _loadedBuiltins = new(StringComparer.Ordinal);
     public ExtensionRegistration Registration { get; } = new();
+    public IReadOnlySet<string> LoadedBuiltins => _loadedBuiltins;
 
     private ExtensionCatalog() { }
 
@@ -281,11 +283,15 @@ public sealed class ExtensionCatalog : IDisposable
     public void EnableBuiltinIfAllowed(BuiltinExtensionDefinition builtin,
         IReadOnlyList<string>? userPaths, IReadOnlyList<string>? projectPaths)
     {
-        if (!IsBuiltinEnabled(builtin.Name, userPaths, projectPaths) ||
+        if (_loadedBuiltins.Contains(builtin.Name) || !IsBuiltinEnabled(builtin.Name, userPaths, projectPaths) ||
             Registration.ToolDefinitions.Any(tool => tool.Function.Name ==
                 (builtin.Name == "tool-search" ? "tool_search" : builtin.Name))) return;
         Registration.SetCurrentSourceInfo(new("builtin:" + builtin.Name, "builtin", "builtin", "top-level", null));
-        try { builtin.Configure(Registration); }
+        try
+        {
+            builtin.Configure(Registration);
+            _loadedBuiltins.Add(builtin.Name);
+        }
         finally { Registration.SetCurrentSourceInfo(null); }
     }
 
@@ -362,7 +368,11 @@ public sealed class ExtensionCatalog : IDisposable
             {
                 catalog.Registration.SetCurrentSourceInfo(new("builtin:" + builtin.Name, "builtin", "builtin",
                     "top-level", null));
-                try { builtin.Configure(catalog.Registration); }
+                try
+                {
+                    builtin.Configure(catalog.Registration);
+                    catalog._loadedBuiltins.Add(builtin.Name);
+                }
                 finally { catalog.Registration.SetCurrentSourceInfo(null); }
             }
             return catalog;
