@@ -1,6 +1,7 @@
 using PiSharp.Cli;
 using PiSharp.Runtime;
 using PiSharp.Runtime.Extensions;
+using PiSharp.Runtime.Sessions;
 using Microsoft.Extensions.AI;
 
 namespace PiSharp.Tests;
@@ -135,6 +136,50 @@ public sealed class ToolSelectionTests
         Assert.Equal("Controls: deferred", provider.RequestToolDescriptions[0]["switch_tools"]);
         Assert.Equal(["deferred"], firstLoadout.Snapshot.ActiveToolNames);
         Assert.Equal(["switch_tools"], secondLoadout.Snapshot.ActiveToolNames);
+    }
+
+    [Fact]
+    public async Task ToolLoadoutChangesSurviveTreeNavigationJsonlExportAndResume()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-tool-loadout-session-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        try
+        {
+            var switchTool = AIFunctionFactory.Create((AIFunctionArguments arguments) =>
+            {
+                PiSharpToolExecutionContext.Get(arguments)!.SetActiveTools(["deferred"]);
+                return "activated";
+            }, name: "switch_tools");
+            var deferredTool = AIFunctionFactory.Create(() => "deferred", name: "deferred");
+            var registrations = new[]
+            {
+                new PiSharpToolRegistration(switchTool, ToolExposure.ModelOnly),
+                new PiSharpToolRegistration(deferredTool, ToolExposure.Deferred)
+            };
+            var conversation = new ConversationSession(cwd, "fixture", null);
+            var firstClient = new LoadoutScriptClient();
+            var firstAgent = new PiAgent(firstClient, new CodingTools(cwd), noBuiltinTools: true,
+                extensionToolRegistrations: registrations);
+            var firstRun = await ConversationRun.OpenAsync(firstAgent, conversation);
+            await foreach (var _ in firstRun.RunEventsAsync("switch tools")) { }
+
+            Assert.Equal(["deferred"], conversation.ActiveToolLoadout());
+            var change = Assert.Single(conversation.Tree.Entries, entry => entry.Type == "tool_loadout");
+            var changedHead = conversation.Tree.HeadId;
+            conversation.Tree.Select(change.ParentId);
+            Assert.Null(conversation.ActiveToolLoadout());
+            conversation.Tree.Select(changedHead);
+
+            var imported = PiJsonlSessionInterchange.Import(PiJsonlSessionInterchange.Export(conversation));
+            Assert.Equal(["deferred"], imported.ActiveToolLoadout());
+            var resumedClient = new ToolCaptureClient();
+            var resumedRun = await ConversationRun.OpenAsync(
+                new PiAgent(resumedClient, new CodingTools(cwd), noBuiltinTools: true,
+                    extensionToolRegistrations: registrations), imported);
+            await foreach (var _ in resumedRun.RunEventsAsync("resume")) { }
+            Assert.Equal(["deferred"], resumedClient.ToolNames);
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
     }
 
     [Fact]

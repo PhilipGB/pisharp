@@ -21,7 +21,8 @@ public sealed record PiSharpToolRegistration(
     ToolExposure Exposure = ToolExposure.Direct,
     bool? DefaultActive = null,
     PiSharpToolNamespace? Namespace = null,
-    Func<ToolLoadoutSnapshot, ToolLoadoutChanges?>? PrepareLoadout = null);
+    Func<ToolLoadoutSnapshot, ToolLoadoutChanges?>? PrepareLoadout = null,
+    bool AllowNestedInvocation = true);
 
 /// <summary>Changes an active loadout's model-facing declaration projection.</summary>
 public sealed record ToolLoadoutChanges(
@@ -32,25 +33,6 @@ public sealed record ToolLoadoutChanges(
 public sealed record PiSharpToolDeclaration(PiSharpToolRegistration Registration, string Description);
 
 /// <summary>Session-specific controls available to an invoked extension tool.</summary>
-public sealed class PiSharpToolExecutionContext(ToolLoadout loadout)
-{
-    private static readonly object s_contextKey = new();
-
-    internal static object ContextKey => s_contextKey;
-
-    public ToolLoadoutSnapshot Snapshot => loadout.Snapshot;
-
-    public void SetActiveTools(IEnumerable<string> toolNames) => loadout.SetActiveTools(toolNames);
-
-    public static PiSharpToolExecutionContext? Get(AIFunctionArguments arguments)
-    {
-        ArgumentNullException.ThrowIfNull(arguments);
-        return arguments.Context is { } context && context.TryGetValue(s_contextKey, out var value)
-            ? value as PiSharpToolExecutionContext
-            : null;
-    }
-}
-
 internal sealed class DescribedAIFunction(AIFunction inner, string description) : DelegatingAIFunction(inner)
 {
     public override string Description => description;
@@ -147,8 +129,8 @@ public sealed class PiSharpToolRegistry
         var declared = activeNames.Select(name => _byName[name]).ToArray();
         var callable = _registrations.Where(registration => registration.Exposure switch
         {
-            ToolExposure.Direct => activeSet.Contains(registration.Function.Name),
-            ToolExposure.CodeMode or ToolExposure.Deferred => true,
+            ToolExposure.Direct => registration.AllowNestedInvocation && activeSet.Contains(registration.Function.Name),
+            ToolExposure.CodeMode or ToolExposure.Deferred => registration.AllowNestedInvocation,
             _ => false
         }).ToArray();
         var initial = new ToolLoadoutSnapshot(_registrations.ToArray(), callable, declared.Select(registration =>

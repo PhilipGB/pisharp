@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.AI;
+using PiSharp.Runtime.Extensions;
 
 namespace PiSharp.Runtime.Sessions;
 
@@ -74,6 +75,15 @@ public sealed record AgentLifecycleEvent(string Type, string? Text = null, strin
 
     [JsonIgnore]
     public string? ToolCallId { get; init; }
+
+    [JsonPropertyName("parentToolCallId"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? ParentToolCallId { get; init; }
+
+    [JsonIgnore]
+    public PiSharpNestedToolCalls? NestedToolCalls { get; init; }
+
+    [JsonIgnore]
+    public IReadOnlyList<string>? ToolLoadoutNames { get; init; }
 
     [JsonIgnore]
     public ChatMessage? ToolResultMessage { get; init; }

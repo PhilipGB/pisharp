@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.AI;
 using PiSharp.Core;
+using PiSharp.Runtime.Extensions;
 using PiSharp.Runtime.Tools;
 
 namespace PiSharp.Runtime.Sessions;
@@ -716,6 +717,8 @@ public static class PiJsonlSessionInterchange
             messageObject["toolName"] = "tool";
             messageObject["isError"] = result?.Exception is not null;
         }
+        if (ConversationSession.NestedToolCallsFor(node) is { } nestedToolCalls)
+            messageObject["nestedCalls"] = JsonSerializer.SerializeToNode(nestedToolCalls);
         return exported;
     }
 
@@ -745,6 +748,16 @@ public static class PiJsonlSessionInterchange
 
     internal static string? StringProperty(JsonElement element, string name) =>
         TryProperty(element, name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
+
+    internal static PiSharpNestedToolCalls? NestedToolCallsFromEntry(JsonElement entry)
+    {
+        if (!TryProperty(entry, "message", out var message) ||
+            !TryProperty(message, "nestedCalls", out var nestedCalls) ||
+            nestedCalls.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
+            return null;
+        try { return nestedCalls.Deserialize<PiSharpNestedToolCalls>(); }
+        catch (JsonException error) { throw new InvalidDataException("Invalid nested tool-call metadata.", error); }
+    }
 
     private static int? IntProperty(JsonElement element, string name) =>
         TryProperty(element, name, out var value) && value.TryGetInt32(out var integer) ? integer : null;

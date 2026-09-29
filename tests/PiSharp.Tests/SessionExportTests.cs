@@ -1,4 +1,6 @@
+using System.Text.Json;
 using Microsoft.Extensions.AI;
+using PiSharp.Runtime.Extensions;
 using PiSharp.Runtime.Sessions;
 using PiSharp.Runtime.Tools;
 
@@ -22,6 +24,11 @@ public sealed class SessionExportTests
             conversation.Append(new ChatMessage(ChatRole.Assistant, "branch-b"));
             conversation.Append(new ChatMessage(ChatRole.Tool,
                 [new FunctionResultContent("x", "failed result") { Exception = new ToolFailureException("boom <bad>") }]));
+            using var nestedArguments = JsonDocument.Parse("{\"path\":\"<script>\"}");
+            conversation.Append(new ChatMessage(ChatRole.Tool,
+                [new FunctionResultContent("nested-parent", "nested result")]), new PiSharpNestedToolCalls(
+                [new PiSharpNestedToolCall("nested-parent/1", "read", "nested-parent", "ok",
+                    nestedArguments.RootElement.Clone())], Complete: true));
             conversation.AppendBashExecution(new BashExecutionRecord("printf <secret>", "<script>bash-output</script>",
                 7, false, true, "/tmp/full-output.log", true));
             var target = Path.Combine(cwd, "export.html");
@@ -34,6 +41,8 @@ public sealed class SessionExportTests
             Assert.Contains("branch-b", html);
             Assert.Contains("Tool failure:", html);
             Assert.Contains("boom &lt;bad&gt;", html);
+            Assert.Contains("Nested tool calls", html);
+            Assert.Contains("&lt;script&gt;", html);
             Assert.Contains("Bash execution", html);
             Assert.Contains("printf &lt;secret&gt;", html);
             Assert.Contains("&lt;script&gt;bash-output&lt;/script&gt;", html);

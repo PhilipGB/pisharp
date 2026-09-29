@@ -131,6 +131,10 @@ public sealed class PiAgent
         ArgumentNullException.ThrowIfNull(session);
         return _sessionToolLoadouts.GetValue(session, _ => _toolRegistry.CreateLoadout(_initialActiveToolNames));
     }
+
+    internal void RestoreToolLoadout(AgentSession session, IEnumerable<string> activeToolNames) =>
+        GetToolLoadout(session).SetActiveTools(activeToolNames);
+
     public long? SystemMessageTimestamp => Volatile.Read(ref _systemMessageTimestamp) is var timestamp && timestamp != 0
         ? timestamp
         : null;
@@ -194,7 +198,8 @@ public sealed class PiAgent
                 string.Equals(registration.Function.Name, name, StringComparison.Ordinal))).ToArray();
         _runtimeToolFunctions = allRegistrations.ToDictionary(registration => registration.Function.Name,
             registration => (AIFunction)new DurableToolFunction(registration.Function, () => _active,
-                value => _events?.Invoke(value), () => Volatile.Read(ref _currentToolLoadout)), StringComparer.Ordinal);
+                value => _events?.Invoke(value), () => Volatile.Read(ref _currentToolLoadout),
+                () => _runtimeToolFunctions!), StringComparer.Ordinal);
         var initialSnapshot = _toolRegistry.CreateLoadout(_initialActiveToolNames).Snapshot;
         _toolDeclarations = Array.AsReadOnly(initialSnapshot.Declared.Select(declaration =>
             (AIFunctionDeclaration)(string.Equals(declaration.Description, declaration.Registration.Function.Description,

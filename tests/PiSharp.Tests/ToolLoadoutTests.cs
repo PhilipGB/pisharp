@@ -93,6 +93,15 @@ public sealed class ToolLoadoutTests
     }
 
     [Fact]
+    public void RegistryCanPreventRecursiveNestedInvocationOfAnOrchestrator()
+    {
+        var orchestrator = Registration("codemode", ToolExposure.CodeMode) with { AllowNestedInvocation = false };
+        var registry = new PiSharpToolRegistry([orchestrator, Registration("deferred", ToolExposure.Deferred)]);
+
+        Assert.Equal(["deferred"], Names(registry.CreateLoadout().Snapshot.Callable));
+    }
+
+    [Fact]
     public void RegistryRejectsDuplicateNames()
     {
         Assert.Throws<ArgumentException>(() => new PiSharpToolRegistry(

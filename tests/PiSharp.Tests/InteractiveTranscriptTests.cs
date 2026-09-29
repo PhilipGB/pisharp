@@ -52,6 +52,30 @@ public sealed class InteractiveTranscriptTests
     }
 
     [Fact]
+    public void InteractiveTranscriptRendersNestedToolCallOutcomesWithParentResult()
+    {
+        using var output = new StringWriter();
+        using var status = new StringWriter();
+        var transcript = new InteractiveTranscript(output, status);
+        var nested = new PiSharpNestedToolCalls(
+        [
+            new("root/1", "read", "root", "ok"),
+            new("root/2", "write", "root", "error", Error: "denied")
+        ], Complete: true);
+
+        transcript.Render(new AgentLifecycleEvent("tool_execution_finished", Tool: "orchestrate", Text: "finished")
+        {
+            NestedToolCalls = nested
+        });
+
+        Assert.Contains("← finished", status.ToString());
+        Assert.Contains("Nested tool calls", status.ToString());
+        Assert.Contains("read [ok]", status.ToString());
+        Assert.Contains("write [error]", status.ToString());
+        Assert.Contains("denied", status.ToString());
+    }
+
+    [Fact]
     public void ToolCallSummariesShowSafeBuiltInArgumentsAndFilterControls()
     {
         using var output = new StringWriter();

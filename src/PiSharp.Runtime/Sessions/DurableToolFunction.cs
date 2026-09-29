@@ -8,7 +8,8 @@ namespace PiSharp.Runtime.Sessions;
 
 /// <summary>Tool lifecycle originates here, at invocation time rather than from inferred model updates.</summary>
 internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecution?> current,
-    Action<AgentLifecycleEvent> publish, Func<ToolLoadout?>? currentLoadout = null) : DelegatingAIFunction(inner)
+    Action<AgentLifecycleEvent> publish, Func<ToolLoadout?>? currentLoadout = null,
+    Func<IReadOnlyDictionary<string, AIFunction>>? allToolFunctions = null) : DelegatingAIFunction(inner)
 {
     protected override async ValueTask<object?> InvokeCoreAsync(AIFunctionArguments arguments, CancellationToken cancellationToken)
     {
@@ -17,7 +18,10 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
         var snapshot = loadout?.Snapshot;
         var isCallable = snapshot is null || snapshot.ActiveToolNames.Contains(Name, StringComparer.Ordinal) ||
             snapshot.Callable.Any(tool => string.Equals(tool.Function.Name, Name, StringComparison.Ordinal));
-        var callContent = FunctionInvokingChatClient.CurrentContext?.CallContent;
+        var nestedInvocation = PiSharpToolExecutionContext.GetNestedInvocation(arguments);
+        var callContent = nestedInvocation is null ? FunctionInvokingChatClient.CurrentContext?.CallContent : null;
+        var toolCallId = nestedInvocation?.CallId ?? callContent?.CallId ?? Guid.NewGuid().ToString("N");
+        var parentToolCallId = nestedInvocation?.ParentCallId;
         var callArguments = callContent is { Arguments: { } argumentsContent }
             ? argumentsContent.ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal)
             : null;
@@ -25,35 +29,54 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
         var id = execution is null ? Guid.NewGuid().ToString("N") :
             await execution.StartToolAsync(Name, arguments, cancellationToken);
         var displayArguments = arguments.ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal);
+        PiSharpToolExecutionContext? toolExecutionContext = null;
+        if (loadout is not null)
+        {
+            Action<string>? onNestedUpdate = nestedInvocation?.OnUpdate is { } onUpdate
+                ? text => onUpdate(new PiSharpToolExecutionResult(toolCallId, Name, null, text, false))
+                : null;
+            toolExecutionContext = nestedInvocation is null
+                ? PiSharpToolExecutionContext.CreateRoot(loadout,
+                    allToolFunctions ?? (() => new Dictionary<string, AIFunction>(StringComparer.Ordinal)),
+                    publish, toolCallId, id, Name, callArguments ?? displayArguments)
+                : nestedInvocation.Parent.ForToolCall(toolCallId, parentToolCallId, id, Name,
+                    callArguments ?? displayArguments, onNestedUpdate);
+        }
         publish(new AgentLifecycleEvent("tool_execution_started", Tool: Name, OperationId: id)
         {
             ToolArguments = callArguments ?? displayArguments,
-            ToolCallId = callContent?.CallId
+            ToolCallId = toolCallId,
+            ParentToolCallId = parentToolCallId
         });
         object? value = null;
         Exception? failure = null;
-        IDictionary<object, object?>? context = null;
+        IDictionary<object, object?>? argumentContext = null;
         object? previousUpdate = null;
         var hadUpdate = false;
         object? previousPiSharpContext = null;
         var hadPiSharpContext = false;
         if (Name == "bash" || loadout is not null)
         {
-            context = arguments.Context ??= new Dictionary<object, object?>();
+            argumentContext = arguments.Context ??= new Dictionary<object, object?>();
             if (Name == "bash")
             {
-                hadUpdate = context.TryGetValue(CodingTools.BashOutputContextKey, out previousUpdate);
-                context[CodingTools.BashOutputContextKey] = (Action<string>)(text =>
-                    publish(new AgentLifecycleEvent("tool_execution_update", Text: text, Tool: Name, OperationId: id)
-                    {
-                        ToolArguments = callArguments ?? displayArguments,
-                        ToolCallId = callContent?.CallId
-                    }));
+                hadUpdate = argumentContext.TryGetValue(CodingTools.BashOutputContextKey, out previousUpdate);
+                argumentContext[CodingTools.BashOutputContextKey] = (Action<string>)(text =>
+                {
+                    toolExecutionContext?.ReportProgress(text);
+                    if (toolExecutionContext is null)
+                        publish(new AgentLifecycleEvent("tool_execution_update", Text: text, Tool: Name, OperationId: id)
+                        {
+                            ToolArguments = callArguments ?? displayArguments,
+                            ToolCallId = toolCallId,
+                            ParentToolCallId = parentToolCallId
+                        });
+                });
             }
             if (loadout is not null)
             {
-                hadPiSharpContext = context.TryGetValue(PiSharpToolExecutionContext.ContextKey, out previousPiSharpContext);
-                context[PiSharpToolExecutionContext.ContextKey] = new PiSharpToolExecutionContext(loadout);
+                hadPiSharpContext = argumentContext.TryGetValue(PiSharpToolExecutionContext.ContextKey, out previousPiSharpContext);
+                argumentContext[PiSharpToolExecutionContext.ContextKey] = toolExecutionContext!;
             }
         }
         try
@@ -65,17 +88,17 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
         catch (Exception error) { failure = error; }
         finally
         {
-            if (context is not null)
+            if (argumentContext is not null)
             {
                 if (Name == "bash")
                 {
-                    if (hadUpdate) context[CodingTools.BashOutputContextKey] = previousUpdate!;
-                    else context.Remove(CodingTools.BashOutputContextKey);
+                    if (hadUpdate) argumentContext[CodingTools.BashOutputContextKey] = previousUpdate!;
+                    else argumentContext.Remove(CodingTools.BashOutputContextKey);
                 }
                 if (loadout is not null)
                 {
-                    if (hadPiSharpContext) context[PiSharpToolExecutionContext.ContextKey] = previousPiSharpContext!;
-                    else context.Remove(PiSharpToolExecutionContext.ContextKey);
+                    if (hadPiSharpContext) argumentContext[PiSharpToolExecutionContext.ContextKey] = previousPiSharpContext!;
+                    else argumentContext.Remove(PiSharpToolExecutionContext.ContextKey);
                 }
             }
         }
@@ -95,7 +118,9 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
         {
             Images = toolImages,
             ToolArguments = callArguments ?? displayArguments,
-            ToolCallId = callContent?.CallId,
+            ToolCallId = toolCallId,
+            ParentToolCallId = parentToolCallId,
+            NestedToolCalls = toolExecutionContext?.NestedCalls,
             ToolResultMessage = callContent is null ? null : new ChatMessage(ChatRole.Tool,
                 [new FunctionResultContent(callContent.CallId, value) { Exception = failure }])
         });

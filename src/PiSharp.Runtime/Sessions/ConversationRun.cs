@@ -1,9 +1,11 @@
+using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Threading.Channels;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using PiSharp.Core;
+using PiSharp.Runtime.Extensions;
 using PiSharp.Runtime.Tools;
 
 namespace PiSharp.Runtime.Sessions;
@@ -76,8 +78,8 @@ public sealed class ConversationRun
         _persistedThinkingLevel = reasoningLevel;
         _compactionCoordinator = new ConversationCompactionCoordinator(Conversation, _agent,
             () => _autoCompaction, () => _keepRecentTokens, () => _pricing, _save,
-            (messages, token) => _agent.RestoreHistoryAsync(messages, token),
-            (execution, count) => { _execution = execution; _historyCount = count; });
+            RestoreExecutionAsync,
+            (execution, count) => { RestoreToolLoadout(execution); _execution = execution; _historyCount = count; });
     }
 
     public static async Task<ConversationRun> OpenAsync(PiAgent agent, ConversationSession conversation,
@@ -92,9 +94,23 @@ public sealed class ConversationRun
         if (autoCompaction is not null) _ = autoCompaction.TriggerTokens;
         if (conversation.RecoverIncomplete() && save is not null) await save(cancellationToken);
         var execution = await agent.RestoreHistoryAsync(conversation.ContextMessages(), cancellationToken);
+        if (conversation.ActiveToolLoadout() is { } activeTools) agent.RestoreToolLoadout(execution, activeTools);
         return new ConversationRun(agent, conversation, execution, save, autoCompaction, pricing, sessionFile, provider,
             reasoningLevel, retryPolicy ?? AgentRunRetryPolicy.Default, steeringMode, followUpMode,
             autoCompactionEnabled, keepRecentTokens, retryDelay);
+    }
+
+    private async Task<AgentSession> RestoreExecutionAsync(IEnumerable<ChatMessage> messages, CancellationToken token)
+    {
+        var execution = await _agent.RestoreHistoryAsync(messages, token);
+        RestoreToolLoadout(execution);
+        return execution;
+    }
+
+    private void RestoreToolLoadout(AgentSession execution)
+    {
+        if (Conversation.ActiveToolLoadout() is { } activeTools)
+            _agent.RestoreToolLoadout(execution, activeTools);
     }
 
     /// <summary>Queue guidance ahead of follow-up work on the active application run.</summary>
@@ -251,7 +267,7 @@ public sealed class ConversationRun
                         async token =>
                         {
                             var history = Conversation.ContextMessages();
-                            _execution = await _agent.RestoreHistoryAsync(history, token);
+                            _execution = await RestoreExecutionAsync(history, token);
                             _historyCount = history.Count;
                         },
                         FlushPendingBashExecutions,
@@ -462,7 +478,7 @@ public sealed class ConversationRun
                     throw new InvalidOperationException("Branch changes the model. Select the matching model before running.");
                 if (Conversation.RecoverIncomplete() && _save is not null) await _save(cancellationToken);
                 var history = Conversation.ContextMessages();
-                var restored = await _agent.RestoreHistoryAsync(history, cancellationToken);
+                var restored = await RestoreExecutionAsync(history, cancellationToken);
                 _execution = restored;
                 _historyCount = history.Count;
             }
@@ -504,6 +520,7 @@ public sealed class ConversationRun
         var events = new List<string>();
         var partialAssistantText = new System.Text.StringBuilder();
         var providerTurnHistory = new ProviderTurnHistoryReconciler();
+        var nestedCallsByCallId = new ConcurrentDictionary<string, PiSharpNestedToolCalls>(StringComparer.Ordinal);
         DurableExecution? durable = _save is null ? null : new DurableExecution(Conversation, _save);
         var started = false;
         var accepted = false;
@@ -514,6 +531,12 @@ public sealed class ConversationRun
         var providerRequestPricing = _pricing;
         var interruptionType = "turn_interrupted";
         string? interruptionError = null;
+        PiSharpNestedToolCalls? NestedCallsFor(ChatMessage message)
+        {
+            var callId = message.Contents.OfType<FunctionResultContent>().FirstOrDefault()?.CallId;
+            return callId is not null && nestedCallsByCallId.TryGetValue(callId, out var nested) ? nested : null;
+        }
+
         void AppendAvailableProviderHistory()
         {
             var providerHistory = ObservedChatClient.NormalizeReadImagesForHistory(_agent.GetHistory(_execution));
@@ -535,7 +558,7 @@ public sealed class ConversationRun
                 if (matchEnd >= 0) canonicalIndex = matchEnd;
                 else
                 {
-                    Conversation.Append(message);
+                    Conversation.Append(message, NestedCallsFor(message));
                     canonicalHistory.Add(message);
                     canonicalIndex = canonicalHistory.Count;
                 }
@@ -560,12 +583,16 @@ public sealed class ConversationRun
             AppendAvailableProviderHistory();
             foreach (var result in providerTurnHistory.MissingToolResults(Conversation.ContextMessages()))
                 foreach (var normalized in ObservedChatClient.NormalizeReadImagesForHistory([result]))
-                    Conversation.Append(normalized);
+                    Conversation.Append(normalized, NestedCallsFor(normalized));
             PersistPendingRuntimeChangesUnsafe();
         }
 
         void Observe(AgentLifecycleEvent item)
         {
+            if (item.Type == "tool_loadout_changed" && item.ToolLoadoutNames is { } activeTools)
+            {
+                lock (_runtimeStateGate) Conversation.AppendToolLoadout(activeTools);
+            }
             if (item.Type is "turn_failed" or "turn_interrupted")
             {
                 interruptionType = item.Type;
@@ -607,7 +634,12 @@ public sealed class ConversationRun
             {
                 // MAF can finish parallel tools on different continuations; serialize the turn
                 // snapshot with CompleteProviderTurnUnsafe so no result is lost during closure.
-                lock (_runtimeStateGate) turnToolResults.Add(result);
+                lock (_runtimeStateGate)
+                {
+                    turnToolResults.Add(result);
+                    if (item.NestedToolCalls is { } nested && result.Contents.OfType<FunctionResultContent>().FirstOrDefault() is { } resultContent)
+                        nestedCallsByCallId[resultContent.CallId] = nested;
+                }
             }
             else if (item.Type == "model_text_delta" && item.Text is not null) partialAssistantText.Append(item.Text);
             onEvent?.Invoke(item);
@@ -619,7 +651,7 @@ public sealed class ConversationRun
             if (!retryContinuation && Conversation.RecoverIncomplete())
             {
                 var history = Conversation.ContextMessages();
-                var restored = await _agent.RestoreHistoryAsync(history, cancellationToken);
+                var restored = await RestoreExecutionAsync(history, cancellationToken);
                 if (_save is not null) await _save(cancellationToken);
                 _execution = restored;
                 _historyCount = history.Count;
@@ -651,7 +683,7 @@ public sealed class ConversationRun
                     if (promptMessage is null)
                     {
                         var history = Conversation.ContextMessages();
-                        _execution = await _agent.RestoreHistoryAsync(history, cancellationToken);
+                        _execution = await RestoreExecutionAsync(history, cancellationToken);
                         _historyCount = history.Count;
                     }
                     if (_save is not null) await _save(CancellationToken.None);
@@ -660,7 +692,7 @@ public sealed class ConversationRun
                 {
                     Conversation.Tree.Select(previousHead);
                     var history = Conversation.ContextMessages();
-                    _execution = await _agent.RestoreHistoryAsync(history, CancellationToken.None);
+                    _execution = await RestoreExecutionAsync(history, CancellationToken.None);
                     _historyCount = history.Count;
                     throw;
                 }
@@ -700,6 +732,8 @@ public sealed class ConversationRun
                     if (_save is not null) await _save(token);
                     onEvent?.Invoke(new("context_compacted_in_flight", Text: "Continuation request summarized; canonical history was not changed."));
                 });
+            if (Conversation.ActiveToolLoadout() is { } activeToolNames)
+                _agent.RestoreToolLoadout(_execution, activeToolNames);
             var updates = promptMessage is null
                 ? _agent.RunStreamingContinuationDurableAsync(_execution, cancellationToken, durable,
                     Observe, TakeSteeringForProvider, inFlightBudget is null ? null : inFlightBudget.ProjectAsync,
@@ -810,7 +844,7 @@ public sealed class ConversationRun
                         if (matchEnd >= 0) canonicalIndex = matchEnd;
                         else
                         {
-                            Conversation.Append(message);
+                            Conversation.Append(message, NestedCallsFor(message));
                             canonicalTail.Add(message);
                             canonicalIndex = canonicalTail.Count;
                         }
@@ -820,7 +854,7 @@ public sealed class ConversationRun
                 if (canonicalHistory.Count != history.Count || canonicalHistory.Where((message, index) => !JsonElement.DeepEquals(
                     JsonSerializer.SerializeToElement(message, AIJsonUtilities.DefaultOptions),
                     JsonSerializer.SerializeToElement(history[index], AIJsonUtilities.DefaultOptions))).Any())
-                    _execution = await _agent.RestoreHistoryAsync(canonicalHistory, CancellationToken.None);
+                    _execution = await RestoreExecutionAsync(canonicalHistory, CancellationToken.None);
                 _historyCount = canonicalHistory.Count;
                 if (!completed && accepted)
                 {
@@ -839,7 +873,7 @@ public sealed class ConversationRun
                             timestamp = DateTimeOffset.UtcNow
                         }));
                     var interruptedHistory = Conversation.ContextMessages();
-                    _execution = await _agent.RestoreHistoryAsync(interruptedHistory, CancellationToken.None);
+                    _execution = await RestoreExecutionAsync(interruptedHistory, CancellationToken.None);
                     _historyCount = interruptedHistory.Count;
                 }
                 if (started) await durable!.FinishAsync(completed);

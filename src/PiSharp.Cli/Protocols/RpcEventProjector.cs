@@ -170,39 +170,54 @@ internal sealed class RpcEventProjector
         return ordered;
     }
 
-    private static object ProjectToolStart(AgentLifecycleEvent item) => new
+    private static JsonObject ProjectToolStart(AgentLifecycleEvent item)
     {
-        type = "tool_execution_start",
-        toolCallId = item.ToolCallId ?? item.OperationId ?? "unknown-call",
-        toolName = item.Tool,
-        args = JsonSerializer.SerializeToNode(item.ToolArguments) ?? new JsonObject()
-    };
-
-    private static object ProjectToolUpdate(AgentLifecycleEvent item) => new
-    {
-        type = "tool_execution_update",
-        toolCallId = item.ToolCallId ?? item.OperationId ?? "unknown-call",
-        toolName = item.Tool,
-        args = JsonSerializer.SerializeToNode(item.ToolArguments) ?? new JsonObject(),
-        partialResult = new
+        var projected = new JsonObject
         {
-            content = new[] { new { type = "text", text = item.Text ?? "" } },
-            details = JsonSerializer.SerializeToNode(item.Details) ?? new JsonObject()
-        }
-    };
+            ["type"] = "tool_execution_start",
+            ["toolCallId"] = item.ToolCallId ?? item.OperationId ?? "unknown-call",
+            ["toolName"] = item.Tool,
+            ["args"] = JsonSerializer.SerializeToNode(item.ToolArguments) ?? new JsonObject()
+        };
+        if (item.ParentToolCallId is not null) projected["parentToolCallId"] = item.ParentToolCallId;
+        return projected;
+    }
 
-    private static object ProjectToolEnd(AgentLifecycleEvent item) => new
+    private static JsonObject ProjectToolUpdate(AgentLifecycleEvent item)
     {
-        type = "tool_execution_end",
-        toolCallId = item.ToolCallId ?? item.OperationId ?? "unknown-call",
-        toolName = item.Tool,
-        result = new
+        var projected = new JsonObject
         {
-            content = new[] { new { type = "text", text = item.Text ?? "" } },
-            details = JsonSerializer.SerializeToNode(item.Details) ?? new JsonObject()
-        },
-        isError = item.IsError ?? false
-    };
+            ["type"] = "tool_execution_update",
+            ["toolCallId"] = item.ToolCallId ?? item.OperationId ?? "unknown-call",
+            ["toolName"] = item.Tool,
+            ["args"] = JsonSerializer.SerializeToNode(item.ToolArguments) ?? new JsonObject(),
+            ["partialResult"] = new JsonObject
+            {
+                ["content"] = new JsonArray(new JsonObject { ["type"] = "text", ["text"] = item.Text ?? "" }),
+                ["details"] = JsonSerializer.SerializeToNode(item.Details) ?? new JsonObject()
+            }
+        };
+        if (item.ParentToolCallId is not null) projected["parentToolCallId"] = item.ParentToolCallId;
+        return projected;
+    }
+
+    private static JsonObject ProjectToolEnd(AgentLifecycleEvent item)
+    {
+        var projected = new JsonObject
+        {
+            ["type"] = "tool_execution_end",
+            ["toolCallId"] = item.ToolCallId ?? item.OperationId ?? "unknown-call",
+            ["toolName"] = item.Tool,
+            ["result"] = new JsonObject
+            {
+                ["content"] = new JsonArray(new JsonObject { ["type"] = "text", ["text"] = item.Text ?? "" }),
+                ["details"] = JsonSerializer.SerializeToNode(item.Details) ?? new JsonObject()
+            },
+            ["isError"] = item.IsError ?? false
+        };
+        if (item.ParentToolCallId is not null) projected["parentToolCallId"] = item.ParentToolCallId;
+        return projected;
+    }
 
     private object? ProjectTurnEnd(ConversationSession conversation, string? turnStartHead, string? api,
         string? terminalType, string? errorMessage, string? turnEndHead,

@@ -55,6 +55,21 @@ public static class SessionExport
                             };
                             if (failure is not null) await Line($"<strong>Tool failure:</strong><pre>{Html(failure)}</pre>");
                         }
+                        if (ConversationSession.NestedToolCallsFor(node) is { } nestedToolCalls)
+                        {
+                            await Line($"<h3>Nested tool calls{(nestedToolCalls.Complete ? "" : " (incomplete)")}</h3><ol>");
+                            foreach (var call in nestedToolCalls.Calls)
+                            {
+                                await Line($"<li><strong>{Html(call.Name)}</strong> · {Html(call.Status)} · " +
+                                    $"id {Html(call.Id)} · parent {Html(call.ParentToolCallId)} · {Html(call.DurationMs?.ToString() ?? "unknown")} ms");
+                                if (call.Arguments is { } arguments)
+                                    await Line($"<pre>{Html(arguments.GetRawText())}</pre>");
+                                if (call.Error is not null)
+                                    await Line($"<strong>Tool failure:</strong><pre>{Html(call.Error)}</pre>");
+                                await Line("</li>");
+                            }
+                            await Line("</ol>");
+                        }
                     }
                     else if (node.Type == "bash_execution")
                     {

@@ -3,6 +3,7 @@ using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.AI;
 using PiSharp.Core;
+using PiSharp.Runtime.Extensions;
 using PiSharp.Runtime.Tools;
 
 namespace PiSharp.Runtime.Sessions;
@@ -61,7 +62,8 @@ public sealed class ConversationSession
                 item.content is FunctionResultContent result ? result.Exception!.Message : ((FunctionCallContent)item.content).Exception!.Message))
             .ToArray();
         return new(id, parentId, "chat", JsonSerializer.SerializeToElement(new ChatRecord(
-            JsonSerializer.SerializeToElement(message, AIJsonUtilities.DefaultOptions), errors, originalEntry.Clone())), timestamp);
+            JsonSerializer.SerializeToElement(message, AIJsonUtilities.DefaultOptions), errors, originalEntry.Clone(),
+            PiJsonlSessionInterchange.NestedToolCallsFromEntry(originalEntry))), timestamp);
     }
 
     internal static JsonElement? PiEntryFromChatPayload(JsonElement payload) =>
@@ -163,6 +165,9 @@ public sealed class ConversationSession
     // M.E.AI deliberately does not serialize function exceptions. Capture failures explicitly
     // so a failed invocation cannot become successful after restoring a branch.
     public void Append(ChatMessage message)
+        => Append(message, null);
+
+    internal void Append(ChatMessage message, PiSharpNestedToolCalls? nestedToolCalls)
     {
         var errors = message.Contents.Select((content, index) => new { content, index })
             .Where(item => item.content is FunctionResultContent { Exception: not null } or FunctionCallContent { Exception: not null })
@@ -170,7 +175,46 @@ public sealed class ConversationSession
                 item.content is FunctionResultContent result ? result.Exception!.Message : ((FunctionCallContent)item.content).Exception!.Message))
             .ToArray();
         Tree.Append("chat", JsonSerializer.SerializeToElement(new ChatRecord(
-            JsonSerializer.SerializeToElement(message, AIJsonUtilities.DefaultOptions), errors)));
+            JsonSerializer.SerializeToElement(message, AIJsonUtilities.DefaultOptions), errors,
+            NestedToolCalls: nestedToolCalls)));
+    }
+
+    /// <summary>Returns the active branch's last persisted declaration set, if one exists.</summary>
+    internal IReadOnlyList<string>? ActiveToolLoadout()
+    {
+        var payload = Tree.ActivePath().Select(node => ToolLoadoutPayload(node)).LastOrDefault(value => value is not null);
+        if (payload is null) return null;
+        if (!payload.Value.TryGetProperty("activeTools", out var tools) || tools.ValueKind != JsonValueKind.Array ||
+            tools.EnumerateArray().Any(item => item.ValueKind != JsonValueKind.String || string.IsNullOrWhiteSpace(item.GetString())))
+            throw new InvalidDataException("Invalid tool loadout in the selected conversation branch.");
+        return tools.EnumerateArray().Select(item => item.GetString()!).Distinct(StringComparer.Ordinal).ToArray();
+    }
+
+    private static JsonElement? ToolLoadoutPayload(ConversationNode node)
+    {
+        if (node.Type == "tool_loadout") return node.Payload;
+        if (PiJsonlSessionInterchange.OriginalEntry(node) is not { } entry ||
+            PiJsonlSessionInterchange.StringProperty(entry, "type") != "custom" ||
+            PiJsonlSessionInterchange.StringProperty(entry, "customType") != "pisharp.tool_loadout" ||
+            !entry.TryGetProperty("data", out var payload) || payload.ValueKind != JsonValueKind.Object)
+            return null;
+        return payload.Clone();
+    }
+
+    /// <summary>Persist the declarations used by the next request on the selected branch.</summary>
+    internal void AppendToolLoadout(IEnumerable<string> activeToolNames)
+    {
+        ArgumentNullException.ThrowIfNull(activeToolNames);
+        var names = activeToolNames.Where(name => !string.IsNullOrWhiteSpace(name))
+            .Distinct(StringComparer.Ordinal).ToArray();
+        if (ActiveToolLoadout() is { } current && current.SequenceEqual(names, StringComparer.Ordinal)) return;
+        Tree.Append("tool_loadout", JsonSerializer.SerializeToElement(new { activeTools = names }));
+    }
+
+    internal static PiSharpNestedToolCalls? NestedToolCallsFor(ConversationNode node)
+    {
+        if (node.Type != "chat" || node.Payload.ValueKind != JsonValueKind.Object) return null;
+        return node.Payload.Deserialize<ChatRecord>()?.NestedToolCalls;
     }
 
     public void AppendBashExecution(BashExecutionRecord execution)
@@ -186,6 +230,19 @@ public sealed class ConversationSession
         .Where(message => message is not null)
         .Cast<ChatMessage>()
         .ToList();
+
+    /// <summary>Nested calls grouped by the parent tool-result call ID on the selected branch.</summary>
+    public IReadOnlyDictionary<string, PiSharpNestedToolCalls> ActiveNestedToolCallsByResultCallId()
+    {
+        var calls = new Dictionary<string, PiSharpNestedToolCalls>(StringComparer.Ordinal);
+        foreach (var node in Tree.ActivePath())
+        {
+            if (NestedToolCallsFor(node) is not { } nestedCalls) continue;
+            foreach (var callId in RestoreEntry(node).Contents.OfType<FunctionResultContent>().Select(result => result.CallId))
+                calls[callId] = nestedCalls;
+        }
+        return new System.Collections.ObjectModel.ReadOnlyDictionary<string, PiSharpNestedToolCalls>(calls);
+    }
 
     /// <summary>Persist provider billing metadata without adding it to model context.</summary>
     public void AppendUsage(UsageRecord usage)
@@ -699,7 +756,9 @@ public sealed class ConversationSession
         [property: JsonPropertyName("details"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         ConversationCompactionDetails? Details);
 
-    private sealed record ChatRecord(JsonElement Message, ToolError[]? Errors, JsonElement? PiEntry = null);
+    private sealed record ChatRecord(JsonElement Message, ToolError[]? Errors, JsonElement? PiEntry = null,
+        [property: JsonPropertyName("nestedCalls"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        PiSharpNestedToolCalls? NestedToolCalls = null);
     private sealed record ToolError(int Index, string Type, string Message);
     private sealed record Document(int Version, string Id, string WorkingDirectory, string Model, string? Endpoint,
         string? Name, string? HeadId, ConversationNode[] Entries, string? Provider = null, JsonElement? PiHeader = null,

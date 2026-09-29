@@ -26,6 +26,7 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
         if (!interactive || screen is null) return;
 
         var toolNames = new Dictionary<string, string>(StringComparer.Ordinal);
+        var nestedCalls = session.ActiveNestedToolCallsByResultCallId();
         screen.ReplaceTranscript(target =>
         {
             foreach (var message in session.ActiveMessages())
@@ -72,6 +73,8 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
                         Tool: name, OperationId: result.CallId, IsError: failed,
                         Error: result.Exception?.Message, Details: result.Result);
                     target.AppendToolResult(_toolPresentation.RenderResult(update, failed), images);
+                    if (nestedCalls.TryGetValue(result.CallId, out var nested))
+                        target.AppendToolResult(RenderNestedToolCalls(nested));
                 }
             }
         });
@@ -185,6 +188,27 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
         {
             WriteToolResult(_toolPresentation.RenderResult(update, update.IsError == true), update.Images);
         }
+        if (update.NestedToolCalls is { } nestedCalls) WriteToolResult(RenderNestedToolCalls(nestedCalls), null);
+    }
+
+    private static PiSharpToolRenderView RenderNestedToolCalls(PiSharpNestedToolCalls nestedCalls)
+    {
+        var spans = new List<PiSharpToolTextSpan>
+        {
+            new("Nested tool calls", PiSharpToolTextStyle.Title, Bold: true)
+        };
+        foreach (var call in nestedCalls.Calls.Take(32))
+        {
+            var depth = Math.Clamp(call.Id.Count(character => character == '/'), 1, 8);
+            spans.Add(new("\n" + new string(' ', depth * 2) + "↳ " + call.Name, PiSharpToolTextStyle.Output));
+            spans.Add(new(" [" + call.Status + "]", call.Status == "error" ? PiSharpToolTextStyle.Error : PiSharpToolTextStyle.Muted));
+            if (call.Error is not null)
+                spans.Add(new("\n" + new string(' ', depth * 2 + 2) + call.Error, PiSharpToolTextStyle.Error));
+        }
+        if (nestedCalls.Calls.Count > 32)
+            spans.Add(new($"\n… {nestedCalls.Calls.Count - 32} additional nested calls", PiSharpToolTextStyle.Muted));
+        if (!nestedCalls.Complete) spans.Add(new("\nNested-call record is incomplete.", PiSharpToolTextStyle.Muted));
+        return new PiSharpToolRenderView(spans);
     }
 
     private void WriteToolCall(PiSharpToolRenderView view)

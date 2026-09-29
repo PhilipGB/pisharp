@@ -59,4 +59,33 @@ public sealed class RpcEventProjectorTests
         Assert.Equal("pisharp", genericRecord.RootElement.GetProperty("format").GetString());
         Assert.Equal("custom_lifecycle", genericRecord.RootElement.GetProperty("data").GetProperty("Type").GetString());
     }
+
+    [Fact]
+    public void ProjectsNestedToolLifecycleWithParentCallIdentity()
+    {
+        var projector = new RpcEventProjector();
+        var conversation = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        var start = Assert.Single(projector.Project(new AgentLifecycleEvent("tool_execution_started", Tool: "child")
+        {
+            ToolCallId = "root/1",
+            ParentToolCallId = "root"
+        }, conversation, null, null, runAccepted: true, api: null));
+        var update = Assert.Single(projector.Project(new AgentLifecycleEvent("tool_execution_update", Tool: "child", Text: "working")
+        {
+            ToolCallId = "root/1",
+            ParentToolCallId = "root"
+        }, conversation, null, null, runAccepted: true, api: null));
+        var end = Assert.Single(projector.Project(new AgentLifecycleEvent("tool_execution_finished", Tool: "child", Text: "done")
+        {
+            ToolCallId = "root/1",
+            ParentToolCallId = "root"
+        }, conversation, null, null, runAccepted: true, api: null));
+
+        foreach (var projected in new[] { start, update, end })
+        {
+            using var record = JsonDocument.Parse(JsonSerializer.Serialize(projected));
+            Assert.Equal("root/1", record.RootElement.GetProperty("toolCallId").GetString());
+            Assert.Equal("root", record.RootElement.GetProperty("parentToolCallId").GetString());
+        }
+    }
 }

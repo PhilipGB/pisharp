@@ -71,6 +71,39 @@ internal static class ConversationCompactionMetadata
             }
         }
 
+        var summarizedCallIds = plan.MessagesToSummarize.Concat(plan.TurnPrefixMessages ?? [])
+            .SelectMany(message => message.Contents.OfType<FunctionCallContent>())
+            .Select(call => call.CallId).ToHashSet(StringComparer.Ordinal);
+        if (summarizedCallIds.Count > 0)
+        {
+            var activePath = conversation.Tree.ActivePath();
+            var firstKeptIndex = activePath.ToList().FindIndex(node => node.Id == plan.FirstKeptEntryId);
+            foreach (var node in activePath.Take(firstKeptIndex < 0 ? 0 : firstKeptIndex))
+            {
+                if (ConversationSession.NestedToolCallsFor(node) is not { } nestedCalls) continue;
+                var parentCallId = ConversationSession.RestoreEntry(node).Contents
+                    .OfType<FunctionResultContent>().FirstOrDefault()?.CallId;
+                if (parentCallId is null || !summarizedCallIds.Contains(parentCallId)) continue;
+                foreach (var call in nestedCalls.Calls)
+                {
+                    if (call.Arguments is not { ValueKind: JsonValueKind.Object } arguments ||
+                        !arguments.TryGetProperty("path", out var pathValue) || pathValue.ValueKind != JsonValueKind.String ||
+                        string.IsNullOrWhiteSpace(pathValue.GetString())) continue;
+                    var filePath = pathValue.GetString()!;
+                    switch (call.Name)
+                    {
+                        case "read":
+                            read.Add(filePath);
+                            break;
+                        case "write":
+                        case "edit":
+                            modified.Add(filePath);
+                            break;
+                    }
+                }
+            }
+        }
+
         read.ExceptWith(modified);
         return new ConversationCompactionDetails(read.Order(StringComparer.Ordinal).ToArray(),
             modified.Order(StringComparer.Ordinal).ToArray());
