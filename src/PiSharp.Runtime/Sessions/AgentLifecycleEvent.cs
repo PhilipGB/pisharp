@@ -53,6 +53,15 @@ public sealed record AgentLifecycleEvent(string Type, string? Text = null, strin
     public string? ProviderModelId { get; init; }
 
     [JsonIgnore]
+    public string? ProviderProviderId { get; init; }
+
+    [JsonIgnore]
+    public ModelPricing? ProviderPricing { get; init; }
+
+    [JsonIgnore]
+    public AutoCompactionPolicy? ProviderContextPolicy { get; init; }
+
+    [JsonIgnore]
     public string? ProviderFinishReason { get; init; }
 
     [JsonIgnore]

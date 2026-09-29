@@ -162,6 +162,16 @@ public sealed class ConversationSession
         }
     }
 
+    internal void RestoreModelMetadata(string model, string? endpoint, string? provider)
+    {
+        lock (_metadataGate)
+        {
+            _model = model;
+            _provider = provider;
+            _endpoint = endpoint;
+        }
+    }
+
     // M.E.AI deliberately does not serialize function exceptions. Capture failures explicitly
     // so a failed invocation cannot become successful after restoring a branch.
     public void Append(ChatMessage message)
@@ -228,6 +238,47 @@ public sealed class ConversationSession
         ArgumentNullException.ThrowIfNull(values);
         if (JsonSerializer.Serialize(ActiveCodemodeStore()) == JsonSerializer.Serialize(values)) return;
         Tree.Append("codemode_store", JsonSerializer.SerializeToElement(new { values }));
+    }
+
+    /// <summary>Returns the latest router state for a logical model on the selected branch.</summary>
+    public JsonElement? ActiveVirtualModelState(string provider, string modelId)
+    {
+        foreach (var node in Tree.ActivePath().Reverse())
+        {
+            var payload = VirtualModelStatePayload(node);
+            if (payload is not { } value ||
+                PiJsonlSessionInterchange.StringProperty(value, "provider") != provider ||
+                PiJsonlSessionInterchange.StringProperty(value, "modelId") != modelId ||
+                !value.TryGetProperty("state", out var state)) continue;
+            return state.Clone();
+        }
+        return null;
+    }
+
+    /// <summary>Stores router state as a branch-local entry compatible with Pi JSONL custom entries.</summary>
+    public void AppendVirtualModelState(string provider, string modelId, JsonElement state)
+    {
+        if (string.IsNullOrWhiteSpace(provider) || string.IsNullOrWhiteSpace(modelId))
+            throw new ArgumentException("Virtual model provider and id cannot be empty.");
+        var current = ActiveVirtualModelState(provider, modelId);
+        if (current is { } existing && JsonElement.DeepEquals(existing, state)) return;
+        Tree.Append("virtual_model_state", JsonSerializer.SerializeToElement(new
+        {
+            provider,
+            modelId,
+            state = state.Clone()
+        }));
+    }
+
+    private static JsonElement? VirtualModelStatePayload(ConversationNode node)
+    {
+        if (node.Type == "virtual_model_state") return node.Payload;
+        if (PiJsonlSessionInterchange.OriginalEntry(node) is not { } entry ||
+            PiJsonlSessionInterchange.StringProperty(entry, "type") != "custom" ||
+            PiJsonlSessionInterchange.StringProperty(entry, "customType") != "pi.virtual-model-state" ||
+            !entry.TryGetProperty("data", out var payload) || payload.ValueKind != JsonValueKind.Object)
+            return null;
+        return payload.Clone();
     }
 
     private static JsonElement? RuntimePayload(ConversationNode node, string kind)

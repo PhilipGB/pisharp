@@ -5,6 +5,7 @@ using Microsoft.Extensions.AI;
 using PiSharp.Core;
 using PiSharp.Runtime.Extensions;
 using PiSharp.Runtime.Tools;
+using PiSharp.Runtime.VirtualModels;
 
 namespace PiSharp.Runtime.Sessions;
 
@@ -357,6 +358,22 @@ public static class PiJsonlSessionInterchange
             .LastOrDefault(level => level is not null);
     }
 
+    /// <summary>Restores a registered virtual model selection that physical responses cannot represent.</summary>
+    public static bool RestoreRegisteredVirtualModelSelection(ConversationSession session,
+        VirtualModelRegistry registry)
+    {
+        ArgumentNullException.ThrowIfNull(session);
+        ArgumentNullException.ThrowIfNull(registry);
+        var change = session.Tree.ActivePath().LastOrDefault(node => node.Type == "model_change");
+        if (change is null) return false;
+        var original = OriginalEntry(change);
+        var model = original is { } entry ? StringProperty(entry, "modelId") : StringProperty(change.Payload, "model");
+        var provider = original is { } source ? StringProperty(source, "provider") : StringProperty(change.Payload, "provider");
+        if (model is null || provider is null || registry.Get(provider, model) is null) return false;
+        session.RestoreModelMetadata(model, null, provider);
+        return true;
+    }
+
     internal static JsonElement? OriginalEntry(ConversationNode node)
     {
         if (node.Type == "chat") return ConversationSession.PiEntryFromChatPayload(node.Payload);
@@ -499,6 +516,18 @@ public static class PiJsonlSessionInterchange
             };
             return new(id, parentId, type, JsonSerializer.SerializeToElement(payload), timestamp);
         }
+        if (type == "custom" && StringProperty(entry, "customType") == "pi.virtual-model-state" &&
+            TryProperty(entry, "data", out var virtualState) && virtualState.ValueKind == JsonValueKind.Object &&
+            StringProperty(virtualState, "provider") is { Length: > 0 } virtualProvider &&
+            StringProperty(virtualState, "modelId") is { Length: > 0 } virtualModelId &&
+            TryProperty(virtualState, "state", out var state))
+            return new(id, parentId, "virtual_model_state", JsonSerializer.SerializeToElement(new
+            {
+                provider = virtualProvider,
+                modelId = virtualModelId,
+                state,
+                piOriginalEntry = entry
+            }), timestamp);
         if (type is "thinking_level_change" or "branch_summary" or "custom_message" or "context_edit" or "session_info" or "label")
             return new(id, parentId, type, AddOriginal(entry), timestamp);
         return new(id, parentId, "pi_entry", JsonSerializer.SerializeToElement(new
@@ -537,7 +566,17 @@ public static class PiJsonlSessionInterchange
         }
 
         var content = contentOverride ?? (TryProperty(message, "content", out var messageContent) ? messageContent : default);
-        return new ChatMessage(role, ReadContent(content, role == ChatRole.Assistant));
+        var result = new ChatMessage(role, ReadContent(content, role == ChatRole.Assistant));
+        if (role == ChatRole.Assistant)
+        {
+            var properties = new AdditionalPropertiesDictionary();
+            if (StringProperty(message, "provider") is { } provider) properties["pisharp.provider"] = provider;
+            if (StringProperty(message, "model") is { } model) properties["pisharp.model"] = model;
+            if (StringProperty(message, "thinkingLevel") is { } thinking) properties["pisharp.thinkingLevel"] = thinking;
+            if (StringProperty(message, "api") is { } api) properties["pisharp.api"] = api;
+            if (properties.Count > 0) result.AdditionalProperties = properties;
+        }
+        return result;
     }
 
     private static IList<AIContent> ReadContent(JsonElement content, bool assistant = false)
@@ -642,6 +681,18 @@ public static class PiJsonlSessionInterchange
                 ["name"] = StringProperty(node.Payload, "name") ??
                     throw new InvalidDataException($"Missing session name at {node.Id}.")
             };
+        if (node.Type == "virtual_model_state")
+            return new JsonObject
+            {
+                ["type"] = "custom",
+                ["customType"] = "pi.virtual-model-state",
+                ["data"] = new JsonObject
+                {
+                    ["provider"] = StringProperty(node.Payload, "provider"),
+                    ["modelId"] = StringProperty(node.Payload, "modelId"),
+                    ["state"] = JsonNode.Parse(node.Payload.GetProperty("state").GetRawText())
+                }
+            };
         if (node.Type == "context_edit")
         {
             if (!TryGetContextEdit(node, out var targetId, out var replacement))
@@ -725,9 +776,10 @@ public static class PiJsonlSessionInterchange
         var messageObject = exported["message"]!.AsObject();
         if (role == "assistant")
         {
-            messageObject["provider"] = session.Provider;
-            messageObject["model"] = session.Model;
-            messageObject["api"] = "openai-responses";
+            messageObject["provider"] = MessageProperty(message, "pisharp.provider") ?? session.Provider;
+            messageObject["model"] = MessageProperty(message, "pisharp.model") ?? session.Model;
+            messageObject["thinkingLevel"] = MessageProperty(message, "pisharp.thinkingLevel");
+            messageObject["api"] = MessageProperty(message, "pisharp.api") ?? "openai-responses";
             messageObject["stopReason"] = message.Contents.OfType<FunctionCallContent>().Any() ? "toolUse" : "stop";
             messageObject["usage"] = EmptyUsage();
         }
@@ -747,6 +799,9 @@ public static class PiJsonlSessionInterchange
             messageObject["nestedCalls"] = JsonSerializer.SerializeToNode(nestedToolCalls);
         return exported;
     }
+
+    private static string? MessageProperty(ChatMessage message, string name) =>
+        message.AdditionalProperties?.TryGetValue(name, out var value) == true ? value as string : null;
 
     private static void AppendLine(StringBuilder output, JsonObject record) => output.Append(record.ToJsonString()).Append('\n');
 

@@ -33,6 +33,7 @@ internal sealed class ProjectSessionRuntimeFactory(
         var sourceSessionDirectory = keepSourceSessionDirectory ? Path.GetDirectoryName(path) : null;
         var project = await ProjectRuntimeContext.LoadAsync(configuration, agentDirectory, arguments,
             configuredSessionDirectory, sourceSessionDirectory, cancellationToken);
+        modelRuntime.SetVirtualModelRegistry(project.Extensions.Registration.VirtualModels);
         var createdImportedSession = false;
         string? destinationPath = null;
         try
@@ -44,6 +45,8 @@ internal sealed class ProjectSessionRuntimeFactory(
                 : isPiJsonl
                     ? project.SessionImport.ImportFile(path)
                     : await project.Store.LoadAsync(path, cancellationToken);
+            PiJsonlSessionInterchange.RestoreRegisteredVirtualModelSelection(conversation,
+                project.Extensions.Registration.VirtualModels);
             destinationPath = arguments.NoSession ? null : isPiJsonl
                 ? targetExists ? project.SessionImport.CreateDestinationPath(conversation) : path
                 : path;
@@ -65,7 +68,10 @@ internal sealed class ProjectSessionRuntimeFactory(
                 PiJsonlSessionInterchange.GetThinkingLevel(conversation) ?? currentThinking,
                 selection.Model.Reasoning, selection.Model.ThinkingLevelMap);
             var chat = ProviderChatClientFactory.Create(selection, project.Settings.Retry?.Provider);
-            var agent = project.CreateAgent(chat, selection, thinking, arguments);
+            var controller = new ModelRuntimeController(modelRuntime, () => project.Settings,
+                Environment.GetEnvironmentVariable);
+            var agent = project.CreateAgent(chat, selection, thinking, arguments,
+                virtualModelRequestRouter: controller.CreateVirtualModelRouter(selection));
             var compaction = project.Settings.ResolveCompactionPolicy(selection.Model.ContextLength,
                 Environment.GetEnvironmentVariable, $"{selection.Provider.Id}/{selection.Model.Id}");
             var pricing = ModelPricing.FromEnvironment(Environment.GetEnvironmentVariable) ?? selection.Model.Pricing;

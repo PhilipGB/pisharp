@@ -87,6 +87,19 @@ var userSettings = projectConfiguration.Settings;
 var explicitThinking = cli.Thinking;
 cli = userSettings.ApplyDefaults(cli, Environment.GetEnvironmentVariable,
     preserveSessionModel: cli.Continue || cli.SessionPath is not null || cli.ForkSource is not null || cli.ListModels);
+ProjectRuntimeContext projectRuntime;
+try
+{
+    projectRuntime = await ProjectRuntimeContext.LoadAsync(projectConfiguration, agentDirectory, cli,
+        configuredSessionDirectory);
+}
+catch (Exception e) when (e is not OperationCanceledException)
+{
+    Console.Error.WriteLine($"Could not load project runtime: {e.Message}");
+    Environment.ExitCode = 2;
+    return;
+}
+using var projectRuntimeOwner = projectRuntime;
 using var catalogHttp = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
 ProviderModelRuntime modelRuntime;
 ModelSelection selection;
@@ -96,8 +109,9 @@ try
 {
     modelRuntime = await ProviderModelRuntime.CreateAsync(agentDirectory, cli.Local || userSettings.DefaultProvider == "local",
         Environment.GetEnvironmentVariable, catalogHttp, cli.ApiKey, cli.ListModels ? null : cli.ScopedModels,
-        offline: cli.Offline || Environment.GetEnvironmentVariable("PI_OFFLINE") is { } offlineFlag &&
+            offline: cli.Offline || Environment.GetEnvironmentVariable("PI_OFFLINE") is { } offlineFlag &&
             offlineFlag.ToLowerInvariant() is "1" or "true" or "yes");
+    modelRuntime.SetVirtualModelRegistry(projectRuntime.Extensions.Registration.VirtualModels);
     selection = await modelRuntime.ResolveAsync(cli.Provider ?? (cli.Local ? "local" : null), cli.ModelOverride);
     thinking = explicitThinking ?? userSettings.GetModelThinkingLevel(selection) ?? cli.Thinking ?? ThinkingLevels.Default;
     thinking = ThinkingLevels.ValidateForModel(thinking, selection.Model.Reasoning, selection.Model.ThinkingLevelMap);
@@ -132,18 +146,6 @@ catch (Exception error) when (error is NotSupportedException or InvalidOperation
     Environment.ExitCode = 2;
     return;
 }
-ProjectRuntimeContext projectRuntime;
-try
-{
-    projectRuntime = await ProjectRuntimeContext.LoadAsync(projectConfiguration, agentDirectory, cli,
-        configuredSessionDirectory);
-}
-catch (Exception e) when (e is not OperationCanceledException)
-{
-    Console.Error.WriteLine($"Could not load project runtime: {e.Message}");
-    Environment.ExitCode = 2;
-    return;
-}
 var resources = projectRuntime.Resources;
 var instructions = projectRuntime.Instructions;
 var prompts = projectRuntime.Prompts;
@@ -152,7 +154,8 @@ using var extensionLease = new ExtensionLease(projectRuntime.TransferExtensions(
 PiAgent agent;
 try
 {
-    agent = projectRuntime.CreateAgent(chat, selection, thinking, cli, userSettings);
+    agent = projectRuntime.CreateAgent(chat, selection, thinking, cli, userSettings,
+        modelRuntimeController.CreateVirtualModelRouter(selection));
 }
 catch (ArgumentException e)
 {
@@ -217,6 +220,8 @@ try
         conversation = sessionPath is not null && File.Exists(sessionPath)
             ? await store.LoadAsync(sessionPath)
             : new ConversationSession(currentDirectory, connection.Model, connection.Endpoint?.ToString(), selection.Provider.Id);
+    PiJsonlSessionInterchange.RestoreRegisteredVirtualModelSelection(conversation,
+        projectRuntime.Extensions.Registration.VirtualModels);
     if (conversation.Model == "unknown")
     {
         conversation.SelectModel(connection.Model, connection.Endpoint?.ToString(), selection.Provider.Id);
@@ -246,7 +251,8 @@ try
         chat = ProviderChatClientFactory.Create(selection, userSettings.Retry?.Provider, userSettings.HttpIdleTimeoutMs);
         contextPolicy = userSettings.ResolveCompactionPolicy(selection.Model.ContextLength, Environment.GetEnvironmentVariable, $"{selection.Provider.Id}/{selection.Model.Id}");
         modelPricing = ModelPricing.FromEnvironment(Environment.GetEnvironmentVariable) ?? selection.Model.Pricing;
-        agent = projectRuntime.CreateAgent(chat, selection, thinking, cli, userSettings);
+        agent = projectRuntime.CreateAgent(chat, selection, thinking, cli, userSettings,
+            modelRuntimeController.CreateVirtualModelRouter(selection));
     }
     using var initialNameChange = cli.SessionName is null ? null : conversation.BeginSessionNameChange(cli.SessionName);
     if (!cli.NoSession) sessionPath ??= store.NewPath(conversation);
@@ -448,7 +454,8 @@ async Task AdoptPreparedModelRuntime(PreparedModelRuntime prepared, bool recordM
     var nextChat = prepared.ChatClient;
     var nextPolicy = prepared.ContextPolicy;
     var nextPricing = prepared.Pricing;
-    var nextAgent = projectRuntime.CreateAgent(nextChat, nextSelection, nextThinking, cli, userSettings);
+    var nextAgent = projectRuntime.CreateAgent(nextChat, nextSelection, nextThinking, cli, userSettings,
+        prepared.VirtualModelRouter);
     var previousHead = conversation.Tree.HeadId;
     var previousSelection = selection;
     var previousConnection = connection;
@@ -789,7 +796,11 @@ async Task ReloadResources()
         var nextConfiguration = await ProjectRuntimeConfiguration.LoadAsync(currentDirectory, agentDirectory, cli,
             trustStore, interactiveTrust: false, Console.In, Console.Error, trustedOverride: trusted);
         nextProject = await ProjectRuntimeContext.LoadAsync(nextConfiguration, agentDirectory, cli, configuredSessionDirectory);
-        var nextAgent = nextProject.CreateAgent(chat, selection, thinking, cli);
+        modelRuntime.SetVirtualModelRegistry(nextProject.Extensions.Registration.VirtualModels);
+        var nextController = new ModelRuntimeController(modelRuntime, () => nextConfiguration.Settings,
+            Environment.GetEnvironmentVariable);
+        var nextAgent = nextProject.CreateAgent(chat, selection, thinking, cli, nextConfiguration.Settings,
+            nextController.CreateVirtualModelRouter(selection));
         var nextContextPolicy = nextConfiguration.Settings.ResolveCompactionPolicy(selection.Model.ContextLength, Environment.GetEnvironmentVariable,
             $"{selection.Provider.Id}/{selection.Model.Id}");
         var nextModelPricing = ModelPricing.FromEnvironment(Environment.GetEnvironmentVariable) ?? selection.Model.Pricing;

@@ -107,6 +107,7 @@ public sealed class PiAgent
     private readonly ChatClientAgent _agent;
     private readonly ChatClientAgent _summarizer;
     private readonly MutableChatClient _chatClient;
+    private readonly RoutedChatClient _routedChatClient;
     private readonly PiSharpToolRegistry _toolRegistry;
     private readonly PiSharpToolHookPipeline _toolHooks;
     private readonly IReadOnlyList<string>? _initialActiveToolNames;
@@ -160,14 +161,17 @@ public sealed class PiAgent
         IReadOnlyCollection<PiSharpToolRegistration>? extensionToolRegistrations = null,
         IReadOnlyList<PiSharpToolCallHook>? extensionToolCallHooks = null,
         IReadOnlyList<PiSharpToolResultHook>? extensionToolResultHooks = null,
-        ExtensionRegistration? liveExtensionRegistration = null)
+        ExtensionRegistration? liveExtensionRegistration = null,
+        VirtualModelRequestRouter? virtualModelRequestRouter = null)
     {
         _codingTools = tools;
         _toolHooks = new PiSharpToolHookPipeline(extensionToolCallHooks, extensionToolResultHooks);
         _chatClient = new MutableChatClient(client);
+        _routedChatClient = new RoutedChatClient(_chatClient, value => _events?.Invoke(value));
+        _routedChatClient.SetRouter(virtualModelRequestRouter);
         _supportsImages = supportsImages ? 1 : 0;
         _reasoning = reasoning;
-        _summarizer = new ChatClientAgent(_chatClient, new ChatClientAgentOptions
+        _summarizer = new ChatClientAgent(_routedChatClient, new ChatClientAgentOptions
         {
             Name = "PiSharpCompaction",
             ChatOptions = new ChatOptions
@@ -238,10 +242,10 @@ public sealed class PiAgent
         }
         SystemInstructions = (systemPrompt ?? "You are PiSharp, a coding agent. Inspect files before modifying them when tools are available. Use only the tools provided for this run.") +
             "\n\n" + (appendSystemPrompt ?? "") + "\n\n" + (contextInstructions ?? "");
-        _agent = new ChatClientAgent(new ObservedChatClient(_chatClient, value => _events?.Invoke(value),
+        _agent = new ChatClientAgent(new ObservedChatClient(_routedChatClient, value => _events?.Invoke(value),
             retryPolicy ?? ProviderRetryPolicy.Default, TakeSteeringForRequest, blockImages, ProjectForRequestAsync,
-            supportsImages, () => Volatile.Read(ref _reasoning), () => Volatile.Read(ref _supportsImages) != 0,
-            _chatClient, GetToolsForRequest), new ChatClientAgentOptions
+            supportsImages, () => Volatile.Read(ref _reasoning), () => _routedChatClient.HasRouter || Volatile.Read(ref _supportsImages) != 0,
+            _routedChatClient, GetToolsForRequest, _routedChatClient), new ChatClientAgentOptions
             {
                 Name = "PiSharp",
                 ChatHistoryProvider = _history,
@@ -359,12 +363,19 @@ public sealed class PiAgent
 
     public void SetReasoningOptions(ReasoningOptions? reasoning) => Volatile.Write(ref _reasoning, reasoning);
 
-    public void SetModelRuntime(IChatClient client, bool supportsImages, ModelImageResizeOptions? imageResizeOptions)
+    public void SetModelRuntime(IChatClient client, bool supportsImages, ModelImageResizeOptions? imageResizeOptions,
+        VirtualModelRequestRouter? virtualModelRequestRouter = null)
     {
         _chatClient.SetClient(client);
+        _routedChatClient.SetRouter(virtualModelRequestRouter);
         Volatile.Write(ref _supportsImages, supportsImages ? 1 : 0);
         _codingTools.SetImageResizeOptions(imageResizeOptions);
     }
+
+    internal void SetVirtualModelSession(ConversationSession session, string thinkingLevel,
+        Func<CancellationToken, Task>? save) => _routedChatClient.SetSession(session, thinkingLevel, save);
+
+    internal void SetVirtualModelThinkingLevel(string thinkingLevel) => _routedChatClient.SetThinkingLevel(thinkingLevel);
 
     public Task<BashExecutionResult> ExecuteBashAsync(string command, Action<string>? onUpdate = null,
         CancellationToken cancellationToken = default) => _codingTools.ExecuteBashAsync(command, onUpdate, cancellationToken);

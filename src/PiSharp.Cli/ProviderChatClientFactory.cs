@@ -3,6 +3,7 @@ using System.ClientModel.Primitives;
 using Anthropic;
 using Microsoft.Extensions.AI;
 using OpenAI;
+using PiSharp.Runtime.VirtualModels;
 
 namespace PiSharp.Cli;
 
@@ -37,6 +38,7 @@ public static class ProviderChatClientFactory
     public static IChatClient Create(ModelSelection selection, ProviderRetrySettings? retrySettings = null,
         int? httpIdleTimeoutMs = null)
     {
+        if (selection.Model.Api == VirtualModelContract.Api) return new UnroutedVirtualModelChatClient(selection.Model);
         var protocol = ResolveProtocol(selection);
         var providerMaxRetries = retrySettings?.MaxRetries ?? ProviderRetrySettings.DefaultMaxRetries;
         var idleTimeout = httpIdleTimeoutMs ?? UserSettings.DefaultHttpIdleTimeoutMs;

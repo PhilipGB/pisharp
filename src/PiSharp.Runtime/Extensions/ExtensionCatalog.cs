@@ -5,6 +5,7 @@ using Microsoft.Extensions.AI;
 using PiSharp.Runtime.Mcp;
 using PiSharp.Runtime.Resources;
 using PiSharp.Runtime.Tools;
+using PiSharp.Runtime.VirtualModels;
 
 namespace PiSharp.Runtime.Extensions;
 
@@ -49,6 +50,7 @@ public sealed class ExtensionRegistration
     private readonly List<PiSharpToolResultHook> _toolResultHooks = [];
     private readonly object _mcpGate = new();
     private readonly Dictionary<string, ExtensionMcpServerRegistration> _mcpServers = new(StringComparer.Ordinal);
+    private readonly VirtualModelRegistry _virtualModels = new();
     private ResourceSourceInfo? _currentSourceInfo;
     public IReadOnlyCollection<AIFunction> Tools { get { lock (_toolGate) return _tools.Values.ToArray(); } }
     public IReadOnlyCollection<PiSharpToolRegistration> ToolDefinitions
@@ -72,6 +74,7 @@ public sealed class ExtensionRegistration
     {
         get { lock (_mcpGate) return _mcpServers.Values.ToArray(); }
     }
+    public VirtualModelRegistry VirtualModels => _virtualModels;
     internal event Action<IReadOnlyCollection<PiSharpToolRegistration>>? ToolDefinitionsChanged;
 
     /// <summary>Registers an MCP server for this session using the same shape as an mcp.json entry.</summary>
@@ -97,6 +100,22 @@ public sealed class ExtensionRegistration
         lock (_mcpGate)
             if (_mcpServers.TryGetValue(name, out var existing) && existing.ExtensionPath == source.Path)
                 _mcpServers.Remove(name);
+    }
+
+    /// <summary>Registers a logical model whose router selects a credentialed physical model per request.</summary>
+    public void RegisterVirtualModel(VirtualModelDefinition definition)
+    {
+        var source = _currentSourceInfo ?? throw new InvalidOperationException(
+            "Virtual models can only be registered while an extension is being configured.");
+        _virtualModels.Register(definition, source.Path);
+    }
+
+    /// <summary>Removes a virtual model registered by the extension currently being configured.</summary>
+    public void UnregisterVirtualModel(string provider, string id)
+    {
+        var source = _currentSourceInfo ?? throw new InvalidOperationException(
+            "Virtual models can only be unregistered while an extension is being configured.");
+        _virtualModels.Unregister(provider, id, source.Path);
     }
 
     public void AddTool(AIFunction tool)

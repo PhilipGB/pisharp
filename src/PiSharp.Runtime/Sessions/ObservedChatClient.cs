@@ -12,7 +12,7 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
     Func<IReadOnlyList<ChatMessage>, bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? projectContext = null,
     bool supportsImages = true, Func<ReasoningOptions?>? getReasoning = null,
     Func<bool>? getSupportsImages = null, IProviderToolCallDeltaSource? toolCallDeltaSource = null,
-    Func<IReadOnlyList<AITool>>? getToolsForRequest = null) : DelegatingChatClient(inner)
+    Func<IReadOnlyList<AITool>>? getToolsForRequest = null, RoutedChatClient? routedChatClient = null) : DelegatingChatClient(inner)
 {
     public override async Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages,
         ChatOptions? options = null, CancellationToken cancellationToken = default)
@@ -22,11 +22,14 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
         var requestMessages = await PrepareRequestAsync(original, force: false, cancellationToken);
         options = ApplyCurrentToolLoadout(ApplyCurrentReasoning(options));
         var overflowRecovered = false;
+        var routeReason = GetRouteReason(requestMessages);
+        VirtualModelFailedRequest? failedRequest = null;
         for (var retries = 0; ; retries++)
         {
             try
             {
-                var response = await base.GetResponseAsync(requestMessages, options, cancellationToken);
+                var requestOptions = AddRouteHint(options, routeReason, getReasoning?.Invoke(), failedRequest);
+                var response = await base.GetResponseAsync(requestMessages, requestOptions, cancellationToken);
                 publish(new("model_request_completed")
                 {
                     ProviderResponse = response.Messages.LastOrDefault(),
@@ -41,6 +44,8 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
             catch (Exception error)
             {
                 publish(new("model_request_failed", Error: error.Message) { ProviderException = error });
+                failedRequest = FailedRequest(routedChatClient, error);
+                routeReason = "retry";
                 if (!overflowRecovered && await RecoverOverflowAsync(original, error, cancellationToken) is { } shorter)
                 {
                     requestMessages = shorter;
@@ -62,6 +67,8 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
         var requestMessages = await PrepareRequestAsync(original, force: false, cancellationToken);
         options = ApplyCurrentToolLoadout(ApplyCurrentReasoning(options));
         var overflowRecovered = false;
+        var routeReason = GetRouteReason(requestMessages);
+        VirtualModelFailedRequest? failedRequest = null;
         for (var retries = 0; ; retries++)
         {
             var ended = false;
@@ -94,7 +101,8 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
                 {
                     // Some SDK streams start the request while creating the enumerator, before
                     // MoveNextAsync. Keep that setup failure inside the provider-error boundary.
-                    enumerator = base.GetStreamingResponseAsync(requestMessages, options, cancellationToken)
+                    var requestOptions = AddRouteHint(options, routeReason, getReasoning?.Invoke(), failedRequest);
+                    enumerator = base.GetStreamingResponseAsync(requestMessages, requestOptions, cancellationToken)
                         .GetAsyncEnumerator(cancellationToken);
                 }
                 catch (OperationCanceledException error)
@@ -244,6 +252,8 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
             }
 
             publish(new("model_request_failed", Error: failure.Message) { ProviderException = failure });
+            failedRequest = FailedRequest(routedChatClient, failure);
+            routeReason = "retry";
             if (!producedOutput && !overflowRecovered &&
                 await RecoverOverflowAsync(original, failure, cancellationToken) is { } shorter)
             {
@@ -418,11 +428,43 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
                 System.Text.RegularExpressions.RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(100));
     }
 
+    private static string GetRouteReason(IReadOnlyList<ChatMessage> messages)
+    {
+        var lastAssistant = messages.ToList().FindLastIndex(message => message.Role == ChatRole.Assistant);
+        return messages.Skip(lastAssistant + 1).Any(message => message.Role == ChatRole.User)
+            ? "user" : "continuation";
+    }
+
+    private static string ThinkingLevel(ReasoningOptions? reasoning) => reasoning?.Effort switch
+    {
+        ReasoningEffort.Low => "low",
+        ReasoningEffort.Medium => "medium",
+        ReasoningEffort.High => "high",
+        ReasoningEffort.ExtraHigh => "xhigh",
+        _ => "off"
+    };
+
+    private static VirtualModelFailedRequest? FailedRequest(RoutedChatClient? routed, Exception error)
+    {
+        if (routed?.CurrentRoute is not { } route) return null;
+        return new(route.Provider, route.Model, route.ThinkingLevel,
+            new ChatMessage(ChatRole.Assistant, error.Message), error.Message);
+    }
+
+    private ChatOptions? AddRouteHint(ChatOptions? options, string reason, ReasoningOptions? reasoning,
+        VirtualModelFailedRequest? failed) => routedChatClient is { HasRouter: true }
+        ? VirtualModelRequestHints.WithHint(options, new(reason, ThinkingLevel(reasoning), failed))
+        : options;
+
     // Filter at the final provider boundary, including persisted history and subsequent tool-loop requests.
     // Never mutate the canonical messages: disabled images remain available if settings change later.
-    private IEnumerable<ChatMessage> FilterImages(IEnumerable<ChatMessage> messages)
+    private IEnumerable<ChatMessage> FilterImages(IEnumerable<ChatMessage> messages) =>
+        FilterImagesForModel(messages, blockImages, getSupportsImages?.Invoke() ?? supportsImages);
+
+    internal static IReadOnlyList<ChatMessage> FilterImagesForModel(IEnumerable<ChatMessage> messages,
+        bool blockImages, bool supportsImages)
     {
-        if (!blockImages && (getSupportsImages?.Invoke() ?? supportsImages)) return messages;
+        if (!blockImages && supportsImages) return messages.ToArray();
         return messages.Select(message =>
         {
             if (message.Role != ChatRole.User && message.Role != ChatRole.Tool ||

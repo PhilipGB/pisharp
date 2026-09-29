@@ -1,6 +1,7 @@
 using System.Text.Json;
 using PiSharp.Runtime.Providers;
 using PiSharp.Runtime.Sessions;
+using PiSharp.Runtime.VirtualModels;
 
 namespace PiSharp.Cli;
 
@@ -37,6 +38,7 @@ public sealed class ProviderModelRuntime
     private readonly string? _runtimeApiKey;
     private readonly bool _offline;
     private IReadOnlyList<string> _scope;
+    private VirtualModelRegistry? _virtualModels;
 
     private ProviderModelRuntime(Dictionary<string, ProviderProfile> providers, AuthStorage auth,
         ProviderOAuthCoordinator oauth,
@@ -53,7 +55,29 @@ public sealed class ProviderModelRuntime
     }
 
     public IReadOnlyList<string> Scope => _scope;
-    public IReadOnlyList<ProviderProfile> Providers => _providers.Values.OrderBy(item => item.Id, StringComparer.Ordinal).ToArray();
+    public VirtualModelRegistry? VirtualModels => _virtualModels;
+    public IReadOnlyList<ProviderProfile> Providers
+    {
+        get
+        {
+            var providers = new Dictionary<string, ProviderProfile>(_providers, StringComparer.Ordinal);
+            foreach (var providerId in _virtualModels?.Models.Select(item => item.Model.Provider)
+                         .Where(providerId => providerId is not null).Select(providerId => providerId!)
+                         .Distinct(StringComparer.Ordinal) ?? [])
+                if (!providers.ContainsKey(providerId)) providers[providerId] = VirtualProvider(providerId);
+            return providers.Values.OrderBy(item => item.Id, StringComparer.Ordinal).ToArray();
+        }
+    }
+
+    public void SetVirtualModelRegistry(VirtualModelRegistry registry)
+    {
+        ArgumentNullException.ThrowIfNull(registry);
+        _virtualModels = registry;
+        foreach (var item in registry.Models)
+            if (item.Model.Provider is { } providerId && _providers.TryGetValue(providerId, out var provider) &&
+                provider.Models.Any(model => string.Equals(model.Id, item.Model.Id, StringComparison.Ordinal)))
+                throw new InvalidOperationException($"Virtual model {item.Model.Provider}/{item.Model.Id} conflicts with a configured physical model.");
+    }
 
     public static async Task<ProviderModelRuntime> CreateAsync(string agentDirectory, bool includeLocal,
         Func<string, string?> environment, HttpClient http, string? runtimeApiKey = null,
@@ -86,7 +110,8 @@ public sealed class ProviderModelRuntime
     }
 
     public ProviderProfile GetProvider(string id) => _providers.TryGetValue(id, out var provider) ? provider :
-        throw new ArgumentException($"Unknown provider '{id}'. Available providers: {string.Join(", ", _providers.Keys.Order())}.");
+        _virtualModels?.Models.Any(item => item.Model.Provider == id) == true ? VirtualProvider(id) :
+        throw new ArgumentException($"Unknown provider '{id}'. Available providers: {string.Join(", ", Providers.Select(item => item.Id).Order())}.");
 
     public void SetScope(IEnumerable<string> patterns)
     {
@@ -161,12 +186,24 @@ public sealed class ProviderModelRuntime
                     UnavailableReason = auth.Source,
                     Status = model.Status ?? "authentication required"
                 }));
+                result.AddRange(VirtualModelsFor(provider.Id).Select(model => model with
+                {
+                    Available = false,
+                    UnavailableReason = auth.Source,
+                    Status = model.Status ?? "authentication required"
+                }));
+                continue;
+            }
+            if (provider.Api == "pi-virtual")
+            {
+                result.AddRange(VirtualModelsFor(provider.Id));
                 continue;
             }
             // These built-ins use pinned, provider-owned catalogues rather than generic /models discovery.
             if (_offline || provider.Id is "xai" or "anthropic" or "mistral" or "azure-openai-responses" or "openai-codex" or "google" or "google-vertex" or "amazon-bedrock" or "radius")
             {
                 result.AddRange(providerModels.Select(model => model with { Provider = provider.Id }));
+                result.AddRange(VirtualModelsFor(provider.Id));
                 continue;
             }
             try
@@ -177,7 +214,10 @@ public sealed class ProviderModelRuntime
                 var merged = discovered.Select(model => Merge(provider, model)).ToList();
                 foreach (var configured in providerModels.Where(model => merged.All(item => item.Id != model.Id)))
                     merged.Add(configured with { Provider = provider.Id, Available = false, UnavailableReason = "not advertised by provider", Status = configured.Status ?? "unavailable" });
-                result.AddRange(merged);
+                var virtualModels = VirtualModelsFor(provider.Id);
+                var virtualIds = virtualModels.Select(model => model.Id).ToHashSet(StringComparer.Ordinal);
+                result.AddRange(merged.Where(model => !virtualIds.Contains(model.Id)));
+                result.AddRange(virtualModels);
             }
             catch (Exception error) when (error is HttpRequestException or TaskCanceledException or InvalidDataException or JsonException)
             {
@@ -189,9 +229,18 @@ public sealed class ProviderModelRuntime
                     UnavailableReason = "catalog unavailable: " + safe,
                     Status = "catalog unavailable"
                 }));
+                result.AddRange(VirtualModelsFor(provider.Id));
             }
         }
         return includeOutOfScope ? result : ApplyScope(result);
+    }
+
+    public async Task<ModelDescriptor?> FindPhysicalModelAsync(string provider, string model,
+        CancellationToken cancellationToken = default)
+    {
+        var catalog = await ListModelsAsync(provider, cancellationToken, includeOutOfScope: true);
+        return catalog.FirstOrDefault(item => item.Id.Equals(model, StringComparison.Ordinal) &&
+            item.Api != VirtualModelContract.Api && item.Available);
     }
 
     public async Task<ModelSelection> ResolveAsync(string? providerId, string? modelReference,
@@ -203,16 +252,26 @@ public sealed class ProviderModelRuntime
         if (explicitProvider is null && slash > 0)
         {
             var prefix = inferredReference![..slash];
-            if (_providers.TryGetValue(prefix, out var inferred))
+            if (_providers.ContainsKey(prefix) || _virtualModels?.Models.Any(item => item.Model.Provider == prefix) == true)
             {
-                explicitProvider = inferred;
+                explicitProvider = GetProvider(prefix);
                 inferredReference = inferredReference[(slash + 1)..];
             }
         }
         explicitProvider ??= GetProvider(_providers.ContainsKey("local") ? "local" :
             _providers.ContainsKey("custom") ? "custom" : "openai");
-        var reference = inferredReference ?? explicitProvider.Models.FirstOrDefault()?.Id;
+        var reference = inferredReference ?? explicitProvider.Models.FirstOrDefault()?.Id ?? _virtualModels?.List(explicitProvider.Id).FirstOrDefault()?.Id;
         if (string.IsNullOrWhiteSpace(reference)) throw new InvalidOperationException($"Provider '{explicitProvider.Id}' has no models.");
+        if (_virtualModels?.Get(explicitProvider.Id, reference) is { } virtualModel)
+        {
+            var virtualAuth = await ResolveAuthAsync(explicitProvider.Id, useRuntimeOverride: true, cancellationToken);
+            var virtualDescriptor = virtualModel.Model with
+            {
+                Available = virtualAuth.Authenticated,
+                UnavailableReason = virtualAuth.Authenticated ? null : virtualAuth.Source
+            };
+            return new ModelSelection(explicitProvider, virtualDescriptor, virtualAuth.Key, virtualAuth.Authenticated, virtualAuth.Source);
+        }
         // An explicitly configured exact ID is usable without /models: many compatible servers
         // do not implement that endpoint, and it must not consume a prompt's first response.
         var configured = (includeOutOfScope ? explicitProvider.Models : ApplyScope(explicitProvider.Models)).Where(item =>
@@ -288,6 +347,12 @@ public sealed class ProviderModelRuntime
         }
         return scoped;
     }
+
+    private IReadOnlyList<ModelDescriptor> VirtualModelsFor(string provider) =>
+        _virtualModels?.List(provider) ?? [];
+
+    private static ProviderProfile VirtualProvider(string provider) => new(provider, provider,
+        new Uri("https://virtual.invalid"), false, false, null, null, [], Api: "pi-virtual", ApiKeySupported: false);
 
     private static ModelDescriptor Merge(ProviderProfile provider, ModelDescriptor discovered)
     {

@@ -76,6 +76,7 @@ public sealed class ConversationRun
         _providerRequestModel = conversation.Model;
         _providerRequestPricing = pricing;
         _persistedThinkingLevel = reasoningLevel;
+        _agent.SetVirtualModelSession(conversation, reasoningLevel ?? "off", save);
         _compactionCoordinator = new ConversationCompactionCoordinator(Conversation, _agent,
             () => _autoCompaction, () => _keepRecentTokens, () => _pricing, _save,
             RestoreExecutionAsync,
@@ -155,6 +156,7 @@ public sealed class ConversationRun
             if (!_promptDelivery.IsActive) return false;
             _agent.SetReasoningOptions(reasoning);
             Volatile.Write(ref _reasoningLevel, level);
+            _agent.SetVirtualModelThinkingLevel(level);
             if (!string.Equals(_persistedThinkingLevel, level, StringComparison.Ordinal))
             {
                 Conversation.AppendThinkingLevelChange(level);
@@ -184,6 +186,7 @@ public sealed class ConversationRun
             }
             _agent.SetReasoningOptions(reasoning);
             Volatile.Write(ref _reasoningLevel, thinkingLevel);
+            _agent.SetVirtualModelThinkingLevel(thinkingLevel);
             _pendingRuntimeChanges.Enqueue(new PendingModelChange(provider, pricing, autoCompaction,
                 keepRecentTokens, activateRuntime));
             return true;
@@ -532,6 +535,8 @@ public sealed class ConversationRun
         var providerRequestModel = Conversation.Model;
         var providerRequestProvider = Conversation.Provider;
         var providerRequestPricing = _pricing;
+        var providerRequestThinking = _reasoningLevel;
+        _agent.SetVirtualModelSession(Conversation, _reasoningLevel ?? "off", _save);
         var interruptionType = "turn_interrupted";
         string? interruptionError = null;
         PiSharpNestedToolCalls? NestedCallsFor(ChatMessage message)
@@ -619,6 +624,19 @@ public sealed class ConversationRun
                 partialAssistantText.Clear();
                 onEvent?.Invoke(new("assistant_turn_started"));
             }
+            else if (item.Type == "model_request_routed")
+            {
+                lock (_runtimeStateGate)
+                {
+                    providerRequestModel = item.ProviderModelId ?? providerRequestModel;
+                    providerRequestProvider = item.ProviderProviderId ?? providerRequestProvider;
+                    providerRequestPricing = item.ProviderPricing;
+                    providerRequestThinking = item.ProviderThinkingLevel;
+                    _providerRequestModel = providerRequestModel;
+                    _providerRequestPricing = providerRequestPricing;
+                    _autoCompaction = item.ProviderContextPolicy;
+                }
+            }
             else if (item.Type == "model_request_completed")
             {
                 lock (_runtimeStateGate)
@@ -629,7 +647,7 @@ public sealed class ConversationRun
                 }
                 item = item with
                 {
-                    ProviderThinkingLevel = Volatile.Read(ref _reasoningLevel),
+                    ProviderThinkingLevel = providerRequestThinking,
                     UsageSnapshot = item.ProviderUsage is { } usage
                         ? UsageRecord.Create(providerRequestModel, "model", usage, providerRequestPricing)
                         : null
