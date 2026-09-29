@@ -139,6 +139,49 @@ public sealed class ToolSelectionTests
     }
 
     [Fact]
+    public async Task PiAgentRefreshesMafInvocationToolsAfterExtensionRegistrationChanges()
+    {
+        var registration = new ExtensionRegistration();
+        var source = new PiSharp.Runtime.Resources.ResourceSourceInfo("mcp:docs", "local", "test", "top-level", null);
+        registration.ReplaceOwnedTools("mcp:docs",
+            [new(Microsoft.Extensions.AI.AIFunctionFactory.Create(() => "old", name: "mcp__docs__old"))], source);
+        var provider = new DynamicExtensionClient();
+        var agent = new PiAgent(provider, new CodingTools(Path.GetTempPath()), noBuiltinTools: true,
+            extensionToolRegistrations: registration.ToolDefinitions,
+            liveExtensionRegistration: registration);
+        var session = await agent.CreateSessionAsync();
+
+        await foreach (var _ in agent.RunStreamingAsync("initial", session)) { }
+
+        registration.ReplaceOwnedTools("mcp:docs",
+            [new(Microsoft.Extensions.AI.AIFunctionFactory.Create(() => "dynamic result", name: "mcp__docs__new"))],
+            source);
+
+        Assert.Equal(["mcp__docs__new"], agent.GetToolLoadout(session).Snapshot.ActiveToolNames);
+        await foreach (var _ in agent.RunStreamingAsync("use new tool", session)) { }
+
+        Assert.Equal(["mcp__docs__new"], provider.RequestToolNames[1]);
+        Assert.True(provider.SawDynamicToolResult);
+    }
+
+    [Fact]
+    public async Task PiAgentCanInvokeAMcpToolAddedByANotificationBetweenToolRounds()
+    {
+        var registration = new ExtensionRegistration();
+        var source = new PiSharp.Runtime.Resources.ResourceSourceInfo("mcp:docs", "local", "test", "top-level", null);
+        registration.ReplaceOwnedTools("mcp:docs",
+            [new(Microsoft.Extensions.AI.AIFunctionFactory.Create(() => "old", name: "mcp__docs__old"))], source);
+        var provider = new MidRunRegistrationClient(registration, source);
+        var agent = new PiAgent(provider, new CodingTools(Path.GetTempPath()), noBuiltinTools: true,
+            extensionToolRegistrations: registration.ToolDefinitions,
+            liveExtensionRegistration: registration);
+
+        await foreach (var _ in agent.RunStreamingAsync("run dynamic tool", await agent.CreateSessionAsync())) { }
+
+        Assert.True(provider.SawDynamicToolResult);
+    }
+
+    [Fact]
     public async Task ToolLoadoutChangesSurviveTreeNavigationJsonlExportAndResume()
     {
         var cwd = Path.Combine(Path.GetTempPath(), "pisharp-tool-loadout-session-" + Guid.NewGuid().ToString("N"));
@@ -262,6 +305,76 @@ public sealed class ToolSelectionTests
                     [new Microsoft.Extensions.AI.FunctionCallContent("hidden", "hidden_tool", new Dictionary<string, object?>())]);
             else
                 yield return new Microsoft.Extensions.AI.ChatResponseUpdate(Microsoft.Extensions.AI.ChatRole.Assistant, "done");
+            await Task.CompletedTask;
+        }
+
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
+    }
+
+    private sealed class DynamicExtensionClient : Microsoft.Extensions.AI.IChatClient
+    {
+        private int _requests;
+        public List<string[]> RequestToolNames { get; } = [];
+        public bool SawDynamicToolResult { get; private set; }
+
+        public Task<Microsoft.Extensions.AI.ChatResponse> GetResponseAsync(IEnumerable<Microsoft.Extensions.AI.ChatMessage> messages,
+            Microsoft.Extensions.AI.ChatOptions? options = null, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
+        public async IAsyncEnumerable<Microsoft.Extensions.AI.ChatResponseUpdate> GetStreamingResponseAsync(
+            IEnumerable<Microsoft.Extensions.AI.ChatMessage> messages, Microsoft.Extensions.AI.ChatOptions? options = null,
+            [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            var request = Interlocked.Increment(ref _requests);
+            RequestToolNames.Add(options?.Tools?.Select(tool => tool.Name).ToArray() ?? []);
+            if (request == 1)
+            {
+                yield return new Microsoft.Extensions.AI.ChatResponseUpdate(Microsoft.Extensions.AI.ChatRole.Assistant, "ready");
+            }
+            else if (request == 2)
+            {
+                yield return new Microsoft.Extensions.AI.ChatResponseUpdate(Microsoft.Extensions.AI.ChatRole.Assistant,
+                    [new Microsoft.Extensions.AI.FunctionCallContent("dynamic-call", "mcp__docs__new", new Dictionary<string, object?>())]);
+            }
+            else
+            {
+                SawDynamicToolResult = messages.SelectMany(message => message.Contents)
+                    .OfType<Microsoft.Extensions.AI.FunctionResultContent>().Any(result => result.CallId == "dynamic-call");
+                yield return new Microsoft.Extensions.AI.ChatResponseUpdate(Microsoft.Extensions.AI.ChatRole.Assistant, "done");
+            }
+            await Task.CompletedTask;
+        }
+
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
+    }
+
+    private sealed class MidRunRegistrationClient(ExtensionRegistration registration,
+        PiSharp.Runtime.Resources.ResourceSourceInfo source) : Microsoft.Extensions.AI.IChatClient
+    {
+        private int _requests;
+        public bool SawDynamicToolResult { get; private set; }
+
+        public Task<Microsoft.Extensions.AI.ChatResponse> GetResponseAsync(IEnumerable<Microsoft.Extensions.AI.ChatMessage> messages,
+            Microsoft.Extensions.AI.ChatOptions? options = null, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
+        public async IAsyncEnumerable<Microsoft.Extensions.AI.ChatResponseUpdate> GetStreamingResponseAsync(
+            IEnumerable<Microsoft.Extensions.AI.ChatMessage> messages, Microsoft.Extensions.AI.ChatOptions? options = null,
+            [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            if (Interlocked.Increment(ref _requests) == 1)
+            {
+                registration.ReplaceOwnedTools("mcp:docs",
+                    [new(Microsoft.Extensions.AI.AIFunctionFactory.Create(() => "new", name: "mcp__docs__new"))], source);
+                yield return new Microsoft.Extensions.AI.ChatResponseUpdate(Microsoft.Extensions.AI.ChatRole.Assistant,
+                    [new Microsoft.Extensions.AI.FunctionCallContent("mid-run-call", "mcp__docs__new", new Dictionary<string, object?>())]);
+            }
+            else
+            {
+                SawDynamicToolResult = messages.SelectMany(message => message.Contents)
+                    .OfType<Microsoft.Extensions.AI.FunctionResultContent>().Any(result => result.CallId == "mid-run-call");
+                yield return new Microsoft.Extensions.AI.ChatResponseUpdate(Microsoft.Extensions.AI.ChatRole.Assistant, "done");
+            }
             await Task.CompletedTask;
         }
 

@@ -71,6 +71,77 @@ public sealed class McpRuntimeLifecycleTests
     }
 
     [Fact]
+    public async Task StdioListChangedNotificationsRefreshToolRegistrationAndResourceLists()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-mcp-notifications-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            var fixture = Path.Combine(AppContext.BaseDirectory, "Fixtures", "mcp_notification_fixture.py");
+            var statePath = Path.Combine(root, "state.json");
+            await File.WriteAllTextAsync(Path.Combine(root, "mcp.json"),
+                System.Text.Json.JsonSerializer.Serialize(new
+                {
+                    mcpServers = new Dictionary<string, object>
+                    {
+                        ["notify"] = new
+                        {
+                            command = "python3",
+                            args = new[] { fixture },
+                            exposure = "direct",
+                            env = new Dictionary<string, string>
+                            {
+                                ["MCP_FIXTURE_NOTIFICATION_STATE"] = statePath
+                            }
+                        }
+                    }
+                }));
+
+            var configuration = await McpConfiguration.LoadAsync(root, root, false);
+            using var catalog = ExtensionCatalog.Load(root, root, false, discover: false);
+            Assert.Empty(await McpRuntime.RegisterAsync(configuration, catalog, root));
+            Assert.Contains(catalog.Registration.ToolDefinitions, tool =>
+                tool.Function.Name == "mcp__notify__echo");
+
+            var echo = catalog.Registration.ToolDefinitions.Single(tool =>
+                tool.Function.Name == "mcp__notify__echo");
+            var echoResult = Assert.IsType<PiSharpToolResult>(await echo.Function.InvokeAsync(
+                new Microsoft.Extensions.AI.AIFunctionArguments(new Dictionary<string, object?>
+                {
+                    ["value"] = "before"
+                })));
+            Assert.Equal("echo:before", echoResult.Text);
+
+            using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+            while (!catalog.Registration.ToolDefinitions.Any(tool =>
+                       tool.Function.Name == "mcp__notify__added") ||
+                   !await NotificationFixtureRefreshedResourcesAsync(statePath))
+                await Task.Delay(20, deadline.Token);
+
+            Assert.Equal(ToolExposure.Hidden, catalog.Registration.ToolDefinitions.Single(tool =>
+                tool.Function.Name == "mcp__notify__echo").Exposure);
+            var added = catalog.Registration.ToolDefinitions.Single(tool =>
+                tool.Function.Name == "mcp__notify__added");
+            var addedResult = Assert.IsType<PiSharpToolResult>(await added.Function.InvokeAsync(
+                new Microsoft.Extensions.AI.AIFunctionArguments(new Dictionary<string, object?>
+                {
+                    ["value"] = "after"
+                })));
+            Assert.Equal("added:after", addedResult.Text);
+
+            var listResources = catalog.Registration.ToolDefinitions.Single(tool =>
+                tool.Function.Name == "list_mcp_resources");
+            Assert.True(ToolResultOutput.TryReadContract(await listResources.Function.InvokeAsync(
+                new Microsoft.Extensions.AI.AIFunctionArguments(new Dictionary<string, object?>
+                {
+                    ["server"] = "notify"
+                })), out var resourceResult));
+            Assert.Contains("updated", resourceResult.Text, StringComparison.Ordinal);
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
     public async Task DroppedStdioConnectionReconnectsForTheNextToolCall()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-mcp-reconnect-" + Guid.NewGuid().ToString("N"));
@@ -133,4 +204,16 @@ public sealed class McpRuntimeLifecycleTests
                 }
             }
         }));
+
+    private static async Task<bool> NotificationFixtureRefreshedResourcesAsync(string statePath)
+    {
+        if (!File.Exists(statePath)) return false;
+        try
+        {
+            using var state = System.Text.Json.JsonDocument.Parse(await File.ReadAllTextAsync(statePath));
+            return state.RootElement.GetProperty("resourcesList").GetInt32() >= 2 &&
+                state.RootElement.GetProperty("templatesList").GetInt32() >= 2;
+        }
+        catch (System.Text.Json.JsonException) { return false; }
+    }
 }

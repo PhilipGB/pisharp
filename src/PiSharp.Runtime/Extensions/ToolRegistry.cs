@@ -81,12 +81,21 @@ public sealed class ToolLoadoutSnapshot
 /// <summary>Creates session loadouts over a stable set of registered tools.</summary>
 public sealed class PiSharpToolRegistry
 {
-    private readonly IReadOnlyList<PiSharpToolRegistration> _registrations;
-    private readonly IReadOnlyDictionary<string, PiSharpToolRegistration> _byName;
+    private sealed record RegistryState(IReadOnlyList<PiSharpToolRegistration> Registrations,
+        IReadOnlyDictionary<string, PiSharpToolRegistration> ByName);
+
+    private RegistryState _state;
+    private readonly object _loadoutsGate = new();
+    private readonly List<WeakReference<ToolLoadout>> _loadouts = [];
 
     public PiSharpToolRegistry(IEnumerable<PiSharpToolRegistration> registrations)
     {
         ArgumentNullException.ThrowIfNull(registrations);
+        _state = CreateState(registrations);
+    }
+
+    private static RegistryState CreateState(IEnumerable<PiSharpToolRegistration> registrations)
+    {
         var materialized = registrations.ToArray();
         var byName = new Dictionary<string, PiSharpToolRegistration>(StringComparer.Ordinal);
         foreach (var registration in materialized)
@@ -103,39 +112,67 @@ public sealed class PiSharpToolRegistry
                 throw new ArgumentException($"Duplicate tool name: {registration.Function.Name}", nameof(registrations));
         }
 
-        _registrations = Array.AsReadOnly(materialized);
-        _byName = new System.Collections.ObjectModel.ReadOnlyDictionary<string, PiSharpToolRegistration>(byName);
+        return new(Array.AsReadOnly(materialized),
+            new System.Collections.ObjectModel.ReadOnlyDictionary<string, PiSharpToolRegistration>(byName));
     }
 
-    public IReadOnlyList<PiSharpToolRegistration> Registered => _registrations;
+    public IReadOnlyList<PiSharpToolRegistration> Registered => Volatile.Read(ref _state).Registrations;
+
+    internal void Replace(IEnumerable<PiSharpToolRegistration> registrations)
+    {
+        ArgumentNullException.ThrowIfNull(registrations);
+        var next = CreateState(registrations);
+        lock (_loadoutsGate)
+        {
+            var previous = _state;
+            Volatile.Write(ref _state, next);
+            for (var index = _loadouts.Count - 1; index >= 0; index--)
+            {
+                if (_loadouts[index].TryGetTarget(out var loadout))
+                    loadout.RefreshForRegistryChange(previous.Registrations, next.Registrations);
+                else _loadouts.RemoveAt(index);
+            }
+        }
+    }
+
+    internal void TrackLoadout(ToolLoadout loadout)
+    {
+        lock (_loadoutsGate)
+        {
+            _loadouts.Add(new WeakReference<ToolLoadout>(loadout));
+            loadout.RefreshForRegistryChange(loadout.Snapshot.Registered, _state.Registrations);
+        }
+    }
 
     public ToolLoadout CreateLoadout(IEnumerable<string>? activeToolNames = null)
     {
+        var registrations = Volatile.Read(ref _state).Registrations;
         var active = activeToolNames is null
-            ? _registrations.Where(IsActiveByDefault).Select(registration => registration.Function.Name)
+            ? registrations.Where(IsActiveByDefault).Select(registration => registration.Function.Name)
             : activeToolNames;
         return new ToolLoadout(this, active);
     }
 
     internal ToolLoadoutSnapshot CreateSnapshot(IEnumerable<string> requestedActiveNames)
     {
+        var state = Volatile.Read(ref _state);
         var activeNames = new List<string>();
         var activeSet = new HashSet<string>(StringComparer.Ordinal);
         foreach (var name in requestedActiveNames)
         {
-            if (string.IsNullOrWhiteSpace(name) || !_byName.TryGetValue(name, out var registration)) continue;
+            if (string.IsNullOrWhiteSpace(name) || !state.ByName.TryGetValue(name, out var registration)) continue;
             if (registration.Exposure == ToolExposure.Hidden || !activeSet.Add(name)) continue;
             activeNames.Add(name);
         }
 
-        var declared = activeNames.Select(name => _byName[name]).ToArray();
-        var callable = _registrations.Where(registration => registration.Exposure switch
+        var declared = activeNames.Select(name => state.ByName[name]).ToArray();
+        var callable = state.Registrations.Where(registration => registration.Exposure switch
         {
             ToolExposure.Direct => registration.AllowNestedInvocation && activeSet.Contains(registration.Function.Name),
             ToolExposure.CodeMode or ToolExposure.Deferred => registration.AllowNestedInvocation,
             _ => false
         }).ToArray();
-        var initial = new ToolLoadoutSnapshot(_registrations.ToArray(), callable, declared.Select(registration =>
+        var initial = new ToolLoadoutSnapshot(state.Registrations.ToArray(), callable, declared.Select(registration =>
             new PiSharpToolDeclaration(registration, registration.Function.Description ?? string.Empty)).ToArray(), activeNames);
 
         var descriptions = new Dictionary<string, string>(StringComparer.Ordinal);
@@ -165,10 +202,10 @@ public sealed class PiSharpToolRegistry
                 ? declaration with { Description = description }
                 : declaration)
             .ToArray();
-        return new ToolLoadoutSnapshot(_registrations.ToArray(), callable, projectedDeclarations, activeNames);
+        return new ToolLoadoutSnapshot(state.Registrations.ToArray(), callable, projectedDeclarations, activeNames);
     }
 
-    private static bool IsActiveByDefault(PiSharpToolRegistration registration) =>
+    internal static bool IsActiveByDefault(PiSharpToolRegistration registration) =>
         (registration.Exposure is ToolExposure.Direct or ToolExposure.ModelOnly) && registration.DefaultActive != false;
 }
 
@@ -185,6 +222,7 @@ public sealed class ToolLoadout
     {
         _registry = registry;
         _snapshot = registry.CreateSnapshot(initialActiveNames);
+        _registry.TrackLoadout(this);
     }
 
     public ToolLoadoutSnapshot Snapshot => Volatile.Read(ref _snapshot);
@@ -224,6 +262,26 @@ public sealed class ToolLoadout
         {
             var next = _registry.CreateSnapshot(_snapshot.ActiveToolNames.Concat(names));
             Volatile.Write(ref _snapshot, next);
+        }
+    }
+
+    internal void RefreshForRegistryChange(IReadOnlyList<PiSharpToolRegistration> previous,
+        IReadOnlyList<PiSharpToolRegistration> current)
+    {
+        var oldByName = previous.ToDictionary(registration => registration.Function.Name, StringComparer.Ordinal);
+        lock (_gate)
+        {
+            var active = _snapshot.ActiveToolNames.ToHashSet(StringComparer.Ordinal);
+            var currentByName = current.ToDictionary(registration => registration.Function.Name, StringComparer.Ordinal);
+            active.RemoveWhere(name => !currentByName.ContainsKey(name));
+            foreach (var registration in current)
+            {
+                var name = registration.Function.Name;
+                var becameDefaultActive = PiSharpToolRegistry.IsActiveByDefault(registration) &&
+                    (!oldByName.TryGetValue(name, out var old) || !PiSharpToolRegistry.IsActiveByDefault(old));
+                if (becameDefaultActive) active.Add(name);
+            }
+            Volatile.Write(ref _snapshot, _registry.CreateSnapshot(active));
         }
     }
 }

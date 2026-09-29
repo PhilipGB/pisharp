@@ -5,16 +5,72 @@ using ModelContextProtocol.Protocol;
 namespace PiSharp.Runtime.Mcp;
 
 internal sealed class McpConnectedServer(McpClient client, McpOAuthRefreshHandler? refreshHandler,
-    IList<McpClientTool> tools, bool hasResources) : IAsyncDisposable
+    IList<McpClientTool> tools, bool hasResources, IList<McpClientResource>? resources = null,
+    IList<McpClientResourceTemplate>? resourceTemplates = null, SemaphoreSlim? toolsRefreshGate = null,
+    SemaphoreSlim? resourcesRefreshGate = null) : IAsyncDisposable
 {
+    private readonly object _gate = new();
+    private IList<McpClientTool> _tools = tools;
+    private IList<McpClientResource> _resources = resources ?? [];
+    private IList<McpClientResourceTemplate> _resourceTemplates = resourceTemplates ?? [];
+    private readonly SemaphoreSlim _toolsRefreshGate = toolsRefreshGate ?? new SemaphoreSlim(1, 1);
+    private readonly SemaphoreSlim _resourcesRefreshGate = resourcesRefreshGate ?? new SemaphoreSlim(1, 1);
+    private readonly HashSet<Task> _refreshTasks = [];
+    private int _disposed;
+
     public McpClient Client { get; } = client;
-    public IList<McpClientTool> Tools { get; } = tools;
+    public IList<McpClientTool> Tools { get { lock (_gate) return _tools.ToArray(); } }
+    public IList<McpClientResource> Resources { get { lock (_gate) return _resources.ToArray(); } }
+    public IList<McpClientResourceTemplate> ResourceTemplates { get { lock (_gate) return _resourceTemplates.ToArray(); } }
     public bool HasResources { get; } = hasResources;
+    public bool IsDisposed => Volatile.Read(ref _disposed) != 0;
+
+    public void ReplaceTools(IList<McpClientTool> tools)
+    {
+        lock (_gate) _tools = tools.ToArray();
+    }
+
+    public void ReplaceResources(IList<McpClientResource> resources,
+        IList<McpClientResourceTemplate> resourceTemplates)
+    {
+        lock (_gate)
+        {
+            _resources = resources.ToArray();
+            _resourceTemplates = resourceTemplates.ToArray();
+        }
+    }
+
+    public void TrackRefresh(Func<Task> refresh)
+    {
+        ArgumentNullException.ThrowIfNull(refresh);
+        Task task;
+        lock (_gate)
+        {
+            if (IsDisposed) return;
+            task = Task.Run(async () =>
+            {
+                try { await refresh(); }
+                catch (Exception) { }
+            });
+            _refreshTasks.Add(task);
+        }
+        _ = task.ContinueWith(completed =>
+        {
+            lock (_gate) _refreshTasks.Remove(completed);
+        }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+    }
 
     public async ValueTask DisposeAsync()
     {
+        if (Interlocked.Exchange(ref _disposed, 1) != 0) return;
         if (refreshHandler is not null) await refreshHandler.WaitForSettledAsync();
         await Client.DisposeAsync();
+        Task[] refreshTasks;
+        lock (_gate) refreshTasks = _refreshTasks.ToArray();
+        try { await Task.WhenAll(refreshTasks); }
+        catch (Exception) { }
+        _toolsRefreshGate.Dispose();
+        _resourcesRefreshGate.Dispose();
     }
 }
 
@@ -34,8 +90,11 @@ internal sealed class McpServerConnection(string name, bool retryTransientConnec
     public string Name => name;
     public string State { get; private set; } = "connecting";
     public string? Error { get; private set; }
-    public IList<McpClientTool> Tools => _connected?.Tools ?? [];
-    public bool HasResources => _connected?.HasResources == true;
+    public IList<McpClientTool> Tools => Volatile.Read(ref _connected)?.Tools ?? [];
+    public bool HasResources => Volatile.Read(ref _connected)?.HasResources == true;
+
+    public bool IsCurrent(McpClient client) =>
+        ReferenceEquals(Volatile.Read(ref _connected)?.Client, client);
 
     public async Task ConnectAsync(CancellationToken cancellationToken = default) =>
         _ = await GetConnectedAsync(cancellationToken);

@@ -133,6 +133,7 @@ internal sealed class ProjectRuntimeContext : IDisposable
             extensionToolRegistrations: Extensions.Registration.ToolDefinitions,
             noBuiltinTools: arguments.NoBuiltinTools,
             supportsImages: selection.Model.Input?.Contains("image", StringComparer.Ordinal) != false,
+            liveExtensionRegistration: Extensions.Registration,
             extensionToolCallHooks: Extensions.Registration.ToolCallHooks,
             extensionToolResultHooks: Extensions.Registration.ToolResultHooks,
             // ProviderChatClientFactory applies retry.provider.maxRetries inside the SDK adapter.

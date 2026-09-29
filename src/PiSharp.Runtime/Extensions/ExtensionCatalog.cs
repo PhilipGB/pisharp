@@ -35,21 +35,33 @@ public sealed class ExtensionRegistration
     private readonly Dictionary<string, PiSharpToolRegistration> _toolDefinitions = new(StringComparer.Ordinal);
     private readonly Dictionary<string, ResourceSourceInfo> _toolSourceInfo = new(StringComparer.Ordinal);
     private readonly Dictionary<string, PiSharpToolRenderer> _toolRenderers = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, HashSet<string>> _ownedToolNames = new(StringComparer.Ordinal);
+    private readonly object _toolGate = new();
     private readonly Dictionary<string, Func<string, CancellationToken, Task<string>>> _commands = new(StringComparer.Ordinal);
     private readonly Dictionary<string, ExtensionCommandInfo> _commandInfo = new(StringComparer.Ordinal);
     private readonly List<UserBashHandler> _userBashHandlers = [];
     private readonly List<PiSharpToolCallHook> _toolCallHooks = [];
     private readonly List<PiSharpToolResultHook> _toolResultHooks = [];
     private ResourceSourceInfo? _currentSourceInfo;
-    public IReadOnlyCollection<AIFunction> Tools => _tools.Values;
-    public IReadOnlyCollection<PiSharpToolRegistration> ToolDefinitions => _toolDefinitions.Values;
-    public IReadOnlyDictionary<string, ResourceSourceInfo> ToolSourceInfo => _toolSourceInfo;
-    public IReadOnlyDictionary<string, PiSharpToolRenderer> ToolRenderers => _toolRenderers;
+    public IReadOnlyCollection<AIFunction> Tools { get { lock (_toolGate) return _tools.Values.ToArray(); } }
+    public IReadOnlyCollection<PiSharpToolRegistration> ToolDefinitions
+    {
+        get { lock (_toolGate) return _toolDefinitions.Values.ToArray(); }
+    }
+    public IReadOnlyDictionary<string, ResourceSourceInfo> ToolSourceInfo
+    {
+        get { lock (_toolGate) return new Dictionary<string, ResourceSourceInfo>(_toolSourceInfo, StringComparer.Ordinal); }
+    }
+    public IReadOnlyDictionary<string, PiSharpToolRenderer> ToolRenderers
+    {
+        get { lock (_toolGate) return new Dictionary<string, PiSharpToolRenderer>(_toolRenderers, StringComparer.Ordinal); }
+    }
     public IReadOnlyDictionary<string, Func<string, CancellationToken, Task<string>>> Commands => _commands;
     public IReadOnlyDictionary<string, ExtensionCommandInfo> CommandInfo => _commandInfo;
     public IReadOnlyList<UserBashHandler> UserBashHandlers => _userBashHandlers;
     public IReadOnlyList<PiSharpToolCallHook> ToolCallHooks => _toolCallHooks;
     public IReadOnlyList<PiSharpToolResultHook> ToolResultHooks => _toolResultHooks;
+    internal event Action<IReadOnlyCollection<PiSharpToolRegistration>>? ToolDefinitionsChanged;
 
     public void AddTool(AIFunction tool)
     {
@@ -62,23 +74,29 @@ public sealed class ExtensionRegistration
     {
         ArgumentNullException.ThrowIfNull(definition);
         ArgumentNullException.ThrowIfNull(definition.Function);
-        if (!_tools.TryAdd(definition.Function.Name, definition.Function))
-            throw new ArgumentException($"Duplicate extension tool: {definition.Function.Name}");
-        _toolDefinitions.Add(definition.Function.Name, definition);
-        var assemblyPath = definition.Function.GetType().Assembly.Location;
-        _toolSourceInfo.Add(definition.Function.Name, _currentSourceInfo ??
-            (string.IsNullOrWhiteSpace(assemblyPath)
-                ? new("<unknown>", "local", "temporary", "top-level", null)
-                : new(Path.GetFullPath(assemblyPath), "local", "temporary", "top-level",
-                    Path.GetDirectoryName(assemblyPath))));
+        IReadOnlyCollection<PiSharpToolRegistration> changed;
+        lock (_toolGate)
+        {
+            AddToolCore(definition);
+            changed = _toolDefinitions.Values.ToArray();
+        }
+        ToolDefinitionsChanged?.Invoke(changed);
     }
 
     /// <summary>Registers an extension tool with optional safe terminal call/result renderers.</summary>
     public void AddTool(AIFunction tool, PiSharpToolRenderer renderer)
     {
+        ArgumentNullException.ThrowIfNull(tool);
         ArgumentNullException.ThrowIfNull(renderer);
-        AddTool(tool);
-        _toolRenderers.Add(tool.Name, renderer);
+        IReadOnlyCollection<PiSharpToolRegistration> changed;
+        lock (_toolGate)
+        {
+            var definition = new PiSharpToolRegistration(tool);
+            AddToolCore(definition);
+            _toolRenderers.Add(tool.Name, renderer);
+            changed = _toolDefinitions.Values.ToArray();
+        }
+        ToolDefinitionsChanged?.Invoke(changed);
     }
 
     /// <summary>Registers a configured extension tool with optional safe terminal renderers.</summary>
@@ -86,12 +104,81 @@ public sealed class ExtensionRegistration
     {
         ArgumentNullException.ThrowIfNull(definition);
         ArgumentNullException.ThrowIfNull(renderer);
-        AddTool(definition);
-        _toolRenderers.Add(definition.Function.Name, renderer);
+        IReadOnlyCollection<PiSharpToolRegistration> changed;
+        lock (_toolGate)
+        {
+            AddToolCore(definition);
+            _toolRenderers.Add(definition.Function.Name, renderer);
+            changed = _toolDefinitions.Values.ToArray();
+        }
+        ToolDefinitionsChanged?.Invoke(changed);
     }
 
-    public PiSharpToolRenderer? GetToolRenderer(string name) =>
-        _toolRenderers.TryGetValue(name, out var renderer) ? renderer : null;
+    public PiSharpToolRenderer? GetToolRenderer(string name)
+    {
+        lock (_toolGate) return _toolRenderers.TryGetValue(name, out var renderer) ? renderer : null;
+    }
+
+    internal IReadOnlyCollection<string> GetOwnedToolNames(string owner)
+    {
+        lock (_toolGate) return _ownedToolNames.TryGetValue(owner, out var names) ? names.ToArray() : [];
+    }
+
+    internal void ReplaceOwnedTools(string owner, IEnumerable<PiSharpToolRegistration> definitions,
+        ResourceSourceInfo sourceInfo, IReadOnlyDictionary<string, PiSharpToolRenderer>? renderers = null)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(owner);
+        ArgumentNullException.ThrowIfNull(definitions);
+        ArgumentNullException.ThrowIfNull(sourceInfo);
+        var replacements = definitions.ToArray();
+        var byName = new Dictionary<string, PiSharpToolRegistration>(StringComparer.Ordinal);
+        foreach (var definition in replacements)
+        {
+            ArgumentNullException.ThrowIfNull(definition);
+            ArgumentNullException.ThrowIfNull(definition.Function);
+            if (!byName.TryAdd(definition.Function.Name, definition))
+                throw new ArgumentException("Duplicate owned extension tool: " + definition.Function.Name, nameof(definitions));
+        }
+        if (renderers is not null && renderers.Keys.Any(name => !byName.ContainsKey(name)))
+            throw new ArgumentException("A renderer was supplied for an unregistered tool.", nameof(renderers));
+
+        IReadOnlyCollection<PiSharpToolRegistration> changed;
+        lock (_toolGate)
+        {
+            var previous = _ownedToolNames.TryGetValue(owner, out var names)
+                ? new HashSet<string>(names, StringComparer.Ordinal)
+                : new HashSet<string>(StringComparer.Ordinal);
+            foreach (var name in byName.Keys)
+                if (_toolDefinitions.ContainsKey(name) && !previous.Contains(name))
+                    throw new ArgumentException($"Duplicate extension tool: {name}", nameof(definitions));
+
+            foreach (var name in previous.Except(byName.Keys, StringComparer.Ordinal))
+            {
+                var existing = _toolDefinitions[name];
+                _toolDefinitions[name] = existing with
+                {
+                    Exposure = ToolExposure.Hidden,
+                    DefaultActive = false,
+                    AllowNestedInvocation = false
+                };
+            }
+
+            foreach (var (name, definition) in byName)
+            {
+                _tools[name] = definition.Function;
+                _toolDefinitions[name] = definition;
+                _toolSourceInfo[name] = sourceInfo;
+                if (renderers?.TryGetValue(name, out var renderer) == true)
+                    _toolRenderers[name] = renderer;
+                else _toolRenderers.Remove(name);
+            }
+
+            previous.UnionWith(byName.Keys);
+            _ownedToolNames[owner] = previous;
+            changed = _toolDefinitions.Values.ToArray();
+        }
+        ToolDefinitionsChanged?.Invoke(changed);
+    }
 
     /// <summary>Registers an asynchronous policy hook for model-issued and nested tool calls.</summary>
     public void AddToolCallHook(PiSharpToolCallHook hook)
@@ -125,9 +212,29 @@ public sealed class ExtensionRegistration
 
     public void SetToolDefaultActive(string name, bool active)
     {
-        if (!_toolDefinitions.TryGetValue(name, out var definition))
-            throw new ArgumentException("Unknown tool: " + name, nameof(name));
-        _toolDefinitions[name] = definition with { DefaultActive = active };
+        IReadOnlyCollection<PiSharpToolRegistration> changed;
+        lock (_toolGate)
+        {
+            if (!_toolDefinitions.TryGetValue(name, out var definition))
+                throw new ArgumentException("Unknown tool: " + name, nameof(name));
+            _toolDefinitions[name] = definition with { DefaultActive = active };
+            changed = _toolDefinitions.Values.ToArray();
+        }
+        ToolDefinitionsChanged?.Invoke(changed);
+    }
+
+    private void AddToolCore(PiSharpToolRegistration definition)
+    {
+        var name = definition.Function.Name;
+        if (!_tools.TryAdd(name, definition.Function))
+            throw new ArgumentException($"Duplicate extension tool: {name}");
+        _toolDefinitions.Add(name, definition);
+        var assemblyPath = definition.Function.GetType().Assembly.Location;
+        _toolSourceInfo.Add(name, _currentSourceInfo ??
+            (string.IsNullOrWhiteSpace(assemblyPath)
+                ? new("<unknown>", "local", "temporary", "top-level", null)
+                : new(Path.GetFullPath(assemblyPath), "local", "temporary", "top-level",
+                    Path.GetDirectoryName(assemblyPath))));
     }
 
     private static ResourceSourceInfo SourceInfoFromHandler(Delegate handler)

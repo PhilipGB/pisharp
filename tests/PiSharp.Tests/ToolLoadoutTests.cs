@@ -112,6 +112,45 @@ public sealed class ToolLoadoutTests
     }
 
     [Fact]
+    public void ExistingLoadoutsRefreshWhenTheRegisteredToolSetChanges()
+    {
+        var first = Registration("first", ToolExposure.Direct);
+        var registry = new PiSharpToolRegistry([first]);
+        var loadout = registry.CreateLoadout();
+
+        registry.Replace([first, Registration("added", ToolExposure.Direct)]);
+
+        Assert.Equal(["first", "added"], Names(loadout.Snapshot.Declared.Select(item => item.Registration)));
+        Assert.Equal(["first", "added"], loadout.Snapshot.ActiveToolNames);
+
+        registry.Replace([first with { Exposure = ToolExposure.Hidden }, Registration("added", ToolExposure.Direct)]);
+
+        Assert.Equal(["added"], Names(loadout.Snapshot.Declared.Select(item => item.Registration)));
+        Assert.Equal(["added"], loadout.Snapshot.ActiveToolNames);
+    }
+
+    [Fact]
+    public void OwnedExtensionToolsCanBeReplacedAndWithdrawnAtomically()
+    {
+        var extension = new ExtensionRegistration();
+        var source = new PiSharp.Runtime.Resources.ResourceSourceInfo("mcp:docs", "local", "test", "top-level", null);
+        var initial = Registration("mcp__docs__old", ToolExposure.Direct);
+        extension.ReplaceOwnedTools("mcp:docs", [initial], source);
+        IReadOnlyCollection<PiSharpToolRegistration>? changed = null;
+        extension.ToolDefinitionsChanged += definitions => changed = definitions;
+
+        var replacement = Registration("mcp__docs__new", ToolExposure.Direct);
+        extension.ReplaceOwnedTools("mcp:docs", [replacement], source);
+
+        Assert.Equal(ToolExposure.Hidden, extension.ToolDefinitions.Single(tool =>
+            tool.Function.Name == initial.Function.Name).Exposure);
+        Assert.Contains(extension.ToolDefinitions, tool => ReferenceEquals(tool, replacement));
+        Assert.Equal(["mcp__docs__new", "mcp__docs__old"],
+            changed!.Select(tool => tool.Function.Name).Order(StringComparer.Ordinal));
+        Assert.Equal("mcp:docs", extension.ToolSourceInfo[replacement.Function.Name].Path);
+    }
+
+    [Fact]
     public void ExtensionRegistrationRetainsToolExposureAndNamespace()
     {
         var tool = Function("deferred");

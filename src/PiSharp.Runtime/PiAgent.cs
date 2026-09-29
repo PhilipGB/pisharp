@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
@@ -106,12 +107,17 @@ public sealed class PiAgent
     private readonly ChatClientAgent _agent;
     private readonly ChatClientAgent _summarizer;
     private readonly MutableChatClient _chatClient;
-    private readonly IReadOnlyList<AIFunctionDeclaration> _toolDeclarations;
     private readonly PiSharpToolRegistry _toolRegistry;
     private readonly PiSharpToolHookPipeline _toolHooks;
     private readonly IReadOnlyList<string>? _initialActiveToolNames;
     private readonly ConditionalWeakTable<AgentSession, ToolLoadout> _sessionToolLoadouts = new();
-    private readonly IReadOnlyDictionary<string, AIFunction> _runtimeToolFunctions;
+    private readonly ConcurrentDictionary<string, AIFunction> _runtimeToolFunctions = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, PiSharpToolRegistration> _runtimeToolRegistrations = new(StringComparer.Ordinal);
+    private readonly object _runtimeToolGate = new();
+    private readonly IReadOnlyList<PiSharpToolRegistration> _builtinRegistrations;
+    private readonly IReadOnlyList<string>? _selectedExtensionTools;
+    private readonly IReadOnlySet<string> _excludedExtensionTools;
+    private readonly bool _noExtensionTools;
     private readonly SemaphoreSlim _runGate = new(1, 1);
     private ReasoningOptions? _reasoning;
     private DurableExecution? _active;
@@ -125,7 +131,12 @@ public sealed class PiAgent
     private ToolLoadout? _currentToolLoadout;
 
     public string SystemInstructions { get; }
-    public IReadOnlyList<AIFunctionDeclaration> ToolDeclarations => _toolDeclarations;
+    public IReadOnlyList<AIFunctionDeclaration> ToolDeclarations => Array.AsReadOnly(
+        _toolRegistry.CreateLoadout(_initialActiveToolNames).Snapshot.Declared.Select(declaration =>
+            (AIFunctionDeclaration)(string.Equals(declaration.Description, declaration.Registration.Function.Description,
+                StringComparison.Ordinal)
+                ? declaration.Registration.Function
+                : new DescribedAIFunction(declaration.Registration.Function, declaration.Description))).ToArray());
     /// <summary>Gets the independent tool loadout associated with one agent session.</summary>
     public ToolLoadout GetToolLoadout(AgentSession session)
     {
@@ -148,7 +159,8 @@ public sealed class PiAgent
         ReasoningOptions? reasoning = null, bool blockImages = false, bool noBuiltinTools = false, bool supportsImages = true,
         IReadOnlyCollection<PiSharpToolRegistration>? extensionToolRegistrations = null,
         IReadOnlyList<PiSharpToolCallHook>? extensionToolCallHooks = null,
-        IReadOnlyList<PiSharpToolResultHook>? extensionToolResultHooks = null)
+        IReadOnlyList<PiSharpToolResultHook>? extensionToolResultHooks = null,
+        ExtensionRegistration? liveExtensionRegistration = null)
     {
         _codingTools = tools;
         _toolHooks = new PiSharpToolHookPipeline(extensionToolCallHooks, extensionToolResultHooks);
@@ -175,6 +187,9 @@ public sealed class PiAgent
             ArgumentNullException.ThrowIfNull(definition.Function);
             registeredExtensions.Add(definition);
         }
+        _selectedExtensionTools = selectedTools?.ToArray();
+        _excludedExtensionTools = new HashSet<string>(excludedTools ?? [], StringComparer.Ordinal);
+        _noExtensionTools = noTools;
         var extensionNames = registeredExtensions.Select(registration => registration.Function.Name)
             .ToHashSet(StringComparer.Ordinal);
         var builtin = selectedTools is null
@@ -196,25 +211,31 @@ public sealed class PiAgent
             throw new ArgumentException("Extension tool conflicts with a built-in tool name.");
         var configuredTools = builtin.Cast<AITool>().Concat(external.Select(registration => (AITool)registration.Function)).ToArray();
         var defaultBuiltinNames = new HashSet<string>(["read", "bash", "edit", "write"], StringComparer.Ordinal);
-        var allRegistrations = builtin.Select(function => new PiSharpToolRegistration(function,
+        _builtinRegistrations = builtin.Select(function => new PiSharpToolRegistration(function,
                 DefaultActive: defaultBuiltinNames.Contains(function.Name)))
-            .Concat(external)
             .ToArray();
+        var allRegistrations = _builtinRegistrations.Concat(external).ToArray();
         _toolRegistry = new PiSharpToolRegistry(allRegistrations);
         _initialActiveToolNames = selectedTools is null
             ? null
             : selectedTools.Where(name => _toolRegistry.Registered.Any(registration =>
                 string.Equals(registration.Function.Name, name, StringComparison.Ordinal))).ToArray();
-        _runtimeToolFunctions = allRegistrations.ToDictionary(registration => registration.Function.Name,
-            registration => (AIFunction)new DurableToolFunction(registration.Function, () => _active,
-                value => _events?.Invoke(value), () => Volatile.Read(ref _currentToolLoadout),
-                () => _runtimeToolFunctions!, _toolHooks, registration.OutputSchema), StringComparer.Ordinal);
-        var initialSnapshot = _toolRegistry.CreateLoadout(_initialActiveToolNames).Snapshot;
-        _toolDeclarations = Array.AsReadOnly(initialSnapshot.Declared.Select(declaration =>
-            (AIFunctionDeclaration)(string.Equals(declaration.Description, declaration.Registration.Function.Description,
-                StringComparison.Ordinal)
-                ? declaration.Registration.Function
-                : new DescribedAIFunction(declaration.Registration.Function, declaration.Description))).ToArray());
+        lock (_runtimeToolGate)
+        {
+            foreach (var registration in allRegistrations)
+                UpdateRuntimeToolFunction(registration);
+        }
+        if (liveExtensionRegistration is not null)
+        {
+            var weakAgent = new WeakReference<PiAgent>(this);
+            Action<IReadOnlyCollection<PiSharpToolRegistration>>? handler = null;
+            handler = definitions =>
+            {
+                if (weakAgent.TryGetTarget(out var agent)) agent.RefreshExtensionTools(definitions);
+                else liveExtensionRegistration.ToolDefinitionsChanged -= handler;
+            };
+            liveExtensionRegistration.ToolDefinitionsChanged += handler;
+        }
         SystemInstructions = (systemPrompt ?? "You are PiSharp, a coding agent. Inspect files before modifying them when tools are available. Use only the tools provided for this run.") +
             "\n\n" + (appendSystemPrompt ?? "") + "\n\n" + (contextInstructions ?? "");
         _agent = new ChatClientAgent(new ObservedChatClient(_chatClient, value => _events?.Invoke(value),
@@ -228,7 +249,7 @@ public sealed class PiAgent
                 ChatOptions = new ChatOptions
                 {
                     Instructions = SystemInstructions,
-                    Tools = configuredTools.Select(tool => tool is AIFunction function ? _runtimeToolFunctions[function.Name] : tool).ToArray(),
+                    Tools = [],
                     Reasoning = reasoning
                 }
             });
@@ -257,6 +278,37 @@ public sealed class PiAgent
                 : new DescribedAIFunction(function, declaration.Description);
         }).ToArray());
     }
+
+    private void RefreshExtensionTools(IReadOnlyCollection<PiSharpToolRegistration> definitions)
+    {
+        var external = definitions.Where(registration =>
+                (_selectedExtensionTools is null ? !_noExtensionTools :
+                    _selectedExtensionTools.Contains(registration.Function.Name, StringComparer.Ordinal) ||
+                    (!_noExtensionTools && registration.Exposure is ToolExposure.CodeMode or ToolExposure.Deferred)) &&
+                !_excludedExtensionTools.Contains(registration.Function.Name))
+            .ToArray();
+        var registrations = _builtinRegistrations.Concat(external).ToArray();
+        lock (_runtimeToolGate)
+        {
+            foreach (var registration in registrations) UpdateRuntimeToolFunction(registration);
+            _toolRegistry.Replace(registrations);
+        }
+    }
+
+    private void UpdateRuntimeToolFunction(PiSharpToolRegistration registration)
+    {
+        var name = registration.Function.Name;
+        if (_runtimeToolRegistrations.TryGetValue(name, out var previous) &&
+            ReferenceEquals(previous.Function, registration.Function) &&
+            previous.OutputSchema.Equals(registration.OutputSchema)) return;
+        _runtimeToolRegistrations[name] = registration;
+        _runtimeToolFunctions[name] = new DurableToolFunction(registration.Function, () => _active,
+            value => _events?.Invoke(value), () => Volatile.Read(ref _currentToolLoadout),
+            () => _runtimeToolFunctions, _toolHooks, registration.OutputSchema);
+    }
+
+    private IReadOnlyList<AITool> GetRuntimeFunctionsForRun() =>
+        Array.AsReadOnly<AITool>(_runtimeToolFunctions.Values.ToArray());
 
     private Task<IReadOnlyList<ChatMessage>> ProjectForRequestAsync(IReadOnlyList<ChatMessage> messages, bool force, CancellationToken token) =>
         // The pre-prompt policy owns the first request; only a pre-content overflow can force it.
@@ -384,13 +436,16 @@ public sealed class PiAgent
             _projectContext = projectContext;
             _providerRequestIndex = 0;
             _injectedSteering.Clear();
-            AgentRunOptions? runOptions = null;
+            var runOptions = new ChatClientAgentRunOptions(new ChatOptions
+            {
+                Tools = GetRuntimeFunctionsForRun().ToList()
+            });
             if (bashSessionEnvironment is { Count: > 0 })
             {
                 var properties = new AdditionalPropertiesDictionary();
                 foreach (var (key, value) in bashSessionEnvironment)
                     if (value is not null) properties[key] = value;
-                runOptions = new AgentRunOptions { AdditionalProperties = properties };
+                runOptions.AdditionalProperties = properties;
             }
             try
             {
