@@ -285,6 +285,55 @@ public sealed class UserSettingsTests
     }
 
     [Fact]
+    public void DefaultToolModifiersLayerOverBuiltinsGlobalAndProjectSelections()
+    {
+        static IReadOnlyList<string>? StartupTools(UserSettings settings, params string[] arguments) =>
+            settings.ApplyDefaults(CliArguments.Parse(arguments), _ => null).Tools;
+
+        Assert.Null(StartupTools(new UserSettings()));
+        Assert.Equal([], StartupTools(new UserSettings(DefaultTools: [])));
+        Assert.Equal(["read", "bash", "edit", "codemode"],
+            StartupTools(new UserSettings(DefaultTools: ["+codemode", "-write"])));
+        Assert.Equal(["read", "grep"], StartupTools(new UserSettings(DefaultTools: ["read", "+grep", "+read"])));
+        var layered = new UserSettings(DefaultTools: ["read", "bash", "+codemode"])
+            .Overlay(new UserSettings(DefaultTools: ["-codemode", "+tool_search"]));
+        Assert.Equal(["read", "bash", "tool_search"], StartupTools(layered));
+        Assert.Equal(["read", "bash", "tool_search", "codemode"],
+            StartupTools(layered.Overlay(new UserSettings(DefaultTools: ["+codemode"]))));
+        Assert.Equal(["read", "bash", "edit", "write", "codemode"],
+            StartupTools(new UserSettings().Overlay(new UserSettings(DefaultTools: ["+codemode"]))));
+        Assert.Equal(["write"], StartupTools(layered, "--tools", "write"));
+        Assert.Null(StartupTools(layered, "--no-tools"));
+    }
+
+    [Fact]
+    public async Task DefaultToolModifiersLoadFromUserAndTrustedProjectSettings()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-tool-defaults-" + Guid.NewGuid().ToString("N"));
+        var agent = Path.Combine(root, "agent");
+        var project = Path.Combine(root, "project");
+        Directory.CreateDirectory(agent);
+        Directory.CreateDirectory(Path.Combine(project, ".pi"));
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(agent, "settings.json"),
+                "{\"defaultTools\":[\"read\",\"bash\",\"+codemode\"]}");
+            await File.WriteAllTextAsync(Path.Combine(project, ".pi", "settings.json"),
+                "{\"defaultTools\":[\"-codemode\",\"+tool_search\"]}");
+            var settings = (await UserSettings.LoadAsync(agent, _ => null))
+                .Overlay(await UserSettings.LoadProjectAsync(project));
+            Assert.Equal(["read", "bash", "tool_search"],
+                settings.ApplyDefaults(CliArguments.Parse([]), _ => null).Tools);
+            await File.WriteAllTextAsync(Path.Combine(project, ".pi", "settings.json"),
+                "{\"defaultTools\":[\"project_tool\"]}");
+            settings = (await UserSettings.LoadAsync(agent, _ => null))
+                .Overlay(await UserSettings.LoadProjectAsync(project));
+            Assert.Equal(["project_tool"], settings.ApplyDefaults(CliArguments.Parse([]), _ => null).Tools);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [Fact]
     public async Task HttpProxyIsUserOnlyValidatedAndDoesNotOverrideProcessProxySettings()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-http-proxy-settings-" + Guid.NewGuid().ToString("N"));
@@ -657,8 +706,7 @@ public sealed class UserSettingsTests
     [InlineData("{\"unknown\":\"value\"}")]
     [InlineData("{\"defaultModel\":42}")]
     [InlineData("{\"defaultTools\":\"read\"}")]
-    [InlineData("{\"defaultTools\":[\"unknown\"]}")]
-    [InlineData("{\"defaultTools\":[\"read\",\"read\"]}")]
+    [InlineData("{\"defaultTools\":[42]}")]
     [InlineData("{\"defaultModel\":\"a\",\"defaultModel\":\"b\"}")]
     [InlineData("{\"compaction\":{\"enabled\":\"false\"}}")]
     [InlineData("{\"compaction\":{\"reserveTokens\":-1}}")]

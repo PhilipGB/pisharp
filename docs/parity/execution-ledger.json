@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "plan_received": true,
-  "source_note": "The latest CI-verified PiSharp checkpoint is 0c7c135f1a36e4680c82212b0549f3225591400d. Exact-head Linux CI run 36570799597 passed restore, format, warnings-as-errors build and 839/839 tests (0 skipped). The MCP CLI follow-up passed 843/843 locally; exact-head CI run 36572820941 failed twice at 842/843 in different existing timing tests. The OAuth follow-up passes 848/848 locally and awaits exact-head CI. Current Pi main is 5257d0d5f3ab7d42550804f32c67a77b49f485d4; the three newer commits add defaultTools modifiers and richer tool-call rendering while MCP CLI/config source is unchanged. MCP TUI management, cross-process OAuth refresh coordination, reconnect, virtual models, Codemode optional globals and broader differentials remain. Overall parity is incomplete.",
+  "source_note": "The latest CI-verified PiSharp checkpoint is ba4c6412986dd4867f8cfbb5b9eab01aa1c152cd. Exact-head Linux CI run 36576153201 passed restore, format, warnings-as-errors build and 848/848 tests (0 skipped). The MCP CLI follow-up passed 843/843 locally; exact-head CI run 36572820941 failed twice at 842/843 in different existing timing tests. The OAuth follow-up passed 848/848 locally and in exact-head CI. The current-Pi defaultTools modifier follow-up passes the 849/849 local full suite and awaits exact-head CI. Current Pi main is 5257d0d5f3ab7d42550804f32c67a77b49f485d4; the three newer commits add defaultTools modifiers and richer tool-call rendering while MCP CLI/config source is unchanged. MCP TUI management, cross-process OAuth refresh coordination, reconnect, virtual models, Codemode optional globals and broader differentials remain. Overall parity is incomplete.",
   "baseline": "earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035",
   "required_ids": [
     "feature-agent-multi-turn-and-streaming",
@@ -2190,7 +2190,7 @@
         "Partial: src/PiSharp.Cli/UserSettings.cs validates defaultProvider in user settings and trusted project overlays; CLI/runtime wiring applies selected defaults, with Pi schema and reload parity still open."
       ],
       "evidence": [
-        "tests/PiSharp.Tests/UserSettingsTests.cs covers defaults, override precedence, trusted overlays and malformed values; tests/PiSharp.Tests/ProjectSettingsProcessTests.cs covers trust boundary in a CLI process. No upstream differential evidence."
+        "Current Pi 5257d0d5f3ab7d42550804f32c67a77b49f485d4 settings-manager.ts and its defaultTools tests specify modifier-only layering and resolution. A new PiSharp test failed first because +codemode/-write passed through raw, then focused UserSettingsTests passed 44/44 with in-memory and file-backed user/project vectors; the sequential full suite passed 849/849 with zero skipped. ProjectSettingsProcessTests covers the trust boundary. A paired Pi/PiSharp process differential remains open."
       ],
       "dependencies": []
     },
@@ -2207,7 +2207,7 @@
         "Partial: src/PiSharp.Cli/UserSettings.cs validates defaultModel in user settings and trusted project overlays; CLI/runtime wiring applies selected defaults, with Pi schema and reload parity still open."
       ],
       "evidence": [
-        "tests/PiSharp.Tests/UserSettingsTests.cs covers defaults, override precedence, trusted overlays and malformed values; tests/PiSharp.Tests/ProjectSettingsProcessTests.cs covers trust boundary in a CLI process. No upstream differential evidence."
+        "Current Pi 5257d0d5f3ab7d42550804f32c67a77b49f485d4 settings-manager.ts and its defaultTools tests specify modifier-only layering and resolution. A new PiSharp test failed first because +codemode/-write passed through raw, then focused UserSettingsTests passed 44/44 with in-memory and file-backed user/project vectors; the sequential full suite passed 849/849 with zero skipped. ProjectSettingsProcessTests covers the trust boundary. A paired Pi/PiSharp process differential remains open."
       ],
       "dependencies": []
     },
@@ -2425,10 +2425,10 @@
         "Test malformed settings, trust boundaries, reload and startup behaviour"
       ],
       "implementation": [
-        "Partial: src/PiSharp.Cli/UserSettings.cs validates defaultTools in user settings and trusted project overlays; CLI/runtime wiring applies selected defaults, with Pi schema and reload parity still open."
+        "UserSettings loads defaultTools from user and trusted-project files. Plain lists replace inherited selections; modifier-only project lists append, and startup resolves +name/-name in order against the inherited or built-in read/bash/edit/write selection. CLI --tools still overrides settings. Other Pi schema and reload parity remains open."
       ],
       "evidence": [
-        "tests/PiSharp.Tests/UserSettingsTests.cs covers defaults, override precedence, trusted overlays and malformed values; tests/PiSharp.Tests/ProjectSettingsProcessTests.cs covers trust boundary in a CLI process. No upstream differential evidence."
+        "Current Pi 5257d0d5f3ab7d42550804f32c67a77b49f485d4 settings-manager.ts and its defaultTools tests specify modifier-only layering and resolution. A new PiSharp test failed first because +codemode/-write passed through raw, then focused UserSettingsTests passed 44/44 with in-memory and file-backed user/project vectors; the sequential full suite passed 849/849 with zero skipped. ProjectSettingsProcessTests covers the trust boundary. A paired Pi/PiSharp process differential remains open."
       ],
       "dependencies": []
     },
@@ -2445,7 +2445,7 @@
         "Partial: src/PiSharp.Cli/UserSettings.cs validates sessionDir in user settings and trusted project overlays; CLI/runtime wiring applies selected defaults, with Pi schema and reload parity still open."
       ],
       "evidence": [
-        "tests/PiSharp.Tests/UserSettingsTests.cs covers defaults, override precedence, trusted overlays and malformed values; tests/PiSharp.Tests/ProjectSettingsProcessTests.cs covers trust boundary in a CLI process. No upstream differential evidence."
+        "Current Pi 5257d0d5f3ab7d42550804f32c67a77b49f485d4 settings-manager.ts and its defaultTools tests specify modifier-only layering and resolution. A new PiSharp test failed first because +codemode/-write passed through raw, then focused UserSettingsTests passed 44/44 with in-memory and file-backed user/project vectors; the sequential full suite passed 849/849 with zero skipped. ProjectSettingsProcessTests covers the trust boundary. A paired Pi/PiSharp process differential remains open."
       ],
       "dependencies": []
     },
@@ -3511,7 +3511,7 @@
       "evidence": [
         "Current Pi MCP tools share exposure, nested execution, hooks and extension registration; builtin:mcp is resolved only after project trust at 4259686d9290c0d73ae7192b796aee3e530a9779.",
         "Upstream commit 1d74741e1 serializes MCP OAuth refreshes across processes with per-server lockfiles and waits for refresh completion during shutdown. The two new MCP OAuth refresh tests pass 2/2 at the current pin. PiSharp now has an OAuth store and local code-flow fixture, but SDK refresh is serialized only within each process; cross-process rotated-token coordination remains open.",
-        "McpConfigurationTests and McpRuntimeTests pass against a deterministic stdio JSON-RPC fixture for configuration trust/precedence, tool schema/result/error forwarding, resource list/template/read and a resource-only server. An overlapping build coincided with one PTY exit timeout in an intermediate full run; that PTY case passed 1/1 in isolation. The original MCP slice passed exact-head Linux CI run 36570045364 with 838/838. A trust regression confirms that a project containing only .pi/mcp.json requires trust; focused trust/configuration tests pass 6/6 and the full local suite passes 839/839 with zero skipped. The trust follow-up passed exact-head Linux CI run 36570799597 with 839/839. McpCommandTests cover add/list/remove, invalid input, private config files and concurrent task/process edits; focused MCP command/config/runtime tests pass 9/9. An initial full local run passed 842/843; an existing RPC auto-compaction test hit its five-second timeout, then passed 1/1 in isolation. The sequential full rerun passed 843/843 with zero skipped. Exact-head CI run 36572820941 failed twice at 842/843 in different existing timing tests while MCP CLI tests passed. McpOAuthTests cover URL-isolated private tokens, concurrent edits, scoped logout, invalid config and an HTTP OAuth challenge/code/token/reconnect path; focused 5/5 and sequential full 848/848 passed locally with zero skipped. Exact-head CI for OAuth is pending."
+        "McpConfigurationTests and McpRuntimeTests pass against a deterministic stdio JSON-RPC fixture for configuration trust/precedence, tool schema/result/error forwarding, resource list/template/read and a resource-only server. An overlapping build coincided with one PTY exit timeout in an intermediate full run; that PTY case passed 1/1 in isolation. The original MCP slice passed exact-head Linux CI run 36570045364 with 838/838. A trust regression confirms that a project containing only .pi/mcp.json requires trust; focused trust/configuration tests pass 6/6 and the full local suite passes 839/839 with zero skipped. The trust follow-up passed exact-head Linux CI run 36570799597 with 839/839. McpCommandTests cover add/list/remove, invalid input, private config files and concurrent task/process edits; focused MCP command/config/runtime tests pass 9/9. An initial full local run passed 842/843; an existing RPC auto-compaction test hit its five-second timeout, then passed 1/1 in isolation. The sequential full rerun passed 843/843 with zero skipped. Exact-head CI run 36572820941 failed twice at 842/843 in different existing timing tests while MCP CLI tests passed. McpOAuthTests cover URL-isolated private tokens, concurrent edits, scoped logout, invalid config and an HTTP OAuth challenge/code/token/reconnect path; focused 5/5 and sequential full 848/848 passed locally with zero skipped. Exact-head Linux CI run 36576153201 passed 848/848 for the OAuth checkpoint."
       ],
       "dependencies": [
         "tool-exposure-loadout",

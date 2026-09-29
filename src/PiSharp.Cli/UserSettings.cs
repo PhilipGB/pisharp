@@ -255,10 +255,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
                 foreach (var item in property.Value.EnumerateArray())
                 {
                     if (item.ValueKind != JsonValueKind.String) throw new InvalidDataException("settings.json defaultTools entries must be strings.");
-                    var name = item.GetString();
-                    if (name is not ("read" or "bash" or "edit" or "write" or "grep" or "find" or "ls") || values.Contains(name, StringComparer.Ordinal))
-                        throw new InvalidDataException($"settings.json defaultTools contains an invalid or duplicate tool '{name}'.");
-                    values.Add(name);
+                    values.Add(item.GetString()!);
                 }
                 tools = values;
                 continue;
@@ -319,7 +316,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         project.DefaultProvider ?? DefaultProvider,
         project.DefaultModel ?? DefaultModel,
         project.DefaultThinkingLevel ?? DefaultThinkingLevel,
-        project.DefaultTools ?? DefaultTools,
+        MergeDefaultTools(DefaultTools, project.DefaultTools),
         project.SessionDirectory ?? SessionDirectory,
         project.Compaction is null ? Compaction : new CompactionSettings(
             project.Compaction.Enabled ?? Compaction?.Enabled,
@@ -468,8 +465,35 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
             ModelOverride = cli.ModelOverride ?? (!useLocal && !preserveSessionModel && environment(modelEnvironment) is null ? DefaultModel : null),
             Thinking = cli.Thinking ?? DefaultThinkingLevel,
             ScopedModels = cli.ScopedModels ?? EnabledModels,
-            Tools = cli.Tools ?? (!cli.NoTools ? DefaultTools : null)
+            Tools = cli.Tools ?? (!cli.NoTools ? ResolveDefaultTools(DefaultTools) : null)
         };
+    }
+
+    private static bool IsToolModifier(string entry) =>
+        entry.StartsWith('+') || entry.StartsWith('-');
+
+    private static IReadOnlyList<string>? MergeDefaultTools(IReadOnlyList<string>? inherited,
+        IReadOnlyList<string>? overrides)
+    {
+        if (overrides is null) return inherited;
+        return inherited is not null && overrides.All(IsToolModifier)
+            ? inherited.Concat(overrides).ToArray() : overrides;
+    }
+
+    private static IReadOnlyList<string>? ResolveDefaultTools(IReadOnlyList<string>? entries)
+    {
+        if (entries is null) return null;
+        var plain = entries.Where(entry => !IsToolModifier(entry)).ToArray();
+        var tools = plain.Length > 0 || entries.Count == 0
+            ? plain.ToList() : new List<string> { "read", "bash", "edit", "write" };
+        foreach (var entry in entries.Where(IsToolModifier))
+        {
+            var name = entry[1..];
+            var index = tools.IndexOf(name);
+            if (entry[0] == '+' && index < 0 && name.Length > 0) tools.Add(name);
+            else if (entry[0] == '-' && index >= 0) tools.RemoveAt(index);
+        }
+        return tools;
     }
 
     private static string? Validate(string? value, string property, int maxLength)
