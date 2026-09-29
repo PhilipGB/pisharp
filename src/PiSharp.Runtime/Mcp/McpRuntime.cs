@@ -13,65 +13,175 @@ namespace PiSharp.Runtime.Mcp;
 /// <summary>Connects configured MCP servers and registers their tools through the extension policy surface.</summary>
 public static class McpRuntime
 {
+    private static readonly TimeSpan s_startupWait = TimeSpan.FromSeconds(10);
+
     public static async Task<IReadOnlyList<string>> RegisterAsync(McpConfiguration configuration,
         ExtensionCatalog catalog, string workingDirectory, CancellationToken cancellationToken = default,
         McpRuntimeManager? manager = null)
     {
         var errors = new List<string>(configuration.Errors);
-        var resourceServers = new List<(string Name, McpServerConnection Connection, TimeSpan Timeout, ToolExposure Exposure)>();
-        foreach (var server in configuration.Servers) manager?.Register(server, null);
-        foreach (var server in configuration.Servers.Where(server => server.Enabled))
+        var registration = catalog.Registration;
+        var resourceGate = new object();
+        var resourceToolsGate = new object();
+        var resourceServers = new Dictionary<string,
+            (string Name, McpServerConnection Connection, TimeSpan Timeout, ToolExposure Exposure)>(StringComparer.Ordinal);
+        var resourceOwner = "mcp:resources";
+        var resourceNames = new HashSet<string>(StringComparer.Ordinal)
+            { "list_mcp_resources", "list_mcp_resource_templates", "read_mcp_resource" };
+
+        void RefreshResourceTools()
+        {
+            lock (resourceToolsGate)
+            {
+                var owned = registration.GetOwnedToolNames(resourceOwner).ToHashSet(StringComparer.Ordinal);
+                if (registration.ToolDefinitions.Any(tool => resourceNames.Contains(tool.Function.Name) &&
+                        !owned.Contains(tool.Function.Name)))
+                    return;
+                (string Name, McpServerConnection Connection, TimeSpan Timeout, ToolExposure Exposure)[] current;
+                lock (resourceGate) current = resourceServers.Values.ToArray();
+                var source = new ResourceSourceInfo("builtin:mcp", "builtin", "builtin", "top-level", null);
+                if (current.Length == 0)
+                {
+                    registration.ReplaceOwnedTools(resourceOwner, [], source);
+                    return;
+                }
+                new McpResourceTools(current).Configure(registration);
+            }
+        }
+
+        var effectiveServers = configuration.Servers.ToList();
+        var configuredNames = configuration.Servers.Select(server => server.Name).ToHashSet(StringComparer.Ordinal);
+        foreach (var extensionServer in registration.McpServers)
+        {
+            if (configuredNames.Contains(extensionServer.Configuration.Name))
+                errors.Add($"MCP server \"{extensionServer.Configuration.Name}\" registered by " +
+                    extensionServer.ExtensionPath + " is overridden by configured MCP settings.");
+            else effectiveServers.Add(extensionServer.Configuration);
+        }
+
+        var connectTasks = new List<Task<string?>>();
+        foreach (var server in effectiveServers)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            var currentServer = server;
+            var publishGate = new object();
             McpServerConnection? connection = null;
-            connection = new McpServerConnection(server.Name, server.Url is not null,
-                token => OpenServerAsync(server, configuration.AgentDirectory, workingDirectory,
-                    (client, tools) =>
+
+            void Publish(McpServerConfiguration updated, McpServerConnection? published)
+            {
+                lock (publishGate)
+                {
+                    currentServer = updated;
+                    if (published is null || !updated.Enabled)
+                        registration.ReplaceOwnedTools("mcp:" + updated.Name, [],
+                            new ResourceSourceInfo("builtin:mcp", "builtin", "builtin", "top-level", null));
+                    else
+                        RegisterServerTools(updated, published, registration, published.Tools);
+
+                    lock (resourceGate)
                     {
-                        if (connection?.IsCurrent(client) == true)
-                            RegisterServerTools(server, connection, catalog.Registration, tools);
-                        return Task.CompletedTask;
-                    }, token));
-            catalog.OwnConnection(connection);
-            manager?.Register(server, connection);
-            try
-            {
-                using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-                deadline.CancelAfter(server.Timeout);
-                await connection.ConnectAsync(deadline.Token);
-                RegisterServerTools(server, connection, catalog.Registration, connection.Tools);
-                if (connection.HasResources && server.Exposure != McpToolExposure.Hidden)
-                    resourceServers.Add((server.Name, connection, server.Timeout, MapExposure(server.Exposure)));
+                        if (published is not null && updated.Enabled && published.HasResources &&
+                            updated.Exposure != McpToolExposure.Hidden)
+                            resourceServers[updated.Name] = (updated.Name, published, updated.Timeout,
+                                MapExposure(updated.Exposure));
+                        else resourceServers.Remove(updated.Name);
+                    }
+                    RefreshResourceTools();
+                }
             }
-            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+
+            McpServerConnection CreateConnection(McpServerConfiguration updated)
             {
-                errors.Add("MCP server " + server.Name + " timed out.");
+                lock (publishGate) currentServer = updated;
+                McpServerConnection? created = null;
+                created = new McpServerConnection(updated.Name, updated.Url is not null,
+                    token =>
+                    {
+                        McpServerConfiguration openingConfiguration;
+                        lock (publishGate) openingConfiguration = currentServer;
+                        return OpenServerAsync(openingConfiguration, configuration.AgentDirectory, workingDirectory,
+                        (client, tools) =>
+                        {
+                            lock (publishGate)
+                            {
+                                if (created?.IsCurrent(client) != true) return Task.CompletedTask;
+                                var activeConfiguration = currentServer;
+                                if (activeConfiguration.Enabled)
+                                    RegisterServerTools(activeConfiguration, created, registration, tools);
+                                else
+                                    registration.ReplaceOwnedTools("mcp:" + activeConfiguration.Name, [],
+                                        new ResourceSourceInfo("builtin:mcp", "builtin", "builtin", "top-level", null));
+                                lock (resourceGate)
+                                {
+                                    if (activeConfiguration.Enabled && created.HasResources &&
+                                        activeConfiguration.Exposure != McpToolExposure.Hidden)
+                                        resourceServers[activeConfiguration.Name] = (activeConfiguration.Name, created,
+                                            activeConfiguration.Timeout, MapExposure(activeConfiguration.Exposure));
+                                    else resourceServers.Remove(activeConfiguration.Name);
+                                }
+                                RefreshResourceTools();
+                            }
+                            return Task.CompletedTask;
+                        }, token);
+                    });
+                catalog.OwnConnection(created);
+                return created;
             }
-            catch (McpSignInRequiredException)
-            {
-                errors.Add("MCP server " + server.Name + " needs authorization. Run pisharp mcp login " +
-                    server.Name + ".");
-            }
-            catch (Exception error) when (error is not OperationCanceledException)
-            {
-                // Connection errors may contain server credentials or authorization headers.
-                errors.Add("MCP server " + server.Name + " could not connect (" + error.GetType().Name + ").");
-            }
+
+            manager?.Register(server, null, CreateConnection, Publish);
+            if (!server.Enabled) continue;
+
+            connection = CreateConnection(server);
+            manager?.Register(server, connection, CreateConnection, Publish);
+            connectTasks.Add(ConnectServerAsync(server, connection, Publish, cancellationToken));
         }
-        if (resourceServers.Count > 0)
+
+        if (connectTasks.Count > 0)
         {
-            var reserved = new[] { "list_mcp_resources", "list_mcp_resource_templates", "read_mcp_resource" };
-            if (catalog.Registration.ToolDefinitions.Any(tool => reserved.Contains(tool.Function.Name, StringComparer.Ordinal)))
-                errors.Add("MCP resource tools could not register because a tool name is already in use.");
-            else
-            {
-                var source = new ResourceSourceInfo("builtin:mcp", "builtin", "builtin", "top-level", null);
-                catalog.Registration.SetCurrentSourceInfo(source);
-                try { new McpResourceTools(resourceServers).Configure(catalog.Registration); }
-                finally { catalog.Registration.SetCurrentSourceInfo(null); }
-            }
+            var startup = Task.WhenAll(connectTasks);
+            var startupWait = Task.Delay(s_startupWait, cancellationToken);
+            _ = await Task.WhenAny(startup, startupWait);
+            if (startup.IsCompleted) errors.AddRange((await startup).OfType<string>());
+            else cancellationToken.ThrowIfCancellationRequested();
         }
+
+        var ownedResourceNames = registration.GetOwnedToolNames(resourceOwner).ToHashSet(StringComparer.Ordinal);
+        var hasResourceServers = false;
+        lock (resourceGate) hasResourceServers = resourceServers.Count > 0;
+        if (hasResourceServers && registration.ToolDefinitions.Any(tool =>
+                resourceNames.Contains(tool.Function.Name) && !ownedResourceNames.Contains(tool.Function.Name)))
+            errors.Add("MCP resource tools could not register because a tool name is already in use.");
         return errors;
+    }
+
+    private static async Task<string?> ConnectServerAsync(McpServerConfiguration server,
+        McpServerConnection connection, Action<McpServerConfiguration, McpServerConnection?> publish,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            deadline.CancelAfter(server.Timeout);
+            await connection.ConnectAsync(deadline.Token);
+            publish(server, connection);
+            return null;
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            publish(server, connection);
+            return "MCP server " + server.Name + " timed out.";
+        }
+        catch (McpSignInRequiredException)
+        {
+            publish(server, connection);
+            return "MCP server " + server.Name + " needs authorization. Run pisharp mcp login " + server.Name + ".";
+        }
+        catch (Exception error) when (error is not OperationCanceledException)
+        {
+            // Connection errors may contain server credentials or authorization headers.
+            publish(server, connection);
+            return "MCP server " + server.Name + " could not connect (" + error.GetType().Name + ").";
+        }
     }
 
     private static void RegisterServerTools(McpServerConfiguration server, McpServerConnection connection,

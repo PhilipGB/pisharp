@@ -7,5 +7,5 @@ public static class McpBuiltin
 {
     public static BuiltinExtensionDefinition CreateDefinition(McpRuntimeManager manager) =>
         new("mcp", registration => registration.AddCommand("mcp", manager.HandleCommandAsync,
-            "Show MCP server status or reconnect a server."));
+            "Manage MCP servers, exposure, and sign-in."));
 }

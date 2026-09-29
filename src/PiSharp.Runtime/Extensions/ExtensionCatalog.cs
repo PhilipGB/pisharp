@@ -1,6 +1,8 @@
 using System.Reflection;
 using System.Runtime.Loader;
+using System.Text.Json;
 using Microsoft.Extensions.AI;
+using PiSharp.Runtime.Mcp;
 using PiSharp.Runtime.Resources;
 using PiSharp.Runtime.Tools;
 
@@ -19,6 +21,9 @@ public sealed record UserBashContext(string Command, bool ExcludeFromContext, st
 public delegate Task<BashExecutionResult?> UserBashHandler(UserBashContext context, CancellationToken cancellationToken);
 
 public sealed record ExtensionCommandInfo(string? Description, ResourceSourceInfo SourceInfo);
+
+/// <summary>An MCP server declared by a loaded extension. It is scoped to this runtime session.</summary>
+public sealed record ExtensionMcpServerRegistration(McpServerConfiguration Configuration, string ExtensionPath);
 
 /// <summary>A capability registered through the same extension surface as loaded assemblies.</summary>
 public sealed record BuiltinExtensionDefinition(string Name, Action<ExtensionRegistration> Configure,
@@ -42,6 +47,8 @@ public sealed class ExtensionRegistration
     private readonly List<UserBashHandler> _userBashHandlers = [];
     private readonly List<PiSharpToolCallHook> _toolCallHooks = [];
     private readonly List<PiSharpToolResultHook> _toolResultHooks = [];
+    private readonly object _mcpGate = new();
+    private readonly Dictionary<string, ExtensionMcpServerRegistration> _mcpServers = new(StringComparer.Ordinal);
     private ResourceSourceInfo? _currentSourceInfo;
     public IReadOnlyCollection<AIFunction> Tools { get { lock (_toolGate) return _tools.Values.ToArray(); } }
     public IReadOnlyCollection<PiSharpToolRegistration> ToolDefinitions
@@ -61,7 +68,36 @@ public sealed class ExtensionRegistration
     public IReadOnlyList<UserBashHandler> UserBashHandlers => _userBashHandlers;
     public IReadOnlyList<PiSharpToolCallHook> ToolCallHooks => _toolCallHooks;
     public IReadOnlyList<PiSharpToolResultHook> ToolResultHooks => _toolResultHooks;
+    public IReadOnlyCollection<ExtensionMcpServerRegistration> McpServers
+    {
+        get { lock (_mcpGate) return _mcpServers.Values.ToArray(); }
+    }
     internal event Action<IReadOnlyCollection<PiSharpToolRegistration>>? ToolDefinitionsChanged;
+
+    /// <summary>Registers an MCP server for this session using the same shape as an mcp.json entry.</summary>
+    public void RegisterMcpServer(string name, JsonElement configuration)
+    {
+        var source = _currentSourceInfo ?? throw new InvalidOperationException(
+            "MCP servers can only be registered while an extension is being configured.");
+        var owner = source.Path;
+        var parsed = McpConfiguration.Parse(name, configuration, owner, "extension");
+        lock (_mcpGate)
+        {
+            if (_mcpServers.TryGetValue(name, out var existing) && existing.ExtensionPath != owner)
+                throw new InvalidOperationException($"MCP server {name} is already registered by extension {existing.ExtensionPath}.");
+            _mcpServers[name] = new(parsed, owner);
+        }
+    }
+
+    /// <summary>Removes an MCP server registered by the extension currently being configured.</summary>
+    public void UnregisterMcpServer(string name)
+    {
+        var source = _currentSourceInfo ?? throw new InvalidOperationException(
+            "MCP servers can only be unregistered while an extension is being configured.");
+        lock (_mcpGate)
+            if (_mcpServers.TryGetValue(name, out var existing) && existing.ExtensionPath == source.Path)
+                _mcpServers.Remove(name);
+    }
 
     public void AddTool(AIFunction tool)
     {

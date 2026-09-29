@@ -204,6 +204,118 @@ public sealed class McpRuntimeLifecycleTests
         finally { Directory.Delete(root, recursive: true); }
     }
 
+    [Fact]
+    public async Task BuiltinManagerEnablesDisablesAndChangesExposureForLiveServers()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-mcp-manager-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            var fixture = Path.Combine(AppContext.BaseDirectory, "Fixtures", "mcp_notification_fixture.py");
+            var statePath = Path.Combine(root, "state.json");
+            var configurationPath = Path.Combine(root, "mcp.json");
+            await File.WriteAllTextAsync(configurationPath,
+                System.Text.Json.JsonSerializer.Serialize(new
+                {
+                    preserved = "value",
+                    mcpServers = new Dictionary<string, object>
+                    {
+                        ["managed"] = new
+                        {
+                            command = "python3",
+                            args = new[] { fixture },
+                            enabled = false,
+                            exposure = "direct",
+                            env = new Dictionary<string, string>
+                            {
+                                ["MCP_FIXTURE_NOTIFICATION_STATE"] = statePath
+                            }
+                        }
+                    }
+                }));
+
+            var configuration = await McpConfiguration.LoadAsync(root, root, false);
+            var manager = new McpRuntimeManager(root);
+            using var catalog = ExtensionCatalog.Load(root, root, false, discover: false,
+                additionalPaths: ["builtin:mcp"], builtins: [McpBuiltin.CreateDefinition(manager)]);
+            Assert.Empty(await McpRuntime.RegisterAsync(configuration, catalog, root, manager: manager));
+            var registry = new PiSharpToolRegistry(catalog.Registration.ToolDefinitions);
+            var loadout = registry.CreateLoadout();
+            catalog.Registration.ToolDefinitionsChanged += definitions => registry.Replace(definitions);
+
+            Assert.Equal("Enabled MCP server managed.", await catalog.Registration.Commands["mcp"]("enable managed",
+                CancellationToken.None));
+            Assert.Contains(catalog.Registration.ToolDefinitions, tool =>
+                tool.Function.Name == "mcp__managed__echo" && tool.Exposure == ToolExposure.Direct);
+            Assert.Contains("mcp__managed__echo", loadout.Snapshot.ActiveToolNames);
+            Assert.Contains(catalog.Registration.ToolDefinitions, tool => tool.Function.Name == "list_mcp_resources");
+
+            Assert.Equal("Set MCP server managed exposure to deferred.",
+                await catalog.Registration.Commands["mcp"]("exposure managed deferred", CancellationToken.None));
+            Assert.Equal(ToolExposure.Deferred, catalog.Registration.ToolDefinitions.Single(tool =>
+                tool.Function.Name == "mcp__managed__echo").Exposure);
+            Assert.DoesNotContain("mcp__managed__echo", loadout.Snapshot.ActiveToolNames);
+            Assert.DoesNotContain("list_mcp_resources", loadout.Snapshot.ActiveToolNames);
+
+            Assert.Equal("Disabled MCP server managed.", await catalog.Registration.Commands["mcp"]("disable managed",
+                CancellationToken.None));
+            Assert.Equal(ToolExposure.Hidden, catalog.Registration.ToolDefinitions.Single(tool =>
+                tool.Function.Name == "mcp__managed__echo").Exposure);
+            Assert.Equal(ToolExposure.Hidden, catalog.Registration.ToolDefinitions.Single(tool =>
+                tool.Function.Name == "list_mcp_resources").Exposure);
+
+            using var saved = System.Text.Json.JsonDocument.Parse(await File.ReadAllTextAsync(configurationPath));
+            Assert.Equal("value", saved.RootElement.GetProperty("preserved").GetString());
+            var savedServer = saved.RootElement.GetProperty("mcpServers").GetProperty("managed");
+            Assert.False(savedServer.GetProperty("enabled").GetBoolean());
+            Assert.Equal("deferred", savedServer.GetProperty("exposure").GetString());
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
+    public async Task ExtensionRegisteredServersConnectWithoutPersistingConfiguration()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-mcp-extension-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            var fixture = Path.Combine(AppContext.BaseDirectory, "Fixtures", "mcp_notification_fixture.py");
+            var statePath = Path.Combine(root, "state.json");
+            var manager = new McpRuntimeManager(root);
+            using var catalog = ExtensionCatalog.Load(root, root, false, discover: false,
+                additionalPaths: ["builtin:mcp"], builtins: [McpBuiltin.CreateDefinition(manager)]);
+            var extensionPath = Path.Combine(root, "fixture-extension.dll");
+            catalog.Registration.SetCurrentSourceInfo(new(extensionPath, "cli", "temporary", "top-level", null));
+            try
+            {
+                catalog.Registration.RegisterMcpServer("extension", System.Text.Json.JsonSerializer.SerializeToElement(new
+                {
+                    command = "python3",
+                    args = new[] { fixture },
+                    exposure = "direct",
+                    env = new Dictionary<string, string>
+                    {
+                        ["MCP_FIXTURE_NOTIFICATION_STATE"] = statePath
+                    }
+                }));
+            }
+            finally { catalog.Registration.SetCurrentSourceInfo(null); }
+
+            var configuration = await McpConfiguration.LoadAsync(root, root, false);
+            Assert.Empty(await McpRuntime.RegisterAsync(configuration, catalog, root, manager: manager));
+            var registration = Assert.Single(catalog.Registration.McpServers);
+            Assert.Equal("extension", registration.Configuration.Scope);
+            Assert.Equal(extensionPath, registration.ExtensionPath);
+            Assert.Contains(catalog.Registration.ToolDefinitions, tool =>
+                tool.Function.Name == "mcp__extension__echo");
+            Assert.Equal("Disabled MCP server extension.", await catalog.Registration.Commands["mcp"]("disable extension",
+                CancellationToken.None));
+            Assert.False(File.Exists(Path.Combine(root, "mcp.json")));
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
     private static Task WriteHttpConfigurationAsync(string root, string endpoint) =>
         File.WriteAllTextAsync(Path.Combine(root, "mcp.json"), System.Text.Json.JsonSerializer.Serialize(new
         {

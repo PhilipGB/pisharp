@@ -277,8 +277,11 @@ public sealed class ToolLoadout
             foreach (var registration in current)
             {
                 var name = registration.Function.Name;
-                var becameDefaultActive = PiSharpToolRegistry.IsActiveByDefault(registration) &&
-                    (!oldByName.TryGetValue(name, out var old) || !PiSharpToolRegistry.IsActiveByDefault(old));
+                var wasDefaultActive = oldByName.TryGetValue(name, out var old) &&
+                    PiSharpToolRegistry.IsActiveByDefault(old);
+                var isDefaultActive = PiSharpToolRegistry.IsActiveByDefault(registration);
+                if (wasDefaultActive && !isDefaultActive) active.Remove(name);
+                var becameDefaultActive = isDefaultActive && !wasDefaultActive;
                 if (becameDefaultActive) active.Add(name);
             }
             Volatile.Write(ref _snapshot, _registry.CreateSnapshot(active));

@@ -14,10 +14,35 @@ public static class McpConfigurationEditor
         CancellationToken cancellationToken = default) => EditAsync(path, name, server, cancellationToken);
 
     public static Task<bool> RemoveAsync(string path, string name,
-        CancellationToken cancellationToken = default) => EditAsync(path, name, null, cancellationToken);
+        CancellationToken cancellationToken = default) => EditAsync(path, name, null, cancellationToken,
+            remove: true, patch: null);
+
+    public static Task<bool> UpdateAsync(string path, string name, bool? enabled, McpToolExposure? exposure,
+        CancellationToken cancellationToken = default)
+    {
+        if (enabled is null && exposure is null)
+            throw new ArgumentException("An MCP setting update is required.");
+        return EditAsync(path, name, null, cancellationToken, remove: false, patch: server =>
+        {
+            if (enabled is { } value)
+            {
+                if (value) server.Remove("enabled");
+                else server["enabled"] = false;
+            }
+            if (exposure is { } mode)
+            {
+                if (mode == McpToolExposure.Codemode) server.Remove("exposure");
+                else server["exposure"] = mode switch
+                {
+                    McpToolExposure.CodemodeDeferred => "codemode-deferred",
+                    _ => mode.ToString().ToLowerInvariant()
+                };
+            }
+        });
+    }
 
     private static async Task<bool> EditAsync(string path, string name, JsonElement? server,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken, bool remove = false, Action<JsonObject>? patch = null)
     {
         var fullPath = Path.GetFullPath(path);
         if (server is { } value) McpConfiguration.Parse(name, value, fullPath, "global");
@@ -41,12 +66,18 @@ public static class McpConfigurationEditor
                 throw new InvalidDataException("MCP mcpServers must be an object.");
             var servers = root["mcpServers"] as JsonObject ?? new JsonObject();
             var replaced = servers.ContainsKey(name);
-            if (server is null)
+            if (remove)
             {
                 if (!replaced) return false;
                 servers.Remove(name);
             }
-            else servers[name] = JsonNode.Parse(server.Value.GetRawText());
+            else if (server is { } jsonServer) servers[name] = JsonNode.Parse(jsonServer.GetRawText());
+            else
+            {
+                if (!servers.TryGetPropertyValue(name, out var selected) || selected is not JsonObject selectedServer)
+                    return false;
+                patch!(selectedServer);
+            }
             if (root["mcpServers"] is null) root["mcpServers"] = servers;
             var bytes = JsonSerializer.SerializeToUtf8Bytes(root, new JsonSerializerOptions { WriteIndented = true });
             var temporary = fullPath + "." + Guid.NewGuid().ToString("N") + ".tmp";

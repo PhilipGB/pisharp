@@ -3,6 +3,7 @@ using System.Text.Json;
 using Microsoft.Extensions.AI;
 using ModelContextProtocol.Protocol;
 using PiSharp.Runtime.Extensions;
+using PiSharp.Runtime.Resources;
 
 namespace PiSharp.Runtime.Mcp;
 
@@ -17,15 +18,20 @@ internal sealed class McpResourceTools(
             ? ToolExposure.Direct
             : servers.Any(server => server.Exposure == ToolExposure.CodeMode)
                 ? ToolExposure.CodeMode : ToolExposure.Deferred;
-        registration.AddTool(new PiSharpToolRegistration(AIFunctionFactory.Create(ListAsync,
-                name: "list_mcp_resources", description: "List resources from connected MCP servers."), exposure,
-            DefaultActive: exposure == ToolExposure.Direct));
-        registration.AddTool(new PiSharpToolRegistration(AIFunctionFactory.Create(ListTemplatesAsync,
-                name: "list_mcp_resource_templates", description: "List resource templates from connected MCP servers."),
-            exposure, DefaultActive: exposure == ToolExposure.Direct));
-        registration.AddTool(new PiSharpToolRegistration(AIFunctionFactory.Create(ReadAsync,
-                name: "read_mcp_resource", description: "Read a resource from a connected MCP server."), exposure,
-            DefaultActive: exposure == ToolExposure.Direct));
+        var definitions = new PiSharpToolRegistration[]
+        {
+            new(AIFunctionFactory.Create(ListAsync,
+                    name: "list_mcp_resources", description: "List resources from connected MCP servers."), exposure,
+                DefaultActive: exposure == ToolExposure.Direct),
+            new(AIFunctionFactory.Create(ListTemplatesAsync,
+                    name: "list_mcp_resource_templates", description: "List resource templates from connected MCP servers."),
+                exposure, DefaultActive: exposure == ToolExposure.Direct),
+            new(AIFunctionFactory.Create(ReadAsync,
+                    name: "read_mcp_resource", description: "Read a resource from a connected MCP server."), exposure,
+                DefaultActive: exposure == ToolExposure.Direct)
+        };
+        var source = new ResourceSourceInfo("builtin:mcp", "builtin", "builtin", "top-level", null);
+        registration.ReplaceOwnedTools("mcp:resources", definitions, source);
     }
 
     private async Task<PiSharpToolResult> ListAsync(CancellationToken cancellationToken,

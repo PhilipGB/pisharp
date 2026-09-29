@@ -130,6 +130,20 @@ public sealed class ToolLoadoutTests
     }
 
     [Fact]
+    public void ExistingLoadoutDropsToolsThatStopBeingDefaultActive()
+    {
+        var direct = Registration("managed", ToolExposure.Direct);
+        var registry = new PiSharpToolRegistry([direct]);
+        var loadout = registry.CreateLoadout();
+        Assert.Equal(["managed"], loadout.Snapshot.ActiveToolNames);
+
+        registry.Replace([direct with { Exposure = ToolExposure.Deferred }]);
+
+        Assert.Empty(loadout.Snapshot.ActiveToolNames);
+        Assert.Contains(loadout.Snapshot.Callable, tool => tool.Function.Name == "managed");
+    }
+
+    [Fact]
     public void OwnedExtensionToolsCanBeReplacedAndWithdrawnAtomically()
     {
         var extension = new ExtensionRegistration();
