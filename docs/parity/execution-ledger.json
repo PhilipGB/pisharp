@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "plan_received": true,
-  "source_note": "Latest exact-head CI source is PiSharp e52fcc0e399545972bdec613ce01706227b73d3f / run 36698889067. Current work locally resolves the first current-Pi delta (3dd803d7 Z.AI CN overflow): fail-first regression, format, warnings-as-errors build with zero warnings/errors, and 1,000/1,000 tests with zero skips pass; commit/push/exact-head CI are pending. Seven later deltas remain. Pi main db6cc71dc7b69202dc560e71106bb9dfd454e758; complete classification in docs/parity/fixtures/upstream-delta-audit-2026-09-30.md. Overall parity remains incomplete.",
+  "source_note": "Verified PiSharp source 2550531a7f4813e9f10abce4241cbffc28f2ea7c / exact-head Linux CI 36746011211: restore, format, warnings-as-errors build and 1000/1000 tests, zero skips. The first current-Pi delta (3dd803d7 Z.AI CN overflow) is complete. Seven later in-scope deltas remain; next is d2931ad3 Codemode image signature validation. Pi main db6cc71dc7b69202dc560e71106bb9dfd454e758; full classification in docs/parity/fixtures/upstream-delta-audit-2026-09-30.md. Overall parity remains incomplete.",
   "baseline": "earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035",
   "required_ids": [
     "feature-agent-multi-turn-and-streaming",
@@ -198,7 +198,7 @@
         "src/PiSharp.Runtime/Sessions/ConversationRun.cs: bounded lifecycle stream runs queued text prompts as later MAF turns, emits per-turn completion and one run completion/settlement, and preserves canonical session history.",
         "src/PiSharp.Cli/Protocols/RpcMode.cs: an RPC prompt received during streaming queues into the active application run rather than claiming completion or starting a competing run.",
         "tests/PiSharp.Tests/AgentIntegrationTests.cs, AgentLifecycleTests.cs, RpcModeTests.cs: deterministic fake-provider coverage for streamed text/tools/results, tool continuation, retry, partial failure, interruption, queued multi-turn session history, and RPC workflow.",
-        "Current Pi delta 3dd803d7 is implemented locally: fail-first provider overflow evidence passes, format/build are clean, and the full suite passes 1000/1000 with zero skips; exact-head CI is pending. Delta 2bbfcca4 (malformed Retry-After fallback) remains open. See docs/parity/fixtures/upstream-delta-audit-2026-09-30.md."
+        "Current Pi delta 3dd803d7 is complete: exact-head Linux CI 36746011211 passed restore, format, warnings-as-errors build and 1000/1000 tests with zero skips after the fail-first overflow regression. Delta 2bbfcca4 (malformed Retry-After fallback) remains open. See docs/parity/fixtures/upstream-delta-audit-2026-09-30.md."
       ],
       "evidence": [
         "Pinned upstream 002fc8385268300ca91a5fc95f935c2afbbdac02 inspected at packages/coding-agent/docs/how-pi-works.md and packages/agent/src/{agent-loop.ts,agent.ts}: provider response -> tools/results -> continuation, queued later turns, partial/error hard exit, and session transcript model were used as the behavioral reference.",
@@ -212,7 +212,8 @@
         "python3 -Werror::ResourceWarning -m unittest discover -s tools/autonomy -p 'test_*.py' -v => 8 passed.",
         "Scope note: this verifies this ledger slice through PiSharp application behavior; it does not claim byte-for-byte Pi protocol parity or distinct steering/follow-up semantics, which remain separate tasks.",
         "ProviderChatClientFactoryTests and ProviderRetryChatClientTests exercise provider-level transient status/header behavior and ensure a streamed request is not replayed after its first update; the paired current-Pi retry helper and settings tests are recorded in settings-provider-retry-delay-baseline.md. This remains bounded adapter evidence, not broad retry parity.",
-        "Current Pi 3dd803d7 Z.AI CN error: a new CompactionTests theory vector failed before the classifier update (one request rather than two), then passed after the narrow message match; focused 8/8, full suite 1000/1000 with TERM=xterm-256color, zero skips. Exact-head CI for the fix is pending."
+        "Current Pi 3dd803d7 Z.AI CN error: a new CompactionTests theory vector failed before the classifier update (one request rather than two), then passed after the narrow message match; focused 8/8, full suite 1000/1000 with TERM=xterm-256color, zero skips. Exact-head CI for the fix is pending.",
+        "Exact-head Linux CI run 36746011211 for source 2550531a7f4813e9f10abce4241cbffc28f2ea7c passed restore, format, warnings-as-errors build and 1000/1000 tests, zero skips."
       ],
       "dependencies": []
     },
@@ -3710,10 +3711,14 @@
       "NO_BEHAVIOR_CHANGE": 5
     },
     "fixture": "docs/parity/fixtures/upstream-delta-audit-2026-09-30.md",
-    "next": "3dd803d7e780fb04b815261b510f76bff563d46d",
-    "current_item": "3dd803d7e780fb04b815261b510f76bff563d46d",
-    "current_item_status": "implemented_locally_ci_pending",
+    "next": "d2931ad3d5bf6936fbdfa5dfc81fb32f875499b2",
+    "current_item": "d2931ad3d5bf6936fbdfa5dfc81fb32f875499b2",
+    "current_item_status": "not_started",
     "current_item_local_evidence": "Fail-first provider overflow test; focused 8/8; format clean; warnings-as-errors build 0 warnings/errors; full 1000/1000, 0 skipped.",
-    "next_after_ci": "d2931ad3d5bf6936fbdfa5dfc81fb32f875499b2"
+    "next_after_ci": "d2931ad3d5bf6936fbdfa5dfc81fb32f875499b2",
+    "completed": [
+      "3dd803d7e780fb04b815261b510f76bff563d46d"
+    ],
+    "ci_run": "36746011211"
   }
 }
