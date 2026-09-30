@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "plan_received": true,
-  "source_note": "Latest exact-head CI-verified PiSharp source is f61455a21c359ec1af704c8b093f1d209db3cb51 / Linux CI 36753858082: restore, format, warnings-as-errors build and 1004/1004 tests, zero skips. The first three current-Pi deltas (3dd803d7 Z.AI CN overflow, d2931ad3 Codemode image validation and 1c7e7df MCP namespace discovery) are complete. The fourth delta (7c9fe664 MCP OAuth client naming) passes fail-first loopback registration for custom/default names, CLI serialization, focused 17/17, format, warnings-as-errors build and full 1006/1006 local tests with zero skips; source publication and exact-head CI are pending. Five in-scope deltas remain including the current item. Pi main db6cc71dc7b69202dc560e71106bb9dfd454e758; full classification in docs/parity/fixtures/upstream-delta-audit-2026-09-30.md. Overall parity remains incomplete.",
+  "source_note": "Latest exact-head CI-verified PiSharp source is 336be83135a0b18393bfaa41f7f826a34314f6eb / Linux CI 36756672893: restore, format, warnings-as-errors build and 1006/1006 tests, zero skips. The first four current-Pi deltas (3dd803d7 Z.AI CN overflow, d2931ad3 Codemode image validation, 1c7e7df MCP namespace discovery and 7c9fe664 MCP OAuth client naming) are complete. Four in-scope deltas remain; next is 2bbfcca4 malformed Retry-After fallback. Pi main db6cc71dc7b69202dc560e71106bb9dfd454e758; full classification in docs/parity/fixtures/upstream-delta-audit-2026-09-30.md. Overall parity remains incomplete.",
   "baseline": "earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035",
   "required_ids": [
     "feature-agent-multi-turn-and-streaming",
@@ -3497,7 +3497,7 @@
         "Successful scripts publish a bounded branch-local store snapshot, restored after tree navigation, native/Pi JSONL import/export and resume. Node.js 22.19+ is a runtime dependency; CI pins Node 24.",
         "ICodemodeModels supplies identity-only model catalog/classifier callbacks through the existing process bridge. Shared nested-call ordering, bounded classifier concurrency and usage ledger retain paid classifier/tool usage on later script failure, aggregate Codemode result cost and persist separate usage records.",
         "Typed image catalogs now include all 57 pinned OpenRouter image models separately from chat/classifier entries, with validated configured models and credential-gated metadata reads; image generation remains a separate capability.",
-        "Current Pi deltas d2931ad3 (Codemode image validation) and 1c7e7df (MCP namespace discovery) are implemented and exact-head verified: source f61455a21c359ec1af704c8b093f1d209db3cb51 / Linux CI 36753858082 passes restore, format, warnings-as-errors build and 1004/1004 tests, zero skips. MCP descriptions list provider-safe server namespaces and configured summaries without tool schemas or instructions; bounded describeNamespace returns instructions and callable names. Continue with 7c9fe664 MCP OAuth client naming; see the 2026-09-30 upstream delta fixture."
+        "Current Pi deltas d2931ad3 (Codemode image validation) and 1c7e7df (MCP namespace discovery) are implemented and exact-head verified: source f61455a21c359ec1af704c8b093f1d209db3cb51 / Linux CI 36753858082 passes restore, format, warnings-as-errors build and 1004/1004 tests, zero skips. MCP descriptions list provider-safe server namespaces and configured summaries without tool schemas or instructions; bounded describeNamespace returns instructions and callable names. MCP OAuth client naming is also closed at 336be831 / CI 36756672893. Continue with 2bbfcca4 malformed Retry-After fallback; see the 2026-09-30 upstream delta fixture."
       ],
       "evidence": [
         "Current Pi Codemode uses an isolated QuickJS/WASM worker and is now resolved as builtin:codemode at 4259686d9290c0d73ae7192b796aee3e530a9779. The previous pin da19b63 package tests passed 57/57; the current refresh did not rerun the full Codemode suite.",
@@ -3546,7 +3546,7 @@
       ],
       "implementation": [
         "McpConfiguration loads global and trusted-project mcp.json with project precedence, enabled flags, exposure overrides, transport settings and bounded timeouts. McpRuntime uses the official C# SDK for stdio and Streamable HTTP, expands environment references without logging credential values, and registers tools and resource operations in the existing extension catalog. Clients are disposed with the extension lease. HTTP servers without an Authorization header use SDK OAuth with a noninteractive startup callback; explicit CLI login uses a loopback authorization-code callback, and logout deletes URL-bound tokens. A private atomic mcp-auth.json cache persists SDK token and client registration fields. Local CLI add/list/remove uses an atomic config editor with same-process and interprocess locking; CLI status probes servers without selecting a chat model.",
-        "Current Pi delta 1c7e7df is implemented and exact-head verified: source f61455a21c359ec1af704c8b093f1d209db3cb51 / CI 36753858082. Current delta 7c9fe664 adds validated per-server OAuth clientName, defaults dynamic registration to pi, and exposes pisharp mcp add --oauth-client-name; focused loopback/config/CLI and full local tests pass, publication and exact-head CI pending. Direct-versus-indirect startup waits at e029c3ed remain open. See the 2026-09-30 upstream delta fixture."
+        "Current Pi deltas 1c7e7df (MCP namespace discovery) and 7c9fe664 (OAuth client naming) are implemented and exact-head verified: OAuth source 336be83135a0b18393bfaa41f7f826a34314f6eb / CI 36756672893. The loopback registration fixture verifies custom and default pi client names; configuration/CLI validation and secret-safe diagnostics are covered. Direct-versus-indirect startup waits at e029c3ed remain open. See the 2026-09-30 upstream delta fixture."
       ],
       "evidence": [
         "Current Pi MCP tools share exposure, nested execution, hooks and extension registration; builtin:mcp is resolved after trust at 4259686d9290c0d73ae7192b796aee3e530a9779. A refreshed source/test audit at 02eed88fd8912e54a804ddebd409e2e4c08ac5ef confirms Pi MCP lifecycle semantics and the /mcp manager; the upstream MCP extension/command/OAuth tests pass 28/28 at this source pin.",
@@ -3557,7 +3557,7 @@
         "Current working-tree follow-up adds runtime MCP enable/disable and exposure persistence, slash-command OAuth login/logout, extension-declared session-only servers with configured-server precedence, and parallel startup connections with a shared 10-second wait. Regressions cover live registration changes, loadout active-state updates, extension provenance and config preservation. Local format verification, serialized warnings-as-errors build and 24/24 focused MCP tests pass; full solution suite passes 866/866 with 0 skipped. Exact-head CI has not yet run. Later extension registrations after extension loading and the rich interactive /mcp manager view remain open.",
         "Commit 71c5fd6f7e92e4cbb4878e2e032ae2935fbc92e6 completes the live MCP manager slice: enable/disable and exposure persistence, slash-command OAuth login/logout, load-time extension-declared session-only servers with configured-server precedence, and parallel startup with a shared 10-second wait. Local focused MCP tests pass 24/24, full suite 866/866 (0 skipped), format and serialized warnings-as-errors build pass. Exact-head Linux CI run 36623595889 passes restore, format, build with 0 warnings/errors, and 866/866 tests. Later extension registrations after load and a richer interactive manager UI remain open.",
         "MCP namespace fail-first two-server stdio fixture verifies configured summaries and initialize instructions, namespace-filtered Codemode search, nested tool calls and hidden-tool exclusion; focused Codemode/MCP/config tests 16/16, format and warnings-as-errors build pass, full local suite 1004/1004 with zero skips. Commit/push and exact-head CI pending. A separate configuration test verifies legacy codemode-deferred canonicalization.",
-        "Fail-first OAuth authorization-server fixture showed custom oauth.clientName was rejected and default DCR omitted client_name. New loopback cases verify Claude Code and default pi on every registration; CLI saves --oauth-client-name; invalid blank/non-string config is rejected without exposing clientSecret. Focused OAuth/config/CLI 17/17; format and warnings-as-errors build clean; full suite 1006/1006, zero skipped. Exact-head CI pending."
+        "Fail-first OAuth authorization-server fixture showed custom oauth.clientName was rejected and default DCR omitted client_name. Loopback cases verify Claude Code and default pi on every registration; CLI saves --oauth-client-name; invalid blank/non-string config is rejected without exposing clientSecret. Focused OAuth/config/CLI 17/17; format and warnings-as-errors build clean; full suite 1006/1006, zero skipped; exact-head Linux CI 36756672893 passes restore, format, warnings-as-errors build and 1006/1006 tests."
       ],
       "dependencies": [
         "tool-exposure-loadout",
@@ -3715,16 +3715,17 @@
       "NO_BEHAVIOR_CHANGE": 5
     },
     "fixture": "docs/parity/fixtures/upstream-delta-audit-2026-09-30.md",
-    "next": "7c9fe66452de9689223e3b490939f014c6e94e52",
-    "current_item": "7c9fe66452de9689223e3b490939f014c6e94e52",
-    "current_item_status": "implemented_locally_ci_pending",
-    "current_item_local_evidence": "Fail-first loopback OAuth tests reproduced rejected oauth.clientName and the missing default client_name. Custom and default pi registration, CLI serialization, blank/type validation and secret-safe diagnostics now pass; focused OAuth/config/CLI 17/17, format, warnings-as-errors build and full local 1006/1006, zero skipped. Commit/push and exact-head CI pending.",
-    "next_after_ci": "2bbfcca437c3aa5a21af1e4ee44ae7a051f953ad",
+    "next": "2bbfcca437c3aa5a21af1e4ee44ae7a051f953ad",
+    "current_item": "2bbfcca437c3aa5a21af1e4ee44ae7a051f953ad",
+    "current_item_status": "queued",
+    "current_item_local_evidence": "Queued after exact-head verification of MCP OAuth client naming at PiSharp source 336be83135a0b18393bfaa41f7f826a34314f6eb / CI 36756672893.",
+    "next_after_ci": "e029c3ed0add2ba55cc9c68b2bc3920e56d32888",
     "completed": [
       "3dd803d7e780fb04b815261b510f76bff563d46d",
       "d2931ad3d5bf6936fbdfa5dfc81fb32f875499b2",
-      "1c7e7df765a6fe542d24906756ee981bf7bb84c4"
+      "1c7e7df765a6fe542d24906756ee981bf7bb84c4",
+      "7c9fe66452de9689223e3b490939f014c6e94e52"
     ],
-    "ci_run": "36753858082"
+    "ci_run": "36756672893"
   }
 }
