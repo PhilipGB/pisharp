@@ -641,8 +641,9 @@ public sealed class ProviderChatClientFactoryTests
 
         var selection = Selection("fixture", protocol == "anthropic-messages"
             ? $"http://127.0.0.1:{port}" : $"http://127.0.0.1:{port}/v1", protocol);
+        // Leave room for runner scheduling while keeping the timeout below the fragmented event's full delivery time.
         var client = ProviderChatClientFactory.Create(selection,
-            new ProviderRetrySettings(TimeoutMs: 5_000), httpIdleTimeoutMs: 250);
+            new ProviderRetrySettings(TimeoutMs: 5_000), httpIdleTimeoutMs: 1_000);
         var firstUpdate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var text = new System.Text.StringBuilder();
         var streaming = Task.Run(async () =>
