@@ -234,6 +234,54 @@ public sealed class VirtualModelRoutingTests
         Assert.Equal("second", imported.ActiveMessages().Last().AdditionalProperties!["pisharp.model"]!.ToString());
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task ReadImagesUsePhysicalResizeLimitsAndFilteringPreservesCanonicalImage(bool continuationSupportsImages)
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-virtual-image-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            using var bitmap = new SkiaSharp.SKBitmap(300, 20);
+            bitmap.Erase(SkiaSharp.SKColors.Blue);
+            using var encoded = bitmap.Encode(SkiaSharp.SKEncodedImageFormat.Png, 100);
+            await File.WriteAllBytesAsync(Path.Combine(root, "image.png"), encoded.ToArray());
+            var session = Session();
+            session.SelectModel("auto", null, "router");
+            var first = new RecordingClient
+            {
+                Contents = [new FunctionCallContent("read-call", "read", new Dictionary<string, object?> { ["path"] = "image.png" })]
+            };
+            var second = new RecordingClient();
+            var routes = 0;
+            var agent = new PiAgent(first, new CodingTools(root), selectedTools: ["read"],
+                virtualModelRequestRouter: request =>
+                {
+                    var initial = ++routes == 1;
+                    var route = Route(initial ? first : second, initial ? "image-model" : "continuation-model");
+                    return Task.FromResult(route with
+                    {
+                        Model = route.Model with
+                        {
+                            Input = initial || continuationSupportsImages ? ["text", "image"] : ["text"],
+                            InputLimits = new ModelInputLimits(new ModelImageInputLimits(
+                                new ModelImageResizeOptions(MaxWidth: 150, MaxHeight: 150)))
+                        }
+                    });
+                });
+            var run = await ConversationRun.OpenAsync(agent, session);
+            await foreach (var item in run.RunEventsAsync("read image.png")) Assert.NotEqual("turn_failed", item.Type);
+            var canonicalImage = Assert.Single(session.ActiveMessages().SelectMany(message => message.Contents).OfType<DataContent>());
+            using var resized = SkiaSharp.SKBitmap.Decode(canonicalImage.Data.ToArray());
+            Assert.Equal((150, 10), (resized.Width, resized.Height));
+            Assert.Equal(continuationSupportsImages ? 1 : 0,
+                second.Messages!.SelectMany(message => message.Contents).OfType<DataContent>().Count());
+            Assert.Equal("auto", session.Model);
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
     private sealed class RecordingClient : IChatClient
     {
         public Exception? Failure { get; init; }

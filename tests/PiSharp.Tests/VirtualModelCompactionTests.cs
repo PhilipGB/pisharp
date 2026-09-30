@@ -69,7 +69,7 @@ public sealed class VirtualModelCompactionTests
         Assert.Equal("auto", session.Model);
         Assert.Equal("small", session.ActiveMessages().Last().AdditionalProperties!["pisharp.model"]!.ToString());
         Assert.Equal(new[] { "large", "history-summary", "turn-summary", "small" }, session.ActiveUsage().Select(usage => usage.Model));
-        Assert.Equal(new[] { 0.00004m, 0.00004m, 0.00011m, 0.00004m }, session.ActiveUsage().Select(usage => usage.Cost));
+        Assert.Equal(new decimal?[] { 0.00004m, 0.00004m, 0.00011m, 0.00004m }, session.ActiveUsage().Select(usage => usage.Cost));
         Assert.Equal(0.00023m, session.ActiveUsage().Sum(usage => usage.Cost));
     }
 

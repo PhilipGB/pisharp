@@ -121,6 +121,7 @@ public sealed class ConversationRun
         if (!_agent.HasVirtualModelRouter || _physicalContextResolver is null) return;
         var context = await GetPhysicalContextAsync(cancellationToken);
         _autoCompaction = context is null ? _logicalContextPolicy : context.ContextPolicy;
+        _agent.SetPhysicalImageLimits(context?.Model);
     }
 
     private async Task<AgentSession> RestoreExecutionAsync(IEnumerable<ChatMessage> messages, CancellationToken token)

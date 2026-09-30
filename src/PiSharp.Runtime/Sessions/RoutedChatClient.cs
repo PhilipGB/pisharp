@@ -5,7 +5,7 @@ using PiSharp.Runtime.Providers;
 namespace PiSharp.Runtime.Sessions;
 
 /// <summary>Routes logical virtual-model calls before they reach a physical provider client.</summary>
-internal sealed class RoutedChatClient(MutableChatClient inner, Action<AgentLifecycleEvent> publish)
+internal sealed class RoutedChatClient(MutableChatClient inner, Action<AgentLifecycleEvent> publish, Action<VirtualModelRequestRoute>? physicalResponse = null)
     : DelegatingChatClient(inner), IProviderToolCallDeltaSource
 {
     private VirtualModelRequestRouter? _router;
@@ -46,6 +46,7 @@ internal sealed class RoutedChatClient(MutableChatClient inner, Action<AgentLife
         var requestMessages = messages.ToArray();
         var (route, routedMessages, routedOptions) = await PrepareRouteAsync(requestMessages, options, cancellationToken);
         var response = await (route?.ChatClient ?? inner).GetResponseAsync(routedMessages, routedOptions, cancellationToken);
+        if (route is not null && VirtualModelRequestHints.ReadHint(options)?.Reason is not "direct") physicalResponse?.Invoke(route);
         return route is null ? response : ApplyPhysicalIdentity(response, route);
     }
 
@@ -64,6 +65,7 @@ internal sealed class RoutedChatClient(MutableChatClient inner, Action<AgentLife
             }
             yield return update;
         }
+        if (route is not null && VirtualModelRequestHints.ReadHint(options)?.Reason is not "direct") physicalResponse?.Invoke(route);
     }
 
     public override object? GetService(Type serviceType, object? serviceKey = null) =>

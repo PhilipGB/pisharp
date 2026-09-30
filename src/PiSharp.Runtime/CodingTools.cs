@@ -36,6 +36,8 @@ public sealed class CodingTools
         _shellCommandPrefix = shellCommandPrefix;
     }
 
+    internal ModelImageResizeOptions? ImageResizeOptions => Volatile.Read(ref _imageResizeOptions);
+
     public void SetImageResizeOptions(ModelImageResizeOptions? options) => Volatile.Write(ref _imageResizeOptions, options);
 
     public IList<AITool> Create(IReadOnlyList<string>? requested = null, IReadOnlyList<string>? excluded = null, bool noTools = false)

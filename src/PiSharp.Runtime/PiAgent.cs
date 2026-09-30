@@ -128,6 +128,7 @@ public sealed class PiAgent
     private readonly List<(ChatMessage Message, string? AfterCallId)> _injectedSteering = [];
     private int _providerRequestIndex;
     private int _supportsImages;
+    private ModelImageResizeOptions? _selectedImageResizeOptions;
     private long _systemMessageTimestamp;
     private ToolLoadout? _currentToolLoadout;
 
@@ -165,9 +166,10 @@ public sealed class PiAgent
         VirtualModelRequestRouter? virtualModelRequestRouter = null)
     {
         _codingTools = tools;
+        _selectedImageResizeOptions = tools.ImageResizeOptions;
         _toolHooks = new PiSharpToolHookPipeline(extensionToolCallHooks, extensionToolResultHooks);
         _chatClient = new MutableChatClient(client);
-        _routedChatClient = new RoutedChatClient(_chatClient, value => _events?.Invoke(value));
+        _routedChatClient = new RoutedChatClient(_chatClient, value => _events?.Invoke(value), route => SetPhysicalImageLimits(route.Model));
         _routedChatClient.SetRouter(virtualModelRequestRouter);
         _supportsImages = supportsImages ? 1 : 0;
         _reasoning = reasoning;
@@ -375,10 +377,14 @@ public sealed class PiAgent
         _chatClient.SetClient(client);
         _routedChatClient.SetRouter(virtualModelRequestRouter);
         Volatile.Write(ref _supportsImages, supportsImages ? 1 : 0);
+        _selectedImageResizeOptions = imageResizeOptions;
         _codingTools.SetImageResizeOptions(imageResizeOptions);
     }
 
     internal bool HasVirtualModelRouter => _routedChatClient.HasRouter;
+
+    internal void SetPhysicalImageLimits(ModelDescriptor? model) =>
+        _codingTools.SetImageResizeOptions(model is null ? _selectedImageResizeOptions : model.InputLimits?.Images?.Resize);
 
     internal void SetVirtualModelSession(ConversationSession session, string thinkingLevel,
         Func<CancellationToken, Task>? save) => _routedChatClient.SetSession(session, thinkingLevel, save);
