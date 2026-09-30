@@ -19,11 +19,15 @@ for line in sys.stdin:
         capabilities = {"resources": {}}
         if os.getenv("MCP_FIXTURE_RESOURCES_ONLY") != "1":
             capabilities["tools"] = {}
-        respond(request, {
+        result = {
             "protocolVersion": request["params"]["protocolVersion"],
             "capabilities": capabilities,
             "serverInfo": {"name": "pisharp-fixture", "version": "1.0.0"},
-        })
+        }
+        instructions = os.getenv("MCP_FIXTURE_INSTRUCTIONS")
+        if instructions:
+            result["instructions"] = instructions
+        respond(request, result)
     elif method == "tools/list":
         respond(request, {"tools": [
             {"name": "echo", "description": "Echo input text.",

@@ -1,4 +1,6 @@
+using System.Text.Json;
 using Microsoft.Extensions.AI;
+using PiSharp.Runtime.Codemode;
 using PiSharp.Runtime.Extensions;
 using PiSharp.Runtime.Mcp;
 using PiSharp.Runtime.Tools;
@@ -128,6 +130,94 @@ public sealed class McpRuntimeTests
                     ["uri"] = "fixture://note"
                 })), out var readResult));
             Assert.Equal("fixture resource", readResult.Text);
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
+    public async Task CodemodeDescribesMcpNamespacesAndOnlyInvokesCallableTools()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-mcp-codemode-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            var fixture = Path.Combine(AppContext.BaseDirectory, "Fixtures", "mcp_fixture.py");
+            var servers = new Dictionary<string, object>
+            {
+                ["docs"] = new
+                {
+                    command = "python3",
+                    args = new[] { fixture },
+                    description = "Search the product manuals.",
+                    env = new Dictionary<string, string>
+                    {
+                        ["MCP_FIXTURE_INSTRUCTIONS"] = "Use the docs server to find product behavior."
+                    },
+                    toolExposure = new Dictionary<string, string> { ["fail"] = "hidden" }
+                },
+                ["tickets"] = new
+                {
+                    command = "python3",
+                    args = new[] { fixture },
+                    description = "Find project tickets.",
+                    env = new Dictionary<string, string>
+                    {
+                        ["MCP_FIXTURE_INSTRUCTIONS"] = "Use the tickets server to inspect project work."
+                    }
+                }
+            };
+            await File.WriteAllTextAsync(Path.Combine(root, "mcp.json"),
+                System.Text.Json.JsonSerializer.Serialize(new { mcpServers = servers }));
+            var configuration = await McpConfiguration.LoadAsync(root, root, false);
+            Assert.Empty(configuration.Errors);
+            using var catalog = ExtensionCatalog.Load(root, root, false, discover: false);
+            CodemodeBuiltin.Configure(catalog.Registration);
+            Assert.Empty(await McpRuntime.RegisterAsync(configuration, catalog, root));
+
+            var registry = new PiSharpToolRegistry(catalog.Registration.ToolDefinitions);
+            var loadout = registry.CreateLoadout(["codemode"]);
+            var description = Assert.Single(loadout.Snapshot.Declared).Description;
+            Assert.Contains("mcp__docs", description);
+            Assert.Contains("Search the product manuals.", description);
+            Assert.Contains("mcp__tickets", description);
+            Assert.Contains("Find project tickets.", description);
+            Assert.DoesNotContain("Echo input text.", description);
+            Assert.DoesNotContain("mcp__docs__echo", description);
+            Assert.DoesNotContain("Use the docs server to find product behavior.", description);
+
+            var functions = catalog.Registration.ToolDefinitions.ToDictionary(
+                tool => tool.Function.Name, tool => tool.Function, StringComparer.Ordinal);
+            var context = PiSharpToolExecutionContext.CreateRoot(loadout, () => functions, _ => { },
+                "test", null, "codemode", new Dictionary<string, object?>());
+            var script = "const docs=await describeNamespace('mcp__docs'); " +
+                "const tickets=await describeNamespace('mcp__tickets'); " +
+                "const searched=await searchTools('Echo input text.',{namespace:'mcp__docs'}); " +
+                "const docResult=await tools.mcp__docs__echo({value:'manual'}); " +
+                "const ticketResult=await tools.mcp__tickets__echo({value:'issue'}); " +
+                "let hiddenState='blocked'; try { await tools.mcp__docs__fail({}); hiddenState='called'; } catch {} " +
+                "text(JSON.stringify({docs,tickets,docValue:docResult.echo,ticketValue:ticketResult.echo," +
+                "searched:searched.map(tool=>tool.name),hiddenState}));";
+            var result = await CodemodeSandbox.ExecuteAsync(script, context,
+                new Dictionary<string, JsonElement>(), CancellationToken.None);
+            Assert.True(result.Ok, result.Error);
+            using var output = JsonDocument.Parse(result.Text);
+            var rootElement = output.RootElement;
+            var docs = rootElement.GetProperty("docs");
+            Assert.Equal("mcp__docs", docs.GetProperty("name").GetString());
+            Assert.Equal("Search the product manuals.", docs.GetProperty("description").GetString());
+            Assert.Equal("Use the docs server to find product behavior.",
+                docs.GetProperty("instructions").GetString());
+            Assert.Equal(["mcp__docs__echo"], docs.GetProperty("tools").EnumerateArray()
+                .Select(item => item.GetString()!).ToArray());
+            var tickets = rootElement.GetProperty("tickets");
+            Assert.Equal("Find project tickets.", tickets.GetProperty("description").GetString());
+            Assert.Equal("Use the tickets server to inspect project work.",
+                tickets.GetProperty("instructions").GetString());
+            Assert.Equal("manual", rootElement.GetProperty("docValue").GetString());
+            Assert.Equal("issue", rootElement.GetProperty("ticketValue").GetString());
+            Assert.Equal(["mcp__docs__echo"], rootElement.GetProperty("searched").EnumerateArray()
+                .Select(item => item.GetString()!).ToArray());
+            Assert.Equal("blocked", rootElement.GetProperty("hiddenState").GetString());
         }
         finally { Directory.Delete(root, recursive: true); }
     }

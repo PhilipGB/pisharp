@@ -113,6 +113,11 @@ const prelude = `(function(bridge, toolsJson, storeJson, hasModels) {
     pending.set(id, { resolve, reject });
     bridge('global', id, 'describeTool', JSON.stringify(name));
   }) });
+  Object.defineProperty(globalThis, 'describeNamespace', { value: name => new Promise((resolve, reject) => {
+    const id = ++nextId;
+    pending.set(id, { resolve, reject });
+    bridge('global', id, 'describeNamespace', JSON.stringify(name));
+  }) });
   if (hasModels) {
     const models = Object.create(null);
     for (const method of ['getModelsOfType', 'getAvailableOfType', 'getModelOfType', 'classify']) {

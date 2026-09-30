@@ -111,9 +111,8 @@ internal sealed class ProjectRuntimeContext : IDisposable
             var explicitBuiltins = (arguments.ExtensionPaths ?? []).ToHashSet(StringComparer.Ordinal);
             var needsToolSearch = mcpRegistrations.Any(tool => tool.Exposure == ToolExposure.Deferred) ||
                 effectiveMcpServers.Any(server => server.Enabled &&
-                    (server.Exposure is McpToolExposure.Deferred or McpToolExposure.CodemodeDeferred ||
-                     server.ToolExposure.Values.Any(exposure =>
-                         exposure is McpToolExposure.Deferred or McpToolExposure.CodemodeDeferred)));
+                    (server.Exposure == McpToolExposure.Deferred ||
+                     server.ToolExposure.Values.Any(exposure => exposure == McpToolExposure.Deferred)));
             if (needsToolSearch &&
                 (!arguments.NoExtensions || explicitBuiltins.Contains("builtin:tool-search")))
                 extensions.EnableBuiltinIfAllowed(ToolSearchBuiltin.Definition,

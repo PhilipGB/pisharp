@@ -11,6 +11,7 @@ internal static class CodemodeSandbox
     private const int MaximumOutputCharacters = 64 * 1024;
     private const int MaximumImageCharacters = 4 * 1024 * 1024;
     private const int MaximumCallArguments = 32 * 1024;
+    private const int MaximumNamespaceMetadataCharacters = 16 * 1024;
     private const int MaximumCalls = 128;
     private static readonly JsonSerializerOptions s_json = new(JsonSerializerDefaults.Web);
 
@@ -180,7 +181,7 @@ internal static class CodemodeSandbox
             }
             else if (isGlobal)
             {
-                if (name is not ("searchTools" or "describeTool"))
+                if (name is not ("searchTools" or "describeTool" or "describeNamespace"))
                     throw new ArgumentException("Unknown Codemode global.");
                 using var parsed = JsonDocument.Parse(args ?? "null");
                 var input = parsed.RootElement;
@@ -217,6 +218,8 @@ internal static class CodemodeSandbox
                             name = CodemodeToolCatalog.JavascriptIdentifier(tool.Function.Name),
                             description = CodemodeToolCatalog.RenderToolSample(tool)
                         }).ToArray(), s_json)
+                    : name == "describeNamespace"
+                        ? DescribeNamespace(query, candidates)
                     : candidates.Where(tool => tool.Function.Name == query ||
                             CodemodeToolCatalog.JavascriptIdentifier(tool.Function.Name) == query)
                         .Select(CodemodeToolCatalog.RenderToolSample).FirstOrDefault() is { } sample
@@ -267,5 +270,27 @@ internal static class CodemodeSandbox
         }
         finally { writeGate.Release(); }
     }
+
+    private static string? DescribeNamespace(string name, IReadOnlyList<PiSharpToolRegistration> candidates)
+    {
+        var first = candidates.FirstOrDefault(tool => tool.Namespace?.Name == name);
+        if (first?.Namespace is not { } toolNamespace) return null;
+        var result = new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["name"] = toolNamespace.Name,
+            ["tools"] = candidates.Where(tool => tool.Namespace?.Name == name)
+                .Select(tool => CodemodeToolCatalog.JavascriptIdentifier(tool.Function.Name)).ToArray()
+        };
+        if (!string.IsNullOrWhiteSpace(toolNamespace.Description))
+            result["description"] = BoundNamespaceMetadata(toolNamespace.Description);
+        if (!string.IsNullOrWhiteSpace(toolNamespace.Instructions))
+            result["instructions"] = BoundNamespaceMetadata(toolNamespace.Instructions);
+        return JsonSerializer.Serialize(result, s_json);
+    }
+
+    private static string BoundNamespaceMetadata(string value) =>
+        value.Length <= MaximumNamespaceMetadataCharacters
+            ? value
+            : value[..MaximumNamespaceMetadataCharacters] + "…";
 
 }

@@ -65,7 +65,7 @@ public sealed class McpConfigurationTests
             Assert.Equal("project-server", shared.Command);
             Assert.Equal("project", shared.Scope);
             Assert.Equal(McpToolExposure.Hidden, shared.ExposureFor("other"));
-            Assert.Equal(McpToolExposure.CodemodeDeferred, shared.ExposureFor("list_public"));
+            Assert.Equal(McpToolExposure.Codemode, shared.ExposureFor("list_public"));
             Assert.Equal(McpToolExposure.Direct, shared.ExposureFor("list_secret"));
             Assert.Equal("Bearer ${SECRET}", trusted.Servers.Single(server => server.Name == "new")
                 .Headers["Authorization"]);

@@ -13,8 +13,8 @@ public enum ToolExposure
     Hidden
 }
 
-/// <summary>A named group of related tools, such as the tools supplied by an MCP server.</summary>
-public sealed record PiSharpToolNamespace(string Name, string? Description = null);
+/// <summary>A named group of related tools, with optional discovery metadata such as MCP instructions.</summary>
+public sealed record PiSharpToolNamespace(string Name, string? Description = null, string? Instructions = null);
 
 /// <summary>A function and the policy that governs its exposure in a session.</summary>
 public sealed record PiSharpToolRegistration(

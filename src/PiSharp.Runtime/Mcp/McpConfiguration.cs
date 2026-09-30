@@ -21,6 +21,8 @@ public sealed record McpServerConfiguration(
     IReadOnlyDictionary<string, string> Headers,
     JsonElement? OAuth)
 {
+    public string? Description { get; init; }
+
     public McpToolExposure ExposureFor(string toolName)
     {
         if (ToolExposure.TryGetValue(toolName, out var exact)) return exact;
@@ -123,19 +125,21 @@ public sealed record McpConfiguration(IReadOnlyList<McpServerConfiguration> Serv
             ? auth.ValueKind == JsonValueKind.Object ? auth.Clone()
                 : throw new ArgumentException($"MCP server {name} oauth must be an object.")
             : (JsonElement?)null;
+        var description = String(value, "description");
         if (oauth is not null && command is not null)
             throw new ArgumentException($"MCP server {name} OAuth requires HTTP.");
         if (oauth is not null && headers.Keys.Any(key => key.Equals("Authorization", StringComparison.OrdinalIgnoreCase)))
             throw new ArgumentException($"MCP server {name} cannot combine OAuth with an Authorization header.");
         if (oauth is not null) McpOAuthSettings.Parse(oauth.Value);
         return new(name, path, scope, enabled, exposure, overrides, TimeSpan.FromSeconds(timeout), command,
-            arguments, workingDirectory, environment, url, headers, oauth);
+            arguments, workingDirectory, environment, url, headers, oauth)
+        { Description = description };
     }
 
     private static McpToolExposure ParseExposure(string? value, string name) => value switch
     {
         null or "codemode" => McpToolExposure.Codemode,
-        "codemode-deferred" => McpToolExposure.CodemodeDeferred,
+        "codemode-deferred" => McpToolExposure.Codemode,
         "deferred" => McpToolExposure.Deferred,
         "direct" => McpToolExposure.Direct,
         "hidden" => McpToolExposure.Hidden,

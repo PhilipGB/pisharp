@@ -4,6 +4,22 @@ PiSharp loads user extensions from `<agent-dir>/extensions` and loads project ex
 
 Built-in `tool-search` and `codemode` use the same extension catalog. They have `builtin:` source identities and support normal enable/disable rules and explicit `--extension builtin:<name>` selection. `codemode` is registered inactive by default; select it with `--tools` or activate it through the session loadout. It requires Node.js 22.19 or newer; it runs model JavaScript inside bundled QuickJS/WASM in a separate process and exposes only session-callable tools through the shared nested execution path.
 
+## MCP namespaces in Codemode
+
+MCP servers use `<agent-dir>/mcp.json` or a trusted project's `.pi/mcp.json`. A server `description` appears beside its `mcp__<name>` namespace in the Codemode tool description. The server's initialize instructions and callable tool names are returned by `await describeNamespace("mcp__<name>")`; find a tool with `await searchTools(query, { namespace: "mcp__<name>" })`. This keeps individual MCP tool schemas out of Codemode's main description while preserving the normal callable-tool policy. The legacy `codemode-deferred` exposure value is accepted as an alias for `codemode`; `deferred` continues to use `tool-search`.
+
+```json
+{
+  "mcpServers": {
+    "docs": {
+      "command": "your-mcp-server",
+      "description": "Search the product manuals.",
+      "exposure": "codemode"
+    }
+  }
+}
+```
+
 An extension implements `IPiSharpExtension.Configure(ExtensionRegistration)`. It can register `AIFunction` tools, terminal slash commands, and direct RPC Bash handlers. Tools execute through the same Microsoft.Extensions.AI function loop and durable checkpoint path as built-in tools.
 
 ## Tool call and result presentation

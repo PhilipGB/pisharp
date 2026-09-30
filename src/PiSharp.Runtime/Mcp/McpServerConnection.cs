@@ -19,6 +19,7 @@ internal sealed class McpConnectedServer(McpClient client, McpOAuthRefreshHandle
     private int _disposed;
 
     public McpClient Client { get; } = client;
+    public string? Instructions => Client.ServerInstructions;
     public IList<McpClientTool> Tools { get { lock (_gate) return _tools.ToArray(); } }
     public IList<McpClientResource> Resources { get { lock (_gate) return _resources.ToArray(); } }
     public IList<McpClientResourceTemplate> ResourceTemplates { get { lock (_gate) return _resourceTemplates.ToArray(); } }
@@ -91,6 +92,7 @@ internal sealed class McpServerConnection(string name, bool retryTransientConnec
     public string State { get; private set; } = "connecting";
     public string? Error { get; private set; }
     public IList<McpClientTool> Tools => Volatile.Read(ref _connected)?.Tools ?? [];
+    public string? Instructions => Volatile.Read(ref _connected)?.Instructions;
     public bool HasResources => Volatile.Read(ref _connected)?.HasResources == true;
 
     public bool IsCurrent(McpClient client) =>

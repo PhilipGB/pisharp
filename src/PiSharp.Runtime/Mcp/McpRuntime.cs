@@ -76,7 +76,7 @@ public static class McpRuntime
                         registration.ReplaceOwnedTools("mcp:" + updated.Name, [],
                             new ResourceSourceInfo("builtin:mcp", "builtin", "builtin", "top-level", null));
                     else
-                        RegisterServerTools(updated, published, registration, published.Tools);
+                        RegisterServerTools(updated, published, registration, published.Tools, published.Instructions);
 
                     lock (resourceGate)
                     {
@@ -107,7 +107,8 @@ public static class McpRuntime
                                 if (created?.IsCurrent(client) != true) return Task.CompletedTask;
                                 var activeConfiguration = currentServer;
                                 if (activeConfiguration.Enabled)
-                                    RegisterServerTools(activeConfiguration, created, registration, tools);
+                                    RegisterServerTools(activeConfiguration, created, registration, tools,
+                                        client.ServerInstructions);
                                 else
                                     registration.ReplaceOwnedTools("mcp:" + activeConfiguration.Name, [],
                                         new ResourceSourceInfo("builtin:mcp", "builtin", "builtin", "top-level", null));
@@ -185,7 +186,7 @@ public static class McpRuntime
     }
 
     private static void RegisterServerTools(McpServerConfiguration server, McpServerConnection connection,
-        ExtensionRegistration registration, IList<McpClientTool> tools)
+        ExtensionRegistration registration, IList<McpClientTool> tools, string? instructions)
     {
         var owner = "mcp:" + server.Name;
         var ownedNames = registration.GetOwnedToolNames(owner).ToHashSet(StringComparer.Ordinal);
@@ -202,7 +203,7 @@ public static class McpRuntime
             definitions.Add(new PiSharpToolRegistration(function, MapExposure(exposure),
                 DefaultActive: exposure == McpToolExposure.Direct,
                 Namespace: new PiSharpToolNamespace("mcp__" + server.Name,
-                    "Tools from MCP server " + server.Name),
+                    server.Description?.Trim(), instructions?.Trim()),
                 AllowNestedInvocation: exposure is McpToolExposure.Codemode or McpToolExposure.CodemodeDeferred,
                 OutputSchema: tool.ProtocolTool.OutputSchema));
             var label = server.Name + "/" + tool.Name;
@@ -417,8 +418,8 @@ public static class McpRuntime
     private static ToolExposure MapExposure(McpToolExposure value) => value switch
     {
         McpToolExposure.Direct => ToolExposure.Direct,
-        McpToolExposure.Deferred or McpToolExposure.CodemodeDeferred => ToolExposure.Deferred,
-        McpToolExposure.Codemode => ToolExposure.CodeMode,
+        McpToolExposure.Deferred => ToolExposure.Deferred,
+        McpToolExposure.Codemode or McpToolExposure.CodemodeDeferred => ToolExposure.CodeMode,
         _ => ToolExposure.Hidden
     };
 
