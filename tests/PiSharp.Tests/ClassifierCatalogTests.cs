@@ -27,8 +27,10 @@ public sealed class ClassifierCatalogTests
         }
         finally { Directory.Delete(root, recursive: true); }
     }
-    [Fact]
-    public async Task ConfiguredClassifierUsesRealHttpAndCannotBeSelectedAsChat()
+    [Theory]
+    [InlineData("typesafe-system-one")]
+    [InlineData("llama-cpp-classify")]
+    public async Task ConfiguredClassifierUsesRealHttpAndCannotBeSelectedAsChat(string api)
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-classifier-http-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(root);
@@ -53,7 +55,7 @@ public sealed class ClassifierCatalogTests
                         models = new object[]
                 {
                     new { id = "chat", type = "chat" },
-                    new { id = "classifier", type = "classifier", api = "typesafe-system-one", contextWindow = 4096 }
+                    new { id = "classifier", type = "classifier", api, contextWindow = 4096 }
                 }
                     }
                 }
@@ -67,20 +69,46 @@ public sealed class ClassifierCatalogTests
             Assert.Equal(4096, Assert.Single(runtime.ListModels("fixture")).ContextWindow);
             var server = Task.Run(async () =>
             {
-                var request = await listener.GetContextAsync().WaitAsync(deadline.Token);
-                Assert.Equal("/v1/systemone", request.Request.Url!.AbsolutePath);
-                Assert.Equal("Bearer configured-key", request.Request.Headers["Authorization"]);
-                await using var writer = new StreamWriter(request.Response.OutputStream);
-                request.Response.ContentType = "application/json";
-                await writer.WriteAsync("""{"answers":{"safe":{"type":"noul","noul":0.9}}}""");
-                await writer.FlushAsync(deadline.Token);
-                request.Response.Close();
+                var completed = false;
+                while (!completed)
+                {
+                    var request = await listener.GetContextAsync().WaitAsync(deadline.Token);
+                    Assert.Equal("Bearer configured-key", request.Request.Headers["Authorization"]);
+                    using var body = await JsonDocument.ParseAsync(request.Request.InputStream, cancellationToken: deadline.Token);
+                    string response;
+                    if (api == "typesafe-system-one")
+                    {
+                        Assert.Equal("/v1/systemone", request.Request.Url!.AbsolutePath);
+                        response = """{"answers":{"safe":{"type":"noul","noul":0.9}}}""";
+                        completed = true;
+                    }
+                    else if (request.Request.Url!.AbsolutePath == "/tokenize")
+                        response = body.RootElement.GetProperty("content").GetString() switch
+                        {
+                            "\n" => "{\"tokens\":[1]}",
+                            "\nYes" => "{\"tokens\":[1,2]}",
+                            "\nNo" => "{\"tokens\":[1,3]}",
+                            _ => throw new InvalidOperationException("Unexpected tokenization")
+                        };
+                    else if (request.Request.Url.AbsolutePath == "/apply-template") response = "{\"prompt\":\"p\"}";
+                    else
+                    {
+                        Assert.Equal("/completion", request.Request.Url.AbsolutePath);
+                        response = JsonSerializer.Serialize(new { completion_probabilities = new[] { new { top_logprobs = new[] { new { id = 2, logprob = Math.Log(0.9) }, new { id = 3, logprob = Math.Log(0.1) } } } } });
+                        completed = true;
+                    }
+                    await using var writer = new StreamWriter(request.Response.OutputStream);
+                    request.Response.ContentType = "application/json";
+                    await writer.WriteAsync(response);
+                    await writer.FlushAsync(deadline.Token);
+                    request.Response.Close();
+                }
             }, deadline.Token);
             var result = await runtime.ClassifyAsync("fixture", "classifier", new ClassifierContext(
                 JsonSerializer.SerializeToElement(new { text = "fixture" }), new Dictionary<string, ClassifierQuestion>
                 { ["safe"] = new ClassifierBoolQuestion("safe?", new Dictionary<string, string> { ["true"] = "safe", ["false"] = "unsafe" }) }), deadline.Token);
             Assert.Equal("stop", result.StopReason);
-            Assert.Equal(0.9, Assert.IsType<ClassifierBoolAnswer>(result.Answers["safe"]).Probability);
+            Assert.Equal(0.9, Assert.IsType<ClassifierBoolAnswer>(result.Answers["safe"]).Probability, 8);
             await server.WaitAsync(deadline.Token);
         }
         finally { Directory.Delete(root, recursive: true); }

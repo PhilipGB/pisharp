@@ -1,0 +1,55 @@
+{
+  "match": true,
+  "pi": {
+    "api": "llama-cpp-classify",
+    "provider": "fixture",
+    "model": "model",
+    "answers": {
+      "safe": {
+        "type": "bool",
+        "probability": 0.7499999999999999
+      },
+      "choice": {
+        "type": "choice",
+        "choice": "a",
+        "probabilities": {
+          "a": 0.7499999999999999,
+          "b": 0.25
+        },
+        "confidence": 0.4999999999999998
+      },
+      "score": {
+        "type": "score",
+        "score": 0.25,
+        "confidence": 0.4999999999999998
+      }
+    },
+    "stopReason": "stop"
+  },
+  "pisharp": {
+    "api": "llama-cpp-classify",
+    "provider": "fixture",
+    "model": "model",
+    "answers": {
+      "safe": {
+        "type": "bool",
+        "probability": 0.7499999999999999
+      },
+      "choice": {
+        "type": "choice",
+        "choice": "a",
+        "probabilities": {
+          "a": 0.7499999999999999,
+          "b": 0.25
+        },
+        "confidence": 0.4999999999999998
+      },
+      "score": {
+        "type": "score",
+        "score": 0.25,
+        "confidence": 0.4999999999999998
+      }
+    },
+    "stopReason": "stop"
+  }
+}

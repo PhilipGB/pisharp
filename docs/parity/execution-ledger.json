@@ -3662,12 +3662,14 @@
       "implementation": [
         "Typed classifier models/contracts and native/custom catalogs with 12 pinned entries; shared provider credential resolution; no classifier IDs in chat selection",
         "Native System One and Cloudflare envelopes, bool/noul mapping, typed answer parsing and per-model pricing",
-        "Shared classifier HTTP boundary implements per-attempt deadlines, provider retries, Retry-After caps and headers; credential-resolution cancellation returns aborted"
+        "Shared classifier HTTP boundary implements per-attempt deadlines, provider retries, Retry-After caps and headers; credential-resolution cancellation returns aborted",
+        "Distinct llama.cpp label-token/template/completion classifier, depth escalation, typed softmax results and server/model token cache"
       ],
       "evidence": [
         "2740ece036f9e90bc9a769a255e724fa192c3d54 exact-head Linux CI 36651669399 passes restore/format/zero-warning build and 934/934 tests with zero skips",
         "Fail-first missing protocol/catalog tests; deterministic HTTP-handler cases and real loopback catalog/auth/dispatch/chat-selection rejection fixture",
-        "Request-options slice has fail-first retry/header and credential-cancellation evidence; focused classifier/provider tests 52/52, format and zero-warning build pass; full suite 939/939 with zero skips; exact-head CI pending"
+        "77530840004db80c18c7ed3907acaa2897a53bde exact-head CI 36681140547 passes restore/format/zero-warning build and 939/939 tests with zero skips",
+        "llama.cpp fail-first regression, 60/60 focused classifier/provider checks, real HTTP dispatch and paired current-Pi bool/choice/score process fixture; format and zero-warning build pass; full suite 947/947 with zero skips; exact-head publication pending"
       ],
       "dependencies": [
         "virtual-model-routing-persistence",

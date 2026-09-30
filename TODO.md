@@ -54,11 +54,11 @@ Latest verified source `43b33344ada902003b4a2c1911196471b0ed9c2f`: exact-head CI
 
 ## Current priority
 
-General classifiers and Codemode model/classifier globals are the active capability family. Native typed classifier/catalog/provider foundation is exact-head green at `2740ece` / CI `36651669399` / 934 tests. Virtual routing/context/image/status checkpoints are recorded in the fixture family; bounded residuals remain for the wider audit.
+General classifiers and Codemode model/classifier globals are the active capability family. Native typed classifiers/catalog and shared request transport are exact-head green at `7753084` / CI `36681140547` / 939 tests. Virtual routing/context/image/status checkpoints are recorded in the fixture family; bounded residuals remain for the wider audit.
 
 ## Exact next action
 
-Shared classifier request options and credential-cancellation outcomes pass local validation (939/939 tests, zero skips); verify their exact-head CI, then implement llama.cpp tokenize/apply-template/completion label readout and Cloudflare stored account metadata. Add paired provider/process classifier evidence. Continue Codemode model/classifier globals and nested usage, material orchestration/extensions, provider/auth/catalog work and the fresh full current-Pi audit. A passing checkpoint does not close parity.
+llama.cpp tokenize/apply-template/completion label readout passes paired Pi comparison, 60 focused checks and full 947/947 local tests with zero skips. Publish/verify its exact-head CI, then implement Cloudflare stored account metadata. Add paired provider/process classifier evidence. Continue Codemode model/classifier globals and nested usage, material orchestration/extensions, provider/auth/catalog work and the fresh full current-Pi audit. A passing checkpoint does not close parity.
 
 ## Architecture and residuals to preserve
 
