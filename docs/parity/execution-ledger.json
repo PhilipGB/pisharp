@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "plan_received": true,
-  "source_note": "Latest exact-head CI-verified PiSharp source is 336be83135a0b18393bfaa41f7f826a34314f6eb / Linux CI 36756672893: restore, format, warnings-as-errors build and 1006/1006 tests, zero skips. The first four current-Pi deltas (3dd803d7 Z.AI CN overflow, d2931ad3 Codemode image validation, 1c7e7df MCP namespace discovery and 7c9fe664 MCP OAuth client naming) are complete. The fifth delta (2bbfcca4 malformed Retry-After fallback) passes fail-first loopback cases, focused 6/6, format, warnings-as-errors build and full 1009/1009 local tests with zero skips; source publication and exact-head CI are pending. Four in-scope deltas remain including the current item. Pi main db6cc71dc7b69202dc560e71106bb9dfd454e758; full classification in docs/parity/fixtures/upstream-delta-audit-2026-09-30.md. Overall parity remains incomplete.",
+  "source_note": "Latest exact-head CI-verified PiSharp source is a3a1512abecf201364c8b4324b24a2837f8f5a25 / Linux CI 36758603590: restore, format, warnings-as-errors build and 1009/1009 tests, zero skips. The first five current-Pi deltas (3dd803d7 Z.AI CN overflow, d2931ad3 Codemode image validation, 1c7e7df MCP namespace discovery, 7c9fe664 MCP OAuth client naming, and 2bbfcca4 malformed Retry-After fallback) are complete. Three in-scope deltas remain: indirect MCP startup, wrapped result previews and default-tool activation on reload. The next source task is queued after the docs-only checkpoint CI. Pi main db6cc71dc7b69202dc560e71106bb9dfd454e758; full classification in docs/parity/fixtures/upstream-delta-audit-2026-09-30.md. Overall parity remains incomplete.",
   "baseline": "earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035",
   "required_ids": [
     "feature-agent-multi-turn-and-streaming",
@@ -198,7 +198,7 @@
         "src/PiSharp.Runtime/Sessions/ConversationRun.cs: bounded lifecycle stream runs queued text prompts as later MAF turns, emits per-turn completion and one run completion/settlement, and preserves canonical session history.",
         "src/PiSharp.Cli/Protocols/RpcMode.cs: an RPC prompt received during streaming queues into the active application run rather than claiming completion or starting a competing run.",
         "tests/PiSharp.Tests/AgentIntegrationTests.cs, AgentLifecycleTests.cs, RpcModeTests.cs: deterministic fake-provider coverage for streamed text/tools/results, tool continuation, retry, partial failure, interruption, queued multi-turn session history, and RPC workflow.",
-        "Current Pi delta 3dd803d7 (Z.AI CN overflow) is exact-head verified at CI 36746011211. Delta 2bbfcca4 (malformed Retry-After fallback) now represents invalid/non-finite server delays as absent; fail-first loopback tests verify the exponential retry, cancellation and preservation of server-delay caps. Focused tests pass 6/6, full local suite passes 1009/1009, and format/build are clean; source publication and exact-head CI remain. See docs/parity/fixtures/upstream-delta-audit-2026-09-30.md."
+        "Current Pi delta 3dd803d7 (Z.AI CN overflow) is exact-head verified at CI 36746011211. Delta 2bbfcca4 (malformed Retry-After fallback) now represents invalid/non-finite server delays as absent; fail-first loopback tests verify the exponential retry, cancellation and preservation of server-delay caps. Focused tests pass 6/6; PiSharp source a3a1512abecf201364c8b4324b24a2837f8f5a25 passes exact-head Linux CI 36758603590 with format, warnings-as-errors build and 1009/1009 tests, zero skips. See docs/parity/fixtures/upstream-delta-audit-2026-09-30.md."
       ],
       "evidence": [
         "Pinned upstream 002fc8385268300ca91a5fc95f935c2afbbdac02 inspected at packages/coding-agent/docs/how-pi-works.md and packages/agent/src/{agent-loop.ts,agent.ts}: provider response -> tools/results -> continuation, queued later turns, partial/error hard exit, and session transcript model were used as the behavioral reference.",
@@ -214,7 +214,7 @@
         "ProviderChatClientFactoryTests and ProviderRetryChatClientTests exercise provider-level transient status/header behavior and ensure a streamed request is not replayed after its first update; the paired current-Pi retry helper and settings tests are recorded in settings-provider-retry-delay-baseline.md. This remains bounded adapter evidence, not broad retry parity.",
         "Current Pi 3dd803d7 Z.AI CN error: a new CompactionTests theory vector failed before the classifier update (one request rather than two), then passed after the narrow message match; focused 8/8, full suite 1000/1000 with TERM=xterm-256color, zero skips. Exact-head CI for the fix is pending.",
         "Exact-head Linux CI run 36746011211 for source 2550531a7f4813e9f10abce4241cbffc28f2ea7c passed restore, format, warnings-as-errors build and 1000/1000 tests, zero skips.",
-        "Fail-first OpenAI Responses loopback cases measured immediate second requests after Retry-After not-a-date/Infinity (7-119 ms). After invalid dates return no server delay, both cases wait for exponential fallback; a cancellation case verifies an in-progress malformed-header fallback is cancelled without a retry. Existing server-delay maximum coverage still rejects the second request. Focused filter passes 6/6; format and warnings-as-errors build pass; full local suite 1009/1009 with zero skips. Exact-head CI pending."
+        "Fail-first OpenAI Responses loopback cases measured immediate second requests after Retry-After not-a-date/Infinity (7-119 ms). After invalid dates return no server delay, both cases wait for exponential fallback; a cancellation case verifies an in-progress malformed-header fallback is cancelled without a retry. Existing server-delay maximum coverage still rejects the second request. Focused filter passes 6/6; format and warnings-as-errors build pass; PiSharp source a3a1512abecf201364c8b4324b24a2837f8f5a25 passes exact-head CI 36758603590 with 1009/1009 tests and zero skips."
       ],
       "dependencies": []
     },
@@ -3498,7 +3498,7 @@
         "Successful scripts publish a bounded branch-local store snapshot, restored after tree navigation, native/Pi JSONL import/export and resume. Node.js 22.19+ is a runtime dependency; CI pins Node 24.",
         "ICodemodeModels supplies identity-only model catalog/classifier callbacks through the existing process bridge. Shared nested-call ordering, bounded classifier concurrency and usage ledger retain paid classifier/tool usage on later script failure, aggregate Codemode result cost and persist separate usage records.",
         "Typed image catalogs now include all 57 pinned OpenRouter image models separately from chat/classifier entries, with validated configured models and credential-gated metadata reads; image generation remains a separate capability.",
-        "Current Pi deltas d2931ad3 (Codemode image validation) and 1c7e7df (MCP namespace discovery) are implemented and exact-head verified: source f61455a21c359ec1af704c8b093f1d209db3cb51 / Linux CI 36753858082 passes restore, format, warnings-as-errors build and 1004/1004 tests, zero skips. MCP descriptions list provider-safe server namespaces and configured summaries without tool schemas or instructions; bounded describeNamespace returns instructions and callable names. MCP OAuth client naming is also closed at 336be831 / CI 36756672893. Continue with 2bbfcca4 malformed Retry-After fallback; see the 2026-09-30 upstream delta fixture."
+        "Current Pi deltas d2931ad3 (Codemode image validation) and 1c7e7df (MCP namespace discovery) are implemented and exact-head verified: source f61455a21c359ec1af704c8b093f1d209db3cb51 / Linux CI 36753858082 passes restore, format, warnings-as-errors build and 1004/1004 tests, zero skips. MCP descriptions list provider-safe server namespaces and configured summaries without tool schemas or instructions; bounded describeNamespace returns instructions and callable names. MCP OAuth client naming is also closed at 336be831 / CI 36756672893. Malformed Retry-After fallback is closed at a3a1512 / CI 36758603590; the next queued source delta is indirect MCP startup after the docs-only checkpoint CI. See the 2026-09-30 upstream delta fixture."
       ],
       "evidence": [
         "Current Pi Codemode uses an isolated QuickJS/WASM worker and is now resolved as builtin:codemode at 4259686d9290c0d73ae7192b796aee3e530a9779. The previous pin da19b63 package tests passed 57/57; the current refresh did not rerun the full Codemode suite.",
@@ -3716,17 +3716,18 @@
       "NO_BEHAVIOR_CHANGE": 5
     },
     "fixture": "docs/parity/fixtures/upstream-delta-audit-2026-09-30.md",
-    "next": "2bbfcca437c3aa5a21af1e4ee44ae7a051f953ad",
-    "current_item": "2bbfcca437c3aa5a21af1e4ee44ae7a051f953ad",
-    "current_item_status": "implemented_locally_ci_pending",
-    "current_item_local_evidence": "Fail-first provider-loop tests observed immediate second requests (7-119 ms) for not-a-date and Infinity Retry-After. Invalid date now selects exponential fallback. Invalid and non-finite loopback cases, malformed-header cancellation, and the existing maximum-server-delay behavior pass; focused 6/6, format, warnings-as-errors build, and full local 1009/1009 with zero skips. Commit/push and exact-head CI pending.",
-    "next_after_ci": "e029c3ed0add2ba55cc9c68b2bc3920e56d32888",
+    "next": "e029c3ed0add2ba55cc9c68b2bc3920e56d32888",
+    "current_item": "e029c3ed0add2ba55cc9c68b2bc3920e56d32888",
+    "current_item_status": "queued_after_docs_checkpoint_ci",
+    "current_item_local_evidence": "The preceding delta 2bbfcca4 is complete at PiSharp source a3a1512abecf201364c8b4324b24a2837f8f5a25 / exact-head Linux CI 36758603590 (restore, format, warnings-as-errors build and 1009/1009 tests, zero skips). Indirect MCP startup is queued; do not begin its implementation until the docs-only checkpoint passes exact-head CI.",
+    "next_after_ci": "0582d9c11da78c1812d4537af2d194f1dd060d26",
     "completed": [
       "3dd803d7e780fb04b815261b510f76bff563d46d",
       "d2931ad3d5bf6936fbdfa5dfc81fb32f875499b2",
       "1c7e7df765a6fe542d24906756ee981bf7bb84c4",
-      "7c9fe66452de9689223e3b490939f014c6e94e52"
+      "7c9fe66452de9689223e3b490939f014c6e94e52",
+      "2bbfcca437c3aa5a21af1e4ee44ae7a051f953ad"
     ],
-    "ci_run": "36756672893"
+    "ci_run": "36758603590"
   }
 }
