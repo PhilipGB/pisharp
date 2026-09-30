@@ -122,6 +122,31 @@ public sealed class VirtualModelCompactionTests
     }
 
     [Fact]
+    public async Task FailedPhysicalDispatchDoesNotReplaceSuccessfulContextStatus()
+    {
+        var session = new ConversationSession(Path.GetTempPath(), "auto", null, "router");
+        session.SelectModel("auto", null, "router");
+        var success = new Client("large answer");
+        var failure = new Client("", failure: new IOException("provider failure"));
+        var requests = 0;
+        var agent = new PiAgent(success, new CodingTools(Path.GetTempPath()), noTools: true,
+            virtualModelRequestRouter: request =>
+            {
+                var first = ++requests == 1;
+                return Task.FromResult(new VirtualModelRequestRoute(first ? success : failure,
+                    new ModelDescriptor(first ? "large" : "small", null, first ? 50000 : 15000, null,
+                        Provider: "physical", Api: "test-api"), "physical", "off", null, null,
+                    new AutoCompactionPolicy(first ? 50000 : 15000, ReserveTokens: 0)));
+            });
+        var run = await ConversationRun.OpenAsync(agent, session);
+        await foreach (var _ in run.RunEventsAsync("first")) { }
+        Assert.Equal(50000, run.ContextWindowTokens);
+        await foreach (var _ in run.RunEventsAsync("second")) { }
+        Assert.Equal(50000, run.ContextWindowTokens);
+        Assert.Equal("auto", session.Model);
+    }
+
+    [Fact]
     public async Task FirstRequestWithUnknownLogicalLimitsCompactsForPhysicalRouteWithoutRerouting()
     {
         var session = new ConversationSession(Path.GetTempPath(), "auto", null, "router");

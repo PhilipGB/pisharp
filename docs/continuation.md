@@ -10,6 +10,10 @@ The user requested commit, push and stop. The current branch/resume slice restor
 
 The older exact-head and per-feature paragraphs below are historical evidence and their source pins are not current-state claims.
 
+## Latest verified source — 2026-09-30
+
+`43b33344ada902003b4a2c1911196471b0ed9c2f` passed exact-head Linux CI [36649725739](https://github.com/PhilipGB/pisharp/actions/runs/36649725739): restore, format, zero-warning/error build and 922/922 tests with zero skips. This verifies continuation/overflow/canonical-history fixes, differently priced split summaries, the nullable assertion correction and physical read-image limits. Physical TUI status is now in progress; the full goal remains active.
+
 ## Active continuation — 2026-09-30
 
 Resumed the existing goal from exact current `2ff42c49634374d9398f928f81b5e8d353f605be`; fetched remote main and verified exact-head CI `36646088522` remains successful. Upstream fetch still resolves to `1b347794e2a630e4359f2584f4eea388145d0ddf`. The terminal blocker is closed and was not reopened. TODO priority/next-action sections now reflect physical continuation semantics rather than MCP/foundation work.
@@ -18,7 +22,10 @@ Continuation/context slice: normal routed requests now defer all threshold check
 
 Physical image slice ready for publication: two fail-first real-read/provider-loop cases returned 300x20 instead of the physical 150x10 limit. Successful physical responses update read-tool limits, direct summaries do not, and the existing branch resolver restores physical limits. Focused virtual-model/read-image/active-model RPC tests pass 51/51, including corrected cost tests. Format verification and warnings-as-errors build pass on these changes. First full run: 920 passed, 2 failed, zero skipped (922 total); existing SSE-byte idle and concurrent session-lease process timing tests failed while format verification was also running. All four focused timing cases and the unchanged solo full rerun passed: 922/922, zero skips. No timeouts have been changed. See [image evidence](parity/fixtures/virtual-model-image-limits-2026-09-30.md).
 
-Exact next action: commit/push the correction and image slice, verify replacement exact-head CI and update ledger. Continue physical compatibility and TUI state presentation, bounded virtual-model audit, classifiers/Codemode and the remaining goal sequence. The goal remains active and incomplete.
+Physical TUI status is ready for publication. A fail-first formatter test reproduced the absent physical route. TerminalModelStatus preserves logical selection/thinking, projects branch-local latest successful physical identity/context, and hides prior virtual dispatch under ordinary selections. Successful context status is separate from failed pending dispatch policy. Focused tests pass 49/49; final format, zero-warning/error build and 925/925 full tests pass, zero skips. See [status and bounded audit](parity/fixtures/virtual-model-status-audit-2026-09-30.md).
+
+Exact next action: publish TUI status and verify exact-head CI, then begin general classifier contracts/catalog/provider boundaries with fail-first protocol evidence, followed by Codemode model/classifier globals and nested usage. Refresh upstream for this new capability family. The bounded virtual-model audit records active-footer presentation, extension-image normalization and cross-logical tree-navigation comparisons for their wider audits rather than delaying missing classifiers. The full goal remains active and incomplete.
+
 
 ## Reference state
 

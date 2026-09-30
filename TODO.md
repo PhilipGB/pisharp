@@ -1,5 +1,8 @@
 # PiSharp capability parity
 
+Latest verified source `43b33344ada902003b4a2c1911196471b0ed9c2f`: exact-head CI `36649725739`, restore/format/zero-warning build, 922/922 tests (zero skips). Continuation routing/overflow, split-summary pricing and physical read-image limits are verified. Physical TUI status is in progress, then bounded virtual-model audit and classifiers/Codemode. The parity goal remains incomplete.
+
+
 **Goal:** implement Pi's in-scope capabilities idiomatically in C#/.NET, using Microsoft Agent Framework and Microsoft.Extensions.AI where appropriate. Pi Packages stay excluded unless needed for a core capability.
 
 **Stop condition:** a full current-Pi audit finds no material in-scope gaps, required behavioral/differential evidence passes, exact-head CI is green, and major architecture bottlenecks are resolved.

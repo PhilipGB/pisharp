@@ -17,6 +17,7 @@ public sealed class ConversationRun
     private readonly Func<CancellationToken, Task>? _save;
     private AutoCompactionPolicy? _autoCompaction;
     private AutoCompactionPolicy? _logicalContextPolicy;
+    private int? _successfulPhysicalContextWindow;
     private readonly VirtualModelPhysicalContextResolver? _physicalContextResolver;
     private int? _keepRecentTokens;
     private int _autoCompactionEnabled;
@@ -45,6 +46,7 @@ public sealed class ConversationRun
         _save?.Invoke(cancellationToken) ?? Task.CompletedTask;
     public bool AutoCompactionEnabled => Volatile.Read(ref _autoCompactionEnabled) != 0;
     public bool IsCompacting => _compactionCoordinator.IsCompacting;
+    public int? ContextWindowTokens { get { lock (_runtimeStateGate) return _agent.HasVirtualModelRouter ? _successfulPhysicalContextWindow : _autoCompaction?.ContextWindowTokens; } }
     public string CurrentModel { get { lock (_runtimeStateGate) return _currentModel; } }
     public string? CurrentProvider { get { lock (_runtimeStateGate) return _currentProvider; } }
     public UsageRecord CurrentProviderUsage(UsageDetails usage)
@@ -121,6 +123,7 @@ public sealed class ConversationRun
         if (!_agent.HasVirtualModelRouter || _physicalContextResolver is null) return;
         var context = await GetPhysicalContextAsync(cancellationToken);
         _autoCompaction = context is null ? _logicalContextPolicy : context.ContextPolicy;
+        _successfulPhysicalContextWindow = context?.Model.ContextLength;
         _agent.SetPhysicalImageLimits(context?.Model);
     }
 
@@ -674,6 +677,7 @@ public sealed class ConversationRun
                 lock (_runtimeStateGate)
                 {
                     providerResponse = item.ProviderResponse;
+                    if (item.ProviderProviderId is not null) _successfulPhysicalContextWindow = _autoCompaction?.ContextWindowTokens;
                     if (providerResponse is not null && item.ProviderProviderId is null && providerRequestApi is not null)
                         providerResponse = ChatMessageProperties.WithProviderIdentity(providerResponse,
                             providerRequestProvider, providerRequestModel, providerRequestApi, _reasoningLevel);
