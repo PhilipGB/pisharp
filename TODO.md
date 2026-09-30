@@ -54,11 +54,11 @@ Latest verified source `43b33344ada902003b4a2c1911196471b0ed9c2f`: exact-head CI
 
 ## Current priority
 
-Virtual-model routing is materially underway through the branch/resume checkpoint `72633674` and the terminal blocker is closed at current `2ff42c4` (exact-head CI `36646088522`, 914/914 tests, zero skips). Current upstream remains `1b347794e2a630e4359f2584f4eea388145d0ddf`, refreshed on 2026-09-30. Complete physical-model continuation/context semantics, split-summary pricing and image/compatibility/TUI behavior before classifiers. MCP is no longer the primary capability phase.
+General classifiers and Codemode model/classifier globals are the active capability family. Native typed classifier/catalog/provider foundation is exact-head green at `2740ece` / CI `36651669399` / 934 tests. Virtual routing/context/image/status checkpoints are recorded in the fixture family; bounded residuals remain for the wider audit.
 
 ## Exact next action
 
-Add fail-first provider-loop evidence for large-to-small physical routing during tool continuation. Reconcile `InFlightContextBudget` with route-aware canonical compaction so the continuation uses its selected physical context, balanced tool history and unchanged logical selection without pre-routing summaries or rerouting. Then verify differently priced split summaries and remaining physical image/compatibility/TUI semantics; perform a bounded virtual-model audit and move to classifiers, Codemode model/classifier globals and nested billing. Continue extension/provider/auth/catalog work and the fresh full current-Pi audit. A passing slice or pushed checkpoint does not close parity.
+Shared classifier request options and credential-cancellation outcomes pass local validation (939/939 tests, zero skips); verify their exact-head CI, then implement llama.cpp tokenize/apply-template/completion label readout and Cloudflare stored account metadata. Add paired provider/process classifier evidence. Continue Codemode model/classifier globals and nested usage, material orchestration/extensions, provider/auth/catalog work and the fresh full current-Pi audit. A passing checkpoint does not close parity.
 
 ## Architecture and residuals to preserve
 

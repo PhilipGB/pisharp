@@ -85,5 +85,23 @@ public sealed class ClassifierCatalogTests
         }
         finally { Directory.Delete(root, recursive: true); }
     }
+    [Fact]
+    public async Task CancellationDuringCredentialResolutionReturnsAbortedClassifierResult()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-classifier-cancel-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            using var http = new HttpClient();
+            var providers = await ProviderModelRuntime.CreateAsync(root, false, _ => null, http, offline: true);
+            using var cancellation = new CancellationTokenSource();
+            cancellation.Cancel();
+            var result = await new ProviderClassifierRuntime(providers, http).ClassifyAsync("typesafe", "jev-latest",
+                new ClassifierContext(JsonSerializer.SerializeToElement(new { }), new Dictionary<string, ClassifierQuestion>()), cancellation.Token);
+            Assert.Equal("aborted", result.StopReason);
+            Assert.Empty(result.Answers);
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
 
 }

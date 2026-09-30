@@ -100,6 +100,70 @@ public sealed class ClassifierProtocolTests
         }
     }
 
+    [Fact]
+    public async Task RetryAndRequestHeadersApplyAtClassifierTransportBoundary()
+    {
+        var attempts = 0;
+        using var http = new HttpClient(new Handler(request =>
+        {
+            attempts++;
+            if (attempts == 1) return Task.FromResult(new HttpResponseMessage(HttpStatusCode.ServiceUnavailable));
+            Assert.Equal("fixture", Assert.Single(request.Headers.GetValues("X-Classifier-Request")));
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            { Content = new StringContent("""{"answers":{"safe":{"type":"noul","noul":0.8}}}""") });
+        }));
+        var response = await new SystemOneClassifierClient(http).ClassifyAsync(Model("typesafe-system-one"), Context(), "key",
+            options: new ClassifierRequestOptions(MaxRetries: 1, Headers: new Dictionary<string, string> { ["X-Classifier-Request"] = "fixture" }));
+        Assert.Equal("stop", response.StopReason);
+        Assert.Equal(2, attempts);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task InFlightDeadlineAndUserCancellationProduceDifferentResults(bool userCancellation)
+    {
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var http = new HttpClient(new BlockingHandler(started));
+        using var cancellation = new CancellationTokenSource();
+        var pending = new SystemOneClassifierClient(http).ClassifyAsync(Model("typesafe-system-one"), Context(), "key",
+            cancellation.Token, new ClassifierRequestOptions(MaxRetries: 0, TimeoutMs: userCancellation ? null : 50));
+        await started.Task.WaitAsync(TimeSpan.FromSeconds(3));
+        if (userCancellation) cancellation.Cancel();
+        var result = await pending.WaitAsync(TimeSpan.FromSeconds(3));
+        Assert.Equal(userCancellation ? "aborted" : "error", result.StopReason);
+        if (!userCancellation) Assert.Contains("timed out", result.ErrorMessage);
+        Assert.Empty(result.Answers);
+    }
+
+    [Fact]
+    public async Task ExcessiveRetryAfterIsRejectedWithoutResending()
+    {
+        var attempts = 0;
+        using var http = new HttpClient(new Handler(_ =>
+        {
+            attempts++;
+            var response = new HttpResponseMessage(HttpStatusCode.TooManyRequests);
+            response.Headers.RetryAfter = new System.Net.Http.Headers.RetryConditionHeaderValue(TimeSpan.FromSeconds(60));
+            return Task.FromResult(response);
+        }));
+        var result = await new SystemOneClassifierClient(http).ClassifyAsync(Model("typesafe-system-one"), Context(), "key",
+            options: new ClassifierRequestOptions(MaxRetries: 2, MaxRetryDelayMs: 1));
+        Assert.Equal("error", result.StopReason);
+        Assert.Equal(1, attempts);
+        Assert.Contains("maximum", result.ErrorMessage);
+    }
+
+    private sealed class BlockingHandler(TaskCompletionSource started) : HttpMessageHandler
+    {
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            started.SetResult();
+            await Task.Delay(Timeout.Infinite, cancellationToken);
+            throw new InvalidOperationException("Unexpected completion");
+        }
+    }
+
     private static ClassifierModel Model(string api) => new("fixture", "classifier", api, new Uri("http://localhost/base"),
         Pricing: new ModelPricing(2m, 10m));
     private static ClassifierContext Context() => new(JsonSerializer.SerializeToElement(new { text = "fixture" }),

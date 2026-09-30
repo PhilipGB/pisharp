@@ -12,7 +12,7 @@ public sealed class SystemOneClassifierClient(HttpClient http) : IClassifierClie
     private static readonly JsonSerializerOptions s_json = new(JsonSerializerDefaults.Web);
 
     public async Task<ClassifierResult> ClassifyAsync(ClassifierModel model, ClassifierContext context, string? apiKey,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default, ClassifierRequestOptions? options = null)
     {
         var result = new ClassifierResult(model.Api, model.Provider, model.Id, new Dictionary<string, ClassifierAnswer>(),
             "stop", Timestamp: DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
@@ -35,12 +35,12 @@ public sealed class SystemOneClassifierClient(HttpClient http) : IClassifierClie
             var payload = cloudflare ? new JsonObject { ["model"] = model.Id, ["input"] = input } : input;
             if (!cloudflare) payload["model"] = model.Id;
             var url = new Uri(model.BaseUrl.AbsoluteUri.TrimEnd('/') + "/" + (cloudflare ? "run" : "systemone"));
-            using var request = new HttpRequestMessage(HttpMethod.Post, url) { Content = JsonContent.Create(payload, options: s_json) };
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
-            using var response = await http.SendAsync(request, cancellationToken).ConfigureAwait(false);
-            response.EnsureSuccessStatusCode();
-            using var document = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync(cancellationToken),
-                cancellationToken: cancellationToken).ConfigureAwait(false);
+            using var document = await new ClassifierHttpTransport(http).SendAsync(() =>
+            {
+                var request = new HttpRequestMessage(HttpMethod.Post, url) { Content = JsonContent.Create(payload, options: s_json) };
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
+                return request;
+            }, options ?? new ClassifierRequestOptions(), cancellationToken).ConfigureAwait(false);
             var output = document.RootElement;
             if (cloudflare)
             {

@@ -29,8 +29,11 @@ public sealed record ClassifierResult(string Api, string Provider, string Model,
     IReadOnlyDictionary<string, ClassifierAnswer> Answers, string StopReason, UsageRecord? Usage = null,
     string? ErrorMessage = null, long Timestamp = 0);
 
+public sealed record ClassifierRequestOptions(int MaxRetries = 2, int? TimeoutMs = null,
+    double? MaxRetryDelayMs = null, double? Temperature = null, IReadOnlyDictionary<string, string>? Headers = null);
+
 public interface IClassifierClient
 {
     Task<ClassifierResult> ClassifyAsync(ClassifierModel model, ClassifierContext context, string? apiKey,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default, ClassifierRequestOptions? options = null);
 }

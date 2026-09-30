@@ -171,7 +171,8 @@
     "extension-orchestration-api",
     "settings-fullscreenwheelscrolllines",
     "provider-llama-context-cache-reload",
-    "provider-auth-openai-chatgpt-oauth"
+    "provider-auth-openai-chatgpt-oauth",
+    "classifier-runtime"
   ],
   "final_audit": {
     "complete": false,
@@ -3645,6 +3646,33 @@
         "Pi llama-extension tests pass within the focused 79/79 coding-agent settings/Llama run at 4259686d9290c0d73ae7192b796aee3e530a9779. The PiSharp generic local endpoint path has no persisted llama.cpp catalog context metadata or tested refresh precedence."
       ],
       "dependencies": []
+    },
+    {
+      "id": "classifier-runtime",
+      "title": "Models: typed classifier catalogs, provider protocols and usage",
+      "status": "in_progress",
+      "source": "docs/parity/fixtures/classifier-native-protocol-2026-09-30.md",
+      "acceptance": [
+        "Keep classifier catalog/selection separate from ordinary chat models",
+        "Support typed choice/score/bool questions and answers through native System One, Cloudflare and llama.cpp classifier protocols",
+        "Preserve usage/cost on parsing failures and explicit error/aborted outcomes",
+        "Provide authenticated provider routing and request retry/timeout/header behavior",
+        "Expose classifier calls to sandboxed Codemode with nested usage aggregation"
+      ],
+      "implementation": [
+        "Typed classifier models/contracts and native/custom catalogs with 12 pinned entries; shared provider credential resolution; no classifier IDs in chat selection",
+        "Native System One and Cloudflare envelopes, bool/noul mapping, typed answer parsing and per-model pricing",
+        "Shared classifier HTTP boundary implements per-attempt deadlines, provider retries, Retry-After caps and headers; credential-resolution cancellation returns aborted"
+      ],
+      "evidence": [
+        "2740ece036f9e90bc9a769a255e724fa192c3d54 exact-head Linux CI 36651669399 passes restore/format/zero-warning build and 934/934 tests with zero skips",
+        "Fail-first missing protocol/catalog tests; deterministic HTTP-handler cases and real loopback catalog/auth/dispatch/chat-selection rejection fixture",
+        "Request-options slice has fail-first retry/header and credential-cancellation evidence; focused classifier/provider tests 52/52, format and zero-warning build pass; full suite 939/939 with zero skips; exact-head CI pending"
+      ],
+      "dependencies": [
+        "virtual-model-routing-persistence",
+        "codemode-runtime"
+      ]
     }
   ]
 }
