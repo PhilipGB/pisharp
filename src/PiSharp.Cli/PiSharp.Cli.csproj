@@ -21,6 +21,7 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Tui\Themes\*.json" LogicalName="PiSharp.Cli.Tui.Themes.%(Filename)%(Extension)" />
+    <EmbeddedResource Include="Providers\Data\image-models.json" LogicalName="PiSharp.Cli.Providers.Data.image-models.json" />
     <EmbeddedResource Include="Providers\Data\classifier-models.json" LogicalName="PiSharp.Cli.Providers.Data.classifier-models.json" />
     <EmbeddedResource Include="Providers\Data\mistral-models.json" LogicalName="PiSharp.Cli.Providers.Data.mistral-models.json" />
     <EmbeddedResource Include="Providers\Data\azure-openai-responses-models.json" LogicalName="PiSharp.Cli.Providers.Data.azure-openai-responses-models.json" />

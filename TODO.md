@@ -54,11 +54,11 @@ Latest verified source `43b33344ada902003b4a2c1911196471b0ed9c2f`: exact-head CI
 
 ## Current priority
 
-General classifiers and Codemode model/classifier globals are the active capability family. Native typed classifiers/catalog and shared request transport are exact-head green at `4a31e8a` / CI `36683707786` / 953 tests. Virtual routing/context/image/status checkpoints are recorded in the fixture family; bounded residuals remain for the wider audit.
+Codemode model/classifier globals and nested usage/cost are exact-head green at `a7fc6c442036cae6434d4ea3bef727779dc213bf`, CI `36691148993`: format, zero-warning/error build, 969/969 tests with zero skips. Paired current-Pi process projections and real CLI classifier HTTP/VM/session persistence pass. Broader parity is incomplete.
 
 ## Exact next action
 
-llama.cpp tokenize/apply-template/completion label readout passes paired Pi comparison, 60 focused checks and full 947/947 local tests with zero skips. Its CI 36682520323 found queued shutdown DA fence leakage; deterministic fix and Cloudflare stored account metadata now pass 107 focused checks and full 953/953 tests. The follow-up exact-head CI 36683707786 is green (953/953). Continue current fail-first Codemode globals/nested usage work. Add paired provider/process classifier evidence. Continue Codemode model/classifier globals and nested usage, material orchestration/extensions, provider/auth/catalog work and the fresh full current-Pi audit. A passing checkpoint does not close parity.
+Finish the fail-first typed image catalog follow-up: configured image entries must remain separate from chat selection, built-in 57-model image metadata must be available through model globals, and credentials remain provider-owned. Focused checks pass 91/91, format/zero-warning build and full 974/974 tests pass; publication/exact-head CI is pending. Then implement multi-call termination at the tool-batch boundary, compare all/mixed termination against current Pi, and continue material orchestration/extensions, provider/auth/catalog work and the full current-Pi audit. Upstream fetched `3e9451238337071b74ba5cdd53f1ab7cf4100ae8`; intervening MCP guidance/link and renderer example commits do not alter the model boundary.
 
 ## Architecture and residuals to preserve
 

@@ -10,7 +10,7 @@ public sealed record ProviderProfile(string Id, string Name, Uri Endpoint, bool 
     bool OAuthSupported, string? ApiKeyEnvironment, string? ConfiguredApiKey,
     IReadOnlyList<ModelDescriptor> Models, string? Api = null, JsonElement? Compatibility = null,
     AzureOpenAiProviderOptions? AzureOpenAi = null, bool ApiKeySupported = true,
-    GoogleVertexProviderOptions? GoogleVertex = null, BedrockProviderOptions? Bedrock = null, IReadOnlyList<ClassifierModel>? Classifiers = null);
+    GoogleVertexProviderOptions? GoogleVertex = null, BedrockProviderOptions? Bedrock = null, IReadOnlyList<ClassifierModel>? Classifiers = null, IReadOnlyList<ImageModelDescriptor>? Images = null);
 
 public sealed record ModelSelection(ProviderProfile Provider, ModelDescriptor Model, string ApiKey,
     bool Authenticated, string AuthSource,
@@ -87,6 +87,7 @@ public sealed class ProviderModelRuntime
     {
         var providers = BuiltinProviderProfiles.Create(environment);
         ClassifierCatalog.AddBuiltins(providers, environment);
+        ImageCatalog.AddBuiltins(providers);
         var configuredEndpoint = environment("PISHARP_BASE_URL");
         if (includeLocal || configuredEndpoint is not null)
         {

@@ -50,6 +50,7 @@ internal static class ProviderProfileLoader
             var compatibility = ModelMetadataJson.ReadObject(value, "compat", $"models.json provider '{item.Name}'", strict: true);
             var models = new List<ModelDescriptor>();
             var classifiers = new List<ClassifierModel>();
+            var images = new List<ImageModelDescriptor>();
             var seenModels = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             if (value.TryGetProperty("models", out var array) && array.ValueKind == JsonValueKind.Array)
                 foreach (var model in array.EnumerateArray())
@@ -70,7 +71,15 @@ internal static class ProviderProfileLoader
                         modelBaseUrl = modelEndpoint.ToString().TrimEnd('/');
                     }
                     var source = $"models.json provider '{item.Name}' model '{id}'";
-                    if (String(model, "type") == "classifier")
+                    var type = String(model, "type") ?? "chat";
+                    if (type is not ("chat" or "classifier" or "image"))
+                        throw new InvalidDataException($"{source} has an unknown model type '{type}'.");
+                    if (type == "image")
+                    {
+                        images.Add(ImageCatalog.Parse(canonicalId, model, endpoint));
+                        continue;
+                    }
+                    if (type == "classifier")
                     {
                         classifiers.Add(ClassifierCatalog.Parse(canonicalId, model, defaultEndpoint: endpoint));
                         continue;
@@ -138,7 +147,8 @@ internal static class ProviderProfileLoader
                 String(value, "apiKey"), models.Count == 0 ? existing?.Models ?? [] : models, api, compatibility,
                 existing?.AzureOpenAi, ApiKeySupported: existing?.ApiKeySupported ?? true,
                 GoogleVertex: existing?.GoogleVertex, Bedrock: existing?.Bedrock,
-                Classifiers: classifiers.Count > 0 ? classifiers : existing?.Classifiers);
+                Classifiers: classifiers.Count > 0 ? classifiers : existing?.Classifiers,
+                Images: images.Count > 0 ? images : existing?.Images);
         }
     }
 
@@ -168,7 +178,7 @@ internal static class ProviderProfileLoader
         return number;
     }
 
-    private static ModelPricing? ParsePricing(JsonElement model)
+    internal static ModelPricing? ParsePricing(JsonElement model)
     {
         if (!model.TryGetProperty("cost", out var cost) || cost.ValueKind != JsonValueKind.Object ||
             !Decimal(cost, "input", out var input) || !Decimal(cost, "output", out var output)) return null;

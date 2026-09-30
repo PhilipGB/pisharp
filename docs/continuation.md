@@ -2,6 +2,12 @@
 
 `TODO.md` is the concise implementation handoff. The feature matrix tracks scope, the detailed inventory records interfaces, and `execution-ledger.json` holds per-capability evidence. Pi Packages remain excluded unless a core capability depends on them.
 
+## Latest verified checkpoint and active follow-up
+
+`a7fc6c442036cae6434d4ea3bef727779dc213bf` passes exact-head CI [36691148993](https://github.com/PhilipGB/pisharp/actions/runs/36691148993): restore, format, zero-warning/error build and 969/969 tests, zero skips. Codemode model/classifier globals, paid nested usage/cost and credential ownership are covered by 95 focused checks, real CLI HTTP/VM/persistence tests and a paired current-Pi process fixture. The older checkpoint sections below are history.
+
+Active follow-up: preserve typed configured and built-in image catalogs separately from chat models. Local focused checks pass 91/91, format and zero-warning/error build pass, and full tests pass 974/974 with zero skips; publication/exact-head CI is pending. Fail-first coverage reproduced the empty image catalog and missing classifier name metadata. Image generation itself remains a separate capability; catalog support alone does not establish it. Next material orchestration target is all-call batch termination, followed by extension and provider/auth/catalog work. Pi refreshed to `3e9451238337071b74ba5cdd53f1ab7cf4100ae8`; four intervening commits cover MCP documentation/sign-in links and renderer examples, with no model changes. Full parity remains incomplete.
+
 ## Current checkpoint — 2026-09-30
 
 **Latest verified source checkpoint, 2026-09-30:** PiSharp `49aa276c3e1aea6364bbd7c5807d4d199a4b29c7` passed exact-head Linux CI [36645748019](https://github.com/PhilipGB/pisharp/actions/runs/36645748019): restore, format, warnings-as-errors build with zero warnings/errors, and 914/914 tests (0 skipped). The interactive startup blocker is fixed: terminal protocol traffic is distinct from EOF, polled input remains non-blocking, and outstanding replies receive bounded shutdown completion. Focused terminal/theme checks pass 158/158; Linux PTY tests prove the editor survives replies, accepts `/session`, and restores tty/modes with no response residue. See [regression evidence](parity/fixtures/terminal-startup-regression-2026-09-30.md). The existing parity goal can now be resumed, but this blocker task stops here. The broader parity goal remains incomplete; upstream remains `1b347794e2a630e4359f2584f4eea388145d0ddf`.

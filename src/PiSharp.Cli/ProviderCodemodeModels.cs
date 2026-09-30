@@ -20,16 +20,31 @@ public sealed class ProviderCodemodeModels(ProviderModelRuntime providers, HttpC
                 type,
                 model.Provider,
                 model.Id,
+                name = model.Name ?? model.Id,
+                input = model.Input ?? ["text"],
+                model.InputLimits,
                 model.Api,
                 baseUrl = model.BaseUrl.AbsoluteUri,
                 model.ContextWindow,
-                cost = model.Pricing
+                cost = Price(model.Pricing)
             }, s_json)).ToArray(),
             "chat" => profiles.SelectMany(profile => profile.Models.Select(model => ChatModel(model, profile)))
                 .Concat((providers.VirtualModels?.Models ?? []).Where(definition => provider is null || definition.Model.Provider == provider)
                     .Select(definition => ChatModel(definition.Model, providers.GetProvider(definition.Model.Provider!))))
                 .DistinctBy(model => (model.GetProperty("provider").GetString(), model.GetProperty("id").GetString())).ToArray(),
-            "image" => [],
+            "image" => profiles.SelectMany(profile => (profile.Images ?? []).Select(model => JsonSerializer.SerializeToElement(new
+            {
+                type,
+                model.Provider,
+                model.Id,
+                model.Name,
+                model.Api,
+                baseUrl = model.BaseUrl.AbsoluteUri,
+                model.Input,
+                model.Output,
+                model.InputLimits,
+                cost = Price(model.Pricing)
+            }, s_json))).ToArray(),
             _ => throw new ArgumentException("Unknown model type.")
         };
     }
