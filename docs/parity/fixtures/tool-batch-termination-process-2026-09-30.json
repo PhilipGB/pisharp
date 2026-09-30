@@ -1,0 +1,453 @@
+{
+  "reference": "3e9451238337071b74ba5cdd53f1ab7cf4100ae8",
+  "cases": [
+    {
+      "flags": [
+        [
+          true,
+          true
+        ]
+      ],
+      "piMode": "sequential",
+      "match": true,
+      "pi": {
+        "requests": 1,
+        "results": [
+          {
+            "name": "tool0",
+            "terminate": true,
+            "text": "result 0"
+          },
+          {
+            "name": "tool1",
+            "terminate": true,
+            "text": "result 1"
+          }
+        ]
+      },
+      "pisharp": {
+        "requests": 1,
+        "results": [
+          {
+            "name": "tool0",
+            "terminate": true,
+            "text": "result 0"
+          },
+          {
+            "name": "tool1",
+            "terminate": true,
+            "text": "result 1"
+          }
+        ]
+      }
+    },
+    {
+      "flags": [
+        [
+          true,
+          true
+        ]
+      ],
+      "piMode": "parallel",
+      "match": true,
+      "pi": {
+        "requests": 1,
+        "results": [
+          {
+            "name": "tool0",
+            "terminate": true,
+            "text": "result 0"
+          },
+          {
+            "name": "tool1",
+            "terminate": true,
+            "text": "result 1"
+          }
+        ]
+      },
+      "pisharp": {
+        "requests": 1,
+        "results": [
+          {
+            "name": "tool0",
+            "terminate": true,
+            "text": "result 0"
+          },
+          {
+            "name": "tool1",
+            "terminate": true,
+            "text": "result 1"
+          }
+        ]
+      }
+    },
+    {
+      "flags": [
+        [
+          true,
+          false
+        ]
+      ],
+      "piMode": "sequential",
+      "match": true,
+      "pi": {
+        "requests": 2,
+        "results": [
+          {
+            "name": "tool0",
+            "terminate": true,
+            "text": "result 0"
+          },
+          {
+            "name": "tool1",
+            "terminate": false,
+            "text": "result 1"
+          }
+        ]
+      },
+      "pisharp": {
+        "requests": 2,
+        "results": [
+          {
+            "name": "tool0",
+            "terminate": true,
+            "text": "result 0"
+          },
+          {
+            "name": "tool1",
+            "terminate": false,
+            "text": "result 1"
+          }
+        ]
+      }
+    },
+    {
+      "flags": [
+        [
+          true,
+          false
+        ]
+      ],
+      "piMode": "parallel",
+      "match": true,
+      "pi": {
+        "requests": 2,
+        "results": [
+          {
+            "name": "tool0",
+            "terminate": true,
+            "text": "result 0"
+          },
+          {
+            "name": "tool1",
+            "terminate": false,
+            "text": "result 1"
+          }
+        ]
+      },
+      "pisharp": {
+        "requests": 2,
+        "results": [
+          {
+            "name": "tool0",
+            "terminate": true,
+            "text": "result 0"
+          },
+          {
+            "name": "tool1",
+            "terminate": false,
+            "text": "result 1"
+          }
+        ]
+      }
+    },
+    {
+      "flags": [
+        [
+          false,
+          true
+        ]
+      ],
+      "piMode": "sequential",
+      "match": true,
+      "pi": {
+        "requests": 2,
+        "results": [
+          {
+            "name": "tool0",
+            "terminate": false,
+            "text": "result 0"
+          },
+          {
+            "name": "tool1",
+            "terminate": true,
+            "text": "result 1"
+          }
+        ]
+      },
+      "pisharp": {
+        "requests": 2,
+        "results": [
+          {
+            "name": "tool0",
+            "terminate": false,
+            "text": "result 0"
+          },
+          {
+            "name": "tool1",
+            "terminate": true,
+            "text": "result 1"
+          }
+        ]
+      }
+    },
+    {
+      "flags": [
+        [
+          false,
+          true
+        ]
+      ],
+      "piMode": "parallel",
+      "match": true,
+      "pi": {
+        "requests": 2,
+        "results": [
+          {
+            "name": "tool0",
+            "terminate": false,
+            "text": "result 0"
+          },
+          {
+            "name": "tool1",
+            "terminate": true,
+            "text": "result 1"
+          }
+        ]
+      },
+      "pisharp": {
+        "requests": 2,
+        "results": [
+          {
+            "name": "tool0",
+            "terminate": false,
+            "text": "result 0"
+          },
+          {
+            "name": "tool1",
+            "terminate": true,
+            "text": "result 1"
+          }
+        ]
+      }
+    },
+    {
+      "flags": [
+        [
+          false,
+          false
+        ]
+      ],
+      "piMode": "sequential",
+      "match": true,
+      "pi": {
+        "requests": 2,
+        "results": [
+          {
+            "name": "tool0",
+            "terminate": false,
+            "text": "result 0"
+          },
+          {
+            "name": "tool1",
+            "terminate": false,
+            "text": "result 1"
+          }
+        ]
+      },
+      "pisharp": {
+        "requests": 2,
+        "results": [
+          {
+            "name": "tool0",
+            "terminate": false,
+            "text": "result 0"
+          },
+          {
+            "name": "tool1",
+            "terminate": false,
+            "text": "result 1"
+          }
+        ]
+      }
+    },
+    {
+      "flags": [
+        [
+          false,
+          false
+        ]
+      ],
+      "piMode": "parallel",
+      "match": true,
+      "pi": {
+        "requests": 2,
+        "results": [
+          {
+            "name": "tool0",
+            "terminate": false,
+            "text": "result 0"
+          },
+          {
+            "name": "tool1",
+            "terminate": false,
+            "text": "result 1"
+          }
+        ]
+      },
+      "pisharp": {
+        "requests": 2,
+        "results": [
+          {
+            "name": "tool0",
+            "terminate": false,
+            "text": "result 0"
+          },
+          {
+            "name": "tool1",
+            "terminate": false,
+            "text": "result 1"
+          }
+        ]
+      }
+    },
+    {
+      "flags": [
+        [
+          false,
+          true
+        ],
+        [
+          true,
+          true
+        ]
+      ],
+      "piMode": "sequential",
+      "match": true,
+      "pi": {
+        "requests": 2,
+        "results": [
+          {
+            "name": "tool0",
+            "terminate": false,
+            "text": "result 0"
+          },
+          {
+            "name": "tool0",
+            "terminate": true,
+            "text": "result 0"
+          },
+          {
+            "name": "tool1",
+            "terminate": true,
+            "text": "result 1"
+          },
+          {
+            "name": "tool1",
+            "terminate": true,
+            "text": "result 1"
+          }
+        ]
+      },
+      "pisharp": {
+        "requests": 2,
+        "results": [
+          {
+            "name": "tool0",
+            "terminate": false,
+            "text": "result 0"
+          },
+          {
+            "name": "tool0",
+            "terminate": true,
+            "text": "result 0"
+          },
+          {
+            "name": "tool1",
+            "terminate": true,
+            "text": "result 1"
+          },
+          {
+            "name": "tool1",
+            "terminate": true,
+            "text": "result 1"
+          }
+        ]
+      }
+    },
+    {
+      "flags": [
+        [
+          false,
+          true
+        ],
+        [
+          true,
+          true
+        ]
+      ],
+      "piMode": "parallel",
+      "match": true,
+      "pi": {
+        "requests": 2,
+        "results": [
+          {
+            "name": "tool0",
+            "terminate": false,
+            "text": "result 0"
+          },
+          {
+            "name": "tool0",
+            "terminate": true,
+            "text": "result 0"
+          },
+          {
+            "name": "tool1",
+            "terminate": true,
+            "text": "result 1"
+          },
+          {
+            "name": "tool1",
+            "terminate": true,
+            "text": "result 1"
+          }
+        ]
+      },
+      "pisharp": {
+        "requests": 2,
+        "results": [
+          {
+            "name": "tool0",
+            "terminate": false,
+            "text": "result 0"
+          },
+          {
+            "name": "tool0",
+            "terminate": true,
+            "text": "result 0"
+          },
+          {
+            "name": "tool1",
+            "terminate": true,
+            "text": "result 1"
+          },
+          {
+            "name": "tool1",
+            "terminate": true,
+            "text": "result 1"
+          }
+        ]
+      }
+    }
+  ]
+}

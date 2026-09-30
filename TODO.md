@@ -54,11 +54,11 @@ Latest verified source `43b33344ada902003b4a2c1911196471b0ed9c2f`: exact-head CI
 
 ## Current priority
 
-Codemode model/classifier globals and nested usage/cost are exact-head green at `a7fc6c442036cae6434d4ea3bef727779dc213bf`, CI `36691148993`: format, zero-warning/error build, 969/969 tests with zero skips. Paired current-Pi process projections and real CLI classifier HTTP/VM/session persistence pass. Broader parity is incomplete.
+Codemode model/classifier globals and nested usage/cost passed exact-head CI at `a7fc6c4` / `36691148993` / 969 tests. Typed image catalogs passed `ed96381b8324cd522ae26cfa485b4272fff512c9` / `36692202838` / 974 tests, zero skips/warnings/errors. Broader parity is incomplete.
 
 ## Exact next action
 
-Finish the fail-first typed image catalog follow-up: configured image entries must remain separate from chat selection, built-in 57-model image metadata must be available through model globals, and credentials remain provider-owned. Focused checks pass 91/91, format/zero-warning build and full 974/974 tests pass; publication/exact-head CI is pending. Then implement multi-call termination at the tool-batch boundary, compare all/mixed termination against current Pi, and continue material orchestration/extensions, provider/auth/catalog work and the full current-Pi audit. Upstream fetched `3e9451238337071b74ba5cdd53f1ab7cf4100ae8`; intervening MCP guidance/link and renderer example commits do not alter the model boundary.
+Publish/verify the tool-batch termination follow-up: fail-first all-terminating sibling coverage, 38 focused checks, ten paired current-Pi sequential/parallel projections, format/zero-warning build and full 982/982 tests pass. Then implement Bash's declared structured output contract with the current Pi 1 MiB programmatic output cap while retaining the bounded 50 KiB/2,000-line model display. Preserve nonzero exit resolution for structured Codemode callers and error lifecycle for the model. Continue material extension/provider/auth/catalog work and the fresh full current-Pi audit. Upstream fetched `3e9451238337071b74ba5cdd53f1ab7cf4100ae8`; intervening MCP guidance/link and renderer example commits do not alter the model/tool boundary.
 
 ## Architecture and residuals to preserve
 

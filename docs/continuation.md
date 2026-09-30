@@ -2,6 +2,10 @@
 
 `TODO.md` is the concise implementation handoff. The feature matrix tracks scope, the detailed inventory records interfaces, and `execution-ledger.json` holds per-capability evidence. Pi Packages remain excluded unless a core capability depends on them.
 
+## Tool-batch checkpoint awaiting publication
+
+Typed image catalog source `ed96381b8324cd522ae26cfa485b4272fff512c9` passes exact-head CI [36692202838](https://github.com/PhilipGB/pisharp/actions/runs/36692202838), including 974/974 tests with zero skips and zero-warning/error build. Tool-batch termination now waits for all finalized root siblings and stops only when every result requests termination. The fail-first provider-loop test, 38 focused checks and ten paired current-Pi sequential/parallel projections pass; format/zero-warning build and full 982/982 tests pass. Publish and verify exact-head CI, then implement Bash's 1 MiB structured output contract for Codemode while preserving the existing model display bounds and sandbox limits. Full parity remains incomplete.
+
 ## Latest verified checkpoint and active follow-up
 
 `a7fc6c442036cae6434d4ea3bef727779dc213bf` passes exact-head CI [36691148993](https://github.com/PhilipGB/pisharp/actions/runs/36691148993): restore, format, zero-warning/error build and 969/969 tests, zero skips. Codemode model/classifier globals, paid nested usage/cost and credential ownership are covered by 95 focused checks, real CLI HTTP/VM/persistence tests and a paired current-Pi process fixture. The older checkpoint sections below are history.

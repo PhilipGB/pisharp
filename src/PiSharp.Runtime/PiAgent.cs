@@ -123,6 +123,7 @@ public sealed class PiAgent
     private readonly bool _noExtensionTools;
     private readonly SemaphoreSlim _runGate = new(1, 1);
     private ReasoningOptions? _reasoning;
+    private readonly ToolBatchTermination _toolBatchTermination = new();
     private DurableExecution? _active;
     private Action<AgentLifecycleEvent>? _events;
     private Func<bool, IReadOnlyList<ChatMessage>>? _takeSteering;
@@ -312,7 +313,7 @@ public sealed class PiAgent
             previous.OutputSchema.Equals(registration.OutputSchema)) return;
         _runtimeToolRegistrations[name] = registration;
         _runtimeToolFunctions[name] = new DurableToolFunction(registration.Function, () => _active,
-            value => _events?.Invoke(value), () => Volatile.Read(ref _currentToolLoadout),
+            value => _events?.Invoke(value), _toolBatchTermination, () => Volatile.Read(ref _currentToolLoadout),
             () => _runtimeToolFunctions, _toolHooks, registration.OutputSchema, _codemodeModels);
     }
 

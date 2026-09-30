@@ -10,7 +10,7 @@ namespace PiSharp.Runtime.Sessions;
 
 /// <summary>Tool lifecycle originates here, at invocation time rather than from inferred model updates.</summary>
 internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecution?> current,
-    Action<AgentLifecycleEvent> publish, Func<ToolLoadout?>? currentLoadout = null,
+    Action<AgentLifecycleEvent> publish, ToolBatchTermination termination, Func<ToolLoadout?>? currentLoadout = null,
     Func<IReadOnlyDictionary<string, AIFunction>>? allToolFunctions = null,
     PiSharpToolHookPipeline? toolHooks = null, JsonElement? outputSchema = null, ICodemodeModels? codemodeModels = null) : DelegatingAIFunction(inner)
 {
@@ -201,8 +201,8 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
             ReadToolOutput.TryRead(value, out var readOutput) && readOutput.TryCreateImageContent(out var image) ? [image] : null;
         if (contract?.Images is { Count: > 0 })
             toolImages = contract.Images.Select(item => item.ToDataContent()).OfType<Microsoft.Extensions.AI.DataContent>().ToArray();
-        if (nestedInvocation is null && contract?.Terminate == true &&
-            FunctionInvokingChatClient.CurrentContext is { FunctionCount: 1 } invocationContext)
+        if (nestedInvocation is null && FunctionInvokingChatClient.CurrentContext is { } invocationContext &&
+            termination.Record(invocationContext, failure is null && contract?.Terminate == true))
             invocationContext.Terminate = true;
         publish(new("tool_execution_finished", Text: resultText, Tool: Name, OperationId: id,
             IsError: resultContext.IsError, Error: resultContext.Error,
