@@ -176,7 +176,7 @@ public sealed class InteractiveTranscriptTests
 
         Assert.NotEqual(darkOutput, lightOutput);
         Assert.Equal(lightOutput, buffer.GetRetainedText());
-        Assert.Equal(lightOutput, buffer.GetText());
+        Assert.Equal(lightOutput, buffer.GetText(width: 80));
         Assert.DoesNotContain('\u001b', Assert.Single(buffer.CaptureSnapshot()).Text);
     }
 

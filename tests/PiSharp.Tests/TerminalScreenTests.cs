@@ -332,11 +332,71 @@ public sealed class TerminalScreenTests
 
         Assert.Contains("line 1", collapsedFrame);
         Assert.Contains("line 10", collapsedFrame);
-        Assert.Contains("2 more lines; tool output collapsed", collapsedFrame);
+        Assert.Contains("2 more visual rows; tool output collapsed", collapsedFrame);
         Assert.DoesNotContain("line 11", collapsedFrame);
         Assert.Contains("line 11", expandedFrame);
         Assert.Contains("line 12", expandedFrame);
         Assert.Contains("line 12", error.ToString());
+    }
+
+    [Fact]
+    public void ActiveToolResultPreviewsCollapseByWrappedRowsForBashCodemodeAndMcp()
+    {
+        foreach (var tool in new[] { "bash", "codemode", "mcp__fixture" })
+        {
+            using var output = new StringWriter();
+            using var error = new StringWriter();
+            var columns = 20;
+            var screen = new TerminalScreen(output, error, () => columns, () => 80);
+            var renderer = new PiSharpToolRenderer(
+                renderResult: (result, _) => new([new(result.Text ?? "")]));
+            var transcript = new InteractiveTranscript(output, error, screen: screen,
+                toolRenderer: name => name == tool ? renderer : null);
+            var results = new[]
+            {
+                new string('x', 300),
+                string.Join('\n', Enumerable.Range(1, 6).Select(line => $"row{line}:{new string('y', 35)}"))
+            };
+
+            foreach (var result in results)
+            {
+                transcript.Render(new("tool_execution_finished", Tool: tool, Text: result));
+                var collapsedFrame = CurrentFrame(output);
+                Assert.Contains("more rows", collapsedFrame);
+                if (result.StartsWith('x'))
+                    Assert.True(collapsedFrame.Count(character => character == 'x') < result.Length);
+                else
+                    Assert.DoesNotContain("row6:", collapsedFrame);
+
+                if (tool == "bash" && result.StartsWith('x'))
+                {
+                    columns = 80;
+                    screen.RefreshIfResized();
+                    var widerFrame = CurrentFrame(output);
+                    Assert.DoesNotContain("more rows", widerFrame);
+                    Assert.Equal(result.Length, widerFrame.Count(character => character == 'x'));
+                    columns = 20;
+                    screen.RefreshIfResized();
+                }
+
+                screen.SetToolResultsExpanded(true);
+                var expandedFrame = CurrentFrame(output);
+                Assert.Contains(result[^10..], expandedFrame);
+                screen.SetToolResultsExpanded(false);
+            }
+
+            screen.Dispose();
+            Assert.Contains(results[0], error.ToString());
+            Assert.Contains(results[1], error.ToString());
+        }
+
+        static string CurrentFrame(StringWriter output)
+        {
+            var text = output.ToString();
+            var start = text.LastIndexOf("\u001b[2J\u001b[H", StringComparison.Ordinal);
+            Assert.True(start >= 0);
+            return text[start..];
+        }
     }
 
     [Fact]

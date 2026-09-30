@@ -620,7 +620,7 @@ public sealed class TerminalScreen : IDisposable
         }
     }
 
-    private string GetTranscriptTextLocked() => _transcript.GetText();
+    private string GetTranscriptTextLocked(int width) => _transcript.GetText(width);
 
     private string RenderMarkdown(string markdown) =>
         TerminalMarkdownRenderer.Render(markdown, Math.Max(1, Columns() - 1), _theme, _markdownCodeBlockIndent);
@@ -638,8 +638,9 @@ public sealed class TerminalScreen : IDisposable
             _images.PruneUnreferenced(_transcript.GetRetainedText());
             _lastImagePruneRevision = _transcript.Revision;
         }
-        var transcript = _images.LayoutTranscript(GetTranscriptTextLocked() + _liveAssistant,
-            Math.Max(1, columns - 1), Math.Max(1, transcriptHeight - 2));
+        var transcriptWidth = Math.Max(1, columns - 1);
+        var transcript = _images.LayoutTranscript(GetTranscriptTextLocked(transcriptWidth) + _liveAssistant,
+            transcriptWidth, Math.Max(1, transcriptHeight - 2));
         var frame = _compositor.Compose(_editorText, _editorCursor, _editorSelectionStart, _editorSelectionEnd,
             transcript, _footer, _overlay, _scrollOffset, columns, rows, _search, _mouse, _theme);
         _scrollOffset = frame.ScrollOffset;

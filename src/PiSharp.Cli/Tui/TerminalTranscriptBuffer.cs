@@ -8,7 +8,7 @@ internal sealed class TerminalTranscriptBuffer
     private const int MaximumTranscriptCharacters = 1_000_000;
     private const int MaximumTranscriptSegments = 10_000;
     private const int MaximumCapturedCharacters = 4_000_000;
-    private const int ToolPreviewLines = 10;
+    private const int ToolPreviewContentRows = 10;
     private readonly List<CapturedChunkBuilder> _captured = [];
     private readonly List<TranscriptSegment> _segments = [];
     private int _capturedCharacters;
@@ -29,7 +29,7 @@ internal sealed class TerminalTranscriptBuffer
             _segments[^1].Text.Append(text);
         else
             _segments.Add(new(isToolResult, new StringBuilder(text),
-                isToolResult ? PreviewToolResult(collapsedPreviewText ?? text) : null));
+                isToolResult ? collapsedPreviewText ?? text : null));
         _transcriptCharacters += text.Length;
         TrimTranscript();
         Revision++;
@@ -54,7 +54,7 @@ internal sealed class TerminalTranscriptBuffer
         if (rendered.Length == 0) return;
         Capture(capturedText, isError);
         _segments.Add(new(isToolResult, new StringBuilder(rendered),
-            isToolResult ? PreviewToolResult(collapsedPreviewText ?? rendered) : null,
+            isToolResult ? collapsedPreviewText ?? rendered : null,
             themeRenderer: themeRenderer, collapsedRenderer: collapsedRenderer));
         _transcriptCharacters += rendered.Length;
         TrimTranscript();
@@ -86,18 +86,24 @@ internal sealed class TerminalTranscriptBuffer
             var next = render(theme);
             segment.Text.Clear().Append(next);
             if (segment.IsToolResult)
-                segment.CollapsedPreview = PreviewToolResult(segment.CollapsedRenderer?.Invoke(theme) ?? next);
+            {
+                segment.CollapsedPreviewSource = segment.CollapsedRenderer?.Invoke(theme) ?? next;
+                segment.InvalidateCollapsedPreview();
+            }
             _transcriptCharacters += next.Length - previousLength;
         }
         TrimTranscript();
         Revision++;
     }
 
-    public string GetText()
+    public string GetText(int width)
     {
+        ArgumentOutOfRangeException.ThrowIfLessThan(width, 1);
         var output = new StringBuilder(_transcriptCharacters);
         foreach (var segment in _segments)
-            output.Append(segment.IsToolResult && !IsExpanded ? segment.CollapsedPreview : segment.Text.ToString());
+            output.Append(segment.IsToolResult && !IsExpanded
+                ? GetCollapsedPreview(segment, width)
+                : segment.Text.ToString());
         return output.ToString();
     }
 
@@ -151,7 +157,11 @@ internal sealed class TerminalTranscriptBuffer
             first.MarkdownSource = null;
             first.ThemeRenderer = null;
             first.CollapsedRenderer = null;
-            if (first.IsToolResult) first.CollapsedPreview = PreviewToolResult(first.Text.ToString());
+            if (first.IsToolResult)
+            {
+                first.CollapsedPreviewSource = first.Text.ToString();
+                first.InvalidateCollapsedPreview();
+            }
             _transcriptCharacters -= remove;
             break;
         }
@@ -183,27 +193,51 @@ internal sealed class TerminalTranscriptBuffer
         _capturedCharacters += text.Length;
     }
 
-    private static string PreviewToolResult(string text)
+    private static string GetCollapsedPreview(TranscriptSegment segment, int width)
     {
-        var endsWithNewline = text.EndsWith('\n');
-        var lines = text.Split('\n');
-        var visibleLines = lines.Length - (endsWithNewline ? 1 : 0);
-        if (visibleLines <= ToolPreviewLines) return text;
-        var remaining = visibleLines - ToolPreviewLines;
-        var preview = string.Join('\n', lines.Take(ToolPreviewLines));
-        return $"{preview}\n... ({remaining} more lines; tool output collapsed){(endsWithNewline ? "\n" : "")}";
+        if (segment.CollapsedPreview is { } cached && segment.CollapsedPreviewWidth == width) return cached;
+
+        var text = segment.CollapsedPreviewSource ?? segment.Text.ToString();
+        var layout = TerminalTextLayout.Create(text, width);
+        var hasTrailingNewline = text.EndsWith('\n');
+        var visibleRows = layout.RowCount - (hasTrailingNewline ? 1 : 0);
+        var hiddenRows = visibleRows - ToolPreviewContentRows;
+        var preview = hiddenRows <= 0
+            ? text
+            : string.Join('\n', layout.Rows.Take(ToolPreviewContentRows)) + "\n" + FormatPreviewHint(hiddenRows, width) +
+                (hasTrailingNewline ? "\n" : "");
+        segment.CollapsedPreview = preview;
+        segment.CollapsedPreviewWidth = width;
+        return preview;
     }
 
-    private sealed class TranscriptSegment(bool isToolResult, StringBuilder text, string? collapsedPreview,
+    private static string FormatPreviewHint(int hiddenRows, int width)
+    {
+        var hint = $"... ({hiddenRows} more visual rows; tool output collapsed)";
+        if (TerminalTextLayout.Width(hint) <= width) return hint;
+
+        var compactHint = $"… +{hiddenRows} more rows";
+        return TerminalTranscriptViewport.Clip(compactHint, width);
+    }
+
+    private sealed class TranscriptSegment(bool isToolResult, StringBuilder text, string? collapsedPreviewSource,
         string? markdownSource = null, Func<TerminalTheme, string>? themeRenderer = null,
         Func<TerminalTheme, string>? collapsedRenderer = null)
     {
         public bool IsToolResult { get; } = isToolResult;
         public StringBuilder Text { get; } = text;
-        public string? CollapsedPreview { get; set; } = collapsedPreview;
+        public string? CollapsedPreviewSource { get; set; } = collapsedPreviewSource;
+        public string? CollapsedPreview { get; set; }
+        public int CollapsedPreviewWidth { get; set; } = -1;
         public string? MarkdownSource { get; set; } = markdownSource;
         public Func<TerminalTheme, string>? ThemeRenderer { get; set; } = themeRenderer;
         public Func<TerminalTheme, string>? CollapsedRenderer { get; set; } = collapsedRenderer;
+
+        public void InvalidateCollapsedPreview()
+        {
+            CollapsedPreview = null;
+            CollapsedPreviewWidth = -1;
+        }
     }
 
     private sealed class CapturedChunkBuilder(bool isError, StringBuilder text)
