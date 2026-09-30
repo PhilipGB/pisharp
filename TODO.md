@@ -58,7 +58,7 @@ General classifiers and Codemode model/classifier globals are the active capabil
 
 ## Exact next action
 
-llama.cpp tokenize/apply-template/completion label readout passes paired Pi comparison, 60 focused checks and full 947/947 local tests with zero skips. Publish/verify its exact-head CI, then implement Cloudflare stored account metadata. Add paired provider/process classifier evidence. Continue Codemode model/classifier globals and nested usage, material orchestration/extensions, provider/auth/catalog work and the fresh full current-Pi audit. A passing checkpoint does not close parity.
+llama.cpp tokenize/apply-template/completion label readout passes paired Pi comparison, 60 focused checks and full 947/947 local tests with zero skips. Its CI 36682520323 found queued shutdown DA fence leakage; deterministic fix and Cloudflare stored account metadata now pass 107 focused checks and full 953/953 tests. Publish/verify the follow-up exact-head CI, then continue Codemode globals/nested usage. Add paired provider/process classifier evidence. Continue Codemode model/classifier globals and nested usage, material orchestration/extensions, provider/auth/catalog work and the fresh full current-Pi audit. A passing checkpoint does not close parity.
 
 ## Architecture and residuals to preserve
 

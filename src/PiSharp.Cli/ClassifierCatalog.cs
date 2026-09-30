@@ -37,11 +37,12 @@ internal static class ClassifierCatalog
     {
         var url = item.TryGetProperty("baseUrl", out var endpoint) ? endpoint.GetString()! : defaultEndpoint?.AbsoluteUri ??
             throw new InvalidDataException("Classifier model requires a baseUrl.");
+        var template = url.Contains("{CLOUDFLARE_ACCOUNT_ID}", StringComparison.Ordinal) ? url : null;
         if (cloudflareAccount is not null) url = url.Replace("{CLOUDFLARE_ACCOUNT_ID}", Uri.EscapeDataString(cloudflareAccount), StringComparison.Ordinal);
         var pricing = item.TryGetProperty("cost", out var cost) ? new ModelPricing(
             cost.GetProperty("input").GetDecimal(), cost.GetProperty("output").GetDecimal()) : null;
         return new(provider, item.GetProperty("id").GetString()!, item.GetProperty("api").GetString()!,
             ProviderProfileLoader.ParseEndpoint(url, "Classifier baseUrl"),
-            item.TryGetProperty("contextWindow", out var window) ? window.GetInt32() : 0, pricing);
+            item.TryGetProperty("contextWindow", out var window) ? window.GetInt32() : 0, pricing, template);
     }
 }

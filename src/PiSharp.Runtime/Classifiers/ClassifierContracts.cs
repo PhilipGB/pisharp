@@ -5,7 +5,7 @@ using PiSharp.Runtime.Sessions;
 namespace PiSharp.Runtime.Classifiers;
 
 public sealed record ClassifierModel(string Provider, string Id, string Api, Uri BaseUrl,
-    int ContextWindow = 0, ModelPricing? Pricing = null);
+    int ContextWindow = 0, ModelPricing? Pricing = null, string? BaseUrlTemplate = null);
 
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
 [JsonDerivedType(typeof(ClassifierChoiceQuestion), "choice")]

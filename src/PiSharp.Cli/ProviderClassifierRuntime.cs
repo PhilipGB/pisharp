@@ -17,7 +17,17 @@ public sealed class ProviderClassifierRuntime(ProviderModelRuntime providers, Ht
             throw new ArgumentException($"Unknown classifier '{provider}/{model}'.");
         try
         {
-            var auth = await providers.ResolveAuthAsync(provider, useRuntimeOverride: true, cancellationToken);
+            var auth = await providers.ResolveClassifierAccessAsync(provider, cancellationToken);
+            if (descriptor.BaseUrlTemplate is { } template)
+            {
+                if (!auth.Environment.TryGetValue("CLOUDFLARE_ACCOUNT_ID", out var account) || string.IsNullOrEmpty(account))
+                    throw new InvalidOperationException("Cloudflare Workers AI requires CLOUDFLARE_ACCOUNT_ID.");
+                descriptor = descriptor with
+                {
+                    BaseUrl = ProviderProfileLoader.ParseEndpoint(
+                    template.Replace("{CLOUDFLARE_ACCOUNT_ID}", Uri.EscapeDataString(account), StringComparison.Ordinal), "Classifier baseUrl")
+                };
+            }
             if (descriptor.BaseUrl.AbsoluteUri.Contains("CLOUDFLARE_ACCOUNT_ID", StringComparison.Ordinal))
                 throw new InvalidOperationException("Cloudflare Workers AI requires CLOUDFLARE_ACCOUNT_ID.");
             IClassifierClient client = descriptor.Api == "llama-cpp-classify" ? _llama : new SystemOneClassifierClient(http);

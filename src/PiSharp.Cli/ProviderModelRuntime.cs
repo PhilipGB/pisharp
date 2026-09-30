@@ -129,6 +129,31 @@ public sealed class ProviderModelRuntime
         if (useRuntimeOverride && !string.IsNullOrWhiteSpace(_runtimeApiKey))
             return (_runtimeApiKey, true, "command line");
         var stored = await _auth.ReadAsync(provider.Id, cancellationToken);
+        return await ResolveAuthCoreAsync(provider, stored, useRuntimeOverride, allowOAuthRefresh, cancellationToken);
+    }
+
+    internal async Task<(string Key, bool Authenticated, string Source, IReadOnlyDictionary<string, string> Environment)> ResolveClassifierAccessAsync(
+        string providerId, CancellationToken cancellationToken)
+    {
+        var provider = GetProvider(providerId);
+        var stored = await _auth.ReadAsync(provider.Id, cancellationToken);
+        var auth = await ResolveAuthCoreAsync(provider, stored, true, true, cancellationToken);
+        var environment = new Dictionary<string, string>();
+        if (provider.Id == "cloudflare-workers-ai")
+        {
+            var name = "CLOUDFLARE_ACCOUNT_ID";
+            var account = stored?.Type == "api_key" && stored.Env?.TryGetValue(name, out var value) == true
+                ? value : _environment(name);
+            if (account is not null) environment[name] = account;
+        }
+        return (auth.Key, auth.Authenticated, auth.Source, environment);
+    }
+
+    private async Task<(string Key, bool Authenticated, string Source)> ResolveAuthCoreAsync(ProviderProfile provider,
+        StoredCredential? stored, bool useRuntimeOverride, bool allowOAuthRefresh, CancellationToken cancellationToken)
+    {
+        if (useRuntimeOverride && !string.IsNullOrWhiteSpace(_runtimeApiKey))
+            return (_runtimeApiKey, true, "command line");
         if (stored is not null)
         {
             // A stored credential owns the provider: never fall back to ambient credentials.

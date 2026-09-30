@@ -3663,13 +3663,15 @@
         "Typed classifier models/contracts and native/custom catalogs with 12 pinned entries; shared provider credential resolution; no classifier IDs in chat selection",
         "Native System One and Cloudflare envelopes, bool/noul mapping, typed answer parsing and per-model pricing",
         "Shared classifier HTTP boundary implements per-attempt deadlines, provider retries, Retry-After caps and headers; credential-resolution cancellation returns aborted",
-        "Distinct llama.cpp label-token/template/completion classifier, depth escalation, typed softmax results and server/model token cache"
+        "Distinct llama.cpp label-token/template/completion classifier, depth escalation, typed softmax results and server/model token cache",
+        "Stored Cloudflare environment metadata and per-field ambient fallback; classifier endpoint template resolved with one credential snapshot at request time"
       ],
       "evidence": [
         "2740ece036f9e90bc9a769a255e724fa192c3d54 exact-head Linux CI 36651669399 passes restore/format/zero-warning build and 934/934 tests with zero skips",
         "Fail-first missing protocol/catalog tests; deterministic HTTP-handler cases and real loopback catalog/auth/dispatch/chat-selection rejection fixture",
         "77530840004db80c18c7ed3907acaa2897a53bde exact-head CI 36681140547 passes restore/format/zero-warning build and 939/939 tests with zero skips",
-        "llama.cpp fail-first regression, 60/60 focused classifier/provider checks, real HTTP dispatch and paired current-Pi bool/choice/score process fixture; format and zero-warning build pass; full suite 947/947 with zero skips; exact-head publication pending"
+        "llama.cpp fail-first regression, 60/60 focused classifier/provider checks, real HTTP dispatch and paired current-Pi bool/choice/score process fixture; format and zero-warning build pass; local full suite 947/947 with zero skips; source 6d34ce4 exact-head CI 36682520323 failed immediate-quit PTY DA fence leakage; deterministic follow-up now implemented",
+        "Two fail-first stored account tests; stored/ambient merge and metadata persistence tests pass; combined follow-up checks 107/107, format/zero-warning build and full suite 953/953 with zero skips; exact-head CI pending"
       ],
       "dependencies": [
         "virtual-model-routing-persistence",

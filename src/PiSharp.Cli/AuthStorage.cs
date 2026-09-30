@@ -4,7 +4,7 @@ using System.Text.RegularExpressions;
 namespace PiSharp.Cli;
 
 public sealed record StoredCredential(string Type, string? Key = null, string? Access = null,
-    string? Refresh = null, long? Expires = null, string? AccountId = null)
+    string? Refresh = null, long? Expires = null, string? AccountId = null, IReadOnlyDictionary<string, string>? Env = null)
 {
     public string? Secret => Type == "oauth" ? Access : Key;
 }
@@ -37,6 +37,14 @@ public sealed class AuthStorage(string path)
     {
         if (string.IsNullOrWhiteSpace(key)) throw new ArgumentException("API key cannot be empty.", nameof(key));
         await StoreAsync(provider, new StoredCredential("api_key", Key: key), cancellationToken);
+    }
+
+    public async Task StoreApiKeyAsync(string provider, string key, IReadOnlyDictionary<string, string> environment,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(key)) throw new ArgumentException("API key cannot be empty.", nameof(key));
+        await StoreAsync(provider, new StoredCredential("api_key", Key: key,
+            Env: new Dictionary<string, string>(environment, StringComparer.Ordinal)), cancellationToken);
     }
 
     /// <summary>Stores a pre-issued OAuth bearer token. Browser authorization and refresh are provider-adapter responsibilities.</summary>
