@@ -169,7 +169,7 @@ public sealed class McpOAuthTests
             }));
             using (var catalog = ExtensionCatalog.Load(root, root, false, discover: false))
             {
-                var failures = await McpRuntime.RegisterAsync(configuration, catalog, root, deadline.Token);
+                var failures = await McpRuntime.RegisterForStatusAsync(configuration, catalog, root, deadline.Token);
                 Assert.Contains(failures, failure => failure.Contains("needs authorization", StringComparison.Ordinal));
             }
             var status = new StringWriter();
@@ -195,7 +195,7 @@ public sealed class McpOAuthTests
             Assert.Equal("fixture-access", tokens?.AccessToken);
             Assert.Equal("fixture-refresh", tokens?.RefreshToken);
             using (var catalog = ExtensionCatalog.Load(root, root, false, discover: false))
-                Assert.Empty(await McpRuntime.RegisterAsync(configuration, catalog, root, deadline.Token));
+                Assert.Empty(await McpRuntime.RegisterForStatusAsync(configuration, catalog, root, deadline.Token));
             status.GetStringBuilder().Clear();
             Assert.Equal(0, await McpCommand.RunAsync(["list", "--json"], root, root, status,
                 new StringWriter(), deadline.Token));

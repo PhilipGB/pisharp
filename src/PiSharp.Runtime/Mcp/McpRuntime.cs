@@ -15,12 +15,27 @@ public static class McpRuntime
 {
     private static readonly TimeSpan s_startupWait = TimeSpan.FromSeconds(10);
 
-    public static async Task<IReadOnlyList<string>> RegisterAsync(McpConfiguration configuration,
+    public static Task<IReadOnlyList<string>> RegisterAsync(McpConfiguration configuration,
         ExtensionCatalog catalog, string workingDirectory, CancellationToken cancellationToken = default,
-        McpRuntimeManager? manager = null)
+        McpRuntimeManager? manager = null) =>
+        RegisterAsync(configuration, catalog, workingDirectory, cancellationToken, manager, s_startupWait);
+
+    internal static Task<IReadOnlyList<string>> RegisterForStatusAsync(McpConfiguration configuration,
+        ExtensionCatalog catalog, string workingDirectory, CancellationToken cancellationToken = default) =>
+        RegisterAsync(configuration, catalog, workingDirectory, cancellationToken, manager: null,
+            startupWait: s_startupWait, waitForAllServers: true);
+
+    internal static async Task<IReadOnlyList<string>> RegisterAsync(McpConfiguration configuration,
+        ExtensionCatalog catalog, string workingDirectory, CancellationToken cancellationToken,
+        McpRuntimeManager? manager, TimeSpan startupWait, bool waitForAllServers = false)
     {
+        ArgumentNullException.ThrowIfNull(configuration);
+        ArgumentNullException.ThrowIfNull(catalog);
+        if (startupWait < TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(startupWait));
         var errors = new List<string>(configuration.Errors);
         var registration = catalog.Registration;
+        var startup = new McpStartupCoordinator(cancellationToken);
+        catalog.OwnConnection(startup);
         var resourceGate = new object();
         var resourceToolsGate = new object();
         var resourceServers = new Dictionary<string,
@@ -59,7 +74,6 @@ public static class McpRuntime
             else effectiveServers.Add(extensionServer.Configuration);
         }
 
-        var connectTasks = new List<Task<string?>>();
         foreach (var server in effectiveServers)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -134,16 +148,23 @@ public static class McpRuntime
 
             connection = CreateConnection(server);
             manager?.Register(server, connection, CreateConnection, Publish);
-            connectTasks.Add(ConnectServerAsync(server, connection, Publish, cancellationToken));
+            var task = ConnectServerAsync(server, connection, Publish, startup.CancellationToken);
+            startup.Add(server, task);
         }
 
-        if (connectTasks.Count > 0)
+        if (effectiveServers.Any(server => server.Enabled))
         {
-            var startup = Task.WhenAll(connectTasks);
-            var startupWait = Task.Delay(s_startupWait, cancellationToken);
-            _ = await Task.WhenAny(startup, startupWait);
-            if (startup.IsCompleted) errors.AddRange((await startup).OfType<string>());
-            else cancellationToken.ThrowIfCancellationRequested();
+            registration.AddToolCallHook(async (call, token) =>
+            {
+                await startup.WaitForToolCallAsync(call, token).ConfigureAwait(false);
+                return PiSharpToolCallDecision.Allow;
+            });
+            var result = await startup.WaitForServersAsync(startupWait, cancellationToken,
+                directOnly: !waitForAllServers).ConfigureAwait(false);
+            errors.AddRange(result.Errors);
+            if (result.TimedOut)
+                errors.AddRange(result.PendingServers.Select(name =>
+                    $"MCP server {name} is still connecting; its tools become available once connected."));
         }
 
         var ownedResourceNames = registration.GetOwnedToolNames(resourceOwner).ToHashSet(StringComparer.Ordinal);
@@ -153,6 +174,54 @@ public static class McpRuntime
                 resourceNames.Contains(tool.Function.Name) && !ownedResourceNames.Contains(tool.Function.Name)))
             errors.Add("MCP resource tools could not register because a tool name is already in use.");
         return errors;
+    }
+
+    /// <summary>Renders the enabled indirect servers and current summaries for model context.</summary>
+    public static string? RenderServerContext(IEnumerable<McpServerConfiguration> servers,
+        McpRuntimeManager? manager = null)
+    {
+        ArgumentNullException.ThrowIfNull(servers);
+        var listed = servers.Where(server => server.Enabled && HasIndirectTools(server))
+            .OrderBy(server => server.Name, StringComparer.Ordinal).ToArray();
+        if (listed.Length == 0) return null;
+        const int maximumSectionLength = 4096;
+        const int maximumSummaryLength = 250;
+        const string introduction = "MCP servers whose tools are not declared to you. Call the tools of `codemode` servers from codemode scripts: find them with `searchTools(query, { namespace })` and read a server's instructions and tool names with `describeNamespace(name)`. Load the tools of `tool_search` servers with `tool_search`.";
+        var heads = listed.Select(server =>
+        {
+            var exposures = ConfiguredExposures(server);
+            var route = exposures.Contains(McpToolExposure.Codemode) ||
+                exposures.Contains(McpToolExposure.CodemodeDeferred) ? "codemode" : "tool_search";
+            return "- mcp__" + server.Name + " (" + route + ")";
+        }).ToArray();
+        string Omitted(int count) => count == 0 ? "" :
+            $"- … {count} more server{(count == 1 ? "" : "s")}; find their tools with searchTools()";
+        int SectionLength(int kept)
+        {
+            var lines = new List<string> { introduction };
+            lines.AddRange(heads.Take(kept));
+            if (kept < listed.Length) lines.Add(Omitted(listed.Length - kept));
+            return string.Join('\n', lines).Length;
+        }
+
+        var kept = listed.Length;
+        while (kept > 0 && SectionLength(kept) > maximumSectionLength) kept--;
+        var summaryLimit = kept == 0 ? 0 : Math.Min(maximumSummaryLength,
+            (maximumSectionLength - SectionLength(kept)) / kept - 2);
+        var lines = new List<string> { introduction };
+        for (var index = 0; index < kept; index++)
+        {
+            var server = listed[index];
+            var summary = (server.Description?.Trim() ?? "");
+            if (summary.Length == 0) summary = manager?.GetServerInstructions(server.Name)?.Trim() ?? "";
+            summary = summary.Split(['\r', '\n'], 2)[0].Trim();
+            if (summaryLimit <= 1) summary = "";
+            else if (summary.Length > summaryLimit)
+                summary = summary[..(summaryLimit - 1)].TrimEnd() + "…";
+            lines.Add(summary.Length > 0 ? heads[index] + ": " + summary : heads[index]);
+        }
+        if (kept < listed.Length) lines.Add(Omitted(listed.Length - kept));
+        return string.Join('\n', lines);
     }
 
     private static async Task<string?> ConnectServerAsync(McpServerConfiguration server,
@@ -165,6 +234,10 @@ public static class McpRuntime
             deadline.CancelAfter(server.Timeout);
             await connection.ConnectAsync(deadline.Token);
             publish(server, connection);
+            return null;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
             return null;
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
@@ -183,6 +256,16 @@ public static class McpRuntime
             publish(server, connection);
             return "MCP server " + server.Name + " could not connect (" + error.GetType().Name + ").";
         }
+    }
+
+    private static HashSet<McpToolExposure> ConfiguredExposures(McpServerConfiguration server) =>
+        [server.Exposure, .. server.ToolExposure.Values];
+
+    private static bool HasIndirectTools(McpServerConfiguration server)
+    {
+        var exposures = ConfiguredExposures(server);
+        return exposures.Contains(McpToolExposure.Codemode) ||
+            exposures.Contains(McpToolExposure.CodemodeDeferred) || exposures.Contains(McpToolExposure.Deferred);
     }
 
     private static void RegisterServerTools(McpServerConfiguration server, McpServerConnection connection,

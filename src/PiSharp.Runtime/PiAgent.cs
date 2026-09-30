@@ -166,7 +166,8 @@ public sealed class PiAgent
         IReadOnlyList<PiSharpToolCallHook>? extensionToolCallHooks = null,
         IReadOnlyList<PiSharpToolResultHook>? extensionToolResultHooks = null,
         ExtensionRegistration? liveExtensionRegistration = null,
-        VirtualModelRequestRouter? virtualModelRequestRouter = null, ICodemodeModels? codemodeModels = null)
+        VirtualModelRequestRouter? virtualModelRequestRouter = null, ICodemodeModels? codemodeModels = null,
+        Func<string?>? getAdditionalSystemInstructions = null)
     {
         _codemodeModels = codemodeModels;
         _codingTools = tools;
@@ -252,7 +253,7 @@ public sealed class PiAgent
         _agent = new ChatClientAgent(new ObservedChatClient(_routedChatClient, value => _events?.Invoke(value),
             retryPolicy ?? ProviderRetryPolicy.Default, TakeSteeringForRequest, blockImages, ProjectForRequestAsync,
             supportsImages, () => Volatile.Read(ref _reasoning), () => _routedChatClient.HasRouter || Volatile.Read(ref _supportsImages) != 0,
-            _routedChatClient, GetToolsForRequest, _routedChatClient), new ChatClientAgentOptions
+            _routedChatClient, GetToolsForRequest, _routedChatClient, getAdditionalSystemInstructions), new ChatClientAgentOptions
             {
                 Name = "PiSharp",
                 ChatHistoryProvider = _history,

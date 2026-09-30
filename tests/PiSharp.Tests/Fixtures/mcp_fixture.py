@@ -3,6 +3,7 @@
 import json
 import os
 import sys
+import time
 
 
 def respond(request, result):
@@ -12,10 +13,22 @@ def respond(request, result):
 
 for line in sys.stdin:
     request = json.loads(line)
+    method = request.get("method")
+    if method == "exit":
+        break
     if "id" not in request:
         continue
-    method = request.get("method")
+    if method == "shutdown":
+        respond(request, {})
+        continue
     if method == "initialize":
+        started_path = os.getenv("MCP_FIXTURE_INITIALIZE_STARTED_PATH")
+        if started_path:
+            with open(started_path, "w", encoding="utf-8") as marker:
+                marker.write("started")
+        delay_ms = int(os.getenv("MCP_FIXTURE_INITIALIZE_DELAY_MS", "0"))
+        if delay_ms > 0:
+            time.sleep(delay_ms / 1000)
         capabilities = {"resources": {}}
         if os.getenv("MCP_FIXTURE_RESOURCES_ONLY") != "1":
             capabilities["tools"] = {}

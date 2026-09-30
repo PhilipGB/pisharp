@@ -39,6 +39,8 @@ internal sealed class ProjectRuntimeContext : IDisposable
     public ConversationStore Store { get; }
     public PiSessionImportService SessionImport { get; }
     public ProjectRuntimeConfiguration Configuration { get; }
+    private McpRuntimeManager McpManager { get; }
+    private IReadOnlyList<McpServerConfiguration> EffectiveMcpServers { get; }
 
     public string WorkingDirectory => Configuration.WorkingDirectory;
     public bool Trusted => Configuration.Trusted;
@@ -48,7 +50,8 @@ internal sealed class ProjectRuntimeContext : IDisposable
     private ProjectRuntimeContext(ProjectRuntimeConfiguration configuration,
         (string? System, string? Append) prompts, string instructions,
         ResourceCatalog resources, ExtensionCatalog extensions, ConversationStore store,
-        PiSessionImportService sessionImport)
+        PiSessionImportService sessionImport, McpRuntimeManager mcpManager,
+        IReadOnlyList<McpServerConfiguration> effectiveMcpServers)
     {
         Configuration = configuration;
         Prompts = prompts;
@@ -57,6 +60,8 @@ internal sealed class ProjectRuntimeContext : IDisposable
         Extensions = extensions;
         Store = store;
         SessionImport = sessionImport;
+        McpManager = mcpManager;
+        EffectiveMcpServers = effectiveMcpServers;
     }
 
     public static async Task<ProjectRuntimeContext> LoadAsync(ProjectRuntimeConfiguration configuration,
@@ -132,7 +137,7 @@ internal sealed class ProjectRuntimeContext : IDisposable
                     extensions.Registration.SetToolDefaultActive("codemode", true);
             }
             return new ProjectRuntimeContext(configuration, prompts, instructions,
-                resources, extensions, store, sessionImport);
+                resources, extensions, store, sessionImport, mcpManager, effectiveMcpServers);
         }
         catch
         {
@@ -158,6 +163,7 @@ internal sealed class ProjectRuntimeContext : IDisposable
             extensionToolResultHooks: Extensions.Registration.ToolResultHooks,
             virtualModelRequestRouter: virtualModelRequestRouter,
             codemodeModels: codemodeModels,
+            getAdditionalSystemInstructions: () => McpRuntime.RenderServerContext(EffectiveMcpServers, McpManager),
             // ProviderChatClientFactory applies retry.provider.maxRetries inside the SDK adapter.
             // Avoid adding PiAgent's independent fallback retry loop on top of that configured count.
             retryPolicy: ProviderRetryPolicy.None);

@@ -10,8 +10,6 @@ namespace PiSharp.Runtime.Codemode;
 public static class CodemodeBuiltin
 {
     private const int MaximumInlineDescriptionCharacters = 12 * 1024;
-    private const int MaximumNamespaceDescriptionCharacters = 1024;
-    private const int MaximumMcpNamespacesInDescription = 128;
 
     public static BuiltinExtensionDefinition Definition { get; } = new("codemode", Configure);
 
@@ -34,43 +32,12 @@ public static class CodemodeBuiltin
             "models.getModelOfType(type, provider, id) inspect catalogs; models.classify(model, context) invokes classifiers. " +
             "Only provider/id select authority. Check stopReason/errorMessage for provider failures. " +
             "store(key, value) and load(key) keep branch-local JSON state. The script can return a value. " +
-            "ALL_TOOLS lists every callable tool, including those omitted below. MCP namespaces are listed " +
-            "without their tool schemas; use searchTools with a namespace or describeNamespace for details. " +
+            "ALL_TOOLS lists every callable tool, including those omitted below. Use searchTools with a namespace " +
+            "or describeNamespace(name) to find MCP server tools and instructions; their schemas stay out of this description. " +
             "There are no host globals, " +
             "timers, imports, process or fetch. Execution is limited to 30 seconds, 32 MiB of guest heap " +
             "and 64 KiB of captured text output. A first line // @options: {\"max_output_tokens\":1000,\"timeout_ms\":1000} " +
             "sets the output budget or shortens the deadline; deadlines above 30 seconds use the safety ceiling.\n");
-        var mcpNamespaces = snapshot.Callable
-            .Where(tool => tool.Exposure != ToolExposure.Deferred && IsMcpNamespace(tool.Namespace))
-            .Select(tool => tool.Namespace!)
-            .GroupBy(toolNamespace => toolNamespace.Name, StringComparer.Ordinal)
-            .Select(group => group.First())
-            .OrderBy(toolNamespace => toolNamespace.Name, StringComparer.Ordinal)
-            .ToArray();
-        if (mcpNamespaces.Length > 0)
-        {
-            var namespaceListing = new StringBuilder("\nMCP server namespaces:");
-            var listed = 0;
-            foreach (var toolNamespace in mcpNamespaces.Take(MaximumMcpNamespacesInDescription))
-            {
-                var entry = new StringBuilder("\n### ").Append(toolNamespace.Name);
-                if (!string.IsNullOrWhiteSpace(toolNamespace.Description))
-                {
-                    var summary = toolNamespace.Description.Trim();
-                    if (summary.Length > MaximumNamespaceDescriptionCharacters)
-                        summary = summary[..MaximumNamespaceDescriptionCharacters] + "…";
-                    entry.Append('\n').Append(summary);
-                }
-                if (description.Length + namespaceListing.Length + entry.Length + 1 >
-                    MaximumInlineDescriptionCharacters) break;
-                namespaceListing.Append(entry);
-                listed++;
-            }
-            if (listed < mcpNamespaces.Length)
-                namespaceListing.Append("\nAdditional MCP namespaces are omitted here; use searchTools or describeNamespace.");
-            if (description.Length + namespaceListing.Length + 1 <= MaximumInlineDescriptionCharacters)
-                description.Append(namespaceListing).Append('\n');
-        }
         foreach (var tool in snapshot.Callable.Where(tool => tool.Exposure != ToolExposure.Deferred &&
                      !IsMcpNamespace(tool.Namespace)).Take(128))
         {

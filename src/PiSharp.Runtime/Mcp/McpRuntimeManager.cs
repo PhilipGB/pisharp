@@ -216,6 +216,8 @@ public sealed class McpRuntimeManager(string? agentDirectory = null)
         lock (_gate) return _servers.TryGetValue(name, out var entry) ? entry : null;
     }
 
+    internal string? GetServerInstructions(string name) => Find(name)?.Connection?.Instructions;
+
     private string FormatStatus()
     {
         ServerEntry[] servers;

@@ -50,7 +50,7 @@ public static class McpCommand
         var trusted = await new ProjectTrust(agentDirectory).GetAsync(cwd, cancellationToken) == true;
         var configuration = await McpConfiguration.LoadAsync(agentDirectory, cwd, trusted, cancellationToken);
         using var catalog = ExtensionCatalog.Load(agentDirectory, cwd, trusted, discover: false);
-        var failures = await McpRuntime.RegisterAsync(configuration, catalog, cwd, cancellationToken);
+        var failures = await McpRuntime.RegisterForStatusAsync(configuration, catalog, cwd, cancellationToken);
         var reports = configuration.Servers.Select(server =>
         {
             var problem = failures.FirstOrDefault(error => error.StartsWith("MCP server " + server.Name + " ",
@@ -67,7 +67,9 @@ public static class McpCommand
                 exposure = server.Exposure.ToString().ToLowerInvariant().Replace("codemodedeferred", "codemode-deferred", StringComparison.Ordinal),
                 transport = server.Command is null ? "http" : "stdio",
                 state = !server.Enabled ? "disabled" : problem?.Contains("needs authorization",
-                    StringComparison.Ordinal) == true ? "needs-auth" : problem is not null ? "failed" : "connected",
+                    StringComparison.Ordinal) == true ? "needs-auth" :
+                    problem?.Contains("still connecting", StringComparison.Ordinal) == true ? "connecting" :
+                    problem is not null ? "failed" : "connected",
                 tools,
                 error = problem
             };

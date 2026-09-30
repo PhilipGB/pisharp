@@ -2,11 +2,229 @@ using PiSharp.Runtime.Extensions;
 using PiSharp.Runtime.Mcp;
 using PiSharp.Runtime.Tools;
 using System.Net.Http;
+using System.Diagnostics;
 
 namespace PiSharp.Tests;
 
 public sealed class McpRuntimeLifecycleTests
 {
+    [Fact]
+    public async Task CodemodeOnlyMcpServerDoesNotHoldRuntimeStartup()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-mcp-indirect-startup-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            var fixture = Path.Combine(AppContext.BaseDirectory, "Fixtures", "mcp_fixture.py");
+            var startedPath = Path.Combine(root, "initialize-started");
+            await File.WriteAllTextAsync(Path.Combine(root, "mcp.json"),
+                System.Text.Json.JsonSerializer.Serialize(new
+                {
+                    mcpServers = new Dictionary<string, object>
+                    {
+                        ["slow"] = new
+                        {
+                            command = "python3",
+                            args = new[] { fixture },
+                            exposure = "codemode",
+                            timeout = 5,
+                            env = new Dictionary<string, string>
+                            {
+                                ["MCP_FIXTURE_INITIALIZE_DELAY_MS"] = "1200",
+                                ["MCP_FIXTURE_INITIALIZE_STARTED_PATH"] = startedPath
+                            }
+                        }
+                    }
+                }));
+
+            var configuration = await McpConfiguration.LoadAsync(root, root, false);
+            using var catalog = ExtensionCatalog.Load(root, root, false, discover: false);
+            var elapsed = Stopwatch.StartNew();
+            Assert.Empty(await McpRuntime.RegisterAsync(configuration, catalog, root));
+
+            Assert.True(elapsed.Elapsed < TimeSpan.FromMilliseconds(400),
+                $"Indirect MCP server held startup for {elapsed.ElapsedMilliseconds} ms.");
+            using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+            await ProcessTestHelpers.WaitForFileAsync(startedPath, deadline.Token);
+            while (!catalog.Registration.ToolDefinitions.Any(tool => tool.Function.Name == "mcp__slow__echo"))
+                await Task.Delay(10, deadline.Token);
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
+    public async Task CodemodeWaitsOnlyForTheServerNamedByItsScript()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-mcp-targeted-wait-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            var fixture = Path.Combine(AppContext.BaseDirectory, "Fixtures", "mcp_fixture.py");
+            var fastStarted = Path.Combine(root, "fast-started");
+            var slowStarted = Path.Combine(root, "slow-started");
+            await File.WriteAllTextAsync(Path.Combine(root, "mcp.json"),
+                System.Text.Json.JsonSerializer.Serialize(new
+                {
+                    mcpServers = new Dictionary<string, object>
+                    {
+                        ["fast"] = new
+                        {
+                            command = "python3",
+                            args = new[] { fixture },
+                            exposure = "codemode",
+                            timeout = 5,
+                            env = new Dictionary<string, string>
+                            {
+                                ["MCP_FIXTURE_INITIALIZE_DELAY_MS"] = "300",
+                                ["MCP_FIXTURE_INITIALIZE_STARTED_PATH"] = fastStarted
+                            }
+                        },
+                        ["slow"] = new
+                        {
+                            command = "python3",
+                            args = new[] { fixture },
+                            exposure = "codemode",
+                            timeout = 5,
+                            env = new Dictionary<string, string>
+                            {
+                                ["MCP_FIXTURE_INITIALIZE_DELAY_MS"] = "1600",
+                                ["MCP_FIXTURE_INITIALIZE_STARTED_PATH"] = slowStarted
+                            }
+                        }
+                    }
+                }));
+
+            var configuration = await McpConfiguration.LoadAsync(root, root, false);
+            using var catalog = ExtensionCatalog.Load(root, root, false, discover: false);
+            var startup = Stopwatch.StartNew();
+            Assert.Empty(await McpRuntime.RegisterAsync(configuration, catalog, root, CancellationToken.None,
+                manager: null, startupWait: TimeSpan.FromMilliseconds(75)));
+            Assert.True(startup.Elapsed < TimeSpan.FromMilliseconds(400),
+                $"Indirect server startup took {startup.ElapsedMilliseconds} ms.");
+
+            using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+            await ProcessTestHelpers.WaitForFileAsync(fastStarted, deadline.Token);
+            await ProcessTestHelpers.WaitForFileAsync(slowStarted, deadline.Token);
+            var hook = Assert.Single(catalog.Registration.ToolCallHooks);
+            var waitFast = Stopwatch.StartNew();
+            await hook(new PiSharpToolCallContext("codemode", "fast-call", null,
+                new Dictionary<string, object?>
+                {
+                    ["code"] = "return await tools.mcp__fast__echo({ value: 'ok' });"
+                }), deadline.Token);
+
+            Assert.True(waitFast.Elapsed < TimeSpan.FromMilliseconds(900),
+                $"Codemode waited for an unrelated MCP server for {waitFast.ElapsedMilliseconds} ms.");
+            Assert.Contains(catalog.Registration.ToolDefinitions, tool => tool.Function.Name == "mcp__fast__echo");
+            Assert.DoesNotContain(catalog.Registration.ToolDefinitions, tool => tool.Function.Name == "mcp__slow__echo");
+
+            await hook(new PiSharpToolCallContext("tool_search", "search-call", null,
+                new Dictionary<string, object?>()), deadline.Token);
+            Assert.Contains(catalog.Registration.ToolDefinitions, tool => tool.Function.Name == "mcp__slow__echo");
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
+    public async Task DirectMcpStartupWaitRemainsBoundedAndReportsPendingTools()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-mcp-direct-wait-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            var fixture = Path.Combine(AppContext.BaseDirectory, "Fixtures", "mcp_fixture.py");
+            var startedPath = Path.Combine(root, "initialize-started");
+            await File.WriteAllTextAsync(Path.Combine(root, "mcp.json"),
+                System.Text.Json.JsonSerializer.Serialize(new
+                {
+                    mcpServers = new Dictionary<string, object>
+                    {
+                        ["direct"] = new
+                        {
+                            command = "python3",
+                            args = new[] { fixture },
+                            exposure = "direct",
+                            timeout = 5,
+                            env = new Dictionary<string, string>
+                            {
+                                ["MCP_FIXTURE_INITIALIZE_DELAY_MS"] = "1600",
+                                ["MCP_FIXTURE_INITIALIZE_STARTED_PATH"] = startedPath
+                            }
+                        }
+                    }
+                }));
+
+            var configuration = await McpConfiguration.LoadAsync(root, root, false);
+            using var catalog = ExtensionCatalog.Load(root, root, false, discover: false);
+            var elapsed = Stopwatch.StartNew();
+            var errors = await McpRuntime.RegisterAsync(configuration, catalog, root, CancellationToken.None,
+                manager: null, startupWait: TimeSpan.FromMilliseconds(100));
+
+            Assert.Contains(errors, error => error.Contains("still connecting", StringComparison.Ordinal));
+            Assert.True(elapsed.Elapsed < TimeSpan.FromMilliseconds(500),
+                $"Direct MCP startup exceeded its configured bound: {elapsed.ElapsedMilliseconds} ms.");
+            Assert.DoesNotContain(catalog.Registration.ToolDefinitions, tool => tool.Function.Name == "mcp__direct__echo");
+            using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+            await ProcessTestHelpers.WaitForFileAsync(startedPath, deadline.Token);
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
+    public async Task CancellingAnIndirectMcpWaitAndDisposingTheCatalogCleansUpStartup()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-mcp-startup-cleanup-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        ExtensionCatalog? catalog = null;
+        try
+        {
+            var fixture = Path.Combine(AppContext.BaseDirectory, "Fixtures", "mcp_fixture.py");
+            var startedPath = Path.Combine(root, "initialize-started");
+            await File.WriteAllTextAsync(Path.Combine(root, "mcp.json"),
+                System.Text.Json.JsonSerializer.Serialize(new
+                {
+                    mcpServers = new Dictionary<string, object>
+                    {
+                        ["slow"] = new
+                        {
+                            command = "python3",
+                            args = new[] { fixture },
+                            exposure = "codemode",
+                            timeout = 20,
+                            env = new Dictionary<string, string>
+                            {
+                                ["MCP_FIXTURE_INITIALIZE_DELAY_MS"] = "1200",
+                                ["MCP_FIXTURE_INITIALIZE_STARTED_PATH"] = startedPath
+                            }
+                        }
+                    }
+                }));
+            var configuration = await McpConfiguration.LoadAsync(root, root, false);
+            catalog = ExtensionCatalog.Load(root, root, false, discover: false);
+            Assert.Empty(await McpRuntime.RegisterAsync(configuration, catalog, root, CancellationToken.None,
+                manager: null, startupWait: TimeSpan.FromMilliseconds(50)));
+            using var startupDeadline = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+            await ProcessTestHelpers.WaitForFileAsync(startedPath, startupDeadline.Token);
+
+            var hook = Assert.Single(catalog.Registration.ToolCallHooks);
+            using var callDeadline = new CancellationTokenSource(TimeSpan.FromMilliseconds(80));
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await hook(
+                new PiSharpToolCallContext("tool_search", "cancel-call", null, new Dictionary<string, object?>()),
+                callDeadline.Token));
+
+            var cleanup = Stopwatch.StartNew();
+            catalog.Dispose();
+            catalog = null;
+            Assert.True(cleanup.Elapsed < TimeSpan.FromSeconds(8),
+                $"MCP startup cleanup took {cleanup.ElapsedMilliseconds} ms.");
+        }
+        finally
+        {
+            catalog?.Dispose();
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
     [Fact]
     public async Task ExpiredHttpSessionRetriesTheToolCallOnANewSessionOnce()
     {

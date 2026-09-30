@@ -174,21 +174,11 @@ public sealed class McpRuntimeTests
             CodemodeBuiltin.Configure(catalog.Registration);
             Assert.Empty(await McpRuntime.RegisterAsync(configuration, catalog, root));
 
-            var registry = new PiSharpToolRegistry(catalog.Registration.ToolDefinitions);
-            var loadout = registry.CreateLoadout(["codemode"]);
-            var description = Assert.Single(loadout.Snapshot.Declared).Description;
-            Assert.Contains("mcp__docs", description);
-            Assert.Contains("Search the product manuals.", description);
-            Assert.Contains("mcp__tickets", description);
-            Assert.Contains("Find project tickets.", description);
-            Assert.DoesNotContain("Echo input text.", description);
-            Assert.DoesNotContain("mcp__docs__echo", description);
-            Assert.DoesNotContain("Use the docs server to find product behavior.", description);
+            var serverContext = McpRuntime.RenderServerContext(configuration.Servers);
+            Assert.Contains("- mcp__docs (codemode): Search the product manuals.", serverContext);
+            Assert.Contains("- mcp__tickets (codemode): Find project tickets.", serverContext);
+            Assert.DoesNotContain("Use the docs server to find product behavior.", serverContext);
 
-            var functions = catalog.Registration.ToolDefinitions.ToDictionary(
-                tool => tool.Function.Name, tool => tool.Function, StringComparer.Ordinal);
-            var context = PiSharpToolExecutionContext.CreateRoot(loadout, () => functions, _ => { },
-                "test", null, "codemode", new Dictionary<string, object?>());
             var script = "const docs=await describeNamespace('mcp__docs'); " +
                 "const tickets=await describeNamespace('mcp__tickets'); " +
                 "const searched=await searchTools('Echo input text.',{namespace:'mcp__docs'}); " +
@@ -197,6 +187,25 @@ public sealed class McpRuntimeTests
                 "let hiddenState='blocked'; try { await tools.mcp__docs__fail({}); hiddenState='called'; } catch {} " +
                 "text(JSON.stringify({docs,tickets,docValue:docResult.echo,ticketValue:ticketResult.echo," +
                 "searched:searched.map(tool=>tool.name),hiddenState}));";
+            var waitHook = Assert.Single(catalog.Registration.ToolCallHooks);
+            await waitHook(new PiSharpToolCallContext("codemode", "codemode-call", null,
+                new Dictionary<string, object?> { ["code"] = script }), CancellationToken.None);
+
+            var registry = new PiSharpToolRegistry(catalog.Registration.ToolDefinitions);
+            var loadout = registry.CreateLoadout(["codemode"]);
+            var description = Assert.Single(loadout.Snapshot.Declared).Description;
+            Assert.DoesNotContain("mcp__docs", description);
+            Assert.DoesNotContain("Search the product manuals.", description);
+            Assert.DoesNotContain("mcp__tickets", description);
+            Assert.DoesNotContain("Find project tickets.", description);
+            Assert.DoesNotContain("Echo input text.", description);
+            Assert.DoesNotContain("mcp__docs__echo", description);
+            Assert.DoesNotContain("Use the docs server to find product behavior.", description);
+
+            var functions = catalog.Registration.ToolDefinitions.ToDictionary(
+                tool => tool.Function.Name, tool => tool.Function, StringComparer.Ordinal);
+            var context = PiSharpToolExecutionContext.CreateRoot(loadout, () => functions, _ => { },
+                "test", null, "codemode", new Dictionary<string, object?>());
             var result = await CodemodeSandbox.ExecuteAsync(script, context,
                 new Dictionary<string, JsonElement>(), CancellationToken.None);
             Assert.True(result.Ok, result.Error);
