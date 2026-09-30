@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "plan_received": true,
-  "source_note": "Latest exact-head CI-verified PiSharp source is a989222d286e79777c3b50c0cb73842543a0ec7c / Linux CI 36779179425: restore, format, warnings-as-errors build and 1026/1026 tests, zero skips. The first nine current-Pi deltas (3dd803d7 Z.AI CN overflow, d2931ad3 Codemode image validation, 1c7e7df MCP namespace discovery, 7c9fe664 MCP OAuth client naming, 2bbfcca4 malformed Retry-After fallback, e029c3ed indirect MCP startup, 0582d9c1 wrapped-result previews, db6cc71d default-tool activation on reload, and b29db895 MCP identifier normalization) are complete. Two in-scope deltas remain: provider-login MCP auth and Anthropic workload identity federation. The next source task is queued after the docs-only checkpoint CI. Pi main 955cc6665ee3986c6a033db52200779310d10dfd; full 26-commit classification in docs/parity/fixtures/upstream-delta-audit-2026-09-30.md. Overall parity remains incomplete.",
+  "source_note": "Latest exact-head CI-verified PiSharp source is c558a1c9c8e65d3436aef150e2232402c4409476 / Linux CI 36783745437: restore, format, warnings-as-errors build and 1031/1031 tests, zero skips. The first ten current-Pi deltas (3dd803d7 Z.AI CN overflow, d2931ad3 Codemode image validation, 1c7e7df MCP namespace discovery, 7c9fe664 MCP OAuth client naming, 2bbfcca4 malformed Retry-After fallback, e029c3ed indirect MCP startup, 0582d9c1 wrapped-result previews, db6cc71d default-tool activation on reload, b29db895 MCP identifier normalization, and 91f9f3b5 provider-login MCP auth) are complete. One in-scope delta remains: Anthropic workload identity federation. The next source task is queued after the docs-only checkpoint CI. Pi main 955cc6665ee3986c6a033db52200779310d10dfd; full 26-commit classification in docs/parity/fixtures/upstream-delta-audit-2026-09-30.md. Overall parity remains incomplete.",
   "baseline": "earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035",
   "required_ids": [
     "feature-agent-multi-turn-and-streaming",
@@ -3718,11 +3718,11 @@
       "NO_BEHAVIOR_CHANGE": 8
     },
     "fixture": "docs/parity/fixtures/upstream-delta-audit-2026-09-30.md",
-    "next": "91f9f3b5dfd7a49dda90d6450de7313ba425b3ca",
-    "current_item": "91f9f3b5dfd7a49dda90d6450de7313ba425b3ca",
+    "next": "a9424cd43d242f32d31a3638bb7fe1305c20f72a",
+    "current_item": "a9424cd43d242f32d31a3638bb7fe1305c20f72a",
     "current_item_status": "queued_after_docs_checkpoint_ci",
-    "current_item_local_evidence": "The preceding delta b29db895 is complete at PiSharp source a989222d286e79777c3b50c0cb73842543a0ec7c / exact-head Linux CI 36779179425 (restore, format, warnings-as-errors build and 1026/1026 tests, zero skips). Fail-first config coverage reproduced acceptance of work-files/work_files; focused MCP tests pass 10/10. Server and tool identifiers now normalize to JavaScript-safe underscores, all sanitized tool-name collisions receive stable hash suffixes, config rejects normalized aliases, and configured servers override extension aliases. Provider-login MCP auth is the next oldest open delta after this docs-only checkpoint passes exact-head CI.",
-    "next_after_ci": "91f9f3b5dfd7a49dda90d6450de7313ba425b3ca",
+    "current_item_local_evidence": "The preceding delta 91f9f3b5 is complete at PiSharp source c558a1c9c8e65d3436aef150e2232402c4409476 / exact-head Linux CI 36783745437 (restore, format, warnings-as-errors build and 1031/1031 tests, zero skips). Provider-backed MCP auth resolves credentials on every HTTP request, preserves provider-owned OAuth refresh and persistence, rejects trusted-project and insecure non-loopback configurations, directs 401 responses to /login <provider>, and never writes credentials to mcp-auth.json. Focused MCP/provider tests pass 7/7. A normalized-namespace context-selection correction for delta b29db895 is included and covered at this exact head. The local full suite had two failures: the crash-recovery process test passed alone, and the Linux PTY theme timeout reproduced alone; exact-head CI passed. Anthropic workload identity federation is the next oldest open delta after this docs-only checkpoint passes exact-head CI.",
+    "next_after_ci": "a9424cd43d242f32d31a3638bb7fe1305c20f72a",
     "completed": [
       "3dd803d7e780fb04b815261b510f76bff563d46d",
       "d2931ad3d5bf6936fbdfa5dfc81fb32f875499b2",
@@ -3732,8 +3732,9 @@
       "e029c3ed0add2ba55cc9c68b2bc3920e56d32888",
       "0582d9c11da78c1812d4537af2d194f1dd060d26",
       "db6cc71dc7b69202dc560e71106bb9dfd454e758",
-      "b29db895c5c1b30b560a39fb9e4664508f1683de"
+      "b29db895c5c1b30b560a39fb9e4664508f1683de",
+      "91f9f3b5dfd7a49dda90d6450de7313ba425b3ca"
     ],
-    "ci_run": "36779179425"
+    "ci_run": "36783745437"
   }
 }
