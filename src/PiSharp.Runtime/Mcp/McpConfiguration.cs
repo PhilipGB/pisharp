@@ -75,7 +75,16 @@ public sealed record McpConfiguration(IReadOnlyList<McpServerConfiguration> Serv
                 }
                 if (!root.TryGetProperty("mcpServers", out listed)) return;
                 foreach (var entry in listed.EnumerateObject())
-                    try { servers[entry.Name] = Parse(entry.Name, entry.Value, path, scope); }
+                    try
+                    {
+                        var parsed = Parse(entry.Name, entry.Value, path, scope);
+                        var conflict = servers.Keys.FirstOrDefault(name => name != entry.Name &&
+                            McpToolIdentifiers.Namespace(name) == McpToolIdentifiers.Namespace(entry.Name));
+                        if (conflict is not null)
+                            errors.Add(path + $": MCP server {entry.Name} conflicts with configured server {conflict} " +
+                                "because both names use the same normalized namespace.");
+                        else servers[entry.Name] = parsed;
+                    }
                     catch (ArgumentException error) { errors.Add(path + ": " + error.Message); }
             }
             catch (Exception error) when (error is IOException or JsonException or InvalidDataException or UnauthorizedAccessException)

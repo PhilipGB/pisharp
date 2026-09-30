@@ -1,7 +1,5 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using System.Security.Cryptography;
-using System.Text;
 using Microsoft.Extensions.AI;
 using ModelContextProtocol.Client;
 using ModelContextProtocol.Protocol;
@@ -65,10 +63,11 @@ public static class McpRuntime
         }
 
         var effectiveServers = configuration.Servers.ToList();
-        var configuredNames = configuration.Servers.Select(server => server.Name).ToHashSet(StringComparer.Ordinal);
+        var configuredNames = configuration.Servers.Select(server => McpToolIdentifiers.Namespace(server.Name))
+            .ToHashSet(StringComparer.Ordinal);
         foreach (var extensionServer in registration.McpServers)
         {
-            if (configuredNames.Contains(extensionServer.Configuration.Name))
+            if (configuredNames.Contains(McpToolIdentifiers.Namespace(extensionServer.Configuration.Name)))
                 errors.Add($"MCP server \"{extensionServer.Configuration.Name}\" registered by " +
                     extensionServer.ExtensionPath + " is overridden by configured MCP settings.");
             else effectiveServers.Add(extensionServer.Configuration);
@@ -192,7 +191,7 @@ public static class McpRuntime
             var exposures = ConfiguredExposures(server);
             var route = exposures.Contains(McpToolExposure.Codemode) ||
                 exposures.Contains(McpToolExposure.CodemodeDeferred) ? "codemode" : "tool_search";
-            return "- mcp__" + server.Name + " (" + route + ")";
+            return "- " + McpToolIdentifiers.Namespace(server.Name) + " (" + route + ")";
         }).ToArray();
         string Omitted(int count) => count == 0 ? "" :
             $"- … {count} more server{(count == 1 ? "" : "s")}; find their tools with searchTools()";
@@ -277,15 +276,17 @@ public static class McpRuntime
             .Where(name => !ownedNames.Contains(name)).ToHashSet(StringComparer.Ordinal);
         var definitions = new List<PiSharpToolRegistration>();
         var renderers = new Dictionary<string, PiSharpToolRenderer>(StringComparer.Ordinal);
-        foreach (var tool in tools)
+        var toolNames = McpToolIdentifiers.CreateNames(server.Name, tools.Select(tool => tool.Name).ToArray(), taken);
+        for (var index = 0; index < tools.Count; index++)
         {
-            var name = NameFor(server.Name, tool.Name, taken);
+            var tool = tools[index];
+            var name = toolNames[index];
             taken.Add(name);
             var exposure = server.ExposureFor(tool.Name);
             var function = new McpToolFunction(tool, connection, name, server.Timeout);
             definitions.Add(new PiSharpToolRegistration(function, MapExposure(exposure),
                 DefaultActive: exposure == McpToolExposure.Direct,
-                Namespace: new PiSharpToolNamespace("mcp__" + server.Name,
+                Namespace: new PiSharpToolNamespace(McpToolIdentifiers.Namespace(server.Name),
                     server.Description?.Trim(), instructions?.Trim()),
                 AllowNestedInvocation: exposure is McpToolExposure.Codemode or McpToolExposure.CodemodeDeferred,
                 OutputSchema: tool.ProtocolTool.OutputSchema));
@@ -479,19 +480,6 @@ public static class McpRuntime
     {
         try { return await client.ListResourceTemplatesAsync(cancellationToken: cancellationToken); }
         catch (Exception error) when (error is not OperationCanceledException) { return []; }
-    }
-
-    private static string Sanitize(string name) => new(name.Select(character =>
-        char.IsAsciiLetterOrDigit(character) || character is '_' or '-' ? character : '_').ToArray());
-
-    private static string NameFor(string server, string tool, ISet<string> taken)
-    {
-        var name = Sanitize("mcp__" + server + "__" + tool);
-        if (name.Length <= 64 && !taken.Contains(name)) return name;
-        var hash = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(server + "\0" + tool)))[..8];
-        var shortened = name[..Math.Min(name.Length, 55)] + "_" + hash;
-        if (taken.Contains(shortened)) throw new InvalidDataException("MCP tool name collision: " + shortened);
-        return shortened;
     }
 
     private static string Expand(string value) => Regex.Replace(value, @"\$\{([A-Za-z_][A-Za-z0-9_]*)\}", match =>

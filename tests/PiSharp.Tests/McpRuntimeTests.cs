@@ -56,7 +56,7 @@ public sealed class McpRuntimeTests
             {
                 mcpServers = new Dictionary<string, object>
                 {
-                    ["fixture"] = new { command = "python3", args = new[] { fixture }, exposure = "direct" }
+                    ["my-fixture"] = new { command = "python3", args = new[] { fixture }, exposure = "direct" }
                 }
             }));
             var configuration = await McpConfiguration.LoadAsync(root, root, false);
@@ -66,13 +66,13 @@ public sealed class McpRuntimeTests
             Assert.Empty(errors);
 
             var echo = catalog.Registration.ToolDefinitions.Single(tool =>
-                tool.Function.Name == "mcp__fixture__echo");
+                tool.Function.Name == "mcp__my_fixture__echo");
             Assert.Equal(ToolExposure.Direct, echo.Exposure);
-            Assert.Equal("fixture", echo.Namespace?.Name["mcp__".Length..]);
-            var renderer = catalog.Registration.GetToolRenderer("mcp__fixture__echo");
+            Assert.Equal("mcp__my_fixture", echo.Namespace?.Name);
+            var renderer = catalog.Registration.GetToolRenderer("mcp__my_fixture__echo");
             Assert.NotNull(renderer);
             var arguments = new Dictionary<string, object?> { ["value"] = "hello" };
-            var renderContext = new PiSharpToolRenderContext("mcp__fixture__echo", "call", root,
+            var renderContext = new PiSharpToolRenderContext("mcp__my_fixture__echo", "call", root,
                 arguments, true, true, false, false, false);
             var callView = renderer.RenderCall!(arguments, renderContext);
             Assert.Contains("fixture/echo", TerminalToolPresentation.Render(callView!, null));
@@ -100,7 +100,7 @@ public sealed class McpRuntimeTests
             new ToolResultSchemaValidator(echo.OutputSchema).Validate(result);
 
             var fail = catalog.Registration.ToolDefinitions.Single(tool =>
-                tool.Function.Name == "mcp__fixture__fail");
+                tool.Function.Name == "mcp__my_fixture__fail");
             var failed = Assert.IsType<PiSharpToolResult>(await fail.Function.InvokeAsync(new AIFunctionArguments()));
             Assert.True(failed.IsError);
             Assert.Equal("fixture failure", failed.Text);
@@ -126,7 +126,7 @@ public sealed class McpRuntimeTests
             Assert.True(ToolResultOutput.TryReadContract(await read.Function.InvokeAsync(
                 new AIFunctionArguments(new Dictionary<string, object?>
                 {
-                    ["server"] = "fixture",
+                    ["server"] = "my-fixture",
                     ["uri"] = "fixture://note"
                 })), out var readResult));
             Assert.Equal("fixture resource", readResult.Text);

@@ -67,7 +67,7 @@ public sealed class McpRuntimeLifecycleTests
                 {
                     mcpServers = new Dictionary<string, object>
                     {
-                        ["fast"] = new
+                        ["fast-server"] = new
                         {
                             command = "python3",
                             args = new[] { fixture },
@@ -110,12 +110,12 @@ public sealed class McpRuntimeLifecycleTests
             await hook(new PiSharpToolCallContext("codemode", "fast-call", null,
                 new Dictionary<string, object?>
                 {
-                    ["code"] = "return await tools.mcp__fast__echo({ value: 'ok' });"
+                    ["code"] = "return await tools.mcp__fast_server__echo({ value: 'ok' });"
                 }), deadline.Token);
 
             Assert.True(waitFast.Elapsed < TimeSpan.FromMilliseconds(900),
                 $"Codemode waited for an unrelated MCP server for {waitFast.ElapsedMilliseconds} ms.");
-            Assert.Contains(catalog.Registration.ToolDefinitions, tool => tool.Function.Name == "mcp__fast__echo");
+            Assert.Contains(catalog.Registration.ToolDefinitions, tool => tool.Function.Name == "mcp__fast_server__echo");
             Assert.DoesNotContain(catalog.Registration.ToolDefinitions, tool => tool.Function.Name == "mcp__slow__echo");
 
             await hook(new PiSharpToolCallContext("tool_search", "search-call", null,

@@ -1,4 +1,3 @@
-using PiSharp.Runtime.Codemode;
 using PiSharp.Runtime.Extensions;
 
 namespace PiSharp.Runtime.Mcp;
@@ -83,9 +82,7 @@ internal sealed class McpStartupCoordinator : IAsyncDisposable
             code.Contains("describeNamespace", StringComparison.Ordinal) ||
             code.Contains("describeTool", StringComparison.Ordinal) ||
             code.Contains("ALL_TOOLS", StringComparison.Ordinal)) return true;
-        var namespaceName = "mcp__" + name;
-        return code.Contains(namespaceName, StringComparison.Ordinal) ||
-            code.Contains(CodemodeToolCatalog.JavascriptIdentifier(namespaceName), StringComparison.Ordinal);
+        return code.Contains(McpToolIdentifiers.Namespace(name), StringComparison.Ordinal);
     }
 
     public async ValueTask DisposeAsync()

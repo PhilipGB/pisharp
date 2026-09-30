@@ -98,4 +98,27 @@ public sealed class McpConfigurationTests
         }
         finally { Directory.Delete(root, recursive: true); }
     }
+
+    [Fact]
+    public async Task NormalizedNamespaceCollisionKeepsFirstConfiguredServer()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-mcp-namespace-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(root, "mcp.json"), """
+                {"mcpServers":{
+                  "work-files":{"command":"first"},
+                  "work_files":{"command":"second"}
+                }}
+                """);
+
+            var loaded = await McpConfiguration.LoadAsync(root, root, false);
+
+            Assert.Equal("work-files", Assert.Single(loaded.Servers).Name);
+            Assert.Contains(loaded.Errors, error => error.Contains("work_files", StringComparison.Ordinal));
+            Assert.DoesNotContain("second", string.Join(' ', loaded.Errors));
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
 }

@@ -86,6 +86,12 @@ public sealed class ExtensionRegistration
         var parsed = McpConfiguration.Parse(name, configuration, owner, "extension");
         lock (_mcpGate)
         {
+            var namespaceConflict = _mcpServers.Values.FirstOrDefault(existing =>
+                existing.Configuration.Name != name &&
+                McpToolIdentifiers.Namespace(existing.Configuration.Name) == McpToolIdentifiers.Namespace(name));
+            if (namespaceConflict is not null)
+                throw new InvalidOperationException($"MCP server {name} conflicts with registered server " +
+                    $"{namespaceConflict.Configuration.Name} because both names use the same normalized namespace.");
             if (_mcpServers.TryGetValue(name, out var existing) && existing.ExtensionPath != owner)
                 throw new InvalidOperationException($"MCP server {name} is already registered by extension {existing.ExtensionPath}.");
             _mcpServers[name] = new(parsed, owner);
