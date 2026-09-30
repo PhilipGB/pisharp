@@ -1,0 +1,17 @@
+import {pathToFileURL} from 'node:url';
+import path from 'node:path';
+import fs from 'node:fs/promises';
+const root=process.argv[2];
+const {executeCodemode}=await import(pathToFileURL(path.join(root,'packages/coding-agent/src/extensions/codemode/execute.ts')).href);
+const {createBashToolDefinition}=await import(pathToFileURL(path.join(root,'packages/coding-agent/src/core/tools/bash.ts')).href);
+const bytes=Number(process.argv[3]),exitCode=Number(process.argv[4]);
+const command=`printf start; printf '%${bytes}s' '' | tr ' ' a; printf tail; exit ${exitCode}`;
+const code="const r=await tools.bash({command:"+JSON.stringify(command)+"});text([r.output.length,r.truncated,r.exit_code,r.output.startsWith('start'),r.output.endsWith('tail'),typeof r.wall_time_seconds,typeof r.full_output_path]);";
+const tool=createBashToolDefinition('/tmp');
+let bashError=false;
+const paths=[];
+const original=tool.execute;
+tool.execute=async(...args)=>{const result=await original(...args);bashError=!!result.isError;if(result.details?.fullOutputPath)paths.push(result.details.fullOutputPath);return result;};
+const result=await executeCodemode('script',{code},undefined,undefined,{tools:[tool],sessionManager:{getBranch:()=>[]},executeTool:async(name,args)=>{const result=await tool.execute('bash',args);return {toolCall:{id:'bash',name,arguments:args},result,isError:!!result.isError};}},{tools:true});
+console.log(JSON.stringify({output:result.content.filter(x=>x.type==='text').map(x=>x.text).filter(x=>x.startsWith('[')).join('\n').trim(),isError:!!result.isError,bashError}));
+for(const file of paths)await fs.unlink(file);

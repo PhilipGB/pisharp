@@ -209,15 +209,20 @@ public sealed class AgentIntegrationTests
             Assert.Equal("recovered", text);
             Assert.Equal(2, client.Requests);
             Assert.NotNull(client.Result);
-            Assert.NotNull(client.Result.Exception);
-            Assert.Contains("code 7", client.Result.Exception.Message);
-            Assert.Contains("output-before-failure", client.Result.Exception.Message);
+            Assert.Null(client.Result.Exception);
+            Assert.Contains("code 7", client.Result.Result?.ToString());
+            Assert.Contains("output-before-failure", client.Result.Result?.ToString());
             var store = new ConversationStore(cwd, Path.Combine(cwd, "sessions"));
             var path = store.NewPath(conversation);
             await store.SaveAsync(conversation, path);
             var reloaded = await store.LoadAsync(path);
-            Assert.Contains(reloaded.ActiveMessages().SelectMany(m => m.Contents), c =>
-                c is FunctionResultContent { CallId: "fail-1", Exception: not null });
+            var savedResult = Assert.Single(reloaded.ActiveMessages().SelectMany(m => m.Contents).OfType<FunctionResultContent>(),
+                result => result.CallId == "fail-1");
+            Assert.Null(savedResult.Exception);
+            Assert.True(PiSharp.Runtime.Tools.ToolResultOutput.TryReadContract(savedResult.Result, out var contract));
+            Assert.True(contract.IsError);
+            Assert.Equal(7, contract.StructuredContent!.Value.GetProperty("exit_code").GetInt32());
+            Assert.Contains("output-before-failure", contract.StructuredContent.Value.GetProperty("output").GetString());
             var resumed = new FailureContinuationClient();
             var continuation = await ConversationRun.OpenAsync(new PiAgent(resumed, new CodingTools(cwd)), reloaded);
             await foreach (var _ in continuation.RunStreamingAsync("continue after failure")) { }
@@ -345,7 +350,8 @@ public sealed class AgentIntegrationTests
             ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             SawFailure = messages.SelectMany(m => m.Contents).OfType<FunctionResultContent>()
-                .Any(result => result.CallId == "fail-1" && result.Exception is not null);
+                .Any(result => result.CallId == "fail-1" && result.Result?.ToString()?.Contains("code 7", StringComparison.Ordinal) == true &&
+                    result.Result.ToString()!.Contains("output-before-failure", StringComparison.Ordinal));
             yield return new ChatResponseUpdate(ChatRole.Assistant, "resumed");
             await Task.CompletedTask;
         }

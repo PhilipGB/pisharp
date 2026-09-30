@@ -1,0 +1,50 @@
+{
+  "reference": "3e9451238337071b74ba5cdd53f1ab7cf4100ae8",
+  "cases": [
+    {
+      "bytes": 100000,
+      "exitCode": 7,
+      "match": true,
+      "pi": {
+        "output": "[100009,false,7,true,true,\"number\",\"undefined\"]",
+        "isError": false,
+        "bashError": true
+      },
+      "pisharp": {
+        "output": "[100009,false,7,true,true,\"number\",\"undefined\"]",
+        "isError": false,
+        "bashError": true
+      }
+    },
+    {
+      "bytes": 1048567,
+      "exitCode": 0,
+      "match": true,
+      "pi": {
+        "output": "[1048576,false,0,true,true,\"number\",\"undefined\"]",
+        "isError": false,
+        "bashError": false
+      },
+      "pisharp": {
+        "output": "[1048576,false,0,true,true,\"number\",\"undefined\"]",
+        "isError": false,
+        "bashError": false
+      }
+    },
+    {
+      "bytes": 1100000,
+      "exitCode": 0,
+      "match": true,
+      "pi": {
+        "output": "[1048609,true,0,true,true,\"number\",\"string\"]",
+        "isError": false,
+        "bashError": false
+      },
+      "pisharp": {
+        "output": "[1048609,true,0,true,true,\"number\",\"string\"]",
+        "isError": false,
+        "bashError": false
+      }
+    }
+  ]
+}

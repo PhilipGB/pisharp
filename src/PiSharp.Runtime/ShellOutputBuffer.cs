@@ -136,6 +136,36 @@ public sealed class ShellOutputBuffer : IAsyncDisposable
         finally { _gate.Release(); }
     }
 
+    internal async Task<(string Content, bool Truncated)> ReadFullOutputAsync(int maxBytes)
+    {
+        await _gate.WaitAsync();
+        try
+        {
+            if (_full is not null) await _full.FlushAsync();
+            if (_fullPath is null) return (Encoding.UTF8.GetString(_prefix.ToArray()), false);
+            await using var file = new FileStream(_fullPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite,
+                8192, FileOptions.Asynchronous);
+            if (file.Length <= maxBytes)
+            {
+                var bytes = new byte[(int)file.Length];
+                await file.ReadExactlyAsync(bytes);
+                return (Encoding.UTF8.GetString(bytes), false);
+            }
+            var head = new byte[maxBytes / 2];
+            var tail = new byte[maxBytes - head.Length];
+            await file.ReadExactlyAsync(head);
+            file.Position = file.Length - tail.Length;
+            await file.ReadExactlyAsync(tail);
+            var chars = new char[Encoding.UTF8.GetMaxCharCount(head.Length)];
+            var count = Encoding.UTF8.GetDecoder().GetChars(head, chars, flush: false);
+            var tailStart = 0;
+            while (tailStart < tail.Length && (tail[tailStart] & 0xc0) == 0x80) tailStart++;
+            return (new string(chars, 0, count) + $"\n\n[... {file.Length - maxBytes} bytes omitted ...]\n\n" +
+                Encoding.UTF8.GetString(tail.AsSpan(tailStart)), true);
+        }
+        finally { _gate.Release(); }
+    }
+
     private int TotalLines => _decodedBytes == 0 ? 0 : _newlines + (_endsWithNewline ? 0 : 1);
     private long LastLineBytes
         => _currentLineBytes;

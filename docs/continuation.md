@@ -2,6 +2,10 @@
 
 `TODO.md` is the concise implementation handoff. The feature matrix tracks scope, the detailed inventory records interfaces, and `execution-ledger.json` holds per-capability evidence. Pi Packages remain excluded unless a core capability depends on them.
 
+## Bash structured-output checkpoint awaiting publication
+
+Tool-batch source `e827b64920598e41d6c9107f421fd6dd90298fd2` passes exact-head CI [36693692336](https://github.com/PhilipGB/pisharp/actions/runs/36693692336), 982/982 tests, zero skips/warnings/errors. Bash now declares a structured result with up to 1 MiB head/tail output, exit/truncation/time metadata, while model display stays bounded at 50 KiB/2,000 lines. Nonzero exits retain returned error contracts and resolve programmatic data through Codemode. Fail-first real VM cases, UTF-8/exact cap coverage, three paired current-Pi cases and 63 focused checks pass; final format/build and full 986/986 tests pass. Publish/verify exact-head CI, then close material Codemode source-options/output handling and move to extension lifecycle/context transforms and provider/auth/catalog work. Full parity remains incomplete.
+
 ## Tool-batch checkpoint awaiting publication
 
 Typed image catalog source `ed96381b8324cd522ae26cfa485b4272fff512c9` passes exact-head CI [36692202838](https://github.com/PhilipGB/pisharp/actions/runs/36692202838), including 974/974 tests with zero skips and zero-warning/error build. Tool-batch termination now waits for all finalized root siblings and stops only when every result requests termination. The fail-first provider-loop test, 38 focused checks and ten paired current-Pi sequential/parallel projections pass; format/zero-warning build and full 982/982 tests pass. Publish and verify exact-head CI, then implement Bash's 1 MiB structured output contract for Codemode while preserving the existing model display bounds and sandbox limits. Full parity remains incomplete.

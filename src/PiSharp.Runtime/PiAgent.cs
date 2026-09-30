@@ -222,7 +222,8 @@ public sealed class PiAgent
         var configuredTools = builtin.Cast<AITool>().Concat(external.Select(registration => (AITool)registration.Function)).ToArray();
         var defaultBuiltinNames = new HashSet<string>(["read", "bash", "edit", "write"], StringComparer.Ordinal);
         _builtinRegistrations = builtin.Select(function => new PiSharpToolRegistration(function,
-                DefaultActive: defaultBuiltinNames.Contains(function.Name)))
+                DefaultActive: defaultBuiltinNames.Contains(function.Name),
+                OutputSchema: function.Name == "bash" ? BashToolOutput.Schema : null))
             .ToArray();
         var allRegistrations = _builtinRegistrations.Concat(external).ToArray();
         _toolRegistry = new PiSharpToolRegistry(allRegistrations);

@@ -10,4 +10,4 @@ Deterministic provider-loop checks cover four flag combinations, mixed then all-
 
 Pi's canonical toolResult messages omit the transient termination flag; PiSharp retains it as extra canonical/interchange metadata. This bounded shape difference does not alter provider-facing results or batch continuation. Broader orchestration/extension/provider/auth and final audit work remains.
 
-Final format verification and warnings-as-errors build pass with zero warnings/errors; full solution tests pass 982/982 with zero skips. Exact-head publication/CI is pending.
+Final format verification and warnings-as-errors build pass with zero warnings/errors; full solution tests pass 982/982 with zero skips. Source `e827b64920598e41d6c9107f421fd6dd90298fd2` passes exact-head CI [36693692336](https://github.com/PhilipGB/pisharp/actions/runs/36693692336): restore, format, zero-warning/error build and 982/982 tests with zero skips.

@@ -245,7 +245,7 @@ public sealed class CodingTools
     }
 
     [Description("Execute a bash command in the current working directory. Returns stdout and stderr. Output is truncated to the last 2000 lines or 50KB, whichever is hit first. If truncated, full output is saved to a temp file. The shell receives PI_SESSION_ID, PI_SESSION_FILE when saved, PI_PROVIDER, PI_MODEL and PI_REASONING_LEVEL for the current run.")]
-    private Task<string> BashForTool(
+    private async Task<Extensions.PiSharpToolResult> BashForTool(
         [Description("Shell command to execute.")] string command,
         [Description("Optional timeout in seconds; no default timeout.")] double? timeout = null,
         AIFunctionArguments? arguments = null,
@@ -254,7 +254,9 @@ public sealed class CodingTools
         Action<string>? onUpdate = null;
         if (arguments?.Context?.TryGetValue(BashOutputContextKey, out var value) == true)
             onUpdate = value as Action<string>;
-        return BashToolAsync(command, timeout, onUpdate, cancellationToken, CurrentBashSessionEnvironment());
+        var result = await BashCoreAsync(command, timeout, onUpdate, cancellationToken, returnCancellationResult: false,
+            CurrentBashSessionEnvironment(), captureStructuredOutput: true);
+        return BashToolOutput.Project(result);
     }
 
     /// <summary>Execute bash in the configured working directory, returning the bounded combined output.</summary>
@@ -290,7 +292,7 @@ public sealed class CodingTools
     private async Task<BashExecutionResult> BashCoreAsync(string command, double? timeout, Action<string>? onUpdate,
         CancellationToken cancellationToken, bool returnCancellationResult,
         IReadOnlyDictionary<string, string?>? sessionEnvironment = null, bool normalizeOutput = false,
-        bool throttleUpdates = true)
+        bool throttleUpdates = true, bool captureStructuredOutput = false)
     {
         if (timeout.HasValue && (!double.IsFinite(timeout.Value) || timeout.Value <= 0))
             throw new ToolFailureException("Invalid timeout: must be a finite number of seconds");
@@ -315,6 +317,7 @@ public sealed class CodingTools
         using var updates = new BashOutputUpdates(onUpdate, throttleUpdates);
         long lastOutputTicks = Stopwatch.GetTimestamp();
         var started = false;
+        var startTime = Stopwatch.GetTimestamp();
         Task? stdout = null;
         Task? stderr = null;
         try
@@ -336,8 +339,10 @@ public sealed class CodingTools
             updates.Complete();
             var result = await output.FinishWithMetadataAsync();
             var cancelled = returnCancellationResult && (cancellationToken.IsCancellationRequested || abortSource.IsCancellationRequested);
+            var structured = captureStructuredOutput ? await output.ReadFullOutputAsync(BashToolOutput.MaximumBytes) : default;
             return new(result.Output, result.DisplayOutput, cancelled ? null : process.ExitCode, cancelled,
-                result.Truncated, result.FullOutputPath);
+                result.Truncated, result.FullOutputPath, structured.Content, structured.Truncated,
+                Math.Round(Stopwatch.GetElapsedTime(startTime).TotalSeconds, 1, MidpointRounding.AwayFromZero));
         }
         catch (OperationCanceledException) when (started)
         {

@@ -54,8 +54,15 @@ public sealed class JsonEventModeTests
                 Assert.Contains(records, record => record.RootElement.GetProperty("data").GetProperty("Type").GetString() == "tool_execution_finished" &&
                     record.RootElement.GetProperty("data").GetProperty("IsError").GetBoolean());
                 Assert.DoesNotContain(records, record => record.RootElement.GetProperty("data").GetProperty("Type").GetString() == "model_content_update");
-                Assert.Contains(conversation.ActiveMessages().SelectMany(message => message.Contents), content =>
-                    content is FunctionResultContent { Exception: not null });
+                var result = Assert.Single(conversation.ActiveMessages().SelectMany(message => message.Contents).OfType<FunctionResultContent>());
+                Assert.Null(result.Exception);
+                Assert.True(PiSharp.Runtime.Tools.ToolResultOutput.TryReadContract(result.Result, out var contract));
+                Assert.True(contract.IsError);
+                Assert.Equal(7, contract.StructuredContent!.Value.GetProperty("exit_code").GetInt32());
+                var restored = ConversationSession.Parse(conversation.ToJson());
+                var saved = Assert.Single(restored.ActiveMessages().SelectMany(message => message.Contents).OfType<FunctionResultContent>());
+                Assert.True(PiSharp.Runtime.Tools.ToolResultOutput.TryReadContract(saved.Result, out var persisted));
+                Assert.True(persisted.IsError);
             }
             finally { foreach (var record in records) record.Dispose(); }
         }

@@ -58,7 +58,7 @@ Codemode model/classifier globals and nested usage/cost passed exact-head CI at 
 
 ## Exact next action
 
-Publish/verify the tool-batch termination follow-up: fail-first all-terminating sibling coverage, 38 focused checks, ten paired current-Pi sequential/parallel projections, format/zero-warning build and full 982/982 tests pass. Then implement Bash's declared structured output contract with the current Pi 1 MiB programmatic output cap while retaining the bounded 50 KiB/2,000-line model display. Preserve nonzero exit resolution for structured Codemode callers and error lifecycle for the model. Continue material extension/provider/auth/catalog work and the fresh full current-Pi audit. Upstream fetched `3e9451238337071b74ba5cdd53f1ab7cf4100ae8`; intervening MCP guidance/link and renderer example commits do not alter the model/tool boundary.
+Tool-batch termination source `e827b64920598e41d6c9107f421fd6dd90298fd2` passes exact-head CI `36693692336` / 982 tests. Bash structured-output follow-up now passes 63 focused checks, three paired current-Pi process cases, format/zero-warning build and full 986/986 tests with zero skips; publish and verify exact-head CI. Then audit Codemode optional source settings/output truncation against the existing sandbox protection requirements and implement the material contract without weakening isolation. Continue broader extension lifecycle/context-transform registration, provider/auth/catalog work and the fresh full current-Pi audit. Pi pin: `3e9451238337071b74ba5cdd53f1ab7cf4100ae8`. Overall parity is incomplete.
 
 ## Architecture and residuals to preserve
 
