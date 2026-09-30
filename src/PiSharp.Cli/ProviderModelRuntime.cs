@@ -1,4 +1,5 @@
 using System.Text.Json;
+using PiSharp.Runtime.Classifiers;
 using PiSharp.Runtime.Providers;
 using PiSharp.Runtime.Sessions;
 using PiSharp.Runtime.VirtualModels;
@@ -9,7 +10,7 @@ public sealed record ProviderProfile(string Id, string Name, Uri Endpoint, bool 
     bool OAuthSupported, string? ApiKeyEnvironment, string? ConfiguredApiKey,
     IReadOnlyList<ModelDescriptor> Models, string? Api = null, JsonElement? Compatibility = null,
     AzureOpenAiProviderOptions? AzureOpenAi = null, bool ApiKeySupported = true,
-    GoogleVertexProviderOptions? GoogleVertex = null, BedrockProviderOptions? Bedrock = null);
+    GoogleVertexProviderOptions? GoogleVertex = null, BedrockProviderOptions? Bedrock = null, IReadOnlyList<ClassifierModel>? Classifiers = null);
 
 public sealed record ModelSelection(ProviderProfile Provider, ModelDescriptor Model, string ApiKey,
     bool Authenticated, string AuthSource,
@@ -84,6 +85,7 @@ public sealed class ProviderModelRuntime
         IReadOnlyList<string>? scope = null, CancellationToken cancellationToken = default, bool offline = false)
     {
         var providers = BuiltinProviderProfiles.Create(environment);
+        ClassifierCatalog.AddBuiltins(providers, environment);
         var configuredEndpoint = environment("PISHARP_BASE_URL");
         if (includeLocal || configuredEndpoint is not null)
         {
@@ -161,6 +163,7 @@ public sealed class ProviderModelRuntime
         var result = new List<ModelDescriptor>();
         foreach (var provider in providers)
         {
+            if (provider.Models.Count == 0 && provider.Classifiers?.Count > 0) continue;
             var auth = await ResolveAuthAsync(provider.Id, useRuntimeOverride: providerId is not null, cancellationToken);
             var providerModels = provider.Models;
             if (provider.Id == "radius" && !_offline)
@@ -262,6 +265,9 @@ public sealed class ProviderModelRuntime
             _providers.ContainsKey("custom") ? "custom" : "openai");
         var reference = inferredReference ?? explicitProvider.Models.FirstOrDefault()?.Id ?? _virtualModels?.List(explicitProvider.Id).FirstOrDefault()?.Id;
         if (string.IsNullOrWhiteSpace(reference)) throw new InvalidOperationException($"Provider '{explicitProvider.Id}' has no models.");
+        if (explicitProvider.Classifiers?.Any(item => item.Id.Equals(reference, StringComparison.OrdinalIgnoreCase)) == true &&
+            !explicitProvider.Models.Any(item => item.Id.Equals(reference, StringComparison.OrdinalIgnoreCase)))
+            throw new ArgumentException($"Model '{explicitProvider.Id}/{reference}' is a classifier and cannot be selected for chat.");
         if (_virtualModels?.Get(explicitProvider.Id, reference) is { } virtualModel)
         {
             var virtualAuth = await ResolveAuthAsync(explicitProvider.Id, useRuntimeOverride: true, cancellationToken);

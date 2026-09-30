@@ -1,4 +1,5 @@
 using System.Globalization;
+using PiSharp.Runtime.Classifiers;
 using System.Text.Json;
 using PiSharp.Runtime.Providers;
 using PiSharp.Runtime.Sessions;
@@ -48,13 +49,14 @@ internal static class ProviderProfileLoader
             var api = String(value, "api") ?? existing?.Api;
             var compatibility = ModelMetadataJson.ReadObject(value, "compat", $"models.json provider '{item.Name}'", strict: true);
             var models = new List<ModelDescriptor>();
+            var classifiers = new List<ClassifierModel>();
             var seenModels = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             if (value.TryGetProperty("models", out var array) && array.ValueKind == JsonValueKind.Array)
                 foreach (var model in array.EnumerateArray())
                 {
                     if (model.ValueKind != JsonValueKind.Object || string.IsNullOrWhiteSpace(String(model, "id")))
                         throw new InvalidDataException($"Provider '{item.Name}' has an invalid model.");
-                    if (!seenModels.Add(String(model, "id")!))
+                    if (!seenModels.Add((String(model, "type") ?? "chat") + ":" + String(model, "id")!))
                         throw new InvalidDataException($"Provider '{item.Name}' has duplicate model IDs.");
                     var id = String(model, "id")!;
                     var defaults = existing?.Models.FirstOrDefault(candidate => candidate.Id.Equals(id, StringComparison.Ordinal));
@@ -68,6 +70,11 @@ internal static class ProviderProfileLoader
                         modelBaseUrl = modelEndpoint.ToString().TrimEnd('/');
                     }
                     var source = $"models.json provider '{item.Name}' model '{id}'";
+                    if (String(model, "type") == "classifier")
+                    {
+                        classifiers.Add(ClassifierCatalog.Parse(canonicalId, model, defaultEndpoint: endpoint));
+                        continue;
+                    }
                     models.Add(new(id, defaults?.Owner ?? canonicalId,
                         PositiveInt(model, "contextWindow") ?? PositiveInt(model, "context_length") ?? defaults?.ContextLength ?? 128000,
                         "configured", Boolean(model, "reasoning") ?? defaults?.Reasoning ?? false,
@@ -117,7 +124,7 @@ internal static class ProviderProfileLoader
                  models.Any(model => model.Api is not null &&
                      !string.Equals(model.Api, existing.Api, StringComparison.Ordinal))))
                 throw new InvalidDataException("The built-in radius provider must retain its Pi Messages protocol and credential environment.");
-            foreach (var reserved in providers.Values.Where(profile => profile.Id is "openai" or "openrouter" or "mistral" or "xai" or "anthropic" or "azure-openai-responses" or "openai-codex" or "google" or "google-vertex" or "radius"))
+            foreach (var reserved in providers.Values.Where(profile => ClassifierCatalog.IsBuiltinProvider(profile.Id) || profile.Id is "openai" or "openrouter" or "mistral" or "xai" or "anthropic" or "azure-openai-responses" or "openai-codex" or "google" or "google-vertex" or "radius"))
                 if (apiKeyEnvironment?.Equals(reserved.ApiKeyEnvironment, StringComparison.OrdinalIgnoreCase) == true &&
                     (!item.Name.Equals(reserved.Id, StringComparison.OrdinalIgnoreCase) || !SameEndpoint(endpoint, reserved.Endpoint)))
                     throw new InvalidDataException($"Provider '{item.Name}' cannot borrow {reserved.ApiKeyEnvironment}; use its own credential environment variable.");
@@ -130,7 +137,8 @@ internal static class ProviderProfileLoader
                 endpoint, authHeader, existing?.OAuthSupported ?? false, apiKeyEnvironment,
                 String(value, "apiKey"), models.Count == 0 ? existing?.Models ?? [] : models, api, compatibility,
                 existing?.AzureOpenAi, ApiKeySupported: existing?.ApiKeySupported ?? true,
-                GoogleVertex: existing?.GoogleVertex, Bedrock: existing?.Bedrock);
+                GoogleVertex: existing?.GoogleVertex, Bedrock: existing?.Bedrock,
+                Classifiers: classifiers.Count > 0 ? classifiers : existing?.Classifiers);
         }
     }
 
