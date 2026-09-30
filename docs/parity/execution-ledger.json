@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "plan_received": true,
-  "source_note": "Latest exact-head CI-verified PiSharp source is 336be83135a0b18393bfaa41f7f826a34314f6eb / Linux CI 36756672893: restore, format, warnings-as-errors build and 1006/1006 tests, zero skips. The first four current-Pi deltas (3dd803d7 Z.AI CN overflow, d2931ad3 Codemode image validation, 1c7e7df MCP namespace discovery and 7c9fe664 MCP OAuth client naming) are complete. Four in-scope deltas remain; next is 2bbfcca4 malformed Retry-After fallback. Pi main db6cc71dc7b69202dc560e71106bb9dfd454e758; full classification in docs/parity/fixtures/upstream-delta-audit-2026-09-30.md. Overall parity remains incomplete.",
+  "source_note": "Latest exact-head CI-verified PiSharp source is 336be83135a0b18393bfaa41f7f826a34314f6eb / Linux CI 36756672893: restore, format, warnings-as-errors build and 1006/1006 tests, zero skips. The first four current-Pi deltas (3dd803d7 Z.AI CN overflow, d2931ad3 Codemode image validation, 1c7e7df MCP namespace discovery and 7c9fe664 MCP OAuth client naming) are complete. The fifth delta (2bbfcca4 malformed Retry-After fallback) passes fail-first loopback cases, focused 6/6, format, warnings-as-errors build and full 1009/1009 local tests with zero skips; source publication and exact-head CI are pending. Four in-scope deltas remain including the current item. Pi main db6cc71dc7b69202dc560e71106bb9dfd454e758; full classification in docs/parity/fixtures/upstream-delta-audit-2026-09-30.md. Overall parity remains incomplete.",
   "baseline": "earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035",
   "required_ids": [
     "feature-agent-multi-turn-and-streaming",
@@ -198,7 +198,7 @@
         "src/PiSharp.Runtime/Sessions/ConversationRun.cs: bounded lifecycle stream runs queued text prompts as later MAF turns, emits per-turn completion and one run completion/settlement, and preserves canonical session history.",
         "src/PiSharp.Cli/Protocols/RpcMode.cs: an RPC prompt received during streaming queues into the active application run rather than claiming completion or starting a competing run.",
         "tests/PiSharp.Tests/AgentIntegrationTests.cs, AgentLifecycleTests.cs, RpcModeTests.cs: deterministic fake-provider coverage for streamed text/tools/results, tool continuation, retry, partial failure, interruption, queued multi-turn session history, and RPC workflow.",
-        "Current Pi delta 3dd803d7 is complete: exact-head Linux CI 36746011211 passed restore, format, warnings-as-errors build and 1000/1000 tests with zero skips after the fail-first overflow regression. Delta 2bbfcca4 (malformed Retry-After fallback) remains open. See docs/parity/fixtures/upstream-delta-audit-2026-09-30.md."
+        "Current Pi delta 3dd803d7 (Z.AI CN overflow) is exact-head verified at CI 36746011211. Delta 2bbfcca4 (malformed Retry-After fallback) now represents invalid/non-finite server delays as absent; fail-first loopback tests verify the exponential retry, cancellation and preservation of server-delay caps. Focused tests pass 6/6, full local suite passes 1009/1009, and format/build are clean; source publication and exact-head CI remain. See docs/parity/fixtures/upstream-delta-audit-2026-09-30.md."
       ],
       "evidence": [
         "Pinned upstream 002fc8385268300ca91a5fc95f935c2afbbdac02 inspected at packages/coding-agent/docs/how-pi-works.md and packages/agent/src/{agent-loop.ts,agent.ts}: provider response -> tools/results -> continuation, queued later turns, partial/error hard exit, and session transcript model were used as the behavioral reference.",
@@ -213,7 +213,8 @@
         "Scope note: this verifies this ledger slice through PiSharp application behavior; it does not claim byte-for-byte Pi protocol parity or distinct steering/follow-up semantics, which remain separate tasks.",
         "ProviderChatClientFactoryTests and ProviderRetryChatClientTests exercise provider-level transient status/header behavior and ensure a streamed request is not replayed after its first update; the paired current-Pi retry helper and settings tests are recorded in settings-provider-retry-delay-baseline.md. This remains bounded adapter evidence, not broad retry parity.",
         "Current Pi 3dd803d7 Z.AI CN error: a new CompactionTests theory vector failed before the classifier update (one request rather than two), then passed after the narrow message match; focused 8/8, full suite 1000/1000 with TERM=xterm-256color, zero skips. Exact-head CI for the fix is pending.",
-        "Exact-head Linux CI run 36746011211 for source 2550531a7f4813e9f10abce4241cbffc28f2ea7c passed restore, format, warnings-as-errors build and 1000/1000 tests, zero skips."
+        "Exact-head Linux CI run 36746011211 for source 2550531a7f4813e9f10abce4241cbffc28f2ea7c passed restore, format, warnings-as-errors build and 1000/1000 tests, zero skips.",
+        "Fail-first OpenAI Responses loopback cases measured immediate second requests after Retry-After not-a-date/Infinity (7-119 ms). After invalid dates return no server delay, both cases wait for exponential fallback; a cancellation case verifies an in-progress malformed-header fallback is cancelled without a retry. Existing server-delay maximum coverage still rejects the second request. Focused filter passes 6/6; format and warnings-as-errors build pass; full local suite 1009/1009 with zero skips. Exact-head CI pending."
       ],
       "dependencies": []
     },
@@ -3717,8 +3718,8 @@
     "fixture": "docs/parity/fixtures/upstream-delta-audit-2026-09-30.md",
     "next": "2bbfcca437c3aa5a21af1e4ee44ae7a051f953ad",
     "current_item": "2bbfcca437c3aa5a21af1e4ee44ae7a051f953ad",
-    "current_item_status": "queued",
-    "current_item_local_evidence": "Queued after exact-head verification of MCP OAuth client naming at PiSharp source 336be83135a0b18393bfaa41f7f826a34314f6eb / CI 36756672893.",
+    "current_item_status": "implemented_locally_ci_pending",
+    "current_item_local_evidence": "Fail-first provider-loop tests observed immediate second requests (7-119 ms) for not-a-date and Infinity Retry-After. Invalid date now selects exponential fallback. Invalid and non-finite loopback cases, malformed-header cancellation, and the existing maximum-server-delay behavior pass; focused 6/6, format, warnings-as-errors build, and full local 1009/1009 with zero skips. Commit/push and exact-head CI pending.",
     "next_after_ci": "e029c3ed0add2ba55cc9c68b2bc3920e56d32888",
     "completed": [
       "3dd803d7e780fb04b815261b510f76bff563d46d",

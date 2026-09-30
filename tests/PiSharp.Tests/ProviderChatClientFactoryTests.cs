@@ -310,6 +310,47 @@ public sealed class ProviderChatClientFactoryTests
         Assert.Equal(1, requests);
     }
 
+    [Theory]
+    [InlineData("not-a-date")]
+    [InlineData("Infinity")]
+    public async Task InvalidRetryAfterUsesExponentialFallbackInsteadOfRetryingImmediately(string retryAfter)
+    {
+        using var listener = StartLoopbackListener(out var port);
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(8));
+        var requests = 0;
+        var secondRequestDelayMs = 0L;
+        var startedAt = System.Diagnostics.Stopwatch.GetTimestamp();
+        var server = Task.Run(async () =>
+        {
+            for (var attempt = 0; attempt < 2; attempt++)
+            {
+                var request = await listener.GetContextAsync().WaitAsync(deadline.Token);
+                Interlocked.Increment(ref requests);
+                if (attempt == 1)
+                    secondRequestDelayMs = (long)System.Diagnostics.Stopwatch.GetElapsedTime(startedAt).TotalMilliseconds;
+                request.Response.StatusCode = 429;
+                request.Response.Headers[HttpResponseHeader.RetryAfter] = retryAfter;
+                request.Response.ContentType = "application/json";
+                await using var writer = new StreamWriter(request.Response.OutputStream);
+                await writer.WriteAsync("{\"error\":{\"message\":\"rate limited\"}}");
+                await writer.FlushAsync();
+                request.Response.Close();
+            }
+            listener.Stop();
+        });
+
+        var selection = Selection("fixture", $"http://127.0.0.1:{port}/v1", "openai-responses");
+        await Assert.ThrowsAnyAsync<Exception>(() => ProviderChatClientFactory.Create(selection,
+            new ProviderRetrySettings(MaxRetries: 1))
+            .GetResponseAsync([new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User, "hello")],
+                cancellationToken: deadline.Token));
+        await server.WaitAsync(deadline.Token);
+
+        Assert.Equal(2, requests);
+        Assert.True(secondRequestDelayMs >= 300,
+            $"The retry arrived after {secondRequestDelayMs}ms instead of using exponential backoff.");
+    }
+
     [Fact]
     public async Task ProviderRetryCanRestartAStreamBeforeItsFirstUpdate()
     {
@@ -394,8 +435,10 @@ public sealed class ProviderChatClientFactoryTests
         Assert.Contains("rate limited", error.Message);
     }
 
-    [Fact]
-    public async Task DisabledProviderRetryDelayLimitWaitRemainsCancellable()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ProviderRetryDelayWaitRemainsCancellable(bool malformedRetryAfter)
     {
         using var listener = StartLoopbackListener(out var port);
         using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(6));
@@ -406,7 +449,10 @@ public sealed class ProviderChatClientFactoryTests
             var request = await listener.GetContextAsync().WaitAsync(deadline.Token);
             Interlocked.Increment(ref requests);
             request.Response.StatusCode = 429;
-            request.Response.Headers["Retry-After-Ms"] = "5000";
+            if (malformedRetryAfter)
+                request.Response.Headers[HttpResponseHeader.RetryAfter] = "not-a-date";
+            else
+                request.Response.Headers["Retry-After-Ms"] = "5000";
             request.Response.ContentType = "application/json";
             await using var writer = new StreamWriter(request.Response.OutputStream);
             await writer.WriteAsync("{\"error\":{\"message\":\"rate limited\"}}");

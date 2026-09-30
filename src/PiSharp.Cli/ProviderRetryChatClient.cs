@@ -163,7 +163,7 @@ internal static class ProviderRequestRetryPolicy
         if (DateTimeOffset.TryParse(retryAfter, CultureInfo.InvariantCulture,
             DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var date))
             return (date - DateTimeOffset.UtcNow).TotalMilliseconds;
-        return 0;
+        return null;
     }
 
     public static double GetBackoffDelay(int retryIndex) =>
