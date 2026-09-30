@@ -58,7 +58,7 @@ Codemode model/classifier globals and nested usage/cost passed exact-head CI at 
 
 ## Exact next action
 
-Tool-batch termination source `e827b64920598e41d6c9107f421fd6dd90298fd2` passes exact-head CI `36693692336` / 982 tests. Bash structured-output follow-up now passes 63 focused checks, three paired current-Pi process cases, format/zero-warning build and full 986/986 tests with zero skips; publish and verify exact-head CI. Then audit Codemode optional source settings/output truncation against the existing sandbox protection requirements and implement the material contract without weakening isolation. Continue broader extension lifecycle/context-transform registration, provider/auth/catalog work and the fresh full current-Pi audit. Pi pin: `3e9451238337071b74ba5cdd53f1ab7cf4100ae8`. Overall parity is incomplete.
+Bash structured-output source `18a85c45ac151d479b34f67564e49e053ade5d40` passes exact-head CI `36697970500` / 986 tests. Codemode source-options/output-budget follow-up passes 44 focused checks, format/zero-warning build and full 999/999 tests with zero skips; publish/verify exact-head CI. Then implement public per-request extension context transforms with ordered handlers, canonical-history isolation, continuation invocation, system prompt preservation and cancellation/error evidence. Current sandbox runtime/heap/captured-output ceiling differences from Pi remain explicitly recorded for final audit. Continue extension lifecycle/provider/auth/catalog work and the full current-Pi audit. Pi pin: `3e9451238337071b74ba5cdd53f1ab7cf4100ae8`. Overall parity is incomplete.
 
 ## Architecture and residuals to preserve
 

@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Text;
+using System.Text.Json;
 using Microsoft.Extensions.AI;
 using PiSharp.Runtime.Extensions;
 
@@ -30,7 +31,8 @@ public static class CodemodeBuiltin
             "store(key, value) and load(key) keep branch-local JSON state. The script can return a value. " +
             "ALL_TOOLS lists every callable tool, including those omitted below. There are no host globals, " +
             "timers, imports, process or fetch. Execution is limited to 30 seconds, 32 MiB of guest heap " +
-            "and 64 KiB of text output.\n");
+            "and 64 KiB of captured text output. A first line // @options: {\"max_output_tokens\":1000,\"timeout_ms\":1000} " +
+            "sets the output budget or shortens the deadline; deadlines above 30 seconds use the safety ceiling.\n");
         foreach (var tool in snapshot.Callable.Where(tool => tool.Exposure != ToolExposure.Deferred).Take(128))
         {
             var sample = CodemodeToolCatalog.RenderToolSample(tool);
@@ -53,9 +55,12 @@ public static class CodemodeBuiltin
         cancellationToken.ThrowIfCancellationRequested();
         if (result.Ok && result.Store is not null) context.SetCodemodeStore(result.Store);
         var usage = CodemodeUsageAccounting.Aggregate(context.NestedUsage);
-        return result.Ok
-            ? new PiSharpToolResult(result.Text, new { sandbox = "quickjs-wasm" }, Images: result.Images, Usage: usage.Usage, Cost: usage.Cost)
-            : new PiSharpToolResult(result.Text.Length > 0 ? result.Text + "\n" + result.Error : result.Error ?? "Codemode failed.",
-                new { sandbox = "quickjs-wasm" }, IsError: true, Error: result.Error, Images: result.Images, Usage: usage.Usage, Cost: usage.Cost);
+        var text = result.Ok ? result.Text : result.Text.Length > 0 ? result.Text + "\n" + result.Error : result.Error ?? "Codemode failed.";
+        long budget = 10000;
+        try { budget = CodemodeSource.Parse(code).MaxOutputTokens; }
+        catch (Exception error) when (error is ArgumentException or JsonException or InvalidOperationException) { }
+        var rendered = await CodemodeOutputBudget.ApplyAsync(text, budget, cancellationToken);
+        return new PiSharpToolResult(rendered.Text, new { sandbox = "quickjs-wasm", fullOutputPath = rendered.FullOutputPath },
+            IsError: !result.Ok, Error: result.Error, Images: result.Images, Usage: usage.Usage, Cost: usage.Cost);
     }
 }

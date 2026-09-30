@@ -25,6 +25,13 @@ internal static class CodemodeSandbox
         if (code.Length is 0 or > MaximumCodeCharacters)
             return new(false, "", $"Codemode source must be 1 to {MaximumCodeCharacters} characters.");
 
+        CodemodeSource source;
+        try { source = CodemodeSource.Parse(code); }
+        catch (Exception error) when (error is ArgumentException or JsonException or InvalidOperationException)
+        {
+            return new(false, "", "Invalid Codemode @options/source: " + error.Message);
+        }
+        code = source.Code;
         var worker = Path.Combine(AppContext.BaseDirectory, "Codemode", "Engine", "worker.mjs");
         if (!File.Exists(worker)) return new(false, "", "Codemode worker assets are unavailable.");
         var tools = context.Snapshot.Callable.Where(tool => tool.Function.Name != "codemode")
@@ -35,7 +42,7 @@ internal static class CodemodeSandbox
                 description = CodemodeToolCatalog.RenderToolSample(tool)
             }).ToArray();
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        deadline.CancelAfter(TimeSpan.FromSeconds(30));
+        deadline.CancelAfter(source.TimeoutMilliseconds);
         var token = deadline.Token;
         using var process = new Process
         {
@@ -140,7 +147,7 @@ internal static class CodemodeSandbox
         catch (OperationCanceledException)
         {
             return new(false, "", cancellationToken.IsCancellationRequested
-                ? "Codemode was cancelled." : "Codemode timed out after 30 seconds.");
+                ? "Codemode was cancelled." : $"Codemode timed out after {source.TimeoutMilliseconds} ms.");
         }
         catch (Exception error) when (error is JsonException or IOException or InvalidOperationException)
         {

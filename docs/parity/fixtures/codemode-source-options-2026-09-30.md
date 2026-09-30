@@ -1,0 +1,9 @@
+# Codemode source options — 2026-09-30
+
+Reference: Pi `3e9451238337071b74ba5cdd53f1ab7cf4100ae8`, packages/codemode/src/source.ts and coding-agent/src/extensions/codemode/execute.ts.
+
+Eight fail-first real VM cases reproduced ignored invalid directives, ignored output budgets and ignored host-call deadlines. CodemodeSource validates an optional first-line JSON directive with max_output_tokens and timeout_ms, rejects unknown fields, unsafe/fractional/negative integers and missing code, and preserves source line numbers. CodemodeSandbox applies the requested deadline to both VM and host callbacks. CodemodeOutputBudget applies Pi's four-character token estimate and default 10,000 tokens to successful/error text, keeps head/tail text, preserves images and writes full output to a private temporary file with details metadata. Successful truncation retains branch-local store updates.
+
+Focused Codemode checks pass 44/44: invalid source, valid whitespace/CRLF, safe-integer limits, zero output budget parsing, runtime cancellation of a blocked host callback, exact head/tail output and full-output content. Existing model/classifier/Bash/sandbox tests remain green. Final format verification and warnings-as-errors build pass with zero warnings/errors; full solution tests pass 999/999 with zero skips. Publication/exact-head CI is pending.
+
+The existing safety ceilings remain: 30 seconds, 32 MiB guest heap and 64 KiB captured text. Requested longer deadlines use the documented ceiling. Pi uses 256 MiB and unlimited default runtime, with wider captured-output semantics; those remain a material audit question under the user's requirement to preserve sandbox protections. This checkpoint closes source parsing, shortening deadlines and token-budget truncation, not full sandbox parity. Extension lifecycle/context transforms and provider/auth/catalog capability work remain next; broader goal is incomplete.

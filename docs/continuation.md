@@ -2,6 +2,10 @@
 
 `TODO.md` is the concise implementation handoff. The feature matrix tracks scope, the detailed inventory records interfaces, and `execution-ledger.json` holds per-capability evidence. Pi Packages remain excluded unless a core capability depends on them.
 
+## Codemode source-options checkpoint awaiting publication
+
+`18a85c45ac151d479b34f67564e49e053ade5d40` passes exact-head CI [36697970500](https://github.com/PhilipGB/pisharp/actions/runs/36697970500), 986/986 tests, zero skips/warnings/errors. Codemode source parsing now rejects invalid directives, supports output budgets and shortening deadlines, spills truncated output privately, and retains store/images/usage. Eight fail-first cases and 44 focused checks pass; final format/zero-warning build and full 999/999 tests pass. Publish/verify exact-head CI, then implement the missing public extension context-transform contract with provider-loop continuation/canonical-isolation evidence. Sandbox runtime/heap/captured-output differences remain explicit and broader parity is incomplete.
+
 ## Bash structured-output checkpoint awaiting publication
 
 Tool-batch source `e827b64920598e41d6c9107f421fd6dd90298fd2` passes exact-head CI [36693692336](https://github.com/PhilipGB/pisharp/actions/runs/36693692336), 982/982 tests, zero skips/warnings/errors. Bash now declares a structured result with up to 1 MiB head/tail output, exit/truncation/time metadata, while model display stays bounded at 50 KiB/2,000 lines. Nonzero exits retain returned error contracts and resolve programmatic data through Codemode. Fail-first real VM cases, UTF-8/exact cap coverage, three paired current-Pi cases and 63 focused checks pass; final format/build and full 986/986 tests pass. Publish/verify exact-head CI, then close material Codemode source-options/output handling and move to extension lifecycle/context transforms and provider/auth/catalog work. Full parity remains incomplete.
