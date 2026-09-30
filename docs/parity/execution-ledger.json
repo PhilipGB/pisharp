@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "plan_received": true,
-  "source_note": "Latest exact-head CI-verified PiSharp source is ee71fc63905044abbeaa2dd0e134a54fbd797f20 / Linux CI 36749258733: restore, format, warnings-as-errors build and 1003/1003 tests, zero skips. Documentation checkpoint de0ed343cdf40e7d818faeb39a222f7ece38a226 also passes exact-head CI 36749920606. The first two current-Pi deltas (3dd803d7 Z.AI CN overflow and d2931ad3 Codemode image validation) are complete. The third delta (1c7e7df MCP namespace discovery) passes fail-first, focused 16/16, format, warnings-as-errors build and full 1004/1004 tests with zero skips; source publication and exact-head CI are pending. Six in-scope deltas remain; after 1c7e7df CI, continue with 7c9fe664 MCP OAuth client naming. Pi main db6cc71dc7b69202dc560e71106bb9dfd454e758; full classification in docs/parity/fixtures/upstream-delta-audit-2026-09-30.md. Overall parity remains incomplete.",
+  "source_note": "Latest exact-head CI-verified PiSharp source is f61455a21c359ec1af704c8b093f1d209db3cb51 / Linux CI 36753858082: restore, format, warnings-as-errors build and 1004/1004 tests, zero skips. The first three current-Pi deltas (3dd803d7 Z.AI CN overflow, d2931ad3 Codemode image validation and 1c7e7df MCP namespace discovery) are complete. Five in-scope deltas remain; next is 7c9fe664 MCP OAuth client naming. Pi main db6cc71dc7b69202dc560e71106bb9dfd454e758; full classification in docs/parity/fixtures/upstream-delta-audit-2026-09-30.md. Overall parity remains incomplete.",
   "baseline": "earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035",
   "required_ids": [
     "feature-agent-multi-turn-and-streaming",
@@ -3497,7 +3497,7 @@
         "Successful scripts publish a bounded branch-local store snapshot, restored after tree navigation, native/Pi JSONL import/export and resume. Node.js 22.19+ is a runtime dependency; CI pins Node 24.",
         "ICodemodeModels supplies identity-only model catalog/classifier callbacks through the existing process bridge. Shared nested-call ordering, bounded classifier concurrency and usage ledger retain paid classifier/tool usage on later script failure, aggregate Codemode result cost and persist separate usage records.",
         "Typed image catalogs now include all 57 pinned OpenRouter image models separately from chat/classifier entries, with validated configured models and credential-gated metadata reads; image generation remains a separate capability.",
-        "Current Pi delta d2931ad3 is implemented and verified at exact head ee71fc63905044abbeaa2dd0e134a54fbd797f20 / CI 36749258733. The next delta 1c7e7df is implemented locally: MCP server summaries and initialize instructions flow into namespace metadata; the Codemode description lists namespaces without MCP tool schemas or instructions; describeNamespace returns bounded metadata and callable names. Exact-head CI remains pending. See the 2026-09-30 upstream delta fixture."
+        "Current Pi deltas d2931ad3 (Codemode image validation) and 1c7e7df (MCP namespace discovery) are implemented and exact-head verified: source f61455a21c359ec1af704c8b093f1d209db3cb51 / Linux CI 36753858082 passes restore, format, warnings-as-errors build and 1004/1004 tests, zero skips. MCP descriptions list provider-safe server namespaces and configured summaries without tool schemas or instructions; bounded describeNamespace returns instructions and callable names. Continue with 7c9fe664 MCP OAuth client naming; see the 2026-09-30 upstream delta fixture."
       ],
       "evidence": [
         "Current Pi Codemode uses an isolated QuickJS/WASM worker and is now resolved as builtin:codemode at 4259686d9290c0d73ae7192b796aee3e530a9779. The previous pin da19b63 package tests passed 57/57; the current refresh did not rerun the full Codemode suite.",
@@ -3507,7 +3507,7 @@
         "Tool-batch e827b64 / CI 36693692336 verified 982/982; Bash structured-output follow-up implements declared-schema results with 1 MiB programmatic cap, separate bounded display and nonzero returned errors. Two fail-first real VM cases, UTF-8/exact cap and persistence/error recovery checks, three paired current-Pi process projections and 63 focused checks pass; local format/build/full 986/986 pass, publication pending. See fixtures/codemode-bash-structured-2026-09-30.md.",
         "Bash source 18a85c4 / CI 36697970500 verified 986/986. Source-options/output-budget follow-up has eight fail-first cases and 44 focused checks, private head/tail spill and requested shorter deadline cancellation; format/build/full 999/999 pass locally, publication pending. Existing 30s/32MiB/64KiB sandbox ceilings remain explicit differences requiring final audit, not silently claimed full parity.",
         "Codemode image-validation source ee71fc63905044abbeaa2dd0e134a54fbd797f20 exact-head CI 36749258733 passes restore, format, zero-warning/error build and 1003/1003 tests with zero skips; fail-first provider-loop evidence and 10/10 focused CodemodeTests recorded in docs/parity/fixtures/upstream-delta-audit-2026-09-30.md.",
-        "Fail-first two-server MCP stdio fixture showed configured descriptions missing from the Codemode model-facing description. The fixed end-to-end fixture verifies two namespace summaries/instructions, namespace-filtered search, nested calls and hidden-tool exclusion; a separate configuration assertion verifies codemode-deferred alias canonicalization. Focused Codemode/MCP/config tests pass 16/16; format and warnings-as-errors build pass; full local suite passes 1004/1004 with zero skips. Source commit/push and exact-head CI pending."
+        "Fail-first two-server MCP stdio fixture verified provider-safe namespace summaries, bounded instructions and callable tool metadata, namespace-filtered search, nested calls and hidden-tool exclusion; a separate configuration assertion verifies codemode-deferred alias canonicalization. Focused Codemode/MCP/config tests pass 16/16; full local suite passes 1004/1004 with zero skips. Exact-head Linux CI on f61455a21c359ec1af704c8b093f1d209db3cb51 / run 36753858082 passes restore, format, warnings-as-errors build and 1004/1004 tests with zero skips."
       ],
       "dependencies": [
         "tool-exposure-loadout",
@@ -3714,15 +3714,16 @@
       "NO_BEHAVIOR_CHANGE": 5
     },
     "fixture": "docs/parity/fixtures/upstream-delta-audit-2026-09-30.md",
-    "next": "1c7e7df765a6fe542d24906756ee981bf7bb84c4",
-    "current_item": "1c7e7df765a6fe542d24906756ee981bf7bb84c4",
-    "current_item_status": "implemented_locally_ci_pending",
-    "current_item_local_evidence": "Fail-first two-server stdio test reproduced missing configured MCP summaries in the Codemode model description; focused Codemode/MCP/config 16/16; format clean; warnings-as-errors build 0 warnings/errors; full 1004/1004, 0 skipped under TERM=xterm-256color.",
-    "next_after_ci": "7c9fe66452de9689223e3b490939f014c6e94e52",
+    "next": "7c9fe66452de9689223e3b490939f014c6e94e52",
+    "current_item": "7c9fe66452de9689223e3b490939f014c6e94e52",
+    "current_item_status": "queued",
+    "current_item_local_evidence": "Queued next after exact-head verification of MCP namespace discovery at PiSharp source f61455a21c359ec1af704c8b093f1d209db3cb51 / CI 36753858082.",
+    "next_after_ci": "2bbfcca437c3aa5a21af1e4ee44ae7a051f953ad",
     "completed": [
       "3dd803d7e780fb04b815261b510f76bff563d46d",
-      "d2931ad3d5bf6936fbdfa5dfc81fb32f875499b2"
+      "d2931ad3d5bf6936fbdfa5dfc81fb32f875499b2",
+      "1c7e7df765a6fe542d24906756ee981bf7bb84c4"
     ],
-    "ci_run": "36749920606"
+    "ci_run": "36753858082"
   }
 }
