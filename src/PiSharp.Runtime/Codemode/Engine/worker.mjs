@@ -67,12 +67,41 @@ const prelude = `(function(bridge, toolsJson, storeJson, hasModels) {
     error: (...args) => output(args.map(value => typeof value === 'string' ? value : JSON.stringify(value)).join(' '))
   }) });
   Object.defineProperty(globalThis, 'exit', { value: () => { throw EXIT; } });
+  const imageSignatures = [
+    ['image/png', data => data.startsWith('iVBORw0KGg')],
+    ['image/jpeg', data => data.startsWith('/9j/') && data[4] !== '9'],
+    ['image/gif', data => data.startsWith('R0lGODlh') || data.startsWith('R0lGODdh')],
+    ['image/webp', data => data.startsWith('UklG') && data.slice(12, 16) === 'RUJQ']
+  ];
   Object.defineProperty(globalThis, 'image', { value: value => {
     const url = typeof value === 'string' ? value : value?.image_url;
     if (typeof url !== 'string') throw new TypeError('image expects a base64 data URL');
-    const match = new RegExp('^data:(image/(?:png|jpeg|gif|webp));base64,([A-Za-z0-9+/=]+)$').exec(url);
-    if (!match || match[2].length > 4194304) throw new TypeError('image expects a supported base64 data URL up to 4 MiB');
-    bridge('image', match[2], match[1]);
+    const comma = url.indexOf(',');
+    const header = comma < 0 ? '' : url.slice(0, comma).toLowerCase();
+    if (!header.startsWith('data:') || !header.slice(5).split(';').includes('base64'))
+      throw new TypeError('image expects a supported base64 data URL up to 4 MiB');
+    const data = url.slice(comma + 1).replace(/\\s+/g, '');
+    if (data.length > 4194304) throw new TypeError('image expects a supported base64 data URL up to 4 MiB');
+    if (data.length === 0 || data.length % 4 !== 0) throw new TypeError('image data is not valid base64');
+    let padding = false;
+    let padCount = 0;
+    let dataCharacters = 0;
+    for (const character of data) {
+      if (character === '=') {
+        padding = true;
+        if (++padCount > 2) throw new TypeError('image data is not valid base64');
+      } else {
+        const code = character.charCodeAt(0);
+        if (padding || !(code >= 65 && code <= 90 || code >= 97 && code <= 122 ||
+            code >= 48 && code <= 57 || character === '+' || character === '/'))
+          throw new TypeError('image data is not valid base64');
+        dataCharacters++;
+      }
+    }
+    if (dataCharacters === 0) throw new TypeError('image data is not valid base64');
+    const detected = imageSignatures.find(([, matches]) => matches(data));
+    if (!detected) throw new TypeError('image data is not a PNG, JPEG, GIF, or WebP image');
+    bridge('image', data, detected[0]);
   } });
   Object.defineProperty(globalThis, 'searchTools', { value: (query, options) => new Promise((resolve, reject) => {
     const id = ++nextId;

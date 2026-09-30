@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 using Microsoft.Extensions.AI;
 using PiSharp.Runtime;
 using PiSharp.Runtime.Codemode;
@@ -69,6 +70,86 @@ public sealed class CodemodeTests
             Assert.Equal("42", resumedClient.Result);
         }
         finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Fact]
+    public async Task RejectsInvalidImageBeforeItIsPersistedOrReplayedToProvider()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-codemode-image-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        try
+        {
+            var registration = new ExtensionRegistration();
+            CodemodeBuiltin.Configure(registration);
+            var client = new ScriptClient("image('data:image/png;base64,AAAA')");
+            var conversation = new ConversationSession(cwd, "fixture", null);
+            var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(cwd),
+                selectedTools: ["codemode"], noBuiltinTools: true,
+                extensionToolRegistrations: registration.ToolDefinitions), conversation);
+
+            await foreach (var _ in run.RunEventsAsync("try invalid image")) { }
+
+            Assert.Equal(2, client.RequestMessages.Count);
+            Assert.DoesNotContain(client.RequestMessages[1].SelectMany(message => message.Contents),
+                content => content is DataContent);
+            Assert.DoesNotContain(conversation.ActiveMessages().SelectMany(message => message.Contents),
+                content => content is DataContent);
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Fact]
+    public async Task CodemodeImagesUseDetectedTypeAndNormalizeWrappedBase64()
+    {
+        var registry = new PiSharpToolRegistry([]);
+        var context = PiSharpToolExecutionContext.CreateRoot(registry.CreateLoadout(),
+            () => new Dictionary<string, AIFunction>(), _ => { }, "test", null, "codemode",
+            new Dictionary<string, object?>());
+        var images = new (string DataUrl, string MimeType, string Base64)[]
+        {
+            ("data:image/png;base64,iVBORw0KGgo=", "image/png", "iVBORw0KGgo="),
+            ("data:image/jpeg;base64,/9j/4A==", "image/jpeg", "/9j/4A=="),
+            ("data:image/gif;base64,R0lGODlh", "image/gif", "R0lGODlh"),
+            ("data:image/webp;base64,UklGRgAAAABXRUJQ", "image/webp", "UklGRgAAAABXRUJQ"),
+            ("data:image/jpeg;base64,iVBORw0KGgo=", "image/png", "iVBORw0KGgo="),
+            ("data:image/png;base64,iVBORw0K\r\nGgo=\n", "image/png", "iVBORw0KGgo=")
+        };
+
+        foreach (var (dataUrl, mimeType, base64) in images)
+        {
+            var result = await CodemodeSandbox.ExecuteAsync("image(" + JsonSerializer.Serialize(dataUrl) + ")",
+                context, new Dictionary<string, JsonElement>(), CancellationToken.None);
+            Assert.True(result.Ok, result.Error);
+            var image = Assert.Single(result.Images!);
+            Assert.Equal(mimeType, image.MimeType);
+            Assert.Equal(base64, image.DataBase64);
+        }
+    }
+
+    [Fact]
+    public async Task CodemodeRejectsMalformedAndUnsupportedImageData()
+    {
+        var registry = new PiSharpToolRegistry([]);
+        var context = PiSharpToolExecutionContext.CreateRoot(registry.CreateLoadout(),
+            () => new Dictionary<string, AIFunction>(), _ => { }, "test", null, "codemode",
+            new Dictionary<string, object?>());
+        var dataUrls = new[]
+        {
+            "data:image/png;base64,AAAA!",
+            "data:image/png;base64,AAAAA",
+            "data:image/png;base64,AA=A",
+            "data:image/png;base64,AAAA",
+            "data:image/png;base64,QUJD",
+            "data:image/jpeg;base64,/9j/9w=="
+        };
+
+        foreach (var dataUrl in dataUrls)
+        {
+            var result = await CodemodeSandbox.ExecuteAsync("image(" + JsonSerializer.Serialize(dataUrl) + ")",
+                context, new Dictionary<string, JsonElement>(), CancellationToken.None);
+            Assert.False(result.Ok);
+            Assert.Empty(result.Images ?? []);
+        }
     }
 
     [Fact]
@@ -197,6 +278,7 @@ public sealed class CodemodeTests
     {
         private int _requests;
         public List<string[]> RequestTools { get; } = [];
+        public List<ChatMessage[]> RequestMessages { get; } = [];
         public string? Result { get; private set; }
         public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
             CancellationToken cancellationToken = default) => throw new NotSupportedException();
@@ -204,6 +286,8 @@ public sealed class CodemodeTests
         public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
             ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
+            var snapshot = messages.ToArray();
+            RequestMessages.Add(snapshot);
             RequestTools.Add(options?.Tools?.OfType<AIFunction>().Select(tool => tool.Name).ToArray() ?? []);
             if (Interlocked.Increment(ref _requests) == 1)
                 yield return new ChatResponseUpdate(ChatRole.Assistant,
@@ -213,7 +297,7 @@ public sealed class CodemodeTests
                     })]);
             else
             {
-                Result = messages.SelectMany(message => message.Contents).OfType<FunctionResultContent>()
+                Result = snapshot.SelectMany(message => message.Contents).OfType<FunctionResultContent>()
                     .Last(result => result.CallId == "script-call").Result?.ToString();
                 yield return new ChatResponseUpdate(ChatRole.Assistant, "done");
             }
