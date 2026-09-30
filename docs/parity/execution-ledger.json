@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "plan_received": true,
-  "source_note": "Verified Bash source 18a85c45ac151d479b34f67564e49e053ade5d40 / CI 36697970500: restore, format, zero-warning/error build and 986/986 tests, zero skips. Codemode source-options/output-budget follow-up passes 44 focused tests, local format/build and full 999/999; publication/CI pending. Next: extension per-request context transforms. Pi 3e9451238337071b74ba5cdd53f1ab7cf4100ae8. Full parity remains incomplete.",
+  "source_note": "Verified PiSharp source e52fcc0e399545972bdec613ce01706227b73d3f / exact-head Linux CI 36698889067: restore, format, warnings-as-errors build and tests passed. Current Pi main is db6cc71dc7b69202dc560e71106bb9dfd454e758; all 18 commits since prior pin 3e9451238337071b74ba5cdd53f1ab7cf4100ae8 are classified in docs/parity/fixtures/upstream-delta-audit-2026-09-30.md. Eight in-scope deltas remain; process oldest first, beginning with Z.AI CN overflow recognition. Overall parity remains incomplete.",
   "baseline": "earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035",
   "required_ids": [
     "feature-agent-multi-turn-and-streaming",
@@ -182,12 +182,14 @@
     {
       "id": "feature-agent-multi-turn-and-streaming",
       "title": "Agent / multi-turn and streaming",
-      "status": "verified",
+      "status": "in_progress",
       "source": "docs/parity/feature-matrix.md:7",
       "acceptance": [
         "Stream text, tool calls and results, continue after tools; session preserves turns",
         "Interrupt, retry, partial response and queued messages per loop",
-        "Verify through application workflow and compare docs/how-pi-works.md; packages/agent/src/agent-loop.ts, agent.ts; PiAgent on MAF ChatClientAgent, AgentSession; deterministic fake provider tests needed"
+        "Verify through application workflow and compare docs/how-pi-works.md; packages/agent/src/agent-loop.ts, agent.ts; PiAgent on MAF ChatClientAgent, AgentSession; deterministic fake provider tests needed",
+        "Recognize current-Pi Z.AI CN prompt-length overflow wording for the existing one-shot context recovery.",
+        "Use exponential provider backoff when Retry-After is malformed or non-finite."
       ],
       "implementation": [
         "src/PiSharp.Runtime/PiAgent.cs: ChatClientAgent/AgentSession runtime composes observed per-provider-request retries without replacing the MAF tool loop.",
@@ -195,7 +197,8 @@
         "src/PiSharp.Runtime/Sessions/ProviderRetryPolicy.cs classifies transient statuses for the MAF fallback path. The CLI provider boundary now separately handles OpenAI and Anthropic SDK errors, x-should-retry and Retry-After headers, and cancellable backoff; see docs/parity/fixtures/settings-provider-retry-delay-baseline.md.",
         "src/PiSharp.Runtime/Sessions/ConversationRun.cs: bounded lifecycle stream runs queued text prompts as later MAF turns, emits per-turn completion and one run completion/settlement, and preserves canonical session history.",
         "src/PiSharp.Cli/Protocols/RpcMode.cs: an RPC prompt received during streaming queues into the active application run rather than claiming completion or starting a competing run.",
-        "tests/PiSharp.Tests/AgentIntegrationTests.cs, AgentLifecycleTests.cs, RpcModeTests.cs: deterministic fake-provider coverage for streamed text/tools/results, tool continuation, retry, partial failure, interruption, queued multi-turn session history, and RPC workflow."
+        "tests/PiSharp.Tests/AgentIntegrationTests.cs, AgentLifecycleTests.cs, RpcModeTests.cs: deterministic fake-provider coverage for streamed text/tools/results, tool continuation, retry, partial failure, interruption, queued multi-turn session history, and RPC workflow.",
+        "Current Pi deltas 3dd803d7 and 2bbfcca4 remain open: Z.AI CN prompt-length classification and malformed Retry-After fallback. Add fail-first provider evidence; see docs/parity/fixtures/upstream-delta-audit-2026-09-30.md."
       ],
       "evidence": [
         "Pinned upstream 002fc8385268300ca91a5fc95f935c2afbbdac02 inspected at packages/coding-agent/docs/how-pi-works.md and packages/agent/src/{agent-loop.ts,agent.ts}: provider response -> tools/results -> continuation, queued later turns, partial/error hard exit, and session transcript model were used as the behavioral reference.",
@@ -437,7 +440,8 @@
       "acceptance": [
         "Shell command with cwd/environment/shell selection, optional finite timeout, live output, combined stdout/stderr and tail truncation",
         "Kill the process tree on timeout/abort, retain full output and preserve exit failure in the tool result",
-        "Compare packages/coding-agent/src/core/tools/bash.ts, output-accumulator.ts, utils/child-process.ts and utils/shell.ts; verify application lifecycle and JSON event paths"
+        "Compare packages/coding-agent/src/core/tools/bash.ts, output-accumulator.ts, utils/child-process.ts and utils/shell.ts; verify application lifecycle and JSON event paths",
+        "Bound Bash, Codemode and MCP result previews by wrapped visual rows, including a single long logical line."
       ],
       "implementation": [
         "src/PiSharp.Runtime/CodingTools.cs resolves bash by platform, accepts configured shell paths, inherits the process environment, sets cwd, drains stdout and stderr concurrently, validates finite seconds, and kills the process group/tree on timeout or cancellation.",
@@ -447,7 +451,8 @@
         "src/PiSharp.Cli/UserSettings.cs and Program.cs carry shellPath from user or trusted-project settings through agent creation and replacement.",
         "PiAgent.ExecuteBashAsync and ConversationRun.ExecuteBashAsync route direct RPC commands through the same CodingTools instance; ConversationRun persists a distinct bash_execution record and defers concurrent records until the active turn ends. Nonexcluded results project into MAF history and context; excluded results remain durable but never enter provider context. ConversationRun passes session metadata in AgentRunOptions.AdditionalProperties, and CodingTools reads it from AIAgent.CurrentRunContext for model-invoked Bash.",
         "ExtensionRegistration supports user_bash handlers from extensions admitted by personal, project-trust, or explicit-path catalog rules. RpcMode invokes handlers in registration order, passes command/cwd/context-exclusion/cancellation and a correlated async update callback, accepts the first structured result, emits extension_error on handler failure, then continues to later handlers or the shared shell runner.",
-        "CodingTools receives shellCommandPrefix from effective settings and prepends it at the shared Bash process boundary; interactive !/!! and RPC direct Bash share ConversationRun.ExecuteBashAsync, and !! persists without projecting into provider context."
+        "CodingTools receives shellCommandPrefix from effective settings and prepends it at the shared Bash process boundary; interactive !/!! and RPC direct Bash share ConversationRun.ExecuteBashAsync, and !! persists without projecting into provider context.",
+        "Current Pi delta 0582d9c1 remains open: terminal previews count logical lines and may display an unbounded long line. See docs/parity/fixtures/upstream-delta-audit-2026-09-30.md."
       ],
       "evidence": [
         "Pinned Pi d5629e20489ccf770ed90b5a33941cb3b7ef24d0 and refreshed current main 5fd446ca1843682e8da3fec4ceb71c42f56fbace use the same 100ms model-tool Bash update throttle, platform shell resolution and rearmed 100ms post-exit stdio idle grace in the inspected source paths; AgentSession.executeBash forwards each sanitized direct-output chunk without that throttle.",
@@ -2424,10 +2429,12 @@
       "source": "docs/parity/detailed-inventory.md:62",
       "acceptance": [
         "Support defaultTools with upstream type/default and user/trusted-project precedence",
-        "Test malformed settings, trust boundaries, reload and startup behaviour"
+        "Test malformed settings, trust boundaries, reload and startup behaviour",
+        "On reload, activate newly added defaultTools while preserving active tools removed from defaults and respecting explicit CLI selections."
       ],
       "implementation": [
-        "UserSettings loads defaultTools from user and trusted-project files. Plain lists replace inherited selections; modifier-only project lists append, and startup resolves +name/-name in order against the inherited or built-in read/bash/edit/write selection. CLI --tools still overrides settings. Other Pi schema and reload parity remains open."
+        "UserSettings loads defaultTools from user and trusted-project files. Plain lists replace inherited selections; modifier-only project lists append, and startup resolves +name/-name in order against the inherited or built-in read/bash/edit/write selection. CLI --tools still overrides settings. Other Pi schema and reload parity remains open.",
+        "Current Pi delta db6cc71d remains open: reload currently restores the old branch loadout without merging newly added effective defaults. See the 2026-09-30 upstream delta fixture."
       ],
       "evidence": [
         "Current Pi 5257d0d5f3ab7d42550804f32c67a77b49f485d4 settings-manager.ts and its defaultTools tests specify modifier-only layering and resolution. A new PiSharp test failed first because +codemode/-write passed through raw, then focused UserSettingsTests passed 44/44 with in-memory and file-backed user/project vectors; the sequential full suite and exact-head CI run 36577388693 passed 849/849 with zero skipped. ProjectSettingsProcessTests covers the trust boundary. A paired Pi/PiSharp process differential remains open."
@@ -3479,14 +3486,16 @@
       "acceptance": [
         "Model-visible script tool invokes only allowed registry tools through the shared nested pipeline",
         "Provide tool declarations, search/discovery, bounded result handling, per-session store and optional model/classifier access",
-        "Use an intentional sandbox boundary with no host globals, resource limits, timeout, cancellation and recursion prevention"
+        "Use an intentional sandbox boundary with no host globals, resource limits, timeout, cancellation and recursion prevention",
+        "Validate decoded image signatures against MIME and discover MCP namespaces without exposing all server tools in the main description."
       ],
       "implementation": [
         "Builtin codemode registers inactive through ExtensionCatalog as builtin:codemode and can be selected through --tools or the session loadout. The model script runs in a separate Node process inside a fresh QuickJS/WASM VM with no Node globals, a 32 MiB guest heap, 30-second deadline, bounded text/images/store/calls, and process kill on cancellation or completion.",
         "Only session-callable tools enter the guest tool table; nested invocations use PiSharpToolExecutionContext.ExecuteToolAsync and preserve root/nested hooks, durable outcomes and parent identities. The guest uses the shared ToolSearchRanker for searchTools and describeTool; recursion is not callable.",
         "Successful scripts publish a bounded branch-local store snapshot, restored after tree navigation, native/Pi JSONL import/export and resume. Node.js 22.19+ is a runtime dependency; CI pins Node 24.",
         "ICodemodeModels supplies identity-only model catalog/classifier callbacks through the existing process bridge. Shared nested-call ordering, bounded classifier concurrency and usage ledger retain paid classifier/tool usage on later script failure, aggregate Codemode result cost and persist separate usage records.",
-        "Typed image catalogs now include all 57 pinned OpenRouter image models separately from chat/classifier entries, with validated configured models and credential-gated metadata reads; image generation remains a separate capability."
+        "Typed image catalogs now include all 57 pinned OpenRouter image models separately from chat/classifier entries, with validated configured models and credential-gated metadata reads; image generation remains a separate capability.",
+        "Current Pi deltas d2931ad3 and 1c7e7df7 remain open: Codemode image signature/MIME validation and MCP namespace discovery/description. See the 2026-09-30 upstream delta fixture."
       ],
       "evidence": [
         "Current Pi Codemode uses an isolated QuickJS/WASM worker and is now resolved as builtin:codemode at 4259686d9290c0d73ae7192b796aee3e530a9779. The previous pin da19b63 package tests passed 57/57; the current refresh did not rerun the full Codemode suite.",
@@ -3528,10 +3537,12 @@
       "acceptance": [
         "Global and trusted-project config with precedence, stdio and streamable HTTP, enable/disable, shared tool exposure and resources",
         "Lifecycle, timeout/cancel, reconnect, server/tool conflicts, trust and process cleanup",
-        "MCP OAuth, safe server-bound credential storage, /mcp management, pi mcp CLI and extension server registration"
+        "MCP OAuth, safe server-bound credential storage, /mcp management, pi mcp CLI and extension server registration",
+        "Support per-server OAuth clientName metadata and avoid holding the first prompt for indirect MCP servers."
       ],
       "implementation": [
-        "McpConfiguration loads global and trusted-project mcp.json with project precedence, enabled flags, exposure overrides, transport settings and bounded timeouts. McpRuntime uses the official C# SDK for stdio and Streamable HTTP, expands environment references without logging credential values, and registers tools and resource operations in the existing extension catalog. Clients are disposed with the extension lease. HTTP servers without an Authorization header use SDK OAuth with a noninteractive startup callback; explicit CLI login uses a loopback authorization-code callback, and logout deletes URL-bound tokens. A private atomic mcp-auth.json cache persists SDK token and client registration fields. Local CLI add/list/remove uses an atomic config editor with same-process and interprocess locking; CLI status probes servers without selecting a chat model."
+        "McpConfiguration loads global and trusted-project mcp.json with project precedence, enabled flags, exposure overrides, transport settings and bounded timeouts. McpRuntime uses the official C# SDK for stdio and Streamable HTTP, expands environment references without logging credential values, and registers tools and resource operations in the existing extension catalog. Clients are disposed with the extension lease. HTTP servers without an Authorization header use SDK OAuth with a noninteractive startup callback; explicit CLI login uses a loopback authorization-code callback, and logout deletes URL-bound tokens. A private atomic mcp-auth.json cache persists SDK token and client registration fields. Local CLI add/list/remove uses an atomic config editor with same-process and interprocess locking; CLI status probes servers without selecting a chat model.",
+        "Current Pi deltas 7c9fe664 and e029c3ed remain open: custom OAuth client name and direct-versus-indirect startup waits. See the 2026-09-30 upstream delta fixture."
       ],
       "evidence": [
         "Current Pi MCP tools share exposure, nested execution, hooks and extension registration; builtin:mcp is resolved after trust at 4259686d9290c0d73ae7192b796aee3e530a9779. A refreshed source/test audit at 02eed88fd8912e54a804ddebd409e2e4c08ac5ef confirms Pi MCP lifecycle semantics and the /mcp manager; the upstream MCP extension/command/OAuth tests pass 28/28 at this source pin.",
@@ -3686,5 +3697,18 @@
         "codemode-runtime"
       ]
     }
-  ]
+  ],
+  "upstream_delta_audit": {
+    "source_pin": "3e9451238337071b74ba5cdd53f1ab7cf4100ae8",
+    "source_head": "db6cc71dc7b69202dc560e71106bb9dfd454e758",
+    "commit_count": 18,
+    "classifications": {
+      "NEEDS_WORK": 8,
+      "MATCHED": 1,
+      "OUT_OF_SCOPE": 4,
+      "NO_BEHAVIOR_CHANGE": 5
+    },
+    "fixture": "docs/parity/fixtures/upstream-delta-audit-2026-09-30.md",
+    "next": "3dd803d7e780fb04b815261b510f76bff563d46d"
+  }
 }
