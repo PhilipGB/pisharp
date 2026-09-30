@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "plan_received": true,
-  "source_note": "Latest exact-head CI-verified PiSharp source is c558a1c9c8e65d3436aef150e2232402c4409476 / Linux CI 36783745437: restore, format, warnings-as-errors build and 1031/1031 tests, zero skips. The first ten current-Pi deltas (3dd803d7 Z.AI CN overflow, d2931ad3 Codemode image validation, 1c7e7df MCP namespace discovery, 7c9fe664 MCP OAuth client naming, 2bbfcca4 malformed Retry-After fallback, e029c3ed indirect MCP startup, 0582d9c1 wrapped-result previews, db6cc71d default-tool activation on reload, b29db895 MCP identifier normalization, and 91f9f3b5 provider-login MCP auth) are complete. One in-scope delta remains: Anthropic workload identity federation. The next source task is queued after the docs-only checkpoint CI. Pi main 955cc6665ee3986c6a033db52200779310d10dfd; full 26-commit classification in docs/parity/fixtures/upstream-delta-audit-2026-09-30.md. Overall parity remains incomplete.",
+  "source_note": "Latest exact-head CI-verified PiSharp source is 3b4d0da48f0d9ed83c6948a7d5cd2123ebba0ad8 / Linux CI 36789619687: restore, format, warnings-as-errors build and 1036/1036 tests, zero skips. All eleven audited current-Pi deltas are complete. Resume the broader parity backlog with extension-orchestration-api; overall parity remains incomplete. Pi main 955cc6665ee3986c6a033db52200779310d10dfd; full audit and evidence are in docs/parity/fixtures/upstream-delta-audit-2026-09-30.md.",
   "baseline": "earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035",
   "required_ids": [
     "feature-agent-multi-turn-and-streaming",
@@ -322,7 +322,8 @@
         "Partial: src/PiSharp.Cli/{ProviderModelRuntime,AuthStorage,ThinkingLevels,CliArguments,Program}.cs selects configured OpenAI-compatible endpoints, adds model flags and interactive commands, and stores private credentials.",
         "Partial: src/PiSharp.Runtime/{Providers/ModelCatalog,Sessions/ConversationSession,PiAgent}.cs records provider/model metadata, persists the provider ID, and passes reasoning options to MAF.",
         "src/PiSharp.Cli/ProviderProfileLoader.cs: bounded models.json parsing and provider endpoint/key-environment identity checks; src/PiSharp.Cli/BuiltinProviderProfiles.cs: pinned xAI Grok 4.3/4.5/4.6/4.7 Responses metadata; ProviderModelRuntime.ListModelsAsync uses static xAI catalogue without /models. xAI OAuth is not supported.",
-        "src/PiSharp.Cli/{BuiltinProviderProfiles,ProviderChatClientFactory,ProviderModelRuntime}.cs: Anthropic API-key-only native Messages protocol via Anthropic 12.50.0 MEAI adapter; three pinned Sonnet/Opus/Haiku model/price entries and model-specific Messages max-output budget and adaptive/extended thinking-mode dispatch without OpenAI /models probe (unknown overrides unpriced); reserved built-in endpoint and credential environment. Anthropic OAuth and full model catalog are absent.",
+        "src/PiSharp.Cli/{BuiltinProviderProfiles,ProviderChatClientFactory,ProviderModelRuntime}.cs: Anthropic native Messages via Anthropic 12.50.0 MEAI adapter; three pinned Sonnet/Opus/Haiku entries, model-specific budget and adaptive/extended thinking dispatch, and reserved endpoint/key environment. OAuth sign-in and full model catalog remain absent.",
+        "src/PiSharp.Cli/ProviderModelRuntime.cs and ProviderChatClientFactory.cs: Anthropic AUTH_TOKEN, OAUTH_TOKEN and API_KEY resolution precedes Anthropic-only workload identity federation; file-backed SDK credentials own token exchange/refresh while ambient SDK resolution is disabled. OAuth sign-in remains a separate open gap.",
         "src/PiSharp.Cli/Tui/TerminalModelPicker.cs and ProviderModelRuntime.cs: Ctrl+L or /model opens searchable all/scoped catalog views and can resolve an out-of-scope choice without changing the configured cycling scope.",
         "src/PiSharp.Cli/Protocols/RpcModelProjector.cs emits the Pi model fields consistently for get_available_models, set_model, cycle_model and get_state; ModelMetadataJson and ModelInputLimits preserve Pi-shaped catalog/config data, and provider/model compatibility uses Pi-compatible nested merges.",
         "src/PiSharp.Cli/{MistralModelCatalog,BuiltinProviderProfiles,ProviderModelRuntime}.cs embeds the current Pi snapshot of all 33 Mistral chat models and lists it statically without a generic /models probe; reasoning maps, image modalities, input limits, costs and the Mistral API identifier are retained. Unknown PISHARP_MISTRAL_MODEL values remain selectable alongside the built-in catalog.",
@@ -350,7 +351,8 @@
         "Mistral catalog/history checkpoint source 6c41414514bcea481c7c288308021332d63f03e1 passed exact-head Linux CI run 36446757583: restore, format, warnings-as-errors build, 754/754 tests, 0 skipped. This reconciles the prior pending note.",
         "AzureOpenAiProviderTests cover configured endpoint validation, API-key header, deployment/API-version request mapping, Responses streaming, per-session prompt-cache key, and the embedded 43-model snapshot. Exact source head ec1ea0f212f2a1964c891ce4a90c286020f3bcca passed Linux CI run 36452261244 with 764/764 tests, 0 skipped. No full Pi process differential or provider-wide image/tool/usage/error coverage is claimed.",
         "AnthropicThinkingSignatureCompatibilityTests uses the real Anthropic .NET SDK with a local /v1/messages loopback and covers compat enabled/disabled, signed content, and whitespace normalization (4/4). The initial disabled-compat case failed before the request projection. Current Pi 11894012dd461232eb075bc890538b6866860a10 tests anthropic-empty-thinking-signature-compat.test.ts and qwen-token-plan-models.test.ts pass 98/98. Exact source head 66561e1db1942624f7310bd50f68195c80ee66bf passed Linux CI run 36454550166: format, warnings-as-errors build (0 warnings/errors), 768/768 tests, 0 skipped.",
-        "At current Pi da19b63c7, the build-time Radius API returned 28 models; PiSharp src/PiSharp.Cli/Providers/Data/radius-models.json contains 25 fallback entries pinned to fd889a274. RadiusModelCatalog.LoadAsync still refreshes /v1/config at runtime, leaving offline bundled-catalog freshness as a category 4 residual."
+        "At current Pi da19b63c7, the build-time Radius API returned 28 models; PiSharp src/PiSharp.Cli/Providers/Data/radius-models.json contains 25 fallback entries pinned to fd889a274. RadiusModelCatalog.LoadAsync still refreshes /v1/config at runtime, leaving offline bundled-catalog freshness as a category 4 residual.",
+        "Anthropic workload identity coverage in ProviderModelRuntimeTests and ProviderChatClientFactoryTests verifies required/optional federation fields, explicit token/key precedence, partial-config fail-closed behavior, other-provider isolation, SDK bearer exchange, cached reuse, 401 refresh and rereading a rotated identity-token file. The focused Anthropic suite passes 18/18; final exact-head source 3b4d0da48f0d9ed83c6948a7d5cd2123ebba0ad8 passed Linux CI 36789619687 with 1,036/1,036 tests and zero skips."
       ],
       "dependencies": []
     },
@@ -3718,11 +3720,11 @@
       "NO_BEHAVIOR_CHANGE": 8
     },
     "fixture": "docs/parity/fixtures/upstream-delta-audit-2026-09-30.md",
-    "next": "a9424cd43d242f32d31a3638bb7fe1305c20f72a",
+    "next": "extension-orchestration-api",
     "current_item": "a9424cd43d242f32d31a3638bb7fe1305c20f72a",
-    "current_item_status": "queued_after_docs_checkpoint_ci",
-    "current_item_local_evidence": "The preceding delta 91f9f3b5 is complete at PiSharp source c558a1c9c8e65d3436aef150e2232402c4409476 / exact-head Linux CI 36783745437 (restore, format, warnings-as-errors build and 1031/1031 tests, zero skips). Provider-backed MCP auth resolves credentials on every HTTP request, preserves provider-owned OAuth refresh and persistence, rejects trusted-project and insecure non-loopback configurations, directs 401 responses to /login <provider>, and never writes credentials to mcp-auth.json. Focused MCP/provider tests pass 7/7. A normalized-namespace context-selection correction for delta b29db895 is included and covered at this exact head. The local full suite had two failures: the crash-recovery process test passed alone, and the Linux PTY theme timeout reproduced alone; exact-head CI passed. Anthropic workload identity federation is the next oldest open delta after this docs-only checkpoint passes exact-head CI.",
-    "next_after_ci": "a9424cd43d242f32d31a3638bb7fe1305c20f72a",
+    "current_item_status": "completed_exact_head_ci",
+    "current_item_local_evidence": "Final audited delta a9424cd43d242f32d31a3638bb7fe1305c20f72a is complete. PiSharp source 94c9f4f adds Anthropic-only workload identity federation through the installed Anthropic SDK, preserves stored/configured/API-key/auth-token precedence, and disables SDK ambient credential resolution. Required and optional fields, API-key/token priority, partial-config fail-closed behavior, another-provider isolation, bearer exchange, 401 refresh and identity-file rotation are covered; Anthropic-focused tests pass 18/18. A 1-second fragmented-SSE idle fixture follow-up is at 3b4d0da. Final exact-head Linux CI 36789619687 passes restore, format, warnings-as-errors build and 1036/1036 tests (zero skips). Local full suite passed 1034/1036: the Linux PTY theme timeout reproduced alone, while the crash-after-side-effect test passed alone. The audited delta set is closed; next continue with extension-orchestration-api from the broader ledger.",
+    "next_after_ci": "extension-orchestration-api",
     "completed": [
       "3dd803d7e780fb04b815261b510f76bff563d46d",
       "d2931ad3d5bf6936fbdfa5dfc81fb32f875499b2",
@@ -3733,8 +3735,9 @@
       "0582d9c11da78c1812d4537af2d194f1dd060d26",
       "db6cc71dc7b69202dc560e71106bb9dfd454e758",
       "b29db895c5c1b30b560a39fb9e4664508f1683de",
-      "91f9f3b5dfd7a49dda90d6450de7313ba425b3ca"
+      "91f9f3b5dfd7a49dda90d6450de7313ba425b3ca",
+      "a9424cd43d242f32d31a3638bb7fe1305c20f72a"
     ],
-    "ci_run": "36783745437"
+    "ci_run": "36789619687"
   }
 }
