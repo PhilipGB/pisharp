@@ -699,6 +699,191 @@ public sealed class ProviderChatClientFactoryTests
     }
 
     [Fact]
+    public async Task AnthropicWorkloadIdentityExchangesFileTokenAndCachesFederatedBearerToken()
+    {
+        using var listener = StartLoopbackListener(out var port);
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-anthropic-federation-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        var identityTokenFile = Path.Combine(root, "identity.jwt");
+        await File.WriteAllTextAsync(identityTokenFile, "fixture-identity-jwt");
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+        var paths = new List<string>();
+        var exchangeBodies = new List<string>();
+        var messageHeaders = new List<(string? Authorization, string? ApiKey)>();
+        var server = Task.Run(async () =>
+        {
+            for (var index = 0; index < 5; index++)
+            {
+                var request = await listener.GetContextAsync().WaitAsync(deadline.Token);
+                var path = request.Request.Url?.AbsolutePath ?? "";
+                paths.Add(path);
+                if (path.EndsWith("/oauth/token", StringComparison.Ordinal))
+                {
+                    using var reader = new StreamReader(request.Request.InputStream);
+                    exchangeBodies.Add(await reader.ReadToEndAsync(deadline.Token));
+                    request.Response.ContentType = "application/json";
+                    await using var tokenWriter = new StreamWriter(request.Response.OutputStream);
+                    await tokenWriter.WriteAsync(exchangeBodies.Count == 1
+                        ? "{\"access_token\":\"expired-federated-token\",\"token_type\":\"Bearer\",\"expires_in\":3600}"
+                        : "{\"access_token\":\"refreshed-federated-token\",\"token_type\":\"Bearer\",\"expires_in\":3600}");
+                    await tokenWriter.FlushAsync();
+                }
+                else
+                {
+                    using var reader = new StreamReader(request.Request.InputStream);
+                    _ = await reader.ReadToEndAsync(deadline.Token);
+                    messageHeaders.Add((request.Request.Headers["Authorization"], request.Request.Headers["x-api-key"]));
+                    request.Response.ContentType = "application/json";
+                    if (request.Request.Headers["Authorization"] == "Bearer expired-federated-token")
+                    {
+                        await File.WriteAllTextAsync(identityTokenFile, "fixture-rotated-identity-jwt", deadline.Token);
+                        request.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
+                        await using var expiredWriter = new StreamWriter(request.Response.OutputStream);
+                        await expiredWriter.WriteAsync("{\"type\":\"error\",\"error\":{\"type\":\"authentication_error\",\"message\":\"expired\"}}");
+                        await expiredWriter.FlushAsync();
+                        request.Response.Close();
+                        continue;
+                    }
+                    await using var messageWriter = new StreamWriter(request.Response.OutputStream);
+                    await messageWriter.WriteAsync("""
+                        {"id":"msg_federated","type":"message","role":"assistant","model":"fixture-model","content":[{"type":"text","text":"federated reply"}],"stop_reason":"end_turn","stop_sequence":null,"usage":{"input_tokens":5,"output_tokens":2}}
+                        """);
+                    await messageWriter.FlushAsync();
+                }
+                request.Response.Close();
+            }
+        }, deadline.Token);
+
+        try
+        {
+            var environment = new Dictionary<string, string>
+            {
+                ["ANTHROPIC_FEDERATION_RULE_ID"] = "fdrl_fixture",
+                ["ANTHROPIC_ORGANIZATION_ID"] = "org-fixture",
+                ["ANTHROPIC_IDENTITY_TOKEN_FILE"] = identityTokenFile,
+                ["ANTHROPIC_SERVICE_ACCOUNT_ID"] = "svac_fixture",
+                ["ANTHROPIC_WORKSPACE_ID"] = "wrkspc_fixture"
+            };
+            using var http = new HttpClient();
+            var runtime = await ProviderModelRuntime.CreateAsync(root, false,
+                name => environment.GetValueOrDefault(name), http);
+            var selection = await runtime.ResolveAsync("anthropic", "claude-sonnet-4-6");
+            selection = selection with { Provider = selection.Provider with { Endpoint = new Uri($"http://127.0.0.1:{port}") } };
+            var client = ProviderChatClientFactory.Create(selection,
+                new ProviderRetrySettings(TimeoutMs: 5_000), httpIdleTimeoutMs: 5_000);
+
+            var first = await client.GetResponseAsync(
+                [new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User, "hello")],
+                cancellationToken: deadline.Token);
+            var second = await client.GetResponseAsync(
+                [new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User, "hello again")],
+                cancellationToken: deadline.Token);
+            await server.WaitAsync(deadline.Token);
+
+            Assert.Equal("federated reply", first.Text);
+            Assert.Equal("federated reply", second.Text);
+            Assert.Equal(3, messageHeaders.Count);
+            Assert.All(messageHeaders, headers =>
+            {
+                Assert.Null(headers.ApiKey);
+            });
+            Assert.Equal(["Bearer expired-federated-token", "Bearer refreshed-federated-token", "Bearer refreshed-federated-token"],
+                messageHeaders.Select(headers => headers.Authorization));
+            Assert.Equal(["/v1/oauth/token", "/v1/messages", "/v1/oauth/token", "/v1/messages", "/v1/messages"], paths);
+            Assert.Equal(2, exchangeBodies.Count);
+            Assert.Contains("fixture-identity-jwt", exchangeBodies[0]);
+            Assert.Contains("fixture-rotated-identity-jwt", exchangeBodies[1]);
+            Assert.All(exchangeBodies, exchangeBody =>
+            {
+                Assert.Contains("urn:ietf:params:oauth:grant-type:jwt-bearer", exchangeBody);
+                Assert.Contains("fdrl_fixture", exchangeBody);
+                Assert.Contains("org-fixture", exchangeBody);
+                Assert.Contains("svac_fixture", exchangeBody);
+                Assert.Contains("wrkspc_fixture", exchangeBody);
+            });
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [Fact]
+    public async Task AnthropicAuthTokensWinOverApiKeyAndDoNotExchangeFederatedCredentials()
+    {
+        using var listener = StartLoopbackListener(out var port);
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-anthropic-auth-token-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var requests = new List<(string Path, string? Authorization, string? ApiKey, string? App,
+            string? DirectAccess, string? Accept)>();
+        var server = Task.Run(async () =>
+        {
+            for (var index = 0; index < 2; index++)
+            {
+                var request = await listener.GetContextAsync();
+                requests.Add((request.Request.Url?.AbsolutePath ?? "", request.Request.Headers["Authorization"],
+                    request.Request.Headers["x-api-key"], request.Request.Headers["x-app"],
+                    request.Request.Headers["anthropic-dangerous-direct-browser-access"], request.Request.Headers["accept"]));
+                using var reader = new StreamReader(request.Request.InputStream);
+                _ = await reader.ReadToEndAsync(deadline.Token);
+                request.Response.ContentType = "application/json";
+                await using var writer = new StreamWriter(request.Response.OutputStream);
+                await writer.WriteAsync("""
+                    {"id":"msg_auth_token","type":"message","role":"assistant","model":"fixture-model","content":[{"type":"text","text":"bearer reply"}],"stop_reason":"end_turn","stop_sequence":null,"usage":{"input_tokens":1,"output_tokens":1}}
+                    """);
+                await writer.FlushAsync();
+                request.Response.Close();
+            }
+        });
+
+        try
+        {
+            var environment = new Dictionary<string, string>
+            {
+                ["ANTHROPIC_AUTH_TOKEN"] = "explicit-bearer-token",
+                ["ANTHROPIC_OAUTH_TOKEN"] = "lower-priority-oauth-token",
+                ["ANTHROPIC_API_KEY"] = "lower-priority-api-key",
+                ["ANTHROPIC_FEDERATION_RULE_ID"] = "fdrl_fixture",
+                ["ANTHROPIC_ORGANIZATION_ID"] = "org-fixture",
+                ["ANTHROPIC_IDENTITY_TOKEN_FILE"] = Path.Combine(root, "unused-identity.jwt")
+            };
+            using var http = new HttpClient();
+            var runtime = await ProviderModelRuntime.CreateAsync(root, false,
+                name => environment.GetValueOrDefault(name), http);
+            var selection = await runtime.ResolveAsync("anthropic", "claude-sonnet-4-6");
+            selection = selection with { Provider = selection.Provider with { Endpoint = new Uri($"http://127.0.0.1:{port}") } };
+            var response = await ProviderChatClientFactory.Create(selection).GetResponseAsync(
+                [new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User, "hello")],
+                cancellationToken: deadline.Token);
+            environment.Remove("ANTHROPIC_AUTH_TOKEN");
+            var oauthSelection = await runtime.ResolveAsync("anthropic", "claude-sonnet-4-6");
+            oauthSelection = oauthSelection with { Provider = oauthSelection.Provider with { Endpoint = new Uri($"http://127.0.0.1:{port}") } };
+            var oauthResponse = await ProviderChatClientFactory.Create(oauthSelection).GetResponseAsync(
+                [new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User, "hello again")],
+                cancellationToken: deadline.Token);
+            await server.WaitAsync(deadline.Token);
+
+            Assert.Equal("ANTHROPIC_AUTH_TOKEN", selection.AuthSource);
+            Assert.Null(selection.AnthropicWorkloadIdentity);
+            Assert.Equal("bearer reply", response.Text);
+            Assert.Equal("ANTHROPIC_OAUTH_TOKEN", oauthSelection.AuthSource);
+            Assert.True(oauthSelection.AnthropicIsOAuthToken);
+            Assert.Null(oauthSelection.AnthropicWorkloadIdentity);
+            Assert.Equal("bearer reply", oauthResponse.Text);
+            Assert.Equal(2, requests.Count);
+            Assert.All(requests, request =>
+            {
+                Assert.Equal("/v1/messages", request.Path);
+                Assert.Null(request.ApiKey);
+            });
+            Assert.Equal("Bearer explicit-bearer-token", requests[0].Authorization);
+            Assert.Equal("Bearer lower-priority-oauth-token", requests[1].Authorization);
+            Assert.Equal("cli", requests[1].App);
+            Assert.Equal("true", requests[1].DirectAccess);
+            Assert.Equal("application/json", requests[1].Accept);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [Fact]
     public async Task AnthropicMessagesStreamsTextAndUsage()
     {
         using var listener = StartLoopbackListener(out var port);

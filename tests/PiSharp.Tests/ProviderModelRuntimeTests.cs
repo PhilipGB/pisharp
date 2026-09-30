@@ -236,6 +236,119 @@ public sealed class ProviderModelRuntimeTests
     }
 
     [Fact]
+    public async Task AnthropicResolvesWorkloadIdentityFederationWhenNoKeyIsConfigured()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-anthropic-federation-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            var environment = new Dictionary<string, string>
+            {
+                ["ANTHROPIC_FEDERATION_RULE_ID"] = "fdrl_fixture",
+                ["ANTHROPIC_ORGANIZATION_ID"] = "org-fixture",
+                ["ANTHROPIC_IDENTITY_TOKEN_FILE"] = Path.Combine(root, "identity.jwt"),
+                ["ANTHROPIC_SERVICE_ACCOUNT_ID"] = "svac_fixture",
+                ["ANTHROPIC_WORKSPACE_ID"] = "wrkspc_fixture"
+            };
+            using var http = new HttpClient(new ModelHandler());
+            var runtime = await ProviderModelRuntime.CreateAsync(root, false,
+                name => environment.GetValueOrDefault(name), http);
+
+            var selection = await runtime.ResolveAsync("anthropic", "claude-sonnet-4-6");
+
+            Assert.True(selection.Authenticated);
+            Assert.True(selection.Model.Available);
+            Assert.Equal("workload identity federation", selection.AuthSource);
+            Assert.Equal(string.Empty, selection.ApiKey);
+            Assert.Equal("fdrl_fixture", selection.AnthropicWorkloadIdentity?.FederationRuleId);
+            Assert.Equal("org-fixture", selection.AnthropicWorkloadIdentity?.OrganizationId);
+            Assert.Equal(environment["ANTHROPIC_IDENTITY_TOKEN_FILE"], selection.AnthropicWorkloadIdentity?.IdentityTokenFile);
+            Assert.Equal("svac_fixture", selection.AnthropicWorkloadIdentity?.ServiceAccountId);
+            Assert.Equal("wrkspc_fixture", selection.AnthropicWorkloadIdentity?.WorkspaceId);
+
+            var unrelatedProvider = await runtime.ResolveAsync("openai", "gpt-4o-mini");
+            Assert.False(unrelatedProvider.Authenticated);
+            Assert.Null(unrelatedProvider.AnthropicWorkloadIdentity);
+            Assert.Null(unrelatedProvider.AnthropicAuthToken);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [Fact]
+    public async Task AnthropicCredentialPrecedenceKeepsExplicitCredentialsAheadOfFederation()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-anthropic-credential-order-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            var environment = new Dictionary<string, string>
+            {
+                ["ANTHROPIC_AUTH_TOKEN"] = "auth-token",
+                ["ANTHROPIC_OAUTH_TOKEN"] = "oauth-token",
+                ["ANTHROPIC_API_KEY"] = "api-key",
+                ["ANTHROPIC_FEDERATION_RULE_ID"] = "fdrl_fixture",
+                ["ANTHROPIC_ORGANIZATION_ID"] = "org-fixture",
+                ["ANTHROPIC_IDENTITY_TOKEN_FILE"] = Path.Combine(root, "identity.jwt")
+            };
+            using var http = new HttpClient(new ModelHandler());
+            var runtime = await ProviderModelRuntime.CreateAsync(root, false,
+                name => environment.GetValueOrDefault(name), http);
+
+            var selection = await runtime.ResolveAsync("anthropic", "claude-sonnet-4-6");
+            Assert.Equal("ANTHROPIC_AUTH_TOKEN", selection.AuthSource);
+            Assert.Equal("auth-token", selection.AnthropicAuthToken);
+            Assert.False(selection.AnthropicIsOAuthToken);
+            Assert.Null(selection.AnthropicWorkloadIdentity);
+
+            environment.Remove("ANTHROPIC_AUTH_TOKEN");
+            selection = await runtime.ResolveAsync("anthropic", "claude-sonnet-4-6");
+            Assert.Equal("ANTHROPIC_OAUTH_TOKEN", selection.AuthSource);
+            Assert.Equal("oauth-token", selection.AnthropicAuthToken);
+            Assert.True(selection.AnthropicIsOAuthToken);
+            Assert.Null(selection.AnthropicWorkloadIdentity);
+
+            environment.Remove("ANTHROPIC_OAUTH_TOKEN");
+            selection = await runtime.ResolveAsync("anthropic", "claude-sonnet-4-6");
+            Assert.Equal("ANTHROPIC_API_KEY", selection.AuthSource);
+            Assert.Equal("api-key", selection.ApiKey);
+            Assert.False(selection.AnthropicIsOAuthToken);
+            Assert.Null(selection.AnthropicWorkloadIdentity);
+
+            environment.Remove("ANTHROPIC_API_KEY");
+            selection = await runtime.ResolveAsync("anthropic", "claude-sonnet-4-6");
+            Assert.Equal("workload identity federation", selection.AuthSource);
+            Assert.NotNull(selection.AnthropicWorkloadIdentity);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [Fact]
+    public async Task PartialAnthropicFederationConfigurationDoesNotAuthenticateProvider()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-anthropic-federation-partial-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            var environment = new Dictionary<string, string>
+            {
+                ["ANTHROPIC_FEDERATION_RULE_ID"] = "fdrl_fixture",
+                ["ANTHROPIC_ORGANIZATION_ID"] = "org-fixture"
+            };
+            using var http = new HttpClient(new ModelHandler());
+            var runtime = await ProviderModelRuntime.CreateAsync(root, false,
+                name => environment.GetValueOrDefault(name), http);
+
+            var selection = await runtime.ResolveAsync("anthropic", "claude-sonnet-4-6");
+
+            Assert.False(selection.Authenticated);
+            Assert.False(selection.Model.Available);
+            Assert.Equal("authentication required", selection.AuthSource);
+            Assert.Null(selection.AnthropicWorkloadIdentity);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [Fact]
     public async Task CaseVariantBuiltInOverrideKeepsCanonicalIdentityAndProtocol()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-case-provider-" + Guid.NewGuid().ToString("N"));

@@ -1,6 +1,8 @@
 using System.ClientModel;
 using System.ClientModel.Primitives;
 using Anthropic;
+using Anthropic.Core;
+using Anthropic.Credentials;
 using Microsoft.Extensions.AI;
 using OpenAI;
 using PiSharp.Runtime.VirtualModels;
@@ -74,14 +76,39 @@ public static class ProviderChatClientFactory
         }
         else if (protocol == "anthropic-messages")
         {
-            var anthropicClient = new AnthropicClient
+            var baseUrl = selection.Connection.Endpoint?.ToString() ?? selection.Provider.Endpoint.ToString();
+            var options = new ClientOptions
             {
-                ApiKey = selection.ApiKey,
-                BaseUrl = selection.Connection.Endpoint?.ToString() ?? selection.Provider.Endpoint.ToString(),
+                ApiKey = selection.AnthropicAuthToken is null && selection.AnthropicWorkloadIdentity is null
+                    ? selection.ApiKey : null,
+                AuthToken = selection.AnthropicAuthToken,
+                BaseUrl = baseUrl,
                 MaxRetries = 0,
                 Timeout = sdkTimeout,
                 Handlers = [new ProviderWireActivityHandler()]
             };
+            if (selection.AnthropicIsOAuthToken)
+            {
+                options.ExtraHeaders = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["accept"] = "application/json",
+                    ["anthropic-dangerous-direct-browser-access"] = "true",
+                    ["x-app"] = "cli"
+                };
+            }
+            if (selection.AnthropicWorkloadIdentity is { } federation)
+            {
+                options.Credentials = new WorkloadIdentityCredentials(new WorkloadIdentityOptions
+                {
+                    FederationRuleId = federation.FederationRuleId,
+                    OrganizationId = federation.OrganizationId,
+                    ServiceAccountId = federation.ServiceAccountId,
+                    WorkspaceId = federation.WorkspaceId,
+                    IdentityTokenProvider = new FileIdentityTokenProvider(federation.IdentityTokenFile),
+                    BaseUrl = baseUrl
+                });
+            }
+            var anthropicClient = new AmbientCredentialsDisabledAnthropicClient(options);
             anthropicClient.HttpClient.Timeout = Timeout.InfiniteTimeSpan;
             providerClient = new AnthropicThinkingSignatureClient(anthropicClient.AsIChatClient(selection.Model.Id,
                 selection.Model.MaxOutputTokens ?? 16384,
@@ -144,6 +171,11 @@ public static class ProviderChatClientFactory
         var timeoutClient = new ProviderRequestTimeoutChatClient(providerClient, requestTimeout, idleTimeout);
         return new ProviderRetryChatClient(timeoutClient, providerMaxRetries,
             retrySettings?.MaxRetryDelayMs ?? ProviderRetrySettings.DefaultMaxRetryDelayMs);
+    }
+
+    private sealed class AmbientCredentialsDisabledAnthropicClient(ClientOptions options) : AnthropicClient(options)
+    {
+        protected override bool ShouldAutoResolveCredentials => false;
     }
 
     private static bool AllowsEmptyThinkingSignature(System.Text.Json.JsonElement? compatibility) =>

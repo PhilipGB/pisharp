@@ -16,6 +16,10 @@ public sealed record ModelSelection(ProviderProfile Provider, ModelDescriptor Mo
     bool Authenticated, string AuthSource,
     Func<CancellationToken, Task<(string Access, string AccountId)>>? OAuthCredentialResolver = null)
 {
+    public string? AnthropicAuthToken { get; init; }
+    public bool AnthropicIsOAuthToken { get; init; }
+    public AnthropicWorkloadIdentityOptions? AnthropicWorkloadIdentity { get; init; }
+
     public ConnectionSettings Connection
     {
         get
@@ -27,6 +31,9 @@ public sealed record ModelSelection(ProviderProfile Provider, ModelDescriptor Mo
         }
     }
 }
+
+public sealed record AnthropicWorkloadIdentityOptions(string FederationRuleId, string OrganizationId,
+    string IdentityTokenFile, string? ServiceAccountId, string? WorkspaceId);
 
 /// <summary>Credential-aware OpenAI-compatible provider/catalog selection shared by CLI commands.</summary>
 public sealed class ProviderModelRuntime
@@ -190,8 +197,17 @@ public sealed class ProviderModelRuntime
             return (stored.Key!, true, "stored API key");
         }
         if (!string.IsNullOrWhiteSpace(provider.ConfiguredApiKey)) return (provider.ConfiguredApiKey, true, "models.json");
+        if (provider.Id == "anthropic")
+        {
+            var authToken = _environment("ANTHROPIC_AUTH_TOKEN");
+            if (!string.IsNullOrWhiteSpace(authToken)) return (authToken, true, "ANTHROPIC_AUTH_TOKEN");
+            var oauthToken = _environment("ANTHROPIC_OAUTH_TOKEN");
+            if (!string.IsNullOrWhiteSpace(oauthToken)) return (oauthToken, true, "ANTHROPIC_OAUTH_TOKEN");
+        }
         if (provider.ApiKeyEnvironment is not null && !string.IsNullOrWhiteSpace(_environment(provider.ApiKeyEnvironment)))
             return (_environment(provider.ApiKeyEnvironment)!, true, provider.ApiKeyEnvironment);
+        if (provider.Id == "anthropic" && ResolveAnthropicWorkloadIdentity() is not null)
+            return (string.Empty, true, "workload identity federation");
         if (provider.GoogleVertex?.HasConfiguredApplicationDefaultCredentials == true)
             return (GoogleVertexProviderOptions.AdcCredentialMarker, true, GoogleVertexProviderOptions.AdcAuthSource);
         if (provider.Bedrock?.AmbientAuthSource is { } bedrockAuthSource)
@@ -359,8 +375,31 @@ public sealed class ProviderModelRuntime
             oauthCredentialResolver = cancellationToken =>
                 _oauth.ResolveCredentialAsync(explicitProvider.Id, cancellationToken);
         return new ModelSelection(explicitProvider, model, auth.Key, auth.Authenticated, auth.Source,
-            oauthCredentialResolver);
+            oauthCredentialResolver)
+        {
+            AnthropicAuthToken = auth.Source is "ANTHROPIC_AUTH_TOKEN" or "ANTHROPIC_OAUTH_TOKEN"
+                ? auth.Key : explicitProvider.Id == "anthropic" && auth.Key.Contains("sk-ant-oat", StringComparison.Ordinal)
+                    ? auth.Key : null,
+            AnthropicIsOAuthToken = explicitProvider.Id == "anthropic" &&
+                (auth.Source == "ANTHROPIC_OAUTH_TOKEN" || auth.Key.Contains("sk-ant-oat", StringComparison.Ordinal)),
+            AnthropicWorkloadIdentity = auth.Source == "workload identity federation"
+                ? ResolveAnthropicWorkloadIdentity() : null
+        };
     }
+
+    private AnthropicWorkloadIdentityOptions? ResolveAnthropicWorkloadIdentity()
+    {
+        var ruleId = _environment("ANTHROPIC_FEDERATION_RULE_ID");
+        var organizationId = _environment("ANTHROPIC_ORGANIZATION_ID");
+        var tokenFile = _environment("ANTHROPIC_IDENTITY_TOKEN_FILE");
+        if (string.IsNullOrWhiteSpace(ruleId) || string.IsNullOrWhiteSpace(organizationId) ||
+            string.IsNullOrWhiteSpace(tokenFile)) return null;
+        return new AnthropicWorkloadIdentityOptions(ruleId, organizationId, tokenFile,
+            NullIfWhiteSpace(_environment("ANTHROPIC_SERVICE_ACCOUNT_ID")),
+            NullIfWhiteSpace(_environment("ANTHROPIC_WORKSPACE_ID")));
+    }
+
+    private static string? NullIfWhiteSpace(string? value) => string.IsNullOrWhiteSpace(value) ? null : value;
 
     public Task LoginApiKeyAsync(string provider, string secret, CancellationToken cancellationToken = default)
     {
