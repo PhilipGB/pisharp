@@ -432,6 +432,7 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
             message.Contains("too many requests", StringComparison.OrdinalIgnoreCase)) return false;
         return message.Contains("context_length_exceeded", StringComparison.OrdinalIgnoreCase) ||
             message.Contains("context length exceeded", StringComparison.OrdinalIgnoreCase) ||
+            message.Contains("prompt exceeds max length", StringComparison.OrdinalIgnoreCase) ||
             message.Contains("exceeds the context window", StringComparison.OrdinalIgnoreCase) ||
             message.Contains("exceeds the available context size", StringComparison.OrdinalIgnoreCase) ||
             System.Text.RegularExpressions.Regex.IsMatch(message,

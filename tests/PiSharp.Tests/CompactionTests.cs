@@ -593,6 +593,7 @@ public sealed class CompactionTests
     [InlineData("Your input exceeds the context window of this model", false, true)]
     [InlineData("the request exceeds the available context size, try increasing it", false, true)]
     [InlineData("400 `prompt too long; exceeded max context length by 100918 tokens`", false, true)]
+    [InlineData("400 {\"code\":\"1261\",\"message\":\"Prompt exceeds max length\"}", false, true)]
     [InlineData("400 Input length (265330) exceeds model's maximum context length (262144).", false, true)]
     [InlineData("400 model runner crashed", false, false)]
     [InlineData("rate limit: too many requests; context_length_exceeded", false, false)]

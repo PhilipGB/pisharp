@@ -1,6 +1,6 @@
 # PiSharp capability parity
 
-Latest verified PiSharp source is `e52fcc0e399545972bdec613ce01706227b73d3f`; exact-head Linux CI [36698889067](https://github.com/PhilipGB/pisharp/actions/runs/36698889067) passed restore, format, warnings-as-errors build and tests. Current Pi `main` is `db6cc71dc7b69202dc560e71106bb9dfd454e758`. The complete 18-commit delta from the prior pin is classified in [the 2026-09-30 upstream audit](docs/parity/fixtures/upstream-delta-audit-2026-09-30.md); eight in-scope mismatches remain, beginning with Z.AI CN overflow recognition. Overall parity remains incomplete.
+Latest verified PiSharp source is `e52fcc0e399545972bdec613ce01706227b73d3f`; exact-head Linux CI [36698889067](https://github.com/PhilipGB/pisharp/actions/runs/36698889067) passed restore, format, warnings-as-errors build and tests. Current Pi `main` is `db6cc71dc7b69202dc560e71106bb9dfd454e758`. The complete 18-commit delta from the prior pin is classified in [the 2026-09-30 upstream audit](docs/parity/fixtures/upstream-delta-audit-2026-09-30.md). The first delta, Z.AI CN overflow recognition, now has fail-first evidence and a local fix; full local validation passes, with commit/push/exact-head CI pending. Seven later mismatches remain. Overall parity remains incomplete.
 
 
 **Goal:** implement Pi's in-scope capabilities idiomatically in C#/.NET, using Microsoft Agent Framework and Microsoft.Extensions.AI where appropriate. Pi Packages stay excluded unless needed for a core capability.
@@ -54,11 +54,11 @@ Latest verified PiSharp source is `e52fcc0e399545972bdec613ce01706227b73d3f`; ex
 
 ## Current priority
 
-Current exact-head CI is green at `e52fcc0e399545972bdec613ce01706227b73d3f` / `36698889067`. The current upstream audit identifies eight open deltas: Z.AI CN overflow, Codemode image validation, MCP namespace discovery, MCP OAuth client name, malformed Retry-After fallback, indirect MCP startup, wrapped result previews, and `defaultTools` activation on reload. See the [classified audit](docs/parity/fixtures/upstream-delta-audit-2026-09-30.md).
+Current exact-head CI is green at `e52fcc0e399545972bdec613ce01706227b73d3f` / `36698889067`. The audit originally identified eight deltas. Z.AI CN overflow now passes fail-first/fixed evidence locally; exact-head CI is pending. Seven remain after that gate: Codemode image validation, MCP namespace discovery, MCP OAuth client name, malformed Retry-After fallback, indirect MCP startup, wrapped result previews, and `defaultTools` activation on reload. See the [classified audit](docs/parity/fixtures/upstream-delta-audit-2026-09-30.md).
 
 ## Exact next action
 
-Process the eight current-Pi `NEEDS_WORK` deltas oldest first as recorded in [the 2026-09-30 audit](docs/parity/fixtures/upstream-delta-audit-2026-09-30.md), starting with `3dd803d7` (Z.AI CN overflow classification). For each delta: add fail-first evidence, make the minimum fix, run focused checks then format/build/full tests, update all parity records, commit/push, and verify exact-head CI before continuing. After these upstream deltas, resume the ordered extension context lifecycle slices. Current Pi pin: `db6cc71dc7b69202dc560e71106bb9dfd454e758`. Overall parity is incomplete.
+Current item: `3dd803d7` (Z.AI CN overflow classification) has fail-first evidence, a local fix, format/build success and 1,000/1,000 tests (0 skipped). Commit/push this slice and verify exact-head CI before proceeding to `d2931ad3` image signature validation. Then continue the remaining items oldest first from [the 2026-09-30 audit](docs/parity/fixtures/upstream-delta-audit-2026-09-30.md); each requires focused/full validation, parity-record updates, one commit/push and green exact-head CI. After all upstream deltas, resume the ordered extension context lifecycle slices. Current Pi pin: `db6cc71dc7b69202dc560e71106bb9dfd454e758`. Overall parity is incomplete.
 
 ## Architecture and residuals to preserve
 
