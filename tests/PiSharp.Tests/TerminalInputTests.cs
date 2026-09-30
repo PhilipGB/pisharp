@@ -48,6 +48,32 @@ public sealed class TerminalInputTests
     }
 
     [Fact]
+    public void PendingReplyCompletionConsumesAlreadyAvailableFenceAfterWaitBudgetExpires()
+    {
+        var reader = new TerminalInput(new MemoryStream(Encoding.UTF8.GetBytes("\u001b]11;#282a36\a\u001b[?62;22cY")));
+        var pending = true;
+        reader.TerminalDeviceAttributesReceived += () => pending = false;
+        reader.CompletePendingReplies(() => pending, 0);
+        Assert.False(pending);
+        Assert.Equal('Y', reader.Read().Key?.KeyChar);
+    }
+
+    [Fact]
+    public void PendingReplyCompletionBoundsAlreadyQueuedControlTrafficByBytes()
+    {
+        var controls = string.Concat(Enumerable.Repeat("\u001b[0n", 20000));
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes(controls + "\u001b[?62;22cY"));
+        var reader = new TerminalInput(stream);
+        var pending = true;
+        reader.TerminalDeviceAttributesReceived += () => pending = false;
+        reader.CompletePendingReplies(() => pending, 0);
+        Assert.True(pending);
+        Assert.InRange(stream.Position, 1, 64 * 1024);
+        Assert.Equal('Y', reader.Read().Key?.KeyChar);
+        Assert.False(pending);
+    }
+
+    [Fact]
     public async Task ActiveEditorStopsOnlyForExplicitEofAndIgnoresEmptyControlEvents()
     {
         var editor = new TerminalEditor();

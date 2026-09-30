@@ -14,6 +14,7 @@ public sealed class TerminalInput
     private readonly Queue<byte> _retainedBytes = new();
     private List<byte>? _replyBytes;
     private long? _protocolDeadline;
+    private int _protocolBytesRemaining;
 
     internal event Action<TerminalColorResponse>? TerminalColorReceived;
     internal event Action? TerminalDeviceAttributesReceived;
@@ -25,7 +26,7 @@ public sealed class TerminalInput
 
     private int ReadByte()
     {
-        if (_protocolDeadline is not null && !Available(100)) throw new TimeoutException();
+        if (_protocolDeadline is not null && (_protocolBytesRemaining <= 0 || !Available(100))) throw new TimeoutException();
         int value;
         if (_retainedBytes.TryDequeue(out var retained)) value = retained;
         else if (!_standardInput) value = _input!.ReadByte();
@@ -37,7 +38,11 @@ public sealed class TerminalInput
             if (count < 0) throw new IOException("Could not read terminal input.");
             value = count == 1 ? bytes[0] : -1;
         }
-        if (value >= 0) _replyBytes?.Add((byte)value);
+        if (value >= 0)
+        {
+            _replyBytes?.Add((byte)value);
+            if (_protocolDeadline is not null) _protocolBytesRemaining--;
+        }
         return value;
     }
 
@@ -67,9 +72,10 @@ public sealed class TerminalInput
         if (_retainedBytes.Count > 0) return;
         _protocolDeadline = Environment.TickCount64 + timeoutMilliseconds;
         _replyBytes = [];
+        _protocolBytesRemaining = 64 * 1024;
         try
         {
-            while (hasPendingReplies() && Available(timeoutMilliseconds))
+            while (_protocolBytesRemaining > 0 && hasPendingReplies() && Available(timeoutMilliseconds))
             {
                 _replyBytes.Clear();
                 var next = ReadNext();
@@ -79,7 +85,7 @@ public sealed class TerminalInput
             }
         }
         catch (TimeoutException) { RetainReplyBytes(); }
-        finally { _protocolDeadline = null; _replyBytes = null; }
+        finally { _protocolDeadline = null; _replyBytes = null; _protocolBytesRemaining = 0; }
     }
 
     private void RetainReplyBytes()
@@ -347,8 +353,8 @@ public sealed class TerminalInput
         if (_protocolDeadline is { } deadline)
         {
             var remaining = deadline - Environment.TickCount64;
-            if (remaining <= 0) return false;
-            milliseconds = (int)Math.Min(milliseconds, remaining);
+            // The deadline bounds waiting; queued replies still belong to this reader.
+            milliseconds = (int)Math.Min(milliseconds, Math.Max(0, remaining));
         }
         if (_retainedBytes.Count > 0) return true;
         if (!_standardInput && _input!.CanSeek) return _input.Position < _input.Length;
