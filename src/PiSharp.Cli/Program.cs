@@ -84,8 +84,9 @@ var trusted = projectConfiguration.Trusted;
 var baseUserSettings = projectConfiguration.BaseUserSettings;
 var projectSettings = projectConfiguration.ProjectSettings;
 var userSettings = projectConfiguration.Settings;
+var usesDefaultToolsSetting = DefaultToolReloadPolicy.UsesSettingsDefaults(cli);
 var explicitThinking = cli.Thinking;
-cli = userSettings.ApplyDefaults(cli, Environment.GetEnvironmentVariable,
+cli = DefaultToolReloadPolicy.ApplyStartupDefaults(cli, userSettings, Environment.GetEnvironmentVariable,
     preserveSessionModel: cli.Continue || cli.SessionPath is not null || cli.ForkSource is not null || cli.ListModels);
 ProjectRuntimeContext projectRuntime;
 try
@@ -175,7 +176,8 @@ try
 catch (ArgumentException error) { Console.Error.WriteLine(error.Message); Environment.ExitCode = 2; return; }
 Task<ConversationRun> OpenRunAsync(PiAgent runningAgent, ConversationSession session, string? path,
     string? runProvider = null, string? reasoningLevel = null,
-    ProjectRuntimeContext? targetProject = null, ModelSelection? targetSelection = null)
+    ProjectRuntimeContext? targetProject = null, ModelSelection? targetSelection = null,
+    IReadOnlyList<string>? activeToolNamesOverride = null)
 {
     var runProject = targetProject ?? projectRuntime;
     var runModel = targetSelection ?? selection;
@@ -194,7 +196,8 @@ Task<ConversationRun> OpenRunAsync(PiAgent runningAgent, ConversationSession ses
         keepRecentTokens: runSettings.ResolveCompactionKeepRecentTokens(
             $"{runModel.Provider.Id}/{runModel.Model.Id}"),
         physicalContextResolver: modelRuntimeController.ResolvePhysicalContextAsync,
-        providerApi: ProviderChatClientFactory.ResolveProtocol(runModel));
+        providerApi: ProviderChatClientFactory.ResolveProtocol(runModel),
+        activeToolNamesOverride: activeToolNamesOverride);
 }
 var sessionPath = cli.NoSession || cli.ForkSource is not null ? null : cli.SessionPath is not null &&
     (cli.SessionPath.Contains(Path.DirectorySeparatorChar) || cli.SessionPath.EndsWith(".session.json", StringComparison.Ordinal) ||
@@ -800,16 +803,23 @@ async Task ReloadResources()
     {
         var nextConfiguration = await ProjectRuntimeConfiguration.LoadAsync(currentDirectory, agentDirectory, cli,
             trustStore, interactiveTrust: false, Console.In, Console.Error, trustedOverride: trusted);
-        nextProject = await ProjectRuntimeContext.LoadAsync(nextConfiguration, agentDirectory, cli, configuredSessionDirectory);
+        var reloadPlan = DefaultToolReloadPolicy.Resolve(cli, usesDefaultToolsSetting, userSettings,
+            nextConfiguration.Settings, conversationRun.ActiveToolNames, Environment.GetEnvironmentVariable);
+        nextProject = await ProjectRuntimeContext.LoadAsync(nextConfiguration, agentDirectory, reloadPlan.Arguments,
+            configuredSessionDirectory);
         modelRuntime.SetVirtualModelRegistry(nextProject.Extensions.Registration.VirtualModels);
         var nextController = new ModelRuntimeController(modelRuntime, () => nextConfiguration.Settings,
             Environment.GetEnvironmentVariable);
-        var nextAgent = nextProject.CreateAgent(chat, selection, thinking, cli, nextConfiguration.Settings,
+        var reloadAgentArguments = usesDefaultToolsSetting
+            ? reloadPlan.Arguments with { Tools = null }
+            : reloadPlan.Arguments;
+        var nextAgent = nextProject.CreateAgent(chat, selection, thinking, reloadAgentArguments, nextConfiguration.Settings,
             nextController.CreateVirtualModelRouter(selection), codemodeModels);
         var nextContextPolicy = nextConfiguration.Settings.ResolveCompactionPolicy(selection.Model.ContextLength, Environment.GetEnvironmentVariable,
             $"{selection.Provider.Id}/{selection.Model.Id}");
         var nextModelPricing = ModelPricing.FromEnvironment(Environment.GetEnvironmentVariable) ?? selection.Model.Pricing;
-        var nextRun = await OpenRunAsync(nextAgent, conversation, sessionPath, targetProject: nextProject);
+        var nextRun = await OpenRunAsync(nextAgent, conversation, sessionPath, targetProject: nextProject,
+            activeToolNamesOverride: reloadPlan.ActiveToolNames);
         extensionLease.Replace(nextProject.TransferExtensions());
         projectRuntime = nextProject;
         projectConfiguration = nextConfiguration;
@@ -817,6 +827,7 @@ async Task ReloadResources()
         baseUserSettings = nextConfiguration.BaseUserSettings;
         projectSettings = nextConfiguration.ProjectSettings;
         userSettings = nextConfiguration.Settings;
+        cli = reloadPlan.Arguments;
         resources = nextProject.Resources;
         instructions = nextProject.Instructions;
         prompts = nextProject.Prompts;
@@ -825,6 +836,8 @@ async Task ReloadResources()
         modelPricing = nextModelPricing;
         sessionController = new InteractiveSessionController(store, cli.NoSession,
             (branch, path) => OpenRunAsync(agent, branch, path));
+        projectSessionRuntimeFactory = new ProjectSessionRuntimeFactory(agentDirectory, cli,
+            configuredSessionDirectory, trustStore, modelRuntime, codemodeModels);
         terminalSessionPicker = editor is null ? null : new TerminalSessionPicker(store, editor);
         RefreshTerminalTheme();
         terminalScreen?.SetMarkdownCodeBlockIndent(userSettings.MarkdownCodeBlockIndent ?? UserSettings.DefaultMarkdownCodeBlockIndent);

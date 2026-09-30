@@ -41,6 +41,8 @@ public sealed class ConversationRun
     private ModelPricing? _providerRequestPricing;
     private string? _persistedThinkingLevel;
     public ConversationSession Conversation { get; }
+    public IReadOnlyList<string> ActiveToolNames =>
+        _agent.GetToolLoadout(_execution).Snapshot.ActiveToolNames;
     public string? SessionFile => _sessionFile;
     public Task PersistAsync(CancellationToken cancellationToken = default) =>
         _save?.Invoke(cancellationToken) ?? Task.CompletedTask;
@@ -99,17 +101,30 @@ public sealed class ConversationRun
         PromptDeliveryMode steeringMode = PromptDeliveryMode.OneAtATime,
         PromptDeliveryMode followUpMode = PromptDeliveryMode.OneAtATime,
         bool autoCompactionEnabled = true, int? keepRecentTokens = null,
-        VirtualModelPhysicalContextResolver? physicalContextResolver = null, string? providerApi = null)
+        VirtualModelPhysicalContextResolver? physicalContextResolver = null, string? providerApi = null,
+        IReadOnlyList<string>? activeToolNamesOverride = null)
     {
         if (autoCompaction is not null) _ = autoCompaction.TriggerTokens;
         if (conversation.RecoverIncomplete() && save is not null) await save(cancellationToken);
         var execution = await agent.RestoreHistoryAsync(conversation.ContextMessages(), cancellationToken);
-        if (conversation.ActiveToolLoadout() is { } activeTools) agent.RestoreToolLoadout(execution, activeTools);
+        IReadOnlyList<string>? restoredToolNames = null;
+        if (activeToolNamesOverride is not null)
+        {
+            restoredToolNames = activeToolNamesOverride.Distinct(StringComparer.Ordinal).ToArray();
+            agent.RestoreToolLoadout(execution, restoredToolNames);
+        }
+        else if (conversation.ActiveToolLoadout() is { } activeTools)
+            agent.RestoreToolLoadout(execution, activeTools);
         if (conversation.ActiveCodemodeStore() is { } codemodeStore) agent.RestoreCodemodeStore(execution, codemodeStore);
         var run = new ConversationRun(agent, conversation, execution, save, autoCompaction, pricing, sessionFile, provider,
             reasoningLevel, retryPolicy ?? AgentRunRetryPolicy.Default, steeringMode, followUpMode,
             autoCompactionEnabled, keepRecentTokens, retryDelay, physicalContextResolver, providerApi);
         await run.RestorePhysicalContextPolicyAsync(cancellationToken);
+        if (restoredToolNames is not null)
+        {
+            conversation.AppendToolLoadout(restoredToolNames);
+            if (save is not null) await save(cancellationToken);
+        }
         return run;
     }
 

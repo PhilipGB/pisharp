@@ -226,6 +226,39 @@ public sealed class ToolSelectionTests
     }
 
     [Fact]
+    public async Task ReloadedDefaultToolsMergeNewNamesIntoTheSavedSessionLoadout()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-reload-tools-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        try
+        {
+            var conversation = new ConversationSession(cwd, "fixture", null);
+            // bash was disabled during this session. It remains off while the newly added grep is activated.
+            conversation.AppendToolLoadout(["read", "write"]);
+            var provider = new ToolCaptureClient();
+            var previousSettings = new UserSettings(DefaultTools: ["read", "bash", "edit", "write"]);
+            var nextSettings = new UserSettings(DefaultTools: ["read", "bash", "+grep"]);
+            var plan = DefaultToolReloadPolicy.Resolve(CliArguments.Parse([]), usesSettingsDefaults: true,
+                previousSettings, nextSettings, ["read", "write"], _ => null);
+            var nextAgent = new PiAgent(provider, new CodingTools(cwd));
+            var saveCount = 0;
+            var reloaded = await ConversationRun.OpenAsync(nextAgent, conversation,
+                save: _ =>
+                {
+                    saveCount++;
+                    return Task.CompletedTask;
+                }, activeToolNamesOverride: plan.ActiveToolNames);
+            Assert.Equal(1, saveCount);
+
+            await foreach (var _ in reloaded.RunEventsAsync("after reload")) { }
+
+            Assert.Equal(["read", "write", "grep"], provider.ToolNames);
+            Assert.Equal(["read", "write", "grep"], conversation.ActiveToolLoadout());
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Fact]
     public async Task HiddenToolCannotRunEvenWhenAProviderReturnsItsName()
     {
         var invoked = false;
