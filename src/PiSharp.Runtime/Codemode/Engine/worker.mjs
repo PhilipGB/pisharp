@@ -33,7 +33,7 @@ const bridge = vm.newFunction('bridge', (kind, id, name, payload) => {
   return vm.undefined;
 });
 
-const prelude = `(function(bridge, toolsJson, storeJson) {
+const prelude = `(function(bridge, toolsJson, storeJson, hasModels) {
   'use strict';
   const pending = new Map();
   const values = new Map(Object.entries(JSON.parse(storeJson)).map(([key, value]) => [key, JSON.stringify(value)]));
@@ -84,6 +84,17 @@ const prelude = `(function(bridge, toolsJson, storeJson) {
     pending.set(id, { resolve, reject });
     bridge('global', id, 'describeTool', JSON.stringify(name));
   }) });
+  if (hasModels) {
+    const models = Object.create(null);
+    for (const method of ['getModelsOfType', 'getAvailableOfType', 'getModelOfType', 'classify']) {
+      models[method] = (...args) => new Promise((resolve, reject) => {
+        const id = ++nextId;
+        pending.set(id, { resolve, reject });
+        bridge('global', id, 'models.' + method, JSON.stringify(args));
+      });
+    }
+    Object.defineProperty(globalThis, 'models', { value: Object.freeze(models) });
+  }
   Object.defineProperty(globalThis, 'store', { value: (key, value) => {
     if (typeof key !== 'string' || key.length > 256) throw new TypeError('store key must be a string of at most 256 characters');
     const json = JSON.stringify(value);
@@ -119,7 +130,7 @@ const prelude = `(function(bridge, toolsJson, storeJson) {
 try {
   const factory = vm.evalCode(prelude, 'codemode-prelude.js');
   const api = vm.callFunction(factory, vm.undefined, bridge,
-    vm.newString(JSON.stringify(request.tools)), vm.newString(JSON.stringify(request.store)));
+    vm.newString(JSON.stringify(request.tools)), vm.newString(JSON.stringify(request.store)), request.hasModels ? vm.true : vm.false);
   const run = api.getProp('run');
   const settle = api.getProp('settle');
   const fn = vm.evalCode(`(async tools => {${request.code}\n})`, 'codemode.js');

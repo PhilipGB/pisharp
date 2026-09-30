@@ -144,7 +144,7 @@ internal sealed class ProjectRuntimeContext : IDisposable
 
     public PiAgent CreateAgent(IChatClient chat, ModelSelection selection, string thinking,
         CliArguments arguments, UserSettings? settings = null,
-        VirtualModelRequestRouter? virtualModelRequestRouter = null)
+        VirtualModelRequestRouter? virtualModelRequestRouter = null, ICodemodeModels? codemodeModels = null)
     {
         var effectiveSettings = settings ?? Settings;
         return new PiAgent(chat, new CodingTools(WorkingDirectory, effectiveSettings.ShellPath,
@@ -158,6 +158,7 @@ internal sealed class ProjectRuntimeContext : IDisposable
             extensionToolCallHooks: Extensions.Registration.ToolCallHooks,
             extensionToolResultHooks: Extensions.Registration.ToolResultHooks,
             virtualModelRequestRouter: virtualModelRequestRouter,
+            codemodeModels: codemodeModels,
             // ProviderChatClientFactory applies retry.provider.maxRetries inside the SDK adapter.
             // Avoid adding PiAgent's independent fallback retry loop on top of that configured count.
             retryPolicy: ProviderRetryPolicy.None);

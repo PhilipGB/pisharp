@@ -223,7 +223,7 @@ internal sealed class RpcEventProjector
             ["details"] = JsonSerializer.SerializeToNode(item.Details) ?? new JsonObject()
         };
         if (item.StructuredContent is { } structured) result["structuredContent"] = JsonNode.Parse(structured.GetRawText());
-        if (item.ToolUsage is { } usage) result["usage"] = PiJsonlSessionInterchange.ProjectToolUsage(usage);
+        if (item.ToolUsage is { } usage) result["usage"] = PiJsonlSessionInterchange.ProjectToolUsage(usage, item.Cost);
         if (item.Terminate == true) result["terminate"] = true;
         var projected = new JsonObject
         {

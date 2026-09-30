@@ -21,7 +21,7 @@ internal sealed record PiSessionStartupTarget(string WorkingDirectory, CliArgume
             FileArguments = ResolvePaths(arguments.FileArguments, invocationPath),
             SkillPaths = ResolvePaths(arguments.SkillPaths, invocationPath),
             PromptTemplatePaths = ResolvePaths(arguments.PromptTemplatePaths, invocationPath),
-            ExtensionPaths = ResolvePaths(arguments.ExtensionPaths, invocationPath),
+            ExtensionPaths = ResolvePaths(arguments.ExtensionPaths, invocationPath, preserveBuiltins: true),
             SystemPrompt = ResolvePromptFile(arguments.SystemPrompt, invocationPath),
             AppendSystemPrompts = ResolvePromptFiles(arguments.AppendSystemPrompts, invocationPath)
         });
@@ -58,8 +58,8 @@ internal sealed record PiSessionStartupTarget(string WorkingDirectory, CliArgume
     private static string? ResolveOptionalPath(string? path, string invocationPath) =>
         path is null ? null : Path.GetFullPath(path, invocationPath);
 
-    private static IReadOnlyList<string>? ResolvePaths(IReadOnlyList<string>? paths, string invocationPath) =>
-        paths?.Select(path => path is "~" || path.StartsWith("~/", StringComparison.Ordinal) ||
+    private static IReadOnlyList<string>? ResolvePaths(IReadOnlyList<string>? paths, string invocationPath, bool preserveBuiltins = false) =>
+        paths?.Select(path => preserveBuiltins && path.StartsWith("builtin:", StringComparison.Ordinal) || path is "~" || path.StartsWith("~/", StringComparison.Ordinal) ||
             path.StartsWith("~\\", StringComparison.Ordinal) ? path : Path.GetFullPath(path, invocationPath)).ToArray();
 
     private static string? ResolvePromptFile(string? input, string invocationPath)

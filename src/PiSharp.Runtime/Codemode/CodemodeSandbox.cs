@@ -62,6 +62,7 @@ internal static class CodemodeSandbox
             {
                 code,
                 tools,
+                hasModels = context.Models is not null,
                 store,
                 memoryLimitBytes = 32 * 1024 * 1024
             }, s_json));
@@ -164,7 +165,13 @@ internal static class CodemodeSandbox
         string? payload;
         try
         {
-            if (isGlobal)
+            if (isGlobal && name.StartsWith("models.", StringComparison.Ordinal))
+            {
+                using var parsed = JsonDocument.Parse(args ?? "null");
+                payload = await CodemodeModelGlobals.InvokeAsync(name, parsed.RootElement, context, cancellationToken);
+                ok = true;
+            }
+            else if (isGlobal)
             {
                 if (name is not ("searchTools" or "describeTool"))
                     throw new ArgumentException("Unknown Codemode global.");

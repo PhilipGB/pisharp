@@ -301,13 +301,19 @@ public static class PiJsonlSessionInterchange
         ["cost"] = new JsonObject { ["input"] = 0, ["output"] = 0, ["cacheRead"] = 0, ["cacheWrite"] = 0, ["total"] = 0 }
     };
 
-    internal static JsonObject ProjectToolUsage(UsageDetails usage) => new()
+    internal static JsonObject ProjectToolUsage(UsageDetails usage, decimal? cost = null)
     {
-        ["input"] = usage.InputTokenCount ?? 0,
-        ["output"] = usage.OutputTokenCount ?? 0,
-        ["cacheRead"] = usage.CachedInputTokenCount ?? 0,
-        ["totalTokens"] = usage.TotalTokenCount ?? (usage.InputTokenCount ?? 0) + (usage.OutputTokenCount ?? 0)
-    };
+        var value = new JsonObject
+        {
+            ["input"] = usage.InputTokenCount ?? 0,
+            ["output"] = usage.OutputTokenCount ?? 0,
+            ["cacheRead"] = usage.CachedInputTokenCount ?? 0,
+            ["cacheWrite"] = UsageRecord.Create("tool", "tool", usage, null).CachedWriteTokens,
+            ["totalTokens"] = usage.TotalTokenCount ?? (usage.InputTokenCount ?? 0) + (usage.OutputTokenCount ?? 0)
+        };
+        if (cost is not null) value["cost"] = new JsonObject { ["total"] = cost.Value };
+        return value;
+    }
 
     /// <summary>Writes Pi JSONL without replacing an existing export; files are user-private on Unix.</summary>
     public static async Task ExportToFileAsync(ConversationSession session, string path,
@@ -795,7 +801,7 @@ public static class PiJsonlSessionInterchange
             if (result is not null && ToolResultOutput.TryReadContract(result.Result, out var parsed)) contract = parsed;
             messageObject["isError"] = result?.Exception is not null || contract?.IsError == true;
             if (contract is not null) messageObject["piSharpToolResult"] = JsonSerializer.SerializeToNode(contract);
-            if (contract?.Usage is { } toolUsage) messageObject["usage"] = ProjectToolUsage(toolUsage);
+            if (contract?.Usage is { } toolUsage) messageObject["usage"] = ProjectToolUsage(toolUsage, contract.Cost);
             if (contract?.Terminate == true) messageObject["terminate"] = true;
         }
         if (ConversationSession.NestedToolCallsFor(node) is { } nestedToolCalls)

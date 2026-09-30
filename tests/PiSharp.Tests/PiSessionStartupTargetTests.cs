@@ -11,6 +11,17 @@ namespace PiSharp.Tests;
 public sealed class PiSessionStartupTargetTests
 {
     [Fact]
+    public void StartupPreservesBuiltinExtensionIdentityWhileResolvingResourcePaths()
+    {
+        var cwd = Path.GetTempPath();
+        var arguments = CliArguments.Parse(["--extension", "builtin:codemode", "--extension", "fixture.dll", "--skill", "fixture-skill"]);
+        var target = PiSessionStartupTarget.Resolve(cwd, arguments);
+        Assert.Equal("builtin:codemode", target.Arguments.ExtensionPaths![0]);
+        Assert.Equal(Path.GetFullPath("fixture.dll", cwd), target.Arguments.ExtensionPaths[1]);
+        Assert.Equal(Path.GetFullPath("fixture-skill", cwd), target.Arguments.SkillPaths![0]);
+    }
+
+    [Fact]
     public void ResolvesProjectCwdFromExplicitSessionAndKeepsRelativeArgumentsAtInvocationDirectory()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-session-startup-target-" + Guid.NewGuid().ToString("N"));

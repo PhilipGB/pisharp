@@ -37,6 +37,7 @@ public sealed class ProviderModelRuntime
     private readonly Func<string, string?> _environment;
     private readonly HttpClient _http;
     private readonly string? _runtimeApiKey;
+    private string? _runtimeApiKeyProvider;
     private readonly bool _offline;
     private IReadOnlyList<string> _scope;
     private VirtualModelRegistry? _virtualModels;
@@ -126,7 +127,8 @@ public sealed class ProviderModelRuntime
         bool allowOAuthRefresh = true)
     {
         var provider = GetProvider(providerId);
-        if (useRuntimeOverride && !string.IsNullOrWhiteSpace(_runtimeApiKey))
+        if (useRuntimeOverride && !string.IsNullOrWhiteSpace(_runtimeApiKey) &&
+            (_runtimeApiKeyProvider is null || _runtimeApiKeyProvider == provider.Id))
             return (_runtimeApiKey, true, "command line");
         var stored = await _auth.ReadAsync(provider.Id, cancellationToken);
         return await ResolveAuthCoreAsync(provider, stored, useRuntimeOverride, allowOAuthRefresh, cancellationToken);
@@ -137,7 +139,7 @@ public sealed class ProviderModelRuntime
     {
         var provider = GetProvider(providerId);
         var stored = await _auth.ReadAsync(provider.Id, cancellationToken);
-        var auth = await ResolveAuthCoreAsync(provider, stored, true, true, cancellationToken);
+        var auth = await ResolveAuthCoreAsync(provider, stored, _runtimeApiKeyProvider == provider.Id, true, cancellationToken);
         var environment = new Dictionary<string, string>();
         if (provider.Id == "cloudflare-workers-ai")
         {
@@ -152,7 +154,8 @@ public sealed class ProviderModelRuntime
     private async Task<(string Key, bool Authenticated, string Source)> ResolveAuthCoreAsync(ProviderProfile provider,
         StoredCredential? stored, bool useRuntimeOverride, bool allowOAuthRefresh, CancellationToken cancellationToken)
     {
-        if (useRuntimeOverride && !string.IsNullOrWhiteSpace(_runtimeApiKey))
+        if (useRuntimeOverride && !string.IsNullOrWhiteSpace(_runtimeApiKey) &&
+            (_runtimeApiKeyProvider is null || _runtimeApiKeyProvider == provider.Id))
             return (_runtimeApiKey, true, "command line");
         if (stored is not null)
         {
@@ -189,7 +192,7 @@ public sealed class ProviderModelRuntime
         foreach (var provider in providers)
         {
             if (provider.Models.Count == 0 && provider.Classifiers?.Count > 0) continue;
-            var auth = await ResolveAuthAsync(provider.Id, useRuntimeOverride: providerId is not null, cancellationToken);
+            var auth = await ResolveAuthAsync(provider.Id, useRuntimeOverride: providerId is not null || _runtimeApiKeyProvider == provider.Id, cancellationToken);
             var providerModels = provider.Models;
             if (provider.Id == "radius" && !_offline)
             {
@@ -273,6 +276,15 @@ public sealed class ProviderModelRuntime
 
     public async Task<ModelSelection> ResolveAsync(string? providerId, string? modelReference,
         CancellationToken cancellationToken = default, bool includeOutOfScope = false)
+    {
+        var selected = await ResolveSelectionAsync(providerId, modelReference, cancellationToken, includeOutOfScope);
+        if (!string.IsNullOrWhiteSpace(_runtimeApiKey))
+            Interlocked.CompareExchange(ref _runtimeApiKeyProvider, selected.Provider.Id, null);
+        return selected;
+    }
+
+    private async Task<ModelSelection> ResolveSelectionAsync(string? providerId, string? modelReference,
+        CancellationToken cancellationToken, bool includeOutOfScope)
     {
         ProviderProfile? explicitProvider = providerId is null ? null : GetProvider(providerId);
         var inferredReference = modelReference?.Trim();

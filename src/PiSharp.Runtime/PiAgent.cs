@@ -3,6 +3,7 @@ using System.Runtime.CompilerServices;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using PiSharp.Runtime.Extensions;
+using PiSharp.Runtime.Codemode;
 using PiSharp.Runtime.Providers;
 using PiSharp.Runtime.Sessions;
 using PiSharp.Runtime.Tools;
@@ -103,6 +104,7 @@ public sealed class PiAgent
         Only summarize information explicitly present above. Do not infer or recreate later messages.
         """;
     private readonly InMemoryChatHistoryProvider _history = new();
+    private readonly ICodemodeModels? _codemodeModels;
     private readonly CodingTools _codingTools;
     private readonly ChatClientAgent _agent;
     private readonly ChatClientAgent _summarizer;
@@ -163,8 +165,9 @@ public sealed class PiAgent
         IReadOnlyList<PiSharpToolCallHook>? extensionToolCallHooks = null,
         IReadOnlyList<PiSharpToolResultHook>? extensionToolResultHooks = null,
         ExtensionRegistration? liveExtensionRegistration = null,
-        VirtualModelRequestRouter? virtualModelRequestRouter = null)
+        VirtualModelRequestRouter? virtualModelRequestRouter = null, ICodemodeModels? codemodeModels = null)
     {
+        _codemodeModels = codemodeModels;
         _codingTools = tools;
         _selectedImageResizeOptions = tools.ImageResizeOptions;
         _toolHooks = new PiSharpToolHookPipeline(extensionToolCallHooks, extensionToolResultHooks);
@@ -310,7 +313,7 @@ public sealed class PiAgent
         _runtimeToolRegistrations[name] = registration;
         _runtimeToolFunctions[name] = new DurableToolFunction(registration.Function, () => _active,
             value => _events?.Invoke(value), () => Volatile.Read(ref _currentToolLoadout),
-            () => _runtimeToolFunctions, _toolHooks, registration.OutputSchema);
+            () => _runtimeToolFunctions, _toolHooks, registration.OutputSchema, _codemodeModels);
     }
 
     private IReadOnlyList<AITool> GetRuntimeFunctionsForRun() =>
@@ -372,7 +375,7 @@ public sealed class PiAgent
     public void SetReasoningOptions(ReasoningOptions? reasoning) => Volatile.Write(ref _reasoning, reasoning);
 
     public void SetModelRuntime(IChatClient client, bool supportsImages, ModelImageResizeOptions? imageResizeOptions,
-        VirtualModelRequestRouter? virtualModelRequestRouter = null)
+        VirtualModelRequestRouter? virtualModelRequestRouter = null, ICodemodeModels? codemodeModels = null)
     {
         _chatClient.SetClient(client);
         _routedChatClient.SetRouter(virtualModelRequestRouter);

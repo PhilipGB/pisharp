@@ -1,6 +1,7 @@
 using System.Text.Json;
 using PiSharp.Runtime.Classifiers;
 using PiSharp.Runtime.Sessions;
+using PiSharp.Runtime.Providers;
 
 namespace PiSharp.Cli;
 
@@ -43,6 +44,9 @@ internal static class ClassifierCatalog
             cost.GetProperty("input").GetDecimal(), cost.GetProperty("output").GetDecimal()) : null;
         return new(provider, item.GetProperty("id").GetString()!, item.GetProperty("api").GetString()!,
             ProviderProfileLoader.ParseEndpoint(url, "Classifier baseUrl"),
-            item.TryGetProperty("contextWindow", out var window) ? window.GetInt32() : 0, pricing, template);
+            item.TryGetProperty("contextWindow", out var window) ? window.GetInt32() : 0, pricing, template,
+            item.TryGetProperty("name", out var name) ? name.GetString() : null,
+            item.TryGetProperty("input", out var input) ? input.EnumerateArray().Select(value => value.GetString()!).ToArray() : ["text"],
+            ModelInputLimitsParser.Parse(item, $"Classifier {provider}", strict: true));
     }
 }

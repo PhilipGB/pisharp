@@ -24,6 +24,9 @@ public static class CodemodeBuiltin
         var description = new StringBuilder("Run an async JavaScript body inside QuickJS/WASM. " +
             "Use tools.<name>(args) for callable tools; text(value), image(dataUrl) and console.log add output; " +
             "exit() ends early. searchTools(query, options) and describeTool(name) inspect callable tools; " +
+            "models.getModelsOfType(type, provider), models.getAvailableOfType(type, provider), " +
+            "models.getModelOfType(type, provider, id) inspect catalogs; models.classify(model, context) invokes classifiers. " +
+            "Only provider/id select authority. Check stopReason/errorMessage for provider failures. " +
             "store(key, value) and load(key) keep branch-local JSON state. The script can return a value. " +
             "ALL_TOOLS lists every callable tool, including those omitted below. There are no host globals, " +
             "timers, imports, process or fetch. Execution is limited to 30 seconds, 32 MiB of guest heap " +
@@ -49,9 +52,10 @@ public static class CodemodeBuiltin
         var result = await CodemodeSandbox.ExecuteAsync(code, context, context.CodemodeStore, cancellationToken);
         cancellationToken.ThrowIfCancellationRequested();
         if (result.Ok && result.Store is not null) context.SetCodemodeStore(result.Store);
+        var usage = CodemodeUsageAccounting.Aggregate(context.NestedUsage);
         return result.Ok
-            ? new PiSharpToolResult(result.Text, new { sandbox = "quickjs-wasm" }, Images: result.Images)
+            ? new PiSharpToolResult(result.Text, new { sandbox = "quickjs-wasm" }, Images: result.Images, Usage: usage.Usage, Cost: usage.Cost)
             : new PiSharpToolResult(result.Text.Length > 0 ? result.Text + "\n" + result.Error : result.Error ?? "Codemode failed.",
-                new { sandbox = "quickjs-wasm" }, IsError: true, Error: result.Error, Images: result.Images);
+                new { sandbox = "quickjs-wasm" }, IsError: true, Error: result.Error, Images: result.Images, Usage: usage.Usage, Cost: usage.Cost);
     }
 }

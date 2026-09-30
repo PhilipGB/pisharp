@@ -630,6 +630,10 @@ public sealed class ConversationRun
 
         void Observe(AgentLifecycleEvent item)
         {
+            if (item.Type is "nested_model_usage" or "nested_tool_usage" && item.UsageSnapshot is { } nestedUsage)
+            {
+                lock (_runtimeStateGate) Conversation.AppendUsage(nestedUsage);
+            }
             if (item.Type == "tool_loadout_changed" && item.ToolLoadoutNames is { } activeTools)
             {
                 lock (_runtimeStateGate) Conversation.AppendToolLoadout(activeTools);

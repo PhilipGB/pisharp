@@ -54,11 +54,11 @@ Latest verified source `43b33344ada902003b4a2c1911196471b0ed9c2f`: exact-head CI
 
 ## Current priority
 
-General classifiers and Codemode model/classifier globals are the active capability family. Native typed classifiers/catalog and shared request transport are exact-head green at `7753084` / CI `36681140547` / 939 tests. Virtual routing/context/image/status checkpoints are recorded in the fixture family; bounded residuals remain for the wider audit.
+General classifiers and Codemode model/classifier globals are the active capability family. Native typed classifiers/catalog and shared request transport are exact-head green at `4a31e8a` / CI `36683707786` / 953 tests. Virtual routing/context/image/status checkpoints are recorded in the fixture family; bounded residuals remain for the wider audit.
 
 ## Exact next action
 
-llama.cpp tokenize/apply-template/completion label readout passes paired Pi comparison, 60 focused checks and full 947/947 local tests with zero skips. Its CI 36682520323 found queued shutdown DA fence leakage; deterministic fix and Cloudflare stored account metadata now pass 107 focused checks and full 953/953 tests. Publish/verify the follow-up exact-head CI, then continue Codemode globals/nested usage. Add paired provider/process classifier evidence. Continue Codemode model/classifier globals and nested usage, material orchestration/extensions, provider/auth/catalog work and the fresh full current-Pi audit. A passing checkpoint does not close parity.
+llama.cpp tokenize/apply-template/completion label readout passes paired Pi comparison, 60 focused checks and full 947/947 local tests with zero skips. Its CI 36682520323 found queued shutdown DA fence leakage; deterministic fix and Cloudflare stored account metadata now pass 107 focused checks and full 953/953 tests. The follow-up exact-head CI 36683707786 is green (953/953). Continue current fail-first Codemode globals/nested usage work. Add paired provider/process classifier evidence. Continue Codemode model/classifier globals and nested usage, material orchestration/extensions, provider/auth/catalog work and the fresh full current-Pi audit. A passing checkpoint does not close parity.
 
 ## Architecture and residuals to preserve
 

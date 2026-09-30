@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.AI;
 using PiSharp.Runtime.Sessions;
+using PiSharp.Runtime.Codemode;
 using PiSharp.Runtime.Tools;
 
 namespace PiSharp.Runtime.Extensions;
@@ -16,7 +17,8 @@ public sealed record PiSharpNestedToolCall(
     [property: JsonPropertyName("arguments"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] JsonElement? Arguments = null,
     [property: JsonPropertyName("argumentsBytes"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] int? ArgumentsBytes = null,
     [property: JsonPropertyName("durationMs"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] long? DurationMs = null,
-    [property: JsonPropertyName("error"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Error = null);
+    [property: JsonPropertyName("error"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Error = null,
+    [property: JsonPropertyName("cost"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] decimal? Cost = null);
 
 /// <summary>Nested tool calls made beneath one model-issued tool call.</summary>
 public sealed record PiSharpNestedToolCalls(
@@ -50,6 +52,7 @@ public sealed class PiSharpToolExecutionContext
     private static readonly object s_contextKey = new();
     private static readonly object s_invocationKey = new();
 
+    private readonly CodemodeModelCalls? _modelCalls;
     private readonly ToolLoadout _loadout;
     private readonly ToolInvocationScope _scope;
     private readonly Action<string>? _nestedUpdate;
@@ -62,7 +65,7 @@ public sealed class PiSharpToolExecutionContext
 
     private PiSharpToolExecutionContext(ToolLoadout loadout, ToolInvocationScope scope, string toolCallId,
         string? parentToolCallId, string? operationId, string toolName,
-        IReadOnlyDictionary<string, object?> arguments, Action<string>? nestedUpdate)
+        IReadOnlyDictionary<string, object?> arguments, Action<string>? nestedUpdate, ICodemodeModels? models = null, CodemodeModelCalls? modelCalls = null)
     {
         _loadout = loadout;
         _scope = scope;
@@ -72,18 +75,47 @@ public sealed class PiSharpToolExecutionContext
         _toolName = toolName;
         _arguments = arguments;
         _nestedUpdate = nestedUpdate;
+        Models = models;
+        _modelCalls = modelCalls ?? (models is null ? null : new(models, _scope.Publish, _scope.Usage, _scope.RegisterOrder));
     }
 
     internal static PiSharpToolExecutionContext CreateRoot(ToolLoadout loadout,
         Func<IReadOnlyDictionary<string, AIFunction>> functions, Action<AgentLifecycleEvent> publish,
         string toolCallId, string? operationId, string toolName,
-        IReadOnlyDictionary<string, object?> arguments) =>
+        IReadOnlyDictionary<string, object?> arguments, ICodemodeModels? models = null) =>
         new(loadout, new ToolInvocationScope(functions, publish), toolCallId, null, operationId,
-            toolName, arguments, null);
+            toolName, arguments, null, models);
+
+    internal ICodemodeModels? Models { get; }
 
     internal string ToolCallId { get; }
     internal string? ParentToolCallId { get; }
-    internal PiSharpNestedToolCalls? NestedCalls => ParentToolCallId is null ? _scope.Snapshot() : null;
+    internal IReadOnlyList<UsageRecord> NestedUsage => _scope.Usage.Records;
+
+    internal void RecordToolUsage(string callId, string name, UsageDetails usage, decimal? cost)
+    {
+        var record = UsageRecord.Create(name, "tool", usage, null) with { Cost = cost };
+        if (_scope.Usage.Add(callId, record))
+            _scope.Publish(new("nested_tool_usage", Cost: cost, TotalTokens: record.TotalTokens)
+            { UsageSnapshot = record, ToolCallId = callId, ParentToolCallId = ToolCallId });
+    }
+
+    internal Task<Classifiers.ClassifierResult> ClassifyModelAsync(string provider, string id,
+        Classifiers.ClassifierContext context, CancellationToken cancellationToken) =>
+        (_modelCalls ?? throw new InvalidOperationException("Model access is unavailable.")).ClassifyAsync(ToolCallId, provider, id, context, cancellationToken);
+
+    internal PiSharpNestedToolCalls? NestedCalls
+    {
+        get
+        {
+            if (ParentToolCallId is not null) return null;
+            var tools = _scope.Snapshot();
+            var models = _modelCalls?.Calls ?? [];
+            if (models.Count == 0) return tools;
+            return new((tools?.Calls ?? []).Concat(models).OrderBy(call => _scope.CallOrder(call.Id)).ToArray(),
+                tools?.Complete != false && models.All(call => call.Status != "unfinished"));
+        }
+    }
 
     /// <summary>The immutable tool set visible to this invocation.</summary>
     public ToolLoadoutSnapshot Snapshot => _loadout.Snapshot;
@@ -159,7 +191,7 @@ public sealed class PiSharpToolExecutionContext
     internal PiSharpToolExecutionContext ForToolCall(string toolCallId, string? parentToolCallId,
         string? operationId, string toolName, IReadOnlyDictionary<string, object?> arguments,
         Action<string>? nestedUpdate = null) =>
-        new(_loadout, _scope, toolCallId, parentToolCallId, operationId, toolName, arguments, nestedUpdate);
+        new(_loadout, _scope, toolCallId, parentToolCallId, operationId, toolName, arguments, nestedUpdate, Models, _modelCalls);
 
     internal sealed class NestedInvocation(PiSharpToolExecutionContext parent, string callId,
         string parentCallId, Action<PiSharpToolExecutionResult>? onUpdate)
@@ -175,11 +207,24 @@ public sealed class PiSharpToolExecutionContext
     private sealed class ToolInvocationScope(Func<IReadOnlyDictionary<string, AIFunction>> functions,
         Action<AgentLifecycleEvent> publish)
     {
+        public CodemodeUsageLedger Usage { get; } = new();
         private readonly object _gate = new();
+        private readonly Dictionary<string, int> _order = new(StringComparer.Ordinal);
         private readonly Dictionary<string, int> _nextChild = new(StringComparer.Ordinal);
         private readonly List<MutableCall> _calls = [];
         private bool _complete = true;
         private int _argumentBytes;
+
+        public void RegisterOrder(string id)
+        {
+            lock (_gate)
+                if (_order.Count < MaximumNestedCalls && !_order.ContainsKey(id)) _order[id] = _order.Count;
+        }
+
+        public int CallOrder(string id)
+        {
+            lock (_gate) return _order.GetValueOrDefault(id, int.MaxValue);
+        }
 
         public void Publish(AgentLifecycleEvent item) => publish(item);
 
@@ -234,10 +279,11 @@ public sealed class PiSharpToolExecutionContext
                 var hasStructuredOutput = ToolResultOutput.TryRead(value, out var structuredText, out var details);
                 var text = hasStructuredOutput ? structuredText : value?.ToString() ?? string.Empty;
                 ToolResultOutput.TryReadContract(value, out var contract);
+                if (contract?.Usage is { } billedUsage) caller.RecordToolUsage(callId, name, billedUsage, contract.Cost);
                 var result = new PiSharpToolExecutionResult(callId, name, value, text, nested.IsError,
                     nested.Error, details, contract?.StructuredContent, contract?.Images, contract?.Usage,
                     contract?.Terminate ?? false);
-                FinishCall(record, nested.IsError, nested.Error);
+                FinishCall(record, nested.IsError, nested.Error, contract?.Cost);
                 return result;
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -267,6 +313,7 @@ public sealed class PiSharpToolExecutionContext
         {
             lock (_gate)
             {
+                RegisterOrder(callId);
                 if (_calls.Count >= MaximumNestedCalls)
                 {
                     _complete = false;
@@ -303,11 +350,12 @@ public sealed class PiSharpToolExecutionContext
             }
         }
 
-        private void FinishCall(MutableCall? call, bool isError, string? error)
+        private void FinishCall(MutableCall? call, bool isError, string? error, decimal? cost = null)
         {
             if (call is null) return;
             lock (_gate)
             {
+                call.Cost = cost ?? Usage.Find(call.Id)?.Cost;
                 call.Status = isError ? "error" : "ok";
                 call.DurationMs = (long)Math.Round(Stopwatch.GetElapsedTime(call.StartedAt).TotalMilliseconds);
                 if (isError && !string.IsNullOrEmpty(error))
@@ -329,11 +377,13 @@ public sealed class PiSharpToolExecutionContext
         private sealed class MutableCall(string id, string name, string parentToolCallId,
             JsonElement? arguments, int? argumentsBytes, long startedAt)
         {
+            public string Id => id;
             public string Status { get; set; } = "unfinished";
             public long? DurationMs { get; set; }
             public string? Error { get; set; }
+            public decimal? Cost { get; set; }
             public PiSharpNestedToolCall ToRecord() => new(id, name, parentToolCallId, Status,
-                arguments, argumentsBytes, DurationMs, Error);
+                arguments, argumentsBytes, DurationMs, Error, Cost);
             public long StartedAt { get; } = startedAt;
         }
     }

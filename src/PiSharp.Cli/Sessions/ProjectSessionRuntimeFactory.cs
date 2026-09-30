@@ -1,4 +1,5 @@
 using Microsoft.Extensions.AI;
+using PiSharp.Runtime.Codemode;
 using PiSharp.Runtime;
 using PiSharp.Runtime.Resources;
 using PiSharp.Runtime.Sessions;
@@ -10,7 +11,7 @@ internal sealed class ProjectSessionRuntimeFactory(
     CliArguments arguments,
     string? configuredSessionDirectory,
     ProjectTrust trustStore,
-    ProviderModelRuntime modelRuntime)
+    ProviderModelRuntime modelRuntime, ICodemodeModels? codemodeModels = null)
 {
     public void ValidateExistingSwitchTarget(string sessionReference, string invocationDirectory)
     {
@@ -71,7 +72,7 @@ internal sealed class ProjectSessionRuntimeFactory(
             var controller = new ModelRuntimeController(modelRuntime, () => project.Settings,
                 Environment.GetEnvironmentVariable);
             var agent = project.CreateAgent(chat, selection, thinking, arguments,
-                virtualModelRequestRouter: controller.CreateVirtualModelRouter(selection));
+                virtualModelRequestRouter: controller.CreateVirtualModelRouter(selection), codemodeModels: codemodeModels);
             var compaction = project.Settings.ResolveCompactionPolicy(selection.Model.ContextLength,
                 Environment.GetEnvironmentVariable, $"{selection.Provider.Id}/{selection.Model.Id}");
             var pricing = ModelPricing.FromEnvironment(Environment.GetEnvironmentVariable) ?? selection.Model.Pricing;

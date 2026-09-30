@@ -125,6 +125,8 @@ catch (Exception error) when (error is ArgumentException or InvalidOperationExce
 }
 async Task<IReadOnlyList<ModelDescriptor>> GetModelsAsync(CancellationToken token = default) =>
     await modelRuntime.ListModelsAsync(cli.Provider, token);
+using var codemodeHttp = new HttpClient { Timeout = Timeout.InfiniteTimeSpan };
+var codemodeModels = new ProviderCodemodeModels(modelRuntime, codemodeHttp);
 var modelRuntimeController = new ModelRuntimeController(modelRuntime, () => userSettings,
     Environment.GetEnvironmentVariable);
 if (cli.ListModels)
@@ -155,7 +157,7 @@ PiAgent agent;
 try
 {
     agent = projectRuntime.CreateAgent(chat, selection, thinking, cli, userSettings,
-        modelRuntimeController.CreateVirtualModelRouter(selection));
+        modelRuntimeController.CreateVirtualModelRouter(selection), codemodeModels);
 }
 catch (ArgumentException e)
 {
@@ -254,7 +256,7 @@ try
         contextPolicy = userSettings.ResolveCompactionPolicy(selection.Model.ContextLength, Environment.GetEnvironmentVariable, $"{selection.Provider.Id}/{selection.Model.Id}");
         modelPricing = ModelPricing.FromEnvironment(Environment.GetEnvironmentVariable) ?? selection.Model.Pricing;
         agent = projectRuntime.CreateAgent(chat, selection, thinking, cli, userSettings,
-            modelRuntimeController.CreateVirtualModelRouter(selection));
+            modelRuntimeController.CreateVirtualModelRouter(selection), codemodeModels);
     }
     using var initialNameChange = cli.SessionName is null ? null : conversation.BeginSessionNameChange(cli.SessionName);
     if (!cli.NoSession) sessionPath ??= store.NewPath(conversation);
@@ -273,7 +275,7 @@ catch (Exception e) when (e is IOException or InvalidDataException or Unauthoriz
 var sessionController = new InteractiveSessionController(store, cli.NoSession,
     (branch, path) => OpenRunAsync(agent, branch, path));
 var projectSessionRuntimeFactory = new ProjectSessionRuntimeFactory(agentDirectory, cli,
-    configuredSessionDirectory, trustStore, modelRuntime);
+    configuredSessionDirectory, trustStore, modelRuntime, codemodeModels);
 bool print = cli.Print || cli.Mode == "print" || Console.IsInputRedirected || Console.IsOutputRedirected;
 var prompt = cli.Prompt;
 // Pi combines trimmed piped input before @file content and the positional prompt.
@@ -457,7 +459,7 @@ async Task AdoptPreparedModelRuntime(PreparedModelRuntime prepared, bool recordM
     var nextPolicy = prepared.ContextPolicy;
     var nextPricing = prepared.Pricing;
     var nextAgent = projectRuntime.CreateAgent(nextChat, nextSelection, nextThinking, cli, userSettings,
-        prepared.VirtualModelRouter);
+        prepared.VirtualModelRouter, codemodeModels);
     var previousHead = conversation.Tree.HeadId;
     var previousSelection = selection;
     var previousConnection = connection;
@@ -803,7 +805,7 @@ async Task ReloadResources()
         var nextController = new ModelRuntimeController(modelRuntime, () => nextConfiguration.Settings,
             Environment.GetEnvironmentVariable);
         var nextAgent = nextProject.CreateAgent(chat, selection, thinking, cli, nextConfiguration.Settings,
-            nextController.CreateVirtualModelRouter(selection));
+            nextController.CreateVirtualModelRouter(selection), codemodeModels);
         var nextContextPolicy = nextConfiguration.Settings.ResolveCompactionPolicy(selection.Model.ContextLength, Environment.GetEnvironmentVariable,
             $"{selection.Provider.Id}/{selection.Model.Id}");
         var nextModelPricing = ModelPricing.FromEnvironment(Environment.GetEnvironmentVariable) ?? selection.Model.Pricing;

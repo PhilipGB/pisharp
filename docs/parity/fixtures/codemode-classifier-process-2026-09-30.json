@@ -1,0 +1,73 @@
+{
+  "reference": "1b347794e2a630e4359f2584f4eea388145d0ddf",
+  "cases": [
+    {
+      "case": "success",
+      "match": true,
+      "pi": {
+        "output": "undefined\n0.8\n[100,10,110,0.00012]",
+        "isError": false,
+        "input": 100,
+        "outputTokens": 10,
+        "totalTokens": 110,
+        "cost": 0.00012,
+        "calls": [
+          {
+            "name": "models.classify",
+            "status": "ok",
+            "cost": 0.00012
+          }
+        ]
+      },
+      "pisharp": {
+        "output": "undefined\n0.8\n[100,10,110,0.00012]",
+        "isError": false,
+        "input": 100,
+        "outputTokens": 10,
+        "totalTokens": 110,
+        "cost": 0.00012,
+        "calls": [
+          {
+            "name": "models.classify",
+            "status": "ok",
+            "cost": 0.00012
+          }
+        ]
+      }
+    },
+    {
+      "case": "failure",
+      "match": true,
+      "pi": {
+        "output": "undefined\n0.8\n[100,10,110,0.00012]",
+        "isError": true,
+        "input": 100,
+        "outputTokens": 10,
+        "totalTokens": 110,
+        "cost": 0.00012,
+        "calls": [
+          {
+            "name": "models.classify",
+            "status": "ok",
+            "cost": 0.00012
+          }
+        ]
+      },
+      "pisharp": {
+        "output": "undefined\n0.8\n[100,10,110,0.00012]",
+        "isError": true,
+        "input": 100,
+        "outputTokens": 10,
+        "totalTokens": 110,
+        "cost": 0.00012,
+        "calls": [
+          {
+            "name": "models.classify",
+            "status": "ok",
+            "cost": 0.00012
+          }
+        ]
+      }
+    }
+  ]
+}

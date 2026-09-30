@@ -3,6 +3,7 @@ using System.Text.Json;
 using Microsoft.Extensions.AI;
 using PiSharp.Runtime;
 using PiSharp.Runtime.Extensions;
+using PiSharp.Runtime.Codemode;
 using PiSharp.Runtime.Tools;
 
 namespace PiSharp.Runtime.Sessions;
@@ -11,7 +12,7 @@ namespace PiSharp.Runtime.Sessions;
 internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecution?> current,
     Action<AgentLifecycleEvent> publish, Func<ToolLoadout?>? currentLoadout = null,
     Func<IReadOnlyDictionary<string, AIFunction>>? allToolFunctions = null,
-    PiSharpToolHookPipeline? toolHooks = null, JsonElement? outputSchema = null) : DelegatingAIFunction(inner)
+    PiSharpToolHookPipeline? toolHooks = null, JsonElement? outputSchema = null, ICodemodeModels? codemodeModels = null) : DelegatingAIFunction(inner)
 {
     private readonly ToolResultSchemaValidator _outputValidator = new(outputSchema);
 
@@ -47,7 +48,7 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
             toolExecutionContext = nestedInvocation is null
                 ? PiSharpToolExecutionContext.CreateRoot(loadout,
                     allToolFunctions ?? (() => new Dictionary<string, AIFunction>(StringComparer.Ordinal)),
-                    publish, toolCallId, id, Name, callArguments ?? displayArguments)
+                    publish, toolCallId, id, Name, callArguments ?? displayArguments, codemodeModels)
                 : nestedInvocation.Parent.ForToolCall(toolCallId, parentToolCallId, id, Name,
                     callArguments ?? displayArguments, onNestedUpdate);
         }
@@ -160,6 +161,8 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
                 returnedDetails, IsError: true, Error: resultContext.Error);
             value = contract;
         }
+        if (nestedInvocation is not null && contract?.Usage is { } nestedUsage)
+            nestedInvocation.Parent.RecordToolUsage(toolCallId, Name, nestedUsage, contract.Cost);
         if (failure is null && !resultContext.IsError)
         {
             try { _outputValidator.Validate(value); }
@@ -203,7 +206,7 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
             invocationContext.Terminate = true;
         publish(new("tool_execution_finished", Text: resultText, Tool: Name, OperationId: id,
             IsError: resultContext.IsError, Error: resultContext.Error,
-            Details: hasStructuredOutput ? details : null)
+            Details: hasStructuredOutput ? details : null, Cost: contract?.Cost)
         {
             Images = toolImages,
             StructuredContent = contract?.StructuredContent,

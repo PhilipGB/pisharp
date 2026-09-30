@@ -25,7 +25,7 @@ public sealed record PiSharpToolResult(
     string? Error = null,
     IReadOnlyList<PiSharpToolImage>? Images = null,
     UsageDetails? Usage = null,
-    bool Terminate = false)
+    bool Terminate = false, decimal? Cost = null)
 {
     [JsonPropertyName("piSharpToolResult")]
     public bool Marker => true;

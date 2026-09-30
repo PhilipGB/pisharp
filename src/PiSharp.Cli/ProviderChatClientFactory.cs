@@ -10,16 +10,19 @@ namespace PiSharp.Cli;
 /// <summary>Chooses an actual provider request protocol, not merely an endpoint alias.</summary>
 public static class ProviderChatClientFactory
 {
-    public static string ResolveProtocol(ModelSelection selection)
-    {
-        if (selection.Model.Api == VirtualModelContract.Api) return VirtualModelContract.Api;
-        var protocol = selection.Model.Api ?? selection.Provider.Api ?? (selection.Provider.Id switch
+    public static string GetProtocolId(ProviderProfile provider, PiSharp.Runtime.Providers.ModelDescriptor model) =>
+        model.Api ?? provider.Api ?? (provider.Id switch
         {
             "openai" or "xai" => "openai-responses",
             "anthropic" => "anthropic-messages",
             "mistral" => "mistral-conversations",
             _ => "openai-completions"
         });
+
+    public static string ResolveProtocol(ModelSelection selection)
+    {
+        if (selection.Model.Api == VirtualModelContract.Api) return VirtualModelContract.Api;
+        var protocol = GetProtocolId(selection.Provider, selection.Model);
         if (protocol == "google-generative-ai" && selection.Provider.Id != "google")
             throw new NotSupportedException($"Model '{selection.Provider.Id}/{selection.Model.Id}' requires unsupported API '{protocol}'.");
         if (protocol == "google-vertex" && selection.Provider.Id != "google-vertex")

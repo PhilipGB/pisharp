@@ -1,11 +1,13 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using PiSharp.Runtime.Sessions;
+using PiSharp.Runtime.Providers;
 
 namespace PiSharp.Runtime.Classifiers;
 
 public sealed record ClassifierModel(string Provider, string Id, string Api, Uri BaseUrl,
-    int ContextWindow = 0, ModelPricing? Pricing = null, string? BaseUrlTemplate = null);
+    int ContextWindow = 0, ModelPricing? Pricing = null, string? BaseUrlTemplate = null, string? Name = null,
+    IReadOnlyList<string>? Input = null, ModelInputLimits? InputLimits = null);
 
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
 [JsonDerivedType(typeof(ClassifierChoiceQuestion), "choice")]
