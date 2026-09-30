@@ -10,6 +10,14 @@ The user requested commit, push and stop. The current branch/resume slice restor
 
 The older exact-head and per-feature paragraphs below are historical evidence and their source pins are not current-state claims.
 
+## Active continuation — 2026-09-30
+
+Resumed the existing goal from exact current `2ff42c49634374d9398f928f81b5e8d353f605be`; fetched remote main and verified exact-head CI `36646088522` remains successful. Upstream fetch still resolves to `1b347794e2a630e4359f2584f4eea388145d0ddf`. The terminal blocker is closed and was not reopened. TODO priority/next-action sections now reflect physical continuation semantics rather than MCP/foundation work.
+
+Continuation/context slice: normal routed requests now defer all threshold checks until physical selection, overflow recovery carries forced compaction into retry routing, and post-compaction reconciliation avoids duplicate raw history. Four tool-provider-loop cases and two overflow cases cover unknown/configured/stale policies, logical identity and physical attribution. Split summaries use distinct physical pricing with correct aggregate cost. Focused tests pass 107/107; final format, zero-warning/error build and 920/920 full tests pass with zero skips. The paired current-Pi/PiSharp later-turn context-compaction process replay matches. See [evidence](parity/fixtures/virtual-model-continuation-context-2026-09-30.md). Exact-head CI is pending publication.
+
+Exact next action: commit/push and verify exact-head CI for this slice, then physical image resize/compatibility and TUI state presentation, bounded virtual-model audit, classifiers/Codemode and the remaining goal sequence. The goal remains active and incomplete.
+
 ## Reference state
 
 The durable parity baseline is `earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035`; the latest upstream HEAD is `1b347794e2a630e4359f2584f4eea388145d0ddf`; changes since `6a4af07d6145c88dad4e3472acebe75cc57af88` require classification. This refresh classifies GPT-6.1 Sol catalog/default updates as in-scope provider work, OpenAI OAuth bundle/release script changes as distribution-only, and leaves MCP source unchanged. Feature-specific records below retain their historical source pins; they are not claims about today's upstream SHA unless a checkpoint names that pin. The current bounded RPC audit, compaction-source checks, terminal-wrap comparison, shell-command-prefix audit, and provider/auth breadth audit are recorded below; this remains far short of the final full audit.

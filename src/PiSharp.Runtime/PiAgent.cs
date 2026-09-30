@@ -383,7 +383,7 @@ public sealed class PiAgent
     internal void SetVirtualModelSession(ConversationSession session, string thinkingLevel,
         Func<CancellationToken, Task>? save) => _routedChatClient.SetSession(session, thinkingLevel, save);
 
-    internal void SetVirtualModelContextPreparation(Func<IReadOnlyList<ChatMessage>, VirtualModelRequestRoute,
+    internal void SetVirtualModelContextPreparation(Func<IReadOnlyList<ChatMessage>, VirtualModelRequestRoute, bool,
         CancellationToken, Task<IReadOnlyList<ChatMessage>>>? prepare) => _routedChatClient.SetContextPreparation(prepare);
 
     internal void SetVirtualModelThinkingLevel(string thinkingLevel) => _routedChatClient.SetThinkingLevel(thinkingLevel);

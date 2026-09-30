@@ -576,7 +576,8 @@ public sealed class ConversationRun
         void AppendAvailableProviderHistory()
         {
             var providerHistory = ObservedChatClient.NormalizeReadImagesForHistory(_agent.GetHistory(_execution));
-            var canonicalHistory = Conversation.ContextMessages();
+            var canonicalHistory = virtualContext?.HasCompacted == true
+                ? Conversation.ActiveMessages() : Conversation.ContextMessages();
             var knownToolCallIds = canonicalHistory.SelectMany(message => message.Contents.OfType<FunctionResultContent>())
                 .Select(result => result.CallId).ToHashSet(StringComparer.Ordinal);
             var canonicalIndex = 0;
@@ -719,7 +720,7 @@ public sealed class ConversationRun
             await RestorePhysicalContextPolicyAsync(cancellationToken);
             var estimatedPrompt = retryContinuation ? "" : prompt;
             var contextTriggerTokens = _autoCompaction?.TriggerTokens;
-            if (AutoCompactionEnabled && contextTriggerTokens is > 0 &&
+            if (!_agent.HasVirtualModelRouter && AutoCompactionEnabled && contextTriggerTokens is > 0 &&
                 EstimateNextContext(estimatedPrompt) > contextTriggerTokens.Value)
             {
                 if (await CompactCoreAsync(null, cancellationToken) is not null)
@@ -902,7 +903,7 @@ public sealed class ConversationRun
                     PersistPendingRuntimeChangesUnsafe();
                     var knownToolCallIds = existing.SelectMany(message => message.Contents.OfType<FunctionResultContent>())
                         .Select(result => result.CallId).ToHashSet(StringComparer.Ordinal);
-                    var canonicalTail = (virtualContext?.HasCompacted == true ? existing : existing.Skip(historyStartIndex)).ToList();
+                    var canonicalTail = (virtualContext?.HasCompacted == true ? Conversation.ActiveMessages() : existing.Skip(historyStartIndex)).ToList();
                     var canonicalIndex = 0;
                     foreach (var providerMessage in appendedHistory)
                     {

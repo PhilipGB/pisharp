@@ -26,7 +26,7 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
         VirtualModelFailedRequest? failedRequest = null;
         for (var retries = 0; ; retries++)
         {
-            var requestOptions = AddRouteHint(options, routeReason, failedRequest);
+            var requestOptions = AddRouteHint(options, routeReason, failedRequest, overflowRecovered);
             try
             {
                 var response = await base.GetResponseAsync(requestMessages, requestOptions, cancellationToken);
@@ -72,7 +72,7 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
         VirtualModelFailedRequest? failedRequest = null;
         for (var retries = 0; ; retries++)
         {
-            var requestOptions = AddRouteHint(options, routeReason, failedRequest);
+            var requestOptions = AddRouteHint(options, routeReason, failedRequest, overflowRecovered);
             var ended = false;
             var producedOutput = false;
             Exception? failure = null;
@@ -275,14 +275,22 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
 
     private async Task<IReadOnlyList<ChatMessage>> PrepareRequestAsync(IReadOnlyList<ChatMessage> messages, bool force, CancellationToken cancellationToken)
     {
-        var projected = projectContext is null ? messages : await projectContext(messages, force, cancellationToken);
+        // A routed request owns its budget after physical selection; earlier policies may describe a different model.
+        var projected = projectContext is null || routedChatClient?.HasRouter == true
+            ? messages : await projectContext(messages, force, cancellationToken);
         return FilterImages(AttachReadImages(AddMissingFunctionResults(projected))).ToArray();
     }
 
     private async Task<IReadOnlyList<ChatMessage>?> RecoverOverflowAsync(IReadOnlyList<ChatMessage> original,
         Exception error, CancellationToken cancellationToken)
     {
-        if (projectContext is null || !IsContextOverflow(error)) return null;
+        if (!IsContextOverflow(error)) return null;
+        if (routedChatClient?.HasRouter == true)
+        {
+            publish(new("model_context_overflow_recovery", Text: "Retrying with route-aware context compaction."));
+            return original;
+        }
+        if (projectContext is null) return null;
         var compacted = await projectContext(original, true, cancellationToken);
         if (ReferenceEquals(compacted, original)) return null;
         publish(new("model_context_overflow_recovery", Text: "Retrying the model request once with a shortened context."));
@@ -449,8 +457,8 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
     }
 
     private ChatOptions? AddRouteHint(ChatOptions? options, string reason,
-        VirtualModelFailedRequest? failed) => routedChatClient is { HasRouter: true }
-        ? VirtualModelRequestHints.WithHint(options, new(reason, routedChatClient.SelectedThinkingLevel, failed, new VirtualModelRequestExecution()))
+        VirtualModelFailedRequest? failed, bool forceCompaction = false) => routedChatClient is { HasRouter: true }
+        ? VirtualModelRequestHints.WithHint(options, new(reason, routedChatClient.SelectedThinkingLevel, failed, new VirtualModelRequestExecution(), ForceCompaction: forceCompaction))
         : options;
 
     // Filter at the final provider boundary, including persisted history and subsequent tool-loop requests.

@@ -10,12 +10,12 @@ internal sealed class VirtualModelContextCoordinator(ConversationSession convers
     public bool HasCompacted { get; private set; }
 
     public async Task<IReadOnlyList<ChatMessage>> PrepareAsync(IReadOnlyList<ChatMessage> messages,
-        VirtualModelRequestRoute route, CancellationToken cancellationToken)
+        VirtualModelRequestRoute route, bool force, CancellationToken cancellationToken)
     {
         var request = HasCompacted ? Project(messages) : messages;
         if (!autoCompactionEnabled() || route.ContextPolicy is not { TriggerTokens: > 0 } policy ||
-            AutoCompactionPolicy.Estimate(request, "") <= policy.TriggerTokens) return request;
-        publish(new("compaction_start") { CompactionReason = "threshold" });
+            !force && AutoCompactionPolicy.Estimate(request, "") <= policy.TriggerTokens) return request;
+        publish(new("compaction_start") { CompactionReason = force ? "overflow" : "threshold" });
         try
         {
             beforeCompaction();
@@ -25,17 +25,17 @@ internal sealed class VirtualModelContextCoordinator(ConversationSession convers
             request = Project(messages);
             if (AutoCompactionPolicy.Estimate(request, "") > policy.TriggerTokens)
                 throw new InvalidOperationException("Physical model context still exceeds its budget after compaction.");
-            publish(new("compaction_end") { CompactionReason = "threshold", CompactionResult = result });
+            publish(new("compaction_end") { CompactionReason = force ? "overflow" : "threshold", CompactionResult = result });
             return request;
         }
         catch (OperationCanceledException)
         {
-            publish(new("compaction_end") { CompactionReason = "threshold", CompactionAborted = true });
+            publish(new("compaction_end") { CompactionReason = force ? "overflow" : "threshold", CompactionAborted = true });
             throw;
         }
         catch (Exception error)
         {
-            publish(new("compaction_end", Error: error.Message) { CompactionReason = "threshold" });
+            publish(new("compaction_end", Error: error.Message) { CompactionReason = force ? "overflow" : "threshold" });
             throw;
         }
     }

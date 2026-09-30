@@ -51,11 +51,11 @@
 
 ## Current priority
 
-The active implementation priority is first-class virtual-model routing against Pi `6a4af07d6145c88dad4e3472acebe75cc57af88`. MCP management is exact-head CI-verified at `71c5fd6f7` with 866/866 tests. Then implement Codemode classifier/usage support and continue the full audit. GPT-6.1 Sol's catalog/default change remains queued for provider work. See the [orchestration audit](docs/parity/fixtures/tool-orchestration-virtual-model-audit-2026-09-29.md).
+Virtual-model routing is materially underway through the branch/resume checkpoint `72633674` and the terminal blocker is closed at current `2ff42c4` (exact-head CI `36646088522`, 914/914 tests, zero skips). Current upstream remains `1b347794e2a630e4359f2584f4eea388145d0ddf`, refreshed on 2026-09-30. Complete physical-model continuation/context semantics, split-summary pricing and image/compatibility/TUI behavior before classifiers. MCP is no longer the primary capability phase.
 
 ## Exact next action
 
-Complete full solution validation and exact-head CI for the current MCP management changes, then implement logical/physical virtual-model routing against Pi `6a4af07d6145c88dad4e3472acebe75cc57af88`. Continue with Codemode classifier/model usage, orchestration/extensions, provider/auth residuals and a fresh full current-Pi audit. Import GPT-6.1 Sol during the provider pass. A passing slice or pushed commit does not close parity.
+Add fail-first provider-loop evidence for large-to-small physical routing during tool continuation. Reconcile `InFlightContextBudget` with route-aware canonical compaction so the continuation uses its selected physical context, balanced tool history and unchanged logical selection without pre-routing summaries or rerouting. Then verify differently priced split summaries and remaining physical image/compatibility/TUI semantics; perform a bounded virtual-model audit and move to classifiers, Codemode model/classifier globals and nested billing. Continue extension/provider/auth/catalog work and the fresh full current-Pi audit. A passing slice or pushed checkpoint does not close parity.
 
 ## Architecture and residuals to preserve
 
