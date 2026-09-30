@@ -1,8 +1,8 @@
 # Current Pi upstream delta audit — 2026-09-30
 
-PiSharp was clean at `e52fcc0e399545972bdec613ce01706227b73d3f`; exact-head Linux CI run [36698889067](https://github.com/PhilipGB/pisharp/actions/runs/36698889067) passed restore, format, warnings-as-errors build, and tests. The prior documented Pi source pin was `3e9451238337071b74ba5cdd53f1ab7cf4100ae8`. Current Pi `main` is `db6cc71dc7b69202dc560e71106bb9dfd454e758`. The pin is an ancestor of the current head, with 18 intervening commits, all reviewed in chronological order against their source/tests and the corresponding PiSharp implementation.
+PiSharp source `f1dc7e2e562a4e367de59dd62aa49796359db537` passed exact-head Linux CI [36766119204](https://github.com/PhilipGB/pisharp/actions/runs/36766119204): restore, format, warnings-as-errors build and 1,014/1,014 tests with zero skips. The prior documented Pi source pin was `3e9451238337071b74ba5cdd53f1ab7cf4100ae8`. Current Pi `main` is `955cc6665ee3986c6a033db52200779310d10dfd`. The pin is an ancestor of the current head, with 26 intervening commits reviewed in chronological order against their source/tests and the corresponding PiSharp implementation.
 
-Classification totals: **8 `NEEDS_WORK`, 1 `MATCHED`, 4 `OUT_OF_SCOPE`, 5 `NO_BEHAVIOR_CHANGE`**. No implementation changes are included in this audit refresh. In-scope deltas are processed oldest first, beginning with `3dd803d7`.
+Classification totals: **11 `NEEDS_WORK`, 1 `MATCHED`, 6 `OUT_OF_SCOPE`, 8 `NO_BEHAVIOR_CHANGE`**. This docs refresh records the completed indirect-MCP-startup slice and eight newly reviewed upstream commits; it makes no source changes. In-scope deltas are processed oldest first; the next open item is wrapped-result preview sizing (`0582d9c1`).
 
 ## Commit classifications
 
@@ -100,6 +100,7 @@ Pi avoids requesting Anthropic strict tool schemas when a schema contains reject
 - **PiSharp files:** `src/PiSharp.Runtime/Mcp/McpRuntime.cs`, MCP connection/registration and prompt execution boundaries, plus MCP/Codemode process tests.
 - **Required test:** hold an indirect server connection open and prove the first prompt starts without waiting; prove a script naming one server waits only for that server; preserve bounded waiting for direct tools and cancellation/cleanup.
 - **Required implementation:** classify direct versus indirect exposures, move indirect connection completion to operation-time waits, and attach only the required server-state context without changing callable authorization.
+- **Resolution evidence:** fail-first coverage used a delayed stdio MCP peer and a real `ProjectRuntimeContext` with a fake provider. The first provider request now succeeds while the indirect server is still connecting; after connection, a later provider request includes that server's first-line summary in the bounded `mcp_servers` request section. Codemode waits only for explicitly named servers, while tool search and resource operations wait for the pending servers they need; direct tools preserve the bounded initial wait, cancellation disposes pending clients, and `pisharp mcp list` keeps its all-server status path. Focused startup/provider-loop/Codemode tests pass; restore, format, warnings-as-errors build and the full 1,014/1,014 suite pass with zero skips. Source `f1dc7e2e562a4e367de59dd62aa49796359db537` passed exact-head Linux CI [36766119204](https://github.com/PhilipGB/pisharp/actions/runs/36766119204).
 
 ### `0582d9c11da78c1812d4537af2d194f1dd060d26` — `NEEDS_WORK`
 
@@ -123,6 +124,53 @@ Pi filters Codemode-hidden tools out of Pi's separate system-prompt tool-snippet
 - **Required test:** change project/user `defaultTools`, reload an open session and assert newly added defaults activate while existing tools remain; verify removed defaults remain active and explicit `--tools`/`--no-tools` behavior is unchanged.
 - **Required implementation:** track whether the active loadout originated from defaults versus an explicit CLI/session selection, then add only newly effective default names on reload and persist the resulting branch-local loadout.
 
+### `b72cf98ec7ac5bd8b33fdda08623ee55c251942f` — `OUT_OF_SCOPE`
+
+Documents compaction and overflow behavior for the separate `packages/durable` library. The requested scope excludes that durable package unless a core coding-agent capability requires it; this commit changes no coding-agent behavior.
+
+### `ed0d6b91b68b7bd180c19a92f49ee816ab0ef52f` — `OUT_OF_SCOPE`
+
+Adds compaction and overflow handling to the separate durable execution harness package. That package remains outside the requested Pi coding-agent capability surface.
+
+### `b29db895c5c1b30b560a39fb9e4664508f1683de` — `NEEDS_WORK`
+
+- **Pi files:** MCP server/tool namespace normalization, Codemode tool discovery and MCP configuration/runtime tests under `packages/coding-agent/src/extensions/{mcp,codemode}`.
+- **Pi behavior:** MCP server namespaces and exposed tool names replace `-` with `_`, so provider-visible names match JavaScript identifiers. When names collide after normalization, each colliding name receives a stable hash suffix independent of server/tool list order. Configuration rejects server names that collide after normalization, and extension registrations use the normalized namespace for collision/replacement checks.
+- **PiSharp behavior / mismatch:** `McpRuntime.Sanitize` preserves hyphens while `CodemodeToolCatalog.JavascriptIdentifier` converts them to underscores, so provider tool names can differ from the names Codemode scripts can call. MCP configuration permits a pair such as `foo-bar` and `foo_bar`, and extension collision checks use exact names.
+- **PiSharp files:** `src/PiSharp.Runtime/Mcp/McpRuntime.cs`, `McpConfiguration.cs`, `ExtensionCatalog.cs`, Codemode tool-name projection, and their tests.
+- **Required test:** verify normalized server/tool names, stable collision suffixes under reordered inputs, rejection of normalized server-name collisions, and extension registration behavior on a normalized namespace collision.
+- **Required implementation:** share one deterministic normalization/collision policy between provider declarations, Codemode identifiers, configured servers and extension registrations.
+
+### `91f9f3b5dfd7a49dda90d6450de7313ba425b3ca` — `NEEDS_WORK`
+
+- **Pi files:** MCP configuration/authentication runtime and provider auth storage under `packages/coding-agent/src/extensions/mcp` and `packages/ai`.
+- **Pi behavior:** a global MCP HTTP server can set `auth.provider` to use the current token from that provider's `/login` flow on every request, including refreshed tokens. This option is forbidden in trusted-project MCP config because it sends account credentials. It is accepted only for HTTPS or loopback HTTP. A 401 response directs the user to `/login <provider>`; provider tokens remain in provider auth storage rather than being copied into the MCP OAuth cache.
+- **PiSharp behavior / mismatch:** MCP supports explicit headers and MCP OAuth, and provider credentials live in `AuthStorage`, but the MCP HTTP handler cannot resolve a provider login token per request. Configuration has no provider-auth field or trusted-project/transport validation for it.
+- **PiSharp files:** `src/PiSharp.Runtime/Mcp/McpConfiguration.cs`, `McpRuntime.cs`, provider `AuthStorage` and runtime context wiring, with MCP configuration and HTTP loopback tests.
+- **Required test:** cover global acceptance and trusted-project rejection, HTTPS/loopback policy, 401 guidance, current token on each request after a token refresh, and absence of provider credentials from `mcp-auth.json`.
+- **Required implementation:** resolve the configured provider token at request time, preserve provider-owned persistence/refresh, and fail closed on insecure or project-scoped configurations.
+
+### `a9424cd43d242f32d31a3638bb7fe1305c20f72a` — `NEEDS_WORK`
+
+- **Pi files:** Anthropic provider authentication and tests in `packages/ai/src/providers/anthropic*` and the Anthropic SDK client construction path.
+- **Pi behavior:** Anthropic workload identity federation uses `ANTHROPIC_FEDERATION_RULE_ID`, `ANTHROPIC_ORGANIZATION_ID`, and `ANTHROPIC_IDENTITY_TOKEN_FILE`, with optional `ANTHROPIC_SERVICE_ACCOUNT_ID` and `ANTHROPIC_WORKSPACE_ID`. The Anthropic SDK exchanges and refreshes the identity token. API key and `ANTHROPIC_AUTH_TOKEN` precedence remains intact, federation is Anthropic-only, and the SDK default credential chain is disabled so Pi's resolver remains authoritative.
+- **PiSharp behavior / mismatch:** `ProviderChatClientFactory` constructs the Anthropic SDK client from `selection.ApiKey`; the provider/auth resolver has no federation environment-variable or identity-token exchange path.
+- **PiSharp files:** `src/PiSharp.Runtime/Providers/ProviderChatClientFactory.cs`, provider selection/auth resolution and Anthropic loopback tests.
+- **Required test:** use a fake identity-token source and deterministic token-exchange boundary to verify required/optional environment fields, token refresh, API-key and auth-token precedence, and that other providers never select Anthropic federation.
+- **Required implementation:** add an Anthropic-only federation credential path through the SDK while keeping the existing auth resolver authoritative and preventing fallback to ambient SDK credentials.
+
+### `002c183e18d85b1d95d4ce6b9b95640e705bfb60` — `NO_BEHAVIOR_CHANGE`
+
+Audits unreleased changelog entries and changes documentation organization only; no coding-agent runtime behavior changes.
+
+### `005af57d88ee23b33778f343a9595b32e67ff788` — `NO_BEHAVIOR_CHANGE`
+
+Bumps release version/package metadata for Pi v0.99.2. It introduces no separate runtime behavior to port.
+
+### `955cc6665ee3986c6a033db52200779310d10dfd` — `NO_BEHAVIOR_CHANGE`
+
+Adds the next `[Unreleased]` changelog headings; no coding-agent behavior changes.
+
 ## Processing order
 
-The eight `NEEDS_WORK` entries are handled in upstream order unless a concrete dependency requires otherwise: Z.AI CN overflow; Codemode image validation; MCP namespaces in Codemode; MCP OAuth client name; invalid `Retry-After`; MCP startup waiting; wrapped result previews; default-tool activation on reload. The first five are implemented and verified at exact heads: Z.AI CN overflow at `2550531a7f4813e9f10abce4241cbffc28f2ea7c` / CI `36746011211`, Codemode image validation at `ee71fc63905044abbeaa2dd0e134a54fbd797f20` / CI `36749258733`, MCP namespace discovery at `f61455a21c359ec1af704c8b093f1d209db3cb51` / CI `36753858082`, MCP OAuth client naming at `336be83135a0b18393bfaa41f7f826a34314f6eb` / CI `36756672893`, and malformed `Retry-After` fallback at `a3a1512abecf201364c8b4324b24a2837f8f5a25` / CI `36758603590`. Three in-scope deltas remain. The next source task is indirect MCP startup; begin it after the current docs-only checkpoint passes exact-head CI. Each slice requires fail-first evidence, focused tests, format, warnings-as-errors build, full tests, updated parity records, one coherent commit/push, and exact-head CI before proceeding.
+The 11 `NEEDS_WORK` entries are handled oldest first unless a concrete dependency requires otherwise: Z.AI CN overflow; Codemode image validation; MCP namespaces in Codemode; MCP OAuth client name; invalid `Retry-After`; MCP startup waiting; wrapped result previews; default-tool activation on reload; MCP identifier normalization; provider-login MCP auth; Anthropic workload identity federation. The first six are implemented and verified at exact heads: Z.AI CN overflow at `2550531a7f4813e9f10abce4241cbffc28f2ea7c` / CI `36746011211`, Codemode image validation at `ee71fc63905044abbeaa2dd0e134a54fbd797f20` / CI `36749258733`, MCP namespace discovery at `f61455a21c359ec1af704c8b093f1d209db3cb51` / CI `36753858082`, MCP OAuth client naming at `336be83135a0b18393bfaa41f7f826a34314f6eb` / CI `36756672893`, malformed `Retry-After` fallback at `a3a1512abecf201364c8b4324b24a2837f8f5a25` / CI `36758603590`, and indirect MCP startup at `f1dc7e2e562a4e367de59dd62aa49796359db537` / CI `36766119204`. Five in-scope deltas remain. The next source task is wrapped-result preview sizing (`0582d9c11da78c1812d4537af2d194f1dd060d26`); begin after the current docs-only checkpoint passes exact-head CI. Each slice requires fail-first evidence, focused tests, format, warnings-as-errors build, full tests, updated parity records, one coherent commit/push, and exact-head CI before proceeding.

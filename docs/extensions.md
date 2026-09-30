@@ -6,7 +6,7 @@ Built-in `tool-search` and `codemode` use the same extension catalog. They have 
 
 ## MCP namespaces in Codemode
 
-MCP servers use `<agent-dir>/mcp.json` or a trusted project's `.pi/mcp.json`. A server `description` appears beside its `mcp__<name>` namespace in the Codemode tool description. The server's initialize instructions and callable tool names are returned by `await describeNamespace("mcp__<name>")`; find a tool with `await searchTools(query, { namespace: "mcp__<name>" })`. This keeps individual MCP tool schemas out of Codemode's main description while preserving the normal callable-tool policy. The legacy `codemode-deferred` exposure value is accepted as an alias for `codemode`; `deferred` continues to use `tool-search`.
+MCP servers use `<agent-dir>/mcp.json` or a trusted project's `.pi/mcp.json`. A server `description` appears in the bounded `mcp_servers` request section after the server connects; the Codemode function description stays server-agnostic. The server's initialize instructions and callable tool names are returned by `await describeNamespace("mcp__<name>")`; find a tool with `await searchTools(query, { namespace: "mcp__<name>" })`. This keeps individual MCP tool schemas out of provider instructions while preserving the normal callable-tool policy. The legacy `codemode-deferred` exposure value is accepted as an alias for `codemode`; `deferred` continues to use `tool-search`.
 
 ```json
 {
