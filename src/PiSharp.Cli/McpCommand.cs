@@ -17,7 +17,7 @@ public static class McpCommand
         if (command is null or "help" or "--help" or "-h")
         {
             await output.WriteLineAsync("Usage: pisharp mcp list [--json] | add <server> [--local] [options] (--url <url> | -- <command> [args...]) | remove <server> [--local] | login <server> [--timeout <seconds>] | logout <server>");
-            await output.WriteLineAsync("Add options: --env KEY=VALUE, --cwd DIR, --header KEY=VALUE, --bearer-token-env-var NAME, --exposure MODE, --oauth-client-id ID, --oauth-client-secret VALUE, --oauth-callback-url URL, --oauth-scope SCOPE.");
+            await output.WriteLineAsync("Add options: --env KEY=VALUE, --cwd DIR, --header KEY=VALUE, --bearer-token-env-var NAME, --exposure MODE, --oauth-client-id ID, --oauth-client-secret VALUE, --oauth-callback-url URL, --oauth-scope SCOPE, --oauth-client-name NAME.");
             return 0;
         }
         try
@@ -100,7 +100,8 @@ public static class McpCommand
         TextWriter output, TextWriter errors, CancellationToken cancellationToken)
     {
         string? name = null, url = null, workdir = null, exposure = null, bearer = null;
-        string? oauthClientId = null, oauthClientSecret = null, oauthCallbackUrl = null, oauthScope = null;
+        string? oauthClientId = null, oauthClientSecret = null, oauthCallbackUrl = null, oauthScope = null,
+            oauthClientName = null;
         var local = false;
         var env = new Dictionary<string, string>(StringComparer.Ordinal);
         var headers = new Dictionary<string, string>(StringComparer.Ordinal);
@@ -113,7 +114,7 @@ public static class McpCommand
             if (arg is "-l" or "--local") { local = true; continue; }
             if (arg is "--url" or "--cwd" or "--exposure" or "--env" or "--header" or
                 "--bearer-token-env-var" or "--oauth-client-id" or "--oauth-client-secret" or
-                "--oauth-callback-url" or "--oauth-scope")
+                "--oauth-callback-url" or "--oauth-scope" or "--oauth-client-name")
             {
                 if (++index >= arguments.Length) return await FailAsync(errors, arg + " needs a value.");
                 var value = arguments[index];
@@ -127,6 +128,7 @@ public static class McpCommand
                     case "--oauth-client-secret": oauthClientSecret = value; break;
                     case "--oauth-callback-url": oauthCallbackUrl = value; break;
                     case "--oauth-scope": oauthScope = value; break;
+                    case "--oauth-client-name": oauthClientName = value; break;
                     case "--env": if (!AddPair(env, value)) return await FailAsync(errors, "--env expects KEY=VALUE."); break;
                     case "--header": if (!AddPair(headers, value)) return await FailAsync(errors, "--header expects KEY=VALUE."); break;
                 }
@@ -141,11 +143,14 @@ public static class McpCommand
             return await FailAsync(errors, "Usage: pisharp mcp add <server> [options] (--url <url> | -- <command> [args...])");
         if (url is not null && (env.Count > 0 || workdir is not null) ||
             command.Count > 0 && (headers.Count > 0 || bearer is not null || oauthClientId is not null ||
-                oauthClientSecret is not null || oauthCallbackUrl is not null || oauthScope is not null))
+                oauthClientSecret is not null || oauthCallbackUrl is not null || oauthScope is not null ||
+                oauthClientName is not null))
             return await FailAsync(errors, "MCP transport options do not match the server type.");
+        if (oauthClientName is not null && string.IsNullOrWhiteSpace(oauthClientName))
+            return await FailAsync(errors, "OAuth client name must be a non-empty string.");
         if ((bearer is not null || headers.Keys.Any(key => key.Equals("Authorization", StringComparison.OrdinalIgnoreCase))) &&
             (oauthClientId is not null || oauthClientSecret is not null || oauthCallbackUrl is not null ||
-                oauthScope is not null))
+                oauthScope is not null || oauthClientName is not null))
             return await FailAsync(errors, "MCP OAuth cannot be combined with an Authorization header.");
         if (bearer is not null)
         {
@@ -155,12 +160,13 @@ public static class McpCommand
             headers["Authorization"] = "Bearer ${" + bearer + "}";
         }
         object? oauth = oauthClientId is null && oauthClientSecret is null && oauthCallbackUrl is null &&
-            oauthScope is null ? null : new
+            oauthScope is null && oauthClientName is null ? null : new
             {
                 clientId = oauthClientId,
                 clientSecret = oauthClientSecret,
                 callbackUrl = oauthCallbackUrl,
-                scope = oauthScope
+                scope = oauthScope,
+                clientName = oauthClientName
             };
         object server = url is not null
             ? new { url, headers = headers.Count == 0 ? null : headers, exposure, oauth }

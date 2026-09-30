@@ -11,6 +11,8 @@ namespace PiSharp.Runtime.Mcp;
 public sealed record McpOAuthSettings(string? ClientId, string? ClientSecret, Uri? CallbackUrl,
     IReadOnlyList<string> Scopes)
 {
+    public string? ClientName { get; init; }
+
     public static McpOAuthSettings Parse(JsonElement value)
     {
         string? Read(string name)
@@ -21,9 +23,12 @@ public sealed record McpOAuthSettings(string? ClientId, string? ClientSecret, Ur
             return property.GetString();
         }
 
-        var known = new[] { "clientId", "clientSecret", "callbackUrl", "scope" };
+        var known = new[] { "clientId", "clientSecret", "callbackUrl", "scope", "clientName" };
         if (value.EnumerateObject().Any(property => !known.Contains(property.Name, StringComparer.Ordinal)))
             throw new ArgumentException("MCP OAuth has an unknown option.");
+        var clientName = Read("clientName");
+        if (clientName is not null && string.IsNullOrWhiteSpace(clientName))
+            throw new ArgumentException("MCP oauth.clientName must be a non-empty string.");
         var callback = Read("callbackUrl");
         Uri? redirect = null;
         if (callback is not null)
@@ -33,8 +38,9 @@ public sealed record McpOAuthSettings(string? ClientId, string? ClientSecret, Ur
                 !string.IsNullOrEmpty(redirect.Query) || !string.IsNullOrEmpty(redirect.Fragment))
                 throw new ArgumentException("MCP OAuth callbackUrl must be a loopback HTTP URL with a port.");
         }
-        return new(Read("clientId"), Read("clientSecret"), redirect,
-            (Read("scope") ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+        return new McpOAuthSettings(Read("clientId"), Read("clientSecret"), redirect,
+            (Read("scope") ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        { ClientName = clientName };
     }
 
     public ClientOAuthOptions CreateOptions(Uri serverUrl, ITokenCache cache, Uri redirectUri,
@@ -48,6 +54,10 @@ public sealed record McpOAuthSettings(string? ClientId, string? ClientSecret, Ur
                 @"\$\{([A-Za-z_][A-Za-z0-9_]*)\}", match =>
                     Environment.GetEnvironmentVariable(match.Groups[1].Value) ??
                     throw new InvalidOperationException("Missing MCP OAuth secret environment variable.")),
+            DynamicClientRegistration = new DynamicClientRegistrationOptions
+            {
+                ClientName = ClientName ?? "pi"
+            },
             Scopes = Scopes,
             TokenCache = cache,
             AuthorizationCallbackHandler = callback

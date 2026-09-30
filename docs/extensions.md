@@ -22,6 +22,21 @@ MCP servers use `<agent-dir>/mcp.json` or a trusted project's `.pi/mcp.json`. A 
 
 An extension implements `IPiSharpExtension.Configure(ExtensionRegistration)`. It can register `AIFunction` tools, terminal slash commands, and direct RPC Bash handlers. Tools execute through the same Microsoft.Extensions.AI function loop and durable checkpoint path as built-in tools.
 
+For HTTP MCP OAuth, `oauth.clientName` sets the name sent during dynamic client registration and defaults to `pi`. Some servers accept registrations only from known clients:
+
+```json
+{
+  "mcpServers": {
+    "figma": {
+      "url": "https://mcp.figma.com/mcp",
+      "oauth": { "clientName": "Claude Code" }
+    }
+  }
+}
+```
+
+The `pisharp mcp add` command also accepts `--oauth-client-name`. The name is sent only when a client is dynamically registered; sign out before registering again under a different name.
+
 ## Tool call and result presentation
 
 An extension can attach optional terminal renderers to a tool:

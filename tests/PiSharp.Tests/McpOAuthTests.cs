@@ -24,8 +24,11 @@ public sealed class McpOAuthTests
         return directory?.FullName ?? throw new DirectoryNotFoundException("Could not find PiSharp repository root.");
     }
 
-    [Fact]
-    public async Task ExplicitLoginUsesLoopbackCodeAndPersistsSdkTokens()
+    [Theory]
+    [InlineData("Claude Code", "Claude Code")]
+    [InlineData(null, "pi")]
+    public async Task DynamicRegistrationUsesConfiguredClientNameAndPersistsSdkTokens(
+        string? clientName, string expectedClientName)
     {
         if (!OperatingSystem.IsLinux()) return;
         var root = Path.Combine(Path.GetTempPath(), "pisharp-mcp-oauth-" + Guid.NewGuid().ToString("N"));
@@ -40,6 +43,7 @@ public sealed class McpOAuthTests
         listener.Start();
         using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(15));
         var issued = 0;
+        var registrationNames = new System.Collections.Concurrent.ConcurrentQueue<string?>();
         var server = Task.Run(async () =>
         {
             while (!deadline.IsCancellationRequested)
@@ -68,10 +72,20 @@ public sealed class McpOAuthTests
                             issuer = origin,
                             authorization_endpoint = origin + "/authorize",
                             token_endpoint = origin + "/token",
+                            registration_endpoint = origin + "/register",
                             response_types_supported = new[] { "code" },
                             code_challenge_methods_supported = new[] { "S256" },
                             token_endpoint_auth_methods_supported = new[] { "none" }
                         });
+                        break;
+                    case "/register":
+                        using (var registration = new StreamReader(request.InputStream))
+                        using (var metadata = JsonDocument.Parse(await registration.ReadToEndAsync(deadline.Token)))
+                            registrationNames.Enqueue(metadata.RootElement.TryGetProperty("client_name", out var registeredName)
+                                ? registeredName.GetString()
+                                : null);
+                        response.StatusCode = (int)HttpStatusCode.Created;
+                        body = """{"client_id":"fixture-client"}""";
                         break;
                     case "/token":
                         Interlocked.Increment(ref issued);
@@ -140,10 +154,12 @@ public sealed class McpOAuthTests
         }, deadline.Token);
         try
         {
+            var oauth = new Dictionary<string, string>(StringComparer.Ordinal);
+            if (clientName is not null) oauth["clientName"] = clientName;
             var config = JsonSerializer.SerializeToElement(new
             {
                 url = origin + "/mcp",
-                oauth = new { clientId = "fixture-client" }
+                oauth
             });
             var entry = McpConfiguration.Parse("protected", config, "mcp.json", "global");
             var configuration = new McpConfiguration([entry], true, []) { AgentDirectory = root };
@@ -172,6 +188,8 @@ public sealed class McpOAuthTests
             Assert.Equal(HttpStatusCode.OK, (await browser.GetAsync(callback, deadline.Token)).StatusCode);
             await login.WaitAsync(deadline.Token);
             Assert.Equal(1, issued);
+            Assert.NotEmpty(registrationNames);
+            Assert.All(registrationNames, name => Assert.Equal(expectedClientName, name));
             var tokens = await new McpTokenCache(root).ForServer(new Uri(origin + "/mcp"))
                 .GetTokensAsync(default);
             Assert.Equal("fixture-access", tokens?.AccessToken);
@@ -571,6 +589,36 @@ public sealed class McpOAuthTests
             oauth = new { clientId = "client" }
         });
         Assert.Throws<ArgumentException>(() => McpConfiguration.Parse("test", mixed, "mcp.json", "global"));
+    }
+
+    [Fact]
+    public async Task OAuthClientNameRejectsEmptyValuesWithoutLeakingSecrets()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-mcp-oauth-config-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(root, "mcp.json"), """
+                {"mcpServers":{"invalid":{"url":"https://example.test/mcp","oauth":{
+                  "clientName":"   ","clientSecret":"sentinel-oauth-secret"}}}}
+                """);
+            var configuration = await McpConfiguration.LoadAsync(root, root, false);
+            Assert.Empty(configuration.Servers);
+            var error = Assert.Single(configuration.Errors);
+            Assert.Contains("oauth.clientName must be a non-empty string", error);
+            Assert.DoesNotContain("sentinel-oauth-secret", error);
+
+            var wrongType = JsonSerializer.SerializeToElement(new
+            {
+                url = "https://example.test/mcp",
+                oauth = new { clientName = 42, clientSecret = "sentinel-oauth-secret" }
+            });
+            var typeError = Assert.Throws<ArgumentException>(() =>
+                McpConfiguration.Parse("invalid", wrongType, "mcp.json", "global"));
+            Assert.Contains("oauth.clientName must be a string", typeError.Message);
+            Assert.DoesNotContain("sentinel-oauth-secret", typeError.Message);
+        }
+        finally { Directory.Delete(root, recursive: true); }
     }
 
     private sealed class RotatingTokenEndpoint : HttpMessageHandler

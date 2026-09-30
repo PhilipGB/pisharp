@@ -66,7 +66,8 @@ public sealed class McpCommandTests
                 new[] { "add", "bad name", "--", "cmd" },
                 ["add", "x", "--url", "file:///secret"],
                 ["add", "x", "--env", "BAD", "--", "cmd"],
-                ["add", "x", "--url", "https://example.test/mcp", "--", "cmd"]
+                ["add", "x", "--url", "https://example.test/mcp", "--", "cmd"],
+                ["add", "blank-name", "--url", "https://example.test/mcp", "--oauth-client-name", "   "]
             })
                 Assert.Equal(1, await McpCommand.RunAsync(invalid, root, root, output, errors));
             Assert.False(File.Exists(Path.Combine(root, "mcp.json")));
@@ -81,6 +82,11 @@ public sealed class McpCommandTests
             var docs = saved.RootElement.GetProperty("mcpServers").GetProperty("docs");
             Assert.Equal("Bearer ${DOCS_TOKEN}", docs.GetProperty("headers").GetProperty("Authorization")
                 .GetString());
+            Assert.Equal(0, await McpCommand.RunAsync(["add", "figma", "--url", "https://example.test/mcp",
+                "--oauth-client-name", "Claude Code"], root, root, output, errors));
+            using var figmaConfig = JsonDocument.Parse(await File.ReadAllTextAsync(Path.Combine(root, "mcp.json")));
+            Assert.Equal("Claude Code", figmaConfig.RootElement.GetProperty("mcpServers").GetProperty("figma")
+                .GetProperty("oauth").GetProperty("clientName").GetString());
             if (OperatingSystem.IsLinux())
                 Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite,
                     File.GetUnixFileMode(Path.Combine(root, "mcp.json")));
