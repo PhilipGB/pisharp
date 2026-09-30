@@ -121,4 +121,39 @@ public sealed class McpConfigurationTests
         }
         finally { Directory.Delete(root, recursive: true); }
     }
+
+    [Fact]
+    public async Task ProviderAuthenticationRequiresSecureGlobalHttpConfiguration()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-mcp-provider-auth-" + Guid.NewGuid().ToString("N"));
+        var agent = Path.Combine(root, "agent");
+        var project = Path.Combine(root, "project");
+        Directory.CreateDirectory(agent);
+        Directory.CreateDirectory(Path.Combine(project, ".pi"));
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(agent, "mcp.json"), """
+                {"mcpServers":{
+                  "radius":{"url":"https://radius.example/mcp","auth":{"provider":"radius"},"enabled":false},
+                  "loopback":{"url":"http://127.0.0.1:8123/mcp","auth":{"provider":"radius"},"enabled":false},
+                  "plain":{"url":"http://radius.example/mcp","auth":{"provider":"radius"},"enabled":false},
+                  "empty":{"url":"https://radius.example/mcp","auth":{"provider":""},"enabled":false},
+                  "stdio":{"command":"fixture","auth":{"provider":"radius"},"enabled":false}
+                }}
+                """);
+            await File.WriteAllTextAsync(Path.Combine(project, ".pi", "mcp.json"), """
+                {"mcpServers":{"radius":{"url":"https://project.example/mcp","auth":{"provider":"radius"},"enabled":false}}}
+                """);
+
+            var loaded = await McpConfiguration.LoadAsync(agent, project, projectTrusted: true);
+
+            Assert.Equal(["radius", "loopback"], loaded.Servers.Select(server => server.Name).ToArray());
+            Assert.All(loaded.Servers, server => Assert.Equal("radius", server.AuthProvider));
+            Assert.Contains(loaded.Errors, error => error.Contains("https", StringComparison.Ordinal));
+            Assert.Contains(loaded.Errors, error => error.Contains("auth.provider", StringComparison.Ordinal));
+            Assert.Contains(loaded.Errors, error => error.Contains("global mcp.json", StringComparison.Ordinal));
+            Assert.DoesNotContain("project.example", string.Join(' ', loaded.Errors));
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
 }

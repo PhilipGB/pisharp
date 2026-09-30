@@ -96,4 +96,18 @@ public sealed class McpIdentifierTests
         }
         finally { Directory.Delete(root, recursive: true); }
     }
+
+    [Fact]
+    public void SessionContextServerSelectionUsesTheRuntimeNormalizedNamespacePrecedence()
+    {
+        using var configuredJson = JsonDocument.Parse("{\"command\":\"global\"}");
+        using var extensionJson = JsonDocument.Parse("{\"command\":\"extension\"}");
+        var configured = McpConfiguration.Parse("my-docs", configuredJson.RootElement, "mcp.json", "global");
+        var extension = McpConfiguration.Parse("my_docs", extensionJson.RootElement, "extension.dll", "extension");
+
+        var effective = McpRuntime.SelectEffectiveServers([configured],
+            [new ExtensionMcpServerRegistration(extension, "extension.dll")]);
+
+        Assert.Equal("global", Assert.Single(effective).Command);
+    }
 }

@@ -15,8 +15,10 @@ public static class McpRuntime
 
     public static Task<IReadOnlyList<string>> RegisterAsync(McpConfiguration configuration,
         ExtensionCatalog catalog, string workingDirectory, CancellationToken cancellationToken = default,
-        McpRuntimeManager? manager = null) =>
-        RegisterAsync(configuration, catalog, workingDirectory, cancellationToken, manager, s_startupWait);
+        McpRuntimeManager? manager = null,
+        Func<string, CancellationToken, Task<string?>>? providerTokenResolver = null) =>
+        RegisterAsync(configuration, catalog, workingDirectory, cancellationToken, manager, s_startupWait,
+            providerTokenResolver: providerTokenResolver);
 
     internal static Task<IReadOnlyList<string>> RegisterForStatusAsync(McpConfiguration configuration,
         ExtensionCatalog catalog, string workingDirectory, CancellationToken cancellationToken = default) =>
@@ -25,7 +27,8 @@ public static class McpRuntime
 
     internal static async Task<IReadOnlyList<string>> RegisterAsync(McpConfiguration configuration,
         ExtensionCatalog catalog, string workingDirectory, CancellationToken cancellationToken,
-        McpRuntimeManager? manager, TimeSpan startupWait, bool waitForAllServers = false)
+        McpRuntimeManager? manager, TimeSpan startupWait, bool waitForAllServers = false,
+        Func<string, CancellationToken, Task<string?>>? providerTokenResolver = null)
     {
         ArgumentNullException.ThrowIfNull(configuration);
         ArgumentNullException.ThrowIfNull(catalog);
@@ -62,7 +65,6 @@ public static class McpRuntime
             }
         }
 
-        var effectiveServers = configuration.Servers.ToList();
         var configuredNames = configuration.Servers.Select(server => McpToolIdentifiers.Namespace(server.Name))
             .ToHashSet(StringComparer.Ordinal);
         foreach (var extensionServer in registration.McpServers)
@@ -70,8 +72,8 @@ public static class McpRuntime
             if (configuredNames.Contains(McpToolIdentifiers.Namespace(extensionServer.Configuration.Name)))
                 errors.Add($"MCP server \"{extensionServer.Configuration.Name}\" registered by " +
                     extensionServer.ExtensionPath + " is overridden by configured MCP settings.");
-            else effectiveServers.Add(extensionServer.Configuration);
         }
+        var effectiveServers = SelectEffectiveServers(configuration.Servers, registration.McpServers);
 
         foreach (var server in effectiveServers)
         {
@@ -113,30 +115,31 @@ public static class McpRuntime
                         McpServerConfiguration openingConfiguration;
                         lock (publishGate) openingConfiguration = currentServer;
                         return OpenServerAsync(openingConfiguration, configuration.AgentDirectory, workingDirectory,
-                        (client, tools) =>
-                        {
-                            lock (publishGate)
+                            providerTokenResolver,
+                            (client, tools) =>
                             {
-                                if (created?.IsCurrent(client) != true) return Task.CompletedTask;
-                                var activeConfiguration = currentServer;
-                                if (activeConfiguration.Enabled)
-                                    RegisterServerTools(activeConfiguration, created, registration, tools,
-                                        client.ServerInstructions);
-                                else
-                                    registration.ReplaceOwnedTools("mcp:" + activeConfiguration.Name, [],
-                                        new ResourceSourceInfo("builtin:mcp", "builtin", "builtin", "top-level", null));
-                                lock (resourceGate)
+                                lock (publishGate)
                                 {
-                                    if (activeConfiguration.Enabled && created.HasResources &&
-                                        activeConfiguration.Exposure != McpToolExposure.Hidden)
-                                        resourceServers[activeConfiguration.Name] = (activeConfiguration.Name, created,
-                                            activeConfiguration.Timeout, MapExposure(activeConfiguration.Exposure));
-                                    else resourceServers.Remove(activeConfiguration.Name);
+                                    if (created?.IsCurrent(client) != true) return Task.CompletedTask;
+                                    var activeConfiguration = currentServer;
+                                    if (activeConfiguration.Enabled)
+                                        RegisterServerTools(activeConfiguration, created, registration, tools,
+                                            client.ServerInstructions);
+                                    else
+                                        registration.ReplaceOwnedTools("mcp:" + activeConfiguration.Name, [],
+                                            new ResourceSourceInfo("builtin:mcp", "builtin", "builtin", "top-level", null));
+                                    lock (resourceGate)
+                                    {
+                                        if (activeConfiguration.Enabled && created.HasResources &&
+                                            activeConfiguration.Exposure != McpToolExposure.Hidden)
+                                            resourceServers[activeConfiguration.Name] = (activeConfiguration.Name, created,
+                                                activeConfiguration.Timeout, MapExposure(activeConfiguration.Exposure));
+                                        else resourceServers.Remove(activeConfiguration.Name);
+                                    }
+                                    RefreshResourceTools();
                                 }
-                                RefreshResourceTools();
-                            }
-                            return Task.CompletedTask;
-                        }, token);
+                                return Task.CompletedTask;
+                            }, token);
                     });
                 catalog.OwnConnection(created);
                 return created;
@@ -223,6 +226,19 @@ public static class McpRuntime
         return string.Join('\n', lines);
     }
 
+    internal static IReadOnlyList<McpServerConfiguration> SelectEffectiveServers(
+        IEnumerable<McpServerConfiguration> configuredServers,
+        IEnumerable<ExtensionMcpServerRegistration> extensionServers)
+    {
+        var effective = configuredServers.ToList();
+        var configuredNamespaces = effective.Select(server => McpToolIdentifiers.Namespace(server.Name))
+            .ToHashSet(StringComparer.Ordinal);
+        effective.AddRange(extensionServers
+            .Where(server => !configuredNamespaces.Contains(McpToolIdentifiers.Namespace(server.Configuration.Name)))
+            .Select(server => server.Configuration));
+        return effective;
+    }
+
     private static async Task<string?> ConnectServerAsync(McpServerConfiguration server,
         McpServerConnection connection, Action<McpServerConfiguration, McpServerConnection?> publish,
         CancellationToken cancellationToken)
@@ -244,10 +260,12 @@ public static class McpRuntime
             publish(server, connection);
             return "MCP server " + server.Name + " timed out.";
         }
-        catch (McpSignInRequiredException)
+        catch (McpSignInRequiredException error)
         {
             publish(server, connection);
-            return "MCP server " + server.Name + " needs authorization. Run pisharp mcp login " + server.Name + ".";
+            return server.AuthProvider is { } provider
+                ? error.Message
+                : "MCP server " + server.Name + " needs authorization. Run pisharp mcp login " + server.Name + ".";
         }
         catch (Exception error) when (error is not OperationCanceledException)
         {
@@ -302,6 +320,7 @@ public static class McpRuntime
 
     private static async Task<McpConnectedServer> OpenServerAsync(McpServerConfiguration server,
         string agentDirectory, string workingDirectory,
+        Func<string, CancellationToken, Task<string?>>? providerTokenResolver,
         Func<McpClient, IList<McpClientTool>, Task> onToolsChanged, CancellationToken cancellationToken)
     {
         McpClient? client = null;
@@ -331,7 +350,7 @@ public static class McpRuntime
             }
             else
             {
-                var oauth = server.Headers.Keys.Any(key =>
+                var oauth = server.AuthProvider is not null || server.Headers.Keys.Any(key =>
                     key.Equals("Authorization", StringComparison.OrdinalIgnoreCase)) ? null :
                     (server.OAuth is { } configured ? McpOAuthSettings.Parse(configured) :
                         new McpOAuthSettings(null, null, null, []));
@@ -344,7 +363,11 @@ public static class McpRuntime
                         item => Expand(item.Value), StringComparer.Ordinal),
                     ConnectionTimeout = server.Timeout
                 };
-                if (oauth is null) transport = new HttpClientTransport(options);
+                if (server.AuthProvider is { } providerAuth)
+                    transport = new HttpClientTransport(options,
+                        new HttpClient(new McpProviderAuthHandler(server.Name, providerAuth, providerTokenResolver)),
+                        ownsHttpClient: true);
+                else if (oauth is null) transport = new HttpClientTransport(options);
                 else
                 {
                     var tokenCache = new McpTokenCache(agentDirectory).ForServerWithRefresh(server.Url!);

@@ -135,6 +135,21 @@ public sealed class ProviderModelRuntime
         return await ResolveAuthCoreAsync(provider, stored, useRuntimeOverride, allowOAuthRefresh, cancellationToken);
     }
 
+    /// <summary>Resolves the current provider credential for an explicitly configured MCP bearer token.</summary>
+    public async Task<string?> GetApiKeyForProviderAsync(string providerId,
+        CancellationToken cancellationToken = default)
+    {
+        ProviderProfile provider;
+        try { provider = GetProvider(providerId); }
+        catch (ArgumentException) { return null; }
+        var auth = await ResolveAuthAsync(provider.Id, useRuntimeOverride: false, cancellationToken)
+            .ConfigureAwait(false);
+        if (!auth.Authenticated || string.IsNullOrWhiteSpace(auth.Key) || auth.Source == "not required" ||
+            auth.Key == GoogleVertexProviderOptions.AdcCredentialMarker || auth.Key == "not-configured" ||
+            auth.Key == "not-needed") return null;
+        return auth.Key;
+    }
+
     internal async Task<(string Key, bool Authenticated, string Source, IReadOnlyDictionary<string, string> Environment)> ResolveClassifierAccessAsync(
         string providerId, CancellationToken cancellationToken)
     {

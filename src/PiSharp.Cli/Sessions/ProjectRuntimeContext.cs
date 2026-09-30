@@ -67,7 +67,8 @@ internal sealed class ProjectRuntimeContext : IDisposable
     public static async Task<ProjectRuntimeContext> LoadAsync(ProjectRuntimeConfiguration configuration,
         string agentDirectory, CliArguments arguments, string? configuredSessionDirectory,
         string? sessionDirectoryOverride = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        Func<string, CancellationToken, Task<string?>>? providerTokenResolver = null)
     {
         var cwd = configuration.WorkingDirectory;
         var prompts = await CliPromptOverrides.ResolveAsync(arguments,
@@ -97,12 +98,11 @@ internal sealed class ProjectRuntimeContext : IDisposable
                 builtins: [ToolSearchBuiltin.Definition, CodemodeBuiltin.Definition,
                     McpBuiltin.CreateDefinition(mcpManager)]);
             var mcp = await McpConfiguration.LoadAsync(agentDirectory, cwd, configuration.Trusted, cancellationToken);
-            var configuredMcpNames = mcp.Servers.Select(server => server.Name).ToHashSet(StringComparer.Ordinal);
-            var effectiveMcpServers = mcp.Servers.Concat(extensions.Registration.McpServers
-                .Where(server => !configuredMcpNames.Contains(server.Configuration.Name))
-                .Select(server => server.Configuration)).ToArray();
+            var effectiveMcpServers = McpRuntime.SelectEffectiveServers(mcp.Servers,
+                extensions.Registration.McpServers);
             var mcpErrors = extensions.LoadedBuiltins.Contains("mcp")
-                ? await McpRuntime.RegisterAsync(mcp, extensions, cwd, cancellationToken, mcpManager)
+                ? await McpRuntime.RegisterAsync(mcp, extensions, cwd, cancellationToken, mcpManager,
+                    providerTokenResolver)
                 : Array.Empty<string>();
             foreach (var error in mcpErrors) Console.Error.WriteLine(error);
             if (!extensions.LoadedBuiltins.Contains("mcp") && extensions.Registration.McpServers.Count > 0)

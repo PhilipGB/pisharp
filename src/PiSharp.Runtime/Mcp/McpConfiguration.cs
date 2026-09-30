@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Net;
 
 namespace PiSharp.Runtime.Mcp;
 
@@ -22,6 +23,7 @@ public sealed record McpServerConfiguration(
     JsonElement? OAuth)
 {
     public string? Description { get; init; }
+    public string? AuthProvider { get; init; }
 
     public McpToolExposure ExposureFor(string toolName)
     {
@@ -78,6 +80,11 @@ public sealed record McpConfiguration(IReadOnlyList<McpServerConfiguration> Serv
                     try
                     {
                         var parsed = Parse(entry.Name, entry.Value, path, scope);
+                        if (scope == "project" && parsed.AuthProvider is not null)
+                        {
+                            errors.Add(path + $": MCP server {entry.Name}: provider auth is only allowed in the global mcp.json.");
+                            continue;
+                        }
                         var conflict = servers.Keys.FirstOrDefault(name => name != entry.Name &&
                             McpToolIdentifiers.Namespace(name) == McpToolIdentifiers.Namespace(entry.Name));
                         if (conflict is not null)
@@ -134,6 +141,19 @@ public sealed record McpConfiguration(IReadOnlyList<McpServerConfiguration> Serv
             ? auth.ValueKind == JsonValueKind.Object ? auth.Clone()
                 : throw new ArgumentException($"MCP server {name} oauth must be an object.")
             : (JsonElement?)null;
+        string? authProvider = null;
+        if (value.TryGetProperty("auth", out var providerAuth))
+        {
+            if (providerAuth.ValueKind != JsonValueKind.Object ||
+                !providerAuth.TryGetProperty("provider", out var provider) ||
+                provider.ValueKind != JsonValueKind.String || string.IsNullOrEmpty(provider.GetString()))
+                throw new ArgumentException($"MCP server {name} auth.provider must be a provider name.");
+            if (url is null)
+                throw new ArgumentException($"MCP server {name} provider auth requires HTTP.");
+            if (url.Scheme != Uri.UriSchemeHttps && !IsLoopback(url))
+                throw new ArgumentException($"MCP server {name} provider auth requires an https URL, or http on a loopback host.");
+            authProvider = provider.GetString();
+        }
         var description = String(value, "description");
         if (oauth is not null && command is not null)
             throw new ArgumentException($"MCP server {name} OAuth requires HTTP.");
@@ -142,7 +162,14 @@ public sealed record McpConfiguration(IReadOnlyList<McpServerConfiguration> Serv
         if (oauth is not null) McpOAuthSettings.Parse(oauth.Value);
         return new(name, path, scope, enabled, exposure, overrides, TimeSpan.FromSeconds(timeout), command,
             arguments, workingDirectory, environment, url, headers, oauth)
-        { Description = description };
+        { Description = description, AuthProvider = authProvider };
+    }
+
+    private static bool IsLoopback(Uri url)
+    {
+        var host = url.Host.Trim('[', ']');
+        return host.Equals("localhost", StringComparison.OrdinalIgnoreCase) ||
+            IPAddress.TryParse(host, out var address) && IPAddress.IsLoopback(address);
     }
 
     private static McpToolExposure ParseExposure(string? value, string name) => value switch

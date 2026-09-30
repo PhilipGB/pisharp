@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Text.Json;
+using System.Collections.Concurrent;
 
 namespace PiSharp.Tests;
 
@@ -14,17 +15,20 @@ internal sealed class McpLifecycleHttpServer : IAsyncDisposable
     private readonly bool _expireFirstToolCall;
     private readonly bool _transientFirstResourceRead;
     private readonly bool _transientFirstToolCall;
+    private readonly Func<string?, bool>? _authorize;
+    private readonly ConcurrentQueue<string?> _authorizationHeaders = new();
     private int _initializeCount;
     private int _toolCallCount;
     private int _resourceReadCount;
     private readonly List<string> _toolCallSessions = [];
 
     public McpLifecycleHttpServer(bool expireFirstToolCall = false, bool transientFirstResourceRead = false,
-        bool transientFirstToolCall = false)
+        bool transientFirstToolCall = false, Func<string?, bool>? authorize = null)
     {
         _expireFirstToolCall = expireFirstToolCall;
         _transientFirstResourceRead = transientFirstResourceRead;
         _transientFirstToolCall = transientFirstToolCall;
+        _authorize = authorize;
         lock (s_startGate)
         {
             using var reservation = new TcpListener(IPAddress.Loopback, 0);
@@ -42,6 +46,7 @@ internal sealed class McpLifecycleHttpServer : IAsyncDisposable
     public int InitializeCount => Volatile.Read(ref _initializeCount);
     public int ToolCallCount => Volatile.Read(ref _toolCallCount);
     public int ResourceReadCount => Volatile.Read(ref _resourceReadCount);
+    public IReadOnlyList<string?> AuthorizationHeaders => _authorizationHeaders.ToArray();
     public IReadOnlyList<string> ToolCallSessions
     {
         get { lock (_toolCallSessions) return _toolCallSessions.ToArray(); }
@@ -67,6 +72,13 @@ internal sealed class McpLifecycleHttpServer : IAsyncDisposable
     {
         var request = context.Request;
         var response = context.Response;
+        var authorization = request.Headers["Authorization"];
+        _authorizationHeaders.Enqueue(authorization);
+        if (_authorize is not null && !_authorize(authorization))
+        {
+            await WriteAsync(response, (int)HttpStatusCode.Unauthorized, "{}");
+            return;
+        }
         if (request.HttpMethod != "POST" || request.Url?.AbsolutePath != "/mcp")
         {
             await WriteAsync(response, 405, "{}");

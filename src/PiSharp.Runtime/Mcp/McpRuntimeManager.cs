@@ -149,6 +149,8 @@ public sealed class McpRuntimeManager(string? agentDirectory = null)
         await entry.Gate.WaitAsync(cancellationToken);
         try
         {
+            if (entry.Configuration.AuthProvider is { } provider)
+                return $"MCP server {name} uses provider sign-in. Run /login {provider}.";
             if (agentDirectory is null) return "MCP OAuth sign-in is unavailable.";
             if (entry.Configuration.Url is null || HasAuthorizationHeader(entry.Configuration))
                 return "MCP server " + name + " does not use OAuth.";
@@ -178,6 +180,8 @@ public sealed class McpRuntimeManager(string? agentDirectory = null)
         await entry.Gate.WaitAsync(cancellationToken);
         try
         {
+            if (entry.Configuration.AuthProvider is { } provider)
+                return $"MCP server {name} uses provider sign-in. Run /logout {provider}.";
             if (agentDirectory is null) return "MCP OAuth sign-out is unavailable.";
             if (entry.Configuration.Url is null || HasAuthorizationHeader(entry.Configuration))
                 return "MCP server " + name + " does not use OAuth.";

@@ -149,6 +149,24 @@ public sealed class ProviderModelRuntimeTests
         }
         finally { Directory.Delete(root, true); }
     }
+
+    [Fact]
+    public async Task ProviderCredentialResolverUsesStoredLoginAndExcludesCommandLineOverride()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-provider-token-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            await new AuthStorage(Path.Combine(root, "auth.json")).StoreApiKeyAsync("openai", "stored-login-token");
+            using var http = new HttpClient(new ModelHandler());
+            var runtime = await ProviderModelRuntime.CreateAsync(root, false, _ => null, http,
+                runtimeApiKey: "command-line-key");
+
+            Assert.Equal("stored-login-token", await runtime.GetApiKeyForProviderAsync("openai"));
+            Assert.Null(await runtime.GetApiKeyForProviderAsync("unknown-provider"));
+        }
+        finally { Directory.Delete(root, true); }
+    }
     [Fact]
     public async Task MistralUsesItsOwnCredentialAndDocumentedOpenAiCompatibleEndpoint()
     {

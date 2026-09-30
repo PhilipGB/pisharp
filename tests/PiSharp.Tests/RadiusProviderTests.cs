@@ -263,6 +263,8 @@ public sealed class RadiusProviderTests
                 Assert.Equal("new-access", resolved.Key);
             });
             Assert.Equal(1, refreshCount);
+            Assert.Equal("new-access", await runtime.GetApiKeyForProviderAsync("radius"));
+            Assert.Equal(1, refreshCount);
             var persisted = await storage.ReadAsync("radius");
             Assert.Equal("new-access", persisted?.Access);
             Assert.Equal("new-refresh", persisted?.Refresh);

@@ -243,5 +243,10 @@ internal sealed class McpRefreshFileLease(McpFileLock fileLock, SemaphoreSlim ga
 
 public sealed class McpSignInRequiredException : Exception
 {
-    public McpSignInRequiredException() : base("MCP server requires explicit sign-in.") { }
+    public McpSignInRequiredException(string? provider = null, string? serverName = null)
+        : base(provider is null ? "MCP server requires explicit sign-in." :
+            $"MCP server \"{serverName}\" requires sign-in. Run /login {provider} to sign in.") =>
+        Provider = provider;
+
+    public string? Provider { get; }
 }

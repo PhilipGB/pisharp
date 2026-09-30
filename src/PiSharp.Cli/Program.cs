@@ -88,11 +88,26 @@ var usesDefaultToolsSetting = DefaultToolReloadPolicy.UsesSettingsDefaults(cli);
 var explicitThinking = cli.Thinking;
 cli = DefaultToolReloadPolicy.ApplyStartupDefaults(cli, userSettings, Environment.GetEnvironmentVariable,
     preserveSessionModel: cli.Continue || cli.SessionPath is not null || cli.ForkSource is not null || cli.ListModels);
+using var catalogHttp = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
+ProviderModelRuntime modelRuntime;
+try
+{
+    modelRuntime = await ProviderModelRuntime.CreateAsync(agentDirectory, cli.Local || userSettings.DefaultProvider == "local",
+        Environment.GetEnvironmentVariable, catalogHttp, cli.ApiKey, cli.ListModels ? null : cli.ScopedModels,
+            offline: cli.Offline || Environment.GetEnvironmentVariable("PI_OFFLINE") is { } offlineFlag &&
+            offlineFlag.ToLowerInvariant() is "1" or "true" or "yes");
+}
+catch (Exception error) when (error is ArgumentException or InvalidOperationException or InvalidDataException or IOException or System.Text.Json.JsonException)
+{
+    Console.Error.WriteLine(error.Message);
+    Environment.ExitCode = 2;
+    return;
+}
 ProjectRuntimeContext projectRuntime;
 try
 {
     projectRuntime = await ProjectRuntimeContext.LoadAsync(projectConfiguration, agentDirectory, cli,
-        configuredSessionDirectory);
+        configuredSessionDirectory, providerTokenResolver: modelRuntime.GetApiKeyForProviderAsync);
 }
 catch (Exception e) when (e is not OperationCanceledException)
 {
@@ -101,18 +116,12 @@ catch (Exception e) when (e is not OperationCanceledException)
     return;
 }
 using var projectRuntimeOwner = projectRuntime;
-using var catalogHttp = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
-ProviderModelRuntime modelRuntime;
+modelRuntime.SetVirtualModelRegistry(projectRuntime.Extensions.Registration.VirtualModels);
 ModelSelection selection;
 ConnectionSettings connection;
 var thinking = cli.Thinking ?? "off";
 try
 {
-    modelRuntime = await ProviderModelRuntime.CreateAsync(agentDirectory, cli.Local || userSettings.DefaultProvider == "local",
-        Environment.GetEnvironmentVariable, catalogHttp, cli.ApiKey, cli.ListModels ? null : cli.ScopedModels,
-            offline: cli.Offline || Environment.GetEnvironmentVariable("PI_OFFLINE") is { } offlineFlag &&
-            offlineFlag.ToLowerInvariant() is "1" or "true" or "yes");
-    modelRuntime.SetVirtualModelRegistry(projectRuntime.Extensions.Registration.VirtualModels);
     selection = await modelRuntime.ResolveAsync(cli.Provider ?? (cli.Local ? "local" : null), cli.ModelOverride);
     thinking = explicitThinking ?? userSettings.GetModelThinkingLevel(selection) ?? cli.Thinking ?? ThinkingLevels.Default;
     thinking = ThinkingLevels.ValidateForModel(thinking, selection.Model.Reasoning, selection.Model.ThinkingLevelMap);
@@ -806,7 +815,7 @@ async Task ReloadResources()
         var reloadPlan = DefaultToolReloadPolicy.Resolve(cli, usesDefaultToolsSetting, userSettings,
             nextConfiguration.Settings, conversationRun.ActiveToolNames, Environment.GetEnvironmentVariable);
         nextProject = await ProjectRuntimeContext.LoadAsync(nextConfiguration, agentDirectory, reloadPlan.Arguments,
-            configuredSessionDirectory);
+            configuredSessionDirectory, providerTokenResolver: modelRuntime.GetApiKeyForProviderAsync);
         modelRuntime.SetVirtualModelRegistry(nextProject.Extensions.Registration.VirtualModels);
         var nextController = new ModelRuntimeController(modelRuntime, () => nextConfiguration.Settings,
             Environment.GetEnvironmentVariable);
