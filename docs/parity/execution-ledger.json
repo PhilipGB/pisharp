@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "plan_received": true,
-  "source_note": "Latest exact-head CI-verified PiSharp source is ec7fe828d820ff6967fa569f3b93affe98177a0a / Linux CI 36798041083: restore, format, warnings-as-errors build and 1047/1047 tests, zero skips. Current Pi main is 8ce69e9d2b171d173fe4b6b2b6256f1f4411e69d; the refreshed audit compares it with 955cc6665ee3986c6a033db52200779310d10dfd and classifies 16 commits, including five NEEDS_WORK entries. Whitespace-aware slash completion and Anthropic browser/copy-code OAuth are closed at exact heads. Process MCP metadata/issuer validation, ANSI slice ordering, then the newer MCP optional-field/pagination residuals. Overall parity remains incomplete. See docs/parity/fixtures/upstream-delta-audit-2026-10-01.md.",
+  "source_note": "Latest exact-head CI-verified PiSharp source is ec7fe828d820ff6967fa569f3b93affe98177a0a / Linux CI 36798041083: restore, format, warnings-as-errors build and 1047/1047 tests, zero skips. Current Pi main is 8ce69e9d2b171d173fe4b6b2b6256f1f4411e69d; the refreshed audit compares it with 955cc6665ee3986c6a033db52200779310d10dfd and classifies 16 commits, including five NEEDS_WORK entries. Whitespace-aware slash completion and Anthropic browser/copy-code OAuth are closed at exact heads. Process configurable MCP authorization-server metadata (RFC 9207 issuer validation is already provided by the SDK), ANSI slice ordering, then the newer MCP optional-field/pagination residuals. Overall parity remains incomplete. See docs/parity/fixtures/upstream-delta-audit-2026-10-01.md.",
   "baseline": "earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035",
   "required_ids": [
     "feature-agent-multi-turn-and-streaming",
@@ -3727,7 +3727,7 @@
     "next": "mcp-oauth-metadata-issuer",
     "current_item": "d850edee9ccc5d3b6cec79553d4839a1cbab47ed",
     "current_item_status": "queued_after_anthropic_exact_head_ci",
-    "current_item_local_evidence": "Pi d850edee adds a trusted optional authorization-server metadata URL and RFC 9207 callback issuer validation. PiSharp McpOAuthSettings does not accept the metadata URL; SDK discovery is used and McpOAuthLogin captures callback iss but the code exchange does not enforce it. This remains the next older in-scope item. The subsequent ANSI ordering delta is 17f3dccbef6c56cbc8cee73dbcfe2bba4f8734f9; the newly classified later MCP optional-field/pagination delta is 8ce69e9d2b171d173fe4b6b2b6256f1f4411e69d.",
+    "current_item_local_evidence": "Pi d850edee adds a trusted optional authorization-server metadata URL and RFC 9207 callback issuer validation. The pinned ModelContextProtocol.Core 2.2.0 already receives callback iss through McpOAuthLogin and validates it in ClientOAuthProvider before code exchange; McpOAuthSettings and ClientOAuthOptions do not accept the trusted metadata-document override. This remains the next older in-scope item. The subsequent ANSI ordering delta is 17f3dccbef6c56cbc8cee73dbcfe2bba4f8734f9; the newly classified later MCP optional-field/pagination delta is 8ce69e9d2b171d173fe4b6b2b6256f1f4411e69d.",
     "next_after_ci": "17f3dccbef6c56cbc8cee73dbcfe2bba4f8734f9",
     "completed": [
       "65117e31f242daa8e0a17dbd2810f7bb92bf4087",
