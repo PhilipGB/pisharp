@@ -84,8 +84,11 @@ public static class McpOAuthLogin
             ConnectionTimeout = server.Timeout
         };
         var refreshHandler = new McpOAuthRefreshHandler(tokenCache);
+        HttpMessageHandler handler = refreshHandler;
+        if (settings.AuthServerMetadataUrl is { } metadataUrl)
+            handler = new McpOAuthMetadataHandler(server.Url, metadataUrl, handler);
         var transport = new HttpClientTransport(transportOptions,
-            new HttpClient(refreshHandler), ownsHttpClient: true);
+            new HttpClient(handler), ownsHttpClient: true);
         McpClient? client = null;
         try
         {

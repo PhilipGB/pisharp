@@ -12,6 +12,7 @@ public sealed record McpOAuthSettings(string? ClientId, string? ClientSecret, Ur
     IReadOnlyList<string> Scopes)
 {
     public string? ClientName { get; init; }
+    public Uri? AuthServerMetadataUrl { get; init; }
 
     public static McpOAuthSettings Parse(JsonElement value)
     {
@@ -23,12 +24,22 @@ public sealed record McpOAuthSettings(string? ClientId, string? ClientSecret, Ur
             return property.GetString();
         }
 
-        var known = new[] { "clientId", "clientSecret", "callbackUrl", "scope", "clientName" };
+        var known = new[] { "clientId", "clientSecret", "callbackUrl", "scope", "clientName", "authServerMetadataUrl" };
         if (value.EnumerateObject().Any(property => !known.Contains(property.Name, StringComparer.Ordinal)))
             throw new ArgumentException("MCP OAuth has an unknown option.");
         var clientName = Read("clientName");
         if (clientName is not null && string.IsNullOrWhiteSpace(clientName))
             throw new ArgumentException("MCP oauth.clientName must be a non-empty string.");
+        var metadataValue = Read("authServerMetadataUrl");
+        Uri? metadataUrl = null;
+        if (metadataValue is not null)
+        {
+            if (!Uri.TryCreate(metadataValue, UriKind.Absolute, out metadataUrl) ||
+                metadataUrl.Scheme != Uri.UriSchemeHttps &&
+                (metadataUrl.Scheme != Uri.UriSchemeHttp || !IsMetadataLoopback(metadataUrl)))
+                throw new ArgumentException(
+                    "MCP oauth.authServerMetadataUrl must be an https URL, or http on localhost, 127.0.0.1, or [::1].");
+        }
         var callback = Read("callbackUrl");
         Uri? redirect = null;
         if (callback is not null)
@@ -40,7 +51,14 @@ public sealed record McpOAuthSettings(string? ClientId, string? ClientSecret, Ur
         }
         return new McpOAuthSettings(Read("clientId"), Read("clientSecret"), redirect,
             (Read("scope") ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
-        { ClientName = clientName };
+        { ClientName = clientName, AuthServerMetadataUrl = metadataUrl };
+    }
+
+    private static bool IsMetadataLoopback(Uri value)
+    {
+        var host = value.Host.Trim('[', ']');
+        return host.Equals("localhost", StringComparison.OrdinalIgnoreCase) ||
+            host.Equals("127.0.0.1", StringComparison.Ordinal) || host.Equals("::1", StringComparison.Ordinal);
     }
 
     public ClientOAuthOptions CreateOptions(Uri serverUrl, ITokenCache cache, Uri redirectUri,

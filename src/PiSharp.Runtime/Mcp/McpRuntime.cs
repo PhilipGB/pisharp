@@ -375,7 +375,10 @@ public static class McpRuntime
                         oauth.CallbackUrl ?? new Uri("http://127.0.0.1:38119/callback"),
                         (_, _) => throw new McpSignInRequiredException());
                     refreshHandler = new McpOAuthRefreshHandler(tokenCache);
-                    transport = new HttpClientTransport(options, new HttpClient(refreshHandler), ownsHttpClient: true);
+                    HttpMessageHandler handler = refreshHandler;
+                    if (oauth.AuthServerMetadataUrl is { } metadataUrl)
+                        handler = new McpOAuthMetadataHandler(server.Url!, metadataUrl, handler);
+                    transport = new HttpClientTransport(options, new HttpClient(handler), ownsHttpClient: true);
                 }
             }
             async ValueTask RefreshToolsAsync(CancellationToken token)

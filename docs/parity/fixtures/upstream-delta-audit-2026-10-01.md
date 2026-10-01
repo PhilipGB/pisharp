@@ -1,8 +1,8 @@
 # Current Pi upstream delta audit — refreshed 2026-10-01
 
-The previously documented Pi pin was `955cc6665ee3986c6a033db52200779310d10dfd`. Pi `main` was refreshed first to `b56702ad345201a1de46a5f8e94542a3a59ad3bd`, then to current `8ce69e9d2b171d173fe4b6b2b6256f1f4411e69d`; the prior pin is an ancestor, with 16 intervening commits reviewed in chronological order against their source, tests, and PiSharp equivalents. PiSharp source `ec7fe828d820ff6967fa569f3b93affe98177a0a` is the current parity branch head and passed exact-head Linux CI [36798041083](https://github.com/PhilipGB/pisharp/actions/runs/36798041083), including 1,047/1,047 tests with zero skips. The separate root worktree still has uncommitted extension context-transform work; it is not included in this source or CI evidence.
+The previously documented Pi pin was `955cc6665ee3986c6a033db52200779310d10dfd`. Pi `main` was refreshed first to `b56702ad345201a1de46a5f8e94542a3a59ad3bd`, then to `8ce69e9d2b171d173fe4b6b2b6256f1f4411e69d`, and is now `70c036211de5378508ae2456f3c7ae3cf9f8bc75`; the prior pin is an ancestor, with 21 intervening commits reviewed in chronological order against their source, tests, and PiSharp equivalents. The latest published PiSharp source `9e2017726e193d5c26f828704e2059bb45715740` passed exact-head Linux CI on both the feature branch [36833609718](https://github.com/PhilipGB/pisharp/actions/runs/36833609718) and `main` [36834040097](https://github.com/PhilipGB/pisharp/actions/runs/36834040097), each with 1,047/1,047 tests and zero skips. The uncommitted metadata-override implementation in the isolated parity worktree passes local full validation with 1,057/1,057 tests and zero skips. The separate root worktree still has uncommitted extension context-transform work; it is not included in this source or CI evidence.
 
-Current classifications: **5 `NEEDS_WORK`, 8 `OUT_OF_SCOPE`, 3 `NO_BEHAVIOR_CHANGE`**. The five in-scope behavior gaps are listed in commit order. No overall parity claim is implied.
+Current classifications: **6 `NEEDS_WORK`, 11 `OUT_OF_SCOPE`, 4 `NO_BEHAVIOR_CHANGE`**. The six in-scope behavior gaps are listed in commit order. No overall parity claim is implied.
 
 ## Commit classifications
 
@@ -67,9 +67,10 @@ Adds a header-click-only hidden logo animation and a last-frame accessor for tha
 - **Pi files:** `packages/coding-agent/src/core/mcp-servers.ts`, `packages/coding-agent/src/extensions/mcp/{oauth.ts,runtime.ts}`, `packages/mcp/src/oauth/{discovery.ts,errors.ts,flow.ts,types.ts}`, and MCP OAuth/configuration tests.
 - **Pi behavior:** an optional `oauth.authServerMetadataUrl` supplies a trusted authorization-server metadata document instead of normal authorization-server discovery; it must be HTTPS except for loopback HTTP. When metadata advertises RFC 9207 issuer responses, authorization codes are exchanged only if the callback `iss` equals that metadata's issuer. A present but mismatched `iss` is rejected as well.
 - **PiSharp behavior / mismatch:** `McpOAuthSettings` does not accept a metadata URL, and the SDK performs only its normal discovery flow. RFC 9207 issuer validation is already present in the pinned `ModelContextProtocol.Core` 2.2.0: `McpOAuthLogin` returns callback `iss` in `AuthorizationResult`, and `ClientOAuthProvider.ValidateIssuerResponse` checks it against discovered metadata before code exchange. The remaining mismatch is the configured trusted metadata-document override and its URL validation.
-- **PiSharp files:** `src/PiSharp.Runtime/Mcp/McpOAuth.cs`, `src/PiSharp.Runtime/Mcp/McpOAuthLogin.cs`, MCP configuration parsing, and `tests/PiSharp.Tests/McpOAuthTests.cs`.
+- **PiSharp files:** `src/PiSharp.Runtime/Mcp/McpOAuth.cs`, `src/PiSharp.Runtime/Mcp/McpOAuthLogin.cs`, `src/PiSharp.Runtime/Mcp/McpOAuthMetadataHandler.cs`, `src/PiSharp.Runtime/Mcp/McpRuntime.cs`, MCP configuration parsing, and focused tests in `tests/PiSharp.Tests/McpOAuthMetadataTests.cs`.
 - **Required test:** loopback fixture with an explicit metadata document; prove it replaces discovery, rejects insecure non-loopback URLs, and verifies matching/missing/wrong callback `iss` against the configured issuer before any authorization code reaches the token endpoint. Keep coverage for the SDK-provided RFC 9207 check while testing the configured-document path.
 - **Required implementation:** validate and pass the configured metadata document into the OAuth flow as a trusted override that replaces normal authorization-server discovery. Preserve the SDK issuer checks and reject unsafe metadata URLs before network access.
+- **Local resolution evidence:** fail-first parsing rejected the new option as unknown. The current worktree accepts only HTTPS or HTTP on localhost/loopback, fetches the configured metadata document in place of ordinary authorization-server discovery for login and runtime, and leaves RFC 9207 validation in `ModelContextProtocol.Core` intact. The loopback fixture covers matching, missing and wrong callback `iss`; it verifies the configured document is requested, normal discovery is not, and a rejected issuer never reaches the token endpoint. The combined MCP OAuth tests pass 21/21; restore, format, warnings-as-errors build and the full suite pass locally with 1,057/1,057 tests and zero skips. Exact-head CI remains required after the code commit.
 
 ### `17f3dccbef6c56cbc8cee73dbcfe2bba4f8734f9` — `NEEDS_WORK`
 
@@ -97,6 +98,31 @@ Adds extensions and per-conversation agent configuration to the separate experim
 - **Required test:** deterministic streamable-HTTP pagination and OAuth fixtures for empty/null cursors, token responses with empty/null optional fields and refresh-token preservation, and invalid resource-metadata URLs; verify no repeated page request and that valid existing credentials survive refresh.
 - **Required implementation:** normalize the SDK boundary to Pi's optional-field semantics, preserve an existing refresh token when the response supplies an empty value, stop pagination on an empty cursor, and use the server-origin fallback for invalid resource-metadata URLs. Keep the already-matching null-expiry and empty-scope behavior covered.
 
+### `5b5ccddfac3abba2f3c26b558ec69dcde85000ab` — `NO_BEHAVIOR_CHANGE`
+
+Documentation-only changes in `packages/durable/docs/` clarify lifecycle wording and the task-graph view; no runtime behavior changes.
+
+### `49683a36476e3a3fdbb40008745073375df563b7` — `OUT_OF_SCOPE`
+
+Adds lifecycle conformance and task-graph APIs to the separate `packages/durable` harness. These alter a durable task runtime and storage model, not the Pi coding-agent capability surface being ported.
+
+### `5609b0d6c07cd3bf8014429123086f6da0a5e14e` — `OUT_OF_SCOPE`
+
+Adds an explicitly experimental coding-agent TUI backed by the separate Pi Durable harness. It is an alternative durable runtime rather than a change to the default coding-agent behavior audited by PiSharp.
+
+### `41169ba2af7f5bd5c97237633879117bc3fa9cd9` — `NEEDS_WORK`
+
+- **Pi files:** `packages/coding-agent/src/extensions/mcp/index.ts` and its changelog.
+- **Pi behavior:** `/mcp login` in TUI mode emits the long authorization URL as an OSC 8 hyperlink and puts the click instruction on a separate short linked line, so terminal wrapping does not break the target.
+- **PiSharp behavior / mismatch:** `pisharp mcp login` prints a plain URL through `McpOAuthLogin`; the TUI terminal renderer understands OSC 8, but there is no equivalent interactive MCP login action or linked authorization-URL projection.
+- **PiSharp files:** `src/PiSharp.Runtime/Mcp/McpOAuthLogin.cs`, `src/PiSharp.Cli/McpCommand.cs`, `src/PiSharp.Cli/Tui/TerminalTextLayout.cs`, and focused MCP/TUI tests.
+- **Required test:** exercise the MCP login URL through a PTY/TUI notification with a long URL; verify the OSC 8 target survives display wrapping and the short click hint points to the same URL, while plain CLI output remains readable.
+- **Required implementation:** expose the MCP login URL through the TUI's hyperlink-capable notification path and preserve the existing plain-text CLI behavior.
+
+### `70c036211de5378508ae2456f3c7ae3cf9f8bc75` — `OUT_OF_SCOPE`
+
+Changes the default task-panel visibility in the experimental durable TUI added by `5609b0d`; it does not change the default Pi coding-agent runtime or its audited interfaces.
+
 ## Processing order
 
-Resolve the five `NEEDS_WORK` commits in chronological order. Whitespace-aware slash completion and Anthropic OAuth copy-code login are closed at exact heads `884a69b07743e57e135a50ce03e65f11c74cdd39` / CI `36795625551` and `ec7fe828d820ff6967fa569f3b93affe98177a0a` / CI `36798041083`, respectively. Next process MCP authorization-server metadata and issuer validation, then ANSI slice-boundary ordering, then the newer MCP optional-field/pagination residuals from `8ce69e9`. Capture fail-first evidence, focused behavior tests, full required validation, update this fixture and the parity ledger, then commit/push and verify exact-head CI before moving on. The broader PiSharp parity backlog and extension context-transform work remain open.
+Resolve the six `NEEDS_WORK` commits in chronological order. Whitespace-aware slash completion and Anthropic OAuth copy-code login are closed at exact heads `884a69b07743e57e135a50ce03e65f11c74cdd39` / CI `36795625551` and `ec7fe828d820ff6967fa569f3b93affe98177a0a` / CI `36798041083`, respectively. Next process MCP authorization-server metadata and issuer validation, ANSI slice-boundary ordering, the optional-field/pagination residuals from `8ce69e9`, then the MCP login hyperlink from `41169ba`. Capture fail-first evidence, focused behavior tests, full required validation, update this fixture and the parity ledger, then commit/push and verify exact-head CI before moving on. The broader PiSharp parity backlog and extension context-transform work remain open.
