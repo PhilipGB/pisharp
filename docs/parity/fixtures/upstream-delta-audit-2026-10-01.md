@@ -1,8 +1,8 @@
 # Current Pi upstream delta audit — refreshed 2026-10-01
 
-The previously documented Pi pin was `955cc6665ee3986c6a033db52200779310d10dfd`. Pi `main` was refreshed first to `b56702ad345201a1de46a5f8e94542a3a59ad3bd`, then to `8ce69e9d2b171d173fe4b6b2b6256f1f4411e69d`, `70c036211de5378508ae2456f3c7ae3cf9f8bc75`, and is now `0c453048bd4bb699b90463d9423c382d1787087f`; the prior pin is an ancestor, with 22 intervening commits reviewed in chronological order against their source, tests, and PiSharp equivalents. PiSharp source `6bddf37a65e64e915969bd2519f08031b7cb3525` passed exact-head Linux CI on the feature branch [36835477212](https://github.com/PhilipGB/pisharp/actions/runs/36835477212) and `main` [36835795082](https://github.com/PhilipGB/pisharp/actions/runs/36835795082), each with 1,057/1,057 tests and zero skips. The separate root worktree still has uncommitted extension context-transform work; it is not included in this source or CI evidence.
+The previously documented Pi pin was `955cc6665ee3986c6a033db52200779310d10dfd`. Pi `main` was refreshed first to `b56702ad345201a1de46a5f8e94542a3a59ad3bd`, then to `8ce69e9d2b171d173fe4b6b2b6256f1f4411e69d`, `70c036211de5378508ae2456f3c7ae3cf9f8bc75`, and was refreshed after the previous CI to `a4715ec9bffbfcb8a32a1a4100dcfd06c12c93e4`; the prior pin is an ancestor, with 23 intervening commits reviewed in chronological order against their source, tests, and PiSharp equivalents. PiSharp source `f72ff8ef40145c3848ff712cefc3470e08dba94b` passed exact-head Linux CI on the feature branch [36837658517](https://github.com/PhilipGB/pisharp/actions/runs/36837658517) and `main` [36838135728](https://github.com/PhilipGB/pisharp/actions/runs/36838135728), each with 1,057/1,057 tests and zero skips. The separate root worktree still has uncommitted extension context-transform work; it is not included in this source or CI evidence.
 
-Current classifications: **7 `NEEDS_WORK`, 11 `OUT_OF_SCOPE`, 4 `NO_BEHAVIOR_CHANGE`**. The seven in-scope behavior gaps are listed in commit order. No overall parity claim is implied.
+Current classifications: **7 `NEEDS_WORK`, 11 `OUT_OF_SCOPE`, 5 `NO_BEHAVIOR_CHANGE`**. The seven in-scope behavior gaps are listed in commit order. No overall parity claim is implied.
 
 ## Commit classifications
 
@@ -131,6 +131,10 @@ Changes the default task-panel visibility in the experimental durable TUI added 
 - **PiSharp files:** `src/PiSharp.Cli/CliArguments.cs`, `src/PiSharp.Cli/Program.cs`, `src/PiSharp.Cli/UserSettings.cs`, `src/PiSharp.Cli/ProviderModelRuntime.cs`, CLI argument/help text, and focused CLI tests.
 - **Required test:** fail first on a normal agent invocation with `--provider` but no explicit `--model`, including when settings have a default model; assert an actionable error occurs before provider selection/request. Preserve informational/help and model-list behavior where Pi does not enter session selection.
 - **Required implementation:** reject the incomplete provider/model pair before applying saved model defaults or resolving a provider model, and document that `--provider` filters an explicit `--model` lookup.
+
+### `a4715ec9bffbfcb8a32a1a4100dcfd06c12c93e4` — `NO_BEHAVIOR_CHANGE`
+
+Adds a pinned official MCP client conformance suite, its baseline runner, and a CI job. It changes test coverage and CI only; it does not change Pi runtime behavior, so there is no coding-agent capability delta to port.
 
 ## Processing order
 
