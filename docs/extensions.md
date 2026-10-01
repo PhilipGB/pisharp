@@ -35,7 +35,7 @@ For HTTP MCP OAuth, `oauth.clientName` sets the name sent during dynamic client 
 }
 ```
 
-The `pisharp mcp add` command also accepts `--oauth-client-name`. The name is sent only when a client is dynamically registered; sign out before registering again under a different name.
+The `pisharp mcp add` command also accepts `--oauth-client-name`. The name is sent only when a client is dynamically registered; sign out before registering again under a different name. In the interactive TUI, `/mcp login <server>` renders the authorization URL and a short linked Ctrl+click/Cmd+click hint; the standalone `pisharp mcp login <server>` command keeps the URL as plain text.
 
 ## Tool call and result presentation
 

@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "plan_received": true,
-  "source_note": "PiSharp source 9f33151c7f0417c9a4d46b5f9bcae2d6e0e63181 passed exact-head Linux CI on feature branch 36845344087 and main 36845868682 with 1064/1064 tests and zero skips. Current Pi main is e792ba131ed0495f3ff58a0eb13f20540e344d5c; the refreshed audit compares it with 955cc6665ee3986c6a033db52200779310d10dfd and classifies 24 commits, including six original NEEDS_WORK entries, one MATCHED entry, and six NO_BEHAVIOR_CHANGE entries. MCP optional-field/pagination parity is exact-head CI-verified. Whitespace-aware slash completion, Anthropic browser/copy-code OAuth, and configured MCP authorization-server metadata are closed. Next continue with the MCP login hyperlink and explicit provider/model residuals. Overall parity remains incomplete. See docs/parity/fixtures/upstream-delta-audit-2026-10-01.md.",
+  "source_note": "PiSharp source 6d8c594258589faca4d8f4fd1e84f0c6cbb3bc4c passed exact-head Linux CI on feature branch 36850176163 and main 36850579208 with 1,065/1,065 tests and zero skips. Current Pi main is 0f8740bb65638180403a225ad7ec4d0cc1f8dedf; the refreshed audit compares it with 955cc6665ee3986c6a033db52200779310d10dfd and classifies 25 commits, including six original NEEDS_WORK entries, one MATCHED entry, and seven NO_BEHAVIOR_CHANGE entries. MCP optional-field/pagination and login hyperlink parity are exact-head CI-verified. Whitespace-aware slash completion, Anthropic browser/copy-code OAuth, and configured MCP authorization-server metadata are closed. ANSI slice-boundary ordering is exact-head CI-verified as matched. The OAuth-selector wording update has no capability effect; process the explicit provider/model residual next. Overall parity remains incomplete. See docs/parity/fixtures/upstream-delta-audit-2026-10-01.md.",
   "baseline": "earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035",
   "required_ids": [
     "feature-agent-multi-turn-and-streaming",
@@ -3715,36 +3715,36 @@
   ],
   "upstream_delta_audit": {
     "source_pin": "955cc6665ee3986c6a033db52200779310d10dfd",
-    "source_head": "e792ba131ed0495f3ff58a0eb13f20540e344d5c",
-    "commit_count": 24,
+    "source_head": "0f8740bb65638180403a225ad7ec4d0cc1f8dedf",
+    "commit_count": 25,
     "classifications": {
       "NEEDS_WORK": 6,
       "MATCHED": 1,
       "OUT_OF_SCOPE": 11,
-      "NO_BEHAVIOR_CHANGE": 6
+      "NO_BEHAVIOR_CHANGE": 7
     },
     "fixture": "docs/parity/fixtures/upstream-delta-audit-2026-10-01.md",
-    "next": "mcp-login-hyperlink",
-    "current_item": "41169ba2af7f5bd5c97237633879117bc3fa9cd9",
-    "current_item_status": "queued_after_8ce69e9_exact_head_ci",
-    "current_item_local_evidence": "8ce69e9 MCP optional-field/pagination parity is closed at PiSharp source 9f33151c7f0417c9a4d46b5f9bcae2d6e0e63181; exact-head feature CI 36845344087 and main CI 36845868682 each pass 1,064/1,064 with zero skips. The post-main-CI Pi refresh resolved to e792ba131ed0495f3ff58a0eb13f20540e344d5c, classified NO_BEHAVIOR_CHANGE because the user-message storage change preserves identical output. Next implement the long clickable /mcp login URL projection from 41169ba.",
+    "next": "explicit-provider-model-requirement",
+    "current_item": "0c453048bd4bb699b90463d9423c382d1787087f",
+    "current_item_status": "queued_after_mcp_login_hyperlink_exact_head_ci",
+    "current_item_local_evidence": "41169ba MCP login hyperlink parity is closed at PiSharp source 6d8c594258589faca4d8f4fd1e84f0c6cbb3bc4c; feature CI 36850176163 and main CI 36850579208 each pass 1,065/1,065 with zero skips. The TUI PTY fixture verifies a wrapped OSC 8 authorization URL and shared Ctrl+click target; direct OAuth output retains its plain URL. The post-main-CI Pi refresh resolved to 0f8740bb65638180403a225ad7ec4d0cc1f8dedf; its OAuth-selector wording-only change is classified NO_BEHAVIOR_CHANGE. Next process the explicit provider/model requirement from 0c45304.",
     "next_after_ci": "0c453048bd4bb699b90463d9423c382d1787087f",
     "completed": [
       "65117e31f242daa8e0a17dbd2810f7bb92bf4087",
       "7a11fe1c723b942fa093edb8b00f051ddb9b6627",
       "d850edee9ccc5d3b6cec79553d4839a1cbab47ed",
       "17f3dccbef6c56cbc8cee73dbcfe2bba4f8734f9",
-      "8ce69e9d2b171d173fe4b6b2b6256f1f4411e69d"
+      "8ce69e9d2b171d173fe4b6b2b6256f1f4411e69d",
+      "41169ba2af7f5bd5c97237633879117bc3fa9cd9"
     ],
-    "ci_run": "36845868682",
+    "ci_run": "36850579208",
     "later_items": [
-      "41169ba2af7f5bd5c97237633879117bc3fa9cd9",
       "0c453048bd4bb699b90463d9423c382d1787087f"
     ],
-    "latest_published_source_head": "9f33151c7f0417c9a4d46b5f9bcae2d6e0e63181",
+    "latest_published_source_head": "6d8c594258589faca4d8f4fd1e84f0c6cbb3bc4c",
     "latest_published_ci_runs": [
-      "36845344087",
-      "36845868682"
+      "36850176163",
+      "36850579208"
     ]
   }
 }
