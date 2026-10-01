@@ -79,6 +79,29 @@ registration.AddToolResultHook((context, cancellationToken) =>
 
 Call hooks run in registration order before tool execution. Each receives the tool name, stable call ID, optional parent call ID and mutable argument dictionary; the first blocked decision prevents the tool from running and returns its error through the normal tool lifecycle. Result hooks also run in registration order after execution, including failed or blocked calls. They can replace the result or set `IsError` and `Error`; nested callers receive that explicit status. The host passes cancellation to every hook. These hooks are a policy extension point, not a built-in approval dialog or security sandbox. Native extensions remain trusted in-process code with the application's operating-system permissions.
 
+## Provider context transforms
+
+An extension can transform the conversation sent to the provider on each model request:
+
+```csharp
+registration.AddContextTransform((messages, cancellationToken) =>
+{
+    cancellationToken.ThrowIfCancellationRequested();
+    var projected = messages.ToList();
+    var promptIndex = projected.FindLastIndex(message => message.Role == ChatRole.User);
+    if (promptIndex >= 0)
+    {
+        var prompt = projected[promptIndex].Clone();
+        prompt.Contents = prompt.Contents.ToList();
+        prompt.Contents.Add(new TextContent("Apply the extension's repository-specific guidance."));
+        projected[promptIndex] = prompt;
+    }
+    return ValueTask.FromResult<IReadOnlyList<ChatMessage>>(projected);
+});
+```
+
+Transforms run in registration order after PiSharp projects the conversation and before provider-only repair and image preparation. They also run for follow-up requests in a tool loop and after context-overflow compaction. The host copies messages and text, tool-call, and tool-result content between transforms; other content payloads should be treated as read-only. Transformed messages are used for that provider request and do not enter saved conversation history. Cancellation is passed through, and a transform failure fails the provider request. Transforms are captured when an agent is created, so registering one later does not change existing agents.
+
 ## Current boundaries
 
-The .NET API does not aim for TypeScript source compatibility. Context transforms, custom providers, extension keybindings, general extension UI, resource registration and settings remain open parity work. Tool output schemas and a complete structured-result contract are also open. See the [parity ledger](parity/execution-ledger.json) for implementation evidence and current gaps.
+The .NET API does not aim for TypeScript source compatibility. Session lifecycle hooks and per-session extension state, dynamic registration, custom providers, extension keybindings, general extension UI, resource registration and settings remain open parity work. Tool output schemas and a complete structured-result contract are also open. See the [parity ledger](parity/execution-ledger.json) for implementation evidence and current gaps.

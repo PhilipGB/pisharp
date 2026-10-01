@@ -48,6 +48,7 @@ public sealed class ExtensionRegistration
     private readonly List<UserBashHandler> _userBashHandlers = [];
     private readonly List<PiSharpToolCallHook> _toolCallHooks = [];
     private readonly List<PiSharpToolResultHook> _toolResultHooks = [];
+    private readonly List<PiSharpContextTransform> _contextTransforms = [];
     private readonly object _mcpGate = new();
     private readonly Dictionary<string, ExtensionMcpServerRegistration> _mcpServers = new(StringComparer.Ordinal);
     private readonly VirtualModelRegistry _virtualModels = new();
@@ -70,6 +71,7 @@ public sealed class ExtensionRegistration
     public IReadOnlyList<UserBashHandler> UserBashHandlers => _userBashHandlers;
     public IReadOnlyList<PiSharpToolCallHook> ToolCallHooks => _toolCallHooks;
     public IReadOnlyList<PiSharpToolResultHook> ToolResultHooks => _toolResultHooks;
+    public IReadOnlyList<PiSharpContextTransform> ContextTransforms => _contextTransforms.ToArray();
     public IReadOnlyCollection<ExtensionMcpServerRegistration> McpServers
     {
         get { lock (_mcpGate) return _mcpServers.Values.ToArray(); }
@@ -253,6 +255,13 @@ public sealed class ExtensionRegistration
     {
         ArgumentNullException.ThrowIfNull(hook);
         _toolResultHooks.Add(hook);
+    }
+
+    /// <summary>Registers an asynchronous transform applied to provider-bound conversation context.</summary>
+    public void AddContextTransform(PiSharpContextTransform transform)
+    {
+        ArgumentNullException.ThrowIfNull(transform);
+        _contextTransforms.Add(transform);
     }
 
     public void AddCommand(string name, Func<string, CancellationToken, Task<string>> handler) =>

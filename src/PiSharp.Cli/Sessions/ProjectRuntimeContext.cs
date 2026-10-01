@@ -164,6 +164,7 @@ internal sealed class ProjectRuntimeContext : IDisposable
             liveExtensionRegistration: Extensions.Registration,
             extensionToolCallHooks: Extensions.Registration.ToolCallHooks,
             extensionToolResultHooks: Extensions.Registration.ToolResultHooks,
+            extensionContextTransforms: Extensions.Registration.ContextTransforms,
             virtualModelRequestRouter: virtualModelRequestRouter,
             codemodeModels: codemodeModels,
             getAdditionalSystemInstructions: () => McpRuntime.RenderServerContext(EffectiveMcpServers, McpManager),

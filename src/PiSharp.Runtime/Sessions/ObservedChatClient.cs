@@ -13,7 +13,9 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
     bool supportsImages = true, Func<ReasoningOptions?>? getReasoning = null,
     Func<bool>? getSupportsImages = null, IProviderToolCallDeltaSource? toolCallDeltaSource = null,
     Func<IReadOnlyList<AITool>>? getToolsForRequest = null, RoutedChatClient? routedChatClient = null,
-    Func<string?>? getAdditionalSystemInstructions = null) : DelegatingChatClient(inner)
+    Func<string?>? getAdditionalSystemInstructions = null,
+    Func<IReadOnlyList<ChatMessage>, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? transformContext = null)
+    : DelegatingChatClient(inner)
 {
     public override async Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages,
         ChatOptions? options = null, CancellationToken cancellationToken = default)
@@ -279,6 +281,8 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
         // A routed request owns its budget after physical selection; earlier policies may describe a different model.
         var projected = projectContext is null || routedChatClient?.HasRouter == true
             ? messages : await projectContext(messages, force, cancellationToken);
+        if (transformContext is not null)
+            projected = await transformContext(projected, cancellationToken);
         return FilterImages(AttachReadImages(AddMissingFunctionResults(projected))).ToArray();
     }
 
@@ -295,6 +299,8 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
         var compacted = await projectContext(original, true, cancellationToken);
         if (ReferenceEquals(compacted, original)) return null;
         publish(new("model_context_overflow_recovery", Text: "Retrying the model request once with a shortened context."));
+        if (transformContext is not null)
+            compacted = await transformContext(compacted, cancellationToken);
         return FilterImages(AttachReadImages(AddMissingFunctionResults(compacted))).ToArray();
     }
 

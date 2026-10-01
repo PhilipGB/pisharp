@@ -121,6 +121,7 @@ public sealed class PiAgent
     private readonly IReadOnlyList<string>? _selectedExtensionTools;
     private readonly IReadOnlySet<string> _excludedExtensionTools;
     private readonly bool _noExtensionTools;
+    private readonly PiSharpContextTransformPipeline _contextTransforms;
     private readonly SemaphoreSlim _runGate = new(1, 1);
     private ReasoningOptions? _reasoning;
     private readonly ToolBatchTermination _toolBatchTermination = new();
@@ -167,8 +168,10 @@ public sealed class PiAgent
         IReadOnlyList<PiSharpToolResultHook>? extensionToolResultHooks = null,
         ExtensionRegistration? liveExtensionRegistration = null,
         VirtualModelRequestRouter? virtualModelRequestRouter = null, ICodemodeModels? codemodeModels = null,
-        Func<string?>? getAdditionalSystemInstructions = null)
+        Func<string?>? getAdditionalSystemInstructions = null,
+        IReadOnlyList<PiSharpContextTransform>? extensionContextTransforms = null)
     {
+        _contextTransforms = new(extensionContextTransforms);
         _codemodeModels = codemodeModels;
         _codingTools = tools;
         _selectedImageResizeOptions = tools.ImageResizeOptions;
@@ -253,7 +256,8 @@ public sealed class PiAgent
         _agent = new ChatClientAgent(new ObservedChatClient(_routedChatClient, value => _events?.Invoke(value),
             retryPolicy ?? ProviderRetryPolicy.Default, TakeSteeringForRequest, blockImages, ProjectForRequestAsync,
             supportsImages, () => Volatile.Read(ref _reasoning), () => _routedChatClient.HasRouter || Volatile.Read(ref _supportsImages) != 0,
-            _routedChatClient, GetToolsForRequest, _routedChatClient, getAdditionalSystemInstructions), new ChatClientAgentOptions
+            _routedChatClient, GetToolsForRequest, _routedChatClient, getAdditionalSystemInstructions,
+            _contextTransforms.ApplyAsync), new ChatClientAgentOptions
             {
                 Name = "PiSharp",
                 ChatHistoryProvider = _history,
