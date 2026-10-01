@@ -40,7 +40,18 @@ public sealed class ConsoleProviderOAuthInteraction : IProviderOAuthInteraction
         }
     }
 
-    private static string? ReadLine()
+    public Task<string> PromptForCodeAsync(string message, string placeholder,
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        Console.Error.WriteLine(message);
+        if (!string.IsNullOrEmpty(placeholder)) Console.Error.WriteLine($"Expected format: {placeholder}");
+        Console.Error.Write("Authorization code: ");
+        var input = ReadLine(echo: false);
+        return Task.FromResult(input ?? throw new EndOfStreamException("No OAuth authorization code was provided."));
+    }
+
+    private static string? ReadLine(bool echo = true)
     {
         if (Console.IsInputRedirected) return Console.ReadLine();
         var value = new System.Text.StringBuilder();
@@ -57,12 +68,12 @@ public sealed class ConsoleProviderOAuthInteraction : IProviderOAuthInteraction
             {
                 if (value.Length == 0) continue;
                 value.Length--;
-                Console.Error.Write("\b \b");
+                if (echo) Console.Error.Write("\b \b");
                 continue;
             }
             if (key.KeyChar == '\0' || char.IsControl(key.KeyChar)) continue;
             value.Append(key.KeyChar);
-            Console.Error.Write(key.KeyChar);
+            if (echo) Console.Error.Write(key.KeyChar);
         }
     }
 }

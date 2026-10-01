@@ -13,6 +13,9 @@ public interface IProviderOAuthInteraction
     Task<string> SelectLoginMethodAsync(IReadOnlyList<ProviderOAuthLoginMethod> methods,
         CancellationToken cancellationToken);
 
+    Task<string> PromptForCodeAsync(string message, string placeholder, CancellationToken cancellationToken) =>
+        Task.FromException<string>(new NotSupportedException("Manual OAuth code input is not supported by this interaction."));
+
     void Notify(ProviderOAuthNotice notice);
 }
 

@@ -113,7 +113,11 @@ public sealed class ProviderModelRuntime
         }
         var authPath = environment("PISHARP_AUTH_PATH") ?? Path.Combine(agentDirectory, "auth.json");
         var auth = new AuthStorage(authPath);
-        var oauthAdapters = new List<IProviderOAuthAdapter> { new OpenAiCodexOAuthAdapter(http) };
+        var oauthAdapters = new List<IProviderOAuthAdapter>
+        {
+            new OpenAiCodexOAuthAdapter(http),
+            new AnthropicOAuthAdapter(http)
+        };
         if (providers.TryGetValue("radius", out var radius))
             oauthAdapters.Add(new RadiusOAuthAdapter(http, radius.Endpoint));
         return new ProviderModelRuntime(providers, auth, new ProviderOAuthCoordinator(auth, http, oauthAdapters),

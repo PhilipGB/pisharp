@@ -111,7 +111,7 @@ internal static class BuiltinProviderProfiles
                 "MISTRAL_API_KEY", null,
                 mistralModels,
                 Api: "mistral-conversations"),
-            ["anthropic"] = new("anthropic", "Anthropic", new Uri("https://api.anthropic.com"), true, false,
+            ["anthropic"] = new("anthropic", "Anthropic", new Uri("https://api.anthropic.com"), true, true,
                 "ANTHROPIC_API_KEY", null,
                 anthropicModels),
             ["azure-openai-responses"] = new("azure-openai-responses", "Azure OpenAI",

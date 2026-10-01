@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "plan_received": true,
-  "source_note": "Latest exact-head CI-verified PiSharp source is 884a69b07743e57e135a50ce03e65f11c74cdd39 / Linux CI 36795625551: restore, format, warnings-as-errors build and 1039/1039 tests, zero skips. The 2026-10-01 Pi main audit compares 955cc6665ee3986c6a033db52200779310d10dfd with b56702ad345201a1de46a5f8e94542a3a59ad3bd and identifies four in-scope deltas; leading-whitespace slash completion is complete at exact head. Process the remaining deltas chronologically before resuming extension lifecycle. Overall parity remains incomplete. See docs/parity/fixtures/upstream-delta-audit-2026-10-01.md.",
+  "source_note": "Latest exact-head CI-verified PiSharp source is 84b54104ea25b1077da100b54c6d57682c8ce6db / Linux CI 36795976453: restore, format, warnings-as-errors build and 1039/1039 tests, zero skips. The 2026-10-01 Pi main audit compares 955cc6665ee3986c6a033db52200779310d10dfd with b56702ad345201a1de46a5f8e94542a3a59ad3bd and identifies four in-scope deltas; leading-whitespace slash completion is complete at exact head, and Anthropic browser/copy-code OAuth has passed local full validation. Its exact-head CI is pending; then process the remaining two deltas chronologically before resuming extension lifecycle. Overall parity remains incomplete. See docs/parity/fixtures/upstream-delta-audit-2026-10-01.md.",
   "baseline": "earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035",
   "required_ids": [
     "feature-agent-multi-turn-and-streaming",
@@ -328,7 +328,8 @@
         "src/PiSharp.Cli/Protocols/RpcModelProjector.cs emits the Pi model fields consistently for get_available_models, set_model, cycle_model and get_state; ModelMetadataJson and ModelInputLimits preserve Pi-shaped catalog/config data, and provider/model compatibility uses Pi-compatible nested merges.",
         "src/PiSharp.Cli/{MistralModelCatalog,BuiltinProviderProfiles,ProviderModelRuntime}.cs embeds the current Pi snapshot of all 33 Mistral chat models and lists it statically without a generic /models probe; reasoning maps, image modalities, input limits, costs and the Mistral API identifier are retained. Unknown PISHARP_MISTRAL_MODEL values remain selectable alongside the built-in catalog.",
         "src/PiSharp.Cli/{AzureOpenAiRequestHandler,AzureOpenAiChatOptionsClient,AzureOpenAiModelCatalog,ProviderChatClientFactory}.cs: Azure Responses API-key boundary, configurable API-version/deployment mapping, per-session prompt_cache_key and embedded 43-model snapshot. Exact-head CI is green; provider-wide image/tool/usage/error differential evidence remains incomplete.",
-        "src/PiSharp.Cli/AnthropicThinkingSignatureClient.cs: replays unsigned Anthropic-compatible assistant reasoning as text unless model compat.allowEmptySignature is true; preserves signed thinking and applies a request-only MAF projection."
+        "src/PiSharp.Cli/AnthropicThinkingSignatureClient.cs: replays unsigned Anthropic-compatible assistant reasoning as text unless model compat.allowEmptySignature is true; preserves signed thinking and applies a request-only MAF projection.",
+        "Anthropic now exposes OAuth through `AnthropicOAuthAdapter`: browser PKCE and headless copy-code login, validated callback/input state, token refresh, private AuthStorage persistence, and the existing Anthropic OAuth request-token projection. Console code input is masked; API-key and environment-token precedence remains intact."
       ],
       "evidence": [
         "tests/PiSharp.Tests/ProviderModelRuntimeTests.cs: deterministic custom endpoint key isolation, configured metadata and fuzzy lookup, no /models request for exact IDs, private credential restart/symlink/permission checks, and CLI missing-auth rejection.",
@@ -352,7 +353,8 @@
         "AzureOpenAiProviderTests cover configured endpoint validation, API-key header, deployment/API-version request mapping, Responses streaming, per-session prompt-cache key, and the embedded 43-model snapshot. Exact source head ec1ea0f212f2a1964c891ce4a90c286020f3bcca passed Linux CI run 36452261244 with 764/764 tests, 0 skipped. No full Pi process differential or provider-wide image/tool/usage/error coverage is claimed.",
         "AnthropicThinkingSignatureCompatibilityTests uses the real Anthropic .NET SDK with a local /v1/messages loopback and covers compat enabled/disabled, signed content, and whitespace normalization (4/4). The initial disabled-compat case failed before the request projection. Current Pi 11894012dd461232eb075bc890538b6866860a10 tests anthropic-empty-thinking-signature-compat.test.ts and qwen-token-plan-models.test.ts pass 98/98. Exact source head 66561e1db1942624f7310bd50f68195c80ee66bf passed Linux CI run 36454550166: format, warnings-as-errors build (0 warnings/errors), 768/768 tests, 0 skipped.",
         "At current Pi da19b63c7, the build-time Radius API returned 28 models; PiSharp src/PiSharp.Cli/Providers/Data/radius-models.json contains 25 fallback entries pinned to fd889a274. RadiusModelCatalog.LoadAsync still refreshes /v1/config at runtime, leaving offline bundled-catalog freshness as a category 4 residual.",
-        "Anthropic workload identity coverage in ProviderModelRuntimeTests and ProviderChatClientFactoryTests verifies required/optional federation fields, explicit token/key precedence, partial-config fail-closed behavior, other-provider isolation, SDK bearer exchange, cached reuse, 401 refresh and rereading a rotated identity-token file. The focused Anthropic suite passes 18/18; final exact-head source 3b4d0da48f0d9ed83c6948a7d5cd2123ebba0ad8 passed Linux CI 36789619687 with 1,036/1,036 tests and zero skips."
+        "Anthropic workload identity coverage in ProviderModelRuntimeTests and ProviderChatClientFactoryTests verifies required/optional federation fields, explicit token/key precedence, partial-config fail-closed behavior, other-provider isolation, SDK bearer exchange, cached reuse, 401 refresh and rereading a rotated identity-token file. The focused Anthropic suite passes 18/18; final exact-head source 3b4d0da48f0d9ed83c6948a7d5cd2123ebba0ad8 passed Linux CI 36789619687 with 1,036/1,036 tests and zero skips.",
+        "AnthropicOAuthTests passes 8/8 with loopback token fixtures for browser callback, copy-code and redirect-URL input, PKCE/state validation, cancellation, malformed responses, private persistence and refresh-token rotation. The full local suite passes 1,047/1,047 with zero skips; format and warnings-as-errors build pass. Exact-head CI for this OAuth slice is pending; see docs/parity/fixtures/upstream-delta-audit-2026-10-01.md."
       ],
       "dependencies": []
     },
@@ -3722,11 +3724,11 @@
       "NO_BEHAVIOR_CHANGE": 3
     },
     "fixture": "docs/parity/fixtures/upstream-delta-audit-2026-10-01.md",
-    "next": "anthropic-copy-code-oauth",
-    "current_item": "65117e31f242daa8e0a17dbd2810f7bb92bf4087",
-    "current_item_status": "completed_exact_head_ci",
-    "current_item_local_evidence": "Fail-first EditorCompletionTests returned no candidates for leading space, multiple spaces and tab before /tr. IsSlashCommandStart now recognizes slash commands after whitespace only on the current line; applying completion preserves indentation, while the existing mid-sentence test remains empty. EditorCompletionTests passes 10/10. Local restore uses --no-http-cache because the default vulnerability-cache path is read-only; format verification passes with 0 of 409 files formatted; warnings-as-errors build passes with 0 warnings/errors. All 1,039 tests pass locally with zero skips using TERM=xterm-256color and xUnit.ParallelizeTestCollections=false. Exact-head Linux CI 36795625551 passes restore, format, warnings-as-errors build and 1,039/1,039 tests with zero skips on 884a69b07743e57e135a50ce03e65f11c74cdd39.",
-    "next_after_ci": "7a11fe1c723b942fa093edb8b00f051ddb9b6627",
+    "next": "mcp-oauth-metadata-issuer",
+    "current_item": "7a11fe1c723b942fa093edb8b00f051ddb9b6627",
+    "current_item_status": "local_full_validation_passed_exact_head_ci_pending",
+    "current_item_local_evidence": "Fail-first AnthropicOAuthTests showed the built-in profile had OAuthSupported=false. PiSharp now registers an Anthropic browser/copy-code adapter, adds masked manual-code input, validates supplied state, and uses the shared private OAuth store/refresh coordinator. AnthropicOAuthTests passes 8/8 for runtime registration, browser callback, copy code, redirect URL without state, PKCE, wrong-state rejection, cancellation, refresh and malformed token response. Restore passes with --no-http-cache, format verification passes with 0 of 411 files formatted, warnings-as-errors build passes with 0 warnings/errors, and the full suite passes 1047/1047 with zero skips using TERM=xterm-256color and xUnit.ParallelizeTestCollections=false. Exact-head CI is pending.",
+    "next_after_ci": "d850edee9ccc5d3b6cec79553d4839a1cbab47ed",
     "completed": [
       "65117e31f242daa8e0a17dbd2810f7bb92bf4087"
     ],
