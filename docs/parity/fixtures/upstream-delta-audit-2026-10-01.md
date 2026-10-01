@@ -1,10 +1,11 @@
-# Current Pi upstream delta audit — refreshed 2026-10-01
+# Current Pi upstream delta audit — 2026-10-01
 
-The previously documented Pi pin was `955cc6665ee3986c6a033db52200779310d10dfd`. Pi `main` was refreshed first to `b56702ad345201a1de46a5f8e94542a3a59ad3bd`, then to `8ce69e9d2b171d173fe4b6b2b6256f1f4411e69d`, `70c036211de5378508ae2456f3c7ae3cf9f8bc75`, `a4715ec9bffbfcb8a32a1a4100dcfd06c12c93e4`, `e792ba131ed0495f3ff58a0eb13f20540e344d5c`, and after the latest main CI to `0f8740bb65638180403a225ad7ec4d0cc1f8dedf`. The prior pin is an ancestor, with 25 intervening commits reviewed in chronological order against their source, tests, and PiSharp equivalents. PiSharp source `6d8c594258589faca4d8f4fd1e84f0c6cbb3bc4c` passed exact-head Linux CI on the feature branch [36850176163](https://github.com/PhilipGB/pisharp/actions/runs/36850176163) and `main` [36850579208](https://github.com/PhilipGB/pisharp/actions/runs/36850579208), each with 1,065/1,065 tests and zero skips. The separate root worktree still has uncommitted extension context-transform work; it is not included in this source or CI evidence.
+The prior recorded Pi pin was `955cc6665ee3986c6a033db52200779310d10dfd`. Fresh fetch confirms Pi `main` at `6f1072cc081f06b86a673bd142f03720d17afe15`, 40 commits after that pin. Every commit in the complete range is classified below in chronological order. PiSharp source `a1a3184343bf1bee3c01029eaa8938f2c091fd38` is the current published head; exact-head Linux CI [36895854094](https://github.com/PhilipGB/pisharp/actions/runs/36895854094) passed restore, format, warnings-as-errors build, and 1,068/1,068 tests with zero skips. The provider-context-transform extension slice is included in this head.
 
-Current classifications: **6 `NEEDS_WORK`, 1 `MATCHED`, 11 `OUT_OF_SCOPE`, 7 `NO_BEHAVIOR_CHANGE`**. Five of the six originally identified in-scope gaps are now exact-head verified; the explicit `--provider`/`--model` requirement remains to process. The in-scope behavioral deltas are listed in commit order. No overall parity claim is implied.
+The complete range has **13 `NEEDS_WORK`, 4 `MATCHED`, 14 `OUT_OF_SCOPE`, and 9 `NO_BEHAVIOR_CHANGE`** commits. Six earlier `NEEDS_WORK` changes are resolved at published PiSharp heads (recorded on their entries); seven open items remain. The oldest open delta is per-server MCP OAuth credential isolation (`5806068c`). The official MCP conformance commit is classified as test infrastructure with no runtime behavior change, while its required equivalent PiSharp conformance evidence is tracked separately in the execution ledger. Overall parity remains incomplete.
 
 ## Commit classifications
+
 
 ### `f3e68e8eaf3274d8111796b9df4e6b43e2f8e58a` — `OUT_OF_SCOPE`
 
@@ -124,7 +125,7 @@ Adds an explicitly experimental coding-agent TUI backed by the separate Pi Durab
 
 Changes the default task-panel visibility in the experimental durable TUI added by `5609b0d`; it does not change the default Pi coding-agent runtime or its audited interfaces.
 
-### `0c453048bd4bb699b90463d9423c382d1787087f` — `NEEDS_WORK`
+### `0c453048bd4bb699b90463d9423c382d1787087f` — `NEEDS_WORK` (resolved at exact head `e50e74dbbd`)
 
 - **Pi files:** `packages/coding-agent/src/main.ts`, `packages/coding-agent/src/cli/args.ts`, and `packages/coding-agent/docs/cli.md`.
 - **Pi behavior:** `--provider` without `--model` reports an error instead of silently ignoring the provider and running the default model from another provider. Help now describes `--provider` as a filter for `--model` and removes an outdated default-provider claim.
@@ -132,10 +133,30 @@ Changes the default task-panel visibility in the experimental durable TUI added 
 - **PiSharp files:** `src/PiSharp.Cli/CliArguments.cs`, `src/PiSharp.Cli/Program.cs`, `src/PiSharp.Cli/UserSettings.cs`, `src/PiSharp.Cli/ProviderModelRuntime.cs`, CLI argument/help text, and focused CLI tests.
 - **Required test:** fail first on a normal agent invocation with `--provider` but no explicit `--model`, including when settings have a default model; assert an actionable error occurs before provider selection/request. Preserve informational/help and model-list behavior where Pi does not enter session selection.
 - **Required implementation:** reject the incomplete provider/model pair before applying saved model defaults or resolving a provider model, and document that `--provider` filters an explicit `--model` lookup.
+- **Resolution evidence:** PiSharp commit `e50e74dbbd` now rejects a normal `--provider` invocation without an explicit `--model` before model resolution while preserving help and model-list paths. Focused CLI regression coverage and exact-head CI at the published range include this behavior.
+
+### `e529a82c98fad679c6e20c03ffbb0bc7896fecb9` — `MATCHED`
+
+- **Pi behavior:** MCP OAuth preserves previously granted scopes when an `insufficient_scope` challenge requests additional scopes; a challenge that names only the missing scope does not discard the earlier grant.
+- **PiSharp evidence:** PiSharp pins `ModelContextProtocol.Core` 2.2.0. Its installed SDK contract documents `ClientOAuthProvider.GetCurrentOperationScopes`, `ChallengeIntroducesNewScopes`, the challenge/metadata/configured-scope precedence, accumulated scope tracking, and `TokenContainer.Scope`. PiSharp uses that provider and persists the complete `TokenContainer` in its private token cache, so the challenged-scope union is owned by the already-used SDK rather than app-side refresh code. A focused integrated regression test is still required before MCP OAuth can be considered fully verified; the SDK API evidence is sufficient to classify this delta as already matched.
 
 ### `a4715ec9bffbfcb8a32a1a4100dcfd06c12c93e4` — `NO_BEHAVIOR_CHANGE`
 
 Adds a pinned official MCP client conformance suite, its baseline runner, and a CI job. It changes test coverage and CI only; it does not change Pi runtime behavior, so there is no coding-agent capability delta to port.
+
+### `5806068c26e55feefd1f5875bf05c0419ec5d912` — `NEEDS_WORK`
+
+- **Pi files:** `packages/coding-agent/src/extensions/mcp/{oauth.ts,runtime.ts,cli.ts}` and `packages/coding-agent/test/mcp-oauth-store.test.ts`.
+- **Pi behavior:** OAuth credentials are isolated by normalized MCP server name and canonical URL, so two configured server names at the same URL can use different accounts. A legacy URL-only entry migrates to the first server that loads it; logout removes only that server's key (or its legacy entry).
+- **PiSharp mismatch:** `McpTokenCache` keys credentials, refresh locks and logout by URL alone. `McpRuntime`, explicit login and `/mcp logout` pass the URL but not `McpServerConfiguration.Name`; same-URL aliases therefore share tokens.
+- **PiSharp files:** `src/PiSharp.Runtime/Mcp/McpOAuth.cs`, `McpOAuthLogin.cs`, `McpRuntime.cs`, `McpRuntimeManager.cs`, `McpOAuthRefreshHandler.cs`, and `tests/PiSharp.Tests/McpOAuthTests.cs`.
+- **Fail-first evidence:** create two named servers with the same URL and prove they can persist, refresh, read and remove distinct tokens; test legacy URL-only migration, normalized-name collisions and concurrent refresh locking under the new composite key.
+- **Required implementation:** key storage and refresh coordination by normalized server name plus canonical URL, pass server identity through runtime/login/logout, and migrate legacy URL-only state deterministically without exposing credentials.
+- **Validation/dependencies:** full solution validation and exact-head CI; no runtime dependency. This is the oldest open upstream delta.
+
+### `54c19a252997ee6607e2379b4c168a0adc93338e` — `NO_BEHAVIOR_CHANGE`
+
+Reduces retained memory in Pi TUI render caches by flattening strings and weakly holding parsed Markdown tokens. It does not change rendered content or the coding-agent interaction contract.
 
 ### `e792ba131ed0495f3ff58a0eb13f20540e344d5c` — `NO_BEHAVIOR_CHANGE`
 
@@ -145,6 +166,90 @@ Changes the interactive user-message component to avoid retaining a duplicate fu
 
 Changes the OAuth selector's empty-status label from “unconfigured” to “not configured” and updates its wording assertions. Authentication state, selection, and login behavior are unchanged, so the commit adds no capability delta to the PiSharp audit.
 
+### `c662ec7e374563bd549dc35f47bac52dcc4bed88` — `NEEDS_WORK`
+
+- **Pi files:** `packages/coding-agent/src/core/agent-session.ts` and `packages/coding-agent/test/suite/agent-session-mcp.test.ts`.
+- **Pi behavior:** tool names restored from a saved session remain pending while MCP servers register; explicit deactivation clears pending names, and pending names that miss the next prompt do not reactivate unexpectedly. `/reload` carries the prior MCP tool loadout through the registry replacement.
+- **PiSharp mismatch:** `ToolRegistry.CreateSnapshot` drops unknown active names and `RefreshForRegistryChange` reconstructs only currently available names, so an MCP tool loaded by `tool_search` can be lost when restoring before server registration or during reload.
+- **PiSharp files:** `src/PiSharp.Runtime/Extensions/ToolRegistry.cs`, `PiAgent.cs`, MCP lifecycle/session restoration, and focused tool-loadout/search tests.
+- **Fail-first evidence:** delay MCP tool registration across session restore; cover `/reload`, explicit clear, and a pending tool absent by the next prompt boundary.
+- **Required implementation:** preserve unresolved selected names with explicit lifecycle semantics until registry registration or the defined clearing boundary.
+- **Validation/dependencies:** full solution validation and exact-head CI; independent of other queued deltas.
+
+### `409e808f5834dc4f2f37b54abf24d3a2f6ecad75` — `NEEDS_WORK`
+
+- **Pi files:** `packages/coding-agent/src/modes/interactive/theme/system-theme.ts` and `packages/coding-agent/test/system-theme.test.ts`.
+- **Pi behavior:** generated anchored palette colors are capped at the source color's chroma, keeping pastel source palettes pastel as lightness changes.
+- **PiSharp mismatch:** `TerminalSystemTheme.Anchored` preserves OKHSL saturation without a source-chroma ceiling; lightness shifts can increase actual chroma and oversaturate a pastel palette.
+- **PiSharp files:** `src/PiSharp.Cli/Tui/TerminalSystemTheme.cs`, `TerminalColorSpace.cs`, and a focused `TerminalThemeTests` fixture.
+- **Fail-first evidence:** port the Catppuccin Frappe pastel-pink sample and compare generated OKLCH chroma at the relevant palette steps.
+- **Required implementation:** clamp generated chroma to the source chroma with the same palette falloff while retaining current contrast/lightness rules.
+- **Validation/dependencies:** focused color fixtures, full solution validation and exact-head CI.
+
+### `f29ea3deb298280b417892c6229ce478ad8c4d2f` — `NEEDS_WORK`
+
+- **Pi files:** `packages/coding-agent/src/core/settings-manager.ts`, `src/index.ts`, `src/modes/interactive/{components/settings-selector.ts,interactive-mode.ts}`, settings docs and interactive-mode tests.
+- **Pi behavior:** `quietStartup` accepts `true`, `false` or `"header"`. Header mode keeps the startup header/version/key hints while suppressing the model-scope line and resource notices; `true` hides the full startup presentation.
+- **PiSharp mismatch:** `UserSettings.QuietStartup` is boolean-only and `Program` either hides or shows a combined banner/metadata string.
+- **PiSharp files:** `src/PiSharp.Cli/UserSettings.cs`, `UserSettingsWriter.cs`, `Tui/TerminalSettingsPicker.cs`, `Program.cs`, and `tests/PiSharp.Tests/QuietStartupTests.cs` plus a CLI/PTY fixture.
+- **Fail-first evidence:** parse/write and render all three values; assert exact header, model metadata and resource-notice visibility at startup.
+- **Required implementation:** model the three-value setting through precedence, persistence and settings UI, and render the header separately from the gated metadata/notices.
+- **Validation/dependencies:** full solution validation and exact-head CI.
+
+### `7fd478a2e888ebc28869566f33a186303d372838` — `OUT_OF_SCOPE`
+
+Removes the experimental agent harness from the separately distributed `pi-agent-core` package. Pi Packages and their experimental harness surfaces are excluded by this parity objective; the change adds no coding-agent capability requirement for PiSharp.
+
+### `48dd1e2f0f9dc7a767d7e5ee693bc85a4d6db38c` — `OUT_OF_SCOPE`
+
+Ports an experimental client/server and durable harness into the separate `pi-durable` package. This is an experimental package/runtime, not the in-scope coding-agent interface; Pi Packages remain excluded.
+
+### `233f174401c1fbf112046b0020bcfb7ea5cd8467` — `OUT_OF_SCOPE`
+
+Changes the color treatment of the Pi logo on the browser OAuth callback page. It changes branding presentation only, adds no authentication behavior, and is specific to Pi's brand assets rather than a reusable coding-agent capability.
+
+### `ed8b3bcc194c8263ec8bec3f337053ae73866da1` — `NEEDS_WORK`
+
+- **Pi files:** `packages/coding-agent/src/core/radius.ts`, OAuth and Radius login selectors, `interactive-mode.ts`, and interactive-mode tests.
+- **Pi behavior:** `/login` offers Radius sign-in, then offers to configure the Radius MCP server in global `mcp.json` with provider-backed authentication; accept persists and reloads configuration, cancel returns to the parent flow, and subscription/account status is presented distinctly.
+- **PiSharp mismatch:** Radius OAuth provider support and MCP provider-auth configuration exist, but `/login` does not connect them into the same onboarding/configuration flow.
+- **PiSharp files:** `src/PiSharp.Cli/ProviderOAuth.cs`, login command/selector services, `src/PiSharp.Runtime/Mcp/McpConfigurationEditor.cs`, manager/reload flow, and focused auth/PTY process tests.
+- **Fail-first evidence:** run `/login` through a PTY with Radius available; assert sign-in, configure, cancel, persisted provider-auth configuration and live server reload paths.
+- **Required implementation:** compose the existing OAuth and MCP services into the interactive onboarding flow without embedding behavior in `Program.cs` or exposing credentials.
+- **Validation/dependencies:** full solution validation and exact-head CI. Radius capabilities exist in PiSharp; only the connected `/login` path is queued.
+
+### `aab34df655e3c5974fc40618f75e9eafdb031293` — `NEEDS_WORK`
+
+- **Pi files:** `packages/coding-agent/src/core/model-registry.ts`, `src/extensions/codemode/{execute.ts,tool.ts}`, model/Codemode docs and Codemode session tests.
+- **Pi behavior:** Codemode exposes `models.generateImages(model, context)`, resolves identity against the configured image-model catalog (never trusting script-supplied credentials/base URL), returns text/image output plus usage and stop/error status, and records nested call/cost evidence.
+- **PiSharp mismatch:** `ICodemodeModels` and `ProviderCodemodeModels` expose catalog and classifier operations but no image-generation method or guest global; image catalog metadata exists separately.
+- **PiSharp files:** `src/PiSharp.Runtime/Codemode/ICodemodeModels.cs`, model globals/call accounting, `src/PiSharp.Cli/ProviderCodemodeModels.cs`, process worker/output projection and focused Codemode image tests.
+- **Fail-first evidence:** guest-process fixture covers valid image generation, identity-only model resolution, image/text blocks, usage, error/aborted results and image emission.
+- **Required implementation:** add configured-provider image generation through the existing model-owned boundary and Codemode nested-call accounting, with no credential flow from script data.
+- **Validation/dependencies:** full solution validation and exact-head CI; the diagnostic overlap with the following Codemode prompt/error commit should be covered without merging unrelated behavior.
+
+### `ca9c925117b8d172d42e516a4175be4db0e51d79` — `MATCHED`
+
+Pi uses a text wordmark in Apple Terminal where its graphical logo is unsuitable. PiSharp's interactive header already uses a plain text `PiSharp` wordmark across terminals and does not emit the half-block logo, so the behavior is present without platform-specific branching. Evidence: `src/PiSharp.Cli/Program.cs` startup/header composition and `TerminalScreen` PTY fixtures.
+
+### `c2f65d8f13f6205c2efa963f7689ebb08a87fd33` — `NO_BEHAVIOR_CHANGE`
+
+Documentation-only provider-page and documentation-navigation edits; they add no runtime capability or observable coding-agent behavior.
+
+### `88ff80b986e34d4fbd1fa94a4df65c60ae964516` — `MATCHED`
+
+For this commit's default-mode change, PiSharp already starts its interactive TUI in the alternate screen and its normal interactive view, matching Pi's new default fullscreen presentation. Evidence: `src/PiSharp.Cli/Tui/TerminalScreen.cs` enters `?1049h`; `TerminalScreenTests` and Linux PTY tests verify alternate-screen lifecycle. PiSharp's separate `tuiMode` setting and normal-mode option remain open ledger work; this classification only covers the upstream commit's new default.
+
+### `6f1072cc081f06b86a673bd142f03720d17afe15` — `NEEDS_WORK`
+
+- **Pi files:** `packages/codemode/src/{declarations.ts,index.ts,runtime/prelude-source.ts}`, Codemode sandbox tests, coding-agent Codemode prompt/tool files and `docs/codemode.md`.
+- **Pi behavior:** reduces Codemode prompt size, documents globals one line each, reports close matches/available names for unknown tool or model members, and gives actionable model-catalog, image-output and store-capacity guidance from runtime errors.
+- **PiSharp mismatch:** the built-in Codemode description is large and inline; the guest bridge does not provide equivalent namespace/member diagnostics and errors for unknown globals, bad model selections and store overflow are generic.
+- **PiSharp files:** `src/PiSharp.Runtime/Codemode/CodemodeBuiltin.cs`, `CodemodeModelGlobals.cs`, `src/PiSharp.Runtime/Codemode` worker bridge and sandbox, plus dedicated prompt/runtime tests.
+- **Fail-first evidence:** assert bounded prompt text and guest errors for close matches, available members, wrong catalog type, output guidance and per-value/total store limits.
+- **Required implementation:** update model-facing declarations and worker-side error projection to produce equivalent useful guidance while preserving the existing isolated sandbox and output limits.
+- **Validation/dependencies:** implement after `models.generateImages` so image catalog errors include that operation; full solution validation and exact-head CI.
+
 ## Processing order
 
-Of the six commits originally classified `NEEDS_WORK`, five now have exact-head verification and one remains to process. Whitespace-aware slash completion, Anthropic OAuth copy-code login, and configured MCP authorization-server metadata are closed at exact heads `884a69b07743e57e135a50ce03e65f11c74cdd39` / CI `36795625551`, `ec7fe828d820ff6967fa569f3b93affe98177a0a` / CI `36798041083`, and `6bddf37a65e64e915969bd2519f08031b7cb3525` / CIs `36835477212` and `36835795082`. The ANSI slice-boundary commit `17f3dcc` is exact-head CI-verified as matched by shared-layout and selection-highlight regression coverage. MCP optional-field and pagination parity is closed at `9f33151c7` / feature CI `36845344087` and main CI `36845868682`. The MCP login hyperlink is closed at `6d8c594258` / feature CI `36850176163` and main CI `36850579208`. Pi `main` refreshed after that main run to `0f8740bb65638180403a225ad7ec4d0cc1f8dedf`; the OAuth-selector label-only change is classified `NO_BEHAVIOR_CHANGE`. Next process the explicit provider/model requirement from `0c45304`. Capture fail-first evidence, focused behavior tests, full required validation, update this fixture and the parity ledger, then commit/push and verify exact-head CI before moving on. The broader PiSharp parity backlog and extension context-transform work remain open.
+Resolve the currently open deltas in chronological order: MCP OAuth credentials keyed by server name and URL (`5806068c`), restored MCP tool loadouts (`c662ec7`), pastel system-theme chroma (`409e808`), header-only quiet startup (`f29ea3d`), Radius `/login` onboarding (`ed8b3bc`), Codemode image generation (`aab34df`), and Codemode prompt/error guidance (`6f1072c`). Before treating MCP as complete, run and baseline the official client conformance scenarios listed in the execution ledger. For each behavior change, add fail-first evidence, implement only that mismatch, run full validation, update parity records, commit/push, verify exact-head CI, refresh Pi, and continue.

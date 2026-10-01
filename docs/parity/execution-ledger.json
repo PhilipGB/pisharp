@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "plan_received": true,
-  "source_note": "PiSharp source 6d8c594258589faca4d8f4fd1e84f0c6cbb3bc4c passed exact-head Linux CI on feature branch 36850176163 and main 36850579208 with 1,065/1,065 tests and zero skips. Current Pi main is 0f8740bb65638180403a225ad7ec4d0cc1f8dedf; the refreshed audit compares it with 955cc6665ee3986c6a033db52200779310d10dfd and classifies 25 commits, including six original NEEDS_WORK entries, one MATCHED entry, and seven NO_BEHAVIOR_CHANGE entries. MCP optional-field/pagination and login hyperlink parity are exact-head CI-verified. Whitespace-aware slash completion, Anthropic browser/copy-code OAuth, and configured MCP authorization-server metadata are closed. ANSI slice-boundary ordering is exact-head CI-verified as matched. The OAuth-selector wording update has no capability effect; process the explicit provider/model residual next. Overall parity remains incomplete. See docs/parity/fixtures/upstream-delta-audit-2026-10-01.md.",
+  "source_note": "PiSharp source a1a3184343bf1bee3c01029eaa8938f2c091fd38 passed exact-head Linux CI 36895854094: restore, format, warnings-as-errors build and 1068/1068 tests, zero skips. Current Pi main is 6f1072cc081f06b86a673bd142f03720d17afe15. All 40 commits after 955cc6665ee3986c6a033db52200779310d10dfd are classified: 13 NEEDS_WORK (six resolved, seven open), four MATCHED, 14 OUT_OF_SCOPE and nine NO_BEHAVIOR_CHANGE. The oldest open upstream item is MCP OAuth credentials keyed by server name and URL. Official MCP client conformance evidence is still required. Overall parity remains incomplete; see docs/parity/fixtures/upstream-delta-audit-2026-10-01.md.",
   "baseline": "earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035",
   "required_ids": [
     "feature-agent-multi-turn-and-streaming",
@@ -3550,7 +3550,9 @@
         "Global and trusted-project config with precedence, stdio and streamable HTTP, enable/disable, shared tool exposure and resources",
         "Lifecycle, timeout/cancel, reconnect, server/tool conflicts, trust and process cleanup",
         "MCP OAuth, safe server-bound credential storage, /mcp management, pi mcp CLI and extension server registration",
-        "Support per-server OAuth clientName metadata and avoid holding the first prompt for indirect MCP servers."
+        "Support per-server OAuth clientName metadata and avoid holding the first prompt for indirect MCP servers.",
+        "Pass an official MCP client-conformance baseline across every protocol mode supported by current Pi; classify all known failing checks.",
+        "Isolate OAuth tokens and refresh coordination per normalized server name plus canonical URL, with deterministic migration from URL-only cache entries."
       ],
       "implementation": [
         "McpConfiguration loads global and trusted-project mcp.json with project precedence, enabled flags, exposure overrides, transport settings and bounded timeouts. McpRuntime uses the official C# SDK for stdio and Streamable HTTP, expands environment references without logging credential values, and registers tools and resource operations in the existing extension catalog. Clients are disposed with the extension lease. HTTP servers without an Authorization header use SDK OAuth with a noninteractive startup callback; explicit CLI login uses a loopback authorization-code callback, and logout deletes URL-bound tokens. A private atomic mcp-auth.json cache persists SDK token and client registration fields. Local CLI add/list/remove uses an atomic config editor with same-process and interprocess locking; CLI status probes servers without selecting a chat model.",
@@ -3566,7 +3568,8 @@
         "Commit 71c5fd6f7e92e4cbb4878e2e032ae2935fbc92e6 completes the live MCP manager slice: enable/disable and exposure persistence, slash-command OAuth login/logout, load-time extension-declared session-only servers with configured-server precedence, and parallel startup with a shared 10-second wait. Local focused MCP tests pass 24/24, full suite 866/866 (0 skipped), format and serialized warnings-as-errors build pass. Exact-head Linux CI run 36623595889 passes restore, format, build with 0 warnings/errors, and 866/866 tests. Later extension registrations after load and a richer interactive manager UI remain open.",
         "MCP namespace fail-first two-server stdio fixture verifies configured summaries and initialize instructions, namespace-filtered Codemode search, nested tool calls and hidden-tool exclusion; focused Codemode/MCP/config tests 16/16, format and warnings-as-errors build pass, full local suite 1004/1004 with zero skips. Source f61455a21c359ec1af704c8b093f1d209db3cb51 passed exact-head Linux CI 36753858082. A separate configuration test verifies legacy codemode-deferred canonicalization.",
         "Fail-first OAuth authorization-server fixture showed custom oauth.clientName was rejected and default DCR omitted client_name. Loopback cases verify Claude Code and default pi on every registration; CLI saves --oauth-client-name; invalid blank/non-string config is rejected without exposing clientSecret. Focused OAuth/config/CLI 17/17; format and warnings-as-errors build clean; full suite 1006/1006, zero skipped; exact-head Linux CI 36756672893 passes restore, format, warnings-as-errors build and 1006/1006 tests.",
-        "Fail-first delayed stdio/provider-loop fixture proves an indirect MCP server no longer holds the first provider call; later provider requests include its first-line summary. Named Codemode waits, tool-search/resource waits, bounded direct startup, cancellation cleanup and separate pisharp mcp list status wait are covered. Full solution suite passes 1014/1014 with zero skips; source f1dc7e2e562a4e367de59dd62aa49796359db537 passed exact-head Linux CI 36766119204."
+        "Fail-first delayed stdio/provider-loop fixture proves an indirect MCP server no longer holds the first provider call; later provider requests include its first-line summary. Named Codemode waits, tool-search/resource waits, bounded direct startup, cancellation cleanup and separate pisharp mcp list status wait are covered. Full solution suite passes 1014/1014 with zero skips; source f1dc7e2e562a4e367de59dd62aa49796359db537 passed exact-head Linux CI 36766119204.",
+        "Current Pi MCP OAuth credential isolation by server name plus URL (5806068c) remains unmatched; the current URL-only key is in McpTokenCache.Key and is propagated through runtime/login/logout. The required official client-conformance suite is pinned by current Pi at @modelcontextprotocol/conformance@0.2.0-alpha.11 for 2025-03-26, 2025-06-18 and 2025-11-25; PiSharp execution/baseline is not started."
       ],
       "dependencies": [
         "tool-exposure-loadout",
@@ -3713,40 +3716,65 @@
         "virtual-model-routing-persistence",
         "codemode-runtime"
       ]
+    },
+    {
+      "id": "mcp-client-conformance",
+      "title": "MCP: official client conformance suite",
+      "status": "not_started",
+      "source": "Current Pi packages/coding-agent/test/mcp-conformance/run.ts and baseline.json at 6f1072cc081f06b86a673bd142f03720d17afe15; conformance package @modelcontextprotocol/conformance@0.2.0-alpha.11.",
+      "acceptance": [
+        "Exercise equivalent official MCP client scenarios against PiSharp for protocol modes 2025-03-26, 2025-06-18 and 2025-11-25.",
+        "Commit explicit passing/failing check baseline and fail CI when a previously passing check regresses or an unlisted check fails.",
+        "Document and classify every known failure as in-scope gap, SDK limitation, intentional scope difference or unsupported future protocol; resolve material in-scope failures."
+      ],
+      "implementation": [],
+      "evidence": [
+        "Current Pi pins @modelcontextprotocol/conformance@0.2.0-alpha.11 and runs modes 2025-03-26, 2025-06-18 and 2025-11-25. Its runner compares each check against a committed baseline. PiSharp has no equivalent harness or baseline yet."
+      ],
+      "dependencies": [
+        "mcp-runtime"
+      ]
     }
   ],
   "upstream_delta_audit": {
     "source_pin": "955cc6665ee3986c6a033db52200779310d10dfd",
-    "source_head": "0f8740bb65638180403a225ad7ec4d0cc1f8dedf",
-    "commit_count": 25,
+    "source_head": "6f1072cc081f06b86a673bd142f03720d17afe15",
+    "commit_count": 40,
     "classifications": {
-      "NEEDS_WORK": 6,
-      "MATCHED": 1,
-      "OUT_OF_SCOPE": 11,
-      "NO_BEHAVIOR_CHANGE": 7
+      "NEEDS_WORK": 13,
+      "MATCHED": 4,
+      "OUT_OF_SCOPE": 14,
+      "NO_BEHAVIOR_CHANGE": 9
     },
     "fixture": "docs/parity/fixtures/upstream-delta-audit-2026-10-01.md",
-    "next": "explicit-provider-model-requirement",
-    "current_item": "0c453048bd4bb699b90463d9423c382d1787087f",
-    "current_item_status": "queued_after_mcp_login_hyperlink_exact_head_ci",
-    "current_item_local_evidence": "41169ba MCP login hyperlink parity is closed at PiSharp source 6d8c594258589faca4d8f4fd1e84f0c6cbb3bc4c; feature CI 36850176163 and main CI 36850579208 each pass 1,065/1,065 with zero skips. The TUI PTY fixture verifies a wrapped OSC 8 authorization URL and shared Ctrl+click target; direct OAuth output retains its plain URL. The post-main-CI Pi refresh resolved to 0f8740bb65638180403a225ad7ec4d0cc1f8dedf; its OAuth-selector wording-only change is classified NO_BEHAVIOR_CHANGE. Next process the explicit provider/model requirement from 0c45304.",
-    "next_after_ci": "0c453048bd4bb699b90463d9423c382d1787087f",
+    "next": "mcp-oauth-credentials-per-server-name-and-url",
+    "current_item": "5806068c26e55feefd1f5875bf05c0419ec5d912",
+    "current_item_status": "open",
+    "current_item_local_evidence": "Pi commit 5806068c keys credentials by normalized server name plus URL with deterministic migration of legacy URL-only entries. PiSharp McpTokenCache, login, runtime and logout currently key only by URL. No fail-first same-URL multi-server test exists.",
+    "next_after_ci": "c662ec7e374563bd549dc35f47bac52dcc4bed88",
     "completed": [
       "65117e31f242daa8e0a17dbd2810f7bb92bf4087",
       "7a11fe1c723b942fa093edb8b00f051ddb9b6627",
       "d850edee9ccc5d3b6cec79553d4839a1cbab47ed",
       "17f3dccbef6c56cbc8cee73dbcfe2bba4f8734f9",
       "8ce69e9d2b171d173fe4b6b2b6256f1f4411e69d",
-      "41169ba2af7f5bd5c97237633879117bc3fa9cd9"
-    ],
-    "ci_run": "36850579208",
-    "later_items": [
+      "41169ba2af7f5bd5c97237633879117bc3fa9cd9",
       "0c453048bd4bb699b90463d9423c382d1787087f"
     ],
-    "latest_published_source_head": "6d8c594258589faca4d8f4fd1e84f0c6cbb3bc4c",
+    "ci_run": "36895854094",
+    "latest_published_source_head": "a1a3184343bf1bee3c01029eaa8938f2c091fd38",
     "latest_published_ci_runs": [
-      "36850176163",
-      "36850579208"
-    ]
+      "36895854094"
+    ],
+    "official_mcp_conformance": {
+      "package": "@modelcontextprotocol/conformance@0.2.0-alpha.11",
+      "protocol_modes": [
+        "2025-03-26",
+        "2025-06-18",
+        "2025-11-25"
+      ],
+      "status": "not_started",
+      "upstream_fixture": "packages/coding-agent/test/mcp-conformance/baseline.json"
+    }
   }
 }

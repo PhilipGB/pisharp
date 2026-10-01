@@ -56,7 +56,7 @@ Built-in provider profiles use separate credentials:
 | OpenRouter | Chat Completions | `OPENROUTER_API_KEY` |
 | Mistral | Chat Completions | `MISTRAL_API_KEY` |
 
-Custom providers and static model metadata can be declared in `models.json` under `PISHARP_AGENT_DIR` (default `~/.pisharp/agent`). Provider discovery, model catalogues, reasoning and authentication are partial; model-provider OAuth login and refresh are not implemented. See the [settings inventory](docs/parity/detailed-inventory.md#settings-inventory) for the supported settings subset.
+Custom providers and static model metadata can be declared in `models.json` under `PISHARP_AGENT_DIR` (default `~/.pisharp/agent`). Provider discovery, model catalogues, reasoning and authentication are partial. OpenAI Codex and Anthropic support OAuth login and refresh; several other current-Pi OAuth profiles and provider-specific behaviors remain open. See the [provider/auth parity inventory](docs/parity/feature-matrix.md). See the [settings inventory](docs/parity/detailed-inventory.md#settings-inventory) for the supported settings subset.
 
 The default coding tools are `read`, `bash`, `edit` and `write`. `grep`, `find` and `ls` are opt-in. Use `--tools`, `--exclude-tools` or `--no-tools` to adjust the set. Images are supported on selected provider paths; RPC image prompts and broader multimodal parity remain open.
 
