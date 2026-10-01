@@ -74,6 +74,33 @@ public sealed class TerminalTextLayoutTests
     }
 
     [Fact]
+    public void WrapPreservesSgrSourceOrderAtPiSliceBoundaryVectors()
+    {
+        const string green = "\u001b[32m";
+        const string magenta = "\u001b[35m";
+        const string foregroundReset = "\u001b[39m";
+
+        var first = TerminalTextLayout.Wrap(green + "foo" + foregroundReset + " bar", 4);
+        Assert.Equal(2, first.Count);
+        Assert.StartsWith(green + foregroundReset, first[1]);
+        Assert.Equal("bar", StripTerminalSequences(first[1]));
+
+        const string searchLine = "Another \u001b[35malpha\u001b[39m line with \u001b[35mbeta\u001b[39m later.";
+        var searchRows = TerminalTextLayout.Wrap(searchLine, 13);
+        Assert.True(searchRows.Count > 1);
+        Assert.StartsWith(magenta + foregroundReset, searchRows[1]);
+        Assert.Equal("line", StripTerminalSequences(searchRows[1]).Split(' ')[0]);
+
+        const string selectionOn = "\u001b[7m";
+        const string selectionOff = "\u001b[27m";
+        Assert.Equal(green + "foo" + foregroundReset + selectionOn + " bar" + selectionOff,
+            TerminalTextLayout.HighlightCells(green + "foo" + foregroundReset + " bar", 3, 7));
+        Assert.Equal("Another " + magenta + "alpha" + foregroundReset + selectionOn + " line" + selectionOff +
+            " with " + magenta + "beta" + foregroundReset + " later.",
+            TerminalTextLayout.HighlightCells(searchLine, 13, 18));
+    }
+
+    [Fact]
     public void WrapHardSplitsOnlyOverlongTokensAndKeepsCjkAndEmojiGraphemes()
     {
         Assert.Equal(["abcd", "efgh", "ij"], TerminalTextLayout.Wrap("abcdefghij", 4)
