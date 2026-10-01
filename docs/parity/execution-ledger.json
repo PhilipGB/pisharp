@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "plan_received": true,
-  "source_note": "Latest exact-head CI-verified PiSharp source is 84b54104ea25b1077da100b54c6d57682c8ce6db / Linux CI 36795976453: restore, format, warnings-as-errors build and 1039/1039 tests, zero skips. The 2026-10-01 Pi main audit compares 955cc6665ee3986c6a033db52200779310d10dfd with b56702ad345201a1de46a5f8e94542a3a59ad3bd and identifies four in-scope deltas; leading-whitespace slash completion is complete at exact head, and Anthropic browser/copy-code OAuth has passed local full validation. Its exact-head CI is pending; then process the remaining two deltas chronologically before resuming extension lifecycle. Overall parity remains incomplete. See docs/parity/fixtures/upstream-delta-audit-2026-10-01.md.",
+  "source_note": "Latest exact-head CI-verified PiSharp source is ec7fe828d820ff6967fa569f3b93affe98177a0a / Linux CI 36798041083: restore, format, warnings-as-errors build and 1047/1047 tests, zero skips. Current Pi main is 8ce69e9d2b171d173fe4b6b2b6256f1f4411e69d; the refreshed audit compares it with 955cc6665ee3986c6a033db52200779310d10dfd and classifies 16 commits, including five NEEDS_WORK entries. Whitespace-aware slash completion and Anthropic browser/copy-code OAuth are closed at exact heads. Process MCP metadata/issuer validation, ANSI slice ordering, then the newer MCP optional-field/pagination residuals. Overall parity remains incomplete. See docs/parity/fixtures/upstream-delta-audit-2026-10-01.md.",
   "baseline": "earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035",
   "required_ids": [
     "feature-agent-multi-turn-and-streaming",
@@ -3715,23 +3715,27 @@
   ],
   "upstream_delta_audit": {
     "source_pin": "955cc6665ee3986c6a033db52200779310d10dfd",
-    "source_head": "b56702ad345201a1de46a5f8e94542a3a59ad3bd",
-    "commit_count": 15,
+    "source_head": "8ce69e9d2b171d173fe4b6b2b6256f1f4411e69d",
+    "commit_count": 16,
     "classifications": {
-      "NEEDS_WORK": 4,
+      "NEEDS_WORK": 5,
       "MATCHED": 0,
       "OUT_OF_SCOPE": 8,
       "NO_BEHAVIOR_CHANGE": 3
     },
     "fixture": "docs/parity/fixtures/upstream-delta-audit-2026-10-01.md",
     "next": "mcp-oauth-metadata-issuer",
-    "current_item": "7a11fe1c723b942fa093edb8b00f051ddb9b6627",
-    "current_item_status": "local_full_validation_passed_exact_head_ci_pending",
-    "current_item_local_evidence": "Fail-first AnthropicOAuthTests showed the built-in profile had OAuthSupported=false. PiSharp now registers an Anthropic browser/copy-code adapter, adds masked manual-code input, validates supplied state, and uses the shared private OAuth store/refresh coordinator. AnthropicOAuthTests passes 8/8 for runtime registration, browser callback, copy code, redirect URL without state, PKCE, wrong-state rejection, cancellation, refresh and malformed token response. Restore passes with --no-http-cache, format verification passes with 0 of 411 files formatted, warnings-as-errors build passes with 0 warnings/errors, and the full suite passes 1047/1047 with zero skips using TERM=xterm-256color and xUnit.ParallelizeTestCollections=false. Exact-head CI is pending.",
-    "next_after_ci": "d850edee9ccc5d3b6cec79553d4839a1cbab47ed",
+    "current_item": "d850edee9ccc5d3b6cec79553d4839a1cbab47ed",
+    "current_item_status": "queued_after_anthropic_exact_head_ci",
+    "current_item_local_evidence": "Pi d850edee adds a trusted optional authorization-server metadata URL and RFC 9207 callback issuer validation. PiSharp McpOAuthSettings does not accept the metadata URL; SDK discovery is used and McpOAuthLogin captures callback iss but the code exchange does not enforce it. This remains the next older in-scope item. The subsequent ANSI ordering delta is 17f3dccbef6c56cbc8cee73dbcfe2bba4f8734f9; the newly classified later MCP optional-field/pagination delta is 8ce69e9d2b171d173fe4b6b2b6256f1f4411e69d.",
+    "next_after_ci": "17f3dccbef6c56cbc8cee73dbcfe2bba4f8734f9",
     "completed": [
-      "65117e31f242daa8e0a17dbd2810f7bb92bf4087"
+      "65117e31f242daa8e0a17dbd2810f7bb92bf4087",
+      "7a11fe1c723b942fa093edb8b00f051ddb9b6627"
     ],
-    "ci_run": "36795625551"
+    "ci_run": "36798041083",
+    "later_items": [
+      "8ce69e9d2b171d173fe4b6b2b6256f1f4411e69d"
+    ]
   }
 }

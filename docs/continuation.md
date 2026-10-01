@@ -2,11 +2,10 @@
 
 `TODO.md` is the concise implementation handoff. The feature matrix tracks scope, the detailed inventory records interfaces, and `execution-ledger.json` holds per-capability evidence. Pi Packages remain excluded unless a core capability depends on them.
 
-## Current source and upstream audit — 2026-09-30
+## Current source and upstream audit — 2026-10-01
+PiSharp source `ec7fe828d820ff6967fa569f3b93affe98177a0a` passed exact-head Linux CI [36798041083](https://github.com/PhilipGB/pisharp/actions/runs/36798041083): restore, format, warnings-as-errors build and 1,047/1,047 tests with zero skips. Current Pi `main` is `8ce69e9d2b171d173fe4b6b2b6256f1f4411e69d`; the refreshed audit classifies all 16 commits since `955cc6665ee3986c6a033db52200779310d10dfd`, with five `NEEDS_WORK` items. Whitespace-aware slash completion and Anthropic browser/copy-code OAuth are exact-head CI-verified. Next is MCP metadata/issuer validation, then ANSI slice-boundary ordering, then the newer MCP optional-field and empty-cursor residuals. The broader parity goal remains incomplete; see [the full audit](parity/fixtures/upstream-delta-audit-2026-10-01.md).
 
-PiSharp source `40b96ada1eb6083f7ea32ac2b11667a92417d7a5` passed exact-head Linux CI [36775909169](https://github.com/PhilipGB/pisharp/actions/runs/36775909169): restore, format, warnings-as-errors build and 1,021/1,021 tests, zero skips. The first eight audited mismatches are verified, including default-tool activation on reload. Three of the 26 classified upstream commits remain in scope: MCP tool-name normalization, provider-login MCP auth, and Anthropic workload identity federation. The next source slice is MCP identifier normalization (`b29db895c5c1b30b560a39fb9e4664508f1683de`) after this docs-only checkpoint's exact-head CI. Current Pi `main` is `955cc6665ee3986c6a033db52200779310d10dfd`; see [the full audit](parity/fixtures/upstream-delta-audit-2026-09-30.md). The broader parity goal remains incomplete.
-
-The old source-options, Bash-output and tool-batch checkpoint paragraphs are removed from the active handoff; their shipped history remains in Git and the corresponding implementation/evidence remains in the parity inventory.
+The old source-options, Bash-output and tool-batch checkpoint paragraphs are historical evidence; their shipped history remains in Git and their implementation/evidence remains in the parity inventory.
 
 ## Current source pointer and historical checkpoint record — 2026-09-30
 
