@@ -1,6 +1,6 @@
 # PiSharp capability parity
 
-PiSharp source `56307f2308c6bd091b0af5e03b647239a55d37ed` passed exact-head Linux CI [36790840783](https://github.com/PhilipGB/pisharp/actions/runs/36790840783): restore, format, warnings-as-errors build and 1,036/1,036 tests with zero skips. The eleven deltas in the 2026-09-30 audit remain closed. The 2026-10-01 refresh pins Pi `main` at `b56702ad345201a1de46a5f8e94542a3a59ad3bd` and records four in-scope behavior gaps. Process them in chronological order before resuming extension lifecycle; overall parity remains incomplete. See [the 2026-10-01 audit](docs/parity/fixtures/upstream-delta-audit-2026-10-01.md).
+PiSharp source `884a69b07743e57e135a50ce03e65f11c74cdd39` passed exact-head Linux CI [36795625551](https://github.com/PhilipGB/pisharp/actions/runs/36795625551): restore, format, warnings-as-errors build and 1,039/1,039 tests with zero skips. The eleven deltas in the 2026-09-30 audit remain closed. The 2026-10-01 refresh pins Pi `main` at `b56702ad345201a1de46a5f8e94542a3a59ad3bd`; one of its four in-scope behavior gaps is now implemented and CI-verified. Process the remaining three in chronological order before resuming extension lifecycle; overall parity remains incomplete. See [the 2026-10-01 audit](docs/parity/fixtures/upstream-delta-audit-2026-10-01.md).
 
 
 **Goal:** implement Pi's in-scope capabilities idiomatically in C#/.NET, using Microsoft Agent Framework and Microsoft.Extensions.AI where appropriate. Pi Packages stay excluded unless needed for a core capability.

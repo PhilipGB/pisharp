@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "plan_received": true,
-  "source_note": "Latest exact-head CI-verified PiSharp source is 56307f2308c6bd091b0af5e03b647239a55d37ed / Linux CI 36790840783: restore, format, warnings-as-errors build and 1036/1036 tests, zero skips. The 2026-10-01 Pi main audit compares 955cc6665ee3986c6a033db52200779310d10dfd with b56702ad345201a1de46a5f8e94542a3a59ad3bd and identifies four in-scope deltas. Resolve them chronologically before resuming extension lifecycle; overall parity remains incomplete. See docs/parity/fixtures/upstream-delta-audit-2026-10-01.md.",
+  "source_note": "Latest exact-head CI-verified PiSharp source is 884a69b07743e57e135a50ce03e65f11c74cdd39 / Linux CI 36795625551: restore, format, warnings-as-errors build and 1039/1039 tests, zero skips. The 2026-10-01 Pi main audit compares 955cc6665ee3986c6a033db52200779310d10dfd with b56702ad345201a1de46a5f8e94542a3a59ad3bd and identifies four in-scope deltas; leading-whitespace slash completion is complete at exact head. Process the remaining deltas chronologically before resuming extension lifecycle. Overall parity remains incomplete. See docs/parity/fixtures/upstream-delta-audit-2026-10-01.md.",
   "baseline": "earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035",
   "required_ids": [
     "feature-agent-multi-turn-and-streaming",
@@ -616,7 +616,7 @@
         "At exact commit 1a9e9cf0a6bcb47844766eff9ad8f55c7617fcb2, EditorBufferTests cover grapheme-safe keyboard selection, copy, replacement, deletion, undo snapshots, word movement, kill accumulation, yank and yank-pop. EditorCompletionTests cover an empty-prompt path list, hidden files/directories except .git, Unicode and CJK punctuation, wrappers, quoted continuation and common-prefix behavior. TerminalPtyTests.FileCompletionPickerAppliesTheSelectedAtPathThroughLinuxPty verifies choosing an @ path through the shared searchable picker. Focused completion/PTY tests pass 6/6; local format and warnings-as-errors build pass; all tests pass 473/473. Linux CI run 36162923941 passed format, build and all 473 tests on exact head. Pi differential completion behavior remains incomplete.",
         "Clipboard image tests cover Linux Wayland MIME reads, WSL PowerShell fallback, private file permissions and Ctrl+V PTY insertion. Exact code commit 17d682c2d7206a052b8a65ca24cf9c514166e39e passed Linux CI run 36166108417: format, warnings-as-errors build and 480/480 tests.",
         "InteractiveBashExecutorTests covers command parsing; TerminalPtyTests.BangCommandsUseTheConfiguredPrefixAndDoubleBangExcludesContext exercises both forms over Linux PTY with saved session assertions. Broader active-run PTY and extension interception differentials remain open.",
-        "Pi 65117e31f242daa8e0a17dbd2810f7bb92bf4087 adds leading-whitespace slash completion. A fail-first theory reproduced missing candidates for spaces, repeated spaces and tabs; EditorCompletionTests passes 10/10 after the fix, including preserved indentation and the existing mid-sentence boundary. Full validation and exact-head CI are pending; see docs/parity/fixtures/upstream-delta-audit-2026-10-01.md."
+        "Pi 65117e31f242daa8e0a17dbd2810f7bb92bf4087 adds leading-whitespace slash completion. A fail-first theory reproduced missing candidates for spaces, repeated spaces and tabs; EditorCompletionTests passes 10/10 after the fix, including preserved indentation and the existing mid-sentence boundary. Restore, format verification (0 of 409 files formatted), warnings-as-errors build (0 warnings/errors), and all 1,039 tests pass with zero skips locally; the suite was rerun with test-collection parallelism disabled after three process/PTY timeouts in the initial parallel run, and all three passed individually. Exact-head Linux CI run 36795625551 passes restore, format, build and 1,039/1,039 tests with zero skips on 884a69b07743e57e135a50ce03e65f11c74cdd39."
       ],
       "dependencies": []
     },
@@ -3724,10 +3724,12 @@
     "fixture": "docs/parity/fixtures/upstream-delta-audit-2026-10-01.md",
     "next": "anthropic-copy-code-oauth",
     "current_item": "65117e31f242daa8e0a17dbd2810f7bb92bf4087",
-    "current_item_status": "local_full_validation_passed_exact_head_ci_pending",
-    "current_item_local_evidence": "Fail-first EditorCompletionTests returned no candidates for leading space, multiple spaces and tab before /tr. IsSlashCommandStart now recognizes slash commands after whitespace only on the current line; applying completion preserves indentation, while the existing mid-sentence test remains empty. EditorCompletionTests passes 10/10. Restore passes with --no-http-cache because the default vulnerability-cache path is read-only in this environment; format verification passes with 0 of 409 files formatted; warnings-as-errors build passes with 0 warnings/errors. After an initial parallel run had three process/PTY timeouts (all passed individually), all 1,039 tests passed with zero skips using TERM=xterm-256color and xUnit.ParallelizeTestCollections=false. Exact-head CI is pending.",
+    "current_item_status": "completed_exact_head_ci",
+    "current_item_local_evidence": "Fail-first EditorCompletionTests returned no candidates for leading space, multiple spaces and tab before /tr. IsSlashCommandStart now recognizes slash commands after whitespace only on the current line; applying completion preserves indentation, while the existing mid-sentence test remains empty. EditorCompletionTests passes 10/10. Local restore uses --no-http-cache because the default vulnerability-cache path is read-only; format verification passes with 0 of 409 files formatted; warnings-as-errors build passes with 0 warnings/errors. All 1,039 tests pass locally with zero skips using TERM=xterm-256color and xUnit.ParallelizeTestCollections=false. Exact-head Linux CI 36795625551 passes restore, format, warnings-as-errors build and 1,039/1,039 tests with zero skips on 884a69b07743e57e135a50ce03e65f11c74cdd39.",
     "next_after_ci": "7a11fe1c723b942fa093edb8b00f051ddb9b6627",
-    "completed": [],
-    "ci_run": "36790840783"
+    "completed": [
+      "65117e31f242daa8e0a17dbd2810f7bb92bf4087"
+    ],
+    "ci_run": "36795625551"
   }
 }
