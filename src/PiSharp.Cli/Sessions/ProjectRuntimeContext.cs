@@ -47,6 +47,9 @@ internal sealed class ProjectRuntimeContext : IDisposable
     public UserSettings? ProjectSettings => Configuration.ProjectSettings;
     public UserSettings Settings => Configuration.Settings;
 
+    public void SetMcpAuthorizationUrlPresenter(Action<string, Uri>? presenter) =>
+        McpManager.SetAuthorizationUrlPresenter(presenter);
+
     private ProjectRuntimeContext(ProjectRuntimeConfiguration configuration,
         (string? System, string? Append) prompts, string instructions,
         ResourceCatalog resources, ExtensionCatalog extensions, ConversationStore store,

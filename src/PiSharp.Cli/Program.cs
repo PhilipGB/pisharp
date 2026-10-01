@@ -351,6 +351,12 @@ using var terminalScreen = editor is null ? null : new TerminalScreen(Console.Ou
 terminalScreen?.SetThemeResolver(colors => ResolveConfiguredTheme(ActiveThemeSetting(), colors));
 terminalScreen?.SetMarkdownCodeBlockIndent(userSettings.MarkdownCodeBlockIndent ?? UserSettings.DefaultMarkdownCodeBlockIndent);
 terminalScreen?.Activate();
+void ConfigureMcpAuthorizationUrlPresenter(ProjectRuntimeContext context)
+{
+    Action<string, Uri>? presenter = terminalScreen is null ? null : terminalScreen.AppendMcpAuthorizationNotification;
+    context.SetMcpAuthorizationUrlPresenter(presenter);
+}
+ConfigureMcpAuthorizationUrlPresenter(projectRuntime);
 editor?.AttachScreen(terminalScreen);
 void RefreshTerminalTheme()
 {
@@ -816,6 +822,7 @@ async Task ReloadResources()
             nextConfiguration.Settings, conversationRun.ActiveToolNames, Environment.GetEnvironmentVariable);
         nextProject = await ProjectRuntimeContext.LoadAsync(nextConfiguration, agentDirectory, reloadPlan.Arguments,
             configuredSessionDirectory, providerTokenResolver: modelRuntime.GetApiKeyForProviderAsync);
+        ConfigureMcpAuthorizationUrlPresenter(nextProject);
         modelRuntime.SetVirtualModelRegistry(nextProject.Extensions.Registration.VirtualModels);
         var nextController = new ModelRuntimeController(modelRuntime, () => nextConfiguration.Settings,
             Environment.GetEnvironmentVariable);
@@ -881,6 +888,7 @@ string? ReadSecret()
 void AdoptProjectSession(ProjectSessionRuntime replacement)
 {
     var nextProject = replacement.Project;
+    ConfigureMcpAuthorizationUrlPresenter(nextProject);
     extensionLease.Replace(nextProject.TransferExtensions());
     projectRuntime = nextProject;
     projectConfiguration = nextProject.Configuration;

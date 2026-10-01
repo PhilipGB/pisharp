@@ -71,6 +71,9 @@ public sealed class McpOAuthMetadataTests
             var authorizationTask = output.Authorization.Task;
             if (await Task.WhenAny(authorizationTask, login) == login) await login;
             var authorizationUri = new Uri(await authorizationTask.WaitAsync(deadline.Token));
+            var plainOutput = output.ToString();
+            Assert.Contains(authorizationUri.AbsoluteUri, plainOutput, StringComparison.Ordinal);
+            Assert.DoesNotContain("\u001b]8;;", plainOutput, StringComparison.Ordinal);
             var query = System.Web.HttpUtility.ParseQueryString(authorizationUri.Query);
 
             Assert.Equal("/idp/authorize", authorizationUri.AbsolutePath);

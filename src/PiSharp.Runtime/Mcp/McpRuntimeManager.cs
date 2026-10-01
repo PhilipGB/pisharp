@@ -16,6 +16,10 @@ public sealed class McpRuntimeManager(string? agentDirectory = null)
 
     private readonly object _gate = new();
     private readonly Dictionary<string, ServerEntry> _servers = new(StringComparer.Ordinal);
+    private Action<string, Uri>? _authorizationUrlPresenter;
+
+    internal void SetAuthorizationUrlPresenter(Action<string, Uri>? presenter) =>
+        Volatile.Write(ref _authorizationUrlPresenter, presenter);
 
     internal void Register(McpServerConfiguration configuration, McpServerConnection? connection,
         Func<McpServerConfiguration, McpServerConnection>? createConnection = null,
@@ -159,7 +163,8 @@ public sealed class McpRuntimeManager(string? agentDirectory = null)
             try
             {
                 await McpOAuthLogin.SignInAsync(entry.Configuration, agentDirectory, Console.Out,
-                    openBrowser: !Console.IsInputRedirected, TimeSpan.FromMinutes(5), cancellationToken);
+                    openBrowser: !Console.IsInputRedirected, TimeSpan.FromMinutes(5), cancellationToken,
+                    Volatile.Read(ref _authorizationUrlPresenter));
                 await entry.Connection.ReconnectAsync(cancellationToken);
                 entry.Publish?.Invoke(entry.Configuration, entry.Connection);
                 return "Signed in to MCP server " + name + ".";

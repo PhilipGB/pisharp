@@ -11,7 +11,8 @@ namespace PiSharp.Runtime.Mcp;
 public static class McpOAuthLogin
 {
     public static async Task SignInAsync(McpServerConfiguration server, string agentDirectory,
-        TextWriter output, bool openBrowser, TimeSpan timeout, CancellationToken cancellationToken = default)
+        TextWriter output, bool openBrowser, TimeSpan timeout, CancellationToken cancellationToken = default,
+        Action<string, Uri>? authorizationUrlPresenter = null)
     {
         if (server.Url is null || server.Headers.Keys.Any(key =>
             key.Equals("Authorization", StringComparison.OrdinalIgnoreCase)))
@@ -38,8 +39,10 @@ public static class McpOAuthLogin
             async (context, token) =>
             {
                 authorizationStarted = true;
-                await output.WriteLineAsync("Sign in to MCP server \"" + server.Name + "\" in your browser:\n" +
-                    context.AuthorizationUri.AbsoluteUri);
+                if (authorizationUrlPresenter is null)
+                    await output.WriteLineAsync("Sign in to MCP server \"" + server.Name + "\" in your browser:\n" +
+                        context.AuthorizationUri.AbsoluteUri);
+                else authorizationUrlPresenter(server.Name, context.AuthorizationUri);
                 if (openBrowser)
                     try
                     {

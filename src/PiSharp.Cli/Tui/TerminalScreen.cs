@@ -426,6 +426,31 @@ public sealed class TerminalScreen : IDisposable
         }
     }
 
+    internal void AppendMcpAuthorizationNotification(string serverName, Uri authorizationUrl)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(serverName);
+        ArgumentNullException.ThrowIfNull(authorizationUrl);
+        if (!authorizationUrl.IsAbsoluteUri ||
+            !(authorizationUrl.Scheme.Equals(Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase) ||
+              authorizationUrl.Scheme.Equals(Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase)) ||
+            string.IsNullOrEmpty(authorizationUrl.Host))
+            throw new ArgumentException("MCP authorization URL must use HTTP or HTTPS.", nameof(authorizationUrl));
+
+        var target = authorizationUrl.AbsoluteUri;
+        var safeName = TerminalSafeText.Normalize(serverName);
+        var clickHint = OperatingSystem.IsMacOS() ? "Cmd+click to open" : "Ctrl+click to open";
+        var open = "\u001b]8;;" + target + "\u001b\\";
+        const string close = "\u001b]8;;\u001b\\";
+        var notification = "Sign in to MCP server \"" + safeName + "\" in your browser:\n" +
+            open + target + close + "\n" + open + clickHint + close + "\n";
+        lock (_gate)
+        {
+            if (!_active) return;
+            _transcript.Append(notification, isError: false);
+            RenderLocked();
+        }
+    }
+
     internal void AppendToolResult(string text, IReadOnlyList<DataContent>? images = null)
     {
         ArgumentNullException.ThrowIfNull(text);
