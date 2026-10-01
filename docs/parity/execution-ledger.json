@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "plan_received": true,
-  "source_note": "PiSharp source a1a3184343bf1bee3c01029eaa8938f2c091fd38 passed exact-head Linux CI 36895854094: restore, format, warnings-as-errors build and 1068/1068 tests, zero skips. Current Pi main is 6f1072cc081f06b86a673bd142f03720d17afe15. All 40 commits after 955cc6665ee3986c6a033db52200779310d10dfd are classified: 13 NEEDS_WORK (six resolved, seven open), four MATCHED, 14 OUT_OF_SCOPE and nine NO_BEHAVIOR_CHANGE. The oldest open upstream item is MCP OAuth credentials keyed by server name and URL. Official MCP client conformance evidence is still required. Overall parity remains incomplete; see docs/parity/fixtures/upstream-delta-audit-2026-10-01.md.",
+  "source_note": "PiSharp source 8931bd73b2e94e7831b1a054a54a8e60bb21aaf5 passed exact-head Linux CI 36904437406: restore, format, warnings-as-errors build and 1068/1068 tests, zero skips. Current Pi main is 395315f4841ab5a090a33b8259f60b6df281c1ca. All 41 commits after 955cc6665ee3986c6a033db52200779310d10dfd are classified: 13 NEEDS_WORK (six resolved, seven open), four MATCHED, 15 OUT_OF_SCOPE and nine NO_BEHAVIOR_CHANGE. The oldest open upstream item is MCP OAuth credentials keyed by server name and URL. Official MCP client conformance evidence is still required. Overall parity remains incomplete; see docs/parity/fixtures/upstream-delta-audit-2026-10-01.md.",
   "baseline": "earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035",
   "required_ids": [
     "feature-agent-multi-turn-and-streaming",
@@ -3721,7 +3721,7 @@
       "id": "mcp-client-conformance",
       "title": "MCP: official client conformance suite",
       "status": "not_started",
-      "source": "Current Pi packages/coding-agent/test/mcp-conformance/run.ts and baseline.json at 6f1072cc081f06b86a673bd142f03720d17afe15; conformance package @modelcontextprotocol/conformance@0.2.0-alpha.11.",
+      "source": "Current Pi packages/coding-agent/test/mcp-conformance/run.ts and baseline.json at 395315f4841ab5a090a33b8259f60b6df281c1ca; conformance package @modelcontextprotocol/conformance@0.2.0-alpha.11.",
       "acceptance": [
         "Exercise equivalent official MCP client scenarios against PiSharp for protocol modes 2025-03-26, 2025-06-18 and 2025-11-25.",
         "Commit explicit passing/failing check baseline and fail CI when a previously passing check regresses or an unlisted check fails.",
@@ -3738,19 +3738,19 @@
   ],
   "upstream_delta_audit": {
     "source_pin": "955cc6665ee3986c6a033db52200779310d10dfd",
-    "source_head": "6f1072cc081f06b86a673bd142f03720d17afe15",
-    "commit_count": 40,
+    "source_head": "395315f4841ab5a090a33b8259f60b6df281c1ca",
+    "commit_count": 41,
     "classifications": {
       "NEEDS_WORK": 13,
       "MATCHED": 4,
-      "OUT_OF_SCOPE": 14,
+      "OUT_OF_SCOPE": 15,
       "NO_BEHAVIOR_CHANGE": 9
     },
     "fixture": "docs/parity/fixtures/upstream-delta-audit-2026-10-01.md",
     "next": "mcp-oauth-credentials-per-server-name-and-url",
     "current_item": "5806068c26e55feefd1f5875bf05c0419ec5d912",
     "current_item_status": "open",
-    "current_item_local_evidence": "Pi commit 5806068c keys credentials by normalized server name plus URL with deterministic migration of legacy URL-only entries. PiSharp McpTokenCache, login, runtime and logout currently key only by URL. No fail-first same-URL multi-server test exists.",
+    "current_item_local_evidence": "Pi commit 5806068c keys credentials by normalized server name plus URL with deterministic migration of legacy URL-only entries. PiSharp McpTokenCache, login, runtime and logout currently key only by URL. No fail-first same-URL multi-server test exists. Current Pi main refreshed after the audit CI to 395315f4841ab5a090a33b8259f60b6df281c1ca; the sole new commit adds an experimental vacation-planner demo on the excluded durable harness and is OUT_OF_SCOPE.",
     "next_after_ci": "c662ec7e374563bd549dc35f47bac52dcc4bed88",
     "completed": [
       "65117e31f242daa8e0a17dbd2810f7bb92bf4087",
@@ -3761,10 +3761,10 @@
       "41169ba2af7f5bd5c97237633879117bc3fa9cd9",
       "0c453048bd4bb699b90463d9423c382d1787087f"
     ],
-    "ci_run": "36895854094",
-    "latest_published_source_head": "a1a3184343bf1bee3c01029eaa8938f2c091fd38",
+    "ci_run": "36904437406",
+    "latest_published_source_head": "8931bd73b2e94e7831b1a054a54a8e60bb21aaf5",
     "latest_published_ci_runs": [
-      "36895854094"
+      "36904437406"
     ],
     "official_mcp_conformance": {
       "package": "@modelcontextprotocol/conformance@0.2.0-alpha.11",

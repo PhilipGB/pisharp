@@ -1,8 +1,8 @@
 # Current Pi upstream delta audit — 2026-10-01
 
-The prior recorded Pi pin was `955cc6665ee3986c6a033db52200779310d10dfd`. Fresh fetch confirms Pi `main` at `6f1072cc081f06b86a673bd142f03720d17afe15`, 40 commits after that pin. Every commit in the complete range is classified below in chronological order. PiSharp source `a1a3184343bf1bee3c01029eaa8938f2c091fd38` is the current published head; exact-head Linux CI [36895854094](https://github.com/PhilipGB/pisharp/actions/runs/36895854094) passed restore, format, warnings-as-errors build, and 1,068/1,068 tests with zero skips. The provider-context-transform extension slice is included in this head.
+The prior recorded Pi pin was `955cc6665ee3986c6a033db52200779310d10dfd`. Fresh fetch confirms Pi `main` at `395315f4841ab5a090a33b8259f60b6df281c1ca`, 41 commits after that pin. Every commit in the complete range is classified below in chronological order. PiSharp source `8931bd73b2e94e7831b1a054a54a8e60bb21aaf5` is the current published head; exact-head Linux CI [36904437406](https://github.com/PhilipGB/pisharp/actions/runs/36904437406) passed restore, format, warnings-as-errors build, and 1,068/1,068 tests with zero skips. The provider-context-transform extension slice is included in this head.
 
-The complete range has **13 `NEEDS_WORK`, 4 `MATCHED`, 14 `OUT_OF_SCOPE`, and 9 `NO_BEHAVIOR_CHANGE`** commits. Six earlier `NEEDS_WORK` changes are resolved at published PiSharp heads (recorded on their entries); seven open items remain. The oldest open delta is per-server MCP OAuth credential isolation (`5806068c`). The official MCP conformance commit is classified as test infrastructure with no runtime behavior change, while its required equivalent PiSharp conformance evidence is tracked separately in the execution ledger. Overall parity remains incomplete.
+The complete range has **13 `NEEDS_WORK`, 4 `MATCHED`, 15 `OUT_OF_SCOPE`, and 9 `NO_BEHAVIOR_CHANGE`** commits. Six earlier `NEEDS_WORK` changes are resolved at published PiSharp heads (recorded on their entries); seven open items remain. The oldest open delta is per-server MCP OAuth credential isolation (`5806068c`). The official MCP conformance commit is classified as test infrastructure with no runtime behavior change, while its required equivalent PiSharp conformance evidence is tracked separately in the execution ledger. Overall parity remains incomplete.
 
 ## Commit classifications
 
@@ -249,6 +249,10 @@ For this commit's default-mode change, PiSharp already starts its interactive TU
 - **Fail-first evidence:** assert bounded prompt text and guest errors for close matches, available members, wrong catalog type, output guidance and per-value/total store limits.
 - **Required implementation:** update model-facing declarations and worker-side error projection to produce equivalent useful guidance while preserving the existing isolated sandbox and output limits.
 - **Validation/dependencies:** implement after `models.generateImages` so image catalog errors include that operation; full solution validation and exact-head CI.
+
+### `395315f4841ab5a090a33b8259f60b6df281c1ca` — `OUT_OF_SCOPE`
+
+Adds an experimental vacation-planner demo under `packages/coding-agent/src/experimental/vacation/`, implemented on the separate Pi Durable harness. It is a demo and alternate durable runtime rather than a coding-agent capability surface; Pi Packages and experimental durable harness work are excluded by the objective.
 
 ## Processing order
 
