@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "plan_received": true,
-  "source_note": "Latest published PiSharp source 9e2017726e193d5c26f828704e2059bb45715740 passed exact-head Linux CI on feature branch 36833609718 and main 36834040097 with 1047/1047 tests and zero skips. Current Pi main is 70c036211de5378508ae2456f3c7ae3cf9f8bc75; the refreshed audit compares it with 955cc6665ee3986c6a033db52200779310d10dfd and classifies 21 commits, including six NEEDS_WORK entries. Whitespace-aware slash completion and Anthropic browser/copy-code OAuth are closed at exact heads. The isolated worktree implementation for configurable MCP authorization-server metadata passes local restore, format, zero-warning build and 1057/1057 tests with zero skips. After publication, continue with ANSI slice ordering, then MCP optional-field/pagination and linked-login residuals. Overall parity remains incomplete. See docs/parity/fixtures/upstream-delta-audit-2026-10-01.md.",
+  "source_note": "PiSharp source 6bddf37a65e64e915969bd2519f08031b7cb3525 passed exact-head Linux CI on feature branch 36835477212 and main 36835795082 with 1057/1057 tests and zero skips. Current Pi main is 70c036211de5378508ae2456f3c7ae3cf9f8bc75; the refreshed audit compares it with 955cc6665ee3986c6a033db52200779310d10dfd and classifies 21 commits, including six NEEDS_WORK entries. Whitespace-aware slash completion, Anthropic browser/copy-code OAuth, and configured MCP authorization-server metadata are closed at exact heads. Continue with ANSI slice ordering, then MCP optional-field/pagination and linked-login residuals. Overall parity remains incomplete. See docs/parity/fixtures/upstream-delta-audit-2026-10-01.md.",
   "baseline": "earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035",
   "required_ids": [
     "feature-agent-multi-turn-and-streaming",
@@ -3724,24 +3724,25 @@
       "NO_BEHAVIOR_CHANGE": 4
     },
     "fixture": "docs/parity/fixtures/upstream-delta-audit-2026-10-01.md",
-    "next": "mcp-oauth-metadata-issuer",
-    "current_item": "d850edee9ccc5d3b6cec79553d4839a1cbab47ed",
-    "current_item_status": "implementation_validated_locally_before_commit",
-    "current_item_local_evidence": "Pi d850edee adds a trusted optional authorization-server metadata URL and RFC 9207 callback issuer validation. The pinned ModelContextProtocol.Core 2.2.0 already receives callback iss through McpOAuthLogin and validates it in ClientOAuthProvider before code exchange; the remaining mismatch was the configured metadata-document override and URL validation. The current isolated worktree parses HTTPS or loopback HTTP metadata URLs, serves the configured metadata document in place of normal authorization-server discovery for login and runtime, and preserves SDK issuer validation. McpOAuthMetadataTests verifies matching, missing and wrong callback iss, configured discovery, rejected unsafe URLs and no token exchange on issuer failure. Restore, format, zero-warning build and the full suite pass locally with 1,057/1,057 tests and zero skips; exact-head CI remains required after the coherent commit.",
-    "next_after_ci": "17f3dccbef6c56cbc8cee73dbcfe2bba4f8734f9",
+    "next": "ansi-slice-ordering",
+    "current_item": "17f3dccbef6c56cbc8cee73dbcfe2bba4f8734f9",
+    "current_item_status": "queued_after_mcp_metadata_exact_head_ci",
+    "current_item_local_evidence": "Pi 17f3dcc preserves ANSI SGR source order when a styled terminal string is sliced exactly at a display-column boundary. PiSharp has ANSI-aware wrapping, slicing and selection highlighting, but no fixture proves the boundary reset remains ordered before any active style so color does not bleed into the selected region. Next fail-first coverage belongs in TerminalTextLayoutTests and the shared TerminalTextLayout/TranscriptSearchController path.",
+    "next_after_ci": "8ce69e9d2b171d173fe4b6b2b6256f1f4411e69d",
     "completed": [
       "65117e31f242daa8e0a17dbd2810f7bb92bf4087",
-      "7a11fe1c723b942fa093edb8b00f051ddb9b6627"
+      "7a11fe1c723b942fa093edb8b00f051ddb9b6627",
+      "d850edee9ccc5d3b6cec79553d4839a1cbab47ed"
     ],
-    "ci_run": "36834040097",
+    "ci_run": "36835795082",
     "later_items": [
       "8ce69e9d2b171d173fe4b6b2b6256f1f4411e69d",
       "41169ba2af7f5bd5c97237633879117bc3fa9cd9"
     ],
-    "latest_published_source_head": "9e2017726e193d5c26f828704e2059bb45715740",
+    "latest_published_source_head": "6bddf37a65e64e915969bd2519f08031b7cb3525",
     "latest_published_ci_runs": [
-      "36833609718",
-      "36834040097"
+      "36835477212",
+      "36835795082"
     ]
   }
 }
