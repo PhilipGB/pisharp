@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "plan_received": true,
-  "source_note": "PiSharp source f72ff8ef40145c3848ff712cefc3470e08dba94b passed exact-head Linux CI on feature branch 36837658517 and main 36838135728 with 1057/1057 tests and zero skips. Current Pi main is a4715ec9bffbfcb8a32a1a4100dcfd06c12c93e4; the refreshed audit compares it with 955cc6665ee3986c6a033db52200779310d10dfd and classifies 23 commits, including six NEEDS_WORK entries and one MATCHED entry. ANSI slice-boundary behavior is locally matched pending exact-head CI. Whitespace-aware slash completion, Anthropic browser/copy-code OAuth, and configured MCP authorization-server metadata are closed at exact heads. Then continue with MCP optional-field/pagination, linked-login, and explicit provider/model residuals. Overall parity remains incomplete. See docs/parity/fixtures/upstream-delta-audit-2026-10-01.md.",
+  "source_note": "PiSharp source bc2b1be94254fa08beb483098730e7eb00700b31 passed exact-head Linux CI on feature branch 36840078307 and main 36840344261 with 1058/1058 tests and zero skips. Current Pi main is a4715ec9bffbfcb8a32a1a4100dcfd06c12c93e4; the refreshed audit compares it with 955cc6665ee3986c6a033db52200779310d10dfd and classifies 23 commits, including six NEEDS_WORK entries and one MATCHED entry. ANSI slice-boundary behavior is matched and exact-head CI-verified. Whitespace-aware slash completion, Anthropic browser/copy-code OAuth, and configured MCP authorization-server metadata are closed at exact heads. Then continue with MCP optional-field/pagination, linked-login, and explicit provider/model residuals. Overall parity remains incomplete. See docs/parity/fixtures/upstream-delta-audit-2026-10-01.md.",
   "baseline": "earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035",
   "required_ids": [
     "feature-agent-multi-turn-and-streaming",
@@ -3724,26 +3724,26 @@
       "NO_BEHAVIOR_CHANGE": 5
     },
     "fixture": "docs/parity/fixtures/upstream-delta-audit-2026-10-01.md",
-    "next": "ansi-slice-ordering",
-    "current_item": "17f3dccbef6c56cbc8cee73dbcfe2bba4f8734f9",
-    "current_item_status": "locally_matched_pending_exact_head_ci",
-    "current_item_local_evidence": "Pi 17f3dcc preserves SGR source order at a display-column slice boundary. Both upstream input vectors pass through PiSharp TerminalTextLayout.Wrap and HighlightCells: the preceding style remains before the boundary 39 reset, the reset precedes selection highlighting, and later styled text remains intact. Focused regression 1/1; full local validation passes 1058/1058 with zero skips. No runtime change was needed; exact-head CI is pending.",
-    "next_after_ci": "8ce69e9d2b171d173fe4b6b2b6256f1f4411e69d",
+    "next": "mcp-oauth-optionals-pagination",
+    "current_item": "8ce69e9d2b171d173fe4b6b2b6256f1f4411e69d",
+    "current_item_status": "queued_after_ansi_exact_head_ci",
+    "current_item_local_evidence": "Pi 8ce69e9 normalizes empty/null optional OAuth fields, falls back to resource origin for invalid resource metadata URLs, skips empty scope candidates, and stops MCP pagination on empty or null cursors. PiSharp core SDK 2.2.0 covers nullable expiry and empty registration secrets/scopes, but ListToolsAsync treats an empty cursor as another page; refresh token parsing overwrites stored credentials with an empty token, resource-metadata URL validation rejects instead of falling back, and the cross-process refresh handler rejects expires_in:null. Proceed with fail-first loopback tests and identify extension points for SDK-owned behavior.",
+    "next_after_ci": "41169ba2af7f5bd5c97237633879117bc3fa9cd9",
     "completed": [
       "65117e31f242daa8e0a17dbd2810f7bb92bf4087",
       "7a11fe1c723b942fa093edb8b00f051ddb9b6627",
-      "d850edee9ccc5d3b6cec79553d4839a1cbab47ed"
+      "d850edee9ccc5d3b6cec79553d4839a1cbab47ed",
+      "17f3dccbef6c56cbc8cee73dbcfe2bba4f8734f9"
     ],
-    "ci_run": "36838135728",
+    "ci_run": "36840344261",
     "later_items": [
-      "8ce69e9d2b171d173fe4b6b2b6256f1f4411e69d",
       "41169ba2af7f5bd5c97237633879117bc3fa9cd9",
       "0c453048bd4bb699b90463d9423c382d1787087f"
     ],
-    "latest_published_source_head": "f72ff8ef40145c3848ff712cefc3470e08dba94b",
+    "latest_published_source_head": "bc2b1be94254fa08beb483098730e7eb00700b31",
     "latest_published_ci_runs": [
-      "36837658517",
-      "36838135728"
+      "36840078307",
+      "36840344261"
     ]
   }
 }
