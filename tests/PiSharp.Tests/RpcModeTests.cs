@@ -1583,10 +1583,12 @@ public sealed class RpcModeTests
         var channel = Channel.CreateUnbounded<string>();
         using var output = new LockedWriter();
         var session = new ConversationSession(Path.GetTempPath(), "fixture", null);
-        var run = await ConversationRun.OpenAsync(new PiAgent(new BlockingClient(), new CodingTools(Path.GetTempPath())), session);
+        var client = new BlockingClient();
+        var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(Path.GetTempPath())), session);
         var serving = new RpcMode(new CommandReader(channel.Reader), output, run).ServeAsync();
         channel.Writer.TryWrite("{\"id\":1,\"type\":\"prompt\",\"message\":\"wait\"}");
         await WaitForAsync(output, "turn_start");
+        await client.RequestStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
         channel.Writer.TryWrite("{\"id\":2,\"type\":\"abort\"}");
         await WaitForAsync(output, "agent_settled");
         channel.Writer.Complete();
@@ -2134,11 +2136,18 @@ public sealed class RpcModeTests
 
     private sealed class BlockingClient : IChatClient
     {
+        public TaskCompletionSource RequestStarted { get; } =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+
         public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
             CancellationToken cancellationToken = default) => throw new NotSupportedException();
         public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
             ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
-        { await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken); yield break; }
+        {
+            RequestStarted.TrySetResult();
+            await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+            yield break;
+        }
         public object? GetService(Type serviceType, object? serviceKey = null) => null;
         public void Dispose() { }
     }
