@@ -1,8 +1,8 @@
 # Current Pi upstream delta audit — 2026-10-01
 
-The prior recorded Pi pin was `955cc6665ee3986c6a033db52200779310d10dfd`. Fresh fetch confirms Pi `main` at `395315f4841ab5a090a33b8259f60b6df281c1ca`, 41 commits after that pin. Every commit in the complete range is classified below in chronological order. PiSharp source `8931bd73b2e94e7831b1a054a54a8e60bb21aaf5` is the current published head; exact-head Linux CI [36904437406](https://github.com/PhilipGB/pisharp/actions/runs/36904437406) passed restore, format, warnings-as-errors build, and 1,068/1,068 tests with zero skips. The provider-context-transform extension slice is included in this head.
+The prior recorded Pi pin was `955cc6665ee3986c6a033db52200779310d10dfd`. Fresh fetch confirms Pi `main` at `395315f4841ab5a090a33b8259f60b6df281c1ca`, 41 commits after that pin. Every commit in the complete range is classified below in chronological order. Before the current scope step-up slice, PiSharp source `d9f2c65f853472636c7d488e40bc1f48047b544d` passed exact-head Linux CI [36905114984](https://github.com/PhilipGB/pisharp/actions/runs/36905114984), including restore, format, warnings-as-errors build, and 1,068/1,068 tests with zero skips. The provider-context-transform extension slice is included in that head.
 
-The complete range has **13 `NEEDS_WORK`, 4 `MATCHED`, 15 `OUT_OF_SCOPE`, and 9 `NO_BEHAVIOR_CHANGE`** commits. Six earlier `NEEDS_WORK` changes are resolved at published PiSharp heads (recorded on their entries); seven open items remain. The oldest open delta is per-server MCP OAuth credential isolation (`5806068c`). The official MCP conformance commit is classified as test infrastructure with no runtime behavior change, while its required equivalent PiSharp conformance evidence is tracked separately in the execution ledger. Overall parity remains incomplete.
+The complete range has **14 `NEEDS_WORK`, 3 `MATCHED`, 15 `OUT_OF_SCOPE`, and 9 `NO_BEHAVIOR_CHANGE`** commits. Seven `NEEDS_WORK` changes are resolved at published PiSharp heads or in the current branch (recorded on their entries); seven open items remain. The oldest open delta is per-server MCP OAuth credential isolation (`5806068c`). The official MCP conformance commit is classified as test infrastructure with no runtime behavior change, while its required equivalent PiSharp conformance evidence is tracked separately in the execution ledger. Overall parity remains incomplete.
 
 ## Commit classifications
 
@@ -135,10 +135,12 @@ Changes the default task-panel visibility in the experimental durable TUI added 
 - **Required implementation:** reject the incomplete provider/model pair before applying saved model defaults or resolving a provider model, and document that `--provider` filters an explicit `--model` lookup.
 - **Resolution evidence:** PiSharp commit `e50e74dbbd` now rejects a normal `--provider` invocation without an explicit `--model` before model resolution while preserving help and model-list paths. Focused CLI regression coverage and exact-head CI at the published range include this behavior.
 
-### `e529a82c98fad679c6e20c03ffbb0bc7896fecb9` — `MATCHED`
+### `e529a82c98fad679c6e20c03ffbb0bc7896fecb9` — `NEEDS_WORK` (resolved in current branch)
 
 - **Pi behavior:** MCP OAuth preserves previously granted scopes when an `insufficient_scope` challenge requests additional scopes; a challenge that names only the missing scope does not discard the earlier grant.
-- **PiSharp evidence:** PiSharp pins `ModelContextProtocol.Core` 2.2.0. Its installed SDK contract documents `ClientOAuthProvider.GetCurrentOperationScopes`, `ChallengeIntroducesNewScopes`, the challenge/metadata/configured-scope precedence, accumulated scope tracking, and `TokenContainer.Scope`. PiSharp uses that provider and persists the complete `TokenContainer` in its private token cache, so the challenged-scope union is owned by the already-used SDK rather than app-side refresh code. A focused integrated regression test is still required before MCP OAuth can be considered fully verified; the SDK API evidence is sufficient to classify this delta as already matched.
+- **PiSharp mismatch:** the pinned `ModelContextProtocol.Core` 2.2.0 SDK selects the challenge scopes, but the observed integrated authorization request contained only `issues:write` when the cached grant already contained `repo:read`.
+- **Resolution:** `McpOAuthSettings.CreateOptions` now uses `ScopeSelector` to union the last-observed cached grant with candidate scopes, preserving order and removing duplicates. `McpOAuthStepUpTests.InsufficientScopeAuthorizationKeepsTheExistingGrant` drives the real SDK client through a 403 insufficient-scope challenge and verifies the authorization request, persisted token grant and retry.
+- **Validation:** the focused step-up test passes 1/1, `dotnet format PiSharp.slnx --verify-no-changes --no-restore` passes, and the full solution suite passes 1,069/1,069 with zero skips under `TERM=xterm-256color`.
 
 ### `a4715ec9bffbfcb8a32a1a4100dcfd06c12c93e4` — `NO_BEHAVIOR_CHANGE`
 

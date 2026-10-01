@@ -77,6 +77,14 @@ public sealed record McpOAuthSettings(string? ClientId, string? ClientSecret, Ur
                 ClientName = ClientName ?? "pi"
             },
             Scopes = Scopes,
+            ScopeSelector = requestedScopes =>
+            {
+                var grantedScopes = (cache as McpTokenCache.ServerCache)?.LastObserved?.Scope;
+                return (grantedScopes ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                    .Concat(requestedScopes ?? [])
+                    .Distinct(StringComparer.Ordinal)
+                    .ToArray();
+            },
             TokenCache = cache,
             AuthorizationCallbackHandler = callback
         };
@@ -231,6 +239,7 @@ public sealed class McpTokenCache(string agentDirectory)
         public async ValueTask StoreTokensAsync(TokenContainer tokens, CancellationToken cancellationToken)
         {
             await owner.StoreAsync(key, tokens, cancellationToken);
+            Volatile.Write(ref _lastObserved, tokens);
         }
     }
 }
