@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "plan_received": true,
-  "source_note": "Latest exact-head CI-verified PiSharp source is 3b4d0da48f0d9ed83c6948a7d5cd2123ebba0ad8 / Linux CI 36789619687: restore, format, warnings-as-errors build and 1036/1036 tests, zero skips. All eleven audited current-Pi deltas are complete. Resume the broader parity backlog with extension-orchestration-api; overall parity remains incomplete. Pi main 955cc6665ee3986c6a033db52200779310d10dfd; full audit and evidence are in docs/parity/fixtures/upstream-delta-audit-2026-09-30.md.",
+  "source_note": "Latest exact-head CI-verified PiSharp source is 56307f2308c6bd091b0af5e03b647239a55d37ed / Linux CI 36790840783: restore, format, warnings-as-errors build and 1036/1036 tests, zero skips. The 2026-10-01 Pi main audit compares 955cc6665ee3986c6a033db52200779310d10dfd with b56702ad345201a1de46a5f8e94542a3a59ad3bd and identifies four in-scope deltas. Resolve them chronologically before resuming extension lifecycle; overall parity remains incomplete. See docs/parity/fixtures/upstream-delta-audit-2026-10-01.md.",
   "baseline": "earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035",
   "required_ids": [
     "feature-agent-multi-turn-and-streaming",
@@ -602,7 +602,8 @@
       "implementation": [
         "Tab completes slash-command prefixes and local path tokens, including an empty prompt. Multiple results use the shared searchable picker; path results include hidden entries except .git, sort directories first, preserve quotes and wrappers, recognize CJK punctuation, and keep grapheme-safe common prefixes.",
         "Ctrl+G (`app.editor.external`) runs a configured external editor against a prompt file in a private temporary directory. Command selection is trusted user/project `externalEditor`, then VISUAL, EDITOR and platform default; terminal state is suspended and restored around the process. Prompt mouse and keyboard selection/copy, grapheme-safe cursor placement, bounded multiline history, grouped undo, configurable actions, kill-ring/yank and text clipboard access are implemented. Clipboard image paste is implemented with WSL image fallback; WSL text clipboard interop, live native macOS/Windows clipboard verification and Pi-complete history/completion remain open.",
-        "InteractiveBashExecutor parses !command and !!command at idle submission and during an active-run input boundary, routes execution through ConversationRun, persists direct results and excludes !! output from model context. Full Pi TUI behavior remains open; PiSharp does not yet invoke extension user_bash handlers from this interactive path."
+        "InteractiveBashExecutor parses !command and !!command at idle submission and during an active-run input boundary, routes execution through ConversationRun, persists direct results and excludes !! output from model context. Full Pi TUI behavior remains open; PiSharp does not yet invoke extension user_bash handlers from this interactive path.",
+        "Slash-command completion now recognizes a command after leading spaces or tabs on the current line and preserves that indentation when applying a completion; mid-sentence slash text remains path input."
       ],
       "evidence": [
         "EditorCompletionTests covers slash ambiguity/unique completion, nested and wrapped paths, CJK punctuation, hidden-file prefixing, quoted directory continuation, emoji-safe common prefixes and directory-first results. Exact commit f87caad457353056712bff08c03c90ae3585a3db passed Linux CI run 36141556326: format, warnings-as-errors build and all 431 tests.",
@@ -614,7 +615,8 @@
         "EditorBufferTests and EditorKeymapTests cover prompt-history cap/deduplication, multiline Up/Down, draft cursor restoration, grouped word/space/newline undo, delete restore, submit clearing and configurable named actions; TerminalInputTests decodes the Linux Ctrl+- CSI-u sequence. Focused tests pass 32/32; local format verification and warnings-as-errors build pass; all 461 tests pass. Exact code commit d3e4defdef81b5535b27a57096c5456e930ab6f4 passes Linux CI run 36158324018: format, warnings-as-errors build and 461/461 tests. These are deterministic component fixtures; interactive PTY history/undo evidence remains open.",
         "At exact commit 1a9e9cf0a6bcb47844766eff9ad8f55c7617fcb2, EditorBufferTests cover grapheme-safe keyboard selection, copy, replacement, deletion, undo snapshots, word movement, kill accumulation, yank and yank-pop. EditorCompletionTests cover an empty-prompt path list, hidden files/directories except .git, Unicode and CJK punctuation, wrappers, quoted continuation and common-prefix behavior. TerminalPtyTests.FileCompletionPickerAppliesTheSelectedAtPathThroughLinuxPty verifies choosing an @ path through the shared searchable picker. Focused completion/PTY tests pass 6/6; local format and warnings-as-errors build pass; all tests pass 473/473. Linux CI run 36162923941 passed format, build and all 473 tests on exact head. Pi differential completion behavior remains incomplete.",
         "Clipboard image tests cover Linux Wayland MIME reads, WSL PowerShell fallback, private file permissions and Ctrl+V PTY insertion. Exact code commit 17d682c2d7206a052b8a65ca24cf9c514166e39e passed Linux CI run 36166108417: format, warnings-as-errors build and 480/480 tests.",
-        "InteractiveBashExecutorTests covers command parsing; TerminalPtyTests.BangCommandsUseTheConfiguredPrefixAndDoubleBangExcludesContext exercises both forms over Linux PTY with saved session assertions. Broader active-run PTY and extension interception differentials remain open."
+        "InteractiveBashExecutorTests covers command parsing; TerminalPtyTests.BangCommandsUseTheConfiguredPrefixAndDoubleBangExcludesContext exercises both forms over Linux PTY with saved session assertions. Broader active-run PTY and extension interception differentials remain open.",
+        "Pi 65117e31f242daa8e0a17dbd2810f7bb92bf4087 adds leading-whitespace slash completion. A fail-first theory reproduced missing candidates for spaces, repeated spaces and tabs; EditorCompletionTests passes 10/10 after the fix, including preserved indentation and the existing mid-sentence boundary. Full validation and exact-head CI are pending; see docs/parity/fixtures/upstream-delta-audit-2026-10-01.md."
       ],
       "dependencies": []
     },
@@ -3710,34 +3712,22 @@
     }
   ],
   "upstream_delta_audit": {
-    "source_pin": "3e9451238337071b74ba5cdd53f1ab7cf4100ae8",
-    "source_head": "955cc6665ee3986c6a033db52200779310d10dfd",
-    "commit_count": 26,
+    "source_pin": "955cc6665ee3986c6a033db52200779310d10dfd",
+    "source_head": "b56702ad345201a1de46a5f8e94542a3a59ad3bd",
+    "commit_count": 15,
     "classifications": {
-      "NEEDS_WORK": 11,
-      "MATCHED": 1,
-      "OUT_OF_SCOPE": 6,
-      "NO_BEHAVIOR_CHANGE": 8
+      "NEEDS_WORK": 4,
+      "MATCHED": 0,
+      "OUT_OF_SCOPE": 8,
+      "NO_BEHAVIOR_CHANGE": 3
     },
-    "fixture": "docs/parity/fixtures/upstream-delta-audit-2026-09-30.md",
-    "next": "extension-orchestration-api",
-    "current_item": "a9424cd43d242f32d31a3638bb7fe1305c20f72a",
-    "current_item_status": "completed_exact_head_ci",
-    "current_item_local_evidence": "Final audited delta a9424cd43d242f32d31a3638bb7fe1305c20f72a is complete. PiSharp source 94c9f4f adds Anthropic-only workload identity federation through the installed Anthropic SDK, preserves stored/configured/API-key/auth-token precedence, and disables SDK ambient credential resolution. Required and optional fields, API-key/token priority, partial-config fail-closed behavior, another-provider isolation, bearer exchange, 401 refresh and identity-file rotation are covered; Anthropic-focused tests pass 18/18. A 1-second fragmented-SSE idle fixture follow-up is at 3b4d0da. Final exact-head Linux CI 36789619687 passes restore, format, warnings-as-errors build and 1036/1036 tests (zero skips). Local full suite passed 1034/1036: the Linux PTY theme timeout reproduced alone, while the crash-after-side-effect test passed alone. The audited delta set is closed; next continue with extension-orchestration-api from the broader ledger.",
-    "next_after_ci": "extension-orchestration-api",
-    "completed": [
-      "3dd803d7e780fb04b815261b510f76bff563d46d",
-      "d2931ad3d5bf6936fbdfa5dfc81fb32f875499b2",
-      "1c7e7df765a6fe542d24906756ee981bf7bb84c4",
-      "7c9fe66452de9689223e3b490939f014c6e94e52",
-      "2bbfcca437c3aa5a21af1e4ee44ae7a051f953ad",
-      "e029c3ed0add2ba55cc9c68b2bc3920e56d32888",
-      "0582d9c11da78c1812d4537af2d194f1dd060d26",
-      "db6cc71dc7b69202dc560e71106bb9dfd454e758",
-      "b29db895c5c1b30b560a39fb9e4664508f1683de",
-      "91f9f3b5dfd7a49dda90d6450de7313ba425b3ca",
-      "a9424cd43d242f32d31a3638bb7fe1305c20f72a"
-    ],
-    "ci_run": "36789619687"
+    "fixture": "docs/parity/fixtures/upstream-delta-audit-2026-10-01.md",
+    "next": "anthropic-copy-code-oauth",
+    "current_item": "65117e31f242daa8e0a17dbd2810f7bb92bf4087",
+    "current_item_status": "local_full_validation_passed_exact_head_ci_pending",
+    "current_item_local_evidence": "Fail-first EditorCompletionTests returned no candidates for leading space, multiple spaces and tab before /tr. IsSlashCommandStart now recognizes slash commands after whitespace only on the current line; applying completion preserves indentation, while the existing mid-sentence test remains empty. EditorCompletionTests passes 10/10. Restore passes with --no-http-cache because the default vulnerability-cache path is read-only in this environment; format verification passes with 0 of 409 files formatted; warnings-as-errors build passes with 0 warnings/errors. After an initial parallel run had three process/PTY timeouts (all passed individually), all 1,039 tests passed with zero skips using TERM=xterm-256color and xUnit.ParallelizeTestCollections=false. Exact-head CI is pending.",
+    "next_after_ci": "7a11fe1c723b942fa093edb8b00f051ddb9b6627",
+    "completed": [],
+    "ci_run": "36790840783"
   }
 }

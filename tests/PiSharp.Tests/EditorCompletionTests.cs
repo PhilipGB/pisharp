@@ -19,6 +19,24 @@ public sealed class EditorCompletionTests
         Assert.Empty(completion.Complete(buffer));
     }
 
+    [Theory]
+    [InlineData(" /tr", " /tree")]
+    [InlineData("  /tr", "  /tree")]
+    [InlineData("\t/tr", "\t/tree")]
+    public void SlashCompletionAfterLeadingWhitespacePreservesIndentation(string prompt, string expected)
+    {
+        var completion = new EditorCompletion(Path.GetTempPath());
+        var buffer = new EditorBuffer();
+        buffer.SetText(prompt);
+
+        Assert.Equal(["/tree", "/trust"], completion.Complete(buffer));
+        Assert.Equal(prompt, buffer.Text);
+
+        completion.ApplySelected(buffer, "/tree");
+        Assert.Equal(expected, buffer.Text);
+        Assert.Equal(expected.Length, buffer.Cursor);
+    }
+
     [Fact]
     public void SlashCompletionReadsDynamicSkillCommandRegistration()
     {

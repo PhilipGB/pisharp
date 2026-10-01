@@ -56,7 +56,7 @@ public sealed class EditorCompletion
         ArgumentNullException.ThrowIfNull(buffer);
         var before = buffer.Text[..buffer.Cursor];
         var start = FindTokenStart(before);
-        if (start == 0 && before[start..].StartsWith('/'))
+        if (IsSlashCommandStart(before, start))
         {
             var slashFragment = before[start..];
             var matches = s_commands.Concat(_dynamicCommands?.Invoke() ?? [])
@@ -87,7 +87,7 @@ public sealed class EditorCompletion
         ArgumentNullException.ThrowIfNull(completion);
         var before = buffer.Text[..buffer.Cursor];
         var start = FindTokenStart(before);
-        if (start == 0 && before[start..].StartsWith('/'))
+        if (IsSlashCommandStart(before, start))
         {
             var slashFragment = before[start..];
             Apply(buffer, start, slashFragment, [completion]);
@@ -117,6 +117,13 @@ public sealed class EditorCompletion
                 start = index + 1;
         }
         return start;
+    }
+
+    private static bool IsSlashCommandStart(string before, int tokenStart)
+    {
+        if (!before[tokenStart..].StartsWith('/')) return false;
+        var lineStart = before.LastIndexOf('\n') + 1;
+        return before[lineStart..tokenStart].All(char.IsWhiteSpace);
     }
 
     private static int FindUnclosedQuoteStart(string text)
