@@ -68,7 +68,9 @@ public sealed class McpOAuthMetadataTests
             var output = new LoginOutput();
             var login = McpOAuthLogin.SignInAsync(entry, root, output, false,
                 TimeSpan.FromSeconds(10), deadline.Token);
-            var authorizationUri = new Uri(await output.Authorization.Task.WaitAsync(deadline.Token));
+            var authorizationTask = output.Authorization.Task;
+            if (await Task.WhenAny(authorizationTask, login) == login) await login;
+            var authorizationUri = new Uri(await authorizationTask.WaitAsync(deadline.Token));
             var query = System.Web.HttpUtility.ParseQueryString(authorizationUri.Query);
 
             Assert.Equal("/idp/authorize", authorizationUri.AbsolutePath);
@@ -100,6 +102,47 @@ public sealed class McpOAuthMetadataTests
         }
     }
 
+    [Fact]
+    public async Task InvalidAuthorizationServerUrlFallsBackToTheMcpServerOrigin()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-mcp-oauth-resource-fallback-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        await using var server = new OAuthServer(invalidAuthorizationServerUrl: true);
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+        try
+        {
+            using var config = JsonDocument.Parse(JsonSerializer.Serialize(new
+            {
+                url = server.Origin + "/mcp",
+                oauth = new { clientId = "fixture-client" }
+            }));
+            var entry = McpConfiguration.Parse("protected", config.RootElement, "mcp.json", "global");
+            var output = new LoginOutput();
+            var login = McpOAuthLogin.SignInAsync(entry, root, output, false,
+                TimeSpan.FromSeconds(10), deadline.Token);
+            var authorizationTask = output.Authorization.Task;
+            if (await Task.WhenAny(authorizationTask, login) == login) await login;
+            var authorizationUri = new Uri(await authorizationTask.WaitAsync(deadline.Token));
+            var query = System.Web.HttpUtility.ParseQueryString(authorizationUri.Query);
+            Assert.Equal(server.Origin + "/authorize", authorizationUri.GetLeftPart(UriPartial.Path));
+
+            var callbackQuery = "code=fixture-code&state=" + Uri.EscapeDataString(query["state"]!) +
+                "&iss=" + Uri.EscapeDataString(server.Origin);
+            var callbackUri = new UriBuilder(new Uri(query["redirect_uri"]!)) { Query = callbackQuery }.Uri;
+            using var browser = new HttpClient();
+            Assert.Equal(HttpStatusCode.OK, (await browser.GetAsync(callbackUri, deadline.Token)).StatusCode);
+            await login.WaitAsync(deadline.Token);
+
+            Assert.True(server.NormalDiscoveryRequests > 0);
+            Assert.Equal(1, server.TokenRequests);
+        }
+        finally
+        {
+            deadline.Cancel();
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
     private sealed class LoginOutput : StringWriter
     {
         public TaskCompletionSource<string> Authorization { get; } =
@@ -119,6 +162,7 @@ public sealed class McpOAuthMetadataTests
         private readonly HttpListener _listener = new();
         private readonly CancellationTokenSource _shutdown = new(TimeSpan.FromSeconds(20));
         private readonly Task _serve;
+        private readonly bool _invalidAuthorizationServerUrl;
         private int _configuredMetadataRequests;
         private int _normalDiscoveryRequests;
         private int _tokenRequests;
@@ -128,8 +172,9 @@ public sealed class McpOAuthMetadataTests
         public int NormalDiscoveryRequests => Volatile.Read(ref _normalDiscoveryRequests);
         public int TokenRequests => Volatile.Read(ref _tokenRequests);
 
-        public OAuthServer()
+        public OAuthServer(bool invalidAuthorizationServerUrl = false)
         {
+            _invalidAuthorizationServerUrl = invalidAuthorizationServerUrl;
             using var reservation = new TcpListener(IPAddress.Loopback, 0);
             reservation.Start();
             var port = ((IPEndPoint)reservation.LocalEndpoint).Port;
@@ -159,18 +204,22 @@ public sealed class McpOAuthMetadataTests
                         body = JsonSerializer.Serialize(new
                         {
                             resource = Origin + "/mcp",
-                            authorization_servers = new[] { Origin }
+                            authorization_servers = new[]
+                            {
+                                _invalidAuthorizationServerUrl ? "not a URL" : Origin
+                            }
                         });
                         break;
                     case "/.well-known/oauth-authorization-server":
                         Interlocked.Increment(ref _normalDiscoveryRequests);
-                        body = AuthorizationMetadata(Origin, "/wrong-authorize", "/wrong-token");
+                        body = AuthorizationMetadata(Origin, "/authorize", "/token");
                         break;
                     case "/idp/metadata":
                         Interlocked.Increment(ref _configuredMetadataRequests);
                         body = AuthorizationMetadata("https://idp.example", "/idp/authorize", "/idp/token");
                         break;
                     case "/idp/token":
+                    case "/token":
                         Interlocked.Increment(ref _tokenRequests);
                         body = """{"access_token":"fixture-access","refresh_token":"fixture-refresh","token_type":"Bearer","expires_in":3600}""";
                         break;

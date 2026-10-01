@@ -365,9 +365,13 @@ public static class McpRuntime
                 };
                 if (server.AuthProvider is { } providerAuth)
                     transport = new HttpClientTransport(options,
-                        new HttpClient(new McpProviderAuthHandler(server.Name, providerAuth, providerTokenResolver)),
+                        new HttpClient(new McpProtocolCompatibilityHandler(server.Url!,
+                            new McpProviderAuthHandler(server.Name, providerAuth, providerTokenResolver))),
                         ownsHttpClient: true);
-                else if (oauth is null) transport = new HttpClientTransport(options);
+                else if (oauth is null)
+                    transport = new HttpClientTransport(options,
+                        new HttpClient(new McpProtocolCompatibilityHandler(server.Url!, new HttpClientHandler())),
+                        ownsHttpClient: true);
                 else
                 {
                     var tokenCache = new McpTokenCache(agentDirectory).ForServerWithRefresh(server.Url!);
@@ -378,6 +382,7 @@ public static class McpRuntime
                     HttpMessageHandler handler = refreshHandler;
                     if (oauth.AuthServerMetadataUrl is { } metadataUrl)
                         handler = new McpOAuthMetadataHandler(server.Url!, metadataUrl, handler);
+                    handler = new McpProtocolCompatibilityHandler(server.Url!, handler);
                     transport = new HttpClientTransport(options, new HttpClient(handler), ownsHttpClient: true);
                 }
             }

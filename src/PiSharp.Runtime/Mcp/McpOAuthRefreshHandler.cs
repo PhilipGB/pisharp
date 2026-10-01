@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using ModelContextProtocol.Authentication;
 
@@ -67,7 +68,11 @@ internal sealed class McpOAuthRefreshHandler(McpTokenCache.ServerCache tokenCach
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             timeout.CancelAfter(s_tokenRequestTimeout);
             var response = await base.SendAsync(request, timeout.Token);
-            if (response.IsSuccessStatusCode && await IsValidTokenResponseAsync(response))
+            var refreshTokenForGrant = grantType == "refresh_token"
+                ? fields.FirstOrDefault(field => field.Key == "refresh_token").Value
+                : null;
+            if (response.IsSuccessStatusCode &&
+                await NormalizeAndValidateTokenResponseAsync(response, grantType, refreshTokenForGrant))
             {
                 tokenCache.Owner.TrackPendingRefresh(_serverUrl, lease);
                 transferred = true;
@@ -140,28 +145,67 @@ internal sealed class McpOAuthRefreshHandler(McpTokenCache.ServerCache tokenCach
         Content = new StringContent("{\"error\":\"invalid_grant\"}", Encoding.UTF8, "application/json")
     };
 
-    private static async Task<bool> IsValidTokenResponseAsync(HttpResponseMessage response)
+    private static async Task<bool> NormalizeAndValidateTokenResponseAsync(HttpResponseMessage response,
+        string grantType, string? refreshTokenForGrant)
     {
         try
         {
             // The server may already have rotated its refresh token. Once the response
             // arrived, finish recognizing it even if the original caller was canceled.
-            using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync(CancellationToken.None));
-            var root = document.RootElement;
-            if (root.ValueKind != JsonValueKind.Object ||
-                !root.TryGetProperty("access_token", out var accessToken) ||
-                accessToken.ValueKind != JsonValueKind.String || string.IsNullOrEmpty(accessToken.GetString()) ||
-                !root.TryGetProperty("token_type", out var tokenType) || tokenType.ValueKind != JsonValueKind.String ||
-                !string.Equals(tokenType.GetString(), "Bearer", StringComparison.OrdinalIgnoreCase)) return false;
-            return (!root.TryGetProperty("refresh_token", out var refreshToken) ||
-                    refreshToken.ValueKind is JsonValueKind.String or JsonValueKind.Null) &&
-                (!root.TryGetProperty("scope", out var scope) || scope.ValueKind is JsonValueKind.String or JsonValueKind.Null) &&
-                (!root.TryGetProperty("expires_in", out var expiresIn) ||
-                    expiresIn.ValueKind == JsonValueKind.Number && expiresIn.TryGetInt32(out _));
+            var originalContent = response.Content;
+            var bytes = await originalContent.ReadAsByteArrayAsync(CancellationToken.None);
+            var token = JsonNode.Parse(bytes);
+            if (token is not JsonObject document ||
+                document["access_token"] is not JsonValue accessToken ||
+                !accessToken.TryGetValue<string>(out var accessTokenValue) || string.IsNullOrEmpty(accessTokenValue) ||
+                document["token_type"] is not JsonValue tokenType ||
+                !tokenType.TryGetValue<string>(out var tokenTypeValue) ||
+                !string.Equals(tokenTypeValue, "Bearer", StringComparison.OrdinalIgnoreCase)) return false;
+
+            if (document.TryGetPropertyValue("refresh_token", out var refreshToken))
+            {
+                if (refreshToken is null || IsEmptyString(refreshToken))
+                {
+                    if (grantType == "refresh_token" && !string.IsNullOrEmpty(refreshTokenForGrant))
+                        document["refresh_token"] = refreshTokenForGrant;
+                    else document.Remove("refresh_token");
+                }
+                else if (refreshToken is not JsonValue tokenValue ||
+                    !tokenValue.TryGetValue<string>(out _)) return false;
+            }
+            else if (grantType == "refresh_token" && !string.IsNullOrEmpty(refreshTokenForGrant))
+                document["refresh_token"] = refreshTokenForGrant;
+
+            if (document.TryGetPropertyValue("scope", out var scope))
+            {
+                if (scope is null || IsEmptyString(scope)) document.Remove("scope");
+                else if (scope is not JsonValue scopeValue || !scopeValue.TryGetValue<string>(out _)) return false;
+            }
+
+            if (document.TryGetPropertyValue("expires_in", out var expiresIn) && expiresIn is not null)
+            {
+                if (IsEmptyString(expiresIn)) document.Remove("expires_in");
+                else if (expiresIn is not JsonValue expiryValue ||
+                    !expiryValue.TryGetValue<int>(out _)) return false;
+            }
+
+            if (document.TryGetPropertyValue("id_token", out var idToken) &&
+                (idToken is null || IsEmptyString(idToken))) document.Remove("id_token");
+
+            var content = new ByteArrayContent(JsonSerializer.SerializeToUtf8Bytes(document));
+            foreach (var header in originalContent.Headers)
+                if (!header.Key.Equals("Content-Length", StringComparison.OrdinalIgnoreCase))
+                    content.Headers.TryAddWithoutValidation(header.Key, header.Value);
+            response.Content = content;
+            originalContent.Dispose();
+            return true;
         }
         catch (JsonException) { return false; }
         catch (InvalidOperationException) { return false; }
     }
+
+    private static bool IsEmptyString(JsonNode node) => node is JsonValue value &&
+        value.TryGetValue<string>(out var text) && text.Length == 0;
 
     private static List<KeyValuePair<string, string>> ParseForm(string value)
     {

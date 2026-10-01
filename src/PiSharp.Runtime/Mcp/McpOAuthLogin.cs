@@ -87,6 +87,7 @@ public static class McpOAuthLogin
         HttpMessageHandler handler = refreshHandler;
         if (settings.AuthServerMetadataUrl is { } metadataUrl)
             handler = new McpOAuthMetadataHandler(server.Url, metadataUrl, handler);
+        handler = new McpProtocolCompatibilityHandler(server.Url, handler);
         var transport = new HttpClientTransport(transportOptions,
             new HttpClient(handler), ownsHttpClient: true);
         McpClient? client = null;

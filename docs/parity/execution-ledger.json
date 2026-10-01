@@ -3726,8 +3726,8 @@
     "fixture": "docs/parity/fixtures/upstream-delta-audit-2026-10-01.md",
     "next": "mcp-oauth-optionals-pagination",
     "current_item": "8ce69e9d2b171d173fe4b6b2b6256f1f4411e69d",
-    "current_item_status": "queued_after_ansi_exact_head_ci",
-    "current_item_local_evidence": "Pi 8ce69e9 normalizes empty/null optional OAuth fields, falls back to resource origin for invalid resource metadata URLs, skips empty scope candidates, and stops MCP pagination on empty or null cursors. PiSharp core SDK 2.2.0 covers nullable expiry and empty registration secrets/scopes, but ListToolsAsync treats an empty cursor as another page; refresh token parsing overwrites stored credentials with an empty token, resource-metadata URL validation rejects instead of falling back, and the cross-process refresh handler rejects expires_in:null. Proceed with fail-first loopback tests and identify extension points for SDK-owned behavior.",
+    "current_item_status": "local_validation_passed_pending_exact_head_ci",
+    "current_item_local_evidence": "The 8ce69e9 mismatch is covered by fail-first loopback tests for empty/null pagination cursors, refresh-token preservation, null/empty expiry lease retention, and invalid protected-resource authorization-server URLs. McpProtocolCompatibilityHandler removes empty/null cursors and repairs invalid metadata URLs; McpOAuthRefreshHandler normalizes empty/null optional fields and preserves the refresh credential. Local restore, full format verification, warnings-as-errors build, and serial tests pass at 1,064/1,064 with zero skips. Exact-head CI is pending publication.",
     "next_after_ci": "41169ba2af7f5bd5c97237633879117bc3fa9cd9",
     "completed": [
       "65117e31f242daa8e0a17dbd2810f7bb92bf4087",

@@ -366,6 +366,105 @@ public sealed class McpOAuthTests
     }
 
     [Fact]
+    public async Task RefreshWithEmptyOptionalFieldsPreservesTheStoredRefreshToken()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-mcp-oauth-optional-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        var serverUrl = new Uri("https://mcp.example.test/mcp");
+        var cache = new McpTokenCache(root).ForServerWithRefresh(serverUrl);
+        await cache.StoreTokensAsync(new TokenContainer
+        {
+            TokenType = "Bearer",
+            AccessToken = "access-1",
+            RefreshToken = "refresh-1",
+            ExpiresIn = 60,
+            ObtainedAt = DateTimeOffset.UtcNow.AddHours(-1)
+        }, default);
+        _ = await cache.GetTokensAsync(default);
+        var handler = new McpOAuthRefreshHandler(cache, new StaticTokenEndpoint(
+            """{"access_token":"access-2","refresh_token":"","token_type":"Bearer","expires_in":3600,"scope":"","id_token":""}"""));
+        using var http = new HttpClient(handler);
+        try
+        {
+            using var response = await http.SendAsync(RefreshRequest());
+            using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+            var body = document.RootElement;
+            var refreshToken = body.GetProperty("refresh_token").GetString();
+            var scopePresent = body.TryGetProperty("scope", out _);
+            var idTokenPresent = body.TryGetProperty("id_token", out _);
+            await cache.StoreTokensAsync(new TokenContainer
+            {
+                TokenType = body.GetProperty("token_type").GetString()!,
+                AccessToken = body.GetProperty("access_token").GetString()!,
+                RefreshToken = refreshToken,
+                ExpiresIn = body.GetProperty("expires_in").GetInt32(),
+                ObtainedAt = DateTimeOffset.UtcNow,
+                Scope = body.TryGetProperty("scope", out var scope) ? scope.GetString() : null
+            }, default);
+            await handler.WaitForSettledAsync();
+
+            Assert.Equal("refresh-1", refreshToken);
+            Assert.False(scopePresent);
+            Assert.False(idTokenPresent);
+            Assert.Equal("refresh-1", (await cache.GetTokensAsync(default))?.RefreshToken);
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task RefreshWithNullOrEmptyExpiryKeepsTheTokenPersistenceLeaseUntilStored(bool emptyStringExpiry)
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-mcp-oauth-null-expiry-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        var serverUrl = new Uri("https://mcp.example.test/mcp");
+        var cache = new McpTokenCache(root).ForServerWithRefresh(serverUrl);
+        await cache.StoreTokensAsync(new TokenContainer
+        {
+            TokenType = "Bearer",
+            AccessToken = "access-1",
+            RefreshToken = "refresh-1",
+            ExpiresIn = 60,
+            ObtainedAt = DateTimeOffset.UtcNow.AddHours(-1)
+        }, default);
+        _ = await cache.GetTokensAsync(default);
+        var responseBody = JsonSerializer.Serialize(new
+        {
+            access_token = "access-2",
+            refresh_token = "refresh-2",
+            token_type = "Bearer",
+            expires_in = emptyStringExpiry ? "" : null
+        });
+        var handler = new McpOAuthRefreshHandler(cache, new StaticTokenEndpoint(responseBody));
+        using var http = new HttpClient(handler);
+        try
+        {
+            using var response = await http.SendAsync(RefreshRequest());
+            using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+            var body = document.RootElement;
+            var settled = handler.WaitForSettledAsync();
+            var leaseRemainsPending = !settled.IsCompleted;
+            await cache.StoreTokensAsync(new TokenContainer
+            {
+                TokenType = body.GetProperty("token_type").GetString()!,
+                AccessToken = body.GetProperty("access_token").GetString()!,
+                RefreshToken = body.GetProperty("refresh_token").GetString(),
+                ExpiresIn = body.TryGetProperty("expires_in", out var expiresIn) &&
+                    expiresIn.ValueKind == JsonValueKind.Number
+                    ? expiresIn.GetInt32()
+                    : null,
+                ObtainedAt = DateTimeOffset.UtcNow
+            }, default);
+            await settled.WaitAsync(TimeSpan.FromSeconds(5));
+
+            Assert.True(leaseRemainsPending, "A null expiry is a valid token response and must stay under the refresh lease.");
+            Assert.Null((await cache.GetTokensAsync(default))?.ExpiresIn);
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
     public async Task MCPRefreshLockSerializesSeparateProcesses()
     {
         if (!OperatingSystem.IsLinux()) return;
@@ -619,6 +718,26 @@ public sealed class McpOAuthTests
             Assert.DoesNotContain("sentinel-oauth-secret", typeError.Message);
         }
         finally { Directory.Delete(root, recursive: true); }
+    }
+
+    private static HttpRequestMessage RefreshRequest() => new(HttpMethod.Post,
+        new Uri("https://auth.example.test/token"))
+    {
+        Content = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["grant_type"] = "refresh_token",
+            ["refresh_token"] = "refresh-1"
+        })
+    };
+
+    private sealed class StaticTokenEndpoint(string body) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
+            CancellationToken cancellationToken) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                RequestMessage = request,
+                Content = new StringContent(body, Encoding.UTF8, "application/json")
+            });
     }
 
     private sealed class RotatingTokenEndpoint : HttpMessageHandler
