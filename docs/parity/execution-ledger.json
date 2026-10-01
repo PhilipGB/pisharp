@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "plan_received": true,
-  "source_note": "PiSharp source 6bddf37a65e64e915969bd2519f08031b7cb3525 passed exact-head Linux CI on feature branch 36835477212 and main 36835795082 with 1057/1057 tests and zero skips. Current Pi main is 70c036211de5378508ae2456f3c7ae3cf9f8bc75; the refreshed audit compares it with 955cc6665ee3986c6a033db52200779310d10dfd and classifies 21 commits, including six NEEDS_WORK entries. Whitespace-aware slash completion, Anthropic browser/copy-code OAuth, and configured MCP authorization-server metadata are closed at exact heads. Continue with ANSI slice ordering, then MCP optional-field/pagination and linked-login residuals. Overall parity remains incomplete. See docs/parity/fixtures/upstream-delta-audit-2026-10-01.md.",
+  "source_note": "PiSharp source 6bddf37a65e64e915969bd2519f08031b7cb3525 passed exact-head Linux CI on feature branch 36835477212 and main 36835795082 with 1057/1057 tests and zero skips. Current Pi main is 0c453048bd4bb699b90463d9423c382d1787087f; the refreshed audit compares it with 955cc6665ee3986c6a033db52200779310d10dfd and classifies 22 commits, including seven NEEDS_WORK entries. Whitespace-aware slash completion, Anthropic browser/copy-code OAuth, and configured MCP authorization-server metadata are closed at exact heads. Continue with ANSI slice ordering, then MCP optional-field/pagination, linked-login, and explicit provider/model residuals. Overall parity remains incomplete. See docs/parity/fixtures/upstream-delta-audit-2026-10-01.md.",
   "baseline": "earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035",
   "required_ids": [
     "feature-agent-multi-turn-and-streaming",
@@ -3715,10 +3715,10 @@
   ],
   "upstream_delta_audit": {
     "source_pin": "955cc6665ee3986c6a033db52200779310d10dfd",
-    "source_head": "70c036211de5378508ae2456f3c7ae3cf9f8bc75",
-    "commit_count": 21,
+    "source_head": "0c453048bd4bb699b90463d9423c382d1787087f",
+    "commit_count": 22,
     "classifications": {
-      "NEEDS_WORK": 6,
+      "NEEDS_WORK": 7,
       "MATCHED": 0,
       "OUT_OF_SCOPE": 11,
       "NO_BEHAVIOR_CHANGE": 4
@@ -3737,7 +3737,8 @@
     "ci_run": "36835795082",
     "later_items": [
       "8ce69e9d2b171d173fe4b6b2b6256f1f4411e69d",
-      "41169ba2af7f5bd5c97237633879117bc3fa9cd9"
+      "41169ba2af7f5bd5c97237633879117bc3fa9cd9",
+      "0c453048bd4bb699b90463d9423c382d1787087f"
     ],
     "latest_published_source_head": "6bddf37a65e64e915969bd2519f08031b7cb3525",
     "latest_published_ci_runs": [
