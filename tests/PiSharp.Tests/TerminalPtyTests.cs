@@ -939,7 +939,7 @@ public sealed class TerminalPtyTests
                 RedirectStandardInput = true,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
-                ArgumentList = { "-q", "-e", "-c", $"stty rows 24 cols 80; dotnet '{assembly}' --provider openai --no-tools --no-session --offline", "/dev/null" }
+                ArgumentList = { "-q", "-e", "-c", $"stty rows 24 cols 80; dotnet '{assembly}' --provider openai --model gpt-4o-mini --no-tools --no-session --offline", "/dev/null" }
             };
             foreach (var name in new[] { "OPENAI_API_KEY", "PISHARP_API_KEY", "PISHARP_BASE_URL", "PISHARP_AUTH_PATH", "PISHARP_MODELS_PATH" })
                 start.Environment.Remove(name);
@@ -1426,7 +1426,7 @@ public sealed class TerminalPtyTests
                 RedirectStandardInput = true,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
-                ArgumentList = { "-q", "-e", "-c", $"stty rows 24 cols 80; dotnet '{assembly}' --provider openai --no-tools --no-session --offline", "/dev/null" }
+                ArgumentList = { "-q", "-e", "-c", $"stty rows 24 cols 80; dotnet '{assembly}' --provider openai --model gpt-4o-mini --no-tools --no-session --offline", "/dev/null" }
             };
             foreach (var name in new[] { "OPENAI_API_KEY", "PISHARP_API_KEY", "PISHARP_BASE_URL", "PISHARP_AUTH_PATH", "PISHARP_MODELS_PATH" })
                 start.Environment.Remove(name);

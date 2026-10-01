@@ -629,7 +629,8 @@ public sealed class ProviderModelRuntimeTests
                 RedirectStandardOutput = true,
                 RedirectStandardError = true
             };
-            foreach (var arg in new[] { typeof(CliArguments).Assembly.Location, "--provider", "openai", "--no-session", "--print", "hello" })
+            foreach (var arg in new[] { typeof(CliArguments).Assembly.Location, "--provider", "openai", "--model", "gpt-4o-mini",
+                         "--no-session", "--print", "hello" })
                 start.ArgumentList.Add(arg);
             foreach (var name in new[] { "OPENAI_API_KEY", "PISHARP_API_KEY", "PISHARP_BASE_URL", "PISHARP_MODEL", "PISHARP_AUTH_PATH", "PISHARP_MODELS_PATH" })
                 start.Environment.Remove(name);
@@ -669,7 +670,7 @@ public sealed class ProviderModelRuntimeTests
             start.ArgumentList.Add("-q");
             start.ArgumentList.Add("-e");
             start.ArgumentList.Add("-c");
-            start.ArgumentList.Add($"stty rows 24 cols 80; exec dotnet '{typeof(CliArguments).Assembly.Location}' --provider fixture --no-tools --offline --session-dir '{root}/sessions'");
+            start.ArgumentList.Add($"stty rows 24 cols 80; exec dotnet '{typeof(CliArguments).Assembly.Location}' --provider fixture --model fixture-model --no-tools --offline --session-dir '{root}/sessions'");
             start.ArgumentList.Add("/dev/null");
             foreach (var name in new[] { "PISHARP_FIXTURE_KEY", "OPENAI_API_KEY", "PISHARP_API_KEY", "PISHARP_BASE_URL", "PISHARP_AUTH_PATH", "PISHARP_MODELS_PATH" })
                 start.Environment.Remove(name);

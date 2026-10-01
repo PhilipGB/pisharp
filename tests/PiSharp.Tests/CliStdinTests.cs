@@ -32,7 +32,7 @@ public sealed class CliStdinTests
                 RedirectStandardOutput = true,
                 RedirectStandardError = true
             };
-            foreach (var arg in new[] { typeof(CliArguments).Assembly.Location, "--provider", "openai", "--no-session", "--print", "hello" })
+            foreach (var arg in new[] { typeof(CliArguments).Assembly.Location, "--provider", "openai", "--model", "gpt-4o-mini", "--no-session", "--print", "hello" })
                 start.ArgumentList.Add(arg);
             start.Environment["PISHARP_AGENT_DIR"] = Path.Combine(root, "agent");
             start.Environment.Remove("OPENAI_API_KEY");
