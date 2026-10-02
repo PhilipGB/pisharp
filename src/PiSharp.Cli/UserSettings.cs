@@ -82,7 +82,7 @@ public sealed record CompactionSettings(bool? Enabled = null, int? ReserveTokens
 }
 public sealed record UserSettings(string? DefaultProvider = null, string? DefaultModel = null,
     string? DefaultThinkingLevel = null, IReadOnlyList<string>? DefaultTools = null, string? SessionDirectory = null,
-    CompactionSettings? Compaction = null, bool? BlockImages = null, string? DefaultProjectTrust = null, bool? HideThinkingBlock = null, bool? QuietStartup = null, IReadOnlyList<string>? EnabledModels = null, string? ShellPath = null, string? ExternalEditor = null, string? Theme = null,
+    CompactionSettings? Compaction = null, bool? BlockImages = null, string? DefaultProjectTrust = null, bool? HideThinkingBlock = null, QuietStartupMode? QuietStartup = null, IReadOnlyList<string>? EnabledModels = null, string? ShellPath = null, string? ExternalEditor = null, string? Theme = null,
     RetrySettings? Retry = null, PromptDeliveryMode? SteeringMode = null, PromptDeliveryMode? FollowUpMode = null,
     IReadOnlyDictionary<string, string>? ModelThinkingLevels = null, string? HttpProxy = null,
     int? HttpIdleTimeoutMs = null, string? MarkdownCodeBlockIndent = null, string? TerminalTrueColor = null,
@@ -121,7 +121,8 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         CompactionSettings? compaction = null;
         RetrySettings? retry = null;
         PromptDeliveryMode? steeringMode = null, followUpMode = null;
-        bool? blockImages = null, hideThinkingBlock = null, quietStartup = null, enableSkillCommands = null;
+        bool? blockImages = null, hideThinkingBlock = null, enableSkillCommands = null;
+        QuietStartupMode? quietStartup = null;
         string? httpProxy = null;
         int? httpIdleTimeoutMs = null;
         string? markdownCodeBlockIndent = null;
@@ -138,9 +139,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
             }
             if (property.Name == "quietStartup")
             {
-                if (property.Value.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
-                    throw new InvalidDataException("settings.json quietStartup must be a boolean.");
-                quietStartup = property.Value.GetBoolean();
+                quietStartup = QuietStartupModes.Parse(property.Value);
                 continue;
             }
             if (property.Name == "hideThinkingBlock")

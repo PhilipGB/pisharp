@@ -1,0 +1,621 @@
+{
+  "piSha": "3874b3e98983c70fa05fa193b675d42cfcb8b9f8",
+  "normalization": "Exact settings scalars, user/trusted-project precedence, header/details gates, preserved JSON writes and ordered supported selector values. Scope excludes the PiSharp inherit option and all TUI text/layout/ANSI/cursor comparisons.",
+  "scenarios": [
+    {
+      "id": "value-0-verbose-False",
+      "user": {
+        "quietStartup": true
+      },
+      "verbose": false
+    },
+    {
+      "id": "value-0-verbose-True",
+      "user": {
+        "quietStartup": true
+      },
+      "verbose": true
+    },
+    {
+      "id": "value-1-verbose-False",
+      "user": {
+        "quietStartup": false
+      },
+      "verbose": false
+    },
+    {
+      "id": "value-1-verbose-True",
+      "user": {
+        "quietStartup": false
+      },
+      "verbose": true
+    },
+    {
+      "id": "value-2-verbose-False",
+      "user": {
+        "quietStartup": "header"
+      },
+      "verbose": false
+    },
+    {
+      "id": "value-2-verbose-True",
+      "user": {
+        "quietStartup": "header"
+      },
+      "verbose": true
+    },
+    {
+      "id": "value-3-verbose-False",
+      "user": {
+        "quietStartup": null
+      },
+      "verbose": false
+    },
+    {
+      "id": "value-3-verbose-True",
+      "user": {
+        "quietStartup": null
+      },
+      "verbose": true
+    },
+    {
+      "id": "value-4-verbose-False",
+      "user": {
+        "quietStartup": 1
+      },
+      "verbose": false
+    },
+    {
+      "id": "value-4-verbose-True",
+      "user": {
+        "quietStartup": 1
+      },
+      "verbose": true
+    },
+    {
+      "id": "value-5-verbose-False",
+      "user": {
+        "quietStartup": "true"
+      },
+      "verbose": false
+    },
+    {
+      "id": "value-5-verbose-True",
+      "user": {
+        "quietStartup": "true"
+      },
+      "verbose": true
+    },
+    {
+      "id": "value-6-verbose-False",
+      "user": {
+        "quietStartup": "HEADER"
+      },
+      "verbose": false
+    },
+    {
+      "id": "value-6-verbose-True",
+      "user": {
+        "quietStartup": "HEADER"
+      },
+      "verbose": true
+    },
+    {
+      "id": "value-7-verbose-False",
+      "user": {
+        "quietStartup": {}
+      },
+      "verbose": false
+    },
+    {
+      "id": "value-7-verbose-True",
+      "user": {
+        "quietStartup": {}
+      },
+      "verbose": true
+    },
+    {
+      "id": "value-8-verbose-False",
+      "user": {
+        "quietStartup": []
+      },
+      "verbose": false
+    },
+    {
+      "id": "value-8-verbose-True",
+      "user": {
+        "quietStartup": []
+      },
+      "verbose": true
+    },
+    {
+      "id": "missing-verbose-False",
+      "user": {},
+      "verbose": false
+    },
+    {
+      "id": "missing-verbose-True",
+      "user": {},
+      "verbose": true
+    },
+    {
+      "id": "project-0-trusted-False",
+      "user": {
+        "quietStartup": true
+      },
+      "project": {
+        "quietStartup": "header"
+      },
+      "trusted": false,
+      "verbose": false
+    },
+    {
+      "id": "project-1-trusted-False",
+      "user": {
+        "quietStartup": "header"
+      },
+      "project": {
+        "quietStartup": false
+      },
+      "trusted": false,
+      "verbose": false
+    },
+    {
+      "id": "project-2-trusted-False",
+      "user": {
+        "quietStartup": "header"
+      },
+      "project": {
+        "quietStartup": true
+      },
+      "trusted": false,
+      "verbose": false
+    },
+    {
+      "id": "project-3-trusted-False",
+      "user": {
+        "quietStartup": "header"
+      },
+      "project": {
+        "quietStartup": null
+      },
+      "trusted": false,
+      "verbose": false
+    },
+    {
+      "id": "project-0-trusted-True",
+      "user": {
+        "quietStartup": true
+      },
+      "project": {
+        "quietStartup": "header"
+      },
+      "trusted": true,
+      "verbose": false
+    },
+    {
+      "id": "project-1-trusted-True",
+      "user": {
+        "quietStartup": "header"
+      },
+      "project": {
+        "quietStartup": false
+      },
+      "trusted": true,
+      "verbose": false
+    },
+    {
+      "id": "project-2-trusted-True",
+      "user": {
+        "quietStartup": "header"
+      },
+      "project": {
+        "quietStartup": true
+      },
+      "trusted": true,
+      "verbose": false
+    },
+    {
+      "id": "project-3-trusted-True",
+      "user": {
+        "quietStartup": "header"
+      },
+      "project": {
+        "quietStartup": null
+      },
+      "trusted": true,
+      "verbose": false
+    }
+  ],
+  "pi": {
+    "results": [
+      {
+        "id": "value-0-verbose-False",
+        "value": "true",
+        "header": false,
+        "details": false
+      },
+      {
+        "id": "value-0-verbose-True",
+        "value": "true",
+        "header": true,
+        "details": true
+      },
+      {
+        "id": "value-1-verbose-False",
+        "value": "false",
+        "header": true,
+        "details": true
+      },
+      {
+        "id": "value-1-verbose-True",
+        "value": "false",
+        "header": true,
+        "details": true
+      },
+      {
+        "id": "value-2-verbose-False",
+        "value": "header",
+        "header": true,
+        "details": false
+      },
+      {
+        "id": "value-2-verbose-True",
+        "value": "header",
+        "header": true,
+        "details": true
+      },
+      {
+        "id": "value-3-verbose-False",
+        "value": "false",
+        "header": true,
+        "details": true
+      },
+      {
+        "id": "value-3-verbose-True",
+        "value": "false",
+        "header": true,
+        "details": true
+      },
+      {
+        "id": "value-4-verbose-False",
+        "value": "false",
+        "header": true,
+        "details": true
+      },
+      {
+        "id": "value-4-verbose-True",
+        "value": "false",
+        "header": true,
+        "details": true
+      },
+      {
+        "id": "value-5-verbose-False",
+        "value": "false",
+        "header": true,
+        "details": true
+      },
+      {
+        "id": "value-5-verbose-True",
+        "value": "false",
+        "header": true,
+        "details": true
+      },
+      {
+        "id": "value-6-verbose-False",
+        "value": "false",
+        "header": true,
+        "details": true
+      },
+      {
+        "id": "value-6-verbose-True",
+        "value": "false",
+        "header": true,
+        "details": true
+      },
+      {
+        "id": "value-7-verbose-False",
+        "value": "false",
+        "header": true,
+        "details": true
+      },
+      {
+        "id": "value-7-verbose-True",
+        "value": "false",
+        "header": true,
+        "details": true
+      },
+      {
+        "id": "value-8-verbose-False",
+        "value": "false",
+        "header": true,
+        "details": true
+      },
+      {
+        "id": "value-8-verbose-True",
+        "value": "false",
+        "header": true,
+        "details": true
+      },
+      {
+        "id": "missing-verbose-False",
+        "value": "false",
+        "header": true,
+        "details": true
+      },
+      {
+        "id": "missing-verbose-True",
+        "value": "false",
+        "header": true,
+        "details": true
+      },
+      {
+        "id": "project-0-trusted-False",
+        "value": "true",
+        "header": false,
+        "details": false
+      },
+      {
+        "id": "project-1-trusted-False",
+        "value": "header",
+        "header": true,
+        "details": false
+      },
+      {
+        "id": "project-2-trusted-False",
+        "value": "header",
+        "header": true,
+        "details": false
+      },
+      {
+        "id": "project-3-trusted-False",
+        "value": "header",
+        "header": true,
+        "details": false
+      },
+      {
+        "id": "project-0-trusted-True",
+        "value": "header",
+        "header": true,
+        "details": false
+      },
+      {
+        "id": "project-1-trusted-True",
+        "value": "false",
+        "header": true,
+        "details": true
+      },
+      {
+        "id": "project-2-trusted-True",
+        "value": "true",
+        "header": false,
+        "details": false
+      },
+      {
+        "id": "project-3-trusted-True",
+        "value": "false",
+        "header": true,
+        "details": true
+      }
+    ],
+    "writes": [
+      {
+        "hideThinkingBlock": true,
+        "quietStartup": "header"
+      },
+      {
+        "hideThinkingBlock": true,
+        "quietStartup": true
+      },
+      {
+        "hideThinkingBlock": true,
+        "quietStartup": false
+      }
+    ],
+    "setting": {
+      "label": "Quiet startup",
+      "description": "Disable verbose printing at startup (header: keep only the startup header)",
+      "values": [
+        "true",
+        "header",
+        "false"
+      ]
+    }
+  },
+  "pisharp": {
+    "results": [
+      {
+        "id": "value-0-verbose-False",
+        "value": "true",
+        "header": false,
+        "details": false
+      },
+      {
+        "id": "value-0-verbose-True",
+        "value": "true",
+        "header": true,
+        "details": true
+      },
+      {
+        "id": "value-1-verbose-False",
+        "value": "false",
+        "header": true,
+        "details": true
+      },
+      {
+        "id": "value-1-verbose-True",
+        "value": "false",
+        "header": true,
+        "details": true
+      },
+      {
+        "id": "value-2-verbose-False",
+        "value": "header",
+        "header": true,
+        "details": false
+      },
+      {
+        "id": "value-2-verbose-True",
+        "value": "header",
+        "header": true,
+        "details": true
+      },
+      {
+        "id": "value-3-verbose-False",
+        "value": "false",
+        "header": true,
+        "details": true
+      },
+      {
+        "id": "value-3-verbose-True",
+        "value": "false",
+        "header": true,
+        "details": true
+      },
+      {
+        "id": "value-4-verbose-False",
+        "value": "false",
+        "header": true,
+        "details": true
+      },
+      {
+        "id": "value-4-verbose-True",
+        "value": "false",
+        "header": true,
+        "details": true
+      },
+      {
+        "id": "value-5-verbose-False",
+        "value": "false",
+        "header": true,
+        "details": true
+      },
+      {
+        "id": "value-5-verbose-True",
+        "value": "false",
+        "header": true,
+        "details": true
+      },
+      {
+        "id": "value-6-verbose-False",
+        "value": "false",
+        "header": true,
+        "details": true
+      },
+      {
+        "id": "value-6-verbose-True",
+        "value": "false",
+        "header": true,
+        "details": true
+      },
+      {
+        "id": "value-7-verbose-False",
+        "value": "false",
+        "header": true,
+        "details": true
+      },
+      {
+        "id": "value-7-verbose-True",
+        "value": "false",
+        "header": true,
+        "details": true
+      },
+      {
+        "id": "value-8-verbose-False",
+        "value": "false",
+        "header": true,
+        "details": true
+      },
+      {
+        "id": "value-8-verbose-True",
+        "value": "false",
+        "header": true,
+        "details": true
+      },
+      {
+        "id": "missing-verbose-False",
+        "value": "false",
+        "header": true,
+        "details": true
+      },
+      {
+        "id": "missing-verbose-True",
+        "value": "false",
+        "header": true,
+        "details": true
+      },
+      {
+        "id": "project-0-trusted-False",
+        "value": "true",
+        "header": false,
+        "details": false
+      },
+      {
+        "id": "project-1-trusted-False",
+        "value": "header",
+        "header": true,
+        "details": false
+      },
+      {
+        "id": "project-2-trusted-False",
+        "value": "header",
+        "header": true,
+        "details": false
+      },
+      {
+        "id": "project-3-trusted-False",
+        "value": "header",
+        "header": true,
+        "details": false
+      },
+      {
+        "id": "project-0-trusted-True",
+        "value": "header",
+        "header": true,
+        "details": false
+      },
+      {
+        "id": "project-1-trusted-True",
+        "value": "false",
+        "header": true,
+        "details": true
+      },
+      {
+        "id": "project-2-trusted-True",
+        "value": "true",
+        "header": false,
+        "details": false
+      },
+      {
+        "id": "project-3-trusted-True",
+        "value": "false",
+        "header": true,
+        "details": true
+      }
+    ],
+    "writes": [
+      {
+        "hideThinkingBlock": true,
+        "quietStartup": "header"
+      },
+      {
+        "hideThinkingBlock": true,
+        "quietStartup": true
+      },
+      {
+        "hideThinkingBlock": true,
+        "quietStartup": false
+      }
+    ],
+    "setting": {
+      "label": "Quiet startup",
+      "description": "Disable verbose printing at startup (header: keep only the startup header)",
+      "values": [
+        "true",
+        "header",
+        "false"
+      ]
+    }
+  },
+  "match": true
+}

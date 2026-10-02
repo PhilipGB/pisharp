@@ -2,7 +2,13 @@
 
 `TODO.md` is the concise implementation handoff. The feature matrix tracks scope, the detailed inventory records interfaces, and `execution-ledger.json` holds per-capability evidence. Normal CLI package-resource workflows and user-reachable visual interactions are in scope.
 
-## Current source and upstream audit — 2026-10-01
+## Current implementation — 2026-10-02
+
+Pi is at `3874b3e98983c70fa05fa193b675d42cfcb8b9f8`; all 53 commits after `955cc666` are classified. PiSharp `095c893a15f5fcdbea356d6c1cfbc57c8c4c5329` passes exact-head Linux CI [36994405262](https://github.com/PhilipGB/pisharp/actions/runs/36994405262), including all 1098 tests with zero skips. The current quiet-startup header-policy slice matches 28 paired settings/gating scenarios and 24 focused tests, including terminal startup and picker persistence. Format verification passes; warnings-as-errors build has zero warnings/errors; the full serial suite passes 1114/1114 with zero skips in 4m29s. Publication and exact-head CI are pending. Startup resource notices, exact header presentation/expansion and forced diagnostics remain open. Radius interactive onboarding follows the policy checkpoint; all remaining ledger capabilities still require verification.
+
+The checkpoint sections below retain historical source pins and counts. Current state is recorded above and in the ledger.
+
+## Historical source and upstream audit — 2026-10-01
 PiSharp `8931bd73b2e94e7831b1a054a54a8e60bb21aaf5` passed exact-head Linux CI [36904437406](https://github.com/PhilipGB/pisharp/actions/runs/36904437406): restore, format, warnings-as-errors build and 1,068/1,068 tests with zero skips. Current Pi `main` is `395315f4841ab5a090a33b8259f60b6df281c1ca`; all 41 commits after `955cc6665ee3986c6a033db52200779310d10dfd` are classified in the refreshed [upstream audit](parity/fixtures/upstream-delta-audit-2026-10-01.md). The audit has 13 `NEEDS_WORK` classifications, six resolved at published heads and seven open; the oldest open item is MCP OAuth credential isolation by server name and URL. The official MCP client conformance package/version and all three protocol modes are recorded in the execution ledger as a required deliverable. Broader parity remains incomplete.
 
 The old source-options, Bash-output and tool-batch checkpoint paragraphs are historical evidence; their shipped history remains in Git and their implementation/evidence remains in the parity inventory.

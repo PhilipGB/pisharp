@@ -32,7 +32,7 @@ public sealed class UserSettingsWriterTests
 
             Assert.True(settings.HideThinkingBlock);
             Assert.False(settings.BlockImages);
-            Assert.True(settings.QuietStartup);
+            Assert.Equal(QuietStartupMode.Silent, settings.QuietStartup);
             Assert.Equal("export PISHARP_PREFIX=kept", settings.ShellCommandPrefix);
             Assert.False(settings.Compaction?.Enabled);
             Assert.Equal(2048, settings.Compaction?.ReserveTokens);

@@ -393,7 +393,9 @@ var terminalClipboard = new TerminalClipboard(writeTerminalControl: value =>
 });
 string IdleFooter() => TerminalModelStatus.Format(selection.Provider.Id, selection.Model, thinking, conversation, conversationRun.ContextWindowTokens) + " · Ctrl+L models · Ctrl+P cycle · Shift+Tab thinking · Enter send";
 terminalScreen?.SetFooter(IdleFooter());
-if (editor is not null && (cli.Verbose || userSettings.QuietStartup != true)) Console.WriteLine($"PiSharp · {selection.Provider.Id}/{connection.Model} · thinking {thinking} · {currentDirectory}\n/model · /settings · /thinking · /scoped-models · /login · /logout · /tree · /fork · /new · /session · /hotkeys · /quit · Escape interrupts; Enter steers; Alt+Enter follows up\n");
+if (editor is not null)
+    new TerminalStartupPresentation(userSettings.QuietStartup, cli.Verbose)
+        .Write(Console.Out, selection.Provider.Id, connection.Model, thinking, currentDirectory);
 CancellationTokenSource? activeRun = null;
 Console.CancelKeyPress += (_, e) => { e.Cancel = true; activeRun?.Cancel(); };
 

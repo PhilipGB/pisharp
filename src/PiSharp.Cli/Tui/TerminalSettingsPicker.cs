@@ -22,7 +22,7 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, Func<IReadOn
         new("hideThinkingBlock", "Hide thinking", "Hide reasoning blocks in the interactive transcript."),
         new("images.blockImages", "Block images", "Replace provider-bound images with text while preserving saved history."),
         new("compaction.enabled", "Automatic compaction", "Summarize older whole turns before a prompt when the context budget is known."),
-        new("quietStartup", "Quiet startup", "Hide the startup banner on the next launch."),
+        new("quietStartup", "Quiet startup", "Disable verbose printing at startup (header: keep only the startup header)"),
         new("steeringMode", "Steering mode", "How queued steering messages are delivered during an agent turn."),
         new("followUpMode", "Follow-up mode", "How queued follow-up messages are delivered after an agent turn."),
         new("httpIdleTimeoutMs", "HTTP idle timeout", "Maximum wait for provider response headers or body data; 0 disables this idle limit."),
@@ -100,7 +100,7 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, Func<IReadOn
             }
             var valueOptions = Values(setting, currentValue).Select(value => new TerminalSelectionOption<string?>(
                 value.Key, value.Value, value.Label, value.Description)).ToArray();
-            var choice = editor.ShowSelectionList($"{setting.Label} · {DisplayValue(currentValue)}", valueOptions,
+            var choice = editor.ShowSelectionList($"{setting.Label} · {DisplayValue(currentValue, setting.Id)}", valueOptions,
                 KeyForValue(currentValue), emptyMessage: "No values available");
             if (choice is null)
             {
@@ -143,7 +143,7 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, Func<IReadOn
         "hideThinkingBlock" => settings.HideThinkingBlock?.ToString().ToLowerInvariant(),
         "images.blockImages" => settings.BlockImages?.ToString().ToLowerInvariant(),
         "compaction.enabled" => settings.Compaction?.Enabled?.ToString().ToLowerInvariant(),
-        "quietStartup" => settings.QuietStartup?.ToString().ToLowerInvariant(),
+        "quietStartup" => settings.QuietStartup?.ToSettingValue(),
         "steeringMode" => settings.SteeringMode?.ToSettingValue(),
         "followUpMode" => settings.FollowUpMode?.ToSettingValue(),
         "retry.provider.maxRetries" => settings.Retry?.Provider?.MaxRetries?.ToString(System.Globalization.CultureInfo.InvariantCulture),
@@ -157,6 +157,7 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, Func<IReadOn
     private static string DisplayValue(string? value, string? settingId = null)
     {
         if (value is null) return "inherit/default";
+        if (settingId == "quietStartup") return value;
         if (settingId == "markdown.codeBlockIndent")
             return value.Length == 0 ? "no prefix" : value.All(character => character == ' ')
                 ? $"{value.Length} space{(value.Length == 1 ? "" : "s")}"
@@ -177,7 +178,13 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, Func<IReadOn
         {
             ("__inherit", null, "Inherit / default", "Remove this override in the selected scope.")
         };
-        if (setting.Id == "defaultProjectTrust")
+        if (setting.Id == "quietStartup")
+        {
+            values.Add(("true", "true", "true", "Hide the startup header and details."));
+            values.Add(("header", "header", "header", "Keep only the startup header."));
+            values.Add(("false", "false", "false", "Show the startup header and details."));
+        }
+        else if (setting.Id == "defaultProjectTrust")
         {
             values.Add(("ask", "ask", "Ask", "Prompt when no explicit trust decision exists."));
             values.Add(("always", "always", "Always trust", "Trust protected resources by default."));

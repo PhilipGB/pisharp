@@ -196,11 +196,13 @@ The OAuth selector now displays “not configured” instead of “unconfigured�
 
 - **Pi files:** `packages/coding-agent/src/core/settings-manager.ts`, `src/index.ts`, `src/modes/interactive/{components/settings-selector.ts,interactive-mode.ts}`, settings docs and interactive-mode tests.
 - **Pi behavior:** `quietStartup` accepts `true`, `false` or `"header"`. Header mode keeps the startup header/version/key hints while suppressing the model-scope line and resource notices; `true` hides the full startup presentation.
-- **PiSharp mismatch:** `UserSettings.QuietStartup` is boolean-only and `Program` either hides or shows a combined banner/metadata string.
+- **Original PiSharp mismatch:** `UserSettings.QuietStartup` is boolean-only and `Program` either hides or shows a combined banner/metadata string.
 - **PiSharp files:** `src/PiSharp.Cli/UserSettings.cs`, `UserSettingsWriter.cs`, `Tui/TerminalSettingsPicker.cs`, `Program.cs`, and `tests/PiSharp.Tests/QuietStartupTests.cs` plus a CLI/PTY fixture.
 - **Fail-first evidence:** parse/write and render all three values; assert exact header, model metadata and resource-notice visibility at startup.
 - **Required implementation:** model the three-value setting through precedence, persistence and settings UI, and render the header separately from the gated metadata/notices.
 - **Validation/dependencies:** full solution validation and exact-head CI.
+
+- **Current implementation/evidence:** Quiet-startup parsing, trusted precedence, three-state persistence and header/details visibility match 28 current-Pi scenarios. Eight fail-first cases are fixed; 24 focused tests pass, including six fixed-dimension terminal launches and a real settings-picker save. Current Pi startup oracle tests pass 5/5 (30 unrelated cases deselected by the explicit filter). Full startup resource notices, header text/layout/ANSI, expansion, logo interactions and forced diagnostics remain open; this slice does not claim those surfaces match. See [the settings/gating fixture](quiet-startup-header-2026-10-02.md). Format verification passes; warnings-as-errors build has zero warnings/errors; the full serial suite passes 1114/1114 with zero skips in 4m29s. Publication and exact-head CI are pending. This delta remains `NEEDS_WORK` until the additional startup notice/presentation requirements are implemented.
 
 ### `7fd478a2e888ebc28869566f33a186303d372838` — `OUT_OF_SCOPE`
 
@@ -306,7 +308,7 @@ Pins the patched brace-expansion dependency in npm packaging/lockfiles without c
 
 ## Processing order
 
-MCP server-account isolation is published and exact-head CI verified. The active slice preserves deferred MCP loadouts and build shared terminal differential coverage for current auth/header presentation, including copy keys and easter eggs. Grammar Responses support must precede provider-switch replay verification. Codemode image generation precedes model/error guidance. Pastel themes, header-only startup, Radius onboarding, official MCP conformance and the full ledger remain open. Every slice requires fail-first coverage, current-Pi evidence, required local checks, push and exact-head CI before the next implementation.
+MCP server-account isolation is published and exact-head CI verified. The active slice preserves deferred MCP loadouts and build shared terminal differential coverage for current auth/header presentation, including copy keys and easter eggs. Grammar Responses support must precede provider-switch replay verification. Codemode image generation precedes model/error guidance. Pastel color policy is verified; header-only startup policy is implemented with broader startup notices/presentation still open. Radius onboarding, official MCP conformance and the full ledger remain open. Every slice requires fail-first coverage, current-Pi evidence, required local checks, push and exact-head CI before the next implementation.
 
 ### `3874b3e98983c70fa05fa193b675d42cfcb8b9f8` — `NEEDS_WORK`
 
@@ -315,4 +317,4 @@ MCP server-account isolation is published and exact-head CI verified. The active
 - **PiSharp mismatch:** the shared `AgentRunRetryPolicy` message classifier lacks this phrase, so a status-free capacity error ends the turn.
 - **Implementation slice:** add only the verified wording to the existing Pi-specific agent retry policy; retain the shared MAF execution path and existing budget/backoff/cancellation behavior. Dedicated fail-first and current-Pi lifecycle comparison are active.
 
-- **Current implementation/evidence:** only the capacity phrase is added to the existing shared retry classifier. Three tests failed first; focused tests pass 17/17 and current Pi retry tests pass 25/25. Six paired lifecycle scenarios match request context/counts and exact retry payloads, including backoff cancellation. Format verification and warnings-as-errors build (zero warnings/errors) pass; all 1098 tests pass with zero skips. Publication and exact-head CI are pending. See [the capacity fixture](provider-capacity-retry-2026-10-02.md).
+- **Current implementation/evidence:** only the capacity phrase is added to the existing shared retry classifier. Three tests failed first; focused tests pass 17/17 and current Pi retry tests pass 25/25. Six paired lifecycle scenarios match request context/counts and exact retry payloads, including backoff cancellation. Format verification and warnings-as-errors build (zero warnings/errors) pass; all 1098 tests pass with zero skips. Exact-head Linux CI 36994405262 passes on source 095c893a15f5fcdbea356d6c1cfbc57c8c4c5329, including all 1098 tests with zero skips. See [the capacity fixture](provider-capacity-retry-2026-10-02.md).
