@@ -1,8 +1,8 @@
 # Current Pi upstream delta audit — 2026-10-01
 
-Fresh fetch on 2026-10-02 confirms Pi `main` at `28eaccb8e87d075562593073282cc0774f2c2e3b`, ten commits after the prior audit head `395315f4841ab5a090a33b8259f60b6df281c1ca` and 51 after `955cc6665ee3986c6a033db52200779310d10dfd`. PiSharp fetched main is `d9f2c65f853472636c7d488e40bc1f48047b544d`. Every intervening commit is classified below. Historical validation records retain their original pins; they do not prove current full parity.
+Fresh fetch on 2026-10-02 confirms Pi `main` at `0495646a8322ff99ce40ac2f9e15f1f49f56bb11`, eleven commits after the prior audit head `395315f4841ab5a090a33b8259f60b6df281c1ca` and 52 after `955cc6665ee3986c6a033db52200779310d10dfd`. PiSharp fetched main is `d9f2c65f853472636c7d488e40bc1f48047b544d`. Every intervening commit is classified below. Historical validation records retain their original pins; they do not prove current full parity.
 
-Current classifications: 14 `OUT_OF_SCOPE`, 10 `NO_BEHAVIOR_CHANGE`, 22 `NEEDS_WORK`, 5 `MATCHED`. User-reachable visual effects, OAuth wording/callback presentation and package-resource CLI flows are in scope. Earlier exclusions for those surfaces are corrected. Grammar/custom-call replay, auth URL copying, current 3D interactions and Together metadata join the existing open queue.
+Current classifications: 14 `OUT_OF_SCOPE`, 11 `NO_BEHAVIOR_CHANGE`, 22 `NEEDS_WORK`, 5 `MATCHED`. User-reachable visual effects, OAuth wording/callback presentation and package-resource CLI flows are in scope. Earlier exclusions for those surfaces are corrected. Grammar/custom-call replay, auth URL copying, current 3D interactions and Together metadata join the existing open queue.
 
 ## Commit classifications
 
@@ -144,7 +144,7 @@ Changes the default task-panel visibility in the experimental durable TUI added 
 
 Adds a pinned official MCP client conformance suite, its baseline runner, and a CI job. It changes test coverage and CI only; it does not change Pi runtime behavior, so there is no coding-agent capability delta to port.
 
-### `5806068c26e55feefd1f5875bf05c0419ec5d912` — `NEEDS_WORK` (implemented; publication pending)
+### `5806068c26e55feefd1f5875bf05c0419ec5d912` — `NEEDS_WORK` (resolved at exact head `930bc2d020`)
 
 - **Pi files:** `packages/coding-agent/src/extensions/mcp/{oauth.ts,runtime.ts,cli.ts}` and `packages/coding-agent/test/mcp-oauth-store.test.ts`.
 - **Pi behavior:** OAuth credentials are isolated by normalized MCP server name and canonical URL, so two configured server names at the same URL can use different accounts. A legacy URL-only entry migrates to the first server that loads it; logout removes only that server's key (or its legacy entry).
@@ -154,7 +154,7 @@ Adds a pinned official MCP client conformance suite, its baseline runner, and a 
 - **Required implementation:** key storage and refresh coordination by normalized server name plus canonical URL, pass server identity through runtime/login/logout, and migrate legacy URL-only state deterministically without exposing credentials.
 - **Validation/dependencies:** full solution validation and exact-head CI; no runtime dependency. This is the oldest open upstream delta.
 
-- **Current implementation/evidence:** cache identity and refresh locking now use normalized server name plus URL. Legacy URL-only credentials atomically move to the first SDK loader; observation is nonmutating, and logout removes only the selected named entry (or its unclaimed legacy entry). Four fail-first behavioral regressions are fixed; 34/34 focused checks and six operation sequences against current Pi `28eaccb8` pass. See `mcp-credential-isolation-2026-10-02.json`. Current Pi store/refresh tests pass 8/8; format verification, zero-warning build and 1076/1076 PiSharp tests pass with zero skips. Exact-head CI is pending.
+- **Current implementation/evidence:** cache identity and refresh locking now use normalized server name plus URL. Legacy URL-only credentials atomically move to the first SDK loader; observation is nonmutating, and logout removes only the selected named entry (or its unclaimed legacy entry). Four fail-first behavioral regressions are fixed; 34/34 focused checks and six operation sequences against current Pi `28eaccb8` pass. See `mcp-credential-isolation-2026-10-02.json`. Current Pi store/refresh tests pass 8/8; format verification, zero-warning build and 1076/1076 PiSharp tests pass with zero skips. Exact-head Linux CI [36986049950](https://github.com/PhilipGB/pisharp/actions/runs/36986049950) passed all required lanes at `930bc2d020cac38d6875e1a040b1c057525734d2`, including 1076 tests with zero skips.
 
 ### `54c19a252997ee6607e2379b4c168a0adc93338e` — `NO_BEHAVIOR_CHANGE`
 
@@ -172,11 +172,13 @@ The OAuth selector now displays “not configured” instead of “unconfigured�
 
 - **Pi files:** `packages/coding-agent/src/core/agent-session.ts` and `packages/coding-agent/test/suite/agent-session-mcp.test.ts`.
 - **Pi behavior:** tool names restored from a saved session remain pending while MCP servers register; explicit deactivation clears pending names, and pending names that miss the next prompt do not reactivate unexpectedly. `/reload` carries the prior MCP tool loadout through the registry replacement.
-- **PiSharp mismatch:** `ToolRegistry.CreateSnapshot` drops unknown active names and `RefreshForRegistryChange` reconstructs only currently available names, so an MCP tool loaded by `tool_search` can be lost when restoring before server registration or during reload.
-- **PiSharp files:** `src/PiSharp.Runtime/Extensions/ToolRegistry.cs`, `PiAgent.cs`, MCP lifecycle/session restoration, and focused tool-loadout/search tests.
+- **Original PiSharp mismatch:** `ToolRegistry.CreateSnapshot` drops unknown active names and `RefreshForRegistryChange` reconstructs only currently available names, so an MCP tool loaded by `tool_search` can be lost when restoring before server registration or during reload.
+- **PiSharp files:** `Extensions/ToolLoadout.cs`, `PiAgent.cs`, `Sessions/ConversationToolState.cs` and `DeferredToolRestoreTests.cs`. The shared MAF session/function pipeline remains the agent foundation.
 - **Fail-first evidence:** delay MCP tool registration across session restore; cover `/reload`, explicit clear, and a pending tool absent by the next prompt boundary.
 - **Required implementation:** preserve unresolved selected names with explicit lifecycle semantics until registry registration or the defined clearing boundary.
 - **Validation/dependencies:** full solution validation and exact-head CI; independent of other queued deltas.
+
+- **Current implementation/evidence:** four original fail-first scenarios are fixed, as is a declaration-order mismatch found by the paired probe. Eight scenarios against Pi `0495646a` match ordered active names, provider declarations and persisted loadout names. Focused tests pass 34/34; current Pi MCP resume/reload tests pass 5/5 (39 unrelated tests deselected). Format verification, warnings-as-errors build (zero warnings/errors) and all 1087 tests pass with zero skips. Publication and exact-head CI are pending. See [the differential fixture](deferred-tool-restore-2026-10-02.md).
 
 ### `409e808f5834dc4f2f37b54abf24d3a2f6ecad75` — `NEEDS_WORK`
 
@@ -296,6 +298,10 @@ Provider and MCP sign-in screens display a hyperlink, platform click hint and co
 
 Together DeepSeek V4 Pro reasoning metadata now uses deepseek-ai/DeepSeek-V4-Pro-0813. PiSharp has no Together built-in catalog/profile, so this is part of the existing provider/model catalog gap. Port the configured provider model identity and high-only Together reasoning mapping with paired request fixtures.
 
+### `0495646a8322ff99ce40ac2f9e15f1f49f56bb11` — `NO_BEHAVIOR_CHANGE`
+
+Pins the patched brace-expansion dependency in npm packaging/lockfiles without changing coding-agent source interfaces. PiSharp uses its managed resource-pattern implementation and has no brace-expansion dependency to update. Full minimatch/brace-pattern equivalence remains open in the resource ledger.
+
 ## Processing order
 
-MCP server-account isolation is the active implementation slice; it is independent of the newly discovered deltas. Next preserve deferred MCP loadouts and build shared terminal differential coverage for current auth/header presentation, including copy keys and easter eggs. Grammar Responses support must precede provider-switch replay verification. Codemode image generation precedes model/error guidance. Pastel themes, header-only startup, Radius onboarding, official MCP conformance and the full ledger remain open. Every slice requires fail-first coverage, current-Pi evidence, required local checks, push and exact-head CI before the next implementation.
+MCP server-account isolation is published and exact-head CI verified. The active slice preserves deferred MCP loadouts and build shared terminal differential coverage for current auth/header presentation, including copy keys and easter eggs. Grammar Responses support must precede provider-switch replay verification. Codemode image generation precedes model/error guidance. Pastel themes, header-only startup, Radius onboarding, official MCP conformance and the full ledger remain open. Every slice requires fail-first coverage, current-Pi evidence, required local checks, push and exact-head CI before the next implementation.

@@ -33,6 +33,7 @@ public sealed class ConversationRun
     private readonly Queue<PendingRuntimeChange> _pendingRuntimeChanges = new();
     private readonly Queue<BashExecutionRecord> _pendingBashExecutions = new();
     private readonly ConversationCompactionCoordinator _compactionCoordinator;
+    private readonly ConversationToolState _toolState;
     private AgentSession _execution;
     private int _historyCount;
     private string _currentModel;
@@ -79,6 +80,7 @@ public sealed class ConversationRun
         _reasoningLevel = reasoningLevel;
         _promptDelivery = new PromptDeliveryController(_runtimeStateGate, steeringMode, followUpMode);
         Conversation = conversation;
+        _toolState = new ConversationToolState(agent, conversation);
         _execution = execution;
         _historyCount = conversation.ContextMessages().Count;
         _currentModel = conversation.Model;
@@ -90,7 +92,7 @@ public sealed class ConversationRun
         _compactionCoordinator = new ConversationCompactionCoordinator(Conversation, _agent,
             () => _autoCompaction, () => _keepRecentTokens, () => _pricing, _save,
             RestoreExecutionAsync,
-            (execution, count) => { RestoreToolLoadout(execution); _execution = execution; _historyCount = count; });
+            (execution, count) => { _toolState.Restore(execution); _execution = execution; _historyCount = count; });
     }
 
     public static async Task<ConversationRun> OpenAsync(PiAgent agent, ConversationSession conversation,
@@ -107,18 +109,11 @@ public sealed class ConversationRun
         if (autoCompaction is not null) _ = autoCompaction.TriggerTokens;
         if (conversation.RecoverIncomplete() && save is not null) await save(cancellationToken);
         var execution = await agent.RestoreHistoryAsync(conversation.ContextMessages(), cancellationToken);
-        IReadOnlyList<string>? restoredToolNames = null;
-        if (activeToolNamesOverride is not null)
-        {
-            restoredToolNames = activeToolNamesOverride.Distinct(StringComparer.Ordinal).ToArray();
-            agent.RestoreToolLoadout(execution, restoredToolNames);
-        }
-        else if (conversation.ActiveToolLoadout() is { } activeTools)
-            agent.RestoreToolLoadout(execution, activeTools);
-        if (conversation.ActiveCodemodeStore() is { } codemodeStore) agent.RestoreCodemodeStore(execution, codemodeStore);
+        var restoredToolNames = activeToolNamesOverride?.Distinct(StringComparer.Ordinal).ToArray();
         var run = new ConversationRun(agent, conversation, execution, save, autoCompaction, pricing, sessionFile, provider,
             reasoningLevel, retryPolicy ?? AgentRunRetryPolicy.Default, steeringMode, followUpMode,
             autoCompactionEnabled, keepRecentTokens, retryDelay, physicalContextResolver, providerApi);
+        run._toolState.Restore(execution, restoredToolNames);
         await run.RestorePhysicalContextPolicyAsync(cancellationToken);
         if (restoredToolNames is not null)
         {
@@ -145,16 +140,8 @@ public sealed class ConversationRun
     private async Task<AgentSession> RestoreExecutionAsync(IEnumerable<ChatMessage> messages, CancellationToken token)
     {
         var execution = await _agent.RestoreHistoryAsync(messages, token);
-        RestoreToolLoadout(execution);
+        _toolState.Restore(execution);
         return execution;
-    }
-
-    private void RestoreToolLoadout(AgentSession execution)
-    {
-        if (Conversation.ActiveToolLoadout() is { } activeTools)
-            _agent.RestoreToolLoadout(execution, activeTools);
-        if (Conversation.ActiveCodemodeStore() is { } codemodeStore)
-            _agent.RestoreCodemodeStore(execution, codemodeStore);
     }
 
     /// <summary>Queue guidance ahead of follow-up work on the active application run.</summary>
@@ -649,14 +636,8 @@ public sealed class ConversationRun
             {
                 lock (_runtimeStateGate) Conversation.AppendUsage(nestedUsage);
             }
-            if (item.Type == "tool_loadout_changed" && item.ToolLoadoutNames is { } activeTools)
-            {
-                lock (_runtimeStateGate) Conversation.AppendToolLoadout(activeTools);
-            }
-            if (item.Type == "codemode_store_changed" && item.CodemodeStore is { } codemodeStore)
-            {
-                lock (_runtimeStateGate) Conversation.AppendCodemodeStore(codemodeStore);
-            }
+            if (item.Type is "tool_loadout_changed" or "codemode_store_changed")
+                lock (_runtimeStateGate) _toolState.Observe(item);
             if (item.Type is "turn_failed" or "turn_interrupted")
             {
                 interruptionType = item.Type;
@@ -826,10 +807,7 @@ public sealed class ConversationRun
                     if (_save is not null) await _save(token);
                     onEvent?.Invoke(new("context_compacted_in_flight", Text: "Continuation request summarized; canonical history was not changed."));
                 });
-            if (Conversation.ActiveToolLoadout() is { } activeToolNames)
-                _agent.RestoreToolLoadout(_execution, activeToolNames);
-            if (Conversation.ActiveCodemodeStore() is { } codemodeStore)
-                _agent.RestoreCodemodeStore(_execution, codemodeStore);
+            lock (_runtimeStateGate) _toolState.BeginRun(_execution);
             var updates = promptMessage is null
                 ? _agent.RunStreamingContinuationDurableAsync(_execution, cancellationToken, durable,
                     Observe, TakeSteeringForProvider, inFlightBudget is null ? null : inFlightBudget.ProjectAsync,

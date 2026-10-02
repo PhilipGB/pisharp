@@ -1,0 +1,327 @@
+{
+  "piSha": "0495646a8322ff99ce40ac2f9e15f1f49f56bb11",
+  "normalization": "Compare ordered active names before and after registration, provider request tool names and persisted loadout names; omit unrelated messages, metadata and IDs.",
+  "scenarios": [
+    "resume",
+    "additive",
+    "replacement",
+    "prompt",
+    "cancel",
+    "excluded",
+    "allowed",
+    "reload"
+  ],
+  "pi": [
+    {
+      "id": "resume",
+      "before": [
+        "base"
+      ],
+      "registered": [
+        "base",
+        "mcp__docs__search"
+      ],
+      "requests": [
+        [
+          "base",
+          "mcp__docs__search"
+        ]
+      ],
+      "persisted": [
+        "base",
+        "mcp__docs__search"
+      ]
+    },
+    {
+      "id": "additive",
+      "before": [
+        "base"
+      ],
+      "registered": [
+        "base",
+        "added",
+        "mcp__docs__search"
+      ],
+      "requests": [
+        [
+          "base",
+          "mcp__docs__search",
+          "added"
+        ]
+      ],
+      "persisted": [
+        "base",
+        "mcp__docs__search",
+        "added"
+      ]
+    },
+    {
+      "id": "replacement",
+      "before": [
+        "base"
+      ],
+      "registered": [
+        "added"
+      ],
+      "requests": [
+        [
+          "added"
+        ]
+      ],
+      "persisted": [
+        "added"
+      ]
+    },
+    {
+      "id": "prompt",
+      "before": [
+        "base"
+      ],
+      "registered": [
+        "base"
+      ],
+      "requests": [
+        [
+          "base"
+        ],
+        [
+          "base"
+        ]
+      ],
+      "persisted": [
+        "base"
+      ]
+    },
+    {
+      "id": "cancel",
+      "before": [
+        "base"
+      ],
+      "registered": [
+        "base"
+      ],
+      "requests": [
+        [
+          "base"
+        ],
+        [
+          "base"
+        ]
+      ],
+      "persisted": [
+        "base"
+      ]
+    },
+    {
+      "id": "excluded",
+      "before": [
+        "base"
+      ],
+      "registered": [
+        "base"
+      ],
+      "requests": [
+        [
+          "base"
+        ]
+      ],
+      "persisted": [
+        "base"
+      ]
+    },
+    {
+      "id": "allowed",
+      "before": [
+        "base"
+      ],
+      "registered": [
+        "base"
+      ],
+      "requests": [
+        [
+          "base"
+        ]
+      ],
+      "persisted": [
+        "base"
+      ]
+    },
+    {
+      "id": "reload",
+      "before": [
+        "base"
+      ],
+      "registered": [
+        "base",
+        "mcp__docs__search"
+      ],
+      "requests": [
+        [
+          "base",
+          "mcp__docs__search"
+        ]
+      ],
+      "persisted": [
+        "base",
+        "mcp__docs__search"
+      ]
+    }
+  ],
+  "pisharp": [
+    {
+      "id": "resume",
+      "before": [
+        "base"
+      ],
+      "registered": [
+        "base",
+        "mcp__docs__search"
+      ],
+      "requests": [
+        [
+          "base",
+          "mcp__docs__search"
+        ]
+      ],
+      "persisted": [
+        "base",
+        "mcp__docs__search"
+      ]
+    },
+    {
+      "id": "additive",
+      "before": [
+        "base"
+      ],
+      "registered": [
+        "base",
+        "added",
+        "mcp__docs__search"
+      ],
+      "requests": [
+        [
+          "base",
+          "mcp__docs__search",
+          "added"
+        ]
+      ],
+      "persisted": [
+        "base",
+        "mcp__docs__search",
+        "added"
+      ]
+    },
+    {
+      "id": "replacement",
+      "before": [
+        "base"
+      ],
+      "registered": [
+        "added"
+      ],
+      "requests": [
+        [
+          "added"
+        ]
+      ],
+      "persisted": [
+        "added"
+      ]
+    },
+    {
+      "id": "prompt",
+      "before": [
+        "base"
+      ],
+      "registered": [
+        "base"
+      ],
+      "requests": [
+        [
+          "base"
+        ],
+        [
+          "base"
+        ]
+      ],
+      "persisted": [
+        "base"
+      ]
+    },
+    {
+      "id": "cancel",
+      "before": [
+        "base"
+      ],
+      "registered": [
+        "base"
+      ],
+      "requests": [
+        [
+          "base"
+        ],
+        [
+          "base"
+        ]
+      ],
+      "persisted": [
+        "base"
+      ]
+    },
+    {
+      "id": "excluded",
+      "before": [
+        "base"
+      ],
+      "registered": [
+        "base"
+      ],
+      "requests": [
+        [
+          "base"
+        ]
+      ],
+      "persisted": [
+        "base"
+      ]
+    },
+    {
+      "id": "allowed",
+      "before": [
+        "base"
+      ],
+      "registered": [
+        "base"
+      ],
+      "requests": [
+        [
+          "base"
+        ]
+      ],
+      "persisted": [
+        "base"
+      ]
+    },
+    {
+      "id": "reload",
+      "before": [
+        "base"
+      ],
+      "registered": [
+        "base",
+        "mcp__docs__search"
+      ],
+      "requests": [
+        [
+          "base",
+          "mcp__docs__search"
+        ]
+      ],
+      "persisted": [
+        "base",
+        "mcp__docs__search"
+      ]
+    }
+  ],
+  "match": true
+}

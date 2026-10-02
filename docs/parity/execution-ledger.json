@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "plan_received": true,
-  "source_note": "Fresh fetch on 2026-10-02 confirms Pi `main` at `28eaccb8e87d075562593073282cc0774f2c2e3b`, ten commits after the prior audit head `395315f4841ab5a090a33b8259f60b6df281c1ca` and 51 after `955cc6665ee3986c6a033db52200779310d10dfd`. PiSharp fetched main is `d9f2c65f853472636c7d488e40bc1f48047b544d`. Every intervening commit is classified below. Historical validation records retain their original pins; they do not prove current full parity.  Current classifications: 14 `OUT_OF_SCOPE`, 10 `NO_BEHAVIOR_CHANGE`, 22 `NEEDS_WORK`, 5 `MATCHED`. User-reachable visual effects, OAuth wording/callback presentation and package-resource CLI flows are in scope. Earlier exclusions for those surfaces are corrected. Grammar/custom-call replay, auth URL copying, current 3D interactions and Together metadata join the existing open queue. Audit corrections accompany the MCP credential implementation; no overall parity claim.",
+  "source_note": "Current Pi 0495646a8322ff99ce40ac2f9e15f1f49f56bb11: all 52 commits after 955cc666 classified with visible interactions in scope. PiSharp 930bc2d020cac38d6875e1a040b1c057525734d2 passed exact-head Linux CI 36986049950 with 1076/1076 tests, zero skips. Deferred MCP resume/reload restoration now matches eight paired scenarios against current Pi; format verification, zero-warning build and all 1087 tests pass with zero skips. Publication and exact-head CI are pending. All 181 tracked capabilities are required completion items. Broader feature/interaction/visual parity remains incomplete.",
   "baseline": "earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035",
   "required_ids": [
     "feature-agent-multi-turn-and-streaming",
@@ -176,7 +176,15 @@
     "provider-responses-grammar-tools",
     "tui-current-easter-eggs",
     "tui-auth-url-copy",
-    "provider-together-catalog"
+    "provider-together-catalog",
+    "rpc-extension-command-prompt",
+    "provider-api-azure-openai-responses",
+    "provider-api-openai-codex-responses",
+    "provider-auth-openai-codex-oauth",
+    "provider-api-google-genai",
+    "provider-api-google-vertex",
+    "extensions-builtin-resource-loading",
+    "mcp-client-conformance"
   ],
   "final_audit": {
     "complete": false,
@@ -3414,14 +3422,16 @@
         "Support session-scoped active tools, prepare-loadout description/declaration changes and transcript persistence across resume/fork"
       ],
       "implementation": [
-        "src/PiSharp.Runtime/Extensions/ToolRegistry.cs defines five exposure states, immutable registered/callable/declared snapshots, atomic session loadouts, activation defaults, namespaces and prepare-loadout description/declaration projections.",
-        "PiSharpToolExecutionContext changes the active loadout; ConversationRun persists active names as tree events and restores the selected branch state; ConversationSession and PiJsonlSessionInterchange preserve loadout changes through Pi JSONL export/import and resume.",
-        "DurableToolFunction rejects invocations outside the active/callable view. ToolSelectionTests cover branch navigation, export/import and resume; full local suite passes 821/821."
+        "src/PiSharp.Runtime/Extensions/ToolRegistry.cs defines five exposure states, immutable registered/callable/declared snapshots, activation defaults, namespaces and prepare-loadout projections. ToolLoadout.cs owns atomic session selections, restored pending names and transcript declaration order.",
+        "PiSharpToolExecutionContext changes the active loadout; ConversationToolState restores branch-local tool/store state and persists current selections at prompt boundaries; ConversationSession and PiJsonlSessionInterchange preserve changes through Pi JSONL export/import and resume.",
+        "DurableToolFunction rejects invocations outside the active/callable view. ToolSelectionTests cover branch navigation, export/import and resume; full local suite passes 821/821.",
+        "Restored unknown tool names remain pending until registration, explicit deactivation or the next prompt. Reload carries the previous selection into the new registry. Pure additions retain pending names. Shared MAF requests preserve transcript declaration order, and prompt expiry persists the current loadout so recovery/resume cannot rearm missing tools."
       ],
       "evidence": [
         "Current Pi loadout, nested-call and built-in extension resource contracts were refreshed at 4259686d9290c0d73ae7192b796aee3e530a9779. The targeted tests added/changed by the current upstream refresh pass 7/7 (172 unrelated tests filtered).",
         "PiSharp ToolLoadoutTests and ToolSelectionTests plus the complete suite pass locally: 821 passed, 0 failed, 0 skipped; format verification and warnings-as-errors build pass.",
-        "Exact PiSharp head ae05045b105bf23bee228dc6238c415d8978d4fa passes Linux CI run 36549801185: restore, format, warnings-as-errors build (0 warnings/errors), and 821/821 tests (0 skipped)."
+        "Exact PiSharp head ae05045b105bf23bee228dc6238c415d8978d4fa passes Linux CI run 36549801185: restore, format, warnings-as-errors build (0 warnings/errors), and 821/821 tests (0 skipped).",
+        "DeferredToolRestoreTests includes resume, registry/reload gaps, additive/replacing selections, exclusions/allowed/no-tools, cancellation and transcript declaration order. Eight paired current-Pi/PiSharp scenarios match ordered selections, provider declarations and persisted loadout names at Pi 0495646a. See docs/parity/fixtures/deferred-tool-restore-2026-10-02.md. Broader parity remains in progress. Format verification and zero-warning build pass; full local tests pass 1087/1087 with zero skips. Exact-head CI is pending."
       ],
       "dependencies": []
     },
@@ -3562,7 +3572,8 @@
       "implementation": [
         "McpConfiguration loads global and trusted-project mcp.json with project precedence, enabled flags, exposure overrides, transport settings and bounded timeouts. McpRuntime uses the official C# SDK for stdio and Streamable HTTP, expands environment references without logging credential values, and registers tools and resource operations in the existing extension catalog. Clients are disposed with the extension lease. HTTP servers without an Authorization header use SDK OAuth with a noninteractive startup callback; explicit CLI login uses a loopback authorization-code callback, and logout deletes server-name/resource-bound tokens. A private atomic mcp-auth.json cache persists SDK token and client registration fields. Local CLI add/list/remove uses an atomic config editor with same-process and interprocess locking; CLI status probes servers without selecting a chat model.",
         "Current Pi deltas 1c7e7df (MCP namespace discovery) and 7c9fe664 (OAuth client naming) are implemented and exact-head verified: OAuth source 336be83135a0b18393bfaa41f7f826a34314f6eb / CI 36756672893. The loopback registration fixture verifies custom and default pi client names; configuration/CLI validation and secret-safe diagnostics are covered. Direct tools retain a bounded initial wait; the first prompt no longer waits for indirect servers, and named Codemode/tool-search/resource work waits for only the pending servers it requires. A delayed stdio fixture plus a real provider loop verifies the first turn proceeds before connection and later request instructions include the connected-server summary. CLI status still has a separate bounded all-server wait. Focused startup/provider-loop/Codemode tests pass; full solution tests pass 1014/1014 with zero skips, format and warnings-as-errors build pass; source f1dc7e2e562a4e367de59dd62aa49796359db537 passed exact-head CI 36766119204. See the 2026-09-30 upstream delta fixture.",
-        "McpTokenCache keys credentials and refresh coordination by mcp__<normalized-name>|<absolute-resource-url>. SDK loads atomically claim URL-only legacy credentials; token observation does not migrate; logout prefers the named key and leaves other accounts intact. Cache persistence is extracted from OAuth settings into its own feature component."
+        "McpTokenCache keys credentials and refresh coordination by mcp__<normalized-name>|<absolute-resource-url>. SDK loads atomically claim URL-only legacy credentials; token observation does not migrate; logout prefers the named key and leaves other accounts intact. Cache persistence is extracted from OAuth settings into its own feature component.",
+        "Restored unknown tool names remain pending until registration, explicit deactivation or the next prompt. Reload carries the previous selection into the new registry. Pure additions retain pending names. Shared MAF requests preserve transcript declaration order, and prompt expiry persists the current loadout so recovery/resume cannot rearm missing tools."
       ],
       "evidence": [
         "Current Pi MCP tools share exposure, nested execution, hooks and extension registration; builtin:mcp is resolved after trust at 4259686d9290c0d73ae7192b796aee3e530a9779. A refreshed source/test audit at 02eed88fd8912e54a804ddebd409e2e4c08ac5ef confirms Pi MCP lifecycle semantics and the /mcp manager; the upstream MCP extension/command/OAuth tests pass 28/28 at this source pin.",
@@ -3576,7 +3587,8 @@
         "Fail-first OAuth authorization-server fixture showed custom oauth.clientName was rejected and default DCR omitted client_name. Loopback cases verify Claude Code and default pi on every registration; CLI saves --oauth-client-name; invalid blank/non-string config is rejected without exposing clientSecret. Focused OAuth/config/CLI 17/17; format and warnings-as-errors build clean; full suite 1006/1006, zero skipped; exact-head Linux CI 36756672893 passes restore, format, warnings-as-errors build and 1006/1006 tests.",
         "Fail-first delayed stdio/provider-loop fixture proves an indirect MCP server no longer holds the first provider call; later provider requests include its first-line summary. Named Codemode waits, tool-search/resource waits, bounded direct startup, cancellation cleanup and separate pisharp mcp list status wait are covered. Full solution suite passes 1014/1014 with zero skips; source f1dc7e2e562a4e367de59dd62aa49796359db537 passed exact-head Linux CI 36766119204.",
         "Historical URL-only credential gap (5806068c) is now implemented and locally verified by current-Pi differential evidence. The required official client-conformance suite is pinned by current Pi at @modelcontextprotocol/conformance@0.2.0-alpha.11 for 2025-03-26, 2025-06-18 and 2025-11-25; PiSharp execution/baseline is not started.",
-        "McpCredentialIsolationTests initially failed four cases: account overwrite, logout removing another account, shared legacy state, and twelve legacy winners. After the fix, 34/34 focused account/OAuth checks pass. Six operation sequences match current Pi 28eaccb8 exactly for token pairs, return values and persisted keys in fixtures/mcp-credential-isolation-2026-10-02.json. Current Pi store/refresh tests pass 8/8. Format verification, warnings-as-errors build (zero warnings/errors) and all 1076 PiSharp tests pass with zero skips; exact-head publication is pending."
+        "McpCredentialIsolationTests initially failed four cases: account overwrite, logout removing another account, shared legacy state, and twelve legacy winners. After the fix, 34/34 focused account/OAuth checks pass. Six operation sequences match current Pi 28eaccb8 exactly for token pairs, return values and persisted keys in fixtures/mcp-credential-isolation-2026-10-02.json. Current Pi store/refresh tests pass 8/8. Format verification, warnings-as-errors build (zero warnings/errors) and all 1076 PiSharp tests pass with zero skips; exact-head Linux CI 36986049950 passes at 930bc2d020cac38d6875e1a040b1c057525734d2 with 1076/1076 tests and zero skips.",
+        "DeferredToolRestoreTests includes resume, registry/reload gaps, additive/replacing selections, exclusions/allowed/no-tools, cancellation and transcript declaration order. Eight paired current-Pi/PiSharp scenarios match ordered selections, provider declarations and persisted loadout names at Pi 0495646a. See docs/parity/fixtures/deferred-tool-restore-2026-10-02.md. Broader parity remains in progress. Format verification and zero-warning build pass; full local tests pass 1087/1087 with zero skips. Exact-head CI is pending."
       ],
       "dependencies": [
         "tool-exposure-loadout",
@@ -3805,20 +3817,20 @@
   ],
   "upstream_delta_audit": {
     "source_pin": "955cc6665ee3986c6a033db52200779310d10dfd",
-    "source_head": "28eaccb8e87d075562593073282cc0774f2c2e3b",
-    "commit_count": 51,
+    "source_head": "0495646a8322ff99ce40ac2f9e15f1f49f56bb11",
+    "commit_count": 52,
     "classifications": {
       "OUT_OF_SCOPE": 14,
-      "NO_BEHAVIOR_CHANGE": 10,
+      "NO_BEHAVIOR_CHANGE": 11,
       "NEEDS_WORK": 22,
       "MATCHED": 5
     },
     "fixture": "docs/parity/fixtures/upstream-delta-audit-2026-10-01.md",
-    "next": "mcp-oauth-credentials-per-server-name-and-url",
-    "current_item": "5806068c26e55feefd1f5875bf05c0419ec5d912",
-    "current_item_status": "local_verified",
-    "current_item_local_evidence": "Four fail-first behavioral failures; 34/34 focused tests, 8/8 current-Pi store/refresh oracle tests, six matching paired credential sequences, format verification, zero-warning build and 1076/1076 full tests (zero skips). Exact-head publication pending.",
-    "next_after_ci": "c662ec7e374563bd549dc35f47bac52dcc4bed88",
+    "next": "mcp-deferred-tool-loadout-restore",
+    "current_item": "c662ec7e374563bd549dc35f47bac52dcc4bed88",
+    "current_item_status": "local_verified_pending_ci",
+    "current_item_local_evidence": "Four original PiSharp regression scenarios failed first; an additional declaration-order mismatch failed after current-Pi comparison. All eight paired scenarios now match ordered active names, provider declarations and persisted loadouts at Pi 0495646a. Focused tests pass 34/34, zero skipped; current Pi MCP resume/reload oracle tests pass 5/5 (39 unrelated cases deselected). See docs/parity/fixtures/deferred-tool-restore-2026-10-02.md. Final format verification and warnings-as-errors build pass; the serial full suite passes 1087/1087 with zero skips (4m32s). Publication and exact-head CI are pending.",
+    "next_after_ci": "409e808f5834dc4f2f37b54abf24d3a2f6ecad75",
     "completed": [
       "65117e31f242daa8e0a17dbd2810f7bb92bf4087",
       "7a11fe1c723b942fa093edb8b00f051ddb9b6627",
@@ -3826,12 +3838,13 @@
       "17f3dccbef6c56cbc8cee73dbcfe2bba4f8734f9",
       "8ce69e9d2b171d173fe4b6b2b6256f1f4411e69d",
       "41169ba2af7f5bd5c97237633879117bc3fa9cd9",
-      "0c453048bd4bb699b90463d9423c382d1787087f"
+      "0c453048bd4bb699b90463d9423c382d1787087f",
+      "5806068c26e55feefd1f5875bf05c0419ec5d912"
     ],
-    "ci_run": "36904437406",
-    "latest_published_source_head": "8931bd73b2e94e7831b1a054a54a8e60bb21aaf5",
+    "ci_run": "36986049950",
+    "latest_published_source_head": "930bc2d020cac38d6875e1a040b1c057525734d2",
     "latest_published_ci_runs": [
-      "36904437406"
+      "36986049950"
     ],
     "official_mcp_conformance": {
       "package": "@modelcontextprotocol/conformance@0.2.0-alpha.11",

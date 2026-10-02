@@ -151,7 +151,9 @@ public sealed class PiAgent
     }
 
     internal void RestoreToolLoadout(AgentSession session, IEnumerable<string> activeToolNames) =>
-        GetToolLoadout(session).SetActiveTools(activeToolNames);
+        GetToolLoadout(session).RestoreActiveTools(activeToolNames.Where(name =>
+            !_excludedExtensionTools.Contains(name) && (_selectedExtensionTools is null
+                ? !_noExtensionTools : _selectedExtensionTools.Contains(name, StringComparer.Ordinal))));
 
     internal void RestoreCodemodeStore(AgentSession session, IReadOnlyDictionary<string, System.Text.Json.JsonElement> values) =>
         GetToolLoadout(session).SetCodemodeStore(values);
@@ -284,9 +286,9 @@ public sealed class PiAgent
 
     private IReadOnlyList<AITool> GetToolsForRequest()
     {
-        var snapshot = Volatile.Read(ref _currentToolLoadout)?.Snapshot;
-        if (snapshot is null) return [];
-        return Array.AsReadOnly<AITool>(snapshot.Declared.Select(declaration =>
+        var declarations = Volatile.Read(ref _currentToolLoadout)?.GetDeclarationsForRequest();
+        if (declarations is null) return [];
+        return Array.AsReadOnly<AITool>(declarations.Select(declaration =>
         {
             var function = _runtimeToolFunctions[declaration.Registration.Function.Name];
             return string.Equals(declaration.Description, function.Description, StringComparison.Ordinal)
@@ -468,7 +470,9 @@ public sealed class PiAgent
         try
         {
             Interlocked.CompareExchange(ref _systemMessageTimestamp, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), 0);
-            Volatile.Write(ref _currentToolLoadout, GetToolLoadout(session));
+            var loadout = GetToolLoadout(session);
+            loadout.BeginRun();
+            Volatile.Write(ref _currentToolLoadout, loadout);
             _active = durable;
             _events = onEvent;
             _takeSteering = takeSteering;
