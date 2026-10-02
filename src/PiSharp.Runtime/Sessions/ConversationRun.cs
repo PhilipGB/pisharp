@@ -636,7 +636,8 @@ public sealed class ConversationRun
             {
                 lock (_runtimeStateGate) Conversation.AppendUsage(nestedUsage);
             }
-            if (item.Type is "tool_loadout_changed" or "codemode_store_changed")
+            if (item.Type is "tool_loadout_changed" or "codemode_store_changed" or
+                "model_request_completed" or "model_request_failed" or "model_request_interrupted")
                 lock (_runtimeStateGate) _toolState.Observe(item);
             if (item.Type is "turn_failed" or "turn_interrupted")
             {

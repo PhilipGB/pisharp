@@ -14,7 +14,8 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
     Func<bool>? getSupportsImages = null, IProviderToolCallDeltaSource? toolCallDeltaSource = null,
     Func<IReadOnlyList<AITool>>? getToolsForRequest = null, RoutedChatClient? routedChatClient = null,
     Func<string?>? getAdditionalSystemInstructions = null,
-    Func<IReadOnlyList<ChatMessage>, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? transformContext = null)
+    Func<IReadOnlyList<ChatMessage>, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? transformContext = null,
+    Func<IReadOnlyList<ChatMessage>, ChatOptions, System.Text.Json.JsonElement?>? projectToolTranscript = null)
     : DelegatingChatClient(inner)
 {
     public override async Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages,
@@ -29,7 +30,8 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
         VirtualModelFailedRequest? failedRequest = null;
         for (var retries = 0; ; retries++)
         {
-            var requestOptions = AddRouteHint(options, routeReason, failedRequest, overflowRecovered);
+            var requestOptions = ApplyToolTranscript(requestMessages,
+                AddRouteHint(options, routeReason, failedRequest, overflowRecovered));
             try
             {
                 var response = await base.GetResponseAsync(requestMessages, requestOptions, cancellationToken);
@@ -75,7 +77,8 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
         VirtualModelFailedRequest? failedRequest = null;
         for (var retries = 0; ; retries++)
         {
-            var requestOptions = AddRouteHint(options, routeReason, failedRequest, overflowRecovered);
+            var requestOptions = ApplyToolTranscript(requestMessages,
+                AddRouteHint(options, routeReason, failedRequest, overflowRecovered));
             var ended = false;
             var producedOutput = false;
             Exception? failure = null;
@@ -314,7 +317,7 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
 
         foreach (var message in messages)
         {
-            if (message.Role != ChatRole.Tool && pendingCallIds.Count > 0)
+            if (message.Role != ChatRole.Tool && message.Role != ChatRole.System && pendingCallIds.Count > 0)
                 AppendMissingResults();
 
             projected.Add(message);
@@ -523,5 +526,17 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
                 ? additionalInstructions
                 : requestOptions.Instructions + "\n\n" + additionalInstructions;
         return requestOptions;
+    }
+
+    private ChatOptions? ApplyToolTranscript(IReadOnlyList<ChatMessage> messages, ChatOptions? options)
+    {
+        if (projectToolTranscript is null) return options;
+        var projected = options?.Clone() ?? new ChatOptions();
+        if (projectToolTranscript(messages, projected) is { } transcript)
+        {
+            projected.AdditionalProperties ??= new();
+            projected.AdditionalProperties["pisharp.toolTranscript"] = transcript;
+        }
+        return projected;
     }
 }

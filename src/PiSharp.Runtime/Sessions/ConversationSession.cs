@@ -590,6 +590,7 @@ public sealed class ConversationSession
             throw new InvalidDataException($"Incomplete chat record at {id}.");
         var message = record.Message.Deserialize<ChatMessage>(AIJsonUtilities.DefaultOptions)
             ?? throw new InvalidDataException($"Missing message at {id}.");
+        StoredToolResultReplay.Restore(message);
         foreach (var error in record.Errors)
         {
             if (error.Index < 0 || error.Index >= message.Contents.Count) throw new InvalidDataException($"Invalid tool failure at {id}.");

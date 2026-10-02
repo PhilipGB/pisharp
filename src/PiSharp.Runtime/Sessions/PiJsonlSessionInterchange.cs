@@ -567,13 +567,16 @@ public static class PiJsonlSessionInterchange
                 PiSharp.Runtime.Tools.ToolResultOutput.TryReadContract(preserved, out var contract))
                 return new ChatMessage(ChatRole.Tool, [new FunctionResultContent(callId, contract)]);
             var toolContent = contentOverride ?? (TryProperty(message, "content", out var toolValue) ? toolValue : default);
-            var toolResult = new FunctionResultContent(callId, ReadContent(toolContent));
+            var toolParts = ReadContent(toolContent);
+            var toolResult = new FunctionResultContent(callId, toolParts.All(part => part is TextContent)
+                ? string.Join('\n', toolParts.OfType<TextContent>().Select(part => part.Text)) : toolParts);
             if (BoolProperty(message, "isError")) toolResult.Exception = new ToolFailureException("Pi session records a failed tool result.");
             return new ChatMessage(ChatRole.Tool, [toolResult]);
         }
 
         var content = contentOverride ?? (TryProperty(message, "content", out var messageContent) ? messageContent : default);
         var result = new ChatMessage(role, ReadContent(content, role == ChatRole.Assistant));
+        if (role == ChatRole.System) SystemMessageTranscript.ImportMetadata(result, message);
         if (role == ChatRole.Assistant)
         {
             var properties = new AdditionalPropertiesDictionary();
@@ -783,6 +786,7 @@ public static class PiJsonlSessionInterchange
             }
         };
         var messageObject = exported["message"]!.AsObject();
+        if (role == "system") SystemMessageTranscript.ExportMetadata(message, messageObject);
         if (role == "assistant")
         {
             messageObject["provider"] = MessageProperty(message, "pisharp.provider") ?? session.Provider;

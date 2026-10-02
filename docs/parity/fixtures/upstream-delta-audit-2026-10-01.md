@@ -324,9 +324,9 @@ MCP server-account isolation is published and exact-head CI verified. The active
 
 - **Pi files:** `packages/ai/src/api/anthropic-messages.ts`, `types.ts`, `utils/transcript.ts`, `test/transcript-tool-changes.test.ts` and Anthropic SDK lockfiles.
 - **Observable behavior:** capable Anthropic models request `inline-tools-2026-09-15`. Initial tools and the deferred placeholder remain fixed at request level; later tools are defined by value in system `tool_addition` blocks. Same-name updates replace the definition inline without a removal or full-list fallback. Cache control stays on the block, not the inline definition. Models without native support and histories without initial tools keep the current-tool fallback. OAuth tool-name mapping remains.
-- **PiSharp mismatch:** the stable SDK IChatClient receives only current top-level MAF tool declarations. PiSharp lacks the native system/tool-delta transcript and beta projection, including same-name replay.
+- **Local implementation:** official SDK beta IChatClient now receives stable initial tools plus placeholder, later inline definitions/removals, block cache controls, capability/current-tool fallback and OAuth names. Shared declaration history survives native and Pi JSONL resume; compaction creates a new prefix. Twenty-six paired current-Pi request bodies match. Final local checks and exact-head CI are pending; full provider-family parity is not inferred.
 - **Required implementation/dependencies:** use the official SDK beta types/IChatClient with the existing shared MAF execution; add the Pi transcript delta, tool conversion/cache/beta behavior and persistence/provider-switch recovery proof. The installed C# SDK already exposes inline beta types; a separate SDK tool runner must not fork agent execution.
-- **Validation:** fail-first real-SDK loopback requests, current-Pi paired payloads for addition/removal/redefinition/fallback/OAuth plus session/tool-loop regression, required full checks and exact-head CI. `provider-anthropic-inline-tools` is a required ledger entry. This commit is in scope and unimplemented.
+- **Validation:** fail-first real-SDK loopback requests, current-Pi paired payloads for addition/removal/redefinition/fallback/OAuth plus session/tool-loop regression, required full checks and exact-head CI. `provider-anthropic-inline-tools` is a required ledger entry. This commit is in scope; local implementation/evidence is recorded in [the Anthropic fixture](anthropic-inline-tools-2026-10-02.md).
 
 
 ### `9b3c19da5cffc4c5e8b6bd74c45abc1ab6bfcd16` — `MATCHED`
@@ -348,3 +348,5 @@ MCP server-account isolation is published and exact-head CI verified. The active
 
 - **Pi files/behavior:** normal Cloudflare AI Gateway catalog generation replaces dots with dashes in Claude IDs forwarded through `/anthropic`; the passthrough forwards the ID unchanged and dotted IDs fail.
 - **PiSharp mismatch:** the built-in gateway chat profile/catalog is absent. Cloudflare classifier support is separate. Required task `provider-cloudflare-ai-gateway` covers the normal profile, catalog, endpoint/auth ownership, protocol routing and dashed Claude IDs.
+
+Execution policy updated 2026-10-02: retain current Pi c10bfb0d7 as a working pin through coherent batches. The full terminal differential harness is next, then the llama.cpp router family. Refresh at capability-family boundaries, known active-capability upstream changes, or after several verified slices; final completion still requires a fresh full current-main audit.

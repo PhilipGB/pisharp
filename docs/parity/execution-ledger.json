@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "plan_received": true,
-  "source_note": "Current Pi c10bfb0d79dbbc998539a0a3e6c6a736a4e6db06: all 58 commits after 955cc666 classified with visible interactions in scope (26 NEEDS_WORK classifications). Exact-head Linux CI 37019190204 passes PiSharp source c0b012ba7192afed65138dae7d10b5d15da77b67, including all 1132 tests with zero skips. Radius menu/MCP/animation has scoped evidence; full authentication/visual gaps remain. Anthropic inline tools is the next shared provider/transcript slice; fresh MCP CIMD and Cloudflare gateway work are explicitly tracked. All 184 capabilities remain required; full feature/interaction/visual parity is incomplete.",
+  "source_note": "Current Pi c10bfb0d79dbbc998539a0a3e6c6a736a4e6db06: all 58 commits after 955cc666 classified with visible interactions in scope (26 NEEDS_WORK classifications). Exact-head Linux CI 37019190204 passes PiSharp source c0b012ba7192afed65138dae7d10b5d15da77b67, including all 1132 tests with zero skips. Radius menu/MCP/animation has scoped evidence; full authentication/visual gaps remain. Anthropic inline tools is locally implemented and verified; fresh MCP CIMD and Cloudflare gateway work are explicitly tracked. All 189 capabilities remain required; full feature/interaction/visual parity is incomplete.",
   "baseline": "earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035",
   "required_ids": [
     "feature-agent-multi-turn-and-streaming",
@@ -187,7 +187,12 @@
     "mcp-client-conformance",
     "provider-anthropic-inline-tools",
     "mcp-oauth-client-metadata-documents",
-    "provider-cloudflare-ai-gateway"
+    "provider-cloudflare-ai-gateway",
+    "tui-full-terminal-differential-harness",
+    "provider-llama-router-configuration",
+    "provider-llama-router-management",
+    "provider-llama-router-models",
+    "provider-llama-router-download"
   ],
   "final_audit": {
     "complete": false,
@@ -3847,9 +3852,14 @@
         "Replay later additions by value; skip removal for same-name redefinition, preserve original top-level definitions and place cache control on message blocks.",
         "Retain current-tool fallback when there is no initial tool or native compatibility is disabled; verify OAuth name mapping, switch/resume/compaction and shared execution."
       ],
-      "implementation": [],
+      "implementation": [
+        "src/PiSharp.Runtime/Sessions/SystemMessageTranscript.cs and ToolDeclarationTranscript.cs: tool definition history projected per MAF request and persisted by ConversationToolState; native/Pi JSONL resume and compaction boundaries retain appropriate prefixes.",
+        "src/PiSharp.Cli/AnthropicTranscriptChatClient.cs and AnthropicSystemMessageHandler.cs: official Anthropic beta IChatClient plus request-only inline tool placement, initial tools/placeholder/cache controls, current-tools fallback, OAuth identity/name conversion.",
+        "src/PiSharp.Runtime/Sessions/StoredToolResultReplay.cs: persisted tool-result strings/content restored before provider conversion; pending calls remain open across system updates."
+      ],
       "evidence": [
-        "Current Pi implementation and transcript-tool-changes.test.ts were inspected after the fresh fetch. PiSharp uses the stable Anthropic AsIChatClient boundary and current top-level MAF declarations; native system/tool delta transcript projection is missing. The installed official Anthropic 12.50.0 SDK already has beta system/tool-definition types; its lower-level beta IChatClient boundary should be reused for the Pi delta. Its separate ToolRunner must not replace the shared MAF execution loop."
+        "docs/parity/fixtures/anthropic-inline-tools-2026-10-02.md",
+        "Anthropic inline tool history matches 26 current-Pi real-SDK request scenarios plus restored tool-result token estimates and both compaction boundaries. Focused checks pass 154/154; format verification and warnings-as-errors build pass with zero warnings/errors; full suite passes 1145/1145 with zero skips. Exact-head CI remains pending until publication. The reusable terminal differential harness is next, then the first-class llama.cpp router family."
       ],
       "dependencies": [
         "feature-tools-default-set-dynamic-availability",
@@ -3891,6 +3901,95 @@
       "dependencies": [
         "feature-models-selection-catalogs-and-credentials"
       ]
+    },
+    {
+      "id": "tui-full-terminal-differential-harness",
+      "title": "Reusable full terminal differential harness",
+      "status": "not_started",
+      "source": "earendil-works/pi@c10bfb0d79dbbc998539a0a3e6c6a736a4e6db06: packages/tui, coding-agent interactive components/tests",
+      "acceptance": [
+        "Compare cell characters, foreground/background/style, cursor position/visibility, alternate/normal screen and relevant modes without layout/style/escape normalization.",
+        "Capture final viewport and deterministic intermediate frames under controlled dimensions/environment with reusable scenarios; include narrow/wide and dark/light as applicable.",
+        "Progressively cover startup/editor/transcript/messages/Markdown/tools/Bash/thinking/selectors/settings/model-thinking/session-tree-fork/auth/MCP/trust/search-selection/clipboard/images/resize/fullscreen-normal/errors-aborts/keybindings/easter eggs."
+      ],
+      "implementation": [],
+      "evidence": [
+        "Explicit user steering on 2026-10-02. This capability remains required; existing targeted visual probes or custom OpenAI-compatible endpoints/native classifier tests do not establish this family."
+      ],
+      "dependencies": []
+    },
+    {
+      "id": "provider-llama-router-configuration",
+      "title": "First-class llama.cpp router login and configuration",
+      "status": "not_started",
+      "source": "earendil-works/pi@c10bfb0d79dbbc998539a0a3e6c6a736a4e6db06: packages/coding-agent/src/extensions/llama/{index,provider,client,ui,huggingface}.ts; test/llama-extension.test.ts",
+      "acceptance": [
+        "Match /login llama.cpp wording, validation, cancellation, auth.json persistence/reload and router URL default http://127.0.0.1:8080.",
+        "Verify LLAMA_BASE_URL/LLAMA_API_KEY, stored/default precedence from Pi source/tests; optional key, isolated provider identity, shared chat/classifier credentials.",
+        "Keep generic models.json custom providers working; compare local-router HTTP/process and full terminal screens."
+      ],
+      "implementation": [],
+      "evidence": [
+        "Explicit user steering on 2026-10-02. This capability remains required; existing targeted visual probes or custom OpenAI-compatible endpoints/native classifier tests do not establish this family."
+      ],
+      "dependencies": [
+        "tui-full-terminal-differential-harness"
+      ]
+    },
+    {
+      "id": "provider-llama-router-management",
+      "title": "llama.cpp router model management",
+      "status": "not_started",
+      "source": "earendil-works/pi@c10bfb0d79dbbc998539a0a3e6c6a736a4e6db06: packages/coding-agent/src/extensions/llama/{index,provider,client,ui,huggingface}.ts; test/llama-extension.test.ts",
+      "acceptance": [
+        "Match /llama loaded/unloaded state, loading/unloading, refresh, health/reconnect Retry/Close and cancellation confirmation.",
+        "Ask whether other loaded models should be unloaded or retained; never silently unload models or delete files.",
+        "Compare exact deterministic fake-router requests, results and reusable terminal screen/style/cursor frames."
+      ],
+      "implementation": [],
+      "evidence": [
+        "Explicit user steering on 2026-10-02. This capability remains required; existing targeted visual probes or custom OpenAI-compatible endpoints/native classifier tests do not establish this family."
+      ],
+      "dependencies": [
+        "provider-llama-router-configuration"
+      ]
+    },
+    {
+      "id": "provider-llama-router-models",
+      "title": "llama.cpp live router model projection and shared execution",
+      "status": "not_started",
+      "source": "earendil-works/pi@c10bfb0d79dbbc998539a0a3e6c6a736a4e6db06: packages/coding-agent/src/extensions/llama/{index,provider,client,ui,huggingface}.ts; test/llama-extension.test.ts",
+      "acceptance": [
+        "Derive management/chat/classifier endpoints as Pi does from router URL; share configuration and credentials.",
+        "Verify current Pi model eligibility, loaded/sleeping/unloaded/autoload rules from source/tests; /model reads live router state and can select newly loaded models for the active session.",
+        "Use the shared MAF execution path; differential visibility, selection, refresh/context-cache and provider requests."
+      ],
+      "implementation": [],
+      "evidence": [
+        "Explicit user steering on 2026-10-02. This capability remains required; existing targeted visual probes or custom OpenAI-compatible endpoints/native classifier tests do not establish this family."
+      ],
+      "dependencies": [
+        "provider-llama-router-management",
+        "provider-llama-context-cache-reload"
+      ]
+    },
+    {
+      "id": "provider-llama-router-download",
+      "title": "llama.cpp Hugging Face download flow",
+      "status": "not_started",
+      "source": "earendil-works/pi@c10bfb0d79dbbc998539a0a3e6c6a736a4e6db06: packages/coding-agent/src/extensions/llama/{index,provider,client,ui,huggingface}.ts; test/llama-extension.test.ts",
+      "acceptance": [
+        "Audit and match Download model\u2026, repository search, quantization selection and exact owner/repository[:quant] input.",
+        "Match HF_TOKEN and token-file lookup precedence, gated-model warnings/access links, cancellation and unload/retain prompts.",
+        "The router downloads the model; deterministic local HTTP/process and full terminal differential evidence is required."
+      ],
+      "implementation": [],
+      "evidence": [
+        "Explicit user steering on 2026-10-02. This capability remains required; existing targeted visual probes or custom OpenAI-compatible endpoints/native classifier tests do not establish this family."
+      ],
+      "dependencies": [
+        "provider-llama-router-management"
+      ]
     }
   ],
   "upstream_delta_audit": {
@@ -3904,11 +4003,11 @@
       "MATCHED": 6
     },
     "fixture": "docs/parity/fixtures/upstream-delta-audit-2026-10-01.md",
-    "next": "anthropic-inline-tool-transcript",
+    "next": "full-terminal-differential-harness",
     "current_item": "b271b0a524b29e13c0c9e748aea0d34e1597f2db",
-    "current_item_status": "oracle_inspected",
-    "current_item_local_evidence": "Radius slice c0b012ba7192afed65138dae7d10b5d15da77b67 passes exact-head CI 37019190204 with all 1132 tests and zero skips. Fresh source c10bfb0d7 adds four classified commits: existing CLI empty-entry filtering matches, README changes have no runtime behavior change, and MCP CIMD/Cloudflare gateway catalog behavior require work. Anthropic inline tools remains the next provider/transcript slice; SDK beta support is available but shared historical system/tool definitions need projection and persistence.",
-    "next_after_ci": "1499466d8581035a4dec6c869725b8712aea4bbe",
+    "current_item_status": "locally_verified_ci_pending",
+    "current_item_local_evidence": "Anthropic inline tool history matches 26 current-Pi real-SDK request scenarios plus restored tool-result token estimates and both compaction boundaries. Focused checks pass 154/154; format verification and warnings-as-errors build pass with zero warnings/errors; full suite passes 1145/1145 with zero skips. Exact-head CI remains pending until publication. The reusable terminal differential harness is next, then the first-class llama.cpp router family.",
+    "next_after_ci": "full-terminal-differential-harness",
     "completed": [
       "65117e31f242daa8e0a17dbd2810f7bb92bf4087",
       "7a11fe1c723b942fa093edb8b00f051ddb9b6627",
@@ -3936,6 +4035,18 @@
       ],
       "status": "not_started",
       "upstream_fixture": "packages/coding-agent/test/mcp-conformance/baseline.json"
-    }
+    },
+    "working_source_pin": "c10bfb0d79dbbc998539a0a3e6c6a736a4e6db06",
+    "refresh_policy": "Refresh at capability-family completion, known upstream changes affecting active work, or after several verified slices; require fresh current-main audit at final completion."
+  },
+  "execution_policy": {
+    "updated": "2026-10-02",
+    "priority": [
+      "Finish active Anthropic inline-tool slice and verify exact-head CI",
+      "Reusable full terminal cell/style/cursor/mode differential harness",
+      "llama.cpp router configuration, management, loaded model selection and download family",
+      "Broad capability-family closure chosen by shared dependencies, including official MCP conformance, provider/auth breadth, Codemode, extensions, sessions/compaction/recovery, settings/keybindings, package CLI, RPC/protocol and multimodal behavior"
+    ],
+    "bookkeeping": "Update evidence/ledger/docs with implementation commits; no docs-only checkpoint after each successful CI. Upstream chronology does not determine capability priority."
   }
 }

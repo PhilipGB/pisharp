@@ -76,6 +76,7 @@ public static class ProviderChatClientFactory
         }
         else if (protocol == "anthropic-messages")
         {
+            var transcript = new AnthropicTranscriptRequest();
             var baseUrl = selection.Connection.Endpoint?.ToString() ?? selection.Provider.Endpoint.ToString();
             var options = new ClientOptions
             {
@@ -85,7 +86,7 @@ public static class ProviderChatClientFactory
                 BaseUrl = baseUrl,
                 MaxRetries = 0,
                 Timeout = sdkTimeout,
-                Handlers = [new ProviderWireActivityHandler()]
+                Handlers = [new AnthropicSystemMessageHandler(transcript), new ProviderWireActivityHandler()]
             };
             if (selection.AnthropicIsOAuthToken)
             {
@@ -110,11 +111,11 @@ public static class ProviderChatClientFactory
             }
             var anthropicClient = new AmbientCredentialsDisabledAnthropicClient(options);
             anthropicClient.HttpClient.Timeout = Timeout.InfiniteTimeSpan;
-            providerClient = new AnthropicThinkingSignatureClient(anthropicClient.AsIChatClient(selection.Model.Id,
+            providerClient = new AnthropicTranscriptChatClient(new AnthropicThinkingSignatureClient(anthropicClient.Beta.AsIChatClient(selection.Model.Id,
                 selection.Model.MaxOutputTokens ?? 16384,
                 thinkingMode: selection.Model.Id is "claude-sonnet-4-6" or "claude-opus-4-6"
                     ? AnthropicThinkingMode.Adaptive : AnthropicThinkingMode.Extended),
-                AllowsEmptyThinkingSignature(selection.Model.Compatibility));
+                AllowsEmptyThinkingSignature(selection.Model.Compatibility)), selection.Model, transcript, selection.AnthropicIsOAuthToken);
         }
         else
         {

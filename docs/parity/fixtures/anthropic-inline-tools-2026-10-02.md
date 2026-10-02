@@ -1,0 +1,21 @@
+# Anthropic inline tool transcript — 2026-10-02
+
+Working oracle: `earendil-works/pi@c10bfb0d79dbbc998539a0a3e6c6a736a4e6db06`. The active delta is `b271b0a524b29e13c0c9e748aea0d34e1597f2db`; no upstream refresh is required between this slice and the terminal-harness milestone under the revised execution policy.
+
+The initial real-SDK suite failed all eight regressions at published PiSharp `69be8dd9b7`: imported system messages lost sections/tool definitions, native tools/beta/placeholder were absent, and system updates interrupted call/result adjacency. An isolated published-source regression also failed because live requests retained no tool declaration history. OAuth naming failed with `bash` instead of `Bash`. Fail-first logs are `/tmp/pisharp-anthropic-inline-fail-first.log`, `/tmp/pisharp-tool-transcript-fail-first.log` and `/tmp/pisharp-anthropic-inline-oauth-fail-first.log`.
+
+`SystemMessageTranscript` preserves Pi sections and tool deltas through native storage and JSONL interchange. `ToolDeclarationTranscript` retains frozen definitions separately from executable functions, projects request-time revisions, and resets the prefix after compaction. `ConversationToolState` restores and stores this branch state. MAF still owns chat history and tool invocation; all front ends use the same runtime. Persisted tool-result strings/content now reach providers as their content rather than serialized JSON. System updates do not cause synthetic missing results before a real result.
+
+The official Anthropic 12.50.0 beta `IChatClient` supplies message/tool serialization and streaming. Its chat projection supports only text in system messages and cannot interleave raw factory messages with converted conversation messages. `AnthropicSystemMessageHandler` therefore inserts Pi's inline blocks after tool results, before the next assistant or at transcript end. Initial definitions plus deferred placeholder stay fixed; redefinitions skip removal, native support requires both compatibility flags and an initial tool, and fallback sends current tools. Cache control goes on the final initial declaration and final user/system block, never the placeholder or inline definition. OAuth definitions/calls/removals use Claude Code names; responses map to the selected executable names.
+
+The reproducible comparison is:
+
+```sh
+python3 tools/parity/anthropic-inline-differential.py --pi /tmp/pisharp-current-pi --output /tmp/anthropic-inline.json
+```
+
+[Captured evidence](anthropic-inline-tools-2026-10-02.json) matches 26 Pi/PiSharp request scenarios: initial prefix, addition/removal, redefinition, three compatibility fallbacks, no initial tools, call/result adjacency, multiple pending updates, removal of all tools and OAuth addition/removal/redefinition/call replay. Each runs through the SDK's streaming and response APIs. Compare full system/tool/message bodies and beta sets; only select transcript-related body fields, canonicalize string content to one text block and default omitted/null `tool_result.is_error` to false. Text, schemas, order and cache controls remain exact. Pi's own `transcript-tool-changes.test.ts` passes 12/12.
+
+Local regressions also cover live MAF execution, native/Pi JSONL resume, compaction/provider replacement and the actual OAuth/HTTP boundary. RPC prompt lifecycle coverage moved from the concentration test file into its own class and verifies the persisted transcript entry in entries/tree reads. The compaction boundary fixture also matches Pi exactly: per-message estimates are `[2, 3, 2, 2, 3, 2]`; budgets 9 and 10 retain from indices 2 and 1 respectively, with 2 and 0 history messages. The older test counted JSON quotation marks around a persisted result; its boundary is corrected and extracted into `ToolResultReplayTests`. Focused checks pass 154/154. Format verification passes, the warnings-as-errors build has zero warnings/errors, and the full suite passes 1145/1145 with zero skips. Exact-head CI remains pending until publication. The capability remains in progress until that gate and remaining provider-family coverage are recorded; the overall parity goal is incomplete.
+
+Next: reusable full terminal cell/style/cursor/mode differential harness, then the explicitly required llama.cpp router family. Targeted ANSI probes do not close interactive visual capabilities.

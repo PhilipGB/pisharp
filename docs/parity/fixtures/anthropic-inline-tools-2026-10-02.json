@@ -1,0 +1,5841 @@
+{
+  "piSha": "c10bfb0d79dbbc998539a0a3e6c6a736a4e6db06",
+  "normalization": "Compare full system/tools/messages and beta sets; select transcript-related body fields. Canonicalize a string content as one text block and omitted/null tool_result.is_error as false; preserve all text, ordering, schemas, cache controls and tool blocks.",
+  "scenarios": [
+    {
+      "id": "initial-response",
+      "messages": [
+        {
+          "role": "system",
+          "content": "base prompt",
+          "sections": {
+            "rules": "old rules",
+            "docs": "read docs"
+          },
+          "toolsAdded": [
+            {
+              "name": "base_tool",
+              "description": "base_tool tool",
+              "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+              }
+            }
+          ],
+          "timestamp": 0
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ],
+          "timestamp": 1
+        }
+      ],
+      "systemSupport": true,
+      "toolSupport": true,
+      "streaming": false
+    },
+    {
+      "id": "initial-stream",
+      "messages": [
+        {
+          "role": "system",
+          "content": "base prompt",
+          "sections": {
+            "rules": "old rules",
+            "docs": "read docs"
+          },
+          "toolsAdded": [
+            {
+              "name": "base_tool",
+              "description": "base_tool tool",
+              "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+              }
+            }
+          ],
+          "timestamp": 0
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ],
+          "timestamp": 1
+        }
+      ],
+      "systemSupport": true,
+      "toolSupport": true,
+      "streaming": true
+    },
+    {
+      "id": "addition-removal-response",
+      "messages": [
+        {
+          "role": "system",
+          "content": "base prompt",
+          "sections": {
+            "rules": "old rules",
+            "docs": "read docs"
+          },
+          "toolsAdded": [
+            {
+              "name": "base_tool",
+              "description": "base_tool tool",
+              "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+              }
+            }
+          ],
+          "timestamp": 0
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ],
+          "timestamp": 1
+        },
+        {
+          "role": "system",
+          "content": "updated guidance",
+          "sections": {
+            "rules": "new rules",
+            "docs": null
+          },
+          "toolsRemoved": [
+            {
+              "name": "base_tool"
+            }
+          ],
+          "toolsAdded": [
+            {
+              "name": "late_tool",
+              "description": "late_tool tool",
+              "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+              }
+            }
+          ],
+          "timestamp": 2
+        }
+      ],
+      "systemSupport": true,
+      "toolSupport": true,
+      "streaming": false
+    },
+    {
+      "id": "addition-removal-stream",
+      "messages": [
+        {
+          "role": "system",
+          "content": "base prompt",
+          "sections": {
+            "rules": "old rules",
+            "docs": "read docs"
+          },
+          "toolsAdded": [
+            {
+              "name": "base_tool",
+              "description": "base_tool tool",
+              "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+              }
+            }
+          ],
+          "timestamp": 0
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ],
+          "timestamp": 1
+        },
+        {
+          "role": "system",
+          "content": "updated guidance",
+          "sections": {
+            "rules": "new rules",
+            "docs": null
+          },
+          "toolsRemoved": [
+            {
+              "name": "base_tool"
+            }
+          ],
+          "toolsAdded": [
+            {
+              "name": "late_tool",
+              "description": "late_tool tool",
+              "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+              }
+            }
+          ],
+          "timestamp": 2
+        }
+      ],
+      "systemSupport": true,
+      "toolSupport": true,
+      "streaming": true
+    },
+    {
+      "id": "redefinition-response",
+      "messages": [
+        {
+          "role": "system",
+          "content": "base prompt",
+          "sections": {
+            "rules": "old rules",
+            "docs": "read docs"
+          },
+          "toolsAdded": [
+            {
+              "name": "base_tool",
+              "description": "base_tool tool",
+              "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+              }
+            }
+          ],
+          "timestamp": 0
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ],
+          "timestamp": 1
+        },
+        {
+          "role": "system",
+          "content": "",
+          "toolsRemoved": [
+            {
+              "name": "base_tool"
+            }
+          ],
+          "toolsAdded": [
+            {
+              "name": "base_tool",
+              "description": "changed",
+              "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+              }
+            }
+          ],
+          "timestamp": 2
+        }
+      ],
+      "systemSupport": true,
+      "toolSupport": true,
+      "streaming": false
+    },
+    {
+      "id": "redefinition-stream",
+      "messages": [
+        {
+          "role": "system",
+          "content": "base prompt",
+          "sections": {
+            "rules": "old rules",
+            "docs": "read docs"
+          },
+          "toolsAdded": [
+            {
+              "name": "base_tool",
+              "description": "base_tool tool",
+              "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+              }
+            }
+          ],
+          "timestamp": 0
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ],
+          "timestamp": 1
+        },
+        {
+          "role": "system",
+          "content": "",
+          "toolsRemoved": [
+            {
+              "name": "base_tool"
+            }
+          ],
+          "toolsAdded": [
+            {
+              "name": "base_tool",
+              "description": "changed",
+              "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+              }
+            }
+          ],
+          "timestamp": 2
+        }
+      ],
+      "systemSupport": true,
+      "toolSupport": true,
+      "streaming": true
+    },
+    {
+      "id": "fallback-no-system-response",
+      "messages": [
+        {
+          "role": "system",
+          "content": "base prompt",
+          "sections": {
+            "rules": "old rules",
+            "docs": "read docs"
+          },
+          "toolsAdded": [
+            {
+              "name": "base_tool",
+              "description": "base_tool tool",
+              "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+              }
+            }
+          ],
+          "timestamp": 0
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ],
+          "timestamp": 1
+        },
+        {
+          "role": "system",
+          "content": "updated guidance",
+          "sections": {
+            "rules": "new rules",
+            "docs": null
+          },
+          "toolsRemoved": [
+            {
+              "name": "base_tool"
+            }
+          ],
+          "toolsAdded": [
+            {
+              "name": "late_tool",
+              "description": "late_tool tool",
+              "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+              }
+            }
+          ],
+          "timestamp": 2
+        }
+      ],
+      "systemSupport": false,
+      "toolSupport": true,
+      "streaming": false
+    },
+    {
+      "id": "fallback-no-system-stream",
+      "messages": [
+        {
+          "role": "system",
+          "content": "base prompt",
+          "sections": {
+            "rules": "old rules",
+            "docs": "read docs"
+          },
+          "toolsAdded": [
+            {
+              "name": "base_tool",
+              "description": "base_tool tool",
+              "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+              }
+            }
+          ],
+          "timestamp": 0
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ],
+          "timestamp": 1
+        },
+        {
+          "role": "system",
+          "content": "updated guidance",
+          "sections": {
+            "rules": "new rules",
+            "docs": null
+          },
+          "toolsRemoved": [
+            {
+              "name": "base_tool"
+            }
+          ],
+          "toolsAdded": [
+            {
+              "name": "late_tool",
+              "description": "late_tool tool",
+              "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+              }
+            }
+          ],
+          "timestamp": 2
+        }
+      ],
+      "systemSupport": false,
+      "toolSupport": true,
+      "streaming": true
+    },
+    {
+      "id": "fallback-no-tool-changes-response",
+      "messages": [
+        {
+          "role": "system",
+          "content": "base prompt",
+          "sections": {
+            "rules": "old rules",
+            "docs": "read docs"
+          },
+          "toolsAdded": [
+            {
+              "name": "base_tool",
+              "description": "base_tool tool",
+              "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+              }
+            }
+          ],
+          "timestamp": 0
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ],
+          "timestamp": 1
+        },
+        {
+          "role": "system",
+          "content": "updated guidance",
+          "sections": {
+            "rules": "new rules",
+            "docs": null
+          },
+          "toolsRemoved": [
+            {
+              "name": "base_tool"
+            }
+          ],
+          "toolsAdded": [
+            {
+              "name": "late_tool",
+              "description": "late_tool tool",
+              "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+              }
+            }
+          ],
+          "timestamp": 2
+        }
+      ],
+      "systemSupport": true,
+      "toolSupport": false,
+      "streaming": false
+    },
+    {
+      "id": "fallback-no-tool-changes-stream",
+      "messages": [
+        {
+          "role": "system",
+          "content": "base prompt",
+          "sections": {
+            "rules": "old rules",
+            "docs": "read docs"
+          },
+          "toolsAdded": [
+            {
+              "name": "base_tool",
+              "description": "base_tool tool",
+              "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+              }
+            }
+          ],
+          "timestamp": 0
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ],
+          "timestamp": 1
+        },
+        {
+          "role": "system",
+          "content": "updated guidance",
+          "sections": {
+            "rules": "new rules",
+            "docs": null
+          },
+          "toolsRemoved": [
+            {
+              "name": "base_tool"
+            }
+          ],
+          "toolsAdded": [
+            {
+              "name": "late_tool",
+              "description": "late_tool tool",
+              "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+              }
+            }
+          ],
+          "timestamp": 2
+        }
+      ],
+      "systemSupport": true,
+      "toolSupport": false,
+      "streaming": true
+    },
+    {
+      "id": "fallback-both-response",
+      "messages": [
+        {
+          "role": "system",
+          "content": "base prompt",
+          "sections": {
+            "rules": "old rules",
+            "docs": "read docs"
+          },
+          "toolsAdded": [
+            {
+              "name": "base_tool",
+              "description": "base_tool tool",
+              "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+              }
+            }
+          ],
+          "timestamp": 0
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ],
+          "timestamp": 1
+        },
+        {
+          "role": "system",
+          "content": "updated guidance",
+          "sections": {
+            "rules": "new rules",
+            "docs": null
+          },
+          "toolsRemoved": [
+            {
+              "name": "base_tool"
+            }
+          ],
+          "toolsAdded": [
+            {
+              "name": "late_tool",
+              "description": "late_tool tool",
+              "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+              }
+            }
+          ],
+          "timestamp": 2
+        }
+      ],
+      "systemSupport": false,
+      "toolSupport": false,
+      "streaming": false
+    },
+    {
+      "id": "fallback-both-stream",
+      "messages": [
+        {
+          "role": "system",
+          "content": "base prompt",
+          "sections": {
+            "rules": "old rules",
+            "docs": "read docs"
+          },
+          "toolsAdded": [
+            {
+              "name": "base_tool",
+              "description": "base_tool tool",
+              "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+              }
+            }
+          ],
+          "timestamp": 0
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ],
+          "timestamp": 1
+        },
+        {
+          "role": "system",
+          "content": "updated guidance",
+          "sections": {
+            "rules": "new rules",
+            "docs": null
+          },
+          "toolsRemoved": [
+            {
+              "name": "base_tool"
+            }
+          ],
+          "toolsAdded": [
+            {
+              "name": "late_tool",
+              "description": "late_tool tool",
+              "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+              }
+            }
+          ],
+          "timestamp": 2
+        }
+      ],
+      "systemSupport": false,
+      "toolSupport": false,
+      "streaming": true
+    },
+    {
+      "id": "no-initial-tools-response",
+      "messages": [
+        {
+          "role": "system",
+          "content": "base prompt",
+          "timestamp": 0
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ],
+          "timestamp": 1
+        },
+        {
+          "role": "system",
+          "content": "updated guidance",
+          "sections": {
+            "rules": "new rules",
+            "docs": null
+          },
+          "toolsRemoved": [
+            {
+              "name": "base_tool"
+            }
+          ],
+          "toolsAdded": [
+            {
+              "name": "late_tool",
+              "description": "late_tool tool",
+              "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+              }
+            }
+          ],
+          "timestamp": 2
+        }
+      ],
+      "systemSupport": true,
+      "toolSupport": true,
+      "streaming": false
+    },
+    {
+      "id": "no-initial-tools-stream",
+      "messages": [
+        {
+          "role": "system",
+          "content": "base prompt",
+          "timestamp": 0
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ],
+          "timestamp": 1
+        },
+        {
+          "role": "system",
+          "content": "updated guidance",
+          "sections": {
+            "rules": "new rules",
+            "docs": null
+          },
+          "toolsRemoved": [
+            {
+              "name": "base_tool"
+            }
+          ],
+          "toolsAdded": [
+            {
+              "name": "late_tool",
+              "description": "late_tool tool",
+              "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+              }
+            }
+          ],
+          "timestamp": 2
+        }
+      ],
+      "systemSupport": true,
+      "toolSupport": true,
+      "streaming": true
+    },
+    {
+      "id": "call-result-adjacency-response",
+      "messages": [
+        {
+          "role": "system",
+          "content": "base prompt",
+          "sections": {
+            "rules": "old rules",
+            "docs": "read docs"
+          },
+          "toolsAdded": [
+            {
+              "name": "base_tool",
+              "description": "base_tool tool",
+              "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+              }
+            }
+          ],
+          "timestamp": 0
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ],
+          "timestamp": 1
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "call_1",
+              "name": "base_tool",
+              "arguments": {}
+            }
+          ],
+          "api": "anthropic-messages",
+          "provider": "anthropic",
+          "model": "claude-opus-5",
+          "stopReason": "toolUse",
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "timestamp": 2
+        },
+        {
+          "role": "system",
+          "content": "updated guidance",
+          "sections": {
+            "rules": "new rules",
+            "docs": null
+          },
+          "toolsRemoved": [
+            {
+              "name": "base_tool"
+            }
+          ],
+          "toolsAdded": [
+            {
+              "name": "late_tool",
+              "description": "late_tool tool",
+              "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+              }
+            }
+          ],
+          "timestamp": 2
+        },
+        {
+          "role": "toolResult",
+          "content": [
+            {
+              "type": "text",
+              "text": "done"
+            }
+          ],
+          "toolCallId": "call_1",
+          "toolName": "base_tool",
+          "isError": false,
+          "timestamp": 3
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": "finished"
+            }
+          ],
+          "api": "anthropic-messages",
+          "provider": "anthropic",
+          "model": "claude-opus-5",
+          "stopReason": "stop",
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "timestamp": 4
+        }
+      ],
+      "systemSupport": true,
+      "toolSupport": true,
+      "streaming": false
+    },
+    {
+      "id": "call-result-adjacency-stream",
+      "messages": [
+        {
+          "role": "system",
+          "content": "base prompt",
+          "sections": {
+            "rules": "old rules",
+            "docs": "read docs"
+          },
+          "toolsAdded": [
+            {
+              "name": "base_tool",
+              "description": "base_tool tool",
+              "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+              }
+            }
+          ],
+          "timestamp": 0
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ],
+          "timestamp": 1
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "call_1",
+              "name": "base_tool",
+              "arguments": {}
+            }
+          ],
+          "api": "anthropic-messages",
+          "provider": "anthropic",
+          "model": "claude-opus-5",
+          "stopReason": "toolUse",
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "timestamp": 2
+        },
+        {
+          "role": "system",
+          "content": "updated guidance",
+          "sections": {
+            "rules": "new rules",
+            "docs": null
+          },
+          "toolsRemoved": [
+            {
+              "name": "base_tool"
+            }
+          ],
+          "toolsAdded": [
+            {
+              "name": "late_tool",
+              "description": "late_tool tool",
+              "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+              }
+            }
+          ],
+          "timestamp": 2
+        },
+        {
+          "role": "toolResult",
+          "content": [
+            {
+              "type": "text",
+              "text": "done"
+            }
+          ],
+          "toolCallId": "call_1",
+          "toolName": "base_tool",
+          "isError": false,
+          "timestamp": 3
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": "finished"
+            }
+          ],
+          "api": "anthropic-messages",
+          "provider": "anthropic",
+          "model": "claude-opus-5",
+          "stopReason": "stop",
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "timestamp": 4
+        }
+      ],
+      "systemSupport": true,
+      "toolSupport": true,
+      "streaming": true
+    },
+    {
+      "id": "pending-updates-response",
+      "messages": [
+        {
+          "role": "system",
+          "content": "base prompt",
+          "sections": {
+            "rules": "old rules",
+            "docs": "read docs"
+          },
+          "toolsAdded": [
+            {
+              "name": "base_tool",
+              "description": "base_tool tool",
+              "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+              }
+            }
+          ],
+          "timestamp": 0
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ],
+          "timestamp": 1
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "call_1",
+              "name": "base_tool",
+              "arguments": {}
+            }
+          ],
+          "api": "anthropic-messages",
+          "provider": "anthropic",
+          "model": "claude-opus-5",
+          "stopReason": "toolUse",
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "timestamp": 2
+        },
+        {
+          "role": "system",
+          "content": "updated guidance",
+          "sections": {
+            "rules": "new rules",
+            "docs": null
+          },
+          "toolsRemoved": [
+            {
+              "name": "base_tool"
+            }
+          ],
+          "toolsAdded": [
+            {
+              "name": "late_tool",
+              "description": "late_tool tool",
+              "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+              }
+            }
+          ],
+          "timestamp": 2
+        },
+        {
+          "role": "toolResult",
+          "content": [
+            {
+              "type": "text",
+              "text": "done"
+            }
+          ],
+          "toolCallId": "call_1",
+          "toolName": "base_tool",
+          "isError": false,
+          "timestamp": 3
+        },
+        {
+          "role": "system",
+          "content": "second update",
+          "timestamp": 4
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ],
+          "timestamp": 1
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": "finished"
+            }
+          ],
+          "api": "anthropic-messages",
+          "provider": "anthropic",
+          "model": "claude-opus-5",
+          "stopReason": "stop",
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "timestamp": 4
+        }
+      ],
+      "systemSupport": true,
+      "toolSupport": true,
+      "streaming": false
+    },
+    {
+      "id": "pending-updates-stream",
+      "messages": [
+        {
+          "role": "system",
+          "content": "base prompt",
+          "sections": {
+            "rules": "old rules",
+            "docs": "read docs"
+          },
+          "toolsAdded": [
+            {
+              "name": "base_tool",
+              "description": "base_tool tool",
+              "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+              }
+            }
+          ],
+          "timestamp": 0
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ],
+          "timestamp": 1
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "call_1",
+              "name": "base_tool",
+              "arguments": {}
+            }
+          ],
+          "api": "anthropic-messages",
+          "provider": "anthropic",
+          "model": "claude-opus-5",
+          "stopReason": "toolUse",
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "timestamp": 2
+        },
+        {
+          "role": "system",
+          "content": "updated guidance",
+          "sections": {
+            "rules": "new rules",
+            "docs": null
+          },
+          "toolsRemoved": [
+            {
+              "name": "base_tool"
+            }
+          ],
+          "toolsAdded": [
+            {
+              "name": "late_tool",
+              "description": "late_tool tool",
+              "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+              }
+            }
+          ],
+          "timestamp": 2
+        },
+        {
+          "role": "toolResult",
+          "content": [
+            {
+              "type": "text",
+              "text": "done"
+            }
+          ],
+          "toolCallId": "call_1",
+          "toolName": "base_tool",
+          "isError": false,
+          "timestamp": 3
+        },
+        {
+          "role": "system",
+          "content": "second update",
+          "timestamp": 4
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ],
+          "timestamp": 1
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": "finished"
+            }
+          ],
+          "api": "anthropic-messages",
+          "provider": "anthropic",
+          "model": "claude-opus-5",
+          "stopReason": "stop",
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "timestamp": 4
+        }
+      ],
+      "systemSupport": true,
+      "toolSupport": true,
+      "streaming": true
+    },
+    {
+      "id": "remove-all-response",
+      "messages": [
+        {
+          "role": "system",
+          "content": "base prompt",
+          "sections": {
+            "rules": "old rules",
+            "docs": "read docs"
+          },
+          "toolsAdded": [
+            {
+              "name": "base_tool",
+              "description": "base_tool tool",
+              "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+              }
+            }
+          ],
+          "timestamp": 0
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ],
+          "timestamp": 1
+        },
+        {
+          "role": "system",
+          "content": "",
+          "toolsRemoved": [
+            {
+              "name": "base_tool"
+            }
+          ],
+          "timestamp": 2
+        }
+      ],
+      "systemSupport": true,
+      "toolSupport": true,
+      "streaming": false
+    },
+    {
+      "id": "remove-all-stream",
+      "messages": [
+        {
+          "role": "system",
+          "content": "base prompt",
+          "sections": {
+            "rules": "old rules",
+            "docs": "read docs"
+          },
+          "toolsAdded": [
+            {
+              "name": "base_tool",
+              "description": "base_tool tool",
+              "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+              }
+            }
+          ],
+          "timestamp": 0
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ],
+          "timestamp": 1
+        },
+        {
+          "role": "system",
+          "content": "",
+          "toolsRemoved": [
+            {
+              "name": "base_tool"
+            }
+          ],
+          "timestamp": 2
+        }
+      ],
+      "systemSupport": true,
+      "toolSupport": true,
+      "streaming": true
+    },
+    {
+      "id": "oauth-addition-removal-response",
+      "messages": [
+        {
+          "role": "system",
+          "content": "base",
+          "toolsAdded": [
+            {
+              "name": "bash",
+              "description": "bash tool",
+              "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+              }
+            }
+          ],
+          "timestamp": 0
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ],
+          "timestamp": 1
+        },
+        {
+          "role": "system",
+          "content": "",
+          "toolsRemoved": [
+            {
+              "name": "bash"
+            }
+          ],
+          "toolsAdded": [
+            {
+              "name": "read",
+              "description": "read tool",
+              "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+              }
+            }
+          ],
+          "timestamp": 2
+        }
+      ],
+      "systemSupport": true,
+      "toolSupport": true,
+      "streaming": false,
+      "oauth": true
+    },
+    {
+      "id": "oauth-addition-removal-stream",
+      "messages": [
+        {
+          "role": "system",
+          "content": "base",
+          "toolsAdded": [
+            {
+              "name": "bash",
+              "description": "bash tool",
+              "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+              }
+            }
+          ],
+          "timestamp": 0
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ],
+          "timestamp": 1
+        },
+        {
+          "role": "system",
+          "content": "",
+          "toolsRemoved": [
+            {
+              "name": "bash"
+            }
+          ],
+          "toolsAdded": [
+            {
+              "name": "read",
+              "description": "read tool",
+              "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+              }
+            }
+          ],
+          "timestamp": 2
+        }
+      ],
+      "systemSupport": true,
+      "toolSupport": true,
+      "streaming": true,
+      "oauth": true
+    },
+    {
+      "id": "oauth-redefinition-response",
+      "messages": [
+        {
+          "role": "system",
+          "content": "base",
+          "toolsAdded": [
+            {
+              "name": "bash",
+              "description": "bash tool",
+              "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+              }
+            }
+          ],
+          "timestamp": 0
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ],
+          "timestamp": 1
+        },
+        {
+          "role": "system",
+          "content": "",
+          "toolsRemoved": [
+            {
+              "name": "bash"
+            }
+          ],
+          "toolsAdded": [
+            {
+              "name": "bash",
+              "description": "changed",
+              "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+              }
+            }
+          ],
+          "timestamp": 2
+        }
+      ],
+      "systemSupport": true,
+      "toolSupport": true,
+      "streaming": false,
+      "oauth": true
+    },
+    {
+      "id": "oauth-redefinition-stream",
+      "messages": [
+        {
+          "role": "system",
+          "content": "base",
+          "toolsAdded": [
+            {
+              "name": "bash",
+              "description": "bash tool",
+              "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+              }
+            }
+          ],
+          "timestamp": 0
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ],
+          "timestamp": 1
+        },
+        {
+          "role": "system",
+          "content": "",
+          "toolsRemoved": [
+            {
+              "name": "bash"
+            }
+          ],
+          "toolsAdded": [
+            {
+              "name": "bash",
+              "description": "changed",
+              "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+              }
+            }
+          ],
+          "timestamp": 2
+        }
+      ],
+      "systemSupport": true,
+      "toolSupport": true,
+      "streaming": true,
+      "oauth": true
+    },
+    {
+      "id": "oauth-call-replay-response",
+      "messages": [
+        {
+          "role": "system",
+          "content": "base",
+          "toolsAdded": [
+            {
+              "name": "bash",
+              "description": "bash tool",
+              "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+              }
+            }
+          ],
+          "timestamp": 0
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ],
+          "timestamp": 1
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "call_1",
+              "name": "bash",
+              "arguments": {}
+            }
+          ],
+          "api": "anthropic-messages",
+          "provider": "anthropic",
+          "model": "claude-opus-5",
+          "stopReason": "toolUse",
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "timestamp": 2
+        },
+        {
+          "role": "toolResult",
+          "content": [
+            {
+              "type": "text",
+              "text": "done"
+            }
+          ],
+          "toolCallId": "call_1",
+          "toolName": "base_tool",
+          "isError": false,
+          "timestamp": 3
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ],
+          "timestamp": 1
+        }
+      ],
+      "systemSupport": true,
+      "toolSupport": true,
+      "streaming": false,
+      "oauth": true
+    },
+    {
+      "id": "oauth-call-replay-stream",
+      "messages": [
+        {
+          "role": "system",
+          "content": "base",
+          "toolsAdded": [
+            {
+              "name": "bash",
+              "description": "bash tool",
+              "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+              }
+            }
+          ],
+          "timestamp": 0
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ],
+          "timestamp": 1
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "call_1",
+              "name": "bash",
+              "arguments": {}
+            }
+          ],
+          "api": "anthropic-messages",
+          "provider": "anthropic",
+          "model": "claude-opus-5",
+          "stopReason": "toolUse",
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "timestamp": 2
+        },
+        {
+          "role": "toolResult",
+          "content": [
+            {
+              "type": "text",
+              "text": "done"
+            }
+          ],
+          "toolCallId": "call_1",
+          "toolName": "base_tool",
+          "isError": false,
+          "timestamp": 3
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ],
+          "timestamp": 1
+        }
+      ],
+      "systemSupport": true,
+      "toolSupport": true,
+      "streaming": true,
+      "oauth": true
+    }
+  ],
+  "pi": [
+    {
+      "id": "initial-response",
+      "betas": [
+        "inline-tools-2026-09-15"
+      ],
+      "system": [
+        {
+          "type": "text",
+          "text": "base prompt\n\nold rules\n\nread docs",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "tools": [
+        {
+          "name": "base_tool",
+          "description": "base_tool tool",
+          "eager_input_streaming": true,
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        },
+        {
+          "name": "__pi_deferred_placeholder__",
+          "description": "Reserved placeholder. Never available. Never call this.",
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "defer_loading": true
+        }
+      ],
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before",
+              "cache_control": {
+                "type": "ephemeral"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "initial-stream",
+      "betas": [
+        "inline-tools-2026-09-15"
+      ],
+      "system": [
+        {
+          "type": "text",
+          "text": "base prompt\n\nold rules\n\nread docs",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "tools": [
+        {
+          "name": "base_tool",
+          "description": "base_tool tool",
+          "eager_input_streaming": true,
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        },
+        {
+          "name": "__pi_deferred_placeholder__",
+          "description": "Reserved placeholder. Never available. Never call this.",
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "defer_loading": true
+        }
+      ],
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before",
+              "cache_control": {
+                "type": "ephemeral"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "addition-removal-response",
+      "betas": [
+        "inline-tools-2026-09-15"
+      ],
+      "system": [
+        {
+          "type": "text",
+          "text": "base prompt\n\nold rules\n\nread docs",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "tools": [
+        {
+          "name": "base_tool",
+          "description": "base_tool tool",
+          "eager_input_streaming": true,
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        },
+        {
+          "name": "__pi_deferred_placeholder__",
+          "description": "Reserved placeholder. Never available. Never call this.",
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "defer_loading": true
+        }
+      ],
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ]
+        },
+        {
+          "role": "system",
+          "content": [
+            {
+              "type": "text",
+              "text": "updated guidance\n\nUpdated system prompt section \"rules\":\n\nnew rules\n\nRemoved system prompt section \"docs\"."
+            },
+            {
+              "type": "tool_removal",
+              "tool": {
+                "type": "tool_reference",
+                "name": "base_tool"
+              }
+            },
+            {
+              "type": "tool_addition",
+              "tool": {
+                "type": "tool_definition",
+                "definition": {
+                  "name": "late_tool",
+                  "description": "late_tool tool",
+                  "eager_input_streaming": true,
+                  "input_schema": {
+                    "type": "object",
+                    "properties": {},
+                    "required": []
+                  }
+                }
+              },
+              "cache_control": {
+                "type": "ephemeral"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "addition-removal-stream",
+      "betas": [
+        "inline-tools-2026-09-15"
+      ],
+      "system": [
+        {
+          "type": "text",
+          "text": "base prompt\n\nold rules\n\nread docs",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "tools": [
+        {
+          "name": "base_tool",
+          "description": "base_tool tool",
+          "eager_input_streaming": true,
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        },
+        {
+          "name": "__pi_deferred_placeholder__",
+          "description": "Reserved placeholder. Never available. Never call this.",
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "defer_loading": true
+        }
+      ],
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ]
+        },
+        {
+          "role": "system",
+          "content": [
+            {
+              "type": "text",
+              "text": "updated guidance\n\nUpdated system prompt section \"rules\":\n\nnew rules\n\nRemoved system prompt section \"docs\"."
+            },
+            {
+              "type": "tool_removal",
+              "tool": {
+                "type": "tool_reference",
+                "name": "base_tool"
+              }
+            },
+            {
+              "type": "tool_addition",
+              "tool": {
+                "type": "tool_definition",
+                "definition": {
+                  "name": "late_tool",
+                  "description": "late_tool tool",
+                  "eager_input_streaming": true,
+                  "input_schema": {
+                    "type": "object",
+                    "properties": {},
+                    "required": []
+                  }
+                }
+              },
+              "cache_control": {
+                "type": "ephemeral"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "redefinition-response",
+      "betas": [
+        "inline-tools-2026-09-15"
+      ],
+      "system": [
+        {
+          "type": "text",
+          "text": "base prompt\n\nold rules\n\nread docs",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "tools": [
+        {
+          "name": "base_tool",
+          "description": "base_tool tool",
+          "eager_input_streaming": true,
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        },
+        {
+          "name": "__pi_deferred_placeholder__",
+          "description": "Reserved placeholder. Never available. Never call this.",
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "defer_loading": true
+        }
+      ],
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ]
+        },
+        {
+          "role": "system",
+          "content": [
+            {
+              "type": "tool_addition",
+              "tool": {
+                "type": "tool_definition",
+                "definition": {
+                  "name": "base_tool",
+                  "description": "changed",
+                  "eager_input_streaming": true,
+                  "input_schema": {
+                    "type": "object",
+                    "properties": {},
+                    "required": []
+                  }
+                }
+              },
+              "cache_control": {
+                "type": "ephemeral"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "redefinition-stream",
+      "betas": [
+        "inline-tools-2026-09-15"
+      ],
+      "system": [
+        {
+          "type": "text",
+          "text": "base prompt\n\nold rules\n\nread docs",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "tools": [
+        {
+          "name": "base_tool",
+          "description": "base_tool tool",
+          "eager_input_streaming": true,
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        },
+        {
+          "name": "__pi_deferred_placeholder__",
+          "description": "Reserved placeholder. Never available. Never call this.",
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "defer_loading": true
+        }
+      ],
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ]
+        },
+        {
+          "role": "system",
+          "content": [
+            {
+              "type": "tool_addition",
+              "tool": {
+                "type": "tool_definition",
+                "definition": {
+                  "name": "base_tool",
+                  "description": "changed",
+                  "eager_input_streaming": true,
+                  "input_schema": {
+                    "type": "object",
+                    "properties": {},
+                    "required": []
+                  }
+                }
+              },
+              "cache_control": {
+                "type": "ephemeral"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fallback-no-system-response",
+      "betas": [],
+      "system": [
+        {
+          "type": "text",
+          "text": "base prompt\n\nupdated guidance\n\nnew rules",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "tools": [
+        {
+          "name": "late_tool",
+          "description": "late_tool tool",
+          "eager_input_streaming": true,
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before",
+              "cache_control": {
+                "type": "ephemeral"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fallback-no-system-stream",
+      "betas": [],
+      "system": [
+        {
+          "type": "text",
+          "text": "base prompt\n\nupdated guidance\n\nnew rules",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "tools": [
+        {
+          "name": "late_tool",
+          "description": "late_tool tool",
+          "eager_input_streaming": true,
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before",
+              "cache_control": {
+                "type": "ephemeral"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fallback-no-tool-changes-response",
+      "betas": [],
+      "system": [
+        {
+          "type": "text",
+          "text": "base prompt\n\nold rules\n\nread docs",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "tools": [
+        {
+          "name": "late_tool",
+          "description": "late_tool tool",
+          "eager_input_streaming": true,
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ]
+        },
+        {
+          "role": "system",
+          "content": [
+            {
+              "type": "text",
+              "text": "updated guidance\n\nUpdated system prompt section \"rules\":\n\nnew rules\n\nRemoved system prompt section \"docs\".",
+              "cache_control": {
+                "type": "ephemeral"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fallback-no-tool-changes-stream",
+      "betas": [],
+      "system": [
+        {
+          "type": "text",
+          "text": "base prompt\n\nold rules\n\nread docs",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "tools": [
+        {
+          "name": "late_tool",
+          "description": "late_tool tool",
+          "eager_input_streaming": true,
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ]
+        },
+        {
+          "role": "system",
+          "content": [
+            {
+              "type": "text",
+              "text": "updated guidance\n\nUpdated system prompt section \"rules\":\n\nnew rules\n\nRemoved system prompt section \"docs\".",
+              "cache_control": {
+                "type": "ephemeral"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fallback-both-response",
+      "betas": [],
+      "system": [
+        {
+          "type": "text",
+          "text": "base prompt\n\nupdated guidance\n\nnew rules",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "tools": [
+        {
+          "name": "late_tool",
+          "description": "late_tool tool",
+          "eager_input_streaming": true,
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before",
+              "cache_control": {
+                "type": "ephemeral"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fallback-both-stream",
+      "betas": [],
+      "system": [
+        {
+          "type": "text",
+          "text": "base prompt\n\nupdated guidance\n\nnew rules",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "tools": [
+        {
+          "name": "late_tool",
+          "description": "late_tool tool",
+          "eager_input_streaming": true,
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before",
+              "cache_control": {
+                "type": "ephemeral"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "no-initial-tools-response",
+      "betas": [],
+      "system": [
+        {
+          "type": "text",
+          "text": "base prompt",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "tools": [
+        {
+          "name": "late_tool",
+          "description": "late_tool tool",
+          "eager_input_streaming": true,
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ]
+        },
+        {
+          "role": "system",
+          "content": [
+            {
+              "type": "text",
+              "text": "updated guidance\n\nUpdated system prompt section \"rules\":\n\nnew rules\n\nRemoved system prompt section \"docs\".",
+              "cache_control": {
+                "type": "ephemeral"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "no-initial-tools-stream",
+      "betas": [],
+      "system": [
+        {
+          "type": "text",
+          "text": "base prompt",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "tools": [
+        {
+          "name": "late_tool",
+          "description": "late_tool tool",
+          "eager_input_streaming": true,
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ]
+        },
+        {
+          "role": "system",
+          "content": [
+            {
+              "type": "text",
+              "text": "updated guidance\n\nUpdated system prompt section \"rules\":\n\nnew rules\n\nRemoved system prompt section \"docs\".",
+              "cache_control": {
+                "type": "ephemeral"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "call-result-adjacency-response",
+      "betas": [
+        "inline-tools-2026-09-15"
+      ],
+      "system": [
+        {
+          "type": "text",
+          "text": "base prompt\n\nold rules\n\nread docs",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "tools": [
+        {
+          "name": "base_tool",
+          "description": "base_tool tool",
+          "eager_input_streaming": true,
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        },
+        {
+          "name": "__pi_deferred_placeholder__",
+          "description": "Reserved placeholder. Never available. Never call this.",
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "defer_loading": true
+        }
+      ],
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ]
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "tool_use",
+              "id": "call_1",
+              "name": "base_tool",
+              "input": {}
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "tool_result",
+              "tool_use_id": "call_1",
+              "content": "done",
+              "is_error": false
+            }
+          ]
+        },
+        {
+          "role": "system",
+          "content": [
+            {
+              "type": "text",
+              "text": "updated guidance\n\nUpdated system prompt section \"rules\":\n\nnew rules\n\nRemoved system prompt section \"docs\"."
+            },
+            {
+              "type": "tool_removal",
+              "tool": {
+                "type": "tool_reference",
+                "name": "base_tool"
+              }
+            },
+            {
+              "type": "tool_addition",
+              "tool": {
+                "type": "tool_definition",
+                "definition": {
+                  "name": "late_tool",
+                  "description": "late_tool tool",
+                  "eager_input_streaming": true,
+                  "input_schema": {
+                    "type": "object",
+                    "properties": {},
+                    "required": []
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": "finished"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "call-result-adjacency-stream",
+      "betas": [
+        "inline-tools-2026-09-15"
+      ],
+      "system": [
+        {
+          "type": "text",
+          "text": "base prompt\n\nold rules\n\nread docs",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "tools": [
+        {
+          "name": "base_tool",
+          "description": "base_tool tool",
+          "eager_input_streaming": true,
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        },
+        {
+          "name": "__pi_deferred_placeholder__",
+          "description": "Reserved placeholder. Never available. Never call this.",
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "defer_loading": true
+        }
+      ],
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ]
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "tool_use",
+              "id": "call_1",
+              "name": "base_tool",
+              "input": {}
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "tool_result",
+              "tool_use_id": "call_1",
+              "content": "done",
+              "is_error": false
+            }
+          ]
+        },
+        {
+          "role": "system",
+          "content": [
+            {
+              "type": "text",
+              "text": "updated guidance\n\nUpdated system prompt section \"rules\":\n\nnew rules\n\nRemoved system prompt section \"docs\"."
+            },
+            {
+              "type": "tool_removal",
+              "tool": {
+                "type": "tool_reference",
+                "name": "base_tool"
+              }
+            },
+            {
+              "type": "tool_addition",
+              "tool": {
+                "type": "tool_definition",
+                "definition": {
+                  "name": "late_tool",
+                  "description": "late_tool tool",
+                  "eager_input_streaming": true,
+                  "input_schema": {
+                    "type": "object",
+                    "properties": {},
+                    "required": []
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": "finished"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "pending-updates-response",
+      "betas": [
+        "inline-tools-2026-09-15"
+      ],
+      "system": [
+        {
+          "type": "text",
+          "text": "base prompt\n\nold rules\n\nread docs",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "tools": [
+        {
+          "name": "base_tool",
+          "description": "base_tool tool",
+          "eager_input_streaming": true,
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        },
+        {
+          "name": "__pi_deferred_placeholder__",
+          "description": "Reserved placeholder. Never available. Never call this.",
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "defer_loading": true
+        }
+      ],
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ]
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "tool_use",
+              "id": "call_1",
+              "name": "base_tool",
+              "input": {}
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "tool_result",
+              "tool_use_id": "call_1",
+              "content": "done",
+              "is_error": false
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ]
+        },
+        {
+          "role": "system",
+          "content": [
+            {
+              "type": "text",
+              "text": "updated guidance\n\nUpdated system prompt section \"rules\":\n\nnew rules\n\nRemoved system prompt section \"docs\"."
+            },
+            {
+              "type": "tool_removal",
+              "tool": {
+                "type": "tool_reference",
+                "name": "base_tool"
+              }
+            },
+            {
+              "type": "tool_addition",
+              "tool": {
+                "type": "tool_definition",
+                "definition": {
+                  "name": "late_tool",
+                  "description": "late_tool tool",
+                  "eager_input_streaming": true,
+                  "input_schema": {
+                    "type": "object",
+                    "properties": {},
+                    "required": []
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "role": "system",
+          "content": [
+            {
+              "type": "text",
+              "text": "second update"
+            }
+          ]
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": "finished"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "pending-updates-stream",
+      "betas": [
+        "inline-tools-2026-09-15"
+      ],
+      "system": [
+        {
+          "type": "text",
+          "text": "base prompt\n\nold rules\n\nread docs",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "tools": [
+        {
+          "name": "base_tool",
+          "description": "base_tool tool",
+          "eager_input_streaming": true,
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        },
+        {
+          "name": "__pi_deferred_placeholder__",
+          "description": "Reserved placeholder. Never available. Never call this.",
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "defer_loading": true
+        }
+      ],
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ]
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "tool_use",
+              "id": "call_1",
+              "name": "base_tool",
+              "input": {}
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "tool_result",
+              "tool_use_id": "call_1",
+              "content": "done",
+              "is_error": false
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ]
+        },
+        {
+          "role": "system",
+          "content": [
+            {
+              "type": "text",
+              "text": "updated guidance\n\nUpdated system prompt section \"rules\":\n\nnew rules\n\nRemoved system prompt section \"docs\"."
+            },
+            {
+              "type": "tool_removal",
+              "tool": {
+                "type": "tool_reference",
+                "name": "base_tool"
+              }
+            },
+            {
+              "type": "tool_addition",
+              "tool": {
+                "type": "tool_definition",
+                "definition": {
+                  "name": "late_tool",
+                  "description": "late_tool tool",
+                  "eager_input_streaming": true,
+                  "input_schema": {
+                    "type": "object",
+                    "properties": {},
+                    "required": []
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "role": "system",
+          "content": [
+            {
+              "type": "text",
+              "text": "second update"
+            }
+          ]
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": "finished"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "remove-all-response",
+      "betas": [
+        "inline-tools-2026-09-15"
+      ],
+      "system": [
+        {
+          "type": "text",
+          "text": "base prompt\n\nold rules\n\nread docs",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "tools": [
+        {
+          "name": "base_tool",
+          "description": "base_tool tool",
+          "eager_input_streaming": true,
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        },
+        {
+          "name": "__pi_deferred_placeholder__",
+          "description": "Reserved placeholder. Never available. Never call this.",
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "defer_loading": true
+        }
+      ],
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ]
+        },
+        {
+          "role": "system",
+          "content": [
+            {
+              "type": "tool_removal",
+              "tool": {
+                "type": "tool_reference",
+                "name": "base_tool"
+              },
+              "cache_control": {
+                "type": "ephemeral"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "remove-all-stream",
+      "betas": [
+        "inline-tools-2026-09-15"
+      ],
+      "system": [
+        {
+          "type": "text",
+          "text": "base prompt\n\nold rules\n\nread docs",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "tools": [
+        {
+          "name": "base_tool",
+          "description": "base_tool tool",
+          "eager_input_streaming": true,
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        },
+        {
+          "name": "__pi_deferred_placeholder__",
+          "description": "Reserved placeholder. Never available. Never call this.",
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "defer_loading": true
+        }
+      ],
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ]
+        },
+        {
+          "role": "system",
+          "content": [
+            {
+              "type": "tool_removal",
+              "tool": {
+                "type": "tool_reference",
+                "name": "base_tool"
+              },
+              "cache_control": {
+                "type": "ephemeral"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "oauth-addition-removal-response",
+      "betas": [
+        "claude-code-20250219",
+        "inline-tools-2026-09-15",
+        "oauth-2025-04-20"
+      ],
+      "system": [
+        {
+          "type": "text",
+          "text": "You are Claude Code, Anthropic's official CLI for Claude.",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        },
+        {
+          "type": "text",
+          "text": "base",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "tools": [
+        {
+          "name": "Bash",
+          "description": "bash tool",
+          "eager_input_streaming": true,
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        },
+        {
+          "name": "__pi_deferred_placeholder__",
+          "description": "Reserved placeholder. Never available. Never call this.",
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "defer_loading": true
+        }
+      ],
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ]
+        },
+        {
+          "role": "system",
+          "content": [
+            {
+              "type": "tool_removal",
+              "tool": {
+                "type": "tool_reference",
+                "name": "Bash"
+              }
+            },
+            {
+              "type": "tool_addition",
+              "tool": {
+                "type": "tool_definition",
+                "definition": {
+                  "name": "Read",
+                  "description": "read tool",
+                  "eager_input_streaming": true,
+                  "input_schema": {
+                    "type": "object",
+                    "properties": {},
+                    "required": []
+                  }
+                }
+              },
+              "cache_control": {
+                "type": "ephemeral"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "oauth-addition-removal-stream",
+      "betas": [
+        "claude-code-20250219",
+        "inline-tools-2026-09-15",
+        "oauth-2025-04-20"
+      ],
+      "system": [
+        {
+          "type": "text",
+          "text": "You are Claude Code, Anthropic's official CLI for Claude.",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        },
+        {
+          "type": "text",
+          "text": "base",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "tools": [
+        {
+          "name": "Bash",
+          "description": "bash tool",
+          "eager_input_streaming": true,
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        },
+        {
+          "name": "__pi_deferred_placeholder__",
+          "description": "Reserved placeholder. Never available. Never call this.",
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "defer_loading": true
+        }
+      ],
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ]
+        },
+        {
+          "role": "system",
+          "content": [
+            {
+              "type": "tool_removal",
+              "tool": {
+                "type": "tool_reference",
+                "name": "Bash"
+              }
+            },
+            {
+              "type": "tool_addition",
+              "tool": {
+                "type": "tool_definition",
+                "definition": {
+                  "name": "Read",
+                  "description": "read tool",
+                  "eager_input_streaming": true,
+                  "input_schema": {
+                    "type": "object",
+                    "properties": {},
+                    "required": []
+                  }
+                }
+              },
+              "cache_control": {
+                "type": "ephemeral"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "oauth-redefinition-response",
+      "betas": [
+        "claude-code-20250219",
+        "inline-tools-2026-09-15",
+        "oauth-2025-04-20"
+      ],
+      "system": [
+        {
+          "type": "text",
+          "text": "You are Claude Code, Anthropic's official CLI for Claude.",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        },
+        {
+          "type": "text",
+          "text": "base",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "tools": [
+        {
+          "name": "Bash",
+          "description": "bash tool",
+          "eager_input_streaming": true,
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        },
+        {
+          "name": "__pi_deferred_placeholder__",
+          "description": "Reserved placeholder. Never available. Never call this.",
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "defer_loading": true
+        }
+      ],
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ]
+        },
+        {
+          "role": "system",
+          "content": [
+            {
+              "type": "tool_addition",
+              "tool": {
+                "type": "tool_definition",
+                "definition": {
+                  "name": "Bash",
+                  "description": "changed",
+                  "eager_input_streaming": true,
+                  "input_schema": {
+                    "type": "object",
+                    "properties": {},
+                    "required": []
+                  }
+                }
+              },
+              "cache_control": {
+                "type": "ephemeral"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "oauth-redefinition-stream",
+      "betas": [
+        "claude-code-20250219",
+        "inline-tools-2026-09-15",
+        "oauth-2025-04-20"
+      ],
+      "system": [
+        {
+          "type": "text",
+          "text": "You are Claude Code, Anthropic's official CLI for Claude.",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        },
+        {
+          "type": "text",
+          "text": "base",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "tools": [
+        {
+          "name": "Bash",
+          "description": "bash tool",
+          "eager_input_streaming": true,
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        },
+        {
+          "name": "__pi_deferred_placeholder__",
+          "description": "Reserved placeholder. Never available. Never call this.",
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "defer_loading": true
+        }
+      ],
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ]
+        },
+        {
+          "role": "system",
+          "content": [
+            {
+              "type": "tool_addition",
+              "tool": {
+                "type": "tool_definition",
+                "definition": {
+                  "name": "Bash",
+                  "description": "changed",
+                  "eager_input_streaming": true,
+                  "input_schema": {
+                    "type": "object",
+                    "properties": {},
+                    "required": []
+                  }
+                }
+              },
+              "cache_control": {
+                "type": "ephemeral"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "oauth-call-replay-response",
+      "betas": [
+        "claude-code-20250219",
+        "inline-tools-2026-09-15",
+        "oauth-2025-04-20"
+      ],
+      "system": [
+        {
+          "type": "text",
+          "text": "You are Claude Code, Anthropic's official CLI for Claude.",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        },
+        {
+          "type": "text",
+          "text": "base",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "tools": [
+        {
+          "name": "Bash",
+          "description": "bash tool",
+          "eager_input_streaming": true,
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        },
+        {
+          "name": "__pi_deferred_placeholder__",
+          "description": "Reserved placeholder. Never available. Never call this.",
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "defer_loading": true
+        }
+      ],
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ]
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "tool_use",
+              "id": "call_1",
+              "name": "Bash",
+              "input": {}
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "tool_result",
+              "tool_use_id": "call_1",
+              "content": "done",
+              "is_error": false
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before",
+              "cache_control": {
+                "type": "ephemeral"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "oauth-call-replay-stream",
+      "betas": [
+        "claude-code-20250219",
+        "inline-tools-2026-09-15",
+        "oauth-2025-04-20"
+      ],
+      "system": [
+        {
+          "type": "text",
+          "text": "You are Claude Code, Anthropic's official CLI for Claude.",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        },
+        {
+          "type": "text",
+          "text": "base",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "tools": [
+        {
+          "name": "Bash",
+          "description": "bash tool",
+          "eager_input_streaming": true,
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        },
+        {
+          "name": "__pi_deferred_placeholder__",
+          "description": "Reserved placeholder. Never available. Never call this.",
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "defer_loading": true
+        }
+      ],
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ]
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "tool_use",
+              "id": "call_1",
+              "name": "Bash",
+              "input": {}
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "tool_result",
+              "tool_use_id": "call_1",
+              "content": "done",
+              "is_error": false
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before",
+              "cache_control": {
+                "type": "ephemeral"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "pisharp": [
+    {
+      "id": "initial-response",
+      "betas": [
+        "inline-tools-2026-09-15"
+      ],
+      "system": [
+        {
+          "type": "text",
+          "text": "base prompt\n\nold rules\n\nread docs",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "tools": [
+        {
+          "name": "base_tool",
+          "description": "base_tool tool",
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "eager_input_streaming": true,
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        },
+        {
+          "name": "__pi_deferred_placeholder__",
+          "description": "Reserved placeholder. Never available. Never call this.",
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "defer_loading": true
+        }
+      ],
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before",
+              "cache_control": {
+                "type": "ephemeral"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "initial-stream",
+      "betas": [
+        "inline-tools-2026-09-15"
+      ],
+      "system": [
+        {
+          "type": "text",
+          "text": "base prompt\n\nold rules\n\nread docs",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "tools": [
+        {
+          "name": "base_tool",
+          "description": "base_tool tool",
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "eager_input_streaming": true,
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        },
+        {
+          "name": "__pi_deferred_placeholder__",
+          "description": "Reserved placeholder. Never available. Never call this.",
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "defer_loading": true
+        }
+      ],
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before",
+              "cache_control": {
+                "type": "ephemeral"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "addition-removal-response",
+      "betas": [
+        "inline-tools-2026-09-15"
+      ],
+      "system": [
+        {
+          "type": "text",
+          "text": "base prompt\n\nold rules\n\nread docs",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "tools": [
+        {
+          "name": "base_tool",
+          "description": "base_tool tool",
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "eager_input_streaming": true,
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        },
+        {
+          "name": "__pi_deferred_placeholder__",
+          "description": "Reserved placeholder. Never available. Never call this.",
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "defer_loading": true
+        }
+      ],
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ]
+        },
+        {
+          "role": "system",
+          "content": [
+            {
+              "type": "text",
+              "text": "updated guidance\n\nUpdated system prompt section \"rules\":\n\nnew rules\n\nRemoved system prompt section \"docs\"."
+            },
+            {
+              "type": "tool_removal",
+              "tool": {
+                "type": "tool_reference",
+                "name": "base_tool"
+              }
+            },
+            {
+              "type": "tool_addition",
+              "tool": {
+                "type": "tool_definition",
+                "definition": {
+                  "name": "late_tool",
+                  "description": "late_tool tool",
+                  "input_schema": {
+                    "type": "object",
+                    "properties": {},
+                    "required": []
+                  },
+                  "eager_input_streaming": true
+                }
+              },
+              "cache_control": {
+                "type": "ephemeral"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "addition-removal-stream",
+      "betas": [
+        "inline-tools-2026-09-15"
+      ],
+      "system": [
+        {
+          "type": "text",
+          "text": "base prompt\n\nold rules\n\nread docs",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "tools": [
+        {
+          "name": "base_tool",
+          "description": "base_tool tool",
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "eager_input_streaming": true,
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        },
+        {
+          "name": "__pi_deferred_placeholder__",
+          "description": "Reserved placeholder. Never available. Never call this.",
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "defer_loading": true
+        }
+      ],
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ]
+        },
+        {
+          "role": "system",
+          "content": [
+            {
+              "type": "text",
+              "text": "updated guidance\n\nUpdated system prompt section \"rules\":\n\nnew rules\n\nRemoved system prompt section \"docs\"."
+            },
+            {
+              "type": "tool_removal",
+              "tool": {
+                "type": "tool_reference",
+                "name": "base_tool"
+              }
+            },
+            {
+              "type": "tool_addition",
+              "tool": {
+                "type": "tool_definition",
+                "definition": {
+                  "name": "late_tool",
+                  "description": "late_tool tool",
+                  "input_schema": {
+                    "type": "object",
+                    "properties": {},
+                    "required": []
+                  },
+                  "eager_input_streaming": true
+                }
+              },
+              "cache_control": {
+                "type": "ephemeral"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "redefinition-response",
+      "betas": [
+        "inline-tools-2026-09-15"
+      ],
+      "system": [
+        {
+          "type": "text",
+          "text": "base prompt\n\nold rules\n\nread docs",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "tools": [
+        {
+          "name": "base_tool",
+          "description": "base_tool tool",
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "eager_input_streaming": true,
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        },
+        {
+          "name": "__pi_deferred_placeholder__",
+          "description": "Reserved placeholder. Never available. Never call this.",
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "defer_loading": true
+        }
+      ],
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ]
+        },
+        {
+          "role": "system",
+          "content": [
+            {
+              "type": "tool_addition",
+              "tool": {
+                "type": "tool_definition",
+                "definition": {
+                  "name": "base_tool",
+                  "description": "changed",
+                  "input_schema": {
+                    "type": "object",
+                    "properties": {},
+                    "required": []
+                  },
+                  "eager_input_streaming": true
+                }
+              },
+              "cache_control": {
+                "type": "ephemeral"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "redefinition-stream",
+      "betas": [
+        "inline-tools-2026-09-15"
+      ],
+      "system": [
+        {
+          "type": "text",
+          "text": "base prompt\n\nold rules\n\nread docs",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "tools": [
+        {
+          "name": "base_tool",
+          "description": "base_tool tool",
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "eager_input_streaming": true,
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        },
+        {
+          "name": "__pi_deferred_placeholder__",
+          "description": "Reserved placeholder. Never available. Never call this.",
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "defer_loading": true
+        }
+      ],
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ]
+        },
+        {
+          "role": "system",
+          "content": [
+            {
+              "type": "tool_addition",
+              "tool": {
+                "type": "tool_definition",
+                "definition": {
+                  "name": "base_tool",
+                  "description": "changed",
+                  "input_schema": {
+                    "type": "object",
+                    "properties": {},
+                    "required": []
+                  },
+                  "eager_input_streaming": true
+                }
+              },
+              "cache_control": {
+                "type": "ephemeral"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fallback-no-system-response",
+      "betas": [],
+      "system": [
+        {
+          "type": "text",
+          "text": "base prompt\n\nupdated guidance\n\nnew rules",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "tools": [
+        {
+          "name": "late_tool",
+          "description": "late_tool tool",
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "eager_input_streaming": true,
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before",
+              "cache_control": {
+                "type": "ephemeral"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fallback-no-system-stream",
+      "betas": [],
+      "system": [
+        {
+          "type": "text",
+          "text": "base prompt\n\nupdated guidance\n\nnew rules",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "tools": [
+        {
+          "name": "late_tool",
+          "description": "late_tool tool",
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "eager_input_streaming": true,
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before",
+              "cache_control": {
+                "type": "ephemeral"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fallback-no-tool-changes-response",
+      "betas": [],
+      "system": [
+        {
+          "type": "text",
+          "text": "base prompt\n\nold rules\n\nread docs",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "tools": [
+        {
+          "name": "late_tool",
+          "description": "late_tool tool",
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "eager_input_streaming": true,
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ]
+        },
+        {
+          "role": "system",
+          "content": [
+            {
+              "type": "text",
+              "text": "updated guidance\n\nUpdated system prompt section \"rules\":\n\nnew rules\n\nRemoved system prompt section \"docs\".",
+              "cache_control": {
+                "type": "ephemeral"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fallback-no-tool-changes-stream",
+      "betas": [],
+      "system": [
+        {
+          "type": "text",
+          "text": "base prompt\n\nold rules\n\nread docs",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "tools": [
+        {
+          "name": "late_tool",
+          "description": "late_tool tool",
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "eager_input_streaming": true,
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ]
+        },
+        {
+          "role": "system",
+          "content": [
+            {
+              "type": "text",
+              "text": "updated guidance\n\nUpdated system prompt section \"rules\":\n\nnew rules\n\nRemoved system prompt section \"docs\".",
+              "cache_control": {
+                "type": "ephemeral"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fallback-both-response",
+      "betas": [],
+      "system": [
+        {
+          "type": "text",
+          "text": "base prompt\n\nupdated guidance\n\nnew rules",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "tools": [
+        {
+          "name": "late_tool",
+          "description": "late_tool tool",
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "eager_input_streaming": true,
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before",
+              "cache_control": {
+                "type": "ephemeral"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fallback-both-stream",
+      "betas": [],
+      "system": [
+        {
+          "type": "text",
+          "text": "base prompt\n\nupdated guidance\n\nnew rules",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "tools": [
+        {
+          "name": "late_tool",
+          "description": "late_tool tool",
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "eager_input_streaming": true,
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before",
+              "cache_control": {
+                "type": "ephemeral"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "no-initial-tools-response",
+      "betas": [],
+      "system": [
+        {
+          "type": "text",
+          "text": "base prompt",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "tools": [
+        {
+          "name": "late_tool",
+          "description": "late_tool tool",
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "eager_input_streaming": true,
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ]
+        },
+        {
+          "role": "system",
+          "content": [
+            {
+              "type": "text",
+              "text": "updated guidance\n\nUpdated system prompt section \"rules\":\n\nnew rules\n\nRemoved system prompt section \"docs\".",
+              "cache_control": {
+                "type": "ephemeral"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "no-initial-tools-stream",
+      "betas": [],
+      "system": [
+        {
+          "type": "text",
+          "text": "base prompt",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "tools": [
+        {
+          "name": "late_tool",
+          "description": "late_tool tool",
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "eager_input_streaming": true,
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ]
+        },
+        {
+          "role": "system",
+          "content": [
+            {
+              "type": "text",
+              "text": "updated guidance\n\nUpdated system prompt section \"rules\":\n\nnew rules\n\nRemoved system prompt section \"docs\".",
+              "cache_control": {
+                "type": "ephemeral"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "call-result-adjacency-response",
+      "betas": [
+        "inline-tools-2026-09-15"
+      ],
+      "system": [
+        {
+          "type": "text",
+          "text": "base prompt\n\nold rules\n\nread docs",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "tools": [
+        {
+          "name": "base_tool",
+          "description": "base_tool tool",
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "eager_input_streaming": true,
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        },
+        {
+          "name": "__pi_deferred_placeholder__",
+          "description": "Reserved placeholder. Never available. Never call this.",
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "defer_loading": true
+        }
+      ],
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ]
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "tool_use",
+              "id": "call_1",
+              "name": "base_tool",
+              "input": {}
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "tool_result",
+              "tool_use_id": "call_1",
+              "is_error": false,
+              "content": "done"
+            }
+          ]
+        },
+        {
+          "role": "system",
+          "content": [
+            {
+              "type": "text",
+              "text": "updated guidance\n\nUpdated system prompt section \"rules\":\n\nnew rules\n\nRemoved system prompt section \"docs\"."
+            },
+            {
+              "type": "tool_removal",
+              "tool": {
+                "type": "tool_reference",
+                "name": "base_tool"
+              }
+            },
+            {
+              "type": "tool_addition",
+              "tool": {
+                "type": "tool_definition",
+                "definition": {
+                  "name": "late_tool",
+                  "description": "late_tool tool",
+                  "input_schema": {
+                    "type": "object",
+                    "properties": {},
+                    "required": []
+                  },
+                  "eager_input_streaming": true
+                }
+              }
+            }
+          ]
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": "finished"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "call-result-adjacency-stream",
+      "betas": [
+        "inline-tools-2026-09-15"
+      ],
+      "system": [
+        {
+          "type": "text",
+          "text": "base prompt\n\nold rules\n\nread docs",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "tools": [
+        {
+          "name": "base_tool",
+          "description": "base_tool tool",
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "eager_input_streaming": true,
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        },
+        {
+          "name": "__pi_deferred_placeholder__",
+          "description": "Reserved placeholder. Never available. Never call this.",
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "defer_loading": true
+        }
+      ],
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ]
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "tool_use",
+              "id": "call_1",
+              "name": "base_tool",
+              "input": {}
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "tool_result",
+              "tool_use_id": "call_1",
+              "is_error": false,
+              "content": "done"
+            }
+          ]
+        },
+        {
+          "role": "system",
+          "content": [
+            {
+              "type": "text",
+              "text": "updated guidance\n\nUpdated system prompt section \"rules\":\n\nnew rules\n\nRemoved system prompt section \"docs\"."
+            },
+            {
+              "type": "tool_removal",
+              "tool": {
+                "type": "tool_reference",
+                "name": "base_tool"
+              }
+            },
+            {
+              "type": "tool_addition",
+              "tool": {
+                "type": "tool_definition",
+                "definition": {
+                  "name": "late_tool",
+                  "description": "late_tool tool",
+                  "input_schema": {
+                    "type": "object",
+                    "properties": {},
+                    "required": []
+                  },
+                  "eager_input_streaming": true
+                }
+              }
+            }
+          ]
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": "finished"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "pending-updates-response",
+      "betas": [
+        "inline-tools-2026-09-15"
+      ],
+      "system": [
+        {
+          "type": "text",
+          "text": "base prompt\n\nold rules\n\nread docs",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "tools": [
+        {
+          "name": "base_tool",
+          "description": "base_tool tool",
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "eager_input_streaming": true,
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        },
+        {
+          "name": "__pi_deferred_placeholder__",
+          "description": "Reserved placeholder. Never available. Never call this.",
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "defer_loading": true
+        }
+      ],
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ]
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "tool_use",
+              "id": "call_1",
+              "name": "base_tool",
+              "input": {}
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "tool_result",
+              "tool_use_id": "call_1",
+              "is_error": false,
+              "content": "done"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ]
+        },
+        {
+          "role": "system",
+          "content": [
+            {
+              "type": "text",
+              "text": "updated guidance\n\nUpdated system prompt section \"rules\":\n\nnew rules\n\nRemoved system prompt section \"docs\"."
+            },
+            {
+              "type": "tool_removal",
+              "tool": {
+                "type": "tool_reference",
+                "name": "base_tool"
+              }
+            },
+            {
+              "type": "tool_addition",
+              "tool": {
+                "type": "tool_definition",
+                "definition": {
+                  "name": "late_tool",
+                  "description": "late_tool tool",
+                  "input_schema": {
+                    "type": "object",
+                    "properties": {},
+                    "required": []
+                  },
+                  "eager_input_streaming": true
+                }
+              }
+            }
+          ]
+        },
+        {
+          "role": "system",
+          "content": [
+            {
+              "type": "text",
+              "text": "second update"
+            }
+          ]
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": "finished"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "pending-updates-stream",
+      "betas": [
+        "inline-tools-2026-09-15"
+      ],
+      "system": [
+        {
+          "type": "text",
+          "text": "base prompt\n\nold rules\n\nread docs",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "tools": [
+        {
+          "name": "base_tool",
+          "description": "base_tool tool",
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "eager_input_streaming": true,
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        },
+        {
+          "name": "__pi_deferred_placeholder__",
+          "description": "Reserved placeholder. Never available. Never call this.",
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "defer_loading": true
+        }
+      ],
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ]
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "tool_use",
+              "id": "call_1",
+              "name": "base_tool",
+              "input": {}
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "tool_result",
+              "tool_use_id": "call_1",
+              "is_error": false,
+              "content": "done"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ]
+        },
+        {
+          "role": "system",
+          "content": [
+            {
+              "type": "text",
+              "text": "updated guidance\n\nUpdated system prompt section \"rules\":\n\nnew rules\n\nRemoved system prompt section \"docs\"."
+            },
+            {
+              "type": "tool_removal",
+              "tool": {
+                "type": "tool_reference",
+                "name": "base_tool"
+              }
+            },
+            {
+              "type": "tool_addition",
+              "tool": {
+                "type": "tool_definition",
+                "definition": {
+                  "name": "late_tool",
+                  "description": "late_tool tool",
+                  "input_schema": {
+                    "type": "object",
+                    "properties": {},
+                    "required": []
+                  },
+                  "eager_input_streaming": true
+                }
+              }
+            }
+          ]
+        },
+        {
+          "role": "system",
+          "content": [
+            {
+              "type": "text",
+              "text": "second update"
+            }
+          ]
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": "finished"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "remove-all-response",
+      "betas": [
+        "inline-tools-2026-09-15"
+      ],
+      "system": [
+        {
+          "type": "text",
+          "text": "base prompt\n\nold rules\n\nread docs",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "tools": [
+        {
+          "name": "base_tool",
+          "description": "base_tool tool",
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "eager_input_streaming": true,
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        },
+        {
+          "name": "__pi_deferred_placeholder__",
+          "description": "Reserved placeholder. Never available. Never call this.",
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "defer_loading": true
+        }
+      ],
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ]
+        },
+        {
+          "role": "system",
+          "content": [
+            {
+              "type": "tool_removal",
+              "tool": {
+                "type": "tool_reference",
+                "name": "base_tool"
+              },
+              "cache_control": {
+                "type": "ephemeral"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "remove-all-stream",
+      "betas": [
+        "inline-tools-2026-09-15"
+      ],
+      "system": [
+        {
+          "type": "text",
+          "text": "base prompt\n\nold rules\n\nread docs",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "tools": [
+        {
+          "name": "base_tool",
+          "description": "base_tool tool",
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "eager_input_streaming": true,
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        },
+        {
+          "name": "__pi_deferred_placeholder__",
+          "description": "Reserved placeholder. Never available. Never call this.",
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "defer_loading": true
+        }
+      ],
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ]
+        },
+        {
+          "role": "system",
+          "content": [
+            {
+              "type": "tool_removal",
+              "tool": {
+                "type": "tool_reference",
+                "name": "base_tool"
+              },
+              "cache_control": {
+                "type": "ephemeral"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "oauth-addition-removal-response",
+      "betas": [
+        "claude-code-20250219",
+        "inline-tools-2026-09-15",
+        "oauth-2025-04-20"
+      ],
+      "system": [
+        {
+          "type": "text",
+          "text": "You are Claude Code, Anthropic's official CLI for Claude.",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        },
+        {
+          "type": "text",
+          "text": "base",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "tools": [
+        {
+          "name": "Bash",
+          "description": "bash tool",
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "eager_input_streaming": true,
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        },
+        {
+          "name": "__pi_deferred_placeholder__",
+          "description": "Reserved placeholder. Never available. Never call this.",
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "defer_loading": true
+        }
+      ],
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ]
+        },
+        {
+          "role": "system",
+          "content": [
+            {
+              "type": "tool_removal",
+              "tool": {
+                "type": "tool_reference",
+                "name": "Bash"
+              }
+            },
+            {
+              "type": "tool_addition",
+              "tool": {
+                "type": "tool_definition",
+                "definition": {
+                  "name": "Read",
+                  "description": "read tool",
+                  "input_schema": {
+                    "type": "object",
+                    "properties": {},
+                    "required": []
+                  },
+                  "eager_input_streaming": true
+                }
+              },
+              "cache_control": {
+                "type": "ephemeral"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "oauth-addition-removal-stream",
+      "betas": [
+        "claude-code-20250219",
+        "inline-tools-2026-09-15",
+        "oauth-2025-04-20"
+      ],
+      "system": [
+        {
+          "type": "text",
+          "text": "You are Claude Code, Anthropic's official CLI for Claude.",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        },
+        {
+          "type": "text",
+          "text": "base",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "tools": [
+        {
+          "name": "Bash",
+          "description": "bash tool",
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "eager_input_streaming": true,
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        },
+        {
+          "name": "__pi_deferred_placeholder__",
+          "description": "Reserved placeholder. Never available. Never call this.",
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "defer_loading": true
+        }
+      ],
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ]
+        },
+        {
+          "role": "system",
+          "content": [
+            {
+              "type": "tool_removal",
+              "tool": {
+                "type": "tool_reference",
+                "name": "Bash"
+              }
+            },
+            {
+              "type": "tool_addition",
+              "tool": {
+                "type": "tool_definition",
+                "definition": {
+                  "name": "Read",
+                  "description": "read tool",
+                  "input_schema": {
+                    "type": "object",
+                    "properties": {},
+                    "required": []
+                  },
+                  "eager_input_streaming": true
+                }
+              },
+              "cache_control": {
+                "type": "ephemeral"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "oauth-redefinition-response",
+      "betas": [
+        "claude-code-20250219",
+        "inline-tools-2026-09-15",
+        "oauth-2025-04-20"
+      ],
+      "system": [
+        {
+          "type": "text",
+          "text": "You are Claude Code, Anthropic's official CLI for Claude.",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        },
+        {
+          "type": "text",
+          "text": "base",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "tools": [
+        {
+          "name": "Bash",
+          "description": "bash tool",
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "eager_input_streaming": true,
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        },
+        {
+          "name": "__pi_deferred_placeholder__",
+          "description": "Reserved placeholder. Never available. Never call this.",
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "defer_loading": true
+        }
+      ],
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ]
+        },
+        {
+          "role": "system",
+          "content": [
+            {
+              "type": "tool_addition",
+              "tool": {
+                "type": "tool_definition",
+                "definition": {
+                  "name": "Bash",
+                  "description": "changed",
+                  "input_schema": {
+                    "type": "object",
+                    "properties": {},
+                    "required": []
+                  },
+                  "eager_input_streaming": true
+                }
+              },
+              "cache_control": {
+                "type": "ephemeral"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "oauth-redefinition-stream",
+      "betas": [
+        "claude-code-20250219",
+        "inline-tools-2026-09-15",
+        "oauth-2025-04-20"
+      ],
+      "system": [
+        {
+          "type": "text",
+          "text": "You are Claude Code, Anthropic's official CLI for Claude.",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        },
+        {
+          "type": "text",
+          "text": "base",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "tools": [
+        {
+          "name": "Bash",
+          "description": "bash tool",
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "eager_input_streaming": true,
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        },
+        {
+          "name": "__pi_deferred_placeholder__",
+          "description": "Reserved placeholder. Never available. Never call this.",
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "defer_loading": true
+        }
+      ],
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ]
+        },
+        {
+          "role": "system",
+          "content": [
+            {
+              "type": "tool_addition",
+              "tool": {
+                "type": "tool_definition",
+                "definition": {
+                  "name": "Bash",
+                  "description": "changed",
+                  "input_schema": {
+                    "type": "object",
+                    "properties": {},
+                    "required": []
+                  },
+                  "eager_input_streaming": true
+                }
+              },
+              "cache_control": {
+                "type": "ephemeral"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "oauth-call-replay-response",
+      "betas": [
+        "claude-code-20250219",
+        "inline-tools-2026-09-15",
+        "oauth-2025-04-20"
+      ],
+      "system": [
+        {
+          "type": "text",
+          "text": "You are Claude Code, Anthropic's official CLI for Claude.",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        },
+        {
+          "type": "text",
+          "text": "base",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "tools": [
+        {
+          "name": "Bash",
+          "description": "bash tool",
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "eager_input_streaming": true,
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        },
+        {
+          "name": "__pi_deferred_placeholder__",
+          "description": "Reserved placeholder. Never available. Never call this.",
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "defer_loading": true
+        }
+      ],
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ]
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "tool_use",
+              "id": "call_1",
+              "name": "Bash",
+              "input": {}
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "tool_result",
+              "tool_use_id": "call_1",
+              "is_error": false,
+              "content": "done"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before",
+              "cache_control": {
+                "type": "ephemeral"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "oauth-call-replay-stream",
+      "betas": [
+        "claude-code-20250219",
+        "inline-tools-2026-09-15",
+        "oauth-2025-04-20"
+      ],
+      "system": [
+        {
+          "type": "text",
+          "text": "You are Claude Code, Anthropic's official CLI for Claude.",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        },
+        {
+          "type": "text",
+          "text": "base",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ],
+      "tools": [
+        {
+          "name": "Bash",
+          "description": "bash tool",
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "eager_input_streaming": true,
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        },
+        {
+          "name": "__pi_deferred_placeholder__",
+          "description": "Reserved placeholder. Never available. Never call this.",
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          },
+          "defer_loading": true
+        }
+      ],
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            }
+          ]
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "tool_use",
+              "id": "call_1",
+              "name": "Bash",
+              "input": {}
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "tool_result",
+              "tool_use_id": "call_1",
+              "is_error": false,
+              "content": "done"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "before",
+              "cache_control": {
+                "type": "ephemeral"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "compaction": {
+    "pi": {
+      "tokens": [
+        2,
+        3,
+        2,
+        2,
+        3,
+        2
+      ],
+      "cuts": [
+        {
+          "budget": 9,
+          "firstKeptIndex": 2,
+          "historyCount": 2
+        },
+        {
+          "budget": 10,
+          "firstKeptIndex": 1,
+          "historyCount": 0
+        }
+      ]
+    },
+    "pisharp": {
+      "tokens": [
+        2,
+        3,
+        2,
+        2,
+        3,
+        2
+      ],
+      "cuts": [
+        {
+          "budget": 9,
+          "firstKeptIndex": 2,
+          "historyCount": 2
+        },
+        {
+          "budget": 10,
+          "firstKeptIndex": 1,
+          "historyCount": 0
+        }
+      ]
+    }
+  },
+  "match": true
+}

@@ -135,6 +135,11 @@ public sealed class PiAgent
     private ModelImageResizeOptions? _selectedImageResizeOptions;
     private long _systemMessageTimestamp;
     private ToolLoadout? _currentToolLoadout;
+    private readonly ConditionalWeakTable<AgentSession, ToolDeclarationTranscript> _toolTranscripts = new();
+    private ToolDeclarationTranscript? _currentToolTranscript;
+
+    internal ToolDeclarationTranscript GetToolTranscript(AgentSession session) =>
+        _toolTranscripts.GetValue(session, _ => new());
 
     public string SystemInstructions { get; }
     public IReadOnlyList<AIFunctionDeclaration> ToolDeclarations => Array.AsReadOnly(
@@ -259,18 +264,19 @@ public sealed class PiAgent
             retryPolicy ?? ProviderRetryPolicy.Default, TakeSteeringForRequest, blockImages, ProjectForRequestAsync,
             supportsImages, () => Volatile.Read(ref _reasoning), () => _routedChatClient.HasRouter || Volatile.Read(ref _supportsImages) != 0,
             _routedChatClient, GetToolsForRequest, _routedChatClient, getAdditionalSystemInstructions,
-            _contextTransforms.ApplyAsync), new ChatClientAgentOptions
-            {
-                Name = "PiSharp",
-                ChatHistoryProvider = _history,
-                AllowConcurrentInvocation = true,
-                ChatOptions = new ChatOptions
+            _contextTransforms.ApplyAsync, (messages, options) =>
+                _currentToolTranscript?.Project(messages, options)), new ChatClientAgentOptions
                 {
-                    Instructions = SystemInstructions,
-                    Tools = [],
-                    Reasoning = reasoning
-                }
-            });
+                    Name = "PiSharp",
+                    ChatHistoryProvider = _history,
+                    AllowConcurrentInvocation = true,
+                    ChatOptions = new ChatOptions
+                    {
+                        Instructions = SystemInstructions,
+                        Tools = [],
+                        Reasoning = reasoning
+                    }
+                });
     }
 
     private IReadOnlyList<ChatMessage> TakeSteeringForRequest(IEnumerable<ChatMessage> messages)
@@ -473,6 +479,7 @@ public sealed class PiAgent
             var loadout = GetToolLoadout(session);
             loadout.BeginRun();
             Volatile.Write(ref _currentToolLoadout, loadout);
+            _currentToolTranscript = GetToolTranscript(session);
             _active = durable;
             _events = onEvent;
             _takeSteering = takeSteering;
@@ -511,6 +518,7 @@ public sealed class PiAgent
             _events = null;
             _active = null;
             Volatile.Write(ref _currentToolLoadout, null);
+            _currentToolTranscript = null;
             _runGate.Release();
         }
     }
