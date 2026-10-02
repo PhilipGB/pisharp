@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "plan_received": true,
-  "source_note": "Current Pi b271b0a524b29e13c0c9e748aea0d34e1597f2db: all 54 commits after 955cc666 classified with visible interactions in scope (24 NEEDS_WORK classifications). Exact-head Linux CI 36997235947 passes on source 4595bc9f4f2db98e45adf98b8ece2e00bbcfc0d1, including all 1114 tests with zero skips. Quiet-startup policy has paired evidence; broader startup notices/presentation remain open. Radius interactive onboarding has scoped menu/MCP/animation evidence with publication and exact-head CI pending; fresh Anthropic inline tools is an explicit required provider/transcript slice. All 182 capabilities remain required; full feature/interaction/visual parity is incomplete.",
+  "source_note": "Current Pi c10bfb0d79dbbc998539a0a3e6c6a736a4e6db06: all 58 commits after 955cc666 classified with visible interactions in scope (26 NEEDS_WORK classifications). Exact-head Linux CI 37019190204 passes PiSharp source c0b012ba7192afed65138dae7d10b5d15da77b67, including all 1132 tests with zero skips. Radius menu/MCP/animation has scoped evidence; full authentication/visual gaps remain. Anthropic inline tools is the next shared provider/transcript slice; fresh MCP CIMD and Cloudflare gateway work are explicitly tracked. All 184 capabilities remain required; full feature/interaction/visual parity is incomplete.",
   "baseline": "earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035",
   "required_ids": [
     "feature-agent-multi-turn-and-streaming",
@@ -185,7 +185,9 @@
     "provider-api-google-vertex",
     "extensions-builtin-resource-loading",
     "mcp-client-conformance",
-    "provider-anthropic-inline-tools"
+    "provider-anthropic-inline-tools",
+    "mcp-oauth-client-metadata-documents",
+    "provider-cloudflare-ai-gateway"
   ],
   "final_audit": {
     "complete": false,
@@ -902,7 +904,8 @@
         "tests/PiSharp.Tests/ProviderModelRuntimeTests.cs: model/auth PTY and HTTP-process fixtures",
         "UserSettingsTests.ModelThinkingLevelsLoadValidateAndMergeTrustedProjectOverrides covers normalization, malformed/duplicate entries and project override precedence; the RPC busy-cycle process differential is recorded in docs/parity/fixtures/rpc-scoped-model-thinking-baseline.md.",
         "2026-10-02 Radius slice: 59 focused checks pass, including seven loopback OAuth/PTY login/reload/cancellation cases and the initial menu. Current Pi b271b0a524b29e13c0c9e748aea0d34e1597f2db matches ten complete MCP configuration outcomes and 26 exact shimmer ANSI frames; current Pi Radius suites pass 8/8. See docs/parity/fixtures/radius-interactive-onboarding-2026-10-02.md. Overall authentication remains in progress: full dialog presentation/cursor, credential format/catalog synchronization and URL copy are not established by these fixtures.",
-        "Final Radius local verification: full solution format check plus final fixture format check pass; warnings-as-errors build has zero warnings/errors; full serial suite passes 1132/1132, zero skips, in 53 seconds. The existing interactive secret-isolation test is extracted into ProviderLoginTuiTests. Publication/exact-head CI remain pending."
+        "Final Radius local verification: full solution format check plus final fixture format check pass; warnings-as-errors build has zero warnings/errors; full serial suite passes 1132/1132, zero skips, in 53 seconds. The existing interactive secret-isolation test is extracted into ProviderLoginTuiTests. Publication/exact-head CI remain pending.",
+        "Published Radius slice c0b012ba7192afed65138dae7d10b5d15da77b67 passes exact-head Linux CI 37019190204: restore, full solution format verification, zero-warning/error build, all 1132 tests and zero skips. Full dialog/style/cursor, catalog synchronization and URL-copy parity remain open."
       ],
       "dependencies": []
     },
@@ -3424,7 +3427,8 @@
       "evidence": [
         "RadiusProviderTests covers browser/device flows, persistence, shared refresh, request-time credentials and cancellation; included in exact-head Linux CI run 36487198225 (807/807, 0 skipped). No paired current-Pi OAuth process differential yet.",
         "2026-10-02 Radius slice: 59 focused checks pass, including seven loopback OAuth/PTY login/reload/cancellation cases and the initial menu. Current Pi b271b0a524b29e13c0c9e748aea0d34e1597f2db matches ten complete MCP configuration outcomes and 26 exact shimmer ANSI frames; current Pi Radius suites pass 8/8. See docs/parity/fixtures/radius-interactive-onboarding-2026-10-02.md. Overall authentication remains in progress: full dialog presentation/cursor, credential format/catalog synchronization and URL copy are not established by these fixtures.",
-        "Final Radius local verification: full solution format check plus final fixture format check pass; warnings-as-errors build has zero warnings/errors; full serial suite passes 1132/1132, zero skips, in 53 seconds. The existing interactive secret-isolation test is extracted into ProviderLoginTuiTests. Publication/exact-head CI remain pending."
+        "Final Radius local verification: full solution format check plus final fixture format check pass; warnings-as-errors build has zero warnings/errors; full serial suite passes 1132/1132, zero skips, in 53 seconds. The existing interactive secret-isolation test is extracted into ProviderLoginTuiTests. Publication/exact-head CI remain pending.",
+        "Published Radius slice c0b012ba7192afed65138dae7d10b5d15da77b67 passes exact-head Linux CI 37019190204: restore, full solution format verification, zero-warning/error build, all 1132 tests and zero skips. Full dialog/style/cursor, catalog synchronization and URL-copy parity remain open."
       ],
       "dependencies": [
         "provider-profile-radius"
@@ -3836,7 +3840,7 @@
     {
       "id": "provider-anthropic-inline-tools",
       "title": "Anthropic inline mid-conversation tool declarations",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "earendil-works/pi@b271b0a524b29e13c0c9e748aea0d34e1597f2db: packages/ai/src/api/anthropic-messages.ts",
       "acceptance": [
         "For capable Anthropic models, keep initial top-level tools plus the deferred placeholder stable and request inline-tools-2026-09-15.",
@@ -3851,24 +3855,60 @@
         "feature-tools-default-set-dynamic-availability",
         "feature-sessions-jsonl-lifecycle"
       ]
+    },
+    {
+      "id": "mcp-oauth-client-metadata-documents",
+      "title": "MCP OAuth Client ID Metadata Documents",
+      "status": "not_started",
+      "source": "earendil-works/pi@1499466d8581035a4dec6c869725b8712aea4bbe",
+      "acceptance": [
+        "Accept oauth.clientRegistration dcr/cimd, retain dcr default and enforce Pi configuration combinations and callback restrictions.",
+        "For supported public clients, use the shared pi.dev client document when authorization responses include iss; otherwise use the server URL hash document and callback path.",
+        "Reuse official SDK PKCE/discovery/refresh; reject mismatching callback origin/path in browser/manual flows and preserve per-server credential/registration transitions."
+      ],
+      "implementation": [],
+      "evidence": [
+        "Fresh source c10bfb0d7 inspected. PiSharp rejects clientRegistration as an unknown option. The current project pins ModelContextProtocol.Core 2.2.0; inspect its existing client-metadata primitive before implementing Pi-specific document selection and callback ownership."
+      ],
+      "dependencies": [
+        "mcp-runtime"
+      ]
+    },
+    {
+      "id": "provider-cloudflare-ai-gateway",
+      "title": "Cloudflare AI Gateway provider and catalog",
+      "status": "not_started",
+      "source": "earendil-works/pi@c10bfb0d79dbbc998539a0a3e6c6a736a4e6db06",
+      "acceptance": [
+        "Expose current normal-product Cloudflare AI Gateway catalog, account/gateway endpoint ownership and credentials.",
+        "Use current protocol-specific OpenAI/Anthropic/Workers routing and convert dotted Claude catalog IDs to dashed upstream IDs.",
+        "Verify catalog and deterministic request behavior using local fixtures; cover normal model selection and shared execution."
+      ],
+      "implementation": [],
+      "evidence": [
+        "Current Pi generator converts native Claude dots to dashes before catalog emission because gateway Anthropic passthrough forwards IDs unchanged. PiSharp has a Cloudflare classifier capability, but no equivalent built-in Cloudflare AI Gateway chat profile/catalog. Classifier evidence does not establish gateway chat parity."
+      ],
+      "dependencies": [
+        "feature-models-selection-catalogs-and-credentials"
+      ]
     }
   ],
   "upstream_delta_audit": {
     "source_pin": "955cc6665ee3986c6a033db52200779310d10dfd",
-    "source_head": "b271b0a524b29e13c0c9e748aea0d34e1597f2db",
-    "commit_count": 54,
+    "source_head": "c10bfb0d79dbbc998539a0a3e6c6a736a4e6db06",
+    "commit_count": 58,
     "classifications": {
       "OUT_OF_SCOPE": 14,
-      "NO_BEHAVIOR_CHANGE": 11,
-      "NEEDS_WORK": 24,
-      "MATCHED": 5
+      "NO_BEHAVIOR_CHANGE": 12,
+      "NEEDS_WORK": 26,
+      "MATCHED": 6
     },
     "fixture": "docs/parity/fixtures/upstream-delta-audit-2026-10-01.md",
-    "next": "radius-interactive-onboarding",
-    "current_item": "ed8b3bcc194c8263ec8bec3f337053ae73866da1",
-    "current_item_status": "slice_local_green_pending_publication_and_ci",
-    "current_item_local_evidence": "Radius login composition is extracted from Program. The top-level menu, originating-menu cancellation, device-code sign-in and global MCP accept/no/cancel are covered by real Linux PTY tests with loopback OAuth. Accepting reloads the runtime settings snapshot; declining/canceling does not. Ten current-Pi MCP configuration scenarios and 26 exact selected-label ANSI shimmer frames match, with 1,008 unchanged shared palette prefixes. Focused checks pass 59/59 and current Pi Radius OAuth/provider tests pass 8/8. Full dialog layout/cursor/style parity, provider catalog synchronization, successful-login wording and auth URL copying remain open. Format verification and the zero-warning/error build pass; all 1132 tests pass with zero skips. Publication and exact-head CI remain pending.",
-    "next_after_ci": "b271b0a524b29e13c0c9e748aea0d34e1597f2db",
+    "next": "anthropic-inline-tool-transcript",
+    "current_item": "b271b0a524b29e13c0c9e748aea0d34e1597f2db",
+    "current_item_status": "oracle_inspected",
+    "current_item_local_evidence": "Radius slice c0b012ba7192afed65138dae7d10b5d15da77b67 passes exact-head CI 37019190204 with all 1132 tests and zero skips. Fresh source c10bfb0d7 adds four classified commits: existing CLI empty-entry filtering matches, README changes have no runtime behavior change, and MCP CIMD/Cloudflare gateway catalog behavior require work. Anthropic inline tools remains the next provider/transcript slice; SDK beta support is available but shared historical system/tool definitions need projection and persistence.",
+    "next_after_ci": "1499466d8581035a4dec6c869725b8712aea4bbe",
     "completed": [
       "65117e31f242daa8e0a17dbd2810f7bb92bf4087",
       "7a11fe1c723b942fa093edb8b00f051ddb9b6627",
@@ -3882,10 +3922,10 @@
       "409e808f5834dc4f2f37b54abf24d3a2f6ecad75",
       "3874b3e98983c70fa05fa193b675d42cfcb8b9f8"
     ],
-    "ci_run": "36997235947",
-    "latest_published_source_head": "4595bc9f4f2db98e45adf98b8ece2e00bbcfc0d1",
+    "ci_run": "37019190204",
+    "latest_published_source_head": "c0b012ba7192afed65138dae7d10b5d15da77b67",
     "latest_published_ci_runs": [
-      "36997235947"
+      "37019190204"
     ],
     "official_mcp_conformance": {
       "package": "@modelcontextprotocol/conformance@0.2.0-alpha.11",

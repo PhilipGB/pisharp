@@ -1,8 +1,8 @@
 # Current Pi upstream delta audit — 2026-10-01
 
-Fresh fetch on 2026-10-02 confirms Pi `main` at `b271b0a524b29e13c0c9e748aea0d34e1597f2db`, thirteen commits after the prior audit head `395315f4841ab5a090a33b8259f60b6df281c1ca` and 54 after `955cc6665ee3986c6a033db52200779310d10dfd`. PiSharp fetched main is `d9f2c65f853472636c7d488e40bc1f48047b544d`. Every intervening commit is classified below. Historical validation records retain their original pins; they do not prove current full parity.
+Fresh fetch on 2026-10-02 confirms Pi `main` at `c10bfb0d79dbbc998539a0a3e6c6a736a4e6db06`, seventeen commits after the prior audit head `395315f4841ab5a090a33b8259f60b6df281c1ca` and 58 after `955cc6665ee3986c6a033db52200779310d10dfd`. PiSharp fetched main is `c0b012ba7192afed65138dae7d10b5d15da77b67`. Every intervening commit is classified below. Historical validation records retain their original pins; they do not prove current full parity.
 
-Current classifications: 14 `OUT_OF_SCOPE`, 11 `NO_BEHAVIOR_CHANGE`, 24 `NEEDS_WORK`, 5 `MATCHED`. User-reachable visual effects, OAuth wording/callback presentation and package-resource CLI flows are in scope. Earlier exclusions for those surfaces are corrected. Grammar/custom-call replay, auth URL copying, current 3D interactions and Together metadata join the existing open queue.
+Current classifications: 14 `OUT_OF_SCOPE`, 12 `NO_BEHAVIOR_CHANGE`, 26 `NEEDS_WORK`, 6 `MATCHED`. User-reachable visual effects, OAuth wording/callback presentation and package-resource CLI flows are in scope. Earlier exclusions for those surfaces are corrected. Grammar/custom-call replay, auth URL copying, current 3D interactions and Together metadata join the existing open queue.
 
 ## Commit classifications
 
@@ -327,3 +327,24 @@ MCP server-account isolation is published and exact-head CI verified. The active
 - **PiSharp mismatch:** the stable SDK IChatClient receives only current top-level MAF tool declarations. PiSharp lacks the native system/tool-delta transcript and beta projection, including same-name replay.
 - **Required implementation/dependencies:** use the official SDK beta types/IChatClient with the existing shared MAF execution; add the Pi transcript delta, tool conversion/cache/beta behavior and persistence/provider-switch recovery proof. The installed C# SDK already exposes inline beta types; a separate SDK tool runner must not fork agent execution.
 - **Validation:** fail-first real-SDK loopback requests, current-Pi paired payloads for addition/removal/redefinition/fallback/OAuth plus session/tool-loop regression, required full checks and exact-head CI. `provider-anthropic-inline-tools` is a required ledger entry. This commit is in scope and unimplemented.
+
+
+### `9b3c19da5cffc4c5e8b6bd74c45abc1ab6bfcd16` — `MATCHED`
+
+- **Pi files/behavior:** CLI `args.ts` drops empty comma-separated `--models` patterns after trimming, preventing an empty substring pattern from adding a model to the cycle.
+- **PiSharp evidence:** `CliArguments.ParseToolNames` already trims and filters empty values for `--models`. Current Pi's two model-list parser tests pass; 86 unrelated cases are explicitly deselected. This classification covers the changed empty-pattern parsing, not all model-cycle/CLI behavior.
+
+### `de7e675de2c909776a2ed6253fe6b8495465167b` — `NO_BEHAVIOR_CHANGE`
+
+- **Pi files/behavior:** repo/CLI README text updates product introduction, installer ordering, examples and optional external session-sharing links. No runtime, installer code or normal CLI command implementation changes.
+
+### `1499466d8581035a4dec6c869725b8712aea4bbe` — `NEEDS_WORK`
+
+- **Pi files:** MCP config, coding-agent OAuth/runtime, MCP SDK OAuth flow/provider/callback and focused tests.
+- **Pi behavior:** opt-in `oauth.clientRegistration: "cimd"`; default dynamic registration stays. Public-client capability is required. Issuer-bearing responses use the shared Pi document; others use a URL-derived server document/callback. Browser/manual responses must match the exact redirect URI; stored registration transitions and refresh preserve server binding.
+- **PiSharp mismatch:** configuration rejects this option, and document/callback selection is absent. Reuse the official C# SDK client metadata primitive for PKCE/discovery/refresh and add only the Pi delta. Required task `mcp-oauth-client-metadata-documents` records configuration, document choice, callback identity and cache transitions.
+
+### `c10bfb0d79dbbc998539a0a3e6c6a736a4e6db06` — `NEEDS_WORK`
+
+- **Pi files/behavior:** normal Cloudflare AI Gateway catalog generation replaces dots with dashes in Claude IDs forwarded through `/anthropic`; the passthrough forwards the ID unchanged and dotted IDs fail.
+- **PiSharp mismatch:** the built-in gateway chat profile/catalog is absent. Cloudflare classifier support is separate. Required task `provider-cloudflare-ai-gateway` covers the normal profile, catalog, endpoint/auth ownership, protocol routing and dashed Claude IDs.
