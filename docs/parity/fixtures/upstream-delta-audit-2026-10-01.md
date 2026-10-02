@@ -168,7 +168,7 @@ Changes the interactive user-message component to avoid retaining a duplicate fu
 
 The OAuth selector now displays “not configured” instead of “unconfigured”. Visible wording is a parity requirement. PiSharp’s provider selection and status presentation need current-Pi terminal snapshots; include this label in the auth-screen slice.
 
-### `c662ec7e374563bd549dc35f47bac52dcc4bed88` — `NEEDS_WORK`
+### `c662ec7e374563bd549dc35f47bac52dcc4bed88` — `NEEDS_WORK` (resolved at exact head `2521200471`)
 
 - **Pi files:** `packages/coding-agent/src/core/agent-session.ts` and `packages/coding-agent/test/suite/agent-session-mcp.test.ts`.
 - **Pi behavior:** tool names restored from a saved session remain pending while MCP servers register; explicit deactivation clears pending names, and pending names that miss the next prompt do not reactivate unexpectedly. `/reload` carries the prior MCP tool loadout through the registry replacement.
@@ -178,17 +178,19 @@ The OAuth selector now displays “not configured” instead of “unconfigured�
 - **Required implementation:** preserve unresolved selected names with explicit lifecycle semantics until registry registration or the defined clearing boundary.
 - **Validation/dependencies:** full solution validation and exact-head CI; independent of other queued deltas.
 
-- **Current implementation/evidence:** four original fail-first scenarios are fixed, as is a declaration-order mismatch found by the paired probe. Eight scenarios against Pi `0495646a` match ordered active names, provider declarations and persisted loadout names. Focused tests pass 34/34; current Pi MCP resume/reload tests pass 5/5 (39 unrelated tests deselected). Format verification, warnings-as-errors build (zero warnings/errors) and all 1087 tests pass with zero skips. Publication and exact-head CI are pending. See [the differential fixture](deferred-tool-restore-2026-10-02.md).
+- **Current implementation/evidence:** four original fail-first scenarios are fixed, as is a declaration-order mismatch found by the paired probe. Eight scenarios against Pi `0495646a` match ordered active names, provider declarations and persisted loadout names. Focused tests pass 34/34; current Pi MCP resume/reload tests pass 5/5 (39 unrelated tests deselected). Format verification, warnings-as-errors build (zero warnings/errors) and all 1087 tests pass with zero skips. Exact-head Linux CI [36989476624](https://github.com/PhilipGB/pisharp/actions/runs/36989476624) passes on source `25212004711fa7a321b198084b4e24290d031985`, including all 1087 tests with zero skips. See [the differential fixture](deferred-tool-restore-2026-10-02.md).
 
 ### `409e808f5834dc4f2f37b54abf24d3a2f6ecad75` — `NEEDS_WORK`
 
 - **Pi files:** `packages/coding-agent/src/modes/interactive/theme/system-theme.ts` and `packages/coding-agent/test/system-theme.test.ts`.
 - **Pi behavior:** generated anchored palette colors are capped at the source color's chroma, keeping pastel source palettes pastel as lightness changes.
-- **PiSharp mismatch:** `TerminalSystemTheme.Anchored` preserves OKHSL saturation without a source-chroma ceiling; lightness shifts can increase actual chroma and oversaturate a pastel palette.
+- **Original PiSharp mismatch:** `TerminalSystemTheme.Anchored` preserves OKHSL saturation without a source-chroma ceiling; lightness shifts can increase actual chroma and oversaturate a pastel palette.
 - **PiSharp files:** `src/PiSharp.Cli/Tui/TerminalSystemTheme.cs`, `TerminalColorSpace.cs`, and a focused `TerminalThemeTests` fixture.
 - **Fail-first evidence:** port the Catppuccin Frappe pastel-pink sample and compare generated OKLCH chroma at the relevant palette steps.
 - **Required implementation:** clamp generated chroma to the source chroma with the same palette falloff while retaining current contrast/lightness rules.
 - **Validation/dependencies:** focused color fixtures, full solution validation and exact-head CI.
+
+- **Current implementation/evidence:** source chroma is carried with OKHSL channels and capped with Pi’s falloff. The paired fixture also found 256-color gray ties; the nearest-entry rule now matches Pi. Theme parsing and palette generation share OKLCH conversion. Four cases failed first; focused tests pass 19/19, Pi system-theme tests pass 8/8. Nine palettes in two color modes match all 56 role ANSI prefixes (1008 comparisons), with no color/style normalization. Format verification and warnings-as-errors build (zero warnings/errors) pass; the full suite passes 1091/1091, zero skips. Publication and exact-head CI are pending. See [the current-Pi color fixture](system-theme-pastel-2026-10-02.md).
 
 ### `f29ea3deb298280b417892c6229ce478ad8c4d2f` — `NEEDS_WORK`
 

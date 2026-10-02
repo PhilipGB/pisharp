@@ -105,6 +105,36 @@ internal static class TerminalColorSpace
         return (hue, Math.Clamp(saturation, 0, 1), lightness);
     }
 
+    public static (double Hue, double Chroma, double Lightness) RgbToOklch(TerminalTheme.Rgb color)
+    {
+        var lab = RgbToOklab(color);
+        return ((Math.Atan2(lab.B, lab.A) * 180 / Math.PI + 360) % 360,
+            Math.Sqrt(lab.A * lab.A + lab.B * lab.B), lab.L);
+    }
+
+    public static TerminalTheme.Rgb OklchToRgb(double lightness, double chroma, double hue)
+    {
+        var angle = hue * Math.PI / 180;
+        var cosine = Math.Cos(angle);
+        var sine = Math.Sin(angle);
+        Vector At(double value) => OklabToLinearSrgb(new(lightness, value * cosine, value * sine));
+        static bool InGamut(Vector value) => value.X is >= -1e-7 and <= 1.0000001 &&
+            value.Y is >= -1e-7 and <= 1.0000001 && value.Z is >= -1e-7 and <= 1.0000001;
+        var linear = At(chroma);
+        if (InGamut(linear)) return LinearSrgbToRgb(linear);
+        var low = 0d;
+        var high = chroma;
+        linear = At(0);
+        for (var index = 0; index < 20; index++)
+        {
+            var middle = (low + high) / 2;
+            var candidate = At(middle);
+            if (InGamut(candidate)) { low = middle; linear = candidate; }
+            else high = middle;
+        }
+        return LinearSrgbToRgb(linear);
+    }
+
     public static double OklabLightness(TerminalTheme.Rgb color) => RgbToOklab(color).L;
 
     public static double OklabToOkhslLightness(double value) =>

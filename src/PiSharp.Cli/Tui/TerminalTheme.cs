@@ -316,7 +316,7 @@ internal sealed class TerminalTheme
                 var hue = double.Parse(match.Groups[4].Value, CultureInfo.InvariantCulture);
                 if (!double.IsFinite(lightness) || !double.IsFinite(chroma) || !double.IsFinite(hue) || lightness is < 0 or > 1 || chroma < 0)
                     throw new InvalidDataException($"Invalid OKLCH color '{value}'.");
-                return new(false, false, null, false, 0, FromOklch(lightness, chroma, hue));
+                return new(false, false, null, false, 0, TerminalColorSpace.OklchToRgb(lightness, chroma, hue));
             }
             match = s_okhsl.Match(value);
             if (match.Success)
@@ -344,46 +344,6 @@ internal sealed class TerminalTheme
             if (mode == TerminalColorMode.TrueColor) return $"\u001b[{slot};2;{Rgb.R};{Rgb.G};{Rgb.B}m";
             return $"\u001b[{slot};5;{Rgb.ToAnsi256()}m";
         }
-
-        private static Rgb FromOklch(double l, double c, double h)
-        {
-            var radians = h * Math.PI / 180;
-            var cosine = Math.Cos(radians);
-            var sine = Math.Sin(radians);
-            (double R, double G, double B) Convert(double chroma)
-            {
-                var a = chroma * cosine;
-                var b = chroma * sine;
-                var lr = Math.Pow(l + 0.3963377774 * a + 0.2158037573 * b, 3);
-                var mr = Math.Pow(l - 0.1055613458 * a - 0.0638541728 * b, 3);
-                var sr = Math.Pow(l - 0.0894841775 * a - 1.291485548 * b, 3);
-                return (4.0767416621 * lr - 3.3077115913 * mr + 0.2309699292 * sr,
-                    -1.2684380046 * lr + 2.6097574011 * mr - 0.3413193965 * sr,
-                    -0.0041960863 * lr - 0.7034186147 * mr + 1.707614701 * sr);
-            }
-            var rgb = Convert(c);
-            bool InGamut((double R, double G, double B) value) => value.R is >= -1e-7 and <= 1.0000001 &&
-                value.G is >= -1e-7 and <= 1.0000001 && value.B is >= -1e-7 and <= 1.0000001;
-            if (!InGamut(rgb))
-            {
-                var low = 0d;
-                var high = c;
-                rgb = Convert(0);
-                for (var step = 0; step < 20; step++)
-                {
-                    var mid = (low + high) / 2;
-                    var candidate = Convert(mid);
-                    if (InGamut(candidate)) { low = mid; rgb = candidate; }
-                    else high = mid;
-                }
-            }
-            static byte Channel(double value)
-            {
-                var srgb = value <= 0.0031308 ? value * 12.92 : 1.055 * Math.Pow(value, 1 / 2.4) - 0.055;
-                return (byte)Math.Round(Math.Clamp(srgb, 0, 1) * 255);
-            }
-            return new(Channel(rgb.R), Channel(rgb.G), Channel(rgb.B));
-        }
     }
 
     internal readonly record struct Rgb(byte R, byte G, byte B)
@@ -404,6 +364,8 @@ internal sealed class TerminalTheme
         public int ToAnsi256()
         {
             ReadOnlySpan<byte> levels = [0, 95, 135, 175, 215, 255];
+            ReadOnlySpan<byte> grays = [8, 18, 28, 38, 48, 58, 68, 78, 88, 98, 108, 118,
+                128, 138, 148, 158, 168, 178, 188, 198, 208, 218, 228, 238];
             static int Nearest(ReadOnlySpan<byte> values, byte target)
             {
                 var index = 0;
@@ -419,9 +381,9 @@ internal sealed class TerminalTheme
             var g = Nearest(levels, G);
             var b = Nearest(levels, B);
             var cube = new Rgb(levels[r], levels[g], levels[b]);
-            var gray = (byte)Math.Clamp((int)Math.Round(0.299 * R + 0.587 * G + 0.114 * B), 0, 255);
-            var grayIndex = Math.Clamp((int)Math.Round((gray - 8) / 10d), 0, 23);
-            var grayValue = (byte)(8 + grayIndex * 10);
+            var gray = (byte)Math.Clamp((int)Math.Floor(0.299 * R + 0.587 * G + 0.114 * B + 0.5), 0, 255);
+            var grayIndex = Nearest(grays, gray);
+            var grayValue = grays[grayIndex];
             var spread = Math.Max(R, Math.Max(G, B)) - Math.Min(R, Math.Min(G, B));
             var cubeDistance = Distance(this, cube);
             var grayDistance = Distance(this, new(grayValue, grayValue, grayValue));

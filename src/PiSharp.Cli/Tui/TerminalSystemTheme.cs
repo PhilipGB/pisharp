@@ -3,6 +3,7 @@ namespace PiSharp.Cli.Tui;
 /// <summary>Builds Pi's terminal-derived system palette with OKHSL hues and contrast-constrained roles.</summary>
 internal static class TerminalSystemTheme
 {
+    private sealed record SourceColor(double Hue, double Saturation, double Lightness, double Chroma);
     private sealed record Family(double Hue, double MinimumSaturation, double MaximumSaturation, int PaletteSlot);
     private sealed record Curve(double[] Coefficients, double MinimumSurface, double MaximumSurface);
     private sealed record Rule(string Token, string[] Surfaces, Level Level);
@@ -75,7 +76,7 @@ internal static class TerminalSystemTheme
             return IndexedColors(saturation, appearanceHint);
 
         var palette = terminal.Palette is { Count: 16 }
-            ? terminal.Palette.Select(TerminalColorSpace.RgbToOkhsl).ToArray()
+            ? terminal.Palette.Select(SourceOf).ToArray()
             : null;
         var appearance = DetectAppearance(background, terminal.Foreground);
         var lighter = appearance == "dark";
@@ -199,7 +200,7 @@ internal static class TerminalSystemTheme
                         result[token] = "";
                         continue;
                     }
-                    var source = TerminalColorSpace.RgbToOkhsl(foreground);
+                    var source = SourceOf(foreground);
                     text = Anchored(source, s_families["neutral"], TerminalColorSpace.OklabToOkhslLightness(required), saturation);
                 }
             }
@@ -230,12 +231,22 @@ internal static class TerminalSystemTheme
         return new(colors, dim, appearance);
     }
 
-    private static TerminalTheme.Rgb Anchored((double Hue, double Saturation, double Lightness) source,
+    private static SourceColor SourceOf(TerminalTheme.Rgb color)
+    {
+        var (hue, saturation, lightness) = TerminalColorSpace.RgbToOkhsl(color);
+        return new(hue, saturation, lightness, TerminalColorSpace.RgbToOklch(color).Chroma);
+    }
+
+    private static TerminalTheme.Rgb Anchored(SourceColor source,
         Family family, double lightness, double saturation)
     {
         var anchor = SaturationCurve(family, source.Lightness);
         var falloff = anchor > 0 ? Math.Min(1, SaturationCurve(family, lightness) / anchor) : 1;
-        return TerminalColorSpace.OkhslToRgb(source.Hue, source.Saturation * falloff * saturation, lightness);
+        var color = TerminalColorSpace.OkhslToRgb(source.Hue, source.Saturation * falloff * saturation, lightness);
+        var cap = source.Chroma * falloff * saturation;
+        var generated = TerminalColorSpace.RgbToOklch(color);
+        return generated.Chroma <= cap ? color :
+            TerminalColorSpace.OklchToRgb(generated.Lightness, cap, source.Hue);
     }
 
     private static TerminalTheme.Rgb WithTextContrast(TerminalTheme.Rgb color,

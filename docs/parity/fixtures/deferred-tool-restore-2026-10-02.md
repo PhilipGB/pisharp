@@ -20,6 +20,6 @@ python3 tools/parity/deferred-tool-differential.py --pi /path/to/current/pi --ou
 
 The Pi checkout must have dependencies and generated provider metadata hydrated. Exact comparison data is in [the JSON fixture](deferred-tool-restore-2026-10-02.json).
 
-Final format verification passes. The warnings-as-errors build has zero warnings/errors. The serial full suite passes 1087/1087 with zero skips in 4m32s. Publication and exact-head CI are pending; their exact source/run IDs will accompany the next implementation checkpoint.
+Final format verification passes. The warnings-as-errors build has zero warnings/errors. The serial full suite passes 1087/1087 with zero skips in 4m32s. Published source `25212004711fa7a321b198084b4e24290d031985` passes exact-head Linux CI [36989476624](https://github.com/PhilipGB/pisharp/actions/runs/36989476624), including all 1087 tests with zero skips. The successful build reports zero warnings/errors.
 
 Broader MCP, exposure and visual parity remain open; this fixture verifies the restored deferred-loadout slice only.
