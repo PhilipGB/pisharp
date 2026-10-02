@@ -29,6 +29,9 @@ public sealed class TerminalEditor
 
     public string Draft => _buffer.Text;
     public string Hotkeys => _keymap.FormatHotkeys();
+    internal TerminalTheme CurrentTheme => _screen?.CurrentTheme ?? TerminalTheme.Default;
+    internal bool TryReadLoginAbort() => EnsureInput().TryRead(50, out var input) &&
+        input.Key is { } key && _keymap.Matches("app.interrupt", key);
 
     public void ReloadKeybindings() => _keymap.Reload();
 

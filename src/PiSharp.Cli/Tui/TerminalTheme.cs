@@ -361,15 +361,17 @@ internal sealed class TerminalTheme
             }
         }
 
-        public int ToAnsi256()
+        public int ToAnsi256() => ToAnsi256(R, G, B);
+
+        public static int ToAnsi256(double red, double green, double blue)
         {
             ReadOnlySpan<byte> levels = [0, 95, 135, 175, 215, 255];
             ReadOnlySpan<byte> grays = [8, 18, 28, 38, 48, 58, 68, 78, 88, 98, 108, 118,
                 128, 138, 148, 158, 168, 178, 188, 198, 208, 218, 228, 238];
-            static int Nearest(ReadOnlySpan<byte> values, byte target)
+            static int Nearest(ReadOnlySpan<byte> values, double target)
             {
                 var index = 0;
-                var distance = int.MaxValue;
+                var distance = double.PositiveInfinity;
                 for (var i = 0; i < values.Length; i++)
                 {
                     var next = Math.Abs(values[i] - target);
@@ -377,26 +379,25 @@ internal sealed class TerminalTheme
                 }
                 return index;
             }
-            var r = Nearest(levels, R);
-            var g = Nearest(levels, G);
-            var b = Nearest(levels, B);
+            double Distance(Rgb second)
+            {
+                var dr = red - second.R;
+                var dg = green - second.G;
+                var db = blue - second.B;
+                return 0.299 * dr * dr + 0.587 * dg * dg + 0.114 * db * db;
+            }
+            var r = Nearest(levels, red);
+            var g = Nearest(levels, green);
+            var b = Nearest(levels, blue);
             var cube = new Rgb(levels[r], levels[g], levels[b]);
-            var gray = (byte)Math.Clamp((int)Math.Floor(0.299 * R + 0.587 * G + 0.114 * B + 0.5), 0, 255);
+            var gray = Math.Clamp(Math.Floor(0.299 * red + 0.587 * green + 0.114 * blue + 0.5), 0, 255);
             var grayIndex = Nearest(grays, gray);
             var grayValue = grays[grayIndex];
-            var spread = Math.Max(R, Math.Max(G, B)) - Math.Min(R, Math.Min(G, B));
-            var cubeDistance = Distance(this, cube);
-            var grayDistance = Distance(this, new(grayValue, grayValue, grayValue));
-            return spread < 10 && grayDistance < cubeDistance ? 232 + grayIndex : 16 + 36 * r + 6 * g + b;
+            var spread = Math.Max(red, Math.Max(green, blue)) - Math.Min(red, Math.Min(green, blue));
+            return spread < 10 && Distance(new(grayValue, grayValue, grayValue)) < Distance(cube)
+                ? 232 + grayIndex : 16 + 36 * r + 6 * g + b;
         }
 
-        private static double Distance(Rgb first, Rgb second)
-        {
-            var dr = first.R - second.R;
-            var dg = first.G - second.G;
-            var db = first.B - second.B;
-            return 0.299 * dr * dr + 0.587 * dg * dg + 0.114 * db * db;
-        }
     }
 
     private static Rgb IndexedRgb(int index)

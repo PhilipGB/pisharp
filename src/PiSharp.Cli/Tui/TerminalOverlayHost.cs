@@ -18,7 +18,12 @@ internal sealed class TerminalOverlayHost(TerminalInput input)
                 screen.RefreshIfResized();
                 var content = list.Render(screen.TerminalWidth, screen.TerminalHeight);
                 screen.SetOverlay(content);
-                var next = input.Read();
+                TerminalInputEvent next;
+                if (list.Selected?.Option.SelectedLabelRenderer is not null)
+                {
+                    if (!input.TryRead(50, out next)) continue;
+                }
+                else next = input.Read();
                 if (next.IsEndOfStream) return null;
                 var mouseContentLine = next.Mouse is { } mouse
                     ? TerminalOverlayLayout.ContentLineAt(content, screen.TerminalWidth, screen.TerminalHeight,

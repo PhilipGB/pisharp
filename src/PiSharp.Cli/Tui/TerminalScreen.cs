@@ -304,7 +304,8 @@ public sealed class TerminalScreen : IDisposable
         lock (_gate)
         {
             if (!_active) return;
-            _overlay = lines?.Select(line => TerminalSafeText.Normalize(line).Replace('\n', ' ')).ToArray();
+            // List state sanitizes user text before applying application-owned styling.
+            _overlay = lines?.Select(line => line.Replace('\n', ' ')).ToArray();
             RenderLocked();
         }
     }

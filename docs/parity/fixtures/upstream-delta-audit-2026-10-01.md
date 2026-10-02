@@ -1,8 +1,8 @@
 # Current Pi upstream delta audit — 2026-10-01
 
-Fresh fetch on 2026-10-02 confirms Pi `main` at `3874b3e98983c70fa05fa193b675d42cfcb8b9f8`, twelve commits after the prior audit head `395315f4841ab5a090a33b8259f60b6df281c1ca` and 53 after `955cc6665ee3986c6a033db52200779310d10dfd`. PiSharp fetched main is `d9f2c65f853472636c7d488e40bc1f48047b544d`. Every intervening commit is classified below. Historical validation records retain their original pins; they do not prove current full parity.
+Fresh fetch on 2026-10-02 confirms Pi `main` at `b271b0a524b29e13c0c9e748aea0d34e1597f2db`, thirteen commits after the prior audit head `395315f4841ab5a090a33b8259f60b6df281c1ca` and 54 after `955cc6665ee3986c6a033db52200779310d10dfd`. PiSharp fetched main is `d9f2c65f853472636c7d488e40bc1f48047b544d`. Every intervening commit is classified below. Historical validation records retain their original pins; they do not prove current full parity.
 
-Current classifications: 14 `OUT_OF_SCOPE`, 11 `NO_BEHAVIOR_CHANGE`, 23 `NEEDS_WORK`, 5 `MATCHED`. User-reachable visual effects, OAuth wording/callback presentation and package-resource CLI flows are in scope. Earlier exclusions for those surfaces are corrected. Grammar/custom-call replay, auth URL copying, current 3D interactions and Together metadata join the existing open queue.
+Current classifications: 14 `OUT_OF_SCOPE`, 11 `NO_BEHAVIOR_CHANGE`, 24 `NEEDS_WORK`, 5 `MATCHED`. User-reachable visual effects, OAuth wording/callback presentation and package-resource CLI flows are in scope. Earlier exclusions for those surfaces are corrected. Grammar/custom-call replay, auth URL copying, current 3D interactions and Together metadata join the existing open queue.
 
 ## Commit classifications
 
@@ -202,7 +202,7 @@ The OAuth selector now displays “not configured” instead of “unconfigured�
 - **Required implementation:** model the three-value setting through precedence, persistence and settings UI, and render the header separately from the gated metadata/notices.
 - **Validation/dependencies:** full solution validation and exact-head CI.
 
-- **Current implementation/evidence:** Quiet-startup parsing, trusted precedence, three-state persistence and header/details visibility match 28 current-Pi scenarios. Eight fail-first cases are fixed; 24 focused tests pass, including six fixed-dimension terminal launches and a real settings-picker save. Current Pi startup oracle tests pass 5/5 (30 unrelated cases deselected by the explicit filter). Full startup resource notices, header text/layout/ANSI, expansion, logo interactions and forced diagnostics remain open; this slice does not claim those surfaces match. See [the settings/gating fixture](quiet-startup-header-2026-10-02.md). Format verification passes; warnings-as-errors build has zero warnings/errors; the full serial suite passes 1114/1114 with zero skips in 4m29s. Publication and exact-head CI are pending. This delta remains `NEEDS_WORK` until the additional startup notice/presentation requirements are implemented.
+- **Current implementation/evidence:** Quiet-startup parsing, trusted precedence, three-state persistence and header/details visibility match 28 current-Pi scenarios. Eight fail-first cases are fixed; 24 focused tests pass, including six fixed-dimension terminal launches and a real settings-picker save. Current Pi startup oracle tests pass 5/5 (30 unrelated cases deselected by the explicit filter). Full startup resource notices, header text/layout/ANSI, expansion, logo interactions and forced diagnostics remain open; this slice does not claim those surfaces match. See [the settings/gating fixture](quiet-startup-header-2026-10-02.md). Format verification passes; warnings-as-errors build has zero warnings/errors; the full serial suite passes 1114/1114 with zero skips in 4m29s. Exact-head Linux CI 36997235947 passes on source 4595bc9f4f2db98e45adf98b8ece2e00bbcfc0d1, including all 1114 tests with zero skips. This delta remains `NEEDS_WORK` until the additional startup notice/presentation requirements are implemented.
 
 ### `7fd478a2e888ebc28869566f33a186303d372838` — `OUT_OF_SCOPE`
 
@@ -220,11 +220,12 @@ The normal browser OAuth callback page displays a colored Pi logo. This user-fac
 
 - **Pi files:** `packages/coding-agent/src/core/radius.ts`, OAuth and Radius login selectors, `interactive-mode.ts`, and interactive-mode tests.
 - **Pi behavior:** `/login` offers Radius sign-in, then offers to configure the Radius MCP server in global `mcp.json` with provider-backed authentication; accept persists and reloads configuration, cancel returns to the parent flow, and subscription/account status is presented distinctly.
-- **PiSharp mismatch:** Radius OAuth provider support and MCP provider-auth configuration exist, but `/login` does not connect them into the same onboarding/configuration flow.
+- **PiSharp mismatch:** the connected login/MCP flow and selected-label animation are implemented and locally verified in this slice. Full dialog/cursor/style parity and post-login catalog synchronization remain open; the classification stays `NEEDS_WORK`.
+- **Scoped evidence:** 59 focused checks, ten whole-configuration current-Pi comparisons and 26 exact selected-label shimmer ANSI frames pass. Seven loopback OAuth/PTY scenarios verify cancellation and actual runtime reload on acceptance. See [Radius evidence](radius-interactive-onboarding-2026-10-02.md); Format verification, the zero-warning/error build and all 1132 tests pass with zero skips; publication and exact-head CI remain pending.
 - **PiSharp files:** `src/PiSharp.Cli/ProviderOAuth.cs`, login command/selector services, `src/PiSharp.Runtime/Mcp/McpConfigurationEditor.cs`, manager/reload flow, and focused auth/PTY process tests.
 - **Fail-first evidence:** run `/login` through a PTY with Radius available; assert sign-in, configure, cancel, persisted provider-auth configuration and live server reload paths.
 - **Required implementation:** compose the existing OAuth and MCP services into the interactive onboarding flow without embedding behavior in `Program.cs` or exposing credentials.
-- **Validation/dependencies:** full solution validation and exact-head CI. Radius capabilities exist in PiSharp; only the connected `/login` path is queued.
+- **Validation/dependencies:** full solution validation and exact-head CI. The connected `/login` behavior is locally verified; complete authentication presentation and catalog synchronization remain queued.
 
 ### `aab34df655e3c5974fc40618f75e9eafdb031293` — `NEEDS_WORK`
 
@@ -318,3 +319,11 @@ MCP server-account isolation is published and exact-head CI verified. The active
 - **Implementation slice:** add only the verified wording to the existing Pi-specific agent retry policy; retain the shared MAF execution path and existing budget/backoff/cancellation behavior. Dedicated fail-first and current-Pi lifecycle comparison are active.
 
 - **Current implementation/evidence:** only the capacity phrase is added to the existing shared retry classifier. Three tests failed first; focused tests pass 17/17 and current Pi retry tests pass 25/25. Six paired lifecycle scenarios match request context/counts and exact retry payloads, including backoff cancellation. Format verification and warnings-as-errors build (zero warnings/errors) pass; all 1098 tests pass with zero skips. Exact-head Linux CI 36994405262 passes on source 095c893a15f5fcdbea356d6c1cfbc57c8c4c5329, including all 1098 tests with zero skips. See [the capacity fixture](provider-capacity-retry-2026-10-02.md).
+
+### `b271b0a524b29e13c0c9e748aea0d34e1597f2db` — `NEEDS_WORK`
+
+- **Pi files:** `packages/ai/src/api/anthropic-messages.ts`, `types.ts`, `utils/transcript.ts`, `test/transcript-tool-changes.test.ts` and Anthropic SDK lockfiles.
+- **Observable behavior:** capable Anthropic models request `inline-tools-2026-09-15`. Initial tools and the deferred placeholder remain fixed at request level; later tools are defined by value in system `tool_addition` blocks. Same-name updates replace the definition inline without a removal or full-list fallback. Cache control stays on the block, not the inline definition. Models without native support and histories without initial tools keep the current-tool fallback. OAuth tool-name mapping remains.
+- **PiSharp mismatch:** the stable SDK IChatClient receives only current top-level MAF tool declarations. PiSharp lacks the native system/tool-delta transcript and beta projection, including same-name replay.
+- **Required implementation/dependencies:** use the official SDK beta types/IChatClient with the existing shared MAF execution; add the Pi transcript delta, tool conversion/cache/beta behavior and persistence/provider-switch recovery proof. The installed C# SDK already exposes inline beta types; a separate SDK tool runner must not fork agent execution.
+- **Validation:** fail-first real-SDK loopback requests, current-Pi paired payloads for addition/removal/redefinition/fallback/OAuth plus session/tool-loop regression, required full checks and exact-head CI. `provider-anthropic-inline-tools` is a required ledger entry. This commit is in scope and unimplemented.

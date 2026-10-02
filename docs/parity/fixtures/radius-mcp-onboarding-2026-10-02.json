@@ -1,0 +1,390 @@
+{
+  "piSha": "b271b0a524b29e13c0c9e748aea0d34e1597f2db",
+  "normalization": "Exact offer presence and full resulting global JSON. No configuration normalization. UI rendering, credential exchange, cancellation navigation and actual runtime reload are separate terminal coverage.",
+  "scenarios": [
+    {
+      "id": "missing-yes",
+      "action": "yes"
+    },
+    {
+      "id": "missing-no",
+      "action": "no"
+    },
+    {
+      "id": "missing-cancel",
+      "action": "cancel"
+    },
+    {
+      "id": "configured",
+      "action": "yes",
+      "global": {
+        "mcpServers": {
+          "custom": {
+            "url": "https://radius.pi.dev/mcp///",
+            "auth": {
+              "provider": "radius"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "existing-options",
+      "action": "yes",
+      "global": {
+        "autoEnableCodemode": false,
+        "mcpServers": {
+          "custom": {
+            "url": "https://radius.pi.dev/mcp/",
+            "oauth": {},
+            "headers": {
+              "X-Extra": "kept"
+            },
+            "enabled": false
+          }
+        }
+      }
+    },
+    {
+      "id": "name-conflict",
+      "action": "yes",
+      "global": {
+        "mcpServers": {
+          "radius": {
+            "command": "unrelated"
+          }
+        }
+      }
+    },
+    {
+      "id": "double-name-conflict",
+      "action": "yes",
+      "global": {
+        "mcpServers": {
+          "radius": {
+            "command": "first"
+          },
+          "radius-mcp": {
+            "command": "second"
+          }
+        }
+      }
+    },
+    {
+      "id": "project-only",
+      "action": "yes",
+      "project": {
+        "mcpServers": {
+          "custom": {
+            "url": "https://radius.pi.dev/mcp",
+            "auth": {
+              "provider": "radius"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "other-provider",
+      "action": "yes",
+      "global": {
+        "mcpServers": {
+          "custom": {
+            "url": "https://radius.pi.dev/mcp",
+            "auth": {
+              "provider": "other"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "case-sensitive-url",
+      "action": "yes",
+      "global": {
+        "mcpServers": {
+          "custom": {
+            "url": "https://RADIUS.pi.dev/mcp"
+          }
+        }
+      }
+    }
+  ],
+  "pi": [
+    {
+      "id": "missing-yes",
+      "offered": true,
+      "global": {
+        "mcpServers": {
+          "radius": {
+            "url": "https://radius.pi.dev/mcp",
+            "auth": {
+              "provider": "radius"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "missing-no",
+      "offered": true,
+      "global": null
+    },
+    {
+      "id": "missing-cancel",
+      "offered": true,
+      "global": null
+    },
+    {
+      "id": "configured",
+      "offered": false,
+      "global": {
+        "mcpServers": {
+          "custom": {
+            "url": "https://radius.pi.dev/mcp///",
+            "auth": {
+              "provider": "radius"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "existing-options",
+      "offered": true,
+      "global": {
+        "autoEnableCodemode": false,
+        "mcpServers": {
+          "custom": {
+            "url": "https://radius.pi.dev/mcp/",
+            "headers": {
+              "X-Extra": "kept"
+            },
+            "enabled": false,
+            "auth": {
+              "provider": "radius"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "name-conflict",
+      "offered": true,
+      "global": {
+        "mcpServers": {
+          "radius": {
+            "command": "unrelated"
+          },
+          "radius-mcp": {
+            "url": "https://radius.pi.dev/mcp",
+            "auth": {
+              "provider": "radius"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "double-name-conflict",
+      "offered": true,
+      "global": {
+        "mcpServers": {
+          "radius": {
+            "command": "first"
+          },
+          "radius-mcp": {
+            "url": "https://radius.pi.dev/mcp",
+            "auth": {
+              "provider": "radius"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "project-only",
+      "offered": true,
+      "global": {
+        "mcpServers": {
+          "radius": {
+            "url": "https://radius.pi.dev/mcp",
+            "auth": {
+              "provider": "radius"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "other-provider",
+      "offered": true,
+      "global": {
+        "mcpServers": {
+          "custom": {
+            "url": "https://radius.pi.dev/mcp",
+            "auth": {
+              "provider": "radius"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "case-sensitive-url",
+      "offered": true,
+      "global": {
+        "mcpServers": {
+          "custom": {
+            "url": "https://RADIUS.pi.dev/mcp"
+          },
+          "radius": {
+            "url": "https://radius.pi.dev/mcp",
+            "auth": {
+              "provider": "radius"
+            }
+          }
+        }
+      }
+    }
+  ],
+  "pisharp": [
+    {
+      "id": "missing-yes",
+      "offered": true,
+      "global": {
+        "mcpServers": {
+          "radius": {
+            "url": "https://radius.pi.dev/mcp",
+            "auth": {
+              "provider": "radius"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "missing-no",
+      "offered": true,
+      "global": null
+    },
+    {
+      "id": "missing-cancel",
+      "offered": true,
+      "global": null
+    },
+    {
+      "id": "configured",
+      "offered": false,
+      "global": {
+        "mcpServers": {
+          "custom": {
+            "url": "https://radius.pi.dev/mcp///",
+            "auth": {
+              "provider": "radius"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "existing-options",
+      "offered": true,
+      "global": {
+        "autoEnableCodemode": false,
+        "mcpServers": {
+          "custom": {
+            "url": "https://radius.pi.dev/mcp/",
+            "headers": {
+              "X-Extra": "kept"
+            },
+            "enabled": false,
+            "auth": {
+              "provider": "radius"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "name-conflict",
+      "offered": true,
+      "global": {
+        "mcpServers": {
+          "radius": {
+            "command": "unrelated"
+          },
+          "radius-mcp": {
+            "url": "https://radius.pi.dev/mcp",
+            "auth": {
+              "provider": "radius"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "double-name-conflict",
+      "offered": true,
+      "global": {
+        "mcpServers": {
+          "radius": {
+            "command": "first"
+          },
+          "radius-mcp": {
+            "url": "https://radius.pi.dev/mcp",
+            "auth": {
+              "provider": "radius"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "project-only",
+      "offered": true,
+      "global": {
+        "mcpServers": {
+          "radius": {
+            "url": "https://radius.pi.dev/mcp",
+            "auth": {
+              "provider": "radius"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "other-provider",
+      "offered": true,
+      "global": {
+        "mcpServers": {
+          "custom": {
+            "url": "https://radius.pi.dev/mcp",
+            "auth": {
+              "provider": "radius"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "case-sensitive-url",
+      "offered": true,
+      "global": {
+        "mcpServers": {
+          "custom": {
+            "url": "https://RADIUS.pi.dev/mcp"
+          },
+          "radius": {
+            "url": "https://radius.pi.dev/mcp",
+            "auth": {
+              "provider": "radius"
+            }
+          }
+        }
+      }
+    }
+  ],
+  "match": true
+}

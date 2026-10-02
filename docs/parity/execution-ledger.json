@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "plan_received": true,
-  "source_note": "Current Pi 3874b3e98983c70fa05fa193b675d42cfcb8b9f8: all 53 commits after 955cc666 classified with visible interactions in scope. Exact-head Linux CI 36994405262 passes on source 095c893a15f5fcdbea356d6c1cfbc57c8c4c5329, including all 1098 tests with zero skips. The quiet-startup header policy slice has paired evidence and 24 focused passes; Format verification passes; warnings-as-errors build has zero warnings/errors; the full serial suite passes 1114/1114 with zero skips in 4m29s. Publication and exact-head CI are pending.. All 181 capabilities remain required; broader feature/interaction/visual parity is incomplete.",
+  "source_note": "Current Pi b271b0a524b29e13c0c9e748aea0d34e1597f2db: all 54 commits after 955cc666 classified with visible interactions in scope (24 NEEDS_WORK classifications). Exact-head Linux CI 36997235947 passes on source 4595bc9f4f2db98e45adf98b8ece2e00bbcfc0d1, including all 1114 tests with zero skips. Quiet-startup policy has paired evidence; broader startup notices/presentation remain open. Radius interactive onboarding has scoped menu/MCP/animation evidence with publication and exact-head CI pending; fresh Anthropic inline tools is an explicit required provider/transcript slice. All 182 capabilities remain required; full feature/interaction/visual parity is incomplete.",
   "baseline": "earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035",
   "required_ids": [
     "feature-agent-multi-turn-and-streaming",
@@ -184,7 +184,8 @@
     "provider-api-google-genai",
     "provider-api-google-vertex",
     "extensions-builtin-resource-loading",
-    "mcp-client-conformance"
+    "mcp-client-conformance",
+    "provider-anthropic-inline-tools"
   ],
   "final_audit": {
     "complete": false,
@@ -894,11 +895,14 @@
       ],
       "implementation": [
         "src/PiSharp.Cli/Program.cs: /model, /models, /thinking, /scoped-models, /login, /logout; src/PiSharp.Cli/ProviderModelRuntime.cs: compatible model selection",
-        "UserSettings parses per-model thinking values and merges trusted project entries over user settings; model selection resolves the target model value before the global default."
+        "UserSettings parses per-model thinking values and merges trusted project entries over user settings; model selection resolves the target model value before the global default.",
+        "TerminalProviderLogin and TerminalProviderOAuthInteraction compose existing OAuth/storage adapters with the terminal authentication menu. RadiusMcpSetup proposes only global MCP provider authentication, preserving server fields and replacing OAuth; accepting calls the existing resource reload path. Selected Radius labels use the current Pi shimmer, preserving fractional channels for 256-color quantization."
       ],
       "evidence": [
         "tests/PiSharp.Tests/ProviderModelRuntimeTests.cs: model/auth PTY and HTTP-process fixtures",
-        "UserSettingsTests.ModelThinkingLevelsLoadValidateAndMergeTrustedProjectOverrides covers normalization, malformed/duplicate entries and project override precedence; the RPC busy-cycle process differential is recorded in docs/parity/fixtures/rpc-scoped-model-thinking-baseline.md."
+        "UserSettingsTests.ModelThinkingLevelsLoadValidateAndMergeTrustedProjectOverrides covers normalization, malformed/duplicate entries and project override precedence; the RPC busy-cycle process differential is recorded in docs/parity/fixtures/rpc-scoped-model-thinking-baseline.md.",
+        "2026-10-02 Radius slice: 59 focused checks pass, including seven loopback OAuth/PTY login/reload/cancellation cases and the initial menu. Current Pi b271b0a524b29e13c0c9e748aea0d34e1597f2db matches ten complete MCP configuration outcomes and 26 exact shimmer ANSI frames; current Pi Radius suites pass 8/8. See docs/parity/fixtures/radius-interactive-onboarding-2026-10-02.md. Overall authentication remains in progress: full dialog presentation/cursor, credential format/catalog synchronization and URL copy are not established by these fixtures.",
+        "Final Radius local verification: full solution format check plus final fixture format check pass; warnings-as-errors build has zero warnings/errors; full serial suite passes 1132/1132, zero skips, in 53 seconds. The existing interactive secret-isolation test is extracted into ProviderLoginTuiTests. Publication/exact-head CI remain pending."
       ],
       "dependencies": []
     },
@@ -2619,7 +2623,7 @@
       "evidence": [
         "Quiet-startup parsing, trusted precedence, three-state persistence and header/details visibility match 28 current-Pi scenarios. Eight fail-first cases are fixed; 24 focused tests pass, including six fixed-dimension terminal launches and a real settings-picker save. Current Pi startup oracle tests pass 5/5 (30 unrelated cases deselected by the explicit filter). Full startup resource notices, header text/layout/ANSI, expansion, logo interactions and forced diagnostics remain open; this slice does not claim those surfaces match.",
         "See docs/parity/fixtures/quiet-startup-header-2026-10-02.md and .json. Broader startup visual/resource/diagnostic checks prevent marking this capability verified.",
-        "Format verification passes; warnings-as-errors build has zero warnings/errors; the full serial suite passes 1114/1114 with zero skips in 4m29s. Publication and exact-head CI are pending."
+        "Format verification passes; warnings-as-errors build has zero warnings/errors; the full serial suite passes 1114/1114 with zero skips in 4m29s. Exact-head Linux CI 36997235947 passes on source 4595bc9f4f2db98e45adf98b8ece2e00bbcfc0d1, including all 1114 tests with zero skips."
       ],
       "dependencies": []
     },
@@ -3414,10 +3418,13 @@
         "Serialized refresh, request-time bearer resolution, cancellation and safe status"
       ],
       "implementation": [
-        "Implemented Radius browser/device OAuth and request-time token refresh."
+        "Implemented Radius browser/device OAuth and request-time token refresh.",
+        "TerminalProviderLogin and TerminalProviderOAuthInteraction compose existing OAuth/storage adapters with the terminal authentication menu. RadiusMcpSetup proposes only global MCP provider authentication, preserving server fields and replacing OAuth; accepting calls the existing resource reload path. Selected Radius labels use the current Pi shimmer, preserving fractional channels for 256-color quantization."
       ],
       "evidence": [
-        "RadiusProviderTests covers browser/device flows, persistence, shared refresh, request-time credentials and cancellation; included in exact-head Linux CI run 36487198225 (807/807, 0 skipped). No paired current-Pi OAuth process differential yet."
+        "RadiusProviderTests covers browser/device flows, persistence, shared refresh, request-time credentials and cancellation; included in exact-head Linux CI run 36487198225 (807/807, 0 skipped). No paired current-Pi OAuth process differential yet.",
+        "2026-10-02 Radius slice: 59 focused checks pass, including seven loopback OAuth/PTY login/reload/cancellation cases and the initial menu. Current Pi b271b0a524b29e13c0c9e748aea0d34e1597f2db matches ten complete MCP configuration outcomes and 26 exact shimmer ANSI frames; current Pi Radius suites pass 8/8. See docs/parity/fixtures/radius-interactive-onboarding-2026-10-02.md. Overall authentication remains in progress: full dialog presentation/cursor, credential format/catalog synchronization and URL copy are not established by these fixtures.",
+        "Final Radius local verification: full solution format check plus final fixture format check pass; warnings-as-errors build has zero warnings/errors; full serial suite passes 1132/1132, zero skips, in 53 seconds. The existing interactive secret-isolation test is extracted into ProviderLoginTuiTests. Publication/exact-head CI remain pending."
       ],
       "dependencies": [
         "provider-profile-radius"
@@ -3825,24 +3832,43 @@
         "Current source inspected during the 2026-10-02 audit; PiSharp has no equivalent verified implementation."
       ],
       "dependencies": []
+    },
+    {
+      "id": "provider-anthropic-inline-tools",
+      "title": "Anthropic inline mid-conversation tool declarations",
+      "status": "not_started",
+      "source": "earendil-works/pi@b271b0a524b29e13c0c9e748aea0d34e1597f2db: packages/ai/src/api/anthropic-messages.ts",
+      "acceptance": [
+        "For capable Anthropic models, keep initial top-level tools plus the deferred placeholder stable and request inline-tools-2026-09-15.",
+        "Replay later additions by value; skip removal for same-name redefinition, preserve original top-level definitions and place cache control on message blocks.",
+        "Retain current-tool fallback when there is no initial tool or native compatibility is disabled; verify OAuth name mapping, switch/resume/compaction and shared execution."
+      ],
+      "implementation": [],
+      "evidence": [
+        "Current Pi implementation and transcript-tool-changes.test.ts were inspected after the fresh fetch. PiSharp uses the stable Anthropic AsIChatClient boundary and current top-level MAF declarations; native system/tool delta transcript projection is missing. The installed official Anthropic 12.50.0 SDK already has beta system/tool-definition types; its lower-level beta IChatClient boundary should be reused for the Pi delta. Its separate ToolRunner must not replace the shared MAF execution loop."
+      ],
+      "dependencies": [
+        "feature-tools-default-set-dynamic-availability",
+        "feature-sessions-jsonl-lifecycle"
+      ]
     }
   ],
   "upstream_delta_audit": {
     "source_pin": "955cc6665ee3986c6a033db52200779310d10dfd",
-    "source_head": "3874b3e98983c70fa05fa193b675d42cfcb8b9f8",
-    "commit_count": 53,
+    "source_head": "b271b0a524b29e13c0c9e748aea0d34e1597f2db",
+    "commit_count": 54,
     "classifications": {
       "OUT_OF_SCOPE": 14,
       "NO_BEHAVIOR_CHANGE": 11,
-      "NEEDS_WORK": 23,
+      "NEEDS_WORK": 24,
       "MATCHED": 5
     },
     "fixture": "docs/parity/fixtures/upstream-delta-audit-2026-10-01.md",
-    "next": "quiet-startup-header",
-    "current_item": "f29ea3deb298280b417892c6229ce478ad8c4d2f",
-    "current_item_status": "local_verified_pending_ci",
-    "current_item_local_evidence": "Quiet-startup parsing, trusted precedence, three-state persistence and header/details visibility match 28 current-Pi scenarios. Eight fail-first cases are fixed; 24 focused tests pass, including six fixed-dimension terminal launches and a real settings-picker save. Current Pi startup oracle tests pass 5/5 (30 unrelated cases deselected by the explicit filter). Full startup resource notices, header text/layout/ANSI, expansion, logo interactions and forced diagnostics remain open; this slice does not claim those surfaces match. Format verification passes; warnings-as-errors build has zero warnings/errors; the full serial suite passes 1114/1114 with zero skips in 4m29s. Publication and exact-head CI are pending.",
-    "next_after_ci": "ed8b3bcc194c8263ec8bec3f337053ae73866da1",
+    "next": "radius-interactive-onboarding",
+    "current_item": "ed8b3bcc194c8263ec8bec3f337053ae73866da1",
+    "current_item_status": "slice_local_green_pending_publication_and_ci",
+    "current_item_local_evidence": "Radius login composition is extracted from Program. The top-level menu, originating-menu cancellation, device-code sign-in and global MCP accept/no/cancel are covered by real Linux PTY tests with loopback OAuth. Accepting reloads the runtime settings snapshot; declining/canceling does not. Ten current-Pi MCP configuration scenarios and 26 exact selected-label ANSI shimmer frames match, with 1,008 unchanged shared palette prefixes. Focused checks pass 59/59 and current Pi Radius OAuth/provider tests pass 8/8. Full dialog layout/cursor/style parity, provider catalog synchronization, successful-login wording and auth URL copying remain open. Format verification and the zero-warning/error build pass; all 1132 tests pass with zero skips. Publication and exact-head CI remain pending.",
+    "next_after_ci": "b271b0a524b29e13c0c9e748aea0d34e1597f2db",
     "completed": [
       "65117e31f242daa8e0a17dbd2810f7bb92bf4087",
       "7a11fe1c723b942fa093edb8b00f051ddb9b6627",
@@ -3856,10 +3882,10 @@
       "409e808f5834dc4f2f37b54abf24d3a2f6ecad75",
       "3874b3e98983c70fa05fa193b675d42cfcb8b9f8"
     ],
-    "ci_run": "36994405262",
-    "latest_published_source_head": "095c893a15f5fcdbea356d6c1cfbc57c8c4c5329",
+    "ci_run": "36997235947",
+    "latest_published_source_head": "4595bc9f4f2db98e45adf98b8ece2e00bbcfc0d1",
     "latest_published_ci_runs": [
-      "36994405262"
+      "36997235947"
     ],
     "official_mcp_conformance": {
       "package": "@modelcontextprotocol/conformance@0.2.0-alpha.11",

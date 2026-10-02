@@ -18,4 +18,4 @@ Reproduce the paired policy fixture:
 python3 tools/parity/quiet-startup-differential.py --pi /path/to/current/pi --output /tmp/quiet-startup.json
 ```
 
-The Pi checkout needs dependencies and generated provider metadata. [The JSON fixture](quiet-startup-header-2026-10-02.json) preserves all inputs/results and the oracle SHA. Format verification passes; warnings-as-errors build has zero warnings/errors; the full serial suite passes 1114/1114 with zero skips in 4m29s. Publication and exact-head CI are pending.
+The Pi checkout needs dependencies and generated provider metadata. [The JSON fixture](quiet-startup-header-2026-10-02.json) preserves all inputs/results and the oracle SHA. Format verification passes; warnings-as-errors build has zero warnings/errors; the full serial suite passes 1114/1114 with zero skips in 4m29s. Exact-head Linux CI 36997235947 passes on source 4595bc9f4f2db98e45adf98b8ece2e00bbcfc0d1, including all 1114 tests with zero skips.

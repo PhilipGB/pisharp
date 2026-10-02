@@ -42,14 +42,20 @@ internal static class TerminalTranscriptViewport
     {
         var result = new StringBuilder();
         var used = 0;
-        var elements = StringInfo.GetTextElementEnumerator(value);
-        while (elements.MoveNext())
+        for (var offset = 0; offset < value.Length;)
         {
-            var element = (string)elements.Current;
+            if (TerminalTextLayout.TryReadEscape(value, offset, out var escapeLength))
+            {
+                result.Append(value, offset, escapeLength);
+                offset += escapeLength;
+                continue;
+            }
+            var element = StringInfo.GetNextTextElement(value, offset);
             var cells = Math.Max(0, TerminalCells.Width(element));
             if (used + cells > width) break;
             result.Append(element);
             used += cells;
+            offset += element.Length;
         }
         return result.ToString();
     }

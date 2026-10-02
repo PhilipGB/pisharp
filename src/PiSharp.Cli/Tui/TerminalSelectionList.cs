@@ -3,7 +3,8 @@ using System.Globalization;
 namespace PiSharp.Cli.Tui;
 
 internal sealed record TerminalSelectionOption<T>(string Key, T Value, string Label,
-    string? Description = null, string? SearchText = null, bool IsCurrent = false);
+    string? Description = null, string? SearchText = null, bool IsCurrent = false,
+    Func<string, string>? SelectedLabelRenderer = null);
 
 internal sealed record TerminalSelection<T>(TerminalSelectionOption<T> Option, bool IsScoped);
 
@@ -150,6 +151,9 @@ internal sealed class TerminalSelectionList<T>
                 var current = option.IsCurrent ? "✓ " : "  ";
                 var description = string.IsNullOrWhiteSpace(option.Description) ? "" : $" · {option.Description}";
                 var line = TerminalSafeText.Normalize($"{marker}{current}{option.Label}{description}");
+                if (selected && option.SelectedLabelRenderer is { } renderLabel)
+                    line = marker + current + renderLabel(TerminalSafeText.Normalize(option.Label)) +
+                        TerminalSafeText.Normalize(description);
                 lines.Add(TerminalTranscriptViewport.Clip(line, width));
             }
             if (start > 0 || end < _filteredOptions.Count)

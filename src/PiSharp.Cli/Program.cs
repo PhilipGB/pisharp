@@ -591,6 +591,10 @@ var terminalModelPicker = editor is null ? null : new TerminalModelPicker(modelR
 var terminalSessionPicker = editor is null ? null : new TerminalSessionPicker(store, editor);
 var terminalForkPicker = editor is null ? null : new TerminalForkPicker(editor);
 var terminalSettingsPicker = editor is null ? null : new TerminalSettingsPicker(editor, () => terminalThemeCatalog.GetAvailableNames());
+var terminalProviderLogin = editor is null ? null : new TerminalProviderLogin(modelRuntime, editor, agentDirectory,
+    () => currentDirectory, () => selection.Provider.Id,
+    async () => await ReplaceModelRuntime(await modelRuntime.ResolveAsync(selection.Provider.Id, selection.Model.Id), thinking, false),
+    ReloadResources);
 async Task SelectModelAsync()
 {
     if (terminalModelPicker is null) return;
@@ -875,24 +879,6 @@ async Task ReloadResources()
         throw;
     }
 }
-string? ReadSecret()
-{
-    if (Console.IsInputRedirected) return Console.ReadLine();
-    var value = new System.Text.StringBuilder();
-    while (true)
-    {
-        var key = Console.ReadKey(intercept: true);
-        if (key.Key == ConsoleKey.Enter) { Console.Error.WriteLine(); return value.ToString(); }
-        if (key.Key is ConsoleKey.Escape) { Console.Error.WriteLine(); return null; }
-        if (key.Key == ConsoleKey.Backspace)
-        {
-            if (value.Length > 0) value.Length--;
-            continue;
-        }
-        if (!char.IsControl(key.KeyChar)) value.Append(key.KeyChar);
-    }
-}
-
 void AdoptProjectSession(ProjectSessionRuntime replacement)
 {
     var nextProject = replacement.Project;
@@ -1174,28 +1160,7 @@ else
                         Console.WriteLine($"Thinking: {thinking}");
                         break;
                     case "/login":
-                        var loginParts = argument.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-                        var loginProvider = loginParts.ElementAtOrDefault(0) ?? selection.Provider.Id;
-                        var loginType = loginParts.ElementAtOrDefault(1) ?? "api-key";
-                        if (loginParts.Length > 2 || loginType is not ("api-key" or "oauth"))
-                            throw new ArgumentException("Use /login [provider] [api-key|oauth]. The secret is prompted and must not be included in the command.");
-                        var loginProfile = modelRuntime.GetProvider(loginProvider);
-                        if (loginType == "oauth" && !loginProfile.OAuthSupported)
-                            throw new InvalidOperationException($"Provider '{loginProvider}' has no configured OAuth adapter; browser authorization is not implemented.");
-                        if (loginType == "api-key" && !loginProfile.ApiKeySupported)
-                            throw new InvalidOperationException($"Provider '{loginProvider}' requires its OAuth login flow.");
-                        if (loginType == "oauth")
-                            await modelRuntime.LoginOAuthAsync(loginProvider, new ConsoleProviderOAuthInteraction());
-                        else
-                        {
-                            Console.Error.Write($"API key for {loginProvider}: ");
-                            var secret = ReadSecret();
-                            if (string.IsNullOrWhiteSpace(secret)) throw new ArgumentException("Credential cannot be empty.");
-                            await modelRuntime.LoginApiKeyAsync(loginProvider, secret);
-                        }
-                        Console.WriteLine($"Authenticated {loginProvider} with {loginType}; credential value was not displayed.");
-                        if (loginProvider.Equals(selection.Provider.Id, StringComparison.OrdinalIgnoreCase))
-                            await ReplaceModelRuntime(await modelRuntime.ResolveAsync(selection.Provider.Id, selection.Model.Id), thinking, false);
+                        await terminalProviderLogin!.ShowAsync(argument);
                         break;
                     case "/logout":
                         var logoutProvider = argument.Length == 0 ? selection.Provider.Id : argument;
