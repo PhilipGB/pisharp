@@ -12,7 +12,7 @@ The paired fixture covers Frappe, Latte, Dracula, Solarized light, background-on
 
 These are exact color-prefix comparisons. They do not compare component text, reset sequences, screen-cell layout, cursor state or the whole TUI. Those remain separate parity requirements.
 
-`SystemThemePastelTests` and existing `TerminalThemeTests` pass 19/19, zero skips. Current Pi's `system-theme.test.ts` passes 8/8, zero skips. Final format verification passes; the warnings-as-errors build has zero warnings/errors. The serial full suite passes 1091/1091 with zero skips in 3m53s. Publication and exact-head CI are pending; exact source/run IDs will accompany the next implementation checkpoint.
+`SystemThemePastelTests` and existing `TerminalThemeTests` pass 19/19, zero skips. Current Pi's `system-theme.test.ts` passes 8/8, zero skips. Final format verification passes; the warnings-as-errors build has zero warnings/errors. The serial full suite passes 1091/1091 with zero skips in 3m53s. Published source `099c63cea62067b83eb0acb10d30797d77e36e98` passes exact-head Linux CI [36991960991](https://github.com/PhilipGB/pisharp/actions/runs/36991960991), including all 1091 tests with zero skips and a zero-warning/error build.
 
 Reproduce from the repository root:
 

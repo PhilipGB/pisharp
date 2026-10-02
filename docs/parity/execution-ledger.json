@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "plan_received": true,
-  "source_note": "Current Pi 0495646a8322ff99ce40ac2f9e15f1f49f56bb11: all 52 commits after 955cc666 classified with visible interactions in scope. PiSharp 25212004711fa7a321b198084b4e24290d031985 passes exact-head Linux CI 36989476624 with 1087/1087 tests, zero skips. MCP credential isolation and restored deferred-loadout slices have paired evidence. System-theme pastel chroma and 256-color gray ties match 1008 current-Pi ANSI-prefix comparisons; format verification, zero-warning build and 1091/1091 tests pass with zero skips; publication and exact-head CI are pending. All 181 tracked capabilities are required completion items; broader feature/interaction/visual parity remains incomplete.",
+  "source_note": "Current Pi 3874b3e98983c70fa05fa193b675d42cfcb8b9f8: all 53 commits after 955cc666 classified with visible interactions in scope. PiSharp 099c63cea62067b83eb0acb10d30797d77e36e98 passes exact-head Linux CI 36991960991 with 1091/1091 tests, zero skips. MCP credential isolation, restored deferred loadouts and system-theme color slices have paired evidence. The fresh upstream provider-capacity retry slice matches six current-Pi lifecycle scenarios; format verification, zero-warning build and all 1098 tests pass with zero skips; publication and exact-head CI are pending. QuietStartup header mode is next. All 181 tracked capabilities remain required; broader feature/interaction/visual parity is incomplete.",
   "baseline": "earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035",
   "required_ids": [
     "feature-agent-multi-turn-and-streaming",
@@ -210,7 +210,8 @@
         "src/PiSharp.Runtime/Sessions/ConversationRun.cs: bounded lifecycle stream runs queued text prompts as later MAF turns, emits per-turn completion and one run completion/settlement, and preserves canonical session history.",
         "src/PiSharp.Cli/Protocols/RpcMode.cs: an RPC prompt received during streaming queues into the active application run rather than claiming completion or starting a competing run.",
         "tests/PiSharp.Tests/AgentIntegrationTests.cs, AgentLifecycleTests.cs, RpcModeTests.cs: deterministic fake-provider coverage for streamed text/tools/results, tool continuation, retry, partial failure, interruption, queued multi-turn session history, and RPC workflow.",
-        "Current Pi delta 3dd803d7 (Z.AI CN overflow) is exact-head verified at CI 36746011211. Delta 2bbfcca4 (malformed Retry-After fallback) now represents invalid/non-finite server delays as absent; fail-first loopback tests verify the exponential retry, cancellation and preservation of server-delay caps. Focused tests pass 6/6; PiSharp source a3a1512abecf201364c8b4324b24a2837f8f5a25 passes exact-head Linux CI 36758603590 with format, warnings-as-errors build and 1009/1009 tests, zero skips. See docs/parity/fixtures/upstream-delta-audit-2026-09-30.md."
+        "Current Pi delta 3dd803d7 (Z.AI CN overflow) is exact-head verified at CI 36746011211. Delta 2bbfcca4 (malformed Retry-After fallback) now represents invalid/non-finite server delays as absent; fail-first loopback tests verify the exponential retry, cancellation and preservation of server-delay caps. Focused tests pass 6/6; PiSharp source a3a1512abecf201364c8b4324b24a2837f8f5a25 passes exact-head Linux CI 36758603590 with format, warnings-as-errors build and 1009/1009 tests, zero skips. See docs/parity/fixtures/upstream-delta-audit-2026-09-30.md.",
+        "AgentRunRetryPolicy classifies model is at capacity as a transient assistant/provider error, retaining enabled/budget/backoff/cancellation and billing/quota precedence through the existing shared MAF/ConversationRun path."
       ],
       "evidence": [
         "Pinned upstream 002fc8385268300ca91a5fc95f935c2afbbdac02 inspected at packages/coding-agent/docs/how-pi-works.md and packages/agent/src/{agent-loop.ts,agent.ts}: provider response -> tools/results -> continuation, queued later turns, partial/error hard exit, and session transcript model were used as the behavioral reference.",
@@ -226,7 +227,8 @@
         "ProviderChatClientFactoryTests and ProviderRetryChatClientTests exercise provider-level transient status/header behavior and ensure a streamed request is not replayed after its first update; the paired current-Pi retry helper and settings tests are recorded in settings-provider-retry-delay-baseline.md. This remains bounded adapter evidence, not broad retry parity.",
         "Current Pi 3dd803d7 Z.AI CN error: a new CompactionTests theory vector failed before the classifier update (one request rather than two), then passed after the narrow message match; focused 8/8, full suite 1000/1000 with TERM=xterm-256color, zero skips. Exact-head CI for the fix is pending.",
         "Exact-head Linux CI run 36746011211 for source 2550531a7f4813e9f10abce4241cbffc28f2ea7c passed restore, format, warnings-as-errors build and 1000/1000 tests, zero skips.",
-        "Fail-first OpenAI Responses loopback cases measured immediate second requests after Retry-After not-a-date/Infinity (7-119 ms). After invalid dates return no server delay, both cases wait for exponential fallback; a cancellation case verifies an in-progress malformed-header fallback is cancelled without a retry. Existing server-delay maximum coverage still rejects the second request. Focused filter passes 6/6; format and warnings-as-errors build pass; PiSharp source a3a1512abecf201364c8b4324b24a2837f8f5a25 passes exact-head CI 36758603590 with 1009/1009 tests and zero skips."
+        "Fail-first OpenAI Responses loopback cases measured immediate second requests after Retry-After not-a-date/Infinity (7-119 ms). After invalid dates return no server delay, both cases wait for exponential fallback; a cancellation case verifies an in-progress malformed-header fallback is cancelled without a retry. Existing server-delay maximum coverage still rejects the second request. Focused filter passes 6/6; format and warnings-as-errors build pass; PiSharp source a3a1512abecf201364c8b4324b24a2837f8f5a25 passes exact-head CI 36758603590 with 1009/1009 tests and zero skips.",
+        "Current Pi 3874b3e98 adds capacity retry wording. Three cases failed first; focused retry tests pass 17/17, Pi retry tests pass 25/25. Six paired scenarios compare request contexts/counts, ordered retry event payloads, recovery/exhaustion, enabled/zero budgets, billing exclusion, backoff cancellation and cleared state. See docs/parity/fixtures/provider-capacity-retry-2026-10-02.md. Format verification, zero-warning build and all 1098 tests pass with zero skips; publication and exact-head CI are pending; broader classifier/lifecycle parity remains open."
       ],
       "dependencies": []
     },
@@ -601,7 +603,7 @@
         "Focused InteractiveTranscriptTests, TerminalScreenTests and ExtensionCatalogTests pass 32/32 after adding themed tool-call/result views, theme-change re-rendering, renderer exception fallbacks, argument context, control filtering, safe image collapse, and a compiled trusted extension exercised through PiAgent.RunEventsAsync. TerminalPtyTests.ActiveRunStreamsExtensionToolThroughLinuxPtyAndRestoresTheTerminal passes 1/1 locally against a loopback Responses SSE provider and compiled extension, confirming call/result rendering, provider continuation and alternate-screen restoration. Local format verification, warnings-as-errors build and all 510 tests pass; exact code commit e50ea5786038f5657869e1a881ceaec028c263d0 passes Linux CI run 36182423444 with restore, format verification, warnings-as-errors build and all 510 tests. No broad Pi TUI differential yet.",
         "Pinned current-Pi comparison at e1787702d32e0a7fd7387840c918faa4d1286187 directly executed wrapTextWithAnsi under Node 24.21.0. Paired vectors cover prose, repeated spaces, SGR, OSC 8, long words, CJK and emoji. Fail-first tests cover wrapped whitespace, nested style state, shared row/search mapping, OSC 8 search offsets, viewport windows and current-Pi CJK/emoji rows; width-1 CJK substitution remains a deliberate difference. See docs/parity/fixtures/tui-wrap-layout-baseline.md. Local full suite passed 719/719; the final CJK/emoji vector test was then added and the complete focused rendering suite passed 51/51. `dotnet format PiSharp.slnx --verify-no-changes --no-restore` passes and the warnings-as-errors solution build reports 0 warnings/errors. Exact-head Linux CI for this pushed source remains to be checked.",
         "Current Pi e1787702d32e0a7fd7387840c918faa4d1286187 theme-controller, system-theme, theme-detection, terminal-color source/tests were inspected. TerminalThemeTests cover pinned light/dark/background-only/readability vectors and OKHSL; TerminalPtyTests.TerminalColorQueriesWorkThroughLinuxPty covers the terminal query protocol. CLI theme path behavior is recorded separately. Exact-head Linux CI run 36417080999 for 90c08f7 passed format, warnings-as-errors build, and 720/720 tests (0 skipped). Broader Pi process/cross-terminal TUI differential and custom HTML-export theme CSS remain open.",
-        "At current Pi 0495646a, nine palette inputs in truecolor and 256color match all 56 role ANSI prefixes (1008 comparisons). Four fail-first cases are fixed; focused theme tests pass 19/19 and Pi system-theme tests pass 8/8. See docs/parity/fixtures/system-theme-pastel-2026-10-02.md. Full TUI cell/layout/interaction and terminal-family parity remain open; format verification, warnings-as-errors build (zero warnings/errors) and the full 1091-test suite pass with zero skips; publication and exact-head CI are pending."
+        "At current Pi 0495646a, nine palette inputs in truecolor and 256color match all 56 role ANSI prefixes (1008 comparisons). Four fail-first cases are fixed; focused theme tests pass 19/19 and Pi system-theme tests pass 8/8. See docs/parity/fixtures/system-theme-pastel-2026-10-02.md. Full TUI cell/layout/interaction and terminal-family parity remain open; format verification, warnings-as-errors build (zero warnings/errors) and the full 1091-test suite pass with zero skips; exact-head Linux CI 36991960991 passes on source 099c63cea62067b83eb0acb10d30797d77e36e98, including all 1091 tests with zero skips."
       ],
       "dependencies": []
     },
@@ -827,7 +829,7 @@
       "evidence": [
         "TerminalThemeTests cover built-in/user/project discovery, content names, precedence, automatic appearance selection and malformed JSON skipping; Linux PTY settings flow selects a theme. CLI theme flags are implemented and covered by CliThemeArgumentsTests, TerminalThemeTests, and CliThemeProcessTests; custom HTML-export theme CSS remains open.",
         "Current Pi e1787702d32e0a7fd7387840c918faa4d1286187 args.ts, args.test.ts, main.ts, resource-loader.ts and resource-loader-theme.test.ts establish repeatability, interactive-only selection, and noThemes behavior that retains explicit paths. PiSharp CliThemeArgumentsTests and TerminalThemeTests cover parsing, nested directory loading, invocation-cwd resolution, and suppression of discovered/configured paths. Exact CLI rendering is covered by CliThemeProcessTests. Exact-head Linux CI run 36420934092 for c68ad5b passed format, warnings-as-errors build and 729/729 tests (0 skipped). Custom theme export CSS remains open.",
-        "At current Pi 0495646a, nine palette inputs in truecolor and 256color match all 56 role ANSI prefixes (1008 comparisons). Four fail-first cases are fixed; focused theme tests pass 19/19 and Pi system-theme tests pass 8/8. See docs/parity/fixtures/system-theme-pastel-2026-10-02.md. Full TUI cell/layout/interaction and terminal-family parity remain open; format verification, warnings-as-errors build (zero warnings/errors) and the full 1091-test suite pass with zero skips; publication and exact-head CI are pending."
+        "At current Pi 0495646a, nine palette inputs in truecolor and 256color match all 56 role ANSI prefixes (1008 comparisons). Four fail-first cases are fixed; focused theme tests pass 19/19 and Pi system-theme tests pass 8/8. See docs/parity/fixtures/system-theme-pastel-2026-10-02.md. Full TUI cell/layout/interaction and terminal-family parity remain open; format verification, warnings-as-errors build (zero warnings/errors) and the full 1091-test suite pass with zero skips; exact-head Linux CI 36991960991 passes on source 099c63cea62067b83eb0acb10d30797d77e36e98, including all 1091 tests with zero skips."
       ],
       "dependencies": []
     },
@@ -2597,7 +2599,7 @@
       "evidence": [
         "UserSettingsWriterTests.ThemeSettingSupportsUserAndProjectOverrideAndValidatesThemePairs covers setting validation and precedence; TerminalPtyTests.SettingsPickerEditsUserScopeThroughLinuxPty verifies interactive selection and persistence. TerminalScreenTests and TerminalThemeTests cover OSC-driven pair selection and palette parsing. This is local behavior evidence; pinned Pi settings/theme rendering differential and terminal-family probes remain open.",
         "Current Pi system-theme.test.ts, theme-controller.test.ts, theme-detection.test.ts and packages/tui/test/terminal-colors.test.ts at e1787702d32e0a7fd7387840c918faa4d1286187 were inspected. TerminalThemeTests cover pinned color/readability vectors; TerminalPtyTests covers OSC query behavior. See docs/parity/fixtures/terminal-system-theme-baseline.md. Exact-head Linux CI run 36420934092 passed 729/729 tests (0 skipped); paired Pi process and terminal-family differential remain open.",
-        "At current Pi 0495646a, nine palette inputs in truecolor and 256color match all 56 role ANSI prefixes (1008 comparisons). Four fail-first cases are fixed; focused theme tests pass 19/19 and Pi system-theme tests pass 8/8. See docs/parity/fixtures/system-theme-pastel-2026-10-02.md. Full TUI cell/layout/interaction and terminal-family parity remain open; format verification, warnings-as-errors build (zero warnings/errors) and the full 1091-test suite pass with zero skips; publication and exact-head CI are pending."
+        "At current Pi 0495646a, nine palette inputs in truecolor and 256color match all 56 role ANSI prefixes (1008 comparisons). Four fail-first cases are fixed; focused theme tests pass 19/19 and Pi system-theme tests pass 8/8. See docs/parity/fixtures/system-theme-pastel-2026-10-02.md. Full TUI cell/layout/interaction and terminal-family parity remain open; format verification, warnings-as-errors build (zero warnings/errors) and the full 1091-test suite pass with zero skips; exact-head Linux CI 36991960991 passes on source 099c63cea62067b83eb0acb10d30797d77e36e98, including all 1091 tests with zero skips."
       ],
       "dependencies": []
     },
@@ -3294,7 +3296,8 @@
         "Implemented at eecb324e7 through OpenAiCodexOAuthAdapter and the provider OAuth boundary. Browser PKCE/device-code flows, private credential persistence, serialized refresh and request-time account auth are active; Codex rejects API-key authentication."
       ],
       "evidence": [
-        "OpenAiCodexOAuthTests covers device and browser flows, callback state/denial, PKCE exchange, credential restart, concurrent refresh, cancellation, failed/invalid refresh, API-key refusal and dynamic request auth; AuthStatusCommandTests verifies offline secret-free status. Exact-head Linux CI run 36462567719 passed 779/779 tests (0 skipped). Manual-code fallback and OAuth flows for the six other current-Pi built-ins remain open."
+        "OpenAiCodexOAuthTests covers device and browser flows, callback state/denial, PKCE exchange, credential restart, concurrent refresh, cancellation, failed/invalid refresh, API-key refusal and dynamic request auth; AuthStatusCommandTests verifies offline secret-free status. Exact-head Linux CI run 36462567719 passed 779/779 tests (0 skipped). Manual-code fallback and OAuth flows for the six other current-Pi built-ins remain open.",
+        "The 2026-10-02 retry-source refresh found a separate remaining classifier gap: AgentRunRetryPolicy lacks current Pi subscription_sharing_usage_unavailable/user_unavailable retry wording and the subscription_sharing_usage_limit_exceeded terminal exclusion. The capacity slice does not claim those cases are verified."
       ],
       "dependencies": [
         "provider-api-openai-codex-responses"
@@ -3823,19 +3826,19 @@
   ],
   "upstream_delta_audit": {
     "source_pin": "955cc6665ee3986c6a033db52200779310d10dfd",
-    "source_head": "0495646a8322ff99ce40ac2f9e15f1f49f56bb11",
-    "commit_count": 52,
+    "source_head": "3874b3e98983c70fa05fa193b675d42cfcb8b9f8",
+    "commit_count": 53,
     "classifications": {
       "OUT_OF_SCOPE": 14,
       "NO_BEHAVIOR_CHANGE": 11,
-      "NEEDS_WORK": 22,
+      "NEEDS_WORK": 23,
       "MATCHED": 5
     },
     "fixture": "docs/parity/fixtures/upstream-delta-audit-2026-10-01.md",
-    "next": "system-theme-pastel-chroma",
-    "current_item": "409e808f5834dc4f2f37b54abf24d3a2f6ecad75",
+    "next": "provider-capacity-retry",
+    "current_item": "3874b3e98983c70fa05fa193b675d42cfcb8b9f8",
     "current_item_status": "local_verified_pending_ci",
-    "current_item_local_evidence": "Four fail-first cases captured dark/light pastel oversaturation and 256-color gray ties. Current Pi system-theme tests pass 8/8 at 0495646a; focused PiSharp theme tests pass 19/19. Nine palettes in two modes match 1008 exact ANSI color prefixes across 56 roles. Shared OKLCH conversion removes the duplicate parser implementation. Format verification and warnings-as-errors build pass with zero warnings/errors; the full serial suite passes 1091/1091 with zero skips in 3m53s. Publication and exact-head CI are pending. See docs/parity/fixtures/system-theme-pastel-2026-10-02.md.",
+    "current_item_local_evidence": "Three fail-first classification/shared-agent cases are fixed by adding only model is at capacity to the existing retry regex. Focused retry tests pass 17/17; current Pi retry tests pass 25/25. Six paired AgentSession/ConversationRun scenarios match ordered retry payloads, request counts, user/assistant request context, completion and cleared retry state. Format verification and warnings-as-errors build pass with zero warnings/errors. Full serial tests pass 1098/1098 with zero skips in 3m46s. Publication and exact-head CI are pending. See docs/parity/fixtures/provider-capacity-retry-2026-10-02.md.",
     "next_after_ci": "f29ea3deb298280b417892c6229ce478ad8c4d2f",
     "completed": [
       "65117e31f242daa8e0a17dbd2810f7bb92bf4087",
@@ -3846,12 +3849,13 @@
       "41169ba2af7f5bd5c97237633879117bc3fa9cd9",
       "0c453048bd4bb699b90463d9423c382d1787087f",
       "5806068c26e55feefd1f5875bf05c0419ec5d912",
-      "c662ec7e374563bd549dc35f47bac52dcc4bed88"
+      "c662ec7e374563bd549dc35f47bac52dcc4bed88",
+      "409e808f5834dc4f2f37b54abf24d3a2f6ecad75"
     ],
-    "ci_run": "36989476624",
-    "latest_published_source_head": "25212004711fa7a321b198084b4e24290d031985",
+    "ci_run": "36991960991",
+    "latest_published_source_head": "099c63cea62067b83eb0acb10d30797d77e36e98",
     "latest_published_ci_runs": [
-      "36989476624"
+      "36991960991"
     ],
     "official_mcp_conformance": {
       "package": "@modelcontextprotocol/conformance@0.2.0-alpha.11",

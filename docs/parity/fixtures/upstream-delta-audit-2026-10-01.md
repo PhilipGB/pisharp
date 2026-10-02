@@ -1,8 +1,8 @@
 # Current Pi upstream delta audit — 2026-10-01
 
-Fresh fetch on 2026-10-02 confirms Pi `main` at `0495646a8322ff99ce40ac2f9e15f1f49f56bb11`, eleven commits after the prior audit head `395315f4841ab5a090a33b8259f60b6df281c1ca` and 52 after `955cc6665ee3986c6a033db52200779310d10dfd`. PiSharp fetched main is `d9f2c65f853472636c7d488e40bc1f48047b544d`. Every intervening commit is classified below. Historical validation records retain their original pins; they do not prove current full parity.
+Fresh fetch on 2026-10-02 confirms Pi `main` at `3874b3e98983c70fa05fa193b675d42cfcb8b9f8`, twelve commits after the prior audit head `395315f4841ab5a090a33b8259f60b6df281c1ca` and 53 after `955cc6665ee3986c6a033db52200779310d10dfd`. PiSharp fetched main is `d9f2c65f853472636c7d488e40bc1f48047b544d`. Every intervening commit is classified below. Historical validation records retain their original pins; they do not prove current full parity.
 
-Current classifications: 14 `OUT_OF_SCOPE`, 11 `NO_BEHAVIOR_CHANGE`, 22 `NEEDS_WORK`, 5 `MATCHED`. User-reachable visual effects, OAuth wording/callback presentation and package-resource CLI flows are in scope. Earlier exclusions for those surfaces are corrected. Grammar/custom-call replay, auth URL copying, current 3D interactions and Together metadata join the existing open queue.
+Current classifications: 14 `OUT_OF_SCOPE`, 11 `NO_BEHAVIOR_CHANGE`, 23 `NEEDS_WORK`, 5 `MATCHED`. User-reachable visual effects, OAuth wording/callback presentation and package-resource CLI flows are in scope. Earlier exclusions for those surfaces are corrected. Grammar/custom-call replay, auth URL copying, current 3D interactions and Together metadata join the existing open queue.
 
 ## Commit classifications
 
@@ -180,7 +180,7 @@ The OAuth selector now displays “not configured” instead of “unconfigured�
 
 - **Current implementation/evidence:** four original fail-first scenarios are fixed, as is a declaration-order mismatch found by the paired probe. Eight scenarios against Pi `0495646a` match ordered active names, provider declarations and persisted loadout names. Focused tests pass 34/34; current Pi MCP resume/reload tests pass 5/5 (39 unrelated tests deselected). Format verification, warnings-as-errors build (zero warnings/errors) and all 1087 tests pass with zero skips. Exact-head Linux CI [36989476624](https://github.com/PhilipGB/pisharp/actions/runs/36989476624) passes on source `25212004711fa7a321b198084b4e24290d031985`, including all 1087 tests with zero skips. See [the differential fixture](deferred-tool-restore-2026-10-02.md).
 
-### `409e808f5834dc4f2f37b54abf24d3a2f6ecad75` — `NEEDS_WORK`
+### `409e808f5834dc4f2f37b54abf24d3a2f6ecad75` — `NEEDS_WORK` (resolved at exact head `099c63cea6`)
 
 - **Pi files:** `packages/coding-agent/src/modes/interactive/theme/system-theme.ts` and `packages/coding-agent/test/system-theme.test.ts`.
 - **Pi behavior:** generated anchored palette colors are capped at the source color's chroma, keeping pastel source palettes pastel as lightness changes.
@@ -190,7 +190,7 @@ The OAuth selector now displays “not configured” instead of “unconfigured�
 - **Required implementation:** clamp generated chroma to the source chroma with the same palette falloff while retaining current contrast/lightness rules.
 - **Validation/dependencies:** focused color fixtures, full solution validation and exact-head CI.
 
-- **Current implementation/evidence:** source chroma is carried with OKHSL channels and capped with Pi’s falloff. The paired fixture also found 256-color gray ties; the nearest-entry rule now matches Pi. Theme parsing and palette generation share OKLCH conversion. Four cases failed first; focused tests pass 19/19, Pi system-theme tests pass 8/8. Nine palettes in two color modes match all 56 role ANSI prefixes (1008 comparisons), with no color/style normalization. Format verification and warnings-as-errors build (zero warnings/errors) pass; the full suite passes 1091/1091, zero skips. Publication and exact-head CI are pending. See [the current-Pi color fixture](system-theme-pastel-2026-10-02.md).
+- **Current implementation/evidence:** source chroma is carried with OKHSL channels and capped with Pi’s falloff. The paired fixture also found 256-color gray ties; the nearest-entry rule now matches Pi. Theme parsing and palette generation share OKLCH conversion. Four cases failed first; focused tests pass 19/19, Pi system-theme tests pass 8/8. Nine palettes in two color modes match all 56 role ANSI prefixes (1008 comparisons), with no color/style normalization. Format verification and warnings-as-errors build (zero warnings/errors) pass; the full suite passes 1091/1091, zero skips. Exact-head Linux CI [36991960991](https://github.com/PhilipGB/pisharp/actions/runs/36991960991) passes on source `099c63cea62067b83eb0acb10d30797d77e36e98`, including all 1091 tests with zero skips. See [the current-Pi color fixture](system-theme-pastel-2026-10-02.md).
 
 ### `f29ea3deb298280b417892c6229ce478ad8c4d2f` — `NEEDS_WORK`
 
@@ -307,3 +307,12 @@ Pins the patched brace-expansion dependency in npm packaging/lockfiles without c
 ## Processing order
 
 MCP server-account isolation is published and exact-head CI verified. The active slice preserves deferred MCP loadouts and build shared terminal differential coverage for current auth/header presentation, including copy keys and easter eggs. Grammar Responses support must precede provider-switch replay verification. Codemode image generation precedes model/error guidance. Pastel themes, header-only startup, Radius onboarding, official MCP conformance and the full ledger remain open. Every slice requires fail-first coverage, current-Pi evidence, required local checks, push and exact-head CI before the next implementation.
+
+### `3874b3e98983c70fa05fa193b675d42cfcb8b9f8` — `NEEDS_WORK`
+
+- **Pi files:** `packages/ai/src/utils/retry.ts` and its changelog.
+- **Observable behavior:** assistant errors containing “model is at capacity” retry within the enabled agent retry budget, instead of ending the normal coding-agent turn immediately. Account/quota/billing exclusions retain precedence.
+- **PiSharp mismatch:** the shared `AgentRunRetryPolicy` message classifier lacks this phrase, so a status-free capacity error ends the turn.
+- **Implementation slice:** add only the verified wording to the existing Pi-specific agent retry policy; retain the shared MAF execution path and existing budget/backoff/cancellation behavior. Dedicated fail-first and current-Pi lifecycle comparison are active.
+
+- **Current implementation/evidence:** only the capacity phrase is added to the existing shared retry classifier. Three tests failed first; focused tests pass 17/17 and current Pi retry tests pass 25/25. Six paired lifecycle scenarios match request context/counts and exact retry payloads, including backoff cancellation. Format verification and warnings-as-errors build (zero warnings/errors) pass; all 1098 tests pass with zero skips. Publication and exact-head CI are pending. See [the capacity fixture](provider-capacity-retry-2026-10-02.md).

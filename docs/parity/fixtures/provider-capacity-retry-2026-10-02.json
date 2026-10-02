@@ -1,0 +1,371 @@
+{
+  "piSha": "3874b3e98983c70fa05fa193b675d42cfcb8b9f8",
+  "normalization": "Compare provider request count, ordered retry event payloads, user/assistant role-text request contexts, completion and cleared retry state. Exclude system prompts and unrelated lifecycle/provider metadata; those have separate parity tasks.",
+  "scenarios": [
+    {
+      "id": "recovery",
+      "message": "Selected model is at capacity",
+      "errors": 1,
+      "retries": 2,
+      "enabled": true,
+      "cancel": false
+    },
+    {
+      "id": "exhaustion",
+      "message": "Selected model is at capacity",
+      "errors": 3,
+      "retries": 2,
+      "enabled": true,
+      "cancel": false
+    },
+    {
+      "id": "disabled",
+      "message": "Selected model is at capacity",
+      "errors": 1,
+      "retries": 2,
+      "enabled": false,
+      "cancel": false
+    },
+    {
+      "id": "zero-budget",
+      "message": "Selected model is at capacity",
+      "errors": 1,
+      "retries": 0,
+      "enabled": true,
+      "cancel": false
+    },
+    {
+      "id": "billing",
+      "message": "Selected model is at capacity; billing limit reached",
+      "errors": 1,
+      "retries": 2,
+      "enabled": true,
+      "cancel": false
+    },
+    {
+      "id": "cancel-backoff",
+      "message": "Selected model is at capacity",
+      "errors": 1,
+      "retries": 2,
+      "enabled": true,
+      "cancel": true
+    }
+  ],
+  "pi": [
+    {
+      "id": "recovery",
+      "requests": 2,
+      "events": [
+        {
+          "type": "auto_retry_start",
+          "attempt": 1,
+          "maxAttempts": 2,
+          "delayMs": 0,
+          "errorMessage": "Selected model is at capacity"
+        },
+        {
+          "type": "auto_retry_end",
+          "attempt": 1,
+          "success": true
+        }
+      ],
+      "contexts": [
+        [
+          {
+            "role": "user",
+            "text": "go"
+          }
+        ],
+        [
+          {
+            "role": "user",
+            "text": "go"
+          }
+        ]
+      ],
+      "completed": true,
+      "isRetrying": false
+    },
+    {
+      "id": "exhaustion",
+      "requests": 3,
+      "events": [
+        {
+          "type": "auto_retry_start",
+          "attempt": 1,
+          "maxAttempts": 2,
+          "delayMs": 0,
+          "errorMessage": "Selected model is at capacity"
+        },
+        {
+          "type": "auto_retry_start",
+          "attempt": 2,
+          "maxAttempts": 2,
+          "delayMs": 0,
+          "errorMessage": "Selected model is at capacity"
+        },
+        {
+          "type": "auto_retry_end",
+          "attempt": 2,
+          "success": false,
+          "finalError": "Selected model is at capacity"
+        }
+      ],
+      "contexts": [
+        [
+          {
+            "role": "user",
+            "text": "go"
+          }
+        ],
+        [
+          {
+            "role": "user",
+            "text": "go"
+          }
+        ],
+        [
+          {
+            "role": "user",
+            "text": "go"
+          }
+        ]
+      ],
+      "completed": false,
+      "isRetrying": false
+    },
+    {
+      "id": "disabled",
+      "requests": 1,
+      "events": [],
+      "contexts": [
+        [
+          {
+            "role": "user",
+            "text": "go"
+          }
+        ]
+      ],
+      "completed": false,
+      "isRetrying": false
+    },
+    {
+      "id": "zero-budget",
+      "requests": 1,
+      "events": [],
+      "contexts": [
+        [
+          {
+            "role": "user",
+            "text": "go"
+          }
+        ]
+      ],
+      "completed": false,
+      "isRetrying": false
+    },
+    {
+      "id": "billing",
+      "requests": 1,
+      "events": [],
+      "contexts": [
+        [
+          {
+            "role": "user",
+            "text": "go"
+          }
+        ]
+      ],
+      "completed": false,
+      "isRetrying": false
+    },
+    {
+      "id": "cancel-backoff",
+      "requests": 1,
+      "events": [
+        {
+          "type": "auto_retry_start",
+          "attempt": 1,
+          "maxAttempts": 2,
+          "delayMs": 100,
+          "errorMessage": "Selected model is at capacity"
+        },
+        {
+          "type": "auto_retry_end",
+          "attempt": 1,
+          "success": false,
+          "finalError": "Retry cancelled"
+        }
+      ],
+      "contexts": [
+        [
+          {
+            "role": "user",
+            "text": "go"
+          }
+        ]
+      ],
+      "completed": false,
+      "isRetrying": false
+    }
+  ],
+  "pisharp": [
+    {
+      "id": "recovery",
+      "requests": 2,
+      "events": [
+        {
+          "type": "auto_retry_start",
+          "attempt": 1,
+          "maxAttempts": 2,
+          "delayMs": 0,
+          "errorMessage": "Selected model is at capacity"
+        },
+        {
+          "type": "auto_retry_end",
+          "attempt": 1,
+          "success": true
+        }
+      ],
+      "contexts": [
+        [
+          {
+            "role": "user",
+            "text": "go"
+          }
+        ],
+        [
+          {
+            "role": "user",
+            "text": "go"
+          }
+        ]
+      ],
+      "completed": true,
+      "isRetrying": false
+    },
+    {
+      "id": "exhaustion",
+      "requests": 3,
+      "events": [
+        {
+          "type": "auto_retry_start",
+          "attempt": 1,
+          "maxAttempts": 2,
+          "delayMs": 0,
+          "errorMessage": "Selected model is at capacity"
+        },
+        {
+          "type": "auto_retry_start",
+          "attempt": 2,
+          "maxAttempts": 2,
+          "delayMs": 0,
+          "errorMessage": "Selected model is at capacity"
+        },
+        {
+          "type": "auto_retry_end",
+          "attempt": 2,
+          "success": false,
+          "finalError": "Selected model is at capacity"
+        }
+      ],
+      "contexts": [
+        [
+          {
+            "role": "user",
+            "text": "go"
+          }
+        ],
+        [
+          {
+            "role": "user",
+            "text": "go"
+          }
+        ],
+        [
+          {
+            "role": "user",
+            "text": "go"
+          }
+        ]
+      ],
+      "completed": false,
+      "isRetrying": false
+    },
+    {
+      "id": "disabled",
+      "requests": 1,
+      "events": [],
+      "contexts": [
+        [
+          {
+            "role": "user",
+            "text": "go"
+          }
+        ]
+      ],
+      "completed": false,
+      "isRetrying": false
+    },
+    {
+      "id": "zero-budget",
+      "requests": 1,
+      "events": [],
+      "contexts": [
+        [
+          {
+            "role": "user",
+            "text": "go"
+          }
+        ]
+      ],
+      "completed": false,
+      "isRetrying": false
+    },
+    {
+      "id": "billing",
+      "requests": 1,
+      "events": [],
+      "contexts": [
+        [
+          {
+            "role": "user",
+            "text": "go"
+          }
+        ]
+      ],
+      "completed": false,
+      "isRetrying": false
+    },
+    {
+      "id": "cancel-backoff",
+      "requests": 1,
+      "events": [
+        {
+          "type": "auto_retry_start",
+          "attempt": 1,
+          "maxAttempts": 2,
+          "delayMs": 100,
+          "errorMessage": "Selected model is at capacity"
+        },
+        {
+          "type": "auto_retry_end",
+          "attempt": 1,
+          "success": false,
+          "finalError": "Retry cancelled"
+        }
+      ],
+      "contexts": [
+        [
+          {
+            "role": "user",
+            "text": "go"
+          }
+        ]
+      ],
+      "completed": false,
+      "isRetrying": false
+    }
+  ],
+  "match": true
+}

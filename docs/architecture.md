@@ -1,6 +1,6 @@
 # Architecture
 
-Current behavioral and visual oracle: `earendil-works/pi@0495646a8322ff99ce40ac2f9e15f1f49f56bb11`, fetched 2026-10-02. The normal coding-agent product, including package-resource CLI flows and interactive visual effects, is in scope. Pure package APIs and experimental alternate runtimes unreachable from its normal executable are excluded. Overall parity remains incomplete; `parity/execution-ledger.json` records scoped evidence and remaining work.
+Current behavioral and visual oracle: `earendil-works/pi@3874b3e98983c70fa05fa193b675d42cfcb8b9f8`, fetched 2026-10-02. The normal coding-agent product, including package-resource CLI flows and interactive visual effects, is in scope. Pure package APIs and experimental alternate runtimes unreachable from its normal executable are excluded. Overall parity remains incomplete; `parity/execution-ledger.json` records scoped evidence and remaining work.
 
 `PiSharp.Core` contains deterministic conversation-tree, edit/diff and read-planning logic. It has no provider SDK, terminal, filesystem or process dependencies.
 
