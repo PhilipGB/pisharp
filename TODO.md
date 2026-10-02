@@ -1,9 +1,13 @@
 # PiSharp capability parity
 
-PiSharp source `8931bd73b2e94e7831b1a054a54a8e60bb21aaf5` passed exact-head Linux CI [36904437406](https://github.com/PhilipGB/pisharp/actions/runs/36904437406): restore, format, warnings-as-errors build, and 1,068/1,068 tests with zero skips. Current Pi `main` is `395315f4841ab5a090a33b8259f60b6df281c1ca`; the refreshed 41-commit audit after `955cc6665ee3986c6a033db52200779310d10dfd` records 13 `NEEDS_WORK`, 4 `MATCHED`, 15 `OUT_OF_SCOPE`, and 9 `NO_BEHAVIOR_CHANGE` classifications. Six earlier in-scope changes are resolved at published heads; seven current gaps remain, beginning with per-server MCP OAuth credential isolation. The broader parity goal remains incomplete; see [the current audit](docs/parity/fixtures/upstream-delta-audit-2026-10-01.md).
+Fresh fetch on 2026-10-02 confirms Pi `main` at `28eaccb8e87d075562593073282cc0774f2c2e3b`, ten commits after the prior audit head `395315f4841ab5a090a33b8259f60b6df281c1ca` and 51 after `955cc6665ee3986c6a033db52200779310d10dfd`. PiSharp fetched main is `d9f2c65f853472636c7d488e40bc1f48047b544d`. Every intervening commit is classified below. Historical validation records retain their original pins; they do not prove current full parity.
+
+Current classifications: 14 `OUT_OF_SCOPE`, 10 `NO_BEHAVIOR_CHANGE`, 22 `NEEDS_WORK`, 5 `MATCHED`. User-reachable visual effects, OAuth wording/callback presentation and package-resource CLI flows are in scope. Earlier exclusions for those surfaces are corrected. Grammar/custom-call replay, auth URL copying, current 3D interactions and Together metadata join the existing open queue.
+
+MCP credential isolation is implemented: four fail-first regressions are fixed, six current-Pi credential sequences match, 34 focused tests pass, and format/zero-warning build/full 1076 tests pass with zero skips. Exact-head CI is pending; deferred MCP tool restoration is next.
 
 
-**Goal:** implement Pi's in-scope capabilities idiomatically in C#/.NET, using Microsoft Agent Framework and Microsoft.Extensions.AI where appropriate. Pi Packages stay excluded unless needed for a core capability.
+**Goal:** implement Pi's in-scope capabilities idiomatically in C#/.NET, using Microsoft Agent Framework and Microsoft.Extensions.AI where appropriate. Normal CLI package-resource workflows and user-reachable visual interactions are in scope.
 
 **Stop condition:** a full current-Pi audit finds no material in-scope gaps, required behavioral/differential evidence passes, exact-head CI is green, and major architecture bottlenecks are resolved.
 

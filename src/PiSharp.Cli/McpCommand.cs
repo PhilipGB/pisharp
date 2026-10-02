@@ -245,7 +245,7 @@ public static class McpCommand
         if (server.Url is null || server.Headers.Keys.Any(key =>
             key.Equals("Authorization", StringComparison.OrdinalIgnoreCase)))
             return await FailAsync(errors, "MCP server \"" + server.Name + "\" does not use OAuth.");
-        var removed = await new McpTokenCache(agentDirectory).RemoveAsync(server.Url, cancellationToken);
+        var removed = await new McpTokenCache(agentDirectory).RemoveAsync(server.Name, server.Url, cancellationToken);
         await output.WriteLineAsync(removed ? "Signed out of MCP server \"" + server.Name + "\"." :
             "No saved sign-in for MCP server \"" + server.Name + "\".");
         return 0;

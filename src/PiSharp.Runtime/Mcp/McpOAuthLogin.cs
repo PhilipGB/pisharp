@@ -34,7 +34,7 @@ public static class McpOAuthLogin
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         deadline.CancelAfter(timeout);
         var authorizationStarted = false;
-        var tokenCache = new McpTokenCache(agentDirectory).ForServerWithRefresh(server.Url);
+        var tokenCache = new McpTokenCache(agentDirectory).ForServerWithRefresh(server.Name, server.Url);
         var options = settings.CreateOptions(server.Url, tokenCache, callback,
             async (context, token) =>
             {

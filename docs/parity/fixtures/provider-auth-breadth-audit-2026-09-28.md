@@ -14,7 +14,7 @@ PiSharp now has 11 cloud profiles across the ten inventoried chat API families. 
 
 The higher-impact gap requirements are in [the current-Pi tool-orchestration and virtual-model audit](tool-orchestration-virtual-model-audit-2026-09-29.md). Provider records below preserve historical implementation evidence; their former “next implement Bedrock/Pi Messages” statements are no longer current.
 
-Reference: `earendil-works/pi@4259686d9290c0d73ae7192b796aee3e530a9779`, refreshed 2026-09-29. Since provider audit pin `cd5ff1125981f0fc37a56df25eee7310286a3f89`, current `main` adds Claude Sonnet 5.5 model metadata plus Llama model-reload context-window restoration. The latest commits add MCP OAuth refresh serialization and built-in extension resource resolution but no newly absent provider/API family. Pi Packages remain excluded. This is a bounded audit of the provider/auth phase, not the final compatibility audit.
+Reference: `earendil-works/pi@4259686d9290c0d73ae7192b796aee3e530a9779`, refreshed 2026-09-29. Since provider audit pin `cd5ff1125981f0fc37a56df25eee7310286a3f89`, current `main` adds Claude Sonnet 5.5 model metadata plus Llama model-reload context-window restoration. The latest commits add MCP OAuth refresh serialization and built-in extension resource resolution but no newly absent provider/API family. The historical Pi Packages exclusion is superseded by the current goal. This is a bounded audit of the provider/auth phase, not the final compatibility audit.
 
 ## Current Pi surface
 

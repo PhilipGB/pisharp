@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "plan_received": true,
-  "source_note": "PiSharp source 8931bd73b2e94e7831b1a054a54a8e60bb21aaf5 passed exact-head Linux CI 36904437406: restore, format, warnings-as-errors build and 1068/1068 tests, zero skips. Current Pi main is 395315f4841ab5a090a33b8259f60b6df281c1ca. All 41 commits after 955cc6665ee3986c6a033db52200779310d10dfd are classified: 13 NEEDS_WORK (six resolved, seven open), four MATCHED, 15 OUT_OF_SCOPE and nine NO_BEHAVIOR_CHANGE. The oldest open upstream item is MCP OAuth credentials keyed by server name and URL. Official MCP client conformance evidence is still required. Overall parity remains incomplete; see docs/parity/fixtures/upstream-delta-audit-2026-10-01.md.",
+  "source_note": "Fresh fetch on 2026-10-02 confirms Pi `main` at `28eaccb8e87d075562593073282cc0774f2c2e3b`, ten commits after the prior audit head `395315f4841ab5a090a33b8259f60b6df281c1ca` and 51 after `955cc6665ee3986c6a033db52200779310d10dfd`. PiSharp fetched main is `d9f2c65f853472636c7d488e40bc1f48047b544d`. Every intervening commit is classified below. Historical validation records retain their original pins; they do not prove current full parity.  Current classifications: 14 `OUT_OF_SCOPE`, 10 `NO_BEHAVIOR_CHANGE`, 22 `NEEDS_WORK`, 5 `MATCHED`. User-reachable visual effects, OAuth wording/callback presentation and package-resource CLI flows are in scope. Earlier exclusions for those surfaces are corrected. Grammar/custom-call replay, auth URL copying, current 3D interactions and Together metadata join the existing open queue. Audit corrections accompany the MCP credential implementation; no overall parity claim.",
   "baseline": "earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035",
   "required_ids": [
     "feature-agent-multi-turn-and-streaming",
@@ -172,7 +172,11 @@
     "settings-fullscreenwheelscrolllines",
     "provider-llama-context-cache-reload",
     "provider-auth-openai-chatgpt-oauth",
-    "classifier-runtime"
+    "classifier-runtime",
+    "provider-responses-grammar-tools",
+    "tui-current-easter-eggs",
+    "tui-auth-url-copy",
+    "provider-together-catalog"
   ],
   "final_audit": {
     "complete": false,
@@ -851,15 +855,16 @@
     {
       "id": "feature-pi-packages",
       "title": "Pi Packages",
-      "status": "excluded",
+      "status": "not_started",
       "source": "docs/parity/feature-matrix.md:31",
       "acceptance": [
-        "install/remove/update/distribute package resources",
-        "out of scope by explicit request",
-        "Verify through application workflow and compare docs/packages.md; packages/coding-agent/src/core/package-manager.ts; none"
+        "Match normal Pi CLI install/remove/update/list package-resource workflows and resource loading.",
+        "Exclude only pure library APIs and experimental alternate runtimes unreachable from the normal executable."
       ],
       "implementation": [],
-      "evidence": [],
+      "evidence": [
+        "The current goal supersedes the earlier Pi Packages exclusion; normal CLI package-resource operations are in scope."
+      ],
       "dependencies": []
     },
     {
@@ -3555,8 +3560,9 @@
         "Isolate OAuth tokens and refresh coordination per normalized server name plus canonical URL, with deterministic migration from URL-only cache entries."
       ],
       "implementation": [
-        "McpConfiguration loads global and trusted-project mcp.json with project precedence, enabled flags, exposure overrides, transport settings and bounded timeouts. McpRuntime uses the official C# SDK for stdio and Streamable HTTP, expands environment references without logging credential values, and registers tools and resource operations in the existing extension catalog. Clients are disposed with the extension lease. HTTP servers without an Authorization header use SDK OAuth with a noninteractive startup callback; explicit CLI login uses a loopback authorization-code callback, and logout deletes URL-bound tokens. A private atomic mcp-auth.json cache persists SDK token and client registration fields. Local CLI add/list/remove uses an atomic config editor with same-process and interprocess locking; CLI status probes servers without selecting a chat model.",
-        "Current Pi deltas 1c7e7df (MCP namespace discovery) and 7c9fe664 (OAuth client naming) are implemented and exact-head verified: OAuth source 336be83135a0b18393bfaa41f7f826a34314f6eb / CI 36756672893. The loopback registration fixture verifies custom and default pi client names; configuration/CLI validation and secret-safe diagnostics are covered. Direct tools retain a bounded initial wait; the first prompt no longer waits for indirect servers, and named Codemode/tool-search/resource work waits for only the pending servers it requires. A delayed stdio fixture plus a real provider loop verifies the first turn proceeds before connection and later request instructions include the connected-server summary. CLI status still has a separate bounded all-server wait. Focused startup/provider-loop/Codemode tests pass; full solution tests pass 1014/1014 with zero skips, format and warnings-as-errors build pass; source f1dc7e2e562a4e367de59dd62aa49796359db537 passed exact-head CI 36766119204. See the 2026-09-30 upstream delta fixture."
+        "McpConfiguration loads global and trusted-project mcp.json with project precedence, enabled flags, exposure overrides, transport settings and bounded timeouts. McpRuntime uses the official C# SDK for stdio and Streamable HTTP, expands environment references without logging credential values, and registers tools and resource operations in the existing extension catalog. Clients are disposed with the extension lease. HTTP servers without an Authorization header use SDK OAuth with a noninteractive startup callback; explicit CLI login uses a loopback authorization-code callback, and logout deletes server-name/resource-bound tokens. A private atomic mcp-auth.json cache persists SDK token and client registration fields. Local CLI add/list/remove uses an atomic config editor with same-process and interprocess locking; CLI status probes servers without selecting a chat model.",
+        "Current Pi deltas 1c7e7df (MCP namespace discovery) and 7c9fe664 (OAuth client naming) are implemented and exact-head verified: OAuth source 336be83135a0b18393bfaa41f7f826a34314f6eb / CI 36756672893. The loopback registration fixture verifies custom and default pi client names; configuration/CLI validation and secret-safe diagnostics are covered. Direct tools retain a bounded initial wait; the first prompt no longer waits for indirect servers, and named Codemode/tool-search/resource work waits for only the pending servers it requires. A delayed stdio fixture plus a real provider loop verifies the first turn proceeds before connection and later request instructions include the connected-server summary. CLI status still has a separate bounded all-server wait. Focused startup/provider-loop/Codemode tests pass; full solution tests pass 1014/1014 with zero skips, format and warnings-as-errors build pass; source f1dc7e2e562a4e367de59dd62aa49796359db537 passed exact-head CI 36766119204. See the 2026-09-30 upstream delta fixture.",
+        "McpTokenCache keys credentials and refresh coordination by mcp__<normalized-name>|<absolute-resource-url>. SDK loads atomically claim URL-only legacy credentials; token observation does not migrate; logout prefers the named key and leaves other accounts intact. Cache persistence is extracted from OAuth settings into its own feature component."
       ],
       "evidence": [
         "Current Pi MCP tools share exposure, nested execution, hooks and extension registration; builtin:mcp is resolved after trust at 4259686d9290c0d73ae7192b796aee3e530a9779. A refreshed source/test audit at 02eed88fd8912e54a804ddebd409e2e4c08ac5ef confirms Pi MCP lifecycle semantics and the /mcp manager; the upstream MCP extension/command/OAuth tests pass 28/28 at this source pin.",
@@ -3569,7 +3575,8 @@
         "MCP namespace fail-first two-server stdio fixture verifies configured summaries and initialize instructions, namespace-filtered Codemode search, nested tool calls and hidden-tool exclusion; focused Codemode/MCP/config tests 16/16, format and warnings-as-errors build pass, full local suite 1004/1004 with zero skips. Source f61455a21c359ec1af704c8b093f1d209db3cb51 passed exact-head Linux CI 36753858082. A separate configuration test verifies legacy codemode-deferred canonicalization.",
         "Fail-first OAuth authorization-server fixture showed custom oauth.clientName was rejected and default DCR omitted client_name. Loopback cases verify Claude Code and default pi on every registration; CLI saves --oauth-client-name; invalid blank/non-string config is rejected without exposing clientSecret. Focused OAuth/config/CLI 17/17; format and warnings-as-errors build clean; full suite 1006/1006, zero skipped; exact-head Linux CI 36756672893 passes restore, format, warnings-as-errors build and 1006/1006 tests.",
         "Fail-first delayed stdio/provider-loop fixture proves an indirect MCP server no longer holds the first provider call; later provider requests include its first-line summary. Named Codemode waits, tool-search/resource waits, bounded direct startup, cancellation cleanup and separate pisharp mcp list status wait are covered. Full solution suite passes 1014/1014 with zero skips; source f1dc7e2e562a4e367de59dd62aa49796359db537 passed exact-head Linux CI 36766119204.",
-        "Current Pi MCP OAuth credential isolation by server name plus URL (5806068c) remains unmatched; the current URL-only key is in McpTokenCache.Key and is propagated through runtime/login/logout. The required official client-conformance suite is pinned by current Pi at @modelcontextprotocol/conformance@0.2.0-alpha.11 for 2025-03-26, 2025-06-18 and 2025-11-25; PiSharp execution/baseline is not started."
+        "Historical URL-only credential gap (5806068c) is now implemented and locally verified by current-Pi differential evidence. The required official client-conformance suite is pinned by current Pi at @modelcontextprotocol/conformance@0.2.0-alpha.11 for 2025-03-26, 2025-06-18 and 2025-11-25; PiSharp execution/baseline is not started.",
+        "McpCredentialIsolationTests initially failed four cases: account overwrite, logout removing another account, shared legacy state, and twelve legacy winners. After the fix, 34/34 focused account/OAuth checks pass. Six operation sequences match current Pi 28eaccb8 exactly for token pairs, return values and persisted keys in fixtures/mcp-credential-isolation-2026-10-02.json. Current Pi store/refresh tests pass 8/8. Format verification, warnings-as-errors build (zero warnings/errors) and all 1076 PiSharp tests pass with zero skips; exact-head publication is pending."
       ],
       "dependencies": [
         "tool-exposure-loadout",
@@ -3641,7 +3648,7 @@
       "acceptance": [
         "Resolve core built-ins as builtin:<name> extension resources with stable source identity and diagnostics.",
         "Apply global and trusted-project enable/disable precedence, --no-extensions and explicit builtin loading after project trust resolution.",
-        "Keep package-manager installation/distribution excluded while using shared extension loading for in-scope built-in Codemode, MCP, tool-search and llama.cpp capabilities."
+        "Support normal CLI package-resource installation/distribution while using shared extension loading for in-scope built-in Codemode, MCP, tool-search and llama.cpp capabilities."
       ],
       "implementation": [
         "PiSharp ExtensionCatalog resolves registered builtin:<name> definitions through normal source identity, explicit loading, --no-extensions and user/trusted-project enable/disable rules. Tool-search and Codemode use this path. MCP is still initialized by a separate runtime call, so builtin:mcp source ownership and lifecycle are not unified; duplicate built-in replacement also lacks Pi's warning behavior."
@@ -3734,23 +3741,83 @@
       "dependencies": [
         "mcp-runtime"
       ]
+    },
+    {
+      "id": "provider-responses-grammar-tools",
+      "title": "Responses grammar/custom tools and switching",
+      "status": "not_started",
+      "source": "earendil-works/pi@bc2d8dc1c46c50f2c6a0f3237e6a2453817e51a1",
+      "acceptance": [
+        "Declare grammar tools, parse custom-tool streaming input, replay custom/function items with type-correct item IDs and preserve canonical call/result linkage across model/provider switches.",
+        "Compare current-Pi request bodies, SSE events, errors and persisted replay through deterministic fixtures."
+      ],
+      "implementation": [],
+      "evidence": [
+        "Current source inspected during the 2026-10-02 audit; PiSharp has no equivalent verified implementation."
+      ],
+      "dependencies": []
+    },
+    {
+      "id": "tui-current-easter-eggs",
+      "title": "Current header logo and /arminsayshi interactions",
+      "status": "not_started",
+      "source": "earendil-works/pi@c450f2c0f8402c3b4757f408b9c7a8296701d830",
+      "acceptance": [
+        "Match graphical header and Apple Terminal wordmark, mouse hit area, fullscreen 3D Pi/Armin and inline normal-screen Armin.",
+        "Compare themed cell matrices, dismissal, cursor/mode state and background restoration through deterministic frames and PTY cases."
+      ],
+      "implementation": [],
+      "evidence": [
+        "Current source inspected during the 2026-10-02 audit; PiSharp has no equivalent verified implementation."
+      ],
+      "dependencies": []
+    },
+    {
+      "id": "tui-auth-url-copy",
+      "title": "Provider and MCP sign-in presentation and URL copying",
+      "status": "not_started",
+      "source": "earendil-works/pi@ced72c2f095bc71999f0242b699a82210f0bc8bd",
+      "acceptance": [
+        "Match provider/MCP sign-in screens, platform hyperlinks, configured message-copy key, no-URL handling, copied/error hints, SSH OSC 52 and widget key precedence.",
+        "Match current OAuth selector wording and browser callback success/failure presentation; compare terminal cell/style/cursor state and local auth fixtures."
+      ],
+      "implementation": [],
+      "evidence": [
+        "Current source inspected during the 2026-10-02 audit; PiSharp has no equivalent verified implementation."
+      ],
+      "dependencies": []
+    },
+    {
+      "id": "provider-together-catalog",
+      "title": "Together built-in models and reasoning",
+      "status": "not_started",
+      "source": "earendil-works/pi@28eaccb8e87d075562593073282cc0774f2c2e3b",
+      "acceptance": [
+        "Provide current Together model metadata, environment auth and reasoning controls including DeepSeek-V4-Pro-0813.",
+        "Compare configured model selection and native request bodies with current Pi."
+      ],
+      "implementation": [],
+      "evidence": [
+        "Current source inspected during the 2026-10-02 audit; PiSharp has no equivalent verified implementation."
+      ],
+      "dependencies": []
     }
   ],
   "upstream_delta_audit": {
     "source_pin": "955cc6665ee3986c6a033db52200779310d10dfd",
-    "source_head": "395315f4841ab5a090a33b8259f60b6df281c1ca",
-    "commit_count": 41,
+    "source_head": "28eaccb8e87d075562593073282cc0774f2c2e3b",
+    "commit_count": 51,
     "classifications": {
-      "NEEDS_WORK": 13,
-      "MATCHED": 4,
-      "OUT_OF_SCOPE": 15,
-      "NO_BEHAVIOR_CHANGE": 9
+      "OUT_OF_SCOPE": 14,
+      "NO_BEHAVIOR_CHANGE": 10,
+      "NEEDS_WORK": 22,
+      "MATCHED": 5
     },
     "fixture": "docs/parity/fixtures/upstream-delta-audit-2026-10-01.md",
     "next": "mcp-oauth-credentials-per-server-name-and-url",
     "current_item": "5806068c26e55feefd1f5875bf05c0419ec5d912",
-    "current_item_status": "open",
-    "current_item_local_evidence": "Pi commit 5806068c keys credentials by normalized server name plus URL with deterministic migration of legacy URL-only entries. PiSharp McpTokenCache, login, runtime and logout currently key only by URL. No fail-first same-URL multi-server test exists. Current Pi main refreshed after the audit CI to 395315f4841ab5a090a33b8259f60b6df281c1ca; the sole new commit adds an experimental vacation-planner demo on the excluded durable harness and is OUT_OF_SCOPE.",
+    "current_item_status": "local_verified",
+    "current_item_local_evidence": "Four fail-first behavioral failures; 34/34 focused tests, 8/8 current-Pi store/refresh oracle tests, six matching paired credential sequences, format verification, zero-warning build and 1076/1076 full tests (zero skips). Exact-head publication pending.",
     "next_after_ci": "c662ec7e374563bd549dc35f47bac52dcc4bed88",
     "completed": [
       "65117e31f242daa8e0a17dbd2810f7bb92bf4087",

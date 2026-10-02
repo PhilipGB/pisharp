@@ -1,6 +1,6 @@
 # Continuation — PiSharp capability parity
 
-`TODO.md` is the concise implementation handoff. The feature matrix tracks scope, the detailed inventory records interfaces, and `execution-ledger.json` holds per-capability evidence. Pi Packages remain excluded unless a core capability depends on them.
+`TODO.md` is the concise implementation handoff. The feature matrix tracks scope, the detailed inventory records interfaces, and `execution-ledger.json` holds per-capability evidence. Normal CLI package-resource workflows and user-reachable visual interactions are in scope.
 
 ## Current source and upstream audit — 2026-10-01
 PiSharp `8931bd73b2e94e7831b1a054a54a8e60bb21aaf5` passed exact-head Linux CI [36904437406](https://github.com/PhilipGB/pisharp/actions/runs/36904437406): restore, format, warnings-as-errors build and 1,068/1,068 tests with zero skips. Current Pi `main` is `395315f4841ab5a090a33b8259f60b6df281c1ca`; all 41 commits after `955cc6665ee3986c6a033db52200779310d10dfd` are classified in the refreshed [upstream audit](parity/fixtures/upstream-delta-audit-2026-10-01.md). The audit has 13 `NEEDS_WORK` classifications, six resolved at published heads and seven open; the oldest open item is MCP OAuth credential isolation by server name and URL. The official MCP client conformance package/version and all three protocol modes are recorded in the execution ledger as a required deliverable. Broader parity remains incomplete.

@@ -374,7 +374,7 @@ public static class McpRuntime
                         ownsHttpClient: true);
                 else
                 {
-                    var tokenCache = new McpTokenCache(agentDirectory).ForServerWithRefresh(server.Url!);
+                    var tokenCache = new McpTokenCache(agentDirectory).ForServerWithRefresh(server.Name, server.Url!);
                     options.OAuth = oauth.CreateOptions(server.Url!, tokenCache,
                         oauth.CallbackUrl ?? new Uri("http://127.0.0.1:38119/callback"),
                         (_, _) => throw new McpSignInRequiredException());

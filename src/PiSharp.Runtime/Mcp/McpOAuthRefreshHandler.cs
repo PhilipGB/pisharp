@@ -12,7 +12,6 @@ internal sealed class McpOAuthRefreshHandler(McpTokenCache.ServerCache tokenCach
     HttpMessageHandler? innerHandler = null) : DelegatingHandler(innerHandler ?? new HttpClientHandler())
 {
     private static readonly TimeSpan s_tokenRequestTimeout = TimeSpan.FromSeconds(15);
-    private readonly Uri _serverUrl = new(tokenCache.Key);
     private readonly object _lifecycleGate = new();
     private int _activeGrants;
     private TaskCompletionSource _grantsSettled = CompletedSource();
@@ -31,13 +30,13 @@ internal sealed class McpOAuthRefreshHandler(McpTokenCache.ServerCache tokenCach
             return await base.SendAsync(request, cancellationToken);
 
         using var operation = BeginGrant();
-        var lease = await tokenCache.Owner.AcquireRefreshLockAsync(_serverUrl, cancellationToken);
+        var lease = await tokenCache.Owner.AcquireRefreshLockAsync(tokenCache.Key, cancellationToken);
         var transferred = false;
         try
         {
             if (grantType == "refresh_token")
             {
-                var current = await tokenCache.Owner.ReadTokensAsync(_serverUrl, cancellationToken);
+                var current = await tokenCache.Owner.ReadTokensAsync(tokenCache.Key, tokenCache.LegacyKey, cancellationToken);
                 var observed = tokenCache.LastObserved;
                 var requestedRefreshToken = fields.FirstOrDefault(field => field.Key == "refresh_token").Value;
                 var cacheChanged = current is not null && (observed is null ||
@@ -49,7 +48,7 @@ internal sealed class McpOAuthRefreshHandler(McpTokenCache.ServerCache tokenCach
                     (cacheChanged || refreshTokenChanged))
                 {
                     var cachedResponse = CachedTokenResponse(current, request);
-                    tokenCache.Owner.TrackPendingRefresh(_serverUrl, lease);
+                    tokenCache.Owner.TrackPendingRefresh(tokenCache.Key, lease);
                     transferred = true;
                     return cachedResponse;
                 }
@@ -74,7 +73,7 @@ internal sealed class McpOAuthRefreshHandler(McpTokenCache.ServerCache tokenCach
             if (response.IsSuccessStatusCode &&
                 await NormalizeAndValidateTokenResponseAsync(response, grantType, refreshTokenForGrant))
             {
-                tokenCache.Owner.TrackPendingRefresh(_serverUrl, lease);
+                tokenCache.Owner.TrackPendingRefresh(tokenCache.Key, lease);
                 transferred = true;
             }
             return response;
@@ -92,9 +91,9 @@ internal sealed class McpOAuthRefreshHandler(McpTokenCache.ServerCache tokenCach
             Task grantsSettled;
             lock (_lifecycleGate) grantsSettled = _grantsSettled.Task;
             await grantsSettled;
-            await tokenCache.Owner.WaitForPendingRefreshAsync(_serverUrl);
+            await tokenCache.Owner.WaitForPendingRefreshAsync(tokenCache.Key);
             lock (_lifecycleGate)
-                if (_activeGrants == 0 && !tokenCache.Owner.HasPendingRefresh(_serverUrl)) return;
+                if (_activeGrants == 0 && !tokenCache.Owner.HasPendingRefresh(tokenCache.Key)) return;
         }
     }
 

@@ -35,4 +35,4 @@ Options:
   --print, -p                    Non-interactive mode: process prompt and exit
 ```
 
-Do not compare help verbatim until the applicable modes and options exist; Pi Packages command lines are explicitly excluded. The `--provider` default can depend on machine configuration and should be checked in a clean environment before treating it as a contract.
+Do not compare help verbatim until the applicable modes and options exist; Normal Pi package-resource command lines are now in scope under the current goal. The `--provider` default can depend on machine configuration and should be checked in a clean environment before treating it as a contract.

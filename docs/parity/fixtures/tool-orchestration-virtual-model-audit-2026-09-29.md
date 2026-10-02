@@ -39,7 +39,7 @@ Current Pi keeps one `McpServerConnection` per server and shares an in-flight la
 
 The unimplemented current-Pi capabilities above are separate from the older bounded Codemode evidence below. Virtual-model logical/physical routing and branch persistence remain a major open family.
 
-Pi Packages/package-manager distribution remains excluded. The source directories below are in scope because Pi exposes their capabilities through the coding-agent runtime and extension API.
+Historical scope excluded package-manager distribution; the current goal includes normal CLI package-resource workflows. The source directories below are in scope because Pi exposes their capabilities through the coding-agent runtime and extension API.
 
 ## Upstream refresh after the orchestration audit
 

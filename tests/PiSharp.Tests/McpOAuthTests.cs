@@ -190,7 +190,7 @@ public sealed class McpOAuthTests
             Assert.Equal(1, issued);
             Assert.NotEmpty(registrationNames);
             Assert.All(registrationNames, name => Assert.Equal(expectedClientName, name));
-            var tokens = await new McpTokenCache(root).ForServer(new Uri(origin + "/mcp"))
+            var tokens = await new McpTokenCache(root).ForServer("protected", new Uri(origin + "/mcp"))
                 .GetTokensAsync(default);
             Assert.Equal("fixture-access", tokens?.AccessToken);
             Assert.Equal("fixture-refresh", tokens?.RefreshToken);
@@ -245,18 +245,18 @@ public sealed class McpOAuthTests
                 ClientId = "client",
                 AuthorizationServer = "https://auth.example.test"
             };
-            await cache.ForServer(one).StoreTokensAsync(token, default);
-            Assert.Null(await new McpTokenCache(root).ForServer(two).GetTokensAsync(default));
-            var restored = await new McpTokenCache(root).ForServer(one).GetTokensAsync(default);
+            await cache.ForServer("test", one).StoreTokensAsync(token, default);
+            Assert.Null(await new McpTokenCache(root).ForServer("test", two).GetTokensAsync(default));
+            var restored = await new McpTokenCache(root).ForServer("test", one).GetTokensAsync(default);
             Assert.Equal("secret-refresh", restored?.RefreshToken);
             Assert.Equal("client", restored?.ClientId);
             Assert.Equal("https://auth.example.test", restored?.AuthorizationServer);
             if (OperatingSystem.IsLinux())
                 Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite,
                     File.GetUnixFileMode(Path.Combine(root, "mcp-auth.json")));
-            Assert.True(await cache.RemoveAsync(one));
-            Assert.False(await cache.RemoveAsync(one));
-            Assert.Null(await cache.ForServer(one).GetTokensAsync(default));
+            Assert.True(await cache.RemoveAsync("test", one));
+            Assert.False(await cache.RemoveAsync("test", one));
+            Assert.Null(await cache.ForServer("test", one).GetTokensAsync(default));
         }
         finally { Directory.Delete(root, recursive: true); }
     }
@@ -269,7 +269,7 @@ public sealed class McpOAuthTests
         try
         {
             await Task.WhenAll(Enumerable.Range(0, 12).Select(async index =>
-                await new McpTokenCache(root).ForServer(new Uri("https://example.test/" + index))
+                await new McpTokenCache(root).ForServer("test", new Uri("https://example.test/" + index))
                     .StoreTokensAsync(new TokenContainer
                     {
                         TokenType = "Bearer",
@@ -278,7 +278,7 @@ public sealed class McpOAuthTests
                     }, default)));
             for (var index = 0; index < 12; index++)
                 Assert.Equal("access-" + index,
-                    (await new McpTokenCache(root).ForServer(new Uri("https://example.test/" + index))
+                    (await new McpTokenCache(root).ForServer("test", new Uri("https://example.test/" + index))
                         .GetTokensAsync(default))?.AccessToken);
         }
         finally { Directory.Delete(root, recursive: true); }
@@ -291,8 +291,8 @@ public sealed class McpOAuthTests
         Directory.CreateDirectory(root);
         var serverUrl = new Uri("https://mcp.example.test/mcp");
         var endpoint = new Uri("https://auth.example.test/token");
-        var firstCache = new McpTokenCache(root).ForServerWithRefresh(serverUrl);
-        var secondCache = new McpTokenCache(root).ForServerWithRefresh(serverUrl);
+        var firstCache = new McpTokenCache(root).ForServerWithRefresh("test", serverUrl);
+        var secondCache = new McpTokenCache(root).ForServerWithRefresh("test", serverUrl);
         await firstCache.StoreTokensAsync(new TokenContainer
         {
             TokenType = "Bearer",
@@ -355,7 +355,7 @@ public sealed class McpOAuthTests
             }, default);
 
             Assert.Equal(1, tokenEndpoint.RefreshRequests);
-            Assert.Equal("refresh-2", (await new McpTokenCache(root).ForServer(serverUrl)
+            Assert.Equal("refresh-2", (await new McpTokenCache(root).ForServer("test", serverUrl)
                 .GetTokensAsync(default))?.RefreshToken);
         }
         finally
@@ -371,7 +371,7 @@ public sealed class McpOAuthTests
         var root = Path.Combine(Path.GetTempPath(), "pisharp-mcp-oauth-optional-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(root);
         var serverUrl = new Uri("https://mcp.example.test/mcp");
-        var cache = new McpTokenCache(root).ForServerWithRefresh(serverUrl);
+        var cache = new McpTokenCache(root).ForServerWithRefresh("test", serverUrl);
         await cache.StoreTokensAsync(new TokenContainer
         {
             TokenType = "Bearer",
@@ -419,7 +419,7 @@ public sealed class McpOAuthTests
         var root = Path.Combine(Path.GetTempPath(), "pisharp-mcp-oauth-null-expiry-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(root);
         var serverUrl = new Uri("https://mcp.example.test/mcp");
-        var cache = new McpTokenCache(root).ForServerWithRefresh(serverUrl);
+        var cache = new McpTokenCache(root).ForServerWithRefresh("test", serverUrl);
         await cache.StoreTokensAsync(new TokenContainer
         {
             TokenType = "Bearer",
@@ -523,7 +523,7 @@ public sealed class McpOAuthTests
 
         try
         {
-            await new McpTokenCache(root).ForServer(serverUrl).StoreTokensAsync(new TokenContainer
+            await new McpTokenCache(root).ForServer("test", serverUrl).StoreTokensAsync(new TokenContainer
             {
                 TokenType = "Bearer",
                 AccessToken = "access-1",
@@ -576,7 +576,7 @@ public sealed class McpOAuthTests
             stopServer.TrySetResult();
             await server.WaitAsync(TimeSpan.FromSeconds(5));
             Assert.Equal(1, refreshRequests);
-            Assert.Equal("refresh-2", (await new McpTokenCache(root).ForServer(serverUrl)
+            Assert.Equal("refresh-2", (await new McpTokenCache(root).ForServer("test", serverUrl)
                 .GetTokensAsync(default))?.RefreshToken);
         }
         finally
@@ -609,7 +609,7 @@ public sealed class McpOAuthTests
         var serverUrl = new Uri(Environment.GetEnvironmentVariable("PISHARP_MCP_REFRESH_TEST_SERVER_URL")!);
         var endpoint = new Uri(Environment.GetEnvironmentVariable("PISHARP_MCP_REFRESH_TEST_ENDPOINT")!);
         var readyFile = Environment.GetEnvironmentVariable("PISHARP_MCP_REFRESH_TEST_READY_FILE")!;
-        var tokenCache = new McpTokenCache(agentDirectory).ForServerWithRefresh(serverUrl);
+        var tokenCache = new McpTokenCache(agentDirectory).ForServerWithRefresh("test", serverUrl);
         Assert.Equal("access-1", (await tokenCache.GetTokensAsync(default))?.AccessToken);
         await File.WriteAllTextAsync(readyFile, "ready");
         using var http = new HttpClient(new McpOAuthRefreshHandler(tokenCache));
@@ -654,7 +654,7 @@ public sealed class McpOAuthTests
             }));
             var cache = new McpTokenCache(root);
             foreach (var url in new[] { first, second })
-                await cache.ForServer(url).StoreTokensAsync(new TokenContainer
+                await cache.ForServer(url == first ? "first" : "second", url).StoreTokensAsync(new TokenContainer
                 {
                     TokenType = "Bearer",
                     AccessToken = url.AbsolutePath,
@@ -664,8 +664,8 @@ public sealed class McpOAuthTests
             var errors = new StringWriter();
             Assert.Equal(0, await McpCommand.RunAsync(["logout", "first"], root, root, output, errors));
             Assert.Contains("Signed out", output.ToString());
-            Assert.Null(await cache.ForServer(first).GetTokensAsync(default));
-            Assert.NotNull(await cache.ForServer(second).GetTokensAsync(default));
+            Assert.Null(await cache.ForServer("first", first).GetTokensAsync(default));
+            Assert.NotNull(await cache.ForServer("second", second).GetTokensAsync(default));
             Assert.Equal("", errors.ToString());
         }
         finally { Directory.Delete(root, recursive: true); }

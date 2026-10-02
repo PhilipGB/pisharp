@@ -1,8 +1,8 @@
 # Current Pi upstream delta audit — 2026-10-01
 
-The prior recorded Pi pin was `955cc6665ee3986c6a033db52200779310d10dfd`. Fresh fetch confirms Pi `main` at `395315f4841ab5a090a33b8259f60b6df281c1ca`, 41 commits after that pin. Every commit in the complete range is classified below in chronological order. PiSharp source `8931bd73b2e94e7831b1a054a54a8e60bb21aaf5` is the current published head; exact-head Linux CI [36904437406](https://github.com/PhilipGB/pisharp/actions/runs/36904437406) passed restore, format, warnings-as-errors build, and 1,068/1,068 tests with zero skips. The provider-context-transform extension slice is included in this head.
+Fresh fetch on 2026-10-02 confirms Pi `main` at `28eaccb8e87d075562593073282cc0774f2c2e3b`, ten commits after the prior audit head `395315f4841ab5a090a33b8259f60b6df281c1ca` and 51 after `955cc6665ee3986c6a033db52200779310d10dfd`. PiSharp fetched main is `d9f2c65f853472636c7d488e40bc1f48047b544d`. Every intervening commit is classified below. Historical validation records retain their original pins; they do not prove current full parity.
 
-The complete range has **13 `NEEDS_WORK`, 4 `MATCHED`, 15 `OUT_OF_SCOPE`, and 9 `NO_BEHAVIOR_CHANGE`** commits. Six earlier `NEEDS_WORK` changes are resolved at published PiSharp heads (recorded on their entries); seven open items remain. The oldest open delta is per-server MCP OAuth credential isolation (`5806068c`). The official MCP conformance commit is classified as test infrastructure with no runtime behavior change, while its required equivalent PiSharp conformance evidence is tracked separately in the execution ledger. Overall parity remains incomplete.
+Current classifications: 14 `OUT_OF_SCOPE`, 10 `NO_BEHAVIOR_CHANGE`, 22 `NEEDS_WORK`, 5 `MATCHED`. User-reachable visual effects, OAuth wording/callback presentation and package-resource CLI flows are in scope. Earlier exclusions for those surfaces are corrected. Grammar/custom-call replay, auth URL copying, current 3D interactions and Together metadata join the existing open queue.
 
 ## Commit classifications
 
@@ -39,9 +39,9 @@ Hardens the async SQLite queue and close behavior in `packages/durable`, outside
 
 Merge commit for the SQLite follow-up already represented by its constituent commit; it adds no distinct tree change.
 
-### `b35af04f465d60c2f15d124ed074476b8986deb4` — `OUT_OF_SCOPE`
+### `b35af04f465d60c2f15d124ed074476b8986deb4` — `NEEDS_WORK`
 
-Adds a header-click-only hidden logo animation and a last-frame accessor for that animation. This is a decorative easter egg rather than a command, agent, session, provider, or protocol behavior in the audited interface inventory; PiSharp does not have a general fullscreen animation subsystem. The optional visual effect is outside the current functional parity scope.
+The header logo is clickable in the normal coding-agent TUI and launches a 3D animation. This is in scope under the current objective. PiSharp has no graphical header or animation. Track current header geometry, mouse hit area, screen restoration and shared 3D renderer with c450f2c0; do not recreate the superseded renderer.
 
 ### `65117e31f242daa8e0a17dbd2810f7bb92bf4087` — `NEEDS_WORK`
 
@@ -144,7 +144,7 @@ Changes the default task-panel visibility in the experimental durable TUI added 
 
 Adds a pinned official MCP client conformance suite, its baseline runner, and a CI job. It changes test coverage and CI only; it does not change Pi runtime behavior, so there is no coding-agent capability delta to port.
 
-### `5806068c26e55feefd1f5875bf05c0419ec5d912` — `NEEDS_WORK`
+### `5806068c26e55feefd1f5875bf05c0419ec5d912` — `NEEDS_WORK` (implemented; publication pending)
 
 - **Pi files:** `packages/coding-agent/src/extensions/mcp/{oauth.ts,runtime.ts,cli.ts}` and `packages/coding-agent/test/mcp-oauth-store.test.ts`.
 - **Pi behavior:** OAuth credentials are isolated by normalized MCP server name and canonical URL, so two configured server names at the same URL can use different accounts. A legacy URL-only entry migrates to the first server that loads it; logout removes only that server's key (or its legacy entry).
@@ -154,6 +154,8 @@ Adds a pinned official MCP client conformance suite, its baseline runner, and a 
 - **Required implementation:** key storage and refresh coordination by normalized server name plus canonical URL, pass server identity through runtime/login/logout, and migrate legacy URL-only state deterministically without exposing credentials.
 - **Validation/dependencies:** full solution validation and exact-head CI; no runtime dependency. This is the oldest open upstream delta.
 
+- **Current implementation/evidence:** cache identity and refresh locking now use normalized server name plus URL. Legacy URL-only credentials atomically move to the first SDK loader; observation is nonmutating, and logout removes only the selected named entry (or its unclaimed legacy entry). Four fail-first behavioral regressions are fixed; 34/34 focused checks and six operation sequences against current Pi `28eaccb8` pass. See `mcp-credential-isolation-2026-10-02.json`. Current Pi store/refresh tests pass 8/8; format verification, zero-warning build and 1076/1076 PiSharp tests pass with zero skips. Exact-head CI is pending.
+
 ### `54c19a252997ee6607e2379b4c168a0adc93338e` — `NO_BEHAVIOR_CHANGE`
 
 Reduces retained memory in Pi TUI render caches by flattening strings and weakly holding parsed Markdown tokens. It does not change rendered content or the coding-agent interaction contract.
@@ -162,9 +164,9 @@ Reduces retained memory in Pi TUI render caches by flattening strings and weakly
 
 Changes the interactive user-message component to avoid retaining a duplicate full-width rendered copy of each line. The commit states and implements identical rendered output; this is an internal memory optimization with no PiSharp capability delta.
 
-### `0f8740bb65638180403a225ad7ec4d0cc1f8dedf` — `NO_BEHAVIOR_CHANGE`
+### `0f8740bb65638180403a225ad7ec4d0cc1f8dedf` — `NEEDS_WORK`
 
-Changes the OAuth selector's empty-status label from “unconfigured” to “not configured” and updates its wording assertions. Authentication state, selection, and login behavior are unchanged, so the commit adds no capability delta to the PiSharp audit.
+The OAuth selector now displays “not configured” instead of “unconfigured”. Visible wording is a parity requirement. PiSharp’s provider selection and status presentation need current-Pi terminal snapshots; include this label in the auth-screen slice.
 
 ### `c662ec7e374563bd549dc35f47bac52dcc4bed88` — `NEEDS_WORK`
 
@@ -198,15 +200,15 @@ Changes the OAuth selector's empty-status label from “unconfigured” to “no
 
 ### `7fd478a2e888ebc28869566f33a186303d372838` — `OUT_OF_SCOPE`
 
-Removes the experimental agent harness from the separately distributed `pi-agent-core` package. Pi Packages and their experimental harness surfaces are excluded by this parity objective; the change adds no coding-agent capability requirement for PiSharp.
+Removes the experimental agent harness from the separately distributed `pi-agent-core` package. Pure package APIs and experimental alternate runtimes unreachable from the normal coding-agent executable are excluded; the change adds no coding-agent capability requirement for PiSharp.
 
 ### `48dd1e2f0f9dc7a767d7e5ee693bc85a4d6db38c` — `OUT_OF_SCOPE`
 
-Ports an experimental client/server and durable harness into the separate `pi-durable` package. This is an experimental package/runtime, not the in-scope coding-agent interface; Pi Packages remain excluded.
+Ports an experimental client/server and durable harness into the separate `pi-durable` package. This is an experimental package/runtime, not the in-scope coding-agent interface; The normal coding-agent executable does not enter this alternate runtime.
 
-### `233f174401c1fbf112046b0020bcfb7ea5cd8467` — `OUT_OF_SCOPE`
+### `233f174401c1fbf112046b0020bcfb7ea5cd8467` — `NEEDS_WORK`
 
-Changes the color treatment of the Pi logo on the browser OAuth callback page. It changes branding presentation only, adds no authentication behavior, and is specific to Pi's brand assets rather than a reusable coding-agent capability.
+The normal browser OAuth callback page displays a colored Pi logo. This user-facing auth presentation is in scope. PiSharp currently serves a plain callback message. Verify success and failure callback pages and match the current source presentation.
 
 ### `ed8b3bcc194c8263ec8bec3f337053ae73866da1` — `NEEDS_WORK`
 
@@ -228,9 +230,9 @@ Changes the color treatment of the Pi logo on the browser OAuth callback page. I
 - **Required implementation:** add configured-provider image generation through the existing model-owned boundary and Codemode nested-call accounting, with no credential flow from script data.
 - **Validation/dependencies:** full solution validation and exact-head CI; the diagnostic overlap with the following Codemode prompt/error commit should be covered without merging unrelated behavior.
 
-### `ca9c925117b8d172d42e516a4175be4db0e51d79` — `MATCHED`
+### `ca9c925117b8d172d42e516a4175be4db0e51d79` — `NEEDS_WORK`
 
-Pi uses a text wordmark in Apple Terminal where its graphical logo is unsuitable. PiSharp's interactive header already uses a plain text `PiSharp` wordmark across terminals and does not emit the half-block logo, so the behavior is present without platform-specific branching. Evidence: `src/PiSharp.Cli/Program.cs` startup/header composition and `TerminalScreen` PTY fixtures.
+Apple Terminal receives Pi’s text wordmark instead of its graphical logo. PiSharp’s PiSharp wordmark everywhere does not prove visual parity. Cover the current source logo/wordmark selection and exact header layout in the terminal differential matrix.
 
 ### `c2f65d8f13f6205c2efa963f7689ebb08a87fd33` — `NO_BEHAVIOR_CHANGE`
 
@@ -252,8 +254,48 @@ For this commit's default-mode change, PiSharp already starts its interactive TU
 
 ### `395315f4841ab5a090a33b8259f60b6df281c1ca` — `OUT_OF_SCOPE`
 
-Adds an experimental vacation-planner demo under `packages/coding-agent/src/experimental/vacation/`, implemented on the separate Pi Durable harness. It is a demo and alternate durable runtime rather than a coding-agent capability surface; Pi Packages and experimental durable harness work are excluded by the objective.
+Adds an experimental vacation-planner demo under `packages/coding-agent/src/experimental/vacation/`, implemented on the separate Pi Durable harness. It is a demo and alternate durable runtime rather than a coding-agent capability surface; Its source is excluded from the normal coding-agent executable build.
+
+### `eaa8b0d0650f40bab58611008f89dd94020b3839` — `OUT_OF_SCOPE`
+
+Changes packaging and documentation exports for the separate experimental durable runtime. The normal coding-agent entrypoint excludes experimental sources; no default-product behavior changes.
+
+### `92fc452c52240917252d76bc723d83e77f4fb1f1` — `NO_BEHAVIOR_CHANGE`
+
+Changelog entries only. The referenced runtime changes are classified separately.
+
+### `bc2d8dc1c46c50f2c6a0f3237e6a2453817e51a1` — `NEEDS_WORK`
+
+Responses replay selects custom_tool_call for grammar tools and function_call otherwise. Item IDs survive only when their prefix matches the selected type (ctc_ or fc_) and the model has not changed; foreign provider calls omit item IDs while preserving normalized call/result linkage. PiSharp currently has no grammar-tool mapping or custom-tool streaming/replay path. Implement at the provider boundary with paired request-body and SSE fixtures, preserving MAF function invocation and canonical history.
+
+### `a13d35a742c6ef8462812a28fbe1d8c8b7431c32` — `MATCHED`
+
+Releases package versions at 1.0.0 without additional runtime changes. PiSharp’s default assembly version and --version already emit 1.0.0. Header presentation remains separately open; this classification covers only the version delta.
+
+### `86dfceec402ad77e563bf4feab5f26c42d5f5db6` — `NO_BEHAVIOR_CHANGE`
+
+Adds empty Unreleased changelog sections only.
+
+### `7fbbd5f4a1d982bb02d63472dde0774fa639f99b` — `NEEDS_WORK`
+
+/arminsayshi plays themed voxel Armin in fullscreen and retains inline Armin in normal mode. PiSharp has neither interaction. Port the current shared renderer after c450f2c0, inline art/animation, cancellation and terminal restoration; cover deterministic frames and PTY command behavior.
+
+### `1c1e9c0efc18a3b2b7890267b6a5e747ecab0202` — `MATCHED`
+
+Removes the automatic Daxnuts animation when selecting opencode Kimi K2.5. PiSharp has no Daxnuts component, model-switch trigger or command. There is no removed behavior to retain; broader opencode provider parity remains open.
+
+### `c450f2c0f8402c3b4757f408b9c7a8296701d830` — `NEEDS_WORK`
+
+Restores the header-logo mouse interaction alongside /arminsayshi through one lazily loaded 3D renderer. Both interactions are in scope. Match current frame rendering, theme accents, overlay bounds, key/click dismissal and background restoration; use exact cell/style/cursor fixtures.
+
+### `ced72c2f095bc71999f0242b699a82210f0bc8bd` — `NEEDS_WORK`
+
+Provider and MCP sign-in screens display a hyperlink, platform click hint and configurable app.message.copy hint. Copy routes the complete URL to clipboard (OSC 52 over SSH), consumes the key before the input widget, and reports success/error inline. Device-code screens without auth URL ignore it. /mcp login now opens the MCP sign-in screen. PiSharp’s transcript hyperlink and console provider flow do not match this. Implement a shared auth URL view and modal key handling with current-Pi component and PTY differentials.
+
+### `28eaccb8e87d075562593073282cc0774f2c2e3b` — `NEEDS_WORK`
+
+Together DeepSeek V4 Pro reasoning metadata now uses deepseek-ai/DeepSeek-V4-Pro-0813. PiSharp has no Together built-in catalog/profile, so this is part of the existing provider/model catalog gap. Port the configured provider model identity and high-only Together reasoning mapping with paired request fixtures.
 
 ## Processing order
 
-Resolve the currently open deltas in chronological order: MCP OAuth credentials keyed by server name and URL (`5806068c`), restored MCP tool loadouts (`c662ec7`), pastel system-theme chroma (`409e808`), header-only quiet startup (`f29ea3d`), Radius `/login` onboarding (`ed8b3bc`), Codemode image generation (`aab34df`), and Codemode prompt/error guidance (`6f1072c`). Before treating MCP as complete, run and baseline the official client conformance scenarios listed in the execution ledger. For each behavior change, add fail-first evidence, implement only that mismatch, run full validation, update parity records, commit/push, verify exact-head CI, refresh Pi, and continue.
+MCP server-account isolation is the active implementation slice; it is independent of the newly discovered deltas. Next preserve deferred MCP loadouts and build shared terminal differential coverage for current auth/header presentation, including copy keys and easter eggs. Grammar Responses support must precede provider-switch replay verification. Codemode image generation precedes model/error guidance. Pastel themes, header-only startup, Radius onboarding, official MCP conformance and the full ledger remain open. Every slice requires fail-first coverage, current-Pi evidence, required local checks, push and exact-head CI before the next implementation.

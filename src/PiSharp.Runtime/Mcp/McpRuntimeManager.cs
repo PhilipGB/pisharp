@@ -190,7 +190,7 @@ public sealed class McpRuntimeManager(string? agentDirectory = null)
             if (agentDirectory is null) return "MCP OAuth sign-out is unavailable.";
             if (entry.Configuration.Url is null || HasAuthorizationHeader(entry.Configuration))
                 return "MCP server " + name + " does not use OAuth.";
-            var removed = await new McpTokenCache(agentDirectory).RemoveAsync(entry.Configuration.Url, cancellationToken);
+            var removed = await new McpTokenCache(agentDirectory).RemoveAsync(entry.Configuration.Name, entry.Configuration.Url, cancellationToken);
             if (entry.Connection is not null)
             {
                 try { await entry.Connection.ReconnectAsync(cancellationToken); }
