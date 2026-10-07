@@ -1,5 +1,8 @@
 namespace PiSharp.Cli.Tui;
 
+internal sealed record TerminalProgressState(string Message, double? Ratio = null, string? Detail = null);
+internal readonly record struct TerminalProgressOutcome<T>(bool Cancelled, T? Value);
+
 /// <summary>Normal-screen terminal editor. Leaves transcript in the terminal scrollback.</summary>
 public sealed class TerminalEditor
 {
@@ -77,6 +80,80 @@ public sealed class TerminalEditor
         using var mode = TerminalMode.Enter(screen);
         return new TerminalOverlayHost(input).Select(screen, title, options, selectedKey, scopedOptions,
             allLabel, scopedLabel, emptyMessage);
+    }
+
+    internal async Task<TerminalProgressOutcome<T>> RunProgressAsync<T>(string title, string subject,
+        string cancelTitle, string cancelMessage,
+        Func<CancellationToken, Action<TerminalProgressState>, Task<T>> run, Func<Task> cancelOperation)
+    {
+        ArgumentNullException.ThrowIfNull(run);
+        ArgumentNullException.ThrowIfNull(cancelOperation);
+        if (_screen is not { IsActive: true } screen)
+            throw new InvalidOperationException("Progress requires an active terminal screen.");
+
+        using var mode = TerminalMode.Enter(screen);
+        using var cancellation = new CancellationTokenSource();
+        var input = EnsureInput();
+        var state = new TerminalProgressState("Starting…");
+        void Update(TerminalProgressState progress)
+        {
+            state = progress;
+            var lines = new List<string> { title, subject, "", state.Message };
+            if (state.Ratio is { } ratio)
+            {
+                var bounded = Math.Clamp(ratio, 0, 1);
+                var filled = (int)Math.Round(bounded * 40, MidpointRounding.AwayFromZero);
+                lines.Add(new string('█', filled) + new string('─', 40 - filled) + $" {Math.Round(bounded * 100):0}%");
+            }
+            if (!string.IsNullOrEmpty(state.Detail)) lines.Add(state.Detail);
+            lines.Add("Escape to stop");
+            screen.SetOverlay(lines);
+        }
+
+        async Task<(bool Succeeded, T? Value, Exception? Error)> SettleAsync()
+        {
+            try { return (true, await run(cancellation.Token, Update).ConfigureAwait(false), null); }
+            catch (Exception error) { return (false, default, error); }
+        }
+
+        Update(state);
+        var settled = SettleAsync();
+        try
+        {
+            while (!settled.IsCompleted)
+            {
+                if (!input.TryRead(50, out var next))
+                {
+                    screen.RefreshIfResized();
+                    await Task.Delay(10).ConfigureAwait(false);
+                    continue;
+                }
+                if (next.Key is not { } key || !_keymap.Matches("app.interrupt", key)) continue;
+                var confirmation = ShowSelectionList($"{cancelTitle}\n{cancelMessage}", new[]
+                {
+                    new TerminalSelectionOption<bool>("yes", true, "Yes"),
+                    new TerminalSelectionOption<bool>("no", false, "No")
+                });
+                if (confirmation?.Option.Value != true)
+                {
+                    Update(state);
+                    continue;
+                }
+                try { await cancelOperation().ConfigureAwait(false); }
+                finally { cancellation.Cancel(); }
+                _ = await settled.ConfigureAwait(false);
+                return new(true, default);
+            }
+
+            var result = await settled.ConfigureAwait(false);
+            if (!result.Succeeded) throw result.Error!;
+            return new(false, result.Value);
+        }
+        finally
+        {
+            cancellation.Cancel();
+            screen.SetOverlay(null);
+        }
     }
 
     /// <summary>Seed the next editable prompt after a session fork; never submits it automatically.</summary>
@@ -324,7 +401,8 @@ public sealed class TerminalEditor
         _screen?.SetFooter(ActiveRunFooter);
     }
 
-    public async Task<string?> ReadLineAsync(Func<string, Task> dispatchApplicationAction, bool enableApplicationActions = true)
+    public async Task<string?> ReadLineAsync(Func<string, Task> dispatchApplicationAction,
+        bool enableApplicationActions = true, bool allowEmptySubmit = false)
     {
         ArgumentNullException.ThrowIfNull(dispatchApplicationAction);
         var previous = Console.TreatControlCAsInput;
@@ -379,6 +457,15 @@ public sealed class TerminalEditor
                 {
                     Render();
                     continue;
+                }
+                if (allowEmptySubmit && next.Key is { } submitKey &&
+                    _keymap.Matches("tui.input.submit", submitKey) && string.IsNullOrWhiteSpace(_buffer.Text))
+                {
+                    var submitted = _buffer.Text;
+                    ClearLine();
+                    Console.WriteLine($"{Prompt}{submitted}");
+                    _buffer.Clear();
+                    return submitted;
                 }
                 if (next.Key is { } tabKey && _keymap.Matches("tui.input.tab", tabKey))
                 {

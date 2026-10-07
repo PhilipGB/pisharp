@@ -123,7 +123,7 @@ public sealed class QuietStartupTests
             Assert.Equal(0, process.ExitCode);
             Assert.Equal("", await error);
             var text = await output;
-            Assert.Equal(header, text.Contains("/model · /settings", StringComparison.Ordinal));
+            Assert.Equal(header, text.Contains("/model · /llama · /settings", StringComparison.Ordinal));
             Assert.Equal(header, text.Contains("PiSharp v", StringComparison.Ordinal));
             Assert.Equal(details, text.Contains("PiSharp · local/", StringComparison.Ordinal));
         }

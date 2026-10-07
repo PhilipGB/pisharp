@@ -1,6 +1,8 @@
 using System.Net;
 using System.Text;
+using System.Text.Json;
 using PiSharp.Cli;
+using PiSharp.Runtime.Classifiers;
 
 namespace PiSharp.Tests;
 
@@ -67,6 +69,7 @@ public sealed class LlamaRouterProviderTests
             Assert.Contains(classifiers, model => model.Id == "decision-only" && model.Api == "typesafe-system-one" &&
                 model.BaseUrl == new Uri("http://llama.test:8080/v1"));
             Assert.Contains(requests, request => request.Path == "/models" && request.Authorization == "Bearer router-secret");
+            Assert.DoesNotContain(requests, request => request.Path == "/props?model=sleeping&autoload=false");
         }
         finally
         {
@@ -125,6 +128,7 @@ public sealed class LlamaRouterProviderTests
                         ]}
                         """),
                     "/props?model=chat-model&autoload=false" => Json("{}"),
+                    "/v1/systemone" => Json("""{"answers":{"safe":{"type":"noul","noul":0.9}}}"""),
                     _ => new HttpResponseMessage(HttpStatusCode.NotFound)
                 };
             }));
@@ -146,11 +150,94 @@ public sealed class LlamaRouterProviderTests
             Assert.Equal("http://llama.test:8080/v1", decision.GetProperty("baseUrl").GetString());
             Assert.Contains(requests, request => request.Path == "/models" &&
                 request.Authorization == "Bearer router-secret");
+
+            var classification = await new ProviderClassifierRuntime(providers, http).ClassifyAsync("llama.cpp",
+                "decision-model", new ClassifierContext(JsonSerializer.SerializeToElement(new { text = "state" }),
+                    new Dictionary<string, ClassifierQuestion>
+                    {
+                        ["safe"] = new ClassifierBoolQuestion("safe?", new Dictionary<string, string>())
+                    }));
+            Assert.Equal("stop", classification.StopReason);
+            Assert.Equal(0.9, Assert.IsType<ClassifierBoolAnswer>(classification.Answers["safe"]).Probability, 8);
+            Assert.Contains(requests, request => request.Path == "/v1/systemone" &&
+                request.Authorization == "Bearer router-secret");
         }
         finally
         {
             Directory.Delete(root, true);
         }
+    }
+
+    [Fact]
+    public async Task UnloadedRouterPresetsAreHiddenWhenAutoloadIsDisabled()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-llama-no-autoload-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            var requests = new List<string>();
+            using var http = new HttpClient(new RouterHandler(request =>
+            {
+                requests.Add(request.RequestUri!.PathAndQuery);
+                return request.RequestUri.PathAndQuery switch
+                {
+                    "/models" => Json("""{"data":[{"id":"preset","status":{"value":"unloaded"},"source":"preset"},{"id":"file","status":{"value":"unloaded"},"source":"local"}]}"""),
+                    "/props" => Json("""{"models_autoload":false}"""),
+                    _ => new HttpResponseMessage(HttpStatusCode.NotFound)
+                };
+            }));
+            var runtime = await ProviderModelRuntime.CreateAsync(root, false,
+                name => name == "LLAMA_BASE_URL" ? "http://llama.test:8080" : null, http);
+
+            Assert.Empty(await runtime.ListModelsAsync("llama.cpp"));
+            Assert.Contains("/props", requests);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [Fact]
+    public async Task RouterContextWindowSurvivesModelSleepAndAnOfflineRuntimeReload()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-llama-context-cache-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            var sleeping = false;
+            var requests = 0;
+            using var http = new HttpClient(new RouterHandler(request =>
+            {
+                requests++;
+                if (request.RequestUri!.AbsolutePath == "/models")
+                    return sleeping
+                        ? Json("""{"data":[{"id":"qwen","status":{"value":"sleeping"},"architecture":{"output_modalities":["text"]}}]}""")
+                        : Json("""{"data":[{"id":"qwen","status":{"value":"loaded"},"architecture":{"output_modalities":["text"]},"meta":{"n_ctx":32768}}]}""");
+                if (request.RequestUri.AbsolutePath.StartsWith("/props", StringComparison.Ordinal)) return Json("{}");
+                return new HttpResponseMessage(HttpStatusCode.NotFound);
+            }));
+            var environment = new Dictionary<string, string?>
+            {
+                ["LLAMA_BASE_URL"] = "http://llama.test:8080",
+                ["LLAMA_API_KEY"] = "router-key"
+            };
+            var runtime = await ProviderModelRuntime.CreateAsync(root, false,
+                name => environment.GetValueOrDefault(name), http);
+
+            var loaded = Assert.Single(await runtime.ListModelsAsync("llama.cpp"));
+            Assert.Equal(32768, loaded.ContextLength);
+            sleeping = true;
+            var slept = Assert.Single(await runtime.ListModelsAsync("llama.cpp"));
+            Assert.Equal("sleeping", slept.Status);
+            Assert.Equal(32768, slept.ContextLength);
+
+            var requestsBeforeReload = requests;
+            var offline = await ProviderModelRuntime.CreateAsync(root, false,
+                name => environment.GetValueOrDefault(name), http, offline: true);
+            var restored = Assert.Single(await offline.ListModelsAsync("llama.cpp"));
+            Assert.Equal("sleeping", restored.Status);
+            Assert.Equal(32768, restored.ContextLength);
+            Assert.Equal(requestsBeforeReload, requests);
+        }
+        finally { Directory.Delete(root, recursive: true); }
     }
 
     [Fact]
@@ -184,11 +271,64 @@ public sealed class LlamaRouterProviderTests
         }
     }
 
+    [Fact]
+    public async Task RouterCredentialsPreferStoredValuesThenEnvironmentThenTheLocalDefault()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-llama-precedence-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            var requests = new List<(string Host, string? Authorization)>();
+            using var http = new HttpClient(new RouterHandler(request =>
+            {
+                requests.Add((request.RequestUri!.Host, request.Headers.Authorization?.ToString()));
+                return Json("{\"data\":[]}");
+            }));
+            var environment = new Dictionary<string, string?>
+            {
+                ["LLAMA_BASE_URL"] = "http://environment.test:8080/v1/",
+                ["LLAMA_API_KEY"] = "environment-key"
+            };
+            var auth = new AuthStorage(Path.Combine(root, "auth.json"));
+            await auth.StoreLlamaRouterAsync("stored-key", "http://stored.test:8081/v1/");
+            var runtime = await ProviderModelRuntime.CreateAsync(root, false,
+                name => environment.GetValueOrDefault(name), http);
+
+            Assert.Equal("stored-key", (await runtime.ResolveAuthAsync("llama.cpp")).Key);
+            await runtime.ListModelsAsync("llama.cpp");
+            Assert.Equal(("stored.test", "Bearer stored-key"), Assert.Single(requests));
+
+            await auth.StoreLlamaRouterAsync(null, "http://stored.test:8081");
+            Assert.Equal("environment-key", (await runtime.ResolveAuthAsync("llama.cpp")).Key);
+            await runtime.ListModelsAsync("llama.cpp");
+            Assert.Equal(("stored.test", "Bearer environment-key"), requests[^1]);
+
+            environment["LLAMA_API_KEY"] = "";
+            Assert.Equal("", (await runtime.ResolveAuthAsync("llama.cpp")).Key);
+            await runtime.ListModelsAsync("llama.cpp");
+            Assert.Equal(("stored.test", null), requests[^1]);
+
+            environment["LLAMA_API_KEY"] = null;
+            Assert.Equal("local", (await runtime.ResolveAuthAsync("llama.cpp")).Key);
+            await auth.DeleteAsync("llama.cpp");
+            await runtime.ListModelsAsync("llama.cpp");
+            Assert.Equal(("environment.test", "Bearer local"), requests[^1]);
+        }
+        finally
+        {
+            Directory.Delete(root, true);
+        }
+    }
+
     [Theory]
     [InlineData("http://llama.test:8080/router/v1/", "http://llama.test:8080/router")]
     [InlineData("http://llama.test:8080/router/V1/", "http://llama.test:8080/router/V1")]
     public void RouterRootNormalizationMatchesCurrentPiCaseSensitiveVersionSuffix(string value, string expected) =>
         Assert.Equal(new Uri(expected), LlamaRouterClient.NormalizeServerUrl(value));
+
+    [Fact]
+    public void RouterLoginDefaultUrlMatchesCurrentPi() =>
+        Assert.Equal("http://127.0.0.1:8080", LlamaRouterClient.DefaultServerUrl);
 
     private static HttpResponseMessage Json(string value) => new(HttpStatusCode.OK)
     {

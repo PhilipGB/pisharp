@@ -90,7 +90,8 @@ internal sealed class TerminalProviderLogin(ProviderModelRuntime runtime, Termin
                 var defaultUrl = string.IsNullOrWhiteSpace(environmentUrl)
                     ? LlamaRouterClient.DefaultServerUrl : environmentUrl.Trim();
                 Console.Error.WriteLine($"llama.cpp server URL (Enter to use {defaultUrl}):");
-                var enteredUrl = await editor.ReadLineAsync(_ => Task.CompletedTask, enableApplicationActions: false);
+                var enteredUrl = await editor.ReadLineAsync(_ => Task.CompletedTask, enableApplicationActions: false,
+                    allowEmptySubmit: true);
                 if (enteredUrl is null) return false;
                 var serverUrl = string.IsNullOrWhiteSpace(enteredUrl) ? defaultUrl : enteredUrl.Trim();
 

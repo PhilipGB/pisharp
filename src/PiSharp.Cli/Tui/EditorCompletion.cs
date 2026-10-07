@@ -31,6 +31,7 @@ public sealed class EditorCompletion
         "/import",
         "/name",
         "/model",
+        "/llama",
         "/models",
         "/settings",
         "/compact",

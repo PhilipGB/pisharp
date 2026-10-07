@@ -19,6 +19,16 @@ public sealed class EditorCompletionTests
         Assert.Empty(completion.Complete(buffer));
     }
 
+    [Fact]
+    public void SlashCompletionIncludesLlamaRouterManager()
+    {
+        var completion = new EditorCompletion(Path.GetTempPath());
+        var buffer = new EditorBuffer();
+        buffer.SetText("/lla");
+
+        Assert.Equal(["/llama"], completion.Complete(buffer));
+    }
+
     [Theory]
     [InlineData(" /tr", " /tree")]
     [InlineData("  /tr", "  /tree")]

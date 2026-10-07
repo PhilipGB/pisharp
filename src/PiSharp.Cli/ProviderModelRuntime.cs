@@ -204,9 +204,9 @@ public sealed class ProviderModelRuntime
             if (useRuntimeOverride && !string.IsNullOrWhiteSpace(_runtimeApiKey) &&
                 (_runtimeApiKeyProvider is null || _runtimeApiKeyProvider == provider.Id))
                 return (_runtimeApiKey, true, "command line");
-            if (!string.IsNullOrWhiteSpace(stored?.Key)) return (stored.Key, true, "stored API key");
-            if (!string.IsNullOrWhiteSpace(_environment("LLAMA_API_KEY")))
-                return (_environment("LLAMA_API_KEY")!, true, "LLAMA_API_KEY");
+            if (stored?.Key is not null) return (stored.Key, true, "stored API key");
+            if (_environment("LLAMA_API_KEY") is { } environmentKey)
+                return (environmentKey, true, "LLAMA_API_KEY");
             return ("local", true, "local llama.cpp router");
         }
         if (useRuntimeOverride && !string.IsNullOrWhiteSpace(_runtimeApiKey) &&
@@ -452,6 +452,39 @@ public sealed class ProviderModelRuntime
         var endpoint = LlamaRouterClient.NormalizeServerUrl(serverUrl);
         _ = await new LlamaRouterClient(_http, endpoint, apiKey).ListAsync(cancellationToken).ConfigureAwait(false);
         await _auth.StoreLlamaRouterAsync(apiKey, endpoint.AbsoluteUri, cancellationToken).ConfigureAwait(false);
+    }
+
+    internal async Task<LlamaRouterClient> CreateLlamaRouterClientAsync(CancellationToken cancellationToken)
+    {
+        var auth = await ResolveAuthAsync("llama.cpp", useRuntimeOverride: true, cancellationToken)
+            .ConfigureAwait(false);
+        if (!auth.Authenticated) throw new InvalidOperationException(auth.Source);
+        var stored = await _auth.ReadAsync("llama.cpp", cancellationToken).ConfigureAwait(false);
+        var serverUrl = ResolveLlamaRouterUrl(stored);
+        if (serverUrl is null) throw new InvalidOperationException("LLAMA_BASE_URL is not configured");
+        return new LlamaRouterClient(_http, serverUrl, auth.Key);
+    }
+
+    internal async Task<IReadOnlyList<LlamaRouterModelInfo>> RefreshLlamaRouterCatalogAsync(
+        LlamaRouterClient client, CancellationToken cancellationToken)
+    {
+        await _llamaRouterRefresh.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            var previous = await _llamaRouterCache.ReadAsync(cancellationToken).ConfigureAwait(false);
+            var catalog = await LlamaRouterCatalog.RefreshAsync(client, previous, cancellationToken)
+                .ConfigureAwait(false);
+            await _llamaRouterCache.WriteAsync(catalog.Cache, cancellationToken).ConfigureAwait(false);
+            var profile = (_llamaRouterProfile ?? _providers["llama.cpp"]) with
+            {
+                Endpoint = new Uri(client.ServerUrl.AbsoluteUri.TrimEnd('/') + "/v1"),
+                Models = catalog.Models,
+                Classifiers = catalog.Classifiers
+            };
+            Volatile.Write(ref _llamaRouterProfile, profile);
+            return catalog.Cache.Models;
+        }
+        finally { _llamaRouterRefresh.Release(); }
     }
 
     public Task LoginOAuthAsync(string provider, IProviderOAuthInteraction interaction,

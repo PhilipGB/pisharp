@@ -21,26 +21,50 @@ public sealed class LlamaRouterLoginTuiTests
             {"providers":{"fixture":{"baseUrl":"http://127.0.0.1:1/v1","apiKey":"fixture-key","models":[{"id":"fixture-model"}]}}}
             """);
         await using var server = new RouterServer();
-        await using var terminal = new LoginTerminal(root, agent);
+        await using var terminal = new LoginTerminal(root, agent, server.Origin);
         try
         {
-            await terminal.WaitTextAsync("fixture-model");
+            await terminal.WaitEditorAsync();
             var mark = terminal.Mark;
             await terminal.SendAsync("/login llama.cpp\n");
             await terminal.WaitTextAsync("llama.cpp server URL", mark);
-            await terminal.SendAsync(server.Origin + "/v1/\n");
-            await terminal.WaitTextAsync("API key for llama.cpp");
-            await terminal.SendAsync("\u001b");
-            await terminal.WaitTextAsync("fixture-model");
-            Assert.False(File.Exists(Path.Combine(agent, "auth.json")));
-
             mark = terminal.Mark;
+            await terminal.SendAsync(server.Origin + "/v1/\n");
+            await terminal.WaitTextAsync("API key for llama.cpp", mark);
+            mark = terminal.Mark;
+            await terminal.SendAsync("\u001b");
+            Assert.False(File.Exists(Path.Combine(agent, "auth.json")));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task LoginUsesEnvironmentUrlWhenPromptAndOptionalKeyAreBlank()
+    {
+        if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-llama-login-env-" + Guid.NewGuid().ToString("N"));
+        var agent = Path.Combine(root, "agent");
+        Directory.CreateDirectory(agent);
+        await File.WriteAllTextAsync(Path.Combine(agent, "models.json"), """
+            {"providers":{"fixture":{"baseUrl":"http://127.0.0.1:1/v1","apiKey":"fixture-key","models":[{"id":"fixture-model"}]}}}
+            """);
+        await using var server = new RouterServer();
+        await using var terminal = new LoginTerminal(root, agent, server.Origin + "/v1/");
+        try
+        {
+            await terminal.WaitEditorAsync();
+            var mark = terminal.Mark;
             await terminal.SendAsync("/login llama.cpp\n");
             await terminal.WaitTextAsync("llama.cpp server URL", mark);
-            await terminal.SendAsync(server.Origin + "/v1/\n");
-            await terminal.WaitTextAsync("API key for llama.cpp");
+            mark = terminal.Mark;
             await terminal.SendAsync("\n");
-            await terminal.WaitTextAsync("Authenticated llama.cpp");
+            await terminal.WaitTextAsync("API key for llama.cpp", mark);
+            mark = terminal.Mark;
+            await terminal.SendAsync("\n");
+            await terminal.WaitTextAsync("Authenticated llama.cpp", mark);
 
             Assert.Equal("/models", Assert.Single(server.Requests).Path);
             Assert.Null(server.Requests.Single().Authorization);
@@ -48,13 +72,9 @@ public sealed class LlamaRouterLoginTuiTests
             Assert.Null(credential?.Key);
             Assert.Equal(server.Origin, credential?.Env?["LLAMA_BASE_URL"]);
             Assert.DoesNotContain("Bearer", terminal.Output);
-
             await terminal.QuitAsync();
         }
-        finally
-        {
-            Directory.Delete(root, recursive: true);
-        }
+        finally { Directory.Delete(root, recursive: true); }
     }
 
     private sealed class RouterServer : IAsyncDisposable
@@ -118,7 +138,7 @@ public sealed class LlamaRouterLoginTuiTests
         public string Output { get { lock (_gate) return _output.ToString(); } }
         public int Mark { get { lock (_gate) return _output.Length; } }
 
-        public LoginTerminal(string root, string agent)
+        public LoginTerminal(string root, string agent, string llamaBaseUrl)
         {
             var start = new ProcessStartInfo("/usr/bin/script")
             {
@@ -137,6 +157,7 @@ public sealed class LlamaRouterLoginTuiTests
                          "PISHARP_MODEL", "PISHARP_AUTH_PATH", "PISHARP_MODELS_PATH", "PISHARP_SETTINGS_PATH" })
                 start.Environment.Remove(name);
             start.Environment["PISHARP_AGENT_DIR"] = agent;
+            start.Environment["LLAMA_BASE_URL"] = llamaBaseUrl;
             _process = Process.Start(start)!;
             _readOutput = ReadOutputAsync();
             _readError = _process.StandardError.ReadToEndAsync();
@@ -152,6 +173,25 @@ public sealed class LlamaRouterLoginTuiTests
 
         public Task<string> WaitTextAsync(string value, int after = 0) => WaitAsync(output =>
             StripAnsi(output[after..]).Contains(value, StringComparison.Ordinal) ? output[after..] : null);
+
+        public Task<string> WaitEditorAsync(int after = 0) => WaitFrameAsync(frame =>
+            frame.Contains("fixture-model", StringComparison.Ordinal), after);
+
+        private Task<string> WaitFrameAsync(Func<string, bool> predicate, int after) => WaitAsync(output =>
+        {
+            const string start = "\u001b[?2026h";
+            const string end = "\u001b[?2026l";
+            var position = after;
+            while ((position = output.IndexOf(start, position, StringComparison.Ordinal)) >= 0)
+            {
+                var close = output.IndexOf(end, position + start.Length, StringComparison.Ordinal);
+                if (close < 0) return null;
+                var frame = StripAnsi(output[(position + start.Length)..close]);
+                if (predicate(frame)) return frame;
+                position = close + end.Length;
+            }
+            return null;
+        });
 
         private async Task<string> WaitAsync(Func<string, string?> match)
         {

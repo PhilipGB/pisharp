@@ -10,7 +10,7 @@ internal sealed class TerminalStartupPresentation(QuietStartupMode? quietStartup
         if (ShowHeader)
         {
             var version = typeof(CliArguments).Assembly.GetName().Version?.ToString(3) ?? "unknown";
-            output.WriteLine($"PiSharp v{version}\n/model · /settings · /thinking · /scoped-models · /login · /logout · /tree · /fork · /new · /session · /hotkeys · /quit · Escape interrupts; Enter steers; Alt+Enter follows up\n");
+            output.WriteLine($"PiSharp v{version}\n/model · /llama · /settings · /thinking · /scoped-models · /login · /logout · /tree · /fork · /new · /session · /hotkeys · /quit · Escape interrupts; Enter steers; Alt+Enter follows up\n");
         }
         if (ShowDetails)
             output.WriteLine($"PiSharp · {provider}/{model} · thinking {thinking} · {workingDirectory}\n");
