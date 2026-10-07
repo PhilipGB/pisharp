@@ -25,7 +25,7 @@ public sealed class CliThemeProcessTests
             Assert.NotNull(themeStream);
             var theme = JsonNode.Parse(themeStream!)!.AsObject();
             theme["name"] = "cli-custom";
-            theme["colors"]!["muted"] = "#010203";
+            theme["colors"]!["dim"] = "#010203";
             await File.WriteAllTextAsync(Path.Combine(themeDirectory, "custom.json"), theme.ToJsonString());
 
             var start = new ProcessStartInfo("/usr/bin/script")

@@ -676,8 +676,16 @@ public sealed class TerminalScreen : IDisposable
         if (!_active || _suspended || _deferRender > 0) return;
         var columns = Columns();
         var rows = Rows();
-        var editorHeight = Math.Clamp(rows / 3, 1, Math.Max(1, rows - 2));
-        var footerHeight = rows > 2 ? 1 : 0;
+        var footerHeight = rows >= 5 ? 2 : rows > 2 ? 1 : 0;
+        var borderHeight = rows - footerHeight >= 4 ? 2 : 0;
+        var maxEditorLines = Math.Max(1, Math.Min((int)(rows * 0.3), rows - footerHeight - borderHeight - 1));
+        var editor = EditorViewport.Layout(_editorText, _editorCursor, columns, maxEditorLines, showPrompt: false);
+        var editorHeight = editor.Rows.Count + borderHeight;
+        if (rows - editorHeight - footerHeight < 1 && borderHeight > 0)
+        {
+            borderHeight = 0;
+            editorHeight = editor.Rows.Count;
+        }
         var transcriptHeight = Math.Max(1, rows - editorHeight - footerHeight);
         if (_lastImagePruneRevision != _transcript.Revision)
         {

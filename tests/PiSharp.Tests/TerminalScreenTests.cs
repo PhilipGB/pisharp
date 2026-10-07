@@ -138,11 +138,11 @@ public sealed class TerminalScreenTests
         screen.Output.Write("alpha\nbe界a\nother\nlast");
         var copiedActions = new List<string>();
         Task Dispatch(string action) { copiedActions.Add(action); return Task.CompletedTask; }
-        await editor.HandleActiveInputAsync(new(null, null, new(0, 1, 2, false)), Queue, Clear, Abort,
+        await editor.HandleActiveInputAsync(new(null, null, new(0, 1, 1, false)), Queue, Clear, Abort,
             dispatchApplicationAction: Dispatch);
-        await editor.HandleActiveInputAsync(new(null, null, new(32, 5, 3, false)), Queue, Clear, Abort,
+        await editor.HandleActiveInputAsync(new(null, null, new(32, 5, 2, false)), Queue, Clear, Abort,
             dispatchApplicationAction: Dispatch);
-        await editor.HandleActiveInputAsync(new(null, null, new(3, 5, 3, true)), Queue, Clear, Abort,
+        await editor.HandleActiveInputAsync(new(null, null, new(3, 5, 2, true)), Queue, Clear, Abort,
             dispatchApplicationAction: Dispatch);
         screen.Dispose();
 
@@ -165,8 +165,8 @@ public sealed class TerminalScreenTests
         editor.Prefill("hello");
         editor.AttachScreen(screen);
 
-        await editor.HandleActiveInputAsync(Mouse(0, 5, 8), Queue, Clear, Abort);
-        await editor.HandleActiveInputAsync(Mouse(0, 5, 8, release: true), Queue, Clear, Abort);
+        await editor.HandleActiveInputAsync(Mouse(0, 3, 6), Queue, Clear, Abort);
+        await editor.HandleActiveInputAsync(Mouse(0, 3, 6, release: true), Queue, Clear, Abort);
         await editor.HandleActiveInputAsync(new(new ConsoleKeyInfo('X', ConsoleKey.X, false, false, false), null), Queue, Clear, Abort);
 
         Assert.Equal("heXllo", editor.Draft);
@@ -185,18 +185,18 @@ public sealed class TerminalScreenTests
         using var error = new StringWriter();
         using var screen = new TerminalScreen(output, error, () => 20, () => 9);
         var editor = new TerminalEditor();
-        const string draft = "hello🙂worldabcdefg";
+        const string draft = "hello🙂worldabcdefg1234567890123456789";
         editor.Prefill(draft);
         editor.AttachScreen(screen);
-        var frame = EditorViewport.Layout(draft, draft.Length, 20, 3);
+        var frame = EditorViewport.Layout(draft, draft.Length, 20, 3, showPrompt: false);
         Assert.Equal(2, frame.Rows.Count);
-        var editorStart = 5 + 3 - frame.Rows.Count;
+        var editorStart = 7 - frame.Rows.Count;
         var copiedActions = new List<string>();
         Task Dispatch(string action) { copiedActions.Add(action); return Task.CompletedTask; }
 
-        await editor.HandleActiveInputAsync(Mouse(0, 3, editorStart + 1), Queue, Clear, Abort);
-        await editor.HandleActiveInputAsync(Mouse(32, 4, editorStart + 2), Queue, Clear, Abort);
-        await editor.HandleActiveInputAsync(Mouse(0, 4, editorStart + 2, release: true), Queue, Clear, Abort,
+        await editor.HandleActiveInputAsync(Mouse(0, 1, editorStart), Queue, Clear, Abort);
+        await editor.HandleActiveInputAsync(Mouse(32, 20, editorStart + 1), Queue, Clear, Abort);
+        await editor.HandleActiveInputAsync(Mouse(0, 20, editorStart + 1, release: true), Queue, Clear, Abort,
             dispatchApplicationAction: Dispatch);
 
         Assert.Equal(draft, screen.SelectedText);
@@ -305,7 +305,7 @@ public sealed class TerminalScreenTests
         Assert.Contains("\u001b[7;1mneedle", searchFrame);
         Assert.Contains("2/2", nextFrame);
         Assert.Contains("\u001b[7;1mneedle", nextFrame);
-        Assert.DoesNotContain("\u001b[7m", closeFrame);
+        Assert.DoesNotContain("\u001b[7;1mneedle", closeFrame);
         Assert.Equal("draft to keep", editor.Draft);
         Assert.False(aborted);
     }

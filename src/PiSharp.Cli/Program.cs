@@ -391,7 +391,9 @@ var terminalClipboard = new TerminalClipboard(writeTerminalControl: value =>
     if (terminalScreen is { IsActive: true }) terminalScreen.WriteControl(value);
     else Console.Write(value);
 });
-string IdleFooter() => TerminalModelStatus.Format(selection.Provider.Id, selection.Model, thinking, conversation, conversationRun.ContextWindowTokens) + " · Ctrl+L models · Ctrl+P cycle · Shift+Tab thinking · Enter send";
+string IdleFooter() => TerminalModelStatus.FormatIdleFooter(selection.Model, thinking, conversation,
+    conversationRun.ContextWindowTokens, userSettings.AutoCompactionEnabled(Environment.GetEnvironmentVariable),
+    terminalScreen?.TerminalWidth ?? 80);
 terminalScreen?.SetFooter(IdleFooter());
 if (editor is not null)
     new TerminalStartupPresentation(userSettings.QuietStartup, cli.Verbose)

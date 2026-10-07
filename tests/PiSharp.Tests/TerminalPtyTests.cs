@@ -56,7 +56,7 @@ public sealed class TerminalPtyTests
                     {
                         output.Append(buffer, 0, count);
                         var current = output.ToString();
-                        if (current.Contains("Ctrl+L models · Ctrl+P cycle", StringComparison.Ordinal)) idle.TrySetResult();
+                        if (current.Contains("\u001b[?2026l", StringComparison.Ordinal)) idle.TrySetResult();
                         if (current.Contains("bang-result:prefix-ready", StringComparison.Ordinal)) normalResult.TrySetResult();
                         if (current.Contains("excluded-result:prefix-ready", StringComparison.Ordinal)) excludedResult.TrySetResult();
                     }
@@ -188,8 +188,8 @@ public sealed class TerminalPtyTests
                     {
                         output.Append(buffer, 0, count);
                         var captured = output.ToString();
-                        const string idleFooter = "Ctrl+L models · Ctrl+P cycle";
-                        if (captured.Contains(idleFooter, StringComparison.Ordinal)) idleReady.TrySetResult();
+                        const string idleFrameEnd = "\u001b[?2026l";
+                        if (captured.Contains(idleFrameEnd, StringComparison.Ordinal)) idleReady.TrySetResult();
                         if (captured.Contains("Settings scope", StringComparison.Ordinal)) settingsScopeShown.TrySetResult();
                         if (captured.Contains("Deliver all queued messages together", StringComparison.Ordinal))
                             steeringOptionsShown.TrySetResult();
@@ -204,7 +204,7 @@ public sealed class TerminalPtyTests
                         if (queuedCount >= 1) firstSteeringQueued.TrySetResult();
                         if (queuedCount >= 2) bothSteeringQueued.TrySetResult();
                         var replyAt = captured.IndexOf("PTY_REPLY_OK", StringComparison.Ordinal);
-                        if (replyAt >= 0 && captured.IndexOf(idleFooter, replyAt + "PTY_REPLY_OK".Length,
+                        if (replyAt >= 0 && captured.IndexOf(idleFrameEnd, replyAt + "PTY_REPLY_OK".Length,
                                 StringComparison.Ordinal) >= 0)
                             idleAfterReply.TrySetResult();
                     }
@@ -1049,7 +1049,7 @@ public sealed class TerminalPtyTests
 
             Assert.Equal(0, process.ExitCode);
             Assert.Contains("Launching external editor:", output);
-            Assert.Contains("❯ /quit", output);
+            Assert.Contains("/quit", output);
             Assert.True(output.Split("\u001b[?1049l", StringSplitOptions.None).Length >= 3,
                 "the alternate screen should be left for the editor and restored before shutdown");
             Assert.DoesNotContain("Shortcut action failed:", output);
@@ -1242,7 +1242,7 @@ public sealed class TerminalPtyTests
                     if not ready: return
                     output += os.read(master, 65536)
                 try:
-                    while b'\x1b[c' not in output or b'Ctrl+L models' not in output:
+                    while b'\x1b[c' not in output or b'\x1b[?2026l' not in output:
                         receive()
                     replies = b'\x1b]10;#f8f8f2\x07\x1b]11;#282a36\x07'
                     replies += b''.join(('\x1b]4;%d;#262626\x07' % i).encode() for i in range(16))
@@ -1329,7 +1329,7 @@ public sealed class TerminalPtyTests
                         if (captured.Contains("FIRST_REPLY_ALIVE", StringComparison.Ordinal)) firstReplyAlive.TrySetResult();
                         if (captured.Contains("(ephemeral) ·", StringComparison.Ordinal)) sessionResponse.TrySetResult();
                         if (CountOccurrences(captured, "\u001b]10;?") >= 1) firstQuery.TrySetResult();
-                        if (captured.Contains("Ctrl+L models · Ctrl+P cycle", StringComparison.Ordinal)) idleReady.TrySetResult();
+                        if (captured.Contains("\u001b[?2026l", StringComparison.Ordinal)) idleReady.TrySetResult();
                     }
                 }
                 lock (outputLock) return output.ToString();
@@ -1453,12 +1453,19 @@ public sealed class TerminalPtyTests
                         var output = outputBuilder.ToString();
                         if (output.Contains("\u001b[?2004h", StringComparison.Ordinal)) inputReady.TrySetResult();
                         if (output.Contains("Complete input", StringComparison.Ordinal)) completionPicker.TrySetResult();
-                        if (output.Contains("❯ @notes.txt", StringComparison.Ordinal)) selectedPath.TrySetResult();
                         var frameStart = output.LastIndexOf("\u001b[?2026h\u001b[2J\u001b[H", StringComparison.Ordinal);
+                        if (frameStart >= 0)
+                        {
+                            var frame = output[(frameStart + "\u001b[?2026h\u001b[2J\u001b[H".Length)..];
+                            if (frame.Contains("@notes.txt", StringComparison.Ordinal) &&
+                                !frame.Contains("Complete input", StringComparison.Ordinal))
+                                selectedPath.TrySetResult();
+                        }
                         if (selectedPath.Task.IsCompleted && frameStart >= 0)
                         {
                             var frame = output[(frameStart + "\u001b[?2026h\u001b[2J\u001b[H".Length)..];
-                            if (frame.Contains("❯ ", StringComparison.Ordinal) && !frame.Contains("@notes.txt", StringComparison.Ordinal))
+                            if (!frame.Contains("Complete input", StringComparison.Ordinal) &&
+                                !frame.Contains("@notes.txt", StringComparison.Ordinal))
                                 blankPrompt.TrySetResult();
                         }
                     }
@@ -1490,8 +1497,7 @@ public sealed class TerminalPtyTests
 
                 Assert.Equal(0, process.ExitCode);
                 Assert.Contains("Complete input", output);
-                Assert.Contains("❯ @notes.txt", output);
-                Assert.Contains("❯ ", output);
+                Assert.Contains("@notes.txt", output);
                 Assert.DoesNotContain("Completion unavailable", output);
                 Assert.DoesNotContain("Error:", await stderr);
             }

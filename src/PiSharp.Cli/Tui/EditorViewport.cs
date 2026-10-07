@@ -32,13 +32,14 @@ public static class EditorViewport
     }
 
     public sealed record Frame(IReadOnlyList<string> Rows, int CursorRow, int CursorColumn,
-        IReadOnlyList<RowMap> RowMaps, IReadOnlyList<string> ContentRows);
+        IReadOnlyList<RowMap> RowMaps, IReadOnlyList<string> ContentRows, int MouseCellOffset = 3);
 
-    public static Frame Layout(string text, int cursor, int columns, int height)
+    public static Frame Layout(string text, int cursor, int columns, int height, bool showPrompt = true)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(cursor);
         if (cursor > text.Length) throw new ArgumentOutOfRangeException(nameof(cursor));
-        var capacity = Math.Max(1, columns - 3);
+        var cursorOffset = showPrompt ? 3 : 0;
+        var capacity = Math.Max(1, columns - (showPrompt ? 3 : 1));
         var rows = new List<string>();
         var rowMaps = new List<RowMap>();
         var line = new StringBuilder();
@@ -46,7 +47,7 @@ public static class EditorViewport
         var used = 0;
         var lineStart = 0;
         var cursorRow = 0;
-        var cursorColumn = 3;
+        var cursorColumn = cursorOffset;
         var cursorSeen = false;
 
         void FinishLine(int endOffset)
@@ -66,7 +67,7 @@ public static class EditorViewport
             var element = (string)elements.Current;
             if (element == "\n")
             {
-                if (position == cursor) { cursorRow = rows.Count; cursorColumn = used + 3; cursorSeen = true; }
+                if (position == cursor) { cursorRow = rows.Count; cursorColumn = used + cursorOffset; cursorSeen = true; }
                 FinishLine(position);
                 lineStart = position + element.Length;
                 continue;
@@ -78,19 +79,20 @@ public static class EditorViewport
             {
                 FinishLine(position);
             }
-            if (position == cursor) { cursorRow = rows.Count; cursorColumn = used + 3; cursorSeen = true; }
+            if (position == cursor) { cursorRow = rows.Count; cursorColumn = used + cursorOffset; cursorSeen = true; }
             line.Append(sanitized);
             cells.Add(new(position, position + element.Length, used, used + width));
             used += width;
         }
-        if (cursor == text.Length) { cursorRow = rows.Count; cursorColumn = used + 3; cursorSeen = true; }
+        if (cursor == text.Length) { cursorRow = rows.Count; cursorColumn = used + cursorOffset; cursorSeen = true; }
         if (!cursorSeen) throw new ArgumentException("Cursor must be at a text-element boundary.", nameof(cursor));
         FinishLine(text.Length);
         var visibleHeight = Math.Max(1, height);
         var first = Math.Clamp(cursorRow - visibleHeight + 1, 0, Math.Max(0, rows.Count - visibleHeight));
-        var visibleRows = rows.Skip(first).Take(visibleHeight).Select((row, offset) =>
-            (first + offset == 0 ? "❯ " : "│ ") + row).ToArray();
+        var visibleRows = rows.Skip(first).Take(visibleHeight).Select((row, offset) => showPrompt
+            ? (first + offset == 0 ? "❯ " : "│ ") + row
+            : row).ToArray();
         return new(visibleRows, cursorRow - first, cursorColumn, rowMaps.Skip(first).Take(visibleHeight).ToArray(),
-            rows.Skip(first).Take(visibleHeight).ToArray());
+            rows.Skip(first).Take(visibleHeight).ToArray(), showPrompt ? 3 : 1);
     }
 }

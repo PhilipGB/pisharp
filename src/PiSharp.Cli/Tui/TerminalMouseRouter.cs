@@ -124,7 +124,7 @@ internal sealed class TerminalMouseRouter
     {
         var row = mouse.Row - 1 - _editorScreenStart;
         if (clamp) row = Math.Clamp(row, 0, Math.Max(0, _editorHeight - 1));
-        var cell = mouse.Column - 3; // Terminal coordinates include the two-cell prompt prefix.
+        var cell = mouse.Column - (_editorFrame?.MouseCellOffset ?? 3);
         return (row, Math.Max(0, cell));
     }
 }

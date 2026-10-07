@@ -31,6 +31,26 @@ public sealed class TerminalModelStatusTests
             new ModelDescriptor("ordinary", null, null, null, Api: "openai-completions"), "low", session, 50000));
     }
 
+    [Fact]
+    public void IdleFooterSeparatesContextUsageFromTheRightAlignedModelName()
+    {
+        var session = new ConversationSession(Path.GetTempPath(), "fixture-model", null, "fixture");
+        var model = new ModelDescriptor("fixture-model", null, 8192, null,
+            Reasoning: false, Api: "openai-completions");
+
+        var footer = TerminalModelStatus.FormatIdleFooter(model, "off", session, 8192,
+            autoCompactionEnabled: true, width: 100);
+
+        const string left = "0.0%/8.2k (auto)";
+        Assert.StartsWith(left, footer);
+        Assert.EndsWith("fixture-model", footer);
+        Assert.Equal(100, TerminalTextLayout.Width(footer));
+
+        var disabled = TerminalModelStatus.FormatIdleFooter(model, "off", session, 8192,
+            autoCompactionEnabled: false, width: 100);
+        Assert.DoesNotContain(" (auto)", disabled);
+    }
+
     private static ChatMessage Response(string model, string thinking, string? stopReason = null) => new(ChatRole.Assistant, "answer")
     {
         AdditionalProperties = new()

@@ -53,6 +53,16 @@ public sealed class EditorViewportTests
     }
 
     [Fact]
+    public void FullscreenLayoutOmitsTheShellPromptPrefixAndUsesTheFirstCellForTheCursor()
+    {
+        var frame = EditorViewport.Layout("", 0, 100, 9, showPrompt: false);
+
+        Assert.Equal([""], frame.Rows);
+        Assert.Equal(0, frame.CursorColumn);
+        Assert.Equal(1, frame.MouseCellOffset);
+    }
+
+    [Fact]
     public void NewlinesAndControlCharactersCannotInjectTerminalEscapeSequences()
     {
         var frame = EditorViewport.Layout("a\u001b[2J\nb", 7, 80, 8);

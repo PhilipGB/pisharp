@@ -24,10 +24,18 @@ internal sealed class TerminalScreenCompositor
         IReadOnlyList<string>? editorPanel = null, int? panelCursorRow = null,
         int? panelCursorColumn = null, bool panelCursorVisible = false, int panelBottomMargin = 1)
     {
-        var editorHeight = Math.Clamp(height / 3, 1, Math.Max(1, height - 2));
-        var footerHeight = height > 2 ? 1 : 0;
+        var activeTheme = theme ?? TerminalTheme.Default;
+        var footerHeight = height >= 5 ? 2 : height > 2 ? 1 : 0;
+        var borderHeight = height - footerHeight >= 4 ? 2 : 0;
+        var maxEditorLines = Math.Max(1, Math.Min((int)(height * 0.3), height - footerHeight - borderHeight - 1));
+        var editor = EditorViewport.Layout(editorText, editorCursor, columns, maxEditorLines, showPrompt: false);
+        var editorHeight = editor.Rows.Count + borderHeight;
+        if (height - editorHeight - footerHeight < 1 && borderHeight > 0)
+        {
+            borderHeight = 0;
+            editorHeight = editor.Rows.Count;
+        }
         var transcriptHeight = Math.Max(1, height - editorHeight - footerHeight);
-        var editor = EditorViewport.Layout(editorText, editorCursor, columns, editorHeight);
         var transcriptWidth = Math.Max(1, columns - 1);
         var transcriptLayout = TerminalTextLayout.Create(transcriptText, transcriptWidth);
         var visibleLayout = transcriptLayout;
@@ -48,21 +56,35 @@ internal sealed class TerminalScreenCompositor
         for (var index = 0; index < transcriptRows.Count; index++)
             rows[transcriptStart + index] = displayedTranscriptRows[index];
 
-        var editorStart = transcriptHeight + editorHeight - editor.Rows.Count;
-        mouse.SetEditor(editorText, editor, editorStart, editorSelectionStart, editorSelectionEnd);
+        var editorStart = transcriptHeight;
+        mouse.SetEditor(editorText, editor, editorStart + borderHeight / 2, editorSelectionStart, editorSelectionEnd);
         var displayedEditorRows = mouse.HighlightEditor();
         for (var index = 0; index < editor.Rows.Count; index++)
-            rows[editorStart + index] = editor.Rows[index][..2] + displayedEditorRows[index];
+        {
+            var row = displayedEditorRows[index];
+            if (index == editor.CursorRow)
+                row = HighlightCursor(row, editor.RowMaps[index], editorCursor);
+            var width = TerminalTextLayout.Width(row);
+            if (width < columns) row += new string(' ', columns - width);
+            rows[editorStart + borderHeight / 2 + index] = row;
+        }
+
+        if (borderHeight > 0)
+        {
+            var border = activeTheme.Style("thinkingOff", new string('─', columns));
+            rows[editorStart] = border;
+            rows[editorStart + editorHeight - 1] = border;
+        }
 
         if (footerHeight > 0)
         {
             var footerText = scrollOffset == 0 ? footer : $"↑ {scrollOffset} rows · live output follows at bottom · {footer}";
-            rows[^1] = (theme ?? TerminalTheme.Default).Style("muted", TerminalTranscriptViewport.Clip(footerText, columns - 1));
+            rows[^1] = activeTheme.Style("dim", TerminalTranscriptViewport.Clip(footerText, columns));
             if (footerHeight > 1)
-                rows[^2] = (theme ?? TerminalTheme.Default).Style("dim",
-                    TerminalTranscriptViewport.Clip(Environment.CurrentDirectory, columns - 1));
+                rows[^2] = activeTheme.Style("dim",
+                    TerminalTranscriptViewport.Clip(Environment.CurrentDirectory, columns));
         }
-        if (overlay is not null) TerminalOverlayLayout.Apply(rows, overlay, columns, theme ?? TerminalTheme.Default);
+        if (overlay is not null) TerminalOverlayLayout.Apply(rows, overlay, columns, activeTheme);
 
         if (editorPanel is { Count: > 0 })
         {
@@ -72,7 +94,7 @@ internal sealed class TerminalScreenCompositor
             for (var index = 0; index < visibleCount; index++)
                 rows[panelStart + index] = TerminalTranscriptViewport.Clip(editorPanel[sourceStart + index], columns);
             if (height > 2 && panelBottomMargin > 1)
-                rows[^2] = (theme ?? TerminalTheme.Default).Style("dim",
+                rows[^2] = activeTheme.Style("dim",
                     TerminalTranscriptViewport.Clip(Environment.CurrentDirectory, columns - 1));
 
             var cursorRow = panelCursorRow is { } requestedRow
@@ -83,7 +105,17 @@ internal sealed class TerminalScreenCompositor
                 Math.Clamp(cursorColumn, 1, columns + 1), scrollOffset, columns, height, panelCursorVisible);
         }
 
-        return new(rows, editorStart + editor.CursorRow, editor.CursorColumn, scrollOffset, columns, height);
+        return new(rows, editorStart + borderHeight / 2 + editor.CursorRow, editor.CursorColumn + 1,
+            scrollOffset, columns, height, CursorVisible: false);
+    }
+
+    private static string HighlightCursor(string row, EditorViewport.RowMap rowMap, int cursor)
+    {
+        var cell = rowMap.Cells.FirstOrDefault(span => span.StartOffset == cursor);
+        var start = cell?.StartCell ?? (cursor >= rowMap.EndOffset ? rowMap.Cells.LastOrDefault()?.EndCell ?? 0 : 0);
+        var end = cell?.EndCell ?? start + 1;
+        if (cell is null && TerminalTextLayout.Width(row) <= start) row += " ";
+        return TerminalTextLayout.HighlightCells(row, start, end);
     }
 
     public void Render(Frame frame)
