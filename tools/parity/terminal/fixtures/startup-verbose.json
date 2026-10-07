@@ -1,0 +1,38 @@
+{
+  "id": "startup-verbose",
+  "settings": {
+    "quietStartup": false
+  },
+  "dimensions": [
+    {
+      "columns": 80,
+      "rows": 24
+    },
+    {
+      "columns": 120,
+      "rows": 40
+    }
+  ],
+  "themes": [
+    "dark",
+    "light"
+  ],
+  "modes": [
+    "fullscreen",
+    "regular"
+  ],
+  "actions": [
+    {
+      "id": "startup",
+      "expect": "fixture-model"
+    },
+    {
+      "id": "quit",
+      "send": "/quit\r",
+      "exit": true
+    }
+  ],
+  "terminal": {
+    "keyboardProtocol": "kitty"
+  }
+}

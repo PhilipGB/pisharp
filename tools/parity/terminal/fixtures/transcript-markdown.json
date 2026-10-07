@@ -1,0 +1,50 @@
+{
+  "id": "transcript-markdown",
+  "settings": {
+    "quietStartup": true
+  },
+  "dimensions": [
+    {
+      "columns": 80,
+      "rows": 24
+    },
+    {
+      "columns": 120,
+      "rows": 40
+    }
+  ],
+  "themes": [
+    "dark",
+    "light"
+  ],
+  "modes": [
+    "fullscreen",
+    "regular"
+  ],
+  "actions": [
+    {
+      "id": "startup",
+      "expect": "fixture-model"
+    },
+    {
+      "id": "reply",
+      "send": "Give the fixture reply\r",
+      "expect": "second"
+    },
+    {
+      "id": "resize",
+      "resize": {
+        "columns": 60,
+        "rows": 20
+      }
+    },
+    {
+      "id": "quit",
+      "send": "/quit\r",
+      "exit": true
+    }
+  ],
+  "terminal": {
+    "keyboardProtocol": "kitty"
+  }
+}

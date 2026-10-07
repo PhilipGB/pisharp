@@ -1,0 +1,65 @@
+{
+  "id": "startup-editor",
+  "settings": {
+    "quietStartup": true
+  },
+  "dimensions": [
+    {
+      "columns": 80,
+      "rows": 24
+    },
+    {
+      "columns": 120,
+      "rows": 40
+    }
+  ],
+  "themes": [
+    "dark",
+    "light"
+  ],
+  "modes": [
+    "fullscreen",
+    "regular"
+  ],
+  "actions": [
+    {
+      "id": "startup",
+      "expect": "fixture-model"
+    },
+    {
+      "id": "editor",
+      "send": "hello  world",
+      "expect": "hello  world"
+    },
+    {
+      "id": "cursor-left",
+      "send": "\u001b[D",
+      "expect": "hello  world"
+    },
+    {
+      "id": "paste",
+      "send": "\u001b[200~界 é\nsecond line\u001b[201~",
+      "expect": "second line"
+    },
+    {
+      "id": "clear",
+      "send": "\u0003",
+      "expect": "fixture-model"
+    },
+    {
+      "id": "resize",
+      "resize": {
+        "columns": 100,
+        "rows": 30
+      }
+    },
+    {
+      "id": "quit",
+      "send": "/quit\r",
+      "exit": true
+    }
+  ],
+  "terminal": {
+    "keyboardProtocol": "kitty"
+  }
+}

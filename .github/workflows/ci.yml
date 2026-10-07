@@ -13,6 +13,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
+      - run: npm ci --prefix tools/parity/terminal --ignore-scripts --no-audit --no-fund
+      - run: npm test --prefix tools/parity/terminal
+      - run: python3 -m unittest discover -s tools/parity/terminal -p 'test_*.py'
       - run: dotnet restore PiSharp.slnx
       - run: dotnet format PiSharp.slnx --verify-no-changes --no-restore
       - run: dotnet build PiSharp.slnx --no-restore --warnaserror

@@ -1,0 +1,77 @@
+{
+  "id": "transcript-markdown-resume",
+  "settings": {
+    "quietStartup": true,
+    "defaultProvider": "fixture",
+    "defaultModel": "fixture-model"
+  },
+  "dimensions": [
+    {
+      "columns": 80,
+      "rows": 24
+    },
+    {
+      "columns": 120,
+      "rows": 40
+    }
+  ],
+  "themes": [
+    "dark",
+    "light"
+  ],
+  "modes": [
+    "fullscreen",
+    "regular"
+  ],
+  "actions": [
+    {
+      "id": "transcript",
+      "expect": "second"
+    },
+    {
+      "id": "resize",
+      "resize": {
+        "columns": 60,
+        "rows": 20
+      }
+    },
+    {
+      "id": "quit",
+      "send": "/quit\r",
+      "exit": true
+    }
+  ],
+  "arguments": {
+    "pi": [
+      "--session",
+      "{agent}/fixtures/transcript.jsonl",
+      "--offline",
+      "--no-extensions",
+      "--no-skills",
+      "--no-prompt-templates",
+      "--no-tools"
+    ],
+    "pisharp": [
+      "--session",
+      "{agent}/fixtures/transcript.jsonl",
+      "--offline",
+      "--no-extensions",
+      "--no-skills",
+      "--no-prompt-templates",
+      "--no-tools",
+      "--no-approve",
+      "--no-context-files"
+    ]
+  },
+  "files": {
+    "pi": {
+      "fixtures/transcript.jsonl": "{\"type\": \"session\", \"version\": 3, \"id\": \"11111111-1111-4111-8111-111111111111\", \"timestamp\": \"2020-01-01T00:00:00.000Z\", \"cwd\": \"/tmp/pisharp-terminal-fixture-workspace\"}\n{\"type\": \"model_change\", \"id\": \"00000001\", \"parentId\": null, \"timestamp\": \"2020-01-01T00:00:00.000Z\", \"provider\": \"fixture\", \"modelId\": \"fixture-model\"}\n{\"type\": \"message\", \"id\": \"00000002\", \"parentId\": \"00000001\", \"timestamp\": \"2020-01-01T00:00:00.000Z\", \"message\": {\"role\": \"user\", \"content\": [{\"type\": \"text\", \"text\": \"Give the fixture reply\"}], \"timestamp\": 0}}\n{\"type\": \"message\", \"id\": \"00000003\", \"parentId\": \"00000002\", \"timestamp\": \"2020-01-01T00:00:00.000Z\", \"message\": {\"role\": \"assistant\", \"content\": [{\"type\": \"text\", \"text\": \"## Fixture reply\\n\\n**bold** and `code`\\n\\n- first\\n- second\\n\"}], \"api\": \"openai-completions\", \"provider\": \"fixture\", \"model\": \"fixture-model\", \"usage\": {\"input\": 10, \"output\": 12, \"cacheRead\": 0, \"cacheWrite\": 0, \"totalTokens\": 22, \"cost\": {\"input\": 0, \"output\": 0, \"cacheRead\": 0, \"cacheWrite\": 0, \"total\": 0}}, \"stopReason\": \"stop\", \"timestamp\": 0}}\n"
+    },
+    "pisharp": {
+      "fixtures/transcript.jsonl": "{\"type\": \"session\", \"version\": 3, \"id\": \"11111111-1111-4111-8111-111111111111\", \"timestamp\": \"2020-01-01T00:00:00.000Z\", \"cwd\": \"/tmp/pisharp-terminal-fixture-workspace\"}\n{\"type\": \"model_change\", \"id\": \"00000001\", \"parentId\": null, \"timestamp\": \"2020-01-01T00:00:00.000Z\", \"provider\": \"fixture\", \"modelId\": \"fixture-model\"}\n{\"type\": \"message\", \"id\": \"00000002\", \"parentId\": \"00000001\", \"timestamp\": \"2020-01-01T00:00:00.000Z\", \"message\": {\"role\": \"user\", \"content\": [{\"type\": \"text\", \"text\": \"Give the fixture reply\"}], \"timestamp\": 0}}\n{\"type\": \"message\", \"id\": \"00000003\", \"parentId\": \"00000002\", \"timestamp\": \"2020-01-01T00:00:00.000Z\", \"message\": {\"role\": \"assistant\", \"content\": [{\"type\": \"text\", \"text\": \"## Fixture reply\\n\\n**bold** and `code`\\n\\n- first\\n- second\\n\"}], \"api\": \"openai-completions\", \"provider\": \"fixture\", \"model\": \"fixture-model\", \"usage\": {\"input\": 10, \"output\": 12, \"cacheRead\": 0, \"cacheWrite\": 0, \"totalTokens\": 22, \"cost\": {\"input\": 0, \"output\": 0, \"cacheRead\": 0, \"cacheWrite\": 0, \"total\": 0}}, \"stopReason\": \"stop\", \"timestamp\": 0}}\n"
+    }
+  },
+  "terminal": {
+    "keyboardProtocol": "kitty"
+  }
+}

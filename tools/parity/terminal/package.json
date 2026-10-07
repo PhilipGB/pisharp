@@ -1,0 +1,7 @@
+{
+  "name": "pisharp-terminal-differential",
+  "private": true,
+  "type": "module",
+  "scripts": { "test": "node --test terminal-state.test.mjs" },
+  "dependencies": { "@xterm/headless": "5.5.0" }
+}
