@@ -35,6 +35,7 @@ internal sealed record LlamaRouterServerProps(
 
 internal sealed class LlamaRouterClient(HttpClient http, Uri serverUrl, string? apiKey)
 {
+    internal const string DefaultServerUrl = "http://127.0.0.1:8080";
     private const int MaxResponseBytes = 1024 * 1024;
     private static readonly JsonSerializerOptions s_json = new(JsonSerializerDefaults.Web);
     private readonly Uri _serverUrl = NormalizeServerUrl(serverUrl.ToString());
@@ -49,7 +50,7 @@ internal sealed class LlamaRouterClient(HttpClient http, Uri serverUrl, string? 
 
         var builder = new UriBuilder(url) { Query = "", Fragment = "" };
         var path = builder.Path.TrimEnd('/');
-        if (path.EndsWith("/v1", StringComparison.OrdinalIgnoreCase)) path = path[..^3].TrimEnd('/');
+        if (path.EndsWith("/v1", StringComparison.Ordinal)) path = path[..^3].TrimEnd('/');
         builder.Path = path;
         return new Uri(builder.Uri.AbsoluteUri.TrimEnd('/'), UriKind.Absolute);
     }

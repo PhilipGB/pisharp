@@ -3,7 +3,7 @@ using PiSharp.Cli.Authentication;
 namespace PiSharp.Cli.Tui;
 
 internal sealed class TerminalProviderLogin(ProviderModelRuntime runtime, TerminalEditor editor,
-    string agentDirectory, Func<string> workingDirectory, Func<string> currentProvider,
+    string agentDirectory, Func<string, string?> environment, Func<string> workingDirectory, Func<string> currentProvider,
     Func<Task> synchronizeCurrentProvider, Func<Task> reload)
 {
     public async Task ShowAsync(string arguments, CancellationToken cancellationToken = default)
@@ -83,7 +83,24 @@ internal sealed class TerminalProviderLogin(ProviderModelRuntime runtime, Termin
             throw new InvalidOperationException($"Provider '{provider.Id}' requires its OAuth login flow.");
         try
         {
-            if (type == "oauth")
+            if (provider.Id == "llama.cpp")
+            {
+                if (type != "api-key") throw new ArgumentException("Use /login llama.cpp.");
+                var environmentUrl = environment("LLAMA_BASE_URL");
+                var defaultUrl = string.IsNullOrWhiteSpace(environmentUrl)
+                    ? LlamaRouterClient.DefaultServerUrl : environmentUrl.Trim();
+                Console.Error.WriteLine($"llama.cpp server URL (Enter to use {defaultUrl}):");
+                var enteredUrl = await editor.ReadLineAsync(_ => Task.CompletedTask, enableApplicationActions: false);
+                if (enteredUrl is null) return false;
+                var serverUrl = string.IsNullOrWhiteSpace(enteredUrl) ? defaultUrl : enteredUrl.Trim();
+
+                Console.Error.Write("API key for llama.cpp (optional): ");
+                var secret = ReadSecret();
+                if (secret is null) return false;
+                await runtime.LoginLlamaRouterAsync(string.IsNullOrWhiteSpace(secret) ? null : secret,
+                    serverUrl, cancellationToken);
+            }
+            else if (type == "oauth")
             {
                 using var cancel = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
                 var interaction = new TerminalProviderOAuthInteraction(editor, provider.Id);
@@ -105,7 +122,9 @@ internal sealed class TerminalProviderLogin(ProviderModelRuntime runtime, Termin
             }
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested) { return false; }
-        Console.WriteLine($"Authenticated {provider.Id} with {type}; credential value was not displayed.");
+        Console.WriteLine(provider.Id == "llama.cpp"
+            ? "Authenticated llama.cpp; credential value was not displayed."
+            : $"Authenticated {provider.Id} with {type}; credential value was not displayed.");
         if (provider.Id.Equals(currentProvider(), StringComparison.OrdinalIgnoreCase))
             await synchronizeCurrentProvider();
         if (provider.Id == "radius" && type == "oauth")

@@ -450,8 +450,7 @@ public sealed class ProviderModelRuntime
         CancellationToken cancellationToken = default)
     {
         var endpoint = LlamaRouterClient.NormalizeServerUrl(serverUrl);
-        var key = string.IsNullOrWhiteSpace(apiKey) ? "local" : apiKey;
-        _ = await new LlamaRouterClient(_http, endpoint, key).ListAsync(cancellationToken).ConfigureAwait(false);
+        _ = await new LlamaRouterClient(_http, endpoint, apiKey).ListAsync(cancellationToken).ConfigureAwait(false);
         await _auth.StoreLlamaRouterAsync(apiKey, endpoint.AbsoluteUri, cancellationToken).ConfigureAwait(false);
     }
 

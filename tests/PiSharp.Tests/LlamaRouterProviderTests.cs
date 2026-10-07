@@ -105,6 +105,91 @@ public sealed class LlamaRouterProviderTests
         }
     }
 
+    [Fact]
+    public async Task CodemodeClassifierAvailabilityRefreshesLiveRouterIncludingNativeDecisionModels()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-llama-codemode-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            var requests = new List<(string Path, string? Authorization)>();
+            using var http = new HttpClient(new RouterHandler(request =>
+            {
+                requests.Add((request.RequestUri!.PathAndQuery, request.Headers.Authorization?.ToString()));
+                return request.RequestUri.PathAndQuery switch
+                {
+                    "/models" => Json("""
+                        {"data":[
+                          {"id":"chat-model","status":{"value":"loaded"},"architecture":{"output_modalities":["text"]}},
+                          {"id":"decision-model","status":{"value":"loaded"},"architecture":{"output_modalities":["decisions"]}}
+                        ]}
+                        """),
+                    "/props?model=chat-model&autoload=false" => Json("{}"),
+                    _ => new HttpResponseMessage(HttpStatusCode.NotFound)
+                };
+            }));
+            var environment = new Dictionary<string, string?>
+            {
+                ["LLAMA_BASE_URL"] = "http://llama.test:8080/v1",
+                ["LLAMA_API_KEY"] = "router-secret"
+            };
+            var providers = await ProviderModelRuntime.CreateAsync(root, false,
+                name => environment.GetValueOrDefault(name), http);
+            var models = await new ProviderCodemodeModels(providers, http)
+                .GetAvailableAsync("classifier", "llama.cpp", CancellationToken.None);
+
+            var chat = Assert.Single(models, model => model.GetProperty("id").GetString() == "chat-model");
+            Assert.Equal("llama-cpp-classify", chat.GetProperty("api").GetString());
+            Assert.Equal("http://llama.test:8080/", chat.GetProperty("baseUrl").GetString());
+            var decision = Assert.Single(models, model => model.GetProperty("id").GetString() == "decision-model");
+            Assert.Equal("typesafe-system-one", decision.GetProperty("api").GetString());
+            Assert.Equal("http://llama.test:8080/v1", decision.GetProperty("baseUrl").GetString());
+            Assert.Contains(requests, request => request.Path == "/models" &&
+                request.Authorization == "Bearer router-secret");
+        }
+        finally
+        {
+            Directory.Delete(root, true);
+        }
+    }
+
+    [Fact]
+    public async Task RouterLoginValidatesAtRouterRootWithoutInventingAnOptionalBearerKey()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-llama-login-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            string? path = null;
+            string? authorization = "not-checked";
+            using var http = new HttpClient(new RouterHandler(request =>
+            {
+                path = request.RequestUri!.PathAndQuery;
+                authorization = request.Headers.Authorization?.ToString();
+                return Json("""{"data":[]}""");
+            }));
+            var providers = await ProviderModelRuntime.CreateAsync(root, false, _ => null, http);
+
+            await providers.LoginLlamaRouterAsync(null, "http://llama.test:8080/v1/");
+
+            Assert.Equal("/models", path);
+            Assert.Null(authorization);
+            var credential = await new AuthStorage(Path.Combine(root, "auth.json")).ReadAsync("llama.cpp");
+            Assert.Null(credential?.Key);
+            Assert.Equal("http://llama.test:8080", credential?.Env?["LLAMA_BASE_URL"]);
+        }
+        finally
+        {
+            Directory.Delete(root, true);
+        }
+    }
+
+    [Theory]
+    [InlineData("http://llama.test:8080/router/v1/", "http://llama.test:8080/router")]
+    [InlineData("http://llama.test:8080/router/V1/", "http://llama.test:8080/router/V1")]
+    public void RouterRootNormalizationMatchesCurrentPiCaseSensitiveVersionSuffix(string value, string expected) =>
+        Assert.Equal(new Uri(expected), LlamaRouterClient.NormalizeServerUrl(value));
+
     private static HttpResponseMessage Json(string value) => new(HttpStatusCode.OK)
     {
         Content = new StringContent(value, Encoding.UTF8, "application/json")

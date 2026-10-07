@@ -592,6 +592,7 @@ var terminalSessionPicker = editor is null ? null : new TerminalSessionPicker(st
 var terminalForkPicker = editor is null ? null : new TerminalForkPicker(editor);
 var terminalSettingsPicker = editor is null ? null : new TerminalSettingsPicker(editor, () => terminalThemeCatalog.GetAvailableNames());
 var terminalProviderLogin = editor is null ? null : new TerminalProviderLogin(modelRuntime, editor, agentDirectory,
+    Environment.GetEnvironmentVariable,
     () => currentDirectory, () => selection.Provider.Id,
     async () => await ReplaceModelRuntime(await modelRuntime.ResolveAsync(selection.Provider.Id, selection.Model.Id), thinking, false),
     ReloadResources);

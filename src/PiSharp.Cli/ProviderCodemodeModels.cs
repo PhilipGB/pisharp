@@ -56,6 +56,9 @@ public sealed class ProviderCodemodeModels(ProviderModelRuntime providers, HttpC
             var models = await providers.ListModelsAsync(provider, cancellationToken, includeOutOfScope: true);
             return models.Where(model => model.Available).Select(model => ChatModel(model, providers.GetProvider(model.Provider!))).ToArray();
         }
+        if (type == "classifier" && (provider == "llama.cpp" ||
+            provider is null && providers.Providers.Any(profile => profile.Id == "llama.cpp")))
+            _ = await providers.ListModelsAsync("llama.cpp", cancellationToken, includeOutOfScope: true);
         var catalog = GetModels(type, provider);
         var available = new List<JsonElement>();
         foreach (var group in catalog.GroupBy(model => model.GetProperty("provider").GetString()!))
