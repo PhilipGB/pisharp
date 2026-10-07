@@ -486,8 +486,8 @@ public sealed class TerminalScreenTests
         var lastFrame = outputText.LastIndexOf("\u001b[2J\u001b[H", StringComparison.Ordinal);
         Assert.True(lastFrame >= 0);
         var currentFrame = outputText[lastFrame..];
-        Assert.Contains("\u001b[38;2;240;198;116m", currentFrame);
-        Assert.DoesNotContain("\u001b[38;2;154;115;38m", currentFrame);
+        Assert.Contains("\u001b[38;2;205;154;34m", currentFrame);
+        Assert.DoesNotContain("\u001b[38;2;143;104;2m", currentFrame);
     }
 
     [Fact]
@@ -559,7 +559,7 @@ public sealed class TerminalScreenTests
 
             var outputText = output.ToString();
             var lastFrame = outputText.LastIndexOf("\u001b[2J\u001b[H", StringComparison.Ordinal);
-            Assert.Contains("\u001b[38;2;154;115;38m", outputText[lastFrame..]);
+            Assert.Contains("\u001b[38;2;143;104;2m", outputText[lastFrame..]);
         }
         finally { Directory.Delete(root, recursive: true); }
     }

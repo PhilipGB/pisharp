@@ -6,14 +6,14 @@ namespace PiSharp.Tests;
 public sealed class TerminalThemeTests
 {
     [Fact]
-    public void BuiltInPalettesResolvePiTokensInTrueColorMode()
+    public void BuiltInPalettesMatchCurrentPiInTrueColorMode()
     {
         var dark = TerminalThemeCatalog.LoadBuiltIn("dark", TerminalColorMode.TrueColor);
         var light = TerminalThemeCatalog.LoadBuiltIn("light", TerminalColorMode.TrueColor);
 
-        Assert.Equal("\u001b[38;2;240;198;116m", dark.Fg("mdHeading"));
-        Assert.Equal("\u001b[38;2;154;115;38m", light.Fg("mdHeading"));
-        Assert.Equal("\u001b[48;2;58;58;74m", dark.Bg("selectedBg"));
+        Assert.Equal("\u001b[38;2;205;154;34m", dark.Fg("mdHeading"));
+        Assert.Equal("\u001b[38;2;143;104;2m", light.Fg("mdHeading"));
+        Assert.Equal("\u001b[48;2;33;59;73m", dark.Bg("selectedBg"));
         Assert.Equal("dark", dark.Appearance);
         Assert.Equal("light", light.Appearance);
     }

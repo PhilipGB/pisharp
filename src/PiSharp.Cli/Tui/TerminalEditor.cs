@@ -186,9 +186,9 @@ public sealed class TerminalEditor
         var lines = new[]
         {
             PanelBorder(theme, width),
-            PadPanelLine(theme.Style("accent", " " + title, bold: true), width),
+            PadPanelLine(" " + theme.Style("accent", TerminalSafeText.Normalize(title), bold: true), width),
             "",
-            PadPanelLine(theme.Style("muted", " " + TerminalSafeText.Normalize(message)), width),
+            PadPanelLine(" " + theme.Style("muted", TerminalSafeText.Normalize(message)), width),
             PanelBorder(theme, width)
         };
         screen.SetEditorPanel(lines, lines.Length - 2, width + 1, cursorVisible: false, bottomMargin: 2);
@@ -201,14 +201,21 @@ public sealed class TerminalEditor
         var width = screen.TerminalWidth;
         var theme = screen.CurrentTheme;
         var lines = new List<string> { PanelBorder(theme, width) };
-        foreach (var row in TerminalSafeText.Normalize(title).Split('\n'))
-            lines.Add(PadPanelLine(theme.Style("accent", " " + row, bold: true), width));
+        var titleRows = TerminalSafeText.Normalize(title).Split('\n');
+        for (var index = 0; index < titleRows.Length; index++)
+        {
+            var row = " " + theme.Style("accent", titleRows[index], bold: true);
+            if (titleRows.Length > 1 && index == 0) row += theme.Fg("accent");
+            lines.Add(PadPanelLine(row, width) +
+                (titleRows.Length > 1 && index == 0 ? "\u001b[39m" : ""));
+        }
         if (header is not null)
         {
             foreach (var row in header)
-                lines.Add(row.Length == 0 ? "" : PadPanelLine(theme.Style("dim", " " + TerminalSafeText.Normalize(row)), width));
+                lines.Add(row.Length == 0 ? "" : PadPanelLine(" " + theme.Style("dim", TerminalSafeText.Normalize(row)), width));
         }
-        if (options.Count == 0) lines.Add(PadPanelLine(theme.Style("warning", " No router models are available"), width));
+        if (options.Count == 0)
+            lines.Add(PadPanelLine(" " + theme.Style("warning", "No router models are available"), width));
         else
         {
             var labelWidth = Math.Clamp(Math.Max(34, options.Max(option => TerminalTextLayout.Width(option.Label))), 34, 54);
@@ -217,17 +224,36 @@ public sealed class TerminalEditor
                 var label = TerminalSafeText.Normalize(option.Label);
                 var marker = index == selectedIndex ? "→ " : "  ";
                 var selected = index == selectedIndex;
-                var description = string.IsNullOrWhiteSpace(option.Description) ? "" :
-                    "  " + TerminalSafeText.Normalize(option.Description);
-                var primary = description.Length == 0 ? marker + label : marker + label.PadRight(labelWidth);
-                lines.Add((selected ? theme.Style("accent", primary) : primary) +
-                    (description.Length == 0 ? "" : theme.Style("muted", description)));
+                var description = string.IsNullOrWhiteSpace(option.Description)
+                    ? "" : TerminalSafeText.Normalize(option.Description);
+                var primary = marker + label;
+                if (description.Length == 0)
+                    lines.Add(selected ? theme.Style("accent", primary) : primary);
+                else if (selected)
+                    lines.Add(theme.Style("accent", marker + label.PadRight(labelWidth) + "  " + description));
+                else
+                    lines.Add(primary + theme.Style("muted",
+                        new string(' ', Math.Max(2, labelWidth - TerminalTextLayout.Width(label) + 2)) + description));
             }
         }
         lines.Add("");
-        lines.Add(PadPanelLine(theme.Style("dim", " " + TerminalSafeText.Normalize(footer)), width));
+        lines.Add(PadPanelLine(" " + RenderKeyHint(theme, TerminalSafeText.Normalize(footer)), width));
         lines.Add(PanelBorder(theme, width));
         return lines;
+    }
+
+    private static string RenderKeyHint(TerminalTheme theme, string value)
+    {
+        var groups = value.Split(" • ", StringSplitOptions.None);
+        for (var index = 0; index < groups.Length; index++)
+        {
+            var separator = groups[index].IndexOf(' ');
+            groups[index] = separator <= 0
+                ? theme.Style("dim", groups[index])
+                : theme.Style("dim", groups[index][..separator]) +
+                  theme.Style("muted", groups[index][separator..]);
+        }
+        return string.Join(" • ", groups);
     }
 
     private static IReadOnlyList<string> RenderPromptPanel(TerminalScreen screen, string title,
@@ -236,14 +262,15 @@ public sealed class TerminalEditor
     {
         var width = screen.TerminalWidth;
         var theme = screen.CurrentTheme;
-        var lines = new List<string> { PanelBorder(theme, width), PadPanelLine(theme.Style("accent", " " + title, bold: true), width) };
+        var lines = new List<string> { PanelBorder(theme, width),
+            PadPanelLine(" " + theme.Style("accent", TerminalSafeText.Normalize(title), bold: true), width) };
         var currentInputRow = 0;
         for (var index = 0; index <= promptIndex; index++)
         {
             lines.Add("");
-            lines.Add(PadPanelLine(theme.Style("text", " " + TerminalSafeText.Normalize(prompts[index].Message)), width));
+            lines.Add(PadPanelLine(" " + theme.Style("text", TerminalSafeText.Normalize(prompts[index].Message)), width));
             if (!string.IsNullOrWhiteSpace(prompts[index].Placeholder))
-                lines.Add(PadPanelLine(theme.Style("dim", " e.g., " + TerminalSafeText.Normalize(prompts[index].Placeholder!)), width));
+                lines.Add(PadPanelLine("  " + theme.Style("dim", "e.g., " + TerminalSafeText.Normalize(prompts[index].Placeholder!)), width));
             currentInputRow = lines.Count;
             lines.Add(PadPanelLine("> " + TerminalSafeText.Normalize(index == promptIndex ? value : completed[index]), width));
             lines.Add(PadPanelLine(theme.Style("dim", " (escape/ctrl+c to cancel, enter to submit)"), width));
@@ -255,7 +282,7 @@ public sealed class TerminalEditor
     }
 
     private static string PanelBorder(TerminalTheme theme, int width) =>
-        theme.Fg("border") + new string('─', Math.Max(1, width)) + "\u001b[0m";
+        theme.Fg("accent") + new string('─', Math.Max(1, width)) + "\u001b[0m";
 
     private static string PadPanelLine(string line, int width) =>
         line + new string(' ', Math.Max(0, width - TerminalTextLayout.Width(line)));
@@ -281,22 +308,22 @@ public sealed class TerminalEditor
             var lines = new List<string>
             {
                 PanelBorder(theme, width),
-                PadPanelLine(theme.Style("accent", " " + title, bold: true), width),
-                PadPanelLine(theme.Style("text", " " + TerminalSafeText.Normalize(subject)), width),
+                PadPanelLine(" " + theme.Style("accent", TerminalSafeText.Normalize(title), bold: true), width),
+                PadPanelLine(" " + theme.Style("text", TerminalSafeText.Normalize(subject)), width),
                 "",
-                PadPanelLine(theme.Style("muted", " " + TerminalSafeText.Normalize(state.Message)), width)
+                PadPanelLine(" " + theme.Style("muted", TerminalSafeText.Normalize(state.Message)), width)
             };
             if (state.Ratio is { } ratio)
             {
                 var bounded = Math.Clamp(ratio, 0, 1);
                 var filled = (int)Math.Round(bounded * 40, MidpointRounding.AwayFromZero);
-                lines.Add(PadPanelLine(theme.Style("accent", " " + new string('█', filled) + new string('─', 40 - filled) +
+                lines.Add(PadPanelLine(" " + theme.Style("accent", new string('█', filled) + new string('─', 40 - filled) +
                     $" {Math.Round(bounded * 100):0}%"), width));
             }
             if (!string.IsNullOrEmpty(state.Detail))
-                lines.Add(PadPanelLine(theme.Style("dim", " " + TerminalSafeText.Normalize(state.Detail)), width));
+                lines.Add(PadPanelLine(" " + theme.Style("dim", TerminalSafeText.Normalize(state.Detail)), width));
             lines.Add("");
-            lines.Add(PadPanelLine(theme.Style("dim", " escape/ctrl+c stop"), width));
+            lines.Add(PadPanelLine(" " + RenderKeyHint(theme, "escape/ctrl+c stop"), width));
             lines.Add(PanelBorder(theme, width));
             screen.SetEditorPanel(lines, lines.Count - 4, width + 1, cursorVisible: false, bottomMargin: 2);
         }
