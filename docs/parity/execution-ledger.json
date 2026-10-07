@@ -3906,7 +3906,7 @@
       "id": "tui-full-terminal-differential-harness",
       "title": "Reusable full terminal differential harness",
       "status": "in_progress",
-      "source": "earendil-works/pi@f10993bc7f28145df1375f3ff39c7f5c4cfc05f0: packages/tui, coding-agent interactive components/tests",
+      "source": "earendil-works/pi@503c605528f9af993c0e37ede468cf884fb0ff5b: packages/tui, coding-agent interactive components/tests",
       "acceptance": [
         "Compare cell characters, foreground/background/style, cursor position/visibility, alternate/normal screen and relevant modes without layout/style/escape normalization.",
         "Capture final viewport and deterministic intermediate frames under controlled dimensions/environment with reusable scenarios; include narrow/wide and dark/light as applicable.",
@@ -3917,11 +3917,15 @@
         "tools/parity/terminal/fixture_http.py",
         "tools/parity/terminal/fixtures/llama-login.json",
         "tools/parity/terminal/fixtures/llama-manager.json",
-        "tools/parity/terminal/fixtures/llama-load-cancel.json"
+        "tools/parity/terminal/fixtures/llama-load-cancel.json",
+        "tools/parity/terminal/fixtures/llama-huggingface.json",
+        "tools/parity/terminal/fixtures/llama-download-cancel.json",
+        "tools/parity/terminal/fixtures/llama-retry.json",
+        "tools/parity/terminal/fixtures/llama-model-picker.json"
       ],
       "evidence": [
         "Explicit user steering on 2026-10-02. This capability remains required; existing targeted visual probes or custom OpenAI-compatible endpoints/native classifier tests do not establish this family.",
-        "Current-Pi/PiSharp 100x32 dark fullscreen llama login, manager and cancelled-load comparisons are recorded in docs/parity/fixtures/llama-router-interactions-2026-10-07.md. Manager panel cells/cursor match; full reports retain startup/status/control and remaining llama prompt/footer differences. This is incremental harness coverage; all other required TUI surfaces remain open."
+        "Current-Pi/PiSharp 100x32 dark fullscreen comparisons now cover login/reload, manager discovery, load cancellation, Hugging Face search/download and cancellation, and retry; request traces match. Search/detail/gate/quantization/progress and manager panel cells/cursors match. Aggregate full-screen reports still differ; current fixture results and open surfaces are recorded in docs/parity/fixtures/llama-router-interactions-2026-10-07.md. Exact-head CI 37674227180 passes on 89fc2d513c7fe0e165afce8655d4af1f64406d01."
       ],
       "dependencies": []
     },
@@ -3929,7 +3933,7 @@
       "id": "provider-llama-router-configuration",
       "title": "First-class llama.cpp router login and configuration",
       "status": "in_progress",
-      "source": "earendil-works/pi@f10993bc7f28145df1375f3ff39c7f5c4cfc05f0: packages/coding-agent/src/extensions/llama/{index,provider,client,ui,huggingface}.ts; test/llama-extension.test.ts",
+      "source": "earendil-works/pi@503c605528f9af993c0e37ede468cf884fb0ff5b: packages/coding-agent/src/extensions/llama/{index,provider,client,ui,huggingface}.ts; test/llama-extension.test.ts",
       "acceptance": [
         "Match /login llama.cpp wording, validation, cancellation, auth.json persistence/reload and router URL default http://127.0.0.1:8080.",
         "Verify LLAMA_BASE_URL/LLAMA_API_KEY, stored/default precedence from Pi source/tests; optional key, isolated provider identity, shared chat/classifier credentials.",
@@ -3942,7 +3946,7 @@
       ],
       "evidence": [
         "Explicit user steering on 2026-10-02. This capability remains required; existing targeted visual probes or custom OpenAI-compatible endpoints/native classifier tests do not establish this family.",
-        "Current Pi source and focused tests refreshed at f10993bc7f28145df1375f3ff39c7f5c4cfc05f0; Pi test/llama-extension.test.ts passes 15/15. PiSharp 616219b8da812694e0b554e0691acc2038c2deaf: focused llama/provider/client/TUI/screen/PTY tests 64/64, full suite 1172/1172 with zero skips, format verification and warnings-as-errors build pass; exact-head Linux CI 37668504863 passes. Paired local-router HTTP traces match for the tracked login, manager-discovery and cancelled-load scenarios. The manager panel cells and cursor match, while full terminal reports remain different and the capability stays in progress. See docs/parity/fixtures/llama-router-interactions-2026-10-07.md."
+        "Current Pi source is refreshed at 503c605528f9af993c0e37ede468cf884fb0ff5b; extension tests pass 15/15. The last published PiSharp head 89fc2d513c7fe0e165afce8655d4af1f64406d01 passes exact-head CI 37674227180. Paired login/restart requests match with stored router URL/key winning over conflicting environment values. The current terminal/model-picker worktree slice has passed focused and full local validation; its exact-head CI is pending publication. Full screen frames and remaining authentication cases stay open. See docs/parity/fixtures/llama-router-interactions-2026-10-07.md."
       ],
       "dependencies": [
         "tui-full-terminal-differential-harness"
@@ -3952,7 +3956,7 @@
       "id": "provider-llama-router-management",
       "title": "llama.cpp router model management",
       "status": "in_progress",
-      "source": "earendil-works/pi@f10993bc7f28145df1375f3ff39c7f5c4cfc05f0: packages/coding-agent/src/extensions/llama/{index,provider,client,ui,huggingface}.ts; test/llama-extension.test.ts",
+      "source": "earendil-works/pi@503c605528f9af993c0e37ede468cf884fb0ff5b: packages/coding-agent/src/extensions/llama/{index,provider,client,ui,huggingface}.ts; test/llama-extension.test.ts",
       "acceptance": [
         "Match /llama loaded/unloaded state, loading/unloading, refresh, health/reconnect Retry/Close and cancellation confirmation.",
         "Ask whether other loaded models should be unloaded or retained; never silently unload models or delete files.",
@@ -3965,7 +3969,7 @@
       ],
       "evidence": [
         "Explicit user steering on 2026-10-02. This capability remains required; existing targeted visual probes or custom OpenAI-compatible endpoints/native classifier tests do not establish this family.",
-        "Current Pi source and focused tests refreshed at f10993bc7f28145df1375f3ff39c7f5c4cfc05f0; Pi test/llama-extension.test.ts passes 15/15. PiSharp 616219b8da812694e0b554e0691acc2038c2deaf: focused llama/provider/client/TUI/screen/PTY tests 64/64, full suite 1172/1172 with zero skips, format verification and warnings-as-errors build pass; exact-head Linux CI 37668504863 passes. Paired local-router HTTP traces match for the tracked login, manager-discovery and cancelled-load scenarios. The manager panel cells and cursor match, while full terminal reports remain different and the capability stays in progress. See docs/parity/fixtures/llama-router-interactions-2026-10-07.md."
+        "Current Pi source/tests are pinned at 503c605528f9af993c0e37ede468cf884fb0ff5b; extension tests pass 15/15. Paired traces cover discovery, load/unload, cancellation, retry and model selection, and match the local router. Exact full-terminal frames and remaining manager-state variants stay open. See docs/parity/fixtures/llama-router-interactions-2026-10-07.md."
       ],
       "dependencies": [
         "provider-llama-router-configuration"
@@ -3975,7 +3979,7 @@
       "id": "provider-llama-router-models",
       "title": "llama.cpp live router model projection and shared execution",
       "status": "in_progress",
-      "source": "earendil-works/pi@f10993bc7f28145df1375f3ff39c7f5c4cfc05f0: packages/coding-agent/src/extensions/llama/{index,provider,client,ui,huggingface}.ts; test/llama-extension.test.ts",
+      "source": "earendil-works/pi@503c605528f9af993c0e37ede468cf884fb0ff5b: packages/coding-agent/src/extensions/llama/{index,provider,client,ui,huggingface}.ts; test/llama-extension.test.ts",
       "acceptance": [
         "Derive management/chat/classifier endpoints as Pi does from router URL; share configuration and credentials.",
         "Verify current Pi model eligibility, loaded/sleeping/unloaded/autoload rules from source/tests; /model reads live router state and can select newly loaded models for the active session.",
@@ -3984,11 +3988,15 @@
       "implementation": [
         "src/PiSharp.Cli/LlamaRouterCatalog.cs",
         "src/PiSharp.Cli/ProviderModelRuntime.cs",
-        "src/PiSharp.Cli/Tui/TerminalModelPicker.cs"
+        "src/PiSharp.Cli/Tui/TerminalModelPicker.cs",
+        "src/PiSharp.Cli/Program.cs",
+        "src/PiSharp.Cli/Tui/TerminalLlamaManager.cs",
+        "tests/PiSharp.Tests/LlamaRouterManagerTuiTests.cs",
+        "tools/parity/terminal/fixtures/llama-model-picker.json"
       ],
       "evidence": [
         "Explicit user steering on 2026-10-02. This capability remains required; existing targeted visual probes or custom OpenAI-compatible endpoints/native classifier tests do not establish this family.",
-        "Current Pi source and focused tests refreshed at f10993bc7f28145df1375f3ff39c7f5c4cfc05f0; Pi test/llama-extension.test.ts passes 15/15. PiSharp 616219b8da812694e0b554e0691acc2038c2deaf: focused llama/provider/client/TUI/screen/PTY tests 64/64, full suite 1172/1172 with zero skips, format verification and warnings-as-errors build pass; exact-head Linux CI 37668504863 passes. Paired local-router HTTP traces match for the tracked login, manager-discovery and cancelled-load scenarios. The manager panel cells and cursor match, while full terminal reports remain different and the capability stays in progress. See docs/parity/fixtures/llama-router-interactions-2026-10-07.md."
+        "Current Pi source/tests are pinned at 503c605528f9af993c0e37ede468cf884fb0ff5b; extension tests pass 15/15. The paired llama-model-picker fixture now starts with --provider fixture, loads a llama router preset, searches /model and selects it; both processes end with the router model active and issue identical HTTP traces. This worktree passes 24 focused llama/router/TUI tests, all 23 harness tests, all 5 Python fixture tests, format verification, zero-warning build and 1172/1172 full tests with zero skips; exact-head CI is pending publication. Context-cache reload and exact full-screen comparison remain open. See docs/parity/fixtures/llama-router-interactions-2026-10-07.md."
       ],
       "dependencies": [
         "provider-llama-router-management",
@@ -3999,7 +4007,7 @@
       "id": "provider-llama-router-download",
       "title": "llama.cpp Hugging Face download flow",
       "status": "in_progress",
-      "source": "earendil-works/pi@f10993bc7f28145df1375f3ff39c7f5c4cfc05f0: packages/coding-agent/src/extensions/llama/{index,provider,client,ui,huggingface}.ts; test/llama-extension.test.ts",
+      "source": "earendil-works/pi@503c605528f9af993c0e37ede468cf884fb0ff5b: packages/coding-agent/src/extensions/llama/{index,provider,client,ui,huggingface}.ts; test/llama-extension.test.ts",
       "acceptance": [
         "Audit and match Download model…, repository search, quantization selection and exact owner/repository[:quant] input.",
         "Match HF_TOKEN and token-file lookup precedence, gated-model warnings/access links, cancellation and unload/retain prompts.",
@@ -4012,7 +4020,7 @@
       ],
       "evidence": [
         "Explicit user steering on 2026-10-02. This capability remains required; existing targeted visual probes or custom OpenAI-compatible endpoints/native classifier tests do not establish this family.",
-        "Current Pi source and focused tests refreshed at f10993bc7f28145df1375f3ff39c7f5c4cfc05f0; Pi test/llama-extension.test.ts passes 15/15. PiSharp 616219b8da812694e0b554e0691acc2038c2deaf: focused llama/provider/client/TUI/screen/PTY tests 64/64, full suite 1172/1172 with zero skips, format verification and warnings-as-errors build pass; exact-head Linux CI 37668504863 passes. Paired local-router HTTP traces match for the tracked login, manager-discovery and cancelled-load scenarios. The manager panel cells and cursor match, while full terminal reports remain different and the capability stays in progress. See docs/parity/fixtures/llama-router-interactions-2026-10-07.md."
+        "Current Pi source/tests are pinned at 503c605528f9af993c0e37ede468cf884fb0ff5b; extension tests pass 15/15. The paired HF search, detail, gated access, quantization, router download, progress, retry and cancellation traces match; full terminal frames and token-file/remaining HF credential cases stay open. See docs/parity/fixtures/llama-router-interactions-2026-10-07.md."
       ],
       "dependencies": [
         "provider-llama-router-management"
@@ -4049,9 +4057,9 @@
       "3874b3e98983c70fa05fa193b675d42cfcb8b9f8"
     ],
     "ci_run": "37019190204",
-    "latest_published_source_head": "616219b8da812694e0b554e0691acc2038c2deaf",
+    "latest_published_source_head": "89fc2d513c7fe0e165afce8655d4af1f64406d01",
     "latest_published_ci_runs": [
-      "37668504863"
+      "37674227180"
     ],
     "official_mcp_conformance": {
       "package": "@modelcontextprotocol/conformance@0.2.0-alpha.11",
@@ -4063,13 +4071,13 @@
       "status": "not_started",
       "upstream_fixture": "packages/coding-agent/test/mcp-conformance/baseline.json"
     },
-    "working_source_pin": "f10993bc7f28145df1375f3ff39c7f5c4cfc05f0",
+    "working_source_pin": "503c605528f9af993c0e37ede468cf884fb0ff5b",
     "refresh_policy": "Refresh at capability-family completion, known upstream changes affecting active work, or after several verified slices; require fresh current-main audit at final completion."
   },
   "execution_policy": {
     "updated": "2026-10-07",
     "priority": [
-      "Complete the first-class llama.cpp router family against refreshed Pi f10993bc7, including full login/configuration, model projection and selection, management, Hugging Face search/download, classifier behavior and required terminal differentials",
+      "Complete the first-class llama.cpp router family against refreshed Pi 503c6055, including full login/configuration, model projection and selection, management, Hugging Face search/download, classifier behavior and required terminal differentials",
       "Continue the highest-leverage unresolved capability families in the 189-item ledger, including broad terminal parity and official MCP conformance",
       "Refresh both repositories at family boundaries and complete the final source audit before declaring parity"
     ],

@@ -235,11 +235,14 @@ public sealed class LlamaRouterManagerTuiTests
         var root = Path.Combine(Path.GetTempPath(), "pisharp-llama-model-picker-" + Guid.NewGuid().ToString("N"));
         var agent = Path.Combine(root, "agent");
         Directory.CreateDirectory(agent);
+        await File.WriteAllTextAsync(Path.Combine(agent, "models.json"), """
+            {"providers":{"fixture":{"baseUrl":"http://127.0.0.1:1/v1","apiKey":"fixture-key","models":[{"id":"fixture-model"}]}}}
+            """);
         await using var server = new RouterServer();
-        await using var terminal = new ManagerTerminal(root, agent, server.Origin, llamaProvider: true);
+        await using var terminal = new ManagerTerminal(root, agent, server.Origin);
         try
         {
-            await terminal.WaitTextAsync("llama.cpp/qwen");
+            await terminal.WaitTextAsync("fixture-model");
             var mark = terminal.Mark;
             await terminal.SendAsync("/llama\n");
             await terminal.WaitTextAsync("llama.cpp models", mark);
@@ -255,7 +258,10 @@ public sealed class LlamaRouterManagerTuiTests
             mark = terminal.Mark;
             await terminal.SendAsync("/model\n");
             await terminal.WaitTextAsync("Select model", mark);
-            await terminal.SendAsync("\u001b[B\n");
+            await terminal.SendAsync("target");
+            await terminal.WaitTextAsync("target [llama.cpp]", mark);
+            await terminal.SendAsync("\n");
+            await terminal.WaitTextAsync("Model: llama.cpp/target", mark);
             await terminal.WaitTextAsync("Model: llama.cpp/target", mark);
             Assert.Equal("loaded", server.Statuses["target"]);
             await terminal.QuitAsync();

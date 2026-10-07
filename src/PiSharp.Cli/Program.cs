@@ -601,7 +601,7 @@ var terminalProviderLogin = editor is null ? null : new TerminalProviderLogin(mo
 async Task SelectModelAsync()
 {
     if (terminalModelPicker is null) return;
-    var nextSelection = await terminalModelPicker.ShowAsync(selection, cli.Provider);
+    var nextSelection = await terminalModelPicker.ShowAsync(selection);
     if (nextSelection is null) return;
     var nextThinking = modelRuntimeController.ResolveThinkingLevelForModelSwitch(nextSelection, thinking);
     await ApplyModelSelectionAsync(nextSelection, nextThinking);

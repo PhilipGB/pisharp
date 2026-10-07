@@ -54,11 +54,7 @@ internal sealed class TerminalLlamaManager(ProviderModelRuntime runtime, Termina
         {
             try
             {
-                // Pi keeps the manager's initial listing as its view snapshot, then refreshes the provider
-                // registry independently. That second request also refreshes selectable chat/classifier models.
-                var managerSnapshot = await client.ListAsync(cancellationToken).ConfigureAwait(false);
-                _ = await runtime.RefreshLlamaRouterCatalogAsync(client, cancellationToken).ConfigureAwait(false);
-                return managerSnapshot;
+                return await ReadCatalogSnapshotAsync(client, cancellationToken).ConfigureAwait(false);
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
             catch (Exception error)
@@ -73,6 +69,15 @@ internal sealed class TerminalLlamaManager(ProviderModelRuntime runtime, Termina
                 if (choice?.Option.Value != "retry") return null;
             }
         }
+    }
+
+    private async Task<IReadOnlyList<LlamaRouterModelInfo>> ReadCatalogSnapshotAsync(LlamaRouterClient client,
+        CancellationToken cancellationToken)
+    {
+        // Keep the manager view and provider registry as separate reads, as Pi's syncCatalog does.
+        var managerSnapshot = await client.ListAsync(cancellationToken).ConfigureAwait(false);
+        _ = await runtime.RefreshLlamaRouterCatalogAsync(client, cancellationToken).ConfigureAwait(false);
+        return managerSnapshot;
     }
 
     private static IReadOnlyList<TerminalSelectionOption<LlamaAction>> ModelOptions(
@@ -145,8 +150,8 @@ internal sealed class TerminalLlamaManager(ProviderModelRuntime runtime, Termina
                 if (replace) await RestoreLoadedAsync(client, loaded, cancellationToken).ConfigureAwait(false);
                 return;
             }
-            var loadedModel = (await runtime.RefreshLlamaRouterCatalogAsync(client, cancellationToken)
-                .ConfigureAwait(false)).FirstOrDefault(model => model.Id == target.Id);
+            var loadedModel = (await ReadCatalogSnapshotAsync(client, cancellationToken).ConfigureAwait(false))
+                .FirstOrDefault(model => model.Id == target.Id);
             Console.WriteLine(loadedModel?.Status.Value == "loaded" ? $"Loaded {target.Id}" : $"Load started for {target.Id}");
         }
         catch

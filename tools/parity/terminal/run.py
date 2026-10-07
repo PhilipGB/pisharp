@@ -87,10 +87,12 @@ def run_product(label, command, scenario, dimensions, theme, mode, server):
                               for name, value in scenario.get('environment', {}).get(label, {}).items()})
     terminal = TerminalProcess(command, Path('/tmp/pisharp-terminal-fixture-workspace'), child_environment, options)
     frames = []
+    http_by_frame = []
     prior_raw = bytearray()
     request_start = len(server.requests)
     try:
         for action in scenario['actions']:
+            request_mark = len(server.requests)
             if action.get('restart'):
                 prior_raw.extend(terminal.raw)
                 terminal.close()
@@ -104,6 +106,7 @@ def run_product(label, command, scenario, dimensions, theme, mode, server):
                 frame = terminal.settle(action.get('expect'), timeout=action.get('timeout', 20))
                 frames.append(dict(id=action['id'], state=frame, controls=terminal.trace.events[control_mark:],
                                    controlPending=terminal.trace.pending.hex()))
+                http_by_frame.append(dict(id=action['id'], requests=server.requests[request_mark:]))
                 continue
             mark, control_mark = len(terminal.raw), len(terminal.trace.events)
             if 'send' in action:
@@ -125,12 +128,14 @@ def run_product(label, command, scenario, dimensions, theme, mode, server):
                     expect = expect[label]
                 frame = terminal.settle(expect, timeout=action.get('timeout', 20), after=0 if 'resize' in action else mark)
             frames.append(dict(id=action['id'], state=frame, controls=terminal.trace.events[control_mark:], controlPending=terminal.trace.pending.hex()))
+            http_by_frame.append(dict(id=action['id'], requests=server.requests[request_mark:]))
         prior_raw.extend(terminal.raw)
-        return dict(frames=frames, raw=base64.b64encode(prior_raw).decode(),
+        return dict(frames=frames, httpByFrame=http_by_frame, raw=base64.b64encode(prior_raw).decode(),
                     http=server.requests[request_start:], command=command, scenarioError=None)
     except (TimeoutError, RuntimeError) as error:
         frames.append(dict(id=action['id'], state=terminal.snapshot(), controls=terminal.trace.events[control_mark:], controlPending=terminal.trace.pending.hex()))
-        return dict(frames=frames, raw=base64.b64encode(terminal.raw).decode(),
+        http_by_frame.append(dict(id=action['id'], requests=server.requests[request_mark:]))
+        return dict(frames=frames, httpByFrame=http_by_frame, raw=base64.b64encode(terminal.raw).decode(),
                     http=server.requests[request_start:], command=command, scenarioError=str(error))
     finally:
         terminal.close()
