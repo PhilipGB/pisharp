@@ -111,7 +111,8 @@ class FixtureServer:
                     model = body.get('model')
                     for entry in outer.models:
                         if entry.get('id') == model:
-                            delay = float(outer.behavior.get('loadDelaySeconds', 0))
+                            delays = outer.behavior.get('loadDelaySecondsByModel', {})
+                            delay = float(delays.get(model, outer.behavior.get('loadDelaySeconds', 0)))
                             entry['status']['value'] = 'loading' if delay > 0 else 'loaded'
                             entry['status'].pop('failed', None)
                             if delay > 0:

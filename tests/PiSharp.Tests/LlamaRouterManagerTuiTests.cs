@@ -101,6 +101,61 @@ public sealed class LlamaRouterManagerTuiTests
     }
 
     [Fact]
+    public async Task CancellingAReplacementLoadRestoresPreviouslyLoadedModels()
+    {
+        if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-llama-replace-cancel-" + Guid.NewGuid().ToString("N"));
+        var agent = Path.Combine(root, "agent");
+        Directory.CreateDirectory(agent);
+        await File.WriteAllTextAsync(Path.Combine(agent, "models.json"), """
+            {"providers":{"fixture":{"baseUrl":"http://127.0.0.1:1/v1","apiKey":"fixture-key","models":[{"id":"fixture-model"}]}}}
+            """);
+        await using var server = new RouterServer(holdLoad: true);
+        await using var terminal = new ManagerTerminal(root, agent, server.Origin);
+        try
+        {
+            await terminal.WaitTextAsync("fixture-model");
+            var mark = terminal.Mark;
+            await terminal.SendAsync("/llama\n");
+            await terminal.WaitTextAsync("llama.cpp models", mark);
+            await terminal.SendAsync("\u001b[B\n");
+            await terminal.WaitTextAsync("1 model is loaded");
+
+            mark = terminal.Mark;
+            await terminal.SendAsync("\n");
+            await terminal.WaitTextAsync("25%", mark);
+            await server.LoadRequested.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            Assert.Equal("unloaded", server.Statuses["qwen"]);
+
+            mark = terminal.Mark;
+            await terminal.SendAsync("\u001b");
+            await terminal.WaitTextAsync("Stop loading?", mark);
+            await terminal.SendAsync("\n");
+            await terminal.WaitTextAsync("llama.cpp models", mark);
+
+            Assert.Equal("unloaded", server.Statuses["target"]);
+            Assert.Equal("loaded", server.Statuses["qwen"]);
+            var mutations = server.Requests.Where(request => request.Method == "POST" &&
+                request.Path is "/models/load" or "/models/unload").ToArray();
+            Assert.Equal(
+                [
+                    ("/models/unload", "{\"model\":\"qwen\"}"),
+                    ("/models/load", "{\"model\":\"target\"}"),
+                    ("/models/unload", "{\"model\":\"target\"}"),
+                    ("/models/load", "{\"model\":\"qwen\"}")
+                ],
+                mutations.Select(request => (request.Path, request.Body)));
+            Assert.All(server.Requests, request => Assert.Equal("Bearer local", request.Authorization));
+
+            mark = terminal.Mark;
+            await terminal.SendAsync("\u001b");
+            await terminal.WaitEditorAsync(mark);
+            await terminal.QuitAsync();
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
     public async Task DownloadSearchGatedApprovalAndQuantizationReachTheRouter()
     {
         if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;

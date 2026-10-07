@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "plan_received": true,
-  "source_note": "Current Pi c10bfb0d79dbbc998539a0a3e6c6a736a4e6db06: all 58 commits after 955cc666 classified with visible interactions in scope (26 NEEDS_WORK classifications). Exact-head Linux CI 37019190204 passes PiSharp source c0b012ba7192afed65138dae7d10b5d15da77b67, including all 1132 tests with zero skips. Radius menu/MCP/animation has scoped evidence; full authentication/visual gaps remain. Anthropic inline tools is locally implemented and verified; fresh MCP CIMD and Cloudflare gateway work are explicitly tracked. All 189 capabilities remain required; full feature/interaction/visual parity is incomplete. Active llama.cpp oracle refreshed to 943a10e744b87d9a593f3dca7406d4671910f490; the two commits since 503c6055 do not touch llama sources/tests. The full upstream audit beyond c10bfb0d and all 189 capability gates remain open.",
+  "source_note": "Current Pi c10bfb0d79dbbc998539a0a3e6c6a736a4e6db06: all 58 commits after 955cc666 classified with visible interactions in scope (26 NEEDS_WORK classifications). Exact-head Linux CI 37019190204 passes PiSharp source c0b012ba7192afed65138dae7d10b5d15da77b67, including all 1132 tests with zero skips. Radius menu/MCP/animation has scoped evidence; full authentication/visual gaps remain. Anthropic inline tools is locally implemented and verified; fresh MCP CIMD and Cloudflare gateway work are explicitly tracked. All 189 capabilities remain required; full feature/interaction/visual parity is incomplete. Active llama.cpp oracle refreshed to 943a10e744b87d9a593f3dca7406d4671910f490; the two commits since 503c6055 do not touch llama sources/tests. The full upstream audit beyond c10bfb0d and all 189 capability gates remain open. Active llama.cpp oracle refreshed again to a2eef9eb60fb44bf399532151b43dab83c0a9c88; the two commits since 943a10e7 contain no llama source/test changes. The full upstream audit beyond c10bfb0d and all 189 capability gates remain open.",
   "baseline": "earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035",
   "required_ids": [
     "feature-agent-multi-turn-and-streaming",
@@ -3720,7 +3720,7 @@
       "id": "provider-llama-context-cache-reload",
       "title": "Provider semantics: llama.cpp context window after reload",
       "status": "verified",
-      "source": "earendil-works/pi@943a10e744b87d9a593f3dca7406d4671910f490; packages/coding-agent/src/extensions/llama/provider.ts and test/llama-extension.test.ts",
+      "source": "earendil-works/pi@a2eef9eb60fb44bf399532151b43dab83c0a9c88; packages/coding-agent/src/extensions/llama/provider.ts and test/llama-extension.test.ts",
       "acceptance": [
         "After llama.cpp catalog refresh, resolve context size from live runtime metadata, configured --ctx-size/-c/-ctx arguments, restored cached metadata, training metadata, then the 128000 fallback.",
         "Keep chat and classifier model context windows consistent across reload and verify the precedence with deterministic tests."
@@ -3734,7 +3734,8 @@
       ],
       "evidence": [
         "Current Pi 503c605528f9af993c0e37ede468cf884fb0ff5b and PiSharp f64ca15efa2634bfeefcbc8cfc531714757955d0 were run as separate processes against the same fake router. The differential matches live n_ctx, configured --ctx-size/-c, cached metadata over training metadata, training metadata, the 128000 fallback, chat/classifier windows, refresh and offline process reload; offline reload makes no HTTP requests. Machine evidence is docs/parity/fixtures/llama-router-context-2026-10-07.json.",
-        "Pi origin/main was refreshed to 943a10e744b87d9a593f3dca7406d4671910f490; commits after 503c605528f9af993c0e37ede468cf884fb0ff5b do not touch llama sources/tests. The context refresh/offline-reload differential was rerun at 943a10e7 and still matches."
+        "Pi origin/main was refreshed to 943a10e744b87d9a593f3dca7406d4671910f490; commits after 503c605528f9af993c0e37ede468cf884fb0ff5b do not touch llama sources/tests. The context refresh/offline-reload differential was rerun at 943a10e7 and still matches.",
+        "The current oracle advanced to Pi a2eef9eb60fb44bf399532151b43dab83c0a9c88; commits since 943a10e7 contain only changelog/model-catalog generator/test changes. The context refresh/offline-reload differential was rerun at a2eef9eb and still matches."
       ],
       "dependencies": []
     },
@@ -3914,7 +3915,7 @@
       "id": "tui-full-terminal-differential-harness",
       "title": "Reusable full terminal differential harness",
       "status": "in_progress",
-      "source": "earendil-works/pi@943a10e744b87d9a593f3dca7406d4671910f490: packages/tui, coding-agent interactive components/tests",
+      "source": "earendil-works/pi@a2eef9eb60fb44bf399532151b43dab83c0a9c88: packages/tui, coding-agent interactive components/tests",
       "acceptance": [
         "Compare cell characters, foreground/background/style, cursor position/visibility, alternate/normal screen and relevant modes without layout/style/escape normalization.",
         "Capture final viewport and deterministic intermediate frames under controlled dimensions/environment with reusable scenarios; include narrow/wide and dark/light as applicable.",
@@ -3937,12 +3938,16 @@
         "tools/parity/terminal/test_driver.py",
         "docs/parity/fixtures/llama-huggingface-token-files-2026-10-07.json",
         "docs/parity/fixtures/llama-huggingface-token-file-2026-10-07-100x32-dark-fullscreen.json.gz",
-        "docs/parity/fixtures/llama-huggingface-home-token-file-2026-10-07-100x32-dark-fullscreen.json.gz"
+        "docs/parity/fixtures/llama-huggingface-home-token-file-2026-10-07-100x32-dark-fullscreen.json.gz",
+        "tools/parity/terminal/fixtures/llama-load-replace-cancel.json",
+        "docs/parity/fixtures/llama-load-replace-cancel-2026-10-07.json",
+        "docs/parity/fixtures/llama-load-replace-cancel-2026-10-07-100x32-dark-fullscreen.json.gz"
       ],
       "evidence": [
         "Explicit user steering on 2026-10-02. This capability remains required; existing targeted visual probes or custom OpenAI-compatible endpoints/native classifier tests do not establish this family.",
         "Current-Pi/PiSharp 100x32 dark fullscreen comparisons now cover login/reload, manager discovery, load cancellation, Hugging Face search/download and cancellation, and retry; request traces match. Search/detail/gate/quantization/progress and manager panel cells/cursors match. Aggregate full-screen reports still differ; current fixture results and open surfaces are recorded in docs/parity/fixtures/llama-router-interactions-2026-10-07.md. Exact-head CI 37674227180 passes on 89fc2d513c7fe0e165afce8655d4af1f64406d01.",
-        "Against current Pi 943a10e744b87d9a593f3dca7406d4671910f490 and PiSharp 3a80c4ea953709313f9dea35204b9d13ff88bc07, explicit HF_TOKEN_PATH and default user-home token-file terminal fixtures each complete with zero scenario errors and identical authenticated search/detail HTTP traces. Full unnormalized captures report 24,560 screen/control differences per case; summaries and compressed captures are in docs/parity/fixtures/llama-huggingface-token-files-2026-10-07.json."
+        "Against current Pi 943a10e744b87d9a593f3dca7406d4671910f490 and PiSharp 3a80c4ea953709313f9dea35204b9d13ff88bc07, explicit HF_TOKEN_PATH and default user-home token-file terminal fixtures each complete with zero scenario errors and identical authenticated search/detail HTTP traces. Full unnormalized captures report 24,560 screen/control differences per case; summaries and compressed captures are in docs/parity/fixtures/llama-huggingface-token-files-2026-10-07.json.",
+        "The replacement-load cancellation fixture uses per-model fake-router delays to hold the target in a cancellable loading state while restoring the original immediately. Current Pi a2eef9eb60fb44bf399532151b43dab83c0a9c88 and PiSharp 40a21b9a0fac47334adf4833316ed2c53d13b410 both complete with zero scenario errors and the same four authenticated mutations; Pi has one additional GET /models during restoration. Full 100x32 dark-screen comparison reports 14,317 exact cell/style/cursor/control differences. Summary and unnormalized capture: docs/parity/fixtures/llama-load-replace-cancel-2026-10-07.json."
       ],
       "dependencies": []
     },
@@ -3950,7 +3955,7 @@
       "id": "provider-llama-router-configuration",
       "title": "First-class llama.cpp router login and configuration",
       "status": "in_progress",
-      "source": "earendil-works/pi@943a10e744b87d9a593f3dca7406d4671910f490: packages/coding-agent/src/extensions/llama/{index,provider,client,ui,huggingface}.ts; test/llama-extension.test.ts",
+      "source": "earendil-works/pi@a2eef9eb60fb44bf399532151b43dab83c0a9c88: packages/coding-agent/src/extensions/llama/{index,provider,client,ui,huggingface}.ts; test/llama-extension.test.ts",
       "acceptance": [
         "Match /login llama.cpp wording, validation, cancellation, auth.json persistence/reload and router URL default http://127.0.0.1:8080.",
         "Verify LLAMA_BASE_URL/LLAMA_API_KEY, stored/default precedence from Pi source/tests; optional key, isolated provider identity, shared chat/classifier credentials.",
@@ -3973,7 +3978,7 @@
       "id": "provider-llama-router-management",
       "title": "llama.cpp router model management",
       "status": "in_progress",
-      "source": "earendil-works/pi@943a10e744b87d9a593f3dca7406d4671910f490: packages/coding-agent/src/extensions/llama/{index,provider,client,ui,huggingface}.ts; test/llama-extension.test.ts",
+      "source": "earendil-works/pi@a2eef9eb60fb44bf399532151b43dab83c0a9c88: packages/coding-agent/src/extensions/llama/{index,provider,client,ui,huggingface}.ts; test/llama-extension.test.ts",
       "acceptance": [
         "Match /llama loaded/unloaded state, loading/unloading, refresh, health/reconnect Retry/Close and cancellation confirmation.",
         "Ask whether other loaded models should be unloaded or retained; never silently unload models or delete files.",
@@ -3982,11 +3987,13 @@
       "implementation": [
         "src/PiSharp.Cli/Tui/TerminalLlamaManager.cs",
         "src/PiSharp.Cli/LlamaRouterClient.cs",
-        "src/PiSharp.Cli/LlamaRouterCatalog.cs"
+        "src/PiSharp.Cli/LlamaRouterCatalog.cs",
+        "tests/PiSharp.Tests/LlamaRouterManagerTuiTests.cs"
       ],
       "evidence": [
         "Explicit user steering on 2026-10-02. This capability remains required; existing targeted visual probes or custom OpenAI-compatible endpoints/native classifier tests do not establish this family.",
-        "Current Pi source/tests are pinned at 503c605528f9af993c0e37ede468cf884fb0ff5b; extension tests pass 15/15. Paired traces cover discovery, load/unload, cancellation, retry and model selection, and match the local router. Exact full-terminal frames and remaining manager-state variants stay open. See docs/parity/fixtures/llama-router-interactions-2026-10-07.md."
+        "Current Pi source/tests are pinned at 503c605528f9af993c0e37ede468cf884fb0ff5b; extension tests pass 15/15. Paired traces cover discovery, load/unload, cancellation, retry and model selection, and match the local router. Exact full-terminal frames and remaining manager-state variants stay open. See docs/parity/fixtures/llama-router-interactions-2026-10-07.md.",
+        "Against refreshed Pi a2eef9eb60fb44bf399532151b43dab83c0a9c88 and PiSharp 40a21b9a0fac47334adf4833316ed2c53d13b410, the replacement-load cancellation PTY test confirms the target is unloaded and the previously loaded qwen model is restored after choosing Unload all and load, then confirming Stop loading. Its authenticated POST sequence is unload qwen, load target, unload target, load qwen. The paired current-Pi terminal fixture has zero scenario errors and matching mutation requests; Pi makes one extra GET /models during restoration, and exact terminal cells/styles/control output remain open. See docs/parity/fixtures/llama-load-replace-cancel-2026-10-07.json."
       ],
       "dependencies": [
         "provider-llama-router-configuration"
@@ -3996,7 +4003,7 @@
       "id": "provider-llama-router-models",
       "title": "llama.cpp live router model projection and shared execution",
       "status": "in_progress",
-      "source": "earendil-works/pi@943a10e744b87d9a593f3dca7406d4671910f490: packages/coding-agent/src/extensions/llama/{index,provider,client,ui,huggingface}.ts; test/llama-extension.test.ts",
+      "source": "earendil-works/pi@a2eef9eb60fb44bf399532151b43dab83c0a9c88: packages/coding-agent/src/extensions/llama/{index,provider,client,ui,huggingface}.ts; test/llama-extension.test.ts",
       "acceptance": [
         "Derive management/chat/classifier endpoints as Pi does from router URL; share configuration and credentials.",
         "Verify current Pi model eligibility, loaded/sleeping/unloaded/autoload rules from source/tests; /model reads live router state and can select newly loaded models for the active session.",
@@ -4023,7 +4030,8 @@
         "Explicit user steering on 2026-10-02. This capability remains required; existing targeted visual probes or custom OpenAI-compatible endpoints/native classifier tests do not establish this family.",
         "Current Pi source/tests are pinned at 503c605528f9af993c0e37ede468cf884fb0ff5b; extension tests pass 15/15 and classifier tests 25/25. The paired llama-model-picker fixture starts with --provider fixture, loads a router preset, searches /model and selects it. Separate current-Pi process fixtures match native decision-classifier projection/request/usage and context precedence across refresh/offline reload. This PiSharp head passes 28 focused router/classifier tests, all 23 terminal harness tests, all 5 Python fixture tests, format verification, zero-warning build and 1,172/1,172 full tests with zero skips; exact-head CI 37677286983 passes on f64ca15efa2634bfeefcbc8cfc531714757955d0. Exact full-screen comparison remains open. See docs/parity/fixtures/llama-router-interactions-2026-10-07.md.",
         "The native classifier, context-window and fallback-classifier process differentials were rerun against refreshed Pi 943a10e744b87d9a593f3dca7406d4671910f490; reports are pinned to that oracle and continue to match.",
-        "The paired process fixture now runs current Pi 943a10e744b87d9a593f3dca7406d4671910f490 and PiSharp c2c4960871c510fa59e58d6fcb5baf058e7e326f with models_autoload enabled and disabled. Both match chat/classifier eligibility for loaded and sleeping models, healthy autoload presets, failed presets, non-preset unloaded models and decision-only presets, plus /models, /props, model props and authenticated /v1/systemone request traces. See docs/parity/fixtures/llama-router-classifier-2026-10-07.json."
+        "The paired process fixture now runs current Pi 943a10e744b87d9a593f3dca7406d4671910f490 and PiSharp c2c4960871c510fa59e58d6fcb5baf058e7e326f with models_autoload enabled and disabled. Both match chat/classifier eligibility for loaded and sleeping models, healthy autoload presets, failed presets, non-preset unloaded models and decision-only presets, plus /models, /props, model props and authenticated /v1/systemone request traces. See docs/parity/fixtures/llama-router-classifier-2026-10-07.json.",
+        "The native classifier, context-window and fallback-classifier process differentials are pinned to refreshed Pi a2eef9eb60fb44bf399532151b43dab83c0a9c88 and PiSharp 40a21b9a0fac47334adf4833316ed2c53d13b410. Autoload on/off model eligibility, model projection, classifier result/usage and router HTTP traces match."
       ],
       "dependencies": [
         "provider-llama-router-management",
@@ -4034,9 +4042,9 @@
       "id": "provider-llama-router-download",
       "title": "llama.cpp Hugging Face download flow",
       "status": "in_progress",
-      "source": "earendil-works/pi@943a10e744b87d9a593f3dca7406d4671910f490: packages/coding-agent/src/extensions/llama/{index,provider,client,ui,huggingface}.ts; test/llama-extension.test.ts",
+      "source": "earendil-works/pi@a2eef9eb60fb44bf399532151b43dab83c0a9c88: packages/coding-agent/src/extensions/llama/{index,provider,client,ui,huggingface}.ts; test/llama-extension.test.ts",
       "acceptance": [
-        "Audit and match Download model\u2026, repository search, quantization selection and exact owner/repository[:quant] input.",
+        "Audit and match Download model…, repository search, quantization selection and exact owner/repository[:quant] input.",
         "Match HF_TOKEN and token-file lookup precedence, gated-model warnings/access links, cancellation and unload/retain prompts.",
         "The router downloads the model; deterministic local HTTP/process and full terminal differential evidence is required."
       ],
@@ -4071,10 +4079,10 @@
     },
     "fixture": "docs/parity/fixtures/upstream-delta-audit-2026-10-01.md",
     "next": "full-terminal-differential-harness",
-    "current_item": "continue-llama-router-autoload-selection-differential",
-    "current_item_status": "local_differential_complete_validation_in_progress",
-    "current_item_local_evidence": "The PiSharp c2c4960871c510fa59e58d6fcb5baf058e7e326f base is pushed and exact-head CI 37682173630 is green. On current Pi 943a10e744b87d9a593f3dca7406d4671910f490, the paired native-classifier process differential now covers models_autoload on/off and matches loaded/sleeping chat models, eligible presets, failed/non-preset exclusions, decision-only classifier visibility, context and authenticated System One requests. Exact full-terminal parity and remaining llama manager lifecycle states stay open.",
-    "next_after_ci": "continue-llama-router-manager-state-variants-and-exact-screen-parity",
+    "current_item": "40a21b9a0fac47334adf4833316ed2c53d13b410",
+    "current_item_status": "pushed_ci_passed",
+    "current_item_local_evidence": "PiSharp 40a21b9a0fac47334adf4833316ed2c53d13b410 is pushed and exact-head Linux CI 37683978051 passes format, warnings-as-errors build and 1,172/1,172 tests with zero skips. The Pi oracle is refreshed at a2eef9eb60fb44bf399532151b43dab83c0a9c88; the two commits since 943a10e7 do not change llama sources/tests. Native classifier, context refresh/reload and loaded/sleeping/autoload on/off process differentials were rerun at a2eef9eb and match PiSharp. HF token-file terminal captures remain accurately pinned to Pi 943a10e7/PiSharp 3a80c4ea because those are their run revisions. Remaining llama work includes replacement-cancellation restoration and exact whole-screen parity.",
+    "next_after_ci": "continue-llama-replacement-cancel-restore-terminal-differential",
     "completed": [
       "65117e31f242daa8e0a17dbd2810f7bb92bf4087",
       "7a11fe1c723b942fa093edb8b00f051ddb9b6627",
@@ -4088,12 +4096,13 @@
       "409e808f5834dc4f2f37b54abf24d3a2f6ecad75",
       "3874b3e98983c70fa05fa193b675d42cfcb8b9f8",
       "f64ca15efa2634bfeefcbc8cfc531714757955d0",
-      "c2c4960871c510fa59e58d6fcb5baf058e7e326f"
+      "c2c4960871c510fa59e58d6fcb5baf058e7e326f",
+      "40a21b9a0fac47334adf4833316ed2c53d13b410"
     ],
-    "ci_run": "37682173630",
-    "latest_published_source_head": "c2c4960871c510fa59e58d6fcb5baf058e7e326f",
+    "ci_run": "37683978051",
+    "latest_published_source_head": "40a21b9a0fac47334adf4833316ed2c53d13b410",
     "latest_published_ci_runs": [
-      "37682173630"
+      "37683978051"
     ],
     "official_mcp_conformance": {
       "package": "@modelcontextprotocol/conformance@0.2.0-alpha.11",
@@ -4107,8 +4116,8 @@
     },
     "working_source_pin": "503c605528f9af993c0e37ede468cf884fb0ff5b",
     "active_llama_classifier_recheck": {
-      "pi_source_head": "943a10e744b87d9a593f3dca7406d4671910f490",
-      "pisharp_head": "c2c4960871c510fa59e58d6fcb5baf058e7e326f",
+      "pi_source_head": "a2eef9eb60fb44bf399532151b43dab83c0a9c88",
+      "pisharp_head": "40a21b9a0fac47334adf4833316ed2c53d13b410",
       "commits": [
         {
           "sha": "f6127a1bf907dec9b77be60e6a46db4b9668f081",
@@ -4122,14 +4131,14 @@
           "open_surface": "OpenAI Decisions classifier models and image input; see classifier-runtime."
         }
       ],
-      "scope": "Current-family refresh at 943a10e7; commits after 503c6055 do not change llama sources/tests. Full audit of all commits after c10bfb0d remains required."
+      "scope": "Current-family refresh at a2eef9eb; commits after 943a10e7 change only changelog/model-catalog generation and tests. Full audit of all commits after c10bfb0d remains required."
     },
     "refresh_policy": "Refresh at capability-family completion, known upstream changes affecting active work, or after several verified slices; require fresh current-main audit at final completion."
   },
   "execution_policy": {
     "updated": "2026-10-07",
     "priority": [
-      "Complete the first-class llama.cpp router family against refreshed Pi 943a10e7, including full login/configuration, model projection and selection, management, Hugging Face search/download, classifier behavior and required terminal differentials",
+      "Complete the first-class llama.cpp router family against refreshed Pi a2eef9eb, including full login/configuration, model projection and selection, management, Hugging Face search/download, classifier behavior and required terminal differentials",
       "Continue the highest-leverage unresolved capability families in the 189-item ledger, including broad terminal parity and official MCP conformance",
       "Refresh both repositories at family boundaries and complete the final source audit before declaring parity"
     ],

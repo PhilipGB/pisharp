@@ -1,0 +1,190 @@
+{
+  "schema": 1,
+  "fixture": "llama-load-replace-cancel",
+  "oracle": {
+    "repository": "earendil-works/pi",
+    "sha": "a2eef9eb60fb44bf399532151b43dab83c0a9c88"
+  },
+  "pisharp": {
+    "sha": "40a21b9a0fac47334adf4833316ed2c53d13b410"
+  },
+  "case": "100x32-dark-fullscreen",
+  "scenario_errors": {},
+  "terminal_comparison": {
+    "exact": false,
+    "unnormalized_field_differences": 14317,
+    "capture": "llama-load-replace-cancel-2026-10-07-100x32-dark-fullscreen.json.gz"
+  },
+  "http_comparison": {
+    "all_request_multisets_match": false,
+    "pi_only": [
+      {
+        "method": "GET",
+        "path": "/models",
+        "authorization": "Bearer local",
+        "body": null,
+        "count": 1
+      }
+    ],
+    "pisharp_only": [],
+    "mutations_match": true,
+    "mutation_sequence": [
+      {
+        "method": "POST",
+        "path": "/models/unload",
+        "body": {
+          "model": "loaded-fixture-model"
+        }
+      },
+      {
+        "method": "POST",
+        "path": "/models/load",
+        "body": {
+          "model": "unloaded-fixture-model"
+        }
+      },
+      {
+        "method": "POST",
+        "path": "/models/unload",
+        "body": {
+          "model": "unloaded-fixture-model"
+        }
+      },
+      {
+        "method": "POST",
+        "path": "/models/load",
+        "body": {
+          "model": "loaded-fixture-model"
+        }
+      }
+    ]
+  },
+  "products": {
+    "pi": {
+      "scenario_error": null,
+      "http_request_count": 23,
+      "authorization": [
+        "Bearer local"
+      ],
+      "requests_by_action": {
+        "startup": 0,
+        "open-manager": 4,
+        "select-replacement-target": 0,
+        "choose-unload-all-and-load": 6,
+        "cancel-replacement-load": 1,
+        "confirm-cancel-and-restore": 12,
+        "close-manager": 0,
+        "quit": 0
+      },
+      "load_prompt_lines": [
+        " Loading model",
+        " Loading text model",
+        " \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 50%"
+      ],
+      "cancel_prompt_lines": [
+        " Stop loading?",
+        " unloaded-fixture-model",
+        "\u2192 Yes"
+      ],
+      "restored_manager_lines": [
+        " Restoring previously loaded models",
+        " llama.cpp models",
+        "\u2192 loaded-fixture-model                loaded \u00b7 16k context",
+        "  unloaded-fixture-model"
+      ],
+      "mutations": [
+        {
+          "method": "POST",
+          "path": "/models/unload",
+          "body": {
+            "model": "loaded-fixture-model"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/models/load",
+          "body": {
+            "model": "unloaded-fixture-model"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/models/unload",
+          "body": {
+            "model": "unloaded-fixture-model"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/models/load",
+          "body": {
+            "model": "loaded-fixture-model"
+          }
+        }
+      ]
+    },
+    "pisharp": {
+      "scenario_error": null,
+      "http_request_count": 22,
+      "authorization": [
+        "Bearer local"
+      ],
+      "requests_by_action": {
+        "startup": 0,
+        "open-manager": 4,
+        "select-replacement-target": 0,
+        "choose-unload-all-and-load": 6,
+        "cancel-replacement-load": 1,
+        "confirm-cancel-and-restore": 11,
+        "close-manager": 0,
+        "quit": 0
+      },
+      "load_prompt_lines": [
+        " Loading model",
+        " Loading text model",
+        " \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 50%"
+      ],
+      "cancel_prompt_lines": [
+        " Stop loading?",
+        " unloaded-fixture-model",
+        "\u2192 Yes"
+      ],
+      "restored_manager_lines": [
+        "Restoring previously loaded models",
+        " llama.cpp models",
+        "\u2192 loaded-fixture-model                loaded \u00b7 16k context",
+        "  unloaded-fixture-model"
+      ],
+      "mutations": [
+        {
+          "method": "POST",
+          "path": "/models/unload",
+          "body": {
+            "model": "loaded-fixture-model"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/models/load",
+          "body": {
+            "model": "unloaded-fixture-model"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/models/unload",
+          "body": {
+            "model": "unloaded-fixture-model"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/models/load",
+          "body": {
+            "model": "loaded-fixture-model"
+          }
+        }
+      ]
+    }
+  }
+}
