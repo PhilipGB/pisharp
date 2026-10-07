@@ -105,8 +105,12 @@ internal static class LlamaRouterCatalog
         var thinkingMap = reasoning
             ? JsonSerializer.SerializeToElement(new Dictionary<string, string?>
             {
-                ["off"] = "off", ["minimal"] = null, ["low"] = null, ["medium"] = "medium",
-                ["high"] = null, ["xhigh"] = null
+                ["off"] = "off",
+                ["minimal"] = null,
+                ["low"] = null,
+                ["medium"] = "medium",
+                ["high"] = null,
+                ["xhigh"] = null
             }, s_json)
             : (JsonElement?)null;
         var compatibilityValues = new Dictionary<string, object>
