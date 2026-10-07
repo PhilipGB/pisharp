@@ -89,15 +89,12 @@ internal sealed class TerminalProviderLogin(ProviderModelRuntime runtime, Termin
                 var environmentUrl = environment("LLAMA_BASE_URL");
                 var defaultUrl = string.IsNullOrWhiteSpace(environmentUrl)
                     ? LlamaRouterClient.DefaultServerUrl : environmentUrl.Trim();
-                Console.Error.WriteLine($"llama.cpp server URL (Enter to use {defaultUrl}):");
-                var enteredUrl = await editor.ReadLineAsync(_ => Task.CompletedTask, enableApplicationActions: false,
-                    allowEmptySubmit: true);
-                if (enteredUrl is null) return false;
+                var prompts = await editor.PromptSequenceAsync("Login to llama.cpp",
+                    [("llama.cpp server URL", defaultUrl), ("API key (optional)", null)]).ConfigureAwait(false);
+                if (prompts is null) return false;
+                var enteredUrl = prompts[0];
                 var serverUrl = string.IsNullOrWhiteSpace(enteredUrl) ? defaultUrl : enteredUrl.Trim();
-
-                Console.Error.Write("API key for llama.cpp (optional): ");
-                var secret = ReadSecret();
-                if (secret is null) return false;
+                var secret = prompts[1];
                 await runtime.LoginLlamaRouterAsync(string.IsNullOrWhiteSpace(secret) ? null : secret,
                     serverUrl, cancellationToken);
             }
@@ -124,7 +121,7 @@ internal sealed class TerminalProviderLogin(ProviderModelRuntime runtime, Termin
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested) { return false; }
         Console.WriteLine(provider.Id == "llama.cpp"
-            ? "Authenticated llama.cpp; credential value was not displayed."
+            ? $"Saved API key for llama.cpp. Credentials saved to {Path.Combine(agentDirectory, "auth.json")}"
             : $"Authenticated {provider.Id} with {type}; credential value was not displayed.");
         if (provider.Id.Equals(currentProvider(), StringComparison.OrdinalIgnoreCase))
             await synchronizeCurrentProvider();
@@ -169,4 +166,5 @@ internal sealed class TerminalProviderLogin(ProviderModelRuntime runtime, Termin
             if (!char.IsControl(key.KeyChar)) value.Append(key.KeyChar);
         }
     }
+
 }

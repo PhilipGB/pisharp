@@ -120,7 +120,7 @@ public sealed class LlamaRouterManagerTuiTests
             await terminal.SendAsync("/llama\n");
             await terminal.WaitTextAsync("llama.cpp models", mark);
             await terminal.SendAsync("\u001b[B\u001b[B\n");
-            await terminal.WaitTextAsync("Hugging Face model name", mark);
+            await terminal.WaitTextAsync("Model name or owner/repository[:quant]", mark);
             await terminal.SendAsync("model search\n");
             await terminal.WaitTextAsync("Select Hugging Face model", mark);
             await terminal.SendAsync("\n");
@@ -167,7 +167,7 @@ public sealed class LlamaRouterManagerTuiTests
             await terminal.SendAsync("/llama\n");
             await terminal.WaitTextAsync("llama.cpp models", mark);
             await terminal.SendAsync("\u001b[B\u001b[B\n");
-            await terminal.WaitTextAsync("Hugging Face model name", mark);
+            await terminal.WaitTextAsync("Model name or owner/repository[:quant]", mark);
             await terminal.SendAsync("model search\n");
             await terminal.WaitTextAsync("Select Hugging Face model", mark);
             await terminal.SendAsync("\n");
@@ -283,7 +283,7 @@ public sealed class LlamaRouterManagerTuiTests
             await terminal.WaitTextAsync("llama.cpp unavailable", mark);
             await terminal.SendAsync("\n");
             await terminal.WaitTextAsync("llama.cpp models", mark);
-            Assert.Equal(2, server.CatalogRequests);
+            Assert.Equal(3, server.CatalogRequests);
             mark = terminal.Mark;
             await terminal.SendAsync("\u001b");
             await terminal.WaitEditorAsync(mark);

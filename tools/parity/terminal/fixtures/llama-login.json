@@ -1,0 +1,29 @@
+{
+  "id": "llama-login",
+  "arguments": {
+    "pi": [
+      "--provider", "fixture", "--model", "fixture-model", "--no-session", "--offline",
+      "--no-skills", "--no-prompt-templates", "--no-tools"
+    ],
+    "pisharp": [
+      "--provider", "fixture", "--model", "fixture-model", "--no-session", "--offline",
+      "--no-skills", "--no-prompt-templates", "--no-tools", "--no-approve", "--no-context-files"
+    ]
+  },
+  "settings": { "quietStartup": true },
+  "environment": {
+    "pi": { "LLAMA_BASE_URL": "{router}" },
+    "pisharp": { "LLAMA_BASE_URL": "{router}" }
+  },
+  "actions": [
+    { "id": "startup", "expect": "fixture-model" },
+    { "id": "url-prompt", "send": "/login llama.cpp\r", "expect": "llama.cpp server URL" },
+    { "id": "default-url", "send": "\r", "expect": "API key (optional)" },
+    { "id": "api-key", "send": "fixture-secret\r", "expect": "Saved API key for llama.cpp" },
+    { "id": "quit", "send": "/quit\r", "exit": true }
+  ],
+  "dimensions": [{ "columns": 100, "rows": 32 }],
+  "themes": ["dark"],
+  "modes": ["fullscreen"],
+  "terminal": { "keyboardProtocol": "kitty" }
+}

@@ -1,0 +1,50 @@
+{
+  "id": "llama-manager",
+  "arguments": {
+    "pi": [
+      "--provider", "fixture", "--model", "fixture-model", "--no-session", "--offline",
+      "--no-skills", "--no-prompt-templates", "--no-tools"
+    ],
+    "pisharp": [
+      "--provider", "fixture", "--model", "fixture-model", "--no-session", "--offline",
+      "--no-skills", "--no-prompt-templates", "--no-tools", "--no-approve", "--no-context-files"
+    ]
+  },
+  "settings": {
+    "quietStartup": true
+  },
+  "environment": {
+    "pi": { "LLAMA_BASE_URL": "{router}" },
+    "pisharp": { "LLAMA_BASE_URL": "{router}" }
+  },
+  "llamaModels": [
+    {
+      "id": "loaded-fixture-model",
+      "status": { "value": "loaded", "args": ["--ctx-size", "16384"] },
+      "architecture": { "input_modalities": ["text"], "output_modalities": ["text"] },
+      "source": "filesystem",
+      "meta": { "n_ctx": 16384, "n_ctx_train": 32768 }
+    },
+    {
+      "id": "unloaded-fixture-model",
+      "status": { "value": "unloaded", "args": ["--ctx-size", "8192"] },
+      "architecture": { "input_modalities": ["text"], "output_modalities": ["text"] },
+      "source": "preset",
+      "meta": { "n_ctx_train": 8192 }
+    }
+  ],
+  "llamaProps": {
+    "models_autoload": false,
+    "chat_template": "fixture"
+  },
+  "dimensions": [{ "columns": 100, "rows": 32 }],
+  "themes": ["dark"],
+  "modes": ["fullscreen"],
+  "actions": [
+    { "id": "startup", "expect": "fixture-model" },
+    { "id": "open-manager", "send": "/llama\r", "expect": "llama.cpp models" },
+    { "id": "close-manager", "send": "\u001b", "expect": "fixture-model" },
+    { "id": "quit", "send": "/quit\r", "exit": true }
+  ],
+  "terminal": { "keyboardProtocol": "kitty" }
+}

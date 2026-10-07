@@ -53,6 +53,11 @@ def run_product(label, command, scenario, dimensions, theme, mode, server):
             shutil.rmtree(path)
         else:
             path.unlink()
+    bin_directory = agent / 'bin'
+    bin_directory.mkdir()
+    fd = bin_directory / 'fd'
+    fd.write_text('#!/bin/sh\nprintf "fd 10.2.0\\n"\n')
+    fd.chmod(0o700)
     settings = dict(scenario.get('settings', {}), theme=theme)
     if label == 'pi' or mode != 'fullscreen':
         settings['tuiMode'] = mode
@@ -73,7 +78,10 @@ def run_product(label, command, scenario, dimensions, theme, mode, server):
     options.update(scenario.get('terminal', {}))
     command = [argument.replace('{agent}', str(agent)) for argument in command]
     child_environment = environment(agent)
-    child_environment.update(scenario.get('environment', {}).get(label, {}))
+    child_environment['PATH'] = str(bin_directory) + os.pathsep + child_environment.get('PATH', '')
+    child_environment.update({name: value.replace('{router}', server.url)
+                              if isinstance(value, str) else value
+                              for name, value in scenario.get('environment', {}).get(label, {}).items()})
     terminal = TerminalProcess(command, Path('/tmp/pisharp-terminal-fixture-workspace'), child_environment, options)
     frames = []
     request_start = len(server.requests)
@@ -132,7 +140,7 @@ def main():
     owner.touch()
     lock = owner.open('r+')
     fcntl.flock(lock, fcntl.LOCK_EX)
-    server = FixtureServer()
+    server = FixtureServer(scenario.get('llamaModels'), scenario.get('llamaProps'), scenario.get('llamaBehavior'))
     try:
         for dimensions, theme, mode in itertools.product(scenario['dimensions'], scenario['themes'], scenario['modes']):
             case_id = f"{dimensions['columns']}x{dimensions['rows']}-{theme}-{mode}"
@@ -140,6 +148,7 @@ def main():
                 continue
             products = {}
             for label, command in product_commands.items():
+                server.reset()
                 products[label] = run_product('pi' if args.calibrate else label, product_commands['pi'] if args.calibrate else command,
                                               scenario, dimensions, theme, mode, server)
             delta = list(differences(products['pi']['frames'], products['pisharp']['frames']))

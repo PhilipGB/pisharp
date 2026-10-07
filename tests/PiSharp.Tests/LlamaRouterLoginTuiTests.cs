@@ -30,7 +30,7 @@ public sealed class LlamaRouterLoginTuiTests
             await terminal.WaitTextAsync("llama.cpp server URL", mark);
             mark = terminal.Mark;
             await terminal.SendAsync(server.Origin + "/v1/\n");
-            await terminal.WaitTextAsync("API key for llama.cpp", mark);
+            await terminal.WaitTextAsync("API key (optional)", mark);
             mark = terminal.Mark;
             await terminal.SendAsync("\u001b");
             Assert.False(File.Exists(Path.Combine(agent, "auth.json")));
@@ -61,10 +61,10 @@ public sealed class LlamaRouterLoginTuiTests
             await terminal.WaitTextAsync("llama.cpp server URL", mark);
             mark = terminal.Mark;
             await terminal.SendAsync("\n");
-            await terminal.WaitTextAsync("API key for llama.cpp", mark);
+            await terminal.WaitTextAsync("API key (optional)", mark);
             mark = terminal.Mark;
             await terminal.SendAsync("\n");
-            await terminal.WaitTextAsync("Authenticated llama.cpp", mark);
+            await terminal.WaitTextAsync("Saved API key for llama.cpp", mark);
 
             Assert.Equal("/models", Assert.Single(server.Requests).Path);
             Assert.Null(server.Requests.Single().Authorization);

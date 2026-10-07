@@ -38,6 +38,11 @@ public sealed class TerminalScreen : IDisposable
     private int _lastImagePruneRevision = -1;
     private string _footer = "Enter steers · follow-up queues · Escape aborts";
     private IReadOnlyList<string>? _overlay;
+    private IReadOnlyList<string>? _editorPanel;
+    private int? _panelCursorRow;
+    private int? _panelCursorColumn;
+    private bool _panelCursorVisible;
+    private int _panelBottomMargin = 1;
     private bool _activated;
     private bool _suspended;
     private volatile bool _active = true;
@@ -306,6 +311,21 @@ public sealed class TerminalScreen : IDisposable
             if (!_active) return;
             // List state sanitizes user text before applying application-owned styling.
             _overlay = lines?.Select(line => line.Replace('\n', ' ')).ToArray();
+            RenderLocked();
+        }
+    }
+
+    internal void SetEditorPanel(IReadOnlyList<string>? lines, int? cursorRow = null,
+        int? cursorColumn = null, bool cursorVisible = false, int bottomMargin = 1)
+    {
+        lock (_gate)
+        {
+            if (!_active) return;
+            _editorPanel = lines?.Select(line => line.Replace('\n', ' ')).ToArray();
+            _panelCursorRow = cursorRow;
+            _panelCursorColumn = cursorColumn;
+            _panelCursorVisible = cursorVisible;
+            _panelBottomMargin = bottomMargin;
             RenderLocked();
         }
     }
@@ -668,7 +688,8 @@ public sealed class TerminalScreen : IDisposable
         var transcript = _images.LayoutTranscript(GetTranscriptTextLocked(transcriptWidth) + _liveAssistant,
             transcriptWidth, Math.Max(1, transcriptHeight - 2));
         var frame = _compositor.Compose(_editorText, _editorCursor, _editorSelectionStart, _editorSelectionEnd,
-            transcript, _footer, _overlay, _scrollOffset, columns, rows, _search, _mouse, _theme);
+            transcript, _footer, _overlay, _scrollOffset, columns, rows, _search, _mouse, _theme,
+            _editorPanel, _panelCursorRow, _panelCursorColumn, _panelCursorVisible, _panelBottomMargin);
         _scrollOffset = frame.ScrollOffset;
         _lastColumns = frame.Columns;
         _lastRows = frame.Height;

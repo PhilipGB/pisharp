@@ -82,6 +82,160 @@ public sealed class TerminalEditor
             allLabel, scopedLabel, emptyMessage);
     }
 
+    internal TerminalSelection<T>? ShowInlineSelectionList<T>(string title,
+        IReadOnlyList<TerminalSelectionOption<T>> options, IReadOnlyList<string>? header = null,
+        string footer = "↑↓ move • enter select • escape/ctrl+c close", string? selectedKey = null)
+    {
+        if (_screen is not { IsActive: true } screen || options.Count == 0) return null;
+        var input = EnsureInput();
+        var selectedIndex = selectedKey is null ? 0 : Math.Max(0,
+            Array.FindIndex(options.ToArray(), option => option.Key.Equals(selectedKey, StringComparison.OrdinalIgnoreCase)));
+        using var mode = TerminalMode.Enter(screen);
+        try
+        {
+            while (screen.IsActive)
+            {
+                screen.RefreshIfResized();
+                var panel = RenderInlinePanel(screen, title, options, selectedIndex, header, footer);
+                screen.SetEditorPanel(panel, panel.Count - 2, screen.TerminalWidth + 1, cursorVisible: false,
+                    bottomMargin: 2);
+                var next = input.Read();
+                if (next.IsEndOfStream) return null;
+                if (next.Key is not { } key) continue;
+                if (key.Key == ConsoleKey.Escape || _keymap.Matches("app.interrupt", key)) return null;
+                if (key.Key == ConsoleKey.Enter) return new(options[selectedIndex], IsScoped: false);
+                if (key.Key == ConsoleKey.UpArrow) selectedIndex = (selectedIndex + options.Count - 1) % options.Count;
+                else if (key.Key == ConsoleKey.DownArrow) selectedIndex = (selectedIndex + 1) % options.Count;
+                else if (key.Key == ConsoleKey.Home) selectedIndex = 0;
+                else if (key.Key == ConsoleKey.End) selectedIndex = options.Count - 1;
+                else if (key.Key == ConsoleKey.PageUp) selectedIndex = Math.Max(0, selectedIndex - 10);
+                else if (key.Key == ConsoleKey.PageDown) selectedIndex = Math.Min(options.Count - 1, selectedIndex + 10);
+            }
+            return null;
+        }
+        finally { screen.SetEditorPanel(null); }
+    }
+
+    internal async Task<IReadOnlyList<string>?> PromptSequenceAsync(string title,
+        IReadOnlyList<(string Message, string? Placeholder)> prompts)
+    {
+        if (prompts.Count == 0) return [];
+        if (_screen is not { IsActive: true } screen)
+        {
+            var redirectedValues = new List<string>(prompts.Count);
+            foreach (var prompt in prompts)
+            {
+                Console.Error.WriteLine(prompt.Message);
+                var value = await ReadLineAsync(_ => Task.CompletedTask, enableApplicationActions: false,
+                    allowEmptySubmit: true).ConfigureAwait(false);
+                if (value is null) return null;
+                redirectedValues.Add(value);
+            }
+            return redirectedValues;
+        }
+
+        var values = new List<string>(prompts.Count);
+        var input = EnsureInput();
+        using var mode = TerminalMode.Enter(screen);
+        try
+        {
+            for (var promptIndex = 0; promptIndex < prompts.Count; promptIndex++)
+            {
+                var promptBuffer = new EditorBuffer(_keymap);
+                while (screen.IsActive)
+                {
+                    screen.RefreshIfResized();
+                    var prompt = prompts[promptIndex];
+                    var panel = RenderPromptPanel(screen, title, prompts, values, promptIndex, promptBuffer.Text,
+                        promptBuffer.Cursor, out var cursorRow, out var cursorColumn);
+                    screen.SetEditorPanel(panel, cursorRow, cursorColumn, cursorVisible: false, bottomMargin: 2);
+
+                    var next = input.Read();
+                    if (next.IsEndOfStream) return null;
+                    if (next.Key is { } key && (key.Key == ConsoleKey.Escape ||
+                        _keymap.Matches("app.interrupt", key))) return null;
+                    if (next.Key is { } submit && submit.Key == ConsoleKey.Enter)
+                    {
+                        values.Add(promptBuffer.Text);
+                        break;
+                    }
+
+                    if (next.Text is { Length: > 0 } text) _ = promptBuffer.InsertText(text);
+                    else if (next.Key is { } editKey) _ = promptBuffer.Handle(editKey);
+                }
+                if (!screen.IsActive) return null;
+            }
+            return values;
+        }
+        finally { screen.SetEditorPanel(null); }
+    }
+
+    private static IReadOnlyList<string> RenderInlinePanel<T>(TerminalScreen screen, string title,
+        IReadOnlyList<TerminalSelectionOption<T>> options, int selectedIndex, IReadOnlyList<string>? header,
+        string footer)
+    {
+        var width = screen.TerminalWidth;
+        var theme = screen.CurrentTheme;
+        var lines = new List<string> { PanelBorder(theme, width) };
+        foreach (var row in TerminalSafeText.Normalize(title).Split('\n'))
+            lines.Add(PadPanelLine(theme.Style("accent", " " + row, bold: true), width));
+        if (header is not null)
+        {
+            foreach (var row in header)
+                lines.Add(row.Length == 0 ? "" : PadPanelLine(theme.Style("dim", " " + TerminalSafeText.Normalize(row)), width));
+        }
+        if (options.Count == 0) lines.Add(PadPanelLine(theme.Style("warning", " No router models are available"), width));
+        else
+        {
+            var labelWidth = Math.Clamp(Math.Max(34, options.Max(option => TerminalTextLayout.Width(option.Label))), 34, 54);
+            foreach (var (option, index) in options.Select((option, index) => (option, index)))
+            {
+                var label = TerminalSafeText.Normalize(option.Label);
+                var marker = index == selectedIndex ? "→ " : "  ";
+                var selected = index == selectedIndex;
+                var description = string.IsNullOrWhiteSpace(option.Description) ? "" :
+                    "  " + TerminalSafeText.Normalize(option.Description);
+                var primary = description.Length == 0 ? marker + label : marker + label.PadRight(labelWidth);
+                lines.Add((selected ? theme.Style("accent", primary) : primary) +
+                    (description.Length == 0 ? "" : theme.Style("muted", description)));
+            }
+        }
+        lines.Add("");
+        lines.Add(PadPanelLine(theme.Style("dim", " " + TerminalSafeText.Normalize(footer)), width));
+        lines.Add(PanelBorder(theme, width));
+        return lines;
+    }
+
+    private static IReadOnlyList<string> RenderPromptPanel(TerminalScreen screen, string title,
+        IReadOnlyList<(string Message, string? Placeholder)> prompts, IReadOnlyList<string> completed,
+        int promptIndex, string value, int cursor, out int cursorRow, out int cursorColumn)
+    {
+        var width = screen.TerminalWidth;
+        var theme = screen.CurrentTheme;
+        var lines = new List<string> { PanelBorder(theme, width), PadPanelLine(theme.Style("accent", " " + title, bold: true), width) };
+        var currentInputRow = 0;
+        for (var index = 0; index <= promptIndex; index++)
+        {
+            lines.Add("");
+            lines.Add(PadPanelLine(theme.Style("text", " " + TerminalSafeText.Normalize(prompts[index].Message)), width));
+            if (!string.IsNullOrWhiteSpace(prompts[index].Placeholder))
+                lines.Add(PadPanelLine(theme.Style("dim", " e.g., " + TerminalSafeText.Normalize(prompts[index].Placeholder!)), width));
+            currentInputRow = lines.Count;
+            lines.Add(PadPanelLine("> " + TerminalSafeText.Normalize(index == promptIndex ? value : completed[index]), width));
+        }
+        lines.Add(PadPanelLine(theme.Style("dim", " (escape/ctrl+c to cancel, enter to submit)"), width));
+        lines.Add(PanelBorder(theme, width));
+        cursorRow = currentInputRow;
+        cursorColumn = Math.Min(width, 3 + TerminalTextLayout.Width(value[..Math.Clamp(cursor, 0, value.Length)]));
+        return lines;
+    }
+
+    private static string PanelBorder(TerminalTheme theme, int width) =>
+        theme.Fg("border") + new string('─', Math.Max(1, width)) + "\u001b[0m";
+
+    private static string PadPanelLine(string line, int width) =>
+        line + new string(' ', Math.Max(0, width - TerminalTextLayout.Width(line)));
+
     internal async Task<TerminalProgressOutcome<T>> RunProgressAsync<T>(string title, string subject,
         string cancelTitle, string cancelMessage,
         Func<CancellationToken, Action<TerminalProgressState>, Task<T>> run, Func<Task> cancelOperation)
@@ -98,16 +252,29 @@ public sealed class TerminalEditor
         void Update(TerminalProgressState progress)
         {
             state = progress;
-            var lines = new List<string> { title, subject, "", state.Message };
+            var theme = screen.CurrentTheme;
+            var width = screen.TerminalWidth;
+            var lines = new List<string>
+            {
+                PanelBorder(theme, width),
+                PadPanelLine(theme.Style("accent", " " + title, bold: true), width),
+                PadPanelLine(theme.Style("text", " " + TerminalSafeText.Normalize(subject)), width),
+                "",
+                PadPanelLine(theme.Style("muted", " " + TerminalSafeText.Normalize(state.Message)), width)
+            };
             if (state.Ratio is { } ratio)
             {
                 var bounded = Math.Clamp(ratio, 0, 1);
                 var filled = (int)Math.Round(bounded * 40, MidpointRounding.AwayFromZero);
-                lines.Add(new string('█', filled) + new string('─', 40 - filled) + $" {Math.Round(bounded * 100):0}%");
+                lines.Add(PadPanelLine(theme.Style("accent", " " + new string('█', filled) + new string('─', 40 - filled) +
+                    $" {Math.Round(bounded * 100):0}%"), width));
             }
-            if (!string.IsNullOrEmpty(state.Detail)) lines.Add(state.Detail);
-            lines.Add("Escape to stop");
-            screen.SetOverlay(lines);
+            if (!string.IsNullOrEmpty(state.Detail))
+                lines.Add(PadPanelLine(theme.Style("dim", " " + TerminalSafeText.Normalize(state.Detail)), width));
+            lines.Add("");
+            lines.Add(PadPanelLine(theme.Style("dim", " escape/ctrl+c to stop"), width));
+            lines.Add(PanelBorder(theme, width));
+            screen.SetEditorPanel(lines, lines.Count - 2, width + 1, cursorVisible: false, bottomMargin: 2);
         }
 
         async Task<(bool Succeeded, T? Value, Exception? Error)> SettleAsync()
@@ -129,11 +296,11 @@ public sealed class TerminalEditor
                     continue;
                 }
                 if (next.Key is not { } key || !_keymap.Matches("app.interrupt", key)) continue;
-                var confirmation = ShowSelectionList($"{cancelTitle}\n{cancelMessage}", new[]
+                var confirmation = ShowInlineSelectionList($"{cancelTitle}\n{cancelMessage}", new[]
                 {
                     new TerminalSelectionOption<bool>("yes", true, "Yes"),
                     new TerminalSelectionOption<bool>("no", false, "No")
-                });
+                }, [""], "enter select • escape cancel");
                 if (confirmation?.Option.Value != true)
                 {
                     Update(state);
@@ -152,7 +319,7 @@ public sealed class TerminalEditor
         finally
         {
             cancellation.Cancel();
-            screen.SetOverlay(null);
+            screen.SetEditorPanel(null);
         }
     }
 
@@ -494,7 +661,8 @@ public sealed class TerminalEditor
                     case EditorAction.Submit:
                         var submitted = _buffer.Text;
                         ClearLine();
-                        Console.WriteLine($"{Prompt}{new string(submitted.Replace('\n', '↵').Select(c => char.IsControl(c) ? ' ' : c).ToArray())}");
+                        if (!submitted.StartsWith("/", StringComparison.Ordinal))
+                            Console.WriteLine($"{Prompt}{new string(submitted.Replace('\n', '↵').Select(c => char.IsControl(c) ? ' ' : c).ToArray())}");
                         _buffer.Clear();
                         return submitted;
                     case EditorAction.Render: Render(); break;
