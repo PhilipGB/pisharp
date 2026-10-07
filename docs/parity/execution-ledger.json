@@ -4022,7 +4022,8 @@
       "evidence": [
         "Explicit user steering on 2026-10-02. This capability remains required; existing targeted visual probes or custom OpenAI-compatible endpoints/native classifier tests do not establish this family.",
         "Current Pi source/tests are pinned at 503c605528f9af993c0e37ede468cf884fb0ff5b; extension tests pass 15/15 and classifier tests 25/25. The paired llama-model-picker fixture starts with --provider fixture, loads a router preset, searches /model and selects it. Separate current-Pi process fixtures match native decision-classifier projection/request/usage and context precedence across refresh/offline reload. This PiSharp head passes 28 focused router/classifier tests, all 23 terminal harness tests, all 5 Python fixture tests, format verification, zero-warning build and 1,172/1,172 full tests with zero skips; exact-head CI 37677286983 passes on f64ca15efa2634bfeefcbc8cfc531714757955d0. Exact full-screen comparison remains open. See docs/parity/fixtures/llama-router-interactions-2026-10-07.md.",
-        "The native classifier, context-window and fallback-classifier process differentials were rerun against refreshed Pi 943a10e744b87d9a593f3dca7406d4671910f490; reports are pinned to that oracle and continue to match."
+        "The native classifier, context-window and fallback-classifier process differentials were rerun against refreshed Pi 943a10e744b87d9a593f3dca7406d4671910f490; reports are pinned to that oracle and continue to match.",
+        "The paired process fixture now runs current Pi 943a10e744b87d9a593f3dca7406d4671910f490 and PiSharp c2c4960871c510fa59e58d6fcb5baf058e7e326f with models_autoload enabled and disabled. Both match chat/classifier eligibility for loaded and sleeping models, healthy autoload presets, failed presets, non-preset unloaded models and decision-only presets, plus /models, /props, model props and authenticated /v1/systemone request traces. See docs/parity/fixtures/llama-router-classifier-2026-10-07.json."
       ],
       "dependencies": [
         "provider-llama-router-management",
@@ -4070,9 +4071,9 @@
     },
     "fixture": "docs/parity/fixtures/upstream-delta-audit-2026-10-01.md",
     "next": "full-terminal-differential-harness",
-    "current_item": "continue-llama-huggingface-token-file-and-credential-cases",
-    "current_item_status": "local_evidence_complete_validation_in_progress",
-    "current_item_local_evidence": "Current Pi 943a10e744b87d9a593f3dca7406d4671910f490 and pushed PiSharp 3a80c4ea953709313f9dea35204b9d13ff88bc07 match explicit HF_TOKEN_PATH and default user-home token-file authentication across the full Hugging Face search/gated/quantization/download flow; native classifier, context refresh/reload and fallback-classifier differentials also rerun and match. Exact-head CI 37680356702 passes 1,172/1,172 tests with zero skips. Token-file slice local full validation and publication are in progress; full terminal parity remains open. The resolver also now accepts and trims token files larger than 64KiB, matching Pi; the regression covers oversized, empty and missing files.",
+    "current_item": "continue-llama-router-autoload-selection-differential",
+    "current_item_status": "local_differential_complete_validation_in_progress",
+    "current_item_local_evidence": "The PiSharp c2c4960871c510fa59e58d6fcb5baf058e7e326f base is pushed and exact-head CI 37682173630 is green. On current Pi 943a10e744b87d9a593f3dca7406d4671910f490, the paired native-classifier process differential now covers models_autoload on/off and matches loaded/sleeping chat models, eligible presets, failed/non-preset exclusions, decision-only classifier visibility, context and authenticated System One requests. Exact full-terminal parity and remaining llama manager lifecycle states stay open.",
     "next_after_ci": "continue-llama-router-manager-state-variants-and-exact-screen-parity",
     "completed": [
       "65117e31f242daa8e0a17dbd2810f7bb92bf4087",
@@ -4086,12 +4087,13 @@
       "c662ec7e374563bd549dc35f47bac52dcc4bed88",
       "409e808f5834dc4f2f37b54abf24d3a2f6ecad75",
       "3874b3e98983c70fa05fa193b675d42cfcb8b9f8",
-      "f64ca15efa2634bfeefcbc8cfc531714757955d0"
+      "f64ca15efa2634bfeefcbc8cfc531714757955d0",
+      "c2c4960871c510fa59e58d6fcb5baf058e7e326f"
     ],
-    "ci_run": "37680356702",
-    "latest_published_source_head": "3a80c4ea953709313f9dea35204b9d13ff88bc07",
+    "ci_run": "37682173630",
+    "latest_published_source_head": "c2c4960871c510fa59e58d6fcb5baf058e7e326f",
     "latest_published_ci_runs": [
-      "37680356702"
+      "37682173630"
     ],
     "official_mcp_conformance": {
       "package": "@modelcontextprotocol/conformance@0.2.0-alpha.11",
@@ -4106,7 +4108,7 @@
     "working_source_pin": "503c605528f9af993c0e37ede468cf884fb0ff5b",
     "active_llama_classifier_recheck": {
       "pi_source_head": "943a10e744b87d9a593f3dca7406d4671910f490",
-      "pisharp_head": "3a80c4ea953709313f9dea35204b9d13ff88bc07",
+      "pisharp_head": "c2c4960871c510fa59e58d6fcb5baf058e7e326f",
       "commits": [
         {
           "sha": "f6127a1bf907dec9b77be60e6a46db4b9668f081",

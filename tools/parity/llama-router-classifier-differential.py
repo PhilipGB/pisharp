@@ -130,9 +130,32 @@ catalog = {
             "architecture": {"input_modalities": ["text"], "output_modalities": ["decisions"]},
             "meta": {"n_ctx": 8192, "n_ctx_train": 16384},
         },
+        {
+            "id": "sleeping-chat",
+            "status": {"value": "sleeping"},
+            "architecture": {"input_modalities": ["text"], "output_modalities": ["text"]},
+            "meta": {"n_ctx_train": 16384},
+        },
+        {
+            "id": "autoload-chat",
+            "status": {"value": "unloaded", "args": ["llama-server", "-c", "4096"]},
+            "architecture": {"input_modalities": ["text"], "output_modalities": ["text"]},
+            "source": "preset",
+            "meta": {"n_ctx_train": 8192},
+        },
+        {
+            "id": "autoload-decision",
+            "status": {"value": "unloaded"},
+            "architecture": {"input_modalities": ["text"], "output_modalities": ["decisions"]},
+            "source": "preset",
+            "meta": {"n_ctx_train": 8192},
+        },
+        {"id": "failed-preset", "status": {"value": "unloaded", "failed": True}, "source": "preset"},
+        {"id": "filesystem-model", "status": {"value": "unloaded"}, "source": "filesystem"},
     ]
 }
 trace = []
+router_autoload = True
 
 
 class FixtureHandler(http.server.BaseHTTPRequestHandler):
@@ -161,6 +184,8 @@ class FixtureHandler(http.server.BaseHTTPRequestHandler):
         self._capture()
         if self.path == "/models":
             return self._send(catalog)
+        if self.path == "/props":
+            return self._send({"models_autoload": router_autoload})
         if self.path == "/props?model=chat-model&autoload=false":
             return self._send({"chat_template": "{% if enable_thinking %}think{% endif %}"})
         return self._send({"error": "not found"}, 404)
@@ -194,19 +219,6 @@ class FixtureHandler(http.server.BaseHTTPRequestHandler):
 server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), FixtureHandler)
 threading.Thread(target=server.serve_forever, daemon=True).start()
 url = f"http://127.0.0.1:{server.server_port}"
-
-pi = json.loads(subprocess.check_output(["node", str(work / "pi.mjs"), url], cwd=pi_repo))
-pi_trace = list(trace)
-trace.clear()
-pisharp = json.loads(
-    subprocess.check_output(
-        ["dotnet", str(work / "bin/Debug/net10.0/probe.dll"), url, str(agent_dir)],
-        cwd=repo,
-        env=environment,
-    )
-)
-pisharp_trace = list(trace)
-server.shutdown()
 
 
 def strip_runtime_fields(value):
@@ -250,16 +262,59 @@ def equal(left, right):
     return left == right
 
 
-pi_result = strip_runtime_fields(pi)
-pisharp_result = strip_runtime_fields(pisharp)
-pi_usage = usage_summary(pi)
-pisharp_usage = usage_summary(pisharp)
-if not equal(pi_usage, pisharp_usage):
-    raise AssertionError(f"Router classifier usage differs:\nPi: {pi_usage}\nPiSharp: {pisharp_usage}")
-if not equal(pi_result, pisharp_result):
-    raise AssertionError(f"Router classifier results differ:\nPi: {pi_result}\nPiSharp: {pisharp_result}")
-if not equal(pi_trace, pisharp_trace):
-    raise AssertionError(f"Router classifier HTTP traces differ:\nPi: {pi_trace}\nPiSharp: {pisharp_trace}")
+scenario_results = []
+primary = None
+for router_autoload in (True, False):
+    trace.clear()
+    pi = json.loads(subprocess.check_output(["node", str(work / "pi.mjs"), url], cwd=pi_repo))
+    pi_trace = list(trace)
+    trace.clear()
+    pisharp_root = agent_dir / ("autoload-on" if router_autoload else "autoload-off")
+    pisharp_root.mkdir()
+    pisharp = json.loads(
+        subprocess.check_output(
+            ["dotnet", str(work / "bin/Debug/net10.0/probe.dll"), url, str(pisharp_root)],
+            cwd=repo,
+            env=environment,
+        )
+    )
+    pisharp_trace = list(trace)
+
+    pi_result = strip_runtime_fields(pi)
+    pisharp_result = strip_runtime_fields(pisharp)
+    pi_usage = usage_summary(pi)
+    pisharp_usage = usage_summary(pisharp)
+    if not equal(pi_usage, pisharp_usage):
+        raise AssertionError(f"Router classifier usage differs with autoload={router_autoload}:\nPi: {pi_usage}\nPiSharp: {pisharp_usage}")
+    if not equal(pi_result, pisharp_result):
+        raise AssertionError(f"Router classifier results differ with autoload={router_autoload}:\nPi: {pi_result}\nPiSharp: {pisharp_result}")
+    if not equal(pi_trace, pisharp_trace):
+        raise AssertionError(f"Router classifier HTTP traces differ with autoload={router_autoload}:\nPi: {pi_trace}\nPiSharp: {pisharp_trace}")
+
+    chat_ids = {model["id"] for model in pi_result["chatModels"]}
+    classifier_ids = {model["id"] for model in pi_result["classifiers"]}
+    expected_chat = {"chat-model", "sleeping-chat", "autoload-chat"} if router_autoload else {"chat-model", "sleeping-chat"}
+    expected_classifiers = (
+        {"chat-model", "decision-model", "sleeping-chat", "autoload-chat", "autoload-decision"}
+        if router_autoload else {"chat-model", "decision-model", "sleeping-chat"}
+    )
+    if chat_ids != expected_chat:
+        raise AssertionError(f"Unexpected chat eligibility with router autoload={router_autoload}: {chat_ids}")
+    if classifier_ids != expected_classifiers:
+        raise AssertionError(f"Unexpected classifier eligibility with router autoload={router_autoload}: {classifier_ids}")
+
+    scenario_results.append({
+        "modelsAutoload": router_autoload,
+        "projection": {"chatModels": pi_result["chatModels"], "classifiers": pi_result["classifiers"]},
+        "requests": {"pi": pi_trace, "pisharp": pisharp_trace},
+    })
+    if router_autoload:
+        primary = (pi_result, pi_usage, pi_trace, pisharp_trace)
+
+server.shutdown()
+
+
+pi_result, pi_usage, pi_trace, pisharp_trace = primary
 
 report = {
     "match": True,
@@ -269,5 +324,6 @@ report = {
     "result": pi_result["result"],
     "usage": pi_usage,
     "requests": {"pi": pi_trace, "pisharp": pisharp_trace},
+    "autoloadScenarios": scenario_results,
 }
 pathlib.Path(args.output).write_text(json.dumps(report, indent=2) + "\n")
