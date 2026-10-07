@@ -42,6 +42,12 @@ def environment(agent):
     return result
 
 
+def expand_environment(values, agent, router_url):
+    return {name: value.replace('{router}', router_url).replace('{agent}', str(agent))
+            if isinstance(value, str) else value
+            for name, value in values.items()}
+
+
 def run_product(label, command, scenario, dimensions, theme, mode, server):
     agent = Path('/tmp/pisharp-terminal-fixture-agent')
     marker = agent / '.pisharp-terminal-harness'
@@ -82,9 +88,8 @@ def run_product(label, command, scenario, dimensions, theme, mode, server):
     command = [argument.replace('{agent}', str(agent)) for argument in command]
     child_environment = environment(agent)
     child_environment['PATH'] = str(bin_directory) + os.pathsep + child_environment.get('PATH', '')
-    child_environment.update({name: value.replace('{router}', server.url)
-                              if isinstance(value, str) else value
-                              for name, value in scenario.get('environment', {}).get(label, {}).items()})
+    child_environment.update(expand_environment(
+        scenario.get('environment', {}).get(label, {}), agent, server.url))
     terminal = TerminalProcess(command, Path('/tmp/pisharp-terminal-fixture-workspace'), child_environment, options)
     frames = []
     http_by_frame = []
@@ -97,9 +102,8 @@ def run_product(label, command, scenario, dimensions, theme, mode, server):
                 prior_raw.extend(terminal.raw)
                 terminal.close()
                 restart_environment = dict(child_environment)
-                restart_environment.update({name: value.replace('{router}', server.url)
-                                            if isinstance(value, str) else value
-                                            for name, value in action.get('restartEnvironment', {}).items()})
+                restart_environment.update(expand_environment(
+                    action.get('restartEnvironment', {}), agent, server.url))
                 terminal = TerminalProcess(command, Path('/tmp/pisharp-terminal-fixture-workspace'),
                                            restart_environment, options)
                 control_mark = len(terminal.trace.events)

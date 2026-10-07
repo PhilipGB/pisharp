@@ -1,13 +1,13 @@
 {
   "match": true,
-  "piSha": "503c605528f9af993c0e37ede468cf884fb0ff5b",
-  "piSharpSha": "f64ca15efa2634bfeefcbc8cfc531714757955d0",
+  "piSha": "943a10e744b87d9a593f3dca7406d4671910f490",
+  "piSharpSha": "3a80c4ea953709313f9dea35204b9d13ff88bc07",
   "projection": {
     "chatModels": [
       {
         "id": "chat-model",
         "api": "openai-completions",
-        "baseUrl": "http://127.0.0.1:46313/v1",
+        "baseUrl": "http://127.0.0.1:34949/v1",
         "contextWindow": 32768,
         "maxTokens": 32768,
         "reasoning": true,
@@ -30,13 +30,13 @@
       {
         "id": "chat-model",
         "api": "llama-cpp-classify",
-        "baseUrl": "http://127.0.0.1:46313",
+        "baseUrl": "http://127.0.0.1:34949",
         "contextWindow": 32768
       },
       {
         "id": "decision-model",
         "api": "typesafe-system-one",
-        "baseUrl": "http://127.0.0.1:46313/v1",
+        "baseUrl": "http://127.0.0.1:34949/v1",
         "contextWindow": 8192
       }
     ]

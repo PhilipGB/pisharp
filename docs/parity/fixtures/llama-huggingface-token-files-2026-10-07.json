@@ -1,0 +1,50 @@
+{
+  "schema": 1,
+  "piSha": "943a10e744b87d9a593f3dca7406d4671910f490",
+  "pisharpSha": "3a80c4ea953709313f9dea35204b9d13ff88bc07",
+  "terminal": "100x32 dark fullscreen; complete state and control streams retained without normalization",
+  "cases": [
+    {
+      "fixture": "llama-huggingface-token-file",
+      "tokenSource": "HF_TOKEN_PATH",
+      "requestTracesMatch": true,
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/models?search=qwen2&filter=gguf&sort=downloads&direction=-1&limit=20",
+          "authorization": "Bearer fixture-hf-token"
+        },
+        {
+          "method": "GET",
+          "path": "/api/models/owner/Qwen2.5-Coder-GGUF?blobs=true",
+          "authorization": "Bearer fixture-hf-token"
+        }
+      ],
+      "terminalDifferences": 24560,
+      "terminalFramesExact": false,
+      "scenarioErrors": {},
+      "rawEvidence": "llama-huggingface-token-file-2026-10-07-100x32-dark-fullscreen.json.gz"
+    },
+    {
+      "fixture": "llama-huggingface-home-token-file",
+      "tokenSource": "default user-home cache",
+      "requestTracesMatch": true,
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/models?search=qwen2&filter=gguf&sort=downloads&direction=-1&limit=20",
+          "authorization": "Bearer fixture-hf-token"
+        },
+        {
+          "method": "GET",
+          "path": "/api/models/owner/Qwen2.5-Coder-GGUF?blobs=true",
+          "authorization": "Bearer fixture-hf-token"
+        }
+      ],
+      "terminalDifferences": 24560,
+      "terminalFramesExact": false,
+      "scenarioErrors": {},
+      "rawEvidence": "llama-huggingface-home-token-file-2026-10-07-100x32-dark-fullscreen.json.gz"
+    }
+  ]
+}

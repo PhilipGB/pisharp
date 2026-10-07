@@ -38,8 +38,6 @@ internal sealed class HuggingFaceClient(HttpClient http, string? token, Uri? bas
             cancellationToken.ThrowIfCancellationRequested();
             try
             {
-                var info = new FileInfo(path!);
-                if (info.Length > 64 * 1024) continue;
                 var value = (await File.ReadAllTextAsync(path!, cancellationToken).ConfigureAwait(false)).Trim();
                 if (!string.IsNullOrEmpty(value)) return value;
             }

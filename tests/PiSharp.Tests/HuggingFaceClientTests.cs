@@ -32,8 +32,14 @@ public sealed class HuggingFaceClientTests
             Assert.Equal("env-token", await HuggingFaceClient.FindTokenAsync(name => environment.GetValueOrDefault(name)));
             environment["HF_TOKEN"] = " ";
             Assert.Equal("explicit-file-token", await HuggingFaceClient.FindTokenAsync(name => environment.GetValueOrDefault(name)));
-            environment["HF_TOKEN_PATH"] = null;
+            var oversizedToken = new string('x', 64 * 1024 + 1);
+            await File.WriteAllTextAsync(tokenPath, oversizedToken);
+            Assert.Equal(oversizedToken, await HuggingFaceClient.FindTokenAsync(name => environment.GetValueOrDefault(name)));
+            await File.WriteAllTextAsync(tokenPath, " \n");
             Assert.Equal("home-token", await HuggingFaceClient.FindTokenAsync(name => environment.GetValueOrDefault(name)));
+            environment["HF_TOKEN_PATH"] = Path.Combine(root, "missing-token");
+            Assert.Equal("home-token", await HuggingFaceClient.FindTokenAsync(name => environment.GetValueOrDefault(name)));
+            environment["HF_TOKEN_PATH"] = null;
             environment["HF_HOME"] = null;
             Assert.Equal("xdg-token", await HuggingFaceClient.FindTokenAsync(name => environment.GetValueOrDefault(name)));
         }

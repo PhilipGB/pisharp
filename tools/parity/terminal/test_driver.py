@@ -6,9 +6,17 @@ import unittest
 
 from compare import ControlTrace, differences
 from pty_process import TerminalProcess
+from run import expand_environment
 
 
 class DriverTests(unittest.TestCase):
+    def test_environment_placeholders_expand_router_and_agent_paths(self):
+        expanded = expand_environment(
+            {'HF_TOKEN_PATH': '{agent}/hf-token', 'LLAMA_BASE_URL': '{router}', 'COUNT': 3},
+            Path('/tmp/parity-agent'), 'http://127.0.0.1:1234')
+        self.assertEqual({'HF_TOKEN_PATH': '/tmp/parity-agent/hf-token',
+                          'LLAMA_BASE_URL': 'http://127.0.0.1:1234', 'COUNT': 3}, expanded)
+
     def test_escape_sequences_are_independent_of_read_chunking(self):
         data = b' text \x1b[38;2;1;2;3mX\r\n\x1b]52;c;YWJj\x07\x1b_Ga=T;fixture\x1b\\'
         whole, split = ControlTrace(), ControlTrace()
