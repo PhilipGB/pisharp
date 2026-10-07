@@ -67,6 +67,11 @@ public sealed class LlamaRouterManagementClientTests
         Assert.Contains(requests, item => item.Method == "POST" && item.Path == "/models/unload" &&
             item.Body == "{\"model\":\"qwen\"}" && item.Authorization == "Bearer router-secret");
         Assert.All(requests, request => Assert.Equal("Bearer router-secret", request.Authorization));
+        var trace = requests.ToArray();
+        var watchIndex = Array.FindIndex(trace, item => item.Method == "GET" && item.Path == "/models/sse");
+        var loadIndex = Array.FindIndex(trace, item => item.Method == "POST" && item.Path == "/models/load");
+        Assert.True(watchIndex >= 0 && loadIndex > watchIndex,
+            "The llama.cpp SSE watcher must start before the load request, as current Pi does.");
     }
 
     [Fact]
@@ -93,6 +98,11 @@ public sealed class LlamaRouterManagementClientTests
 
         Assert.Equal("owner/model:Q4_K_M", Assert.Single(models).Id);
         Assert.Contains(progress, item => item.Message == "Downloading model");
+        var trace = requests.ToArray();
+        var watchIndex = Array.FindIndex(trace, item => item.Method == "GET" && item.Path == "/models/sse");
+        var downloadIndex = Array.FindIndex(trace, item => item.Method == "POST" && item.Path == "/models");
+        Assert.True(watchIndex >= 0 && downloadIndex > watchIndex,
+            "The llama.cpp SSE watcher must start before the router download request, as current Pi does.");
         Assert.Contains(requests, item => item.Method == "POST" && item.Path == "/models" &&
             item.Body == "{\"model\":\"owner/model:Q4_K_M\"}" && item.Authorization == "Bearer router-secret");
         Assert.Contains(requests, item => item.Method == "GET" && item.Path == "/models?reload=1");

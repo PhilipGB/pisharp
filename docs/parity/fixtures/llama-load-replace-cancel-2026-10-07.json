@@ -3,30 +3,159 @@
   "fixture": "llama-load-replace-cancel",
   "oracle": {
     "repository": "earendil-works/pi",
-    "sha": "a2eef9eb60fb44bf399532151b43dab83c0a9c88"
+    "sha": "70759f48bed0c0b30b089b9094f4080cbc3148c5"
   },
   "pisharp": {
-    "sha": "40a21b9a0fac47334adf4833316ed2c53d13b410"
+    "sha": "406263fa0b2996e868a7e3df9e6811f233696143"
   },
   "case": "100x32-dark-fullscreen",
   "scenario_errors": {},
   "terminal_comparison": {
     "exact": false,
-    "unnormalized_field_differences": 14317,
-    "capture": "llama-load-replace-cancel-2026-10-07-100x32-dark-fullscreen.json.gz"
+    "unnormalized_field_differences": 10079,
+    "capture": "llama-load-replace-cancel-2026-10-07-100x32-dark-fullscreen.json.gz",
+    "inline_panel_row_comparison": {
+      "select-replacement-target": {
+        "matching_inline_panel_viewport_rows": [
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29
+        ],
+        "nonmatching_viewport_rows": [
+          31
+        ]
+      },
+      "choose-unload-all-and-load": {
+        "matching_inline_panel_viewport_rows": [
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29
+        ],
+        "nonmatching_viewport_rows": [
+          31
+        ]
+      },
+      "cancel-replacement-load": {
+        "matching_inline_panel_viewport_rows": [
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29
+        ],
+        "nonmatching_viewport_rows": [
+          31
+        ]
+      },
+      "confirm-cancel-and-restore": {
+        "matching_inline_panel_viewport_rows": [
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29
+        ],
+        "nonmatching_viewport_rows": [
+          1,
+          19,
+          31
+        ]
+      }
+    }
   },
   "http_comparison": {
-    "all_request_multisets_match": false,
-    "pi_only": [
+    "all_request_multisets_match": true,
+    "pi_only": [],
+    "pisharp_only": [],
+    "request_order_matches": false,
+    "request_order_differences": [
       {
-        "method": "GET",
-        "path": "/models",
-        "authorization": "Bearer local",
-        "body": null,
-        "count": 1
+        "index": 6,
+        "pi": {
+          "method": "GET",
+          "path": "/models/sse"
+        },
+        "pisharp": {
+          "method": "POST",
+          "path": "/models/load"
+        }
+      },
+      {
+        "index": 7,
+        "pi": {
+          "method": "POST",
+          "path": "/models/load"
+        },
+        "pisharp": {
+          "method": "GET",
+          "path": "/models/sse"
+        }
+      },
+      {
+        "index": 12,
+        "pi": {
+          "method": "POST",
+          "path": "/models/unload"
+        },
+        "pisharp": {
+          "method": "GET",
+          "path": "/models"
+        }
+      },
+      {
+        "index": 13,
+        "pi": {
+          "method": "GET",
+          "path": "/models/sse"
+        },
+        "pisharp": {
+          "method": "POST",
+          "path": "/models/unload"
+        }
+      },
+      {
+        "index": 14,
+        "pi": {
+          "method": "POST",
+          "path": "/models/load"
+        },
+        "pisharp": {
+          "method": "GET",
+          "path": "/models/sse"
+        }
+      },
+      {
+        "index": 15,
+        "pi": {
+          "method": "GET",
+          "path": "/models"
+        },
+        "pisharp": {
+          "method": "POST",
+          "path": "/models/load"
+        }
       }
     ],
-    "pisharp_only": [],
     "mutations_match": true,
     "mutation_sequence": [
       {
@@ -62,7 +191,7 @@
   "products": {
     "pi": {
       "scenario_error": null,
-      "http_request_count": 23,
+      "http_request_count": 24,
       "authorization": [
         "Bearer local"
       ],
@@ -71,7 +200,7 @@
         "open-manager": 4,
         "select-replacement-target": 0,
         "choose-unload-all-and-load": 6,
-        "cancel-replacement-load": 1,
+        "cancel-replacement-load": 2,
         "confirm-cancel-and-restore": 12,
         "close-manager": 0,
         "quit": 0
@@ -79,17 +208,17 @@
       "load_prompt_lines": [
         " Loading model",
         " Loading text model",
-        " \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 50%"
+        " ████████████████████──────────────────── 50%"
       ],
       "cancel_prompt_lines": [
         " Stop loading?",
         " unloaded-fixture-model",
-        "\u2192 Yes"
+        "→ Yes"
       ],
       "restored_manager_lines": [
         " Restoring previously loaded models",
         " llama.cpp models",
-        "\u2192 loaded-fixture-model                loaded \u00b7 16k context",
+        "→ loaded-fixture-model                loaded · 16k context",
         "  unloaded-fixture-model"
       ],
       "mutations": [
@@ -125,7 +254,7 @@
     },
     "pisharp": {
       "scenario_error": null,
-      "http_request_count": 22,
+      "http_request_count": 24,
       "authorization": [
         "Bearer local"
       ],
@@ -133,26 +262,26 @@
         "startup": 0,
         "open-manager": 4,
         "select-replacement-target": 0,
-        "choose-unload-all-and-load": 6,
+        "choose-unload-all-and-load": 7,
         "cancel-replacement-load": 1,
-        "confirm-cancel-and-restore": 11,
+        "confirm-cancel-and-restore": 12,
         "close-manager": 0,
         "quit": 0
       },
       "load_prompt_lines": [
         " Loading model",
         " Loading text model",
-        " \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 50%"
+        " ████████████████████──────────────────── 50%"
       ],
       "cancel_prompt_lines": [
         " Stop loading?",
         " unloaded-fixture-model",
-        "\u2192 Yes"
+        "→ Yes"
       ],
       "restored_manager_lines": [
         "Restoring previously loaded models",
         " llama.cpp models",
-        "\u2192 loaded-fixture-model                loaded \u00b7 16k context",
+        "→ loaded-fixture-model                loaded · 16k context",
         "  unloaded-fixture-model"
       ],
       "mutations": [

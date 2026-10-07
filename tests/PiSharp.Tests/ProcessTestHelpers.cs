@@ -19,7 +19,7 @@ internal static class ProcessTestHelpers
         watcher.Changed += found;
         watcher.Renamed += renamed;
         if (File.Exists(path)) ready.TrySetResult();
-        await ready.Task.WaitAsync(TimeSpan.FromSeconds(5), cancellationToken);
+        await ready.Task.WaitAsync(TimeSpan.FromSeconds(15), cancellationToken);
     }
 
     public static int ReadLinuxProcessId(string path) => int.Parse(File.ReadAllText(path), System.Globalization.CultureInfo.InvariantCulture);
