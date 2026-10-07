@@ -3719,15 +3719,21 @@
     {
       "id": "provider-llama-context-cache-reload",
       "title": "Provider semantics: llama.cpp context window after reload",
-      "status": "not_started",
-      "source": "earendil-works/pi@4259686d9290c0d73ae7192b796aee3e530a9779; packages/coding-agent/src/extensions/llama/provider.ts",
+      "status": "verified",
+      "source": "earendil-works/pi@503c605528f9af993c0e37ede468cf884fb0ff5b; packages/coding-agent/src/extensions/llama/provider.ts and test/llama-extension.test.ts",
       "acceptance": [
         "After llama.cpp catalog refresh, resolve context size from live runtime metadata, configured --ctx-size/-c/-ctx arguments, restored cached metadata, training metadata, then the 128000 fallback.",
         "Keep chat and classifier model context windows consistent across reload and verify the precedence with deterministic tests."
       ],
-      "implementation": [],
+      "implementation": [
+        "src/PiSharp.Cli/LlamaRouterCatalog.cs",
+        "src/PiSharp.Cli/ProviderModelRuntime.cs",
+        "tests/PiSharp.Tests/LlamaRouterProviderTests.cs",
+        "tools/parity/llama-router-context-differential.py",
+        "docs/parity/fixtures/llama-router-context-2026-10-07.json"
+      ],
       "evidence": [
-        "Pi llama-extension tests pass within the focused 79/79 coding-agent settings/Llama run at 4259686d9290c0d73ae7192b796aee3e530a9779. The PiSharp generic local endpoint path has no persisted llama.cpp catalog context metadata or tested refresh precedence."
+        "Current Pi 503c605528f9af993c0e37ede468cf884fb0ff5b and PiSharp f64ca15efa2634bfeefcbc8cfc531714757955d0 were run as separate processes against the same fake router. The differential matches live n_ctx, configured --ctx-size/-c, cached metadata over training metadata, training metadata, the 128000 fallback, chat/classifier windows, refresh and offline process reload; offline reload makes no HTTP requests. Machine evidence is docs/parity/fixtures/llama-router-context-2026-10-07.json."
       ],
       "dependencies": []
     },
@@ -3738,7 +3744,7 @@
       "source": "docs/parity/fixtures/classifier-native-protocol-2026-09-30.md",
       "acceptance": [
         "Keep classifier catalog/selection separate from ordinary chat models",
-        "Support typed choice/score/bool questions and answers through native System One, Cloudflare and llama.cpp classifier protocols",
+        "Support typed choice/score/bool questions and answers through OpenAI Decisions, native System One, Cloudflare and llama.cpp classifier protocols, including applicable image input",
         "Preserve usage/cost on parsing failures and explicit error/aborted outcomes",
         "Provide authenticated provider routing and request retry/timeout/header behavior",
         "Expose classifier calls to sandboxed Codemode with nested usage aggregation"
@@ -3757,7 +3763,8 @@
         "llama.cpp fail-first regression, 60/60 focused classifier/provider checks, real HTTP dispatch and paired current-Pi bool/choice/score process fixture; format and zero-warning build pass; local full suite 947/947 with zero skips; source 6d34ce4 exact-head CI 36682520323 failed immediate-quit PTY DA fence leakage; deterministic follow-up now implemented",
         "Two fail-first stored account tests; stored/ambient merge and metadata persistence tests pass; combined follow-up checks 107/107, format/zero-warning build and full suite 953/953 with zero skips; exact-head CI pending",
         "4a31e8aec84b5778e2950095200cf274f9447bbe exact-head CI 36683707786 passes restore/format/zero-warning build and 953/953 tests with zero skips, including queued terminal reply follow-up",
-        "Codemode classifier dispatch/usage retention now verified at a7fc6c4 / CI 36691148993, with guest endpoint/header spoofing rejected by host-owned provider/id selection and provider-scoped runtime API key isolation."
+        "Codemode classifier dispatch/usage retention now verified at a7fc6c4 / CI 36691148993, with guest endpoint/header spoofing rejected by host-owned provider/id selection and provider-scoped runtime API key isolation.",
+        "Current Pi 503c605528f9af993c0e37ede468cf884fb0ff5b includes shared System One classifier commit ce8972a0 and native llama decision-model commit f6127a1b. The paired process fixture matches decision-model discovery, chat exclusion, native /v1/systemone routing, bearer auth, typed bool output and input/output usage in docs/parity/fixtures/llama-router-classifier-2026-10-07.json. ce8972a0 also introduces OpenAI Decisions classifiers and image input; that non-llama behavior remains unresolved and queued here."
       ],
       "dependencies": [
         "virtual-model-routing-persistence",
@@ -3921,7 +3928,9 @@
         "tools/parity/terminal/fixtures/llama-huggingface.json",
         "tools/parity/terminal/fixtures/llama-download-cancel.json",
         "tools/parity/terminal/fixtures/llama-retry.json",
-        "tools/parity/terminal/fixtures/llama-model-picker.json"
+        "tools/parity/terminal/fixtures/llama-model-picker.json",
+        "tools/parity/llama-router-classifier-differential.py",
+        "tools/parity/llama-router-context-differential.py"
       ],
       "evidence": [
         "Explicit user steering on 2026-10-02. This capability remains required; existing targeted visual probes or custom OpenAI-compatible endpoints/native classifier tests do not establish this family.",
@@ -3983,6 +3992,7 @@
       "acceptance": [
         "Derive management/chat/classifier endpoints as Pi does from router URL; share configuration and credentials.",
         "Verify current Pi model eligibility, loaded/sleeping/unloaded/autoload rules from source/tests; /model reads live router state and can select newly loaded models for the active session.",
+        "Route decision-output models through native System One classifiers, exclude decision-only models from chat, and retain llama.cpp token-probability fallback for chat models.",
         "Use the shared MAF execution path; differential visibility, selection, refresh/context-cache and provider requests."
       ],
       "implementation": [
@@ -3992,11 +4002,18 @@
         "src/PiSharp.Cli/Program.cs",
         "src/PiSharp.Cli/Tui/TerminalLlamaManager.cs",
         "tests/PiSharp.Tests/LlamaRouterManagerTuiTests.cs",
-        "tools/parity/terminal/fixtures/llama-model-picker.json"
+        "tests/PiSharp.Tests/LlamaRouterProviderTests.cs",
+        "src/PiSharp.Runtime/Classifiers/LlamaClassifierClient.cs",
+        "src/PiSharp.Runtime/Classifiers/SystemOneClassifierClient.cs",
+        "src/PiSharp.Cli/ProviderClassifierRuntime.cs",
+        "tools/parity/terminal/fixtures/llama-model-picker.json",
+        "tools/parity/llama-classifier-differential.py",
+        "tools/parity/llama-router-classifier-differential.py",
+        "tools/parity/llama-router-context-differential.py"
       ],
       "evidence": [
         "Explicit user steering on 2026-10-02. This capability remains required; existing targeted visual probes or custom OpenAI-compatible endpoints/native classifier tests do not establish this family.",
-        "Current Pi source/tests are pinned at 503c605528f9af993c0e37ede468cf884fb0ff5b; extension tests pass 15/15. The paired llama-model-picker fixture now starts with --provider fixture, loads a llama router preset, searches /model and selects it; both processes end with the router model active and issue identical HTTP traces. This worktree passes 24 focused llama/router/TUI tests, all 23 harness tests, all 5 Python fixture tests, format verification, zero-warning build and 1172/1172 full tests with zero skips; exact-head CI is pending publication. Context-cache reload and exact full-screen comparison remain open. See docs/parity/fixtures/llama-router-interactions-2026-10-07.md."
+        "Current Pi source/tests are pinned at 503c605528f9af993c0e37ede468cf884fb0ff5b; extension tests pass 15/15 and classifier tests 25/25. The paired llama-model-picker fixture starts with --provider fixture, loads a router preset, searches /model and selects it. Separate current-Pi process fixtures match native decision-classifier projection/request/usage and context precedence across refresh/offline reload. This PiSharp head passes 28 focused router/classifier tests, all 23 terminal harness tests, all 5 Python fixture tests, format verification, zero-warning build and 1,172/1,172 full tests with zero skips; exact-head CI 37677286983 passes on f64ca15efa2634bfeefcbc8cfc531714757955d0. Exact full-screen comparison remains open. See docs/parity/fixtures/llama-router-interactions-2026-10-07.md."
       ],
       "dependencies": [
         "provider-llama-router-management",
@@ -4039,10 +4056,10 @@
     },
     "fixture": "docs/parity/fixtures/upstream-delta-audit-2026-10-01.md",
     "next": "full-terminal-differential-harness",
-    "current_item": "b271b0a524b29e13c0c9e748aea0d34e1597f2db",
-    "current_item_status": "locally_verified_ci_pending",
-    "current_item_local_evidence": "Anthropic inline tool history matches 26 current-Pi real-SDK request scenarios plus restored tool-result token estimates and both compaction boundaries. Focused checks pass 154/154; format verification and warnings-as-errors build pass with zero warnings/errors; full suite passes 1145/1145 with zero skips. Exact-head CI remains pending until publication. The reusable terminal differential harness is next, then the first-class llama.cpp router family.",
-    "next_after_ci": "continue-llama-router-family",
+    "current_item": "f64ca15efa2634bfeefcbc8cfc531714757955d0",
+    "current_item_status": "pushed_ci_passed",
+    "current_item_local_evidence": "PiSharp f64ca15efa2634bfeefcbc8cfc531714757955d0 matches current Pi 503c605528f9af993c0e37ede468cf884fb0ff5b for llama native decision-classifier projection/request/usage and context precedence across router refresh and offline process reload; exact-head Linux CI 37677286983 passes 1,172/1,172 with zero skips.",
+    "next_after_ci": "continue-llama-huggingface-token-file-and-credential-cases",
     "completed": [
       "65117e31f242daa8e0a17dbd2810f7bb92bf4087",
       "7a11fe1c723b942fa093edb8b00f051ddb9b6627",
@@ -4054,12 +4071,13 @@
       "5806068c26e55feefd1f5875bf05c0419ec5d912",
       "c662ec7e374563bd549dc35f47bac52dcc4bed88",
       "409e808f5834dc4f2f37b54abf24d3a2f6ecad75",
-      "3874b3e98983c70fa05fa193b675d42cfcb8b9f8"
+      "3874b3e98983c70fa05fa193b675d42cfcb8b9f8",
+      "f64ca15efa2634bfeefcbc8cfc531714757955d0"
     ],
-    "ci_run": "37019190204",
-    "latest_published_source_head": "89fc2d513c7fe0e165afce8655d4af1f64406d01",
+    "ci_run": "37677286983",
+    "latest_published_source_head": "f64ca15efa2634bfeefcbc8cfc531714757955d0",
     "latest_published_ci_runs": [
-      "37674227180"
+      "37677286983"
     ],
     "official_mcp_conformance": {
       "package": "@modelcontextprotocol/conformance@0.2.0-alpha.11",
@@ -4072,6 +4090,24 @@
       "upstream_fixture": "packages/coding-agent/test/mcp-conformance/baseline.json"
     },
     "working_source_pin": "503c605528f9af993c0e37ede468cf884fb0ff5b",
+    "active_llama_classifier_recheck": {
+      "pi_source_head": "503c605528f9af993c0e37ede468cf884fb0ff5b",
+      "pisharp_head": "f64ca15efa2634bfeefcbc8cfc531714757955d0",
+      "commits": [
+        {
+          "sha": "f6127a1bf907dec9b77be60e6a46db4b9668f081",
+          "classification": "MATCHED",
+          "evidence": "docs/parity/fixtures/llama-router-classifier-2026-10-07.json"
+        },
+        {
+          "sha": "ce8972a0",
+          "classification": "NEEDS_WORK",
+          "matched_subset": "Shared System One behavior used by llama.cpp is differentially verified.",
+          "open_surface": "OpenAI Decisions classifier models and image input; see classifier-runtime."
+        }
+      ],
+      "scope": "Path-scoped current-family refresh only; final audit of all commits after c10bfb0d remains required."
+    },
     "refresh_policy": "Refresh at capability-family completion, known upstream changes affecting active work, or after several verified slices; require fresh current-main audit at final completion."
   },
   "execution_policy": {

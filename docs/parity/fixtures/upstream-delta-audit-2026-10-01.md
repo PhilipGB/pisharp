@@ -349,4 +349,13 @@ MCP server-account isolation is published and exact-head CI verified. The active
 - **Pi files/behavior:** normal Cloudflare AI Gateway catalog generation replaces dots with dashes in Claude IDs forwarded through `/anthropic`; the passthrough forwards the ID unchanged and dotted IDs fail.
 - **PiSharp mismatch:** the built-in gateway chat profile/catalog is absent. Cloudflare classifier support is separate. Required task `provider-cloudflare-ai-gateway` covers the normal profile, catalog, endpoint/auth ownership, protocol routing and dashed Claude IDs.
 
-Execution policy updated 2026-10-02: retain current Pi c10bfb0d7 as a working pin through coherent batches. The full terminal differential harness is next, then the llama.cpp router family. Refresh at capability-family boundaries, known active-capability upstream changes, or after several verified slices; final completion still requires a fresh full current-main audit.
+Execution policy updated 2026-10-02: retain Pi `c10bfb0d7` as the working pin through coherent batches. The later 2026-10-07 refresh supersedes that pin; the full current-main audit remains open.
+
+## Current llama/classifier recheck — 2026-10-07
+
+Pi `main` was fetched at `503c605528f9af993c0e37ede468cf884fb0ff5b`. A path-scoped comparison from the former `c10bfb0d7` pin found two relevant classifier/llama commits:
+
+- `f6127a1b` — `MATCHED` for the llama.cpp native decision-model surface. Current Pi maps decision-only router models to `typesafe-system-one`, keeps them out of chat selection, and calls `/v1/systemone`; the Pi/PiSharp process comparison matches discovery, authentication, answer and usage. Evidence is in [the classifier fixture](llama-classifier-2026-09-30.md).
+- `ce8972a0` — `NEEDS_WORK`. Its shared System One behavior used by llama.cpp is covered by that comparison, but the commit also adds OpenAI Decisions classifier models and image input. PiSharp has no `openai-decisions` implementation; the broader classifier-runtime ledger owns this remaining product behavior.
+
+This recheck covers the active llama/classifier files only. It does not replace the final audit of all Pi product commits after the historical `c10bfb0d` source head.

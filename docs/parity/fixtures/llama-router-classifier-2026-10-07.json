@@ -1,0 +1,134 @@
+{
+  "match": true,
+  "piSha": "503c605528f9af993c0e37ede468cf884fb0ff5b",
+  "piSharpSha": "f64ca15efa2634bfeefcbc8cfc531714757955d0",
+  "projection": {
+    "chatModels": [
+      {
+        "id": "chat-model",
+        "api": "openai-completions",
+        "baseUrl": "http://127.0.0.1:46313/v1",
+        "contextWindow": 32768,
+        "maxTokens": 32768,
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "compatibility": {
+          "supportsStore": false,
+          "supportsDeveloperRole": false,
+          "supportsReasoningEffort": false,
+          "supportsUsageInStreaming": true,
+          "supportsStrictMode": false,
+          "maxTokensField": "max_tokens",
+          "thinkingFormat": "qwen-chat-template"
+        }
+      }
+    ],
+    "classifiers": [
+      {
+        "id": "chat-model",
+        "api": "llama-cpp-classify",
+        "baseUrl": "http://127.0.0.1:46313",
+        "contextWindow": 32768
+      },
+      {
+        "id": "decision-model",
+        "api": "typesafe-system-one",
+        "baseUrl": "http://127.0.0.1:46313/v1",
+        "contextWindow": 8192
+      }
+    ]
+  },
+  "result": {
+    "api": "typesafe-system-one",
+    "provider": "llama.cpp",
+    "model": "decision-model",
+    "answers": {
+      "safe": {
+        "type": "bool",
+        "probability": 0.9
+      }
+    },
+    "stopReason": "stop"
+  },
+  "usage": {
+    "input": 42,
+    "output": 0,
+    "total": 42,
+    "cost": 0
+  },
+  "requests": {
+    "pi": [
+      {
+        "method": "GET",
+        "path": "/models",
+        "authorization": "Bearer local",
+        "body": null
+      },
+      {
+        "method": "GET",
+        "path": "/props?model=chat-model&autoload=false",
+        "authorization": "Bearer local",
+        "body": null
+      },
+      {
+        "method": "POST",
+        "path": "/v1/systemone",
+        "authorization": "Bearer local",
+        "body": {
+          "model": "decision-model",
+          "state": {
+            "message": "fixture"
+          },
+          "questions": {
+            "safe": {
+              "type": "noul",
+              "instructions": "Is the state safe?",
+              "criteria": {
+                "true": "safe",
+                "false": "unsafe"
+              }
+            }
+          }
+        }
+      }
+    ],
+    "pisharp": [
+      {
+        "method": "GET",
+        "path": "/models",
+        "authorization": "Bearer local",
+        "body": null
+      },
+      {
+        "method": "GET",
+        "path": "/props?model=chat-model&autoload=false",
+        "authorization": "Bearer local",
+        "body": null
+      },
+      {
+        "method": "POST",
+        "path": "/v1/systemone",
+        "authorization": "Bearer local",
+        "body": {
+          "state": {
+            "message": "fixture"
+          },
+          "questions": {
+            "safe": {
+              "type": "noul",
+              "criteria": {
+                "true": "safe",
+                "false": "unsafe"
+              },
+              "instructions": "Is the state safe?"
+            }
+          },
+          "model": "decision-model"
+        }
+      }
+    ]
+  }
+}
