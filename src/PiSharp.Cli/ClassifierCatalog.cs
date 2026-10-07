@@ -7,7 +7,7 @@ namespace PiSharp.Cli;
 
 internal static class ClassifierCatalog
 {
-    internal static bool IsBuiltinProvider(string id) => id is "typesafe" or "vercel-ai-gateway" or "opencode" or "openrouter" or "cloudflare-workers-ai";
+    internal static bool IsBuiltinProvider(string id) => id is "typesafe" or "vercel-ai-gateway" or "opencode" or "openrouter" or "cloudflare-workers-ai" or "llama.cpp";
 
     public static void AddBuiltins(Dictionary<string, ProviderProfile> providers, Func<string, string?> environment)
     {

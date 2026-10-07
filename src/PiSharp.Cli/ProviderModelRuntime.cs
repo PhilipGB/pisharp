@@ -46,12 +46,16 @@ public sealed class ProviderModelRuntime
     private readonly string? _runtimeApiKey;
     private string? _runtimeApiKeyProvider;
     private readonly bool _offline;
+    private readonly LlamaRouterCatalogStore _llamaRouterCache;
+    private readonly SemaphoreSlim _llamaRouterRefresh = new(1, 1);
+    private ProviderProfile? _llamaRouterProfile;
     private IReadOnlyList<string> _scope;
     private VirtualModelRegistry? _virtualModels;
 
     private ProviderModelRuntime(Dictionary<string, ProviderProfile> providers, AuthStorage auth,
         ProviderOAuthCoordinator oauth,
-        Func<string, string?> environment, HttpClient http, string? runtimeApiKey, IReadOnlyList<string>? scope, bool offline)
+        Func<string, string?> environment, HttpClient http, string? runtimeApiKey, IReadOnlyList<string>? scope,
+        bool offline, string agentDirectory)
     {
         _providers = providers;
         _auth = auth;
@@ -60,6 +64,8 @@ public sealed class ProviderModelRuntime
         _http = http;
         _runtimeApiKey = runtimeApiKey;
         _offline = offline;
+        _llamaRouterCache = new LlamaRouterCatalogStore(agentDirectory);
+        _llamaRouterProfile = providers.GetValueOrDefault("llama.cpp");
         _scope = scope ?? [];
     }
 
@@ -70,6 +76,8 @@ public sealed class ProviderModelRuntime
         get
         {
             var providers = new Dictionary<string, ProviderProfile>(_providers, StringComparer.Ordinal);
+            if (Volatile.Read(ref _llamaRouterProfile) is { } llamaRouter)
+                providers[llamaRouter.Id] = llamaRouter;
             foreach (var providerId in _virtualModels?.Models.Select(item => item.Model.Provider)
                          .Where(providerId => providerId is not null).Select(providerId => providerId!)
                          .Distinct(StringComparer.Ordinal) ?? [])
@@ -121,10 +129,11 @@ public sealed class ProviderModelRuntime
         if (providers.TryGetValue("radius", out var radius))
             oauthAdapters.Add(new RadiusOAuthAdapter(http, radius.Endpoint));
         return new ProviderModelRuntime(providers, auth, new ProviderOAuthCoordinator(auth, http, oauthAdapters),
-            environment, http, runtimeApiKey, scope, offline);
+            environment, http, runtimeApiKey, scope, offline, agentDirectory);
     }
 
-    public ProviderProfile GetProvider(string id) => _providers.TryGetValue(id, out var provider) ? provider :
+    public ProviderProfile GetProvider(string id) => id == "llama.cpp" && Volatile.Read(ref _llamaRouterProfile) is { } llamaRouter
+        ? llamaRouter : _providers.TryGetValue(id, out var provider) ? provider :
         _virtualModels?.Models.Any(item => item.Model.Provider == id) == true ? VirtualProvider(id) :
         throw new ArgumentException($"Unknown provider '{id}'. Available providers: {string.Join(", ", Providers.Select(item => item.Id).Order())}.");
 
@@ -139,6 +148,11 @@ public sealed class ProviderModelRuntime
         bool allowOAuthRefresh = true)
     {
         var provider = GetProvider(providerId);
+        if (provider.Id == "llama.cpp")
+        {
+            var llamaStored = await _auth.ReadAsync(provider.Id, cancellationToken);
+            return await ResolveAuthCoreAsync(provider, llamaStored, useRuntimeOverride, allowOAuthRefresh, cancellationToken);
+        }
         if (useRuntimeOverride && !string.IsNullOrWhiteSpace(_runtimeApiKey) &&
             (_runtimeApiKeyProvider is null || _runtimeApiKeyProvider == provider.Id))
             return (_runtimeApiKey, true, "command line");
@@ -181,6 +195,20 @@ public sealed class ProviderModelRuntime
     private async Task<(string Key, bool Authenticated, string Source)> ResolveAuthCoreAsync(ProviderProfile provider,
         StoredCredential? stored, bool useRuntimeOverride, bool allowOAuthRefresh, CancellationToken cancellationToken)
     {
+        if (provider.Id == "llama.cpp")
+        {
+            if (stored is not null && stored.Type != "api_key")
+                return ("not-configured", false, "unsupported stored credential type");
+            if (ResolveLlamaRouterUrl(stored) is null)
+                return ("not-configured", false, "LLAMA_BASE_URL is not configured");
+            if (useRuntimeOverride && !string.IsNullOrWhiteSpace(_runtimeApiKey) &&
+                (_runtimeApiKeyProvider is null || _runtimeApiKeyProvider == provider.Id))
+                return (_runtimeApiKey, true, "command line");
+            if (!string.IsNullOrWhiteSpace(stored?.Key)) return (stored.Key, true, "stored API key");
+            if (!string.IsNullOrWhiteSpace(_environment("LLAMA_API_KEY")))
+                return (_environment("LLAMA_API_KEY")!, true, "LLAMA_API_KEY");
+            return ("local", true, "local llama.cpp router");
+        }
         if (useRuntimeOverride && !string.IsNullOrWhiteSpace(_runtimeApiKey) &&
             (_runtimeApiKeyProvider is null || _runtimeApiKeyProvider == provider.Id))
             return (_runtimeApiKey, true, "command line");
@@ -230,6 +258,11 @@ public sealed class ProviderModelRuntime
             if (provider.Models.Count == 0 && provider.Classifiers?.Count > 0) continue;
             var auth = await ResolveAuthAsync(provider.Id, useRuntimeOverride: providerId is not null || _runtimeApiKeyProvider == provider.Id, cancellationToken);
             var providerModels = provider.Models;
+            if (provider.Id == "llama.cpp")
+            {
+                await AddLlamaRouterModelsAsync(result, auth, cancellationToken).ConfigureAwait(false);
+                continue;
+            }
             if (provider.Id == "radius" && !_offline)
             {
                 try
@@ -355,7 +388,7 @@ public sealed class ProviderModelRuntime
         // do not implement that endpoint, and it must not consume a prompt's first response.
         var configured = (includeOutOfScope ? explicitProvider.Models : ApplyScope(explicitProvider.Models)).Where(item =>
             item.Id.Equals(reference, StringComparison.OrdinalIgnoreCase)).ToArray();
-        var models = configured.Length == 1 && explicitProvider.Id != "radius" ? configured :
+        var models = configured.Length == 1 && explicitProvider.Id is not ("radius" or "llama.cpp") ? configured :
             await ListModelsAsync(explicitProvider.Id, cancellationToken, includeOutOfScope);
         var matches = models.Where(item => item.Id.Equals(reference, StringComparison.OrdinalIgnoreCase)).ToArray();
         if (matches.Length == 0)
@@ -413,6 +446,15 @@ public sealed class ProviderModelRuntime
         return _auth.StoreApiKeyAsync(provider, secret, cancellationToken);
     }
 
+    public async Task LoginLlamaRouterAsync(string? apiKey, string serverUrl,
+        CancellationToken cancellationToken = default)
+    {
+        var endpoint = LlamaRouterClient.NormalizeServerUrl(serverUrl);
+        var key = string.IsNullOrWhiteSpace(apiKey) ? "local" : apiKey;
+        _ = await new LlamaRouterClient(_http, endpoint, key).ListAsync(cancellationToken).ConfigureAwait(false);
+        await _auth.StoreLlamaRouterAsync(apiKey, endpoint.AbsoluteUri, cancellationToken).ConfigureAwait(false);
+    }
+
     public Task LoginOAuthAsync(string provider, IProviderOAuthInteraction interaction,
         CancellationToken cancellationToken = default)
     {
@@ -452,6 +494,69 @@ public sealed class ProviderModelRuntime
 
     private IReadOnlyList<ModelDescriptor> VirtualModelsFor(string provider) =>
         _virtualModels?.List(provider) ?? [];
+
+    private Uri? ResolveLlamaRouterUrl(StoredCredential? stored)
+    {
+        var value = stored?.Env?.TryGetValue("LLAMA_BASE_URL", out var storedUrl) == true &&
+                    !string.IsNullOrWhiteSpace(storedUrl)
+            ? storedUrl : _environment("LLAMA_BASE_URL");
+        return string.IsNullOrWhiteSpace(value) ? null : LlamaRouterClient.NormalizeServerUrl(value);
+    }
+
+    private async Task AddLlamaRouterModelsAsync(List<ModelDescriptor> result,
+        (string Key, bool Authenticated, string Source) auth, CancellationToken cancellationToken)
+    {
+        var stored = await _auth.ReadAsync("llama.cpp", cancellationToken).ConfigureAwait(false);
+        var serverUrl = ResolveLlamaRouterUrl(stored);
+        if (serverUrl is null || !auth.Authenticated) return;
+
+        await _llamaRouterRefresh.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            var previous = await _llamaRouterCache.ReadAsync(cancellationToken).ConfigureAwait(false);
+            LlamaRouterCatalogResult catalog;
+            if (_offline)
+            {
+                catalog = LlamaRouterCatalog.Restore(previous, serverUrl);
+            }
+            else
+            {
+                try
+                {
+                    var client = new LlamaRouterClient(_http, serverUrl, auth.Key);
+                    catalog = await LlamaRouterCatalog.RefreshAsync(client, previous, cancellationToken).ConfigureAwait(false);
+                    await _llamaRouterCache.WriteAsync(catalog.Cache, cancellationToken).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
+                catch (Exception error) when (error is HttpRequestException or TaskCanceledException or InvalidDataException or JsonException or ArgumentException)
+                {
+                    catalog = LlamaRouterCatalog.Restore(previous, serverUrl);
+                    if (catalog.Models.Count == 0)
+                    {
+                        var safe = SecretRedactor.Redact(error.Message, auth.Key, _runtimeApiKey);
+                        result.AddRange(_llamaRouterProfile?.Models.Select(model => model with
+                        {
+                            Available = false,
+                            UnavailableReason = "catalog unavailable: " + safe,
+                            Status = "catalog unavailable"
+                        }) ?? []);
+                        return;
+                    }
+                }
+            }
+
+            var inferenceUrl = new Uri(serverUrl.AbsoluteUri.TrimEnd('/') + "/v1");
+            var profile = (_llamaRouterProfile ?? _providers["llama.cpp"]) with
+            {
+                Endpoint = inferenceUrl,
+                Models = catalog.Models,
+                Classifiers = catalog.Classifiers
+            };
+            Volatile.Write(ref _llamaRouterProfile, profile);
+            result.AddRange(catalog.Models);
+        }
+        finally { _llamaRouterRefresh.Release(); }
+    }
 
     private static ProviderProfile VirtualProvider(string provider) => new(provider, provider,
         new Uri("https://virtual.invalid"), false, false, null, null, [], Api: "pi-virtual", ApiKeySupported: false);

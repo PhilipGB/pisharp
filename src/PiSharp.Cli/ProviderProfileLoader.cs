@@ -133,6 +133,12 @@ internal static class ProviderProfileLoader
                  models.Any(model => model.Api is not null &&
                      !string.Equals(model.Api, existing.Api, StringComparison.Ordinal))))
                 throw new InvalidDataException("The built-in radius provider must retain its Pi Messages protocol and credential environment.");
+            if (existing?.Id == "llama.cpp" &&
+                (!string.Equals(api, "openai-completions", StringComparison.Ordinal) ||
+                 !string.Equals(apiKeyEnvironment ?? existing.ApiKeyEnvironment, existing.ApiKeyEnvironment,
+                     StringComparison.OrdinalIgnoreCase) ||
+                 models.Any(model => model.Api is not null && !string.Equals(model.Api, "openai-completions", StringComparison.Ordinal))))
+                throw new InvalidDataException("The built-in llama.cpp provider must retain its router protocol and credential environment.");
             foreach (var reserved in providers.Values.Where(profile => ClassifierCatalog.IsBuiltinProvider(profile.Id) || profile.Id is "openai" or "openrouter" or "mistral" or "xai" or "anthropic" or "azure-openai-responses" or "openai-codex" or "google" or "google-vertex" or "radius"))
                 if (apiKeyEnvironment?.Equals(reserved.ApiKeyEnvironment, StringComparison.OrdinalIgnoreCase) == true &&
                     (!item.Name.Equals(reserved.Id, StringComparison.OrdinalIgnoreCase) || !SameEndpoint(endpoint, reserved.Endpoint)))

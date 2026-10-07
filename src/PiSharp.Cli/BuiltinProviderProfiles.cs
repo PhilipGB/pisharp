@@ -131,6 +131,8 @@ internal static class BuiltinProviderProfiles
                 "RADIUS_API_KEY", null, radiusModels, Api: "pi-messages"),
             ["openai-codex"] = new("openai-codex", "OpenAI Codex", new Uri("https://chatgpt.com/backend-api"),
                 true, true, null, null, codexModels, Api: "openai-codex-responses", ApiKeySupported: false),
+            ["llama.cpp"] = new("llama.cpp", "llama.cpp", new Uri("http://127.0.0.1:8080/v1"),
+                true, false, "LLAMA_API_KEY", null, [], Api: "openai-completions"),
             ["xai"] = new("xai", "xAI", new Uri("https://api.x.ai/v1"), true, false,
                 "XAI_API_KEY", null, xaiModels)
         };

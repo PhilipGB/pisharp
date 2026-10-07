@@ -13,6 +13,7 @@ public sealed record StoredCredential(string Type, string? Key = null, string? A
 public sealed class AuthStorage(string path)
 {
     private static readonly Regex ProviderId = new("^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$", RegexOptions.CultureInvariant);
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
     private readonly string _path = System.IO.Path.GetFullPath(path);
     private readonly SemaphoreSlim _gate = new(1, 1);
 
@@ -45,6 +46,17 @@ public sealed class AuthStorage(string path)
         if (string.IsNullOrWhiteSpace(key)) throw new ArgumentException("API key cannot be empty.", nameof(key));
         await StoreAsync(provider, new StoredCredential("api_key", Key: key,
             Env: new Dictionary<string, string>(environment, StringComparer.Ordinal)), cancellationToken);
+    }
+
+    internal Task StoreLlamaRouterAsync(string? key, string serverUrl, CancellationToken cancellationToken = default)
+    {
+        var normalizedUrl = LlamaRouterClient.NormalizeServerUrl(serverUrl).AbsoluteUri.TrimEnd('/');
+        var environment = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["LLAMA_BASE_URL"] = normalizedUrl
+        };
+        return StoreAsync("llama.cpp", new StoredCredential("api_key",
+            Key: string.IsNullOrWhiteSpace(key) ? null : key, Env: environment), cancellationToken);
     }
 
     /// <summary>Stores a pre-issued OAuth bearer token. Browser authorization and refresh are provider-adapter responsibilities.</summary>
@@ -94,12 +106,16 @@ public sealed class AuthStorage(string path)
         try
         {
             await using var stream = new FileStream(_path, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, FileOptions.Asynchronous);
-            var data = await JsonSerializer.DeserializeAsync<Dictionary<string, StoredCredential>>(stream,
-                cancellationToken: cancellationToken) ?? [];
+            var data = await JsonSerializer.DeserializeAsync<Dictionary<string, StoredCredential>>(stream, JsonOptions,
+                cancellationToken) ?? [];
             foreach (var (provider, credential) in data)
             {
                 ValidateProvider(provider);
+                if (credential is null) throw new InvalidDataException($"Invalid credential entry for provider '{provider}'.");
                 if (credential.Type == "api_key" && !string.IsNullOrWhiteSpace(credential.Key)) continue;
+                if (provider.Equals("llama.cpp", StringComparison.OrdinalIgnoreCase) && credential.Type == "api_key" &&
+                    credential.Key is null && credential.Env?.TryGetValue("LLAMA_BASE_URL", out var serverUrl) == true &&
+                    !string.IsNullOrWhiteSpace(serverUrl)) continue;
                 if (credential.Type == "oauth" && !string.IsNullOrWhiteSpace(credential.Access)) continue;
                 throw new InvalidDataException($"Invalid credential entry for provider '{provider}'.");
             }
@@ -121,7 +137,7 @@ public sealed class AuthStorage(string path)
                 4096, FileOptions.Asynchronous | FileOptions.WriteThrough))
             {
                 if (OperatingSystem.IsLinux()) File.SetUnixFileMode(temporary, UnixFileMode.UserRead | UnixFileMode.UserWrite);
-                await JsonSerializer.SerializeAsync(stream, data, cancellationToken: cancellationToken);
+                await JsonSerializer.SerializeAsync(stream, data, JsonOptions, cancellationToken);
                 await stream.FlushAsync(cancellationToken);
             }
             File.Move(temporary, _path, true);
