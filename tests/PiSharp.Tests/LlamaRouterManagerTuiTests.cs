@@ -121,8 +121,8 @@ public sealed class LlamaRouterManagerTuiTests
             await terminal.WaitTextAsync("llama.cpp models", mark);
             await terminal.SendAsync("\u001b[B\u001b[B\n");
             await terminal.WaitTextAsync("Model name or owner/repository[:quant]", mark);
-            await terminal.SendAsync("model search\n");
-            await terminal.WaitTextAsync("Select Hugging Face model", mark);
+            await terminal.SendAsync("model\n");
+            await terminal.WaitTextAsync("owner/model", mark);
             await terminal.SendAsync("\n");
             await terminal.WaitTextAsync("Hugging Face access required", mark);
             await terminal.SendAsync("\n");
@@ -130,7 +130,7 @@ public sealed class LlamaRouterManagerTuiTests
             await terminal.SendAsync("\n");
             await terminal.WaitTextAsync("Downloaded owner/model:Q4_K_M", mark);
 
-            Assert.Contains(huggingFace.Requests, request => request.Path.Contains("search=model+search", StringComparison.Ordinal) &&
+            Assert.Contains(huggingFace.Requests, request => request.Path.Contains("search=model&", StringComparison.Ordinal) &&
                 request.Path.Contains("filter=gguf", StringComparison.Ordinal) && request.Authorization == "Bearer hf-fixture-token");
             Assert.Contains(huggingFace.Requests, request => request.Path == "/api/models/owner/model?blobs=true" &&
                 request.Authorization == "Bearer hf-fixture-token");
@@ -168,8 +168,8 @@ public sealed class LlamaRouterManagerTuiTests
             await terminal.WaitTextAsync("llama.cpp models", mark);
             await terminal.SendAsync("\u001b[B\u001b[B\n");
             await terminal.WaitTextAsync("Model name or owner/repository[:quant]", mark);
-            await terminal.SendAsync("model search\n");
-            await terminal.WaitTextAsync("Select Hugging Face model", mark);
+            await terminal.SendAsync("model\n");
+            await terminal.WaitTextAsync("owner/model", mark);
             await terminal.SendAsync("\n");
             await terminal.WaitTextAsync("Hugging Face access required", mark);
             await terminal.SendAsync("\n");

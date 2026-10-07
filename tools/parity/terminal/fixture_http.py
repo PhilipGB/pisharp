@@ -2,15 +2,17 @@ import json
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from threading import Thread
-from urllib.parse import urlsplit
+from urllib.parse import unquote, urlsplit
 
 
 class FixtureServer:
-    def __init__(self, models=None, props=None, behavior=None):
+    def __init__(self, models=None, props=None, behavior=None, huggingface=None):
         self.requests = []
         self.initial_models = json.loads(json.dumps(models or []))
         self.props = props or {}
         self.behavior = behavior or {}
+        self.huggingface = huggingface or {}
+        self.closed = False
         self.reset()
         outer = self
 
@@ -31,6 +33,10 @@ class FixtureServer:
                 outer.requests.append(dict(method='GET', path=self.path,
                                            authorization=self.headers.get('Authorization')))
                 if path == '/models':
+                    if outer.catalog_failures_remaining > 0:
+                        outer.catalog_failures_remaining -= 1
+                        self.send_json(dict(error=dict(message='fixture router unavailable')), status=503)
+                        return
                     now = time.monotonic()
                     for entry in outer.models:
                         deadline = outer.pending_loads.get(entry.get('id'))
@@ -47,10 +53,53 @@ class FixtureServer:
                     self.send_header('Content-Type', 'text/event-stream')
                     self.send_header('Cache-Control', 'no-cache')
                     self.end_headers()
-                    self.wfile.write(b'data: {}\n\n')
-                    self.wfile.flush()
+                    sent_load_progress = set()
+                    sent_download_progress = set()
+                    try:
+                        while not outer.closed:
+                            now = time.monotonic()
+                            for model, deadline in list(outer.pending_loads.items()):
+                                if model not in sent_load_progress:
+                                    self.send_event(dict(model=model, event='status_change', data=dict(
+                                        status='loading', progress=dict(stages=['text_model'],
+                                                                        current='text_model', value=0.5))))
+                                    sent_load_progress.add(model)
+                                if now >= deadline:
+                                    outer.set_status(model, 'loaded')
+                                    outer.pending_loads.pop(model, None)
+                                    self.send_event(dict(model=model, event='status_change', data=dict(status='loaded')))
+                            for model, deadline in list(outer.pending_downloads.items()):
+                                if model not in sent_download_progress:
+                                    self.send_event(dict(model=model, event='download_progress', data=dict(progress={
+                                        'https://fixture.invalid/model.gguf': dict(done=512, total=1024)})))
+                                    sent_download_progress.add(model)
+                                if now >= deadline:
+                                    outer.set_status(model, 'unloaded')
+                                    outer.pending_downloads.pop(model, None)
+                                    self.send_event(dict(model=model, event='download_finished', data={}))
+                            self.wfile.flush()
+                            time.sleep(0.05)
+                    except (BrokenPipeError, ConnectionResetError):
+                        pass
+                    return
+                if path == '/api/models':
+                    self.send_json(outer.huggingface.get('searchResults', []))
+                    return
+                if path.startswith('/api/models/'):
+                    repository = unquote(path[len('/api/models/'):])
+                    delay = float(outer.huggingface.get('detailsDelaySeconds', 0))
+                    if delay > 0:
+                        time.sleep(delay)
+                    details = outer.huggingface.get('details', {}).get(repository)
+                    if details is not None:
+                        self.send_json(details)
+                    else:
+                        self.send_json(dict(error='Model not found'), status=404)
                     return
                 self.send_error(404)
+
+            def send_event(self, value):
+                self.wfile.write(('data: ' + json.dumps(value) + '\n\n').encode())
 
             def do_POST(self):
                 raw = self.rfile.read(int(self.headers.get('Content-Length', 0)))
@@ -58,34 +107,37 @@ class FixtureServer:
                 path = urlsplit(self.path).path
                 outer.requests.append(dict(method='POST', path=self.path,
                                            authorization=self.headers.get('Authorization'), body=body))
-                if self.path != '/v1/chat/completions':
-                    if path == '/models/load':
-                        model = body.get('model')
-                        for entry in outer.models:
-                            if entry.get('id') == model:
-                                delay = float(outer.behavior.get('loadDelaySeconds', 0))
-                                entry['status']['value'] = 'loading' if delay > 0 else 'loaded'
-                                entry['status'].pop('failed', None)
-                                if delay > 0:
-                                    outer.pending_loads[model] = time.monotonic() + delay
-                        self.send_json(dict(success=True))
-                        return
-                    if path == '/models/unload':
-                        model = body.get('model')
-                        for entry in outer.models:
-                            if entry.get('id') == model:
-                                entry['status']['value'] = 'unloaded'
-                        outer.pending_loads.pop(model, None)
-                        self.send_json(dict(success=True))
-                        return
-                    if path == '/models':
-                        model = body.get('model')
-                        if not any(entry.get('id') == model for entry in outer.models):
-                            outer.models.append(dict(id=model, status=dict(value='downloading')))
-                        self.send_json(dict(success=True))
-                        return
-                    self.send_error(404)
+                if path == '/models/load':
+                    model = body.get('model')
+                    for entry in outer.models:
+                        if entry.get('id') == model:
+                            delay = float(outer.behavior.get('loadDelaySeconds', 0))
+                            entry['status']['value'] = 'loading' if delay > 0 else 'loaded'
+                            entry['status'].pop('failed', None)
+                            if delay > 0:
+                                outer.pending_loads[model] = time.monotonic() + delay
+                    self.send_json(dict(success=True))
                     return
+                if path == '/models/unload':
+                    model = body.get('model')
+                    for entry in outer.models:
+                        if entry.get('id') == model:
+                            entry['status']['value'] = 'unloaded'
+                    outer.pending_loads.pop(model, None)
+                    outer.pending_downloads.pop(model, None)
+                    self.send_json(dict(success=True))
+                    return
+                if path == '/models':
+                    model = body.get('model')
+                    outer.set_status(model, 'downloading')
+                    delay = float(outer.behavior.get('downloadDelaySeconds', 0.75))
+                    outer.pending_downloads[model] = time.monotonic() + max(delay, 0)
+                    if delay <= 0:
+                        outer.set_status(model, 'unloaded')
+                        outer.pending_downloads.pop(model, None)
+                    self.send_json(dict(success=True))
+                    return
+                self.send_error(404)
                 self.send_response(200)
                 self.send_header('Content-Type', 'text/event-stream')
                 self.end_headers()
@@ -108,9 +160,20 @@ class FixtureServer:
     def reset(self):
         self.models = json.loads(json.dumps(self.initial_models))
         self.pending_loads = {}
+        self.pending_downloads = {}
+        self.catalog_failures_remaining = int(self.behavior.get('initialModelFailures', 0))
         self.requests.clear()
 
+    def set_status(self, model, status):
+        entry = next((entry for entry in self.models if entry.get('id') == model), None)
+        if entry is None:
+            entry = dict(id=model, status=dict(value=status))
+            self.models.append(entry)
+        else:
+            entry.setdefault('status', {})['value'] = status
+
     def close(self):
+        self.closed = True
         self.server.shutdown()
         self.server.server_close()
         self.thread.join(timeout=5)

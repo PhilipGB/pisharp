@@ -23,7 +23,10 @@ def commands(pi, pisharp, scenario):
     common = ['--provider', 'fixture', '--model', 'fixture-model', '--no-session', '--offline',
               '--no-extensions', '--no-skills', '--no-prompt-templates', '--no-tools']
     resolver = pi / 'packages/coding-agent/src/experimental/source-resolver.ts'
-    result = dict(pi=['node', '--import', resolver.as_uri(), str(pi / 'packages/coding-agent/src/experimental/cli.ts'), *common],
+    pi_command = ['node', '--import', resolver.as_uri()]
+    if scenario.get('mockHuggingFace'):
+        pi_command.extend(['--import', (ROOT / 'tools/parity/terminal/huggingface-preload.mjs').as_uri()])
+    result = dict(pi=[*pi_command, str(pi / 'packages/coding-agent/src/experimental/cli.ts'), *common],
                 pisharp=['dotnet', str(pisharp), *common, '--no-approve', '--no-context-files'])
     for product, arguments in scenario.get('arguments', {}).items():
         result[product] = result[product][:-len(common) - (2 if product == 'pisharp' else 0)] + arguments
@@ -84,9 +87,24 @@ def run_product(label, command, scenario, dimensions, theme, mode, server):
                               for name, value in scenario.get('environment', {}).get(label, {}).items()})
     terminal = TerminalProcess(command, Path('/tmp/pisharp-terminal-fixture-workspace'), child_environment, options)
     frames = []
+    prior_raw = bytearray()
     request_start = len(server.requests)
     try:
         for action in scenario['actions']:
+            if action.get('restart'):
+                prior_raw.extend(terminal.raw)
+                terminal.close()
+                restart_environment = dict(child_environment)
+                restart_environment.update({name: value.replace('{router}', server.url)
+                                            if isinstance(value, str) else value
+                                            for name, value in action.get('restartEnvironment', {}).items()})
+                terminal = TerminalProcess(command, Path('/tmp/pisharp-terminal-fixture-workspace'),
+                                           restart_environment, options)
+                control_mark = len(terminal.trace.events)
+                frame = terminal.settle(action.get('expect'), timeout=action.get('timeout', 20))
+                frames.append(dict(id=action['id'], state=frame, controls=terminal.trace.events[control_mark:],
+                                   controlPending=terminal.trace.pending.hex()))
+                continue
             mark, control_mark = len(terminal.raw), len(terminal.trace.events)
             if 'send' in action:
                 terminal.send(action['send'])
@@ -107,7 +125,8 @@ def run_product(label, command, scenario, dimensions, theme, mode, server):
                     expect = expect[label]
                 frame = terminal.settle(expect, timeout=action.get('timeout', 20), after=0 if 'resize' in action else mark)
             frames.append(dict(id=action['id'], state=frame, controls=terminal.trace.events[control_mark:], controlPending=terminal.trace.pending.hex()))
-        return dict(frames=frames, raw=base64.b64encode(terminal.raw).decode(),
+        prior_raw.extend(terminal.raw)
+        return dict(frames=frames, raw=base64.b64encode(prior_raw).decode(),
                     http=server.requests[request_start:], command=command, scenarioError=None)
     except (TimeoutError, RuntimeError) as error:
         frames.append(dict(id=action['id'], state=terminal.snapshot(), controls=terminal.trace.events[control_mark:], controlPending=terminal.trace.pending.hex()))
@@ -140,7 +159,8 @@ def main():
     owner.touch()
     lock = owner.open('r+')
     fcntl.flock(lock, fcntl.LOCK_EX)
-    server = FixtureServer(scenario.get('llamaModels'), scenario.get('llamaProps'), scenario.get('llamaBehavior'))
+    server = FixtureServer(scenario.get('llamaModels'), scenario.get('llamaProps'),
+                           scenario.get('llamaBehavior'), scenario.get('huggingFace'))
     try:
         for dimensions, theme, mode in itertools.product(scenario['dimensions'], scenario['themes'], scenario['modes']):
             case_id = f"{dimensions['columns']}x{dimensions['rows']}-{theme}-{mode}"

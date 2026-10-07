@@ -1,0 +1,72 @@
+{
+  "id": "llama-download-cancel",
+  "mockHuggingFace": true,
+  "arguments": {
+    "pi": [
+      "--provider", "fixture", "--model", "fixture-model", "--no-session", "--offline",
+      "--no-skills", "--no-prompt-templates", "--no-tools"
+    ],
+    "pisharp": [
+      "--provider", "fixture", "--model", "fixture-model", "--no-session", "--offline",
+      "--no-skills", "--no-prompt-templates", "--no-tools", "--no-approve", "--no-context-files"
+    ]
+  },
+  "settings": { "quietStartup": true },
+  "environment": {
+    "pi": {
+      "LLAMA_BASE_URL": "{router}",
+      "HF_TOKEN": "fixture-hf-token",
+      "PI_PARITY_HF_BASE_URL": "{router}"
+    },
+    "pisharp": {
+      "LLAMA_BASE_URL": "{router}",
+      "HF_TOKEN": "fixture-hf-token",
+      "HF_ENDPOINT": "{router}"
+    }
+  },
+  "llamaModels": [
+    {
+      "id": "loaded-fixture-model",
+      "status": { "value": "loaded", "args": ["--ctx-size", "8192"] },
+      "architecture": { "input_modalities": ["text"], "output_modalities": ["text"] },
+      "source": "filesystem",
+      "meta": { "n_ctx": 8192 }
+    }
+  ],
+  "llamaProps": { "models_autoload": false, "chat_template": "fixture" },
+  "llamaBehavior": { "downloadDelaySeconds": 10 },
+  "huggingFace": {
+    "detailsDelaySeconds": 0.5,
+    "searchResults": [
+      { "id": "owner/Qwen2.5-Coder-GGUF", "downloads": 2500000 }
+    ],
+    "details": {
+      "owner/Qwen2.5-Coder-GGUF": {
+        "id": "owner/Qwen2.5-Coder-GGUF",
+        "gated": "manual",
+        "siblings": [
+          { "rfilename": "model-Q4_K_M.gguf", "size": 2147483648 },
+          { "rfilename": "model-Q5_K_M.gguf", "size": 3221225472 }
+        ]
+      }
+    }
+  },
+  "dimensions": [{ "columns": 100, "rows": 32 }],
+  "themes": ["dark"],
+  "modes": ["fullscreen"],
+  "actions": [
+    { "id": "startup", "expect": "fixture-model" },
+    { "id": "open-manager", "send": "/llama\r", "expect": "llama.cpp models" },
+    { "id": "open-download", "send": "\u001b[B\r", "expect": "Model name or owner/repository[:quant]" },
+    { "id": "search-model", "send": "qwen", "expect": "owner/Qwen2.5-Coder-GGUF" },
+    { "id": "select-model", "send": "\r", "expect": "Loading model details" },
+    { "id": "accept-gate", "expect": "Hugging Face access required" },
+    { "id": "confirm-gate", "send": "\r", "expect": "Select quantization" },
+    { "id": "select-quantization", "send": "\r", "expect": "Downloading model" },
+    { "id": "request-cancel", "send": "\u001b", "expect": "Stop download?" },
+    { "id": "confirm-cancel", "send": "\r", "expect": "llama.cpp models", "timeout": 15 },
+    { "id": "close-manager", "send": "\u001b", "expect": "fixture-model" },
+    { "id": "quit", "send": "/quit\r", "exit": true }
+  ],
+  "terminal": { "keyboardProtocol": "kitty" }
+}

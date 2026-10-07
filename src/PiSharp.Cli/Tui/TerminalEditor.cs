@@ -102,7 +102,8 @@ public sealed class TerminalEditor
                 var next = input.Read();
                 if (next.IsEndOfStream) return null;
                 if (next.Key is not { } key) continue;
-                if (key.Key == ConsoleKey.Escape || _keymap.Matches("app.interrupt", key)) return null;
+                if (key.Key == ConsoleKey.Escape || _keymap.Matches("app.interrupt", key) ||
+                    _keymap.Matches("app.clear", key)) return null;
                 if (key.Key == ConsoleKey.Enter) return new(options[selectedIndex], IsScoped: false);
                 if (key.Key == ConsoleKey.UpArrow) selectedIndex = (selectedIndex + options.Count - 1) % options.Count;
                 else if (key.Key == ConsoleKey.DownArrow) selectedIndex = (selectedIndex + 1) % options.Count;
@@ -153,7 +154,7 @@ public sealed class TerminalEditor
                     var next = input.Read();
                     if (next.IsEndOfStream) return null;
                     if (next.Key is { } key && (key.Key == ConsoleKey.Escape ||
-                        _keymap.Matches("app.interrupt", key))) return null;
+                        _keymap.Matches("app.interrupt", key) || _keymap.Matches("app.clear", key))) return null;
                     if (next.Key is { } submit && submit.Key == ConsoleKey.Enter)
                     {
                         values.Add(promptBuffer.Text);
@@ -168,6 +169,29 @@ public sealed class TerminalEditor
             return values;
         }
         finally { screen.SetEditorPanel(null); }
+    }
+
+    internal string? ShowHuggingFaceSearch(HuggingFaceClient client,
+        IDictionary<string, IReadOnlyList<HuggingFaceModel>> cache)
+    {
+        if (_screen is not { IsActive: true } screen) return null;
+        return new TerminalHuggingFaceSearch(screen, EnsureInput(), _keymap, client, cache).Show();
+    }
+
+    internal void ShowInlineStatus(string title, string message)
+    {
+        if (_screen is not { IsActive: true } screen) return;
+        var theme = screen.CurrentTheme;
+        var width = screen.TerminalWidth;
+        var lines = new[]
+        {
+            PanelBorder(theme, width),
+            PadPanelLine(theme.Style("accent", " " + title, bold: true), width),
+            "",
+            PadPanelLine(theme.Style("muted", " " + TerminalSafeText.Normalize(message)), width),
+            PanelBorder(theme, width)
+        };
+        screen.SetEditorPanel(lines, lines.Length - 2, width + 1, cursorVisible: false, bottomMargin: 2);
     }
 
     private static IReadOnlyList<string> RenderInlinePanel<T>(TerminalScreen screen, string title,
@@ -222,8 +246,8 @@ public sealed class TerminalEditor
                 lines.Add(PadPanelLine(theme.Style("dim", " e.g., " + TerminalSafeText.Normalize(prompts[index].Placeholder!)), width));
             currentInputRow = lines.Count;
             lines.Add(PadPanelLine("> " + TerminalSafeText.Normalize(index == promptIndex ? value : completed[index]), width));
+            lines.Add(PadPanelLine(theme.Style("dim", " (escape/ctrl+c to cancel, enter to submit)"), width));
         }
-        lines.Add(PadPanelLine(theme.Style("dim", " (escape/ctrl+c to cancel, enter to submit)"), width));
         lines.Add(PanelBorder(theme, width));
         cursorRow = currentInputRow;
         cursorColumn = Math.Min(width, 3 + TerminalTextLayout.Width(value[..Math.Clamp(cursor, 0, value.Length)]));
@@ -272,9 +296,9 @@ public sealed class TerminalEditor
             if (!string.IsNullOrEmpty(state.Detail))
                 lines.Add(PadPanelLine(theme.Style("dim", " " + TerminalSafeText.Normalize(state.Detail)), width));
             lines.Add("");
-            lines.Add(PadPanelLine(theme.Style("dim", " escape/ctrl+c to stop"), width));
+            lines.Add(PadPanelLine(theme.Style("dim", " escape/ctrl+c stop"), width));
             lines.Add(PanelBorder(theme, width));
-            screen.SetEditorPanel(lines, lines.Count - 2, width + 1, cursorVisible: false, bottomMargin: 2);
+            screen.SetEditorPanel(lines, lines.Count - 4, width + 1, cursorVisible: false, bottomMargin: 2);
         }
 
         async Task<(bool Succeeded, T? Value, Exception? Error)> SettleAsync()
@@ -295,12 +319,13 @@ public sealed class TerminalEditor
                     await Task.Delay(10).ConfigureAwait(false);
                     continue;
                 }
-                if (next.Key is not { } key || !_keymap.Matches("app.interrupt", key)) continue;
+                if (next.Key is not { } key ||
+                    !_keymap.Matches("app.interrupt", key) && !_keymap.Matches("app.clear", key)) continue;
                 var confirmation = ShowInlineSelectionList($"{cancelTitle}\n{cancelMessage}", new[]
                 {
                     new TerminalSelectionOption<bool>("yes", true, "Yes"),
                     new TerminalSelectionOption<bool>("no", false, "No")
-                }, [""], "enter select • escape cancel");
+                }, [""], "enter select • escape/ctrl+c cancel");
                 if (confirmation?.Option.Value != true)
                 {
                     Update(state);

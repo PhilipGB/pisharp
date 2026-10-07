@@ -12,14 +12,26 @@
   },
   "settings": { "quietStartup": true },
   "environment": {
-    "pi": { "LLAMA_BASE_URL": "{router}" },
-    "pisharp": { "LLAMA_BASE_URL": "{router}" }
+    "pi": { "LLAMA_BASE_URL": "{router}/v1", "LLAMA_API_KEY": "initial-environment-key" },
+    "pisharp": { "LLAMA_BASE_URL": "{router}/v1", "LLAMA_API_KEY": "initial-environment-key" }
   },
   "actions": [
     { "id": "startup", "expect": "fixture-model" },
     { "id": "url-prompt", "send": "/login llama.cpp\r", "expect": "llama.cpp server URL" },
     { "id": "default-url", "send": "\r", "expect": "API key (optional)" },
     { "id": "api-key", "send": "fixture-secret\r", "expect": "Saved API key for llama.cpp" },
+    { "id": "quit-before-reload", "send": "/quit\r", "exit": true },
+    {
+      "id": "restart-with-conflicting-environment",
+      "restart": true,
+      "restartEnvironment": {
+        "LLAMA_BASE_URL": "{router}/conflict/v1",
+        "LLAMA_API_KEY": "conflicting-environment-key"
+      },
+      "expect": "fixture-model"
+    },
+    { "id": "open-manager-after-reload", "send": "/llama\r", "expect": "llama.cpp models" },
+    { "id": "close-manager-after-reload", "send": "\u001b", "expect": "fixture-model" },
     { "id": "quit", "send": "/quit\r", "exit": true }
   ],
   "dimensions": [{ "columns": 100, "rows": 32 }],

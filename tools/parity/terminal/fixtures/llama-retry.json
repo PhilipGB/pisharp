@@ -1,0 +1,30 @@
+{
+  "id": "llama-retry",
+  "arguments": {
+    "pi": [
+      "--provider", "fixture", "--model", "fixture-model", "--no-session", "--offline",
+      "--no-skills", "--no-prompt-templates", "--no-tools"
+    ],
+    "pisharp": [
+      "--provider", "fixture", "--model", "fixture-model", "--no-session", "--offline",
+      "--no-skills", "--no-prompt-templates", "--no-tools", "--no-approve", "--no-context-files"
+    ]
+  },
+  "settings": { "quietStartup": true },
+  "environment": {
+    "pi": { "LLAMA_BASE_URL": "{router}" },
+    "pisharp": { "LLAMA_BASE_URL": "{router}" }
+  },
+  "llamaBehavior": { "initialModelFailures": 1 },
+  "dimensions": [{ "columns": 100, "rows": 32 }],
+  "themes": ["dark"],
+  "modes": ["fullscreen"],
+  "actions": [
+    { "id": "startup", "expect": "fixture-model" },
+    { "id": "open-manager", "send": "/llama\r", "expect": "llama.cpp unavailable" },
+    { "id": "retry-router", "send": "\r", "expect": "llama.cpp models" },
+    { "id": "close-manager", "send": "\u001b", "expect": "fixture-model" },
+    { "id": "quit", "send": "/quit\r", "exit": true }
+  ],
+  "terminal": { "keyboardProtocol": "kitty" }
+}
