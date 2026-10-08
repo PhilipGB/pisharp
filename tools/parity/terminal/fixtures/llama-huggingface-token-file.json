@@ -160,11 +160,13 @@
     {
       "id": "select-model",
       "send": "\r",
-      "expect": "Loading model details"
+      "expect": "Hugging Face access required",
+      "allowStaticFrame": true
     },
     {
       "id": "accept-gate",
-      "expect": "Hugging Face access required"
+      "expect": "Hugging Face access required",
+      "allowStaticFrame": true
     },
     {
       "id": "confirm-gate",

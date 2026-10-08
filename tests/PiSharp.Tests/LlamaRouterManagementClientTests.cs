@@ -70,9 +70,10 @@ public sealed class LlamaRouterManagementClientTests
 
         Assert.Equal("loaded", loaded.Status.Value);
         var progressUpdates = progress.ToArray();
-        Assert.Equal("Loading model", progressUpdates[0].Message);
         Assert.Contains(progressUpdates, item => item.Message == "Loading loading model" && item.Ratio == 0.25);
-        Assert.NotEqual("Loading model", progressUpdates[^1].Message);
+        Assert.Equal("Loading model", progressUpdates[^1].Message);
+        Assert.True(Array.FindIndex(progressUpdates, item => item.Message == "Loading loading model") <
+            Array.FindLastIndex(progressUpdates, item => item.Message == "Loading model"));
         Assert.Contains(requests, item => item.Method == "POST" && item.Path == "/models/load" &&
             item.Body == "{\"model\":\"qwen\"}" && item.Authorization == "Bearer router-secret");
         Assert.Contains(requests, item => item.Method == "POST" && item.Path == "/models/unload" &&
@@ -124,6 +125,7 @@ public sealed class LlamaRouterManagementClientTests
     public async Task LoadWaitHonorsCancellationWhileRouterRemainsLoading()
     {
         var requests = new ConcurrentQueue<string>();
+        var progress = new ConcurrentQueue<LlamaRouterProgress>();
         using var http = new HttpClient(new RouterHandler((request, _) =>
         {
             requests.Enqueue(request.Method.Method + " " + request.RequestUri!.PathAndQuery);
@@ -138,8 +140,9 @@ public sealed class LlamaRouterManagementClientTests
         using var cancellation = new CancellationTokenSource(TimeSpan.FromMilliseconds(100));
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
-            client.LoadAndWaitAsync("qwen", _ => { }, cancellation.Token));
+            client.LoadAndWaitAsync("qwen", progress.Enqueue, cancellation.Token));
 
+        Assert.Contains(progress, item => item.Message == "Loading model");
         Assert.Contains("POST /models/load", requests);
         Assert.Contains("GET /models", requests);
     }

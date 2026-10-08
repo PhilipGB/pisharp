@@ -126,7 +126,6 @@ internal sealed class LlamaRouterClient(HttpClient http, Uri serverUrl, string? 
         Action<LlamaRouterProgress> onProgress, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(onProgress);
-        onProgress(new("Loading model"));
         using var watcherCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         var eventGate = new object();
         var eventLoaded = false;
@@ -134,6 +133,7 @@ internal sealed class LlamaRouterClient(HttpClient http, Uri serverUrl, string? 
         var watchTask = ObserveEventsAsync(watcherCancellation.Token, model, item =>
         {
             if (item.Event is not ("model_status" or "status_change")) return;
+            var progress = ParseLoadProgress(item.Data);
             lock (eventGate)
             {
                 if (item.Data.ValueKind == JsonValueKind.Object && item.Data.TryGetProperty("status", out var status) &&
@@ -143,11 +143,12 @@ internal sealed class LlamaRouterClient(HttpClient http, Uri serverUrl, string? 
                     if (status.GetString() == "unloaded") eventError = "Model failed to load";
                 }
             }
-            if (ParseLoadProgress(item.Data) is { } progress) onProgress(progress);
+            if (progress is not null) onProgress(progress);
         });
         try
         {
             await LoadAsync(model, cancellationToken).ConfigureAwait(false);
+            onProgress(new("Loading model"));
             while (true)
             {
                 cancellationToken.ThrowIfCancellationRequested();
