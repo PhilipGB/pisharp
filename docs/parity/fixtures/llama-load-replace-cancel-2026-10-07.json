@@ -3,16 +3,17 @@
   "fixture": "llama-load-replace-cancel",
   "oracle": {
     "repository": "earendil-works/pi",
-    "sha": "70759f48bed0c0b30b089b9094f4080cbc3148c5"
+    "sha": "7f9e1198f2f7a8cf5ea18d5010ba081d4d60c333"
   },
   "pisharp": {
-    "sha": "406263fa0b2996e868a7e3df9e6811f233696143"
+    "sha": "f615889c5f33f4a1bc9c8373c1f52f29da2e584f",
+    "ci_run": "37748361405"
   },
   "case": "100x32-dark-fullscreen",
   "scenario_errors": {},
   "terminal_comparison": {
     "exact": false,
-    "unnormalized_field_differences": 10079,
+    "unnormalized_field_differences": 4104,
     "capture": "llama-load-replace-cancel-2026-10-07-100x32-dark-fullscreen.json.gz",
     "inline_panel_row_comparison": {
       "select-replacement-target": {
@@ -27,9 +28,7 @@
           28,
           29
         ],
-        "nonmatching_viewport_rows": [
-          31
-        ]
+        "nonmatching_viewport_rows": []
       },
       "choose-unload-all-and-load": {
         "matching_inline_panel_viewport_rows": [
@@ -43,9 +42,7 @@
           28,
           29
         ],
-        "nonmatching_viewport_rows": [
-          31
-        ]
+        "nonmatching_viewport_rows": []
       },
       "cancel-replacement-load": {
         "matching_inline_panel_viewport_rows": [
@@ -59,9 +56,7 @@
           28,
           29
         ],
-        "nonmatching_viewport_rows": [
-          31
-        ]
+        "nonmatching_viewport_rows": []
       },
       "confirm-cancel-and-restore": {
         "matching_inline_panel_viewport_rows": [
@@ -76,85 +71,29 @@
           29
         ],
         "nonmatching_viewport_rows": [
-          1,
-          19,
-          31
+          1
         ]
       }
     }
   },
   "http_comparison": {
-    "all_request_multisets_match": true,
-    "pi_only": [],
+    "all_request_multisets_match": false,
+    "pi_only": [
+      {
+        "method": "GET",
+        "path": "/models",
+        "authorization": "Bearer local",
+        "count": 1
+      }
+    ],
     "pisharp_only": [],
     "request_order_matches": false,
-    "request_order_differences": [
-      {
-        "index": 6,
-        "pi": {
-          "method": "GET",
-          "path": "/models/sse"
-        },
-        "pisharp": {
-          "method": "POST",
-          "path": "/models/load"
-        }
-      },
-      {
-        "index": 7,
-        "pi": {
-          "method": "POST",
-          "path": "/models/load"
-        },
-        "pisharp": {
-          "method": "GET",
-          "path": "/models/sse"
-        }
-      },
-      {
-        "index": 12,
-        "pi": {
-          "method": "POST",
-          "path": "/models/unload"
-        },
-        "pisharp": {
-          "method": "GET",
-          "path": "/models"
-        }
-      },
-      {
-        "index": 13,
-        "pi": {
-          "method": "GET",
-          "path": "/models/sse"
-        },
-        "pisharp": {
-          "method": "POST",
-          "path": "/models/unload"
-        }
-      },
-      {
-        "index": 14,
-        "pi": {
-          "method": "POST",
-          "path": "/models/load"
-        },
-        "pisharp": {
-          "method": "GET",
-          "path": "/models/sse"
-        }
-      },
-      {
-        "index": 15,
-        "pi": {
-          "method": "GET",
-          "path": "/models"
-        },
-        "pisharp": {
-          "method": "POST",
-          "path": "/models/load"
-        }
-      }
+    "request_order_difference_indexes": [
+      16,
+      17,
+      18,
+      20,
+      21
     ],
     "mutations_match": true,
     "mutation_sequence": [
@@ -191,7 +130,7 @@
   "products": {
     "pi": {
       "scenario_error": null,
-      "http_request_count": 24,
+      "http_request_count": 23,
       "authorization": [
         "Bearer local"
       ],
@@ -200,7 +139,7 @@
         "open-manager": 4,
         "select-replacement-target": 0,
         "choose-unload-all-and-load": 6,
-        "cancel-replacement-load": 2,
+        "cancel-replacement-load": 1,
         "confirm-cancel-and-restore": 12,
         "close-manager": 0,
         "quit": 0
@@ -254,7 +193,7 @@
     },
     "pisharp": {
       "scenario_error": null,
-      "http_request_count": 24,
+      "http_request_count": 22,
       "authorization": [
         "Bearer local"
       ],
@@ -262,9 +201,9 @@
         "startup": 0,
         "open-manager": 4,
         "select-replacement-target": 0,
-        "choose-unload-all-and-load": 7,
+        "choose-unload-all-and-load": 6,
         "cancel-replacement-load": 1,
-        "confirm-cancel-and-restore": 12,
+        "confirm-cancel-and-restore": 11,
         "close-manager": 0,
         "quit": 0
       },
@@ -279,7 +218,6 @@
         "→ Yes"
       ],
       "restored_manager_lines": [
-        "Restoring previously loaded models",
         " llama.cpp models",
         "→ loaded-fixture-model                loaded · 16k context",
         "  unloaded-fixture-model"

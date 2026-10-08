@@ -1,0 +1,423 @@
+{
+  "schema": 1,
+  "captured_at": "2026-10-08",
+  "oracle": {
+    "repository": "earendil-works/pi",
+    "sha": "7f9e1198f2f7a8cf5ea18d5010ba081d4d60c333"
+  },
+  "pisharp": {
+    "sha": "f615889c5f33f4a1bc9c8373c1f52f29da2e584f",
+    "ci_run": "37748361405"
+  },
+  "case": "100x32-dark-fullscreen",
+  "normalization": "None. Full cells, styles, spacing, cursor, modes, buffers and control sequences remain exact.",
+  "calibration": {
+    "fixture": "llama-load-cancel",
+    "pi_runs": 2,
+    "match": true,
+    "terminal_differences": 0,
+    "evidence": "Two independent Pi runs at current origin/main 7f9e1198 completed every checkpoint without scenario errors.",
+    "capture": "llama-terminal-current-pi-2026-10-07/llama-load-cancel-calibration-2026-10-08-100x32-dark-fullscreen.json.gz",
+    "report": "llama-terminal-current-pi-2026-10-07/llama-load-cancel-calibration-2026-10-08.json"
+  },
+  "fixtures": [
+    {
+      "fixture": "llama-download-cancel",
+      "terminal_differences": 7584,
+      "scenario_errors": {},
+      "http": {
+        "request_counts": {
+          "pi": 13,
+          "pisharp": 13
+        },
+        "request_multisets_match": true,
+        "pi_only": [],
+        "pisharp_only": [],
+        "request_order_difference_count": 0,
+        "first_request_order_difference_indexes": [],
+        "mutation_sequences_match": true,
+        "pi_mutations": [
+          {
+            "method": "POST",
+            "path": "/models",
+            "body": {
+              "model": "owner/Qwen2.5-Coder-GGUF:Q4_K_M"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/models/unload",
+            "body": {
+              "model": "owner/Qwen2.5-Coder-GGUF:Q4_K_M"
+            }
+          }
+        ],
+        "pisharp_mutations": [
+          {
+            "method": "POST",
+            "path": "/models",
+            "body": {
+              "model": "owner/Qwen2.5-Coder-GGUF:Q4_K_M"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/models/unload",
+            "body": {
+              "model": "owner/Qwen2.5-Coder-GGUF:Q4_K_M"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "fixture": "llama-huggingface",
+      "terminal_differences": 9158,
+      "scenario_errors": {},
+      "http": {
+        "request_counts": {
+          "pi": 20,
+          "pisharp": 21
+        },
+        "request_multisets_match": false,
+        "pi_only": [],
+        "pisharp_only": [
+          {
+            "method": "GET",
+            "path": "/models",
+            "authorization": "Bearer local",
+            "count": 1
+          }
+        ],
+        "request_order_difference_count": 5,
+        "first_request_order_difference_indexes": [
+          14,
+          15,
+          16,
+          17,
+          19
+        ],
+        "mutation_sequences_match": true,
+        "pi_mutations": [
+          {
+            "method": "POST",
+            "path": "/models",
+            "body": {
+              "model": "owner/Qwen2.5-Coder-GGUF:Q4_K_M"
+            }
+          }
+        ],
+        "pisharp_mutations": [
+          {
+            "method": "POST",
+            "path": "/models",
+            "body": {
+              "model": "owner/Qwen2.5-Coder-GGUF:Q4_K_M"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "fixture": "llama-huggingface-home-token-file",
+      "terminal_differences": 8916,
+      "scenario_errors": {},
+      "http": {
+        "request_counts": {
+          "pi": 21,
+          "pisharp": 21
+        },
+        "request_multisets_match": true,
+        "pi_only": [],
+        "pisharp_only": [],
+        "request_order_difference_count": 0,
+        "first_request_order_difference_indexes": [],
+        "mutation_sequences_match": true,
+        "pi_mutations": [
+          {
+            "method": "POST",
+            "path": "/models",
+            "body": {
+              "model": "owner/Qwen2.5-Coder-GGUF:Q4_K_M"
+            }
+          }
+        ],
+        "pisharp_mutations": [
+          {
+            "method": "POST",
+            "path": "/models",
+            "body": {
+              "model": "owner/Qwen2.5-Coder-GGUF:Q4_K_M"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "fixture": "llama-huggingface-token-file",
+      "terminal_differences": 8916,
+      "scenario_errors": {},
+      "http": {
+        "request_counts": {
+          "pi": 21,
+          "pisharp": 21
+        },
+        "request_multisets_match": true,
+        "pi_only": [],
+        "pisharp_only": [],
+        "request_order_difference_count": 0,
+        "first_request_order_difference_indexes": [],
+        "mutation_sequences_match": true,
+        "pi_mutations": [
+          {
+            "method": "POST",
+            "path": "/models",
+            "body": {
+              "model": "owner/Qwen2.5-Coder-GGUF:Q4_K_M"
+            }
+          }
+        ],
+        "pisharp_mutations": [
+          {
+            "method": "POST",
+            "path": "/models",
+            "body": {
+              "model": "owner/Qwen2.5-Coder-GGUF:Q4_K_M"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "fixture": "llama-load-cancel",
+      "terminal_differences": 2940,
+      "scenario_errors": {},
+      "http": {
+        "request_counts": {
+          "pi": 14,
+          "pisharp": 14
+        },
+        "request_multisets_match": true,
+        "pi_only": [],
+        "pisharp_only": [],
+        "request_order_difference_count": 0,
+        "first_request_order_difference_indexes": [],
+        "mutation_sequences_match": true,
+        "pi_mutations": [
+          {
+            "method": "POST",
+            "path": "/models/load",
+            "body": {
+              "model": "unloaded-fixture-model"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/models/unload",
+            "body": {
+              "model": "unloaded-fixture-model"
+            }
+          }
+        ],
+        "pisharp_mutations": [
+          {
+            "method": "POST",
+            "path": "/models/load",
+            "body": {
+              "model": "unloaded-fixture-model"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/models/unload",
+            "body": {
+              "model": "unloaded-fixture-model"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "fixture": "llama-load-replace-cancel",
+      "terminal_differences": 4104,
+      "scenario_errors": {},
+      "http": {
+        "request_counts": {
+          "pi": 23,
+          "pisharp": 22
+        },
+        "request_multisets_match": false,
+        "pi_only": [
+          {
+            "method": "GET",
+            "path": "/models",
+            "authorization": "Bearer local",
+            "count": 1
+          }
+        ],
+        "pisharp_only": [],
+        "request_order_difference_count": 5,
+        "first_request_order_difference_indexes": [
+          16,
+          17,
+          18,
+          20,
+          21
+        ],
+        "mutation_sequences_match": true,
+        "pi_mutations": [
+          {
+            "method": "POST",
+            "path": "/models/unload",
+            "body": {
+              "model": "loaded-fixture-model"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/models/load",
+            "body": {
+              "model": "unloaded-fixture-model"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/models/unload",
+            "body": {
+              "model": "unloaded-fixture-model"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/models/load",
+            "body": {
+              "model": "loaded-fixture-model"
+            }
+          }
+        ],
+        "pisharp_mutations": [
+          {
+            "method": "POST",
+            "path": "/models/unload",
+            "body": {
+              "model": "loaded-fixture-model"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/models/load",
+            "body": {
+              "model": "unloaded-fixture-model"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/models/unload",
+            "body": {
+              "model": "unloaded-fixture-model"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/models/load",
+            "body": {
+              "model": "loaded-fixture-model"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "fixture": "llama-login",
+      "terminal_differences": 8020,
+      "scenario_errors": {},
+      "http": {
+        "request_counts": {
+          "pi": 3,
+          "pisharp": 3
+        },
+        "request_multisets_match": true,
+        "pi_only": [],
+        "pisharp_only": [],
+        "request_order_difference_count": 0,
+        "first_request_order_difference_indexes": [],
+        "mutation_sequences_match": true,
+        "pi_mutations": [],
+        "pisharp_mutations": []
+      }
+    },
+    {
+      "fixture": "llama-manager",
+      "terminal_differences": 2653,
+      "scenario_errors": {},
+      "http": {
+        "request_counts": {
+          "pi": 4,
+          "pisharp": 4
+        },
+        "request_multisets_match": true,
+        "pi_only": [],
+        "pisharp_only": [],
+        "request_order_difference_count": 0,
+        "first_request_order_difference_indexes": [],
+        "mutation_sequences_match": true,
+        "pi_mutations": [],
+        "pisharp_mutations": []
+      }
+    },
+    {
+      "fixture": "llama-model-picker",
+      "terminal_differences": 19590,
+      "scenario_errors": {},
+      "http": {
+        "request_counts": {
+          "pi": 15,
+          "pisharp": 15
+        },
+        "request_multisets_match": true,
+        "pi_only": [],
+        "pisharp_only": [],
+        "request_order_difference_count": 0,
+        "first_request_order_difference_indexes": [],
+        "mutation_sequences_match": true,
+        "pi_mutations": [
+          {
+            "method": "POST",
+            "path": "/models/load",
+            "body": {
+              "model": "unloaded-fixture-model"
+            }
+          }
+        ],
+        "pisharp_mutations": [
+          {
+            "method": "POST",
+            "path": "/models/load",
+            "body": {
+              "model": "unloaded-fixture-model"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "fixture": "llama-retry",
+      "terminal_differences": 4098,
+      "scenario_errors": {},
+      "http": {
+        "request_counts": {
+          "pi": 3,
+          "pisharp": 3
+        },
+        "request_multisets_match": true,
+        "pi_only": [],
+        "pisharp_only": [],
+        "request_order_difference_count": 0,
+        "first_request_order_difference_indexes": [],
+        "mutation_sequences_match": true,
+        "pi_mutations": [],
+        "pisharp_mutations": []
+      }
+    }
+  ]
+}

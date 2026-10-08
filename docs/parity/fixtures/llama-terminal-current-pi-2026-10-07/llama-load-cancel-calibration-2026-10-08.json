@@ -1,0 +1,18 @@
+{
+  "piSha": "7f9e1198f2f7a8cf5ea18d5010ba081d4d60c333",
+  "pisharpSha": "f615889c5f33f4a1bc9c8373c1f52f29da2e584f",
+  "fixture": "llama-load-cancel",
+  "calibration": true,
+  "normalization": "None. Full cells, styles, spacing, cursor, modes, buffers and control sequences remain exact.",
+  "cases": [
+    {
+      "id": "100x32-dark-fullscreen",
+      "match": true,
+      "differences": 0,
+      "firstDifferences": [],
+      "scenarioErrors": {},
+      "evidence": "100x32-dark-fullscreen.json.gz"
+    }
+  ],
+  "match": true
+}

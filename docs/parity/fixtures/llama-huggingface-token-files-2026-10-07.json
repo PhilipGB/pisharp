@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "piSha": "943a10e744b87d9a593f3dca7406d4671910f490",
-  "pisharpSha": "3a80c4ea953709313f9dea35204b9d13ff88bc07",
+  "piSha": "7f9e1198f2f7a8cf5ea18d5010ba081d4d60c333",
+  "pisharpSha": "f615889c5f33f4a1bc9c8373c1f52f29da2e584f",
   "terminal": "100x32 dark fullscreen; complete state and control streams retained without normalization",
   "cases": [
     {
@@ -20,10 +20,16 @@
           "authorization": "Bearer fixture-hf-token"
         }
       ],
-      "terminalDifferences": 24560,
+      "terminalDifferences": 8916,
       "terminalFramesExact": false,
       "scenarioErrors": {},
-      "rawEvidence": "llama-huggingface-token-file-2026-10-07-100x32-dark-fullscreen.json.gz"
+      "rawEvidence": "llama-terminal-current-pi-2026-10-07/llama-huggingface-token-file.json.gz",
+      "requestOrderMatches": true,
+      "requestCounts": {
+        "pi": 21,
+        "pisharp": 21
+      },
+      "mutationSequencesMatch": true
     },
     {
       "fixture": "llama-huggingface-home-token-file",
@@ -41,10 +47,18 @@
           "authorization": "Bearer fixture-hf-token"
         }
       ],
-      "terminalDifferences": 24560,
+      "terminalDifferences": 8916,
       "terminalFramesExact": false,
       "scenarioErrors": {},
-      "rawEvidence": "llama-huggingface-home-token-file-2026-10-07-100x32-dark-fullscreen.json.gz"
+      "rawEvidence": "llama-terminal-current-pi-2026-10-07/llama-huggingface-home-token-file.json.gz",
+      "requestOrderMatches": true,
+      "requestCounts": {
+        "pi": 21,
+        "pisharp": 21
+      },
+      "mutationSequencesMatch": true
     }
-  ]
+  ],
+  "capturedAt": "2026-10-08",
+  "ciRun": "37748361405"
 }

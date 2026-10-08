@@ -1,13 +1,13 @@
 {
   "match": true,
-  "piSha": "70759f48bed0c0b30b089b9094f4080cbc3148c5",
-  "piSharpSha": "406263fa0b2996e868a7e3df9e6811f233696143",
+  "piSha": "7f9e1198f2f7a8cf5ea18d5010ba081d4d60c333",
+  "piSharpSha": "f615889c5f33f4a1bc9c8373c1f52f29da2e584f",
   "projection": {
     "chatModels": [
       {
         "id": "chat-model",
         "api": "openai-completions",
-        "baseUrl": "http://127.0.0.1:39461/v1",
+        "baseUrl": "http://127.0.0.1:37641/v1",
         "contextWindow": 32768,
         "maxTokens": 32768,
         "reasoning": true,
@@ -28,7 +28,7 @@
       {
         "id": "sleeping-chat",
         "api": "openai-completions",
-        "baseUrl": "http://127.0.0.1:39461/v1",
+        "baseUrl": "http://127.0.0.1:37641/v1",
         "contextWindow": 16384,
         "maxTokens": 16384,
         "reasoning": false,
@@ -47,7 +47,7 @@
       {
         "id": "autoload-chat",
         "api": "openai-completions",
-        "baseUrl": "http://127.0.0.1:39461/v1",
+        "baseUrl": "http://127.0.0.1:37641/v1",
         "contextWindow": 4096,
         "maxTokens": 4096,
         "reasoning": false,
@@ -68,31 +68,31 @@
       {
         "id": "chat-model",
         "api": "llama-cpp-classify",
-        "baseUrl": "http://127.0.0.1:39461",
+        "baseUrl": "http://127.0.0.1:37641",
         "contextWindow": 32768
       },
       {
         "id": "decision-model",
         "api": "typesafe-system-one",
-        "baseUrl": "http://127.0.0.1:39461/v1",
+        "baseUrl": "http://127.0.0.1:37641/v1",
         "contextWindow": 8192
       },
       {
         "id": "sleeping-chat",
         "api": "llama-cpp-classify",
-        "baseUrl": "http://127.0.0.1:39461",
+        "baseUrl": "http://127.0.0.1:37641",
         "contextWindow": 16384
       },
       {
         "id": "autoload-chat",
         "api": "llama-cpp-classify",
-        "baseUrl": "http://127.0.0.1:39461",
+        "baseUrl": "http://127.0.0.1:37641",
         "contextWindow": 4096
       },
       {
         "id": "autoload-decision",
         "api": "typesafe-system-one",
-        "baseUrl": "http://127.0.0.1:39461/v1",
+        "baseUrl": "http://127.0.0.1:37641/v1",
         "contextWindow": 8192
       }
     ]
@@ -207,7 +207,7 @@
           {
             "id": "chat-model",
             "api": "openai-completions",
-            "baseUrl": "http://127.0.0.1:39461/v1",
+            "baseUrl": "http://127.0.0.1:37641/v1",
             "contextWindow": 32768,
             "maxTokens": 32768,
             "reasoning": true,
@@ -228,7 +228,7 @@
           {
             "id": "sleeping-chat",
             "api": "openai-completions",
-            "baseUrl": "http://127.0.0.1:39461/v1",
+            "baseUrl": "http://127.0.0.1:37641/v1",
             "contextWindow": 16384,
             "maxTokens": 16384,
             "reasoning": false,
@@ -247,7 +247,7 @@
           {
             "id": "autoload-chat",
             "api": "openai-completions",
-            "baseUrl": "http://127.0.0.1:39461/v1",
+            "baseUrl": "http://127.0.0.1:37641/v1",
             "contextWindow": 4096,
             "maxTokens": 4096,
             "reasoning": false,
@@ -268,31 +268,31 @@
           {
             "id": "chat-model",
             "api": "llama-cpp-classify",
-            "baseUrl": "http://127.0.0.1:39461",
+            "baseUrl": "http://127.0.0.1:37641",
             "contextWindow": 32768
           },
           {
             "id": "decision-model",
             "api": "typesafe-system-one",
-            "baseUrl": "http://127.0.0.1:39461/v1",
+            "baseUrl": "http://127.0.0.1:37641/v1",
             "contextWindow": 8192
           },
           {
             "id": "sleeping-chat",
             "api": "llama-cpp-classify",
-            "baseUrl": "http://127.0.0.1:39461",
+            "baseUrl": "http://127.0.0.1:37641",
             "contextWindow": 16384
           },
           {
             "id": "autoload-chat",
             "api": "llama-cpp-classify",
-            "baseUrl": "http://127.0.0.1:39461",
+            "baseUrl": "http://127.0.0.1:37641",
             "contextWindow": 4096
           },
           {
             "id": "autoload-decision",
             "api": "typesafe-system-one",
-            "baseUrl": "http://127.0.0.1:39461/v1",
+            "baseUrl": "http://127.0.0.1:37641/v1",
             "contextWindow": 8192
           }
         ]
@@ -389,7 +389,7 @@
           {
             "id": "chat-model",
             "api": "openai-completions",
-            "baseUrl": "http://127.0.0.1:39461/v1",
+            "baseUrl": "http://127.0.0.1:37641/v1",
             "contextWindow": 32768,
             "maxTokens": 32768,
             "reasoning": true,
@@ -410,7 +410,7 @@
           {
             "id": "sleeping-chat",
             "api": "openai-completions",
-            "baseUrl": "http://127.0.0.1:39461/v1",
+            "baseUrl": "http://127.0.0.1:37641/v1",
             "contextWindow": 16384,
             "maxTokens": 16384,
             "reasoning": false,
@@ -431,19 +431,19 @@
           {
             "id": "chat-model",
             "api": "llama-cpp-classify",
-            "baseUrl": "http://127.0.0.1:39461",
+            "baseUrl": "http://127.0.0.1:37641",
             "contextWindow": 32768
           },
           {
             "id": "decision-model",
             "api": "typesafe-system-one",
-            "baseUrl": "http://127.0.0.1:39461/v1",
+            "baseUrl": "http://127.0.0.1:37641/v1",
             "contextWindow": 8192
           },
           {
             "id": "sleeping-chat",
             "api": "llama-cpp-classify",
-            "baseUrl": "http://127.0.0.1:39461",
+            "baseUrl": "http://127.0.0.1:37641",
             "contextWindow": 16384
           }
         ]
