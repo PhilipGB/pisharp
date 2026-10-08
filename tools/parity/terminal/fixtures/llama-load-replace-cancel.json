@@ -29,6 +29,29 @@
   "settings": {
     "quietStartup": true
   },
+  "concurrentHttpGroups": [
+    {
+      "occurrence": 1,
+      "requests": [
+        { "method": "GET", "path": "/models/sse" },
+        { "method": "POST", "path": "/models/load" }
+      ]
+    },
+    {
+      "occurrence": 2,
+      "requests": [
+        { "method": "GET", "path": "/models/sse" },
+        { "method": "POST", "path": "/models/load" }
+      ]
+    },
+    {
+      "occurrence": 3,
+      "requests": [
+        { "method": "GET", "path": "/models/sse" },
+        { "method": "POST", "path": "/models/load" }
+      ]
+    }
+  ],
   "environment": {
     "pi": {
       "LLAMA_BASE_URL": "{router}"
@@ -179,6 +202,8 @@
       "id": "start-restoration",
       "releaseGates": ["restore-response"],
       "waitGatesAfter": ["restore-started"],
+      "waitForModelPoll": "loaded-fixture-model",
+      "expectModelStatus": { "id": "loaded-fixture-model", "value": "loading" },
       "expect": "Restoring previously loaded models",
       "quietMs": 0
     },

@@ -16,7 +16,7 @@ internal sealed class TerminalLlamaManager(ProviderModelRuntime runtime, Termina
             return;
         }
 
-        var catalog = await ReadCatalogAsync(client, cancellationToken).ConfigureAwait(false);
+        var catalog = await ReadCatalogAsync(client, cancellationToken, showLoading: true).ConfigureAwait(false);
         if (catalog is null) return;
         var huggingFaceSearchCache = new Dictionary<string, IReadOnlyList<HuggingFaceModel>>(StringComparer.OrdinalIgnoreCase);
         while (true)
@@ -41,7 +41,7 @@ internal sealed class TerminalLlamaManager(ProviderModelRuntime runtime, Termina
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
             catch (Exception error) { actionError = error; }
 
-            catalog = await ReadCatalogAsync(client, cancellationToken).ConfigureAwait(false);
+            catalog = await ReadCatalogAsync(client, cancellationToken, showLoading: false).ConfigureAwait(false);
             if (catalog is null) return;
             if (actionError is not null && !IsConnectionError(actionError))
                 editor.SetStatusNotification(SecretRedactor.Redact(actionError.Message, environment("LLAMA_API_KEY")),
@@ -50,17 +50,20 @@ internal sealed class TerminalLlamaManager(ProviderModelRuntime runtime, Termina
     }
 
     private async Task<IReadOnlyList<LlamaRouterModelInfo>?> ReadCatalogAsync(LlamaRouterClient client,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken, bool showLoading)
     {
+        var showInitialLoading = showLoading;
         while (true)
         {
             try
             {
+                using var loading = showInitialLoading ? editor.ShowLlamaCatalogLoading() : null;
                 return await ReadCatalogSnapshotAsync(client, cancellationToken).ConfigureAwait(false);
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
             catch (Exception error)
             {
+                showInitialLoading = false;
                 var message = error is HttpRequestException { StatusCode: null } or TaskCanceledException
                     ? "Could not connect to the server." : error.Message;
                 var choice = editor.ShowInlineSelectionList("llama.cpp unavailable", new[]
@@ -146,12 +149,9 @@ internal sealed class TerminalLlamaManager(ProviderModelRuntime runtime, Termina
             var result = await editor.RunProgressAsync("Loading model", target.Id, "Stop loading?", target.Id,
                 (token, update) => client.LoadAndWaitAsync(target.Id,
                     progress => update(new(progress.Message, progress.Ratio, progress.Detail)), token),
-                () => client.UnloadAsync(target.Id, CancellationToken.None)).ConfigureAwait(false);
-            if (result.Cancelled)
-            {
-                if (replace) await RestoreLoadedAsync(client, loaded, cancellationToken).ConfigureAwait(false);
-                return;
-            }
+                () => client.UnloadAsync(target.Id, CancellationToken.None),
+                replace ? () => RestoreLoadedAsync(client, loaded, cancellationToken) : null).ConfigureAwait(false);
+            if (result.Cancelled) return;
             var loadedModel = (await ReadCatalogSnapshotAsync(client, cancellationToken).ConfigureAwait(false))
                 .FirstOrDefault(model => model.Id == target.Id);
             editor.SetStatusNotification(loadedModel?.Status.Value == "loaded"

@@ -28,7 +28,7 @@ public sealed class LlamaRouterManagerTuiTests
             await terminal.WaitTextAsync("fixture-model");
             var mark = terminal.Mark;
             await terminal.SendAsync("/llama\n");
-            await terminal.WaitTextAsync("llama.cpp models", mark);
+            await terminal.WaitManagerAsync(mark);
             await terminal.SendAsync("\u001b[B\n");
             await terminal.WaitTextAsync("1 model is loaded");
             mark = terminal.Mark;
@@ -38,11 +38,13 @@ public sealed class LlamaRouterManagerTuiTests
             Assert.Equal("loaded", server.Statuses["target"]);
 
             mark = terminal.Mark;
-            await terminal.WaitTextAsync("llama.cpp models", mark);
+            await terminal.WaitManagerAsync(mark);
             await terminal.SendAsync("\n");
             await terminal.WaitTextAsync("Unload model?", mark);
             await terminal.SendAsync("\n");
             await terminal.WaitTextAsync("Unloaded qwen", mark);
+            mark = terminal.Mark;
+            await terminal.WaitManagerAsync(mark);
             Assert.Equal("unloaded", server.Statuses["qwen"]);
             Assert.Contains(server.Requests, request => request.Method == "POST" && request.Path == "/models/load" &&
                 request.Body == "{\"model\":\"target\"}");
@@ -75,7 +77,7 @@ public sealed class LlamaRouterManagerTuiTests
             await terminal.WaitTextAsync("fixture-model");
             var mark = terminal.Mark;
             await terminal.SendAsync("/llama\n");
-            await terminal.WaitTextAsync("llama.cpp models", mark);
+            await terminal.WaitManagerAsync(mark);
             await terminal.SendAsync("\u001b[B\n");
             await terminal.WaitTextAsync("1 model is loaded");
             mark = terminal.Mark;
@@ -87,7 +89,7 @@ public sealed class LlamaRouterManagerTuiTests
             await terminal.SendAsync("\u001b");
             await terminal.WaitTextAsync("Stop loading?", mark);
             await terminal.SendAsync("\n");
-            await terminal.WaitTextAsync("llama.cpp models", mark);
+            await terminal.WaitManagerAsync(mark);
 
             Assert.Equal("unloaded", server.Statuses["target"]);
             Assert.Contains(server.Requests, request => request.Method == "POST" && request.Path == "/models/unload" &&
@@ -110,14 +112,14 @@ public sealed class LlamaRouterManagerTuiTests
         await File.WriteAllTextAsync(Path.Combine(agent, "models.json"), """
             {"providers":{"fixture":{"baseUrl":"http://127.0.0.1:1/v1","apiKey":"fixture-key","models":[{"id":"fixture-model"}]}}}
             """);
-        await using var server = new RouterServer(holdLoad: true);
+        await using var server = new RouterServer(holdLoad: true, holdRestore: true);
         await using var terminal = new ManagerTerminal(root, agent, server.Origin);
         try
         {
             await terminal.WaitTextAsync("fixture-model");
             var mark = terminal.Mark;
             await terminal.SendAsync("/llama\n");
-            await terminal.WaitTextAsync("llama.cpp models", mark);
+            await terminal.WaitManagerAsync(mark);
             await terminal.SendAsync("\u001b[B\n");
             await terminal.WaitTextAsync("1 model is loaded");
 
@@ -132,7 +134,13 @@ public sealed class LlamaRouterManagerTuiTests
             await terminal.WaitTextAsync("Stop loading?", mark);
             await terminal.SendAsync("\n");
             await terminal.WaitTextAsync("Restoring previously loaded models", mark);
-            await terminal.WaitTextAsync("llama.cpp models", mark);
+            await server.RestoreLoadRequested.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            var restoring = await terminal.WaitFrameAsync(frame =>
+                frame.Contains("Restoring previously loaded models", StringComparison.Ordinal) &&
+                frame.Contains("Stop loading?", StringComparison.Ordinal), mark);
+            Assert.Contains("Yes", restoring, StringComparison.Ordinal);
+            server.ReleaseRestore();
+            await terminal.WaitManagerAsync(mark);
 
             Assert.Equal("unloaded", server.Statuses["target"]);
             Assert.Equal("loaded", server.Statuses["qwen"]);
@@ -174,7 +182,7 @@ public sealed class LlamaRouterManagerTuiTests
             await terminal.WaitTextAsync("fixture-model");
             var mark = terminal.Mark;
             await terminal.SendAsync("/llama\n");
-            await terminal.WaitTextAsync("llama.cpp models", mark);
+            await terminal.WaitManagerAsync(mark);
             await terminal.SendAsync("\u001b[B\u001b[B\n");
             await terminal.WaitTextAsync("Model name or owner/repository[:quant]", mark);
             await terminal.SendAsync("model\n");
@@ -221,7 +229,7 @@ public sealed class LlamaRouterManagerTuiTests
             await terminal.WaitTextAsync("fixture-model");
             var mark = terminal.Mark;
             await terminal.SendAsync("/llama\n");
-            await terminal.WaitTextAsync("llama.cpp models", mark);
+            await terminal.WaitManagerAsync(mark);
             await terminal.SendAsync("\u001b[B\u001b[B\n");
             await terminal.WaitTextAsync("Model name or owner/repository[:quant]", mark);
             await terminal.SendAsync("model\n");
@@ -238,7 +246,7 @@ public sealed class LlamaRouterManagerTuiTests
             await terminal.SendAsync("\u001b");
             await terminal.WaitTextAsync("Stop download?", mark);
             await terminal.SendAsync("\n");
-            await terminal.WaitTextAsync("llama.cpp models", mark);
+            await terminal.WaitManagerAsync(mark);
 
             Assert.Equal("unloaded", router.Statuses["owner/model:Q4_K_M"]);
             Assert.Contains(router.Requests, request => request.Method == "POST" && request.Path == "/models/unload" &&
@@ -268,11 +276,13 @@ public sealed class LlamaRouterManagerTuiTests
             await terminal.WaitTextAsync("fixture-model");
             var mark = terminal.Mark;
             await terminal.SendAsync("/llama\n");
-            await terminal.WaitTextAsync("llama.cpp models", mark);
+            await terminal.WaitManagerAsync(mark);
             await terminal.SendAsync("\n");
             await terminal.WaitTextAsync("Unload model?", mark);
             await terminal.SendAsync("\n");
             await terminal.WaitTextAsync("Unloaded qwen", mark);
+            mark = terminal.Mark;
+            await terminal.WaitManagerAsync(mark);
             Assert.Equal("unloaded", server.Statuses["qwen"]);
             Assert.Contains(server.Requests, request => request.Method == "POST" && request.Path == "/models/unload" &&
                 request.Body == "{\"model\":\"qwen\"}");
@@ -301,14 +311,14 @@ public sealed class LlamaRouterManagerTuiTests
             await terminal.WaitTextAsync("fixture-model");
             var mark = terminal.Mark;
             await terminal.SendAsync("/llama\n");
-            await terminal.WaitTextAsync("llama.cpp models", mark);
+            await terminal.WaitManagerAsync(mark);
             await terminal.SendAsync("\u001b[B\n");
             await terminal.WaitTextAsync("1 model is loaded");
             await terminal.SendAsync("\u001b[B\n");
             mark = terminal.Mark;
             await terminal.WaitTextAsync("Loaded target", mark);
             mark = terminal.Mark;
-            await terminal.WaitTextAsync("llama.cpp models", mark);
+            await terminal.WaitManagerAsync(mark);
             mark = terminal.Mark;
             await terminal.SendAsync("\u001b");
             await terminal.WaitEditorAsync(mark);
@@ -346,7 +356,7 @@ public sealed class LlamaRouterManagerTuiTests
             await terminal.SendAsync("/llama\n");
             await terminal.WaitTextAsync("llama.cpp unavailable", mark);
             await terminal.SendAsync("\n");
-            await terminal.WaitTextAsync("llama.cpp models", mark);
+            await terminal.WaitManagerAsync(mark);
             Assert.Equal(3, server.CatalogRequests);
             mark = terminal.Mark;
             await terminal.SendAsync("\u001b");
@@ -363,12 +373,15 @@ public sealed class LlamaRouterManagerTuiTests
         private readonly Task _serve;
         private readonly bool _holdLoad;
         private readonly bool _holdDownload;
+        private readonly bool _holdRestore;
         private readonly bool _failFirstCatalog;
         private readonly ConcurrentBag<Task> _background = [];
         private readonly TaskCompletionSource _downloadRequested = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private int _catalogRequests;
         public ConcurrentQueue<(string Method, string Path, string? Authorization, string? Body)> Requests { get; } = new();
         public TaskCompletionSource LoadRequested { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource RestoreLoadRequested { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource _restoreLoadRelease = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public TaskCompletionSource DownloadRequested => _downloadRequested;
         public int CatalogRequests => Volatile.Read(ref _catalogRequests);
         public Dictionary<string, string> Statuses { get; } = new(StringComparer.Ordinal)
@@ -379,11 +392,12 @@ public sealed class LlamaRouterManagerTuiTests
         public string Origin { get; }
 
         public RouterServer(bool holdLoad = false, bool failFirstCatalog = false, bool holdDownload = false,
-            bool sleepingQwen = false)
+            bool sleepingQwen = false, bool holdRestore = false)
         {
             _holdLoad = holdLoad;
             _failFirstCatalog = failFirstCatalog;
             _holdDownload = holdDownload;
+            _holdRestore = holdRestore;
             if (sleepingQwen) Statuses["qwen"] = "sleeping";
             using var reservation = new TcpListener(IPAddress.Loopback, 0);
             reservation.Start();
@@ -416,8 +430,14 @@ public sealed class LlamaRouterManagerTuiTests
                     {
                         using var payload = JsonDocument.Parse(body!);
                         var model = payload.RootElement.GetProperty("model").GetString()!;
+                        var holdRestore = _holdRestore && model == "qwen";
                         Statuses[model] = _holdLoad && model == "target" ? "loading" : "loaded";
                         LoadRequested.TrySetResult();
+                        if (holdRestore)
+                        {
+                            RestoreLoadRequested.TrySetResult();
+                            await _restoreLoadRelease.Task.WaitAsync(_shutdown.Token);
+                        }
                         response = "{}";
                     }
                     else if (context.Request.HttpMethod == "POST" && path == "/models/unload")
@@ -505,12 +525,15 @@ public sealed class LlamaRouterManagerTuiTests
 
         public async ValueTask DisposeAsync()
         {
+            _restoreLoadRelease.TrySetResult();
             _shutdown.Cancel();
             _listener.Close();
             await _serve;
             await Task.WhenAll(_background);
             _shutdown.Dispose();
         }
+
+        public void ReleaseRestore() => _restoreLoadRelease.TrySetResult();
     }
 
     private sealed class HuggingFaceServer : IAsyncDisposable
@@ -620,12 +643,17 @@ public sealed class LlamaRouterManagerTuiTests
         public Task<string> WaitTextAsync(string value, int after = 0) => WaitAsync(output =>
             StripAnsi(output[after..]).Contains(value, StringComparison.Ordinal) ? output[after..] : null);
 
+        public Task<string> WaitManagerAsync(int after = 0) => WaitFrameAsync(frame =>
+            frame.Contains("llama.cpp models", StringComparison.Ordinal) &&
+            !frame.Contains("Loading…", StringComparison.Ordinal) &&
+            frame.Contains("qwen", StringComparison.Ordinal), after);
+
         public Task<string> WaitEditorAsync(int after = 0) => WaitFrameAsync(frame =>
             frame.Contains(_editorModelText, StringComparison.Ordinal) &&
             !frame.Contains("llama.cpp models", StringComparison.Ordinal) &&
             !frame.Contains("Unload model?", StringComparison.Ordinal), after);
 
-        private Task<string> WaitFrameAsync(Func<string, bool> predicate, int after) => WaitAsync(output =>
+        public Task<string> WaitFrameAsync(Func<string, bool> predicate, int after = 0) => WaitAsync(output =>
         {
             const string start = "\u001b[?2026h";
             const string end = "\u001b[?2026l";

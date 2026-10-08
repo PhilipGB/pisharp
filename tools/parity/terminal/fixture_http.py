@@ -54,7 +54,7 @@ class FixtureServer:
                         outer.catalog_failures_remaining -= 1
                         self.send_json(dict(error=dict(message='fixture router unavailable')), status=503)
                         return
-                    outer.wait_for_model_poll()
+                    outer._wait_for_model_poll_gate()
                     now = time.monotonic()
                     for entry in outer.models:
                         deadline = outer.pending_loads.get(entry.get('id'))
@@ -282,7 +282,7 @@ class FixtureServer:
         self.pending_download_finish_gates = {}
         self.pending_download_poll_gates = {}
         self.model_poll_counts = {}
-        self.model_poll_waiting = Event()
+        self.model_poll_waiting = {}
         self.model_poll_waiting.clear()
         for gate in self.gates.values():
             gate.clear()
@@ -338,7 +338,7 @@ class FixtureServer:
             raise ValueError(f'Unknown fixture gate: {name}')
         return self.gates[name].wait(timeout) and not self.closed
 
-    def wait_for_model_poll(self):
+    def _wait_for_model_poll_gate(self):
         pending = [(model, gate, 'loading')
                    for model, gate in self.pending_load_poll_gates.items()]
         pending.extend((model, gate, 'downloading')
@@ -350,8 +350,11 @@ class FixtureServer:
             polls = self.model_poll_counts.get(model, 0)
             self.model_poll_counts[model] = polls + 1
             if polls > 0 and not self.gate_released(gate):
-                self.model_poll_waiting.set()
+                self.model_poll_waiting.setdefault(model, Event()).set()
                 self.wait_for_gate(gate)
+
+    def wait_for_model_poll(self, model, timeout=20):
+        return self.model_poll_waiting.setdefault(model, Event()).wait(timeout)
 
     def set_progress(self, model, status):
         entry = next((value for value in self.models if value.get('id') == model), None)

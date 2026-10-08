@@ -84,13 +84,15 @@ public sealed class TerminalEditor
 
     internal TerminalSelection<T>? ShowInlineSelectionList<T>(string title,
         IReadOnlyList<TerminalSelectionOption<T>> options, IReadOnlyList<string>? header = null,
-        string footer = "↑↓ move • enter select • escape/ctrl+c close", string? selectedKey = null)
+        string footer = "↑↓ move • enter select • escape/ctrl+c close", string? selectedKey = null,
+        bool preservePanelAfterSelection = false)
     {
         if (_screen is not { IsActive: true } screen || options.Count == 0) return null;
         var input = EnsureInput();
         var selectedIndex = selectedKey is null ? 0 : Math.Max(0,
             Array.FindIndex(options.ToArray(), option => option.Key.Equals(selectedKey, StringComparison.OrdinalIgnoreCase)));
         using var mode = TerminalMode.Enter(screen);
+        var preservePanel = false;
         try
         {
             while (screen.IsActive)
@@ -104,7 +106,11 @@ public sealed class TerminalEditor
                 if (next.Key is not { } key) continue;
                 if (key.Key == ConsoleKey.Escape || _keymap.Matches("app.interrupt", key) ||
                     _keymap.Matches("app.clear", key)) return null;
-                if (key.Key == ConsoleKey.Enter) return new(options[selectedIndex], IsScoped: false);
+                if (key.Key == ConsoleKey.Enter)
+                {
+                    preservePanel = preservePanelAfterSelection;
+                    return new(options[selectedIndex], IsScoped: false);
+                }
                 if (key.Key == ConsoleKey.UpArrow) selectedIndex = (selectedIndex + options.Count - 1) % options.Count;
                 else if (key.Key == ConsoleKey.DownArrow) selectedIndex = (selectedIndex + 1) % options.Count;
                 else if (key.Key == ConsoleKey.Home) selectedIndex = 0;
@@ -114,7 +120,16 @@ public sealed class TerminalEditor
             }
             return null;
         }
-        finally { screen.SetEditorPanel(null); }
+        finally { if (!preservePanel) screen.SetEditorPanel(null); }
+    }
+
+    internal void ShowInlineSelectionPanel<T>(string title, IReadOnlyList<TerminalSelectionOption<T>> options,
+        IReadOnlyList<string>? header = null, string footer = "↑↓ move • enter select • escape/ctrl+c close",
+        int selectedIndex = 0)
+    {
+        if (_screen is not { IsActive: true } screen || options.Count == 0) return;
+        var panel = RenderInlinePanel(screen, title, options, Math.Clamp(selectedIndex, 0, options.Count - 1), header, footer);
+        screen.SetEditorPanel(panel, panel.Count - 2, screen.TerminalWidth + 1, cursorVisible: false, bottomMargin: 2);
     }
 
     internal async Task<IReadOnlyList<string>?> PromptSequenceAsync(string title,
@@ -192,6 +207,27 @@ public sealed class TerminalEditor
             PanelBorder(theme, width)
         };
         screen.SetEditorPanel(lines, lines.Length - 2, width + 1, cursorVisible: false, bottomMargin: 2);
+    }
+
+    internal IDisposable? ShowLlamaCatalogLoading()
+    {
+        if (_screen is not { IsActive: true } screen) return null;
+        var theme = screen.CurrentTheme;
+        var width = screen.TerminalWidth;
+        var lines = new[]
+        {
+            PanelBorder(theme, width),
+            PadPanelLine(" " + theme.Style("accent", "llama.cpp models", bold: true), width),
+            PadPanelLine(" " + theme.Style("muted", "Loading…"), width),
+            PanelBorder(theme, width)
+        };
+        screen.SetEditorPanel(lines, lines.Length - 2, width + 1, cursorVisible: false, bottomMargin: 2);
+        return new InlinePanelLease(screen);
+    }
+
+    private sealed class InlinePanelLease(TerminalScreen screen) : IDisposable
+    {
+        public void Dispose() => screen.SetEditorPanel(null);
     }
 
     internal void SetStatusNotification(string message,
@@ -292,7 +328,8 @@ public sealed class TerminalEditor
 
     internal async Task<TerminalProgressOutcome<T>> RunProgressAsync<T>(string title, string subject,
         string cancelTitle, string cancelMessage,
-        Func<CancellationToken, Action<TerminalProgressState>, Task<T>> run, Func<Task> cancelOperation)
+        Func<CancellationToken, Action<TerminalProgressState>, Task<T>> run, Func<Task> cancelOperation,
+        Func<Task>? afterCancelled = null)
     {
         ArgumentNullException.ThrowIfNull(run);
         ArgumentNullException.ThrowIfNull(cancelOperation);
@@ -303,6 +340,13 @@ public sealed class TerminalEditor
         using var cancellation = new CancellationTokenSource();
         var input = EnsureInput();
         var state = new TerminalProgressState("Starting…");
+        var cancelOptions = new[]
+        {
+            new TerminalSelectionOption<bool>("yes", true, "Yes"),
+            new TerminalSelectionOption<bool>("no", false, "No")
+        };
+        var confirmationTitle = $"{cancelTitle}\n{cancelMessage}";
+        const string confirmationFooter = "enter select • escape/ctrl+c cancel";
         void Update(TerminalProgressState progress)
         {
             state = progress;
@@ -351,19 +395,22 @@ public sealed class TerminalEditor
                 }
                 if (next.Key is not { } key ||
                     !_keymap.Matches("app.interrupt", key) && !_keymap.Matches("app.clear", key)) continue;
-                var confirmation = ShowInlineSelectionList($"{cancelTitle}\n{cancelMessage}", new[]
-                {
-                    new TerminalSelectionOption<bool>("yes", true, "Yes"),
-                    new TerminalSelectionOption<bool>("no", false, "No")
-                }, [""], "enter select • escape/ctrl+c cancel");
+                var confirmation = ShowInlineSelectionList(confirmationTitle, cancelOptions, [""],
+                    confirmationFooter, preservePanelAfterSelection: true);
                 if (confirmation?.Option.Value != true)
                 {
+                    screen.SetEditorPanel(null);
                     Update(state);
                     continue;
                 }
                 try { await cancelOperation().ConfigureAwait(false); }
                 finally { cancellation.Cancel(); }
                 _ = await settled.ConfigureAwait(false);
+                if (afterCancelled is not null)
+                {
+                    ShowInlineSelectionPanel(confirmationTitle, cancelOptions, [""], confirmationFooter);
+                    await afterCancelled().ConfigureAwait(false);
+                }
                 return new(true, default);
             }
 

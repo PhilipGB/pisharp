@@ -23,7 +23,7 @@ class DriverTests(unittest.TestCase):
                 return json.loads(line.removeprefix('data: '))
 
     def test_fixture_reset_waits_for_disconnected_sse_clients(self):
-        server = FixtureServer()
+        server = FixtureServer(behavior=dict(downloadFinishGate='finish'))
         stream = None
         try:
             stream = urllib.request.urlopen(server.url + '/models/sse', timeout=2)
@@ -31,8 +31,11 @@ class DriverTests(unittest.TestCase):
             stream = None
 
             self.assertTrue(server.wait_for_sse_streams(2))
+            server.release_gate('finish')
+            self.assertTrue(server.gate_released('finish'))
             server.reset()
             self.assertEqual(0, server.active_sse_streams)
+            self.assertFalse(server.gate_released('finish'))
         finally:
             if stream is not None:
                 stream.close()
@@ -234,7 +237,8 @@ class DriverTests(unittest.TestCase):
 
             poll_thread = Thread(target=poll_catalog, daemon=True)
             poll_thread.start()
-            self.assertTrue(server.model_poll_waiting.wait(2), 'catalog poll did not wait at its fixture gate')
+            self.assertTrue(server.wait_for_model_poll('owner/model:Q4_K_M', 2),
+                            'catalog poll did not wait at its fixture gate')
 
             request = urllib.request.Request(
                 server.url + '/models/unload', data=json.dumps(dict(model='owner/model:Q4_K_M')).encode(),

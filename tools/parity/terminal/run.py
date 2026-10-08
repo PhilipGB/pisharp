@@ -137,6 +137,17 @@ def run_product(label, command, scenario, dimensions, theme, mode, server):
             for gate in wait_gates_after:
                 if not server.wait_for_gate(gate, timeout=action.get('gateTimeout', 20)):
                     raise TimeoutError(f'Fixture gate was not signaled after action: {gate}')
+            poll_model = action.get('waitForModelPoll')
+            if poll_model and not server.wait_for_model_poll(poll_model, timeout=action.get('gateTimeout', 20)):
+                raise TimeoutError(f'Fixture model poll did not reach its gate: {poll_model}')
+            expected_model_status = action.get('expectModelStatus')
+            if expected_model_status:
+                model = next((value for value in server.models
+                              if value.get('id') == expected_model_status['id']), None)
+                actual_status = model.get('status', {}).get('value') if model else None
+                if actual_status != expected_model_status['value']:
+                    raise RuntimeError(f"Fixture model {expected_model_status['id']} status was {actual_status!r}, "
+                                       f"expected {expected_model_status['value']!r}.")
             if action.get('exit'):
                 deadline = time.monotonic() + 10
                 while not terminal.closed and time.monotonic() < deadline:
