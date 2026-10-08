@@ -67,17 +67,11 @@ internal sealed class RadiusLoginTerminal : IAsyncDisposable
     public Task<string> WaitFrameAsync(Func<string, bool> predicate, int after = 0, bool preserveAnsi = false) =>
         WaitAsync(output =>
         {
-            const string start = "\u001b[?2026h";
-            const string end = "\u001b[?2026l";
-            var position = after;
-            while ((position = output.IndexOf(start, position, StringComparison.Ordinal)) >= 0)
+            foreach (var frame in TerminalOutputFrameReader.Read(output, rows: 40, columns: 120))
             {
-                var close = output.IndexOf(end, position + start.Length, StringComparison.Ordinal);
-                if (close < 0) return null;
-                var raw = output[(position + start.Length)..close];
-                var frame = preserveAnsi ? raw : StripAnsi(raw);
-                if (predicate(frame)) return frame;
-                position = close + end.Length;
+                if (frame.Start < after) continue;
+                var candidate = preserveAnsi ? frame.Output : frame.Screen;
+                if (predicate(candidate)) return candidate;
             }
             return null;
         });

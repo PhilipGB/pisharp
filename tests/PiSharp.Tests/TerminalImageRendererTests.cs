@@ -114,7 +114,7 @@ public sealed class TerminalImageRendererTests
 
         var rendered = output.ToString();
         var imageEnd = rendered.IndexOf('\u0007');
-        var followingRow = rendered.IndexOf("\u001b[7;1Hafter image", imageEnd, StringComparison.Ordinal);
+        var followingRow = rendered.IndexOf("\u001b[7;1H\u001b[2Kafter image", imageEnd, StringComparison.Ordinal);
         Assert.True(imageEnd >= 0 && followingRow > imageEnd);
         Assert.DoesNotContain("\u001b[K", rendered);
     }

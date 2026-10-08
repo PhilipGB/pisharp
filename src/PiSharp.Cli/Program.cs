@@ -353,7 +353,7 @@ var initialTerminalTheme = ResolveConfiguredTheme(ActiveThemeSetting());
 using var terminalScreen = editor is null ? null : new TerminalScreen(Console.Out, Console.Error,
     getColumns: null, getRows: null, imageRenderer: new TerminalImageRenderer(), theme: initialTerminalTheme,
     queryTerminalColors: !Console.IsInputRedirected && !Console.IsOutputRedirected,
-    followTerminalAppearance: ThemeFollowsTerminalAppearance(ActiveThemeSetting()));
+    followTerminalAppearance: ThemeFollowsTerminalAppearance(ActiveThemeSetting()), deferInitialRender: true);
 terminalScreen?.SetThemeResolver(colors => ResolveConfiguredTheme(ActiveThemeSetting(), colors));
 terminalScreen?.SetMarkdownCodeBlockIndent(userSettings.MarkdownCodeBlockIndent ?? UserSettings.DefaultMarkdownCodeBlockIndent);
 terminalScreen?.Activate();
@@ -398,6 +398,7 @@ terminalScreen?.SetFooter(IdleFooter());
 if (editor is not null)
     new TerminalStartupPresentation(userSettings.QuietStartup, cli.Verbose)
         .Write(Console.Out, selection.Provider.Id, connection.Model, thinking, currentDirectory);
+terminalScreen?.RenderInitial();
 CancellationTokenSource? activeRun = null;
 Console.CancelKeyPress += (_, e) => { e.Cancel = true; activeRun?.Cancel(); };
 

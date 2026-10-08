@@ -11,6 +11,27 @@ namespace PiSharp.Tests;
 public sealed class TerminalScreenTests
 {
     [Fact]
+    public void DeferredInitialRenderIncludesStartupOutputAndConfiguredFooter()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        using var screen = new TerminalScreen(output, error, () => 40, () => 9,
+            new TerminalImageRenderer(), TerminalTheme.Default, queryTerminalColors: false,
+            deferInitialRender: true);
+
+        screen.SetFooter("configured model status");
+        screen.Output.WriteLine("startup context");
+
+        Assert.DoesNotContain("\u001b[?2026h", output.ToString());
+        screen.RenderInitial();
+
+        var text = output.ToString();
+        Assert.Equal(1, Count(text, "\u001b[?2026h"));
+        Assert.Contains("startup context", text);
+        Assert.Contains("configured model status", text);
+    }
+
+    [Fact]
     public void TranscriptAndDraftShareAUnicodeAwareScreenAndRestoreSeparateStreams()
     {
         using var output = new StringWriter();
@@ -366,7 +387,7 @@ public sealed class TerminalScreenTests
             foreach (var result in results)
             {
                 transcript.Render(new("tool_execution_finished", Tool: tool, Text: result));
-                var collapsedFrame = CurrentFrame(output);
+                var collapsedFrame = CurrentFrame(output, columns);
                 Assert.Contains("more rows", collapsedFrame);
                 if (result.StartsWith('x'))
                     Assert.True(collapsedFrame.Count(character => character == 'x') < result.Length);
@@ -377,7 +398,7 @@ public sealed class TerminalScreenTests
                 {
                     columns = 80;
                     screen.RefreshIfResized();
-                    var widerFrame = CurrentFrame(output);
+                    var widerFrame = CurrentFrame(output, columns);
                     Assert.DoesNotContain("more rows", widerFrame);
                     Assert.Equal(result.Length, widerFrame.Count(character => character == 'x'));
                     columns = 20;
@@ -385,7 +406,7 @@ public sealed class TerminalScreenTests
                 }
 
                 screen.SetToolResultsExpanded(true);
-                var expandedFrame = CurrentFrame(output);
+                var expandedFrame = CurrentFrame(output, columns);
                 Assert.Contains(result[^10..], expandedFrame);
                 screen.SetToolResultsExpanded(false);
             }
@@ -395,12 +416,12 @@ public sealed class TerminalScreenTests
             Assert.Contains(results[1], error.ToString());
         }
 
-        static string CurrentFrame(StringWriter output)
+        static string CurrentFrame(StringWriter output, int columns)
         {
             var text = output.ToString();
-            var start = text.LastIndexOf("\u001b[2J\u001b[H", StringComparison.Ordinal);
-            Assert.True(start >= 0);
-            return text[start..];
+            var frames = TerminalOutputFrameReader.Read(text, rows: 80, columns: columns);
+            Assert.NotEmpty(frames);
+            return frames[^1].Screen;
         }
     }
 
@@ -488,7 +509,7 @@ public sealed class TerminalScreenTests
         screen.SetTheme(dark);
 
         var outputText = output.ToString();
-        var lastFrame = outputText.LastIndexOf("\u001b[2J\u001b[H", StringComparison.Ordinal);
+        var lastFrame = outputText.LastIndexOf("\u001b[?2026h", StringComparison.Ordinal);
         Assert.True(lastFrame >= 0);
         var currentFrame = outputText[lastFrame..];
         Assert.Contains("\u001b[38;2;205;154;34m", currentFrame);
@@ -506,7 +527,7 @@ public sealed class TerminalScreenTests
         screen.SetMarkdownCodeBlockIndent(">>");
 
         var outputText = output.ToString();
-        var lastFrame = outputText.LastIndexOf("\u001b[2J\u001b[H", StringComparison.Ordinal);
+        var lastFrame = outputText.LastIndexOf("\u001b[?2026h", StringComparison.Ordinal);
         Assert.True(lastFrame >= 0);
         var visibleFrame = Regex.Replace(outputText[lastFrame..], "\\u001b\\[[0-9;]*m", "");
         Assert.Contains("  │>>line", visibleFrame);
@@ -536,7 +557,7 @@ public sealed class TerminalScreenTests
         screen.SetTheme(light);
 
         var outputText = output.ToString();
-        var lastFrame = outputText.LastIndexOf("\u001b[2J\u001b[H", StringComparison.Ordinal);
+        var lastFrame = outputText.LastIndexOf("\u001b[?2026h", StringComparison.Ordinal);
         Assert.True(lastFrame >= 0);
         var currentFrame = outputText[lastFrame..];
         Assert.Contains(lightCall, currentFrame);
@@ -563,7 +584,7 @@ public sealed class TerminalScreenTests
             screen.HandleTerminalDeviceAttributes();
 
             var outputText = output.ToString();
-            var lastFrame = outputText.LastIndexOf("\u001b[2J\u001b[H", StringComparison.Ordinal);
+            var lastFrame = outputText.LastIndexOf("\u001b[?2026h", StringComparison.Ordinal);
             Assert.Contains("\u001b[38;2;143;104;2m", outputText[lastFrame..]);
         }
         finally { Directory.Delete(root, recursive: true); }
@@ -599,7 +620,7 @@ public sealed class TerminalScreenTests
             Assert.Equal("light", screen.CurrentTheme.Appearance);
             Assert.NotEqual(darkHeading, screen.CurrentTheme.GetConcreteColor("mdHeading"));
             var lightHeadingAnsi = screen.CurrentTheme.Fg("mdHeading");
-            var lastFrame = output.ToString().LastIndexOf("\u001b[2J\u001b[H", StringComparison.Ordinal);
+            var lastFrame = output.ToString().LastIndexOf("\u001b[?2026h", StringComparison.Ordinal);
             Assert.True(lastFrame >= 0);
             Assert.Contains(lightHeadingAnsi, output.ToString()[lastFrame..]);
             Assert.Equal(2, Count(output.ToString(), "\u001b]10;?"));

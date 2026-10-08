@@ -1,4 +1,3 @@
-using System.Text.RegularExpressions;
 using PiSharp.Cli.Tui;
 using PiSharp.Runtime.Extensions;
 using PiSharp.Runtime.Sessions;
@@ -79,7 +78,7 @@ public sealed class ToolCallRenderingTests
 
     private static string VisibleFrame(string output)
     {
-        var last = output.LastIndexOf("\u001b[2J\u001b[H", StringComparison.Ordinal);
-        return Regex.Replace(last < 0 ? output : output[last..], "\\u001b\\[[0-9;]*m", "");
+        var frames = TerminalOutputFrameReader.Read(output, rows: 24, columns: 100);
+        return frames.Count == 0 ? output : frames[^1].Screen;
     }
 }

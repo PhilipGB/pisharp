@@ -175,17 +175,8 @@ public sealed class LlamaRouterLoginTuiTests
 
         private Task<string> WaitFrameAsync(Func<string, bool> predicate, int after) => WaitAsync(output =>
         {
-            const string start = "\u001b[?2026h";
-            const string end = "\u001b[?2026l";
-            var position = after;
-            while ((position = output.IndexOf(start, position, StringComparison.Ordinal)) >= 0)
-            {
-                var close = output.IndexOf(end, position + start.Length, StringComparison.Ordinal);
-                if (close < 0) return null;
-                var frame = StripAnsi(output[(position + start.Length)..close]);
-                if (predicate(frame)) return frame;
-                position = close + end.Length;
-            }
+            foreach (var frame in TerminalOutputFrameReader.Read(output, rows: 30, columns: 100))
+                if (frame.Start >= after && predicate(frame.Screen)) return frame.Screen;
             return null;
         });
 

@@ -197,12 +197,10 @@ public sealed class TerminalPtyTests
                             steeringSaved.TrySetResult();
                         if (captured.Contains("Settings closed.", StringComparison.Ordinal)) settingsClosed.TrySetResult();
                         const string queuedMessage = "Queued steering message.";
-                        var frameEnd = captured.LastIndexOf(idleFrameEnd, StringComparison.Ordinal);
-                        var frameStart = frameEnd < 0 ? -1 : captured.LastIndexOf("\u001b[2J", frameEnd,
-                            StringComparison.Ordinal);
-                        if (frameStart >= 0)
+                        var frames = TerminalOutputFrameReader.Read(captured, rows: 24, columns: 80);
+                        if (frames.Count > 0)
                         {
-                            var frame = captured.Substring(frameStart, frameEnd + idleFrameEnd.Length - frameStart);
+                            var frame = frames[^1].Screen;
                             var queuedCount = 0;
                             for (var position = 0;
                                 (position = frame.IndexOf(queuedMessage, position, StringComparison.Ordinal)) >= 0;
@@ -1462,18 +1460,15 @@ public sealed class TerminalPtyTests
                         var output = outputBuilder.ToString();
                         if (output.Contains("\u001b[?2004h", StringComparison.Ordinal)) inputReady.TrySetResult();
                         if (output.Contains("Complete input", StringComparison.Ordinal)) completionPicker.TrySetResult();
-                        var frameStart = output.LastIndexOf("\u001b[?2026h\u001b[2J\u001b[H", StringComparison.Ordinal);
-                        if (frameStart >= 0)
+                        var frames = TerminalOutputFrameReader.Read(output, rows: 24, columns: 80);
+                        if (frames.Count > 0)
                         {
-                            var frame = output[(frameStart + "\u001b[?2026h\u001b[2J\u001b[H".Length)..];
+                            var frame = frames[^1].Screen;
                             if (frame.Contains("@notes.txt", StringComparison.Ordinal) &&
                                 !frame.Contains("Complete input", StringComparison.Ordinal))
                                 selectedPath.TrySetResult();
-                        }
-                        if (selectedPath.Task.IsCompleted && frameStart >= 0)
-                        {
-                            var frame = output[(frameStart + "\u001b[?2026h\u001b[2J\u001b[H".Length)..];
-                            if (!frame.Contains("Complete input", StringComparison.Ordinal) &&
+                            if (selectedPath.Task.IsCompleted &&
+                                !frame.Contains("Complete input", StringComparison.Ordinal) &&
                                 !frame.Contains("@notes.txt", StringComparison.Ordinal))
                                 blankPrompt.TrySetResult();
                         }

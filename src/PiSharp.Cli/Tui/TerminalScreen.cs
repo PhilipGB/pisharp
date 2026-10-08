@@ -49,6 +49,7 @@ public sealed class TerminalScreen : IDisposable
     private bool _suspended;
     private volatile bool _active = true;
     private int _deferRender;
+    private bool _deferInitialRender;
 
     public TerminalScreen(TextWriter originalOut, TextWriter originalError,
         Func<int>? getColumns = null, Func<int>? getRows = null)
@@ -70,7 +71,7 @@ public sealed class TerminalScreen : IDisposable
 
     internal TerminalScreen(TextWriter originalOut, TextWriter originalError,
         Func<int>? getColumns, Func<int>? getRows, TerminalImageRenderer imageRenderer, TerminalTheme theme,
-        bool queryTerminalColors, bool followTerminalAppearance = false)
+        bool queryTerminalColors, bool followTerminalAppearance = false, bool deferInitialRender = false)
     {
         ArgumentNullException.ThrowIfNull(originalOut);
         ArgumentNullException.ThrowIfNull(originalError);
@@ -80,6 +81,7 @@ public sealed class TerminalScreen : IDisposable
         _originalError = originalError;
         _images = imageRenderer;
         _theme = theme;
+        _deferInitialRender = deferInitialRender;
         _terminalColors = new(theme.TerminalForeground, theme.TerminalBackground);
         _getColumns = getColumns ?? ReadColumns;
         _getRows = getRows ?? ReadRows;
@@ -127,6 +129,16 @@ public sealed class TerminalScreen : IDisposable
             _installedOut = Console.Out;
             _installedError = Console.Error;
             _activated = true;
+        }
+    }
+
+    internal void RenderInitial()
+    {
+        lock (_gate)
+        {
+            if (!_active || !_deferInitialRender) return;
+            _deferInitialRender = false;
+            RenderLocked();
         }
     }
 
@@ -701,7 +713,7 @@ public sealed class TerminalScreen : IDisposable
 
     private void RenderLocked()
     {
-        if (!_active || _suspended || _deferRender > 0) return;
+        if (!_active || _suspended || _deferRender > 0 || _deferInitialRender) return;
         // .NET Console can enter application cursor/keypad mode while writing to a tty.
         // Normalize those modes before a frame so key sequences remain consistent with the editor.
         _originalOut.Write("\u001b[?1l\u001b>");

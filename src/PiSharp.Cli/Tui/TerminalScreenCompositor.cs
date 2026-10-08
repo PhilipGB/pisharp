@@ -12,6 +12,9 @@ internal sealed class TerminalScreenCompositor
 {
     private readonly TextWriter _output;
     private readonly TerminalImageRenderer _images;
+    private IReadOnlyList<string>? _previousRows;
+    private int _previousColumns;
+    private int _previousHeight;
 
     public TerminalScreenCompositor(TextWriter output, TerminalImageRenderer images)
     {
@@ -143,10 +146,15 @@ internal sealed class TerminalScreenCompositor
         var rendered = _images.PrepareFrame(frame.Rows);
         _output.Write("\u001b[?2026h");
         if (rendered.Preamble.Length > 0) _output.Write(rendered.Preamble);
-        _output.Write("\u001b[2J\u001b[H");
+        var fullRedraw = _previousRows is null || _previousColumns != frame.Columns || _previousHeight != frame.Height;
+        var redrawAllRows = fullRedraw || rendered.Preamble.Length > 0;
+        if (fullRedraw) _output.Write("\u001b[2J");
         for (var index = 0; index < frame.Rows.Count; index++)
         {
+            if (!redrawAllRows && string.Equals(_previousRows![index], rendered.Rows[index], StringComparison.Ordinal))
+                continue;
             _output.Write($"\u001b[{index + 1};1H");
+            _output.Write("\u001b[2K");
             _output.Write(rendered.Rows[index]);
             _output.Write("\u001b[0m");
         }
@@ -155,10 +163,14 @@ internal sealed class TerminalScreenCompositor
             // Preserve the terminal's pending-wrap cursor state on a fully padded panel row.
             _output.Write($"\u001b[{frame.CursorRow + 1};1H");
             _output.Write(rendered.Rows[frame.CursorRow]);
+            _output.Write("\u001b[0m");
         }
         else
             _output.Write($"\u001b[{frame.CursorRow + 1};{Math.Clamp(frame.CursorColumn, 1, frame.Columns)}H");
         _output.Write($"\u001b[?25{(frame.CursorVisible ? 'h' : 'l')}\u001b[?2026l");
         _output.Flush();
+        _previousRows = rendered.Rows.ToArray();
+        _previousColumns = frame.Columns;
+        _previousHeight = frame.Height;
     }
 }

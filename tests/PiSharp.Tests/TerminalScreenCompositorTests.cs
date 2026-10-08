@@ -5,6 +5,30 @@ namespace PiSharp.Tests;
 public sealed class TerminalScreenCompositorTests
 {
     [Fact]
+    public void RenderClearsOnlyChangedRowsAfterTheInitialFrame()
+    {
+        using var output = new StringWriter();
+        var compositor = new TerminalScreenCompositor(output, new TerminalImageRenderer());
+        var first = new TerminalScreenCompositor.Frame(["first", "second"], 1, 1, 0, 10, 2);
+        compositor.Render(first);
+        output.GetStringBuilder().Clear();
+
+        compositor.Render(first with { Rows = ["first", "updated"] });
+
+        var update = output.ToString();
+        Assert.DoesNotContain("\u001b[2J", update);
+        Assert.Equal(1, Count(update, "\u001b[2K"));
+        Assert.Contains("\u001b[2;1H\u001b[2Kupdated", update);
+
+        output.GetStringBuilder().Clear();
+        compositor.Render(first with { Rows = ["first", "updated"] });
+        var cursorOnly = output.ToString();
+        Assert.DoesNotContain("\u001b[2K", cursorOnly);
+        Assert.Contains("\u001b[?2026h", cursorOnly);
+        Assert.Contains("\u001b[?2026l", cursorOnly);
+    }
+
+    [Fact]
     public void StatusNotificationRemainsVisibleAboveThePanel()
     {
         var compositor = new TerminalScreenCompositor(new StringWriter(), new TerminalImageRenderer());
@@ -78,5 +102,13 @@ public sealed class TerminalScreenCompositorTests
         Assert.Equal(28, frame.CursorRow);
         Assert.Equal(1, frame.CursorColumn);
         Assert.False(frame.CursorVisible);
+    }
+
+    private static int Count(string text, string value)
+    {
+        var count = 0;
+        for (var index = 0; (index = text.IndexOf(value, index, StringComparison.Ordinal)) >= 0; index += value.Length)
+            count++;
+        return count;
     }
 }
