@@ -72,7 +72,10 @@
   },
   "llamaBehavior": {
     "downloadDelaySeconds": 1.5,
-    "downloadProgressDelaySeconds": 0.5
+    "downloadProgressDelaySeconds": 0.5,
+    "downloadProgressGate": "download-progress",
+    "downloadFinishGate": "download-finished",
+    "downloadPollGate": "download-poll"
   },
   "huggingFace": {
     "detailsDelaySeconds": 0.5,
@@ -175,10 +178,12 @@
     },
     {
       "id": "wait-download-progress",
+      "releaseGates": ["download-progress"],
       "expect": "50%"
     },
     {
       "id": "download-finished",
+      "releaseGates": ["download-finished"],
       "expect": "Downloaded owner/Qwen2.5-Coder-GGUF:Q4_K_M",
       "timeout": 15
     },

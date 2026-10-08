@@ -6,6 +6,7 @@ export class TerminalState {
   constructor({ columns = 80, rows = 24, foreground = '#dddddd', background = '#111111', keyboardProtocol = 'legacy' } = {}) {
     this.terminal = new xterm.Terminal({ cols: columns, rows, allowProposedApi: true, scrollback: 10000 });
     this.replies = '';
+    this.renderFrames = [];
     this.privateModes = {};
     this.keyboard = { kittyFlags: 0, kittyStack: [], modifyOtherKeys: 0 };
     this.colors = { foreground, background };
@@ -38,7 +39,15 @@ export class TerminalState {
     this.terminal.onData(data => { this.replies += data; });
     for (const final of ['h', 'l']) {
       this.terminal.parser.registerCsiHandler({ prefix: '?', final }, params => {
-        for (const parameter of params) this.privateModes[String(parameter)] = final === 'h';
+        for (const parameter of params) {
+          this.privateModes[String(parameter)] = final === 'h';
+          if (final === 'l' && parameter === 2026) {
+            // xterm invokes custom handlers before its built-in mode update.
+            // Record the completed synchronized frame with the closing mode
+            // already reflected in the snapshot.
+            this.renderFrames.push(this.renderSnapshot());
+          }
+        }
         return false;
       });
     }
@@ -73,6 +82,12 @@ export class TerminalState {
     await new Promise(resolve => this.terminal.write(data, resolve));
   }
 
+  takeRenderFrames() {
+    const frames = this.renderFrames;
+    this.renderFrames = [];
+    return frames;
+  }
+
   rgb(color) {
     if (color?.startsWith('rgb:')) return color;
     return `rgb:${(color ?? '#000000').slice(1).match(/../g).map(component => component.repeat(2)).join('/')}`;
@@ -102,6 +117,13 @@ export class TerminalState {
       viewport: Array.from({ length: terminal.rows }, (_, row) => this.line(active.getLine(active.viewportY + row))),
       buffers
     };
+  }
+
+  renderSnapshot() {
+    const frame = this.snapshot();
+    frame.modes.private['2026'] = false;
+    if (Object.hasOwn(frame.modes, 'synchronizedOutput')) frame.modes.synchronizedOutput = false;
+    return frame;
   }
 
   buffer(buffer) {

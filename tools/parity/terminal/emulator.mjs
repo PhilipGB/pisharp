@@ -12,7 +12,8 @@ for await (const line of readline.createInterface({ input: process.stdin })) {
       case 'snapshot': break;
       default: throw new Error(`Unknown operation: ${request.op}`);
     }
-    const result = { replies: Buffer.from(terminal.takeReplies()).toString('base64') };
+    const result = { replies: Buffer.from(terminal.takeReplies()).toString('base64'),
+      renderFrames: terminal.takeRenderFrames() };
     if (request.op === 'snapshot') result.frame = terminal.snapshot();
     process.stdout.write(JSON.stringify(result) + '\n');
   } catch (error) {

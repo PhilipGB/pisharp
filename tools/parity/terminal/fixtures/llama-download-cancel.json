@@ -34,7 +34,13 @@
     }
   ],
   "llamaProps": { "models_autoload": false, "chat_template": "fixture" },
-  "llamaBehavior": { "downloadDelaySeconds": 10, "downloadProgressDelaySeconds": 0.5 },
+  "llamaBehavior": {
+    "downloadDelaySeconds": 10,
+    "downloadProgressDelaySeconds": 0.5,
+    "downloadProgressGate": "download-progress",
+    "downloadFinishGate": "download-finished",
+    "downloadPollGate": "download-poll"
+  },
   "huggingFace": {
     "detailsDelaySeconds": 0.5,
     "searchResults": [
@@ -63,7 +69,7 @@
     { "id": "accept-gate", "expect": "Hugging Face access required" },
     { "id": "confirm-gate", "send": "\r", "expect": "Select quantization" },
     { "id": "select-quantization", "send": "\r", "expect": "Downloading model" },
-    { "id": "wait-download-progress", "expect": "50%" },
+    { "id": "wait-download-progress", "releaseGates": ["download-progress"], "expect": "50%" },
     { "id": "request-cancel", "send": "\u001b", "expect": "Stop download?" },
     { "id": "confirm-cancel", "send": "\r", "expect": "llama.cpp models", "timeout": 15 },
     { "id": "close-manager", "send": "\u001b", "expect": "fixture-model" },

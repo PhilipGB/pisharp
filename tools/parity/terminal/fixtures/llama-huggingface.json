@@ -34,7 +34,13 @@
     }
   ],
   "llamaProps": { "models_autoload": false, "chat_template": "fixture" },
-  "llamaBehavior": { "downloadDelaySeconds": 1.5, "downloadProgressDelaySeconds": 0.5 },
+  "llamaBehavior": {
+    "downloadDelaySeconds": 1.5,
+    "downloadProgressDelaySeconds": 0.5,
+    "downloadProgressGate": "download-progress",
+    "downloadFinishGate": "download-finished",
+    "downloadPollGate": "download-poll"
+  },
   "huggingFace": {
     "detailsDelaySeconds": 0.5,
     "searchResults": [
@@ -68,8 +74,8 @@
     { "id": "accept-gate", "expect": "Hugging Face access required" },
     { "id": "confirm-gate", "send": "\r", "expect": "Select quantization" },
     { "id": "select-quantization", "send": "\r", "expect": "Downloading model" },
-    { "id": "wait-download-progress", "expect": "50%" },
-    { "id": "download-finished", "expect": "Downloaded owner/Qwen2.5-Coder-GGUF:Q4_K_M", "timeout": 15 },
+    { "id": "wait-download-progress", "releaseGates": ["download-progress"], "expect": "50%" },
+    { "id": "download-finished", "releaseGates": ["download-finished"], "expect": "Downloaded owner/Qwen2.5-Coder-GGUF:Q4_K_M", "timeout": 15 },
     { "id": "close-manager", "send": "\u001b", "expect": "fixture-model" },
     { "id": "quit", "send": "/quit\r", "exit": true }
   ],

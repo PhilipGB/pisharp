@@ -15,13 +15,20 @@
     "pi": { "LLAMA_BASE_URL": "{router}" },
     "pisharp": { "LLAMA_BASE_URL": "{router}" }
   },
-  "llamaBehavior": { "initialModelFailures": 1 },
+  "llamaBehavior": {
+    "initialModelFailures": 1,
+    "catalogFailureRequestGate": "catalog-failure-requested",
+    "catalogFailureResponseGate": "catalog-failure-response"
+  },
   "dimensions": [{ "columns": 100, "rows": 32 }],
   "themes": ["dark"],
   "modes": ["fullscreen"],
   "actions": [
     { "id": "startup", "expect": "fixture-model" },
-    { "id": "open-manager", "send": "/llama\r", "expect": "llama.cpp unavailable" },
+    { "id": "open-manager", "send": "/llama\r",
+      "waitGatesAfter": ["catalog-failure-requested"], "expect": "Loading…", "quietMs": 0 },
+    { "id": "show-retry", "releaseGates": ["catalog-failure-response"],
+      "expect": "llama.cpp unavailable", "quietMs": 0 },
     { "id": "retry-router", "send": "\r", "expect": "llama.cpp models" },
     { "id": "close-manager", "send": "\u001b", "expect": "fixture-model" },
     { "id": "quit", "send": "/quit\r", "exit": true }

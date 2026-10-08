@@ -18,6 +18,7 @@ from compare import ControlTrace
 
 class TerminalProcess:
     def __init__(self, command, cwd, environment, options):
+        self.render_frames = []
         self.emulator = subprocess.Popen(['node', str(Path(__file__).with_name('emulator.mjs'))],
                                          stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
         self.ask(dict(op='start', options=options))
@@ -58,6 +59,7 @@ class TerminalProcess:
         self.raw.extend(data)
         self.trace.write(data)
         response = self.ask(dict(op='write', data=base64.b64encode(data).decode()))
+        self.render_frames.extend(response.get('renderFrames', []))
         if response['replies']:
             self.send(base64.b64decode(response['replies']))
         self.last_output = time.monotonic()

@@ -12,7 +12,7 @@ import subprocess
 import shutil
 import time
 
-from compare import differences
+from compare import compare_products
 from fixture_http import FixtureServer
 from pty_process import TerminalProcess
 
@@ -94,12 +94,26 @@ def run_product(label, command, scenario, dimensions, theme, mode, server):
     frames = []
     http_by_frame = []
     prior_raw = bytearray()
+    prior_render_frames = []
     request_start = len(server.requests)
     try:
         for action in scenario['actions']:
             request_mark = len(server.requests)
+            mark, control_mark = len(terminal.raw), len(terminal.trace.events)
+            wait_gates = action.get('waitGates', [])
+            if isinstance(wait_gates, str):
+                wait_gates = [wait_gates]
+            for gate in wait_gates:
+                if not server.wait_for_gate(gate, timeout=action.get('gateTimeout', 20)):
+                    raise TimeoutError(f'Fixture gate was not signaled: {gate}')
+            release_gates = action.get('releaseGates', [])
+            if isinstance(release_gates, str):
+                release_gates = [release_gates]
+            for gate in release_gates:
+                server.release_gate(gate)
             if action.get('restart'):
                 prior_raw.extend(terminal.raw)
+                prior_render_frames.extend(terminal.render_frames)
                 terminal.close()
                 restart_environment = dict(child_environment)
                 restart_environment.update(expand_environment(
@@ -117,6 +131,12 @@ def run_product(label, command, scenario, dimensions, theme, mode, server):
                 terminal.send(action['send'])
             if 'resize' in action:
                 terminal.resize(**action['resize'])
+            wait_gates_after = action.get('waitGatesAfter', [])
+            if isinstance(wait_gates_after, str):
+                wait_gates_after = [wait_gates_after]
+            for gate in wait_gates_after:
+                if not server.wait_for_gate(gate, timeout=action.get('gateTimeout', 20)):
+                    raise TimeoutError(f'Fixture gate was not signaled after action: {gate}')
             if action.get('exit'):
                 deadline = time.monotonic() + 10
                 while not terminal.closed and time.monotonic() < deadline:
@@ -130,16 +150,21 @@ def run_product(label, command, scenario, dimensions, theme, mode, server):
                 expect = action.get('expect')
                 if isinstance(expect, dict):
                     expect = expect[label]
-                frame = terminal.settle(expect, timeout=action.get('timeout', 20), after=0 if 'resize' in action else mark)
+                frame = terminal.settle(expect, timeout=action.get('timeout', 20),
+                                        quiet_ms=action.get('quietMs', 200),
+                                        after=0 if 'resize' in action else mark)
             frames.append(dict(id=action['id'], state=frame, controls=terminal.trace.events[control_mark:], controlPending=terminal.trace.pending.hex()))
             http_by_frame.append(dict(id=action['id'], requests=server.requests[request_mark:]))
         prior_raw.extend(terminal.raw)
-        return dict(frames=frames, httpByFrame=http_by_frame, raw=base64.b64encode(prior_raw).decode(),
+        return dict(frames=frames, renders=prior_render_frames + terminal.render_frames,
+                    httpByFrame=http_by_frame, raw=base64.b64encode(prior_raw).decode(),
                     http=server.requests[request_start:], command=command, scenarioError=None)
     except (TimeoutError, RuntimeError) as error:
         frames.append(dict(id=action['id'], state=terminal.snapshot(), controls=terminal.trace.events[control_mark:], controlPending=terminal.trace.pending.hex()))
         http_by_frame.append(dict(id=action['id'], requests=server.requests[request_mark:]))
-        return dict(frames=frames, httpByFrame=http_by_frame, raw=base64.b64encode(terminal.raw).decode(),
+        combined_raw = prior_raw + terminal.raw
+        return dict(frames=frames, renders=prior_render_frames + terminal.render_frames,
+                    httpByFrame=http_by_frame, raw=base64.b64encode(combined_raw).decode(),
                     http=server.requests[request_start:], command=command, scenarioError=str(error))
     finally:
         terminal.close()
@@ -159,7 +184,14 @@ def main():
     product_commands = commands(args.pi.resolve(), args.pisharp.resolve(), scenario)
     report = dict(piSha=subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=args.pi, text=True).strip(),
                   pisharpSha=subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
-                  fixture=scenario['id'], calibration=args.calibrate, normalization='None. Full cells, styles, spacing, cursor, modes, buffers and control sequences remain exact.', cases=[])
+                  fixture=scenario['id'], calibration=args.calibrate,
+                  concurrentHttpGroups=scenario.get('concurrentHttpGroups', []),
+                  normalization=('Named checkpoints and every synchronized render state are compared exactly, collapsing '
+                                 'only adjacent identical states and ignoring cursor coordinates only while that cursor '
+                                 'is hidden. Raw bytes remain captured and exact-match status is reported separately. '
+                                 'HTTP identity/count/order remain exact except within declared concurrent batches, '
+                                 'where arrival order is unspecified. Per-checkpoint control buckets are diagnostic.'),
+                  cases=[])
     cwd = Path('/tmp/pisharp-terminal-fixture-workspace')
     owner = cwd / '.pisharp-terminal-harness'
     if cwd.exists() and not owner.exists():
@@ -180,7 +212,9 @@ def main():
                 server.reset()
                 products[label] = run_product('pi' if args.calibrate else label, product_commands['pi'] if args.calibrate else command,
                                               scenario, dimensions, theme, mode, server)
-            delta = list(differences(products['pi']['frames'], products['pisharp']['frames']))
+            comparison = compare_products(products['pi'], products['pisharp'],
+                                          scenario.get('concurrentHttpGroups', []))
+            delta = comparison['differences']
             errors = {label: product['scenarioError'] for label, product in products.items() if product['scenarioError']}
             if errors:
                 delta.insert(0, dict(path='$.scenarioError', **errors))
@@ -188,7 +222,15 @@ def main():
             artifact = case_id + '.json.gz'
             (args.output / artifact).write_bytes(gzip.compress(json.dumps(evidence, ensure_ascii=False).encode(), mtime=0))
             report['cases'].append(dict(id=case_id, match=not delta, differences=len(delta),
-                                        firstDifferences=delta[:50], scenarioErrors=errors, evidence=artifact))
+                                        firstDifferences=delta[:50], scenarioErrors=errors,
+                                        terminalMatch=comparison['terminalMatch'], rawMatch=comparison['rawMatch'],
+                                        rawDifference=comparison['rawDifference'],
+                                        comparedRenderFrameCount=comparison['comparedRenderFrameCount'],
+                                        renderDifferences=len(comparison['renderDifferences']),
+                                        httpMatch=comparison['httpMatch'],
+                                        controlBoundaryDifferenceCount=comparison['controlBoundaryDifferenceCount'],
+                                        controlBoundaryFirstDifferences=comparison['controlBoundaryFirstDifferences'],
+                                        evidence=artifact))
             print(f'{case_id}: {len(delta)} differences', flush=True)
     finally:
         server.close()

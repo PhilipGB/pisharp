@@ -84,6 +84,17 @@ test('captures deterministic intermediate frames and resize', async () => {
   terminal.dispose();
 });
 
+test('captures every completed synchronized render in stream order', async () => {
+  const terminal = await state('\x1b[?2026h\x1b[Hloading\x1b[?2026l\x1b[?2026h\x1b[H50%\x1b[?2026l');
+  const renders = terminal.takeRenderFrames();
+  assert.equal(renders.length, 2);
+  assert.equal(renders[0].viewport[0].cells.slice(0, 7).map(cell => cell.chars).join(''), 'loading');
+  assert.equal(renders[1].viewport[0].cells.slice(0, 3).map(cell => cell.chars).join(''), '50%');
+  assert.equal(renders[0].modes.private['2026'], false);
+  assert.deepEqual(terminal.takeRenderFrames(), []);
+  terminal.dispose();
+});
+
 test('retains wrapping, truncation, erasure and scrollback', async () => {
   const terminal = await state('abcdefghij', 6, 2);
   let frame = terminal.snapshot();

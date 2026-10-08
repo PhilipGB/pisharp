@@ -39,6 +39,29 @@
   },
   "llamaBehavior": {
     "loadProgressDelaySeconds": 0.5,
+    "loadProgressGateByModel": {
+      "unloaded-fixture-model": "load-progress"
+    },
+    "loadFinishGateByModel": {
+      "unloaded-fixture-model": "load-finished",
+      "loaded-fixture-model": "restore-finished"
+    },
+    "loadPollGateByModel": {
+      "unloaded-fixture-model": "load-poll",
+      "loaded-fixture-model": "restore-poll"
+    },
+    "loadStartGateByModel": {
+      "unloaded-fixture-model": "load-started",
+      "loaded-fixture-model": "restore-started"
+    },
+    "loadRequestGateByModel": {
+      "unloaded-fixture-model": "load-requested",
+      "loaded-fixture-model": "restore-requested"
+    },
+    "loadResponseGateByModel": {
+      "unloaded-fixture-model": "load-response",
+      "loaded-fixture-model": "restore-response"
+    },
     "loadDelaySecondsByModel": {
       "unloaded-fixture-model": 30,
       "loaded-fixture-model": 0
@@ -122,8 +145,22 @@
       "expect": "1 model is loaded"
     },
     {
-      "id": "choose-unload-all-and-load",
+      "id": "begin-replacement-load",
       "send": "\r",
+      "waitGatesAfter": ["load-requested"],
+      "expect": "Starting…",
+      "quietMs": 0
+    },
+    {
+      "id": "start-replacement-load",
+      "releaseGates": ["load-response"],
+      "waitGatesAfter": ["load-started"],
+      "expect": "Loading model",
+      "quietMs": 0
+    },
+    {
+      "id": "wait-load-progress",
+      "releaseGates": ["load-progress"],
       "expect": "50%"
     },
     {
@@ -134,6 +171,20 @@
     {
       "id": "confirm-cancel-and-restore",
       "send": "\r",
+      "waitGatesAfter": ["restore-requested"],
+      "expect": "Restoring previously loaded models",
+      "quietMs": 0
+    },
+    {
+      "id": "start-restoration",
+      "releaseGates": ["restore-response"],
+      "waitGatesAfter": ["restore-started"],
+      "expect": "Restoring previously loaded models",
+      "quietMs": 0
+    },
+    {
+      "id": "complete-restoration",
+      "releaseGates": ["restore-finished"],
       "expect": "llama.cpp models"
     },
     {

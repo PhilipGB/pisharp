@@ -15,6 +15,22 @@
     "pi": { "LLAMA_BASE_URL": "{router}" },
     "pisharp": { "LLAMA_BASE_URL": "{router}" }
   },
+  "concurrentHttpGroups": [
+    {
+      "occurrence": 1,
+      "requests": [
+        { "method": "GET", "path": "/props?model=loaded-fixture-model&autoload=false" },
+        { "method": "GET", "path": "/props?model=unloaded-fixture-model&autoload=false" }
+      ]
+    },
+    {
+      "occurrence": 2,
+      "requests": [
+        { "method": "GET", "path": "/props?model=loaded-fixture-model&autoload=false" },
+        { "method": "GET", "path": "/props?model=unloaded-fixture-model&autoload=false" }
+      ]
+    }
+  ],
   "llamaModels": [
     {
       "id": "loaded-fixture-model",
@@ -32,7 +48,13 @@
     }
   ],
   "llamaProps": { "models_autoload": false, "chat_template": "fixture" },
-  "llamaBehavior": { "loadDelaySeconds": 1.5, "loadProgressDelaySeconds": 0.5 },
+  "llamaBehavior": {
+    "loadDelaySeconds": 1.5,
+    "loadProgressDelaySeconds": 0.5,
+    "loadProgressGate": "load-progress",
+    "loadFinishGate": "load-finished",
+    "loadPollGate": "load-poll"
+  },
   "dimensions": [{ "columns": 100, "rows": 32 }],
   "themes": ["dark"],
   "modes": ["fullscreen"],
@@ -41,8 +63,8 @@
     { "id": "open-manager", "send": "/llama\r", "expect": "unloaded-fixture-model" },
     { "id": "select-unloaded", "send": "\u001b[B\r", "expect": "1 model is loaded" },
     { "id": "keep-loaded-model", "send": "\u001b[B\r", "expect": "Loading model" },
-    { "id": "wait-load-progress", "expect": "50%" },
-    { "id": "load-finished", "expect": "unloaded-fixture-model" },
+    { "id": "wait-load-progress", "releaseGates": ["load-progress"], "expect": "50%" },
+    { "id": "load-finished", "releaseGates": ["load-finished"], "expect": "unloaded-fixture-model" },
     { "id": "close-manager", "send": "\u001b", "expect": "fixture-model" },
     { "id": "open-model-picker", "send": "/model\r", "expect": { "pi": "Only showing models from configured providers", "pisharp": "Select model" } },
     { "id": "search-new-router-model", "send": "unloaded-fixture-model", "expect": "unloaded-fixture-model [llama.cpp]" },

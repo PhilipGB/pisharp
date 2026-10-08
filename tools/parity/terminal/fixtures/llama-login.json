@@ -19,7 +19,8 @@
     { "id": "startup", "expect": "fixture-model" },
     { "id": "url-prompt", "send": "/login llama.cpp\r", "expect": "llama.cpp server URL" },
     { "id": "default-url", "send": "\r", "expect": "API key (optional)" },
-    { "id": "api-key", "send": "fixture-secret\r", "expect": "Saved API key for llama.cpp" },
+    { "id": "api-key-input", "send": "fixture-secret", "expect": "fixture-secret" },
+    { "id": "api-key-submit", "send": "\r", "expect": "Saved API key for llama.cpp" },
     { "id": "quit-before-reload", "send": "/quit\r", "exit": true },
     {
       "id": "restart-with-conflicting-environment",
