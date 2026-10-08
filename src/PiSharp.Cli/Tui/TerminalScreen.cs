@@ -199,7 +199,7 @@ public sealed class TerminalScreen : IDisposable
                     _editorSelectionEnd = boundedEnd;
                 }
             }
-            RenderLocked(immediate: true);
+            RenderLocked();
         }
     }
 
@@ -209,6 +209,7 @@ public sealed class TerminalScreen : IDisposable
         lock (_gate)
         {
             if (!_active) return;
+            if (_renderPending) FlushPendingRenderLocked();
             var cleanup = _images.CleanupControlSequence();
             if (cleanup.Length > 0) _originalOut.Write(cleanup);
             _transcript.Clear();

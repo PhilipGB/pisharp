@@ -72,7 +72,7 @@ public sealed class TerminalScreenTests
     }
 
     [Fact]
-    public void RenderSchedulingCoalescesOutputAndEditorInputPreemptsTheTimer()
+    public void RenderSchedulingCoalescesOutputAndEditorUpdatesButOpensModalsImmediately()
     {
         using var output = new StringWriter();
         using var error = new StringWriter();
@@ -93,12 +93,13 @@ public sealed class TerminalScreenTests
 
         output.GetStringBuilder().Clear();
         screen.Output.Write("pending output");
+        screen.SetEditor("p", 1);
         screen.SetEditor("prompt", 6);
-        Assert.Equal(1, Count(output.ToString(), "\u001b[?2026h"));
-        Assert.Contains("prompt", output.ToString());
+        Assert.Equal(0, Count(output.ToString(), "\u001b[?2026h"));
 
         clock.Advance(TimeSpan.FromMilliseconds(16));
         Assert.Equal(1, Count(output.ToString(), "\u001b[?2026h"));
+        Assert.Contains("prompt", output.ToString());
 
         output.GetStringBuilder().Clear();
         screen.SetStatusNotification("message before modal");
@@ -117,6 +118,28 @@ public sealed class TerminalScreenTests
         Assert.Contains("modal overlay", output.ToString());
         clock.Advance(TimeSpan.FromMilliseconds(16));
         Assert.Equal(1, Count(output.ToString(), "\u001b[?2026h"));
+    }
+
+    [Fact]
+    public void ReplacingTranscriptFlushesPendingOutputBeforeDiscardingThePreviousSession()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        var clock = new ManualTimeProvider();
+        using var screen = new TerminalScreen(output, error, () => 40, () => 9,
+            new TerminalImageRenderer(), TerminalTheme.Default, queryTerminalColors: false,
+            minimumRenderInterval: TimeSpan.FromMilliseconds(16), timeProvider: clock);
+        output.GetStringBuilder().Clear();
+
+        screen.Output.Write("previous session notice");
+        Assert.Equal(0, Count(output.ToString(), "\u001b[?2026h"));
+
+        screen.ReplaceTranscript(_ => { });
+        Assert.Equal(1, Count(output.ToString(), "\u001b[?2026h"));
+        Assert.Contains("previous session notice", output.ToString());
+
+        clock.Advance(TimeSpan.FromMilliseconds(16));
+        Assert.Equal(2, Count(output.ToString(), "\u001b[?2026h"));
     }
 
     [Fact]

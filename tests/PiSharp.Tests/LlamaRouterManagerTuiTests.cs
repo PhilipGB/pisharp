@@ -39,7 +39,6 @@ public sealed class LlamaRouterManagerTuiTests
             await terminal.WaitTextAsync("Loaded target", mark);
             Assert.Equal("loaded", server.Statuses["target"]);
 
-            mark = terminal.Mark;
             await terminal.WaitManagerAsync(mark);
             await terminal.SendAsync("\n");
             await terminal.WaitTextAsync("Unload model?", mark);
