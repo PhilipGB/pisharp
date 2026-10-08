@@ -116,12 +116,12 @@ internal sealed class TerminalColorQueryController : IDisposable
         if (changed is not null) _changed(changed);
     }
 
-    internal void CompletePendingReplies(TerminalInput input)
+    internal void CompletePendingReplies(TerminalInput input, bool disableFollowAppearance = true)
     {
         lock (_gate)
         {
             if (_disposed || _pending.Count == 0) return;
-            SetFollowAppearanceLocked(false);
+            if (disableFollowAppearance) SetFollowAppearanceLocked(false);
         }
         input.CompletePendingReplies(() =>
         {

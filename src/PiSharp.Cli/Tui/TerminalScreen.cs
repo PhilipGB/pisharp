@@ -293,6 +293,9 @@ public sealed class TerminalScreen : IDisposable
 
     internal void AttachTerminalInput(TerminalInput input) => _terminalInput = input;
 
+    internal void CompleteInitialTerminalColorQuery(TerminalInput input) =>
+        _terminalColorQuery?.CompletePendingReplies(input, disableFollowAppearance: false);
+
     internal void HandleTerminalColorResponse(TerminalColorResponse response)
     {
         _terminalColorQuery?.HandleColorResponse(response);

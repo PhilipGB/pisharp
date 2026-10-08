@@ -103,6 +103,22 @@ public sealed class TerminalColorQueryControllerTests
         Assert.Equal('X', input.Read().Key?.KeyChar);
     }
 
+    [Fact]
+    public void InitialColorWaitKeepsTerminalAppearanceMonitoringEnabled()
+    {
+        using var output = new StringWriter();
+        var input = new TerminalInput(new MemoryStream());
+        using var query = new TerminalColorQueryController(output, _ => { });
+        query.Start(queryColors: true, followAppearance: true);
+
+        query.CompletePendingReplies(input, disableFollowAppearance: false);
+        query.HandleAppearanceReport("light");
+
+        Assert.Equal(2, Count(output.ToString(), "\u001b]10;?"));
+        Assert.Contains("\u001b[?2031h", output.ToString());
+        Assert.DoesNotContain("\u001b[?2031l", output.ToString());
+    }
+
     private static void Send(TerminalColorQueryController query, string payload)
     {
         Assert.True(TerminalColorResponse.TryParse(payload, out var response), payload);

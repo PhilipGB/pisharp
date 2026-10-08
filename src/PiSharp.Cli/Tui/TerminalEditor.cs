@@ -70,6 +70,12 @@ public sealed class TerminalEditor
 
     private void HandleTerminalColorScheme(string appearance) => _screen?.HandleTerminalColorScheme(appearance);
 
+    internal void CompleteInitialTerminalColorQuery()
+    {
+        if (_screen is { IsActive: true } screen)
+            screen.CompleteInitialTerminalColorQuery(EnsureInput());
+    }
+
     internal TerminalSelection<T>? ShowSelectionList<T>(string title,
         IReadOnlyList<TerminalSelectionOption<T>> options, string? selectedKey = null,
         IReadOnlyList<TerminalSelectionOption<T>>? scopedOptions = null,

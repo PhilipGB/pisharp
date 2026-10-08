@@ -387,6 +387,7 @@ void ConfigureMcpAuthorizationUrlPresenter(ProjectRuntimeContext context)
 }
 ConfigureMcpAuthorizationUrlPresenter(projectRuntime);
 editor?.AttachScreen(terminalScreen);
+editor?.CompleteInitialTerminalColorQuery();
 void RefreshTerminalTheme()
 {
     if (terminalScreen is null) return;
