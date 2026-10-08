@@ -48,13 +48,13 @@ public sealed class LlamaRouterProviderTests
             var runtime = await ProviderModelRuntime.CreateAsync(root, false,
                 name => environment.GetValueOrDefault(name), http);
 
-            Assert.Equal(1, runtime.AvailableModelProviderCount);
+            Assert.Equal(0, runtime.AvailableModelProviderCount);
             _ = await runtime.ResolveAsync("fixture", "fixture-model");
-            Assert.Equal(2, runtime.AvailableModelProviderCount);
+            Assert.Equal(1, runtime.AvailableModelProviderCount);
 
             var models = await runtime.ListModelsAsync("llama.cpp");
 
-            Assert.Equal(2, runtime.AvailableModelProviderCount);
+            Assert.Equal(1, runtime.AvailableModelProviderCount);
             Assert.Equal(["qwen", "sleeping", "autoload-preset"], models.Select(model => model.Id));
             var qwen = Assert.Single(models, model => model.Id == "qwen");
             Assert.Equal("llama.cpp", qwen.Provider);
@@ -67,6 +67,7 @@ public sealed class LlamaRouterProviderTests
             Assert.Equal("qwen-chat-template", qwen.Compatibility?.GetProperty("thinkingFormat").GetString());
 
             var selection = await runtime.ResolveAsync("llama.cpp", "qwen");
+            Assert.Equal(2, runtime.AvailableModelProviderCount);
             Assert.Equal("router-secret", selection.ApiKey);
             Assert.Equal(new Uri("http://llama.test:8080/v1"), selection.Connection.Endpoint);
             Assert.Equal("openai-completions", ProviderChatClientFactory.ResolveProtocol(selection));

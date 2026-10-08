@@ -140,8 +140,6 @@ public sealed class ProviderModelRuntime
             oauthAdapters.Add(new RadiusOAuthAdapter(http, radius.Endpoint));
         var runtime = new ProviderModelRuntime(providers, auth, new ProviderOAuthCoordinator(auth, http, oauthAdapters),
             environment, http, runtimeApiKey, scope, offline, agentDirectory);
-        if (runtime.ResolveLlamaRouterUrl(await auth.ReadAsync("llama.cpp", cancellationToken).ConfigureAwait(false)) is not null)
-            runtime.RecordAvailableProvider("llama.cpp", true);
         return runtime;
     }
 
@@ -350,8 +348,14 @@ public sealed class ProviderModelRuntime
             }
         }
         var visible = includeOutOfScope ? result : ApplyScope(result);
-        foreach (var provider in providers)
-            RecordAvailableProvider(provider.Id, visible.Any(model => model.Provider == provider.Id && model.Available));
+        // A provider-specific lookup (for example /llama's manager panel) does not refresh the
+        // interactive model snapshot that drives Pi's footer provider count. Count llama.cpp
+        // only after the shared catalog is refreshed or a model is selected for the session.
+        if (providerId is null)
+        {
+            foreach (var provider in providers)
+                RecordAvailableProvider(provider.Id, visible.Any(model => model.Provider == provider.Id && model.Available));
+        }
         return visible;
     }
 

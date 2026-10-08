@@ -26,7 +26,8 @@ public sealed class LlamaRouterManagerTuiTests
         try
         {
             var initialEditor = await terminal.WaitEditorAsync();
-            Assert.Contains("(fixture) fixture-model", initialEditor);
+            Assert.Contains("fixture-model", initialEditor);
+            Assert.DoesNotContain("(fixture) fixture-model", initialEditor);
             var mark = terminal.Mark;
             await terminal.SendAsync("/llama\n");
             await terminal.WaitManagerAsync(mark);
@@ -55,7 +56,8 @@ public sealed class LlamaRouterManagerTuiTests
 
             mark = terminal.Mark;
             await terminal.SendAsync("\u001b");
-            await terminal.WaitEditorAsync(mark);
+            var restoredEditor = await terminal.WaitEditorAsync(mark);
+            Assert.DoesNotContain("(fixture) fixture-model", restoredEditor);
             await terminal.QuitAsync();
         }
         finally { Directory.Delete(root, recursive: true); }
