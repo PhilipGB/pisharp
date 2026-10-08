@@ -81,7 +81,7 @@ class TerminalProcess:
     def snapshot(self):
         return self.ask(dict(op='snapshot'))['frame']
 
-    def settle(self, contains=None, timeout=20, quiet_ms=200, after=0):
+    def settle(self, contains=None, absent=None, timeout=20, quiet_ms=200, after=0):
         deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
             self.pump()
@@ -89,7 +89,7 @@ class TerminalProcess:
                 continue
             frame = self.snapshot()
             text = '\n'.join(''.join(cell['chars'] for cell in line['cells'] if cell) for line in frame['viewport'])
-            if contains is None or contains in text:
+            if (contains is None or contains in text) and (absent is None or absent not in text):
                 if len(self.raw) > after or self.closed:
                     return frame
             if self.closed:

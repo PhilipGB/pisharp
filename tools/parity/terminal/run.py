@@ -163,7 +163,8 @@ def run_product(label, command, scenario, dimensions, theme, mode, server):
                     expect = expect[label]
                 frame = terminal.settle(expect, timeout=action.get('timeout', 20),
                                         quiet_ms=action.get('quietMs', 200),
-                                        after=0 if 'resize' in action else mark)
+                                        absent=action.get('notExpect'),
+                                        after=0 if 'resize' in action or action.get('allowStaticFrame') else mark)
             frames.append(dict(id=action['id'], state=frame, controls=terminal.trace.events[control_mark:], controlPending=terminal.trace.pending.hex()))
             http_by_frame.append(dict(id=action['id'], requests=server.requests[request_mark:]))
         prior_raw.extend(terminal.raw)

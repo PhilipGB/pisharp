@@ -118,6 +118,7 @@ public sealed class TerminalInput
                 if (value is >= 0x40 and <= 0x7E) break;
             }
             var code = sequence.ToString();
+            if (code.StartsWith('?') && code.EndsWith('u')) return new(null, null);
             if (code.StartsWith('?') && code.EndsWith('c'))
             {
                 TerminalDeviceAttributesReceived?.Invoke();
@@ -130,6 +131,7 @@ public sealed class TerminalInput
             }
             if (code == "200~") return Paste();
             if (TryDecodeSgrMouse(code, out var mouse)) return new(null, null, mouse);
+            if (TryDecodeKittyKey(code, out var kittyKey)) return kittyKey;
             if (TryDecodeModifiedKey(code, out var modifiedKey)) return Key(modifiedKey.Key, modifiedKey.KeyChar,
                 modifiedKey.Modifiers.HasFlag(ConsoleModifiers.Shift), modifiedKey.Modifiers.HasFlag(ConsoleModifiers.Alt),
                 modifiedKey.Modifiers.HasFlag(ConsoleModifiers.Control));
@@ -172,6 +174,71 @@ public sealed class TerminalInput
             return false;
         mouse = new(button, column, row, code[^1] == 'm');
         return true;
+    }
+
+    private static bool TryDecodeKittyKey(string code, out TerminalInputEvent key)
+    {
+        key = new(null, null);
+        if (!code.EndsWith('u')) return false;
+        var body = code.AsSpan(0, code.Length - 1);
+        var separator = body.IndexOf(';');
+        var keySpec = separator < 0 ? body : body[..separator];
+        var modifierSpec = separator < 0 ? "1" : body[(separator + 1)..].ToString();
+        var modifierParts = modifierSpec.Split(':');
+        if (modifierParts.Length is < 1 or > 2 ||
+            !int.TryParse(modifierParts[0], NumberStyles.None, CultureInfo.InvariantCulture, out var modifier) || modifier < 1 ||
+            modifierParts.Length == 2 &&
+                (!int.TryParse(modifierParts[1], NumberStyles.None, CultureInfo.InvariantCulture, out var eventType) ||
+                 eventType is < 1 or > 3))
+            return false;
+        if (modifierParts.Length == 2 && modifierParts[1] == "3") return true;
+
+        var keyParts = keySpec.ToString().Split(':');
+        if (keyParts.Length is < 1 or > 3 ||
+            !int.TryParse(keyParts[0], NumberStyles.None, CultureInfo.InvariantCulture, out var codePoint) ||
+            codePoint is < 0 or > 0x10FFFF or >= 0xD800 and <= 0xDFFF)
+            return false;
+        if (codePoint == 0) return true;
+        var modifierBits = modifier - 1;
+        if ((modifierBits & 1) != 0 && keyParts.Length > 1 && keyParts[1].Length > 0 &&
+            int.TryParse(keyParts[1], NumberStyles.None, CultureInfo.InvariantCulture, out var shiftedCodePoint))
+            codePoint = shiftedCodePoint;
+
+        var shift = (modifierBits & 1) != 0;
+        var alt = (modifierBits & 2) != 0;
+        var control = (modifierBits & 4) != 0;
+        var mapped = codePoint switch
+        {
+            27 => Key(ConsoleKey.Escape, shift: shift, alt: alt, control: control),
+            9 => Key(ConsoleKey.Tab, '\t', shift, alt, control),
+            13 => Key(ConsoleKey.Enter, '\n', shift, alt, control),
+            127 => Key(ConsoleKey.Backspace, '\b', shift, alt, control),
+            57348 => Key(ConsoleKey.Insert, shift: shift, alt: alt, control: control),
+            57349 => Key(ConsoleKey.Delete, shift: shift, alt: alt, control: control),
+            57350 => Key(ConsoleKey.LeftArrow, shift: shift, alt: alt, control: control),
+            57351 => Key(ConsoleKey.RightArrow, shift: shift, alt: alt, control: control),
+            57352 => Key(ConsoleKey.UpArrow, shift: shift, alt: alt, control: control),
+            57353 => Key(ConsoleKey.DownArrow, shift: shift, alt: alt, control: control),
+            57354 => Key(ConsoleKey.PageUp, shift: shift, alt: alt, control: control),
+            57355 => Key(ConsoleKey.PageDown, shift: shift, alt: alt, control: control),
+            57356 => Key(ConsoleKey.Home, shift: shift, alt: alt, control: control),
+            57357 => Key(ConsoleKey.End, shift: shift, alt: alt, control: control),
+            >= 57364 and <= 57387 => Key((ConsoleKey)((int)ConsoleKey.F1 + codePoint - 57364),
+                shift: shift, alt: alt, control: control),
+            >= 32 and < 127 => KittyAsciiKey(codePoint, shift, alt, control),
+            _ => new(null, char.ConvertFromUtf32(codePoint))
+        };
+        key = mapped;
+        return true;
+    }
+
+    private static TerminalInputEvent KittyAsciiKey(int codePoint, bool shift, bool alt, bool control)
+    {
+        var character = (char)codePoint;
+        if (!TryMapAsciiKey(character, out var consoleKey, out var shifted))
+            return new(null, character.ToString());
+        if (char.IsAsciiLetter(character) && shift) character = char.ToUpperInvariant(character);
+        return Key(consoleKey, control ? '\0' : character, shift: shift || shifted, alt: alt, control: control);
     }
 
     private static bool TryDecodeModifiedKey(string code, out ConsoleKeyInfo key)
@@ -381,6 +448,12 @@ public sealed record TerminalInputEvent(ConsoleKeyInfo? Key, string? Text, Termi
 {
     public static TerminalInputEvent EndOfStream { get; } = new(null, null, IsEndOfStream: true);
     internal bool IsControl => !IsEndOfStream && Key is null && Text is null && Mouse is null;
+}
+
+internal static class TerminalKeyboardMode
+{
+    public const string Enable = "\u001b[>7u\u001b[?u";
+    public const string Disable = "\u001b[<u";
 }
 
 /// <summary>SGR mouse report coordinates are one-based terminal columns and rows.</summary>

@@ -88,14 +88,16 @@ public sealed class TerminalScreen : IDisposable
         _error = new(this, isError: true);
         try
         {
-            _originalOut.Write("\u001b[?1049h\u001b[?25l" + TerminalMouseMode.Enable);
+            _originalOut.Write("\u001b[?1l\u001b>" + TerminalKeyboardMode.Enable +
+                "\u001b[?1049h\u001b[?7l\u001b[?25l" + TerminalMouseMode.Enable);
             lock (_gate) RenderLocked();
             _terminalColorQuery = new(_originalOut, HandleTerminalColorStateChanged, initialColors: _terminalColors);
             _terminalColorQuery.Start(queryTerminalColors, followTerminalAppearance);
         }
         catch
         {
-            _originalOut.Write(TerminalMouseMode.Disable + "\u001b[?25h\u001b[?1049l");
+            _originalOut.Write(TerminalMouseMode.Disable + "\u001b[?7h\u001b[?25h\u001b[?1049l" +
+                TerminalKeyboardMode.Disable + "\u001b[?1l\u001b>");
             _originalOut.Flush();
             _active = false;
             throw;
@@ -133,7 +135,8 @@ public sealed class TerminalScreen : IDisposable
         lock (_gate)
         {
             if (!_active || _suspended) return;
-            _originalOut.Write(_images.HidePlacements() + TerminalMouseMode.Disable + "\u001b[?25h\u001b[?1049l");
+            _originalOut.Write(_images.HidePlacements() + TerminalMouseMode.Disable +
+                "\u001b[?7h\u001b[?25h\u001b[?1049l" + TerminalKeyboardMode.Disable + "\u001b[?1l\u001b>");
             _originalOut.Flush();
             _suspended = true;
         }
@@ -144,7 +147,8 @@ public sealed class TerminalScreen : IDisposable
         lock (_gate)
         {
             if (!_active || !_suspended) return;
-            _originalOut.Write("\u001b[?1049h\u001b[?25l" + TerminalMouseMode.Enable);
+            _originalOut.Write("\u001b[?1l\u001b>" + TerminalKeyboardMode.Enable +
+                "\u001b[?1049h\u001b[?7l\u001b[?25l" + TerminalMouseMode.Enable);
             _suspended = false;
             RenderLocked();
         }
@@ -656,7 +660,8 @@ public sealed class TerminalScreen : IDisposable
                 if (ReferenceEquals(Console.Out, _installedOut)) Console.SetOut(_originalOut);
                 if (ReferenceEquals(Console.Error, _installedError)) Console.SetError(_originalError);
             }
-            _originalOut.Write(_images.CleanupControlSequence() + TerminalMouseMode.Disable + "\u001b[?25h\u001b[?1049l");
+            _originalOut.Write(_images.CleanupControlSequence() + TerminalMouseMode.Disable +
+                "\u001b[?7h\u001b[?25h\u001b[?1049l" + TerminalKeyboardMode.Disable + "\u001b[?1l\u001b>");
             _originalOut.Flush();
             captured = _transcript.CaptureSnapshot();
             truncated = _transcript.CaptureTruncated;
@@ -697,6 +702,9 @@ public sealed class TerminalScreen : IDisposable
     private void RenderLocked()
     {
         if (!_active || _suspended || _deferRender > 0) return;
+        // .NET Console can enter application cursor/keypad mode while writing to a tty.
+        // Normalize those modes before a frame so key sequences remain consistent with the editor.
+        _originalOut.Write("\u001b[?1l\u001b>");
         var columns = Columns();
         var rows = Rows();
         var footerHeight = rows >= 5 ? 2 : rows > 2 ? 1 : 0;

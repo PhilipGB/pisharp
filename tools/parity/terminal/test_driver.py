@@ -385,6 +385,21 @@ while True:
         finally:
             terminal.close()
 
+    def test_settle_waits_until_a_transient_message_disappears(self):
+        child = '''import os, time
+os.write(1, b"\\x1b[1;1HStarting...\\x1b[K")
+time.sleep(0.1)
+os.write(1, b"\\x1b[1;1HLoading model\\x1b[K")
+'''
+        terminal = TerminalProcess([sys.executable, '-c', child], Path('/tmp'), dict(os.environ), dict(columns=40, rows=5))
+        try:
+            frame = terminal.settle('Loading model', absent='Starting...')
+            text = '\n'.join(''.join(cell['chars'] for cell in row['cells'] if cell) for row in frame['viewport'])
+            self.assertIn('Loading model', text)
+            self.assertNotIn('Starting...', text)
+        finally:
+            terminal.close()
+
 
 if __name__ == '__main__':
     unittest.main()

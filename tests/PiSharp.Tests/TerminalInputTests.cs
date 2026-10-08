@@ -150,6 +150,43 @@ public sealed class TerminalInputTests
     }
 
     [Fact]
+    public void DecodesKittyKeyEventsAndConsumesNegotiationReplies()
+    {
+        var reader = new TerminalInput(new MemoryStream(Encoding.UTF8.GetBytes(
+            "\u001b[?7u\u001b[97;1u\u001b[97:65:97;2u\u001b[13;2u\u001b[57352;5u\u001b[57364u\u001b[128512u")));
+
+        var letter = reader.Read().Key!.Value;
+        Assert.Equal((ConsoleKey.A, 'a'), (letter.Key, letter.KeyChar));
+
+        var shiftedLetter = reader.Read().Key!.Value;
+        Assert.Equal((ConsoleKey.A, 'A'), (shiftedLetter.Key, shiftedLetter.KeyChar));
+        Assert.True(shiftedLetter.Modifiers.HasFlag(ConsoleModifiers.Shift));
+
+        var shiftedEnter = reader.Read().Key!.Value;
+        Assert.Equal(ConsoleKey.Enter, shiftedEnter.Key);
+        Assert.True(shiftedEnter.Modifiers.HasFlag(ConsoleModifiers.Shift));
+
+        var controlUp = reader.Read().Key!.Value;
+        Assert.Equal(ConsoleKey.UpArrow, controlUp.Key);
+        Assert.True(controlUp.Modifiers.HasFlag(ConsoleModifiers.Control));
+        Assert.Equal(ConsoleKey.F1, reader.Read().Key?.Key);
+        Assert.Equal("😀", reader.Read().Text);
+        Assert.True(reader.Read().IsEndOfStream);
+    }
+
+    [Fact]
+    public void KittyKeyReleaseIsIgnoredAndPressesRemainReadable()
+    {
+        var release = new TerminalInput(new MemoryStream(Encoding.UTF8.GetBytes("\u001b[97;1:3u")));
+        Assert.False(release.TryRead(0, out _));
+
+        var press = new TerminalInput(new MemoryStream(Encoding.UTF8.GetBytes("\u001b[97;1u")));
+        Assert.True(press.TryRead(0, out var key));
+        Assert.Equal(ConsoleKey.A, key.Key?.Key);
+        Assert.Equal('a', key.Key?.KeyChar);
+    }
+
+    [Fact]
     public void DecodesModifiedCursorAndPageKeysForConfigurableBindings()
     {
         var reader = new TerminalInput(new MemoryStream(Encoding.UTF8.GetBytes(

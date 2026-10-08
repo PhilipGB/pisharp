@@ -174,7 +174,7 @@ internal sealed class TerminalLlamaManager(ProviderModelRuntime runtime, Termina
         editor.SetStatusNotification("Restoring previously loaded models");
         foreach (var model in models)
             await client.LoadAndWaitAsync(model.Id, _ => { }, cancellationToken).ConfigureAwait(false);
-        _ = await runtime.RefreshLlamaRouterCatalogAsync(client, cancellationToken).ConfigureAwait(false);
+        _ = await ReadCatalogSnapshotAsync(client, cancellationToken).ConfigureAwait(false);
     }
 
     private async Task UnloadModelAsync(LlamaRouterClient client, LlamaRouterModelInfo model,

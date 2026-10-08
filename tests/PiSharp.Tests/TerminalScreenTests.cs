@@ -257,16 +257,21 @@ public sealed class TerminalScreenTests
         screen.Dispose();
 
         var text = output.ToString();
-        var enabled = text.IndexOf("\u001b[?1000h\u001b[?1002h\u001b[?1006h", StringComparison.Ordinal);
-        var disabledForSuspend = text.IndexOf("\u001b[?1006l\u001b[?1002l\u001b[?1000l", StringComparison.Ordinal);
-        var reenabled = text.IndexOf("\u001b[?1000h\u001b[?1002h\u001b[?1006h", enabled + 1, StringComparison.Ordinal);
-        var disabledForDispose = text.LastIndexOf("\u001b[?1006l\u001b[?1002l\u001b[?1000l", StringComparison.Ordinal);
+        var enable = TerminalMouseMode.Enable;
+        var disable = TerminalMouseMode.Disable;
+        Assert.Contains("\u001b[?1l\u001b>" + TerminalKeyboardMode.Enable +
+            "\u001b[?1049h\u001b[?7l\u001b[?25l" + enable, text);
+        var enabled = text.IndexOf("\u001b[?1049h\u001b[?7l\u001b[?25l" + enable, StringComparison.Ordinal);
+        var disabledForSuspend = text.IndexOf(disable + "\u001b[?7h", StringComparison.Ordinal);
+        var reenabled = text.IndexOf("\u001b[?1049h\u001b[?7l\u001b[?25l" + enable, enabled + 1, StringComparison.Ordinal);
+        var disabledForDispose = text.LastIndexOf(disable + "\u001b[?7h", StringComparison.Ordinal);
         var suspendAltExit = text.IndexOf("\u001b[?25h\u001b[?1049l", disabledForSuspend, StringComparison.Ordinal);
         var disposeAltExit = text.IndexOf("\u001b[?25h\u001b[?1049l", disabledForDispose, StringComparison.Ordinal);
 
         Assert.True(enabled >= 0 && enabled < disabledForSuspend);
         Assert.True(disabledForSuspend < suspendAltExit && suspendAltExit < reenabled);
         Assert.True(reenabled < disabledForDispose && disabledForDispose < disposeAltExit);
+        Assert.Contains("\u001b[?1049l" + TerminalKeyboardMode.Disable + "\u001b[?1l\u001b>", text);
     }
 
     [Fact]

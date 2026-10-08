@@ -179,6 +179,7 @@
       "releaseGates": ["load-response"],
       "waitGatesAfter": ["load-started"],
       "expect": "Loading model",
+      "notExpect": "Starting…",
       "quietMs": 0
     },
     {
@@ -205,6 +206,7 @@
       "waitForModelPoll": "loaded-fixture-model",
       "expectModelStatus": { "id": "loaded-fixture-model", "value": "loading" },
       "expect": "Restoring previously loaded models",
+      "allowStaticFrame": true,
       "quietMs": 0
     },
     {
