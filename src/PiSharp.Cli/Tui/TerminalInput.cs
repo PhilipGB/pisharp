@@ -480,16 +480,19 @@ public readonly record struct TerminalMouseEvent(int Button, int Column, int Row
 internal sealed class TerminalMode : IDisposable
 {
     private static readonly AsyncLocal<int> s_depth = new();
+    private static readonly AsyncLocal<TerminalMode?> s_owner = new();
     private readonly string _original;
     private readonly TerminalScreen? _screen;
     private readonly bool _ownsMode;
+    private readonly TerminalMode? _owner;
     private bool _suspended;
     private bool _disposed;
-    private TerminalMode(string original, TerminalScreen? screen, bool ownsMode)
+    private TerminalMode(string original, TerminalScreen? screen, bool ownsMode, TerminalMode? owner = null)
     {
         _original = original;
         _screen = screen;
         _ownsMode = ownsMode;
+        _owner = owner;
     }
 
     public static TerminalMode Enter(TerminalScreen? screen = null)
@@ -497,22 +500,26 @@ internal sealed class TerminalMode : IDisposable
         if (s_depth.Value > 0)
         {
             s_depth.Value++;
-            return new TerminalMode("", screen, ownsMode: false);
+            return new TerminalMode("", screen, ownsMode: false, owner: s_owner.Value);
         }
         var state = Stty("-g").Trim();
         if (string.IsNullOrEmpty(state)) throw new IOException("Could not read terminal settings.");
         Stty("-icanon", "-echo", "-isig", "min", "1", "time", "0");
         try { WriteControl(screen, "\u001b[?2004h"); }
         catch { Stty(state); throw; }
+        var owner = new TerminalMode(state, screen, ownsMode: true);
+        s_owner.Value = owner;
         s_depth.Value = 1;
-        return new TerminalMode(state, screen, ownsMode: true);
+        return owner;
     }
 
     public void Dispose()
     {
         if (!_ownsMode)
         {
+            if (_disposed) return;
             s_depth.Value = Math.Max(0, s_depth.Value - 1);
+            _disposed = true;
             return;
         }
         if (_disposed) return;
@@ -523,12 +530,26 @@ internal sealed class TerminalMode : IDisposable
             finally
             {
                 s_depth.Value = 0;
+                s_owner.Value = null;
                 _disposed = true;
             }
         }
     }
 
     public void Suspend()
+    {
+        if (_disposed || _suspended) return;
+        if (!_ownsMode)
+        {
+            if (_owner is null || _owner._disposed) return;
+            _owner.SuspendOwned();
+            _suspended = true;
+            return;
+        }
+        SuspendOwned();
+    }
+
+    private void SuspendOwned()
     {
         if (!_ownsMode || _disposed || _suspended) return;
         WriteControl(_screen, "\u001b[?2004l");
@@ -538,11 +559,22 @@ internal sealed class TerminalMode : IDisposable
             WriteControl(_screen, "\u001b[?2004h");
             throw;
         }
-        s_depth.Value = 0;
         _suspended = true;
     }
 
     public void Resume()
+    {
+        if (_disposed || !_suspended) return;
+        if (!_ownsMode)
+        {
+            _owner?.ResumeOwned();
+            _suspended = false;
+            return;
+        }
+        ResumeOwned();
+    }
+
+    private void ResumeOwned()
     {
         if (!_ownsMode || _disposed || !_suspended) return;
         Stty(_original);
@@ -553,7 +585,6 @@ internal sealed class TerminalMode : IDisposable
             Stty(_original);
             throw;
         }
-        s_depth.Value = 1;
         _suspended = false;
     }
 

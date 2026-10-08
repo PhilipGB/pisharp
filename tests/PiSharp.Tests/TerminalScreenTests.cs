@@ -280,7 +280,7 @@ public sealed class TerminalScreenTests
         var text = output.ToString();
         var enable = TerminalMouseMode.Enable;
         var disable = TerminalMouseMode.Disable;
-        Assert.Contains("\u001b[?1l\u001b>" + TerminalKeyboardMode.Enable +
+        Assert.Contains(TerminalKeyboardMode.Enable +
             "\u001b[?1049h\u001b[?7l\u001b[?25l" + enable, text);
         var enabled = text.IndexOf("\u001b[?1049h\u001b[?7l\u001b[?25l" + enable, StringComparison.Ordinal);
         var disabledForSuspend = text.IndexOf(disable + "\u001b[?7h", StringComparison.Ordinal);
@@ -292,7 +292,8 @@ public sealed class TerminalScreenTests
         Assert.True(enabled >= 0 && enabled < disabledForSuspend);
         Assert.True(disabledForSuspend < suspendAltExit && suspendAltExit < reenabled);
         Assert.True(reenabled < disabledForDispose && disabledForDispose < disposeAltExit);
-        Assert.Contains(TerminalKeyboardMode.Disable + "\u001b[?1l\u001b>\u001b[?2026h\u001b[?1049l\u001b[?7l", text);
+        Assert.Contains(TerminalKeyboardMode.Disable + "\u001b[?2026h\u001b[?1049l\u001b[?7l", text);
+        Assert.DoesNotContain("\u001b[?1l", text);
     }
 
     [Fact]

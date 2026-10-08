@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.Extensions.AI;
 using PiSharp.Runtime.Extensions;
@@ -90,7 +91,7 @@ public sealed class TerminalScreen : IDisposable
         _error = new(this, isError: true);
         try
         {
-            _originalOut.Write("\u001b[?1l\u001b>" + TerminalKeyboardMode.Enable +
+            _originalOut.Write(TerminalKeyboardMode.Enable +
                 "\u001b[?1049h\u001b[?7l\u001b[?25l" + TerminalMouseMode.Enable);
             lock (_gate) RenderLocked();
             _terminalColorQuery = new(_originalOut, HandleTerminalColorStateChanged, initialColors: _terminalColors);
@@ -99,7 +100,7 @@ public sealed class TerminalScreen : IDisposable
         catch
         {
             _originalOut.Write(TerminalMouseMode.Disable + "\u001b[?7h\u001b[?25h\u001b[?1049l" +
-                TerminalKeyboardMode.Disable + "\u001b[?1l\u001b>");
+                TerminalKeyboardMode.Disable);
             _originalOut.Flush();
             _active = false;
             throw;
@@ -148,7 +149,7 @@ public sealed class TerminalScreen : IDisposable
         {
             if (!_active || _suspended) return;
             _originalOut.Write(_images.HidePlacements() + TerminalMouseMode.Disable +
-                "\u001b[?7h\u001b[?25h\u001b[?1049l" + TerminalKeyboardMode.Disable + "\u001b[?1l\u001b>");
+                "\u001b[?7h\u001b[?25h\u001b[?1049l" + TerminalKeyboardMode.Disable);
             _originalOut.Flush();
             _suspended = true;
         }
@@ -159,7 +160,7 @@ public sealed class TerminalScreen : IDisposable
         lock (_gate)
         {
             if (!_active || !_suspended) return;
-            _originalOut.Write("\u001b[?1l\u001b>" + TerminalKeyboardMode.Enable +
+            _originalOut.Write(TerminalKeyboardMode.Enable +
                 "\u001b[?1049h\u001b[?7l\u001b[?25l" + TerminalMouseMode.Enable);
             _suspended = false;
             RenderLocked();
@@ -673,7 +674,7 @@ public sealed class TerminalScreen : IDisposable
                 if (ReferenceEquals(Console.Error, _installedError)) Console.SetError(_originalError);
             }
             _originalOut.Write(_images.CleanupControlSequence() + TerminalMouseMode.Disable +
-                "\u001b[?7h\u001b[?25h" + TerminalKeyboardMode.Disable + "\u001b[?1l\u001b>");
+                "\u001b[?7h\u001b[?25h" + TerminalKeyboardMode.Disable);
             _compositor.LeaveAlternateScreen();
             captured = _transcript.CaptureSnapshot();
             truncated = _transcript.CaptureTruncated;
@@ -715,9 +716,6 @@ public sealed class TerminalScreen : IDisposable
     private void RenderLocked()
     {
         if (!_active || _suspended || _deferRender > 0 || _deferInitialRender) return;
-        // .NET Console can enter application cursor/keypad mode while writing to a tty.
-        // Normalize those modes before a frame so key sequences remain consistent with the editor.
-        _originalOut.Write("\u001b[?1l\u001b>");
         var columns = Columns();
         var rows = Rows();
         var footerHeight = rows >= 5 ? 2 : rows > 2 ? 1 : 0;
@@ -761,17 +759,48 @@ public sealed class TerminalScreen : IDisposable
         catch (IOException) { return 24; }
     }
 
-    private static int ReadColumns()
+    internal static int ReadColumns()
     {
+        if (!OperatingSystem.IsWindows())
+            return TryReadTerminalSize(out var size) ? size.Columns : 80;
         try { return Console.WindowWidth; }
         catch (IOException) { return 80; }
     }
 
-    private static int ReadRows()
+    internal static int ReadRows()
     {
+        if (!OperatingSystem.IsWindows())
+            return TryReadTerminalSize(out var size) ? size.Rows : 24;
         try { return Console.WindowHeight; }
         catch (IOException) { return 24; }
     }
+
+    private static bool TryReadTerminalSize(out TerminalWindowSize size)
+    {
+        size = default;
+        if (!OperatingSystem.IsLinux() && !OperatingSystem.IsMacOS()) return false;
+        var request = OperatingSystem.IsMacOS() ? (nuint)0x40087468 : 0x5413u;
+        return HasSize(0, out size) || HasSize(1, out size) || HasSize(2, out size);
+
+        bool HasSize(int fileDescriptor, out TerminalWindowSize result)
+        {
+            if (Ioctl(fileDescriptor, request, out result) != 0 || result.Columns == 0 || result.Rows == 0)
+                return false;
+            return true;
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct TerminalWindowSize
+    {
+        public ushort Rows;
+        public ushort Columns;
+        public ushort PixelWidth;
+        public ushort PixelHeight;
+    }
+
+    [DllImport("libc", EntryPoint = "ioctl", SetLastError = true)]
+    private static extern int Ioctl(int fileDescriptor, nuint request, out TerminalWindowSize size);
 
     private sealed class ScreenWriter(TerminalScreen screen, bool isError) : TextWriter
     {

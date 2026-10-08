@@ -448,10 +448,8 @@ public sealed class TerminalEditor
         Func<IReadOnlyList<string>> clearQueue, Action abort, CancellationToken cancellationToken,
         Func<string, Task>? dispatchApplicationAction = null)
     {
-        var previous = Console.TreatControlCAsInput;
         try
         {
-            Console.TreatControlCAsInput = true;
             using var mode = TerminalMode.Enter(_screen);
             var input = EnsureInput();
             _screen?.SetFooter(ActiveRunFooter);
@@ -472,7 +470,6 @@ public sealed class TerminalEditor
         {
             if (_searchingTranscript) CloseTranscriptSearch();
             ClearLine();
-            Console.TreatControlCAsInput = previous;
         }
     }
 
@@ -674,104 +671,98 @@ public sealed class TerminalEditor
         bool enableApplicationActions = true, bool allowEmptySubmit = false)
     {
         ArgumentNullException.ThrowIfNull(dispatchApplicationAction);
-        var previous = Console.TreatControlCAsInput;
-        try
+        using var mode = TerminalMode.Enter(_screen);
+        var input = EnsureInput();
+        Render();
+        while (true)
         {
-            Console.TreatControlCAsInput = true;
-            using var mode = TerminalMode.Enter(_screen);
-            var input = EnsureInput();
-            Render();
-            while (true)
+            var next = input.Read();
+            if (next.Mouse is { } mouse)
             {
-                var next = input.Read();
-                if (next.Mouse is { } mouse)
+                var result = _screen?.HandleMouse(mouse) ?? default;
+                if (result.EditorCursorOffset is { } cursor)
                 {
-                    var result = _screen?.HandleMouse(mouse) ?? default;
-                    if (result.EditorCursorOffset is { } cursor)
-                    {
-                        _buffer.SetCursor(cursor);
-                        Render();
-                    }
-                    if (result.Copy)
-                        await dispatchApplicationAction("app.message.copy");
-                    continue;
+                    _buffer.SetCursor(cursor);
+                    Render();
                 }
-                if (next.IsEndOfStream)
+                if (result.Copy)
+                    await dispatchApplicationAction("app.message.copy");
+                continue;
+            }
+            if (next.IsEndOfStream)
+            {
+                ClearLine();
+                Console.WriteLine();
+                return null;
+            }
+            if (enableApplicationActions && next.Key is { } externalEditorKey &&
+                !_keymap.MatchesEditorAction(externalEditorKey) &&
+                _keymap.MatchIdleApplicationAction(externalEditorKey) is { } externalAction && externalAction == "app.editor.external")
+            {
+                ClearLine();
+                mode.Suspend();
+                try
                 {
+                    _screen?.Suspend();
+                    await dispatchApplicationAction(externalAction);
+                }
+                finally
+                {
+                    try { _screen?.Resume(); }
+                    finally { mode.Resume(); }
+                }
+                Render();
+                continue;
+            }
+            if (enableApplicationActions && next.Key is { } applicationKey &&
+                await HandleApplicationShortcutAsync(applicationKey, dispatchApplicationAction, ClearLine))
+            {
+                Render();
+                continue;
+            }
+            if (allowEmptySubmit && next.Key is { } submitKey &&
+                _keymap.Matches("tui.input.submit", submitKey) && string.IsNullOrWhiteSpace(_buffer.Text))
+            {
+                var submitted = _buffer.Text;
+                ClearLine();
+                Console.WriteLine($"{Prompt}{submitted}");
+                _buffer.Clear();
+                return submitted;
+            }
+            if (next.Key is { } tabKey && _keymap.Matches("tui.input.tab", tabKey))
+            {
+                try
+                {
+                    CompleteInput(tabKey);
+                }
+                catch (Exception error) when (error is IOException or UnauthorizedAccessException or ArgumentException)
+                {
+                    ClearLine();
+                    Console.WriteLine($"\nCompletion unavailable: {error.Message}");
+                }
+                Render();
+                continue;
+            }
+            var action = next.Text is not null ? _buffer.InsertText(next.Text) : _buffer.Handle(next.Key!.Value);
+            switch (action)
+            {
+                case EditorAction.Exit:
                     ClearLine();
                     Console.WriteLine();
                     return null;
-                }
-                if (enableApplicationActions && next.Key is { } externalEditorKey &&
-                    !_keymap.MatchesEditorAction(externalEditorKey) &&
-                    _keymap.MatchIdleApplicationAction(externalEditorKey) is { } externalAction && externalAction == "app.editor.external")
-                {
-                    ClearLine();
-                    mode.Suspend();
-                    try
-                    {
-                        _screen?.Suspend();
-                        await dispatchApplicationAction(externalAction);
-                    }
-                    finally
-                    {
-                        try { _screen?.Resume(); }
-                        finally { mode.Resume(); }
-                    }
+                case EditorAction.Cancel:
                     Render();
-                    continue;
-                }
-                if (enableApplicationActions && next.Key is { } applicationKey &&
-                    await HandleApplicationShortcutAsync(applicationKey, dispatchApplicationAction, ClearLine))
-                {
-                    Render();
-                    continue;
-                }
-                if (allowEmptySubmit && next.Key is { } submitKey &&
-                    _keymap.Matches("tui.input.submit", submitKey) && string.IsNullOrWhiteSpace(_buffer.Text))
-                {
+                    break;
+                case EditorAction.Submit:
                     var submitted = _buffer.Text;
                     ClearLine();
-                    Console.WriteLine($"{Prompt}{submitted}");
+                    if (!submitted.StartsWith("/", StringComparison.Ordinal))
+                        Console.WriteLine($"{Prompt}{new string(submitted.Replace('\n', '↵').Select(c => char.IsControl(c) ? ' ' : c).ToArray())}");
                     _buffer.Clear();
                     return submitted;
-                }
-                if (next.Key is { } tabKey && _keymap.Matches("tui.input.tab", tabKey))
-                {
-                    try
-                    {
-                        CompleteInput(tabKey);
-                    }
-                    catch (Exception error) when (error is IOException or UnauthorizedAccessException or ArgumentException)
-                    {
-                        ClearLine();
-                        Console.WriteLine($"\nCompletion unavailable: {error.Message}");
-                    }
-                    Render();
-                    continue;
-                }
-                var action = next.Text is not null ? _buffer.InsertText(next.Text) : _buffer.Handle(next.Key!.Value);
-                switch (action)
-                {
-                    case EditorAction.Exit:
-                        ClearLine();
-                        Console.WriteLine();
-                        return null;
-                    case EditorAction.Cancel:
-                        Render();
-                        break;
-                    case EditorAction.Submit:
-                        var submitted = _buffer.Text;
-                        ClearLine();
-                        if (!submitted.StartsWith("/", StringComparison.Ordinal))
-                            Console.WriteLine($"{Prompt}{new string(submitted.Replace('\n', '↵').Select(c => char.IsControl(c) ? ' ' : c).ToArray())}");
-                        _buffer.Clear();
-                        return submitted;
-                    case EditorAction.Render: Render(); break;
-                }
+                case EditorAction.Render: Render(); break;
             }
         }
-        finally { Console.TreatControlCAsInput = previous; }
     }
 
     public async Task<bool> HandleApplicationShortcutAsync(ConsoleKeyInfo key, Func<string, Task> dispatch,
@@ -839,8 +830,8 @@ public sealed class TerminalEditor
             _screen.SetEditor(_buffer.Text, _buffer.Cursor, _buffer.SelectionStart, _buffer.SelectionEnd);
             return;
         }
-        var width = Console.WindowWidth > 0 ? Console.WindowWidth : 80;
-        var height = Console.WindowHeight > 0 ? Console.WindowHeight : 24;
+        var width = TerminalScreen.ReadColumns();
+        var height = TerminalScreen.ReadRows();
         var frame = EditorViewport.Layout(_buffer.Text, _buffer.Cursor, width, Math.Max(1, height / 3));
         ClearLine();
         for (var row = 0; row < frame.Rows.Count; row++)

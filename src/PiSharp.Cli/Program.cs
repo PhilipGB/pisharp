@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Microsoft.Win32.SafeHandles;
 using Microsoft.Extensions.AI;
 using PiSharp.Cli;
 using PiSharp.Runtime;
@@ -9,6 +10,25 @@ using PiSharp.Runtime.Resources;
 using PiSharp.Cli.Tui;
 using PiSharp.Cli.Protocols;
 using PiSharp.Cli.Sessions;
+
+using var rawTerminalOutput = !OperatingSystem.IsWindows() && !Console.IsOutputRedirected
+    ? OpenRawTerminalWriter(1)
+    : null;
+using var rawTerminalError = !OperatingSystem.IsWindows() && !Console.IsErrorRedirected
+    ? OpenRawTerminalWriter(2)
+    : null;
+using var rawTerminalInput = !OperatingSystem.IsWindows() && !Console.IsInputRedirected
+    ? OpenRawTerminalReader(0)
+    : null;
+if (rawTerminalOutput is not null) Console.SetOut(rawTerminalOutput);
+if (rawTerminalError is not null) Console.SetError(rawTerminalError);
+var standardInput = rawTerminalInput ?? Console.In;
+static StreamWriter OpenRawTerminalWriter(int fileDescriptor) => new(
+    new FileStream(new SafeFileHandle(new IntPtr(fileDescriptor), ownsHandle: false), FileAccess.Write, 4096),
+    new System.Text.UTF8Encoding(false), 4096);
+static StreamReader OpenRawTerminalReader(int fileDescriptor) => new(
+    new FileStream(new SafeFileHandle(new IntPtr(fileDescriptor), ownsHandle: false), FileAccess.Read, 4096),
+    new System.Text.UTF8Encoding(false), detectEncodingFromByteOrderMarks: true, bufferSize: 4096);
 
 var agentDirectory = Path.GetFullPath(Environment.GetEnvironmentVariable("PISHARP_AGENT_DIR") ??
     Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".pisharp", "agent"));
@@ -78,7 +98,7 @@ try
 {
     projectConfiguration = await ProjectRuntimeConfiguration.LoadAsync(currentDirectory, agentDirectory, cli,
         trustStore, cli.Mode == "interactive" && !cli.Print && !Console.IsInputRedirected && !Console.IsOutputRedirected,
-        Console.In, Console.Error);
+        standardInput, Console.Error);
 }
 catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidDataException or System.Text.Json.JsonException or ArgumentException)
 {
@@ -299,7 +319,7 @@ var prompt = cli.Prompt;
 // Pi combines trimmed piped input before @file content and the positional prompt.
 // RPC owns stdin as a command stream and must not consume it here.
 string stdinContent;
-try { stdinContent = cli.Mode != "rpc" && Console.IsInputRedirected ? await CliStdin.ReadAsync(Console.In) : ""; }
+try { stdinContent = cli.Mode != "rpc" && Console.IsInputRedirected ? await CliStdin.ReadAsync(standardInput) : ""; }
 catch (InvalidDataException error)
 {
     Console.Error.WriteLine(error.Message);
@@ -350,13 +370,15 @@ TerminalTheme ResolveConfiguredTheme(string? themeSetting, TerminalColorState? t
 bool ThemeFollowsTerminalAppearance(string? themeSetting) => themeSetting is null or "" or "system" ||
     themeSetting.Count(character => character == '/') == 1;
 var initialTerminalTheme = ResolveConfiguredTheme(ActiveThemeSetting());
-using var terminalScreen = editor is null ? null : new TerminalScreen(Console.Out, Console.Error,
+using var terminalScreen = editor is null ? null : new TerminalScreen(rawTerminalOutput ?? Console.Out,
+    rawTerminalError ?? Console.Error,
     getColumns: null, getRows: null, imageRenderer: new TerminalImageRenderer(), theme: initialTerminalTheme,
     queryTerminalColors: !Console.IsInputRedirected && !Console.IsOutputRedirected,
     followTerminalAppearance: ThemeFollowsTerminalAppearance(ActiveThemeSetting()), deferInitialRender: true);
 terminalScreen?.SetThemeResolver(colors => ResolveConfiguredTheme(ActiveThemeSetting(), colors));
 terminalScreen?.SetMarkdownCodeBlockIndent(userSettings.MarkdownCodeBlockIndent ?? UserSettings.DefaultMarkdownCodeBlockIndent);
 terminalScreen?.Activate();
+using var terminalMode = editor is null ? null : TerminalMode.Enter(terminalScreen);
 void ConfigureMcpAuthorizationUrlPresenter(ProjectRuntimeContext context)
 {
     Action<string, Uri>? presenter = terminalScreen is null ? null : terminalScreen.AppendMcpAuthorizationNotification;
@@ -400,7 +422,7 @@ if (editor is not null)
         .Write(Console.Out, selection.Provider.Id, connection.Model, thinking, currentDirectory);
 terminalScreen?.RenderInitial();
 CancellationTokenSource? activeRun = null;
-Console.CancelKeyPress += (_, e) => { e.Cancel = true; activeRun?.Cancel(); };
+if (editor is null) Console.CancelKeyPress += (_, e) => { e.Cancel = true; activeRun?.Cancel(); };
 
 async Task Run(string input, IReadOnlyList<DataContent>? images = null)
 {
