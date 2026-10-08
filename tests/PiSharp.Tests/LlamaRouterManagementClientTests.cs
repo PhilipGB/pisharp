@@ -32,6 +32,7 @@ public sealed class LlamaRouterManagementClientTests
     public async Task LoadAndUnloadUseAuthenticatedRouterEndpointsAndWaitForCatalogState()
     {
         var state = "unloaded";
+        var progressObserved = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var requests = new ConcurrentQueue<(string Method, string Path, string? Authorization, string? Body)>();
         using var http = new HttpClient(new RouterHandler(async (request, cancellationToken) =>
         {
@@ -42,6 +43,7 @@ public sealed class LlamaRouterManagementClientTests
                 return Sse("data: {\"model\":\"qwen\",\"event\":\"model_status\",\"data\":{\"status\":\"loading\",\"progress\":{\"current\":\"loading_model\",\"stages\":[\"loading_model\",\"loading_context\"],\"value\":0.5}}}\n\n");
             if (request.Method == HttpMethod.Post && request.RequestUri.AbsolutePath == "/models/load")
             {
+                await progressObserved.Task.WaitAsync(cancellationToken);
                 state = "loaded";
                 return Json("{}");
             }
@@ -55,13 +57,22 @@ public sealed class LlamaRouterManagementClientTests
             return new HttpResponseMessage(HttpStatusCode.NotFound);
         }));
         var client = new LlamaRouterClient(http, new Uri("http://llama.test:8080/v1"), "router-secret");
-        var progress = new List<LlamaRouterProgress>();
+        var progress = new ConcurrentQueue<LlamaRouterProgress>();
 
-        var loaded = await client.LoadAndWaitAsync("qwen", progress.Add, CancellationToken.None);
+        void RecordProgress(LlamaRouterProgress value)
+        {
+            progress.Enqueue(value);
+            if (value.Ratio == 0.25) progressObserved.TrySetResult();
+        }
+
+        var loaded = await client.LoadAndWaitAsync("qwen", RecordProgress, CancellationToken.None);
         await client.UnloadAndWaitAsync("qwen", CancellationToken.None);
 
         Assert.Equal("loaded", loaded.Status.Value);
-        Assert.Contains(progress, item => item.Message == "Loading model");
+        var progressUpdates = progress.ToArray();
+        Assert.Equal("Loading model", progressUpdates[0].Message);
+        Assert.Contains(progressUpdates, item => item.Message == "Loading loading model" && item.Ratio == 0.25);
+        Assert.NotEqual("Loading model", progressUpdates[^1].Message);
         Assert.Contains(requests, item => item.Method == "POST" && item.Path == "/models/load" &&
             item.Body == "{\"model\":\"qwen\"}" && item.Authorization == "Bearer router-secret");
         Assert.Contains(requests, item => item.Method == "POST" && item.Path == "/models/unload" &&

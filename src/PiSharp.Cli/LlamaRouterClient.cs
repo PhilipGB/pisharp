@@ -126,6 +126,7 @@ internal sealed class LlamaRouterClient(HttpClient http, Uri serverUrl, string? 
         Action<LlamaRouterProgress> onProgress, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(onProgress);
+        onProgress(new("Loading model"));
         using var watcherCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         var eventGate = new object();
         var eventLoaded = false;
@@ -147,7 +148,6 @@ internal sealed class LlamaRouterClient(HttpClient http, Uri serverUrl, string? 
         try
         {
             await LoadAsync(model, cancellationToken).ConfigureAwait(false);
-            onProgress(new("Loading model"));
             while (true)
             {
                 cancellationToken.ThrowIfCancellationRequested();
