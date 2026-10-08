@@ -673,8 +673,8 @@ public sealed class TerminalScreen : IDisposable
                 if (ReferenceEquals(Console.Error, _installedError)) Console.SetError(_originalError);
             }
             _originalOut.Write(_images.CleanupControlSequence() + TerminalMouseMode.Disable +
-                "\u001b[?7h\u001b[?25h\u001b[?1049l" + TerminalKeyboardMode.Disable + "\u001b[?1l\u001b>");
-            _originalOut.Flush();
+                "\u001b[?7h\u001b[?25h" + TerminalKeyboardMode.Disable + "\u001b[?1l\u001b>");
+            _compositor.LeaveAlternateScreen();
             captured = _transcript.CaptureSnapshot();
             truncated = _transcript.CaptureTruncated;
         }
@@ -685,12 +685,13 @@ public sealed class TerminalScreen : IDisposable
             writer.Write(chunk.Text);
             writer.Flush();
         }
-        _images.Clear();
         if (truncated)
         {
             _originalError.WriteLine("Interactive transcript exceeded the scrollback restore limit; the active screen was still rendered in full.");
             _originalError.Flush();
         }
+        _compositor.RestoreLastFrameToNormalBuffer();
+        _images.Clear();
     }
 
     private int _lastColumns;

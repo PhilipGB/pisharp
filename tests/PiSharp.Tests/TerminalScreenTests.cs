@@ -287,12 +287,12 @@ public sealed class TerminalScreenTests
         var reenabled = text.IndexOf("\u001b[?1049h\u001b[?7l\u001b[?25l" + enable, enabled + 1, StringComparison.Ordinal);
         var disabledForDispose = text.LastIndexOf(disable + "\u001b[?7h", StringComparison.Ordinal);
         var suspendAltExit = text.IndexOf("\u001b[?25h\u001b[?1049l", disabledForSuspend, StringComparison.Ordinal);
-        var disposeAltExit = text.IndexOf("\u001b[?25h\u001b[?1049l", disabledForDispose, StringComparison.Ordinal);
+        var disposeAltExit = text.IndexOf("\u001b[?1049l\u001b[?7l", disabledForDispose, StringComparison.Ordinal);
 
         Assert.True(enabled >= 0 && enabled < disabledForSuspend);
         Assert.True(disabledForSuspend < suspendAltExit && suspendAltExit < reenabled);
         Assert.True(reenabled < disabledForDispose && disabledForDispose < disposeAltExit);
-        Assert.Contains("\u001b[?1049l" + TerminalKeyboardMode.Disable + "\u001b[?1l\u001b>", text);
+        Assert.Contains(TerminalKeyboardMode.Disable + "\u001b[?1l\u001b>\u001b[?2026h\u001b[?1049l\u001b[?7l", text);
     }
 
     [Fact]

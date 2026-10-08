@@ -208,6 +208,31 @@ internal sealed class TerminalImageRenderer
         return new(preamble.ToString(), renderedRows);
     }
 
+    /// <summary>Replaces image markers with readable labels for a document restored after image cleanup.</summary>
+    public IReadOnlyList<string> PrepareFallbackFrame(IReadOnlyList<string> rows)
+    {
+        ArgumentNullException.ThrowIfNull(rows);
+        var renderedRows = new List<string>(rows.Count);
+        foreach (var line in rows)
+        {
+            var result = new System.Text.StringBuilder(line.Length);
+            for (var offset = 0; offset < line.Length;)
+            {
+                if (!TryReadMarker(line, offset, out var markerLength, out var id, out _))
+                {
+                    result.Append(line[offset++]);
+                    continue;
+                }
+
+                result.Append(_images.TryGetValue(id, out var image) ? image.Fallback : "[Image omitted]");
+                offset += markerLength;
+            }
+            renderedRows.Add(result.ToString());
+        }
+
+        return renderedRows;
+    }
+
     public string CleanupControlSequence() => _protocol == TerminalImageProtocol.Kitty && _images.Values.Any(image => image.KittyUploaded)
         ? "\u001b_Ga=d,d=A,q=2\u001b\\"
         : "";

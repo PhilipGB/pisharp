@@ -29,6 +29,27 @@ public sealed class TerminalScreenCompositorTests
     }
 
     [Fact]
+    public void RestoreLastFrameWritesCompactViewportToNormalBuffer()
+    {
+        using var output = new StringWriter();
+        var compositor = new TerminalScreenCompositor(output, new TerminalImageRenderer());
+        compositor.Render(new TerminalScreenCompositor.Frame(
+            ["transcript", "", "\u001b[2m────\u001b[0m", "   ", "\u001b[7mX\u001b[27m", "cwd", "footer"],
+            4, 1, 0, 10, 7, RestoreStartRow: 2));
+        output.GetStringBuilder().Clear();
+
+        compositor.RestoreLastFrameToNormalBuffer();
+
+        var restored = output.ToString();
+        Assert.Contains("\u001b[?2026h\r\n\r\u001b[2K\u001b[2m────\u001b[0m\r\n\r\u001b[2K   \r\n\r\u001b[2KX", restored);
+        Assert.Contains("\r\u001b[2Kcwd\r\n\r\u001b[2Kfooter", restored);
+        Assert.EndsWith("\u001b[?7h\r\n\r\n\u001b[?25h\u001b[?2026l", restored);
+        Assert.DoesNotContain("\u001b[7m", restored);
+        Assert.DoesNotContain("\u001b[27m", restored);
+        Assert.DoesNotContain("transcript", restored);
+    }
+
+    [Fact]
     public void StatusNotificationRemainsVisibleAboveThePanel()
     {
         var compositor = new TerminalScreenCompositor(new StringWriter(), new TerminalImageRenderer());

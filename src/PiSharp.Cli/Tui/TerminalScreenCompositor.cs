@@ -13,6 +13,9 @@ internal sealed class TerminalScreenCompositor
     private readonly TextWriter _output;
     private readonly TerminalImageRenderer _images;
     private IReadOnlyList<string>? _previousRows;
+    private IReadOnlyList<string>? _previousDocumentRows;
+    private int _previousCursorRow;
+    private int _previousRestoreStartRow;
     private int _previousColumns;
     private int _previousHeight;
 
@@ -25,7 +28,7 @@ internal sealed class TerminalScreenCompositor
     }
 
     internal sealed record Frame(IReadOnlyList<string> Rows, int CursorRow, int CursorColumn,
-        int ScrollOffset, int Columns, int Height, bool CursorVisible = true);
+        int ScrollOffset, int Columns, int Height, bool CursorVisible = true, int RestoreStartRow = 0);
 
     public Frame Compose(string editorText, int editorCursor, int? editorSelectionStart, int? editorSelectionEnd,
         string transcriptText, string footer,
@@ -125,11 +128,12 @@ internal sealed class TerminalScreenCompositor
                 : panelStart + visibleCount - 1;
             var cursorColumn = panelCursorColumn ?? 1;
             return new(rows, Math.Clamp(cursorRow, 0, Math.Max(0, height - 1)),
-                Math.Clamp(cursorColumn, 1, columns + 1), scrollOffset, columns, height, panelCursorVisible);
+                Math.Clamp(cursorColumn, 1, columns + 1), scrollOffset, columns, height, panelCursorVisible,
+                RestoreStartRow: panelStart);
         }
 
         return new(rows, editorStart + borderHeight / 2 + editor.CursorRow, editor.CursorColumn + 1,
-            scrollOffset, columns, height, CursorVisible: false);
+            scrollOffset, columns, height, CursorVisible: false, RestoreStartRow: editorStart);
     }
 
     private static string HighlightCursor(string row, EditorViewport.RowMap rowMap, int cursor)
@@ -170,7 +174,43 @@ internal sealed class TerminalScreenCompositor
         _output.Write($"\u001b[?25{(frame.CursorVisible ? 'h' : 'l')}\u001b[?2026l");
         _output.Flush();
         _previousRows = rendered.Rows.ToArray();
+        _previousDocumentRows = frame.Rows.ToArray();
+        _previousCursorRow = frame.CursorRow;
+        _previousRestoreStartRow = frame.RestoreStartRow;
         _previousColumns = frame.Columns;
         _previousHeight = frame.Height;
     }
+
+    public void RestoreLastFrameToNormalBuffer()
+    {
+        var documentRows = _previousDocumentRows is null
+            ? Array.Empty<string>()
+            : _images.PrepareFallbackFrame(_previousDocumentRows);
+        _output.Write("\u001b[?2026h");
+        var firstRow = Math.Clamp(_previousRestoreStartRow, 0, documentRows.Count);
+        if (firstRow < documentRows.Count)
+        {
+            // The saved primary-buffer cursor begins one row above Pi's restored document.
+            _output.Write("\r\n");
+            for (var index = firstRow; index < documentRows.Count; index++)
+            {
+                if (index > firstRow) _output.Write("\r\n");
+                _output.Write("\r\u001b[2K");
+                var row = index == _previousCursorRow
+                    ? documentRows[index].Replace("\u001b[7m", "", StringComparison.Ordinal)
+                        .Replace("\u001b[27m", "", StringComparison.Ordinal)
+                    : documentRows[index];
+                _output.Write(row);
+            }
+        }
+        _output.Write("\u001b[0m\u001b[?7h\r\n\r\n\u001b[?25h\u001b[?2026l");
+        _output.Flush();
+    }
+
+    public void LeaveAlternateScreen()
+    {
+        _output.Write("\u001b[?2026h\u001b[?1049l\u001b[?7l\u001b[?2026l");
+        _output.Flush();
+    }
+
 }
