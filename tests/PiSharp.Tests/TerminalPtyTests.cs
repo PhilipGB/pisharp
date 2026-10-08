@@ -197,16 +197,25 @@ public sealed class TerminalPtyTests
                             steeringSaved.TrySetResult();
                         if (captured.Contains("Settings closed.", StringComparison.Ordinal)) settingsClosed.TrySetResult();
                         const string queuedMessage = "Queued steering message.";
-                        var queuedCount = 0;
-                        for (var position = 0; (position = captured.IndexOf(queuedMessage, position, StringComparison.Ordinal)) >= 0;
-                            position += queuedMessage.Length)
-                            queuedCount++;
-                        if (queuedCount >= 1) firstSteeringQueued.TrySetResult();
-                        if (queuedCount >= 2) bothSteeringQueued.TrySetResult();
-                        var replyAt = captured.IndexOf("PTY_REPLY_OK", StringComparison.Ordinal);
-                        if (replyAt >= 0 && captured.IndexOf(idleFrameEnd, replyAt + "PTY_REPLY_OK".Length,
-                                StringComparison.Ordinal) >= 0)
-                            idleAfterReply.TrySetResult();
+                        var frameEnd = captured.LastIndexOf(idleFrameEnd, StringComparison.Ordinal);
+                        var frameStart = frameEnd < 0 ? -1 : captured.LastIndexOf("\u001b[2J", frameEnd,
+                            StringComparison.Ordinal);
+                        if (frameStart >= 0)
+                        {
+                            var frame = captured.Substring(frameStart, frameEnd + idleFrameEnd.Length - frameStart);
+                            var queuedCount = 0;
+                            for (var position = 0;
+                                (position = frame.IndexOf(queuedMessage, position, StringComparison.Ordinal)) >= 0;
+                                position += queuedMessage.Length)
+                                queuedCount++;
+                            if (queuedCount >= 1) firstSteeringQueued.TrySetResult();
+                            if (queuedCount >= 2) bothSteeringQueued.TrySetResult();
+
+                            const string activeFooter = "Enter steers · follow-up queues · Escape aborts";
+                            if (frame.Contains("PTY_REPLY_OK", StringComparison.Ordinal) &&
+                                !frame.Contains(activeFooter, StringComparison.Ordinal))
+                                idleAfterReply.TrySetResult();
+                        }
                     }
                 }
             });
