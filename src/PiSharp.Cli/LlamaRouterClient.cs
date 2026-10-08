@@ -128,10 +128,9 @@ internal sealed class LlamaRouterClient(HttpClient http, Uri serverUrl, string? 
         ArgumentNullException.ThrowIfNull(onProgress);
         using var watcherCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         var eventGate = new object();
-        var watcherReady = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var eventLoaded = false;
         string? eventError = null;
-        var watchTask = ObserveEventsAsync(watcherCancellation.Token, model, watcherReady, item =>
+        var watchTask = ObserveEventsAsync(watcherCancellation.Token, model, item =>
         {
             if (item.Event is not ("model_status" or "status_change")) return;
             lock (eventGate)
@@ -147,7 +146,6 @@ internal sealed class LlamaRouterClient(HttpClient http, Uri serverUrl, string? 
         });
         try
         {
-            await WaitForWatcherConnectionAsync(watcherReady.Task, cancellationToken).ConfigureAwait(false);
             await LoadAsync(model, cancellationToken).ConfigureAwait(false);
             onProgress(new("Loading model"));
             while (true)
@@ -181,11 +179,10 @@ internal sealed class LlamaRouterClient(HttpClient http, Uri serverUrl, string? 
         ArgumentNullException.ThrowIfNull(onProgress);
         using var watcherCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         var eventGate = new object();
-        var watcherReady = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var finished = false;
         string? failure = null;
         var sawProgress = false;
-        var watchTask = ObserveEventsAsync(watcherCancellation.Token, model, watcherReady, item =>
+        var watchTask = ObserveEventsAsync(watcherCancellation.Token, model, item =>
         {
             lock (eventGate)
             {
@@ -198,7 +195,6 @@ internal sealed class LlamaRouterClient(HttpClient http, Uri serverUrl, string? 
         });
         try
         {
-            await WaitForWatcherConnectionAsync(watcherReady.Task, cancellationToken).ConfigureAwait(false);
             await DownloadAsync(model, cancellationToken).ConfigureAwait(false);
             onProgress(new("Downloading model"));
             var polls = 0;
@@ -235,10 +231,9 @@ internal sealed class LlamaRouterClient(HttpClient http, Uri serverUrl, string? 
     }
 
     public Task WatchAsync(Action<LlamaRouterEvent> onEvent, CancellationToken cancellationToken) =>
-        WatchAsync(onEvent, cancellationToken, null);
+        WatchStreamAsync(onEvent, cancellationToken);
 
-    private async Task WatchAsync(Action<LlamaRouterEvent> onEvent, CancellationToken cancellationToken,
-        TaskCompletionSource? watcherReady)
+    private async Task WatchStreamAsync(Action<LlamaRouterEvent> onEvent, CancellationToken cancellationToken)
     {
         using var request = new HttpRequestMessage(HttpMethod.Get, Endpoint("models/sse"));
         if (apiKey is { Length: > 0 })
@@ -247,7 +242,6 @@ internal sealed class LlamaRouterClient(HttpClient http, Uri serverUrl, string? 
         connectTimeout.CancelAfter(TimeSpan.FromSeconds(15));
         using var response = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, connectTimeout.Token)
             .ConfigureAwait(false);
-        watcherReady?.TrySetResult();
         if (!response.IsSuccessStatusCode || response.Content is null)
             throw new HttpRequestException($"llama.cpp SSE returned HTTP {(int)response.StatusCode}.", null,
                 response.StatusCode);
@@ -334,28 +328,18 @@ internal sealed class LlamaRouterClient(HttpClient http, Uri serverUrl, string? 
     }
 
     private async Task ObserveEventsAsync(CancellationToken cancellationToken, string model,
-        TaskCompletionSource watcherReady, Action<LlamaRouterEvent> onEvent)
+        Action<LlamaRouterEvent> onEvent)
     {
         try
         {
-            await WatchAsync(item =>
+            await WatchStreamAsync(item =>
             {
                 if (item.Model == model) onEvent(item);
-            }, cancellationToken, watcherReady).ConfigureAwait(false);
+            }, cancellationToken).ConfigureAwait(false);
         }
         catch (Exception error) when (error is HttpRequestException or TaskCanceledException or IOException or
                                           JsonException or OperationCanceledException)
         { }
-        finally { watcherReady.TrySetResult(); }
-    }
-
-    private static async Task WaitForWatcherConnectionAsync(Task watcherReady, CancellationToken cancellationToken)
-    {
-        try
-        {
-            await watcherReady.WaitAsync(TimeSpan.FromMilliseconds(100), cancellationToken).ConfigureAwait(false);
-        }
-        catch (TimeoutException) { }
     }
 
     private static async Task ObserveCancellationAsync(Task task)
