@@ -103,12 +103,20 @@ public sealed class TerminalScreenTests
         output.GetStringBuilder().Clear();
         screen.SetStatusNotification("message before modal");
         screen.SetEditorPanel(["modal panel"], 0, 1);
-        Assert.Equal(1, Count(output.ToString(), "\u001b[?2026h"));
+        Assert.Equal(2, Count(output.ToString(), "\u001b[?2026h"));
         Assert.Contains("message before modal", output.ToString());
-
+        Assert.Contains("modal panel", output.ToString());
         clock.Advance(TimeSpan.FromMilliseconds(16));
         Assert.Equal(2, Count(output.ToString(), "\u001b[?2026h"));
-        Assert.Contains("modal panel", output.ToString());
+
+        screen.SetEditorPanel(null);
+        clock.Advance(TimeSpan.FromMilliseconds(16));
+        output.GetStringBuilder().Clear();
+        screen.SetOverlay(["modal overlay"]);
+        Assert.Equal(1, Count(output.ToString(), "\u001b[?2026h"));
+        Assert.Contains("modal overlay", output.ToString());
+        clock.Advance(TimeSpan.FromMilliseconds(16));
+        Assert.Equal(1, Count(output.ToString(), "\u001b[?2026h"));
     }
 
     [Fact]

@@ -340,11 +340,12 @@ public sealed class TerminalScreen : IDisposable
         lock (_gate)
         {
             if (!_active) return;
-            if (lines is not null && _overlay is null && _renderPending)
+            var opening = lines is not null && _overlay is null;
+            if (opening && _renderPending)
                 FlushPendingRenderLocked();
             // List state sanitizes user text before applying application-owned styling.
             _overlay = lines?.Select(line => line.Replace('\n', ' ')).ToArray();
-            RenderLocked();
+            RenderLocked(immediate: opening);
         }
     }
 
@@ -354,14 +355,15 @@ public sealed class TerminalScreen : IDisposable
         lock (_gate)
         {
             if (!_active) return;
-            if (lines is not null && _editorPanel is null && _renderPending)
+            var opening = lines is not null && _editorPanel is null;
+            if (opening && _renderPending)
                 FlushPendingRenderLocked();
             _editorPanel = lines?.Select(line => line.Replace('\n', ' ')).ToArray();
             _panelCursorRow = cursorRow;
             _panelCursorColumn = cursorColumn;
             _panelCursorVisible = cursorVisible;
             _panelBottomMargin = bottomMargin;
-            RenderLocked();
+            RenderLocked(immediate: opening);
         }
     }
 
