@@ -131,6 +131,7 @@ public sealed class LlamaRouterManagerTuiTests
             await terminal.SendAsync("\u001b");
             await terminal.WaitTextAsync("Stop loading?", mark);
             await terminal.SendAsync("\n");
+            await terminal.WaitTextAsync("Restoring previously loaded models", mark);
             await terminal.WaitTextAsync("llama.cpp models", mark);
 
             Assert.Equal("unloaded", server.Statuses["target"]);
@@ -307,12 +308,14 @@ public sealed class LlamaRouterManagerTuiTests
             mark = terminal.Mark;
             await terminal.WaitTextAsync("Loaded target", mark);
             mark = terminal.Mark;
+            await terminal.WaitTextAsync("llama.cpp models", mark);
+            mark = terminal.Mark;
             await terminal.SendAsync("\u001b");
             await terminal.WaitEditorAsync(mark);
 
             mark = terminal.Mark;
             await terminal.SendAsync("/model\n");
-            await terminal.WaitTextAsync("Select model", mark);
+            await terminal.WaitTextAsync("type to filter", mark);
             await terminal.SendAsync("target");
             await terminal.WaitTextAsync("target [llama.cpp]", mark);
             await terminal.SendAsync("\n");

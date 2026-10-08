@@ -12,7 +12,7 @@ internal sealed class TerminalLlamaManager(ProviderModelRuntime runtime, Termina
         try { client = await runtime.CreateLlamaRouterClientAsync(cancellationToken).ConfigureAwait(false); }
         catch (InvalidOperationException error) when (error.Message.Contains("LLAMA_BASE_URL", StringComparison.Ordinal))
         {
-            Console.WriteLine("Configure llama.cpp with /login llama.cpp");
+            editor.SetStatusNotification("Configure llama.cpp with /login llama.cpp", TerminalStatusNotificationKind.Warning);
             return;
         }
 
@@ -35,15 +35,17 @@ internal sealed class TerminalLlamaManager(ProviderModelRuntime runtime, Termina
                 else if (action.Model is { Status.Value: "unloaded" } target)
                     await LoadModelAsync(client, catalog, target, cancellationToken).ConfigureAwait(false);
                 else if (action.Model is { } inProgress)
-                    Console.WriteLine($"{inProgress.Id} is {inProgress.Status.Value}");
+                    editor.SetStatusNotification($"{inProgress.Id} is {inProgress.Status.Value}",
+                        TerminalStatusNotificationKind.Warning);
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
             catch (Exception error) { actionError = error; }
 
             catalog = await ReadCatalogAsync(client, cancellationToken).ConfigureAwait(false);
             if (catalog is null) return;
-            if (actionError is not null)
-                Console.WriteLine(SecretRedactor.Redact(actionError.Message, environment("LLAMA_API_KEY")));
+            if (actionError is not null && !IsConnectionError(actionError))
+                editor.SetStatusNotification(SecretRedactor.Redact(actionError.Message, environment("LLAMA_API_KEY")),
+                    TerminalStatusNotificationKind.Error);
         }
     }
 
@@ -152,7 +154,8 @@ internal sealed class TerminalLlamaManager(ProviderModelRuntime runtime, Termina
             }
             var loadedModel = (await ReadCatalogSnapshotAsync(client, cancellationToken).ConfigureAwait(false))
                 .FirstOrDefault(model => model.Id == target.Id);
-            Console.WriteLine(loadedModel?.Status.Value == "loaded" ? $"Loaded {target.Id}" : $"Load started for {target.Id}");
+            editor.SetStatusNotification(loadedModel?.Status.Value == "loaded"
+                ? $"Loaded {target.Id}" : $"Load started for {target.Id}");
         }
         catch
         {
@@ -168,7 +171,7 @@ internal sealed class TerminalLlamaManager(ProviderModelRuntime runtime, Termina
     private async Task RestoreLoadedAsync(LlamaRouterClient client, IReadOnlyList<LlamaRouterModelInfo> models,
         CancellationToken cancellationToken)
     {
-        Console.WriteLine("Restoring previously loaded models");
+        editor.SetStatusNotification("Restoring previously loaded models");
         foreach (var model in models)
             await client.LoadAndWaitAsync(model.Id, _ => { }, cancellationToken).ConfigureAwait(false);
         _ = await runtime.RefreshLlamaRouterCatalogAsync(client, cancellationToken).ConfigureAwait(false);
@@ -184,7 +187,7 @@ internal sealed class TerminalLlamaManager(ProviderModelRuntime runtime, Termina
             }, [model.Id, ""], "enter select • escape/ctrl+c cancel")?.Option.Value != true) return;
         await client.UnloadAndWaitAsync(model.Id, cancellationToken).ConfigureAwait(false);
         _ = await runtime.RefreshLlamaRouterCatalogAsync(client, cancellationToken).ConfigureAwait(false);
-        Console.WriteLine($"Unloaded {model.Id}");
+        editor.SetStatusNotification($"Unloaded {model.Id}");
     }
 
     private async Task DownloadModelAsync(LlamaRouterClient client,
@@ -247,6 +250,15 @@ internal sealed class TerminalLlamaManager(ProviderModelRuntime runtime, Termina
     }
 
     private static bool IsLoaded(LlamaRouterModelInfo model) => model.Status.Value is "loaded" or "sleeping";
+
+    private static bool IsConnectionError(Exception error)
+    {
+        if (error is HttpRequestException { StatusCode: null } or TaskCanceledException or TimeoutException) return true;
+        var message = (error.GetType().Name + " " + error.Message).ToLowerInvariant();
+        return message.Contains("fetch failed", StringComparison.Ordinal) ||
+            message.Contains("timeout", StringComparison.Ordinal) ||
+            message.Contains("network", StringComparison.Ordinal);
+    }
 
     private static string ServerLabel(Uri serverUrl) => serverUrl.GetLeftPart(UriPartial.Path).TrimEnd('/');
 

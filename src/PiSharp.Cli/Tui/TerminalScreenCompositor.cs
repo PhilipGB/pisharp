@@ -1,5 +1,12 @@
 namespace PiSharp.Cli.Tui;
 
+internal enum TerminalStatusNotificationKind
+{
+    Info,
+    Warning,
+    Error
+}
+
 /// <summary>Builds complete terminal frames from transcript, editor, footer and overlay state.</summary>
 internal sealed class TerminalScreenCompositor
 {
@@ -23,7 +30,8 @@ internal sealed class TerminalScreenCompositor
         TranscriptSearchController search, TerminalMouseRouter mouse, TerminalTheme? theme = null,
         IReadOnlyList<string>? editorPanel = null, int? panelCursorRow = null,
         int? panelCursorColumn = null, bool panelCursorVisible = false, int panelBottomMargin = 1,
-        string? statusNotification = null)
+        string? statusNotification = null,
+        TerminalStatusNotificationKind statusNotificationKind = TerminalStatusNotificationKind.Info)
     {
         var activeTheme = theme ?? TerminalTheme.Default;
         var footerHeight = height >= 5 ? 2 : height > 2 ? 1 : 0;
@@ -85,9 +93,18 @@ internal sealed class TerminalScreenCompositor
                 rows[^2] = activeTheme.Style("dim",
                     TerminalTranscriptViewport.Clip(Environment.CurrentDirectory, columns));
         }
-        if (overlay is not null) TerminalOverlayLayout.Apply(rows, overlay, columns, activeTheme);
         if (statusNotification is not null && height > 1)
-            rows[1] = activeTheme.Style("dim", TerminalTranscriptViewport.Clip(" " + statusNotification, columns));
+        {
+            var (style, prefix) = statusNotificationKind switch
+            {
+                TerminalStatusNotificationKind.Warning => ("warning", "Warning: "),
+                TerminalStatusNotificationKind.Error => ("error", "Error: "),
+                _ => ("dim", "")
+            };
+            rows[1] = activeTheme.Style(style,
+                TerminalTranscriptViewport.Clip(" " + prefix + statusNotification, columns));
+        }
+        if (overlay is not null) TerminalOverlayLayout.Apply(rows, overlay, columns, activeTheme);
 
         if (editorPanel is { Count: > 0 })
         {

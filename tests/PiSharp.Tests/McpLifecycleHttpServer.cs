@@ -1,5 +1,4 @@
 using System.Net;
-using System.Net.Sockets;
 using System.Text;
 using System.Text.Json;
 using System.Collections.Concurrent;
@@ -8,8 +7,7 @@ namespace PiSharp.Tests;
 
 internal sealed class McpLifecycleHttpServer : IAsyncDisposable
 {
-    private static readonly object s_startGate = new();
-    private readonly HttpListener _listener = new();
+    private readonly HttpListener _listener;
     private readonly CancellationTokenSource _stop = new(TimeSpan.FromSeconds(30));
     private readonly Task _serve;
     private readonly bool _expireFirstToolCall;
@@ -29,17 +27,10 @@ internal sealed class McpLifecycleHttpServer : IAsyncDisposable
         _transientFirstResourceRead = transientFirstResourceRead;
         _transientFirstToolCall = transientFirstToolCall;
         _authorize = authorize;
-        lock (s_startGate)
-        {
-            using var reservation = new TcpListener(IPAddress.Loopback, 0);
-            reservation.Start();
-            var port = ((IPEndPoint)reservation.LocalEndpoint).Port;
-            Endpoint = "http://127.0.0.1:" + port + "/mcp";
-            _listener.Prefixes.Add("http://127.0.0.1:" + port + "/");
-            reservation.Stop();
-            _listener.Start();
-            _serve = ServeAsync();
-        }
+        var (listener, port) = TestLoopbackListener.Start();
+        _listener = listener;
+        Endpoint = "http://127.0.0.1:" + port + "/mcp";
+        _serve = ServeAsync();
     }
 
     public string Endpoint { get; }

@@ -38,6 +38,7 @@ public sealed class TerminalScreen : IDisposable
     private int _lastImagePruneRevision = -1;
     private string _footer = "Enter steers · follow-up queues · Escape aborts";
     private string? _statusNotification;
+    private TerminalStatusNotificationKind _statusNotificationKind;
     private IReadOnlyList<string>? _overlay;
     private IReadOnlyList<string>? _editorPanel;
     private int? _panelCursorRow;
@@ -331,15 +332,23 @@ public sealed class TerminalScreen : IDisposable
         }
     }
 
-    internal void SetStatusNotification(string message)
+    internal void SetStatusNotification(string message,
+        TerminalStatusNotificationKind kind = TerminalStatusNotificationKind.Info)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(message);
         lock (_gate)
         {
             if (!_active) return;
             var safe = TerminalSafeText.Normalize(message);
-            _transcript.AppendCaptured(Environment.NewLine + " " + safe + Environment.NewLine, isError: false);
+            var (prefix, isError) = kind switch
+            {
+                TerminalStatusNotificationKind.Warning => ("Warning: ", false),
+                TerminalStatusNotificationKind.Error => ("Error: ", true),
+                _ => ("", false)
+            };
+            _transcript.AppendCaptured(Environment.NewLine + " " + prefix + safe + Environment.NewLine, isError);
             _statusNotification = safe;
+            _statusNotificationKind = kind;
             RenderLocked();
         }
     }
@@ -711,7 +720,8 @@ public sealed class TerminalScreen : IDisposable
             transcriptWidth, Math.Max(1, transcriptHeight - 2));
         var frame = _compositor.Compose(_editorText, _editorCursor, _editorSelectionStart, _editorSelectionEnd,
             transcript, _footer, _overlay, _scrollOffset, columns, rows, _search, _mouse, _theme,
-            _editorPanel, _panelCursorRow, _panelCursorColumn, _panelCursorVisible, _panelBottomMargin, _statusNotification);
+            _editorPanel, _panelCursorRow, _panelCursorColumn, _panelCursorVisible, _panelBottomMargin,
+            _statusNotification, _statusNotificationKind);
         _scrollOffset = frame.ScrollOffset;
         _lastColumns = frame.Columns;
         _lastRows = frame.Height;

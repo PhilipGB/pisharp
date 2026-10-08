@@ -1,7 +1,6 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net;
-using System.Net.Sockets;
 using System.Text;
 using System.Text.RegularExpressions;
 using PiSharp.Cli;
@@ -79,7 +78,7 @@ public sealed class LlamaRouterLoginTuiTests
 
     private sealed class RouterServer : IAsyncDisposable
     {
-        private readonly HttpListener _listener = new();
+        private readonly HttpListener _listener;
         private readonly CancellationTokenSource _shutdown = new();
         private readonly Task _serve;
         public ConcurrentQueue<(string Path, string? Authorization)> Requests { get; } = new();
@@ -87,12 +86,9 @@ public sealed class LlamaRouterLoginTuiTests
 
         public RouterServer()
         {
-            using var reservation = new TcpListener(IPAddress.Loopback, 0);
-            reservation.Start();
-            Origin = "http://127.0.0.1:" + ((IPEndPoint)reservation.LocalEndpoint).Port;
-            reservation.Stop();
-            _listener.Prefixes.Add(Origin + "/");
-            _listener.Start();
+            var (listener, port) = TestLoopbackListener.Start();
+            _listener = listener;
+            Origin = "http://127.0.0.1:" + port;
             _serve = ServeAsync();
         }
 

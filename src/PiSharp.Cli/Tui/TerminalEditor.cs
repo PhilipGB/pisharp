@@ -194,7 +194,8 @@ public sealed class TerminalEditor
         screen.SetEditorPanel(lines, lines.Length - 2, width + 1, cursorVisible: false, bottomMargin: 2);
     }
 
-    internal void SetStatusNotification(string message) => _screen?.SetStatusNotification(message);
+    internal void SetStatusNotification(string message,
+        TerminalStatusNotificationKind kind = TerminalStatusNotificationKind.Info) => _screen?.SetStatusNotification(message, kind);
 
     private static IReadOnlyList<string> RenderInlinePanel<T>(TerminalScreen screen, string title,
         IReadOnlyList<TerminalSelectionOption<T>> options, int selectedIndex, IReadOnlyList<string>? header,

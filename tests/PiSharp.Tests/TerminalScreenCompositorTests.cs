@@ -26,6 +26,42 @@ public sealed class TerminalScreenCompositorTests
     }
 
     [Fact]
+    public void StatusNotificationUsesPiSeverityLabelsAndThemeColors()
+    {
+        var compositor = new TerminalScreenCompositor(new StringWriter(), new TerminalImageRenderer());
+        var theme = TerminalTheme.Default;
+
+        foreach (var (kind, style, prefix) in new[]
+        {
+            (TerminalStatusNotificationKind.Info, "dim", ""),
+            (TerminalStatusNotificationKind.Warning, "warning", "Warning: "),
+            (TerminalStatusNotificationKind.Error, "error", "Error: ")
+        })
+        {
+            var frame = compositor.Compose("", 0, null, null, "", "fixture-model",
+                overlay: null, scrollOffset: 0, columns: 100, height: 32,
+                new TranscriptSearchController(), new TerminalMouseRouter(), theme,
+                statusNotification: "fixture notification", statusNotificationKind: kind);
+
+            Assert.Equal(theme.Style(style, " " + prefix + "fixture notification"), frame.Rows[1]);
+        }
+    }
+
+    [Fact]
+    public void ModalOverlayCoversUnderlyingStatusNotification()
+    {
+        var compositor = new TerminalScreenCompositor(new StringWriter(), new TerminalImageRenderer());
+
+        var frame = compositor.Compose("", 0, null, null, "", "fixture-model",
+            overlay: ["Selection title"], scrollOffset: 0, columns: 40, height: 3,
+            new TranscriptSearchController(), new TerminalMouseRouter(), TerminalTheme.Default,
+            statusNotification: "Loaded fixture-model");
+
+        Assert.Contains("Selection title", frame.Rows[1]);
+        Assert.DoesNotContain("Loaded fixture-model", frame.Rows[1]);
+    }
+
+    [Fact]
     public void IdleDockMatchesThePiEditorDirectoryAndStatusRows()
     {
         var compositor = new TerminalScreenCompositor(new StringWriter(), new TerminalImageRenderer());
