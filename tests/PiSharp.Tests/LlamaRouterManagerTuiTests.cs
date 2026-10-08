@@ -316,11 +316,13 @@ public sealed class LlamaRouterManagerTuiTests
             await terminal.WaitManagerAsync(mark);
             await terminal.SendAsync("\u001b[B\n");
             await terminal.WaitTextAsync("1 model is loaded");
+            mark = terminal.Mark;
             await terminal.SendAsync("\u001b[B\n");
-            mark = terminal.Mark;
-            await terminal.WaitTextAsync("Loaded target", mark);
-            mark = terminal.Mark;
-            await terminal.WaitManagerAsync(mark);
+            await terminal.WaitFrameAsync(frame =>
+                frame.Contains("llama.cpp models", StringComparison.Ordinal) &&
+                frame.Contains("Loaded target", StringComparison.Ordinal) &&
+                frame.Split('\n').Any(line => line.Contains("target", StringComparison.Ordinal) &&
+                    line.Contains("loaded", StringComparison.Ordinal)), mark);
             mark = terminal.Mark;
             await terminal.SendAsync("\u001b");
             await terminal.WaitEditorAsync(mark);
