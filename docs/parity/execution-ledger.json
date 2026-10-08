@@ -192,7 +192,12 @@
     "provider-llama-router-configuration",
     "provider-llama-router-management",
     "provider-llama-router-models",
-    "provider-llama-router-download"
+    "provider-llama-router-download",
+    "cli-application-install-update",
+    "provider-api-azure-foundry-chat-completions",
+    "provider-api-mistral-conversations",
+    "provider-thinking-level-sampling",
+    "feature-config-schemas-publication"
   ],
   "final_audit": {
     "complete": false,
@@ -338,7 +343,8 @@
       "acceptance": [
         "/model, /thinking, /scoped-models, /login, /logout, --provider, --models, --thinking, API key/OAuth",
         "unavailable models and auth failures shown; don't log keys",
-        "Verify through application workflow and compare docs/models.md, docs/providers.md; packages/coding-agent/src/core/model-, auth-storage.ts; provider adapters and capability-based selectors"
+        "Verify through application workflow and compare docs/models.md, docs/providers.md; packages/coding-agent/src/core/model-, auth-storage.ts; provider adapters and capability-based selectors",
+        "Use current models.dev metadata for Anthropic Claude 5.5 models, including prompt-length pricing tiers and adaptive-thinking support; keep Moonshot Kimi K3 pricing current."
       ],
       "implementation": [
         "Partial: src/PiSharp.Cli/{ProviderModelRuntime,AuthStorage,ThinkingLevels,CliArguments,Program}.cs selects configured OpenAI-compatible endpoints, adds model flags and interactive commands, and stores private credentials.",
@@ -826,7 +832,8 @@
       "acceptance": [
         "discovery, on-demand skill load, /skill:name, template expansion, theme reload",
         "invalid metadata reported",
-        "Verify through application workflow and compare docs/skills.md, docs/prompt-templates.md, docs/themes.md; packages/coding-agent/src/core/{skills,prompt-templates}.ts; loader and TUI tests"
+        "Verify through application workflow and compare docs/skills.md, docs/prompt-templates.md, docs/themes.md; packages/coding-agent/src/core/{skills,prompt-templates}.ts; loader and TUI tests",
+        "Ship the built-in dup issue prompt with its argument metadata and preserve normal prompt-template discovery and expansion."
       ],
       "implementation": [
         "TerminalThemeCatalog discovers embedded dark/light palettes and JSON files from the agent themes directory and trusted project .pi/themes; theme names come from validated theme content and project files take precedence over user files.",
@@ -3447,7 +3454,8 @@
       "acceptance": [
         "Represent registered, callable and model-declared tools separately",
         "Implement direct/model-only/codemode/deferred/hidden exposure and activation defaults",
-        "Support session-scoped active tools, prepare-loadout description/declaration changes and transcript persistence across resume/fork"
+        "Support session-scoped active tools, prepare-loadout description/declaration changes and transcript persistence across resume/fork",
+        "Keep hidden tools out of prompt rules and skills hints, and honor --tools include/exclude patterns with --no-mcp."
       ],
       "implementation": [
         "src/PiSharp.Runtime/Extensions/ToolRegistry.cs defines five exposure states, immutable registered/callable/declared snapshots, activation defaults, namespaces and prepare-loadout projections. ToolLoadout.cs owns atomic session selections, restored pending names and transcript declaration order.",
@@ -3540,7 +3548,8 @@
         "Model-visible script tool invokes only allowed registry tools through the shared nested pipeline",
         "Provide tool declarations, search/discovery, bounded result handling, per-session store and optional model/classifier access",
         "Use an intentional sandbox boundary with no host globals, resource limits, timeout, cancellation and recursion prevention",
-        "Normalize whitespace, validate image data against supported PNG/JPEG/GIF/WebP signatures, derive emitted MIME from image bytes, and discover MCP namespaces without exposing all server tools in the main description."
+        "Normalize whitespace, validate image data against supported PNG/JPEG/GIF/WebP signatures, derive emitted MIME from image bytes, and discover MCP namespaces without exposing all server tools in the main description.",
+        "Bound host-side accumulated script output so print loops cannot exhaust memory; preserve execution after package updates/removal, save image() artifacts, and keep output items separately structured."
       ],
       "implementation": [
         "Builtin codemode registers inactive through ExtensionCatalog as builtin:codemode and can be selected through --tools or the session loadout. The model script runs in a separate Node process inside a fresh QuickJS/WASM VM with no Node globals, a 32 MiB guest heap, 30-second deadline, bounded text/images/store/calls, and process kill on cancellation or completion.",
@@ -3595,7 +3604,8 @@
         "MCP OAuth, safe server-bound credential storage, /mcp management, pi mcp CLI and extension server registration",
         "Support per-server OAuth clientName metadata and avoid holding the first prompt for indirect MCP servers.",
         "Pass an official MCP client-conformance baseline across every protocol mode supported by current Pi; classify all known failing checks.",
-        "Isolate OAuth tokens and refresh coordination per normalized server name plus canonical URL, with deterministic migration from URL-only cache entries."
+        "Isolate OAuth tokens and refresh coordination per normalized server name plus canonical URL, with deterministic migration from URL-only cache entries.",
+        "Allow trusted project mcp.json to override enabled/exposure for global servers; retain tool metadata before connect; cancel in-flight connects/OAuth on shutdown; send application_type during dynamic registration."
       ],
       "implementation": [
         "McpConfiguration loads global and trusted-project mcp.json with project precedence, enabled flags, exposure overrides, transport settings and bounded timeouts. McpRuntime uses the official C# SDK for stdio and Streamable HTTP, expands environment references without logging credential values, and registers tools and resource operations in the existing extension catalog. Clients are disposed with the extension lease. HTTP servers without an Authorization header use SDK OAuth with a noninteractive startup callback; explicit CLI login uses a loopback authorization-code callback, and logout deletes server-name/resource-bound tokens. A private atomic mcp-auth.json cache persists SDK token and client registration fields. Local CLI add/list/remove uses an atomic config editor with same-process and interprocess locking; CLI status probes servers without selecting a chat model.",
@@ -3749,7 +3759,8 @@
         "Support typed choice/score/bool questions and answers through OpenAI Decisions, native System One, Cloudflare and llama.cpp classifier protocols, including applicable image input",
         "Preserve usage/cost on parsing failures and explicit error/aborted outcomes",
         "Provide authenticated provider routing and request retry/timeout/header behavior",
-        "Expose classifier calls to sandboxed Codemode with nested usage aggregation"
+        "Expose classifier calls to sandboxed Codemode with nested usage aggregation",
+        "Parse both direct-result Cloudflare Clef responses and nested System One run envelopes; include current OpenAI Decisions image input and native llama.cpp classification."
       ],
       "implementation": [
         "Typed classifier models/contracts and native/custom catalogs with 12 pinned entries; shared provider credential resolution; no classifier IDs in chat selection",
@@ -4050,7 +4061,7 @@
       "status": "in_progress",
       "source": "earendil-works/pi@7f9e1198f2f7a8cf5ea18d5010ba081d4d60c333: packages/coding-agent/src/extensions/llama/{index,provider,client,ui,huggingface}.ts; test/llama-extension.test.ts",
       "acceptance": [
-        "Audit and match Download model…, repository search, quantization selection and exact owner/repository[:quant] input.",
+        "Audit and match Download model\u2026, repository search, quantization selection and exact owner/repository[:quant] input.",
         "Match HF_TOKEN and token-file lookup precedence, gated-model warnings/access links, cancellation and unload/retain prompts.",
         "The router downloads the model; deterministic local HTTP/process and full terminal differential evidence is required."
       ],
@@ -4073,24 +4084,133 @@
       "dependencies": [
         "provider-llama-router-management"
       ]
+    },
+    {
+      "id": "cli-application-install-update",
+      "title": "CLI application installation and self-update",
+      "status": "not_started",
+      "source": "earendil-works/pi@581e7ba78141a4d8b61cc9d11b8b22ae7e59195e and @9f013cf59c1b32658a496e762a56c581faad21c2: packages/coding-agent/src/config.ts; packages/coding-agent/src/package-manager-cli.ts; managed installer release code/tests.",
+      "acceptance": [
+        "Match `pi update` source detection and exact migration guidance for npm-managed installs while preserving pnpm, yarn, and bun behavior.",
+        "Stage, verify, activate, reuse, recover, and prune versioned managed releases with current Pi lock and active-version protections.",
+        "Verify update success/failure, interrupted activation, already-staged version reuse, old-release pruning, and user-visible output against pinned Pi source and tests."
+      ],
+      "implementation": [
+        "src/PiSharp.Cli/Program.cs",
+        "src/PiSharp.Cli/ManagedInstallationUpdater.cs",
+        "tests/PiSharp.Tests/ManagedInstallationUpdaterTests.cs"
+      ],
+      "evidence": [
+        "Added by the 2026-10-08 source audit: npm migration guidance and managed release pruning are normal CLI flows, separate from extension package commands."
+      ],
+      "dependencies": []
+    },
+    {
+      "id": "provider-api-azure-foundry-chat-completions",
+      "title": "Provider API: Azure Foundry Chat Completions",
+      "status": "not_started",
+      "source": "earendil-works/pi@a37306d437c528c355357bc9123524de2bf67267: packages/ai/src/api/azure-openai-config.ts; packages/ai/src/providers/azure.ts; packages/ai/src/providers/azure-openai-responses.ts; packages/ai/test/azure-openai-completions.test.ts.",
+      "acceptance": [
+        "Expose current Azure Foundry deployments with correct provider/model identity, endpoint and deployment mapping, API version, and credential environment precedence.",
+        "Match Chat Completions request/stream behavior, reasoning and tool mapping, usage, errors, cancellation, and model metadata against current Pi.",
+        "Use deterministic local HTTP/process differentials for normal selection and deployment-specific URLs; keep this separate from Azure OpenAI Responses behavior."
+      ],
+      "implementation": [
+        "src/PiSharp.Cli/AzureOpenAiEndpoint.cs",
+        "src/PiSharp.Cli/ProviderChatClientFactory.cs",
+        "src/PiSharp.Cli/ModelCatalog.cs"
+      ],
+      "evidence": [
+        "Added by the 2026-10-08 source audit: Azure Foundry Chat Completions is distinct from the existing Azure OpenAI Responses ledger capability."
+      ],
+      "dependencies": [
+        "feature-models-selection-catalogs-and-credentials"
+      ]
+    },
+    {
+      "id": "provider-api-mistral-conversations",
+      "title": "Provider API: Mistral Conversations retry and timeout semantics",
+      "status": "in_progress",
+      "source": "earendil-works/pi@7fb59f995b0a1db552001a8577b234e4105d7179 and @6b07b4e57269ebc4b3fe2b7cd3caba2d95e26cc0: packages/ai/src/api/mistral-conversations.ts and transport tests.",
+      "acceptance": [
+        "Match current Pi recognition and retry behavior for Mistral finish_reason errors without replaying a response after visible stream content.",
+        "Apply request timeout only until response headers arrive, then use cancellation for the live stream without truncating a valid long response.",
+        "Compare exact request counts, retry timing/headers, finish/error events, cancellation, and terminal error text against current Pi."
+      ],
+      "implementation": [
+        "src/PiSharp.Cli/ProviderRetryPolicy.cs",
+        "src/PiSharp.Cli/ProviderChatClientFactory.cs",
+        "tests/PiSharp.Tests/MistralProviderCompatibilityTests.cs"
+      ],
+      "evidence": [
+        "Added by the 2026-10-08 source audit: existing Mistral mapping tests do not prove these current finish_reason retry and header-only timeout contracts."
+      ],
+      "dependencies": [
+        "feature-agent-multi-turn-and-streaming"
+      ]
+    },
+    {
+      "id": "provider-thinking-level-sampling",
+      "title": "Provider request sampling by effective thinking level",
+      "status": "not_started",
+      "source": "earendil-works/pi@76dfb88f63ce51ff2e3fe2ead4fcf1f65f71f121: packages/ai/src/api/simple-options.ts; packages/ai/src/types.ts; packages/ai/test/sampling-options.test.ts; packages/coding-agent/src/core/model-config.ts.",
+      "acceptance": [
+        "Resolve sampling parameters in current Pi order: provider/model defaults, effective clamped thinking-level parameters, then request overrides.",
+        "Send resolved sampling fields through stream and simple-stream adapters that support them, omitting unsupported fields.",
+        "Verify configured metadata, thinking-level fallback/clamping, request overrides, absent values, and exact provider bodies across applicable APIs."
+      ],
+      "implementation": [
+        "src/PiSharp.Cli/ProviderModelRuntime.cs",
+        "src/PiSharp.Cli/ProviderProfileLoader.cs",
+        "src/PiSharp.Cli/ProviderChatClientFactory.cs"
+      ],
+      "evidence": [
+        "Added by the 2026-10-08 source audit: PiSharp currently preserves sampling metadata in catalog/RPC projection, but has no verified per-thinking-level outbound resolution."
+      ],
+      "dependencies": [
+        "feature-models-selection-catalogs-and-credentials"
+      ]
+    },
+    {
+      "id": "feature-config-schemas-publication",
+      "title": "Publish configuration JSON schemas with the coding-agent package",
+      "status": "not_started",
+      "source": "earendil-works/pi@7f9e1198f2f7a8cf5ea18d5010ba081d4d60c333: packages/coding-agent/schemas/{settings,models,keybindings,theme}.schema.json; packages/coding-agent/scripts/generate-schemas.ts; packages/coding-agent/test/config-schemas.test.ts.",
+      "acceptance": [
+        "Publish settings, model/provider compatibility, keybindings, and theme JSON schemas as normal package resources with stable discoverable paths.",
+        "Keep published schemas aligned with runtime validation, exported types, defaults, and documented configuration contracts.",
+        "Verify generated schema files are current and present in the shipped package, including settings/theme variants and keybinding aliases."
+      ],
+      "implementation": [
+        "src/PiSharp.Cli/PiSharp.Cli.csproj",
+        "src/PiSharp.Cli/ConfigSchemaCatalog.cs",
+        "tests/PiSharp.Tests/ConfigurationSchemaPublicationTests.cs"
+      ],
+      "evidence": [
+        "Added by the 2026-10-08 source audit: current Pi publishes four configuration schemas and tests package contents/generation; PiSharp has no verified equivalent resources."
+      ],
+      "dependencies": [
+        "feature-security-settings-and-authentication",
+        "feature-resources-skills-templates-themes"
+      ]
     }
   ],
   "upstream_delta_audit": {
     "source_pin": "955cc6665ee3986c6a033db52200779310d10dfd",
-    "source_head": "c10bfb0d79dbbc998539a0a3e6c6a736a4e6db06",
-    "commit_count": 58,
+    "source_head": "ce950d78f424dcaf9f5d6a03ce80ab141130eb1d",
+    "commit_count": 193,
     "classifications": {
-      "OUT_OF_SCOPE": 14,
-      "NO_BEHAVIOR_CHANGE": 12,
-      "NEEDS_WORK": 26,
-      "MATCHED": 6
+      "OUT_OF_SCOPE": 64,
+      "NO_BEHAVIOR_CHANGE": 36,
+      "NEEDS_WORK": 86,
+      "MATCHED": 7
     },
-    "fixture": "docs/parity/fixtures/upstream-delta-audit-2026-10-01.md",
-    "next": "full-terminal-differential-harness",
-    "current_item": "f615889c5f33f4a1bc9c8373c1f52f29da2e584f",
+    "fixture": "docs/parity/fixtures/upstream-delta-audit-2026-10-08.md",
+    "next": "continue-llama-terminal-differential",
+    "current_item": "4503ee6719f345e7c2ef9ccf0839f326b1b61373",
     "current_item_status": "pushed_ci_passed",
-    "current_item_local_evidence": "Current Pi origin/main is 7f9e1198f2f7a8cf5ea18d5010ba081d4d60c333; the two commits after 1cedd327 update schema publication and an OAuth regression test without llama-specific paths. Current Pi llama/runtime-classifier tests pass 16/16 and the TUI suite passes. Router/classifier autoload, context refresh/offline reload, and native classifier process differentials match. Ten exact 100x32 terminal runs complete without scenario errors; full unnormalized differences are 2,653-19,590. Eight request multisets and all mutation sequences match; standard HF search has one extra PiSharp GET /models, replacement-load cancellation one extra Pi GET /models and five order differences. The replacement manager panel matches but Pi alone displays the restore notification on row 1. Exact captures are in docs/parity/fixtures/llama-terminal-current-pi-2026-10-07.json. PiSharp f615889c exact-head Linux CI 37748361405 passes format, warnings-as-errors build and 1,177/1,177 tests.",
-    "next_after_ci": "continue-llama-notification-and-lifecycle-parity-current-pi-7f9e1198",
+    "current_item_local_evidence": "Fresh fetch: current Pi origin/main is ce950d78f424dcaf9f5d6a03ce80ab141130eb1d; PiSharp origin/main and validated product source head are 4503ee6719f345e7c2ef9ccf0839f326b1b61373. PiSharp exact-head Linux CI 37756825255 passes restore, format verification, warnings-as-errors build, and 1179/1179 tests with zero skips. Current Pi focused llama extension/classifier suites pass 16/16 and 67/67 after rebuilding packages/ai; the Pi TUI suite passes. Current-Pi router classifier, router context/autoload/offline reload, and native llama classifier process comparisons match. Ten terminal scenarios have no scenario errors; same-Pi calibration matches five and fails five. The remaining failures are checkpoint/control-trace boundaries in login, picker, replacement-load, retry, plus a Hugging Face token-file progress-state race. No terminal screen/control trace normalization is used. Next action: resolve these llama terminal and progress differentials at current source pins, then continue the highest-leverage open ledger capability.",
+    "next_after_ci": "continue-llama-terminal-differential-current-pi-ce950d78",
     "completed": [
       "65117e31f242daa8e0a17dbd2810f7bb92bf4087",
       "7a11fe1c723b942fa093edb8b00f051ddb9b6627",
@@ -4109,12 +4229,15 @@
       "c2d5a8d882388b0ec7c8f2cebe358a17c096a4e7",
       "406263fa0b2996e868a7e3df9e6811f233696143",
       "dfcf54335509086fe13921320792b0142f62188f",
-      "f615889c5f33f4a1bc9c8373c1f52f29da2e584f"
+      "f615889c5f33f4a1bc9c8373c1f52f29da2e584f",
+      "18e95be2f26fe19e169e68924d53e4eaa8042b69",
+      "8ffc5bfa9c4f8dd8df01fc947691ec77abf2f3f7",
+      "4503ee6719f345e7c2ef9ccf0839f326b1b61373"
     ],
-    "ci_run": "37748361405",
-    "latest_published_source_head": "f615889c5f33f4a1bc9c8373c1f52f29da2e584f",
+    "ci_run": "37756825255",
+    "latest_published_source_head": "4503ee6719f345e7c2ef9ccf0839f326b1b61373",
     "latest_published_ci_runs": [
-      "37748361405"
+      "37756825255"
     ],
     "official_mcp_conformance": {
       "package": "@modelcontextprotocol/conformance@0.2.0-alpha.11",
@@ -4126,26 +4249,65 @@
       "status": "not_started",
       "upstream_fixture": "packages/coding-agent/test/mcp-conformance/baseline.json"
     },
-    "working_source_pin": "503c605528f9af993c0e37ede468cf884fb0ff5b",
+    "working_source_pin": "ce950d78f424dcaf9f5d6a03ce80ab141130eb1d",
     "active_llama_classifier_recheck": {
-      "pi_source_head": "7f9e1198f2f7a8cf5ea18d5010ba081d4d60c333",
-      "pisharp_head": "f615889c5f33f4a1bc9c8373c1f52f29da2e584f",
+      "pi_source_head": "ce950d78f424dcaf9f5d6a03ce80ab141130eb1d",
+      "pisharp_head": "4503ee6719f345e7c2ef9ccf0839f326b1b61373",
       "commits": [
         {
           "sha": "f6127a1bf907dec9b77be60e6a46db4b9668f081",
           "classification": "MATCHED",
-          "evidence": "docs/parity/fixtures/llama-router-classifier-2026-10-07.json"
+          "evidence": "docs/parity/fixtures/llama-current-pi-2026-10-08/llama-classifier.json"
         },
         {
-          "sha": "ce8972a0",
+          "sha": "ce8972a0e99cab79f2620a594a1c17baef436c67",
           "classification": "NEEDS_WORK",
-          "matched_subset": "Shared System One behavior used by llama.cpp is differentially verified.",
-          "open_surface": "OpenAI Decisions classifier models and image input; see classifier-runtime."
+          "matched_subset": "Current llama classifier process behavior matches at Pi ce950/PiSharp 4503.",
+          "open_surface": "OpenAI Decisions catalogs/requests and classifier image input remain open under classifier-runtime."
         }
-      ],
-      "scope": "Current family recheck at Pi 7f9e1198f2f7a8cf5ea18d5010ba081d4d60c333 / PiSharp f615889c5f33f4a1bc9c8373c1f52f29da2e584f; focused process differentials match. Full audit of all commits after c10bfb0d and all 189 gates remain open."
+      ]
     },
-    "refresh_policy": "Refresh at capability-family completion, known upstream changes affecting active work, or after several verified slices; require fresh current-main audit at final completion."
+    "refresh_policy": "Refresh at capability-family completion, known upstream changes affecting active work, or after several verified slices; require fresh current-main audit at final completion.",
+    "classification_ranges": [
+      {
+        "source_pin": "955cc6665ee3986c6a033db52200779310d10dfd",
+        "source_head": "c10bfb0d79dbbc998539a0a3e6c6a736a4e6db06",
+        "commit_count": 58,
+        "classifications": {
+          "OUT_OF_SCOPE": 14,
+          "NO_BEHAVIOR_CHANGE": 12,
+          "NEEDS_WORK": 26,
+          "MATCHED": 6
+        },
+        "fixture": "docs/parity/fixtures/upstream-delta-audit-2026-10-01.md"
+      },
+      {
+        "source_pin": "c10bfb0d79dbbc998539a0a3e6c6a736a4e6db06",
+        "source_head": "ce950d78f424dcaf9f5d6a03ce80ab141130eb1d",
+        "commit_count": 135,
+        "classifications": {
+          "OUT_OF_SCOPE": 50,
+          "NO_BEHAVIOR_CHANGE": 24,
+          "NEEDS_WORK": 60,
+          "MATCHED": 1
+        },
+        "fixture": "docs/parity/fixtures/upstream-delta-audit-2026-10-08.md"
+      }
+    ],
+    "current_checkpoint": {
+      "validated_pi_head": "ce950d78f424dcaf9f5d6a03ce80ab141130eb1d",
+      "validated_pisharp_source_head": "4503ee6719f345e7c2ef9ccf0839f326b1b61373",
+      "exact_head_ci_run": "37756825255",
+      "exact_head_ci": "success",
+      "tests": "1179 passed, 0 failed, 0 skipped",
+      "active_family": "llama.cpp router and native classifier",
+      "residuals": [
+        "Five of ten same-Pi terminal calibrations still differ.",
+        "Full-screen llama terminal comparisons and Hugging Face progress-state capture differences remain open.",
+        "Broad parity and official MCP conformance remain open."
+      ],
+      "next_action": "Resolve current-Pi llama terminal/progress mismatches, then continue the next highest-leverage unresolved required capability."
+    }
   },
   "execution_policy": {
     "updated": "2026-10-08",

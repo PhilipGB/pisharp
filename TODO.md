@@ -1,7 +1,14 @@
 # PiSharp capability parity
 
-Anthropic inline tool history matches 26 current-Pi real-SDK request scenarios plus restored tool-result token estimates and both compaction boundaries. Focused checks pass 154/154; format verification and warnings-as-errors build pass with zero warnings/errors; full suite passes 1145/1145 with zero skips. Exact-head CI remains pending until publication. The reusable terminal differential harness is next, then the first-class llama.cpp router family. See [inline transcript evidence](docs/parity/fixtures/anthropic-inline-tools-2026-10-02.md).
-Working Pi pin: `c10bfb0d79dbbc998539a0a3e6c6a736a4e6db06`. The revised execution policy prioritizes coherent capability families and refreshes upstream at family boundaries, known active-capability changes or after several verified slices. Finish the Anthropic inline-tool slice and exact-head CI, then deliver the reusable full terminal differential harness. First-class llama.cpp router login/environment configuration, management, live model selection and Hugging Face download are the next near-term family; custom providers and classifier support do not close it. All 189 ledger capabilities remain required. Update evidence with source/tests; avoid routine docs-only checkpoints. Full parity remains incomplete.
+## Current checkpoint — 2026-10-08
+
+Pi `origin/main` is `ce950d78f424dcaf9f5d6a03ce80ab141130eb1d`; the audited PiSharp product source at the checkpoint was `4503ee6719f345e7c2ef9ccf0839f326b1b61373`. Exact-head Linux CI [37756825255](https://github.com/PhilipGB/pisharp/actions/runs/37756825255) passes restore, format verification, warnings-as-errors build and 1179/1179 tests with zero skips. The only unrelated pre-existing worktree item is the user-owned untracked `test.pdf`; the audit and current-evidence files listed here are this task’s changes.
+
+The last full Pi audit pin is `955cc6665ee3986c6a033db52200779310d10dfd` (full audit head `c10bfb0d79dbbc998539a0a3e6c6a736a4e6db06`). The 135 commits since that head are classified in [the 2026-10-08 audit](docs/parity/fixtures/upstream-delta-audit-2026-10-08.md); five new required capabilities are in the ledger. There are now 194 required capabilities, and final parity remains incomplete.
+
+The active family is llama.cpp. Current Pi/PiSharp router classifier, context reload, and native classifier process comparisons match. Five of ten same-Pi terminal calibrations still differ: login, model picker, replacement-load cancellation, retry, and Hugging Face token-file progress. Full terminal screens/control traces remain exact and unnormalized; resolve these residuals before moving to another family. Official MCP conformance remains not started.
+
+## Historical progress and evidence
 
 Fresh fetch on 2026-10-02 confirms Pi `main` at `c10bfb0d79dbbc998539a0a3e6c6a736a4e6db06`, seventeen commits after the prior audit head `395315f4841ab5a090a33b8259f60b6df281c1ca` and 58 after `955cc6665ee3986c6a033db52200779310d10dfd`. PiSharp fetched main is `c0b012ba7192afed65138dae7d10b5d15da77b67`. Every intervening commit is classified below. Historical validation records retain their original pins; they do not prove current full parity.
 
@@ -16,7 +23,9 @@ Radius interactive onboarding is implemented as a bounded slice: 59 focused chec
 
 **Stop condition:** a full current-Pi audit finds no material in-scope gaps, required behavioral/differential evidence passes, exact-head CI is green, and major architecture bottlenecks are resolved.
 
-## Current state
+## Historical progress at earlier checkpoints
+
+The detailed entries in this section preserve earlier source/test evidence only; use the 2026-10-08 checkpoint above for current heads, family, CI, and next action.
 
 - **Historical source checkpoint, 2026-10-01:** `8931bd73b2e94e7831b1a054a54a8e60bb21aaf5` passed exact-head Linux CI [36904437406](https://github.com/PhilipGB/pisharp/actions/runs/36904437406), including 1,068/1,068 tests and zero skips. Current Pi is `395315f4841ab5a090a33b8259f60b6df281c1ca`; all 41 commits after `955cc6665ee3986c6a033db52200779310d10dfd` are classified, with seven open upstream deltas beginning with per-server MCP OAuth credential isolation. The full parity goal remains incomplete.
 
@@ -63,17 +72,19 @@ Radius interactive onboarding is implemented as a bounded slice: 59 focused chec
 
 ## Current priority
 
-Latest exact-head Linux CI passed at source `3b4d0da48f0d9ed83c6948a7d5cd2123ebba0ad8` / [36789619687](https://github.com/PhilipGB/pisharp/actions/runs/36789619687): restore, format, warnings-as-errors build and 1,036/1,036 tests (zero skips). All eleven deltas in the [classified audit](docs/parity/fixtures/upstream-delta-audit-2026-09-30.md) are closed; broader Pi parity remains incomplete.
+The current priority is the open llama.cpp family at Pi `ce950d78` and PiSharp `4503ee67`. Same-Pi terminal calibration still fails five flows and full terminal differential evidence is open. The broad source audit is refreshed through current Pi `ce950d78`; 194 required ledger capabilities remain, and official MCP conformance has not started.
 
 ## Exact next action
 
-Current source checkpoint: Pi delta `a9424cd43d242f32d31a3638bb7fe1305c20f72a` is implemented at PiSharp `94c9f4f`, with the fragmented-stream test timing adjustment at `3b4d0da`; exact-head Linux CI [36789619687](https://github.com/PhilipGB/pisharp/actions/runs/36789619687) passes restore, format, warnings-as-errors build and 1,036/1,036 tests (zero skips). Anthropic resolves stored/configured credentials and `ANTHROPIC_AUTH_TOKEN`, `ANTHROPIC_OAUTH_TOKEN`, and `ANTHROPIC_API_KEY` before file-backed workload identity federation; SDK ambient credential resolution is disabled. Loopback tests cover the exchange, token caching, 401 refresh and rereading a rotated identity-token file. The focused Anthropic suite passes 18/18. The local full suite passed 1,034/1,036: the crash-after-side-effect test passed alone, while the Linux PTY theme timeout reproduced alone. All eleven items from the current-Pi audit are now closed. After this docs-only checkpoint passes exact-head CI, continue the broader ledger at `extension-orchestration-api` and its ordered extension lifecycle work. Current Pi pin: `955cc6665ee3986c6a033db52200779310d10dfd`; overall parity remains incomplete.
+Continue the llama.cpp family at Pi `ce950d78f424dcaf9f5d6a03ce80ab141130eb1d` and PiSharp source `4503ee6719f345e7c2ef9ccf0839f326b1b61373`. Resolve the five same-Pi terminal calibration failures and the associated screen/control-trace and download-progress differences without increasing settling delays or normalizing compared output. Close the four llama-router ledger capabilities only after current-Pi HTTP/process and exact terminal evidence pass. Then continue automatically with the next highest-leverage unresolved required capability. Full parity and official MCP conformance remain open.
 
-## Architecture and residuals to preserve
+The requested starting commit `5deac5275f705f69224c1812966dcffc07a692d3` is an ancestor, not current `origin/main`. Its GitHub CI run `37652404512` stopped at format verification because of whitespace in `LlamaRouterCatalog.cs`; `8c23342368` fixed that. A local probe also found the pre-existing theme process fixture still used the removed `muted` key; `3aff5ebe9d` changed it to `dim`. Current `origin/main` exact-head CI passes all 1179 tests with zero skips.
+
+## Architecture risks to reconcile before completion
 
 - Keep `Program.cs` a composition root; extract behavior at the boundary required by the next capability.
 - `ConversationRun.cs` remains a concentration risk; prompt queue state/delivery has moved into `PromptDeliveryController`, while retry, compaction and provider-turn boundaries remain candidates only when the next capability needs them.
 - `PiJsonlSessionInterchange.cs` remains large; separate import/migration, mapping, export or I/O only when session interoperability requires it.
 - Keep RPC capability tests in focused classes rather than growing `RpcModeTests.cs` further.
 - Preserve remaining TUI gaps: custom HTML-export theme CSS, full Markdown dialect/syntax highlighting, and broader TUI differential coverage. System-theme acquisition/update, word-aware wrapping, shared ANSI-aware visual-row layout, and nested Markdown style restoration now have pinned fixtures and exact-head CI evidence.
-- Before final parity, reread the feature matrix and ledger, audit current Pi `main`, collect required behavioral/differential evidence, and confirm exact-head CI.
+- Before final parity, reread the feature matrix and ledger, audit current Pi `main` after this checkpoint, collect required behavioral/differential evidence, and confirm exact-head CI.

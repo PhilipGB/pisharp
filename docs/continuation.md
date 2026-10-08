@@ -1,11 +1,18 @@
 # Continuation — PiSharp capability parity
 
-Anthropic inline tool history matches 26 current-Pi real-SDK request scenarios plus restored tool-result token estimates and both compaction boundaries. Focused checks pass 154/154; format verification and warnings-as-errors build pass with zero warnings/errors; full suite passes 1145/1145 with zero skips. Exact-head CI remains pending until publication. The reusable terminal differential harness is next, then the first-class llama.cpp router family. See [inline transcript evidence](parity/fixtures/anthropic-inline-tools-2026-10-02.md).
-Working Pi pin: `c10bfb0d79dbbc998539a0a3e6c6a736a4e6db06`. The revised execution policy prioritizes coherent capability families and refreshes upstream at family boundaries, known active-capability changes or after several verified slices. Finish the Anthropic inline-tool slice and exact-head CI, then deliver the reusable full terminal differential harness. First-class llama.cpp router login/environment configuration, management, live model selection and Hugging Face download are the next near-term family; custom providers and classifier support do not close it. All 189 ledger capabilities remain required. Update evidence with source/tests; avoid routine docs-only checkpoints. Full parity remains incomplete.
+## Current checkpoint — 2026-10-08
+
+Fresh fetch confirms Pi `origin/main` at `ce950d78f424dcaf9f5d6a03ce80ab141130eb1d`; the audited PiSharp product source at this checkpoint is `4503ee6719f345e7c2ef9ccf0839f326b1b61373`. Exact-head Linux CI [37756825255](https://github.com/PhilipGB/pisharp/actions/runs/37756825255) passes restore, format verification, warnings-as-errors build, and 1179/1179 tests with zero skips. The only unrelated pre-existing worktree item is the user-owned untracked `test.pdf`; the audit and current-evidence files listed here are this task’s changes.
+
+The last full Pi audit pin is `955cc6665ee3986c6a033db52200779310d10dfd`, ending at `c10bfb0d79dbbc998539a0a3e6c6a736a4e6db06`. The 135 newer commits through `ce950d78` are classified in [the current audit](parity/fixtures/upstream-delta-audit-2026-10-08.md); the ledger now has 194 required capabilities. The active family remains llama.cpp: current-Pi router/classifier/context process comparisons match, but five of ten same-Pi terminal calibrations still fail. The remaining captures cover login, model picker, replacement-load cancellation, retry, and Hugging Face token-file progress. No output is normalized. Full parity and official MCP conformance remain open.
+
+The requested starting commit `5deac5275f705f69224c1812966dcffc07a692d3` is an ancestor, not current `origin/main`. Its GitHub CI run `37652404512` failed at format verification for whitespace in `LlamaRouterCatalog.cs`; `8c23342368` fixed that. A local probe also exposed a stale theme test fixture using the removed `muted` key; `3aff5ebe9d` changed it to `dim`. Current-head CI passes all tests with zero skips.
+
+TODO.md is the concise implementation handoff. The feature matrix tracks scope, the detailed inventory records interfaces, and `execution-ledger.json` holds per-capability evidence. Sections below this checkpoint preserve earlier findings as historical records; the execution ledger and this checkpoint identify current source and next work.
 
 `TODO.md` is the concise implementation handoff. The feature matrix tracks scope, the detailed inventory records interfaces, and `execution-ledger.json` holds per-capability evidence. Normal CLI package-resource workflows and user-reachable visual interactions are in scope.
 
-## Current implementation — 2026-10-02
+## Historical checkpoint — 2026-10-02
 
 Pi is at `c10bfb0d79dbbc998539a0a3e6c6a736a4e6db06`; all 58 commits after `955cc666` are classified. PiSharp `c0b012ba7192afed65138dae7d10b5d15da77b67` passes exact-head Linux CI [37019190204](https://github.com/PhilipGB/pisharp/actions/runs/37019190204): restore, format, zero-warning/error build, all 1132 tests and zero skips. Radius menu/MCP/animation is a bounded verified slice; full auth dialog/cursor/style, catalog synchronization and URL copying remain open. Fresh MCP CIMD and Cloudflare gateway catalog work are recorded as required capabilities. All 184 capabilities remain required and final parity is incomplete. Continue Anthropic inline tool definitions through shared historical system/tool transcript projection, then the full terminal harness and llama.cpp router family. See [Radius evidence](parity/fixtures/radius-interactive-onboarding-2026-10-02.md).
 
@@ -16,7 +23,7 @@ PiSharp `8931bd73b2e94e7831b1a054a54a8e60bb21aaf5` passed exact-head Linux CI [3
 
 The old source-options, Bash-output and tool-batch checkpoint paragraphs are historical evidence; their shipped history remains in Git and their implementation/evidence remains in the parity inventory.
 
-## Current source pointer and historical checkpoint record — 2026-09-30
+## Historical source pointer — 2026-09-30
 
 **Current source and upstream checkpoint:** PiSharp `40b96ada1eb6083f7ea32ac2b11667a92417d7a5` passed exact-head Linux CI [36775909169](https://github.com/PhilipGB/pisharp/actions/runs/36775909169), including 1,021/1,021 tests with zero skips. The first eight deltas are verified. Fail-first reload coverage confirms only newly added defaults join the current branch loadout, active removed tools stay active, and unchanged session-disabled tools stay off. Three items remain from the complete 26-commit classification [here](parity/fixtures/upstream-delta-audit-2026-09-30.md). Continue with MCP identifier normalization (`b29db895c5c1b30b560a39fb9e4664508f1683de`) after this docs-only checkpoint passes exact-head CI. The broader parity goal remains incomplete.
 
@@ -24,11 +31,11 @@ Historical physical-routing checkpoint (recorded with a commit/push/stop boundar
 
 The older exact-head and per-feature paragraphs below are historical evidence and their source pins are not current-state claims.
 
-## Latest verified source — 2026-09-30
+## Historical verified source — 2026-09-30
 
 `43b33344ada902003b4a2c1911196471b0ed9c2f` passed exact-head Linux CI [36649725739](https://github.com/PhilipGB/pisharp/actions/runs/36649725739): restore, format, zero-warning/error build and 922/922 tests with zero skips. This verifies continuation/overflow/canonical-history fixes, differently priced split summaries, the nullable assertion correction and physical read-image limits. Physical TUI status is now in progress; the full goal remains active.
 
-## Active continuation — 2026-09-30
+## Historical continuation — 2026-09-30
 
 Resumed the existing goal from exact current `2ff42c49634374d9398f928f81b5e8d353f605be`; fetched remote main and verified exact-head CI `36646088522` remains successful. Upstream fetch still resolves to `1b347794e2a630e4359f2584f4eea388145d0ddf`. The terminal blocker is closed and was not reopened. TODO priority/next-action sections now reflect physical continuation semantics rather than MCP/foundation work.
 
@@ -41,7 +48,7 @@ Physical TUI status is pushed at `e38dc1b196f2ed41eded583dcabb9e1362b6819b`; exa
 Historical next-action note, superseded by the current 2026-09-30 upstream delta audit above: this earlier checkpoint queued classifier contracts after polling CI `36650323848` and referenced upstream `1b347794e2a630e4359f2584f4eea388145d0ddf`. Pi classifier contracts are distinct from chat models: state object plus named choice/score/bool questions and typed answers, stop/error/aborted, optional priced usage preserved before parsing answers. System One maps bool to wire noul; TypeSafe/OpenRouter POST systemone, Cloudflare POST run with input envelope, llama.cpp is a distinct classifier protocol. Implement these as a capability-owned boundary rather than IChatClient chat emulation. The bounded virtual-model audit records active-footer presentation, extension-image normalization and cross-logical tree-navigation comparisons for their wider audits rather than delaying missing classifiers. The full goal remains active and incomplete.
 
 
-## Current verified checkpoint and Codemode continuation
+## Historical Codemode checkpoint
 
 `4a31e8aec84b5778e2950095200cf274f9447bbe` passes exact-head CI `36683707786`: restore, format, zero-warning/error build, 953/953 tests, zero skips. This includes the separate queued-reply correction `1fb2652` and Cloudflare stored account metadata. The previously failed terminal CI is superseded by this verified follow-up.
 
@@ -51,7 +58,7 @@ Codemode model globals are now being implemented behind ICodemodeModels and the 
 
 Llama classifier source `6d34ce4ab80088aa44b6555f6c161fb543ded0be` passed local format/build and 947 tests, but exact-head CI `36682520323` failed the immediate-quit PTY test: a DA1 fence remained after the shutdown wait budget. A new deterministic zero-budget input test reproduced the queued-data cutoff. The pending correction separates bounded waiting from bounded ready-byte consumption (64 KiB), without increasing the deadline or adding sleeps. Cloudflare stored account metadata now follows per-field stored/ambient precedence at request time, with key and metadata from one credential snapshot. Focused terminal/classifier/provider/auth checks pass 107/107. Format verification and the zero-warning/error build pass. Full suite passes 953/953 with zero skips after an unchanged rerun for a virtual-model fixture port collision. Publish and verify exact-head CI before claiming the follow-up green. Then continue Codemode model/classifier globals and nested usage, with remaining model headers/request observation in the classifier audit.
 
-## Latest classifier checkpoint
+## Historical classifier checkpoint
 
 `2740ece036f9e90bc9a769a255e724fa192c3d54` passes exact-head Linux CI `36651669399`: restore/format, zero-warning/error build, 934/934 tests, zero skips. The following request-options checkpoint adds: shared per-attempt HTTP deadlines/retries/headers and retry-delay caps; user cancellation versus timeout; cancellation during credential resolution returns aborted. Fail-first tests reproduced both missing retries and escaping credential cancellation. Focused checks pass 52/52, final format and zero-warning build pass; the full solution passes 939/939 tests with zero skips. Request-options source 77530840004db80c18c7ed3907acaa2897a53bde passes exact-head CI 36681140547: restore/format, zero-warning/error build and 939/939 tests with zero skips. The llama.cpp non-generative token-logprob classifier is implemented with 60 focused checks and paired Pi evidence; format/zero-warning build and full 947/947 tests pass, zero skips. Publication/CI is pending. Continue Cloudflare stored account/env metadata and paired process evidence. Codemode globals/nested billing remain after provider support. No overall parity completion.
 
@@ -65,7 +72,7 @@ Exact next action: publish this foundation and verify exact-head CI, then add cl
 
 The durable parity baseline remains `earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035`. Current Pi `main` is `955cc6665ee3986c6a033db52200779310d10dfd`; the full 26-commit delta from `3e9451238337071b74ba5cdd53f1ab7cf4100ae8` is classified in [the 2026-09-30 audit](parity/fixtures/upstream-delta-audit-2026-09-30.md). Older source pins below describe their original scoped comparisons, not current upstream state.
 
-## Latest exact-head evidence
+## Historical exact-head evidence
 
 At PiSharp source head `ae05045b105bf23bee228dc6238c415d8978d4fa`, exact-head Linux CI run [36549801185](https://github.com/PhilipGB/pisharp/actions/runs/36549801185) passed restore, format, warnings-as-errors build (0 warnings/errors), and 821/821 tests (0 skipped). Current Pi is `4259686d9290c0d73ae7192b796aee3e530a9779`; the previous orchestration, MCP, Codemode, virtual-model, fullscreen-wheel and Llama/settings tests passed at their recorded `da19b63` pin, and the new OAuth/resource-resolution tests pass 7/7 at the refreshed pin.
 
