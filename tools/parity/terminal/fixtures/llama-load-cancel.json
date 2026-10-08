@@ -15,7 +15,7 @@
     "pi": { "LLAMA_BASE_URL": "{router}" },
     "pisharp": { "LLAMA_BASE_URL": "{router}" }
   },
-  "llamaBehavior": { "loadDelaySeconds": 1.5 },
+  "llamaBehavior": { "loadDelaySeconds": 1.5, "loadProgressDelaySeconds": 0.5 },
   "llamaModels": [
     {
       "id": "loaded-fixture-model",
@@ -41,6 +41,7 @@
     { "id": "open-manager", "send": "/llama\r", "expect": "llama.cpp models" },
     { "id": "select-unloaded", "send": "\u001b[B\r", "expect": "1 model is loaded" },
     { "id": "keep-loaded-model", "send": "\u001b[B\r", "expect": "Loading model" },
+    { "id": "wait-load-progress", "expect": "50%" },
     { "id": "cancel-load", "send": "\u001b", "expect": "Stop loading?" },
     { "id": "confirm-cancel", "send": "\r", "expect": "llama.cpp models" },
     { "id": "close-manager", "send": "\u001b", "expect": "fixture-model" },

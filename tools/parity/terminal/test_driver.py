@@ -1,15 +1,61 @@
 import copy
+import json
 import os
 from pathlib import Path
 import sys
+import time
+import urllib.request
 import unittest
 
 from compare import ControlTrace, differences
+from fixture_http import FixtureServer
 from pty_process import TerminalProcess
 from run import expand_environment
 
 
 class DriverTests(unittest.TestCase):
+    def test_llama_download_progress_waits_for_configured_deadline(self):
+        server = FixtureServer(behavior=dict(downloadDelaySeconds=1, downloadProgressDelaySeconds=0.2))
+        try:
+            request = urllib.request.Request(
+                server.url + '/models',
+                data=json.dumps(dict(model='owner/model:Q4_K_M')).encode(),
+                headers={'Content-Type': 'application/json'}, method='POST')
+            with urllib.request.urlopen(request, timeout=2):
+                pass
+
+            started = time.monotonic()
+            with urllib.request.urlopen(server.url + '/models/sse', timeout=2) as response:
+                event = response.readline().decode()
+
+            self.assertGreaterEqual(time.monotonic() - started, 0.15)
+            self.assertIn('"event": "download_progress"', event)
+            self.assertIn('"total": 1024', event)
+        finally:
+            server.close()
+
+    def test_llama_load_progress_waits_for_configured_deadline(self):
+        server = FixtureServer(
+            models=[dict(id='fixture-model', status=dict(value='unloaded'))],
+            behavior=dict(loadDelaySeconds=1, loadProgressDelaySeconds=0.2))
+        try:
+            request = urllib.request.Request(
+                server.url + '/models/load',
+                data=json.dumps(dict(model='fixture-model')).encode(),
+                headers={'Content-Type': 'application/json'}, method='POST')
+            with urllib.request.urlopen(request, timeout=2):
+                pass
+
+            started = time.monotonic()
+            with urllib.request.urlopen(server.url + '/models/sse', timeout=2) as response:
+                event = response.readline().decode()
+
+            self.assertGreaterEqual(time.monotonic() - started, 0.15)
+            self.assertIn('"event": "status_change"', event)
+            self.assertIn('"value": 0.5', event)
+        finally:
+            server.close()
+
     def test_environment_placeholders_expand_router_and_agent_paths(self):
         expanded = expand_environment(
             {'HF_TOKEN_PATH': '{agent}/hf-token', 'LLAMA_BASE_URL': '{router}', 'COUNT': 3},

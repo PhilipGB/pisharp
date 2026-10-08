@@ -43,6 +43,7 @@ class FixtureServer:
                         if deadline is not None and now >= deadline:
                             entry['status']['value'] = 'loaded'
                             del outer.pending_loads[entry['id']]
+                            outer.pending_load_progress.pop(entry['id'], None)
                     self.send_json(dict(object='list', data=outer.models))
                     return
                 if path == '/props':
@@ -59,7 +60,8 @@ class FixtureServer:
                         while not outer.closed:
                             now = time.monotonic()
                             for model, deadline in list(outer.pending_loads.items()):
-                                if model not in sent_load_progress:
+                                progress_deadline = outer.pending_load_progress.get(model, 0)
+                                if model not in sent_load_progress and now >= progress_deadline:
                                     self.send_event(dict(model=model, event='status_change', data=dict(
                                         status='loading', progress=dict(stages=['text_model'],
                                                                         current='text_model', value=0.5))))
@@ -67,15 +69,18 @@ class FixtureServer:
                                 if now >= deadline:
                                     outer.set_status(model, 'loaded')
                                     outer.pending_loads.pop(model, None)
+                                    outer.pending_load_progress.pop(model, None)
                                     self.send_event(dict(model=model, event='status_change', data=dict(status='loaded')))
                             for model, deadline in list(outer.pending_downloads.items()):
-                                if model not in sent_download_progress:
+                                progress_deadline = outer.pending_download_progress.get(model, 0)
+                                if model not in sent_download_progress and now >= progress_deadline:
                                     self.send_event(dict(model=model, event='download_progress', data=dict(progress={
                                         'https://fixture.invalid/model.gguf': dict(done=512, total=1024)})))
                                     sent_download_progress.add(model)
                                 if now >= deadline:
                                     outer.set_status(model, 'unloaded')
                                     outer.pending_downloads.pop(model, None)
+                                    outer.pending_download_progress.pop(model, None)
                                     self.send_event(dict(model=model, event='download_finished', data={}))
                             self.wfile.flush()
                             time.sleep(0.05)
@@ -113,10 +118,15 @@ class FixtureServer:
                         if entry.get('id') == model:
                             delays = outer.behavior.get('loadDelaySecondsByModel', {})
                             delay = float(delays.get(model, outer.behavior.get('loadDelaySeconds', 0)))
+                            progress_delays = outer.behavior.get('loadProgressDelaySecondsByModel', {})
+                            progress_delay = float(progress_delays.get(
+                                model, outer.behavior.get('loadProgressDelaySeconds', 0)))
                             entry['status']['value'] = 'loading' if delay > 0 else 'loaded'
                             entry['status'].pop('failed', None)
                             if delay > 0:
-                                outer.pending_loads[model] = time.monotonic() + delay
+                                started = time.monotonic()
+                                outer.pending_loads[model] = started + delay
+                                outer.pending_load_progress[model] = started + max(progress_delay, 0)
                     self.send_json(dict(success=True))
                     return
                 if path == '/models/unload':
@@ -125,17 +135,23 @@ class FixtureServer:
                         if entry.get('id') == model:
                             entry['status']['value'] = 'unloaded'
                     outer.pending_loads.pop(model, None)
+                    outer.pending_load_progress.pop(model, None)
                     outer.pending_downloads.pop(model, None)
+                    outer.pending_download_progress.pop(model, None)
                     self.send_json(dict(success=True))
                     return
                 if path == '/models':
                     model = body.get('model')
                     outer.set_status(model, 'downloading')
                     delay = float(outer.behavior.get('downloadDelaySeconds', 0.75))
-                    outer.pending_downloads[model] = time.monotonic() + max(delay, 0)
+                    progress_delay = float(outer.behavior.get('downloadProgressDelaySeconds', 0))
+                    started = time.monotonic()
+                    outer.pending_downloads[model] = started + max(delay, 0)
+                    outer.pending_download_progress[model] = started + max(progress_delay, 0)
                     if delay <= 0:
                         outer.set_status(model, 'unloaded')
                         outer.pending_downloads.pop(model, None)
+                        outer.pending_download_progress.pop(model, None)
                     self.send_json(dict(success=True))
                     return
                 self.send_error(404)
@@ -161,7 +177,9 @@ class FixtureServer:
     def reset(self):
         self.models = json.loads(json.dumps(self.initial_models))
         self.pending_loads = {}
+        self.pending_load_progress = {}
         self.pending_downloads = {}
+        self.pending_download_progress = {}
         self.catalog_failures_remaining = int(self.behavior.get('initialModelFailures', 0))
         self.requests.clear()
 

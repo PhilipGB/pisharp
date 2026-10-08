@@ -38,6 +38,7 @@
     }
   },
   "llamaBehavior": {
+    "loadProgressDelaySeconds": 0.5,
     "loadDelaySecondsByModel": {
       "unloaded-fixture-model": 30,
       "loaded-fixture-model": 0
