@@ -14,6 +14,8 @@ public sealed class TerminalScreen : IDisposable
     private readonly TextWriter _originalError;
     private readonly Func<int> _getColumns;
     private readonly Func<int> _getRows;
+    private readonly TimeProvider _timeProvider;
+    private readonly TimeSpan _minimumRenderInterval;
     private readonly TerminalTranscriptBuffer _transcript = new();
     private readonly TerminalImageRenderer _images;
     private readonly TerminalScreenCompositor _compositor;
@@ -51,6 +53,10 @@ public sealed class TerminalScreen : IDisposable
     private volatile bool _active = true;
     private int _deferRender;
     private bool _deferInitialRender;
+    private ITimer? _renderTimer;
+    private bool _renderPending;
+    private bool _hasRendered;
+    private long _lastRenderTimestamp;
 
     public TerminalScreen(TextWriter originalOut, TextWriter originalError,
         Func<int>? getColumns = null, Func<int>? getRows = null)
@@ -72,7 +78,8 @@ public sealed class TerminalScreen : IDisposable
 
     internal TerminalScreen(TextWriter originalOut, TextWriter originalError,
         Func<int>? getColumns, Func<int>? getRows, TerminalImageRenderer imageRenderer, TerminalTheme theme,
-        bool queryTerminalColors, bool followTerminalAppearance = false, bool deferInitialRender = false)
+        bool queryTerminalColors, bool followTerminalAppearance = false, bool deferInitialRender = false,
+        TimeSpan? minimumRenderInterval = null, TimeProvider? timeProvider = null)
     {
         ArgumentNullException.ThrowIfNull(originalOut);
         ArgumentNullException.ThrowIfNull(originalError);
@@ -83,6 +90,10 @@ public sealed class TerminalScreen : IDisposable
         _images = imageRenderer;
         _theme = theme;
         _deferInitialRender = deferInitialRender;
+        _minimumRenderInterval = minimumRenderInterval ?? TimeSpan.Zero;
+        if (_minimumRenderInterval < TimeSpan.Zero)
+            throw new ArgumentOutOfRangeException(nameof(minimumRenderInterval));
+        _timeProvider = timeProvider ?? TimeProvider.System;
         _terminalColors = new(theme.TerminalForeground, theme.TerminalBackground);
         _getColumns = getColumns ?? ReadColumns;
         _getRows = getRows ?? ReadRows;
@@ -93,7 +104,7 @@ public sealed class TerminalScreen : IDisposable
         {
             _originalOut.Write(TerminalKeyboardMode.Enable +
                 "\u001b[?1049h\u001b[?7l\u001b[?25l" + TerminalMouseMode.Enable);
-            lock (_gate) RenderLocked();
+            lock (_gate) RenderLocked(immediate: true);
             _terminalColorQuery = new(_originalOut, HandleTerminalColorStateChanged, initialColors: _terminalColors);
             _terminalColorQuery.Start(queryTerminalColors, followTerminalAppearance);
         }
@@ -139,7 +150,7 @@ public sealed class TerminalScreen : IDisposable
         {
             if (!_active || !_deferInitialRender) return;
             _deferInitialRender = false;
-            RenderLocked();
+            RenderLocked(immediate: true);
         }
     }
 
@@ -148,6 +159,7 @@ public sealed class TerminalScreen : IDisposable
         lock (_gate)
         {
             if (!_active || _suspended) return;
+            CancelPendingRenderLocked();
             _originalOut.Write(_images.HidePlacements() + TerminalMouseMode.Disable +
                 "\u001b[?7h\u001b[?25h\u001b[?1049l" + TerminalKeyboardMode.Disable);
             _originalOut.Flush();
@@ -163,7 +175,7 @@ public sealed class TerminalScreen : IDisposable
             _originalOut.Write(TerminalKeyboardMode.Enable +
                 "\u001b[?1049h\u001b[?7l\u001b[?25l" + TerminalMouseMode.Enable);
             _suspended = false;
-            RenderLocked();
+            RenderLocked(immediate: true);
         }
     }
 
@@ -187,7 +199,7 @@ public sealed class TerminalScreen : IDisposable
                     _editorSelectionEnd = boundedEnd;
                 }
             }
-            RenderLocked();
+            RenderLocked(immediate: true);
         }
     }
 
@@ -328,6 +340,8 @@ public sealed class TerminalScreen : IDisposable
         lock (_gate)
         {
             if (!_active) return;
+            if (lines is not null && _overlay is null && _renderPending)
+                FlushPendingRenderLocked();
             // List state sanitizes user text before applying application-owned styling.
             _overlay = lines?.Select(line => line.Replace('\n', ' ')).ToArray();
             RenderLocked();
@@ -340,6 +354,8 @@ public sealed class TerminalScreen : IDisposable
         lock (_gate)
         {
             if (!_active) return;
+            if (lines is not null && _editorPanel is null && _renderPending)
+                FlushPendingRenderLocked();
             _editorPanel = lines?.Select(line => line.Replace('\n', ' ')).ToArray();
             _panelCursorRow = cursorRow;
             _panelCursorColumn = cursorColumn;
@@ -382,7 +398,7 @@ public sealed class TerminalScreen : IDisposable
                 _transcript.ReRenderMarkdown(RenderMarkdown);
                 _liveAssistant = _liveAssistantSource.Length == 0 ? "" : RenderMarkdown(_liveAssistantSource);
             }
-            if (columns != _lastColumns || rows != _lastRows) RenderLocked();
+            if (columns != _lastColumns || rows != _lastRows) RenderLocked(immediate: true);
         }
     }
 
@@ -667,6 +683,9 @@ public sealed class TerminalScreen : IDisposable
         lock (_gate)
         {
             if (!_active) return;
+            CancelPendingRenderLocked();
+            _renderTimer?.Dispose();
+            _renderTimer = null;
             _active = false;
             if (_activated)
             {
@@ -713,9 +732,70 @@ public sealed class TerminalScreen : IDisposable
     private string RenderMarkdown(string markdown) =>
         TerminalMarkdownRenderer.Render(markdown, Math.Max(1, Columns() - 1), _theme, _markdownCodeBlockIndent);
 
-    private void RenderLocked()
+    private void RenderLocked(bool immediate = false)
     {
         if (!_active || _suspended || _deferRender > 0 || _deferInitialRender) return;
+        if (_minimumRenderInterval == TimeSpan.Zero || immediate || !_hasRendered)
+        {
+            CancelPendingRenderLocked();
+            RenderFrameLocked();
+            _lastRenderTimestamp = _timeProvider.GetTimestamp();
+            _hasRendered = true;
+            return;
+        }
+
+        if (_renderPending) return;
+        _renderPending = true;
+        _renderTimer ??= _timeProvider.CreateTimer(static state => ((TerminalScreen)state!).RenderScheduled(),
+            this, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
+        var elapsed = _timeProvider.GetElapsedTime(_lastRenderTimestamp);
+        var delay = _minimumRenderInterval - elapsed;
+        _renderTimer.Change(delay > TimeSpan.Zero ? delay : TimeSpan.Zero, Timeout.InfiniteTimeSpan);
+    }
+
+    private void RenderScheduled()
+    {
+        lock (_gate)
+        {
+            if (!_renderPending) return;
+            if (!_active || _suspended || _deferRender > 0 || _deferInitialRender)
+            {
+                _renderPending = false;
+                return;
+            }
+
+            var elapsed = _timeProvider.GetElapsedTime(_lastRenderTimestamp);
+            var delay = _minimumRenderInterval - elapsed;
+            if (delay > TimeSpan.Zero)
+            {
+                _renderTimer?.Change(delay, Timeout.InfiniteTimeSpan);
+                return;
+            }
+
+            _renderPending = false;
+            RenderFrameLocked();
+            _lastRenderTimestamp = _timeProvider.GetTimestamp();
+            _hasRendered = true;
+        }
+    }
+
+    private void CancelPendingRenderLocked()
+    {
+        _renderPending = false;
+        _renderTimer?.Change(Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
+    }
+
+    private void FlushPendingRenderLocked()
+    {
+        if (!_renderPending) return;
+        CancelPendingRenderLocked();
+        RenderFrameLocked();
+        _lastRenderTimestamp = _timeProvider.GetTimestamp();
+        _hasRendered = true;
+    }
+
+    private void RenderFrameLocked()
+    {
         var columns = Columns();
         var rows = Rows();
         var footerHeight = rows >= 5 ? 2 : rows > 2 ? 1 : 0;

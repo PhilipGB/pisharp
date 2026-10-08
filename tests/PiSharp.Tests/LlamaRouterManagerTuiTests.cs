@@ -45,7 +45,6 @@ public sealed class LlamaRouterManagerTuiTests
             await terminal.WaitTextAsync("Unload model?", mark);
             await terminal.SendAsync("\n");
             await terminal.WaitTextAsync("Unloaded qwen", mark);
-            mark = terminal.Mark;
             await terminal.WaitManagerAsync(mark);
             Assert.Equal("unloaded", server.Statuses["qwen"]);
             Assert.Contains(server.Requests, request => request.Method == "POST" && request.Path == "/models/load" &&
@@ -281,11 +280,11 @@ public sealed class LlamaRouterManagerTuiTests
             var mark = terminal.Mark;
             await terminal.SendAsync("/llama\n");
             await terminal.WaitManagerAsync(mark);
+            mark = terminal.Mark;
             await terminal.SendAsync("\n");
             await terminal.WaitTextAsync("Unload model?", mark);
             await terminal.SendAsync("\n");
             await terminal.WaitTextAsync("Unloaded qwen", mark);
-            mark = terminal.Mark;
             await terminal.WaitManagerAsync(mark);
             Assert.Equal("unloaded", server.Statuses["qwen"]);
             Assert.Contains(server.Requests, request => request.Method == "POST" && request.Path == "/models/unload" &&

@@ -72,6 +72,46 @@ public sealed class TerminalScreenTests
     }
 
     [Fact]
+    public void RenderSchedulingCoalescesOutputAndEditorInputPreemptsTheTimer()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        var clock = new ManualTimeProvider();
+        using var screen = new TerminalScreen(output, error, () => 40, () => 9,
+            new TerminalImageRenderer(), TerminalTheme.Default, queryTerminalColors: false,
+            minimumRenderInterval: TimeSpan.FromMilliseconds(16), timeProvider: clock);
+        output.GetStringBuilder().Clear();
+
+        screen.Output.Write("first");
+        screen.Output.Write("second");
+        Assert.Equal(0, Count(output.ToString(), "\u001b[?2026h"));
+
+        clock.Advance(TimeSpan.FromMilliseconds(15));
+        Assert.Equal(0, Count(output.ToString(), "\u001b[?2026h"));
+        clock.Advance(TimeSpan.FromMilliseconds(1));
+        Assert.Equal(1, Count(output.ToString(), "\u001b[?2026h"));
+
+        output.GetStringBuilder().Clear();
+        screen.Output.Write("pending output");
+        screen.SetEditor("prompt", 6);
+        Assert.Equal(1, Count(output.ToString(), "\u001b[?2026h"));
+        Assert.Contains("prompt", output.ToString());
+
+        clock.Advance(TimeSpan.FromMilliseconds(16));
+        Assert.Equal(1, Count(output.ToString(), "\u001b[?2026h"));
+
+        output.GetStringBuilder().Clear();
+        screen.SetStatusNotification("message before modal");
+        screen.SetEditorPanel(["modal panel"], 0, 1);
+        Assert.Equal(1, Count(output.ToString(), "\u001b[?2026h"));
+        Assert.Contains("message before modal", output.ToString());
+
+        clock.Advance(TimeSpan.FromMilliseconds(16));
+        Assert.Equal(2, Count(output.ToString(), "\u001b[?2026h"));
+        Assert.Contains("modal panel", output.ToString());
+    }
+
+    [Fact]
     public void DisposeRestoresConsoleWritersAfterAnActiveRun()
     {
         var previousOut = Console.Out;
@@ -653,5 +693,110 @@ public sealed class TerminalScreenTests
         using var image = SKImage.FromBitmap(bitmap);
         using var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
         return encoded.ToArray();
+    }
+
+    private sealed class ManualTimeProvider : TimeProvider
+    {
+        private readonly object _gate = new();
+        private readonly HashSet<ManualTimer> _timers = [];
+        private long _timestamp;
+
+        public override long TimestampFrequency => TimeSpan.TicksPerSecond;
+
+        public override long GetTimestamp()
+        {
+            lock (_gate) return _timestamp;
+        }
+
+        public override DateTimeOffset GetUtcNow()
+        {
+            lock (_gate) return DateTimeOffset.UnixEpoch.AddTicks(_timestamp);
+        }
+
+        public override ITimer CreateTimer(TimerCallback callback, object? state,
+            TimeSpan dueTime, TimeSpan period)
+        {
+            ArgumentNullException.ThrowIfNull(callback);
+            var timer = new ManualTimer(this, callback, state);
+            lock (_gate) _timers.Add(timer);
+            timer.Change(dueTime, period);
+            return timer;
+        }
+
+        public void Advance(TimeSpan amount)
+        {
+            if (amount < TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(amount));
+            long target;
+            lock (_gate) target = _timestamp + amount.Ticks;
+
+            while (true)
+            {
+                ManualTimer? next;
+                lock (_gate)
+                {
+                    next = _timers.Where(timer => timer.DueTimestamp is { } due && due <= target)
+                        .MinBy(timer => timer.DueTimestamp);
+                    if (next is null)
+                    {
+                        _timestamp = target;
+                        return;
+                    }
+
+                    _timestamp = next.DueTimestamp!.Value;
+                    next.AdvanceDueTime();
+                }
+                next.Callback(next.State);
+            }
+        }
+
+        private void Change(ManualTimer timer, TimeSpan dueTime, TimeSpan period)
+        {
+            lock (_gate)
+            {
+                if (timer.IsDisposed) return;
+                timer.Period = period;
+                timer.DueTimestamp = dueTime == Timeout.InfiniteTimeSpan ? null : _timestamp + dueTime.Ticks;
+            }
+        }
+
+        private void Remove(ManualTimer timer)
+        {
+            lock (_gate) _timers.Remove(timer);
+        }
+
+        private sealed class ManualTimer(ManualTimeProvider owner, TimerCallback callback, object? state) : ITimer
+        {
+            public long? DueTimestamp { get; set; }
+            public TimeSpan Period { get; set; }
+            public bool IsDisposed { get; private set; }
+            public TimerCallback Callback { get; } = callback;
+            public object? State { get; } = state;
+
+            public bool Change(TimeSpan dueTime, TimeSpan period)
+            {
+                owner.Change(this, dueTime, period);
+                return !IsDisposed;
+            }
+
+            public void Dispose()
+            {
+                if (IsDisposed) return;
+                IsDisposed = true;
+                owner.Remove(this);
+            }
+
+            public ValueTask DisposeAsync()
+            {
+                Dispose();
+                return ValueTask.CompletedTask;
+            }
+
+            public void AdvanceDueTime()
+            {
+                DueTimestamp = Period <= TimeSpan.Zero || Period == Timeout.InfiniteTimeSpan
+                    ? null
+                    : DueTimestamp + Period.Ticks;
+            }
+        }
     }
 }

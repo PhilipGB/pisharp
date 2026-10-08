@@ -374,7 +374,8 @@ using var terminalScreen = editor is null ? null : new TerminalScreen(rawTermina
     rawTerminalError ?? Console.Error,
     getColumns: null, getRows: null, imageRenderer: new TerminalImageRenderer(), theme: initialTerminalTheme,
     queryTerminalColors: !Console.IsInputRedirected && !Console.IsOutputRedirected,
-    followTerminalAppearance: ThemeFollowsTerminalAppearance(ActiveThemeSetting()), deferInitialRender: true);
+    followTerminalAppearance: ThemeFollowsTerminalAppearance(ActiveThemeSetting()), deferInitialRender: true,
+    minimumRenderInterval: TimeSpan.FromMilliseconds(16));
 terminalScreen?.SetThemeResolver(colors => ResolveConfiguredTheme(ActiveThemeSetting(), colors));
 terminalScreen?.SetMarkdownCodeBlockIndent(userSettings.MarkdownCodeBlockIndent ?? UserSettings.DefaultMarkdownCodeBlockIndent);
 terminalScreen?.Activate();
