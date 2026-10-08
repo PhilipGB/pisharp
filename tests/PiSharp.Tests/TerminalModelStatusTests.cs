@@ -36,6 +36,7 @@ public sealed class TerminalModelStatusTests
     {
         var session = new ConversationSession(Path.GetTempPath(), "fixture-model", null, "fixture");
         var model = new ModelDescriptor("fixture-model", null, 8192, null,
+            Provider: "fixture",
             Reasoning: false, Api: "openai-completions");
 
         var footer = TerminalModelStatus.FormatIdleFooter(model, "off", session, 8192,
@@ -49,6 +50,12 @@ public sealed class TerminalModelStatusTests
         var disabled = TerminalModelStatus.FormatIdleFooter(model, "off", session, 8192,
             autoCompactionEnabled: false, width: 100);
         Assert.DoesNotContain(" (auto)", disabled);
+
+        var multipleProviders = TerminalModelStatus.FormatIdleFooter(model, "off", session, 8192,
+            autoCompactionEnabled: true, width: 100, availableProviderCount: 2);
+        Assert.EndsWith("(fixture) fixture-model", multipleProviders);
+        Assert.Equal(100, TerminalTextLayout.Width(multipleProviders));
+
     }
 
     private static ChatMessage Response(string model, string thinking, string? stopReason = null) => new(ChatRole.Assistant, "answer")

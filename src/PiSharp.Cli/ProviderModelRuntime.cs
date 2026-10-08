@@ -48,6 +48,8 @@ public sealed class ProviderModelRuntime
     private readonly bool _offline;
     private readonly LlamaRouterCatalogStore _llamaRouterCache;
     private readonly SemaphoreSlim _llamaRouterRefresh = new(1, 1);
+    private readonly object _availableProviderGate = new();
+    private readonly Dictionary<string, bool> _availableProviderSnapshot = new(StringComparer.Ordinal);
     private ProviderProfile? _llamaRouterProfile;
     private IReadOnlyList<string> _scope;
     private VirtualModelRegistry? _virtualModels;
@@ -71,6 +73,14 @@ public sealed class ProviderModelRuntime
 
     public IReadOnlyList<string> Scope => _scope;
     public VirtualModelRegistry? VirtualModels => _virtualModels;
+    public int AvailableModelProviderCount
+    {
+        get
+        {
+            lock (_availableProviderGate) return _availableProviderSnapshot.Count(item => item.Value);
+        }
+    }
+
     public IReadOnlyList<ProviderProfile> Providers
     {
         get
@@ -128,8 +138,11 @@ public sealed class ProviderModelRuntime
         };
         if (providers.TryGetValue("radius", out var radius))
             oauthAdapters.Add(new RadiusOAuthAdapter(http, radius.Endpoint));
-        return new ProviderModelRuntime(providers, auth, new ProviderOAuthCoordinator(auth, http, oauthAdapters),
+        var runtime = new ProviderModelRuntime(providers, auth, new ProviderOAuthCoordinator(auth, http, oauthAdapters),
             environment, http, runtimeApiKey, scope, offline, agentDirectory);
+        if (runtime.ResolveLlamaRouterUrl(await auth.ReadAsync("llama.cpp", cancellationToken).ConfigureAwait(false)) is not null)
+            runtime.RecordAvailableProvider("llama.cpp", true);
+        return runtime;
     }
 
     public ProviderProfile GetProvider(string id) => id == "llama.cpp" && Volatile.Read(ref _llamaRouterProfile) is { } llamaRouter
@@ -255,7 +268,11 @@ public sealed class ProviderModelRuntime
         var result = new List<ModelDescriptor>();
         foreach (var provider in providers)
         {
-            if (provider.Models.Count == 0 && provider.Classifiers?.Count > 0) continue;
+            if (provider.Models.Count == 0 && provider.Classifiers?.Count > 0)
+            {
+                RecordAvailableProvider(provider.Id, false);
+                continue;
+            }
             var auth = await ResolveAuthAsync(provider.Id, useRuntimeOverride: providerId is not null || _runtimeApiKeyProvider == provider.Id, cancellationToken);
             var providerModels = provider.Models;
             if (provider.Id == "llama.cpp")
@@ -332,7 +349,10 @@ public sealed class ProviderModelRuntime
                 result.AddRange(VirtualModelsFor(provider.Id));
             }
         }
-        return includeOutOfScope ? result : ApplyScope(result);
+        var visible = includeOutOfScope ? result : ApplyScope(result);
+        foreach (var provider in providers)
+            RecordAvailableProvider(provider.Id, visible.Any(model => model.Provider == provider.Id && model.Available));
+        return visible;
     }
 
     public async Task<ModelDescriptor?> FindPhysicalModelAsync(string provider, string model,
@@ -382,6 +402,7 @@ public sealed class ProviderModelRuntime
                 Available = virtualAuth.Authenticated,
                 UnavailableReason = virtualAuth.Authenticated ? null : virtualAuth.Source
             };
+            RecordAvailableProvider(explicitProvider.Id, virtualDescriptor.Available);
             return new ModelSelection(explicitProvider, virtualDescriptor, virtualAuth.Key, virtualAuth.Authenticated, virtualAuth.Source);
         }
         // An explicitly configured exact ID is usable without /models: many compatible servers
@@ -406,6 +427,7 @@ public sealed class ProviderModelRuntime
             Available = auth.Authenticated && model.Available,
             UnavailableReason = auth.Authenticated ? model.UnavailableReason : auth.Source
         };
+        RecordAvailableProvider(explicitProvider.Id, model.Available);
         Func<CancellationToken, Task<(string Access, string AccountId)>>? oauthCredentialResolver = null;
         if (auth.Source.StartsWith("stored OAuth", StringComparison.Ordinal) &&
             explicitProvider.Id is "openai-codex" or "radius")
@@ -422,6 +444,11 @@ public sealed class ProviderModelRuntime
             AnthropicWorkloadIdentity = auth.Source == "workload identity federation"
                 ? ResolveAnthropicWorkloadIdentity() : null
         };
+    }
+
+    private void RecordAvailableProvider(string providerId, bool available)
+    {
+        lock (_availableProviderGate) _availableProviderSnapshot[providerId] = available;
     }
 
     private AnthropicWorkloadIdentityOptions? ResolveAnthropicWorkloadIdentity()

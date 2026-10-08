@@ -25,7 +25,8 @@ public sealed class LlamaRouterManagerTuiTests
         await using var terminal = new ManagerTerminal(root, agent, server.Origin);
         try
         {
-            await terminal.WaitTextAsync("fixture-model");
+            var initialEditor = await terminal.WaitEditorAsync();
+            Assert.Contains("(fixture) fixture-model", initialEditor);
             var mark = terminal.Mark;
             await terminal.SendAsync("/llama\n");
             await terminal.WaitManagerAsync(mark);
@@ -249,6 +250,7 @@ public sealed class LlamaRouterManagerTuiTests
             await terminal.WaitManagerAsync(mark);
 
             Assert.Equal("unloaded", router.Statuses["owner/model:Q4_K_M"]);
+            Assert.DoesNotContain(router.Requests, request => request.Method == "GET" && request.Path == "/models?reload=1");
             Assert.Contains(router.Requests, request => request.Method == "POST" && request.Path == "/models/unload" &&
                 request.Body == "{\"model\":\"owner/model:Q4_K_M\"}");
             mark = terminal.Mark;

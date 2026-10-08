@@ -403,8 +403,8 @@ public sealed class TerminalEditor
                     Update(state);
                     continue;
                 }
-                try { await cancelOperation().ConfigureAwait(false); }
-                finally { cancellation.Cancel(); }
+                cancellation.Cancel();
+                await cancelOperation().ConfigureAwait(false);
                 _ = await settled.ConfigureAwait(false);
                 if (afterCancelled is not null)
                 {

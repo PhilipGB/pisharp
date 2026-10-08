@@ -15,6 +15,9 @@ public sealed class LlamaRouterProviderTests
         Directory.CreateDirectory(root);
         try
         {
+            await File.WriteAllTextAsync(Path.Combine(root, "models.json"), """
+                {"providers":{"fixture":{"baseUrl":"https://fixture.test/v1","apiKey":"fixture-secret","models":[{"id":"fixture-model"}]}}}
+                """);
             var requests = new List<(string Method, string Path, string? Authorization)>();
             var handler = new RouterHandler(request =>
             {
@@ -45,8 +48,13 @@ public sealed class LlamaRouterProviderTests
             var runtime = await ProviderModelRuntime.CreateAsync(root, false,
                 name => environment.GetValueOrDefault(name), http);
 
+            Assert.Equal(1, runtime.AvailableModelProviderCount);
+            _ = await runtime.ResolveAsync("fixture", "fixture-model");
+            Assert.Equal(2, runtime.AvailableModelProviderCount);
+
             var models = await runtime.ListModelsAsync("llama.cpp");
 
+            Assert.Equal(2, runtime.AvailableModelProviderCount);
             Assert.Equal(["qwen", "sleeping", "autoload-preset"], models.Select(model => model.Id));
             var qwen = Assert.Single(models, model => model.Id == "qwen");
             Assert.Equal("llama.cpp", qwen.Provider);

@@ -393,7 +393,7 @@ var terminalClipboard = new TerminalClipboard(writeTerminalControl: value =>
 });
 string IdleFooter() => TerminalModelStatus.FormatIdleFooter(selection.Model, thinking, conversation,
     conversationRun.ContextWindowTokens, userSettings.AutoCompactionEnabled(Environment.GetEnvironmentVariable),
-    terminalScreen?.TerminalWidth ?? 80);
+    terminalScreen?.TerminalWidth ?? 80, modelRuntime.AvailableModelProviderCount);
 terminalScreen?.SetFooter(IdleFooter());
 if (editor is not null)
     new TerminalStartupPresentation(userSettings.QuietStartup, cli.Verbose)
@@ -1167,9 +1167,11 @@ else
                         break;
                     case "/login":
                         await terminalProviderLogin!.ShowAsync(argument);
+                        terminalScreen?.SetFooter(IdleFooter());
                         break;
                     case "/llama":
                         await terminalLlamaManager!.ShowAsync(argument);
+                        terminalScreen?.SetFooter(IdleFooter());
                         break;
                     case "/logout":
                         var logoutProvider = argument.Length == 0 ? selection.Provider.Id : argument;

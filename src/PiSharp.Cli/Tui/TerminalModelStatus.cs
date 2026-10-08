@@ -9,7 +9,7 @@ namespace PiSharp.Cli.Tui;
 internal static class TerminalModelStatus
 {
     public static string FormatIdleFooter(ModelDescriptor model, string thinking, ConversationSession session,
-        int? contextWindow, bool autoCompactionEnabled, int width)
+        int? contextWindow, bool autoCompactionEnabled, int width, int availableProviderCount = 1)
     {
         var window = contextWindow ?? model.ContextLength;
         var latest = session.LatestContextUsageTokens();
@@ -41,6 +41,8 @@ internal static class TerminalModelStatus
         var right = model.Id;
         if (model.Reasoning == true)
             right += thinking == "off" ? " • thinking off" : " • " + thinking;
+        if (availableProviderCount > 1 && !string.IsNullOrEmpty(model.Provider))
+            right = $"({model.Provider}) {right}";
         var leftWidth = TerminalTextLayout.Width(left);
         var rightWidth = TerminalTextLayout.Width(right);
         var remaining = Math.Max(0, width - leftWidth - rightWidth);
