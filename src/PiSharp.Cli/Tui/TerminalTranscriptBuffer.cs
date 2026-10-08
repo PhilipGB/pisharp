@@ -35,6 +35,8 @@ internal sealed class TerminalTranscriptBuffer
         Revision++;
     }
 
+    public void AppendCaptured(string text, bool isError) => Capture(text, isError);
+
     public void AppendMarkdown(string source, string rendered, bool isError)
     {
         if (rendered.Length == 0) return;

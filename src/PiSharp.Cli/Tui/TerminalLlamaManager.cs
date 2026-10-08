@@ -237,7 +237,7 @@ internal sealed class TerminalLlamaManager(ProviderModelRuntime runtime, Termina
             () => client.UnloadAsync(model, CancellationToken.None)).ConfigureAwait(false);
         if (result.Cancelled) return;
         _ = await runtime.RefreshLlamaRouterCatalogAsync(client, cancellationToken).ConfigureAwait(false);
-        Console.WriteLine("Downloaded " + model);
+        editor.SetStatusNotification("Downloaded " + model);
     }
 
     private static (string Repository, string? Quantization) ParseRepositoryInput(string value)
