@@ -1,0 +1,383 @@
+{
+  "piSha": "f1b2e77f5b13b2a199b1052cb79c235451afe7d7",
+  "pisharpSha": "7b1fb8a319a39d25f9ec683c2ca3048eacd07e2f",
+  "fixture": "extension-resource-discovery-reload",
+  "calibration": false,
+  "concurrentHttpGroups": [],
+  "normalization": "Named checkpoints and every synchronized render state are compared exactly, collapsing only adjacent identical states and ignoring cursor coordinates only while that cursor is hidden. Raw bytes remain captured and exact-match status is reported separately. HTTP identity/count/order remain exact except within declared concurrent batches, where arrival order is unspecified. Per-checkpoint control buckets are diagnostic.",
+  "cases": [
+    {
+      "id": "120x40-dark-fullscreen",
+      "match": false,
+      "differences": 212720,
+      "firstDifferences": [
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[0].chars",
+          "pi": "[",
+          "pisharp": ""
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[0].foreground.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[0].foreground.value",
+          "pi": 13474338,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[1].chars",
+          "pi": "T",
+          "pisharp": ""
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[1].foreground.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[1].foreground.value",
+          "pi": 13474338,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[2].chars",
+          "pi": "h",
+          "pisharp": ""
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[2].foreground.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[2].foreground.value",
+          "pi": 13474338,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[3].chars",
+          "pi": "e",
+          "pisharp": ""
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[3].foreground.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[3].foreground.value",
+          "pi": 13474338,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[4].chars",
+          "pi": "m",
+          "pisharp": ""
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[4].foreground.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[4].foreground.value",
+          "pi": 13474338,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[5].chars",
+          "pi": "e",
+          "pisharp": ""
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[5].foreground.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[5].foreground.value",
+          "pi": 13474338,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[6].chars",
+          "pi": " ",
+          "pisharp": ""
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[6].foreground.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[6].foreground.value",
+          "pi": 13474338,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[7].chars",
+          "pi": "c",
+          "pisharp": ""
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[7].foreground.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[7].foreground.value",
+          "pi": 13474338,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[8].chars",
+          "pi": "o",
+          "pisharp": ""
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[8].foreground.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[8].foreground.value",
+          "pi": 13474338,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[9].chars",
+          "pi": "n",
+          "pisharp": ""
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[9].foreground.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[9].foreground.value",
+          "pi": 13474338,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[10].chars",
+          "pi": "f",
+          "pisharp": ""
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[10].foreground.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[10].foreground.value",
+          "pi": 13474338,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[11].chars",
+          "pi": "l",
+          "pisharp": ""
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[11].foreground.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[11].foreground.value",
+          "pi": 13474338,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[12].chars",
+          "pi": "i",
+          "pisharp": ""
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[12].foreground.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[12].foreground.value",
+          "pi": 13474338,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[13].chars",
+          "pi": "c",
+          "pisharp": ""
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[13].foreground.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[13].foreground.value",
+          "pi": 13474338,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[14].chars",
+          "pi": "t",
+          "pisharp": ""
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[14].foreground.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[14].foreground.value",
+          "pi": 13474338,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[15].chars",
+          "pi": "s",
+          "pisharp": ""
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[15].foreground.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[15].foreground.value",
+          "pi": 13474338,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[16].chars",
+          "pi": "]",
+          "pisharp": ""
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[16].foreground.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        }
+      ],
+      "scenarioErrors": {},
+      "terminalMatch": false,
+      "rawMatch": false,
+      "rawDifference": {
+        "piBytes": 23675,
+        "pisharpBytes": 14563,
+        "firstDifferingByte": 2
+      },
+      "comparedRenderFrameCount": 13,
+      "renderDifferences": 126434,
+      "httpMatch": false,
+      "controlBoundaryDifferenceCount": 666,
+      "controlBoundaryFirstDifferences": [
+        {
+          "path": "$.controlBoundaries[0].length",
+          "pi": 239,
+          "pisharp": 169
+        },
+        {
+          "path": "$.controlBoundaries[0][0]",
+          "pi": "1b5b3f3130343968",
+          "pisharp": "1b5b3e3775"
+        },
+        {
+          "path": "$.controlBoundaries[0][1]",
+          "pi": "1b5b3f376c",
+          "pisharp": "1b5b3f75"
+        },
+        {
+          "path": "$.controlBoundaries[0][2]",
+          "pi": "1b5b3f3130303068",
+          "pisharp": "1b5b3f3130343968"
+        },
+        {
+          "path": "$.controlBoundaries[0][3]",
+          "pi": "1b5b3f3130303268",
+          "pisharp": "1b5b3f376c"
+        },
+        {
+          "path": "$.controlBoundaries[0][4]",
+          "pi": "1b5b3f3130303368",
+          "pisharp": "1b5b3f32356c"
+        },
+        {
+          "path": "$.controlBoundaries[0][5]",
+          "pi": "1b5b3f3130303468",
+          "pisharp": "1b5b3f3130303068"
+        },
+        {
+          "path": "$.controlBoundaries[0][6]",
+          "pi": "1b5b3f3130303668",
+          "pisharp": "1b5b3f3130303268"
+        },
+        {
+          "path": "$.controlBoundaries[0][7]",
+          "pi": "1b5b324a",
+          "pisharp": "1b5b3f3130303368"
+        },
+        {
+          "path": "$.controlBoundaries[0][8]",
+          "pi": "1b5b48",
+          "pisharp": "1b5b3f3130303468"
+        },
+        {
+          "path": "$.controlBoundaries[0][9]",
+          "pi": "1b5b3f32356c",
+          "pisharp": "1b5b3f3130303668"
+        },
+        {
+          "path": "$.controlBoundaries[0][10]",
+          "pi": "1b5b3f3230303468",
+          "pisharp": "1b5d31303b3f07"
+        },
+        {
+          "path": "$.controlBoundaries[0][11]",
+          "pi": "1b5b3e3775",
+          "pisharp": "1b5d31313b3f07"
+        },
+        {
+          "path": "$.controlBoundaries[0][12]",
+          "pi": "1b5b3f75",
+          "pisharp": "1b5d343b303b3f07"
+        },
+        {
+          "path": "$.controlBoundaries[0][13]",
+          "pi": "1b5d373530313b3f1b5c",
+          "pisharp": "1b5d343b313b3f07"
+        },
+        {
+          "path": "$.controlBoundaries[0][14]",
+          "pi": "1b5b63",
+          "pisharp": "1b5d343b323b3f07"
+        },
+        {
+          "path": "$.controlBoundaries[0][15]",
+          "pi": "1b5b3f32356c",
+          "pisharp": "1b5d343b333b3f07"
+        },
+        {
+          "path": "$.controlBoundaries[0][16]",
+          "pi": "1b5d31303b3f07",
+          "pisharp": "1b5d343b343b3f07"
+        },
+        {
+          "path": "$.controlBoundaries[0][17]",
+          "pi": "1b5d31313b3f07",
+          "pisharp": "1b5d343b353b3f07"
+        },
+        {
+          "path": "$.controlBoundaries[0][18]",
+          "pi": "1b5d343b303b3f07",
+          "pisharp": "1b5d343b363b3f07"
+        }
+      ],
+      "evidence": "120x40-dark-fullscreen.json.gz"
+    }
+  ],
+  "match": false
+}

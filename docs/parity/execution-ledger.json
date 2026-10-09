@@ -826,7 +826,8 @@
         "src/PiSharp.Runtime/Resources/CanonicalDirectoryPath.cs and ProjectTrust.cs: canonicalize symlink aliases for trust reads/writes and protected-resource checks.",
         "src/PiSharp.Cli/Tui/TerminalTrustPicker.cs and ProjectTrust.SetManyAsync: bare /trust displays the nearest saved decision and applies Trust, Trust parent folder, and Do not trust choices atomically without changing the active session.",
         "src/PiSharp.Runtime/Resources/ProjectTrust.cs: accepts null trust-store values, skips them during nearest-ancestor lookup, preserves unrelated nulls and removes the selected null entry.",
-        "src/PiSharp.Cli/UserSettings.cs: global defaultProjectTrust accepts ask/always/never; malformed values fall back to ask and project values do not override the global trust policy."
+        "src/PiSharp.Cli/UserSettings.cs: global defaultProjectTrust accepts ask/always/never; malformed values fall back to ask and project values do not override the global trust policy.",
+        "ExtensionRegistration.AddResourceDiscoveryHandler provides ordered asynchronous startup/reload callbacks; ProjectRuntimeContext loads discovered skills/prompts into ResourceCatalog and passes themes to TerminalThemeCatalog."
       ],
       "evidence": [
         "Pi f1b2e77 resource-loader source and tests refreshed. Its 53-test suite passes. The two symlink cases failed first on PiSharp (expected one instruction occurrence, observed two); after commit 78bc0ffc9523cc28aa1f8bc05777ff4812b3f1e4, the focused application-loader tests pass 9/9, including nested worktree override/inheritance, same-name symlink deduplication, different-filename retention and bare/sibling guards. Exact-head Linux CI 37902383991 passes 1201/1201 with zero skips. See docs/parity/fixtures/context-instructions-nested-worktree-2026-10-09.json. Broader project trust/settings and resource workflow differentials remain open.",
@@ -836,7 +837,8 @@
         "At Pi f1b2e77f / PiSharp 359f1499 startup now emits model scope and compact Context/Skills/Prompts summaries and Ctrl+O expands help and resource paths. The paired seven-frame startup run has exact HTTP, no scenario errors, and 52,812 state/25,096 render differences; same-Pi calibration is exact. The current `/trust` selector completes without errors and matches HTTP; full-screen output still differs (72,384 state/41,068 render differences). Trusted-project settings and broader resource workflows remain open. See docs/parity/fixtures/quiet-startup-resources-current-pi-2026-10-09.md and docs/parity/fixtures/project-trust-selector-current-pi-2026-10-09/current-359f1499/evidence.json.",
         "At current Pi f1b2e77f / PiSharp 83fad4d6, the new trust-store null regression failed first on PiSharp, then passed after the nullable reader change. The paired process differential matches child-null inheritance from parent allow/deny, undecided null paths, removal of the child entry and preservation of unrelated null entries. Focused Pi trust-manager/settings-manager tests pass 53/53; PiSharp full local verification passes format, zero-warning build, 1,217/1,217 .NET tests, 24/24 terminal tests and 20/20 Python tests. Exact-head Linux CI 37953004947 is green. See docs/parity/fixtures/project-trust-null-current-pi-2026-10-09.json.",
         "PiSharp 8d6205a4d5b8d4bdf111a76a5785f86ffa860666 fixes global defaultProjectTrust semantics: invalid global values/types fall back to ask, project-scope values do not override global settings, and stored decisions/--approve/--no-approve retain Pi precedence. A fail-first application-process differential had five mismatches across eight scenarios; the post-fix nine-scenario differential matches Pi f1b2e77f5b13b2a199b1052cb79c235451afe7d7. Focused settings/process tests pass 46/46; local format and warnings-as-errors build pass; full local validation passes 1,218/1,218 .NET tests, 24/24 terminal tests and 20/20 Python tests. Exact-head Linux CI 37955148011 passes every gate with zero skips. Evidence: docs/parity/fixtures/default-project-trust-current-pi-2026-10-09.json and docs/parity/fixtures/default-project-trust-fail-first-current-pi-2026-10-09.json. Trusted-project reload/resource discovery and startup/selector screen parity remain open.",
-        "Paired Pi f1b2e77f5b13b2a199b1052cb79c235451afe7d7 / PiSharp 8d6205a4d5b8d4bdf111a76a5785f86ffa860666 PTY flow changes trusted project defaultTools from read to bash, adds a project SKILL.md, runs /reload, and invokes the new skill. Both sides send two chat requests with tools [read], then [read,bash], and expand the initial and reloaded skill content with zero scenario errors. Full terminal comparison remains open: 111,927 field differences, 71,800 render differences, 423 control-boundary differences, and non-matching raw/HTTP traces. Same-Pi calibration has two spinner-phase render differences. See docs/parity/fixtures/project-settings-reload-current-pi-2026-10-09.md and its exact captures."
+        "Paired Pi f1b2e77f5b13b2a199b1052cb79c235451afe7d7 / PiSharp 8d6205a4d5b8d4bdf111a76a5785f86ffa860666 PTY flow changes trusted project defaultTools from read to bash, adds a project SKILL.md, runs /reload, and invokes the new skill. Both sides send two chat requests with tools [read], then [read,bash], and expand the initial and reloaded skill content with zero scenario errors. Full terminal comparison remains open: 111,927 field differences, 71,800 render differences, 423 control-boundary differences, and non-matching raw/HTTP traces. Same-Pi calibration has two spinner-phase render differences. See docs/parity/fixtures/project-settings-reload-current-pi-2026-10-09.md and its exact captures.",
+        "At Pi f1b2e77f5b13b2a199b1052cb79c235451afe7d7 / PiSharp 7b1fb8a319a39d25f9ec683c2ca3048eacd07e2f, a paired PTY fixture returns skill, prompt, and theme paths at startup and reload, including a file-URL skill path. Both sides expand startup and reloaded skill/prompt content with four provider requests and zero scenario errors. Full pair differs by 212,720 terminal-state fields, 126,434 render fields, and HTTP/system-prompt traces; same-Pi calibration matches normalized terminal state and HTTP. Exact-head CI 37961269172 passes 1,220 tests with zero skips. See docs/parity/fixtures/extension-resource-discovery-current-pi-2026-10-09.md."
       ],
       "dependencies": []
     },
@@ -855,13 +857,15 @@
         "TerminalThemeCatalog discovers embedded dark/light palettes and JSON files from the agent themes directory and trusted project .pi/themes; theme names come from validated theme content and project files take precedence over user files.",
         "TerminalSettingsPicker exposes discovered theme names and automatic light/dark pairing; /reload reconstructs discovery, while /settings writes the scalar theme to user or trusted project settings.",
         "CliArguments parses repeatable `--theme`, `--use-theme`, and `--no-themes`; TerminalThemeCatalog resolves explicit file/directory paths from the invocation cwd and keeps them available while discovery/configured theme paths are disabled. Program applies `--use-theme` for the interactive run, retains it across appearance/reload refresh, and relinquishes it when a theme is explicitly saved.",
-        "TerminalSystemTheme caps generated palette/foreground chroma at source chroma times the existing falloff. TerminalColorSpace shares OKLCH conversion with theme parsing; ANSI-256 gray selection chooses the lower entry on ties as Pi does."
+        "TerminalSystemTheme caps generated palette/foreground chroma at source chroma times the existing falloff. TerminalColorSpace shares OKLCH conversion with theme parsing; ANSI-256 gray selection chooses the lower entry on ties as Pi does.",
+        "ExtensionRegistration.AddResourceDiscoveryHandler provides ordered asynchronous startup/reload callbacks; ProjectRuntimeContext loads discovered skills/prompts into ResourceCatalog and passes themes to TerminalThemeCatalog."
       ],
       "evidence": [
         "TerminalThemeTests cover built-in/user/project discovery, content names, precedence, automatic appearance selection and malformed JSON skipping; Linux PTY settings flow selects a theme. CLI theme flags are implemented and covered by CliThemeArgumentsTests, TerminalThemeTests, and CliThemeProcessTests; custom HTML-export theme CSS remains open.",
         "Current Pi e1787702d32e0a7fd7387840c918faa4d1286187 args.ts, args.test.ts, main.ts, resource-loader.ts and resource-loader-theme.test.ts establish repeatability, interactive-only selection, and noThemes behavior that retains explicit paths. PiSharp CliThemeArgumentsTests and TerminalThemeTests cover parsing, nested directory loading, invocation-cwd resolution, and suppression of discovered/configured paths. Exact CLI rendering is covered by CliThemeProcessTests. Exact-head Linux CI run 36420934092 for c68ad5b passed format, warnings-as-errors build and 729/729 tests (0 skipped). Custom theme export CSS remains open.",
         "At current Pi 0495646a, nine palette inputs in truecolor and 256color match all 56 role ANSI prefixes (1008 comparisons). Four fail-first cases are fixed; focused theme tests pass 19/19 and Pi system-theme tests pass 8/8. See docs/parity/fixtures/system-theme-pastel-2026-10-02.md. Full TUI cell/layout/interaction and terminal-family parity remain open; format verification, warnings-as-errors build (zero warnings/errors) and the full 1091-test suite pass with zero skips; exact-head Linux CI 36991960991 passes on source 099c63cea62067b83eb0acb10d30797d77e36e98, including all 1091 tests with zero skips.",
-        "Paired Pi f1b2e77f5b13b2a199b1052cb79c235451afe7d7 / PiSharp 8d6205a4d5b8d4bdf111a76a5785f86ffa860666 PTY flow changes trusted project defaultTools from read to bash, adds a project SKILL.md, runs /reload, and invokes the new skill. Both sides send two chat requests with tools [read], then [read,bash], and expand the initial and reloaded skill content with zero scenario errors. Full terminal comparison remains open: 111,927 field differences, 71,800 render differences, 423 control-boundary differences, and non-matching raw/HTTP traces. Same-Pi calibration has two spinner-phase render differences. See docs/parity/fixtures/project-settings-reload-current-pi-2026-10-09.md and its exact captures."
+        "Paired Pi f1b2e77f5b13b2a199b1052cb79c235451afe7d7 / PiSharp 8d6205a4d5b8d4bdf111a76a5785f86ffa860666 PTY flow changes trusted project defaultTools from read to bash, adds a project SKILL.md, runs /reload, and invokes the new skill. Both sides send two chat requests with tools [read], then [read,bash], and expand the initial and reloaded skill content with zero scenario errors. Full terminal comparison remains open: 111,927 field differences, 71,800 render differences, 423 control-boundary differences, and non-matching raw/HTTP traces. Same-Pi calibration has two spinner-phase render differences. See docs/parity/fixtures/project-settings-reload-current-pi-2026-10-09.md and its exact captures.",
+        "At Pi f1b2e77f5b13b2a199b1052cb79c235451afe7d7 / PiSharp 7b1fb8a319a39d25f9ec683c2ca3048eacd07e2f, a paired PTY fixture returns skill, prompt, and theme paths at startup and reload, including a file-URL skill path. Both sides expand startup and reloaded skill/prompt content with four provider requests and zero scenario errors. Full pair differs by 212,720 terminal-state fields, 126,434 render fields, and HTTP/system-prompt traces; same-Pi calibration matches normalized terminal state and HTTP. Exact-head CI 37961269172 passes 1,220 tests with zero skips. See docs/parity/fixtures/extension-resource-discovery-current-pi-2026-10-09.md."
       ],
       "dependencies": []
     },
@@ -877,10 +881,12 @@
       ],
       "implementation": [
         "ExtensionRegistration.AddTool(AIFunction, PiSharpToolRenderer) can attach per-tool call/result callbacks. PiSharpToolRenderView contains plain spans with semantic theme styles; render context includes tool-call ID, working directory, a JSON-safe argument snapshot, execution/result flags, details, images and error text.",
-        "TerminalToolPresentation invokes callbacks at the lifecycle boundary, catches failures and uses the existing safe fallback; callbacks are synchronous and returned text/views are sanitized and bounded. TerminalScreen stores host-owned views for theme re-rendering instead of retaining plugin delegates, so extension catalog reload can release the prior load context."
+        "TerminalToolPresentation invokes callbacks at the lifecycle boundary, catches failures and uses the existing safe fallback; callbacks are synchronous and returned text/views are sanitized and bounded. TerminalScreen stores host-owned views for theme re-rendering instead of retaining plugin delegates, so extension catalog reload can release the prior load context.",
+        "ExtensionRegistration.AddResourceDiscoveryHandler adds ordered asynchronous startup/reload resource callbacks for skills, prompts, and themes; broader Pi extension compatibility remains open."
       ],
       "evidence": [
-        "ExtensionCatalogTests.RegistrationStoresSafeCallAndResultRenderersByToolName validates registration and lookup. InteractiveTranscriptTests cover safe text, stable call context and exception fallback; TerminalScreenTests cover palette re-rendering; ExtensionCatalogTests exercise a compiled trusted extension tool through PiAgent.RunEventsAsync and render both call/result events. Focused UI/extension tests pass 32/32 locally; TerminalPtyTests.ActiveRunStreamsExtensionToolThroughLinuxPtyAndRestoresTheTerminal passes 1/1 against a loopback provider and Linux PTY. Local format verification, warnings-as-errors build and the 510/510 suite pass; Linux CI run 36182423444 passes all gates on exact code commit e50ea5786038f5657869e1a881ceaec028c263d0. No Pi component differential."
+        "ExtensionCatalogTests.RegistrationStoresSafeCallAndResultRenderersByToolName validates registration and lookup. InteractiveTranscriptTests cover safe text, stable call context and exception fallback; TerminalScreenTests cover palette re-rendering; ExtensionCatalogTests exercise a compiled trusted extension tool through PiAgent.RunEventsAsync and render both call/result events. Focused UI/extension tests pass 32/32 locally; TerminalPtyTests.ActiveRunStreamsExtensionToolThroughLinuxPtyAndRestoresTheTerminal passes 1/1 against a loopback provider and Linux PTY. Local format verification, warnings-as-errors build and the 510/510 suite pass; Linux CI run 36182423444 passes all gates on exact code commit e50ea5786038f5657869e1a881ceaec028c263d0. No Pi component differential.",
+        "At Pi f1b2e77f5b13b2a199b1052cb79c235451afe7d7 / PiSharp 7b1fb8a319a39d25f9ec683c2ca3048eacd07e2f, a paired PTY fixture returns skill, prompt, and theme paths at startup and reload, including a file-URL skill path. Both sides expand startup and reloaded skill/prompt content with four provider requests and zero scenario errors. Full pair differs by 212,720 terminal-state fields, 126,434 render fields, and HTTP/system-prompt traces; same-Pi calibration matches normalized terminal state and HTTP. Exact-head CI 37961269172 passes 1,220 tests with zero skips. See docs/parity/fixtures/extension-resource-discovery-current-pi-2026-10-09.md."
       ],
       "dependencies": []
     },
@@ -1050,7 +1056,8 @@
         "tests/PiSharp.Tests/ResourceCatalogTests.cs: resource discovery, explicit paths, expansion and precedence",
         "tests/PiSharp.Tests/ExtensionCatalogTests.cs: native extension command fixture; tests/PiSharp.Tests/RpcModeTests.cs: get_commands",
         "RpcCommandDiscoveryProcessTests covers explicit prompt/skill/extension metadata, absent descriptions, Pi prompt fallback descriptions, auto-discovery scopes and project-before-user order. Direct Pi process inspection at 2b0a123de98318c2ff8069661721ce0c3794c34e confirmed these sourceInfo values and ordering; provider-specific command contributors and full command-list differential remain open.",
-        "RpcExtensionCommandProcessTests covers active-run invocation, handled success/failure and event/response order. Exact pushed head fc2193cc9d80c7257a682797388515ec9de6a66d CI run 36309452502 passed format/build but failed two unrelated provider/compaction tests; current local harness corrections pass format, warnings-as-errors build, 647/647 full tests, 25 overflow cases and 30 repeated compaction runs. Corrected exact-head CI remains pending."
+        "RpcExtensionCommandProcessTests covers active-run invocation, handled success/failure and event/response order. Exact pushed head fc2193cc9d80c7257a682797388515ec9de6a66d CI run 36309452502 passed format/build but failed two unrelated provider/compaction tests; current local harness corrections pass format, warnings-as-errors build, 647/647 full tests, 25 overflow cases and 30 repeated compaction runs. Corrected exact-head CI remains pending.",
+        "Extension resource discovery is covered by a compiled native extension PTY fixture at current Pi f1b2e77/PiSharp 7b1fb8a; dynamic command/provider contributors, complete request traces and screen parity remain open. See docs/parity/fixtures/extension-resource-discovery-current-pi-2026-10-09.md."
       ],
       "dependencies": []
     },
@@ -1133,12 +1140,13 @@
         "Test parsed flags, conflict/recovery and process behaviour"
       ],
       "implementation": [
-        "Partial: CLI and resource/extension loaders accept repeatable explicit skill, prompt-template, and .NET extension paths even with corresponding discovery disabled; project auto-discovery is trust-gated. Themes and Pi extension APIs remain absent.",
+        "Partial: CLI and resource/extension loaders accept repeatable explicit skill, prompt-template, and .NET extension paths even with corresponding discovery disabled; project auto-discovery is trust-gated. Native .NET extensions support startup/reload resource-discovery handlers for skills, prompts, and themes; broader Pi extension APIs remain incomplete.",
         "The `--theme`, `--use-theme`, and `--no-themes` flags are parsed and applied. Explicit theme files/directories are repeatable and cwd-relative; `--no-themes` suppresses discovered/configured user and trusted-project themes but keeps built-ins/system and explicit CLI paths. `--use-theme` is an interactive-only startup override and an explicit saved theme replaces it."
       ],
       "evidence": [
         "tests/PiSharp.Tests/{ResourceCatalogTests,ExtensionCatalogTests,ProviderModelRuntimeTests}.cs exercise duplicate precedence, opt-in paths, HTTP provider request content and PTY extension command behavior. Upstream package resolution and trust diagnostics still differ.",
-        "CliThemeArgumentsTests covers values/repeatability and missing arguments; TerminalThemeTests covers explicit nested paths with discovery disabled; CliThemeProcessTests verifies the unique custom footer color in a Linux PTY with all three flags. Current Pi args.test.ts, resource-loader.ts, resource-loader-theme.test.ts and docs/cli.md were inspected at e1787702d32e0a7fd7387840c918faa4d1286187. Exact-head Linux CI run 36420934092 passed format, warnings-as-errors build and 729/729 tests (0 skipped)."
+        "CliThemeArgumentsTests covers values/repeatability and missing arguments; TerminalThemeTests covers explicit nested paths with discovery disabled; CliThemeProcessTests verifies the unique custom footer color in a Linux PTY with all three flags. Current Pi args.test.ts, resource-loader.ts, resource-loader-theme.test.ts and docs/cli.md were inspected at e1787702d32e0a7fd7387840c918faa4d1286187. Exact-head Linux CI run 36420934092 passed format, warnings-as-errors build and 729/729 tests (0 skipped).",
+        "At Pi f1b2e77f5b13b2a199b1052cb79c235451afe7d7 / PiSharp 7b1fb8a319a39d25f9ec683c2ca3048eacd07e2f, a paired PTY fixture returns skill, prompt, and theme paths at startup and reload, including a file-URL skill path. Both sides expand startup and reloaded skill/prompt content with four provider requests and zero scenario errors. Full pair differs by 212,720 terminal-state fields, 126,434 render fields, and HTTP/system-prompt traces; same-Pi calibration matches normalized terminal state and HTTP. Exact-head CI 37961269172 passes 1,220 tests with zero skips. See docs/parity/fixtures/extension-resource-discovery-current-pi-2026-10-09.md."
       ],
       "dependencies": []
     },
@@ -3701,13 +3709,14 @@
       ],
       "implementation": [
         "PiSharp ExtensionRegistration exposes native tools, commands, safe terminal renderers and direct RPC Bash handlers. PiSharpToolRegistration now also supplies exposure, namespace, default activation, loadout projection and nested invocation controls.",
-        "PiSharpToolExecutionContext and the durable wrapper provide shared nested execution, lifecycle/persistence and call/result hooks with allow/block decisions. ExtensionCatalog now loads built-ins through ExtensionRegistration with builtin: source identity, trust-gated configured paths, explicit loading, disable rules and reload construction. ExtensionRegistration now exposes ordered asynchronous provider-context transforms, wired through PiAgent and ObservedChatClient after context projection and before provider-only repair and image preparation. Transforms receive copied messages and known mutable text/tool content, run on initial, tool-loop and context-overflow retry requests, and do not persist changes into conversation history. Registrations are captured when an agent is created. Extension state, late/dynamic registration, provider/model, MCP server, resource, keybinding and interactive UI registration remain open."
+        "PiSharpToolExecutionContext and the durable wrapper provide shared nested execution, lifecycle/persistence and call/result hooks with allow/block decisions. ExtensionCatalog now loads built-ins through ExtensionRegistration with builtin: source identity, trust-gated configured paths, explicit loading, disable rules and reload construction. ExtensionRegistration now exposes ordered asynchronous provider-context transforms, wired through PiAgent and ObservedChatClient after context projection and before provider-only repair and image preparation. Transforms receive copied messages and known mutable text/tool content, run on initial, tool-loop and context-overflow retry requests, and do not persist changes into conversation history. Registrations are captured when an agent is created. Native extensions now register ordered asynchronous startup/reload discovery callbacks for skills, prompts, and themes; resource behavior has paired current-Pi semantic evidence but full screen/request parity remains open. Extension state, late/dynamic registration, provider/model, MCP server, keybinding and interactive UI registration remain open."
       ],
       "evidence": [
         "Current Pi ExtensionAPI, AgentSession tool hooks, virtual-model registration, MCP server registration and builtin extension-resource loading were inspected at 4259686d9290c0d73ae7192b796aee3e530a9779. The current upstream targeted resource/OAuth tests pass 7/7.",
         "PiSharp exact head e71d6f19252b4c5ed8a8b800b975f678927a1d78 passes Linux CI run 36558027552 with 824/824 tests. ExtensionCatalogTests and ProjectRuntimeContextTests cover builtin: identity, explicit loading, trust and disable behavior; the current built-in/search slice passes 827/827 local tests and awaits exact-head CI. Broader extension lifecycle and permission UI remain absent.",
         "ExtensionContextTransformTests passes locally 1/1: ordered transforms run for both provider requests in a tool loop, transformed prompt/tool-call arguments reach the provider, and canonical ConversationSession history retains the original prompt and tool arguments.",
-        "dotnet format PiSharp.slnx --verify-no-changes --no-restore and dotnet build PiSharp.slnx --no-restore -warnaserror pass (0 warnings/errors). Full local suite: 1,067/1,068 passed, zero skipped; CliThemeProcessTests.ExplicitThemePathAndUseThemeApplyThroughLinuxPtyWithNoThemes timed out and reproduced in isolation."
+        "dotnet format PiSharp.slnx --verify-no-changes --no-restore and dotnet build PiSharp.slnx --no-restore -warnaserror pass (0 warnings/errors). Full local suite: 1,067/1,068 passed, zero skipped; CliThemeProcessTests.ExplicitThemePathAndUseThemeApplyThroughLinuxPtyWithNoThemes timed out and reproduced in isolation.",
+        "At Pi f1b2e77f5b13b2a199b1052cb79c235451afe7d7 / PiSharp 7b1fb8a319a39d25f9ec683c2ca3048eacd07e2f, a paired PTY fixture returns skill, prompt, and theme paths at startup and reload, including a file-URL skill path. Both sides expand startup and reloaded skill/prompt content with four provider requests and zero scenario errors. Full pair differs by 212,720 terminal-state fields, 126,434 render fields, and HTTP/system-prompt traces; same-Pi calibration matches normalized terminal state and HTTP. Exact-head CI 37961269172 passes 1,220 tests with zero skips. See docs/parity/fixtures/extension-resource-discovery-current-pi-2026-10-09.md."
       ],
       "dependencies": [
         "tool-exposure-loadout",
@@ -3725,11 +3734,13 @@
         "Support normal CLI package-resource installation/distribution while using shared extension loading for in-scope built-in Codemode, MCP, tool-search and llama.cpp capabilities."
       ],
       "implementation": [
-        "PiSharp ExtensionCatalog resolves registered builtin:<name> definitions through normal source identity, explicit loading, --no-extensions and user/trusted-project enable/disable rules. Tool-search and Codemode use this path. MCP is still initialized by a separate runtime call, so builtin:mcp source ownership and lifecycle are not unified; duplicate built-in replacement also lacks Pi's warning behavior."
+        "PiSharp ExtensionCatalog resolves registered builtin:<name> definitions through normal source identity, explicit loading, --no-extensions and user/trusted-project enable/disable rules. Tool-search and Codemode use this path. MCP is still initialized by a separate runtime call, so builtin:mcp source ownership and lifecycle are not unified; duplicate built-in replacement also lacks Pi's warning behavior.",
+        "Native extension resource-discovery handlers contribute skill/prompt/theme paths during startup and reload; this is separate from builtin extension-resource resolution."
       ],
       "evidence": [
         "ExtensionCatalogTests.BuiltinsUseExtensionRegistrationAndRespectExplicitTrustAndDisableRules covers normal registration, stable builtin source identity, discovery disable, wildcard exclusion, explicit re-enable, trusted-project disable and explicit loading despite --no-extensions. ProjectRuntimeContextTests also verifies explicit builtin:tool-search loading with --no-extensions in an untrusted project.",
-        "Current Pi commit 9d1a650 adds a warning when a replaceable built-in is overridden. At Pi source 02eed88fd8912e54a804ddebd409e2e4c08ac5ef, resource-loader tests passed 50/50 after ignored generated model data was hydrated from live catalogs; this is targeted test evidence, not a reproducible catalog snapshot."
+        "Current Pi commit 9d1a650 adds a warning when a replaceable built-in is overridden. At Pi source 02eed88fd8912e54a804ddebd409e2e4c08ac5ef, resource-loader tests passed 50/50 after ignored generated model data was hydrated from live catalogs; this is targeted test evidence, not a reproducible catalog snapshot.",
+        "At Pi f1b2e77f5b13b2a199b1052cb79c235451afe7d7 / PiSharp 7b1fb8a319a39d25f9ec683c2ca3048eacd07e2f, a paired PTY fixture returns skill, prompt, and theme paths at startup and reload, including a file-URL skill path. Both sides expand startup and reloaded skill/prompt content with four provider requests and zero scenario errors. Full pair differs by 212,720 terminal-state fields, 126,434 render fields, and HTTP/system-prompt traces; same-Pi calibration matches normalized terminal state and HTTP. Exact-head CI 37961269172 passes 1,220 tests with zero skips. See docs/parity/fixtures/extension-resource-discovery-current-pi-2026-10-09.md."
       ],
       "dependencies": [
         "extension-orchestration-api"
@@ -4277,11 +4288,11 @@
       "MATCHED": 7
     },
     "fixture": "docs/parity/fixtures/upstream-delta-audit-2026-10-09.md",
-    "next": "continue-current-pi-extension-resource-discovery-and-trust-screen-differential",
-    "current_item": "8d6205a4d5b8d4bdf111a76a5785f86ffa860666",
+    "next": "continue-current-pi-trusted-project-settings-and-startup-trust-terminal-differential",
+    "current_item": "7b1fb8a319a39d25f9ec683c2ca3048eacd07e2f",
     "current_item_status": "pushed_ci_passed",
-    "current_item_local_evidence": "PiSharp 8d6205a4d5b8d4bdf111a76a5785f86ffa860666 fixes global defaultProjectTrust semantics: invalid global values/types fall back to ask, project-scope values do not override global settings, and stored decisions/--approve/--no-approve retain Pi precedence. A fail-first application-process differential had five mismatches across eight scenarios; the post-fix nine-scenario differential matches Pi f1b2e77f5b13b2a199b1052cb79c235451afe7d7. Focused settings/process tests pass 46/46; local format and warnings-as-errors build pass; full local validation passes 1,218/1,218 .NET tests, 24/24 terminal tests and 20/20 Python tests. Exact-head Linux CI 37955148011 passes every gate with zero skips. Evidence: docs/parity/fixtures/default-project-trust-current-pi-2026-10-09.json and docs/parity/fixtures/default-project-trust-fail-first-current-pi-2026-10-09.json. Trusted-project reload/resource discovery and startup/selector screen parity remain open.",
-    "next_after_ci": "continue-current-pi-resource-discovery-extension-events-and-terminal-trust-startup-parity",
+    "current_item_local_evidence": "PiSharp 7b1fb8a319a39d25f9ec683c2ca3048eacd07e2f adds ordered asynchronous extension resource discovery on startup and reload for skills, prompts, and themes. The paired current-Pi flow expands startup and reloaded skill/prompt resources on both products with four provider requests and no scenario errors. Full terminal and request comparison remains open: 212,720 state-field and 126,434 render-field differences with different HTTP/system-prompt traces; same-Pi calibration matches normalized state and HTTP. Exact-head Linux CI 37961269172 passes standard restore, format, warnings-as-errors build, terminal harnesses and 1,220/1,220 tests with zero skips. See docs/parity/fixtures/extension-resource-discovery-current-pi-2026-10-09.md. Continue trusted-project settings and startup/trust screen parity.",
+    "next_after_ci": "continue-current-pi-trusted-project-settings-and-startup-trust-terminal-differential",
     "completed": [
       "65117e31f242daa8e0a17dbd2810f7bb92bf4087",
       "7a11fe1c723b942fa093edb8b00f051ddb9b6627",
@@ -4308,14 +4319,16 @@
       "78bc0ffc9523cc28aa1f8bc05777ff4812b3f1e4",
       "6ec1f514943f4c8841d3df69f2fc7cad99bc9f0b",
       "5b32bd97170ef8963a3726bb466693dc65aa511e",
-      "8d6205a4d5b8d4bdf111a76a5785f86ffa860666"
+      "8d6205a4d5b8d4bdf111a76a5785f86ffa860666",
+      "7b1fb8a319a39d25f9ec683c2ca3048eacd07e2f"
     ],
-    "ci_run": "37955148011",
-    "latest_published_source_head": "8d6205a4d5b8d4bdf111a76a5785f86ffa860666",
+    "ci_run": "37961269172",
+    "latest_published_source_head": "7b1fb8a319a39d25f9ec683c2ca3048eacd07e2f",
     "latest_published_ci_runs": [
       "37907627495",
       "37953004947",
-      "37955148011"
+      "37955148011",
+      "37961269172"
     ],
     "official_mcp_conformance": {
       "package": "@modelcontextprotocol/conformance@0.2.0-alpha.11",
@@ -4398,10 +4411,10 @@
     ],
     "current_checkpoint": {
       "validated_pi_head": "f1b2e77f5b13b2a199b1052cb79c235451afe7d7",
-      "validated_pisharp_source_head": "8d6205a4d5b8d4bdf111a76a5785f86ffa860666",
-      "exact_head_ci_run": "37955148011",
+      "validated_pisharp_source_head": "7b1fb8a319a39d25f9ec683c2ca3048eacd07e2f",
+      "exact_head_ci_run": "37961269172",
       "exact_head_ci": "success",
-      "tests": "1218 passed, 0 failed, 0 skipped",
+      "tests": "1220 passed, 0 failed, 0 skipped",
       "active_family": "Resources / instructions and trust",
       "terminal_calibration": {
         "pi_source_head": "6fb2e7815167e6b19006fc526d1a5d0f5f998787",
@@ -4424,7 +4437,8 @@
         "The 195-commit incremental audit is current through f1b2e77. The final complete audit, remaining ledger capabilities, official MCP conformance and architecture risk review remain open.",
         "PiSharp 83fad4d6 fixes null-valued trust-store compatibility. The three-case current-Pi process differential matches, focused Pi trust/settings tests pass 53/53, and exact-head CI 37953004947 passes 1,217 tests with zero skips. defaultProjectTrust precedence, trusted-project settings, resource reload/discovery and startup/trust selector terminal parity remain open.",
         "PiSharp 8d6205a4d5b8d4bdf111a76a5785f86ffa860666 fixes global defaultProjectTrust semantics: invalid global values/types fall back to ask, project-scope values do not override global settings, and stored decisions/--approve/--no-approve retain Pi precedence. A fail-first application-process differential had five mismatches across eight scenarios; the post-fix nine-scenario differential matches Pi f1b2e77f5b13b2a199b1052cb79c235451afe7d7. Focused settings/process tests pass 46/46; local format and warnings-as-errors build pass; full local validation passes 1,218/1,218 .NET tests, 24/24 terminal tests and 20/20 Python tests. Exact-head Linux CI 37955148011 passes every gate with zero skips. Evidence: docs/parity/fixtures/default-project-trust-current-pi-2026-10-09.json and docs/parity/fixtures/default-project-trust-fail-first-current-pi-2026-10-09.json. Trusted-project reload/resource discovery and startup/selector screen parity remain open.",
-        "Paired Pi f1b2e77f5b13b2a199b1052cb79c235451afe7d7 / PiSharp 8d6205a4d5b8d4bdf111a76a5785f86ffa860666 PTY flow changes trusted project defaultTools from read to bash, adds a project SKILL.md, runs /reload, and invokes the new skill. Both sides send two chat requests with tools [read], then [read,bash], and expand the initial and reloaded skill content with zero scenario errors. Full terminal comparison remains open: 111,927 field differences, 71,800 render differences, 423 control-boundary differences, and non-matching raw/HTTP traces. Same-Pi calibration has two spinner-phase render differences. See docs/parity/fixtures/project-settings-reload-current-pi-2026-10-09.md and its exact captures."
+        "Paired Pi f1b2e77f5b13b2a199b1052cb79c235451afe7d7 / PiSharp 8d6205a4d5b8d4bdf111a76a5785f86ffa860666 PTY flow changes trusted project defaultTools from read to bash, adds a project SKILL.md, runs /reload, and invokes the new skill. Both sides send two chat requests with tools [read], then [read,bash], and expand the initial and reloaded skill content with zero scenario errors. Full terminal comparison remains open: 111,927 field differences, 71,800 render differences, 423 control-boundary differences, and non-matching raw/HTTP traces. Same-Pi calibration has two spinner-phase render differences. See docs/parity/fixtures/project-settings-reload-current-pi-2026-10-09.md and its exact captures.",
+        "At Pi f1b2e77 / PiSharp 7b1fb8a, extension resource discovery returns startup/reload skill, prompt, and theme paths and both products expand startup/reloaded resources without scenario errors. The paired screen/request traces differ (212,720 state fields; 126,434 render fields; HTTP/system-prompt mismatch); same-Pi calibration matches normalized state and HTTP. See docs/parity/fixtures/extension-resource-discovery-current-pi-2026-10-09.md."
       ],
       "next_action": "Continue Resources / instructions and trust against freshly fetched Pi f1b2e77. Differential-test extension resources_discover startup/reload behavior and trusted-project resource discovery, then reduce remaining startup and /trust terminal differences.",
       "terminal_comparison": {
@@ -4502,13 +4516,29 @@
           "total": 41,
           "pi_head": "f1b2e77f5b13b2a199b1052cb79c235451afe7d7"
         }
+      },
+      "resource_discovery_comparison": {
+        "pi_source_head": "f1b2e77f5b13b2a199b1052cb79c235451afe7d7",
+        "pisharp_source_head": "7b1fb8a319a39d25f9ec683c2ca3048eacd07e2f",
+        "behavior_match": true,
+        "startup_and_reload": [
+          "skills",
+          "prompts",
+          "themes"
+        ],
+        "paired_terminal_state_differences": 212720,
+        "paired_render_differences": 126434,
+        "paired_http_match": false,
+        "same_pi_calibration_terminal_state_match": true,
+        "same_pi_calibration_http_match": true,
+        "evidence": "docs/parity/fixtures/extension-resource-discovery-current-pi-2026-10-09.md"
       }
     }
   },
   "execution_policy": {
     "updated": "2026-10-09",
     "priority": [
-      "Continue Resources / instructions and trust against current Pi f1b2e77f5b13b2a199b1052cb79c235451afe7d7: defaultProjectTrust, null trust-store values, and scoped /reload tool/skill behavior match; broader trust-settings, extension resource discovery and exact startup/selector rendering remain open.",
+      "Continue Resources / instructions and trust against current Pi f1b2e77f5b13b2a199b1052cb79c235451afe7d7: defaultProjectTrust, null trust-store values, scoped reload behavior, and extension startup/reload resource discovery for skills/prompts/themes have evidence; broader trusted-project settings and exact startup/selector/resource presentation remain open.",
       "Continue the highest-leverage unresolved ledger families, including official MCP conformance and broad interactive/terminal parity.",
       "Refresh both repositories at family boundaries and complete a fresh final source audit, required evidence and architecture-risk reconciliation before declaring parity."
     ],

@@ -1,0 +1,40 @@
+{
+  "piSha": "f1b2e77f5b13b2a199b1052cb79c235451afe7d7",
+  "pisharpSha": "7b1fb8a319a39d25f9ec683c2ca3048eacd07e2f",
+  "fixture": "extension-resource-discovery-reload",
+  "behaviorMatch": true,
+  "behavior": {
+    "pi": {
+      "chatRequests": 4,
+      "startupSkillAndPromptExpanded": true,
+      "reloadedSkillAndPromptExpanded": true,
+      "scenarioError": null
+    },
+    "pisharp": {
+      "chatRequests": 4,
+      "startupSkillAndPromptExpanded": true,
+      "reloadedSkillAndPromptExpanded": true,
+      "scenarioError": null
+    }
+  },
+  "fullTerminalMatch": false,
+  "fullHttpMatch": false,
+  "rawMatch": false,
+  "terminalDifferences": 212720,
+  "renderDifferences": 126434,
+  "scenarioErrors": {},
+  "evidence": {
+    "report": "docs/parity/fixtures/extension-resource-discovery-current-pi-2026-10-09/paired/report.json",
+    "capture": "docs/parity/fixtures/extension-resource-discovery-current-pi-2026-10-09/paired/120x40-dark-fullscreen.json.gz"
+  },
+  "samePiCalibration": {
+    "piSha": "f1b2e77f5b13b2a199b1052cb79c235451afe7d7",
+    "terminalMatch": true,
+    "httpMatch": true,
+    "rawMatch": false,
+    "terminalDifferences": 0,
+    "renderDifferences": 0,
+    "controlBoundaryDifferences": 1,
+    "scenarioErrors": {}
+  }
+}
