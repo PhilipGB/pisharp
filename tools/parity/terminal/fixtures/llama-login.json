@@ -18,7 +18,8 @@
   "actions": [
     { "id": "startup", "expect": "fixture-model" },
     { "id": "url-prompt", "send": "/login llama.cpp\r", "expect": "llama.cpp server URL" },
-    { "id": "default-url", "send": "\r", "expect": "API key (optional)" },
+    { "id": "user-entered-router-root-url", "send": "{router}/v1/", "expect": "/v1/" },
+    { "id": "submit-router-root-url", "send": "\r", "expect": "API key (optional)" },
     { "id": "api-key-input", "send": "fixture-secret", "expect": "fixture-secret" },
     { "id": "api-key-submit", "send": "\r", "expect": "Saved API key for llama.cpp" },
     {

@@ -167,7 +167,10 @@ def run_product(label, command, scenario, dimensions, theme, mode, server):
                 continue
             mark, control_mark = len(terminal.raw), len(terminal.trace.events)
             if 'send' in action:
-                terminal.send(action['send'])
+                value = action['send']
+                if isinstance(value, str):
+                    value = value.replace('{router}', server.url).replace('{agent}', str(agent))
+                terminal.send(value)
             if 'resize' in action:
                 terminal.resize(**action['resize'])
             wait_gates_after = action.get('waitGatesAfter', [])
@@ -179,14 +182,6 @@ def run_product(label, command, scenario, dimensions, theme, mode, server):
             poll_model = action.get('waitForModelPoll')
             if poll_model and not server.wait_for_model_poll(poll_model, timeout=action.get('gateTimeout', 20)):
                 raise TimeoutError(f'Fixture model poll did not reach its gate: {poll_model}')
-            expected_model_status = action.get('expectModelStatus')
-            if expected_model_status:
-                model = next((value for value in server.models
-                              if value.get('id') == expected_model_status['id']), None)
-                actual_status = model.get('status', {}).get('value') if model else None
-                if actual_status != expected_model_status['value']:
-                    raise RuntimeError(f"Fixture model {expected_model_status['id']} status was {actual_status!r}, "
-                                       f"expected {expected_model_status['value']!r}.")
             if action.get('exit'):
                 deadline = time.monotonic() + 10
                 while not terminal.closed and time.monotonic() < deadline:
@@ -204,6 +199,14 @@ def run_product(label, command, scenario, dimensions, theme, mode, server):
                                         quiet_ms=action.get('quietMs', 200),
                                         absent=action.get('notExpect'),
                                         after=0 if 'resize' in action or action.get('allowStaticFrame') else mark)
+            expected_model_status = action.get('expectModelStatus')
+            if expected_model_status:
+                model = next((value for value in server.models
+                              if value.get('id') == expected_model_status['id']), None)
+                actual_status = model.get('status', {}).get('value') if model else None
+                if actual_status != expected_model_status['value']:
+                    raise RuntimeError(f"Fixture model {expected_model_status['id']} status was {actual_status!r}, "
+                                       f"expected {expected_model_status['value']!r}.")
             frames.append(dict(id=action['id'], state=frame, controls=terminal.trace.events[control_mark:], controlPending=terminal.trace.pending.hex()))
             http_by_frame.append(dict(id=action['id'], requests=server.requests[request_mark:]))
         prior_raw.extend(terminal.raw)

@@ -183,14 +183,14 @@ internal sealed class TerminalLlamaManager(ProviderModelRuntime runtime, Termina
     private async Task UnloadModelAsync(LlamaRouterClient client, LlamaRouterModelInfo model,
         CancellationToken cancellationToken)
     {
-        if (editor.ShowInlineSelectionList("Unload model?", new[]
+        if (editor.ShowInlineSelectionList($"Unload model?\n{model.Id}", new[]
             {
                 new TerminalSelectionOption<bool>("yes", true, "Yes"),
                 new TerminalSelectionOption<bool>("no", false, "No")
-            }, [model.Id, ""], "enter select • escape/ctrl+c cancel",
+            }, [""], "enter select • escape/ctrl+c cancel",
             preservePanelAfterSelection: true)?.Option.Value != true) return;
         await client.UnloadAndWaitAsync(model.Id, cancellationToken).ConfigureAwait(false);
-        _ = await runtime.RefreshLlamaRouterCatalogAsync(client, cancellationToken).ConfigureAwait(false);
+        _ = await ReadCatalogSnapshotAsync(client, cancellationToken).ConfigureAwait(false);
         editor.AppendStatusMessage($"Unloaded {model.Id}");
     }
 
