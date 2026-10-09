@@ -1,0 +1,102 @@
+{
+  "pisharpSha": "83fad4d62a62e354cbb8d2d3d7d68a386242e037",
+  "piSha": "f1b2e77f5b13b2a199b1052cb79c235451afe7d7",
+  "normalization": "Canonical project paths are reduced to relative labels. Compare inherited decisions and exact persisted null/boolean entries after removing the child null entry.",
+  "scenarios": [
+    {
+      "id": "child-null-inherits-trusted-parent",
+      "parentDecision": true
+    },
+    {
+      "id": "child-null-inherits-denied-parent",
+      "parentDecision": false
+    },
+    {
+      "id": "null-child-and-parent-have-no-decision",
+      "parentDecision": null
+    }
+  ],
+  "pi": [
+    {
+      "id": "child-null-inherits-trusted-parent",
+      "before": {
+        "path": "parent",
+        "decision": true
+      },
+      "after": {
+        "path": "parent",
+        "decision": true
+      },
+      "persisted": {
+        "parent": true,
+        "unrelated": null
+      }
+    },
+    {
+      "id": "child-null-inherits-denied-parent",
+      "before": {
+        "path": "parent",
+        "decision": false
+      },
+      "after": {
+        "path": "parent",
+        "decision": false
+      },
+      "persisted": {
+        "parent": false,
+        "unrelated": null
+      }
+    },
+    {
+      "id": "null-child-and-parent-have-no-decision",
+      "before": null,
+      "after": null,
+      "persisted": {
+        "parent": null,
+        "unrelated": null
+      }
+    }
+  ],
+  "pisharp": [
+    {
+      "id": "child-null-inherits-trusted-parent",
+      "before": {
+        "path": "parent",
+        "decision": true
+      },
+      "after": {
+        "path": "parent",
+        "decision": true
+      },
+      "persisted": {
+        "parent": true,
+        "unrelated": null
+      }
+    },
+    {
+      "id": "child-null-inherits-denied-parent",
+      "before": {
+        "path": "parent",
+        "decision": false
+      },
+      "after": {
+        "path": "parent",
+        "decision": false
+      },
+      "persisted": {
+        "parent": false,
+        "unrelated": null
+      }
+    },
+    {
+      "id": "null-child-and-parent-have-no-decision",
+      "before": null,
+      "after": null,
+      "persisted": {
+        "parent": null,
+        "unrelated": null
+      }
+    }
+  ],
+  "match": true
+}

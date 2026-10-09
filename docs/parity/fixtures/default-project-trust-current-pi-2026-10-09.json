@@ -1,0 +1,206 @@
+{
+  "piSha": "f1b2e77f5b13b2a199b1052cb79c235451afe7d7",
+  "pisharpSha": "8d6205a4d5b8d4bdf111a76a5785f86ffa860666",
+  "normalization": "Launch both CLI applications with isolated agent directories, an offline unauthenticated OpenAI request, a protected project settings file and identical trust/default inputs. Compare whether each process reaches provider authentication or rejects trust settings; exit codes and product-specific diagnostics are recorded separately.",
+  "scenarios": [
+    {
+      "id": "malformed-global-string-falls-back-to-ask",
+      "user": {
+        "defaultProjectTrust": "sometimes"
+      }
+    },
+    {
+      "id": "malformed-global-type-falls-back-to-ask",
+      "user": {
+        "defaultProjectTrust": true
+      }
+    },
+    {
+      "id": "project-always-does-not-override-global-never",
+      "user": {
+        "defaultProjectTrust": "never"
+      },
+      "project": {
+        "defaultProjectTrust": "always",
+        "theme": "light"
+      }
+    },
+    {
+      "id": "project-never-does-not-override-global-always",
+      "user": {
+        "defaultProjectTrust": "always"
+      },
+      "project": {
+        "defaultProjectTrust": "never",
+        "theme": "light"
+      }
+    },
+    {
+      "id": "malformed-project-setting-does-not-fail-trusted-project",
+      "user": {
+        "defaultProjectTrust": "always"
+      },
+      "project": {
+        "defaultProjectTrust": true,
+        "theme": "light"
+      }
+    },
+    {
+      "id": "saved-deny-precedes-global-always",
+      "user": {
+        "defaultProjectTrust": "always"
+      },
+      "project": {
+        "defaultProjectTrust": "never",
+        "theme": "light"
+      },
+      "saved": false
+    },
+    {
+      "id": "saved-allow-precedes-global-never",
+      "user": {
+        "defaultProjectTrust": "never"
+      },
+      "project": {
+        "defaultProjectTrust": "never",
+        "theme": "light"
+      },
+      "saved": true
+    },
+    {
+      "id": "approve-precedes-saved-deny",
+      "user": {
+        "defaultProjectTrust": "never"
+      },
+      "project": {
+        "defaultProjectTrust": "never",
+        "theme": "light"
+      },
+      "saved": false,
+      "override": "--approve"
+    },
+    {
+      "id": "no-approve-precedes-saved-allow",
+      "user": {
+        "defaultProjectTrust": "always"
+      },
+      "project": {
+        "defaultProjectTrust": "never",
+        "theme": "light"
+      },
+      "saved": true,
+      "override": "--no-approve"
+    }
+  ],
+  "results": [
+    {
+      "id": "malformed-global-string-falls-back-to-ask",
+      "pi": {
+        "outcome": "provider-auth-required",
+        "exitCode": 1
+      },
+      "pisharp": {
+        "outcome": "provider-auth-required",
+        "exitCode": 2
+      },
+      "match": true
+    },
+    {
+      "id": "malformed-global-type-falls-back-to-ask",
+      "pi": {
+        "outcome": "provider-auth-required",
+        "exitCode": 1
+      },
+      "pisharp": {
+        "outcome": "provider-auth-required",
+        "exitCode": 2
+      },
+      "match": true
+    },
+    {
+      "id": "project-always-does-not-override-global-never",
+      "pi": {
+        "outcome": "provider-auth-required",
+        "exitCode": 1
+      },
+      "pisharp": {
+        "outcome": "provider-auth-required",
+        "exitCode": 2
+      },
+      "match": true
+    },
+    {
+      "id": "project-never-does-not-override-global-always",
+      "pi": {
+        "outcome": "provider-auth-required",
+        "exitCode": 1
+      },
+      "pisharp": {
+        "outcome": "provider-auth-required",
+        "exitCode": 2
+      },
+      "match": true
+    },
+    {
+      "id": "malformed-project-setting-does-not-fail-trusted-project",
+      "pi": {
+        "outcome": "provider-auth-required",
+        "exitCode": 1
+      },
+      "pisharp": {
+        "outcome": "provider-auth-required",
+        "exitCode": 2
+      },
+      "match": true
+    },
+    {
+      "id": "saved-deny-precedes-global-always",
+      "pi": {
+        "outcome": "provider-auth-required",
+        "exitCode": 1
+      },
+      "pisharp": {
+        "outcome": "provider-auth-required",
+        "exitCode": 2
+      },
+      "match": true
+    },
+    {
+      "id": "saved-allow-precedes-global-never",
+      "pi": {
+        "outcome": "provider-auth-required",
+        "exitCode": 1
+      },
+      "pisharp": {
+        "outcome": "provider-auth-required",
+        "exitCode": 2
+      },
+      "match": true
+    },
+    {
+      "id": "approve-precedes-saved-deny",
+      "pi": {
+        "outcome": "provider-auth-required",
+        "exitCode": 1
+      },
+      "pisharp": {
+        "outcome": "provider-auth-required",
+        "exitCode": 2
+      },
+      "match": true
+    },
+    {
+      "id": "no-approve-precedes-saved-allow",
+      "pi": {
+        "outcome": "provider-auth-required",
+        "exitCode": 1
+      },
+      "pisharp": {
+        "outcome": "provider-auth-required",
+        "exitCode": 2
+      },
+      "match": true
+    }
+  ],
+  "match": true
+}

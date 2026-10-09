@@ -1,0 +1,31 @@
+{
+  "date": "2026-10-09",
+  "capability": "feature-resources-instructions-and-trust",
+  "scenario": "Store a trust decision for a real project directory, read it through a directory symlink alias, update it through the alias, then read the result through the real path.",
+  "pi": {
+    "source_head": "f1b2e77f5b13b2a199b1052cb79c235451afe7d7",
+    "implementation": "packages/coding-agent/src/core/trust-manager.ts:normalizeCwd/ProjectTrustStore",
+    "test_suite": "packages/coding-agent/test/trust-manager.test.ts:2/2 passed",
+    "direct_process_result": {
+      "read_through_alias_after_trusting_real_path": true,
+      "read_through_real_path_after_denying_alias": false,
+      "persisted_path_keys": "one canonical project path",
+      "match": true
+    }
+  },
+  "pisharp": {
+    "baseline_source_head": "78bc0ffc9523cc28aa1f8bc05777ff4812b3f1e4",
+    "fail_first_test": "TrustDecisionsUseTheCanonicalPathForSymbolicLinkAliases",
+    "baseline_result": "Failed: trust saved at the real directory returned null through the symlink alias.",
+    "source_head": "6ec1f514943f4c8841d3df69f2fc7cad99bc9f0b",
+    "implementation": "src/PiSharp.Runtime/Resources/CanonicalDirectoryPath.cs; ProjectTrust; ContextInstructions",
+    "focused_tests": "13/13 passed across ContextInstructionsTests and ProjectTrustTests",
+    "full_suite": "1202/1202 passed, 0 skipped",
+    "format": "passed",
+    "warnings_as_errors_build": "passed, 0 warnings and 0 errors",
+    "exact_head_ci_run": "37904094102",
+    "exact_head_ci_status": "success"
+  },
+  "result": "PiSharp now canonicalizes existing directory symlinks before trust lookups, writes and protected-resource checks; trust decisions through real and alias paths share one persisted entry.",
+  "evidence_boundary": "Pi current-source direct store invocation compared with PiSharp deterministic unit coverage; not an interactive /trust terminal-flow differential."
+}

@@ -1,0 +1,87 @@
+{
+  "id": "trusted-project-settings-reload",
+  "workingDirectory": "reload-project",
+  "settings": {
+    "quietStartup": true
+  },
+  "arguments": {
+    "pi": [
+      "--provider", "fixture", "--model", "fixture-model", "--models", "fixture-model",
+      "--no-session", "--offline", "--no-extensions", "--no-prompt-templates", "--no-context-files"
+    ],
+    "pisharp": [
+      "--provider", "fixture", "--model", "fixture-model", "--models", "fixture-model",
+      "--no-session", "--offline", "--no-extensions", "--no-prompt-templates", "--no-context-files"
+    ]
+  },
+  "projectFiles": {
+    "reload-project/.pi/settings.json": {
+      "defaultTools": ["read"]
+    },
+    "reload-project/.pi/skills/initial/SKILL.md": "---\nname: initial-check\ndescription: Initial project skill\n---\nUse the initial skill content.\n"
+  },
+  "files": {
+    "pi": {
+      "trust.json": {
+        "/tmp/pisharp-terminal-fixture-workspace/reload-project": true
+      }
+    },
+    "pisharp": {
+      "trust.json": {
+        "/tmp/pisharp-terminal-fixture-workspace/reload-project": true
+      }
+    }
+  },
+  "actions": [
+    {
+      "id": "startup",
+      "expect": "fixture-model"
+    },
+    {
+      "id": "send-before-reload",
+      "send": "/skill:initial-check first argument\r",
+      "expect": "fixture reply"
+    },
+    {
+      "id": "change-trusted-project-settings",
+      "writeFiles": {
+        "workspace": {
+          "reload-project/.pi/settings.json": {
+            "defaultTools": ["bash"]
+          },
+          "reload-project/.pi/skills/reloaded/SKILL.md": "---\nname: reloaded-check\ndescription: Re-discovered project skill\n---\nUse the reloaded skill content.\n"
+        }
+      },
+      "allowStaticFrame": true
+    },
+    {
+      "id": "reload",
+      "send": "/reload\r",
+      "expect": {
+        "pi": "Reloaded keybindings, extensions, skills, prompts, themes, and context files",
+        "pisharp": "Project resources and themes reloaded."
+      }
+    },
+    {
+      "id": "send-after-reload",
+      "send": "/skill:reloaded-check second argument\r",
+      "expect": "fixture reply"
+    },
+    {
+      "id": "quit",
+      "send": "/quit\r",
+      "exit": true
+    }
+  ],
+  "dimensions": [
+    {
+      "columns": 120,
+      "rows": 40
+    }
+  ],
+  "themes": ["dark"],
+  "modes": ["fullscreen"],
+  "terminal": {
+    "keyboardProtocol": "kitty"
+  }
+}

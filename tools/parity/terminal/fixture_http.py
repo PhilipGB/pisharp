@@ -257,20 +257,41 @@ class FixtureServer:
                         outer.wait_for_gate(response_gate)
                     self.send_json(dict(success=True))
                     return
+                if path == '/chat/completions' or path.endswith('/chat/completions'):
+                    model = body.get('model', 'fixture-model')
+                    if body.get('stream'):
+                        self.send_response(200)
+                        self.send_header('Content-Type', 'text/event-stream')
+                        self.send_header('Cache-Control', 'no-cache')
+                        self.end_headers()
+                        chunks = [
+                            dict(id='fixture-response', object='chat.completion.chunk', created=1,
+                                 model=model, choices=[dict(index=0,
+                                     delta=dict(role='assistant', content='fixture reply'), finish_reason=None)]),
+                            dict(id='fixture-response', object='chat.completion.chunk', created=1,
+                                 model=model, choices=[dict(index=0, delta={}, finish_reason='stop')]),
+                        ]
+                        if body.get('stream_options', {}).get('include_usage'):
+                            chunks.append(dict(id='fixture-response', object='chat.completion.chunk', created=1,
+                                               model=model, choices=[],
+                                               usage=dict(prompt_tokens=10, completion_tokens=3, total_tokens=13)))
+                        try:
+                            for chunk in chunks:
+                                self.wfile.write(('data: ' + json.dumps(chunk) + '\n\n').encode())
+                                self.wfile.flush()
+                            self.wfile.write(b'data: [DONE]\n\n')
+                            self.wfile.flush()
+                        except (BrokenPipeError, ConnectionResetError):
+                            pass
+                        return
+                    self.send_json(dict(id='fixture-response', object='chat.completion', created=1, model=model,
+                                        choices=[dict(index=0,
+                                            message=dict(role='assistant', content='fixture reply'),
+                                            finish_reason='stop')],
+                                        usage=dict(prompt_tokens=10, completion_tokens=3, total_tokens=13)))
+                    return
                 self.send_error(404)
-                self.send_response(200)
-                self.send_header('Content-Type', 'text/event-stream')
-                self.end_headers()
-                for index, content in enumerate(['## Fixture reply\n\n', '**bold** and `code`\n', '\n- first\n- second\n']):
-                    chunk = dict(id='fixture-response', object='chat.completion.chunk', created=1,
-                                 model='fixture-model', choices=[dict(index=0, delta=dict(role='assistant', content=content), finish_reason=None)])
-                    self.wfile.write(('data: ' + json.dumps(chunk) + '\n\n').encode())
-                    self.wfile.flush()
-                chunk = dict(id='fixture-response', object='chat.completion.chunk', created=1,
-                             model='fixture-model', choices=[dict(index=0, delta={}, finish_reason='stop')],
-                             usage=dict(prompt_tokens=10, completion_tokens=12, total_tokens=22))
-                self.wfile.write(('data: ' + json.dumps(chunk) + '\n\ndata: [DONE]\n\n').encode())
-                self.wfile.flush()
+                return
 
         self.server = ThreadingHTTPServer(('127.0.0.1', 0), Handler)
         self.url = f'http://127.0.0.1:{self.server.server_port}'

@@ -1,0 +1,69 @@
+{
+  "piSha": "f1b2e77f5b13b2a199b1052cb79c235451afe7d7",
+  "pisharpSha": "8d6205a4d5b8d4bdf111a76a5785f86ffa860666",
+  "fixture": "trusted-project-settings-reload",
+  "behaviorMatch": true,
+  "behavior": {
+    "pi": {
+      "chatRequests": 2,
+      "toolNamesByRequest": [
+        [
+          "read"
+        ],
+        [
+          "read",
+          "bash"
+        ]
+      ],
+      "initialSkillInvokedBeforeReload": true,
+      "reloadedSkillInvokedAfterReload": true,
+      "scenarioError": null
+    },
+    "pisharp": {
+      "chatRequests": 2,
+      "toolNamesByRequest": [
+        [
+          "read"
+        ],
+        [
+          "read",
+          "bash"
+        ]
+      ],
+      "initialSkillInvokedBeforeReload": true,
+      "reloadedSkillInvokedAfterReload": true,
+      "scenarioError": null
+    }
+  },
+  "fullTerminalMatch": false,
+  "fullHttpMatch": false,
+  "rawMatch": false,
+  "terminalDifferences": 111927,
+  "renderDifferences": 71800,
+  "controlBoundaryDifferences": 423,
+  "scenarioErrors": {},
+  "calibration": {
+    "match": false,
+    "terminalMatch": false,
+    "httpMatch": true,
+    "rawMatch": false,
+    "renderDifferences": 2,
+    "firstDifferences": [
+      {
+        "path": "$.renders[1].buffers.alternate.lines[35].cells[3].chars",
+        "pi": "\u2819",
+        "pisharp": "\u280b"
+      },
+      {
+        "path": "$.renders[1].viewport[35].cells[3].chars",
+        "pi": "\u2819",
+        "pisharp": "\u280b"
+      }
+    ]
+  },
+  "evidence": {
+    "report": "docs/parity/fixtures/project-settings-reload-current-pi-2026-10-09/comparison-8d6205a4/report.json",
+    "capture": "docs/parity/fixtures/project-settings-reload-current-pi-2026-10-09/comparison-8d6205a4/120x40-dark-fullscreen.json.gz",
+    "calibrationReport": "docs/parity/fixtures/project-settings-reload-current-pi-2026-10-09/calibration-8d6205a4/report.json"
+  }
+}

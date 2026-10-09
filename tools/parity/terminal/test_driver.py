@@ -12,7 +12,7 @@ import unittest
 from compare import ControlTrace, canonical_render_frames, compare_products, differences
 from fixture_http import FixtureServer
 from pty_process import TerminalProcess
-from run import expand_environment, prepare_workspace
+from run import expand_environment, prepare_workspace, write_scenario_files
 
 
 class DriverTests(unittest.TestCase):
@@ -40,6 +40,44 @@ class DriverTests(unittest.TestCase):
             self.assertEqual('{}', (workspace / '.pi/settings.json').read_text())
             with self.assertRaises(ValueError):
                 prepare_workspace({'workingDirectory': '../outside'}, workspace)
+
+    def test_fixture_file_updates_are_contained_to_the_owned_directory(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / 'owned'
+            root.mkdir()
+            write_scenario_files({'project/.pi/settings.json': {'defaultTools': ['bash']}}, root)
+            self.assertEqual({'defaultTools': ['bash']},
+                             json.loads((root / 'project/.pi/settings.json').read_text()))
+            with self.assertRaises(ValueError):
+                write_scenario_files({'../outside.json': '{}'}, root)
+            outside = Path(temporary) / 'outside'
+            outside.mkdir()
+            (root / 'escape').symlink_to(outside, target_is_directory=True)
+            with self.assertRaises(ValueError):
+                write_scenario_files({'escape/settings.json': '{}'}, root)
+
+    def test_fixture_server_returns_and_records_chat_completion_requests(self):
+        server = FixtureServer()
+        body = dict(model='fixture-model', stream=True, tools=[dict(type='function', function=dict(name='read'))])
+        stream = None
+        try:
+            request = urllib.request.Request(
+                server.url + '/v1/chat/completions', data=json.dumps(body).encode(),
+                headers={'Content-Type': 'application/json'}, method='POST')
+            stream = urllib.request.urlopen(request, timeout=2)
+            first = self.read_sse_event(stream)
+            second = self.read_sse_event(stream)
+            separator = stream.readline().decode().strip()
+            done = stream.readline().decode().strip() if not separator else separator
+            self.assertEqual('fixture reply', first['choices'][0]['delta']['content'])
+            self.assertEqual('stop', second['choices'][0]['finish_reason'])
+            self.assertEqual('data: [DONE]', done)
+            self.assertEqual(body, server.requests[0]['body'])
+            self.assertEqual('/v1/chat/completions', server.requests[0]['path'])
+        finally:
+            if stream is not None:
+                stream.close()
+            server.close()
 
     def test_fixture_reset_waits_for_disconnected_sse_clients(self):
         server = FixtureServer(behavior=dict(downloadFinishGate='finish'))

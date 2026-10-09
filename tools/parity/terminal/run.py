@@ -18,6 +18,17 @@ from pty_process import TerminalProcess
 
 ROOT = Path(__file__).resolve().parents[3]
 WORKSPACE = Path('/tmp/pisharp-terminal-fixture-workspace')
+AGENT_DIRECTORY = Path('/tmp/pisharp-terminal-fixture-agent')
+
+
+def write_scenario_files(files, base):
+    root = base.resolve()
+    for name, content in files.items():
+        path = (base / name).resolve()
+        if not path.is_relative_to(root):
+            raise ValueError(f'Fixture file leaves its owned directory: {name}')
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(content if isinstance(content, str) else json.dumps(content))
 
 
 def prepare_workspace(scenario, workspace=WORKSPACE):
@@ -35,12 +46,7 @@ def prepare_workspace(scenario, workspace=WORKSPACE):
             entry.unlink()
 
     workspace_root = workspace.resolve()
-    for name, content in scenario.get('projectFiles', {}).items():
-        path = (workspace / name).resolve()
-        if not path.is_relative_to(workspace_root):
-            raise ValueError(f'Fixture project file leaves its workspace: {name}')
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(content if isinstance(content, str) else json.dumps(content))
+    write_scenario_files(scenario.get('projectFiles', {}), workspace)
 
     working_relative = scenario.get('workingDirectory', '.')
     working_directory = (workspace / working_relative).resolve()
@@ -80,7 +86,7 @@ def expand_environment(values, agent, router_url):
 
 
 def run_product(label, command, scenario, dimensions, theme, mode, server):
-    agent = Path('/tmp/pisharp-terminal-fixture-agent')
+    agent = AGENT_DIRECTORY
     marker = agent / '.pisharp-terminal-harness'
     if agent.exists() and not marker.exists():
         raise RuntimeError(f'Refusing to reset unowned fixture configuration: {agent}')
@@ -107,12 +113,7 @@ def run_product(label, command, scenario, dimensions, theme, mode, server):
                  cost=dict(input=0, output=0, cacheRead=0, cacheWrite=0))
     (agent / 'models.json').write_text(json.dumps(dict(providers=dict(fixture=dict(baseUrl=server.url + '/v1',
                                                                                  apiKey='fixture-key', api='openai-completions', models=[model])))))
-    for name, content in scenario.get('files', {}).get(label, {}).items():
-        path = (agent / name).resolve()
-        if not path.is_relative_to(agent.resolve()):
-            raise ValueError(f'Fixture file leaves its agent directory: {name}')
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(content if isinstance(content, str) else json.dumps(content))
+    write_scenario_files(scenario.get('files', {}).get(label, {}), agent)
     options = dict(dimensions, foreground='#dddddd' if theme == 'dark' else '#222222',
                    background='#111111' if theme == 'dark' else '#ffffff')
     options.update(scenario.get('terminal', {}))
@@ -143,6 +144,8 @@ def run_product(label, command, scenario, dimensions, theme, mode, server):
                 release_gates = [release_gates]
             for gate in release_gates:
                 server.release_gate(gate)
+            for scope, base in (('workspace', WORKSPACE), ('agent', agent)):
+                write_scenario_files(action.get('writeFiles', {}).get(scope, {}), base)
             if action.get('restart'):
                 prior_raw.extend(terminal.raw)
                 prior_render_frames.extend(terminal.render_frames)
