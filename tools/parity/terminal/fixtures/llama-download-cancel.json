@@ -12,6 +12,15 @@
     ]
   },
   "settings": { "quietStartup": true },
+  "concurrentHttpGroups": [
+    {
+      "occurrence": 1,
+      "requests": [
+        { "method": "GET", "path": "/models/sse" },
+        { "method": "POST", "path": "/models" }
+      ]
+    }
+  ],
   "environment": {
     "pi": {
       "LLAMA_BASE_URL": "{router}",

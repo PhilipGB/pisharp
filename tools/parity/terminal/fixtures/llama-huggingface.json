@@ -12,6 +12,15 @@
     ]
   },
   "settings": { "quietStartup": true },
+  "concurrentHttpGroups": [
+    {
+      "occurrence": 1,
+      "requests": [
+        { "method": "GET", "path": "/models/sse" },
+        { "method": "POST", "path": "/models" }
+      ]
+    }
+  ],
   "environment": {
     "pi": {
       "LLAMA_BASE_URL": "{router}",
@@ -37,6 +46,8 @@
   "llamaBehavior": {
     "catalogSuccessRequestGate": "catalog-requested",
     "catalogSuccessResponseGate": "catalog-response",
+    "downloadRequestGate": "download-request",
+    "downloadResponseGate": "download-response",
     "downloadDelaySeconds": 1.5,
     "downloadProgressDelaySeconds": 0.5,
     "downloadProgressGate": "download-progress",
@@ -76,7 +87,9 @@
     { "id": "select-model", "send": "\r", "expect": "Hugging Face access required", "allowStaticFrame": true },
     { "id": "accept-gate", "expect": "Hugging Face access required", "allowStaticFrame": true },
     { "id": "confirm-gate", "send": "\r", "expect": "Select quantization" },
-    { "id": "select-quantization", "send": "\r", "expect": "Downloading model" },
+    { "id": "select-quantization", "send": "\r", "waitGatesAfter": ["download-request"], "expect": "Starting…", "quietMs": 0 },
+    { "id": "start-download", "releaseGates": ["download-response"],
+      "waitForModelPoll": "owner/Qwen2.5-Coder-GGUF:Q4_K_M", "expect": "Downloading model", "notExpect": "Starting…", "quietMs": 0 },
     { "id": "wait-download-progress", "releaseGates": ["download-progress"], "expect": "50%" },
     { "id": "download-finished", "releaseGates": ["download-finished"], "expect": "Downloaded owner/Qwen2.5-Coder-GGUF:Q4_K_M", "timeout": 15 },
     { "id": "close-manager", "send": "\u001b", "expect": "fixture-model" }
