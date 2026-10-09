@@ -80,6 +80,9 @@ def inspect_product(run):
     visible_suggestions = completion_rows(after)
     if not visible_suggestions:
         raise AssertionError('The reloaded skill autocomplete menu had no visible entries')
+    reload = next(frame for frame in run['frames'] if frame['id'] == 'reload')
+    if 'Reloaded keybindings, extensions, skills, prompts, themes, and context files' not in screen_text(reload):
+        raise AssertionError('The Pi-compatible /reload status was not visible')
     requests = chat_requests(run)
     if len(requests) != 2:
         raise AssertionError(f'Expected two provider requests, received {len(requests)}')
@@ -93,6 +96,7 @@ def inspect_product(run):
     return dict(chatRequests=2, disabledCompletionBeforeReload=True,
                 reloadedCompletionEnabled=True, initialSkillExpanded=True,
                 reloadedSkillExpanded=True, visibleSuggestionRows=visible_suggestions,
+                reloadStatusVisible=True,
                 expandedUserMessages=[user_messages(request) for request in requests],
                 advertisedSkillsByRequest=[
                     [name for name in ('initial-legacy-skill', 'reloaded-legacy-skill')

@@ -7,7 +7,7 @@ internal static class TerminalStartupDetails
 {
     public static IReadOnlyList<TerminalStartupDetail> Build(IReadOnlyList<string> contextFiles,
         ResourceCatalog resources, ExtensionCatalog extensions,
-        string workingDirectory)
+        string workingDirectory, IReadOnlyList<TerminalThemeDiagnostic>? themeDiagnostics = null)
     {
         var details = new List<TerminalStartupDetail>();
         if (contextFiles.Count > 0)
@@ -39,6 +39,12 @@ internal static class TerminalStartupDetails
             .Order(StringComparer.OrdinalIgnoreCase).ToArray();
         if (extensionItems.Length > 0)
             details.Add(new("Extensions", extensionItems));
+        if (themeDiagnostics is { Count: > 0 })
+        {
+            var items = themeDiagnostics.SelectMany(item => new[] { item.Path, item.Message }).ToArray();
+            details.Add(new("Theme conflicts", items, items, ShowWhenQuiet: true,
+                ShowEachItemWhenQuiet: true));
+        }
         return details;
     }
 

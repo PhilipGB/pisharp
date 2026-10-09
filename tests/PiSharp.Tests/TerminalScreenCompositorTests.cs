@@ -180,6 +180,49 @@ public sealed class TerminalScreenCompositorTests
     }
 
     [Fact]
+    public void QuietStartupRendersThemePathDiagnosticsAsSeparatePiCompatibleRows()
+    {
+        var presentation = new TerminalStartupPresentation(QuietStartupMode.Silent, verbose: false);
+        var details = new TerminalStartupDetail("Theme conflicts",
+            ["/project/.pi/extension-themes", "theme path does not exist"],
+            ShowWhenQuiet: true, ShowEachItemWhenQuiet: true);
+
+        var rendered = presentation.BuildDetails(TerminalTheme.Default, 120, [details], null, expanded: false);
+
+        Assert.Contains("[Theme conflicts]", rendered);
+        Assert.Contains("/project/.pi/extension-themes", rendered);
+        Assert.Contains("theme path does not exist", rendered);
+        Assert.DoesNotContain(", theme path does not exist", rendered);
+    }
+
+    [Fact]
+    public void QuietStartupDiagnosticsRemainPinnedWhileTranscriptScrolls()
+    {
+        var compositor = new TerminalScreenCompositor(new StringWriter(), new TerminalImageRenderer());
+        var presentation = new TerminalStartupPresentation(QuietStartupMode.Silent, verbose: false);
+        var detail = new TerminalStartupDetail("Theme conflicts",
+            ["/project/.pi/extension-themes", "theme path does not exist"],
+            ShowWhenQuiet: true, ShowEachItemWhenQuiet: true);
+        var pinned = presentation.BuildDetails(TerminalTheme.Default, 100, [detail], null,
+            expanded: false, persistentOnly: true);
+        var content = presentation.BuildDetails(TerminalTheme.Default, 100, [detail], null,
+            expanded: false, includePersistentDetails: false);
+
+        var first = compositor.Compose("", 0, null, null, "first\nsecond\nthird", "fixture-model",
+            overlay: null, scrollOffset: 0, columns: 100, height: 16,
+            new TranscriptSearchController(), new TerminalMouseRouter(), TerminalTheme.Default,
+            startupHeader: pinned, startupContent: content);
+        var scrolled = compositor.Compose("", 0, null, null, "first\nsecond\nthird", "fixture-model",
+            overlay: null, scrollOffset: 1, columns: 100, height: 16,
+            new TranscriptSearchController(), new TerminalMouseRouter(), TerminalTheme.Default,
+            startupHeader: pinned, startupContent: content);
+
+        Assert.Equal(first.Rows[0], scrolled.Rows[0]);
+        Assert.Contains("[Theme conflicts]", scrolled.Rows[0]);
+        Assert.DoesNotContain("/project/.pi/extension-themes", content);
+    }
+
+    [Fact]
     public void ModalOverlayCoversUnderlyingStatusNotification()
     {
         var compositor = new TerminalScreenCompositor(new StringWriter(), new TerminalImageRenderer());

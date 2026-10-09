@@ -3,6 +3,8 @@ using PiSharp.Runtime.Resources;
 
 namespace PiSharp.Cli.Tui;
 
+internal sealed record TerminalThemeDiagnostic(string Message, string Path);
+
 /// <summary>Discovers and loads built-in, user, and trusted-project Pi-compatible theme files.</summary>
 internal sealed class TerminalThemeCatalog
 {
@@ -18,6 +20,8 @@ internal sealed class TerminalThemeCatalog
     private readonly string _explicitThemeBaseDirectory;
     private readonly TerminalColorMode _mode;
     private readonly Func<string, string?> _environment;
+
+    public IReadOnlyList<TerminalThemeDiagnostic> Diagnostics => GetDiagnostics();
 
     public TerminalThemeCatalog(string agentDirectory, string? trustedProjectDirectory = null,
         Func<string, string?>? environment = null, bool? trueColorOverride = null,
@@ -160,6 +164,41 @@ internal sealed class TerminalThemeCatalog
             var path = Path.GetFullPath(entry, _explicitThemeBaseDirectory);
             foreach (var file in ThemeFilesIn(path, recursive: true))
                 if (seen.Add(file)) yield return file;
+        }
+    }
+
+    private IReadOnlyList<TerminalThemeDiagnostic> GetDiagnostics()
+    {
+        var diagnostics = new List<TerminalThemeDiagnostic>();
+        var seen = new HashSet<string>(OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
+
+        AddConfiguredPaths(_userThemePaths, _userBaseDirectory);
+        if (_projectBaseDirectory is not null)
+            AddConfiguredPaths(_projectThemePaths, _projectBaseDirectory);
+        foreach (var entry in _explicitThemePaths ?? [])
+        {
+            var path = Path.GetFullPath(entry, _explicitThemeBaseDirectory);
+            if (seen.Add(path)) AddPathDiagnostic(path);
+        }
+        return diagnostics;
+
+        void AddConfiguredPaths(IReadOnlyList<string>? entries, string baseDirectory)
+        {
+            foreach (var entry in LocalResourcePathRules.GetPaths(entries))
+            {
+                var path = LocalResourcePathRules.ResolvePath(entry, baseDirectory);
+                if (!LocalResourcePathRules.IsEnabledByOverrides(path, entries, baseDirectory) || !seen.Add(path))
+                    continue;
+                AddPathDiagnostic(path);
+            }
+        }
+
+        void AddPathDiagnostic(string path)
+        {
+            if (!File.Exists(path) && !Directory.Exists(path))
+                diagnostics.Add(new("theme path does not exist", path));
+            else if (File.Exists(path) && !Path.GetExtension(path).Equals(".json", StringComparison.OrdinalIgnoreCase))
+                diagnostics.Add(new("theme path is not a json file", path));
         }
     }
 

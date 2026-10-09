@@ -1,7 +1,8 @@
 namespace PiSharp.Cli.Tui;
 
 internal sealed record TerminalStartupDetail(string Name, IReadOnlyList<string> Items,
-    IReadOnlyList<string>? ExpandedItems = null, bool ShowWhenQuiet = false);
+    IReadOnlyList<string>? ExpandedItems = null, bool ShowWhenQuiet = false,
+    bool ShowEachItemWhenQuiet = false);
 
 internal sealed class TerminalStartupPresentation(QuietStartupMode? quietStartup, bool verbose,
     Func<string, string?>? getDisplayKeys = null)
@@ -39,25 +40,28 @@ internal sealed class TerminalStartupPresentation(QuietStartupMode? quietStartup
     }
 
     public string BuildDetails(TerminalTheme theme, int columns,
-        IReadOnlyList<TerminalStartupDetail>? startupDetails, string? projectTrustNotice, bool expanded)
+        IReadOnlyList<TerminalStartupDetail>? startupDetails, string? projectTrustNotice, bool expanded,
+        bool includePersistentDetails = true, bool persistentOnly = false)
     {
         var rows = new List<string>();
         if (startupDetails is not null)
         {
-            foreach (var detail in startupDetails.Where(detail => ShowDetails || detail.ShowWhenQuiet))
+            foreach (var detail in startupDetails.Where(detail =>
+                         (persistentOnly ? detail.ShowWhenQuiet : includePersistentDetails || !detail.ShowWhenQuiet) &&
+                         (ShowDetails || detail.ShowWhenQuiet)))
             {
                 var sourceItems = expanded ? detail.ExpandedItems ?? detail.Items : detail.Items;
                 var items = sourceItems.Select(TerminalTextLayout.Sanitize)
                     .Select(item => item.Trim()).Where(item => item.Length > 0).ToArray();
                 if (items.Length == 0) continue;
                 rows.Add(" " + theme.Style("mdHeading", $"[{TerminalTextLayout.Sanitize(detail.Name)}]"));
-                rows.AddRange(expanded
+                rows.AddRange(expanded || detail.ShowEachItemWhenQuiet
                     ? items.Select(item => " " + theme.Style("dim", $"  {item}"))
                     : [" " + theme.Style("dim", $"  {string.Join(", ", items)}")]);
                 rows.Add("");
             }
         }
-        if (!string.IsNullOrWhiteSpace(projectTrustNotice))
+        if (!persistentOnly && !string.IsNullOrWhiteSpace(projectTrustNotice))
         {
             var notice = projectTrustNotice;
             var split = notice.LastIndexOf(" then ", StringComparison.Ordinal);

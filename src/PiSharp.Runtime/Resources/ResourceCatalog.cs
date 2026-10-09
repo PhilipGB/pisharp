@@ -386,7 +386,7 @@ public sealed class ResourceCatalog
         var metadata = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         var normalized = text.Replace("\r\n", "\n", StringComparison.Ordinal).TrimStart('\uFEFF');
         if (!normalized.StartsWith("---\n", StringComparison.Ordinal)) return (metadata, normalized);
-        var end = normalized.IndexOf("\n---\n", 4, StringComparison.Ordinal);
+        var end = normalized.IndexOf("\n---", 4, StringComparison.Ordinal);
         if (end < 0) return (metadata, normalized);
         var frontmatterLines = normalized[4..end].Split('\n');
         for (var index = 0; index < frontmatterLines.Length; index++)
@@ -402,7 +402,9 @@ public sealed class ResourceCatalog
                 metadata[key] = ParseBlockScalar(value, indentation, frontmatterLines, ref index);
             else metadata[key] = value.Trim('"', '\'');
         }
-        return (metadata, normalized[(end + 5)..]);
+        var bodyStart = end + 4;
+        if (bodyStart < normalized.Length && normalized[bodyStart] == '\n') bodyStart++;
+        return (metadata, normalized[bodyStart..].Trim());
     }
 
     private static string ParseBlockScalar(string header, int keyIndentation, string[] lines, ref int index)

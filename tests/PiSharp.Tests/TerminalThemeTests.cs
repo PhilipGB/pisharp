@@ -259,6 +259,26 @@ public sealed class TerminalThemeTests
     }
 
     [Fact]
+    public void MissingConfiguredThemePathsProducePiCompatibleDiagnostics()
+    {
+        var root = TempRoot();
+        var agent = Path.Combine(root, "agent");
+        var project = Path.Combine(root, "project");
+        var missingExtensionThemes = Path.Combine(project, ".pi", "extension-themes");
+        Directory.CreateDirectory(agent);
+        Directory.CreateDirectory(Path.Combine(project, ".pi"));
+        try
+        {
+            var catalog = new TerminalThemeCatalog(agent, project, environment: _ => null,
+                explicitThemePaths: [missingExtensionThemes]);
+
+            Assert.Equal([new TerminalThemeDiagnostic("theme path does not exist", missingExtensionThemes)],
+                catalog.Diagnostics);
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
     public void ThemePairTracksTerminalAppearanceAndNoColorIsRespected()
     {
         var root = TempRoot();

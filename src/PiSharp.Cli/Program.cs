@@ -386,12 +386,6 @@ TerminalThemeCatalog CreateTerminalThemeCatalog() => new(agentDirectory, trusted
         .Concat(projectRuntime.ExtensionResources.ThemePaths.Select(path => path.Path)).ToArray(),
     explicitThemeBaseDirectory: invocationDirectory);
 var terminalThemeCatalog = CreateTerminalThemeCatalog();
-foreach (var themePath in cli.ThemePaths ?? [])
-{
-    var resolvedThemePath = Path.GetFullPath(themePath, invocationDirectory);
-    if (!File.Exists(resolvedThemePath) && !Directory.Exists(resolvedThemePath))
-        Console.Error.WriteLine($"Theme path does not exist: {resolvedThemePath}");
-}
 TerminalTheme ResolveConfiguredTheme(string? themeSetting, TerminalColorState? terminalColors = null)
 {
     var colors = terminalColors ?? new TerminalColorState();
@@ -455,11 +449,14 @@ var startupTrustNotice = !trusted && ProjectTrust.HasProtectedResources(currentD
     : null;
 if (editor is not null)
 {
-    terminalScreen?.SetStartupHeader((theme, _, _) => startupPresentation.BuildLogo(theme));
+    IReadOnlyList<TerminalStartupDetail> CurrentStartupDetails() => TerminalStartupDetails.Build(
+        projectRuntime.ContextFiles, resources, extensionLease.Current, currentDirectory, terminalThemeCatalog.Diagnostics);
+    terminalScreen?.SetStartupHeader((theme, columns, expanded) =>
+        startupPresentation.BuildLogo(theme) + startupPresentation.BuildDetails(theme, columns,
+            CurrentStartupDetails(), null, expanded, persistentOnly: true));
     terminalScreen?.SetStartupContent((theme, columns, expanded) =>
         startupPresentation.Build(theme, expanded) + startupPresentation.BuildDetails(theme, columns,
-            TerminalStartupDetails.Build(projectRuntime.ContextFiles, resources,
-                extensionLease.Current, currentDirectory), startupTrustNotice, expanded));
+            CurrentStartupDetails(), startupTrustNotice, expanded, includePersistentDetails: false));
 }
 InteractiveTranscript CreateInteractiveTranscript(bool interactive = true) => new(Console.Out, Console.Error, interactive,
     hideThinking: userSettings.HideThinkingBlock == true, screen: terminalScreen,
@@ -1337,7 +1334,7 @@ else
                     case "/reload":
                         await ReloadResources();
                         editor.ReloadKeybindings();
-                        Console.WriteLine("Project resources and themes reloaded.");
+                        Console.WriteLine("Reloaded keybindings, extensions, skills, prompts, themes, and context files");
                         break;
                     case "/hotkeys":
                         Console.WriteLine(editor.Hotkeys);

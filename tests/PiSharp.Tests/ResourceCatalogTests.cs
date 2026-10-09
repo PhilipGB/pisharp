@@ -27,6 +27,26 @@ public sealed class ResourceCatalogTests
     }
 
     [Fact]
+    public async Task PromptTemplateFrontmatterChompsBodyWhitespaceLikePi()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-prompt-chomping-" + Guid.NewGuid().ToString("N"));
+        var prompts = Path.Combine(root, "prompts");
+        Directory.CreateDirectory(prompts);
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(prompts, "review.md"),
+                "---\ndescription: Review\n---\nReview $1\n\n");
+            await File.WriteAllTextAsync(Path.Combine(prompts, "plain.md"), "Plain body\n\n");
+
+            var resources = await ResourceCatalog.LoadAsync(root, root, trusted: false);
+
+            Assert.Equal("Review value", resources.ExpandPrompt("review", "value"));
+            Assert.Equal("Plain body\n\n", resources.ExpandPrompt("plain", ""));
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
     public async Task ProjectResourcesRequireTrustAndSkillsLoadOnDemand()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-resources-" + Guid.NewGuid().ToString("N"));
