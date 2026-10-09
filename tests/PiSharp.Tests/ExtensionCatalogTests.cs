@@ -52,6 +52,38 @@ public sealed class ExtensionCatalogTests
     }
 
     [Fact]
+    public async Task ResourceDiscoveryIsOrderedAndAnExtensionFailureDoesNotDiscardOtherPaths()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-resource-discovery-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        try
+        {
+            var expectedPath = Path.Combine(cwd, "extension skill");
+            BuiltinExtensionDefinition[] builtins =
+            [
+                new("broken-resources", registration => registration.AddResourceDiscoveryHandler((_, _) =>
+                    Task.FromException<ExtensionResourceDiscoveryResult?>(new InvalidOperationException("fixture failure")))),
+                new("working-resources", registration => registration.AddResourceDiscoveryHandler((context, _) =>
+                    Task.FromResult<ExtensionResourceDiscoveryResult?>(context.Reason == ExtensionResourceDiscoveryReason.Reload
+                        ? new([new Uri(expectedPath).AbsoluteUri])
+                        : null)))
+            ];
+            using var catalog = ExtensionCatalog.Load(cwd, cwd, false, discover: false,
+                additionalPaths: ["builtin:broken-resources", "builtin:working-resources"], builtins: builtins);
+
+            var discovery = await catalog.DiscoverResourcesAsync(cwd, ExtensionResourceDiscoveryReason.Reload);
+
+            Assert.Equal("fixture failure", Assert.Single(discovery.Errors).Message);
+            var skill = Assert.Single(discovery.SkillPaths);
+            Assert.Equal(expectedPath, skill.Path);
+            Assert.Equal("extension:builtin:working-resources", skill.SourceInfo.Source);
+            Assert.Equal("temporary", skill.SourceInfo.Scope);
+            Assert.Null(skill.SourceInfo.BaseDir);
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Fact]
     public async Task ProjectAssembliesNeedTrustAndUserAssembliesDoNot()
     {
         var cwd = Path.Combine(Path.GetTempPath(), "pisharp-extension-" + Guid.NewGuid().ToString("N"));

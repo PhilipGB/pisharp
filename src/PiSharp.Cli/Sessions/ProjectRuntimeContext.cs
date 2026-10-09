@@ -37,6 +37,7 @@ internal sealed class ProjectRuntimeContext : IDisposable
     public IReadOnlyList<string> ContextFiles { get; }
     public ResourceCatalog Resources { get; }
     public ExtensionCatalog Extensions { get; }
+    public ExtensionResourceDiscovery ExtensionResources { get; }
     public ConversationStore Store { get; }
     public PiSessionImportService SessionImport { get; }
     public ProjectRuntimeConfiguration Configuration { get; }
@@ -53,7 +54,8 @@ internal sealed class ProjectRuntimeContext : IDisposable
 
     private ProjectRuntimeContext(ProjectRuntimeConfiguration configuration,
         (string? System, string? Append) prompts, string instructions, IReadOnlyList<string> contextFiles,
-        ResourceCatalog resources, ExtensionCatalog extensions, ConversationStore store,
+        ResourceCatalog resources, ExtensionCatalog extensions, ExtensionResourceDiscovery extensionResources,
+        ConversationStore store,
         PiSessionImportService sessionImport, McpRuntimeManager mcpManager,
         IReadOnlyList<McpServerConfiguration> effectiveMcpServers)
     {
@@ -63,6 +65,7 @@ internal sealed class ProjectRuntimeContext : IDisposable
         ContextFiles = contextFiles;
         Resources = resources;
         Extensions = extensions;
+        ExtensionResources = extensionResources;
         Store = store;
         SessionImport = sessionImport;
         McpManager = mcpManager;
@@ -73,7 +76,8 @@ internal sealed class ProjectRuntimeContext : IDisposable
         string agentDirectory, CliArguments arguments, string? configuredSessionDirectory,
         string? sessionDirectoryOverride = null,
         CancellationToken cancellationToken = default,
-        Func<string, CancellationToken, Task<string?>>? providerTokenResolver = null)
+        Func<string, CancellationToken, Task<string?>>? providerTokenResolver = null,
+        ExtensionResourceDiscoveryReason resourceDiscoveryReason = ExtensionResourceDiscoveryReason.Startup)
     {
         var cwd = configuration.WorkingDirectory;
         var contextFiles = new List<string>();
@@ -86,13 +90,6 @@ internal sealed class ProjectRuntimeContext : IDisposable
         var prompts = (promptResources.System, promptResources.Append);
         var instructions = arguments.NoContextFiles ? "" :
             await ContextInstructions.LoadAsync(cwd, agentDirectory, cancellationToken, contextFiles);
-        var resources = await ResourceCatalog.LoadAsync(cwd, agentDirectory, configuration.Trusted, cancellationToken,
-            discoverSkills: !arguments.NoSkills, discoverPrompts: !arguments.NoPromptTemplates,
-            additionalSkills: arguments.SkillPaths, additionalPrompts: arguments.PromptTemplatePaths,
-            userSkills: configuration.BaseUserSettings.Skills, projectSkills: configuration.ProjectSettings?.Skills,
-            userPrompts: configuration.BaseUserSettings.Prompts, projectPrompts: configuration.ProjectSettings?.Prompts);
-        instructions += "\n" + resources.SystemInstructions();
-
         var sessionDirectory = sessionDirectoryOverride ?? arguments.SessionDirectory ?? configuredSessionDirectory ??
             configuration.Settings.SessionDirectory;
         if (sessionDirectory is not null) sessionDirectory = Path.GetFullPath(sessionDirectory, cwd);
@@ -148,8 +145,19 @@ internal sealed class ProjectRuntimeContext : IDisposable
                     codemodeSource.Path == "builtin:codemode")
                     extensions.Registration.SetToolDefaultActive("codemode", true);
             }
+            var extensionResources = await extensions.DiscoverResourcesAsync(cwd, resourceDiscoveryReason,
+                cancellationToken);
+            foreach (var error in extensionResources.Errors)
+                Console.Error.WriteLine($"Extension resource discovery failed ({error.ExtensionPath}): {error.Message}");
+            var resources = await ResourceCatalog.LoadAsync(cwd, agentDirectory, configuration.Trusted, cancellationToken,
+                discoverSkills: !arguments.NoSkills, discoverPrompts: !arguments.NoPromptTemplates,
+                additionalSkills: arguments.SkillPaths, additionalPrompts: arguments.PromptTemplatePaths,
+                userSkills: configuration.BaseUserSettings.Skills, projectSkills: configuration.ProjectSettings?.Skills,
+                userPrompts: configuration.BaseUserSettings.Prompts, projectPrompts: configuration.ProjectSettings?.Prompts,
+                extensionResources: extensionResources);
+            instructions += "\n" + resources.SystemInstructions();
             return new ProjectRuntimeContext(configuration, prompts, instructions, contextFiles,
-                resources, extensions, store, sessionImport, mcpManager, effectiveMcpServers);
+                resources, extensions, extensionResources, store, sessionImport, mcpManager, effectiveMcpServers);
         }
         catch
         {

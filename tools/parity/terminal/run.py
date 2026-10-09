@@ -56,7 +56,7 @@ def prepare_workspace(scenario, workspace=WORKSPACE):
     return working_directory
 
 
-def commands(pi, pisharp, scenario):
+def commands(pi, pisharp, scenario, pisharp_extension=None):
     common = ['--provider', 'fixture', '--model', 'fixture-model', '--no-session', '--offline',
               '--no-extensions', '--no-skills', '--no-prompt-templates', '--no-tools']
     resolver = pi / 'packages/coding-agent/src/experimental/source-resolver.ts'
@@ -67,6 +67,10 @@ def commands(pi, pisharp, scenario):
                 pisharp=['dotnet', str(pisharp), *common, '--no-approve', '--no-context-files'])
     for product, arguments in scenario.get('arguments', {}).items():
         result[product] = result[product][:-len(common) - (2 if product == 'pisharp' else 0)] + arguments
+    if scenario.get('pisharpExtension'):
+        if pisharp_extension is None or not pisharp_extension.is_file():
+            raise ValueError('This fixture requires an existing --pisharp-extension assembly')
+        result['pisharp'].extend(['--extension', str(pisharp_extension.resolve())])
     return result
 
 
@@ -221,6 +225,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--pi', type=Path, required=True)
     parser.add_argument('--pisharp', type=Path, default=ROOT / 'src/PiSharp.Cli/bin/Debug/net10.0/PiSharp.Cli.dll')
+    parser.add_argument('--pisharp-extension', type=Path,
+                        help='Native extension assembly required by a fixture')
     parser.add_argument('--fixture', type=Path, default=Path(__file__).with_name('fixtures') / 'startup-editor.json')
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--calibrate', action='store_true', help='Compare two independent Pi runs before trusting cross-product evidence')
@@ -228,7 +234,7 @@ def main():
     args = parser.parse_args()
     scenario = json.loads(args.fixture.read_text())
     args.output.mkdir(parents=True, exist_ok=True)
-    product_commands = commands(args.pi.resolve(), args.pisharp.resolve(), scenario)
+    product_commands = commands(args.pi.resolve(), args.pisharp.resolve(), scenario, args.pisharp_extension)
     report = dict(piSha=subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=args.pi, text=True).strip(),
                   pisharpSha=subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
                   fixture=scenario['id'], calibration=args.calibrate,

@@ -49,6 +49,7 @@ public sealed class ExtensionRegistration
     private readonly List<PiSharpToolCallHook> _toolCallHooks = [];
     private readonly List<PiSharpToolResultHook> _toolResultHooks = [];
     private readonly List<PiSharpContextTransform> _contextTransforms = [];
+    private readonly List<RegisteredResourceDiscoveryHandler> _resourceDiscoveryHandlers = [];
     private readonly object _mcpGate = new();
     private readonly Dictionary<string, ExtensionMcpServerRegistration> _mcpServers = new(StringComparer.Ordinal);
     private readonly VirtualModelRegistry _virtualModels = new();
@@ -72,6 +73,8 @@ public sealed class ExtensionRegistration
     public IReadOnlyList<PiSharpToolCallHook> ToolCallHooks => _toolCallHooks;
     public IReadOnlyList<PiSharpToolResultHook> ToolResultHooks => _toolResultHooks;
     public IReadOnlyList<PiSharpContextTransform> ContextTransforms => _contextTransforms.ToArray();
+    internal IReadOnlyList<RegisteredResourceDiscoveryHandler> ResourceDiscoveryHandlers =>
+        _resourceDiscoveryHandlers.ToArray();
     public IReadOnlyCollection<ExtensionMcpServerRegistration> McpServers
     {
         get { lock (_mcpGate) return _mcpServers.Values.ToArray(); }
@@ -264,6 +267,15 @@ public sealed class ExtensionRegistration
         _contextTransforms.Add(transform);
     }
 
+    /// <summary>Registers resources that become available after extension startup and each reload.</summary>
+    public void AddResourceDiscoveryHandler(ExtensionResourceDiscoveryHandler handler)
+    {
+        ArgumentNullException.ThrowIfNull(handler);
+        var source = _currentSourceInfo ?? throw new InvalidOperationException(
+            "Resource discovery handlers can only be registered while an extension is being configured.");
+        _resourceDiscoveryHandlers.Add(new(handler, source));
+    }
+
     public void AddCommand(string name, Func<string, CancellationToken, Task<string>> handler) =>
         AddCommand(name, handler, null);
 
@@ -347,6 +359,60 @@ public sealed class ExtensionCatalog : IDisposable
     public ExtensionRegistration Registration { get; } = new();
     public IReadOnlySet<string> LoadedBuiltins => _loadedBuiltins;
     public IReadOnlyList<ResourceSourceInfo> LoadedExtensions => _loadedExtensions.ToArray();
+
+    public async Task<ExtensionResourceDiscovery> DiscoverResourcesAsync(string workingDirectory,
+        ExtensionResourceDiscoveryReason reason, CancellationToken cancellationToken = default)
+    {
+        var cwd = Path.GetFullPath(workingDirectory);
+        var skills = new List<ExtensionDiscoveredResourcePath>();
+        var prompts = new List<ExtensionDiscoveredResourcePath>();
+        var themes = new List<ExtensionDiscoveredResourcePath>();
+        var errors = new List<ExtensionResourceDiscoveryError>();
+        var context = new ExtensionResourceDiscoveryContext(cwd, reason);
+
+        foreach (var registration in Registration.ResourceDiscoveryHandlers)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            try
+            {
+                var result = await registration.Handler(context, cancellationToken);
+                if (result is null) continue;
+                AddPaths(result.SkillPaths, skills, registration.ExtensionSource, cwd);
+                AddPaths(result.PromptPaths, prompts, registration.ExtensionSource, cwd);
+                AddPaths(result.ThemePaths, themes, registration.ExtensionSource, cwd);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception error)
+            {
+                errors.Add(new(registration.ExtensionSource.Path, error.Message));
+            }
+        }
+
+        return new(skills, prompts, themes, errors);
+    }
+
+    private static void AddPaths(IReadOnlyList<string>? paths, List<ExtensionDiscoveredResourcePath> target,
+        ResourceSourceInfo extensionSource, string workingDirectory)
+    {
+        foreach (var path in paths ?? [])
+        {
+            if (string.IsNullOrWhiteSpace(path)) continue;
+            var normalized = Uri.TryCreate(path, UriKind.Absolute, out var uri) && uri.IsFile
+                ? Path.GetFullPath(uri.LocalPath)
+                : Path.GetFullPath(path, workingDirectory);
+            var synthetic = extensionSource.Path.StartsWith("builtin:", StringComparison.Ordinal) ||
+                extensionSource.Path.StartsWith('<');
+            var label = synthetic
+                ? extensionSource.Path.Trim('<', '>')
+                : Path.GetFileNameWithoutExtension(extensionSource.Path);
+            var source = new ResourceSourceInfo(normalized, "extension:" + label, "temporary", "top-level",
+                synthetic ? null : Path.GetDirectoryName(Path.GetFullPath(extensionSource.Path)));
+            target.Add(new(normalized, source));
+        }
+    }
 
     private ExtensionCatalog() { }
 

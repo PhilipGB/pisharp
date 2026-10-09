@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.RegularExpressions;
+using PiSharp.Runtime.Extensions;
 
 namespace PiSharp.Runtime.Resources;
 
@@ -19,7 +20,8 @@ public sealed class ResourceCatalog
         CancellationToken cancellationToken = default, bool discoverSkills = true, bool discoverPrompts = true,
         IReadOnlyList<string>? additionalSkills = null, IReadOnlyList<string>? additionalPrompts = null,
         IReadOnlyList<string>? userSkills = null, IReadOnlyList<string>? projectSkills = null,
-        IReadOnlyList<string>? userPrompts = null, IReadOnlyList<string>? projectPrompts = null)
+        IReadOnlyList<string>? userPrompts = null, IReadOnlyList<string>? projectPrompts = null,
+        ExtensionResourceDiscovery? extensionResources = null)
     {
         var skills = new List<SkillResource>();
         var prompts = new List<PromptResource>();
@@ -62,6 +64,9 @@ public sealed class ResourceCatalog
             AddAutoPaths(Path.Combine(agentDirectory, "prompts"), userPrompts, agentDirectory,
                 "user", "prompts", promptFiles, seenPrompts);
         }
+
+        AddExtensionPaths(extensionResources?.SkillPaths, "skills", skillFiles, seenSkills);
+        AddExtensionPaths(extensionResources?.PromptPaths, "prompts", promptFiles, seenPrompts);
 
         foreach (var (path, source) in skillFiles)
         {
@@ -144,6 +149,17 @@ public sealed class ResourceCatalog
         {
             var fullPath = Path.GetFullPath(path);
             if (seen.Add(fullPath)) target.Add((fullPath, source with { Path = fullPath }));
+        }
+
+        void AddExtensionPaths(IReadOnlyList<ExtensionDiscoveredResourcePath>? entries, string kind,
+            List<(string Path, ResourceSourceInfo Source)> target, HashSet<string> seen)
+        {
+            foreach (var entry in entries ?? [])
+            {
+                var files = EnumerateResourceFiles(entry.Path, kind, recursive: kind == "prompts");
+                foreach (var path in files)
+                    AddPath(target, seen, path, entry.SourceInfo);
+            }
         }
     }
 

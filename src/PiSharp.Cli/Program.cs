@@ -348,7 +348,8 @@ string? ActiveThemeSetting() => cliThemeOverride ?? userSettings.Theme;
 TerminalThemeCatalog CreateTerminalThemeCatalog() => new(agentDirectory, trusted ? currentDirectory : null,
     trueColorOverride: userSettings.TerminalTrueColorOverride,
     userThemePaths: baseUserSettings.Themes, projectThemePaths: projectSettings?.Themes,
-    discoverThemes: !cli.NoThemes, explicitThemePaths: cli.ThemePaths,
+    discoverThemes: !cli.NoThemes, explicitThemePaths: (cli.ThemePaths ?? [])
+        .Concat(projectRuntime.ExtensionResources.ThemePaths.Select(path => path.Path)).ToArray(),
     explicitThemeBaseDirectory: invocationDirectory);
 var terminalThemeCatalog = CreateTerminalThemeCatalog();
 foreach (var themePath in cli.ThemePaths ?? [])
@@ -898,7 +899,8 @@ async Task ReloadResources()
         var reloadPlan = DefaultToolReloadPolicy.Resolve(cli, usesDefaultToolsSetting, userSettings,
             nextConfiguration.Settings, conversationRun.ActiveToolNames, Environment.GetEnvironmentVariable);
         nextProject = await ProjectRuntimeContext.LoadAsync(nextConfiguration, agentDirectory, reloadPlan.Arguments,
-            configuredSessionDirectory, providerTokenResolver: modelRuntime.GetApiKeyForProviderAsync);
+            configuredSessionDirectory, providerTokenResolver: modelRuntime.GetApiKeyForProviderAsync,
+            resourceDiscoveryReason: ExtensionResourceDiscoveryReason.Reload);
         ConfigureMcpAuthorizationUrlPresenter(nextProject);
         modelRuntime.SetVirtualModelRegistry(nextProject.Extensions.Registration.VirtualModels);
         var nextController = new ModelRuntimeController(modelRuntime, () => nextConfiguration.Settings,

@@ -12,7 +12,7 @@ import unittest
 from compare import ControlTrace, canonical_render_frames, compare_products, differences
 from fixture_http import FixtureServer
 from pty_process import TerminalProcess
-from run import expand_environment, prepare_workspace, write_scenario_files
+from run import commands, expand_environment, prepare_workspace, write_scenario_files
 
 
 class DriverTests(unittest.TestCase):
@@ -40,6 +40,25 @@ class DriverTests(unittest.TestCase):
             self.assertEqual('{}', (workspace / '.pi/settings.json').read_text())
             with self.assertRaises(ValueError):
                 prepare_workspace({'workingDirectory': '../outside'}, workspace)
+
+    def test_fixture_can_load_a_native_extension_only_in_the_pisharp_process(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            extension = Path(temporary) / 'dynamic-resources.dll'
+            extension.touch()
+            scenario = {
+                'pisharpExtension': True,
+                'arguments': {
+                    'pi': ['--no-extensions', '--extension', 'dynamic-resources.ts'],
+                    'pisharp': ['--no-extensions'],
+                },
+            }
+
+            result = commands(Path('/current-pi'), Path('/pisharp.dll'), scenario, extension)
+
+            self.assertEqual(['--extension', str(extension.resolve())], result['pisharp'][-2:])
+            self.assertNotIn(str(extension.resolve()), result['pi'])
+            with self.assertRaises(ValueError):
+                commands(Path('/current-pi'), Path('/pisharp.dll'), scenario)
 
     def test_fixture_file_updates_are_contained_to_the_owned_directory(self):
         with tempfile.TemporaryDirectory() as temporary:

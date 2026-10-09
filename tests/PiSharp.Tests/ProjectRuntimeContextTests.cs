@@ -1,11 +1,62 @@
+using System.Text.Json.Nodes;
 using PiSharp.Cli;
+using PiSharp.Cli.Tui;
 using PiSharp.Cli.Sessions;
+using PiSharp.ResourceDiscoveryExtension;
+using PiSharp.Runtime.Extensions;
 using PiSharp.Runtime.Resources;
 
 namespace PiSharp.Tests;
 
 public sealed class ProjectRuntimeContextTests
 {
+    [Fact]
+    public async Task ExtensionResourcesDiscoverOnStartupAndAreReplacedOnReload()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp extension resources " + Guid.NewGuid().ToString("N"));
+        var project = Path.Combine(root, "project");
+        var agent = Path.Combine(root, "agent");
+        var extensionPath = typeof(ResourceDiscoveryFixture).Assembly.Location;
+        Assert.True(File.Exists(extensionPath));
+        Directory.CreateDirectory(agent);
+        await WriteResourcesAsync(project, "startup", "startup-skill", "startup-review", "startup-theme");
+        await WriteResourcesAsync(project, "reloaded", "reloaded-skill", "reloaded-review", "reloaded-theme");
+
+        try
+        {
+            var arguments = CliArguments.Parse(["--no-extensions", "--no-skills", "--no-prompt-templates",
+                "--extension", extensionPath]);
+            var trust = new ProjectTrust(agent);
+            var configuration = await ProjectRuntimeConfiguration.LoadAsync(project, agent, arguments,
+                trust, interactiveTrust: false, TextReader.Null, TextWriter.Null, trustedOverride: true);
+
+            using var startup = await ProjectRuntimeContext.LoadAsync(configuration, agent, arguments, null);
+            var startupSkill = Assert.Single(startup.Resources.Skills);
+            Assert.Equal("startup-skill", startupSkill.Name);
+            Assert.Equal("extension:dynamic-resources", startupSkill.SourceInfo.Source);
+            Assert.Equal("temporary", startupSkill.SourceInfo.Scope);
+            Assert.Equal("top-level", startupSkill.SourceInfo.Origin);
+            Assert.Equal(Path.GetDirectoryName(extensionPath), startupSkill.SourceInfo.BaseDir);
+            var startupPrompt = Assert.Single(startup.Resources.Prompts);
+            Assert.Equal("startup-review", startupPrompt.Name);
+            Assert.Equal("extension:dynamic-resources", startupPrompt.SourceInfo.Source);
+            var startupThemePath = Assert.Single(startup.ExtensionResources.ThemePaths);
+            Assert.Equal("extension:dynamic-resources", startupThemePath.SourceInfo.Source);
+            Assert.Empty(startup.ExtensionResources.Errors);
+            AssertTheme(startup.ExtensionResources, project, "startup-theme", "#123456");
+
+            using var reloaded = await ProjectRuntimeContext.LoadAsync(configuration, agent, arguments, null,
+                resourceDiscoveryReason: ExtensionResourceDiscoveryReason.Reload);
+            Assert.Equal("reloaded-skill", Assert.Single(reloaded.Resources.Skills).Name);
+            var reloadedPrompt = Assert.Single(reloaded.Resources.Prompts);
+            Assert.Equal("reloaded-review", reloadedPrompt.Name);
+            Assert.Equal("extension:dynamic-resources", reloadedPrompt.SourceInfo.Source);
+            Assert.Empty(reloaded.ExtensionResources.Errors);
+            AssertTheme(reloaded.ExtensionResources, project, "reloaded-theme", "#654321");
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
     [Fact]
     public async Task LoadsProjectScopedSettingsResourcesAndStoreUnderTheTrustDecision()
     {
@@ -108,5 +159,40 @@ public sealed class ProjectRuntimeContextTests
             Assert.DoesNotContain(reloaded.Resources.Skills, skill => skill.Name == "configured-first");
         }
         finally { Directory.Delete(root, recursive: true); }
+    }
+
+    private static async Task WriteResourcesAsync(string project, string phase, string skillName,
+        string promptName, string themeName)
+    {
+        var root = Path.Combine(project, ".pi", "extension-resources", phase);
+        var skillDirectory = Path.Combine(root, "skills");
+        var promptDirectory = Path.Combine(root, "prompts");
+        var themeDirectory = Path.Combine(root, "themes");
+        Directory.CreateDirectory(skillDirectory);
+        Directory.CreateDirectory(promptDirectory);
+        Directory.CreateDirectory(themeDirectory);
+        await File.WriteAllTextAsync(Path.Combine(skillDirectory, "SKILL.md"),
+            $"---\nname: {skillName}\ndescription: Extension supplied skill\n---\nUse {skillName}.");
+        await File.WriteAllTextAsync(Path.Combine(promptDirectory, promptName + ".md"),
+            $"Review {promptName}.");
+        using var resource = typeof(TerminalTheme).Assembly.GetManifestResourceStream("PiSharp.Cli.Tui.Themes.dark.json");
+        Assert.NotNull(resource);
+        using var reader = new StreamReader(resource!);
+        var theme = JsonNode.Parse(await reader.ReadToEndAsync())!.AsObject();
+        theme["name"] = themeName;
+        theme["colors"]!["mdHeading"] = phase == "startup" ? "#123456" : "#654321";
+        await File.WriteAllTextAsync(Path.Combine(themeDirectory, themeName + ".json"), theme.ToJsonString());
+    }
+
+    private static void AssertTheme(ExtensionResourceDiscovery discovery, string project, string name,
+        string headingColor)
+    {
+        var catalog = new TerminalThemeCatalog(project, project,
+            environment: _ => null, trueColorOverride: true, discoverThemes: false,
+            explicitThemePaths: discovery.ThemePaths.Select(path => path.Path).ToArray(),
+            explicitThemeBaseDirectory: project);
+        Assert.Contains(name, catalog.GetAvailableNames());
+        Assert.Equal("\u001b[38;2;" + string.Join(';', Convert.FromHexString(headingColor[1..]).Select(value => value.ToString())) + "m",
+            catalog.Load(name).Fg("mdHeading"));
     }
 }

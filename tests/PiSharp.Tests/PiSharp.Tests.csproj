@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\PiSharp.Cli\PiSharp.Cli.csproj" />
+    <ProjectReference Include="..\ResourceDiscoveryExtension\ResourceDiscoveryExtension.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Fixtures/mcp_fixture.py" CopyToOutputDirectory="PreserveNewest" />

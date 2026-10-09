@@ -22,6 +22,25 @@ MCP servers use `<agent-dir>/mcp.json` or a trusted project's `.pi/mcp.json`. A 
 
 An extension implements `IPiSharpExtension.Configure(ExtensionRegistration)`. It can register `AIFunction` tools, terminal slash commands, and direct RPC Bash handlers. Tools execute through the same Microsoft.Extensions.AI function loop and durable checkpoint path as built-in tools.
 
+## Extension resources
+
+An extension can make skills, prompt templates, and terminal themes available on startup and after `/reload`:
+
+```csharp
+registration.AddResourceDiscoveryHandler((context, cancellationToken) =>
+{
+    cancellationToken.ThrowIfCancellationRequested();
+    var phase = context.Reason == ExtensionResourceDiscoveryReason.Reload ? "reloaded" : "startup";
+    var resources = Path.Combine(context.WorkingDirectory, ".pi", "generated-resources", phase);
+    return Task.FromResult<ExtensionResourceDiscoveryResult?>(new(
+        SkillPaths: [Path.Combine(resources, "skills")],
+        PromptPaths: [Path.Combine(resources, "prompts")],
+        ThemePaths: [Path.Combine(resources, "themes")]));
+});
+```
+
+Returned paths may be files or directories and may be absolute, relative to the working directory, or file URLs. Skill and prompt resources use the same parsing and slash-command flow as local resources; theme paths join the active theme catalog. `--no-skills`, `--no-prompt-templates`, and `--no-themes` suppress their normal scans while explicitly contributed paths remain available. Handlers run in registration order after extension setup. A handler failure is reported and does not discard paths returned by other handlers; cancellation stops discovery.
+
 For HTTP MCP OAuth, `oauth.clientName` sets the name sent during dynamic client registration and defaults to `pi`. Some servers accept registrations only from known clients:
 
 ```json
@@ -104,4 +123,4 @@ Transforms run in registration order after PiSharp projects the conversation and
 
 ## Current boundaries
 
-The .NET API does not aim for TypeScript source compatibility. Session lifecycle hooks and per-session extension state, dynamic registration, custom providers, extension keybindings, general extension UI, resource registration and settings remain open parity work. Tool output schemas and a complete structured-result contract are also open. See the [parity ledger](parity/execution-ledger.json) for implementation evidence and current gaps.
+The .NET API does not aim for TypeScript source compatibility. Session lifecycle hooks and per-session extension state, late dynamic registration, custom providers, extension keybindings, general extension UI and settings remain open parity work. Resource discovery is currently a startup/reload callback rather than a full resource-management API. Tool output schemas and a complete structured-result contract are also open. See the [parity ledger](parity/execution-ledger.json) for implementation evidence and current gaps.

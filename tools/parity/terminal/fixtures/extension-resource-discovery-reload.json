@@ -1,0 +1,98 @@
+{
+  "id": "extension-resource-discovery-reload",
+  "workingDirectory": "extension-project",
+  "pisharpExtension": true,
+  "settings": {
+    "quietStartup": true
+  },
+  "arguments": {
+    "pi": [
+      "--provider", "fixture", "--model", "fixture-model", "--models", "fixture-model",
+      "--no-session", "--offline", "--no-extensions", "--no-skills", "--no-prompt-templates",
+      "--no-tools", "--no-context-files", "--extension", ".pi/extensions/dynamic-resources.ts"
+    ],
+    "pisharp": [
+      "--provider", "fixture", "--model", "fixture-model", "--models", "fixture-model",
+      "--no-session", "--offline", "--no-extensions", "--no-skills", "--no-prompt-templates",
+      "--no-tools", "--no-context-files"
+    ]
+  },
+  "projectFiles": {
+    "extension-project/.pi/settings.json": {},
+    "extension-project/.pi/extensions/dynamic-resources.ts": "import { join } from 'node:path';\nimport { pathToFileURL } from 'node:url';\n\nexport default function (pi) {\n  pi.on('resources_discover', ({ cwd, reason }) => {\n    const phase = reason === 'reload' ? 'reloaded' : 'startup';\n    const root = join(cwd, '.pi', 'extension-resources', phase);\n    return {\n      skillPaths: [pathToFileURL(join(root, 'skills')).href],\n      promptPaths: [join(root, 'prompts')],\n      themePaths: [join(root, 'themes')],\n    };\n  });\n}\n",
+    "extension-project/.pi/extension-resources/startup/skills/SKILL.md": "---\nname: extension-startup\ndescription: Startup resource discovery skill\n---\nUse the startup extension skill.\n",
+    "extension-project/.pi/extension-resources/startup/prompts/startup-review.md": "---\ndescription: Startup extension prompt\n---\nReview the startup extension template: $1\n"
+  },
+  "files": {
+    "pi": {
+      "trust.json": {
+        "/tmp/pisharp-terminal-fixture-workspace/extension-project": true
+      }
+    },
+    "pisharp": {
+      "trust.json": {
+        "/tmp/pisharp-terminal-fixture-workspace/extension-project": true
+      }
+    }
+  },
+  "actions": [
+    {
+      "id": "startup",
+      "expect": "fixture-model"
+    },
+    {
+      "id": "startup-skill",
+      "send": "/skill:extension-startup initial-argument\r",
+      "expect": "fixture reply"
+    },
+    {
+      "id": "startup-prompt",
+      "send": "/startup-review initial-argument\r",
+      "expect": "fixture reply"
+    },
+    {
+      "id": "add-reloaded-resources",
+      "writeFiles": {
+        "workspace": {
+          "extension-project/.pi/extension-resources/reloaded/skills/SKILL.md": "---\nname: extension-reloaded\ndescription: Reloaded resource discovery skill\n---\nUse the reloaded extension skill.\n",
+          "extension-project/.pi/extension-resources/reloaded/prompts/reloaded-review.md": "---\ndescription: Reloaded extension prompt\n---\nReview the reloaded extension template: $1\n"
+        }
+      },
+      "allowStaticFrame": true
+    },
+    {
+      "id": "reload",
+      "send": "/reload\r",
+      "expect": {
+        "pi": "Reloaded keybindings, extensions, skills, prompts, themes, and context files",
+        "pisharp": "Project resources and themes reloaded."
+      }
+    },
+    {
+      "id": "reloaded-skill",
+      "send": "/skill:extension-reloaded reload-argument\r",
+      "expect": "fixture reply"
+    },
+    {
+      "id": "reloaded-prompt",
+      "send": "/reloaded-review reload-argument\r",
+      "expect": "fixture reply"
+    },
+    {
+      "id": "quit",
+      "send": "/quit\r",
+      "exit": true
+    }
+  ],
+  "dimensions": [
+    {
+      "columns": 120,
+      "rows": 40
+    }
+  ],
+  "themes": ["dark"],
+  "modes": ["fullscreen"],
+  "terminal": {
+    "keyboardProtocol": "kitty"
+  }
+}
