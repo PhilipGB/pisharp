@@ -18,10 +18,12 @@ public sealed class SystemOneClassifierClient(HttpClient http) : IClassifierClie
             "stop", Timestamp: DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
         try
         {
-            cancellationToken.ThrowIfCancellationRequested();
             var cloudflare = model.Api == "cloudflare-workers-ai-system-one";
             if (!cloudflare && model.Api != "typesafe-system-one")
                 throw new NotSupportedException($"Unsupported classifier API: {model.Api}");
+            if (context.Images is { Count: > 0 })
+                throw new InvalidOperationException($"{(cloudflare ? "Cloudflare Workers AI" : "System One API")} does not support image input");
+            cancellationToken.ThrowIfCancellationRequested();
             if (string.IsNullOrEmpty(apiKey)) throw new InvalidOperationException($"No API key for provider: {model.Provider}");
             if (context.State.ValueKind != JsonValueKind.Object) throw new ArgumentException("Classifier state must be an object.");
             var questions = new JsonObject();

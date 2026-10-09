@@ -9,6 +9,31 @@ namespace PiSharp.Tests;
 public sealed class ClassifierProtocolTests
 {
     [Theory]
+    [InlineData("typesafe-system-one", "System One API does not support image input", false)]
+    [InlineData("typesafe-system-one", "System One API does not support image input", true)]
+    [InlineData("cloudflare-workers-ai-system-one", "Cloudflare Workers AI does not support image input", false)]
+    [InlineData("cloudflare-workers-ai-system-one", "Cloudflare Workers AI does not support image input", true)]
+    public async Task SystemOneRejectsImagesBeforeSendingRequests(string api, string expectedError, bool canceled)
+    {
+        var called = false;
+        using var http = new HttpClient(new Handler(_ =>
+        {
+            called = true;
+            throw new InvalidOperationException("Unexpected request");
+        }));
+        using var input = JsonDocument.Parse("""{"state":{"text":"fixture"},"questions":{"safe":{"type":"bool","instructions":"safe?","criteria":{"true":"safe","false":"unsafe"}}},"images":[{"type":"image","data":"AQID","mimeType":"image/png"}]}""");
+        var context = input.RootElement.Deserialize<ClassifierContext>(new JsonSerializerOptions(JsonSerializerDefaults.Web))!;
+        using var cancellation = new CancellationTokenSource();
+        if (canceled) cancellation.Cancel();
+        var result = await new SystemOneClassifierClient(http).ClassifyAsync(Model(api), context, "fixture-key", cancellation.Token);
+        Assert.Equal(canceled ? "aborted" : "error", result.StopReason);
+        Assert.Equal(expectedError, result.ErrorMessage);
+        Assert.False(called);
+        Assert.Empty(result.Answers);
+        Assert.Null(result.Usage);
+    }
+
+    [Theory]
     [InlineData("typesafe-system-one")]
     [InlineData("cloudflare-workers-ai-system-one")]
     public async Task SystemOneProjectsBooleanQuestionsParsesAnswersAndPricesUsage(string api)

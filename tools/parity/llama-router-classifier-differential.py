@@ -50,6 +50,13 @@ var context = new ClassifierContext(JsonSerializer.SerializeToElement(new { mess
     });
 var result = await new ProviderClassifierRuntime(providers, http)
     .ClassifyAsync("llama.cpp", selected.Id, context);
+var imageContext = context with { Images = [new ClassifierImage("image", "AQID", "image/png")] };
+var imageResult = await new ProviderClassifierRuntime(providers, http)
+    .ClassifyAsync("llama.cpp", selected.Id, imageContext);
+using var canceled = new CancellationTokenSource();
+canceled.Cancel();
+var canceledImageResult = await new SystemOneClassifierClient(http)
+    .ClassifyAsync(selected, imageContext, "local", canceled.Token);
 var output = new
 {
     chatModels = chat.Select(model => new
@@ -70,7 +77,9 @@ var output = new
         baseUrl = model.BaseUrl.AbsoluteUri.TrimEnd('/'),
         contextWindow = model.ContextWindow
     }),
-    result
+    result,
+    imageResult,
+    canceledImageResult
 };
 Console.WriteLine(JsonSerializer.Serialize(output, new JsonSerializerOptions(JsonSerializerDefaults.Web)));
 '''
@@ -94,11 +103,14 @@ Console.WriteLine(JsonSerializer.Serialize(output, new JsonSerializerOptions(Jso
     "const selected=all.find(model=>model.type==='classifier'&&model.id==='decision-model');\n"
     "if(!selected)throw new Error('Pi did not expose the decision model as a classifier');\n"
     "const result=await controller.provider.classify?.(selected,context,{apiKey:'local'});\n"
+    "const imageContext={...context,images:[{type:'image',data:'AQID',mimeType:'image/png'}]};\n"
+    "const imageResult=await controller.provider.classify?.(selected,imageContext,{apiKey:'local'});\n"
+    "const canceledImageResult=await controller.provider.classify?.(selected,imageContext,{apiKey:'local',signal:AbortSignal.abort()});\n"
     "const project=model=>({id:model.id,api:model.api,baseUrl:model.baseUrl,contextWindow:model.contextWindow,"
     "maxTokens:model.maxTokens,reasoning:model.reasoning,input:model.input,compatibility:model.compat});\n"
     "console.log(JSON.stringify({chatModels:controller.provider.getModels().map(project),"
     "classifiers:all.filter(model=>model.type==='classifier').map(model=>({id:model.id,api:model.api,"
-    "baseUrl:model.baseUrl.replace(/\\/$/u,''),contextWindow:model.contextWindow})),result}));\n"
+    "baseUrl:model.baseUrl.replace(/\\/$/u,''),contextWindow:model.contextWindow})),result,imageResult,canceledImageResult}));\n"
     .replace("{pi}", pi_repo.as_posix())
 )
 
@@ -290,6 +302,13 @@ for router_autoload in (True, False):
         raise AssertionError(f"Router classifier results differ with autoload={router_autoload}:\nPi: {pi_result}\nPiSharp: {pisharp_result}")
     if not equal(pi_trace, pisharp_trace):
         raise AssertionError(f"Router classifier HTTP traces differ with autoload={router_autoload}:\nPi: {pi_trace}\nPiSharp: {pisharp_trace}")
+    expected_image_error = "System One API does not support image input"
+    if pi_result["imageResult"].get("errorMessage") != expected_image_error:
+        raise AssertionError(f"Unexpected router decision image result with autoload={router_autoload}: {pi_result['imageResult']}")
+    if pi_result["canceledImageResult"].get("errorMessage") != expected_image_error:
+        raise AssertionError(f"Unexpected canceled router decision image result with autoload={router_autoload}: {pi_result['canceledImageResult']}")
+    if sum(request["path"] == "/v1/systemone" for request in pi_trace) != 1:
+        raise AssertionError(f"Image classification sent a router request with autoload={router_autoload}: {pi_trace}")
 
     chat_ids = {model["id"] for model in pi_result["chatModels"]}
     classifier_ids = {model["id"] for model in pi_result["classifiers"]}
@@ -322,6 +341,11 @@ report = {
     "piSharpSha": subprocess.check_output(["git", "-C", str(repo), "rev-parse", "HEAD"], text=True).strip(),
     "projection": {"chatModels": pi_result["chatModels"], "classifiers": pi_result["classifiers"]},
     "result": pi_result["result"],
+    "imageInput": {
+        "result": pi_result["imageResult"],
+        "alreadyCanceledResult": pi_result["canceledImageResult"],
+        "requestsSent": 0,
+    },
     "usage": pi_usage,
     "requests": {"pi": pi_trace, "pisharp": pisharp_trace},
     "autoloadScenarios": scenario_results,

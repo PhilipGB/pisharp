@@ -38,6 +38,26 @@ public sealed class CodemodeModelTests
     }
 
     [Fact]
+    public async Task GuestClassifierImagesSurviveHostDeserialization()
+    {
+        var models = new Models();
+        var registry = new PiSharpToolRegistry([]);
+        var context = PiSharpToolExecutionContext.CreateRoot(registry.CreateLoadout(),
+            () => new Dictionary<string, AIFunction>(), _ => { }, "root", null, "codemode", new Dictionary<string, object?>(), models);
+        var result = await CodemodeSandbox.ExecuteAsync("""
+            const context={state:{value:7},questions:{q:{type:'bool',instructions:'safe?',criteria:{true:'safe',false:'unsafe'}}},images:[{type:'image',data:'AQID',mimeType:'image/png'}]};
+            await models.classify({provider:'fixture',id:'one'},context);
+            text('done');
+            """, context, new Dictionary<string, JsonElement>(), CancellationToken.None);
+        Assert.True(result.Ok, result.Error);
+        Assert.Equal("done", result.Text);
+        var image = Assert.Single(models.LastContext.GetProperty("images").EnumerateArray());
+        Assert.Equal("image", image.GetProperty("type").GetString());
+        Assert.Equal("AQID", image.GetProperty("data").GetString());
+        Assert.Equal("image/png", image.GetProperty("mimeType").GetString());
+    }
+
+    [Fact]
     public async Task PaidClassifierUsageIsPublishedEvenWhenTheScriptLaterFails()
     {
         var events = new List<AgentLifecycleEvent>();
@@ -208,6 +228,7 @@ public sealed class CodemodeModelTests
     private sealed class Models(bool error = false) : ICodemodeModels
     {
         public int Calls { get; private set; }
+        public JsonElement LastContext { get; private set; }
         public IReadOnlyList<JsonElement> GetModels(string type, string? provider = null) =>
             [JsonSerializer.SerializeToElement(new { type = "classifier", provider = "fixture", id = "one", headers = new { Authorization = "host-secret" } })];
         public Task<IReadOnlyList<JsonElement>> GetAvailableAsync(string type, string? provider, CancellationToken cancellationToken) => Task.FromResult(GetModels(type, provider));
@@ -215,6 +236,7 @@ public sealed class CodemodeModelTests
         {
             Assert.Equal("fixture", provider);
             Assert.Equal("one", id);
+            LastContext = JsonSerializer.SerializeToElement(context, new JsonSerializerOptions(JsonSerializerDefaults.Web));
             Assert.Equal(7, context.State.GetProperty("value").GetInt32());
             Assert.IsType<ClassifierBoolQuestion>(context.Questions["q"]);
             Calls++;

@@ -7,6 +7,25 @@ namespace PiSharp.Tests;
 public sealed class LlamaClassifierTests
 {
     [Fact]
+    public async Task NativeClassifierRejectsImagesBeforeSendingRouterRequests()
+    {
+        var requests = 0;
+        using var http = new HttpClient(new Handler(_ =>
+        {
+            requests++;
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.InternalServerError));
+        }));
+        using var input = JsonDocument.Parse("""{"state":{"text":"fixture"},"questions":{"safe":{"type":"bool","instructions":"safe?","criteria":{"true":"safe","false":"unsafe"}}},"images":[{"type":"image","data":"AQID","mimeType":"image/png"}]}""");
+        var context = input.RootElement.Deserialize<ClassifierContext>(new JsonSerializerOptions(JsonSerializerDefaults.Web))!;
+        var result = await new LlamaClassifierClient(http).ClassifyAsync(
+            new("llama.cpp", "fixture", "llama-cpp-classify", new Uri("http://fixture/v1")), context, null);
+        Assert.Equal("error", result.StopReason);
+        Assert.Equal("llama.cpp classification does not support image input", result.ErrorMessage);
+        Assert.Equal(0, requests);
+        Assert.Empty(result.Answers);
+    }
+
+    [Fact]
     public async Task NativeLabelReadoutEscalatesAndReturnsBooleanProbability()
     {
         var depths = new List<int>();

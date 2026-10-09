@@ -17,7 +17,9 @@ public abstract record ClassifierQuestion(string Instructions);
 public sealed record ClassifierChoiceQuestion(string Instructions, IReadOnlyDictionary<string, string> Criteria) : ClassifierQuestion(Instructions);
 public sealed record ClassifierScoreQuestion(string Instructions, IReadOnlyList<string> Criteria) : ClassifierQuestion(Instructions);
 public sealed record ClassifierBoolQuestion(string Instructions, IReadOnlyDictionary<string, string> Criteria) : ClassifierQuestion(Instructions);
-public sealed record ClassifierContext(JsonElement State, IReadOnlyDictionary<string, ClassifierQuestion> Questions);
+public sealed record ClassifierImage(string Type, string Data, string MimeType);
+public sealed record ClassifierContext(JsonElement State, IReadOnlyDictionary<string, ClassifierQuestion> Questions,
+    IReadOnlyList<ClassifierImage>? Images = null);
 
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
 [JsonDerivedType(typeof(ClassifierChoiceAnswer), "choice")]

@@ -20,6 +20,7 @@ public sealed class LlamaClassifierClient(HttpClient http) : IClassifierClient
         try
         {
             if (model.Api != "llama-cpp-classify") throw new ArgumentException($"Unsupported classifier API: {model.Api}");
+            if (context.Images is { Count: > 0 }) throw new InvalidOperationException("llama.cpp classification does not support image input");
             options ??= new();
             var temperature = options.Temperature ?? 1;
             if (!double.IsFinite(temperature) || temperature <= 0) throw new ArgumentException("Temperature must be a positive finite number.");
