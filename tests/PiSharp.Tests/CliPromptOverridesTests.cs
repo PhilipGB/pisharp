@@ -18,6 +18,11 @@ public sealed class CliPromptOverridesTests
             var resolved = await CliPromptOverrides.ResolveAsync(cli, ("discovered", "discovered append"), root);
             Assert.Equal("FROM FILE", resolved.System);
             Assert.Equal("literal one\n\nFROM FILE", resolved.Append);
+            var withSources = await CliPromptOverrides.ResolveWithSourcesAsync(cli,
+                new("discovered", "discovered append", "old-system.md", ["old-append.md"]), root);
+            Assert.Equal("FROM FILE", withSources.System);
+            Assert.Equal(file, withSources.SystemPath);
+            Assert.Equal([file], withSources.AppendPaths);
             await File.WriteAllTextAsync(file, "UPDATED");
             Assert.Equal("UPDATED", (await CliPromptOverrides.ResolveAsync(cli, (null, null), root)).System);
             var literal = CliArguments.Parse(["--system-prompt", "a literal prompt\nwith lines"]);

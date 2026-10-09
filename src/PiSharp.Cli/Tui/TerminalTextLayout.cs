@@ -541,7 +541,7 @@ internal static class TerminalTextLayout
         return output.ToString();
     }
 
-    private static string Sanitize(string element)
+    public static string Sanitize(string element)
     {
         var output = new StringBuilder(element.Length);
         foreach (var rune in element.EnumerateRunes())

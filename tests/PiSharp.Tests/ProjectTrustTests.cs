@@ -9,6 +9,37 @@ namespace PiSharp.Tests;
 public sealed class ProjectTrustTests
 {
     [Fact]
+    public async Task ProjectPromptSourcesFollowTrustAndSystemAppendPrecedence()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-prompt-source-" + Guid.NewGuid().ToString("N"));
+        var project = Path.Combine(root, "project");
+        var agent = Path.Combine(root, "agent");
+        Directory.CreateDirectory(Path.Combine(project, ".pi"));
+        Directory.CreateDirectory(agent);
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(agent, "SYSTEM.md"), "USER SYSTEM");
+            await File.WriteAllTextAsync(Path.Combine(agent, "APPEND_SYSTEM.md"), "USER APPEND");
+            await File.WriteAllTextAsync(Path.Combine(project, ".pi", "SYSTEM.md"), "PROJECT SYSTEM");
+            await File.WriteAllTextAsync(Path.Combine(project, ".pi", "APPEND_SYSTEM.md"), "PROJECT APPEND");
+
+            var untrusted = await ProjectPrompts.LoadWithSourcesAsync(project, agent, projectTrusted: false);
+            Assert.Equal("USER SYSTEM", untrusted.System);
+            Assert.Equal(Path.Combine(agent, "SYSTEM.md"), untrusted.SystemPath);
+            Assert.Equal("USER APPEND", untrusted.Append);
+            Assert.Equal([Path.Combine(agent, "APPEND_SYSTEM.md")], untrusted.AppendPaths);
+
+            var trusted = await ProjectPrompts.LoadWithSourcesAsync(project, agent, projectTrusted: true);
+            Assert.Equal("PROJECT SYSTEM", trusted.System);
+            Assert.Equal(Path.Combine(project, ".pi", "SYSTEM.md"), trusted.SystemPath);
+            Assert.Equal("USER APPEND\n\nPROJECT APPEND", trusted.Append);
+            Assert.Equal([Path.Combine(agent, "APPEND_SYSTEM.md"), Path.Combine(project, ".pi", "APPEND_SYSTEM.md")],
+                trusted.AppendPaths);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [Fact]
     public async Task ProtectedPromptsRequireTrustButContextInstructionsDoNot()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-trust-" + Guid.NewGuid().ToString("N"));

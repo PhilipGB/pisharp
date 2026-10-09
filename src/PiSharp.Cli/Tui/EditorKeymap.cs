@@ -7,7 +7,7 @@ public sealed class EditorKeymap
     private sealed record Definition(string Description, string[] DefaultKeys);
     private readonly record struct KeyStroke(ConsoleKey Key, ConsoleModifiers Modifiers);
     private sealed record BoundKey(KeyStroke Stroke, string Name);
-    private static readonly string[] IdleApplicationActions = ["app.thinking.cycle", "app.model.cycleForward", "app.model.cycleBackward", "app.model.select", "app.editor.external", "app.message.copy", "app.clipboard.pasteImage", "app.settings.open", "app.session.fork", "app.session.resume"];
+    private static readonly string[] IdleApplicationActions = ["app.thinking.cycle", "app.model.cycleForward", "app.model.cycleBackward", "app.model.select", "app.tools.expand", "app.editor.external", "app.message.copy", "app.clipboard.pasteImage", "app.settings.open", "app.session.fork", "app.session.resume"];
 
     private static readonly IReadOnlyDictionary<string, Definition> s_definitions = new Dictionary<string, Definition>(StringComparer.Ordinal)
     {
@@ -80,6 +80,21 @@ public sealed class EditorKeymap
     public bool Matches(string action, ConsoleKeyInfo key) =>
         _bindings.TryGetValue(action, out var bindings) && bindings.Any(binding =>
             binding.Stroke.Key == key.Key && binding.Stroke.Modifiers == key.Modifiers);
+
+    public string? GetDisplayKeys(string action) =>
+        _bindings.TryGetValue(action, out var bindings) && bindings.Length > 0
+            ? string.Join("/", bindings.Select(binding => string.Join("+", binding.Name.Split('+')
+                .Select(part => part.ToLowerInvariant() switch
+                {
+                    "ctrl" => "Ctrl",
+                    "shift" => "Shift",
+                    "alt" => "Alt",
+                    "esc" or "escape" => "Esc",
+                    "pageup" => "PageUp",
+                    "pagedown" => "PageDown",
+                    _ => part.Length == 0 ? part : char.ToUpperInvariant(part[0]) + part[1..]
+                }))))
+            : null;
 
     public string? MatchIdleApplicationAction(ConsoleKeyInfo key)
     {

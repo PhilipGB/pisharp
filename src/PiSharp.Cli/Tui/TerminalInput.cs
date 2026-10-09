@@ -549,7 +549,7 @@ internal sealed class TerminalMode : IDisposable
         }
         var state = Stty("-g").Trim();
         if (string.IsNullOrEmpty(state)) throw new IOException("Could not read terminal settings.");
-        Stty("-icanon", "-echo", "-isig", "min", "1", "time", "0");
+        Stty("-icanon", "-echo", "-isig", "-iexten", "min", "1", "time", "0");
         try { WriteControl(screen, "\u001b[?2004h"); }
         catch { Stty(state); throw; }
         var owner = new TerminalMode(state, screen, ownsMode: true);
@@ -623,7 +623,7 @@ internal sealed class TerminalMode : IDisposable
     {
         if (!_ownsMode || _disposed || !_suspended) return;
         Stty(_original);
-        Stty("-icanon", "-echo", "-isig", "min", "1", "time", "0");
+        Stty("-icanon", "-echo", "-isig", "-iexten", "min", "1", "time", "0");
         try { WriteControl(_screen, "\u001b[?2004h"); }
         catch
         {

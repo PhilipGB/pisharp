@@ -342,9 +342,11 @@ public sealed class ExtensionCatalog : IDisposable
 {
     private readonly List<AssemblyLoadContext> _contexts = [];
     private readonly List<IAsyncDisposable> _ownedConnections = [];
+    private readonly List<ResourceSourceInfo> _loadedExtensions = [];
     private readonly HashSet<string> _loadedBuiltins = new(StringComparer.Ordinal);
     public ExtensionRegistration Registration { get; } = new();
     public IReadOnlySet<string> LoadedBuiltins => _loadedBuiltins;
+    public IReadOnlyList<ResourceSourceInfo> LoadedExtensions => _loadedExtensions.ToArray();
 
     private ExtensionCatalog() { }
 
@@ -416,6 +418,7 @@ public sealed class ExtensionCatalog : IDisposable
             }
             foreach (var (path, sourceInfo) in selectedPaths)
             {
+                catalog._loadedExtensions.Add(sourceInfo with { Path = path });
                 var context = new PluginLoadContext(path);
                 catalog._contexts.Add(context);
                 var assembly = context.LoadFromAssemblyPath(path);

@@ -342,7 +342,7 @@ TerminalEditor? editor = !print && cli.Mode is not ("json" or "rpc") ? new Termi
         .Concat(resources.Prompts.Select(item => "/" + item.Name))
         .Concat(extensionLease.Current.Registration.Commands.Keys.Select(name => "/" + name)).ToArray();
 },
-    agentDirectory, () => currentDirectory) : null;
+    agentDirectory, () => currentDirectory, initiallyExpanded: cli.Verbose) : null;
 string? cliThemeOverride = editor is null ? null : cli.UseTheme;
 string? ActiveThemeSetting() => cliThemeOverride ?? userSettings.Theme;
 TerminalThemeCatalog CreateTerminalThemeCatalog() => new(agentDirectory, trusted ? currentDirectory : null,
@@ -370,6 +370,15 @@ TerminalTheme ResolveConfiguredTheme(string? themeSetting, TerminalColorState? t
 bool ThemeFollowsTerminalAppearance(string? themeSetting) => themeSetting is null or "" or "system" ||
     themeSetting.Count(character => character == '/') == 1;
 var initialTerminalTheme = ResolveConfiguredTheme(ActiveThemeSetting());
+var startupPresentation = new TerminalStartupPresentation(userSettings.QuietStartup, cli.Verbose,
+    action => editor?.GetDisplayKeys(action));
+if (editor is not null && startupPresentation.ShowDetails && modelRuntime.Scope.Count > 0)
+{
+    var cycleKey = editor.GetDisplayKeys("app.model.cycleForward");
+    var cycleHint = string.IsNullOrWhiteSpace(cycleKey) ? "" : $" ({cycleKey} to cycle)";
+    Console.WriteLine(initialTerminalTheme.Style("dim",
+        $"Model scope: {string.Join(", ", modelRuntime.Scope)}{cycleHint}"));
+}
 using var terminalScreen = editor is null ? null : new TerminalScreen(rawTerminalOutput ?? Console.Out,
     rawTerminalError ?? Console.Error,
     getColumns: null, getRows: null, imageRenderer: new TerminalImageRenderer(), theme: initialTerminalTheme,
@@ -411,8 +420,11 @@ var startupTrustNotice = !trusted && ProjectTrust.HasProtectedResources(currentD
     : null;
 if (editor is not null)
 {
-    var startupPresentation = new TerminalStartupPresentation(userSettings.QuietStartup, cli.Verbose);
-    terminalScreen?.SetStartupHeader((theme, columns) => startupPresentation.Build(theme, columns, startupTrustNotice));
+    terminalScreen?.SetStartupHeader((theme, _, _) => startupPresentation.BuildLogo(theme));
+    terminalScreen?.SetStartupContent((theme, columns, expanded) =>
+        startupPresentation.Build(theme, expanded) + startupPresentation.BuildDetails(theme, columns,
+            TerminalStartupDetails.Build(projectRuntime.ContextFiles, resources,
+                extensionLease.Current, currentDirectory), startupTrustNotice, expanded));
 }
 InteractiveTranscript CreateInteractiveTranscript(bool interactive = true) => new(Console.Out, Console.Error, interactive,
     hideThinking: userSettings.HideThinkingBlock == true, screen: terminalScreen,

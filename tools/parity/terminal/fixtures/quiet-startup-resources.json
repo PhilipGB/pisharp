@@ -1,0 +1,84 @@
+{
+  "id": "quiet-startup-resources",
+  "workingDirectory": "quiet-startup",
+  "settings": {
+    "quietStartup": false
+  },
+  "arguments": {
+    "pi": [
+      "--provider", "fixture", "--model", "fixture-model", "--models", "fixture-model", "--no-session", "--offline", "--no-extensions", "--no-tools"
+    ],
+    "pisharp": [
+      "--provider", "fixture", "--model", "fixture-model", "--models", "fixture-model", "--no-session", "--offline", "--no-extensions", "--no-tools", "--no-approve"
+    ]
+  },
+  "projectFiles": {
+    "quiet-startup/AGENTS.md": "Project context instructions.\n",
+    "quiet-startup/.pi/SYSTEM.md": "Untrusted project system prompt.\n",
+    "quiet-startup/.pi/APPEND_SYSTEM.md": "Untrusted project appended prompt.\n",
+    "quiet-startup/.pi/skills/untrusted-project-skill/SKILL.md": "---\nname: untrusted-project-skill\ndescription: Must stay hidden\n---\nDo not load.\n"
+  },
+  "files": {
+    "pi": {
+      "AGENTS.md": "User context instructions.\n",
+      "SYSTEM.md": "User system prompt.\n",
+      "APPEND_SYSTEM.md": "User appended prompt.\n",
+      "skills/startup-skill/SKILL.md": "---\nname: startup-skill\ndescription: Startup test skill\n---\nUse for startup tests.\n",
+      "prompts/startup-template.md": "---\ndescription: Startup test prompt\n---\nUse this template.\n",
+      "trust.json": {
+        "/tmp/pisharp-terminal-fixture-workspace": true,
+        "/tmp/pisharp-terminal-fixture-workspace/quiet-startup": false
+      }
+    },
+    "pisharp": {
+      "AGENTS.md": "User context instructions.\n",
+      "SYSTEM.md": "User system prompt.\n",
+      "APPEND_SYSTEM.md": "User appended prompt.\n",
+      "skills/startup-skill/SKILL.md": "---\nname: startup-skill\ndescription: Startup test skill\n---\nUse for startup tests.\n",
+      "prompts/startup-template.md": "---\ndescription: Startup test prompt\n---\nUse this template.\n",
+      "trust.json": {
+        "/tmp/pisharp-terminal-fixture-workspace": true,
+        "/tmp/pisharp-terminal-fixture-workspace/quiet-startup": false
+      }
+    }
+  },
+  "actions": [
+    {
+      "id": "startup",
+      "expect": "startup-skill"
+    },
+    {
+      "id": "expand-startup",
+      "send": "\u000f",
+      "expect": "skills/startup-skill/SKILL.md"
+    },
+    {
+      "id": "quit",
+      "send": "/quit\r",
+      "exit": true
+    }
+  ],
+  "dimensions": [
+    {
+      "columns": 120,
+      "rows": 40
+    }
+  ],
+  "themes": [
+    "dark"
+  ],
+  "modes": [
+    "fullscreen"
+  ],
+  "environment": {
+    "pi": {
+      "HOME": "{agent}"
+    },
+    "pisharp": {
+      "HOME": "{agent}"
+    }
+  },
+  "terminal": {
+    "keyboardProtocol": "kitty"
+  }
+}

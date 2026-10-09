@@ -19,13 +19,14 @@ public sealed class TerminalEditor
     private string _lastSearchQuery = "";
     private bool _toolResultsExpanded;
     public TerminalEditor(Func<IReadOnlyList<string>>? commands = null, string? agentDirectory = null,
-        Func<string>? getWorkingDirectory = null)
+        Func<string>? getWorkingDirectory = null, bool initiallyExpanded = false)
     {
         _completion = getWorkingDirectory is null
             ? new EditorCompletion(Environment.CurrentDirectory, commands)
             : new EditorCompletion(getWorkingDirectory, commands);
         _keymap = new(agentDirectory);
         _buffer = new(_keymap);
+        _toolResultsExpanded = initiallyExpanded;
     }
     private const string Prompt = "❯ ";
     private int _renderedRows;
@@ -33,6 +34,7 @@ public sealed class TerminalEditor
 
     public string Draft => _buffer.Text;
     public string Hotkeys => _keymap.FormatHotkeys();
+    internal string? GetDisplayKeys(string action) => _keymap.GetDisplayKeys(action);
     internal TerminalTheme CurrentTheme => _screen?.CurrentTheme ?? TerminalTheme.Default;
     internal bool TryReadLoginAbort() => EnsureInput().TryRead(50, out var input) &&
         input.Key is { } key && _keymap.Matches("app.interrupt", key);
@@ -974,6 +976,11 @@ public sealed class TerminalEditor
         var action = _keymap.MatchIdleApplicationAction(key);
         if (action is null) return false;
         beforeDispatch?.Invoke();
+        if (action == "app.tools.expand")
+        {
+            ToggleToolResults();
+            return true;
+        }
         await dispatch(action);
         return true;
     }

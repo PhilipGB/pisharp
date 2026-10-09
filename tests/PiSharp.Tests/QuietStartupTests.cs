@@ -87,21 +87,34 @@ public sealed class QuietStartupTests
     }
 
     [Theory]
-    [InlineData("true", false, false)]
-    [InlineData("true", true, true)]
-    [InlineData("\"header\"", false, true)]
-    [InlineData("\"header\"", true, true)]
-    [InlineData("false", false, true)]
-    [InlineData("false", true, true)]
-    public async Task TerminalStartupHeaderVisibilityFollowsQuietStartup(string value, bool verbose, bool header)
+    [InlineData("true", false, false, false)]
+    [InlineData("true", true, true, true)]
+    [InlineData("\"header\"", false, true, false)]
+    [InlineData("\"header\"", true, true, true)]
+    [InlineData("false", false, true, true)]
+    [InlineData("false", true, true, true)]
+    public async Task TerminalStartupVisibilityFollowsQuietStartup(string value, bool verbose, bool header, bool details)
     {
         if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
         var root = Path.Combine(Path.GetTempPath(), "pisharp-quiet-pty-" + Guid.NewGuid().ToString("N"));
         var agent = Path.Combine(root, "agent");
-        Directory.CreateDirectory(agent);
+        var skillDirectory = Path.Combine(agent, "skills", "startup-skill");
+        Directory.CreateDirectory(skillDirectory);
+        Directory.CreateDirectory(Path.Combine(agent, "prompts"));
+        Directory.CreateDirectory(Path.Combine(root, ".pi", "skills", "untrusted-project-skill"));
         try
         {
             await File.WriteAllTextAsync(Path.Combine(agent, "settings.json"), $"{{\"quietStartup\":{value}}}");
+            await File.WriteAllTextAsync(Path.Combine(agent, "AGENTS.md"), "user context");
+            await File.WriteAllTextAsync(Path.Combine(agent, "SYSTEM.md"), "user system prompt");
+            await File.WriteAllTextAsync(Path.Combine(agent, "APPEND_SYSTEM.md"), "user appended prompt");
+            await File.WriteAllTextAsync(Path.Combine(root, "CLAUDE.md"), "project context");
+            await File.WriteAllTextAsync(Path.Combine(root, ".pi", "SYSTEM.md"), "untrusted project prompt");
+            await File.WriteAllTextAsync(Path.Combine(skillDirectory, "SKILL.md"),
+                "---\nname: startup-skill\ndescription: Startup test skill\n---\nUse for startup tests.");
+            await File.WriteAllTextAsync(Path.Combine(agent, "prompts", "startup-template.md"), "Startup template.");
+            await File.WriteAllTextAsync(Path.Combine(root, ".pi", "skills", "untrusted-project-skill", "SKILL.md"),
+                "---\nname: untrusted-project-skill\ndescription: Must stay hidden\n---\nDo not load.");
             var cli = typeof(CliArguments).Assembly.Location;
             var start = new ProcessStartInfo("/usr/bin/script")
             {
@@ -109,9 +122,10 @@ public sealed class QuietStartupTests
                 RedirectStandardInput = true,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
-                ArgumentList = { "-q", "-e", "-c", $"stty rows 40 cols 120; dotnet '{cli}' --local --no-session --no-tools --no-approve {(verbose ? "--verbose" : "")}", "/dev/null" }
+                ArgumentList = { "-q", "-e", "-c", $"stty rows 40 cols 120; dotnet '{cli}' --local --models 'local/*' --no-session --no-tools --no-approve {(verbose ? "--verbose" : "")}", "/dev/null" }
             };
             start.Environment["PISHARP_AGENT_DIR"] = agent;
+            start.Environment["HOME"] = root;
             using var process = Process.Start(start)!;
             var output = process.StandardOutput.ReadToEndAsync();
             var error = process.StandardError.ReadToEndAsync();
@@ -125,6 +139,19 @@ public sealed class QuietStartupTests
             var text = await output;
             Assert.Equal(header, text.Contains("▀▀█", StringComparison.Ordinal));
             Assert.Equal(header, text.Contains("PiSharp v", StringComparison.Ordinal));
+            Assert.Contains("This project is not trusted", text);
+            Assert.Equal(details, text.Contains("Model scope: local/*", StringComparison.Ordinal));
+            Assert.Equal(details, text.Contains("[Context]", StringComparison.Ordinal));
+            Assert.Equal(details, text.Contains("agent/AGENTS.md", StringComparison.Ordinal));
+            Assert.Equal(details, text.Contains("CLAUDE.md", StringComparison.Ordinal));
+            Assert.Equal(details, text.Contains("SYSTEM.md", StringComparison.Ordinal));
+            Assert.Equal(details, text.Contains("APPEND_SYSTEM.md", StringComparison.Ordinal));
+            Assert.Equal(details, text.Contains("[Skills]", StringComparison.Ordinal));
+            Assert.Equal(details, text.Contains("startup-skill", StringComparison.Ordinal));
+            Assert.Equal(details, text.Contains("[Prompts]", StringComparison.Ordinal));
+            Assert.Equal(details, text.Contains("/startup-template", StringComparison.Ordinal));
+            Assert.DoesNotContain("untrusted-project-skill", text);
+            Assert.DoesNotContain("untrusted project prompt", text);
             Assert.DoesNotContain("PiSharp · local/", text);
         }
         finally { Directory.Delete(root, true); }

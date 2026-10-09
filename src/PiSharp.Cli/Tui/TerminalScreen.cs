@@ -43,7 +43,9 @@ public sealed class TerminalScreen : IDisposable
     private string? _statusNotification;
     private TerminalStatusNotificationKind _statusNotificationKind;
     private bool _statusNotificationIsExtension;
-    private Func<TerminalTheme, int, string>? _startupHeader;
+    private Func<TerminalTheme, int, bool, string>? _startupHeader;
+    private Func<TerminalTheme, int, bool, string>? _startupContent;
+    private bool _startupExpanded;
     private IReadOnlyList<string>? _overlay;
     private IReadOnlyList<string>? _editorPanel;
     private int? _panelCursorRow;
@@ -341,13 +343,24 @@ public sealed class TerminalScreen : IDisposable
         }
     }
 
-    internal void SetStartupHeader(Func<TerminalTheme, int, string> renderHeader)
+    internal void SetStartupHeader(Func<TerminalTheme, int, bool, string> renderHeader)
     {
         ArgumentNullException.ThrowIfNull(renderHeader);
         lock (_gate)
         {
             if (!_active) return;
             _startupHeader = renderHeader;
+            RenderLocked();
+        }
+    }
+
+    internal void SetStartupContent(Func<TerminalTheme, int, bool, string> renderContent)
+    {
+        ArgumentNullException.ThrowIfNull(renderContent);
+        lock (_gate)
+        {
+            if (!_active) return;
+            _startupContent = renderContent;
             RenderLocked();
         }
     }
@@ -723,6 +736,7 @@ public sealed class TerminalScreen : IDisposable
         {
             if (!_active) return _transcript.IsExpanded;
             var expanded = _transcript.ToggleExpanded();
+            _startupExpanded = expanded;
             RenderLocked();
             return expanded;
         }
@@ -732,9 +746,11 @@ public sealed class TerminalScreen : IDisposable
     {
         lock (_gate)
         {
-            if (!_active || _transcript.IsExpanded == expanded) return;
+            if (!_active) return;
+            var changed = _transcript.IsExpanded != expanded || _startupExpanded != expanded;
             _transcript.SetExpanded(expanded);
-            RenderLocked();
+            _startupExpanded = expanded;
+            if (changed) RenderLocked();
         }
     }
 
@@ -913,7 +929,8 @@ public sealed class TerminalScreen : IDisposable
             transcript, _footer, _overlay, _scrollOffset, columns, rows, _search, _mouse, _theme,
             _editorPanel, _panelCursorRow, _panelCursorColumn, _panelCursorVisible, _panelBottomMargin,
             _statusNotification, _statusNotificationKind, _statusNotificationIsExtension,
-            _startupHeader?.Invoke(_theme, columns));
+            _startupHeader?.Invoke(_theme, columns, _startupExpanded),
+            _startupContent?.Invoke(_theme, columns, _startupExpanded));
         _scrollOffset = frame.ScrollOffset;
         _lastColumns = frame.Columns;
         _lastRows = frame.Height;

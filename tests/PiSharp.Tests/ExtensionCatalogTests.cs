@@ -65,9 +65,13 @@ public sealed class ExtensionCatalogTests
             {
                 Assert.Empty(untrusted.Registration.Tools);
                 Assert.Empty(untrusted.Registration.UserBashHandlers);
+                Assert.Empty(untrusted.LoadedExtensions);
             }
             using (var trusted = ExtensionCatalog.Load(agent, cwd, true))
             {
+                var loadedExtension = Assert.Single(trusted.LoadedExtensions);
+                Assert.Equal(Path.Combine(project, "fixture.dll"), loadedExtension.Path);
+                Assert.Equal("project", loadedExtension.Scope);
                 Assert.Equal("echo_ext", Assert.Single(trusted.Registration.Tools).Name);
                 Assert.NotNull(trusted.Registration.GetToolRenderer("echo_ext"));
                 Assert.Single(trusted.Registration.UserBashHandlers);

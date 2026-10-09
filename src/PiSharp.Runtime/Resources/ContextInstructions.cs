@@ -16,7 +16,7 @@ public static class ContextInstructions
     private const int MaxTotalBytes = 256 * 1024;
 
     public static async Task<string> LoadAsync(string workingDirectory, string agentDirectory,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default, ICollection<string>? loadedFiles = null)
     {
         var folders = new List<string> { Path.GetFullPath(agentDirectory) };
         var parents = new Stack<string>();
@@ -43,6 +43,7 @@ public static class ContextInstructions
             if (Encoding.UTF8.GetByteCount(contents.ToString()) + Encoding.UTF8.GetByteCount(section) > MaxTotalBytes)
                 throw new InvalidDataException("Combined context instructions exceed 256KB.");
             contents.Append(section);
+            loadedFiles?.Add(file);
         }
         return contents.ToString();
     }

@@ -167,10 +167,13 @@ public sealed class ContextInstructionsTests
             await File.WriteAllTextAsync(Path.Combine(project, "AGENTS.md"), "old rule");
             await File.WriteAllTextAsync(Path.Combine(project, "AGENTS.override.md"), "PROJECT OVERRIDE");
             await File.WriteAllTextAsync(Path.Combine(child, "AGENTS.MD"), "CHILD RULE");
-            var text = await ContextInstructions.LoadAsync(child, agentDir);
+            var loadedFiles = new List<string>();
+            var text = await ContextInstructions.LoadAsync(child, agentDir, loadedFiles: loadedFiles);
             Assert.True(text.IndexOf("USER RULE", StringComparison.Ordinal) < text.IndexOf("PROJECT OVERRIDE", StringComparison.Ordinal));
             Assert.True(text.IndexOf("PROJECT OVERRIDE", StringComparison.Ordinal) < text.IndexOf("CHILD RULE", StringComparison.Ordinal));
             Assert.DoesNotContain("old rule", text);
+            Assert.Equal([Path.Combine(agentDir, "CLAUDE.md"), Path.Combine(project, "AGENTS.override.md"),
+                Path.Combine(child, "AGENTS.MD")], loadedFiles);
             var provider = new CaptureClient();
             var agent = new PiAgent(provider, new CodingTools(child), noTools: true, contextInstructions: text);
             await foreach (var _ in agent.RunStreamingAsync("hi", await agent.CreateSessionAsync())) { }

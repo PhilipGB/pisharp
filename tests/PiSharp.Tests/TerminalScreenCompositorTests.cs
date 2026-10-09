@@ -111,14 +111,52 @@ public sealed class TerminalScreenCompositorTests
     }
 
     [Fact]
+    public void StartupDetailsUseTheScrollableTranscriptBelowTheFixedHeader()
+    {
+        var compositor = new TerminalScreenCompositor(new StringWriter(), new TerminalImageRenderer());
+
+        var frame = compositor.Compose("", 0, null, null, "project history", "fixture-model",
+            overlay: null, scrollOffset: 0, columns: 80, height: 24,
+            new TranscriptSearchController(), new TerminalMouseRouter(), TerminalTheme.Default,
+            startupHeader: "brand", startupContent: "[Skills]\n  startup-skill\n\n[Prompts]\n  /review");
+
+        Assert.Contains("brand", frame.Rows[0]);
+        Assert.Contains(frame.Rows, row => row.Contains("[Skills]", StringComparison.Ordinal));
+        Assert.Contains(frame.Rows, row => row.Contains("startup-skill", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void StartupTrustNoticeUsesAnIndentedPiWidthContinuation()
     {
         var presentation = new TerminalStartupPresentation(null, verbose: false);
 
-        var header = presentation.Build(TerminalTheme.Default, 120,
-            "This project is not trusted. Project .pi resources and packages are ignored. Use /trust to save a trust decision, then restart PiSharp.");
+        var header = presentation.BuildDetails(TerminalTheme.Default, 120, null,
+            "This project is not trusted. Project .pi resources and packages are ignored. Use /trust to save a trust decision, then restart PiSharp.",
+            expanded: false);
 
         Assert.Contains("then\n restart PiSharp.", header);
+    }
+
+    [Fact]
+    public void StartupExpansionShowsConfiguredHelpAndResourcePaths()
+    {
+        var presentation = new TerminalStartupPresentation(null, verbose: false,
+            action => action == "app.tools.expand" ? "Alt+O" : null);
+        var details = new[]
+        {
+            new TerminalStartupDetail("Skills", ["startup-skill"], ["/home/user/.agents/skills/startup-skill/SKILL.md"])
+        };
+
+        var compactHeader = presentation.Build(TerminalTheme.Default, expanded: false);
+        var expandedHeader = presentation.Build(TerminalTheme.Default, expanded: true);
+        var compactDetails = presentation.BuildDetails(TerminalTheme.Default, 120, details, null, expanded: false);
+        var expandedDetails = presentation.BuildDetails(TerminalTheme.Default, 120, details, null, expanded: true);
+
+        Assert.Contains("Press Alt+O to show full startup help and loaded resources.", compactHeader);
+        Assert.Contains("Alt+O to expand or collapse details and tool output", expandedHeader);
+        Assert.Contains("startup-skill", compactDetails);
+        Assert.DoesNotContain("SKILL.md", compactDetails);
+        Assert.Contains("/home/user/.agents/skills/startup-skill/SKILL.md", expandedDetails);
     }
 
     [Fact]

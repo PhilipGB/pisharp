@@ -34,6 +34,7 @@ internal sealed class ProjectRuntimeContext : IDisposable
 
     public (string? System, string? Append) Prompts { get; }
     public string Instructions { get; }
+    public IReadOnlyList<string> ContextFiles { get; }
     public ResourceCatalog Resources { get; }
     public ExtensionCatalog Extensions { get; }
     public ConversationStore Store { get; }
@@ -51,7 +52,7 @@ internal sealed class ProjectRuntimeContext : IDisposable
         McpManager.SetAuthorizationUrlPresenter(presenter);
 
     private ProjectRuntimeContext(ProjectRuntimeConfiguration configuration,
-        (string? System, string? Append) prompts, string instructions,
+        (string? System, string? Append) prompts, string instructions, IReadOnlyList<string> contextFiles,
         ResourceCatalog resources, ExtensionCatalog extensions, ConversationStore store,
         PiSessionImportService sessionImport, McpRuntimeManager mcpManager,
         IReadOnlyList<McpServerConfiguration> effectiveMcpServers)
@@ -59,6 +60,7 @@ internal sealed class ProjectRuntimeContext : IDisposable
         Configuration = configuration;
         Prompts = prompts;
         Instructions = instructions;
+        ContextFiles = contextFiles;
         Resources = resources;
         Extensions = extensions;
         Store = store;
@@ -74,9 +76,16 @@ internal sealed class ProjectRuntimeContext : IDisposable
         Func<string, CancellationToken, Task<string?>>? providerTokenResolver = null)
     {
         var cwd = configuration.WorkingDirectory;
-        var prompts = await CliPromptOverrides.ResolveAsync(arguments,
-            await ProjectPrompts.LoadAsync(cwd, agentDirectory, configuration.Trusted, cancellationToken), cwd);
-        var instructions = arguments.NoContextFiles ? "" : await ContextInstructions.LoadAsync(cwd, agentDirectory, cancellationToken);
+        var contextFiles = new List<string>();
+        var discoveredPrompts = await ProjectPrompts.LoadWithSourcesAsync(cwd, agentDirectory,
+            configuration.Trusted, cancellationToken);
+        var promptResources = await CliPromptOverrides.ResolveWithSourcesAsync(arguments, discoveredPrompts, cwd,
+            cancellationToken);
+        if (promptResources.SystemPath is { } systemPath) contextFiles.Add(systemPath);
+        contextFiles.AddRange(promptResources.AppendPaths);
+        var prompts = (promptResources.System, promptResources.Append);
+        var instructions = arguments.NoContextFiles ? "" :
+            await ContextInstructions.LoadAsync(cwd, agentDirectory, cancellationToken, contextFiles);
         var resources = await ResourceCatalog.LoadAsync(cwd, agentDirectory, configuration.Trusted, cancellationToken,
             discoverSkills: !arguments.NoSkills, discoverPrompts: !arguments.NoPromptTemplates,
             additionalSkills: arguments.SkillPaths, additionalPrompts: arguments.PromptTemplatePaths,
@@ -139,7 +148,7 @@ internal sealed class ProjectRuntimeContext : IDisposable
                     codemodeSource.Path == "builtin:codemode")
                     extensions.Registration.SetToolDefaultActive("codemode", true);
             }
-            return new ProjectRuntimeContext(configuration, prompts, instructions,
+            return new ProjectRuntimeContext(configuration, prompts, instructions, contextFiles,
                 resources, extensions, store, sessionImport, mcpManager, effectiveMcpServers);
         }
         catch
