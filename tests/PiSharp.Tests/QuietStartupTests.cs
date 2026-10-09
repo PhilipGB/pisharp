@@ -87,13 +87,13 @@ public sealed class QuietStartupTests
     }
 
     [Theory]
-    [InlineData("true", false, false, false)]
-    [InlineData("true", true, true, true)]
-    [InlineData("\"header\"", false, true, false)]
-    [InlineData("\"header\"", true, true, true)]
-    [InlineData("false", false, true, true)]
-    [InlineData("false", true, true, true)]
-    public async Task TerminalStartupSeparatesHeaderAndDetails(string value, bool verbose, bool header, bool details)
+    [InlineData("true", false, false)]
+    [InlineData("true", true, true)]
+    [InlineData("\"header\"", false, true)]
+    [InlineData("\"header\"", true, true)]
+    [InlineData("false", false, true)]
+    [InlineData("false", true, true)]
+    public async Task TerminalStartupHeaderVisibilityFollowsQuietStartup(string value, bool verbose, bool header)
     {
         if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
         var root = Path.Combine(Path.GetTempPath(), "pisharp-quiet-pty-" + Guid.NewGuid().ToString("N"));
@@ -123,9 +123,9 @@ public sealed class QuietStartupTests
             Assert.Equal(0, process.ExitCode);
             Assert.Equal("", await error);
             var text = await output;
-            Assert.Equal(header, text.Contains("/model · /llama · /settings", StringComparison.Ordinal));
+            Assert.Equal(header, text.Contains("▀▀█", StringComparison.Ordinal));
             Assert.Equal(header, text.Contains("PiSharp v", StringComparison.Ordinal));
-            Assert.Equal(details, text.Contains("PiSharp · local/", StringComparison.Ordinal));
+            Assert.DoesNotContain("PiSharp · local/", text);
         }
         finally { Directory.Delete(root, true); }
     }

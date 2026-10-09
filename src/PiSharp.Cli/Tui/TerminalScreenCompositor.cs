@@ -38,7 +38,8 @@ internal sealed class TerminalScreenCompositor
         int? panelCursorColumn = null, bool panelCursorVisible = false, int panelBottomMargin = 1,
         string? statusNotification = null,
         TerminalStatusNotificationKind statusNotificationKind = TerminalStatusNotificationKind.Info,
-        bool statusNotificationIsExtension = false)
+        bool statusNotificationIsExtension = false,
+        string? startupHeader = null)
     {
         var activeTheme = theme ?? TerminalTheme.Default;
         var footerHeight = height >= 5 ? 2 : height > 2 ? 1 : 0;
@@ -51,8 +52,13 @@ internal sealed class TerminalScreenCompositor
             borderHeight = 0;
             editorHeight = editor.Rows.Count;
         }
-        var transcriptHeight = Math.Max(1, height - editorHeight - footerHeight);
         var transcriptWidth = Math.Max(1, columns - 1);
+        var startupRows = string.IsNullOrEmpty(startupHeader)
+            ? Array.Empty<string>()
+            : TerminalTextLayout.Create(startupHeader, transcriptWidth).Rows;
+        var startupHeight = Math.Min(startupRows.Count,
+            Math.Max(0, height - editorHeight - footerHeight - 1));
+        var transcriptHeight = Math.Max(1, height - editorHeight - footerHeight - startupHeight);
         var transcriptLayout = TerminalTextLayout.Create(transcriptText, transcriptWidth);
         var visibleLayout = transcriptLayout;
         var highlightedSearch = search.Highlight(transcriptText);
@@ -66,13 +72,17 @@ internal sealed class TerminalScreenCompositor
         var transcriptRows = TerminalTranscriptViewport.WrapWindow(visibleLayout,
             transcriptHeight, scrollOffset, out scrollOffset, out var firstVisualRow);
         var rows = Enumerable.Repeat("", height).ToArray();
-        var transcriptStart = scrollOffset > 0 ? 0 : transcriptHeight - transcriptRows.Count;
+        for (var index = 0; index < startupHeight; index++)
+            rows[index] = TerminalTranscriptViewport.Clip(startupRows[index], columns);
+        var transcriptStart = startupHeight + (scrollOffset > 0 || startupHeight > 0
+            ? 0
+            : transcriptHeight - transcriptRows.Count);
         mouse.SetTranscript(transcriptRows, firstVisualRow, transcriptStart, transcriptHeight);
         var displayedTranscriptRows = mouse.HighlightTranscript();
         for (var index = 0; index < transcriptRows.Count; index++)
             rows[transcriptStart + index] = displayedTranscriptRows[index];
 
-        var editorStart = transcriptHeight;
+        var editorStart = startupHeight + transcriptHeight;
         mouse.SetEditor(editorText, editor, editorStart + borderHeight / 2, editorSelectionStart, editorSelectionEnd);
         var displayedEditorRows = mouse.HighlightEditor();
         for (var index = 0; index < editor.Rows.Count; index++)
@@ -109,7 +119,8 @@ internal sealed class TerminalScreenCompositor
                 _ => ("dim", "")
             };
             var statusText = prefix + statusNotification;
-            rows[1] = statusNotificationIsExtension
+            var statusRow = Math.Min(startupHeight + 1, height - 1);
+            rows[statusRow] = statusNotificationIsExtension
                 ? " " + activeTheme.Style(style, TerminalTranscriptViewport.Clip(statusText, columns - 1)) +
                   new string(' ', Math.Max(0, columns - 1 - TerminalTextLayout.Width(statusText)))
                 : activeTheme.Style(style, TerminalTranscriptViewport.Clip(" " + statusText, columns));

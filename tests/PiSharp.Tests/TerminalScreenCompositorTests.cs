@@ -93,6 +93,35 @@ public sealed class TerminalScreenCompositorTests
     }
 
     [Fact]
+    public void StartupHeaderStaysAboveTranscriptAndStatusNotifications()
+    {
+        var compositor = new TerminalScreenCompositor(new StringWriter(), new TerminalImageRenderer());
+
+        var frame = compositor.Compose("", 0, null, null, "project history", "fixture-model",
+            overlay: null, scrollOffset: 0, columns: 80, height: 24,
+            new TranscriptSearchController(), new TerminalMouseRouter(), TerminalTheme.Default,
+            statusNotification: "Loaded fixture-model", startupHeader: "brand\nhelp\n\nstartup trust notice");
+
+        Assert.Contains("brand", frame.Rows[0]);
+        Assert.Contains("help", frame.Rows[1]);
+        Assert.Contains("startup trust notice", frame.Rows[3]);
+        Assert.DoesNotContain("Loaded fixture-model", frame.Rows[1]);
+        Assert.Contains("Loaded fixture-model", frame.Rows[5]);
+        Assert.Contains("project history", frame.Rows[4]);
+    }
+
+    [Fact]
+    public void StartupTrustNoticeUsesAnIndentedPiWidthContinuation()
+    {
+        var presentation = new TerminalStartupPresentation(null, verbose: false);
+
+        var header = presentation.Build(TerminalTheme.Default, 120,
+            "This project is not trusted. Project .pi resources and packages are ignored. Use /trust to save a trust decision, then restart PiSharp.");
+
+        Assert.Contains("then\n restart PiSharp.", header);
+    }
+
+    [Fact]
     public void ModalOverlayCoversUnderlyingStatusNotification()
     {
         var compositor = new TerminalScreenCompositor(new StringWriter(), new TerminalImageRenderer());

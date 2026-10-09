@@ -24,7 +24,7 @@ foreach (var scenario in input.RootElement.EnumerateArray())
         }
         var presentation = new TerminalStartupPresentation(settings.QuietStartup, scenario.GetProperty("verbose").GetBoolean());
         results.Add(new { id = scenario.GetProperty("id").GetString(), value = settings.QuietStartup?.ToSettingValue() ?? "false",
-            header = presentation.ShowHeader, details = presentation.ShowDetails });
+            header = presentation.ShowHeader });
     }
     finally { Directory.Delete(root, true); }
 }

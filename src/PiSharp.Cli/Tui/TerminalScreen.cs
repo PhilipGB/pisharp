@@ -43,6 +43,7 @@ public sealed class TerminalScreen : IDisposable
     private string? _statusNotification;
     private TerminalStatusNotificationKind _statusNotificationKind;
     private bool _statusNotificationIsExtension;
+    private Func<TerminalTheme, int, string>? _startupHeader;
     private IReadOnlyList<string>? _overlay;
     private IReadOnlyList<string>? _editorPanel;
     private int? _panelCursorRow;
@@ -336,6 +337,17 @@ public sealed class TerminalScreen : IDisposable
         {
             if (!_active) return;
             _footer = TerminalSafeText.Normalize(text);
+            RenderLocked();
+        }
+    }
+
+    internal void SetStartupHeader(Func<TerminalTheme, int, string> renderHeader)
+    {
+        ArgumentNullException.ThrowIfNull(renderHeader);
+        lock (_gate)
+        {
+            if (!_active) return;
+            _startupHeader = renderHeader;
             RenderLocked();
         }
     }
@@ -900,7 +912,8 @@ public sealed class TerminalScreen : IDisposable
         var frame = _compositor.Compose(_editorText, _editorCursor, _editorSelectionStart, _editorSelectionEnd,
             transcript, _footer, _overlay, _scrollOffset, columns, rows, _search, _mouse, _theme,
             _editorPanel, _panelCursorRow, _panelCursorColumn, _panelCursorVisible, _panelBottomMargin,
-            _statusNotification, _statusNotificationKind, _statusNotificationIsExtension);
+            _statusNotification, _statusNotificationKind, _statusNotificationIsExtension,
+            _startupHeader?.Invoke(_theme, columns));
         _scrollOffset = frame.ScrollOffset;
         _lastColumns = frame.Columns;
         _lastRows = frame.Height;

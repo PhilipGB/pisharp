@@ -22,8 +22,7 @@ it("captures current Pi quiet startup settings and presentation gates", async ()
             const settingsManager = SettingsManager.create(root, agent, { projectTrusted: scenario.trusted ?? false });
             const view = { settingsManager, options: { verbose: scenario.verbose } };
             results.push({ id: scenario.id, value: String(settingsManager.getQuietStartup()),
-                header: (InteractiveMode as any).prototype.shouldShowStartupHeader.call(view),
-                details: (InteractiveMode as any).prototype.shouldShowStartupDetails.call(view) });
+                header: (InteractiveMode as any).prototype.shouldShowStartupHeader.call(view) });
         } finally { rmSync(root, { recursive: true, force: true }); }
     }
     const root = mkdtempSync(join(tmpdir(), "pi-quiet-save-"));

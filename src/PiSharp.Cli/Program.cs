@@ -406,9 +406,14 @@ void LoadSessionTranscript()
     history.LoadHistory(conversation);
 }
 LoadSessionTranscript();
-if (!trusted && ProjectTrust.HasProtectedResources(currentDirectory))
-    terminalScreen?.AppendStatusMessage(
-        $"This project is not trusted. Project .pi resources and packages are ignored. Use /trust to save a trust decision, then restart PiSharp.");
+var startupTrustNotice = !trusted && ProjectTrust.HasProtectedResources(currentDirectory)
+    ? "This project is not trusted. Project .pi resources and packages are ignored. Use /trust to save a trust decision, then restart PiSharp."
+    : null;
+if (editor is not null)
+{
+    var startupPresentation = new TerminalStartupPresentation(userSettings.QuietStartup, cli.Verbose);
+    terminalScreen?.SetStartupHeader((theme, columns) => startupPresentation.Build(theme, columns, startupTrustNotice));
+}
 InteractiveTranscript CreateInteractiveTranscript(bool interactive = true) => new(Console.Out, Console.Error, interactive,
     hideThinking: userSettings.HideThinkingBlock == true, screen: terminalScreen,
     toolRenderer: name => extensionLease.Current.Registration.GetToolRenderer(name),
@@ -422,9 +427,6 @@ string IdleFooter(int? providerCount = null) => TerminalModelStatus.FormatIdleFo
     conversationRun.ContextWindowTokens, userSettings.AutoCompactionEnabled(Environment.GetEnvironmentVariable),
     terminalScreen?.TerminalWidth ?? 80, providerCount ?? modelRuntime.AvailableModelProviderCount);
 terminalScreen?.SetFooter(IdleFooter(providerCount: 1));
-if (editor is not null)
-    new TerminalStartupPresentation(userSettings.QuietStartup, cli.Verbose)
-        .Write(Console.Out, selection.Provider.Id, connection.Model, thinking, currentDirectory);
 terminalScreen?.RenderInitial();
 terminalScreen?.SetFooter(IdleFooter());
 CancellationTokenSource? activeRun = null;
@@ -1268,7 +1270,7 @@ else
                                 ? null
                                 : await terminalTrustPicker.ShowAsync(trustStore, currentDirectory, trusted);
                             if (savedTrustDecision.HasValue)
-                                Console.WriteLine($"Saved trust decision: {(savedTrustDecision.Value ? "trusted" : "untrusted")}. Restart PiSharp for this to take effect.");
+                                Console.WriteLine($" Saved trust decision: {(savedTrustDecision.Value ? "trusted" : "untrusted")}. Restart PiSharp for this to take effect.");
                             break;
                         }
                         bool? decision = argument switch

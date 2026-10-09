@@ -108,7 +108,12 @@ public sealed class TerminalPtyTests
             Assert.Contains("Current session: untrusted", capturedOutput);
             Assert.Contains("Saved decision: trusted (inherited from ", capturedOutput);
             Assert.Contains("Saved trust decision: trusted. Restart PiSharp for this to take effect.", capturedOutput);
-            Assert.Contains("This project is not trusted. Project .pi resources and packages are ignored. Use /trust to save a trust decision, then restart PiSharp.", capturedOutput);
+            Assert.Contains("This project is not trusted.", capturedOutput);
+            Assert.Contains("restart PiSharp.", capturedOutput);
+            Assert.Contains("PiSharp can explain its own features and look up its docs. Ask how to use or extend PiSharp.", capturedOutput);
+            Assert.Contains("Use /hotkeys for shortcut help and / for commands.", capturedOutput);
+            Assert.True(capturedOutput.IndexOf("PiSharp can explain its own features and look up its docs. Ask how to use or extend PiSharp.", StringComparison.Ordinal) <
+                capturedOutput.LastIndexOf("This project is not trusted.", StringComparison.Ordinal));
             Assert.DoesNotContain("Agent error:", capturedOutput);
             Assert.DoesNotContain("Exception:", await stderr);
             using var saved = System.Text.Json.JsonDocument.Parse(await File.ReadAllTextAsync(trustStore.PathOnDisk));
@@ -424,27 +429,79 @@ public sealed class TerminalPtyTests
             };
             using var process = Process.Start(start);
             Assert.NotNull(process);
-            var stdout = process.StandardOutput.ReadToEndAsync();
+            var output = new StringBuilder();
+            var outputLock = new object();
+            var inputReady = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var pickerOpened = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var outputChanged = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var stdout = Task.Run(async () =>
+            {
+                var buffer = new char[1024];
+                while (true)
+                {
+                    var count = await process.StandardOutput.ReadAsync(buffer);
+                    if (count == 0) break;
+                    lock (outputLock)
+                    {
+                        output.Append(buffer, 0, count);
+                        var captured = output.ToString();
+                        if (captured.Contains("\u001b[?2004h", StringComparison.Ordinal)) inputReady.TrySetResult();
+                        if (captured.Contains("Resume session", StringComparison.Ordinal)) pickerOpened.TrySetResult();
+                        var changed = outputChanged;
+                        outputChanged = new(TaskCreationOptions.RunContinuationsAsynchronously);
+                        changed.TrySetResult();
+                    }
+                }
+                lock (outputLock)
+                {
+                    outputChanged.TrySetResult();
+                    return output.ToString();
+                }
+            });
+            async Task WaitForOutputAsync(Func<string, bool> predicate, CancellationToken token)
+            {
+                while (true)
+                {
+                    Task changed;
+                    lock (outputLock)
+                    {
+                        var captured = output.ToString();
+                        if (predicate(captured)) return;
+                        changed = outputChanged.Task;
+                    }
+                    await changed.WaitAsync(token);
+                }
+            }
             var stderr = process.StandardError.ReadToEndAsync();
-            await process.StandardInput.WriteAsync($"/name first\n/new\n/name second\n/sessions\n/resume first\n/resume\nsecond\n/session\n/export {cwd}/export.html\n/clone\n/session\n/quit\n");
+            using var limit = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+            await inputReady.Task.WaitAsync(limit.Token);
+            await process.StandardInput.WriteAsync("/name first\n/new\n/name second\n/sessions\n/resume first\n/resume\n");
+            await process.StandardInput.FlushAsync();
+            await pickerOpened.Task.WaitAsync(limit.Token);
+            var secondId = (await PiSharp.Runtime.Sessions.SessionCatalog.ListAsync(store))
+                .Single(session => session.Name == "second").Id[..12];
+            await process.StandardInput.WriteAsync("second\r");
+            await process.StandardInput.FlushAsync();
+            await WaitForOutputAsync(captured => captured.Contains($"Resumed {secondId}", StringComparison.Ordinal), limit.Token);
+            await process.StandardInput.WriteAsync($"/session\n/export {cwd}/export.html\n/clone\n/session\n/quit\n");
+            await process.StandardInput.FlushAsync();
             process.StandardInput.Close();
-            using var limit = new CancellationTokenSource(TimeSpan.FromSeconds(12));
             try { await process.WaitForExitAsync(limit.Token); }
             catch (OperationCanceledException) { process.Kill(entireProcessTree: true); throw; }
-            var output = await stdout;
+            var capturedOutput = await stdout;
             var secondIds = (await PiSharp.Runtime.Sessions.SessionCatalog.ListAsync(store))
                 .Where(session => session.Name == "second").Select(session => session.Id[..12]).ToHashSet();
-            var resumedIds = System.Text.RegularExpressions.Regex.Matches(output, @"Resumed ([a-f0-9]{12})")
+            var resumedIds = System.Text.RegularExpressions.Regex.Matches(capturedOutput, @"Resumed ([a-f0-9]{12})")
                 .Select(match => match.Groups[1].Value).ToArray();
             Assert.Equal(0, process.ExitCode);
-            Assert.Contains("Resumed", output);
-            Assert.Contains("Resume session", output);
+            Assert.Contains("Resumed", capturedOutput);
+            Assert.Contains("Resume session", capturedOutput);
             Assert.Contains(resumedIds, id => secondIds.Contains(id));
-            Assert.Contains("clone:", output);
-            Assert.Contains("Exported private HTML", output);
+            Assert.Contains("clone:", capturedOutput);
+            Assert.Contains("Exported private HTML", capturedOutput);
             Assert.Contains("PiSharp session", await File.ReadAllTextAsync(Path.Combine(cwd, "export.html")));
             Assert.Equal(3, Directory.EnumerateFiles(Path.Combine(cwd, "sessions"), "*.session.json").Count());
-            Assert.DoesNotContain("Session error", output);
+            Assert.DoesNotContain("Session error", capturedOutput);
             Assert.DoesNotContain("Agent error", await stderr);
         }
         finally { Directory.Delete(cwd, recursive: true); }
@@ -1158,23 +1215,50 @@ public sealed class TerminalPtyTests
             start.Environment["VISUAL"] = $"/bin/sh \"{editorScript}\"";
             using var process = Process.Start(start);
             Assert.NotNull(process);
-            var stdout = process.StandardOutput.ReadToEndAsync();
+            var output = new StringBuilder();
+            var outputLock = new object();
+            var inputReady = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var editorLaunched = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var restoredDraft = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var stdout = Task.Run(async () =>
+            {
+                var buffer = new char[1024];
+                while (true)
+                {
+                    var count = await process.StandardOutput.ReadAsync(buffer);
+                    if (count == 0) break;
+                    lock (outputLock)
+                    {
+                        output.Append(buffer, 0, count);
+                        var captured = output.ToString();
+                        if (captured.Contains("\u001b[?2004h", StringComparison.Ordinal)) inputReady.TrySetResult();
+                        if (captured.Contains("Launching external editor:", StringComparison.Ordinal)) editorLaunched.TrySetResult();
+                        if (captured.Contains("/quit", StringComparison.Ordinal)) restoredDraft.TrySetResult();
+                    }
+                }
+                lock (outputLock) return output.ToString();
+            });
             var stderr = process.StandardError.ReadToEndAsync();
-            await process.StandardInput.WriteAsync("\u0007\n");
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(12));
+            await inputReady.Task.WaitAsync(timeout.Token);
+            await process.StandardInput.WriteAsync("\u0007");
+            await process.StandardInput.FlushAsync();
+            await editorLaunched.Task.WaitAsync(timeout.Token);
+            await restoredDraft.Task.WaitAsync(timeout.Token);
+            await process.StandardInput.WriteAsync("\r");
             await process.StandardInput.FlushAsync();
             process.StandardInput.Close();
-            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(12));
             try { await process.WaitForExitAsync(timeout.Token); }
             catch (OperationCanceledException) { process.Kill(entireProcessTree: true); throw; }
-            var output = await stdout;
+            var capturedOutput = await stdout;
 
             Assert.Equal(0, process.ExitCode);
-            Assert.Contains("Launching external editor:", output);
-            Assert.Contains("/quit", output);
-            Assert.True(output.Split("\u001b[?1049l", StringSplitOptions.None).Length >= 3,
+            Assert.Contains("Launching external editor:", capturedOutput);
+            Assert.Contains("/quit", capturedOutput);
+            Assert.True(capturedOutput.Split("\u001b[?1049l", StringSplitOptions.None).Length >= 3,
                 "the alternate screen should be left for the editor and restored before shutdown");
-            Assert.DoesNotContain("Shortcut action failed:", output);
-            Assert.DoesNotContain("Agent error:", output);
+            Assert.DoesNotContain("Shortcut action failed:", capturedOutput);
+            Assert.DoesNotContain("Agent error:", capturedOutput);
             Assert.DoesNotContain("Exception:", await stderr);
         }
         finally { Directory.Delete(cwd, recursive: true); }
