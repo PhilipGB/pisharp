@@ -1,0 +1,56 @@
+{
+  "date": "2026-10-09",
+  "pi_oracle_head": "f1b2e77f5b13b2a199b1052cb79c235451afe7d7",
+  "pisharp_head": "08eff8952dd8818878d947a3bac39533125def19",
+  "exact_head_ci": {
+    "run_id": 37933157930,
+    "url": "https://github.com/PhilipGB/pisharp/actions/runs/37933157930",
+    "conclusion": "success",
+    "tests_passed": 1212,
+    "tests_skipped": 0
+  },
+  "fixture": "tools/parity/terminal/fixtures/trust-selector.json",
+  "quiet_startup_settings": {
+    "scenarios": 28,
+    "match": true,
+    "normalization": "Resolved settings values, trusted-project precedence, exact JSON writes, supported selector values and header visibility. Details text, startup resource output and terminal visuals are not covered.",
+    "capture": "quiet-startup-settings-differential.json"
+  },
+  "calibration": {
+    "case": "120x40-dark-fullscreen",
+    "match": true,
+    "terminal_state_match": true,
+    "raw_byte_match": false,
+    "http_match": true,
+    "state_differences": 0,
+    "render_frames_compared": 10,
+    "render_differences": 0,
+    "control_boundary_diagnostics": 1,
+    "report": "calibration-report.json",
+    "capture": "calibration-120x40-dark-fullscreen.json.gz"
+  },
+  "comparison": {
+    "case": "120x40-dark-fullscreen",
+    "match": false,
+    "terminal_state_match": false,
+    "raw_byte_match": false,
+    "http_match": true,
+    "state_differences": 52658,
+    "render_frames_compared": 10,
+    "render_differences": 31120,
+    "control_boundary_diagnostics": 443,
+    "scenario_errors": {},
+    "report": "comparison-report.json",
+    "capture": "comparison-120x40-dark-fullscreen.json.gz"
+  },
+  "observed": [
+    "The PiSharp version/help header is pinned above the scrolling transcript, and the untrusted-project warning is placed in the startup header.",
+    "The trust selector completes without scenario errors and its HTTP trace matches current Pi.",
+    "Compared with PiSharp 5b32bd97, the earlier trust-selector capture had 76378 state differences and 42596 render differences; this capture has 52658 and 31120 respectively."
+  ],
+  "remaining": [
+    "Current Pi gates model-scope and loaded-resource details separately from the startup header; PiSharp has not restored that details gate or loaded-resource presentation.",
+    "The full-screen comparison remains different in text, styles and layout, including product-specific help and trust restart wording.",
+    "Raw terminal bytes differ; the terminal-state calibration is exact and retains one control-boundary scheduling diagnostic."
+  ]
+}
