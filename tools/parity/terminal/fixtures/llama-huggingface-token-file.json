@@ -30,6 +30,15 @@
   "settings": {
     "quietStartup": true
   },
+  "concurrentHttpGroups": [
+    {
+      "occurrence": 1,
+      "requests": [
+        { "method": "GET", "path": "/models/sse" },
+        { "method": "POST", "path": "/models" }
+      ]
+    }
+  ],
   "environment": {
     "pi": {
       "LLAMA_BASE_URL": "{router}",
@@ -71,6 +80,8 @@
     "chat_template": "fixture"
   },
   "llamaBehavior": {
+    "downloadRequestGate": "download-request",
+    "downloadResponseGate": "download-response",
     "downloadDelaySeconds": 1.5,
     "downloadProgressDelaySeconds": 0.5,
     "downloadProgressGate": "download-progress",
@@ -133,8 +144,13 @@
       "expect": "llama.cpp models"
     },
     {
+      "id": "select-download-option",
+      "send": "\u001b[B",
+      "expect": "Download model…"
+    },
+    {
       "id": "open-download",
-      "send": "\u001b[B\r",
+      "send": "\r",
       "expect": "Model name or owner/repository[:quant]"
     },
     {
@@ -148,8 +164,13 @@
       "expect": "llama.cpp models"
     },
     {
+      "id": "select-cached-download-option",
+      "send": "\u001b[B",
+      "expect": "Download model…"
+    },
+    {
       "id": "open-download-cached",
-      "send": "\u001b[B\r",
+      "send": "\r",
       "expect": "Model name or owner/repository[:quant]"
     },
     {
@@ -176,7 +197,17 @@
     {
       "id": "select-quantization",
       "send": "\r",
-      "expect": "Downloading model"
+      "waitGatesAfter": ["download-request"],
+      "expect": "Starting…",
+      "quietMs": 0
+    },
+    {
+      "id": "start-download",
+      "releaseGates": ["download-response"],
+      "waitForModelPoll": "owner/Qwen2.5-Coder-GGUF:Q4_K_M",
+      "expect": "Downloading model",
+      "notExpect": "Starting…",
+      "quietMs": 0
     },
     {
       "id": "wait-download-progress",
