@@ -2,20 +2,26 @@ using System.Globalization;
 
 namespace PiSharp.Cli.Tui;
 
+public sealed record EditorCompletionSuggestion(string Command, string? Description);
+
 /// <summary>Completes implemented slash commands and local paths; UI only, no agent state.</summary>
 public sealed class EditorCompletion
 {
     private readonly Func<string> _workingDirectory;
     private readonly Func<IReadOnlyList<string>>? _dynamicCommands;
+    private readonly Func<string, string?>? _describeCommand;
 
-    public EditorCompletion(string workingDirectory, Func<IReadOnlyList<string>>? dynamicCommands = null)
-        : this(() => workingDirectory, dynamicCommands) { }
+    public EditorCompletion(string workingDirectory, Func<IReadOnlyList<string>>? dynamicCommands = null,
+        Func<string, string?>? describeCommand = null)
+        : this(() => workingDirectory, dynamicCommands, describeCommand) { }
 
-    public EditorCompletion(Func<string> workingDirectory, Func<IReadOnlyList<string>>? dynamicCommands = null)
+    public EditorCompletion(Func<string> workingDirectory, Func<IReadOnlyList<string>>? dynamicCommands = null,
+        Func<string, string?>? describeCommand = null)
     {
         ArgumentNullException.ThrowIfNull(workingDirectory);
         _workingDirectory = workingDirectory;
         _dynamicCommands = dynamicCommands;
+        _describeCommand = describeCommand;
     }
 
     private static readonly string[] s_commands =
@@ -60,8 +66,7 @@ public sealed class EditorCompletion
         if (IsSlashCommandStart(before, start))
         {
             var slashFragment = before[start..];
-            var matches = s_commands.Concat(_dynamicCommands?.Invoke() ?? [])
-                .Where(command => command.StartsWith(slashFragment, StringComparison.OrdinalIgnoreCase)).ToArray();
+            var matches = FindSlashCommandMatches(slashFragment);
             return Apply(buffer, start, slashFragment, matches);
         }
 
@@ -81,6 +86,23 @@ public sealed class EditorCompletion
         var matchesForPath = GetPathCompletions(path, hasAtPrefix, quoted, Path.GetFullPath(_workingDirectory()));
         return Apply(buffer, fragmentStart, fragment, matchesForPath, hasExistingClosingQuote);
     }
+
+    public IReadOnlyList<EditorCompletionSuggestion> GetSlashCommandSuggestions(EditorBuffer buffer)
+    {
+        ArgumentNullException.ThrowIfNull(buffer);
+        var before = buffer.Text[..buffer.Cursor];
+        var start = FindTokenStart(before);
+        return IsSlashCommandStart(before, start)
+            ? FindSlashCommandMatches(before[start..])
+                .Select(command => new EditorCompletionSuggestion(command, _describeCommand?.Invoke(command)))
+                .ToArray()
+            : [];
+    }
+
+    private string[] FindSlashCommandMatches(string fragment) => s_commands
+        .Concat(_dynamicCommands?.Invoke() ?? [])
+        .Where(command => command.StartsWith(fragment, StringComparison.OrdinalIgnoreCase))
+        .ToArray();
 
     public void ApplySelected(EditorBuffer buffer, string completion)
     {

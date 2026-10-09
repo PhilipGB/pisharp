@@ -39,12 +39,16 @@ internal sealed class TerminalScreenCompositor
         string? statusNotification = null,
         TerminalStatusNotificationKind statusNotificationKind = TerminalStatusNotificationKind.Info,
         bool statusNotificationIsExtension = false,
-        string? startupHeader = null, string? startupContent = null)
+        string? startupHeader = null, string? startupContent = null,
+        IReadOnlyList<EditorCompletionSuggestion>? editorSuggestions = null)
     {
         var activeTheme = theme ?? TerminalTheme.Default;
         var footerHeight = height >= 5 ? 2 : height > 2 ? 1 : 0;
         var borderHeight = height - footerHeight >= 4 ? 2 : 0;
-        var maxEditorLines = Math.Max(1, Math.Min((int)(height * 0.3), height - footerHeight - borderHeight - 1));
+        var suggestionHeight = Math.Min(editorSuggestions?.Count ?? 0,
+            Math.Max(0, height - footerHeight - borderHeight - 2));
+        var maxEditorLines = Math.Max(1,
+            Math.Min((int)(height * 0.3), height - footerHeight - borderHeight - suggestionHeight - 1));
         var editor = EditorViewport.Layout(editorText, editorCursor, columns, maxEditorLines, showPrompt: false);
         var editorHeight = editor.Rows.Count + borderHeight;
         if (height - editorHeight - footerHeight < 1 && borderHeight > 0)
@@ -57,8 +61,9 @@ internal sealed class TerminalScreenCompositor
             ? Array.Empty<string>()
             : TerminalTextLayout.Create(startupHeader, transcriptWidth).Rows;
         var startupHeight = Math.Min(startupRows.Count,
-            Math.Max(0, height - editorHeight - footerHeight - 1));
-        var transcriptHeight = Math.Max(1, height - editorHeight - footerHeight - startupHeight);
+            Math.Max(0, height - editorHeight - footerHeight - suggestionHeight - 1));
+        var transcriptHeight = Math.Max(1,
+            height - editorHeight - footerHeight - startupHeight - suggestionHeight);
         var startupPrefix = string.IsNullOrEmpty(startupContent) ? "" : startupContent + "\n";
         var startupContentRows = startupPrefix.Length == 0 ? 0 :
             TerminalTextLayout.Create(startupPrefix, transcriptWidth).RowCount;
@@ -87,6 +92,21 @@ internal sealed class TerminalScreenCompositor
             rows[transcriptStart + index] = displayedTranscriptRows[index];
 
         var editorStart = startupHeight + transcriptHeight;
+        for (var index = 0; index < suggestionHeight; index++)
+        {
+            var suggestion = editorSuggestions![index];
+            var selected = index == 0;
+            var marker = selected ? "→ " : "  ";
+            var name = suggestion.Command.StartsWith('/') ? suggestion.Command[1..] : suggestion.Command;
+            if (TerminalTextLayout.Width(name) > 30) name = name[..Math.Min(name.Length, 30)];
+            var spaces = new string(' ', Math.Max(0, 32 - TerminalTextLayout.Width(name)));
+            var primary = (selected ? activeTheme.Style("accent", marker + name) : marker + name) + spaces;
+            var description = suggestion.Description is null
+                ? ""
+                : activeTheme.Style("muted", TerminalSafeText.Normalize(suggestion.Description));
+            rows[editorStart + editorHeight + index] =
+                TerminalTranscriptViewport.Clip(primary + description, Math.Max(0, columns - 2));
+        }
         mouse.SetEditor(editorText, editor, editorStart + borderHeight / 2, editorSelectionStart, editorSelectionEnd);
         var displayedEditorRows = mouse.HighlightEditor();
         for (var index = 0; index < editor.Rows.Count; index++)

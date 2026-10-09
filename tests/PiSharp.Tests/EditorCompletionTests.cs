@@ -67,6 +67,25 @@ public sealed class EditorCompletionTests
     }
 
     [Fact]
+    public void SlashCommandSuggestionsTrackReloadedCommandsWithoutChangingTheDraft()
+    {
+        var commands = Array.Empty<string>();
+        var descriptions = new Dictionary<string, string>();
+        var completion = new EditorCompletion(Path.GetTempPath(), () => commands,
+            command => descriptions.GetValueOrDefault(command));
+        var buffer = new EditorBuffer();
+        buffer.SetText("/skill:");
+
+        Assert.Empty(completion.GetSlashCommandSuggestions(buffer));
+        commands = ["/skill:reloaded-legacy-skill"];
+        descriptions[commands[0]] = "[p] Reloaded legacy skill";
+        Assert.Equal([new EditorCompletionSuggestion("/skill:reloaded-legacy-skill", "[p] Reloaded legacy skill")],
+            completion.GetSlashCommandSuggestions(buffer));
+        Assert.Equal("/skill:", buffer.Text);
+        Assert.Equal(buffer.Text.Length, buffer.Cursor);
+    }
+
+    [Fact]
     public void EmptyPromptCanChooseAPathCompletion()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-complete-empty-" + Guid.NewGuid().ToString("N"));

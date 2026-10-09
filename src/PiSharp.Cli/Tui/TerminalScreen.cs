@@ -37,6 +37,7 @@ public sealed class TerminalScreen : IDisposable
     private int _editorCursor;
     private int? _editorSelectionStart;
     private int? _editorSelectionEnd;
+    private IReadOnlyList<EditorCompletionSuggestion> _editorSuggestions = [];
     private int _scrollOffset;
     private int _lastImagePruneRevision = -1;
     private string _footer = "Enter steers · follow-up queues · Escape aborts";
@@ -183,7 +184,8 @@ public sealed class TerminalScreen : IDisposable
         }
     }
 
-    public void SetEditor(string text, int cursor, int? selectionStart = null, int? selectionEnd = null)
+    public void SetEditor(string text, int cursor, int? selectionStart = null, int? selectionEnd = null,
+        IReadOnlyList<EditorCompletionSuggestion>? suggestions = null)
     {
         ArgumentNullException.ThrowIfNull(text);
         lock (_gate)
@@ -191,6 +193,7 @@ public sealed class TerminalScreen : IDisposable
             if (!_active) return;
             _editorText = text;
             _editorCursor = Math.Clamp(cursor, 0, text.Length);
+            _editorSuggestions = suggestions ?? [];
             _editorSelectionStart = null;
             _editorSelectionEnd = null;
             if (selectionStart is { } start && selectionEnd is { } end && start < end)
@@ -930,7 +933,7 @@ public sealed class TerminalScreen : IDisposable
             _editorPanel, _panelCursorRow, _panelCursorColumn, _panelCursorVisible, _panelBottomMargin,
             _statusNotification, _statusNotificationKind, _statusNotificationIsExtension,
             _startupHeader?.Invoke(_theme, columns, _startupExpanded),
-            _startupContent?.Invoke(_theme, columns, _startupExpanded));
+            _startupContent?.Invoke(_theme, columns, _startupExpanded), _editorSuggestions);
         _scrollOffset = frame.ScrollOffset;
         _lastColumns = frame.Columns;
         _lastRows = frame.Height;

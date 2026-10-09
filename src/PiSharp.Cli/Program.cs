@@ -333,6 +333,39 @@ if (!selection.Authenticated && cli.Mode != "rpc" &&
     Environment.ExitCode = 2;
     return;
 }
+string? DescribeSlashCommand(string command)
+{
+    string? description;
+    ResourceSourceInfo? sourceInfo;
+    if (command.StartsWith("/skill:", StringComparison.Ordinal))
+    {
+        var skillName = command[7..];
+        var skill = resources.Skills.FirstOrDefault(item => item.Name == skillName);
+        if (skill is null) return null;
+        description = skill.Description;
+        sourceInfo = skill.SourceInfo;
+    }
+    else if (command.StartsWith('/') && command.Length > 1 &&
+        resources.Prompts.FirstOrDefault(item => "/" + item.Name == command) is { } prompt)
+    {
+        description = prompt.Description;
+        sourceInfo = prompt.SourceInfo;
+    }
+    else if (command.StartsWith('/') &&
+        extensionLease.Current.Registration.CommandInfo.TryGetValue(command[1..], out var extensionCommand))
+    {
+        description = extensionCommand.Description;
+        sourceInfo = extensionCommand.SourceInfo;
+    }
+    else return null;
+
+    var scope = sourceInfo.Scope == "user" ? "u" : sourceInfo.Scope == "project" ? "p" : "t";
+    var source = sourceInfo.Source.Trim();
+    var tag = source is "auto" or "local" or "cli" ? scope :
+        source.StartsWith("npm:", StringComparison.Ordinal) ? $"{scope}:{source}" : scope;
+    var visibleDescription = description?.Replace('\n', ' ').Replace('\r', ' ').Trim();
+    return string.IsNullOrWhiteSpace(visibleDescription) ? $"[{tag}]" : $"[{tag}] {visibleDescription}";
+}
 TerminalEditor? editor = !print && cli.Mode is not ("json" or "rpc") ? new TerminalEditor(() =>
 {
     var skillCommands = userSettings.SkillCommandsEnabled
@@ -342,7 +375,8 @@ TerminalEditor? editor = !print && cli.Mode is not ("json" or "rpc") ? new Termi
         .Concat(resources.Prompts.Select(item => "/" + item.Name))
         .Concat(extensionLease.Current.Registration.Commands.Keys.Select(name => "/" + name)).ToArray();
 },
-    agentDirectory, () => currentDirectory, initiallyExpanded: cli.Verbose) : null;
+    agentDirectory, () => currentDirectory, initiallyExpanded: cli.Verbose,
+    describeCommand: DescribeSlashCommand) : null;
 string? cliThemeOverride = editor is null ? null : cli.UseTheme;
 string? ActiveThemeSetting() => cliThemeOverride ?? userSettings.Theme;
 TerminalThemeCatalog CreateTerminalThemeCatalog() => new(agentDirectory, trusted ? currentDirectory : null,

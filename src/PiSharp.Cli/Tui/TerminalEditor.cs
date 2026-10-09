@@ -19,11 +19,12 @@ public sealed class TerminalEditor
     private string _lastSearchQuery = "";
     private bool _toolResultsExpanded;
     public TerminalEditor(Func<IReadOnlyList<string>>? commands = null, string? agentDirectory = null,
-        Func<string>? getWorkingDirectory = null, bool initiallyExpanded = false)
+        Func<string>? getWorkingDirectory = null, bool initiallyExpanded = false,
+        Func<string, string?>? describeCommand = null)
     {
         _completion = getWorkingDirectory is null
-            ? new EditorCompletion(Environment.CurrentDirectory, commands)
-            : new EditorCompletion(getWorkingDirectory, commands);
+            ? new EditorCompletion(Environment.CurrentDirectory, commands, describeCommand)
+            : new EditorCompletion(getWorkingDirectory, commands, describeCommand);
         _keymap = new(agentDirectory);
         _buffer = new(_keymap);
         _toolResultsExpanded = initiallyExpanded;
@@ -1035,7 +1036,8 @@ public sealed class TerminalEditor
     {
         if (_screen is { IsActive: true })
         {
-            _screen.SetEditor(_buffer.Text, _buffer.Cursor, _buffer.SelectionStart, _buffer.SelectionEnd);
+            _screen.SetEditor(_buffer.Text, _buffer.Cursor, _buffer.SelectionStart, _buffer.SelectionEnd,
+                _completion.GetSlashCommandSuggestions(_buffer));
             return;
         }
         var width = TerminalScreen.ReadColumns();

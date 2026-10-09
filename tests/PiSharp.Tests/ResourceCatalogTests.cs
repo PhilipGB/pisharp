@@ -4,6 +4,26 @@ namespace PiSharp.Tests;
 
 public sealed class ResourceCatalogTests
 {
+    [Theory]
+    [InlineData(">", "A testing guide with a second line.\n")]
+    [InlineData("|", "A testing guide\nwith a second line.\n")]
+    public async Task SkillDescriptionsHonorYamlBlockScalarStyles(string scalarStyle, string expected)
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-resource-block-scalar-" + Guid.NewGuid().ToString("N"));
+        var skillDirectory = Path.Combine(root, "skills", "block-guide");
+        Directory.CreateDirectory(skillDirectory);
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(skillDirectory, "SKILL.md"),
+                $"---\nname: block-guide\ndescription: {scalarStyle}\n  A testing guide\n  with a second line.\n---\nUse the guide.");
+
+            var resources = await ResourceCatalog.LoadAsync(root, root, trusted: false);
+
+            Assert.Equal(expected, Assert.Single(resources.Skills, skill => skill.Name == "block-guide").Description);
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
     [Fact]
     public async Task ProjectResourcesRequireTrustAndSkillsLoadOnDemand()
     {

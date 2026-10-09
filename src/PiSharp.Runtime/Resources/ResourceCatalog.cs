@@ -321,12 +321,77 @@ public sealed class ResourceCatalog
         if (!normalized.StartsWith("---\n", StringComparison.Ordinal)) return (metadata, normalized);
         var end = normalized.IndexOf("\n---\n", 4, StringComparison.Ordinal);
         if (end < 0) return (metadata, normalized);
-        foreach (var line in normalized[4..end].Split('\n'))
+        var frontmatterLines = normalized[4..end].Split('\n');
+        for (var index = 0; index < frontmatterLines.Length; index++)
         {
+            var line = frontmatterLines[index];
+            var indentation = line.Length - line.TrimStart().Length;
+            if (indentation > 0) continue;
             var separator = line.IndexOf(':');
-            if (separator > 0) metadata[line[..separator].Trim()] = line[(separator + 1)..].Trim().Trim('"', '\'');
+            if (separator <= 0) continue;
+            var key = line[..separator].Trim();
+            var value = line[(separator + 1)..].Trim();
+            if (value.Length > 0 && value[0] is '>' or '|')
+                metadata[key] = ParseBlockScalar(value, indentation, frontmatterLines, ref index);
+            else metadata[key] = value.Trim('"', '\'');
         }
         return (metadata, normalized[(end + 5)..]);
+    }
+
+    private static string ParseBlockScalar(string header, int keyIndentation, string[] lines, ref int index)
+    {
+        var content = new List<string>();
+        var contentIndentation = -1;
+        for (var next = index + 1; next < lines.Length; next++)
+        {
+            var line = lines[next];
+            if (string.IsNullOrWhiteSpace(line))
+            {
+                content.Add("");
+                index = next;
+                continue;
+            }
+
+            var indentation = line.Length - line.TrimStart().Length;
+            if (indentation <= keyIndentation) break;
+            contentIndentation = contentIndentation < 0 ? indentation : contentIndentation;
+            if (indentation < contentIndentation) break;
+            content.Add(line[contentIndentation..]);
+            index = next;
+        }
+
+        var trailingBreaks = 0;
+        while (content.Count > 0 && content[^1].Length == 0)
+        {
+            trailingBreaks++;
+            content.RemoveAt(content.Count - 1);
+        }
+
+        var value = header[0] == '|'
+            ? string.Join('\n', content)
+            : FoldBlockScalar(content);
+        var chomp = header.Contains('+') ? '+' : header.Contains('-') ? '-' : ' ';
+        var lineBreaks = chomp == '+' ? trailingBreaks + 1 : chomp == '-' ? 0 : 1;
+        return value + new string('\n', lineBreaks);
+    }
+
+    private static string FoldBlockScalar(IReadOnlyList<string> lines)
+    {
+        var value = new StringBuilder();
+        var priorLineWasBlank = false;
+        foreach (var line in lines)
+        {
+            if (line.Length == 0)
+            {
+                value.Append('\n');
+                priorLineWasBlank = true;
+                continue;
+            }
+            if (value.Length > 0 && !priorLineWasBlank) value.Append(' ');
+            value.Append(line);
+            priorLineWasBlank = false;
+        }
+        return value.ToString();
     }
 
     private static async Task<string> ReadBoundedAsync(string path, CancellationToken token)
