@@ -1,0 +1,374 @@
+{
+  "date": "2026-10-09",
+  "pi_oracle_head": "f1b2e77f5b13b2a199b1052cb79c235451afe7d7",
+  "pisharp_head": "be133ebfa6e17d5a4f094abe8d9a3cf01a2f6b75",
+  "terminal_comparison_pi_head": "f1b2e77f5b13b2a199b1052cb79c235451afe7d7",
+  "terminal_comparison_pisharp_head": "be133ebfa6e17d5a4f094abe8d9a3cf01a2f6b75",
+  "terminal_comparison_pin_validity": "A fresh fetch after exact-head CI confirmed Pi origin/main at f1b2e77f5b13b2a199b1052cb79c235451afe7d7 and PiSharp origin/main at be133ebfa6e17d5a4f094abe8d9a3cf01a2f6b75. All terminal and process comparisons below were generated from those clean committed heads.",
+  "terminal": {
+    "comparison": {
+      "flows": 10,
+      "terminal_state_matches": 10,
+      "http_matches": 10,
+      "raw_byte_exact_matches": 0,
+      "control_boundary_diagnostics": 5292,
+      "flows_detail": [
+        {
+          "fixture": "llama-login",
+          "terminal_state_match": true,
+          "http_match": true,
+          "raw_bytes_exact": false,
+          "normalized_differences": 0,
+          "render_frames_compared": 12,
+          "render_differences": 0,
+          "control_boundary_diagnostics": 518,
+          "scenario_errors": {},
+          "pi_sha": "f1b2e77f5b13b2a199b1052cb79c235451afe7d7",
+          "pisharp_sha": "be133ebfa6e17d5a4f094abe8d9a3cf01a2f6b75",
+          "capture": "docs/parity/fixtures/llama-terminal-current-pi-2026-10-09/comparison-be133ebf/llama-login/100x32-dark-fullscreen.json.gz"
+        },
+        {
+          "fixture": "llama-model-picker",
+          "terminal_state_match": true,
+          "http_match": true,
+          "raw_bytes_exact": false,
+          "normalized_differences": 0,
+          "render_frames_compared": 15,
+          "render_differences": 0,
+          "control_boundary_diagnostics": 571,
+          "scenario_errors": {},
+          "pi_sha": "f1b2e77f5b13b2a199b1052cb79c235451afe7d7",
+          "pisharp_sha": "be133ebfa6e17d5a4f094abe8d9a3cf01a2f6b75",
+          "capture": "docs/parity/fixtures/llama-terminal-current-pi-2026-10-09/comparison-be133ebf/llama-model-picker/100x32-dark-fullscreen.json.gz"
+        },
+        {
+          "fixture": "llama-manager",
+          "terminal_state_match": true,
+          "http_match": true,
+          "raw_bytes_exact": false,
+          "normalized_differences": 0,
+          "render_frames_compared": 4,
+          "render_differences": 0,
+          "control_boundary_diagnostics": 237,
+          "scenario_errors": {},
+          "pi_sha": "f1b2e77f5b13b2a199b1052cb79c235451afe7d7",
+          "pisharp_sha": "be133ebfa6e17d5a4f094abe8d9a3cf01a2f6b75",
+          "capture": "docs/parity/fixtures/llama-terminal-current-pi-2026-10-09/comparison-be133ebf/llama-manager/100x32-dark-fullscreen.json.gz"
+        },
+        {
+          "fixture": "llama-retry",
+          "terminal_state_match": true,
+          "http_match": true,
+          "raw_bytes_exact": false,
+          "normalized_differences": 0,
+          "render_frames_compared": 5,
+          "render_differences": 0,
+          "control_boundary_diagnostics": 292,
+          "scenario_errors": {},
+          "pi_sha": "f1b2e77f5b13b2a199b1052cb79c235451afe7d7",
+          "pisharp_sha": "be133ebfa6e17d5a4f094abe8d9a3cf01a2f6b75",
+          "capture": "docs/parity/fixtures/llama-terminal-current-pi-2026-10-09/comparison-be133ebf/llama-retry/100x32-dark-fullscreen.json.gz"
+        },
+        {
+          "fixture": "llama-load-cancel",
+          "terminal_state_match": true,
+          "http_match": true,
+          "raw_bytes_exact": false,
+          "normalized_differences": 0,
+          "render_frames_compared": 12,
+          "render_differences": 0,
+          "control_boundary_diagnostics": 472,
+          "scenario_errors": {},
+          "pi_sha": "f1b2e77f5b13b2a199b1052cb79c235451afe7d7",
+          "pisharp_sha": "be133ebfa6e17d5a4f094abe8d9a3cf01a2f6b75",
+          "capture": "docs/parity/fixtures/llama-terminal-current-pi-2026-10-09/comparison-be133ebf/llama-load-cancel/100x32-dark-fullscreen.json.gz"
+        },
+        {
+          "fixture": "llama-load-replace-cancel",
+          "terminal_state_match": true,
+          "http_match": true,
+          "raw_bytes_exact": false,
+          "normalized_differences": 0,
+          "render_frames_compared": 12,
+          "render_differences": 0,
+          "control_boundary_diagnostics": 463,
+          "scenario_errors": {},
+          "pi_sha": "f1b2e77f5b13b2a199b1052cb79c235451afe7d7",
+          "pisharp_sha": "be133ebfa6e17d5a4f094abe8d9a3cf01a2f6b75",
+          "capture": "docs/parity/fixtures/llama-terminal-current-pi-2026-10-09/comparison-be133ebf/llama-load-replace-cancel/100x32-dark-fullscreen.json.gz"
+        },
+        {
+          "fixture": "llama-huggingface",
+          "terminal_state_match": true,
+          "http_match": true,
+          "raw_bytes_exact": false,
+          "normalized_differences": 0,
+          "render_frames_compared": 21,
+          "render_differences": 0,
+          "control_boundary_diagnostics": 699,
+          "scenario_errors": {},
+          "pi_sha": "f1b2e77f5b13b2a199b1052cb79c235451afe7d7",
+          "pisharp_sha": "be133ebfa6e17d5a4f094abe8d9a3cf01a2f6b75",
+          "capture": "docs/parity/fixtures/llama-terminal-current-pi-2026-10-09/comparison-be133ebf/llama-huggingface/100x32-dark-fullscreen.json.gz"
+        },
+        {
+          "fixture": "llama-huggingface-token-file",
+          "terminal_state_match": true,
+          "http_match": true,
+          "raw_bytes_exact": false,
+          "normalized_differences": 0,
+          "render_frames_compared": 20,
+          "render_differences": 0,
+          "control_boundary_diagnostics": 694,
+          "scenario_errors": {},
+          "pi_sha": "f1b2e77f5b13b2a199b1052cb79c235451afe7d7",
+          "pisharp_sha": "be133ebfa6e17d5a4f094abe8d9a3cf01a2f6b75",
+          "capture": "docs/parity/fixtures/llama-terminal-current-pi-2026-10-09/comparison-be133ebf/llama-huggingface-token-file/100x32-dark-fullscreen.json.gz"
+        },
+        {
+          "fixture": "llama-huggingface-home-token-file",
+          "terminal_state_match": true,
+          "http_match": true,
+          "raw_bytes_exact": false,
+          "normalized_differences": 0,
+          "render_frames_compared": 20,
+          "render_differences": 0,
+          "control_boundary_diagnostics": 694,
+          "scenario_errors": {},
+          "pi_sha": "f1b2e77f5b13b2a199b1052cb79c235451afe7d7",
+          "pisharp_sha": "be133ebfa6e17d5a4f094abe8d9a3cf01a2f6b75",
+          "capture": "docs/parity/fixtures/llama-terminal-current-pi-2026-10-09/comparison-be133ebf/llama-huggingface-home-token-file/100x32-dark-fullscreen.json.gz"
+        },
+        {
+          "fixture": "llama-download-cancel",
+          "terminal_state_match": true,
+          "http_match": true,
+          "raw_bytes_exact": false,
+          "normalized_differences": 0,
+          "render_frames_compared": 17,
+          "render_differences": 0,
+          "control_boundary_diagnostics": 652,
+          "scenario_errors": {},
+          "pi_sha": "f1b2e77f5b13b2a199b1052cb79c235451afe7d7",
+          "pisharp_sha": "be133ebfa6e17d5a4f094abe8d9a3cf01a2f6b75",
+          "capture": "docs/parity/fixtures/llama-terminal-current-pi-2026-10-09/comparison-be133ebf/llama-download-cancel/100x32-dark-fullscreen.json.gz"
+        }
+      ],
+      "normalized_differences": 0,
+      "render_frames_compared": 138,
+      "render_differences": 0,
+      "scenario_errors": 0
+    },
+    "same_pi_calibration": {
+      "flows": 10,
+      "terminal_state_matches": 10,
+      "http_matches": 10,
+      "raw_byte_exact_matches": 9,
+      "control_boundary_diagnostics": 1,
+      "flows_detail": [
+        {
+          "fixture": "llama-login",
+          "terminal_state_match": true,
+          "http_match": true,
+          "raw_bytes_exact": false,
+          "normalized_differences": 0,
+          "render_frames_compared": 12,
+          "render_differences": 0,
+          "control_boundary_diagnostics": 1,
+          "scenario_errors": {},
+          "pi_sha": "f1b2e77f5b13b2a199b1052cb79c235451afe7d7",
+          "pisharp_sha": "be133ebfa6e17d5a4f094abe8d9a3cf01a2f6b75",
+          "capture": "docs/parity/fixtures/llama-terminal-current-pi-2026-10-09/calibration-be133ebf/llama-login/100x32-dark-fullscreen.json.gz"
+        },
+        {
+          "fixture": "llama-model-picker",
+          "terminal_state_match": true,
+          "http_match": true,
+          "raw_bytes_exact": true,
+          "normalized_differences": 0,
+          "render_frames_compared": 15,
+          "render_differences": 0,
+          "control_boundary_diagnostics": 0,
+          "scenario_errors": {},
+          "pi_sha": "f1b2e77f5b13b2a199b1052cb79c235451afe7d7",
+          "pisharp_sha": "be133ebfa6e17d5a4f094abe8d9a3cf01a2f6b75",
+          "capture": "docs/parity/fixtures/llama-terminal-current-pi-2026-10-09/calibration-be133ebf/llama-model-picker/100x32-dark-fullscreen.json.gz"
+        },
+        {
+          "fixture": "llama-manager",
+          "terminal_state_match": true,
+          "http_match": true,
+          "raw_bytes_exact": true,
+          "normalized_differences": 0,
+          "render_frames_compared": 4,
+          "render_differences": 0,
+          "control_boundary_diagnostics": 0,
+          "scenario_errors": {},
+          "pi_sha": "f1b2e77f5b13b2a199b1052cb79c235451afe7d7",
+          "pisharp_sha": "be133ebfa6e17d5a4f094abe8d9a3cf01a2f6b75",
+          "capture": "docs/parity/fixtures/llama-terminal-current-pi-2026-10-09/calibration-be133ebf/llama-manager/100x32-dark-fullscreen.json.gz"
+        },
+        {
+          "fixture": "llama-retry",
+          "terminal_state_match": true,
+          "http_match": true,
+          "raw_bytes_exact": true,
+          "normalized_differences": 0,
+          "render_frames_compared": 5,
+          "render_differences": 0,
+          "control_boundary_diagnostics": 0,
+          "scenario_errors": {},
+          "pi_sha": "f1b2e77f5b13b2a199b1052cb79c235451afe7d7",
+          "pisharp_sha": "be133ebfa6e17d5a4f094abe8d9a3cf01a2f6b75",
+          "capture": "docs/parity/fixtures/llama-terminal-current-pi-2026-10-09/calibration-be133ebf/llama-retry/100x32-dark-fullscreen.json.gz"
+        },
+        {
+          "fixture": "llama-load-cancel",
+          "terminal_state_match": true,
+          "http_match": true,
+          "raw_bytes_exact": true,
+          "normalized_differences": 0,
+          "render_frames_compared": 12,
+          "render_differences": 0,
+          "control_boundary_diagnostics": 0,
+          "scenario_errors": {},
+          "pi_sha": "f1b2e77f5b13b2a199b1052cb79c235451afe7d7",
+          "pisharp_sha": "be133ebfa6e17d5a4f094abe8d9a3cf01a2f6b75",
+          "capture": "docs/parity/fixtures/llama-terminal-current-pi-2026-10-09/calibration-be133ebf/llama-load-cancel/100x32-dark-fullscreen.json.gz"
+        },
+        {
+          "fixture": "llama-load-replace-cancel",
+          "terminal_state_match": true,
+          "http_match": true,
+          "raw_bytes_exact": true,
+          "normalized_differences": 0,
+          "render_frames_compared": 12,
+          "render_differences": 0,
+          "control_boundary_diagnostics": 0,
+          "scenario_errors": {},
+          "pi_sha": "f1b2e77f5b13b2a199b1052cb79c235451afe7d7",
+          "pisharp_sha": "be133ebfa6e17d5a4f094abe8d9a3cf01a2f6b75",
+          "capture": "docs/parity/fixtures/llama-terminal-current-pi-2026-10-09/calibration-be133ebf/llama-load-replace-cancel/100x32-dark-fullscreen.json.gz"
+        },
+        {
+          "fixture": "llama-huggingface",
+          "terminal_state_match": true,
+          "http_match": true,
+          "raw_bytes_exact": true,
+          "normalized_differences": 0,
+          "render_frames_compared": 21,
+          "render_differences": 0,
+          "control_boundary_diagnostics": 0,
+          "scenario_errors": {},
+          "pi_sha": "f1b2e77f5b13b2a199b1052cb79c235451afe7d7",
+          "pisharp_sha": "be133ebfa6e17d5a4f094abe8d9a3cf01a2f6b75",
+          "capture": "docs/parity/fixtures/llama-terminal-current-pi-2026-10-09/calibration-be133ebf/llama-huggingface/100x32-dark-fullscreen.json.gz"
+        },
+        {
+          "fixture": "llama-huggingface-token-file",
+          "terminal_state_match": true,
+          "http_match": true,
+          "raw_bytes_exact": true,
+          "normalized_differences": 0,
+          "render_frames_compared": 20,
+          "render_differences": 0,
+          "control_boundary_diagnostics": 0,
+          "scenario_errors": {},
+          "pi_sha": "f1b2e77f5b13b2a199b1052cb79c235451afe7d7",
+          "pisharp_sha": "be133ebfa6e17d5a4f094abe8d9a3cf01a2f6b75",
+          "capture": "docs/parity/fixtures/llama-terminal-current-pi-2026-10-09/calibration-be133ebf/llama-huggingface-token-file/100x32-dark-fullscreen.json.gz"
+        },
+        {
+          "fixture": "llama-huggingface-home-token-file",
+          "terminal_state_match": true,
+          "http_match": true,
+          "raw_bytes_exact": true,
+          "normalized_differences": 0,
+          "render_frames_compared": 20,
+          "render_differences": 0,
+          "control_boundary_diagnostics": 0,
+          "scenario_errors": {},
+          "pi_sha": "f1b2e77f5b13b2a199b1052cb79c235451afe7d7",
+          "pisharp_sha": "be133ebfa6e17d5a4f094abe8d9a3cf01a2f6b75",
+          "capture": "docs/parity/fixtures/llama-terminal-current-pi-2026-10-09/calibration-be133ebf/llama-huggingface-home-token-file/100x32-dark-fullscreen.json.gz"
+        },
+        {
+          "fixture": "llama-download-cancel",
+          "terminal_state_match": true,
+          "http_match": true,
+          "raw_bytes_exact": true,
+          "normalized_differences": 0,
+          "render_frames_compared": 17,
+          "render_differences": 0,
+          "control_boundary_diagnostics": 0,
+          "scenario_errors": {},
+          "pi_sha": "f1b2e77f5b13b2a199b1052cb79c235451afe7d7",
+          "pisharp_sha": "be133ebfa6e17d5a4f094abe8d9a3cf01a2f6b75",
+          "capture": "docs/parity/fixtures/llama-terminal-current-pi-2026-10-09/calibration-be133ebf/llama-download-cancel/100x32-dark-fullscreen.json.gz"
+        }
+      ]
+    },
+    "raw_capture_root": {
+      "comparison": "docs/parity/fixtures/llama-terminal-current-pi-2026-10-09/comparison-be133ebf",
+      "calibration": "docs/parity/fixtures/llama-terminal-current-pi-2026-10-09/calibration-be133ebf"
+    }
+  },
+  "process_differentials": {
+    "native_classifier_and_image_rejection": {
+      "match": true,
+      "evidence": "docs/parity/fixtures/llama-native-classifier-images-2026-10-09-be133ebf.json",
+      "pi_sha": "f1b2e77f5b13b2a199b1052cb79c235451afe7d7",
+      "pisharp_sha": "be133ebfa6e17d5a4f094abe8d9a3cf01a2f6b75"
+    },
+    "router_classifier_autoload_and_image_rejection": {
+      "match": true,
+      "evidence": "docs/parity/fixtures/llama-router-classifier-images-2026-10-09-be133ebf.json",
+      "pi_sha": "f1b2e77f5b13b2a199b1052cb79c235451afe7d7",
+      "pisharp_sha": "be133ebfa6e17d5a4f094abe8d9a3cf01a2f6b75"
+    },
+    "context_refresh_and_offline_reload": {
+      "match": true,
+      "evidence": "docs/parity/fixtures/llama-router-context-2026-10-09-be133ebf.json",
+      "pi_sha": "f1b2e77f5b13b2a199b1052cb79c235451afe7d7",
+      "pisharp_sha": "be133ebfa6e17d5a4f094abe8d9a3cf01a2f6b75"
+    }
+  },
+  "current_pi_focused_tests": {
+    "resource_loader": {
+      "passed": 53,
+      "total": 53,
+      "pi_head": "f1b2e77f5b13b2a199b1052cb79c235451afe7d7"
+    },
+    "llama_extension": {
+      "passed": 15,
+      "total": 15,
+      "pi_head": "f1b2e77f5b13b2a199b1052cb79c235451afe7d7"
+    },
+    "native_classifier": {
+      "passed": 15,
+      "total": 15,
+      "pi_head": "f1b2e77f5b13b2a199b1052cb79c235451afe7d7"
+    },
+    "classifier_catalog": {
+      "passed": 10,
+      "total": 10,
+      "pi_head": "f1b2e77f5b13b2a199b1052cb79c235451afe7d7"
+    },
+    "model_runtime_classifier": {
+      "passed": 1,
+      "total": 1,
+      "pi_head": "f1b2e77f5b13b2a199b1052cb79c235451afe7d7"
+    }
+  },
+  "pisharp_validation": {
+    "source_head": "be133ebfa6e17d5a4f094abe8d9a3cf01a2f6b75",
+    "classifier_codemode_focused": "44/44 passed",
+    "terminal_harness_node": "24/24 passed",
+    "terminal_harness_python": "20/20 passed",
+    "format": "passed",
+    "warnings_as_errors_build": "passed; 0 warnings, 0 errors",
+    "full_suite": "1210/1210 passed; 0 skipped",
+    "exact_head_ci_run": "37925593650",
+    "exact_head_ci_status": "success"
+  }
+}

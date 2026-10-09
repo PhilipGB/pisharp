@@ -1,0 +1,267 @@
+{
+  "match": true,
+  "piSha": "f1b2e77f5b13b2a199b1052cb79c235451afe7d7",
+  "piSharpSha": "be133ebfa6e17d5a4f094abe8d9a3cf01a2f6b75",
+  "baseline": {
+    "result": {
+      "api": "llama-cpp-classify",
+      "provider": "fixture",
+      "model": "model",
+      "answers": {
+        "safe": {
+          "type": "bool",
+          "probability": 0.7499999999999999
+        },
+        "choice": {
+          "type": "choice",
+          "choice": "a",
+          "probabilities": {
+            "a": 0.7499999999999999,
+            "b": 0.25
+          },
+          "confidence": 0.4999999999999998
+        },
+        "score": {
+          "type": "score",
+          "score": 0.25,
+          "confidence": 0.4999999999999998
+        }
+      },
+      "stopReason": "stop"
+    },
+    "requests": {
+      "pi": [
+        {
+          "method": "POST",
+          "path": "/native/tokenize",
+          "authorization": null
+        },
+        {
+          "method": "POST",
+          "path": "/native/tokenize",
+          "authorization": null
+        },
+        {
+          "method": "POST",
+          "path": "/native/tokenize",
+          "authorization": null
+        },
+        {
+          "method": "POST",
+          "path": "/native/tokenize",
+          "authorization": null
+        },
+        {
+          "method": "POST",
+          "path": "/native/apply-template",
+          "authorization": null
+        },
+        {
+          "method": "POST",
+          "path": "/native/completion",
+          "authorization": null
+        },
+        {
+          "method": "POST",
+          "path": "/native/completion",
+          "authorization": null
+        },
+        {
+          "method": "POST",
+          "path": "/native/tokenize",
+          "authorization": null
+        },
+        {
+          "method": "POST",
+          "path": "/native/tokenize",
+          "authorization": null
+        },
+        {
+          "method": "POST",
+          "path": "/native/tokenize",
+          "authorization": null
+        },
+        {
+          "method": "POST",
+          "path": "/native/tokenize",
+          "authorization": null
+        },
+        {
+          "method": "POST",
+          "path": "/native/apply-template",
+          "authorization": null
+        },
+        {
+          "method": "POST",
+          "path": "/native/completion",
+          "authorization": null
+        },
+        {
+          "method": "POST",
+          "path": "/native/completion",
+          "authorization": null
+        },
+        {
+          "method": "POST",
+          "path": "/native/tokenize",
+          "authorization": null
+        },
+        {
+          "method": "POST",
+          "path": "/native/tokenize",
+          "authorization": null
+        },
+        {
+          "method": "POST",
+          "path": "/native/tokenize",
+          "authorization": null
+        },
+        {
+          "method": "POST",
+          "path": "/native/tokenize",
+          "authorization": null
+        },
+        {
+          "method": "POST",
+          "path": "/native/apply-template",
+          "authorization": null
+        },
+        {
+          "method": "POST",
+          "path": "/native/completion",
+          "authorization": null
+        },
+        {
+          "method": "POST",
+          "path": "/native/completion",
+          "authorization": null
+        }
+      ],
+      "pisharp": [
+        {
+          "method": "POST",
+          "path": "/native/tokenize",
+          "authorization": null
+        },
+        {
+          "method": "POST",
+          "path": "/native/tokenize",
+          "authorization": null
+        },
+        {
+          "method": "POST",
+          "path": "/native/tokenize",
+          "authorization": null
+        },
+        {
+          "method": "POST",
+          "path": "/native/tokenize",
+          "authorization": null
+        },
+        {
+          "method": "POST",
+          "path": "/native/apply-template",
+          "authorization": null
+        },
+        {
+          "method": "POST",
+          "path": "/native/completion",
+          "authorization": null
+        },
+        {
+          "method": "POST",
+          "path": "/native/completion",
+          "authorization": null
+        },
+        {
+          "method": "POST",
+          "path": "/native/tokenize",
+          "authorization": null
+        },
+        {
+          "method": "POST",
+          "path": "/native/tokenize",
+          "authorization": null
+        },
+        {
+          "method": "POST",
+          "path": "/native/tokenize",
+          "authorization": null
+        },
+        {
+          "method": "POST",
+          "path": "/native/tokenize",
+          "authorization": null
+        },
+        {
+          "method": "POST",
+          "path": "/native/apply-template",
+          "authorization": null
+        },
+        {
+          "method": "POST",
+          "path": "/native/completion",
+          "authorization": null
+        },
+        {
+          "method": "POST",
+          "path": "/native/completion",
+          "authorization": null
+        },
+        {
+          "method": "POST",
+          "path": "/native/tokenize",
+          "authorization": null
+        },
+        {
+          "method": "POST",
+          "path": "/native/tokenize",
+          "authorization": null
+        },
+        {
+          "method": "POST",
+          "path": "/native/tokenize",
+          "authorization": null
+        },
+        {
+          "method": "POST",
+          "path": "/native/tokenize",
+          "authorization": null
+        },
+        {
+          "method": "POST",
+          "path": "/native/apply-template",
+          "authorization": null
+        },
+        {
+          "method": "POST",
+          "path": "/native/completion",
+          "authorization": null
+        },
+        {
+          "method": "POST",
+          "path": "/native/completion",
+          "authorization": null
+        }
+      ]
+    }
+  },
+  "imageInput": {
+    "result": {
+      "api": "llama-cpp-classify",
+      "provider": "fixture",
+      "model": "model",
+      "answers": {},
+      "stopReason": "error",
+      "errorMessage": "llama.cpp classification does not support image input"
+    },
+    "requestsSent": {
+      "pi": 0,
+      "pisharp": 0
+    },
+    "baselineRequestCounts": {
+      "pi": 21,
+      "pisharp": 21
+    }
+  }
+}

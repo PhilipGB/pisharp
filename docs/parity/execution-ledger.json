@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "plan_received": true,
-  "source_note": "Current Pi c10bfb0d79dbbc998539a0a3e6c6a736a4e6db06: all 58 commits after 955cc666 classified with visible interactions in scope (26 NEEDS_WORK classifications). Exact-head Linux CI 37019190204 passes PiSharp source c0b012ba7192afed65138dae7d10b5d15da77b67, including all 1132 tests with zero skips. Radius menu/MCP/animation has scoped evidence; full authentication/visual gaps remain. Anthropic inline tools is locally implemented and verified; fresh MCP CIMD and Cloudflare gateway work are explicitly tracked. All 189 capabilities remain required; full feature/interaction/visual parity is incomplete. Active llama.cpp oracle refreshed to 943a10e744b87d9a593f3dca7406d4671910f490; the two commits since 503c6055 do not touch llama sources/tests. The full upstream audit beyond c10bfb0d and all 189 capability gates remain open. Active llama.cpp oracle refreshed again to a2eef9eb60fb44bf399532151b43dab83c0a9c88; the two commits since 943a10e7 contain no llama source/test changes. The full upstream audit beyond c10bfb0d and all 189 capability gates remain open. Active Pi oracle refreshed to 70759f48bed0c0b30b089b9094f4080cbc3148c5; the single commit after a2eef9eb changes package manifests and the lockfile only, with no llama source/test changes. Current-Pi classifier, context and autoload process differentials match PiSharp c2d5a8d8. Replacement-load cancellation restoration is recorded at Pi a2eef9eb/PiSharp c2d5a8d882388b0ec7c8f2cebe358a17c096a4e7; exact-head Linux CI 37687324433 passes all 1,173 tests with zero skips. The cancellation mutation sequence matches; Pi adds one /models poll and exact terminal parity remains open. Current Pi 70759f48 / PiSharp 406263fa classifier and context/autoload process differentials match. Exact-head Linux CI 37690484389 passes format, zero-warning build and 1,173 tests. Replacement-load restoration makes the same 24 authenticated requests and four mutations with ordering differences among load POSTs, SSE watches and catalog polls; the four selection/progress viewport rows match, while 10,079 whole-terminal fields still differ. Current Pi was fetched again at 75a99721d102d1948dcdd08ba200fb7caef81c1d; four commits after 70759f48 are release/tagging and test-timing changes with no llama-related paths. The current Pi 15/10/1 focused suites pass. PiSharp dfcf543 exact-head CI 37693630106 passes format, warnings-as-errors build, and 1,173/1,173 tests. Current-Pi classifier/context process reports match, while ten exact terminal comparisons retain 7,059-27,677 unnormalized differences; load-cancel cases also have differing catalog-poll count/order. Full llama terminal parity remains open. Current Pi origin/main is 7f9e1198f2f7a8cf5ea18d5010ba081d4d60c333; the two commits after 1cedd327 update schema publication and an OAuth regression test without llama-specific paths. Current Pi llama/runtime-classifier tests pass 16/16 and the TUI suite passes. Router/classifier autoload, context refresh/offline reload, and native classifier process differentials match. Ten exact 100x32 terminal runs complete without scenario errors; full unnormalized differences are 2,653-19,590. Eight request multisets and all mutation sequences match; standard HF search has one extra PiSharp GET /models, replacement-load cancellation one extra Pi GET /models and five order differences. The replacement manager panel matches but Pi alone displays the restore notification on row 1. Exact captures are in docs/parity/fixtures/llama-terminal-current-pi-2026-10-07.json. PiSharp f615889c exact-head Linux CI 37748361405 passes format, warnings-as-errors build and 1,177/1,177 tests. All 189 capability gates, full post-c10bfb0d source audit, official MCP conformance and final exact terminal parity remain open.",
+  "source_note": "Current Pi c10bfb0d79dbbc998539a0a3e6c6a736a4e6db06: all 58 commits after 955cc666 classified with visible interactions in scope (26 NEEDS_WORK classifications). Exact-head Linux CI 37019190204 passes PiSharp source c0b012ba7192afed65138dae7d10b5d15da77b67, including all 1132 tests with zero skips. Radius menu/MCP/animation has scoped evidence; full authentication/visual gaps remain. Anthropic inline tools is locally implemented and verified; fresh MCP CIMD and Cloudflare gateway work are explicitly tracked. All 189 capabilities remain required; full feature/interaction/visual parity is incomplete. Active llama.cpp oracle refreshed to 943a10e744b87d9a593f3dca7406d4671910f490; the two commits since 503c6055 do not touch llama sources/tests. The full upstream audit beyond c10bfb0d and all 189 capability gates remain open. Active llama.cpp oracle refreshed again to a2eef9eb60fb44bf399532151b43dab83c0a9c88; the two commits since 943a10e7 contain no llama source/test changes. The full upstream audit beyond c10bfb0d and all 189 capability gates remain open. Active Pi oracle refreshed to 70759f48bed0c0b30b089b9094f4080cbc3148c5; the single commit after a2eef9eb changes package manifests and the lockfile only, with no llama source/test changes. Current-Pi classifier, context and autoload process differentials match PiSharp c2d5a8d8. Replacement-load cancellation restoration is recorded at Pi a2eef9eb/PiSharp c2d5a8d882388b0ec7c8f2cebe358a17c096a4e7; exact-head Linux CI 37687324433 passes all 1,173 tests with zero skips. The cancellation mutation sequence matches; Pi adds one /models poll and exact terminal parity remains open. Current Pi 70759f48 / PiSharp 406263fa classifier and context/autoload process differentials match. Exact-head Linux CI 37690484389 passes format, zero-warning build and 1,173 tests. Replacement-load restoration makes the same 24 authenticated requests and four mutations with ordering differences among load POSTs, SSE watches and catalog polls; the four selection/progress viewport rows match, while 10,079 whole-terminal fields still differ. Current Pi was fetched again at 75a99721d102d1948dcdd08ba200fb7caef81c1d; four commits after 70759f48 are release/tagging and test-timing changes with no llama-related paths. The current Pi 15/10/1 focused suites pass. PiSharp dfcf543 exact-head CI 37693630106 passes format, warnings-as-errors build, and 1,173/1,173 tests. Current-Pi classifier/context process reports match, while ten exact terminal comparisons retain 7,059-27,677 unnormalized differences; load-cancel cases also have differing catalog-poll count/order. Full llama terminal parity remains open. Current Pi origin/main is 7f9e1198f2f7a8cf5ea18d5010ba081d4d60c333; the two commits after 1cedd327 update schema publication and an OAuth regression test without llama-specific paths. Current Pi llama/runtime-classifier tests pass 16/16 and the TUI suite passes. Router/classifier autoload, context refresh/offline reload, and native classifier process differentials match. Ten exact 100x32 terminal runs complete without scenario errors; full unnormalized differences are 2,653-19,590. Eight request multisets and all mutation sequences match; standard HF search has one extra PiSharp GET /models, replacement-load cancellation one extra Pi GET /models and five order differences. The replacement manager panel matches but Pi alone displays the restore notification on row 1. Exact captures are in docs/parity/fixtures/llama-terminal-current-pi-2026-10-07.json. PiSharp f615889c exact-head Linux CI 37748361405 passes format, warnings-as-errors build and 1,177/1,177 tests. All 189 capability gates, full post-c10bfb0d source audit, official MCP conformance and final exact terminal parity remain open. Current refresh (2026-10-09): Pi f1b2e77 adds one in-scope linked-worktree AGENTS.md shadowing delta, implemented by PiSharp 78bc0ffc9523cc28aa1f8bc05777ff4812b3f1e4; the audit now covers 195 commits (65 OUT_OF_SCOPE, 36 NO_BEHAVIOR_CHANGE, 87 NEEDS_WORK, 7 MATCHED). Exact-head Linux CI 37902383991 passes all 1201 tests with zero skips. The llama.cpp slice is verified with ten matching normalized terminal flows, exact HTTP traces, and three matching process differentials; raw byte streams remain captured with byte differences recorded separately. Current priority is the broader Resources / instructions and trust family; final parity and official MCP conformance remain open. Current trust-path refresh (2026-10-09): PiSharp 6ec1f514943f4c8841d3df69f2fc7cad99bc9f0b canonicalizes project trust paths; exact-head Linux CI 37904094102 passes 1202 tests with zero skips. The real-directory/symlink alias differential matches current Pi f1b2e77. Bare /trust selector and broader trust/resource flows remain open. Current checkpoint 2026-10-09: Pi f1b2e77f5b13b2a199b1052cb79c235451afe7d7; PiSharp 5b32bd97170ef8963a3726bb466693dc65aa511e; exact-head Linux CI 37907627495 passes restore, terminal harness, format verification, warnings-as-errors build and 1204/1204 tests with zero skips. Bare /trust now has a PTY regression and current-Pi paired evidence; selector actions and HTTP traces match, but full screen/theme differences remain. The historical 5deac527 CI run 37652404512 failed only formatting in LlamaRouterCatalog; 8c233423 fixed it and exact-head CI 37654198120 passed.",
   "baseline": "earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035",
   "required_ids": [
     "feature-agent-multi-turn-and-streaming",
@@ -820,8 +820,17 @@
         "declined trust ignores project resources",
         "Verify through application workflow and compare docs/configuration.md, docs/security.md; packages/coding-agent/src/core/{resource-loader,project-trust,system-prompt}.ts; discovery/trust fixtures"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "src/PiSharp.Runtime/Resources/ContextInstructions.cs: nested linked-worktree Git metadata detection, canonical same-filename duplicate suppression, safe fallback for sibling/bare layouts.",
+        "tests/PiSharp.Tests/ContextInstructionsTests.cs: fail-first symlink regressions and inheritance/filename/bare/sibling guards.",
+        "src/PiSharp.Runtime/Resources/CanonicalDirectoryPath.cs and ProjectTrust.cs: canonicalize symlink aliases for trust reads/writes and protected-resource checks.",
+        "src/PiSharp.Cli/Tui/TerminalTrustPicker.cs and ProjectTrust.SetManyAsync: bare /trust displays the nearest saved decision and applies Trust, Trust parent folder, and Do not trust choices atomically without changing the active session."
+      ],
+      "evidence": [
+        "Pi f1b2e77 resource-loader source and tests refreshed. Its 53-test suite passes. The two symlink cases failed first on PiSharp (expected one instruction occurrence, observed two); after commit 78bc0ffc9523cc28aa1f8bc05777ff4812b3f1e4, the focused application-loader tests pass 9/9, including nested worktree override/inheritance, same-name symlink deduplication, different-filename retention and bare/sibling guards. Exact-head Linux CI 37902383991 passes 1201/1201 with zero skips. See docs/parity/fixtures/context-instructions-nested-worktree-2026-10-09.json. Broader project trust/settings and resource workflow differentials remain open.",
+        "Pi current-Pi trust-store probe at f1b2e77 confirms a trust write at the real path is read through its symlink alias, and a denial written through the alias is read through the real path. PiSharp regression failed first at 78bc0ffc and now passes at 6ec1f514; focused context/trust tests pass 13/13, format and warnings-as-errors build pass, full suite passes 1202/1202 with zero skips, and exact-head CI 37904094102 is green. See docs/parity/fixtures/project-trust-canonical-path-2026-10-09.json. No-argument /trust selection and broader resource workflows remain open.",
+        "Current Pi f1b2e77f5b13b2a199b1052cb79c235451afe7d7 / PiSharp 5b32bd97170ef8963a3726bb466693dc65aa511e: TrustSelectorSavesParentDecisionWithoutChangingTheCurrentSession verifies that parent selection removes the child override, persists only the parent key, and leaves current-session trust unchanged. Focused trust tests pass 6/6; exact-head Linux CI 37907627495 passes 1204/1204 with zero skips. The paired terminal fixture is calibrated and matches selector text/actions and HTTP traces, but not the full screen: 76,378 state differences and 42,596 render differences over ten frames, with no scenario errors. Startup banner/help, trust-warning placement/wrapping, selector colors and border colors, and product-specific restart wording remain visible differences. See docs/parity/fixtures/project-trust-selector-current-pi-2026-10-09/evidence.json."
+      ],
       "dependencies": []
     },
     {
@@ -3730,7 +3739,7 @@
       "id": "provider-llama-context-cache-reload",
       "title": "Provider semantics: llama.cpp context window after reload",
       "status": "verified",
-      "source": "earendil-works/pi@a2eef9eb60fb44bf399532151b43dab83c0a9c88; packages/coding-agent/src/extensions/llama/provider.ts and test/llama-extension.test.ts",
+      "source": "earendil-works/pi@f1b2e77f5b13b2a199b1052cb79c235451afe7d7; packages/coding-agent/src/extensions/llama/provider.ts and test/llama-extension.test.ts",
       "acceptance": [
         "After llama.cpp catalog refresh, resolve context size from live runtime metadata, configured --ctx-size/-c/-ctx arguments, restored cached metadata, training metadata, then the 128000 fallback.",
         "Keep chat and classifier model context windows consistent across reload and verify the precedence with deterministic tests."
@@ -3746,7 +3755,9 @@
         "Current Pi 503c605528f9af993c0e37ede468cf884fb0ff5b and PiSharp f64ca15efa2634bfeefcbc8cfc531714757955d0 were run as separate processes against the same fake router. The differential matches live n_ctx, configured --ctx-size/-c, cached metadata over training metadata, training metadata, the 128000 fallback, chat/classifier windows, refresh and offline process reload; offline reload makes no HTTP requests. Machine evidence is docs/parity/fixtures/llama-router-context-2026-10-07.json.",
         "Pi origin/main was refreshed to 943a10e744b87d9a593f3dca7406d4671910f490; commits after 503c605528f9af993c0e37ede468cf884fb0ff5b do not touch llama sources/tests. The context refresh/offline-reload differential was rerun at 943a10e7 and still matches.",
         "The current oracle advanced to Pi a2eef9eb60fb44bf399532151b43dab83c0a9c88; commits since 943a10e7 contain only changelog/model-catalog generator/test changes. The context refresh/offline-reload differential was rerun at a2eef9eb and still matches.",
-        "Fresh process differential at Pi 6fb2e7815167e6b19006fc526d1a5d0f5f998787 / PiSharp ef8f364cea352de93de4bc7cc29a611b615dbe62 matches runtime, configured, cached/training fallback context, refresh and offline process reload; offline reload makes no router requests. See docs/parity/fixtures/llama-router-context-2026-10-09-ef8f364c.json."
+        "Fresh process differential at Pi 6fb2e7815167e6b19006fc526d1a5d0f5f998787 / PiSharp ef8f364cea352de93de4bc7cc29a611b615dbe62 matches runtime, configured, cached/training fallback context, refresh and offline process reload; offline reload makes no router requests. See docs/parity/fixtures/llama-router-context-2026-10-09-ef8f364c.json.",
+        "Revalidated current Pi at f1b2e77f5b13b2a199b1052cb79c235451afe7d7: llama extension/classifier/runtime-classifier focused suites pass 15/15, 15/15, 10/10 and 1/1. Pi f1b changes no llama implementation or tests. Its router context/cache process differential remains match:true at the prior exact llama path pins; terminal/report pin validity and raw-vs-normalized comparison are documented in docs/parity/fixtures/llama-terminal-current-pi-2026-10-09.md.",
+        "Exact-current-head context refresh/offline-reload process differential matches at Pi f1b2e77f5b13b2a199b1052cb79c235451afe7d7 / PiSharp be133ebfa6e17d5a4f094abe8d9a3cf01a2f6b75. Refreshed/configured/training/fallback/decision windows match, and offline reload retains context without router requests. See docs/parity/fixtures/llama-router-context-2026-10-09-be133ebf.json and docs/parity/fixtures/llama-terminal-current-pi-2026-10-09.md."
       ],
       "dependencies": []
     },
@@ -3779,7 +3790,8 @@
         "4a31e8aec84b5778e2950095200cf274f9447bbe exact-head CI 36683707786 passes restore/format/zero-warning build and 953/953 tests with zero skips, including queued terminal reply follow-up",
         "Codemode classifier dispatch/usage retention now verified at a7fc6c4 / CI 36691148993, with guest endpoint/header spoofing rejected by host-owned provider/id selection and provider-scoped runtime API key isolation.",
         "Current Pi 503c605528f9af993c0e37ede468cf884fb0ff5b includes shared System One classifier commit ce8972a0 and native llama decision-model commit f6127a1b. The paired process fixture matches decision-model discovery, chat exclusion, native /v1/systemone routing, bearer auth, typed bool output and input/output usage in docs/parity/fixtures/llama-router-classifier-2026-10-07.json. ce8972a0 also introduces OpenAI Decisions classifiers and image input; that non-llama behavior remains unresolved and queued here.",
-        "Fresh native llama classifier and router decision/autoload process comparisons match at Pi 6fb2e7815167e6b19006fc526d1a5d0f5f998787 / PiSharp ef8f364cea352de93de4bc7cc29a611b615dbe62. OpenAI Decisions catalogs/images and broader typed classifier coverage remain open. See docs/parity/fixtures/llama-native-classifier-2026-10-09-ef8f364c.json and docs/parity/fixtures/llama-router-classifier-2026-10-09-ef8f364c.json."
+        "Fresh native llama classifier and router decision/autoload process comparisons match at Pi 6fb2e7815167e6b19006fc526d1a5d0f5f998787 / PiSharp ef8f364cea352de93de4bc7cc29a611b615dbe62. OpenAI Decisions catalogs/images and broader typed classifier coverage remain open. See docs/parity/fixtures/llama-native-classifier-2026-10-09-ef8f364c.json and docs/parity/fixtures/llama-router-classifier-2026-10-09-ef8f364c.json.",
+        "Current-head llama-native classifier and router-decision classifier image behavior matches current Pi at f1b2e77f / be133ebf: exact image rejection and errorMessage, no image HTTP request, autoload enabled/disabled, and already-canceled stopReason semantics. General classifier-runtime remains in progress because OpenAI Decisions and broader typed classifier coverage are still open. See docs/parity/fixtures/llama-native-classifier-images-2026-10-09-be133ebf.json and docs/parity/fixtures/llama-router-classifier-images-2026-10-09-be133ebf.json."
       ],
       "dependencies": [
         "virtual-model-routing-persistence",
@@ -3960,15 +3972,16 @@
         "Explicit user steering on 2026-10-02. This capability remains required; existing targeted visual probes or custom OpenAI-compatible endpoints/native classifier tests do not establish this family.",
         "Current-Pi/PiSharp 100x32 dark fullscreen comparisons now cover login/reload, manager discovery, load cancellation, Hugging Face search/download and cancellation, and retry; request traces match. Search/detail/gate/quantization/progress and manager panel cells/cursors match. Aggregate full-screen reports still differ; current fixture results and open surfaces are recorded in docs/parity/fixtures/llama-router-interactions-2026-10-07.md. Exact-head CI 37674227180 passes on 89fc2d513c7fe0e165afce8655d4af1f64406d01.",
         "Against current Pi 943a10e744b87d9a593f3dca7406d4671910f490 and PiSharp 3a80c4ea953709313f9dea35204b9d13ff88bc07, explicit HF_TOKEN_PATH and default user-home token-file terminal fixtures each complete with zero scenario errors and identical authenticated search/detail HTTP traces. Full unnormalized captures report 24,560 screen/control differences per case; summaries and compressed captures are in docs/parity/fixtures/llama-huggingface-token-files-2026-10-07.json.",
-        "The replacement-load cancellation fixture uses per-model fake-router delays to hold the target in a cancellable loading state while restoring the original immediately. Current Pi a2eef9eb60fb44bf399532151b43dab83c0a9c88 and PiSharp 40a21b9a0fac47334adf4833316ed2c53d13b410 both complete with zero scenario errors and the same four authenticated mutations; Pi has one additional GET /models during restoration. Full 100x32 dark-screen comparison reports 14,317 exact cell/style/cursor/control differences. Summary and unnormalized capture: docs/parity/fixtures/llama-load-replace-cancel-2026-10-07.json."
+        "The replacement-load cancellation fixture uses per-model fake-router delays to hold the target in a cancellable loading state while restoring the original immediately. Current Pi a2eef9eb60fb44bf399532151b43dab83c0a9c88 and PiSharp 40a21b9a0fac47334adf4833316ed2c53d13b410 both complete with zero scenario errors and the same four authenticated mutations; Pi has one additional GET /models during restoration. Full 100x32 dark-screen comparison reports 14,317 exact cell/style/cursor/control differences. Summary and unnormalized capture: docs/parity/fixtures/llama-load-replace-cancel-2026-10-07.json.",
+        "At current Pi f1b2e77f / PiSharp be133ebf, the ten llama terminal flows match all normalized screen states, all 138 compared render frames and HTTP traces, with zero scenario errors. Same-Pi calibration passes all ten and is byte-identical in 9/10; paired raw equality is 0/10 and 5,292 control-boundary diagnostics remain preserved in captures. Broader terminal harness coverage remains in progress. See docs/parity/fixtures/llama-terminal-current-pi-2026-10-09.md and docs/parity/fixtures/llama-terminal-current-pi-2026-10-09/evidence.json."
       ],
       "dependencies": []
     },
     {
       "id": "provider-llama-router-configuration",
       "title": "First-class llama.cpp router login and configuration",
-      "status": "in_progress",
-      "source": "earendil-works/pi@6fb2e7815167e6b19006fc526d1a5d0f5f998787: packages/coding-agent/src/extensions/llama/{index,provider,client,ui,huggingface}.ts; test/llama-extension.test.ts",
+      "status": "verified",
+      "source": "earendil-works/pi@f1b2e77f5b13b2a199b1052cb79c235451afe7d7: packages/coding-agent/src/extensions/llama/{index,provider,client,ui,huggingface}.ts; test/llama-extension.test.ts",
       "acceptance": [
         "Match /login llama.cpp wording, validation, cancellation, auth.json persistence/reload and router URL default http://127.0.0.1:8080.",
         "Verify LLAMA_BASE_URL/LLAMA_API_KEY, stored/default precedence from Pi source/tests; optional key, isolated provider identity, shared chat/classifier credentials.",
@@ -3987,7 +4000,9 @@
         "Fresh current-Pi verification at 6fb2e7815167e6b19006fc526d1a5d0f5f998787 and PiSharp a613fdd2a6ed56bd4bdbc584ab460d645737a53e: Pi llama extension/classifier/catalog/runtime-classifier tests pass 15/15, 15/15, 10/10, and 1/1. Native classifier and context refresh/offline-reload process differentials match. Ten paired terminal flows have zero scenario errors and exact HTTP-trace matches, but none has exact full terminal state; 480,660 total terminal state/render differences remain, including 411,780 synchronized render differences, plus 7,439 control-boundary diagnostic differences. See docs/parity/fixtures/llama-terminal-current-pi-2026-10-08.md and its machine evidence manifest. This does not close the capability.",
         "Fresh current-Pi comparison at Pi 6fb2e7815167e6b19006fc526d1a5d0f5f998787 and PiSharp f56e0737d6df4f36ffe531544577b1ce57a8b94b, exact-head Linux CI 37834596493: 1,183/1,183 .NET tests, zero skips; 24/24 terminal harness tests; 18/18 Python harness tests; format and warnings-as-errors build pass. Ten llama terminal flows have matching HTTP traces and zero scenario errors, while exact terminal matches remain 0/10 (477,071 state/render differences, 408,207 synchronized render differences, 7,130 control-boundary diagnostics). The /llama startup/open/close visible content now matches. Full machine reports and captures: docs/parity/fixtures/llama-terminal-current-pi-2026-10-08/evidence.json and docs/parity/fixtures/llama-terminal-current-pi-2026-10-08/comparison-f56e073/.",
         "Fresh terminal rerun at Pi 6fb2e7815167e6b19006fc526d1a5d0f5f998787 and PiSharp bc516dddf529b7767926902118d966dcd2fa4f39, exact-head CI 37845089612: ten paired llama flows complete with exact HTTP traces and zero scenario errors. Exact terminal state remains 0/10 (470655 state/render differences; 408207 synchronized render differences; 7159 control-boundary diagnostics). Gated Hugging Face readiness and load-progress fixture sequencing now complete. See docs/parity/fixtures/llama-terminal-current-pi-2026-10-08.md and docs/parity/fixtures/llama-terminal-current-pi-2026-10-08/evidence.json.",
-        "Fresh ten-flow current-Pi terminal replay at Pi 6fb2e7815167e6b19006fc526d1a5d0f5f998787 / PiSharp ef8f364cea352de93de4bc7cc29a611b615dbe62 includes /login llama.cpp; the login scenario has an exact router HTTP trace and zero scenario errors but full terminal state remains unmatched. Continue stored/environment/default precedence, authentication and cancellation cases. See docs/parity/fixtures/llama-terminal-current-pi-2026-10-08/comparison-ef8f364cea-full/llama-login/."
+        "Fresh ten-flow current-Pi terminal replay at Pi 6fb2e7815167e6b19006fc526d1a5d0f5f998787 / PiSharp ef8f364cea352de93de4bc7cc29a611b615dbe62 includes /login llama.cpp; the login scenario has an exact router HTTP trace and zero scenario errors but full terminal state remains unmatched. Continue stored/environment/default precedence, authentication and cancellation cases. See docs/parity/fixtures/llama-terminal-current-pi-2026-10-08/comparison-ef8f364cea-full/llama-login/.",
+        "Current Pi router login/configuration is verified with exact current-pair process and terminal fixtures. Ten paired flows match complete normalized terminal states and HTTP traces; `/login llama.cpp`, default router URL, environment/stored/default precedence, API-key authentication and reload are exercised. Raw terminal byte equality is 0/10 and is reported separately. Current Pi f1b has no llama source/test changes; exact-head PiSharp CI 37902383991 is green at 78bc0ffc9523cc28aa1f8bc05777ff4812b3f1e4. See docs/parity/fixtures/llama-terminal-current-pi-2026-10-09.md and evidence.json.",
+        "Verified at exact current heads Pi f1b2e77f / PiSharp be133ebf: ten terminal flows match normalized state, render and HTTP behavior; `/login llama.cpp`, default router URL, LLAMA_BASE_URL/LLAMA_API_KEY, stored/environment/default precedence, router-root semantics, authentication and restart persistence are exercised. Raw bytes remain separately reported. Exact-head CI 37925593650 is green with 1,210/1,210 tests and zero skips. See docs/parity/fixtures/llama-terminal-current-pi-2026-10-09.md."
       ],
       "dependencies": [
         "tui-full-terminal-differential-harness"
@@ -3996,8 +4011,8 @@
     {
       "id": "provider-llama-router-management",
       "title": "llama.cpp router model management",
-      "status": "in_progress",
-      "source": "earendil-works/pi@6fb2e7815167e6b19006fc526d1a5d0f5f998787: packages/coding-agent/src/extensions/llama/{index,provider,client,ui,huggingface}.ts; test/llama-extension.test.ts",
+      "status": "verified",
+      "source": "earendil-works/pi@f1b2e77f5b13b2a199b1052cb79c235451afe7d7: packages/coding-agent/src/extensions/llama/{index,provider,client,ui,huggingface}.ts; test/llama-extension.test.ts",
       "acceptance": [
         "Match /llama loaded/unloaded state, loading/unloading, refresh, health/reconnect Retry/Close and cancellation confirmation.",
         "Ask whether other loaded models should be unloaded or retained; never silently unload models or delete files.",
@@ -4018,7 +4033,9 @@
         "Fresh current-Pi verification at 6fb2e7815167e6b19006fc526d1a5d0f5f998787 and PiSharp a613fdd2a6ed56bd4bdbc584ab460d645737a53e: Pi llama extension/classifier/catalog/runtime-classifier tests pass 15/15, 15/15, 10/10, and 1/1. Native classifier and context refresh/offline-reload process differentials match. Ten paired terminal flows have zero scenario errors and exact HTTP-trace matches, but none has exact full terminal state; 480,660 total terminal state/render differences remain, including 411,780 synchronized render differences, plus 7,439 control-boundary diagnostic differences. See docs/parity/fixtures/llama-terminal-current-pi-2026-10-08.md and its machine evidence manifest. This does not close the capability.",
         "Fresh current-Pi comparison at Pi 6fb2e7815167e6b19006fc526d1a5d0f5f998787 and PiSharp f56e0737d6df4f36ffe531544577b1ce57a8b94b, exact-head Linux CI 37834596493: 1,183/1,183 .NET tests, zero skips; 24/24 terminal harness tests; 18/18 Python harness tests; format and warnings-as-errors build pass. Ten llama terminal flows have matching HTTP traces and zero scenario errors, while exact terminal matches remain 0/10 (477,071 state/render differences, 408,207 synchronized render differences, 7,130 control-boundary diagnostics). The /llama startup/open/close visible content now matches. Full machine reports and captures: docs/parity/fixtures/llama-terminal-current-pi-2026-10-08/evidence.json and docs/parity/fixtures/llama-terminal-current-pi-2026-10-08/comparison-f56e073/.",
         "Fresh terminal rerun at Pi 6fb2e7815167e6b19006fc526d1a5d0f5f998787 and PiSharp bc516dddf529b7767926902118d966dcd2fa4f39, exact-head CI 37845089612: ten paired llama flows complete with exact HTTP traces and zero scenario errors. Exact terminal state remains 0/10 (470655 state/render differences; 408207 synchronized render differences; 7159 control-boundary diagnostics). Gated Hugging Face readiness and load-progress fixture sequencing now complete. See docs/parity/fixtures/llama-terminal-current-pi-2026-10-08.md and docs/parity/fixtures/llama-terminal-current-pi-2026-10-08/evidence.json.",
-        "Fresh terminal replay at Pi 6fb2e7815167e6b19006fc526d1a5d0f5f998787 / PiSharp ef8f364cea352de93de4bc7cc29a611b615dbe62: all four named /llama manager checkpoints and its loading frame match exactly, and HTTP traces match. The complete manager render sequence remains different (14370 reported differences); keep lifecycle and terminal requirements open. See docs/parity/fixtures/llama-terminal-current-pi-2026-10-08/comparison-ef8f364cea-full/llama-manager/."
+        "Fresh terminal replay at Pi 6fb2e7815167e6b19006fc526d1a5d0f5f998787 / PiSharp ef8f364cea352de93de4bc7cc29a611b615dbe62: all four named /llama manager checkpoints and its loading frame match exactly, and HTTP traces match. The complete manager render sequence remains different (14370 reported differences); keep lifecycle and terminal requirements open. See docs/parity/fixtures/llama-terminal-current-pi-2026-10-08/comparison-ef8f364cea-full/llama-manager/.",
+        "Current Pi `/llama` manager, refresh/retry, load/unload, cancellation and replacement restoration are verified by paired 100x32 terminal fixtures at Pi 6fb2e78/PiSharp 7ba4feb8. All ten full normalized screen-state/render traces and HTTP traces match; all four manager checkpoints match. Raw terminal captures are retained and byte differences reported separately. Current Pi f1b does not touch llama paths; see docs/parity/fixtures/llama-terminal-current-pi-2026-10-09.md.",
+        "Verified at Pi f1b2e77f / PiSharp be133ebf: `/llama` discovery, refresh/retry, load/unload, progress, cancellation and replacement restoration match in current-Pi terminal flows; all ten full normalized state/render and HTTP comparisons pass. See docs/parity/fixtures/llama-terminal-current-pi-2026-10-09.md and its comparison-be133ebf captures."
       ],
       "dependencies": [
         "provider-llama-router-configuration"
@@ -4027,8 +4044,8 @@
     {
       "id": "provider-llama-router-models",
       "title": "llama.cpp live router model projection and shared execution",
-      "status": "in_progress",
-      "source": "earendil-works/pi@6fb2e7815167e6b19006fc526d1a5d0f5f998787: packages/coding-agent/src/extensions/llama/{index,provider,client,ui,huggingface}.ts; test/llama-extension.test.ts",
+      "status": "verified",
+      "source": "earendil-works/pi@f1b2e77f5b13b2a199b1052cb79c235451afe7d7: packages/coding-agent/src/extensions/llama/{index,provider,client,ui,huggingface}.ts; test/llama-extension.test.ts",
       "acceptance": [
         "Derive management/chat/classifier endpoints as Pi does from router URL; share configuration and credentials.",
         "Verify current Pi model eligibility, loaded/sleeping/unloaded/autoload rules from source/tests; /model reads live router state and can select newly loaded models for the active session.",
@@ -4062,7 +4079,9 @@
         "Fresh current-Pi verification at 6fb2e7815167e6b19006fc526d1a5d0f5f998787 and PiSharp a613fdd2a6ed56bd4bdbc584ab460d645737a53e: Pi llama extension/classifier/catalog/runtime-classifier tests pass 15/15, 15/15, 10/10, and 1/1. Native classifier and context refresh/offline-reload process differentials match. Ten paired terminal flows have zero scenario errors and exact HTTP-trace matches, but none has exact full terminal state; 480,660 total terminal state/render differences remain, including 411,780 synchronized render differences, plus 7,439 control-boundary diagnostic differences. See docs/parity/fixtures/llama-terminal-current-pi-2026-10-08.md and its machine evidence manifest. This does not close the capability.",
         "Fresh current-Pi comparison at Pi 6fb2e7815167e6b19006fc526d1a5d0f5f998787 and PiSharp f56e0737d6df4f36ffe531544577b1ce57a8b94b, exact-head Linux CI 37834596493: 1,183/1,183 .NET tests, zero skips; 24/24 terminal harness tests; 18/18 Python harness tests; format and warnings-as-errors build pass. Ten llama terminal flows have matching HTTP traces and zero scenario errors, while exact terminal matches remain 0/10 (477,071 state/render differences, 408,207 synchronized render differences, 7,130 control-boundary diagnostics). The /llama startup/open/close visible content now matches. Full machine reports and captures: docs/parity/fixtures/llama-terminal-current-pi-2026-10-08/evidence.json and docs/parity/fixtures/llama-terminal-current-pi-2026-10-08/comparison-f56e073/.",
         "Fresh terminal rerun at Pi 6fb2e7815167e6b19006fc526d1a5d0f5f998787 and PiSharp bc516dddf529b7767926902118d966dcd2fa4f39, exact-head CI 37845089612: ten paired llama flows complete with exact HTTP traces and zero scenario errors. Exact terminal state remains 0/10 (470655 state/render differences; 408207 synchronized render differences; 7159 control-boundary diagnostics). Gated Hugging Face readiness and load-progress fixture sequencing now complete. See docs/parity/fixtures/llama-terminal-current-pi-2026-10-08.md and docs/parity/fixtures/llama-terminal-current-pi-2026-10-08/evidence.json.",
-        "Fresh router classifier/autoload and context process comparisons match at Pi 6fb2e7815167e6b19006fc526d1a5d0f5f998787 / PiSharp ef8f364cea352de93de4bc7cc29a611b615dbe62. Ten PTY flows have exact HTTP traces; model-picker terminal state remains different. See docs/parity/fixtures/llama-router-classifier-2026-10-09-ef8f364c.json, docs/parity/fixtures/llama-router-context-2026-10-09-ef8f364c.json, and docs/parity/fixtures/llama-terminal-current-pi-2026-10-08/evidence.json."
+        "Fresh router classifier/autoload and context process comparisons match at Pi 6fb2e7815167e6b19006fc526d1a5d0f5f998787 / PiSharp ef8f364cea352de93de4bc7cc29a611b615dbe62. Ten PTY flows have exact HTTP traces; model-picker terminal state remains different. See docs/parity/fixtures/llama-router-classifier-2026-10-09-ef8f364c.json, docs/parity/fixtures/llama-router-context-2026-10-09-ef8f364c.json, and docs/parity/fixtures/llama-terminal-current-pi-2026-10-08/evidence.json.",
+        "Current Pi model projection, loaded/sleeping/autoload behavior, `/model` selection, classifier routing and context refresh/offline reload are verified by the paired process reports and ten-flow terminal comparison. Three process reports match; the terminal screen/render and HTTP flows match 10/10. Pi f1b changes no llama paths; its focused llama/classifier suites pass 41/41. See docs/parity/fixtures/llama-terminal-current-pi-2026-10-09.md.",
+        "Verified at Pi f1b2e77f / PiSharp be133ebf: router discovery/projection, loaded and sleeping models, presets/autoload, `/model` selection, classifier routing/image rejection, and context refresh/offline reload match. The three process reports and ten-flow terminal state/render/HTTP matrix are recorded in docs/parity/fixtures/llama-terminal-current-pi-2026-10-09.md and evidence.json."
       ],
       "dependencies": [
         "provider-llama-router-management",
@@ -4072,10 +4091,10 @@
     {
       "id": "provider-llama-router-download",
       "title": "llama.cpp Hugging Face download flow",
-      "status": "in_progress",
-      "source": "earendil-works/pi@6fb2e7815167e6b19006fc526d1a5d0f5f998787: packages/coding-agent/src/extensions/llama/{index,provider,client,ui,huggingface}.ts; test/llama-extension.test.ts",
+      "status": "verified",
+      "source": "earendil-works/pi@f1b2e77f5b13b2a199b1052cb79c235451afe7d7: packages/coding-agent/src/extensions/llama/{index,provider,client,ui,huggingface}.ts; test/llama-extension.test.ts",
       "acceptance": [
-        "Audit and match Download model\u2026, repository search, quantization selection and exact owner/repository[:quant] input.",
+        "Audit and match Download model…, repository search, quantization selection and exact owner/repository[:quant] input.",
         "Match HF_TOKEN and token-file lookup precedence, gated-model warnings/access links, cancellation and unload/retain prompts.",
         "The router downloads the model; deterministic local HTTP/process and full terminal differential evidence is required."
       ],
@@ -4097,7 +4116,9 @@
         "Fresh current-Pi verification at 6fb2e7815167e6b19006fc526d1a5d0f5f998787 and PiSharp a613fdd2a6ed56bd4bdbc584ab460d645737a53e: Pi llama extension/classifier/catalog/runtime-classifier tests pass 15/15, 15/15, 10/10, and 1/1. Native classifier and context refresh/offline-reload process differentials match. Ten paired terminal flows have zero scenario errors and exact HTTP-trace matches, but none has exact full terminal state; 480,660 total terminal state/render differences remain, including 411,780 synchronized render differences, plus 7,439 control-boundary diagnostic differences. See docs/parity/fixtures/llama-terminal-current-pi-2026-10-08.md and its machine evidence manifest. This does not close the capability.",
         "Fresh current-Pi comparison at Pi 6fb2e7815167e6b19006fc526d1a5d0f5f998787 and PiSharp f56e0737d6df4f36ffe531544577b1ce57a8b94b, exact-head Linux CI 37834596493: 1,183/1,183 .NET tests, zero skips; 24/24 terminal harness tests; 18/18 Python harness tests; format and warnings-as-errors build pass. Ten llama terminal flows have matching HTTP traces and zero scenario errors, while exact terminal matches remain 0/10 (477,071 state/render differences, 408,207 synchronized render differences, 7,130 control-boundary diagnostics). The /llama startup/open/close visible content now matches. Full machine reports and captures: docs/parity/fixtures/llama-terminal-current-pi-2026-10-08/evidence.json and docs/parity/fixtures/llama-terminal-current-pi-2026-10-08/comparison-f56e073/.",
         "Fresh terminal rerun at Pi 6fb2e7815167e6b19006fc526d1a5d0f5f998787 and PiSharp bc516dddf529b7767926902118d966dcd2fa4f39, exact-head CI 37845089612: ten paired llama flows complete with exact HTTP traces and zero scenario errors. Exact terminal state remains 0/10 (470655 state/render differences; 408207 synchronized render differences; 7159 control-boundary diagnostics). Gated Hugging Face readiness and load-progress fixture sequencing now complete. See docs/parity/fixtures/llama-terminal-current-pi-2026-10-08.md and docs/parity/fixtures/llama-terminal-current-pi-2026-10-08/evidence.json.",
-        "Fresh gated Hugging Face, token-file, download and cancellation flows at Pi 6fb2e7815167e6b19006fc526d1a5d0f5f998787 / PiSharp ef8f364cea352de93de4bc7cc29a611b615dbe62 have exact HTTP traces and zero scenario errors; full terminal states remain different. Same-Pi calibration matches all ten terminal states, confirming comparator stability. See docs/parity/fixtures/llama-terminal-current-pi-2026-10-08/evidence.json."
+        "Fresh gated Hugging Face, token-file, download and cancellation flows at Pi 6fb2e7815167e6b19006fc526d1a5d0f5f998787 / PiSharp ef8f364cea352de93de4bc7cc29a611b615dbe62 have exact HTTP traces and zero scenario errors; full terminal states remain different. Same-Pi calibration matches all ten terminal states, confirming comparator stability. See docs/parity/fixtures/llama-terminal-current-pi-2026-10-08/evidence.json.",
+        "Current Pi HF search, quantization, gated access, token-file lookup, router download/progress and cancellation/retain flows are covered by the three Hugging Face terminal fixtures, including explicit token-file and home-token-file paths. All ten paired terminal traces match screen states/render frames and HTTP; raw bytes remain separately captured. Pi f1b has no llama changes. See docs/parity/fixtures/llama-terminal-current-pi-2026-10-09.md.",
+        "Verified at Pi f1b2e77f / PiSharp be133ebf: Hugging Face search, gated access, quantization, environment/token-file lookup, download/progress, cancellation and retain flows are exercised by three HF terminal fixtures. All ten paired flows match normalized terminal state, render frames and HTTP; all ten same-Pi calibrations pass. See docs/parity/fixtures/llama-terminal-current-pi-2026-10-09.md and the calibration-be133ebf captures."
       ],
       "dependencies": [
         "provider-llama-router-management"
@@ -4215,20 +4236,20 @@
   ],
   "upstream_delta_audit": {
     "source_pin": "955cc6665ee3986c6a033db52200779310d10dfd",
-    "source_head": "6fb2e7815167e6b19006fc526d1a5d0f5f998787",
-    "commit_count": 194,
+    "source_head": "f1b2e77f5b13b2a199b1052cb79c235451afe7d7",
+    "commit_count": 195,
     "classifications": {
       "OUT_OF_SCOPE": 65,
       "NO_BEHAVIOR_CHANGE": 36,
-      "NEEDS_WORK": 86,
+      "NEEDS_WORK": 87,
       "MATCHED": 7
     },
-    "fixture": "docs/parity/fixtures/upstream-delta-audit-2026-10-08.md",
-    "next": "continue-llama-terminal-and-lifecycle-differentials",
-    "current_item": "ef8f364cea352de93de4bc7cc29a611b615dbe62",
+    "fixture": "docs/parity/fixtures/upstream-delta-audit-2026-10-09.md",
+    "next": "continue-resource-settings-trust-and-resource-workflows",
+    "current_item": "5b32bd97170ef8963a3726bb466693dc65aa511e",
     "current_item_status": "pushed_ci_passed",
-    "current_item_local_evidence": "Current Pi origin/main is 6fb2e7815167e6b19006fc526d1a5d0f5f998787; PiSharp origin/main and tested source are ef8f364cea352de93de4bc7cc29a611b615dbe62. Exact-head Linux CI 37867953979 passes restore, format, warnings-as-errors build, and 1189/1189 tests with zero skips. The focused loading-geometry/compositor tests pass 7/7; format verification passes; the warnings-as-errors build has zero warnings/errors; the full local suite passes 1189/1189 with zero skips. Current-Pi native classifier, router classifier/autoload, and context refresh/offline-reload process comparisons match. Ten paired 100x32 terminal flows have exact HTTP traces and no scenario errors; exact terminal state remains 0/10 (443815 total state/render differences, 383131 synchronized-render differences, 6311 control-boundary diagnostics). The four named /llama manager checkpoints and the loading frame match exactly. Same-Pi calibration is 10/10 terminal states, 10/10 HTTP, and 9/10 raw-byte exact. See docs/parity/fixtures/llama-terminal-current-pi-2026-10-08.md and its evidence manifest.",
-    "next_after_ci": "continue-llama-terminal-and-lifecycle-differentials-current-pi-6fb2e781",
+    "current_item_local_evidence": "PiSharp 5b32bd97170ef8963a3726bb466693dc65aa511e implements bare /trust saved-decision selection. The Linux PTY regression shows direct/inherited decisions, atomic parent selection/removal of a project override, and an unchanged current-session trust state. Focused ProjectTrust/selector checks pass 6/6; the terminal emulator suite passes 24/24; Python parity harness tests pass 19/19. Format verification passes, the warnings-as-errors build has 0 warnings/errors, and the full suite passes 1204/1204 with zero skips. Exact-head Linux CI 37907627495 is green. Against current Pi f1b2e77f5b13b2a199b1052cb79c235451afe7d7, the calibrated paired fixture completes with matching text/actions and HTTP traces and zero scenario errors, but full terminal matching remains false (76,378 state differences, 42,596 render differences over 10 frames, 464 control-boundary diagnostics). See docs/parity/fixtures/project-trust-selector-current-pi-2026-10-09/evidence.json.",
+    "next_after_ci": "continue-current-pi-f1b2e77-trust-store-settings-and-resource-workflows",
     "completed": [
       "65117e31f242daa8e0a17dbd2810f7bb92bf4087",
       "7a11fe1c723b942fa093edb8b00f051ddb9b6627",
@@ -4251,12 +4272,15 @@
       "18e95be2f26fe19e169e68924d53e4eaa8042b69",
       "8ffc5bfa9c4f8dd8df01fc947691ec77abf2f3f7",
       "4503ee6719f345e7c2ef9ccf0839f326b1b61373",
-      "ef8f364cea352de93de4bc7cc29a611b615dbe62"
+      "ef8f364cea352de93de4bc7cc29a611b615dbe62",
+      "78bc0ffc9523cc28aa1f8bc05777ff4812b3f1e4",
+      "6ec1f514943f4c8841d3df69f2fc7cad99bc9f0b",
+      "5b32bd97170ef8963a3726bb466693dc65aa511e"
     ],
-    "ci_run": "37867953979",
-    "latest_published_source_head": "ef8f364cea352de93de4bc7cc29a611b615dbe62",
+    "ci_run": "37907627495",
+    "latest_published_source_head": "5b32bd97170ef8963a3726bb466693dc65aa511e",
     "latest_published_ci_runs": [
-      "37867953979"
+      "37907627495"
     ],
     "official_mcp_conformance": {
       "package": "@modelcontextprotocol/conformance@0.2.0-alpha.11",
@@ -4268,7 +4292,7 @@
       "status": "not_started",
       "upstream_fixture": "packages/coding-agent/test/mcp-conformance/baseline.json"
     },
-    "working_source_pin": "6fb2e7815167e6b19006fc526d1a5d0f5f998787",
+    "working_source_pin": "f1b2e77f5b13b2a199b1052cb79c235451afe7d7",
     "active_llama_classifier_recheck": {
       "pi_source_head": "ce950d78f424dcaf9f5d6a03ce80ab141130eb1d",
       "pisharp_head": "4503ee6719f345e7c2ef9ccf0839f326b1b61373",
@@ -4323,85 +4347,124 @@
           "MATCHED": 0
         },
         "fixture": "docs/parity/fixtures/upstream-delta-audit-2026-10-08.md"
+      },
+      {
+        "source_pin": "6fb2e7815167e6b19006fc526d1a5d0f5f998787",
+        "source_head": "f1b2e77f5b13b2a199b1052cb79c235451afe7d7",
+        "commit_count": 1,
+        "classifications": {
+          "OUT_OF_SCOPE": 0,
+          "NO_BEHAVIOR_CHANGE": 0,
+          "NEEDS_WORK": 1,
+          "MATCHED": 0
+        },
+        "fixture": "docs/parity/fixtures/upstream-delta-audit-2026-10-09.md"
       }
     ],
     "current_checkpoint": {
-      "validated_pi_head": "6fb2e7815167e6b19006fc526d1a5d0f5f998787",
-      "validated_pisharp_source_head": "ef8f364cea352de93de4bc7cc29a611b615dbe62",
-      "exact_head_ci_run": "37867953979",
+      "validated_pi_head": "f1b2e77f5b13b2a199b1052cb79c235451afe7d7",
+      "validated_pisharp_source_head": "6ec1f514943f4c8841d3df69f2fc7cad99bc9f0b",
+      "exact_head_ci_run": "37904094102",
       "exact_head_ci": "success",
-      "tests": "1189 passed, 0 failed, 0 skipped",
-      "active_family": "llama.cpp router, Hugging Face downloads and native classifier",
+      "tests": "1202 passed, 0 failed, 0 skipped",
+      "active_family": "Resources / instructions and trust",
       "terminal_calibration": {
         "pi_source_head": "6fb2e7815167e6b19006fc526d1a5d0f5f998787",
         "product_pair": "current Pi vs current Pi",
         "cases": 10,
         "terminal_state_matches": 10,
         "http_matches": 10,
-        "raw_byte_exact_matches": 9,
+        "raw_byte_exact_matches": 8,
         "raw_byte_schedule_variance": [
-          "llama-huggingface"
+          "llama-login",
+          "llama-model-picker"
         ],
-        "control_boundary_differences": 1,
-        "evidence": "docs/parity/fixtures/llama-terminal-current-pi-2026-10-08/evidence.json"
+        "control_boundary_differences": 2,
+        "evidence": "docs/parity/fixtures/llama-terminal-current-pi-2026-10-09/evidence.json"
       },
       "residuals": [
-        "PiSharp exact-head Linux CI 37867953979 passes restore, format, warnings-as-errors build and 1189/1189 tests with zero skips on ef8f364cea352de93de4bc7cc29a611b615dbe62.",
-        "At Pi 6fb2e7815167e6b19006fc526d1a5d0f5f998787, ten paired llama terminal flows have exact HTTP traces and zero scenario errors but exact terminal state remains 0/10 (443815 state/render differences; 383131 synchronized-render differences; 6311 control-boundary diagnostics). All four named manager checkpoints and the loading frame match. Captures: docs/parity/fixtures/llama-terminal-current-pi-2026-10-08/comparison-ef8f364cea-full/.",
-        "Complete current-Pi llama.cpp configuration precedence/authentication, manager lifecycle, loaded/sleeping/unloaded/autoload behavior, /model integration, persisted context, Hugging Face gated/download/quantization/progress, and exact terminal transitions.",
-        "Broad parity, a fresh final source audit, official MCP conformance and the remaining ledger capabilities stay open."
+        "PiSharp exact-head Linux CI 37904094102 passes restore, terminal harness, format verification, warnings-as-errors build and 1202/1202 tests with zero skips on 6ec1f514943f4c8841d3df69f2fc7cad99bc9f0b.",
+        "The llama.cpp family is verified for its scoped current-Pi router/login/model/manager/Hugging Face/classifier behaviors: three process reports match and all ten paired flows match terminal states, render frames and HTTP traces with zero scenario errors. Raw byte streams are separately captured and are not byte-identical; see docs/parity/fixtures/llama-terminal-current-pi-2026-10-09.md.",
+        "The f1b2e77 Pi nested linked-worktree instruction deduplication delta is implemented at 78bc0ffc; canonical project trust path handling is implemented at 6ec1f514. Both have fail-first evidence and exact-head CI. Bare /trust selector, broader trust/settings and resource workflow differentials remain open.",
+        "The 195-commit incremental audit is current through f1b2e77. The final complete audit, remaining ledger capabilities, official MCP conformance and architecture risk review remain open."
       ],
-      "next_action": "Resolve remaining llama.cpp intermediate terminal render/control/mode differences without normalization; complete configuration, lifecycle and Hugging Face cases; then continue to the next unresolved capability family.",
+      "next_action": "Continue the Resources / instructions and trust family against refreshed Pi f1b2e77. Implement and compare the no-argument /trust selector, then close remaining project settings, trust boundaries/reload and resource discovery workflows before selecting the next ledger family.",
       "terminal_comparison": {
         "cases": 10,
-        "exact_terminal_state_matches": 0,
+        "exact_terminal_state_matches": 10,
         "http_matches": 10,
         "raw_byte_exact_matches": 0,
         "scenario_errors": 0,
-        "render_differences": 383131,
-        "evidence": "docs/parity/fixtures/llama-terminal-current-pi-2026-10-08/evidence.json",
-        "terminal_state_and_render_differences": 443815,
-        "control_boundary_differences": 6311,
-        "pisharp_capture_source_head": "ef8f364cea352de93de4bc7cc29a611b615dbe62",
-        "captures_directory": "docs/parity/fixtures/llama-terminal-current-pi-2026-10-08/comparison-ef8f364cea-full",
+        "render_differences": 0,
+        "evidence": "docs/parity/fixtures/llama-terminal-current-pi-2026-10-09/evidence.json",
+        "terminal_state_and_render_differences": 0,
+        "control_boundary_differences": 5307,
+        "pisharp_capture_source_head": "7ba4feb83851ae1233cfdf4ed7e37ad50a364bc3",
+        "captures_directory": "docs/parity/fixtures/llama-terminal-current-pi-2026-10-09/comparison-7ba4feb8/",
         "manager_named_checkpoints_match": 4,
-        "manager_loading_frame_differences": 0
+        "manager_loading_frame_differences": 0,
+        "raw_byte_note": "All ten raw transcripts remain captured; terminal states/render frames and HTTP traces match. Raw bytes are not exact."
       },
       "process_differentials": {
         "native_classifier": {
           "match": true,
           "pi_source_head": "6fb2e7815167e6b19006fc526d1a5d0f5f998787",
-          "pisharp_source_head": "ef8f364cea352de93de4bc7cc29a611b615dbe62",
-          "evidence": "docs/parity/fixtures/llama-native-classifier-2026-10-09-ef8f364c.json"
+          "pisharp_source_head": "7ba4feb83851ae1233cfdf4ed7e37ad50a364bc3",
+          "evidence": "docs/parity/fixtures/llama-native-classifier-2026-10-09-7ba4feb8.json"
         },
         "router_classifier_autoload": {
           "match": true,
           "pi_source_head": "6fb2e7815167e6b19006fc526d1a5d0f5f998787",
-          "pisharp_source_head": "ef8f364cea352de93de4bc7cc29a611b615dbe62",
-          "evidence": "docs/parity/fixtures/llama-router-classifier-2026-10-09-ef8f364c.json"
+          "pisharp_source_head": "7ba4feb83851ae1233cfdf4ed7e37ad50a364bc3",
+          "evidence": "docs/parity/fixtures/llama-router-classifier-2026-10-09-7ba4feb8.json"
         },
         "context_refresh_offline_reload": {
           "match": true,
           "pi_source_head": "6fb2e7815167e6b19006fc526d1a5d0f5f998787",
-          "pisharp_source_head": "ef8f364cea352de93de4bc7cc29a611b615dbe62",
-          "evidence": "docs/parity/fixtures/llama-router-context-2026-10-09-ef8f364c.json"
+          "pisharp_source_head": "7ba4feb83851ae1233cfdf4ed7e37ad50a364bc3",
+          "evidence": "docs/parity/fixtures/llama-router-context-2026-10-09-7ba4feb8.json"
         }
       },
       "current_pi_focused_tests": {
-        "llama_extension": "15 passed",
-        "native_classifier": "15 passed",
-        "classifier_catalog": "10 passed",
-        "model_runtime_classifier": "1 passed",
-        "total": "41 passed"
+        "resource_loader": {
+          "passed": 53,
+          "total": 53,
+          "pi_head": "f1b2e77f5b13b2a199b1052cb79c235451afe7d7"
+        },
+        "llama_extension": {
+          "passed": 15,
+          "total": 15,
+          "pi_head": "f1b2e77f5b13b2a199b1052cb79c235451afe7d7"
+        },
+        "native_classifier": {
+          "passed": 15,
+          "total": 15,
+          "pi_head": "f1b2e77f5b13b2a199b1052cb79c235451afe7d7"
+        },
+        "classifier_catalog": {
+          "passed": 10,
+          "total": 10,
+          "pi_head": "f1b2e77f5b13b2a199b1052cb79c235451afe7d7"
+        },
+        "model_runtime_classifier": {
+          "passed": 1,
+          "total": 1,
+          "pi_head": "f1b2e77f5b13b2a199b1052cb79c235451afe7d7"
+        },
+        "llama_classifier_total": {
+          "passed": 41,
+          "total": 41,
+          "pi_head": "f1b2e77f5b13b2a199b1052cb79c235451afe7d7"
+        }
       }
     }
   },
   "execution_policy": {
-    "updated": "2026-10-08",
+    "updated": "2026-10-09",
     "priority": [
-      "Complete first-class llama.cpp router login/configuration, model projection/selection, management, Hugging Face search/download/gated/quantization flows and native classifier behavior against refreshed Pi 6fb2e7815167e6b19006fc526d1a5d0f5f998787, including exact terminal differentials.",
-      "Continue the highest-leverage unresolved capability families in the 189-item ledger, including broad terminal parity and official MCP conformance",
-      "Refresh both repositories at family boundaries and complete the final source audit before declaring parity"
+      "Continue Resources / instructions and trust against current Pi f1b2e77f5b13b2a199b1052cb79c235451afe7d7: bare /trust selection is implemented, but exact selector/startup rendering, defaultProjectTrust differentials, null-valued trust-store compatibility, trusted-project settings and resource reload/discovery flows remain open.",
+      "Continue the highest-leverage unresolved ledger families, including official MCP conformance and broad interactive/terminal parity.",
+      "Refresh both repositories at family boundaries and complete a fresh final source audit, required evidence and architecture-risk reconciliation before declaring parity."
     ],
     "bookkeeping": "After each coherent implementation slice, run focused verification, format verification, warnings-as-errors build and the full test suite; commit and push; verify exact-head CI; update parity evidence; refresh current Pi when the active family requires it; then continue until every ledger capability and the complete final gate are satisfied. Preserve unrelated user-owned worktree files."
   }
