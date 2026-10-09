@@ -27,7 +27,8 @@ internal sealed class TerminalTrustPicker(TerminalEditor editor)
             selectedKey: selectedKey,
             optionIndent: 1,
             bottomMargin: 2,
-            bottomSpacerLines: 1);
+            bottomSpacerLines: 1,
+            showCurrentMarker: true);
         if (selected is null) return null;
 
         await trustStore.SetManyAsync(selected.Option.Value.Updates, cancellationToken);

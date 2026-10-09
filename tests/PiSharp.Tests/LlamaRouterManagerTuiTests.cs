@@ -498,8 +498,11 @@ public sealed class LlamaRouterManagerTuiTests
                     }
                     var bytes = Encoding.UTF8.GetBytes(response);
                     context.Response.ContentType = contentType;
-                    context.Response.ContentLength64 = bytes.Length;
+                    if (path == "/models/sse") context.Response.SendChunked = true;
+                    else context.Response.ContentLength64 = bytes.Length;
                     await context.Response.OutputStream.WriteAsync(bytes, _shutdown.Token);
+                    if (path == "/models/sse")
+                        await context.Response.OutputStream.FlushAsync(_shutdown.Token);
                     context.Response.Close();
                     if (announceDownload) _downloadRequested.TrySetResult();
                 }

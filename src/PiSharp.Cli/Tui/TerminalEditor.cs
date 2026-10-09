@@ -186,7 +186,7 @@ public sealed class TerminalEditor
         IReadOnlyList<TerminalSelectionOption<T>> options, IReadOnlyList<string>? header = null,
         string footer = "↑↓ move • enter select • escape/ctrl+c close", string? selectedKey = null,
         bool preservePanelAfterSelection = false, int optionIndent = 0, int bottomMargin = 2,
-        int bottomSpacerLines = 0)
+        int bottomSpacerLines = 0, bool showCurrentMarker = false)
     {
         if (_screen is not { IsActive: true } screen || options.Count == 0) return null;
         var input = EnsureInput();
@@ -200,7 +200,7 @@ public sealed class TerminalEditor
             {
                 screen.RefreshIfResized();
                 var panel = RenderInlinePanel(screen, title, options, selectedIndex, header, footer,
-                    optionIndent, bottomSpacerLines);
+                    optionIndent, bottomSpacerLines, showCurrentMarker);
                 screen.SetEditorPanel(panel, panel.Count - 2, screen.TerminalWidth + 1, cursorVisible: false,
                     bottomMargin);
                 var next = input.Read();
@@ -386,7 +386,7 @@ public sealed class TerminalEditor
 
     private static IReadOnlyList<string> RenderInlinePanel<T>(TerminalScreen screen, string title,
         IReadOnlyList<TerminalSelectionOption<T>> options, int selectedIndex, IReadOnlyList<string>? header,
-        string footer, int optionIndent = 0, int bottomSpacerLines = 0)
+        string footer, int optionIndent = 0, int bottomSpacerLines = 0, bool showCurrentMarker = false)
     {
         var width = screen.TerminalWidth;
         var theme = screen.CurrentTheme;
@@ -414,7 +414,9 @@ public sealed class TerminalEditor
                 var label = TerminalSafeText.Normalize(option.Label);
                 var marker = index == selectedIndex ? "→ " : "  ";
                 var selected = index == selectedIndex;
-                var current = option.IsCurrent ? theme.Style("accent", "✓ ") : "  ";
+                var current = showCurrentMarker
+                    ? option.IsCurrent ? theme.Style("accent", "✓ ") : "  "
+                    : "";
                 var description = string.IsNullOrWhiteSpace(option.Description)
                     ? "" : TerminalSafeText.Normalize(option.Description);
                 var primary = new string(' ', Math.Max(0, optionIndent)) + marker + current + label;
