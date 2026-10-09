@@ -11,6 +11,15 @@
     ]
   },
   "settings": { "quietStartup": true },
+  "concurrentHttpGroups": [
+    {
+      "occurrence": 1,
+      "requests": [
+        { "method": "GET", "path": "/models/sse" },
+        { "method": "POST", "path": "/models/load" }
+      ]
+    }
+  ],
   "environment": {
     "pi": { "LLAMA_BASE_URL": "{router}" },
     "pisharp": { "LLAMA_BASE_URL": "{router}" }
@@ -18,9 +27,12 @@
   "llamaBehavior": {
     "loadDelaySeconds": 1.5,
     "loadProgressDelaySeconds": 0.5,
-    "loadProgressGate": "load-progress",
-    "loadFinishGate": "load-finished",
-    "loadPollGate": "load-poll"
+    "loadRequestGateByModel": { "unloaded-fixture-model": "load-requested" },
+    "loadResponseGateByModel": { "unloaded-fixture-model": "load-response" },
+    "loadStartGateByModel": { "unloaded-fixture-model": "load-started" },
+    "loadProgressGateByModel": { "unloaded-fixture-model": "load-progress" },
+    "loadFinishGateByModel": { "unloaded-fixture-model": "load-finished" },
+    "loadPollGateByModel": { "unloaded-fixture-model": "load-poll" }
   },
   "llamaModels": [
     {
@@ -46,7 +58,9 @@
     { "id": "startup", "expect": "fixture-model" },
     { "id": "open-manager", "send": "/llama\r", "expect": "llama.cpp models" },
     { "id": "select-unloaded", "send": "\u001b[B\r", "expect": "1 model is loaded" },
-    { "id": "keep-loaded-model", "send": "\u001b[B\r", "expect": "Loading model" },
+    { "id": "keep-loaded-model", "send": "\u001b[B\r", "waitGatesAfter": ["load-requested"], "expect": "Starting…", "quietMs": 0 },
+    { "id": "start-load", "releaseGates": ["load-response"], "waitGatesAfter": ["load-started"],
+      "waitForModelPoll": "unloaded-fixture-model", "expect": "Loading model", "notExpect": "Starting…", "quietMs": 0 },
     { "id": "wait-load-progress", "releaseGates": ["load-progress"], "expect": "50%" },
     { "id": "cancel-load", "send": "\u001b", "expect": "Stop loading?" },
     { "id": "confirm-cancel", "send": "\r", "expect": "llama.cpp models" },

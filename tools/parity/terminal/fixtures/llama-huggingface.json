@@ -35,6 +35,8 @@
   ],
   "llamaProps": { "models_autoload": false, "chat_template": "fixture" },
   "llamaBehavior": {
+    "catalogSuccessRequestGate": "catalog-requested",
+    "catalogSuccessResponseGate": "catalog-response",
     "downloadDelaySeconds": 1.5,
     "downloadProgressDelaySeconds": 0.5,
     "downloadProgressGate": "download-progress",
@@ -64,7 +66,8 @@
   "modes": ["fullscreen"],
   "actions": [
     { "id": "startup", "expect": "fixture-model" },
-    { "id": "open-manager", "send": "/llama\r", "expect": "llama.cpp models" },
+    { "id": "open-manager", "send": "/llama\r", "waitGatesAfter": ["catalog-requested"], "expect": "Loading…", "quietMs": 0 },
+    { "id": "release-manager-catalog", "releaseGates": ["catalog-response"], "expect": "loaded-fixture-model" },
     { "id": "open-download", "send": "\u001b[B\r", "expect": "Model name or owner/repository[:quant]" },
     { "id": "search-model", "send": "qwen2", "expect": "owner/Qwen2.5-Coder-GGUF" },
     { "id": "cancel-search", "send": "\u001b", "expect": "llama.cpp models" },
