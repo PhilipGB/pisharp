@@ -1,3 +1,4 @@
+using PiSharp.Cli;
 using PiSharp.Cli.Tui;
 
 namespace PiSharp.Tests;
@@ -157,6 +158,25 @@ public sealed class TerminalScreenCompositorTests
         Assert.Contains("startup-skill", compactDetails);
         Assert.DoesNotContain("SKILL.md", compactDetails);
         Assert.Contains("/home/user/.agents/skills/startup-skill/SKILL.md", expandedDetails);
+    }
+
+    [Fact]
+    public void QuietStartupStillShowsResourceDiagnosticsWithoutListingLoadedResources()
+    {
+        var presentation = new TerminalStartupPresentation(QuietStartupMode.Silent, verbose: false);
+        var details = new[]
+        {
+            new TerminalStartupDetail("Skills", ["shared", "project-only"]),
+            new TerminalStartupDetail("Skill conflicts", ["shared collision: project wins; user skipped"],
+                ShowWhenQuiet: true)
+        };
+
+        var content = presentation.BuildDetails(TerminalTheme.Default, 120, details, null, expanded: false);
+
+        Assert.Contains("[Skill conflicts]", content);
+        Assert.Contains("shared collision: project wins; user skipped", content);
+        Assert.DoesNotContain("[Skills]", content);
+        Assert.DoesNotContain("project-only", content);
     }
 
     [Fact]

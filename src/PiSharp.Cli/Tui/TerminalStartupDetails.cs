@@ -26,7 +26,7 @@ internal static class TerminalStartupDetails
                 : item.Path is { } path
                     ? $"{item.Message}: {DisplayPath(path, workingDirectory)}"
                     : item.Message).ToArray();
-            details.Add(new("Skill conflicts", diagnostics, diagnostics));
+            details.Add(new("Skill conflicts", diagnostics, diagnostics, ShowWhenQuiet: true));
         }
         if (resources.Prompts.Count > 0)
             details.Add(new("Prompts", resources.Prompts.Select(item => "/" + item.Name)

@@ -243,8 +243,8 @@ def main():
                   fixture=scenario['id'], calibration=args.calibrate,
                   concurrentHttpGroups=scenario.get('concurrentHttpGroups', []),
                   normalization=('Named checkpoints and every synchronized render state are compared exactly, collapsing '
-                                 'only adjacent identical states and ignoring cursor coordinates only while that cursor '
-                                 'is hidden. Raw bytes remain captured and exact-match status is reported separately. '
+                                 'only adjacent identical states, hidden cursor coordinates, and transient braille loader '
+                                 'frames in the bottom status area. Raw bytes remain captured and exact-match status is reported separately. '
                                  'HTTP identity/count/order remain exact except within declared concurrent batches, '
                                  'where arrival order is unspecified. Per-checkpoint control buckets are diagnostic.'),
                   cases=[])

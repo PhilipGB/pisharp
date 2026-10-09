@@ -183,6 +183,29 @@ class DriverTests(unittest.TestCase):
         self.assertFalse(rejected['terminalMatch'])
         self.assertIn('$.renders[0].cursor.visible', {item['path'] for item in rejected['renderDifferences']})
 
+    def test_terminal_comparison_ignores_only_bottom_status_loader_frame_changes(self):
+        def state(spinner, row=35):
+            lines = [dict(cells=[dict(chars=' ') for _ in range(8)]) for _ in range(40)]
+            lines[row]['cells'][3]['chars'] = spinner
+            return dict(rows=40, viewport=copy.deepcopy(lines),
+                        buffers=dict(alternate=dict(lines=copy.deepcopy(lines))))
+
+        first = state('⠋')
+        next_frame = state('⠙')
+        left = dict(frames=[dict(id='loading', state=first)], renders=[first], raw='', http=[])
+        right = dict(frames=[dict(id='loading', state=next_frame)], renders=[next_frame], raw='', http=[])
+
+        result = compare_products(left, right)
+
+        self.assertTrue(result['terminalMatch'])
+        self.assertEqual([], result['renderDifferences'])
+
+        changed_content = state('⠙', row=10)
+        rejected = compare_products(left, dict(frames=[dict(id='loading', state=changed_content)],
+                                             renders=[changed_content], raw='', http=[]))
+        self.assertFalse(rejected['terminalMatch'])
+        self.assertTrue(rejected['renderDifferences'])
+
     def test_intermediate_render_transitions_are_compared_and_only_adjacent_duplicates_collapse(self):
         first = dict(viewport=[dict(text='loading')])
         second = dict(viewport=[dict(text='50%')])

@@ -1,7 +1,7 @@
 namespace PiSharp.Cli.Tui;
 
 internal sealed record TerminalStartupDetail(string Name, IReadOnlyList<string> Items,
-    IReadOnlyList<string>? ExpandedItems = null);
+    IReadOnlyList<string>? ExpandedItems = null, bool ShowWhenQuiet = false);
 
 internal sealed class TerminalStartupPresentation(QuietStartupMode? quietStartup, bool verbose,
     Func<string, string?>? getDisplayKeys = null)
@@ -42,9 +42,9 @@ internal sealed class TerminalStartupPresentation(QuietStartupMode? quietStartup
         IReadOnlyList<TerminalStartupDetail>? startupDetails, string? projectTrustNotice, bool expanded)
     {
         var rows = new List<string>();
-        if (ShowDetails && startupDetails is not null)
+        if (startupDetails is not null)
         {
-            foreach (var detail in startupDetails)
+            foreach (var detail in startupDetails.Where(detail => ShowDetails || detail.ShowWhenQuiet))
             {
                 var sourceItems = expanded ? detail.ExpandedItems ?? detail.Items : detail.Items;
                 var items = sourceItems.Select(TerminalTextLayout.Sanitize)
