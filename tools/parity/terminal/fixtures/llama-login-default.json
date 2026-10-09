@@ -1,0 +1,63 @@
+{
+  "id": "llama-login-default",
+  "dimensions": [
+    {
+      "columns": 100,
+      "rows": 32
+    }
+  ],
+  "themes": [
+    "dark"
+  ],
+  "modes": [
+    "fullscreen"
+  ],
+  "settings": {
+    "quietStartup": true
+  },
+  "actions": [
+    {
+      "id": "startup",
+      "expect": "fixture-model"
+    },
+    {
+      "id": "show-default-router-url",
+      "send": "/login llama.cpp\r",
+      "expect": "e.g., http://127.0.0.1:8080"
+    },
+    {
+      "id": "cancel-default-router-login",
+      "send": "\u001b",
+      "expect": "Error: Failed to save API key for llama.cpp: This operation was aborted"
+    }
+  ],
+  "arguments": {
+    "pi": [
+      "--provider",
+      "fixture",
+      "--model",
+      "fixture-model",
+      "--no-session",
+      "--offline",
+      "--no-skills",
+      "--no-prompt-templates",
+      "--no-tools"
+    ],
+    "pisharp": [
+      "--provider",
+      "fixture",
+      "--model",
+      "fixture-model",
+      "--no-session",
+      "--offline",
+      "--no-skills",
+      "--no-prompt-templates",
+      "--no-tools",
+      "--no-approve",
+      "--no-context-files"
+    ]
+  },
+  "terminal": {
+    "keyboardProtocol": "kitty"
+  }
+}

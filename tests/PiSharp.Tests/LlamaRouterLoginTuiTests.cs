@@ -76,6 +76,37 @@ public sealed class LlamaRouterLoginTuiTests
         finally { Directory.Delete(root, recursive: true); }
     }
 
+    [Fact]
+    public async Task CancelingDefaultRouterLoginShowsCurrentPiErrorWithoutPersistingCredentials()
+    {
+        if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-llama-login-default-" + Guid.NewGuid().ToString("N"));
+        var agent = Path.Combine(root, "agent");
+        Directory.CreateDirectory(agent);
+        await File.WriteAllTextAsync(Path.Combine(agent, "models.json"), """
+            {"providers":{"fixture":{"baseUrl":"http://127.0.0.1:1/v1","apiKey":"fixture-key","models":[{"id":"fixture-model"}]}}}
+            """);
+        await using var terminal = new LoginTerminal(root, agent, llamaBaseUrl: null);
+        try
+        {
+            await terminal.WaitEditorAsync();
+            var mark = terminal.Mark;
+            await terminal.SendAsync("/login llama.cpp\n");
+            var prompt = await terminal.WaitTextAsync("e.g., http://127.0.0.1:8080", mark);
+            Assert.Contains("llama.cpp server URL", prompt, StringComparison.Ordinal);
+
+            mark = terminal.Mark;
+            await terminal.SendAsync("\u001b");
+            await terminal.WaitTextAsync(
+                "Error: Failed to save API key for llama.cpp: This operation was aborted", mark);
+            Assert.False(File.Exists(Path.Combine(agent, "auth.json")));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
     private sealed class RouterServer : IAsyncDisposable
     {
         private readonly HttpListener _listener;
@@ -134,7 +165,7 @@ public sealed class LlamaRouterLoginTuiTests
         public string Output { get { lock (_gate) return _output.ToString(); } }
         public int Mark { get { lock (_gate) return _output.Length; } }
 
-        public LoginTerminal(string root, string agent, string llamaBaseUrl)
+        public LoginTerminal(string root, string agent, string? llamaBaseUrl)
         {
             var start = new ProcessStartInfo("/usr/bin/script")
             {
@@ -153,7 +184,7 @@ public sealed class LlamaRouterLoginTuiTests
                          "PISHARP_MODEL", "PISHARP_AUTH_PATH", "PISHARP_MODELS_PATH", "PISHARP_SETTINGS_PATH" })
                 start.Environment.Remove(name);
             start.Environment["PISHARP_AGENT_DIR"] = agent;
-            start.Environment["LLAMA_BASE_URL"] = llamaBaseUrl;
+            if (llamaBaseUrl is not null) start.Environment["LLAMA_BASE_URL"] = llamaBaseUrl;
             _process = Process.Start(start)!;
             _readOutput = ReadOutputAsync();
             _readError = _process.StandardError.ReadToEndAsync();

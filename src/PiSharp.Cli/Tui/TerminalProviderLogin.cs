@@ -91,8 +91,14 @@ internal sealed class TerminalProviderLogin(ProviderModelRuntime runtime, Termin
                     ? LlamaRouterClient.DefaultServerUrl : environmentUrl.Trim();
                 var prompts = await editor.PromptSequenceAsync("Login to llama.cpp",
                     [("llama.cpp server URL", defaultUrl), ("API key (optional)", null)],
-                    preservePanelAfterSubmit: true).ConfigureAwait(false);
-                if (prompts is null) return false;
+                    preservePanelAfterSubmit: true, preservePanelOnCancel: true).ConfigureAwait(false);
+                if (prompts is null)
+                {
+                    editor.DismissEditorPanelAndAppendStatus(
+                        "Failed to save API key for llama.cpp: This operation was aborted",
+                        TerminalStatusNotificationKind.Error);
+                    return false;
+                }
                 var enteredUrl = prompts[0];
                 var serverUrl = string.IsNullOrWhiteSpace(enteredUrl) ? defaultUrl : enteredUrl.Trim();
                 var secret = prompts[1];

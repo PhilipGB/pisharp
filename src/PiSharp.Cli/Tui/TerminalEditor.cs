@@ -238,7 +238,8 @@ public sealed class TerminalEditor
     }
 
     internal async Task<IReadOnlyList<string>?> PromptSequenceAsync(string title,
-        IReadOnlyList<(string Message, string? Placeholder)> prompts, bool preservePanelAfterSubmit = false)
+        IReadOnlyList<(string Message, string? Placeholder)> prompts, bool preservePanelAfterSubmit = false,
+        bool preservePanelOnCancel = false)
     {
         if (prompts.Count == 0) return [];
         if (_screen is not { IsActive: true } screen)
@@ -293,9 +294,17 @@ public sealed class TerminalEditor
                     }
 
                     if (!input.TryRead(40, out var next)) continue;
-                    if (next.IsEndOfStream) return null;
+                    if (next.IsEndOfStream)
+                    {
+                        preservePanel = preservePanelOnCancel;
+                        return null;
+                    }
                     if (next.Key is { } key && (key.Key == ConsoleKey.Escape ||
-                        _keymap.Matches("app.interrupt", key) || _keymap.Matches("app.clear", key))) return null;
+                        _keymap.Matches("app.interrupt", key) || _keymap.Matches("app.clear", key)))
+                    {
+                        preservePanel = preservePanelOnCancel;
+                        return null;
+                    }
                     if (next.Key is { } submit && submit.Key == ConsoleKey.Enter)
                     {
                         values.Add(promptBuffer.Text);
@@ -316,7 +325,11 @@ public sealed class TerminalEditor
                     else if (next.Key is { } editKey) _ = promptBuffer.Handle(editKey);
                     needsRender = true;
                 }
-                if (!screen.IsActive) return null;
+                if (!screen.IsActive)
+                {
+                    preservePanel = preservePanelOnCancel;
+                    return null;
+                }
             }
             preservePanel = preservePanelAfterSubmit;
             return values;
