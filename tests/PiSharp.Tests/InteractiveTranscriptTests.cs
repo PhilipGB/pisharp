@@ -172,7 +172,7 @@ public sealed class InteractiveTranscriptTests
             themeRenderer: theme => TerminalToolPresentation.Render(view, theme) + Environment.NewLine,
             capturedText: TerminalToolPresentation.Render(view, theme: null) + Environment.NewLine,
             collapsedPreviewText: darkOutput);
-        buffer.ReRenderToolViews(light);
+        buffer.ReRenderThemedSegments(light);
 
         Assert.NotEqual(darkOutput, lightOutput);
         Assert.Equal(lightOutput, buffer.GetRetainedText());
