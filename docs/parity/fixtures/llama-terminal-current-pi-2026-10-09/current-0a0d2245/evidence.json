@@ -1,0 +1,179 @@
+{
+  "date": "2026-10-09",
+  "pi_oracle_remote": "origin/main",
+  "pi_oracle_head": "f1b2e77f5b13b2a199b1052cb79c235451afe7d7",
+  "pisharp_remote": "origin/main",
+  "pisharp_head": "0a0d2245e343ba5745e790f21c54e137a89ff6b7",
+  "pi_fetch_verified_after_process_and_terminal_runs": true,
+  "exact_head_ci": {
+    "workflow": "Linux CI",
+    "run_id": 37935491732,
+    "conclusion": "success",
+    "url": "https://github.com/PhilipGB/pisharp/actions/runs/37935491732"
+  },
+  "focused_tests": {
+    "pisharp": {
+      "passed": 36,
+      "failed": 0,
+      "skipped": 0,
+      "command": "dotnet test tests/PiSharp.Tests/PiSharp.Tests.csproj --no-restore --filter 'FullyQualifiedName~LlamaRouterProviderTests|FullyQualifiedName~LlamaRouterManagementClientTests|FullyQualifiedName~HuggingFaceClientTests|FullyQualifiedName~LlamaClassifierTests|FullyQualifiedName~LlamaRouterLoginTuiTests|FullyQualifiedName~LlamaRouterManagerTuiTests'"
+    },
+    "pi_coding_agent": {
+      "passed": 16,
+      "failed": 0,
+      "command": "npm test --prefix /tmp/pisharp-parity-current-pi/packages/coding-agent -- test/llama-extension.test.ts test/model-runtime-classifiers.test.ts"
+    },
+    "pi_ai_native_classifier": {
+      "passed": 15,
+      "failed": 0,
+      "command": "npm test --prefix /tmp/pisharp-parity-current-pi/packages/ai -- test/llama-cpp-classify.test.ts"
+    }
+  },
+  "terminal": {
+    "flows": 10,
+    "terminal_state_matches": 10,
+    "render_frames_compared": 138,
+    "render_differences": 0,
+    "http_matches": 10,
+    "scenario_errors": 0,
+    "raw_byte_exact_matches": 0,
+    "control_boundary_diagnostics": 5292,
+    "flows_detail": [
+      {
+        "fixture": "llama-login",
+        "report": "terminal/llama-login/report.json",
+        "capture": "terminal/llama-login/100x32-dark-fullscreen.json.gz",
+        "terminal_state_match": true,
+        "http_match": true,
+        "raw_bytes_exact": false,
+        "render_frames": 12,
+        "render_differences": 0,
+        "control_boundary_diagnostics": 518,
+        "scenario_errors": {}
+      },
+      {
+        "fixture": "llama-model-picker",
+        "report": "terminal/llama-model-picker/report.json",
+        "capture": "terminal/llama-model-picker/100x32-dark-fullscreen.json.gz",
+        "terminal_state_match": true,
+        "http_match": true,
+        "raw_bytes_exact": false,
+        "render_frames": 15,
+        "render_differences": 0,
+        "control_boundary_diagnostics": 575,
+        "scenario_errors": {}
+      },
+      {
+        "fixture": "llama-manager",
+        "report": "terminal/llama-manager/report.json",
+        "capture": "terminal/llama-manager/100x32-dark-fullscreen.json.gz",
+        "terminal_state_match": true,
+        "http_match": true,
+        "raw_bytes_exact": false,
+        "render_frames": 4,
+        "render_differences": 0,
+        "control_boundary_diagnostics": 237,
+        "scenario_errors": {}
+      },
+      {
+        "fixture": "llama-retry",
+        "report": "terminal/llama-retry/report.json",
+        "capture": "terminal/llama-retry/100x32-dark-fullscreen.json.gz",
+        "terminal_state_match": true,
+        "http_match": true,
+        "raw_bytes_exact": false,
+        "render_frames": 5,
+        "render_differences": 0,
+        "control_boundary_diagnostics": 292,
+        "scenario_errors": {}
+      },
+      {
+        "fixture": "llama-load-cancel",
+        "report": "terminal/llama-load-cancel/report.json",
+        "capture": "terminal/llama-load-cancel/100x32-dark-fullscreen.json.gz",
+        "terminal_state_match": true,
+        "http_match": true,
+        "raw_bytes_exact": false,
+        "render_frames": 12,
+        "render_differences": 0,
+        "control_boundary_diagnostics": 472,
+        "scenario_errors": {}
+      },
+      {
+        "fixture": "llama-load-replace-cancel",
+        "report": "terminal/llama-load-replace-cancel/report.json",
+        "capture": "terminal/llama-load-replace-cancel/100x32-dark-fullscreen.json.gz",
+        "terminal_state_match": true,
+        "http_match": true,
+        "raw_bytes_exact": false,
+        "render_frames": 12,
+        "render_differences": 0,
+        "control_boundary_diagnostics": 463,
+        "scenario_errors": {}
+      },
+      {
+        "fixture": "llama-huggingface",
+        "report": "terminal/llama-huggingface/report.json",
+        "capture": "terminal/llama-huggingface/100x32-dark-fullscreen.json.gz",
+        "terminal_state_match": true,
+        "http_match": true,
+        "raw_bytes_exact": false,
+        "render_frames": 21,
+        "render_differences": 0,
+        "control_boundary_diagnostics": 699,
+        "scenario_errors": {}
+      },
+      {
+        "fixture": "llama-huggingface-token-file",
+        "report": "terminal/llama-huggingface-token-file/report.json",
+        "capture": "terminal/llama-huggingface-token-file/100x32-dark-fullscreen.json.gz",
+        "terminal_state_match": true,
+        "http_match": true,
+        "raw_bytes_exact": false,
+        "render_frames": 20,
+        "render_differences": 0,
+        "control_boundary_diagnostics": 694,
+        "scenario_errors": {}
+      },
+      {
+        "fixture": "llama-huggingface-home-token-file",
+        "report": "terminal/llama-huggingface-home-token-file/report.json",
+        "capture": "terminal/llama-huggingface-home-token-file/100x32-dark-fullscreen.json.gz",
+        "terminal_state_match": true,
+        "http_match": true,
+        "raw_bytes_exact": false,
+        "render_frames": 20,
+        "render_differences": 0,
+        "control_boundary_diagnostics": 694,
+        "scenario_errors": {}
+      },
+      {
+        "fixture": "llama-download-cancel",
+        "report": "terminal/llama-download-cancel/report.json",
+        "capture": "terminal/llama-download-cancel/100x32-dark-fullscreen.json.gz",
+        "terminal_state_match": true,
+        "http_match": true,
+        "raw_bytes_exact": false,
+        "render_frames": 17,
+        "render_differences": 0,
+        "control_boundary_diagnostics": 648,
+        "scenario_errors": {}
+      }
+    ]
+  },
+  "process_differentials": {
+    "native-classifier": {
+      "match": true,
+      "report": "process/native-classifier.json"
+    },
+    "router-classifier": {
+      "match": true,
+      "report": "process/router-classifier.json"
+    },
+    "router-context": {
+      "match": true,
+      "report": "process/router-context.json"
+    }
+  },
+  "scope": "Current-Pi llama.cpp router/login/model manager/Hugging Face/context/native classifier behavior. This does not complete the overall PiSharp parity goal."
+}

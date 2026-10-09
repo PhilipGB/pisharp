@@ -1,0 +1,132 @@
+{
+  "piSha": "f1b2e77f5b13b2a199b1052cb79c235451afe7d7",
+  "pisharpSha": "0a0d2245e343ba5745e790f21c54e137a89ff6b7",
+  "fixture": "llama-manager",
+  "calibration": false,
+  "concurrentHttpGroups": [],
+  "normalization": "Named checkpoints and every synchronized render state are compared exactly, collapsing only adjacent identical states and ignoring cursor coordinates only while that cursor is hidden. Raw bytes remain captured and exact-match status is reported separately. HTTP identity/count/order remain exact except within declared concurrent batches, where arrival order is unspecified. Per-checkpoint control buckets are diagnostic.",
+  "cases": [
+    {
+      "id": "100x32-dark-fullscreen",
+      "match": true,
+      "differences": 0,
+      "firstDifferences": [],
+      "scenarioErrors": {},
+      "terminalMatch": true,
+      "rawMatch": false,
+      "rawDifference": {
+        "piBytes": 5503,
+        "pisharpBytes": 5320,
+        "firstDifferingByte": 2
+      },
+      "comparedRenderFrameCount": 4,
+      "renderDifferences": 0,
+      "httpMatch": true,
+      "controlBoundaryDifferenceCount": 237,
+      "controlBoundaryFirstDifferences": [
+        {
+          "path": "$.controlBoundaries[0].length",
+          "pi": 189,
+          "pisharp": 145
+        },
+        {
+          "path": "$.controlBoundaries[0][0]",
+          "pi": "1b5b3f3130343968",
+          "pisharp": "1b5b3e3775"
+        },
+        {
+          "path": "$.controlBoundaries[0][1]",
+          "pi": "1b5b3f376c",
+          "pisharp": "1b5b3f75"
+        },
+        {
+          "path": "$.controlBoundaries[0][2]",
+          "pi": "1b5b3f3130303068",
+          "pisharp": "1b5b3f3130343968"
+        },
+        {
+          "path": "$.controlBoundaries[0][3]",
+          "pi": "1b5b3f3130303268",
+          "pisharp": "1b5b3f376c"
+        },
+        {
+          "path": "$.controlBoundaries[0][4]",
+          "pi": "1b5b3f3130303368",
+          "pisharp": "1b5b3f32356c"
+        },
+        {
+          "path": "$.controlBoundaries[0][5]",
+          "pi": "1b5b3f3130303468",
+          "pisharp": "1b5b3f3130303068"
+        },
+        {
+          "path": "$.controlBoundaries[0][6]",
+          "pi": "1b5b3f3130303668",
+          "pisharp": "1b5b3f3130303268"
+        },
+        {
+          "path": "$.controlBoundaries[0][7]",
+          "pi": "1b5b324a",
+          "pisharp": "1b5b3f3130303368"
+        },
+        {
+          "path": "$.controlBoundaries[0][8]",
+          "pi": "1b5b48",
+          "pisharp": "1b5b3f3130303468"
+        },
+        {
+          "path": "$.controlBoundaries[0][9]",
+          "pi": "1b5b3f32356c",
+          "pisharp": "1b5b3f3130303668"
+        },
+        {
+          "path": "$.controlBoundaries[0][10]",
+          "pi": "1b5b3f3230303468",
+          "pisharp": "1b5d31303b3f07"
+        },
+        {
+          "path": "$.controlBoundaries[0][11]",
+          "pi": "1b5b3e3775",
+          "pisharp": "1b5d31313b3f07"
+        },
+        {
+          "path": "$.controlBoundaries[0][12]",
+          "pi": "1b5b3f75",
+          "pisharp": "1b5d343b303b3f07"
+        },
+        {
+          "path": "$.controlBoundaries[0][13]",
+          "pi": "1b5d373530313b3f1b5c",
+          "pisharp": "1b5d343b313b3f07"
+        },
+        {
+          "path": "$.controlBoundaries[0][14]",
+          "pi": "1b5b63",
+          "pisharp": "1b5d343b323b3f07"
+        },
+        {
+          "path": "$.controlBoundaries[0][15]",
+          "pi": "1b5b3f32356c",
+          "pisharp": "1b5d343b333b3f07"
+        },
+        {
+          "path": "$.controlBoundaries[0][16]",
+          "pi": "1b5d31303b3f07",
+          "pisharp": "1b5d343b343b3f07"
+        },
+        {
+          "path": "$.controlBoundaries[0][17]",
+          "pi": "1b5d31313b3f07",
+          "pisharp": "1b5d343b353b3f07"
+        },
+        {
+          "path": "$.controlBoundaries[0][18]",
+          "pi": "1b5d343b303b3f07",
+          "pisharp": "1b5d343b363b3f07"
+        }
+      ],
+      "evidence": "100x32-dark-fullscreen.json.gz"
+    }
+  ],
+  "match": true
+}
