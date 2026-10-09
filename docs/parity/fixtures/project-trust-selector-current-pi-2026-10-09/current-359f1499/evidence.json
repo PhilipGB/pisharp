@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "date": "2026-10-09",
+  "pi_sha": "f1b2e77f5b13b2a199b1052cb79c235451afe7d7",
+  "pisharp_sha": "359f14991abb3ddcc01fa1b437a0699b17a0762a",
+  "fixture": "trust-selector",
+  "paired": {
+    "terminal_state_differences": 72384,
+    "render_frames": 10,
+    "render_differences": 41068,
+    "http_match": true,
+    "scenario_errors": {},
+    "raw_match": false,
+    "control_boundary_differences": 443,
+    "report": "comparison/report.json",
+    "capture": "comparison/120x40-dark-fullscreen.json.gz"
+  },
+  "same_pi_calibration": {
+    "match": true,
+    "terminal_state_differences": 0,
+    "render_differences": 0,
+    "http_match": true,
+    "control_boundary_differences": 1,
+    "report": "calibration/report.json",
+    "capture": "calibration/120x40-dark-fullscreen.json.gz"
+  },
+  "interpretation": "The selector request/action trace and scenario complete without errors. The remaining paired mismatch includes startup branding and product-specific screen/theme output; same-Pi calibration is exact."
+}

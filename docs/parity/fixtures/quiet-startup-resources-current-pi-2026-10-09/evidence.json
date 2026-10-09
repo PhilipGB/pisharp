@@ -1,0 +1,41 @@
+{
+  "schema": 1,
+  "date": "2026-10-09",
+  "fixture": "quiet-startup-resources",
+  "pi_sha": "f1b2e77f5b13b2a199b1052cb79c235451afe7d7",
+  "pisharp_sha": "359f14991abb3ddcc01fa1b437a0699b17a0762a",
+  "paired": {
+    "match": false,
+    "state_differences": 52812,
+    "render_frames": 7,
+    "render_differences": 25096,
+    "http_match": true,
+    "scenario_errors": {},
+    "raw_match": false,
+    "raw_difference": {
+      "piBytes": 17655,
+      "pisharpBytes": 7032,
+      "firstDifferingByte": 45
+    },
+    "control_boundary_differences": 397,
+    "report": "comparison/report.json",
+    "capture": "comparison/120x40-dark-fullscreen.json.gz"
+  },
+  "same_pi_calibration": {
+    "match": true,
+    "state_differences": 0,
+    "render_frames": 7,
+    "render_differences": 0,
+    "http_match": true,
+    "raw_match": true,
+    "report": "calibration/report.json",
+    "capture": "calibration/120x40-dark-fullscreen.json.gz"
+  },
+  "behavior": {
+    "compact_startup_resource_summary": true,
+    "ctrl_o_expands_resource_paths_and_startup_help": true,
+    "model_scope_is_emitted_in_normal_buffer": true,
+    "full_terminal_state_parity": false,
+    "remaining_visible_differences": "Product-specific branding, startup/help copy, color and full-screen layout/styles."
+  }
+}

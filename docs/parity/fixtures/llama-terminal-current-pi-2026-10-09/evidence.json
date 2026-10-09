@@ -370,5 +370,6 @@
     "full_suite": "1210/1210 passed; 0 skipped",
     "exact_head_ci_run": "37925593650",
     "exact_head_ci_status": "success"
-  }
+  },
+  "superseded_by": "current-359f1499/evidence.json"
 }

@@ -1,0 +1,184 @@
+{
+  "schema": 1,
+  "date": "2026-10-09",
+  "pi_sha": "f1b2e77f5b13b2a199b1052cb79c235451afe7d7",
+  "pisharp_sha": "359f14991abb3ddcc01fa1b437a0699b17a0762a",
+  "exact_head_ci": {
+    "run_id": "37949329319",
+    "status": "success",
+    "url": "https://github.com/PhilipGB/pisharp/actions/runs/37949329319",
+    "tests": "1216 passed; 0 skipped",
+    "terminal_node_tests": "24/24",
+    "terminal_python_tests": "20/20",
+    "format": "passed",
+    "warnings_as_errors_build": "passed; 0 warnings, 0 errors"
+  },
+  "terminal": {
+    "fixtures": 10,
+    "state_matches": 10,
+    "compared_render_frames": 138,
+    "render_differences": 0,
+    "http_matches": 10,
+    "scenario_errors": 0,
+    "raw_byte_exact_matches": 0,
+    "control_boundary_diagnostics": 5288,
+    "per_flow": [
+      {
+        "fixture": "llama-download-cancel",
+        "terminal_match": true,
+        "state_differences": 0,
+        "render_frames": 17,
+        "render_differences": 0,
+        "http_match": true,
+        "scenario_errors": {},
+        "raw_byte_exact": false,
+        "control_boundary_diagnostics": 652,
+        "capture": "terminal/llama-download-cancel/100x32-dark-fullscreen.json.gz"
+      },
+      {
+        "fixture": "llama-huggingface",
+        "terminal_match": true,
+        "state_differences": 0,
+        "render_frames": 21,
+        "render_differences": 0,
+        "http_match": true,
+        "scenario_errors": {},
+        "raw_byte_exact": false,
+        "control_boundary_diagnostics": 699,
+        "capture": "terminal/llama-huggingface/100x32-dark-fullscreen.json.gz"
+      },
+      {
+        "fixture": "llama-huggingface-home-token-file",
+        "terminal_match": true,
+        "state_differences": 0,
+        "render_frames": 20,
+        "render_differences": 0,
+        "http_match": true,
+        "scenario_errors": {},
+        "raw_byte_exact": false,
+        "control_boundary_diagnostics": 690,
+        "capture": "terminal/llama-huggingface-home-token-file/100x32-dark-fullscreen.json.gz"
+      },
+      {
+        "fixture": "llama-huggingface-token-file",
+        "terminal_match": true,
+        "state_differences": 0,
+        "render_frames": 20,
+        "render_differences": 0,
+        "http_match": true,
+        "scenario_errors": {},
+        "raw_byte_exact": false,
+        "control_boundary_diagnostics": 690,
+        "capture": "terminal/llama-huggingface-token-file/100x32-dark-fullscreen.json.gz"
+      },
+      {
+        "fixture": "llama-load-cancel",
+        "terminal_match": true,
+        "state_differences": 0,
+        "render_frames": 12,
+        "render_differences": 0,
+        "http_match": true,
+        "scenario_errors": {},
+        "raw_byte_exact": false,
+        "control_boundary_diagnostics": 472,
+        "capture": "terminal/llama-load-cancel/100x32-dark-fullscreen.json.gz"
+      },
+      {
+        "fixture": "llama-load-replace-cancel",
+        "terminal_match": true,
+        "state_differences": 0,
+        "render_frames": 12,
+        "render_differences": 0,
+        "http_match": true,
+        "scenario_errors": {},
+        "raw_byte_exact": false,
+        "control_boundary_diagnostics": 463,
+        "capture": "terminal/llama-load-replace-cancel/100x32-dark-fullscreen.json.gz"
+      },
+      {
+        "fixture": "llama-login",
+        "terminal_match": true,
+        "state_differences": 0,
+        "render_frames": 12,
+        "render_differences": 0,
+        "http_match": true,
+        "scenario_errors": {},
+        "raw_byte_exact": false,
+        "control_boundary_diagnostics": 518,
+        "capture": "terminal/llama-login/100x32-dark-fullscreen.json.gz"
+      },
+      {
+        "fixture": "llama-manager",
+        "terminal_match": true,
+        "state_differences": 0,
+        "render_frames": 4,
+        "render_differences": 0,
+        "http_match": true,
+        "scenario_errors": {},
+        "raw_byte_exact": false,
+        "control_boundary_diagnostics": 237,
+        "capture": "terminal/llama-manager/100x32-dark-fullscreen.json.gz"
+      },
+      {
+        "fixture": "llama-model-picker",
+        "terminal_match": true,
+        "state_differences": 0,
+        "render_frames": 15,
+        "render_differences": 0,
+        "http_match": true,
+        "scenario_errors": {},
+        "raw_byte_exact": false,
+        "control_boundary_diagnostics": 575,
+        "capture": "terminal/llama-model-picker/100x32-dark-fullscreen.json.gz"
+      },
+      {
+        "fixture": "llama-retry",
+        "terminal_match": true,
+        "state_differences": 0,
+        "render_frames": 5,
+        "render_differences": 0,
+        "http_match": true,
+        "scenario_errors": {},
+        "raw_byte_exact": false,
+        "control_boundary_diagnostics": 292,
+        "capture": "terminal/llama-retry/100x32-dark-fullscreen.json.gz"
+      }
+    ],
+    "same_pi_calibration": {
+      "pi_sha": "f1b2e77f5b13b2a199b1052cb79c235451afe7d7",
+      "fixtures": 10,
+      "normalized_matches": 10,
+      "raw_byte_exact_matches": 9,
+      "source": "current-0a0d2245/calibration/evidence.json",
+      "note": "Pi was unchanged at f1b2e77; calibration executes Pi for both sides."
+    }
+  },
+  "process": {
+    "native_classifier": {
+      "match": true,
+      "request_counts": [
+        21,
+        21
+      ],
+      "request_trace_comparison": {
+        "match": true,
+        "tokenizeRequestMultisetsMatch": true,
+        "orderedNonTokenRequestsMatch": true,
+        "tokenizeDispatchOrder": "parallel label lookups are compared as an unordered request batch"
+      },
+      "image_requests": {
+        "pi": 0,
+        "pisharp": 0
+      },
+      "report": "process/native-classifier.json"
+    },
+    "router_classifier": {
+      "match": true,
+      "report": "process/router-classifier.json"
+    },
+    "router_context_refresh_offline_reload": {
+      "match": true,
+      "report": "process/router-context.json"
+    }
+  }
+}

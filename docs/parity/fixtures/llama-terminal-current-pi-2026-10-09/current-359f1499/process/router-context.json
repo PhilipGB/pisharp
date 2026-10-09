@@ -1,0 +1,211 @@
+{
+  "match": true,
+  "piSha": "f1b2e77f5b13b2a199b1052cb79c235451afe7d7",
+  "piSharpSha": "359f14991abb3ddcc01fa1b437a0699b17a0762a",
+  "expectedContextWindows": {
+    "initial": {
+      "runtime": 32768,
+      "configured": 4096,
+      "training": 16384,
+      "fallback": 128000,
+      "decision": 8192
+    },
+    "refresh": {
+      "runtime": 32768,
+      "configured": 2048,
+      "training": 16384,
+      "fallback": 128000,
+      "decision": 8192
+    }
+  },
+  "snapshots": {
+    "initial": {
+      "chatModels": [
+        {
+          "id": "runtime",
+          "contextWindow": 32768,
+          "maxTokens": 32768
+        },
+        {
+          "id": "configured",
+          "contextWindow": 4096,
+          "maxTokens": 4096
+        },
+        {
+          "id": "training",
+          "contextWindow": 16384,
+          "maxTokens": 16384
+        },
+        {
+          "id": "fallback",
+          "contextWindow": 128000,
+          "maxTokens": 128000
+        }
+      ],
+      "classifiers": [
+        {
+          "id": "runtime",
+          "api": "llama-cpp-classify",
+          "contextWindow": 32768
+        },
+        {
+          "id": "configured",
+          "api": "llama-cpp-classify",
+          "contextWindow": 4096
+        },
+        {
+          "id": "training",
+          "api": "llama-cpp-classify",
+          "contextWindow": 16384
+        },
+        {
+          "id": "fallback",
+          "api": "llama-cpp-classify",
+          "contextWindow": 128000
+        },
+        {
+          "id": "decision",
+          "api": "typesafe-system-one",
+          "contextWindow": 8192
+        }
+      ]
+    },
+    "refresh": {
+      "chatModels": [
+        {
+          "id": "runtime",
+          "contextWindow": 32768,
+          "maxTokens": 32768
+        },
+        {
+          "id": "configured",
+          "contextWindow": 2048,
+          "maxTokens": 2048
+        },
+        {
+          "id": "training",
+          "contextWindow": 16384,
+          "maxTokens": 16384
+        },
+        {
+          "id": "fallback",
+          "contextWindow": 128000,
+          "maxTokens": 128000
+        }
+      ],
+      "classifiers": [
+        {
+          "id": "runtime",
+          "api": "llama-cpp-classify",
+          "contextWindow": 32768
+        },
+        {
+          "id": "configured",
+          "api": "llama-cpp-classify",
+          "contextWindow": 2048
+        },
+        {
+          "id": "training",
+          "api": "llama-cpp-classify",
+          "contextWindow": 16384
+        },
+        {
+          "id": "fallback",
+          "api": "llama-cpp-classify",
+          "contextWindow": 128000
+        },
+        {
+          "id": "decision",
+          "api": "typesafe-system-one",
+          "contextWindow": 8192
+        }
+      ]
+    },
+    "offlineReload": {
+      "chatModels": [
+        {
+          "id": "runtime",
+          "contextWindow": 32768,
+          "maxTokens": 32768
+        },
+        {
+          "id": "configured",
+          "contextWindow": 2048,
+          "maxTokens": 2048
+        },
+        {
+          "id": "training",
+          "contextWindow": 16384,
+          "maxTokens": 16384
+        },
+        {
+          "id": "fallback",
+          "contextWindow": 128000,
+          "maxTokens": 128000
+        }
+      ],
+      "classifiers": [
+        {
+          "id": "runtime",
+          "api": "llama-cpp-classify",
+          "contextWindow": 32768
+        },
+        {
+          "id": "configured",
+          "api": "llama-cpp-classify",
+          "contextWindow": 2048
+        },
+        {
+          "id": "training",
+          "api": "llama-cpp-classify",
+          "contextWindow": 16384
+        },
+        {
+          "id": "fallback",
+          "api": "llama-cpp-classify",
+          "contextWindow": 128000
+        },
+        {
+          "id": "decision",
+          "api": "typesafe-system-one",
+          "contextWindow": 8192
+        }
+      ]
+    }
+  },
+  "requests": {
+    "initial": [
+      {
+        "method": "GET",
+        "path": "/models",
+        "authorization": "Bearer local"
+      },
+      {
+        "method": "GET",
+        "path": "/props",
+        "authorization": "Bearer local"
+      },
+      {
+        "method": "GET",
+        "path": "/props?model=runtime&autoload=false",
+        "authorization": "Bearer local"
+      }
+    ],
+    "refresh": [
+      {
+        "method": "GET",
+        "path": "/models",
+        "authorization": "Bearer local"
+      },
+      {
+        "method": "GET",
+        "path": "/props",
+        "authorization": "Bearer local"
+      }
+    ]
+  },
+  "offlineReloadRequests": {
+    "pi": [],
+    "pisharp": []
+  }
+}
