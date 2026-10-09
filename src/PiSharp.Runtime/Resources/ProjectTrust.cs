@@ -10,14 +10,15 @@ public sealed class ProjectTrust(string agentDirectory)
 
     public static bool HasProtectedResources(string cwd)
     {
-        var directory = System.IO.Path.GetFullPath(cwd);
+        var directory = CanonicalDirectoryPath.Resolve(cwd);
         var pi = System.IO.Path.Combine(directory, ".pi");
         if (new[] { "settings.json", "mcp.json", "extensions", "skills", "prompts", "themes", "SYSTEM.md", "APPEND_SYSTEM.md" }
             .Any(name => File.Exists(System.IO.Path.Combine(pi, name)) || Directory.Exists(System.IO.Path.Combine(pi, name)))) return true;
-        var homeSkills = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".agents", "skills");
+        var home = CanonicalDirectoryPath.Resolve(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
+        var homeSkills = System.IO.Path.Combine(home, ".agents", "skills");
         for (var parent = new DirectoryInfo(directory); parent is not null; parent = parent.Parent)
         {
-            var skills = System.IO.Path.Combine(parent.FullName, ".agents", "skills");
+            var skills = System.IO.Path.Combine(CanonicalDirectoryPath.Resolve(parent.FullName), ".agents", "skills");
             if (skills != homeSkills && Directory.Exists(skills)) return true;
         }
         return false;
@@ -26,7 +27,7 @@ public sealed class ProjectTrust(string agentDirectory)
     public async Task<bool?> GetAsync(string cwd, CancellationToken cancellationToken = default)
     {
         var decisions = await ReadAsync(cancellationToken);
-        for (var parent = new DirectoryInfo(System.IO.Path.GetFullPath(cwd)); parent is not null; parent = parent.Parent)
+        for (var parent = new DirectoryInfo(CanonicalDirectoryPath.Resolve(cwd)); parent is not null; parent = parent.Parent)
             if (decisions.TryGetValue(parent.FullName, out var value)) return value;
         return null;
     }
@@ -49,7 +50,7 @@ public sealed class ProjectTrust(string agentDirectory)
         try
         {
             var decisions = await ReadAsync(cancellationToken);
-            var key = System.IO.Path.GetFullPath(cwd);
+            var key = CanonicalDirectoryPath.Resolve(cwd);
             if (trusted is null) decisions.Remove(key);
             else decisions[key] = trusted.Value;
             var temp = PathOnDisk + "." + Guid.NewGuid().ToString("N") + ".tmp";

@@ -33,7 +33,7 @@ public static class ContextInstructions
             var file = s_names.Select(name => Path.Combine(folder, name)).FirstOrDefault(File.Exists);
             if (file is null) continue;
             var isShadowed = shadowedContextFile is not null &&
-                PathsEqual(Path.Combine(CanonicalizeDirectory(folder), Path.GetFileName(file)), shadowedContextFile);
+                PathsEqual(Path.Combine(CanonicalDirectoryPath.Resolve(folder), Path.GetFileName(file)), shadowedContextFile);
             if (isShadowed || !seenPaths.Add(file)) continue;
             var info = new FileInfo(file);
             if (info.Length > MaxFileBytes) throw new InvalidDataException($"Instruction file exceeds 64KB: {file}");
@@ -59,15 +59,15 @@ public static class ContextInstructions
         var gitPaths = FindGitPaths(Path.GetFullPath(workingDirectory));
         if (gitPaths is null) return null;
 
-        var commonGitDirectory = CanonicalizeDirectory(gitPaths.CommonGitDirectory);
-        var worktreeRoot = CanonicalizeDirectory(gitPaths.RepositoryDirectory);
+        var commonGitDirectory = CanonicalDirectoryPath.Resolve(gitPaths.CommonGitDirectory);
+        var worktreeRoot = CanonicalDirectoryPath.Resolve(gitPaths.RepositoryDirectory);
         var mainRepositoryRoot = Path.GetDirectoryName(commonGitDirectory);
         if (mainRepositoryRoot is null || !IsDescendantPath(worktreeRoot, mainRepositoryRoot)) return null;
 
         // For ordinary linked worktrees, the common git directory is <main>/.git.
         // This excludes bare layouts and submodules, whose common git directory does
         // not identify an ancestor main worktree.
-        if (!PathsEqual(CanonicalizeDirectory(Path.Combine(mainRepositoryRoot, ".git")), commonGitDirectory))
+        if (!PathsEqual(CanonicalDirectoryPath.Resolve(Path.Combine(mainRepositoryRoot, ".git")), commonGitDirectory))
             return null;
 
         var worktreeContextFile = FindContextFilePath(worktreeRoot);
@@ -135,33 +135,6 @@ public static class ContextInstructions
     }
 
     private static bool PathsEqual(string left, string right) => s_pathComparer.Equals(left, right);
-
-    private static string CanonicalizeDirectory(string path)
-    {
-        var fullPath = Path.GetFullPath(path);
-        var root = Path.GetPathRoot(fullPath);
-        if (root is null) return fullPath;
-        var current = root;
-        foreach (var segment in fullPath[root.Length..].Split(
-            [Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar], StringSplitOptions.RemoveEmptyEntries))
-        {
-            current = Path.Combine(current, segment);
-            if (!Directory.Exists(current)) continue;
-            try
-            {
-                current = new DirectoryInfo(current).ResolveLinkTarget(returnFinalTarget: true)?.FullName ?? current;
-            }
-            catch (IOException)
-            {
-                // Match Pi's canonicalizePath fallback for inaccessible or broken paths.
-            }
-            catch (UnauthorizedAccessException)
-            {
-                // The caller will continue with the normalized path when realpath is unavailable.
-            }
-        }
-        return Path.GetFullPath(current);
-    }
 
     private static string XmlEscape(string input) => System.Security.SecurityElement.Escape(input) ?? "";
 }

@@ -99,6 +99,30 @@ public sealed class ProjectTrustTests
         finally { Directory.Delete(root, recursive: true); }
     }
 
+    [Fact]
+    public async Task TrustDecisionsUseTheCanonicalPathForSymbolicLinkAliases()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-trust-link-" + Guid.NewGuid().ToString("N"));
+        var project = Path.Combine(root, "project");
+        var alias = Path.Combine(root, "project-alias");
+        Directory.CreateDirectory(project);
+        Directory.CreateSymbolicLink(alias, project);
+        try
+        {
+            var trust = new ProjectTrust(Path.Combine(root, "agent"));
+            await trust.SetAsync(project, true);
+
+            Assert.True(await trust.GetAsync(alias));
+
+            await trust.SetAsync(alias, false);
+            Assert.False(await trust.GetAsync(project));
+            using var saved = System.Text.Json.JsonDocument.Parse(await File.ReadAllTextAsync(trust.PathOnDisk));
+            Assert.Equal(new[] { Path.GetFullPath(project) }, saved.RootElement.EnumerateObject()
+                .Select(property => property.Name));
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
     private sealed class CaptureClient : IChatClient
     {
         public string? Instructions { get; private set; }
