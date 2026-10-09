@@ -755,7 +755,7 @@ public sealed class ProviderModelRuntimeTests
                 Assert.Contains("fixture-model", request.body);
                 if (resourceFixture)
                 {
-                    Assert.Equal(!disableResources || explicitResources, request.body.Contains("SKILL_DESCRIPTION_SENTINEL", StringComparison.Ordinal));
+                    Assert.DoesNotContain("SKILL_DESCRIPTION_SENTINEL", request.body);
                     Assert.Equal(!disableResources || explicitResources, request.body.Contains("EXPANDED_TEMPLATE_SENTINEL value", StringComparison.Ordinal));
                     if (disableResources && !explicitResources) Assert.Contains("/review value", request.body);
                 }

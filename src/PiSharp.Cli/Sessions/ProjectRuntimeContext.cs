@@ -155,7 +155,13 @@ internal sealed class ProjectRuntimeContext : IDisposable
                 userSkills: configuration.BaseUserSettings.Skills, projectSkills: configuration.ProjectSettings?.Skills,
                 userPrompts: configuration.BaseUserSettings.Prompts, projectPrompts: configuration.ProjectSettings?.Prompts,
                 extensionResources: extensionResources);
-            instructions += "\n" + resources.SystemInstructions();
+            var skillFileReadTool = arguments.NoTools ? null : arguments.Tools is null
+                ? "read"
+                : arguments.Tools.Contains("read", StringComparer.Ordinal) ? "read"
+                : arguments.Tools.Contains("bash", StringComparer.Ordinal) ? "bash"
+                : null;
+            var skillInstructions = resources.SystemInstructions(skillFileReadTool);
+            if (skillInstructions.Length > 0) instructions += "\n" + skillInstructions;
             return new ProjectRuntimeContext(configuration, prompts, instructions, contextFiles,
                 resources, extensions, extensionResources, store, sessionImport, mcpManager, effectiveMcpServers);
         }

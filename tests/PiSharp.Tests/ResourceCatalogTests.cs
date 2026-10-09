@@ -50,10 +50,20 @@ public sealed class ResourceCatalogTests
             Assert.Equal("auto", userSkillSource.Source);
             Assert.Equal("user", userSkillSource.Scope);
             Assert.Equal(agent, userSkillSource.BaseDir);
+            Assert.Equal(
+                $"<skill name=\"unit-guide\" location=\"{Path.Combine(userSkill, "SKILL.md")}\">\n" +
+                $"References are relative to {userSkill}.\n\nUse references/guide.md\n</skill>\n\nfocus",
+                await untrusted.InvokeSkillAsync("unit-guide", "focus"));
             var userPromptSource = Assert.Single(untrusted.Prompts).SourceInfo;
             Assert.Equal("user", userPromptSource.Scope);
             Assert.Equal(agent, userPromptSource.BaseDir);
             Assert.Contains("unit-guide", untrusted.SystemInstructions());
+            Assert.Contains("Use the read tool to load a skill's file", untrusted.SystemInstructions());
+            Assert.Contains("<location>" + Path.Combine(userSkill, "SKILL.md") + "</location>",
+                untrusted.SystemInstructions());
+            Assert.Contains("Use bash to load a skill's file", untrusted.SystemInstructions("bash"));
+            Assert.Empty(untrusted.SystemInstructions(null));
+            Assert.Empty(untrusted.SystemInstructions("write"));
             Assert.DoesNotContain("Use references", untrusted.SystemInstructions());
             Assert.Equal("Review API compatibility and security: API compatibility", untrusted.ExpandPrompt("review", "\"API compatibility\""));
             Assert.Contains("Use references/guide.md", await untrusted.InvokeSkillAsync("unit-guide", "focus"));
@@ -85,7 +95,10 @@ public sealed class ResourceCatalogTests
             Assert.Equal("temporary", explicitResources.Skills[0].SourceInfo.Scope);
             Assert.Equal("temporary", explicitResources.Prompts[0].SourceInfo.Scope);
             Assert.Contains("Review value", await explicitResources.ResolveInputAsync("/review value"));
-            Assert.Equal("Run a script", (await explicitResources.InvokeSkillAsync("project-secret", "")).Split('\n')[1]);
+            Assert.Equal(
+                $"<skill name=\"project-secret\" location=\"{Path.Combine(projectSkill, "SKILL.md")}\">\n" +
+                $"References are relative to {projectSkill}.\n\nRun a script\n</skill>",
+                await explicitResources.InvokeSkillAsync("project-secret", ""));
             var collidingSkill = Path.Combine(agent, "skills", "collision");
             Directory.CreateDirectory(collidingSkill);
             await File.WriteAllTextAsync(Path.Combine(collidingSkill, "SKILL.md"),
@@ -109,7 +122,10 @@ public sealed class ResourceCatalogTests
             Assert.Equal("project", projectSkillSource.Scope);
             Assert.Equal(Path.Combine(project, ".pi"), projectSkillSource.BaseDir);
             Assert.DoesNotContain("project-secret", trusted.SystemInstructions());
-            Assert.Contains("Run a script", await trusted.InvokeSkillAsync("project-secret", ""));
+            Assert.Equal(
+                $"<skill name=\"project-secret\" location=\"{Path.Combine(projectSkill, "SKILL.md")}\">\n" +
+                $"References are relative to {projectSkill}.\n\nRun a script\n</skill>",
+                await trusted.InvokeSkillAsync("project-secret", ""));
             Assert.Contains(trusted.Prompts, item => item.Name == "internal");
         }
         finally { Directory.Delete(root, recursive: true); }

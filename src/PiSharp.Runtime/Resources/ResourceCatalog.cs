@@ -217,18 +217,47 @@ public sealed class ResourceCatalog
     private static StringComparer PathComparer() => OperatingSystem.IsWindows()
         ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
 
-    public string SystemInstructions()
+    public string SystemInstructions(string? skillFileReadTool = "read")
     {
+        if (skillFileReadTool is not ("read" or "bash" or "indirect")) return "";
         var visible = Skills.Where(skill => !skill.ExplicitOnly).ToArray();
-        return visible.Length == 0 ? "" : "Available skills (read SKILL.md when relevant; paths are absolute):\n" +
-            string.Join('\n', visible.Select(skill => $"- {skill.Name}: {skill.Description} ({skill.Path})"));
+        if (visible.Length == 0) return "";
+
+        var readInstruction = skillFileReadTool switch
+        {
+            "read" => "Use the read tool to load a skill's file when the task matches its description.",
+            "bash" => "Use bash to load a skill's file when the task matches its description.",
+            _ => "Load a skill's file when the task matches its description."
+        };
+        var lines = new List<string>
+        {
+            "The following skills provide specialized instructions for specific tasks.",
+            readInstruction,
+            "When a skill file references a relative path, resolve it against the skill directory (parent of SKILL.md / dirname of the path) and use that absolute path in tool commands.",
+            "",
+            "<available_skills>"
+        };
+        foreach (var skill in visible)
+        {
+            lines.Add("  <skill>");
+            lines.Add($"    <name>{EscapeXml(skill.Name)}</name>");
+            lines.Add($"    <description>{EscapeXml(skill.Description)}</description>");
+            lines.Add($"    <location>{EscapeXml(skill.Path)}</location>");
+            lines.Add("  </skill>");
+        }
+        lines.Add("</available_skills>");
+        return $"<skills>\n{string.Join('\n', lines)}\n</skills>";
     }
 
     public async Task<string> InvokeSkillAsync(string name, string arguments, CancellationToken cancellationToken = default)
     {
         var skill = Skills.SingleOrDefault(item => item.Name == name) ?? throw new ArgumentException($"Unknown skill: {name}");
         var (_, body) = Parse(await ReadBoundedAsync(skill.Path, cancellationToken));
-        return $"<skill name=\"{skill.Name}\" path=\"{skill.Path}\">\n{body}\n</skill>\n\n{arguments}";
+        var skillDirectory = Path.GetDirectoryName(skill.Path) ?? Path.GetFullPath(".");
+        var skillBlock = $"<skill name=\"{skill.Name}\" location=\"{skill.Path}\">\n" +
+            $"References are relative to {skillDirectory}.\n\n{body.Trim()}\n</skill>";
+        var trimmedArguments = arguments.Trim();
+        return trimmedArguments.Length == 0 ? skillBlock : $"{skillBlock}\n\n{trimmedArguments}";
     }
 
     public async Task<string> ResolveInputAsync(string input, CancellationToken cancellationToken = default)
@@ -313,6 +342,13 @@ public sealed class ResourceCatalog
         var firstLine = body.Split('\n').FirstOrDefault(line => !string.IsNullOrWhiteSpace(line)) ?? "";
         return firstLine.Length > 60 ? firstLine[..60] + "..." : firstLine;
     }
+
+    private static string EscapeXml(string value) => value
+        .Replace("&", "&amp;", StringComparison.Ordinal)
+        .Replace("<", "&lt;", StringComparison.Ordinal)
+        .Replace(">", "&gt;", StringComparison.Ordinal)
+        .Replace("\"", "&quot;", StringComparison.Ordinal)
+        .Replace("'", "&apos;", StringComparison.Ordinal);
 
     private static (Dictionary<string, string> Metadata, string Body) Parse(string text)
     {

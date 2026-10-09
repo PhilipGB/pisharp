@@ -24,6 +24,32 @@ def user_text(request):
     return '\n'.join(sections)
 
 
+def user_messages(request):
+    messages = []
+    for message in request['body'].get('messages', []):
+        if message.get('role') != 'user':
+            continue
+        content = message.get('content')
+        if isinstance(content, str):
+            messages.append(content)
+        elif isinstance(content, list):
+            messages.append(''.join(part.get('text', '') for part in content if isinstance(part, dict)))
+    return messages
+
+
+def system_text(request):
+    sections = []
+    for message in request['body'].get('messages', []):
+        if message.get('role') != 'system':
+            continue
+        content = message.get('content')
+        if isinstance(content, str):
+            sections.append(content)
+        elif isinstance(content, list):
+            sections.extend(part.get('text', '') for part in content if isinstance(part, dict))
+    return '\n'.join(sections)
+
+
 def screen_text(frame):
     state = frame['state']
     buffer = state['buffers'][state['activeScreen']]
@@ -67,6 +93,12 @@ def inspect_product(run):
     return dict(chatRequests=2, disabledCompletionBeforeReload=True,
                 reloadedCompletionEnabled=True, initialSkillExpanded=True,
                 reloadedSkillExpanded=True, visibleSuggestionRows=visible_suggestions,
+                expandedUserMessages=[user_messages(request) for request in requests],
+                advertisedSkillsByRequest=[
+                    [name for name in ('initial-legacy-skill', 'reloaded-legacy-skill')
+                     if name in system_text(request)]
+                    for request in requests
+                ],
                 scenarioError=None)
 
 
@@ -82,7 +114,7 @@ def main():
         capture = json.load(stream)
     behavior = {product: inspect_product(capture[product]) for product in ('pi', 'pisharp')}
     if behavior['pi'] != behavior['pisharp']:
-        raise AssertionError('Pi and PiSharp legacy skill reload behavior differs')
+        raise AssertionError('Pi and PiSharp legacy skill prompts or reload behavior differ')
     calibration = None
     if args.calibration_report:
         case = json.loads(args.calibration_report.read_text())['cases'][0]
