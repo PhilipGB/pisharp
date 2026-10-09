@@ -36,7 +36,8 @@ public sealed class ProjectTrust(string agentDirectory)
     {
         var decisions = await ReadAsync(cancellationToken);
         for (var parent = new DirectoryInfo(CanonicalDirectoryPath.Resolve(cwd)); parent is not null; parent = parent.Parent)
-            if (decisions.TryGetValue(parent.FullName, out var value)) return new(parent.FullName, value);
+            if (decisions.TryGetValue(parent.FullName, out var value) && value.HasValue)
+                return new(parent.FullName, value.Value);
         return null;
     }
 
@@ -111,12 +112,12 @@ public sealed class ProjectTrust(string agentDirectory)
         return answer is "o" or "once";
     }
 
-    private async Task<Dictionary<string, bool>> ReadAsync(CancellationToken token)
+    private async Task<Dictionary<string, bool?>> ReadAsync(CancellationToken token)
     {
         if (!File.Exists(PathOnDisk)) return new(StringComparer.Ordinal);
         if (new FileInfo(PathOnDisk).Length > 1024 * 1024) throw new InvalidDataException("Trust store exceeds 1MB.");
         var json = await File.ReadAllTextAsync(PathOnDisk, token);
-        var decisions = JsonSerializer.Deserialize<Dictionary<string, bool>>(json)
+        var decisions = JsonSerializer.Deserialize<Dictionary<string, bool?>>(json)
             ?? throw new InvalidDataException("Trust store must be an object.");
         if (decisions.Keys.Any(key => !System.IO.Path.IsPathFullyQualified(key)))
             throw new InvalidDataException("Trust store contains a non-absolute path.");

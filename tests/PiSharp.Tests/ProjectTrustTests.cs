@@ -91,7 +91,7 @@ public sealed class ProjectTrustTests
             var trust = new ProjectTrust(Path.Combine(root, "agent"));
             Assert.True(await trust.ResolveAsync(root, null, true, new StringReader("yes\n"), new StringWriter()));
             Assert.True(await trust.ResolveAsync(root, null, false, TextReader.Null, TextWriter.Null));
-            await File.WriteAllTextAsync(trust.PathOnDisk, "{\"/tmp\":null}");
+            await File.WriteAllTextAsync(trust.PathOnDisk, "{\"/tmp\":\"invalid\"}");
             await Assert.ThrowsAsync<System.Text.Json.JsonException>(() => trust.GetAsync(root));
             Assert.Throws<ArgumentException>(() => CliArguments.Parse(["--approve", "--no-approve"]));
             Assert.True(CliArguments.Parse(["--approve"]).ProjectTrustOverride);
@@ -126,6 +126,34 @@ public sealed class ProjectTrustTests
             await trust.SetAsync(root, true);
             Assert.True(await trust.ResolveAsync(root, null, false, TextReader.Null, TextWriter.Null,
                 defaultProjectTrust: "never"));
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
+    public async Task NullTrustStoreEntriesFallThroughToParentAndCanBeRemoved()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-trust-null-" + Guid.NewGuid().ToString("N"));
+        var parent = Path.Combine(root, "parent");
+        var project = Path.Combine(parent, "project");
+        var agent = Path.Combine(root, "agent");
+        Directory.CreateDirectory(project);
+        Directory.CreateDirectory(agent);
+        try
+        {
+            var trustPath = Path.Combine(agent, "trust.json");
+            await File.WriteAllTextAsync(trustPath, System.Text.Json.JsonSerializer.Serialize(
+                new Dictionary<string, bool?> { [parent] = true, [project] = null }));
+            var trust = new ProjectTrust(agent);
+
+            Assert.Equal(new ProjectTrustEntry(parent, true), await trust.GetEntryAsync(project));
+
+            await trust.SetAsync(project, null);
+
+            Assert.Equal(new ProjectTrustEntry(parent, true), await trust.GetEntryAsync(project));
+            using var saved = System.Text.Json.JsonDocument.Parse(await File.ReadAllTextAsync(trustPath));
+            Assert.Single(saved.RootElement.EnumerateObject());
+            Assert.True(saved.RootElement.GetProperty(parent).GetBoolean());
         }
         finally { Directory.Delete(root, recursive: true); }
     }
