@@ -10,7 +10,11 @@
       "--no-skills", "--no-prompt-templates", "--no-tools", "--no-approve", "--no-context-files"
     ]
   },
-  "settings": { "quietStartup": true },
+  "settings": {
+    "quietStartup": true,
+    "defaultProvider": "llama.cpp",
+    "defaultModel": "sleeping-fixture-model"
+  },
   "environment": {
     "pi": { "LLAMA_BASE_URL": "{router}" },
     "pisharp": { "LLAMA_BASE_URL": "{router}" }
@@ -45,6 +49,13 @@
       "architecture": { "input_modalities": ["text"], "output_modalities": ["text"] },
       "source": "preset",
       "meta": { "n_ctx_train": 8192 }
+    },
+    {
+      "id": "sleeping-fixture-model",
+      "status": { "value": "sleeping", "args": ["--ctx-size", "12288"] },
+      "architecture": { "input_modalities": ["text"], "output_modalities": ["text"] },
+      "source": "filesystem",
+      "meta": { "n_ctx": 12288 }
     }
   ],
   "llamaProps": { "models_autoload": false, "chat_template": "fixture" },
@@ -61,12 +72,16 @@
   "actions": [
     { "id": "startup", "expect": "fixture-model" },
     { "id": "open-manager", "send": "/llama\r", "expect": "unloaded-fixture-model" },
-    { "id": "select-unloaded", "send": "\u001b[B\r", "expect": "1 model is loaded" },
+    { "id": "select-sleeping-manager-model", "send": "\u001b[B", "expect": "sleeping-fixture-model" },
+    { "id": "select-unloaded", "send": "\u001b[B\r", "expect": "2 models are loaded" },
     { "id": "keep-loaded-model", "send": "\u001b[B\r", "expect": "Loading model" },
     { "id": "wait-load-progress", "releaseGates": ["load-progress"], "expect": "50%" },
     { "id": "load-finished", "releaseGates": ["load-finished"], "expect": "unloaded-fixture-model" },
     { "id": "close-manager", "send": "\u001b", "expect": "fixture-model" },
     { "id": "open-model-picker", "send": "/model\r", "expect": "Only showing models from configured providers" },
+    { "id": "search-sleeping-router-model", "send": "sleeping-fixture-model", "expect": "sleeping-fixture-model [llama.cpp]" },
+    { "id": "select-sleeping-router-model", "send": "\r", "expect": "Model: sleeping-fixture-model" },
+    { "id": "reopen-model-picker", "send": "/model\r", "expect": "Only showing models from configured providers" },
     { "id": "search-new-router-model", "send": "unloaded-fixture-model", "expect": "unloaded-fixture-model [llama.cpp]" },
     { "id": "select-new-router-model", "send": "\r", "expect": "Model: unloaded-fixture-model" }
   ],

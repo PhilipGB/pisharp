@@ -78,9 +78,11 @@ internal sealed class TerminalModelPicker(ProviderModelRuntime modelRuntime, Ter
         if (models.All(model => !SameModel(model, current.Provider.Id, current.Model.Id)))
             models.Add(current.Model with { Provider = current.Provider.Id });
 
+        // Match Pi's current/default/provider priorities while preserving each provider's catalog order.
         var ordered = models.OrderByDescending(model => SameModel(model, current.Provider.Id, current.Model.Id))
+            .ThenByDescending(model => Key(model.Provider ?? current.Provider.Id, model.Id)
+                .Equals(defaultModelKey, StringComparison.OrdinalIgnoreCase))
             .ThenBy(model => model.Provider, StringComparer.OrdinalIgnoreCase)
-            .ThenBy(model => model.Id, StringComparer.OrdinalIgnoreCase)
             .ToArray();
         var options = ordered.Select(model => ToOption(model, current, defaultModelKey)).ToArray();
         var scopedOptions = modelRuntime.Scope.Count == 0 ? null : options.Where(option => IsInScope(option.Value)).ToArray();
