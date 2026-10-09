@@ -69,7 +69,7 @@ public sealed class ProviderLoginTuiTests
                 Assert.Equal(1, process.ExitCode); // Rejected prompts are failures, not successful inference.
                 Assert.Contains("has no configured OAuth adapter", transcript);
                 Assert.Contains("Authenticated fixture with api-key", transcript);
-                Assert.Contains("Model: fixture/fixture-alt", transcript);
+                Assert.Contains("Model: fixture-alt", transcript);
                 Assert.Contains("Thinking: off", transcript);
                 Assert.Contains("Thinking: off; available: off", transcript);
                 Assert.Contains("Logged out fixture", transcript);

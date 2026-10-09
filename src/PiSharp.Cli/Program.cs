@@ -632,7 +632,7 @@ void ShowModelChangeStatus(bool persistAsDefault = false)
 {
     var label = persistAsDefault
         ? $"Default model: {selection.Provider.Id}/{selection.Model.Id}"
-        : $"Model: {selection.Provider.Id}/{selection.Model.Id}";
+        : $"Model: {selection.Model.Id}";
     if (terminalScreen is { IsActive: true } screen)
         screen.ShowModelChangeStatus(IdleFooter(), label);
     else Console.WriteLine($"Model: {selection.Provider.Id}/{selection.Model.Id} · thinking {thinking}");

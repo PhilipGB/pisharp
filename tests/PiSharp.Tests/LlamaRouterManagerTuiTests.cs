@@ -125,7 +125,7 @@ public sealed class LlamaRouterManagerTuiTests
 
             mark = terminal.Mark;
             await terminal.SendAsync("\n");
-            await terminal.WaitTextAsync("25%", mark);
+            await terminal.WaitTextAsync("Loading model", mark);
             await server.LoadRequested.Task.WaitAsync(TimeSpan.FromSeconds(10));
             Assert.Equal("unloaded", server.Statuses["qwen"]);
 
@@ -332,8 +332,8 @@ public sealed class LlamaRouterManagerTuiTests
             await terminal.SendAsync("target");
             await terminal.WaitTextAsync("target [llama.cpp]", mark);
             await terminal.SendAsync("\n");
-            await terminal.WaitTextAsync("Model: llama.cpp/target", mark);
-            await terminal.WaitTextAsync("Model: llama.cpp/target", mark);
+            await terminal.WaitTextAsync("Model: target", mark);
+            await terminal.WaitTextAsync("Model: target", mark);
             Assert.Equal("loaded", server.Statuses["target"]);
             await terminal.QuitAsync();
         }
