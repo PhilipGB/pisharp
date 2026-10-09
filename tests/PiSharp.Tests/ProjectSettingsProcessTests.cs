@@ -6,6 +6,56 @@ namespace PiSharp.Tests;
 public sealed class ProjectSettingsProcessTests
 {
     [Fact]
+    public async Task InvalidGlobalTrustFallsBackAndProjectTrustSettingDoesNotOverrideIt()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-default-project-trust-process-" + Guid.NewGuid().ToString("N"));
+        var agent = Path.Combine(root, "agent");
+        Directory.CreateDirectory(agent);
+        Directory.CreateDirectory(Path.Combine(root, ".pi"));
+        try
+        {
+            var projectSettingsPath = Path.Combine(root, ".pi", "settings.json");
+            await File.WriteAllTextAsync(projectSettingsPath, "{\"defaultProjectTrust\":\"never\"}");
+
+            async Task<(int Code, string Error)> Run()
+            {
+                var start = new ProcessStartInfo("dotnet")
+                {
+                    WorkingDirectory = root,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true
+                };
+                start.ArgumentList.Add(typeof(CliArguments).Assembly.Location);
+                foreach (var arg in new[] { "--provider", "openai", "--model", "gpt-4o-mini", "--offline", "--no-session", "--no-tools", "--print", "hello" })
+                    start.ArgumentList.Add(arg);
+                start.Environment["PISHARP_AGENT_DIR"] = agent;
+                start.Environment["PISHARP_OFFLINE"] = "1";
+                foreach (var name in new[] { "OPENAI_API_KEY", "PISHARP_API_KEY", "PISHARP_MODEL", "PISHARP_BASE_URL", "PISHARP_SETTINGS_PATH" })
+                    start.Environment.Remove(name);
+                using var process = Process.Start(start)!;
+                var output = process.StandardOutput.ReadToEndAsync();
+                var error = process.StandardError.ReadToEndAsync();
+                await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(10));
+                _ = await output;
+                return (process.ExitCode, await error);
+            }
+
+            await File.WriteAllTextAsync(Path.Combine(agent, "settings.json"), "{\"defaultProjectTrust\":\"sometimes\"}");
+            var malformedGlobal = await Run();
+            Assert.Equal(2, malformedGlobal.Code);
+            Assert.Contains("not authenticated", malformedGlobal.Error);
+            Assert.DoesNotContain("defaultProjectTrust", malformedGlobal.Error);
+
+            await File.WriteAllTextAsync(Path.Combine(agent, "settings.json"), "{\"defaultProjectTrust\":\"always\"}");
+            var projectOverride = await Run();
+            Assert.Equal(2, projectOverride.Code);
+            Assert.Contains("not authenticated", projectOverride.Error);
+            Assert.DoesNotContain("defaultProjectTrust", projectOverride.Error);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [Fact]
     public async Task UntrustedProjectSettingsAreNeverParsedAndTrustedInvalidSettingsFailClosed()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-project-settings-process-" + Guid.NewGuid().ToString("N"));

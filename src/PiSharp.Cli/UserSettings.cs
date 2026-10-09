@@ -259,16 +259,17 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
                 tools = values;
                 continue;
             }
+            if (property.Name == "defaultProjectTrust")
+            {
+                var candidate = property.Value.ValueKind == JsonValueKind.String ? property.Value.GetString() : null;
+                defaultTrust = candidate is "ask" or "always" or "never" ? candidate : null;
+                continue;
+            }
             if (property.Value.ValueKind != JsonValueKind.String)
                 throw new InvalidDataException($"settings.json property '{property.Name}' must be a string.");
             var value = property.Value.GetString();
             switch (property.Name)
             {
-                case "defaultProjectTrust":
-                    defaultTrust = Validate(value, property.Name, 8);
-                    if (defaultTrust is not ("ask" or "always" or "never"))
-                        throw new InvalidDataException("settings.json defaultProjectTrust must be ask, always or never.");
-                    break;
                 case "shellCommandPrefix": shellCommandPrefix = value; break;
                 case "defaultProvider": provider = Validate(value, property.Name, 128); break;
                 case "defaultModel": model = Validate(value, property.Name, 256); break;
@@ -431,8 +432,6 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
     public static async Task<UserSettings> LoadProjectAsync(string workingDirectory, CancellationToken cancellationToken = default)
     {
         var settings = await LoadAsync(workingDirectory, _ => Path.Combine(workingDirectory, ".pi", "settings.json"), cancellationToken);
-        if (settings.DefaultProjectTrust is not null)
-            throw new InvalidDataException("defaultProjectTrust is only allowed in user settings.json.");
         if (settings.HttpProxy is not null)
             throw new InvalidDataException("httpProxy is only allowed in user settings.json.");
         return settings;

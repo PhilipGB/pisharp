@@ -656,7 +656,27 @@ public sealed class UserSettingsTests
             var global = await UserSettings.LoadAsync(root, _ => null);
             Assert.Equal("always", global.DefaultProjectTrust);
             await File.WriteAllTextAsync(Path.Combine(root, ".pi", "settings.json"), "{\"defaultProjectTrust\":\"never\"}");
-            await Assert.ThrowsAsync<InvalidDataException>(() => UserSettings.LoadProjectAsync(root));
+            var project = await UserSettings.LoadProjectAsync(root);
+            Assert.Equal("never", project.DefaultProjectTrust);
+            Assert.Equal("always", global.Overlay(project).DefaultProjectTrust);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [Theory]
+    [InlineData("{\"defaultProjectTrust\":\"sometimes\"}")]
+    [InlineData("{\"defaultProjectTrust\":true}")]
+    public async Task InvalidDefaultProjectTrustFallsBackToTheAskDefault(string json)
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-invalid-default-trust-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(root, "settings.json"), json);
+
+            var settings = await UserSettings.LoadAsync(root, _ => null);
+
+            Assert.Null(settings.DefaultProjectTrust);
         }
         finally { Directory.Delete(root, true); }
     }
@@ -701,8 +721,6 @@ public sealed class UserSettingsTests
 
     [Theory]
     [InlineData("{\"defaultThinkingLevel\":\"ultra\"}")]
-    [InlineData("{\"defaultProjectTrust\":\"maybe\"}")]
-    [InlineData("{\"defaultProjectTrust\":true}")]
     [InlineData("{\"unknown\":\"value\"}")]
     [InlineData("{\"defaultModel\":42}")]
     [InlineData("{\"defaultTools\":\"read\"}")]
