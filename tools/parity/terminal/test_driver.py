@@ -5,13 +5,14 @@ from pathlib import Path
 import sys
 import time
 from threading import Event, Thread
+import tempfile
 import urllib.request
 import unittest
 
 from compare import ControlTrace, canonical_render_frames, compare_products, differences
 from fixture_http import FixtureServer
 from pty_process import TerminalProcess
-from run import expand_environment
+from run import expand_environment, prepare_workspace
 
 
 class DriverTests(unittest.TestCase):
@@ -21,6 +22,24 @@ class DriverTests(unittest.TestCase):
             line = stream.readline().decode()
             if line.startswith('data: '):
                 return json.loads(line.removeprefix('data: '))
+
+    def test_workspace_fixture_files_are_reset_and_contained(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            workspace = Path(temporary) / 'workspace'
+            workspace.mkdir()
+            (workspace / '.pisharp-terminal-harness').touch()
+            (workspace / 'stale.txt').write_text('stale')
+
+            working = prepare_workspace({
+                'workingDirectory': 'trust-project',
+                'projectFiles': {'.pi/settings.json': '{}'},
+            }, workspace)
+
+            self.assertEqual(workspace / 'trust-project', working)
+            self.assertFalse((workspace / 'stale.txt').exists())
+            self.assertEqual('{}', (workspace / '.pi/settings.json').read_text())
+            with self.assertRaises(ValueError):
+                prepare_workspace({'workingDirectory': '../outside'}, workspace)
 
     def test_fixture_reset_waits_for_disconnected_sse_clients(self):
         server = FixtureServer(behavior=dict(downloadFinishGate='finish'))

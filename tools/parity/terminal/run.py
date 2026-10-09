@@ -17,6 +17,37 @@ from fixture_http import FixtureServer
 from pty_process import TerminalProcess
 
 ROOT = Path(__file__).resolve().parents[3]
+WORKSPACE = Path('/tmp/pisharp-terminal-fixture-workspace')
+
+
+def prepare_workspace(scenario, workspace=WORKSPACE):
+    marker = workspace / '.pisharp-terminal-harness'
+    if workspace.exists() and not marker.exists():
+        raise RuntimeError(f'Refusing to reset unowned fixture directory: {workspace}')
+    workspace.mkdir(exist_ok=True, mode=0o700)
+    marker.touch()
+    for entry in workspace.iterdir():
+        if entry == marker:
+            continue
+        if entry.is_dir() and not entry.is_symlink():
+            shutil.rmtree(entry)
+        else:
+            entry.unlink()
+
+    workspace_root = workspace.resolve()
+    for name, content in scenario.get('projectFiles', {}).items():
+        path = (workspace / name).resolve()
+        if not path.is_relative_to(workspace_root):
+            raise ValueError(f'Fixture project file leaves its workspace: {name}')
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(content if isinstance(content, str) else json.dumps(content))
+
+    working_relative = scenario.get('workingDirectory', '.')
+    working_directory = (workspace / working_relative).resolve()
+    if not working_directory.is_relative_to(workspace_root):
+        raise ValueError(f'Fixture working directory leaves its workspace: {working_relative}')
+    working_directory.mkdir(parents=True, exist_ok=True)
+    return working_directory
 
 
 def commands(pi, pisharp, scenario):
@@ -90,7 +121,8 @@ def run_product(label, command, scenario, dimensions, theme, mode, server):
     child_environment['PATH'] = str(bin_directory) + os.pathsep + child_environment.get('PATH', '')
     child_environment.update(expand_environment(
         scenario.get('environment', {}).get(label, {}), agent, server.url))
-    terminal = TerminalProcess(command, Path('/tmp/pisharp-terminal-fixture-workspace'), child_environment, options)
+    working_directory = prepare_workspace(scenario)
+    terminal = TerminalProcess(command, working_directory, child_environment, options)
     frames = []
     http_by_frame = []
     prior_raw = bytearray()
@@ -118,8 +150,8 @@ def run_product(label, command, scenario, dimensions, theme, mode, server):
                 restart_environment = dict(child_environment)
                 restart_environment.update(expand_environment(
                     action.get('restartEnvironment', {}), agent, server.url))
-                terminal = TerminalProcess(command, Path('/tmp/pisharp-terminal-fixture-workspace'),
-                                           restart_environment, options)
+                working_directory = prepare_workspace(scenario)
+                terminal = TerminalProcess(command, working_directory, restart_environment, options)
                 control_mark = len(terminal.trace.events)
                 frame = terminal.settle(action.get('expect'), timeout=action.get('timeout', 20))
                 frames.append(dict(id=action['id'], state=frame, controls=terminal.trace.events[control_mark:],
@@ -204,7 +236,7 @@ def main():
                                  'HTTP identity/count/order remain exact except within declared concurrent batches, '
                                  'where arrival order is unspecified. Per-checkpoint control buckets are diagnostic.'),
                   cases=[])
-    cwd = Path('/tmp/pisharp-terminal-fixture-workspace')
+    cwd = WORKSPACE
     owner = cwd / '.pisharp-terminal-harness'
     if cwd.exists() and not owner.exists():
         raise RuntimeError(f'Refusing to use unowned fixture directory: {cwd}')

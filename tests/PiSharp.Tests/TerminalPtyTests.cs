@@ -10,6 +10,120 @@ namespace PiSharp.Tests;
 public sealed class TerminalPtyTests
 {
     [Fact]
+    public async Task TrustSelectorSavesParentDecisionWithoutChangingTheCurrentSession()
+    {
+        if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-trust-selector-pty-" + Guid.NewGuid().ToString("N"));
+        var agent = Path.Combine(root, "agent");
+        var parent = Path.Combine(root, "parent");
+        var cwd = Path.Combine(parent, "project");
+        Directory.CreateDirectory(agent);
+        Directory.CreateDirectory(Path.Combine(cwd, ".pi"));
+        await File.WriteAllTextAsync(Path.Combine(cwd, ".pi", "settings.json"), "{}");
+        var trustStore = new PiSharp.Runtime.Resources.ProjectTrust(agent);
+        await trustStore.SetAsync(parent, true);
+        await trustStore.SetAsync(cwd, false);
+
+        Process? process = null;
+        try
+        {
+            var start = new ProcessStartInfo("/usr/bin/script")
+            {
+                WorkingDirectory = cwd,
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+            start.ArgumentList.Add("-q");
+            start.ArgumentList.Add("-e");
+            start.ArgumentList.Add("-c");
+            start.ArgumentList.Add($"stty rows 24 cols 100; exec dotnet {ShellQuote(typeof(CliArguments).Assembly.Location)} --local --offline --no-session --no-tools");
+            start.ArgumentList.Add("/dev/null");
+            start.Environment["PISHARP_AGENT_DIR"] = agent;
+            process = Process.Start(start);
+            Assert.NotNull(process);
+
+            var output = new StringBuilder();
+            var outputLock = new object();
+            var inputReady = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var initialSelector = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var decisionSaved = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var decisionSavedAgain = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var selectorAfterSave = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var stdout = Task.Run(async () =>
+            {
+                var buffer = new char[1024];
+                while (true)
+                {
+                    var count = await process.StandardOutput.ReadAsync(buffer);
+                    if (count == 0) break;
+                    lock (outputLock)
+                    {
+                        output.Append(buffer, 0, count);
+                        var captured = output.ToString();
+                        if (captured.Contains("\u001b[?2004h", StringComparison.Ordinal)) inputReady.TrySetResult();
+                        if (captured.Contains("Saved decision: untrusted (", StringComparison.Ordinal) &&
+                            captured.Contains("Trust parent folder (", StringComparison.Ordinal))
+                            initialSelector.TrySetResult();
+                        const string savedStatus = "Saved trust decision: trusted. Restart PiSharp for this to take effect.";
+                        if (captured.Contains(savedStatus, StringComparison.Ordinal))
+                            decisionSaved.TrySetResult();
+                        if (CountOccurrences(captured, savedStatus) >= 2) decisionSavedAgain.TrySetResult();
+                        if (CountOccurrences(captured, "Current session: untrusted") >= 2 &&
+                            captured.Contains("Saved decision: trusted (inherited from ", StringComparison.Ordinal))
+                            selectorAfterSave.TrySetResult();
+                    }
+                }
+                lock (outputLock) return output.ToString();
+            });
+            var stderr = process.StandardError.ReadToEndAsync();
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+            await inputReady.Task.WaitAsync(timeout.Token);
+            await process.StandardInput.WriteAsync("/trust\n");
+            await process.StandardInput.FlushAsync();
+            try { await initialSelector.Task.WaitAsync(timeout.Token); }
+            catch (OperationCanceledException)
+            {
+                string tail;
+                lock (outputLock) tail = new string(output.ToString().TakeLast(5000).ToArray());
+                throw new InvalidOperationException($"Trust selector did not open. exited={process.HasExited}; stdout tail: {tail}");
+            }
+            await process.StandardInput.WriteAsync("\u001b[A\n");
+            await process.StandardInput.FlushAsync();
+            await decisionSaved.Task.WaitAsync(timeout.Token);
+            await process.StandardInput.WriteAsync("/trust\n");
+            await process.StandardInput.FlushAsync();
+            await selectorAfterSave.Task.WaitAsync(timeout.Token);
+            await process.StandardInput.WriteAsync("\n");
+            await process.StandardInput.FlushAsync();
+            await decisionSavedAgain.Task.WaitAsync(timeout.Token);
+            await process.StandardInput.WriteAsync("/quit\n");
+            await process.StandardInput.FlushAsync();
+            process.StandardInput.Close();
+            await process.WaitForExitAsync(timeout.Token);
+            var capturedOutput = await stdout;
+
+            Assert.Equal(0, process.ExitCode);
+            Assert.Contains("Saved decision: untrusted (", capturedOutput);
+            Assert.Contains("Current session: untrusted", capturedOutput);
+            Assert.Contains("Saved decision: trusted (inherited from ", capturedOutput);
+            Assert.Contains("Saved trust decision: trusted. Restart PiSharp for this to take effect.", capturedOutput);
+            Assert.Contains("This project is not trusted. Project .pi resources and packages are ignored. Use /trust to save a trust decision, then restart PiSharp.", capturedOutput);
+            Assert.DoesNotContain("Agent error:", capturedOutput);
+            Assert.DoesNotContain("Exception:", await stderr);
+            using var saved = System.Text.Json.JsonDocument.Parse(await File.ReadAllTextAsync(trustStore.PathOnDisk));
+            Assert.Single(saved.RootElement.EnumerateObject());
+            Assert.True(saved.RootElement.GetProperty(Path.GetFullPath(parent)).GetBoolean());
+        }
+        finally
+        {
+            if (process is { HasExited: false }) process.Kill(entireProcessTree: true);
+            process?.Dispose();
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task BangCommandsUseTheConfiguredPrefixAndDoubleBangExcludesContext()
     {
         if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;

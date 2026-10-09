@@ -3,10 +3,15 @@ using System.Text.Json;
 
 namespace PiSharp.Runtime.Resources;
 
+public sealed record ProjectTrustEntry(string Path, bool Decision);
+public sealed record ProjectTrustUpdate(string Path, bool? Decision);
+
 /// <summary>Permission to load project-supplied executable/configurable resources. Not a process sandbox.</summary>
 public sealed class ProjectTrust(string agentDirectory)
 {
     public string PathOnDisk { get; } = Path.Combine(System.IO.Path.GetFullPath(agentDirectory), "trust.json");
+
+    public static string CanonicalizePath(string path) => CanonicalDirectoryPath.Resolve(path);
 
     public static bool HasProtectedResources(string cwd)
     {
@@ -24,16 +29,25 @@ public sealed class ProjectTrust(string agentDirectory)
         return false;
     }
 
-    public async Task<bool?> GetAsync(string cwd, CancellationToken cancellationToken = default)
+    public async Task<bool?> GetAsync(string cwd, CancellationToken cancellationToken = default) =>
+        (await GetEntryAsync(cwd, cancellationToken))?.Decision;
+
+    public async Task<ProjectTrustEntry?> GetEntryAsync(string cwd, CancellationToken cancellationToken = default)
     {
         var decisions = await ReadAsync(cancellationToken);
         for (var parent = new DirectoryInfo(CanonicalDirectoryPath.Resolve(cwd)); parent is not null; parent = parent.Parent)
-            if (decisions.TryGetValue(parent.FullName, out var value)) return value;
+            if (decisions.TryGetValue(parent.FullName, out var value)) return new(parent.FullName, value);
         return null;
     }
 
-    public async Task SetAsync(string cwd, bool? trusted, CancellationToken cancellationToken = default)
+    public Task SetAsync(string cwd, bool? trusted, CancellationToken cancellationToken = default) =>
+        SetManyAsync([new ProjectTrustUpdate(cwd, trusted)], cancellationToken);
+
+    public async Task SetManyAsync(IReadOnlyList<ProjectTrustUpdate> updates,
+        CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(updates);
+        if (updates.Count == 0) return;
         var parent = System.IO.Path.GetDirectoryName(PathOnDisk)!;
         if (OperatingSystem.IsLinux()) Directory.CreateDirectory(parent, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
         else Directory.CreateDirectory(parent);
@@ -50,9 +64,12 @@ public sealed class ProjectTrust(string agentDirectory)
         try
         {
             var decisions = await ReadAsync(cancellationToken);
-            var key = CanonicalDirectoryPath.Resolve(cwd);
-            if (trusted is null) decisions.Remove(key);
-            else decisions[key] = trusted.Value;
+            foreach (var update in updates)
+            {
+                var key = CanonicalDirectoryPath.Resolve(update.Path);
+                if (update.Decision is null) decisions.Remove(key);
+                else decisions[key] = update.Decision.Value;
+            }
             var temp = PathOnDisk + "." + Guid.NewGuid().ToString("N") + ".tmp";
             try
             {

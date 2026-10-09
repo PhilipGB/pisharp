@@ -123,6 +123,34 @@ public sealed class ProjectTrustTests
         finally { Directory.Delete(root, recursive: true); }
     }
 
+    [Fact]
+    public async Task TrustParentDecisionReplacesProjectOverrideAtomically()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-trust-parent-" + Guid.NewGuid().ToString("N"));
+        var parent = Path.Combine(root, "parent");
+        var project = Path.Combine(parent, "project");
+        Directory.CreateDirectory(project);
+        try
+        {
+            var trust = new ProjectTrust(Path.Combine(root, "agent"));
+            await trust.SetAsync(parent, true);
+            await trust.SetAsync(project, false);
+
+            Assert.Equal(new ProjectTrustEntry(project, false), await trust.GetEntryAsync(project));
+
+            await trust.SetManyAsync([
+                new ProjectTrustUpdate(parent, true),
+                new ProjectTrustUpdate(project, null)
+            ]);
+
+            Assert.Equal(new ProjectTrustEntry(parent, true), await trust.GetEntryAsync(project));
+            using var saved = System.Text.Json.JsonDocument.Parse(await File.ReadAllTextAsync(trust.PathOnDisk));
+            Assert.Single(saved.RootElement.EnumerateObject());
+            Assert.True(saved.RootElement.GetProperty(Path.GetFullPath(parent)).GetBoolean());
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
     private sealed class CaptureClient : IChatClient
     {
         public string? Instructions { get; private set; }

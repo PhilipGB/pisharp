@@ -185,7 +185,8 @@ public sealed class TerminalEditor
     internal TerminalSelection<T>? ShowInlineSelectionList<T>(string title,
         IReadOnlyList<TerminalSelectionOption<T>> options, IReadOnlyList<string>? header = null,
         string footer = "↑↓ move • enter select • escape/ctrl+c close", string? selectedKey = null,
-        bool preservePanelAfterSelection = false)
+        bool preservePanelAfterSelection = false, int optionIndent = 0, int bottomMargin = 2,
+        int bottomSpacerLines = 0)
     {
         if (_screen is not { IsActive: true } screen || options.Count == 0) return null;
         var input = EnsureInput();
@@ -198,9 +199,10 @@ public sealed class TerminalEditor
             while (screen.IsActive)
             {
                 screen.RefreshIfResized();
-                var panel = RenderInlinePanel(screen, title, options, selectedIndex, header, footer);
+                var panel = RenderInlinePanel(screen, title, options, selectedIndex, header, footer,
+                    optionIndent, bottomSpacerLines);
                 screen.SetEditorPanel(panel, panel.Count - 2, screen.TerminalWidth + 1, cursorVisible: false,
-                    bottomMargin: 2);
+                    bottomMargin);
                 var next = input.Read();
                 if (next.IsEndOfStream) return null;
                 if (next.Key is not { } key) continue;
@@ -384,7 +386,7 @@ public sealed class TerminalEditor
 
     private static IReadOnlyList<string> RenderInlinePanel<T>(TerminalScreen screen, string title,
         IReadOnlyList<TerminalSelectionOption<T>> options, int selectedIndex, IReadOnlyList<string>? header,
-        string footer)
+        string footer, int optionIndent = 0, int bottomSpacerLines = 0)
     {
         var width = screen.TerminalWidth;
         var theme = screen.CurrentTheme;
@@ -412,9 +414,10 @@ public sealed class TerminalEditor
                 var label = TerminalSafeText.Normalize(option.Label);
                 var marker = index == selectedIndex ? "→ " : "  ";
                 var selected = index == selectedIndex;
+                var current = option.IsCurrent ? theme.Style("accent", "✓ ") : "  ";
                 var description = string.IsNullOrWhiteSpace(option.Description)
                     ? "" : TerminalSafeText.Normalize(option.Description);
-                var primary = marker + label;
+                var primary = new string(' ', Math.Max(0, optionIndent)) + marker + current + label;
                 if (description.Length == 0)
                     lines.Add(selected ? theme.Style("accent", primary) : primary);
                 else if (selected)
@@ -426,6 +429,7 @@ public sealed class TerminalEditor
         }
         lines.Add("");
         lines.Add(PadPanelLine(" " + RenderKeyHint(theme, TerminalSafeText.Normalize(footer)), width));
+        lines.AddRange(Enumerable.Repeat("", Math.Max(0, bottomSpacerLines)));
         lines.Add(PanelBorder(theme, width));
         return lines;
     }

@@ -1,0 +1,76 @@
+{
+  "id": "trust-selector",
+  "workingDirectory": "trust-project",
+  "arguments": {
+    "pisharp": [
+      "--provider", "fixture", "--model", "fixture-model", "--no-session", "--offline",
+      "--no-extensions", "--no-skills", "--no-prompt-templates", "--no-tools", "--no-context-files"
+    ]
+  },
+  "projectFiles": {
+    "trust-project/.pi/settings.json": "{}"
+  },
+  "files": {
+    "pi": {
+      "trust.json": {
+        "/tmp/pisharp-terminal-fixture-workspace": true,
+        "/tmp/pisharp-terminal-fixture-workspace/trust-project": false
+      }
+    },
+    "pisharp": {
+      "trust.json": {
+        "/tmp/pisharp-terminal-fixture-workspace": true,
+        "/tmp/pisharp-terminal-fixture-workspace/trust-project": false
+      }
+    }
+  },
+  "actions": [
+    {
+      "id": "startup",
+      "expect": "fixture-model"
+    },
+    {
+      "id": "open-trust-selector",
+      "send": "/trust\r",
+      "expect": "Saved decision: untrusted"
+    },
+    {
+      "id": "trust-parent",
+      "send": "\u001b[A\r",
+      "expect": {
+        "pi": "Saved trust decision: trusted. Restart pi for this to take effect.",
+        "pisharp": "Saved trust decision: trusted. Restart PiSharp for this to take effect."
+      }
+    },
+    {
+      "id": "verify-session-stays-untrusted",
+      "send": "/trust\r",
+      "expect": "Current session: untrusted"
+    },
+    {
+      "id": "close-trust-selector",
+      "send": "\u001b",
+      "expect": "fixture-model"
+    },
+    {
+      "id": "quit",
+      "send": "/quit\r",
+      "exit": true
+    }
+  ],
+  "dimensions": [
+    {
+      "columns": 120,
+      "rows": 40
+    }
+  ],
+  "themes": [
+    "dark"
+  ],
+  "modes": [
+    "fullscreen"
+  ],
+  "terminal": {
+    "keyboardProtocol": "kitty"
+  }
+}
