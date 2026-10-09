@@ -1,0 +1,27 @@
+{
+  "piSha": "6fb2e7815167e6b19006fc526d1a5d0f5f998787",
+  "pisharpSha": "ef8f364cea352de93de4bc7cc29a611b615dbe62",
+  "fixture": "llama-huggingface-token-file",
+  "calibration": true,
+  "concurrentHttpGroups": [],
+  "normalization": "Named checkpoints and every synchronized render state are compared exactly, collapsing only adjacent identical states and ignoring cursor coordinates only while that cursor is hidden. Raw bytes remain captured and exact-match status is reported separately. HTTP identity/count/order remain exact except within declared concurrent batches, where arrival order is unspecified. Per-checkpoint control buckets are diagnostic.",
+  "cases": [
+    {
+      "id": "100x32-dark-fullscreen",
+      "match": true,
+      "differences": 0,
+      "firstDifferences": [],
+      "scenarioErrors": {},
+      "terminalMatch": true,
+      "rawMatch": true,
+      "rawDifference": null,
+      "comparedRenderFrameCount": 23,
+      "renderDifferences": 0,
+      "httpMatch": true,
+      "controlBoundaryDifferenceCount": 0,
+      "controlBoundaryFirstDifferences": [],
+      "evidence": "100x32-dark-fullscreen.json.gz"
+    }
+  ],
+  "match": true
+}

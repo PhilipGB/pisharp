@@ -1,5 +1,5 @@
 {
-  "date": "2026-10-08",
+  "date": "2026-10-09",
   "purpose": "Fresh current-Pi llama.cpp process and full-terminal parity evidence.",
   "pi": {
     "remote": "origin/main",
@@ -7,10 +7,10 @@
   },
   "pisharp": {
     "branch": "main",
-    "source_head": "a613fdd2a6ed56bd4bdbc584ab460d645737a53e",
-    "exact_head_ci_run": "37804640060",
+    "source_head": "ef8f364cea352de93de4bc7cc29a611b615dbe62",
+    "exact_head_ci_run": "37867953979",
     "exact_head_ci": "success",
-    "tests": "1181 passed, 0 failed, 0 skipped"
+    "tests": "1189 passed, 0 failed, 0 skipped"
   },
   "current_pi_focused_tests": {
     "llama_extension": "15 passed",
@@ -20,195 +20,227 @@
     "total": "41 passed"
   },
   "process_differentials": {
-    "classifier": {
+    "native_classifier": {
       "match": true,
-      "evidence": "fixtures/llama-router-classifier-2026-10-08-current.json"
+      "pi_source_head": "6fb2e7815167e6b19006fc526d1a5d0f5f998787",
+      "pisharp_source_head": "ef8f364cea352de93de4bc7cc29a611b615dbe62",
+      "evidence": "fixtures/llama-native-classifier-2026-10-09-ef8f364c.json"
+    },
+    "router_classifier_autoload": {
+      "match": true,
+      "pi_source_head": "6fb2e7815167e6b19006fc526d1a5d0f5f998787",
+      "pisharp_source_head": "ef8f364cea352de93de4bc7cc29a611b615dbe62",
+      "evidence": "fixtures/llama-router-classifier-2026-10-09-ef8f364c.json"
     },
     "context_refresh_offline_reload": {
       "match": true,
-      "evidence": "fixtures/llama-router-context-2026-10-08-current.json"
+      "pi_source_head": "6fb2e7815167e6b19006fc526d1a5d0f5f998787",
+      "pisharp_source_head": "ef8f364cea352de93de4bc7cc29a611b615dbe62",
+      "evidence": "fixtures/llama-router-context-2026-10-09-ef8f364c.json"
     }
   },
   "terminal": {
     "dimensions": "100x32 dark fullscreen",
     "cases": 10,
     "pi_self_calibration": {
+      "pi_source_head": "6fb2e7815167e6b19006fc526d1a5d0f5f998787",
       "terminal_state_matches": 10,
       "http_matches": 10,
-      "raw_byte_exact_matches": 8,
+      "raw_byte_exact_matches": 9,
       "raw_byte_schedule_variance": [
-        "llama-model-picker",
-        "llama-retry"
+        "llama-huggingface"
       ],
+      "control_boundary_differences": 1,
       "scenario_errors": 0,
-      "reports_directory": "fixtures/llama-terminal-current-pi-2026-10-08/calibration"
+      "reports_directory": "fixtures/llama-terminal-current-pi-2026-10-08/calibration-6fb2e781-2026-10-09-llama"
     },
     "pi_vs_pisharp": {
+      "pi_source_head": "6fb2e7815167e6b19006fc526d1a5d0f5f998787",
+      "pisharp_source_head": "ef8f364cea352de93de4bc7cc29a611b615dbe62",
       "exact_terminal_state_matches": 0,
       "http_matches": 10,
       "raw_byte_exact_matches": 0,
       "scenario_errors": 0,
-      "render_differences": 411780,
-      "captures_directory": "fixtures/llama-terminal-current-pi-2026-10-08/comparison",
-      "terminal_state_and_render_differences": 480660,
-      "control_boundary_differences": 7439
+      "render_differences": 383131,
+      "terminal_state_and_render_differences": 443815,
+      "control_boundary_differences": 6311,
+      "compared_render_frames": 177,
+      "captures_directory": "fixtures/llama-terminal-current-pi-2026-10-08/comparison-ef8f364cea-full",
+      "manager_named_checkpoints": {
+        "state_matches": 4,
+        "state_differences": {
+          "startup": 0,
+          "open-manager": 0,
+          "close-manager": 0,
+          "quit": 0
+        },
+        "loading_frame_differences": 0,
+        "capture": "fixtures/llama-terminal-current-pi-2026-10-08/comparison-ef8f364cea-full/llama-manager/100x32-dark-fullscreen.json.gz"
+      }
     },
     "fixtures": [
       {
-        "fixture": "llama-download-cancel",
-        "pi_head": "6fb2e7815167e6b19006fc526d1a5d0f5f998787",
-        "pisharp_head": "a613fdd2a6ed56bd4bdbc584ab460d645737a53e",
-        "terminal_state_match": false,
-        "http_match": true,
-        "raw_byte_match": false,
-        "state_differences": 57951,
-        "render_differences": 51312,
-        "control_boundary_differences": 857,
-        "compared_render_frames": 20,
-        "scenario_errors": {},
-        "report": "fixtures/llama-terminal-current-pi-2026-10-08/comparison/llama-download-cancel/report.json",
-        "capture": "fixtures/llama-terminal-current-pi-2026-10-08/comparison/llama-download-cancel/100x32-dark-fullscreen.json.gz"
-      },
-      {
-        "fixture": "llama-huggingface",
-        "pi_head": "6fb2e7815167e6b19006fc526d1a5d0f5f998787",
-        "pisharp_head": "a613fdd2a6ed56bd4bdbc584ab460d645737a53e",
-        "terminal_state_match": false,
-        "http_match": true,
-        "raw_byte_match": false,
-        "state_differences": 70270,
-        "render_differences": 62175,
-        "control_boundary_differences": 958,
-        "compared_render_frames": 24,
-        "scenario_errors": {},
-        "report": "fixtures/llama-terminal-current-pi-2026-10-08/comparison/llama-huggingface/report.json",
-        "capture": "fixtures/llama-terminal-current-pi-2026-10-08/comparison/llama-huggingface/100x32-dark-fullscreen.json.gz"
-      },
-      {
-        "fixture": "llama-huggingface-home-token-file",
-        "pi_head": "6fb2e7815167e6b19006fc526d1a5d0f5f998787",
-        "pisharp_head": "a613fdd2a6ed56bd4bdbc584ab460d645737a53e",
-        "terminal_state_match": false,
-        "http_match": true,
-        "raw_byte_match": false,
-        "state_differences": 67635,
-        "render_differences": 59792,
-        "control_boundary_differences": 950,
-        "compared_render_frames": 23,
-        "scenario_errors": {},
-        "report": "fixtures/llama-terminal-current-pi-2026-10-08/comparison/llama-huggingface-home-token-file/report.json",
-        "capture": "fixtures/llama-terminal-current-pi-2026-10-08/comparison/llama-huggingface-home-token-file/100x32-dark-fullscreen.json.gz"
-      },
-      {
-        "fixture": "llama-huggingface-token-file",
-        "pi_head": "6fb2e7815167e6b19006fc526d1a5d0f5f998787",
-        "pisharp_head": "a613fdd2a6ed56bd4bdbc584ab460d645737a53e",
-        "terminal_state_match": false,
-        "http_match": true,
-        "raw_byte_match": false,
-        "state_differences": 67635,
-        "render_differences": 59792,
-        "control_boundary_differences": 950,
-        "compared_render_frames": 23,
-        "scenario_errors": {},
-        "report": "fixtures/llama-terminal-current-pi-2026-10-08/comparison/llama-huggingface-token-file/report.json",
-        "capture": "fixtures/llama-terminal-current-pi-2026-10-08/comparison/llama-huggingface-token-file/100x32-dark-fullscreen.json.gz"
-      },
-      {
-        "fixture": "llama-load-cancel",
-        "pi_head": "6fb2e7815167e6b19006fc526d1a5d0f5f998787",
-        "pisharp_head": "a613fdd2a6ed56bd4bdbc584ab460d645737a53e",
-        "terminal_state_match": false,
-        "http_match": true,
-        "raw_byte_match": false,
-        "state_differences": 38264,
-        "render_differences": 36019,
-        "control_boundary_differences": 640,
-        "compared_render_frames": 16,
-        "scenario_errors": {},
-        "report": "fixtures/llama-terminal-current-pi-2026-10-08/comparison/llama-load-cancel/report.json",
-        "capture": "fixtures/llama-terminal-current-pi-2026-10-08/comparison/llama-load-cancel/100x32-dark-fullscreen.json.gz"
-      },
-      {
-        "fixture": "llama-load-replace-cancel",
-        "pi_head": "6fb2e7815167e6b19006fc526d1a5d0f5f998787",
-        "pisharp_head": "a613fdd2a6ed56bd4bdbc584ab460d645737a53e",
-        "terminal_state_match": false,
-        "http_match": true,
-        "raw_byte_match": false,
-        "state_differences": 41585,
-        "render_differences": 38535,
-        "control_boundary_differences": 659,
-        "compared_render_frames": 16,
-        "scenario_errors": {},
-        "report": "fixtures/llama-terminal-current-pi-2026-10-08/comparison/llama-load-replace-cancel/report.json",
-        "capture": "fixtures/llama-terminal-current-pi-2026-10-08/comparison/llama-load-replace-cancel/100x32-dark-fullscreen.json.gz"
-      },
-      {
         "fixture": "llama-login",
         "pi_head": "6fb2e7815167e6b19006fc526d1a5d0f5f998787",
-        "pisharp_head": "a613fdd2a6ed56bd4bdbc584ab460d645737a53e",
+        "pisharp_head": "ef8f364cea352de93de4bc7cc29a611b615dbe62",
         "terminal_state_match": false,
         "http_match": true,
         "raw_byte_match": false,
-        "state_differences": 40049,
-        "render_differences": 32333,
-        "control_boundary_differences": 814,
+        "state_differences": 6604,
+        "render_differences": 24243,
+        "control_boundary_differences": 631,
         "compared_render_frames": 20,
         "scenario_errors": {},
-        "report": "fixtures/llama-terminal-current-pi-2026-10-08/comparison/llama-login/report.json",
-        "capture": "fixtures/llama-terminal-current-pi-2026-10-08/comparison/llama-login/100x32-dark-fullscreen.json.gz"
+        "report": "fixtures/llama-terminal-current-pi-2026-10-08/comparison-ef8f364cea-full/llama-login/report.json",
+        "capture": "fixtures/llama-terminal-current-pi-2026-10-08/comparison-ef8f364cea-full/llama-login/100x32-dark-fullscreen.json.gz"
       },
       {
         "fixture": "llama-manager",
         "pi_head": "6fb2e7815167e6b19006fc526d1a5d0f5f998787",
-        "pisharp_head": "a613fdd2a6ed56bd4bdbc584ab460d645737a53e",
+        "pisharp_head": "ef8f364cea352de93de4bc7cc29a611b615dbe62",
         "terminal_state_match": false,
         "http_match": true,
         "raw_byte_match": false,
-        "state_differences": 12126,
-        "render_differences": 9886,
-        "control_boundary_differences": 379,
+        "state_differences": 0,
+        "render_differences": 14370,
+        "control_boundary_differences": 311,
         "compared_render_frames": 8,
         "scenario_errors": {},
-        "report": "fixtures/llama-terminal-current-pi-2026-10-08/comparison/llama-manager/report.json",
-        "capture": "fixtures/llama-terminal-current-pi-2026-10-08/comparison/llama-manager/100x32-dark-fullscreen.json.gz"
+        "report": "fixtures/llama-terminal-current-pi-2026-10-08/comparison-ef8f364cea-full/llama-manager/report.json",
+        "capture": "fixtures/llama-terminal-current-pi-2026-10-08/comparison-ef8f364cea-full/llama-manager/100x32-dark-fullscreen.json.gz"
+      },
+      {
+        "fixture": "llama-load-cancel",
+        "pi_head": "6fb2e7815167e6b19006fc526d1a5d0f5f998787",
+        "pisharp_head": "ef8f364cea352de93de4bc7cc29a611b615dbe62",
+        "terminal_state_match": false,
+        "http_match": true,
+        "raw_byte_match": false,
+        "state_differences": 0,
+        "render_differences": 34217,
+        "control_boundary_differences": 564,
+        "compared_render_frames": 15,
+        "scenario_errors": {},
+        "report": "fixtures/llama-terminal-current-pi-2026-10-08/comparison-ef8f364cea-full/llama-load-cancel/report.json",
+        "capture": "fixtures/llama-terminal-current-pi-2026-10-08/comparison-ef8f364cea-full/llama-load-cancel/100x32-dark-fullscreen.json.gz"
+      },
+      {
+        "fixture": "llama-load-replace-cancel",
+        "pi_head": "6fb2e7815167e6b19006fc526d1a5d0f5f998787",
+        "pisharp_head": "ef8f364cea352de93de4bc7cc29a611b615dbe62",
+        "terminal_state_match": false,
+        "http_match": true,
+        "raw_byte_match": false,
+        "state_differences": 802,
+        "render_differences": 39231,
+        "control_boundary_differences": 541,
+        "compared_render_frames": 16,
+        "scenario_errors": {},
+        "report": "fixtures/llama-terminal-current-pi-2026-10-08/comparison-ef8f364cea-full/llama-load-replace-cancel/report.json",
+        "capture": "fixtures/llama-terminal-current-pi-2026-10-08/comparison-ef8f364cea-full/llama-load-replace-cancel/100x32-dark-fullscreen.json.gz"
+      },
+      {
+        "fixture": "llama-download-cancel",
+        "pi_head": "6fb2e7815167e6b19006fc526d1a5d0f5f998787",
+        "pisharp_head": "ef8f364cea352de93de4bc7cc29a611b615dbe62",
+        "terminal_state_match": false,
+        "http_match": true,
+        "raw_byte_match": false,
+        "state_differences": 7262,
+        "render_differences": 47010,
+        "control_boundary_differences": 747,
+        "compared_render_frames": 20,
+        "scenario_errors": {},
+        "report": "fixtures/llama-terminal-current-pi-2026-10-08/comparison-ef8f364cea-full/llama-download-cancel/report.json",
+        "capture": "fixtures/llama-terminal-current-pi-2026-10-08/comparison-ef8f364cea-full/llama-download-cancel/100x32-dark-fullscreen.json.gz"
+      },
+      {
+        "fixture": "llama-huggingface",
+        "pi_head": "6fb2e7815167e6b19006fc526d1a5d0f5f998787",
+        "pisharp_head": "ef8f364cea352de93de4bc7cc29a611b615dbe62",
+        "terminal_state_match": false,
+        "http_match": true,
+        "raw_byte_match": false,
+        "state_differences": 8716,
+        "render_differences": 54804,
+        "control_boundary_differences": 823,
+        "compared_render_frames": 24,
+        "scenario_errors": {},
+        "report": "fixtures/llama-terminal-current-pi-2026-10-08/comparison-ef8f364cea-full/llama-huggingface/report.json",
+        "capture": "fixtures/llama-terminal-current-pi-2026-10-08/comparison-ef8f364cea-full/llama-huggingface/100x32-dark-fullscreen.json.gz"
+      },
+      {
+        "fixture": "llama-huggingface-token-file",
+        "pi_head": "6fb2e7815167e6b19006fc526d1a5d0f5f998787",
+        "pisharp_head": "ef8f364cea352de93de4bc7cc29a611b615dbe62",
+        "terminal_state_match": false,
+        "http_match": true,
+        "raw_byte_match": false,
+        "state_differences": 8446,
+        "render_differences": 53702,
+        "control_boundary_differences": 823,
+        "compared_render_frames": 23,
+        "scenario_errors": {},
+        "report": "fixtures/llama-terminal-current-pi-2026-10-08/comparison-ef8f364cea-full/llama-huggingface-token-file/report.json",
+        "capture": "fixtures/llama-terminal-current-pi-2026-10-08/comparison-ef8f364cea-full/llama-huggingface-token-file/100x32-dark-fullscreen.json.gz"
+      },
+      {
+        "fixture": "llama-huggingface-home-token-file",
+        "pi_head": "6fb2e7815167e6b19006fc526d1a5d0f5f998787",
+        "pisharp_head": "ef8f364cea352de93de4bc7cc29a611b615dbe62",
+        "terminal_state_match": false,
+        "http_match": true,
+        "raw_byte_match": false,
+        "state_differences": 8446,
+        "render_differences": 53696,
+        "control_boundary_differences": 802,
+        "compared_render_frames": 23,
+        "scenario_errors": {},
+        "report": "fixtures/llama-terminal-current-pi-2026-10-08/comparison-ef8f364cea-full/llama-huggingface-home-token-file/report.json",
+        "capture": "fixtures/llama-terminal-current-pi-2026-10-08/comparison-ef8f364cea-full/llama-huggingface-home-token-file/100x32-dark-fullscreen.json.gz"
       },
       {
         "fixture": "llama-model-picker",
         "pi_head": "6fb2e7815167e6b19006fc526d1a5d0f5f998787",
-        "pisharp_head": "a613fdd2a6ed56bd4bdbc584ab460d645737a53e",
+        "pisharp_head": "ef8f364cea352de93de4bc7cc29a611b615dbe62",
         "terminal_state_match": false,
         "http_match": true,
         "raw_byte_match": false,
-        "state_differences": 66396,
-        "render_differences": 48491,
-        "control_boundary_differences": 794,
+        "state_differences": 19000,
+        "render_differences": 45694,
+        "control_boundary_differences": 684,
         "compared_render_frames": 19,
         "scenario_errors": {},
-        "report": "fixtures/llama-terminal-current-pi-2026-10-08/comparison/llama-model-picker/report.json",
-        "capture": "fixtures/llama-terminal-current-pi-2026-10-08/comparison/llama-model-picker/100x32-dark-fullscreen.json.gz"
+        "report": "fixtures/llama-terminal-current-pi-2026-10-08/comparison-ef8f364cea-full/llama-model-picker/report.json",
+        "capture": "fixtures/llama-terminal-current-pi-2026-10-08/comparison-ef8f364cea-full/llama-model-picker/100x32-dark-fullscreen.json.gz"
       },
       {
         "fixture": "llama-retry",
         "pi_head": "6fb2e7815167e6b19006fc526d1a5d0f5f998787",
-        "pisharp_head": "a613fdd2a6ed56bd4bdbc584ab460d645737a53e",
+        "pisharp_head": "ef8f364cea352de93de4bc7cc29a611b615dbe62",
         "terminal_state_match": false,
         "http_match": true,
         "raw_byte_match": false,
-        "state_differences": 18749,
-        "render_differences": 13445,
-        "control_boundary_differences": 438,
+        "state_differences": 1408,
+        "render_differences": 16164,
+        "control_boundary_differences": 385,
         "compared_render_frames": 9,
         "scenario_errors": {},
-        "report": "fixtures/llama-terminal-current-pi-2026-10-08/comparison/llama-retry/report.json",
-        "capture": "fixtures/llama-terminal-current-pi-2026-10-08/comparison/llama-retry/100x32-dark-fullscreen.json.gz"
+        "report": "fixtures/llama-terminal-current-pi-2026-10-08/comparison-ef8f364cea-full/llama-retry/report.json",
+        "capture": "fixtures/llama-terminal-current-pi-2026-10-08/comparison-ef8f364cea-full/llama-retry/100x32-dark-fullscreen.json.gz"
       }
     ]
   },
   "open_gaps": [
-    "All ten paired router HTTP traces match, but exact synchronized terminal state/render comparison remains open.",
-    "Remaining terminal differences include retained buffer/history state, row styles, render scheduling/frame count, cursor/keypad mode state and control output.",
-    "Complete remaining current-Pi llama.cpp lifecycle and Hugging Face gated/download/quantization behavior checks before closing this family."
-  ]
+    "All ten current-Pi paired flows have exact router HTTP traces and zero scenario errors, but full synchronized terminal-state matching remains 0/10.",
+    "The four named /llama manager checkpoints and the loading frame match exactly; intermediate repaint sequence, command-entry frames, terminal modes, styles, cursor/control output, and screen restoration remain open.",
+    "Finish stored/environment/default URL and key precedence, authentication, reconnect/retry and cancellation combinations, loaded/sleeping/unloaded/autoload catalog behavior, model properties and /model integration, context persistence/reload, and complete Hugging Face gated/search/quantization/download/progress behavior.",
+    "Keep the llama router capabilities and native classifier evidence open until every listed product behavior and exact terminal requirement passes."
+  ],
+  "local_validation": {
+    "focused": "7 passed, 0 failed, 0 skipped (llama loading geometry and terminal compositor)",
+    "format": "dotnet format PiSharp.slnx --verify-no-changes passed",
+    "warnings_as_errors_build": "passed, 0 warnings, 0 errors",
+    "full_suite": "1189 passed, 0 failed, 0 skipped"
+  }
 }

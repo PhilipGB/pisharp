@@ -1,12 +1,12 @@
 # PiSharp capability parity
 
-## Current checkpoint — 2026-10-08
+## Current checkpoint — 2026-10-09
 
-Pi `origin/main` is `ce950d78f424dcaf9f5d6a03ce80ab141130eb1d`; the audited PiSharp product source at the checkpoint was `4503ee6719f345e7c2ef9ccf0839f326b1b61373`. Exact-head Linux CI [37756825255](https://github.com/PhilipGB/pisharp/actions/runs/37756825255) passes restore, format verification, warnings-as-errors build and 1179/1179 tests with zero skips. The only unrelated pre-existing worktree item is the user-owned untracked `test.pdf`; the audit and current-evidence files listed here are this task’s changes.
+Pi `origin/main` is `6fb2e7815167e6b19006fc526d1a5d0f5f998787`; PiSharp `origin/main` is `ef8f364cea352de93de4bc7cc29a611b615dbe62`. Exact-head Linux CI [37867953979](https://github.com/PhilipGB/pisharp/actions/runs/37867953979) passes restore, format verification, warnings-as-errors build, and 1189/1189 tests with zero skips. `test.pdf` and the existing Hugging Face calibration file remain user-owned and untouched.
 
-The last full Pi audit pin is `955cc6665ee3986c6a033db52200779310d10dfd` (full audit head `c10bfb0d79dbbc998539a0a3e6c6a736a4e6db06`). The 135 commits since that head are classified in [the 2026-10-08 audit](docs/parity/fixtures/upstream-delta-audit-2026-10-08.md); five new required capabilities are in the ledger. There are now 194 required capabilities, and final parity remains incomplete.
+The last full Pi audit pin is `955cc6665ee3986c6a033db52200779310d10dfd` (full audit head `c10bfb0d79dbbc998539a0a3e6c6a736a4e6db06`). The incremental audit now covers 136 commits after that head through current Pi `6fb2e781`; all 194 upstream commits are classified in [the refreshed audit](docs/parity/fixtures/upstream-delta-audit-2026-10-08.md). The ledger still has 194 required capabilities, and final parity remains incomplete.
 
-The active family is llama.cpp. Current Pi/PiSharp router classifier, context reload, and native classifier process comparisons match. Five of ten same-Pi terminal calibrations still differ: login, model picker, replacement-load cancellation, retry, and Hugging Face token-file progress. Full terminal screens/control traces remain exact and unnormalized; resolve these residuals before moving to another family. Official MCP conformance remains not started.
+The active family remains llama.cpp. Fresh current-Pi router classifier, context refresh/offline-reload, and native classifier process comparisons match at Pi `6fb2e781` and PiSharp `ef8f364c`. Ten paired terminal flows have exact HTTP traces and zero scenario errors, but exact full terminal state remains 0/10 (443,815 state/render differences, 383,131 synchronized render differences, and 6,311 control-boundary diagnostics). All four `/llama` manager named checkpoints match; intermediate rendering and terminal mode/control output remain open. See [current llama.cpp evidence](docs/parity/fixtures/llama-terminal-current-pi-2026-10-08.md). Continue the remaining llama lifecycle and Hugging Face cases before moving to another family. Official MCP conformance remains not started.
 
 ## Historical progress and evidence
 
@@ -72,13 +72,11 @@ The detailed entries in this section preserve earlier source/test evidence only;
 
 ## Current priority
 
-The current priority is the open llama.cpp family at Pi `ce950d78` and PiSharp `4503ee67`. Same-Pi terminal calibration still fails five flows and full terminal differential evidence is open. The broad source audit is refreshed through current Pi `ce950d78`; 194 required ledger capabilities remain, and official MCP conformance has not started.
+The open llama.cpp family remains first. Current Pi is `6fb2e7815167e6b19006fc526d1a5d0f5f998787`; PiSharp is `ef8f364cea352de93de4bc7cc29a611b615dbe62`, with exact-head CI `37867953979` green. The broad audit cursor is current through 6fb2e781 after classifying its final packaging-only commit. All 194 required ledger capabilities remain open or in progress as recorded; official MCP conformance has not started.
 
 ## Exact next action
 
-Continue the llama.cpp family at Pi `ce950d78f424dcaf9f5d6a03ce80ab141130eb1d` and PiSharp source `4503ee6719f345e7c2ef9ccf0839f326b1b61373`. Resolve the five same-Pi terminal calibration failures and the associated screen/control-trace and download-progress differences without increasing settling delays or normalizing compared output. Close the four llama-router ledger capabilities only after current-Pi HTTP/process and exact terminal evidence pass. Then continue automatically with the next highest-leverage unresolved required capability. Full parity and official MCP conformance remain open.
-
-The requested starting commit `5deac5275f705f69224c1812966dcffc07a692d3` is an ancestor, not current `origin/main`. Its GitHub CI run `37652404512` stopped at format verification because of whitespace in `LlamaRouterCatalog.cs`; `8c23342368` fixed that. A local probe also found the pre-existing theme process fixture still used the removed `muted` key; `3aff5ebe9d` changed it to `dim`. Current `origin/main` exact-head CI passes all 1179 tests with zero skips.
+Resolve the remaining llama.cpp terminal transition and control/mode differences without normalizing output, then finish the current-Pi login/configuration, manager, download, model projection, classifier and lifecycle differentials. The loading panel and all four manager named checkpoints match exactly, but the ten-flow synchronized render series remains 0/10 exact (443,815 state/render differences). Keep the llama ledger capabilities open until full acceptance passes, then continue automatically into the next unresolved capability family.
 
 ## Architecture risks to reconcile before completion
 

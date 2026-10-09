@@ -1,0 +1,383 @@
+{
+  "piSha": "6fb2e7815167e6b19006fc526d1a5d0f5f998787",
+  "pisharpSha": "ef8f364cea352de93de4bc7cc29a611b615dbe62",
+  "fixture": "llama-huggingface-home-token-file",
+  "calibration": false,
+  "concurrentHttpGroups": [],
+  "normalization": "Named checkpoints and every synchronized render state are compared exactly, collapsing only adjacent identical states and ignoring cursor coordinates only while that cursor is hidden. Raw bytes remain captured and exact-match status is reported separately. HTTP identity/count/order remain exact except within declared concurrent batches, where arrival order is unspecified. Per-checkpoint control buckets are diagnostic.",
+  "cases": [
+    {
+      "id": "100x32-dark-fullscreen",
+      "match": false,
+      "differences": 62142,
+      "firstDifferences": [
+        {
+          "path": "$.frames[2].state.buffers.alternate.lines[20].cells[0].foreground.value",
+          "pi": 10983639,
+          "pisharp": 6269132
+        },
+        {
+          "path": "$.frames[2].state.buffers.alternate.lines[20].cells[1].foreground.value",
+          "pi": 10983639,
+          "pisharp": 6269132
+        },
+        {
+          "path": "$.frames[2].state.buffers.alternate.lines[20].cells[2].foreground.value",
+          "pi": 10983639,
+          "pisharp": 6269132
+        },
+        {
+          "path": "$.frames[2].state.buffers.alternate.lines[20].cells[3].foreground.value",
+          "pi": 10983639,
+          "pisharp": 6269132
+        },
+        {
+          "path": "$.frames[2].state.buffers.alternate.lines[20].cells[4].foreground.value",
+          "pi": 10983639,
+          "pisharp": 6269132
+        },
+        {
+          "path": "$.frames[2].state.buffers.alternate.lines[20].cells[5].foreground.value",
+          "pi": 10983639,
+          "pisharp": 6269132
+        },
+        {
+          "path": "$.frames[2].state.buffers.alternate.lines[20].cells[6].foreground.value",
+          "pi": 10983639,
+          "pisharp": 6269132
+        },
+        {
+          "path": "$.frames[2].state.buffers.alternate.lines[20].cells[7].foreground.value",
+          "pi": 10983639,
+          "pisharp": 6269132
+        },
+        {
+          "path": "$.frames[2].state.buffers.alternate.lines[20].cells[8].foreground.value",
+          "pi": 10983639,
+          "pisharp": 6269132
+        },
+        {
+          "path": "$.frames[2].state.buffers.alternate.lines[20].cells[9].foreground.value",
+          "pi": 10983639,
+          "pisharp": 6269132
+        },
+        {
+          "path": "$.frames[2].state.buffers.alternate.lines[20].cells[10].foreground.value",
+          "pi": 10983639,
+          "pisharp": 6269132
+        },
+        {
+          "path": "$.frames[2].state.buffers.alternate.lines[20].cells[11].foreground.value",
+          "pi": 10983639,
+          "pisharp": 6269132
+        },
+        {
+          "path": "$.frames[2].state.buffers.alternate.lines[20].cells[12].foreground.value",
+          "pi": 10983639,
+          "pisharp": 6269132
+        },
+        {
+          "path": "$.frames[2].state.buffers.alternate.lines[20].cells[13].foreground.value",
+          "pi": 10983639,
+          "pisharp": 6269132
+        },
+        {
+          "path": "$.frames[2].state.buffers.alternate.lines[20].cells[14].foreground.value",
+          "pi": 10983639,
+          "pisharp": 6269132
+        },
+        {
+          "path": "$.frames[2].state.buffers.alternate.lines[20].cells[15].foreground.value",
+          "pi": 10983639,
+          "pisharp": 6269132
+        },
+        {
+          "path": "$.frames[2].state.buffers.alternate.lines[20].cells[16].foreground.value",
+          "pi": 10983639,
+          "pisharp": 6269132
+        },
+        {
+          "path": "$.frames[2].state.buffers.alternate.lines[20].cells[17].foreground.value",
+          "pi": 10983639,
+          "pisharp": 6269132
+        },
+        {
+          "path": "$.frames[2].state.buffers.alternate.lines[20].cells[18].foreground.value",
+          "pi": 10983639,
+          "pisharp": 6269132
+        },
+        {
+          "path": "$.frames[2].state.buffers.alternate.lines[20].cells[19].foreground.value",
+          "pi": 10983639,
+          "pisharp": 6269132
+        },
+        {
+          "path": "$.frames[2].state.buffers.alternate.lines[20].cells[20].foreground.value",
+          "pi": 10983639,
+          "pisharp": 6269132
+        },
+        {
+          "path": "$.frames[2].state.buffers.alternate.lines[20].cells[21].foreground.value",
+          "pi": 10983639,
+          "pisharp": 6269132
+        },
+        {
+          "path": "$.frames[2].state.buffers.alternate.lines[20].cells[22].foreground.value",
+          "pi": 10983639,
+          "pisharp": 6269132
+        },
+        {
+          "path": "$.frames[2].state.buffers.alternate.lines[20].cells[23].foreground.value",
+          "pi": 10983639,
+          "pisharp": 6269132
+        },
+        {
+          "path": "$.frames[2].state.buffers.alternate.lines[20].cells[24].foreground.value",
+          "pi": 10983639,
+          "pisharp": 6269132
+        },
+        {
+          "path": "$.frames[2].state.buffers.alternate.lines[20].cells[25].foreground.value",
+          "pi": 10983639,
+          "pisharp": 6269132
+        },
+        {
+          "path": "$.frames[2].state.buffers.alternate.lines[20].cells[26].foreground.value",
+          "pi": 10983639,
+          "pisharp": 6269132
+        },
+        {
+          "path": "$.frames[2].state.buffers.alternate.lines[20].cells[27].foreground.value",
+          "pi": 10983639,
+          "pisharp": 6269132
+        },
+        {
+          "path": "$.frames[2].state.buffers.alternate.lines[20].cells[28].foreground.value",
+          "pi": 10983639,
+          "pisharp": 6269132
+        },
+        {
+          "path": "$.frames[2].state.buffers.alternate.lines[20].cells[29].foreground.value",
+          "pi": 10983639,
+          "pisharp": 6269132
+        },
+        {
+          "path": "$.frames[2].state.buffers.alternate.lines[20].cells[30].foreground.value",
+          "pi": 10983639,
+          "pisharp": 6269132
+        },
+        {
+          "path": "$.frames[2].state.buffers.alternate.lines[20].cells[31].foreground.value",
+          "pi": 10983639,
+          "pisharp": 6269132
+        },
+        {
+          "path": "$.frames[2].state.buffers.alternate.lines[20].cells[32].foreground.value",
+          "pi": 10983639,
+          "pisharp": 6269132
+        },
+        {
+          "path": "$.frames[2].state.buffers.alternate.lines[20].cells[33].foreground.value",
+          "pi": 10983639,
+          "pisharp": 6269132
+        },
+        {
+          "path": "$.frames[2].state.buffers.alternate.lines[20].cells[34].foreground.value",
+          "pi": 10983639,
+          "pisharp": 6269132
+        },
+        {
+          "path": "$.frames[2].state.buffers.alternate.lines[20].cells[35].foreground.value",
+          "pi": 10983639,
+          "pisharp": 6269132
+        },
+        {
+          "path": "$.frames[2].state.buffers.alternate.lines[20].cells[36].foreground.value",
+          "pi": 10983639,
+          "pisharp": 6269132
+        },
+        {
+          "path": "$.frames[2].state.buffers.alternate.lines[20].cells[37].foreground.value",
+          "pi": 10983639,
+          "pisharp": 6269132
+        },
+        {
+          "path": "$.frames[2].state.buffers.alternate.lines[20].cells[38].foreground.value",
+          "pi": 10983639,
+          "pisharp": 6269132
+        },
+        {
+          "path": "$.frames[2].state.buffers.alternate.lines[20].cells[39].foreground.value",
+          "pi": 10983639,
+          "pisharp": 6269132
+        },
+        {
+          "path": "$.frames[2].state.buffers.alternate.lines[20].cells[40].foreground.value",
+          "pi": 10983639,
+          "pisharp": 6269132
+        },
+        {
+          "path": "$.frames[2].state.buffers.alternate.lines[20].cells[41].foreground.value",
+          "pi": 10983639,
+          "pisharp": 6269132
+        },
+        {
+          "path": "$.frames[2].state.buffers.alternate.lines[20].cells[42].foreground.value",
+          "pi": 10983639,
+          "pisharp": 6269132
+        },
+        {
+          "path": "$.frames[2].state.buffers.alternate.lines[20].cells[43].foreground.value",
+          "pi": 10983639,
+          "pisharp": 6269132
+        },
+        {
+          "path": "$.frames[2].state.buffers.alternate.lines[20].cells[44].foreground.value",
+          "pi": 10983639,
+          "pisharp": 6269132
+        },
+        {
+          "path": "$.frames[2].state.buffers.alternate.lines[20].cells[45].foreground.value",
+          "pi": 10983639,
+          "pisharp": 6269132
+        },
+        {
+          "path": "$.frames[2].state.buffers.alternate.lines[20].cells[46].foreground.value",
+          "pi": 10983639,
+          "pisharp": 6269132
+        },
+        {
+          "path": "$.frames[2].state.buffers.alternate.lines[20].cells[47].foreground.value",
+          "pi": 10983639,
+          "pisharp": 6269132
+        },
+        {
+          "path": "$.frames[2].state.buffers.alternate.lines[20].cells[48].foreground.value",
+          "pi": 10983639,
+          "pisharp": 6269132
+        },
+        {
+          "path": "$.frames[2].state.buffers.alternate.lines[20].cells[49].foreground.value",
+          "pi": 10983639,
+          "pisharp": 6269132
+        }
+      ],
+      "scenarioErrors": {},
+      "terminalMatch": false,
+      "rawMatch": false,
+      "rawDifference": {
+        "piBytes": 18586,
+        "pisharpBytes": 29912,
+        "firstDifferingByte": 2
+      },
+      "comparedRenderFrameCount": 23,
+      "renderDifferences": 53696,
+      "httpMatch": true,
+      "controlBoundaryDifferenceCount": 802,
+      "controlBoundaryFirstDifferences": [
+        {
+          "path": "$.controlBoundaries[0].length",
+          "pi": 189,
+          "pisharp": 145
+        },
+        {
+          "path": "$.controlBoundaries[0][0]",
+          "pi": "1b5b3f3130343968",
+          "pisharp": "1b5b3e3775"
+        },
+        {
+          "path": "$.controlBoundaries[0][1]",
+          "pi": "1b5b3f376c",
+          "pisharp": "1b5b3f75"
+        },
+        {
+          "path": "$.controlBoundaries[0][2]",
+          "pi": "1b5b3f3130303068",
+          "pisharp": "1b5b3f3130343968"
+        },
+        {
+          "path": "$.controlBoundaries[0][3]",
+          "pi": "1b5b3f3130303268",
+          "pisharp": "1b5b3f376c"
+        },
+        {
+          "path": "$.controlBoundaries[0][4]",
+          "pi": "1b5b3f3130303368",
+          "pisharp": "1b5b3f32356c"
+        },
+        {
+          "path": "$.controlBoundaries[0][5]",
+          "pi": "1b5b3f3130303468",
+          "pisharp": "1b5b3f3130303068"
+        },
+        {
+          "path": "$.controlBoundaries[0][6]",
+          "pi": "1b5b3f3130303668",
+          "pisharp": "1b5b3f3130303268"
+        },
+        {
+          "path": "$.controlBoundaries[0][7]",
+          "pi": "1b5b324a",
+          "pisharp": "1b5b3f3130303368"
+        },
+        {
+          "path": "$.controlBoundaries[0][8]",
+          "pi": "1b5b48",
+          "pisharp": "1b5b3f3130303468"
+        },
+        {
+          "path": "$.controlBoundaries[0][9]",
+          "pi": "1b5b3f32356c",
+          "pisharp": "1b5b3f3130303668"
+        },
+        {
+          "path": "$.controlBoundaries[0][10]",
+          "pi": "1b5b3f3230303468",
+          "pisharp": "1b5d31303b3f07"
+        },
+        {
+          "path": "$.controlBoundaries[0][11]",
+          "pi": "1b5b3e3775",
+          "pisharp": "1b5d31313b3f07"
+        },
+        {
+          "path": "$.controlBoundaries[0][12]",
+          "pi": "1b5b3f75",
+          "pisharp": "1b5d343b303b3f07"
+        },
+        {
+          "path": "$.controlBoundaries[0][13]",
+          "pi": "1b5d373530313b3f1b5c",
+          "pisharp": "1b5d343b313b3f07"
+        },
+        {
+          "path": "$.controlBoundaries[0][14]",
+          "pi": "1b5b63",
+          "pisharp": "1b5d343b323b3f07"
+        },
+        {
+          "path": "$.controlBoundaries[0][15]",
+          "pi": "1b5b3f32356c",
+          "pisharp": "1b5d343b333b3f07"
+        },
+        {
+          "path": "$.controlBoundaries[0][16]",
+          "pi": "1b5d31303b3f07",
+          "pisharp": "1b5d343b343b3f07"
+        },
+        {
+          "path": "$.controlBoundaries[0][17]",
+          "pi": "1b5d31313b3f07",
+          "pisharp": "1b5d343b353b3f07"
+        },
+        {
+          "path": "$.controlBoundaries[0][18]",
+          "pi": "1b5d343b303b3f07",
+          "pisharp": "1b5d343b363b3f07"
+        }
+      ],
+      "evidence": "100x32-dark-fullscreen.json.gz"
+    }
+  ],
+  "match": false
+}

@@ -1,16 +1,14 @@
 # Continuation — PiSharp capability parity
 
-## Current checkpoint — 2026-10-08
+## Current checkpoint — 2026-10-09
 
-Fresh fetch confirms Pi `origin/main` at `ce950d78f424dcaf9f5d6a03ce80ab141130eb1d`; the audited PiSharp product source at this checkpoint is `4503ee6719f345e7c2ef9ccf0839f326b1b61373`. Exact-head Linux CI [37756825255](https://github.com/PhilipGB/pisharp/actions/runs/37756825255) passes restore, format verification, warnings-as-errors build, and 1179/1179 tests with zero skips. The only unrelated pre-existing worktree item is the user-owned untracked `test.pdf`; the audit and current-evidence files listed here are this task’s changes.
+Fresh fetch confirms Pi `origin/main` at `6fb2e7815167e6b19006fc526d1a5d0f5f998787` and PiSharp `origin/main` at `ef8f364cea352de93de4bc7cc29a611b615dbe62`. Exact-head Linux CI [37867953979](https://github.com/PhilipGB/pisharp/actions/runs/37867953979) passes restore, format verification, warnings-as-errors build and 1,189/1,189 tests with zero skips. The terminal harness passes 24/24 Node tests and 18/18 Python tests. User-owned `test.pdf` and Hugging Face `calibration.json` remain untouched.
 
-The last full Pi audit pin is `955cc6665ee3986c6a033db52200779310d10dfd`, ending at `c10bfb0d79dbbc998539a0a3e6c6a736a4e6db06`. The 135 newer commits through `ce950d78` are classified in [the current audit](parity/fixtures/upstream-delta-audit-2026-10-08.md); the ledger now has 194 required capabilities. The active family remains llama.cpp: current-Pi router/classifier/context process comparisons match, but five of ten same-Pi terminal calibrations still fail. The remaining captures cover login, model picker, replacement-load cancellation, retry, and Hugging Face token-file progress. No output is normalized. Full parity and official MCP conformance remain open.
+The active family is llama.cpp. Ten paired terminal flows complete with exact HTTP traces and zero scenario errors; exact full terminal state remains 0/10 (443,815 state/render differences, 383,131 synchronized render differences, and 6,311 control-boundary diagnostics). All four `/llama` manager named checkpoints match exactly, including the loading frame, while intermediate renders and terminal mode/control output still differ. Current-Pi native classifier, router classifier and context refresh/offline-reload process comparisons match. See [current llama.cpp evidence](parity/fixtures/llama-terminal-current-pi-2026-10-08.md) and its [machine manifest](parity/fixtures/llama-terminal-current-pi-2026-10-08/evidence.json).
 
-The requested starting commit `5deac5275f705f69224c1812966dcffc07a692d3` is an ancestor, not current `origin/main`. Its GitHub CI run `37652404512` failed at format verification for whitespace in `LlamaRouterCatalog.cs`; `8c23342368` fixed that. A local probe also exposed a stale theme test fixture using the removed `muted` key; `3aff5ebe9d` changed it to `dim`. Current-head CI passes all tests with zero skips.
+The incremental source audit now reaches Pi `6fb2e7815167e6b19006fc526d1a5d0f5f998787`: 136 commits after `c10bfb0d`, plus the earlier 58, for 194 classified commits. The final commit in this range only updates repository package-artifact tooling for npm 12. The ledger tracks 194 required capabilities; overall parity and official MCP conformance remain open.
 
-TODO.md is the concise implementation handoff. The feature matrix tracks scope, the detailed inventory records interfaces, and `execution-ledger.json` holds per-capability evidence. Sections below this checkpoint preserve earlier findings as historical records; the execution ledger and this checkpoint identify current source and next work.
-
-`TODO.md` is the concise implementation handoff. The feature matrix tracks scope, the detailed inventory records interfaces, and `execution-ledger.json` holds per-capability evidence. Normal CLI package-resource workflows and user-reachable visual interactions are in scope.
+TODO.md is the concise implementation handoff. The feature matrix tracks scope, the detailed inventory records interfaces, and `execution-ledger.json` holds per-capability evidence. Normal CLI package-resource workflows and user-reachable visual interactions are in scope.
 
 ## Historical checkpoint — 2026-10-02
 

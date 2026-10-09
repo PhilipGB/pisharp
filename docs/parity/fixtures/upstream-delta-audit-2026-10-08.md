@@ -1,8 +1,8 @@
-# Incremental current-Pi source audit — 2026-10-08
+# Incremental current-Pi source audit — 2026-10-08, refreshed 2026-10-09
 
-Pi `main` was freshly fetched at `ce950d78f424dcaf9f5d6a03ce80ab141130eb1d`. This audit covers the 135 commits after the previous full audit head `c10bfb0d79dbbc998539a0a3e6c6a736a4e6db06` through that current head. The last full audit began at `955cc6665ee3986c6a033db52200779310d10dfd` and classified the earlier 58 commits in [the 2026-10-01 audit](upstream-delta-audit-2026-10-01.md); together, the records cover 193 commits from that source pin.
+Pi `main` was freshly fetched at `6fb2e7815167e6b19006fc526d1a5d0f5f998787`. This audit covers the 136 commits after the previous full audit head `c10bfb0d79dbbc998539a0a3e6c6a736a4e6db06` through that current head. The last full audit began at `955cc6665ee3986c6a033db52200779310d10dfd` and classified the earlier 58 commits in [the 2026-10-01 audit](upstream-delta-audit-2026-10-01.md); together, the records cover 194 commits from that source pin.
 
-At the audit snapshot, PiSharp `origin/main` was `4503ee6719f345e7c2ef9ccf0839f326b1b61373`. Exact-head Linux CI [37756825255](https://github.com/PhilipGB/pisharp/actions/runs/37756825255) passes restore, format verification, warnings-as-errors build, and 1179/1179 tests with zero skips. The only unrelated worktree item is the user-owned untracked `test.pdf`.
+At the original `ce950d78` table snapshot, PiSharp was `4503ee6719f345e7c2ef9ccf0839f326b1b61373`; that historical CI result is not current validation. The current PiSharp source and exact-head CI are recorded in the 2026-10-09 refresh below.
 
 These classifications track whether a commit changes normal coding-agent behavior and whether that behavior is proved against PiSharp. `NEEDS_WORK` means its contract still needs current-source evidence in the mapped ledger capability; it does not claim that every part of the implementation is absent. Documentation-only changes were checked for new product contracts and mapped to the source commit that introduced them.
 
@@ -16,11 +16,17 @@ These classifications track whether a commit changes normal coding-agent behavio
 
 ## Current-source evidence
 
-- Current Pi llama classifier source changed in `f6127a1b` and shared classifier protocols changed in `ce8972a0`; focused current-Pi extension/classifier suites pass 16/16 and 67/67 after rebuilding `packages/ai`. The current Pi TUI suite passes.
+- Current Pi llama classifier source changed in `f6127a1b` and shared classifier protocols changed in `ce8972a0`; the llama extension, native classifier, classifier catalog and runtime-classifier suites pass 15/15, 15/15, 10/10 and 1/1 at current Pi `6fb2e781`.
 
-- Native llama classifier output matches in [the current differential](llama-current-pi-2026-10-08/llama-classifier.json). Router classifier/autoload and context/offline-reload comparisons match at the exact Pi/PiSharp heads: [router classifier](llama-current-pi-2026-10-08/router-classifier.json), [router context](llama-current-pi-2026-10-08/router-context.json).
+- Native classifier, router classifier/autoload and context refresh/offline-reload process comparisons match at Pi `6fb2e781` / PiSharp `ef8f364c`: [native classifier](llama-native-classifier-2026-10-09-ef8f364c.json), [router classifier](llama-router-classifier-2026-10-09-ef8f364c.json), [context cache](llama-router-context-2026-10-09-ef8f364c.json).
 
-- All ten current llama terminal scenarios complete without scenario errors, but same-Pi calibration matches five and fails five. Token-file HF progress, login, model picker, replacement-load cancellation, and retry remain different. Four expose synchronized-output trace events crossing adjacent checkpoints; token-file HF also has a progress-state race. Full-screen and control-trace differences remain unnormalized and open.
+- Ten paired llama terminal flows at Pi `6fb2e781` / PiSharp `ef8f364c` complete without scenario errors and have exact HTTP traces. Full exact terminal state remains 0/10 (443,815 state/render differences, 383,131 synchronized-render differences and 6,311 control-boundary diagnostics). The four named `/llama` manager checkpoints match, including the loading view; intermediate render transitions, terminal modes, styles and controls remain open. Full captures are under [the current comparison directory](llama-terminal-current-pi-2026-10-08/comparison-ef8f364cea-full/), with per-flow summaries in the [machine manifest](llama-terminal-current-pi-2026-10-08/evidence.json).
+
+## 2026-10-09 current-head refresh
+
+The only commit after `ce950d78` is `6fb2e7815167e6b19006fc526d1a5d0f5f998787` (`fix: support npm 12 pack JSON output`). It changes `scripts/package-artifacts.mjs` and its test so repository artifact production accepts npm 12's package-keyed JSON output. These are distribution/test scripts; they do not change the normal coding-agent runtime or its package/resource commands, so the commit is `OUT_OF_SCOPE`.
+
+At this refresh PiSharp `origin/main` is `ef8f364cea352de93de4bc7cc29a611b615dbe62`; exact-head Linux CI [37867953979](https://github.com/PhilipGB/pisharp/actions/runs/37867953979) passes restore, format, warnings-as-errors build, and 1,189/1,189 tests with zero skips. The audit now covers 194 upstream commits: 65 `OUT_OF_SCOPE`, 36 `NO_BEHAVIOR_CHANGE`, 86 `NEEDS_WORK`, and 7 `MATCHED`. The fresh llama process and terminal evidence is pinned to these exact heads; broad parity and a fresh final audit remain open.
 
 ## Commit classifications
 
@@ -161,9 +167,10 @@ These classifications track whether a commit changes normal coding-agent behavio
 | `89e12ccd4a5eb587bfa3f4a823baa7cad1549735` `chore: approve contributors from issue #10627` | `OUT_OF_SCOPE` | Repository CI/release/security/issue administration; no normal coding-agent runtime behavior. | — |
 | `7933a0e2866a5b1c73c76aeb016de26bbc3b1357` `feat: assign owners and reopen issues when mcp, codemode, or durable labels are applied` | `OUT_OF_SCOPE` | Repository CI/release/security/issue administration; no normal coding-agent runtime behavior. | — |
 | `ce950d78f424dcaf9f5d6a03ce80ab141130eb1d` `fix(ai): use models.dev metadata for Claude 5.5 models` | `NEEDS_WORK` | Normal-product contract changed in `packages/ai/scripts/generate-models.ts`; current exact-pair acceptance remains open. | `feature-models-selection-catalogs-and-credentials` |
+| `6fb2e7815167e6b19006fc526d1a5d0f5f998787` `fix: support npm 12 pack JSON output (#10680)` | `OUT_OF_SCOPE` | Repository package-artifact tooling accepts npm 12's package-keyed `npm pack --json` output; this affects build/distribution scripts, not the normal coding-agent runtime or its package/resource commands. | — |
 
 ## Ledger additions from this audit
 
 Five new required records capture deltas absent from the prior ledger: `cli-application-install-update`, `provider-api-azure-foundry-chat-completions`, `provider-api-mistral-conversations`, `provider-thinking-level-sampling`, and `feature-config-schemas-publication`. The full open set remains in [the execution ledger](../execution-ledger.json); these additions do not close or narrow existing requirements.
 
-The active family remains llama.cpp. Resolve terminal capture and progress mismatches at Pi `ce950d78` and PiSharp `4503ee67`, close the four llama-router tasks only with complete process and terminal evidence, then continue the next highest-leverage open capability.
+The active family remains llama.cpp at Pi `6fb2e781` and PiSharp `ef8f364c`. Resolve the remaining exact terminal render/control/mode differences and close the llama-router tasks only after all process, persistence and terminal requirements pass; then continue the next highest-leverage open capability.
