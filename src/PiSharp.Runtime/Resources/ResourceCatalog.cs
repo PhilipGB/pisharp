@@ -13,8 +13,10 @@ public sealed class ResourceCatalog
 {
     public IReadOnlyList<SkillResource> Skills { get; }
     public IReadOnlyList<PromptResource> Prompts { get; }
+    public IReadOnlyList<ResourceDiagnostic> Diagnostics { get; }
 
-    private ResourceCatalog(List<SkillResource> skills, List<PromptResource> prompts) => (Skills, Prompts) = (skills, prompts);
+    private ResourceCatalog(List<SkillResource> skills, List<PromptResource> prompts,
+        List<ResourceDiagnostic> diagnostics) => (Skills, Prompts, Diagnostics) = (skills, prompts, diagnostics);
 
     public static async Task<ResourceCatalog> LoadAsync(string cwd, string agentDirectory, bool trusted,
         CancellationToken cancellationToken = default, bool discoverSkills = true, bool discoverPrompts = true,
@@ -25,31 +27,33 @@ public sealed class ResourceCatalog
     {
         var skills = new List<SkillResource>();
         var prompts = new List<PromptResource>();
+        var diagnostics = new List<ResourceDiagnostic>();
         var skillFiles = new List<(string Path, ResourceSourceInfo Source)>();
         var promptFiles = new List<(string Path, ResourceSourceInfo Source)>();
         var seenSkills = new HashSet<string>(OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
         var seenPrompts = new HashSet<string>(OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
 
-        AddCliPaths(additionalSkills, "skill", cwd, skillFiles, seenSkills);
-        AddCliPaths(additionalPrompts, "prompt template", cwd, promptFiles, seenPrompts);
-
         if (trusted)
         {
             AddConfiguredPaths(projectSkills, Path.Combine(cwd, ".pi"), "project", "skills", skillFiles, seenSkills);
             AddConfiguredPaths(projectPrompts, Path.Combine(cwd, ".pi"), "project", "prompts", promptFiles, seenPrompts);
-        }
-        AddConfiguredPaths(userSkills, agentDirectory, "user", "skills", skillFiles, seenSkills);
-        AddConfiguredPaths(userPrompts, agentDirectory, "user", "prompts", promptFiles, seenPrompts);
-
-        if (discoverSkills)
-        {
-            if (trusted)
+            if (discoverSkills)
             {
                 AddAutoPaths(Path.Combine(cwd, ".pi", "skills"), projectSkills, Path.Combine(cwd, ".pi"),
                     "project", "skills", skillFiles, seenSkills, skillPaths: true);
                 AddAutoPaths(Path.Combine(cwd, ".agents", "skills"), projectSkills, Path.Combine(cwd, ".pi"),
                     "project", "skills", skillFiles, seenSkills, skillPaths: true);
             }
+            if (discoverPrompts)
+                AddAutoPaths(Path.Combine(cwd, ".pi", "prompts"), projectPrompts, Path.Combine(cwd, ".pi"),
+                    "project", "prompts", promptFiles, seenPrompts);
+        }
+
+        AddConfiguredPaths(userSkills, agentDirectory, "user", "skills", skillFiles, seenSkills);
+        AddConfiguredPaths(userPrompts, agentDirectory, "user", "prompts", promptFiles, seenPrompts);
+
+        if (discoverSkills)
+        {
             AddAutoPaths(Path.Combine(agentDirectory, "skills"), userSkills, agentDirectory,
                 "user", "skills", skillFiles, seenSkills, skillPaths: true);
             AddAutoPaths(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".agents", "skills"),
@@ -58,24 +62,45 @@ public sealed class ResourceCatalog
 
         if (discoverPrompts)
         {
-            if (trusted)
-                AddAutoPaths(Path.Combine(cwd, ".pi", "prompts"), projectPrompts, Path.Combine(cwd, ".pi"),
-                    "project", "prompts", promptFiles, seenPrompts);
             AddAutoPaths(Path.Combine(agentDirectory, "prompts"), userPrompts, agentDirectory,
                 "user", "prompts", promptFiles, seenPrompts);
         }
 
         AddExtensionPaths(extensionResources?.SkillPaths, "skills", skillFiles, seenSkills);
         AddExtensionPaths(extensionResources?.PromptPaths, "prompts", promptFiles, seenPrompts);
+        AddCliPaths(additionalSkills, "skill", cwd, skillFiles, seenSkills);
+        AddCliPaths(additionalPrompts, "prompt template", cwd, promptFiles, seenPrompts);
 
         foreach (var (path, source) in skillFiles)
         {
             cancellationToken.ThrowIfCancellationRequested();
             var (metadata, _) = Parse(await ReadBoundedAsync(path, cancellationToken));
-            if (!metadata.TryGetValue("name", out var name) ||
-                !Regex.IsMatch(name, "^[a-z0-9]+(?:-[a-z0-9]+)*$", RegexOptions.CultureInvariant) || name.Length > 64 ||
-                !metadata.TryGetValue("description", out var description) || description.Length is 0 or > 1024 ||
-                skills.Any(item => item.Name == name)) continue;
+            var name = metadata.GetValueOrDefault("name");
+            if (string.IsNullOrEmpty(name))
+                name = Path.GetFileName(Path.GetDirectoryName(path)) ?? "";
+            var description = metadata.GetValueOrDefault("description") ?? "";
+            if (string.IsNullOrWhiteSpace(description))
+            {
+                diagnostics.Add(new("warning", "description is required", path));
+                continue;
+            }
+            if (description.Length > 1024)
+                diagnostics.Add(new("warning", $"description exceeds 1024 characters ({description.Length})", path));
+            if (name.Length > 64)
+                diagnostics.Add(new("warning", $"name exceeds 64 characters ({name.Length})", path));
+            if (!Regex.IsMatch(name, "^[a-z0-9-]+$", RegexOptions.CultureInvariant))
+                diagnostics.Add(new("warning", "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)", path));
+            if (name.StartsWith("-", StringComparison.Ordinal) || name.EndsWith("-", StringComparison.Ordinal))
+                diagnostics.Add(new("warning", "name must not start or end with a hyphen", path));
+            if (name.Contains("--", StringComparison.Ordinal))
+                diagnostics.Add(new("warning", "name must not contain consecutive hyphens", path));
+            var existing = skills.FirstOrDefault(item => item.Name == name);
+            if (existing is not null)
+            {
+                diagnostics.Add(new("collision", $"name \"{name}\" collision", path,
+                    new("skill", name, existing.Path, path)));
+                continue;
+            }
             skills.Add(new(name, description, path, metadata.GetValueOrDefault("disable-model-invocation") == "true", source));
         }
 
@@ -83,15 +108,21 @@ public sealed class ResourceCatalog
         {
             cancellationToken.ThrowIfCancellationRequested();
             var name = Path.GetFileNameWithoutExtension(path);
-            if (!Regex.IsMatch(name, "^[a-zA-Z0-9_-]+$", RegexOptions.CultureInvariant) ||
-                prompts.Any(item => item.Name == name)) continue;
+            if (!Regex.IsMatch(name, "^[a-zA-Z0-9_-]+$", RegexOptions.CultureInvariant)) continue;
+            var existing = prompts.FirstOrDefault(item => item.Name == name);
+            if (existing is not null)
+            {
+                diagnostics.Add(new("collision", $"name \"{name}\" collision", path,
+                    new("prompt", name, existing.Path, path)));
+                continue;
+            }
             var (metadata, body) = Parse(await ReadBoundedAsync(path, cancellationToken));
             var description = metadata.GetValueOrDefault("description");
             if (string.IsNullOrEmpty(description)) description = PromptDescription(body);
             prompts.Add(new(name, description, body, path, source));
         }
 
-        return new(skills, prompts);
+        return new(skills, prompts, diagnostics);
 
         void AddCliPaths(IReadOnlyList<string>? roots, string description, string baseDirectory,
             List<(string Path, ResourceSourceInfo Source)> target, HashSet<string> seen)

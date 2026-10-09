@@ -1,3 +1,5 @@
+using PiSharp.Cli.Tui;
+using PiSharp.Runtime.Extensions;
 using PiSharp.Runtime.Resources;
 
 namespace PiSharp.Tests;
@@ -108,9 +110,14 @@ public sealed class ResourceCatalogTests
             var chosen = await ResourceCatalog.LoadAsync(project, agent, false,
                 additionalSkills: [Path.Combine(projectSkill, "SKILL.md")],
                 additionalPrompts: [chosenPrompt]);
-            Assert.Equal("Chosen prompt: value", chosen.ExpandPrompt("review", "value"));
-            Assert.Contains("Run a script", await chosen.InvokeSkillAsync("project-secret", ""));
-            Assert.DoesNotContain("Wrong skill", await chosen.InvokeSkillAsync("project-secret", ""));
+            Assert.Equal("Review value and security: value", chosen.ExpandPrompt("review", "value"));
+            Assert.Equal(Path.Combine(agent, "prompts", "review.md"),
+                Assert.Single(chosen.Prompts, prompt => prompt.Name == "review").Path);
+            Assert.Contains(chosen.Diagnostics, diagnostic => diagnostic.Collision?.Name == "review" &&
+                diagnostic.Collision.WinnerPath == Path.Combine(agent, "prompts", "review.md") &&
+                diagnostic.Collision.LoserPath == chosenPrompt);
+            Assert.Contains("Wrong skill", await chosen.InvokeSkillAsync("project-secret", ""));
+            Assert.DoesNotContain("Run a script", await chosen.InvokeSkillAsync("project-secret", ""));
             File.Delete(Path.Combine(collidingSkill, "SKILL.md"));
             await Assert.ThrowsAsync<FileNotFoundException>(() => ResourceCatalog.LoadAsync(project, agent, false,
                 discoverSkills: false, additionalSkills: ["missing-skill"]));
@@ -212,18 +219,134 @@ public sealed class ResourceCatalogTests
     }
 
     [Fact]
-    public async Task InvalidResourcesDoNotAdvertiseAndBadArgumentsFail()
+    public async Task WarnOnlyInvalidSkillNamesRemainLoadedAndBadArgumentsFail()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-resources-" + Guid.NewGuid().ToString("N"));
-        var folder = Path.Combine(root, "skills", "bad");
+        var folder = Path.Combine(root, "skills", "unsafe&skill");
         Directory.CreateDirectory(folder);
         try
         {
-            await File.WriteAllTextAsync(Path.Combine(folder, "SKILL.md"), "---\nname: Bad Name\ndescription: invalid\n---\ntext");
-            var resources = await ResourceCatalog.LoadAsync(root, root, false);
-            Assert.DoesNotContain(resources.Skills, skill => skill.Name == "Bad Name");
+            await File.WriteAllTextAsync(Path.Combine(folder, "SKILL.md"),
+                "---\nname: unsafe&skill\ndescription: >-\n  A <safe> & \"quoted\" 'single'\n---\ntext");
+            var resources = await ResourceCatalog.LoadAsync(root, root, false, discoverSkills: false,
+                additionalSkills: [Path.Combine(root, "skills")]);
+            var skill = Assert.Single(resources.Skills);
+            Assert.Equal("unsafe&skill", skill.Name);
+            Assert.Equal("A <safe> & \"quoted\" 'single'", skill.Description);
+            Assert.Contains(resources.Diagnostics, diagnostic => diagnostic.Type == "warning" &&
+                diagnostic.Message.Contains("invalid characters", StringComparison.Ordinal));
+            var instructions = resources.SystemInstructions();
+            Assert.Contains("<name>unsafe&amp;skill</name>", instructions);
+            Assert.Contains("<description>A &lt;safe&gt; &amp; &quot;quoted&quot; &apos;single&apos;</description>", instructions);
+            Assert.Contains($"<location>{Path.Combine(folder, "SKILL.md").Replace("&", "&amp;", StringComparison.Ordinal)}</location>",
+                instructions);
+            Assert.Contains($"<skill name=\"unsafe&skill\" location=\"{Path.Combine(folder, "SKILL.md")}\">",
+                await resources.InvokeSkillAsync("unsafe&skill", ""));
             Assert.Throws<ArgumentException>(() => resources.ExpandPrompt("absent", ""));
         }
         finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
+    public async Task SkillFallbackNamesAndLongDescriptionsRemainLoadedWithWarnings()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-resources-" + Guid.NewGuid().ToString("N"));
+        var fallback = Path.Combine(root, "skills", "folder-name", "SKILL.md");
+        var longDescription = Path.Combine(root, "skills", "long-description", "SKILL.md");
+        var missingDescription = Path.Combine(root, "skills", "missing-description", "SKILL.md");
+        Directory.CreateDirectory(Path.GetDirectoryName(fallback)!);
+        Directory.CreateDirectory(Path.GetDirectoryName(longDescription)!);
+        Directory.CreateDirectory(Path.GetDirectoryName(missingDescription)!);
+        try
+        {
+            await File.WriteAllTextAsync(fallback, "---\ndescription: folder fallback\n---\nbody");
+            await File.WriteAllTextAsync(longDescription,
+                $"---\nname: long-description\ndescription: {new string('x', 1025)}\n---\nbody");
+            await File.WriteAllTextAsync(missingDescription, "---\nname: missing-description\ndescription:  \n---\nbody");
+
+            var resources = await ResourceCatalog.LoadAsync(root, root, false, discoverSkills: false,
+                additionalSkills: [Path.Combine(root, "skills")]);
+
+            Assert.Contains(resources.Skills, skill => skill.Name == "folder-name");
+            Assert.Contains(resources.Skills, skill => skill.Name == "long-description");
+            Assert.DoesNotContain(resources.Skills, skill => skill.Name == "missing-description");
+            Assert.Contains(resources.Diagnostics, diagnostic => diagnostic.Path == longDescription &&
+                diagnostic.Message.Contains("exceeds 1024 characters", StringComparison.Ordinal));
+            Assert.Contains(resources.Diagnostics, diagnostic => diagnostic.Path == missingDescription &&
+                diagnostic.Message == "description is required");
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
+    public async Task SkillMetadataWarningsAppearInExpandedStartupDetails()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-resource-diagnostics-" + Guid.NewGuid().ToString("N"));
+        var skillPath = Path.Combine(root, "skills", "unsafe&skill", "SKILL.md");
+        Directory.CreateDirectory(Path.GetDirectoryName(skillPath)!);
+        try
+        {
+            await File.WriteAllTextAsync(skillPath,
+                "---\nname: unsafe&skill\ndescription: loaded with a warning\n---\nbody");
+            var resources = await ResourceCatalog.LoadAsync(root, root, false, discoverSkills: false,
+                additionalSkills: [Path.Combine(root, "skills")]);
+            using var extensions = ExtensionCatalog.Load(root, root, projectTrusted: false, discover: false,
+                builtins: []);
+
+            var details = TerminalStartupDetails.Build([], resources, extensions, root);
+            var warning = Assert.Single(details, detail => detail.Name == "Skill conflicts");
+
+            Assert.Contains(warning.Items, item => item.Contains("invalid characters", StringComparison.Ordinal));
+            Assert.Contains(skillPath, Assert.Single(warning.ExpandedItems!), StringComparison.Ordinal);
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
+    public async Task SkillPromptPreservesPiProjectUserAndTemporaryPrecedence()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-skill-order-" + Guid.NewGuid().ToString("N"));
+        var project = Path.Combine(root, "project");
+        var agent = Path.Combine(root, "agent");
+        var temporary = Path.Combine(root, "temporary", "temporary-skill", "SKILL.md");
+        try
+        {
+            async Task WriteSkill(string path, string name)
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+                await File.WriteAllTextAsync(path, $"---\nname: {name}\ndescription: {name} description\n---\n{name} body");
+            }
+
+            await WriteSkill(Path.Combine(project, ".pi", "custom-skills", "project-skill", "SKILL.md"), "project-skill");
+            await WriteSkill(Path.Combine(agent, "custom-skills", "user-skill", "SKILL.md"), "user-skill");
+            await WriteSkill(temporary, "temporary-skill");
+            var projectShared = Path.Combine(project, ".pi", "custom-skills", "project-shared", "SKILL.md");
+            var userShared = Path.Combine(agent, "custom-skills", "user-shared", "SKILL.md");
+            var temporaryShared = Path.Combine(root, "temporary", "shared", "SKILL.md");
+            await WriteSkill(projectShared, "shared");
+            await WriteSkill(userShared, "shared");
+            await WriteSkill(temporaryShared, "shared");
+
+            var resources = await ResourceCatalog.LoadAsync(project, agent, trusted: true, discoverSkills: false,
+                additionalSkills: [Path.Combine(root, "temporary")], userSkills: ["custom-skills"],
+                projectSkills: ["custom-skills"]);
+
+            Assert.Equal("project", Assert.Single(resources.Skills, skill => skill.Name == "project-skill").SourceInfo.Scope);
+            Assert.Equal("user", Assert.Single(resources.Skills, skill => skill.Name == "user-skill").SourceInfo.Scope);
+            Assert.Equal("temporary", Assert.Single(resources.Skills, skill => skill.Name == "temporary-skill").SourceInfo.Scope);
+            Assert.Equal(projectShared, Assert.Single(resources.Skills, skill => skill.Name == "shared").Path);
+            var sharedCollisions = resources.Diagnostics.Where(diagnostic => diagnostic.Collision?.Name == "shared").ToArray();
+            Assert.Equal(2, sharedCollisions.Length);
+            Assert.All(sharedCollisions, diagnostic => Assert.Equal(projectShared, diagnostic.Collision!.WinnerPath));
+            Assert.Contains(sharedCollisions, diagnostic => diagnostic.Collision!.LoserPath == userShared);
+            Assert.Contains(sharedCollisions, diagnostic => diagnostic.Collision!.LoserPath == temporaryShared);
+            var instructions = resources.SystemInstructions();
+            var projectIndex = instructions.IndexOf("<name>project-skill</name>", StringComparison.Ordinal);
+            var userIndex = instructions.IndexOf("<name>user-skill</name>", StringComparison.Ordinal);
+            var temporaryIndex = instructions.IndexOf("<name>temporary-skill</name>", StringComparison.Ordinal);
+            Assert.True(projectIndex >= 0 && projectIndex < userIndex && userIndex < temporaryIndex,
+                instructions);
+        }
+        finally { if (Directory.Exists(root)) Directory.Delete(root, recursive: true); }
     }
 }

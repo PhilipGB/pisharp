@@ -18,6 +18,16 @@ internal static class TerminalStartupDetails
                 .Order(StringComparer.OrdinalIgnoreCase).ToArray(),
                 resources.Skills.Select(item => DisplayPath(item.Path, workingDirectory))
                     .Order(StringComparer.OrdinalIgnoreCase).ToArray()));
+        if (resources.Diagnostics.Count > 0)
+        {
+            var diagnostics = resources.Diagnostics.Select(item => item.Collision is { } collision
+                ? $"{collision.Name} collision: {DisplayPath(collision.WinnerPath, workingDirectory)} wins; " +
+                  $"{DisplayPath(collision.LoserPath, workingDirectory)} skipped"
+                : item.Path is { } path
+                    ? $"{item.Message}: {DisplayPath(path, workingDirectory)}"
+                    : item.Message).ToArray();
+            details.Add(new("Skill conflicts", diagnostics, diagnostics));
+        }
         if (resources.Prompts.Count > 0)
             details.Add(new("Prompts", resources.Prompts.Select(item => "/" + item.Name)
                 .Order(StringComparer.OrdinalIgnoreCase).ToArray(),
