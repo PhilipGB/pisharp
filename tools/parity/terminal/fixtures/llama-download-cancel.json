@@ -37,6 +37,8 @@
   "llamaBehavior": {
     "downloadDelaySeconds": 10,
     "downloadProgressDelaySeconds": 0.5,
+    "downloadRequestGate": "download-request",
+    "downloadResponseGate": "download-response",
     "downloadProgressGate": "download-progress",
     "downloadFinishGate": "download-finished",
     "downloadPollGate": "download-poll"
@@ -68,7 +70,8 @@
     { "id": "select-model", "send": "\r", "expect": "Hugging Face access required", "allowStaticFrame": true },
     { "id": "accept-gate", "expect": "Hugging Face access required", "allowStaticFrame": true },
     { "id": "confirm-gate", "send": "\r", "expect": "Select quantization" },
-    { "id": "select-quantization", "send": "\r", "expect": "Downloading model" },
+    { "id": "select-quantization", "send": "\r", "waitGatesAfter": ["download-request"], "expect": "Starting…" },
+    { "id": "start-download", "releaseGates": ["download-response"], "waitForModelPoll": "owner/Qwen2.5-Coder-GGUF:Q4_K_M", "expect": "Downloading model" },
     { "id": "wait-download-progress", "releaseGates": ["download-progress"], "expect": "50%" },
     { "id": "request-cancel", "send": "\u001b", "expect": "Stop download?" },
     { "id": "confirm-cancel", "send": "\r", "expect": "llama.cpp models", "timeout": 15 },

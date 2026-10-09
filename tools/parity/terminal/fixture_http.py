@@ -251,6 +251,10 @@ class FixtureServer:
                         outer.set_status(model, 'unloaded')
                         outer.pending_downloads.pop(model, None)
                         outer.pending_download_progress.pop(model, None)
+                    outer.signal_gate(outer.behavior.get('downloadRequestGate'))
+                    response_gate = outer.behavior.get('downloadResponseGate')
+                    if response_gate is not None:
+                        outer.wait_for_gate(response_gate)
                     self.send_json(dict(success=True))
                     return
                 self.send_error(404)

@@ -218,6 +218,38 @@ class DriverTests(unittest.TestCase):
                 stream.close()
             server.close()
 
+    def test_llama_download_start_response_can_be_gated_after_request_arrival(self):
+        server = FixtureServer(behavior=dict(downloadRequestGate='download-request',
+                                             downloadResponseGate='download-response'))
+        completed = Event()
+        responses = []
+        errors = []
+        request = urllib.request.Request(
+            server.url + '/models', data=json.dumps(dict(model='owner/model:Q4_K_M')).encode(),
+            headers={'Content-Type': 'application/json'}, method='POST')
+
+        def post_download():
+            try:
+                with urllib.request.urlopen(request, timeout=3) as response:
+                    responses.append(json.loads(response.read()))
+            except Exception as error:
+                errors.append(error)
+            finally:
+                completed.set()
+
+        try:
+            Thread(target=post_download, daemon=True).start()
+            self.assertTrue(server.wait_for_gate('download-request', 2),
+                            'download request did not reach the fixture')
+            self.assertFalse(completed.is_set(), 'download response escaped its fixture gate')
+            server.release_gate('download-response')
+            self.assertTrue(completed.wait(2), 'download response did not follow its fixture gate')
+            if errors:
+                raise errors[0]
+            self.assertEqual([dict(success=True)], responses)
+        finally:
+            server.close()
+
     def test_llama_unload_cancellation_releases_poll_without_finishing_download(self):
         server = FixtureServer(models=[dict(id='loaded-model', status=dict(value='loaded'))],
                                behavior=dict(downloadProgressGate='download-progress',
