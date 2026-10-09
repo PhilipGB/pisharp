@@ -82,8 +82,15 @@ public sealed class LlamaRouterManagerTuiTests
             await terminal.WaitTextAsync("1 model is loaded");
             mark = terminal.Mark;
             await terminal.SendAsync("\u001b[B\n");
-            await terminal.WaitTextAsync("25%", mark);
+            await terminal.WaitFrameAsync(frame => frame.Contains("Loading model", StringComparison.Ordinal) &&
+                !frame.Contains("Starting…", StringComparison.Ordinal), mark);
             await server.LoadRequested.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            server.ReleaseLoadProgress();
+            try { await terminal.WaitTextAsync("25%", mark); }
+            catch (TimeoutException error)
+            {
+                throw new InvalidOperationException("The router's released load-progress event was not rendered.", error);
+            }
 
             mark = terminal.Mark;
             await terminal.SendAsync("\u001b");
@@ -380,6 +387,7 @@ public sealed class LlamaRouterManagerTuiTests
         private readonly bool _failFirstCatalog;
         private readonly ConcurrentBag<Task> _background = [];
         private readonly TaskCompletionSource _downloadRequested = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource _loadProgressRelease = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private int _catalogRequests;
         public ConcurrentQueue<(string Method, string Path, string? Authorization, string? Body)> Requests { get; } = new();
         public TaskCompletionSource LoadRequested { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -485,9 +493,12 @@ public sealed class LlamaRouterManagerTuiTests
                             _background.Add(RespondDownloadProgressAsync(context));
                             continue;
                         }
-                        response = _holdLoad
-                            ? "data: {\"model\":\"target\",\"event\":\"model_status\",\"data\":{\"status\":\"loading\",\"progress\":{\"current\":\"loading_model\",\"stages\":[\"loading_model\",\"loading_context\"],\"value\":0.5}}}\n\n"
-                            : "data: {\"model\":\"owner/model:Q4_K_M\",\"event\":\"download_finished\",\"data\":{}}\n\n";
+                        if (_holdLoad)
+                        {
+                            _background.Add(RespondLoadProgressAsync(context));
+                            continue;
+                        }
+                        response = "data: {\"model\":\"owner/model:Q4_K_M\",\"event\":\"download_finished\",\"data\":{}}\n\n";
                     }
                     else if (context.Request.HttpMethod == "GET" && path.StartsWith("/props", StringComparison.Ordinal))
                         response = "{}";
@@ -498,11 +509,8 @@ public sealed class LlamaRouterManagerTuiTests
                     }
                     var bytes = Encoding.UTF8.GetBytes(response);
                     context.Response.ContentType = contentType;
-                    if (path == "/models/sse") context.Response.SendChunked = true;
-                    else context.Response.ContentLength64 = bytes.Length;
+                    context.Response.ContentLength64 = bytes.Length;
                     await context.Response.OutputStream.WriteAsync(bytes, _shutdown.Token);
-                    if (path == "/models/sse")
-                        await context.Response.OutputStream.FlushAsync(_shutdown.Token);
                     context.Response.Close();
                     if (announceDownload) _downloadRequested.TrySetResult();
                 }
@@ -528,6 +536,30 @@ public sealed class LlamaRouterManagerTuiTests
                 error is OperationCanceledException or HttpListenerException or ObjectDisposedException or IOException)
             { }
         }
+
+        private async Task RespondLoadProgressAsync(HttpListenerContext context)
+        {
+            try
+            {
+                await _loadProgressRelease.Task.WaitAsync(_shutdown.Token);
+                const string response = "data: {\"model\":\"target\",\"event\":\"model_status\",\"data\":{\"status\":\"loading\",\"progress\":{\"current\":\"loading_model\",\"stages\":[\"loading_model\",\"loading_context\"],\"value\":0.5}}}\n\n";
+                var bytes = Encoding.UTF8.GetBytes(response);
+                context.Response.ContentType = "text/event-stream";
+                context.Response.ContentLength64 = bytes.Length;
+                await context.Response.OutputStream.WriteAsync(bytes, _shutdown.Token);
+                context.Response.Close();
+            }
+            catch (Exception error) when (_shutdown.IsCancellationRequested &&
+                error is OperationCanceledException or HttpListenerException or ObjectDisposedException or IOException)
+            { }
+            finally
+            {
+                try { context.Response.Close(); }
+                catch (Exception error) when (error is HttpListenerException or ObjectDisposedException or IOException) { }
+            }
+        }
+
+        public void ReleaseLoadProgress() => _loadProgressRelease.TrySetResult();
 
         public async ValueTask DisposeAsync()
         {
