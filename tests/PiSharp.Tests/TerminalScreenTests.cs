@@ -121,6 +121,29 @@ public sealed class TerminalScreenTests
     }
 
     [Fact]
+    public void DisposeRestoresTheLatestEditorStateWhenItsRenderIsCoalesced()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        var clock = new ManualTimeProvider();
+        var screen = new TerminalScreen(output, error, () => 40, () => 9,
+            new TerminalImageRenderer(), TerminalTheme.Default, queryTerminalColors: false,
+            deferInitialRender: true, minimumRenderInterval: TimeSpan.FromMilliseconds(16), timeProvider: clock);
+        screen.SetEditor("/qui", 4);
+        screen.RenderInitial();
+        output.GetStringBuilder().Clear();
+
+        screen.SetEditor("", 0);
+        Assert.Equal(0, Count(output.ToString(), "\u001b[?2026h"));
+
+        screen.Dispose();
+
+        var restoreIndex = output.ToString().LastIndexOf("\u001b[?1049l", StringComparison.Ordinal);
+        Assert.True(restoreIndex >= 0);
+        Assert.DoesNotContain("/qui", output.ToString()[(restoreIndex + "\u001b[?1049l".Length)..]);
+    }
+
+    [Fact]
     public void ReplacingTranscriptFlushesPendingOutputBeforeDiscardingThePreviousSession()
     {
         using var output = new StringWriter();

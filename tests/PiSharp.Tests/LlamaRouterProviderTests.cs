@@ -66,6 +66,10 @@ public sealed class LlamaRouterProviderTests
             Assert.True(qwen.Reasoning);
             Assert.Equal("qwen-chat-template", qwen.Compatibility?.GetProperty("thinkingFormat").GetString());
 
+            var routerClient = await runtime.CreateLlamaRouterClientAsync(default);
+            _ = await runtime.RefreshLlamaRouterCatalogAsync(routerClient, default);
+            Assert.Equal(1, runtime.AvailableModelProviderCount);
+
             var selection = await runtime.ResolveAsync("llama.cpp", "qwen");
             Assert.Equal(2, runtime.AvailableModelProviderCount);
             Assert.Equal("router-secret", selection.ApiKey);

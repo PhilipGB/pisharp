@@ -689,7 +689,7 @@ public sealed class TerminalScreen : IDisposable
         lock (_gate)
         {
             if (!_active) return;
-            CancelPendingRenderLocked();
+            FlushPendingRenderLocked();
             _renderTimer?.Dispose();
             _renderTimer = null;
             _active = false;
