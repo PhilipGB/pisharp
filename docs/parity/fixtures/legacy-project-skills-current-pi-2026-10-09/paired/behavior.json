@@ -1,0 +1,40 @@
+{
+  "piSha": "f1b2e77f5b13b2a199b1052cb79c235451afe7d7",
+  "pisharpSha": "1ff661e129f5fe654db9dde13b44e6af6149eb39",
+  "fixture": "legacy-project-skills-settings",
+  "behaviorMatch": true,
+  "behavior": {
+    "pi": {
+      "chatRequests": 1,
+      "legacySkillExpanded": true,
+      "legacyArgumentPreserved": true,
+      "skillCompletionDisabled": true,
+      "scenarioError": null
+    },
+    "pisharp": {
+      "chatRequests": 1,
+      "legacySkillExpanded": true,
+      "legacyArgumentPreserved": true,
+      "skillCompletionDisabled": true,
+      "scenarioError": null
+    }
+  },
+  "fullTerminalMatch": false,
+  "fullHttpMatch": false,
+  "rawMatch": false,
+  "terminalDifferences": 40877,
+  "renderDifferences": 30695,
+  "controlBoundaryDifferences": 317,
+  "scenarioErrors": {},
+  "calibration": {
+    "terminalMatch": true,
+    "httpMatch": true,
+    "renderDifferences": 0,
+    "scenarioErrors": {}
+  },
+  "evidence": {
+    "report": "docs/parity/fixtures/legacy-project-skills-current-pi-2026-10-09/paired/report.json",
+    "capture": "docs/parity/fixtures/legacy-project-skills-current-pi-2026-10-09/paired/120x40-dark-fullscreen.json.gz",
+    "calibrationReport": "docs/parity/fixtures/legacy-project-skills-current-pi-2026-10-09/calibration/report.json"
+  }
+}
