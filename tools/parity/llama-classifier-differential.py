@@ -2,6 +2,7 @@
 """Compare current Pi and PiSharp native llama.cpp classifier behavior."""
 
 import argparse
+from collections import Counter
 import http.server
 import json
 import math
@@ -79,7 +80,8 @@ class Server(http.server.BaseHTTPRequestHandler):
         else:
             raw = self.rfile.read(int(self.headers["Content-Length"]))
         body = json.loads(raw)
-        trace.append({"method": self.command, "path": self.path, "authorization": self.headers.get("Authorization")})
+        trace.append({"method": self.command, "path": self.path,
+                      "authorization": self.headers.get("Authorization"), "body": body})
         assert body["model"] == "model"
         if self.path.endswith("/tokenize"):
             text = body["content"]
@@ -142,8 +144,27 @@ pi_result = strip_runtime_fields(pi)
 pisharp_result = strip_runtime_fields(pisharp)
 if not equal(pi_result, pisharp_result):
     raise AssertionError(f"Native classifier results differ:\nPi: {pi_result}\nPiSharp: {pisharp_result}")
-if pi_trace != pisharp_trace:
-    raise AssertionError(f"Native classifier HTTP traces differ:\nPi: {pi_trace}\nPiSharp: {pisharp_trace}")
+def compare_request_traces(left, right):
+    def encoded(request):
+        return json.dumps(request, sort_keys=True, separators=(",", ":"))
+
+    def tokenizations(trace):
+        return Counter(encoded(request) for request in trace if request["path"].endswith("/tokenize"))
+
+    def ordered_requests(trace):
+        return [encoded(request) for request in trace if not request["path"].endswith("/tokenize")]
+
+    token_multisets_match = tokenizations(left) == tokenizations(right)
+    ordered_requests_match = ordered_requests(left) == ordered_requests(right)
+    return token_multisets_match, ordered_requests_match
+
+
+token_multisets_match, ordered_requests_match = compare_request_traces(pi_trace, pisharp_trace)
+if not token_multisets_match or not ordered_requests_match:
+    raise AssertionError(
+        "Native classifier HTTP requests differ after treating parallel /tokenize dispatch order as unspecified:\n"
+        f"Pi: {pi_trace}\nPiSharp: {pisharp_trace}"
+    )
 if pi_result["image"]["errorMessage"] != "llama.cpp classification does not support image input":
     raise AssertionError(f"Pi returned an unexpected image error: {pi_result['image']}")
 for label, requests in (("Pi", pi_trace), ("PiSharp", pisharp_trace)):
@@ -155,6 +176,12 @@ report = {
     "piSha": subprocess.check_output(["git", "-C", str(pi_repo), "rev-parse", "HEAD"], text=True).strip(),
     "piSharpSha": subprocess.check_output(["git", "-C", str(repo), "rev-parse", "HEAD"], text=True).strip(),
     "baseline": {"result": pi_result["baseline"], "requests": {"pi": pi_trace, "pisharp": pisharp_trace}},
+    "requestTraceComparison": {
+        "match": True,
+        "tokenizeRequestMultisetsMatch": token_multisets_match,
+        "orderedNonTokenRequestsMatch": ordered_requests_match,
+        "tokenizeDispatchOrder": "parallel label lookups are compared as an unordered request batch",
+    },
     "imageInput": {
         "result": pi_result["image"],
         "requestsSent": {"pi": 0, "pisharp": 0},

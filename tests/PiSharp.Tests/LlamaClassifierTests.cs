@@ -126,6 +126,76 @@ public sealed class LlamaClassifierTests
         Assert.Equal(12, tokenCalls);
     }
 
+    [Fact]
+    public async Task NativeLabelTokensAreResolvedConcurrentlyAndCached()
+    {
+        var tokenCalls = 0;
+        var fourTokenRequests = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var templateRequest = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseTokenRequests = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var http = new HttpClient(new Handler(async request =>
+        {
+            using var document = JsonDocument.Parse(await request.Content!.ReadAsStringAsync());
+            var body = document.RootElement;
+            string response;
+            if (request.RequestUri!.AbsolutePath == "/tokenize")
+            {
+                if (Interlocked.Increment(ref tokenCalls) == 4) fourTokenRequests.TrySetResult();
+                await releaseTokenRequests.Task;
+                response = body.GetProperty("content").GetString() switch
+                {
+                    "\n" => "{\"tokens\":[1]}",
+                    "\nYes" => "{\"tokens\":[1,2]}",
+                    "\nNo" => "{\"tokens\":[1,3]}",
+                    _ => throw new InvalidOperationException("Unexpected label")
+                };
+            }
+            else if (request.RequestUri.AbsolutePath == "/apply-template")
+            {
+                templateRequest.TrySetResult();
+                var content = body.GetProperty("messages")[1].GetProperty("content").GetString();
+                Assert.Contains("Question: safe?\n\nYes means: safe\nNo means: unsafe\n\nAnswer Yes or No.", content);
+                response = "{\"prompt\":\"rendered\"}";
+            }
+            else response = "{\"completion_probabilities\":[{\"top_logprobs\":[{\"id\":2,\"logprob\":0},{\"id\":3,\"logprob\":0}]}]}";
+            return new(HttpStatusCode.OK) { Content = new StringContent(response) };
+        }));
+
+        var client = new LlamaClassifierClient(http);
+        var model = new ClassifierModel("local", "m", "llama-cpp-classify", new Uri("http://fixture/v1"));
+        var context = new ClassifierContext(JsonSerializer.SerializeToElement(new { value = "data" }),
+            new Dictionary<string, ClassifierQuestion>
+            {
+                ["safe"] = new ClassifierBoolQuestion("safe?", new Dictionary<string, string>
+                {
+                    ["true"] = "safe",
+                    ["false"] = "unsafe"
+                })
+            });
+        var classification = client.ClassifyAsync(model, context, null);
+        bool allLabelRequestsArrived;
+        try
+        {
+            var parallelWork = Task.WhenAll(fourTokenRequests.Task, templateRequest.Task);
+            var first = await Task.WhenAny(parallelWork, classification).WaitAsync(TimeSpan.FromSeconds(5));
+            allLabelRequestsArrived = ReferenceEquals(first, parallelWork);
+        }
+        catch (TimeoutException)
+        {
+            allLabelRequestsArrived = false;
+        }
+        finally
+        {
+            releaseTokenRequests.TrySetResult();
+        }
+
+        Assert.True(allLabelRequestsArrived, "All label token requests should be in flight together.");
+        Assert.Equal("stop", (await classification).StopReason);
+        Assert.Equal(4, tokenCalls);
+        Assert.Equal("stop", (await client.ClassifyAsync(model, context, null)).StopReason);
+        Assert.Equal(4, tokenCalls);
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
