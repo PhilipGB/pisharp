@@ -21,6 +21,7 @@ public sealed class TerminalScreen : IDisposable
     private readonly TerminalScreenCompositor _compositor;
     private TerminalTheme _theme;
     private string _markdownCodeBlockIndent = "  ";
+    private string _toolExpandKeyLabel = "Ctrl+O";
     private TerminalColorState _terminalColors;
     private TerminalColorQueryController? _terminalColorQuery;
     private TerminalInput? _terminalInput;
@@ -273,7 +274,7 @@ public sealed class TerminalScreen : IDisposable
             if (!_active) return;
             _theme = theme.WithTerminalColors(_terminalColors.Foreground, _terminalColors.Background);
             _transcript.ReRenderMarkdown(RenderMarkdown);
-            _transcript.ReRenderToolViews(_theme);
+            _transcript.ReRenderThemedSegments(_theme);
             _liveAssistant = _liveAssistantSource.Length == 0 ? "" : RenderMarkdown(_liveAssistantSource);
             RenderLocked();
         }
@@ -329,7 +330,7 @@ public sealed class TerminalScreen : IDisposable
                 _theme = _theme.WithTerminalColors(colors.Foreground, colors.Background);
             }
             _transcript.ReRenderMarkdown(RenderMarkdown);
-            _transcript.ReRenderToolViews(_theme);
+            _transcript.ReRenderThemedSegments(_theme);
             _liveAssistant = _liveAssistantSource.Length == 0 ? "" : RenderMarkdown(_liveAssistantSource);
             RenderLocked();
         }
@@ -588,14 +589,14 @@ public sealed class TerminalScreen : IDisposable
             if (!_active) return;
             var activeText = new StringBuilder();
             var capturedText = new StringBuilder();
-            if (safe.Length > 0)
+            var skillInvocation = TerminalSkillInvocationParser.Parse(safe);
+            if (skillInvocation is not null)
             {
-                foreach (var line in safe.Split('\n'))
-                {
-                    activeText.Append("› ").Append(line).Append(Environment.NewLine);
-                    capturedText.Append("› ").Append(line).Append(Environment.NewLine);
-                }
+                AppendSkillInvocationLocked(skillInvocation);
+                if (skillInvocation.UserMessage is { Length: > 0 } userMessage)
+                    AppendUserTextLocked(userMessage, activeText, capturedText, separate: true);
             }
+            else AppendUserTextLocked(safe, activeText, capturedText);
             if (images is not null)
             {
                 foreach (var image in images)
@@ -605,9 +606,65 @@ public sealed class TerminalScreen : IDisposable
                     capturedText.Append(fallback).Append(Environment.NewLine);
                 }
             }
-            if (activeText.Length == 0) return;
-            _transcript.Append(activeText.ToString(), isError: false, capturedText: capturedText.ToString());
+            if (skillInvocation is null && activeText.Length == 0) return;
+            if (activeText.Length > 0)
+                _transcript.Append(activeText.ToString(), isError: false, capturedText: capturedText.ToString());
             RenderLocked();
+        }
+    }
+
+    internal void SetToolExpandKeyLabel(string? keyLabel)
+    {
+        var safe = TerminalSafeText.Normalize(keyLabel ?? string.Empty);
+        lock (_gate)
+        {
+            if (_toolExpandKeyLabel.Equals(safe, StringComparison.Ordinal)) return;
+            _toolExpandKeyLabel = safe;
+            _transcript.ReRenderThemedSegments(_theme);
+            RenderLocked();
+        }
+    }
+
+    private void AppendSkillInvocationLocked(TerminalSkillInvocation skillInvocation)
+    {
+        var name = TerminalSafeText.Normalize(skillInvocation.Name);
+        var content = TerminalSafeText.Normalize(skillInvocation.Content);
+        var keyHint = string.IsNullOrWhiteSpace(_toolExpandKeyLabel)
+            ? ""
+            : $" ({_toolExpandKeyLabel.ToLowerInvariant()} to expand)";
+        string RenderExpanded(TerminalTheme theme)
+        {
+            var markdown = TerminalMarkdownRenderer.Render($"**{name}**\n\n{content}",
+                Math.Max(1, Columns() - 1), theme, _markdownCodeBlockIndent);
+            return Environment.NewLine + " " + theme.Style("customMessageLabel", "[skill]", bold: true) +
+                Environment.NewLine + markdown + Environment.NewLine;
+        }
+
+        string RenderCollapsed(TerminalTheme theme) => Environment.NewLine + " " +
+            theme.Style("customMessageLabel", "[skill]", bold: true) + " " +
+            theme.Style("customMessageText", name) +
+            (keyHint.Length == 0 ? "" : theme.Style("dim", keyHint)) +
+            Environment.NewLine;
+
+        var captured = Environment.NewLine + $" [skill] {name}{keyHint}" + Environment.NewLine;
+        _transcript.AppendThemed(RenderExpanded(_theme), isError: false, isToolResult: false,
+            RenderExpanded, captured, collapsedPreviewText: RenderCollapsed(_theme),
+            collapsedRenderer: RenderCollapsed, isCollapsible: true);
+    }
+
+    private static void AppendUserTextLocked(string text, StringBuilder activeText,
+        StringBuilder capturedText, bool separate = false)
+    {
+        if (text.Length == 0) return;
+        if (separate)
+        {
+            activeText.Append(Environment.NewLine);
+            capturedText.Append(Environment.NewLine);
+        }
+        foreach (var line in text.Split('\n'))
+        {
+            activeText.Append("› ").Append(line).Append(Environment.NewLine);
+            capturedText.Append("› ").Append(line).Append(Environment.NewLine);
         }
     }
 

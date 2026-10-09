@@ -40,7 +40,11 @@ public sealed class TerminalEditor
     internal bool TryReadLoginAbort() => EnsureInput().TryRead(50, out var input) &&
         input.Key is { } key && _keymap.Matches("app.interrupt", key);
 
-    public void ReloadKeybindings() => _keymap.Reload();
+    public void ReloadKeybindings()
+    {
+        _keymap.Reload();
+        _screen?.SetToolExpandKeyLabel(_keymap.GetDisplayKeys("app.tools.expand"));
+    }
 
     public void AttachScreen(TerminalScreen? screen)
     {
@@ -48,6 +52,7 @@ public sealed class TerminalEditor
         if (screen is not null)
         {
             screen.SetToolResultsExpanded(_toolResultsExpanded);
+            screen.SetToolExpandKeyLabel(_keymap.GetDisplayKeys("app.tools.expand"));
             screen.SetEditor(_buffer.Text, _buffer.Cursor, _buffer.SelectionStart, _buffer.SelectionEnd);
         }
     }

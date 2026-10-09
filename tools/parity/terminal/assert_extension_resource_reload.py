@@ -43,6 +43,22 @@ def frame_text(run, frame_id):
                      for line in frame['state']['viewport'])
 
 
+def assert_skill_presentation(run, name, marker, argument, prefix):
+    collapsed = frame_text(run, f'collapse-{prefix}-skill')
+    expanded = frame_text(run, f'expand-{prefix}-skill')
+    collapsed_line = f'[skill] {name} (ctrl+o to expand)'
+    if collapsed_line not in collapsed:
+        raise AssertionError(f'{prefix} skill did not collapse to its Pi-compatible row')
+    if marker in collapsed:
+        raise AssertionError(f'{prefix} skill body remained visible while collapsed')
+    if argument not in collapsed:
+        raise AssertionError(f'{prefix} skill argument was not shown as a separate message')
+    if '[skill]' not in expanded or name not in expanded or marker not in expanded:
+        raise AssertionError(f'{prefix} skill body was not rendered after Ctrl+O')
+    if argument not in expanded:
+        raise AssertionError(f'{prefix} skill argument disappeared while the skill body was expanded')
+
+
 def inspect_product(run):
     if run['scenarioError'] is not None:
         raise AssertionError(f"Terminal scenario failed: {run['scenarioError']}")
@@ -68,8 +84,13 @@ def inspect_product(run):
         raise AssertionError('Reloaded extension theme diagnostics were not visible')
     if 'Reloaded keybindings, extensions, skills, prompts, themes, and context files' not in reload_screen:
         raise AssertionError('The Pi-compatible /reload status was not visible')
+    assert_skill_presentation(run, 'extension-startup', 'Use the startup extension skill.',
+                              'initial-argument', 'startup')
+    assert_skill_presentation(run, 'extension-reloaded', 'Use the reloaded extension skill.',
+                              'reload-argument', 'reloaded')
     return dict(chatRequests=len(requests), startupSkillAndPromptExpanded=True,
                 reloadedSkillAndPromptExpanded=True,
+                collapsibleSkillMessages=True,
                 latestUserMessages=[latest_user_message(request) for request in requests],
                 startupThemeDiagnosticVisible=True, reloadedThemeDiagnosticVisible=True,
                 reloadStatusVisible=True,

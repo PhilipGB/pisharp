@@ -46,6 +46,16 @@
       "expect": "fixture reply"
     },
     {
+      "id": "expand-startup-skill",
+      "send": "\u000f",
+      "expect": "Use the startup extension skill."
+    },
+    {
+      "id": "collapse-startup-skill",
+      "send": "\u000f",
+      "expect": "extension-startup"
+    },
+    {
       "id": "startup-prompt",
       "send": "/startup-review initial-argument\r",
       "expect": "fixture reply"
@@ -72,6 +82,16 @@
       "id": "reloaded-skill",
       "send": "/skill:extension-reloaded reload-argument\r",
       "expect": "fixture reply"
+    },
+    {
+      "id": "expand-reloaded-skill",
+      "send": "\u000f",
+      "expect": "Use the reloaded extension skill."
+    },
+    {
+      "id": "collapse-reloaded-skill",
+      "send": "\u000f",
+      "expect": "extension-reloaded"
     },
     {
       "id": "reloaded-prompt",
