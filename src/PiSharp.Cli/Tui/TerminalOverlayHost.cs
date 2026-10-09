@@ -30,7 +30,10 @@ internal sealed class TerminalOverlayHost(TerminalInput input)
                         mouse.Column, mouse.Row)
                     : null;
                 var action = list.HandleInput(next, mouseContentLine);
-                if (action == TerminalSelectionAction.Accept) return list.Selected;
+                if (action is TerminalSelectionAction.Accept or TerminalSelectionAction.AcceptAsDefault)
+                    return list.Selected is { } selected
+                        ? selected with { SetAsDefault = action == TerminalSelectionAction.AcceptAsDefault }
+                        : null;
                 if (action == TerminalSelectionAction.Cancel) return null;
             }
             return null;

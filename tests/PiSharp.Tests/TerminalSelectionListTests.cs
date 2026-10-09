@@ -76,6 +76,42 @@ public sealed class TerminalSelectionListTests
     }
 
     [Fact]
+    public void RefreshReplacesOptionsWithoutDroppingTheSearchQuery()
+    {
+        var original = new[]
+        {
+            new TerminalSelectionOption<string>("cached", "cached", "cached model", SearchText: "cached model")
+        };
+        var list = new TerminalSelectionList<string>("Select model", original);
+        list.HandleInput(new(null, "cached"));
+
+        list.ReplaceOptions(
+        [
+            new TerminalSelectionOption<string>("cached", "refreshed", "cached model v2", SearchText: "cached model v2"),
+            new TerminalSelectionOption<string>("fresh", "fresh", "fresh model", SearchText: "fresh model")
+        ], scopedOptions: null);
+
+        Assert.Equal("cached", list.Selected?.Option.Key);
+        Assert.Equal("refreshed", list.Selected?.Option.Value);
+        Assert.Contains("Search: cached", string.Join('\n', list.Render(80, 24)));
+    }
+
+    [Fact]
+    public void ModelPickerRendersAnInverseSearchCursorCell()
+    {
+        var list = new TerminalSelectionList<string>("Select model",
+        [new TerminalSelectionOption<string>("model", "model", "model")]);
+        list.HandleInput(new(null, "qwen"));
+
+        var lines = list.RenderModelPicker(80, TerminalTheme.Default, "hint", "Refreshing model catalogs…",
+            refreshSuccess: false, model => model, out var cursorRow, out var cursorColumn);
+
+        Assert.Contains("> qwen\u001b[7m \u001b[27m", string.Join('\n', lines));
+        Assert.Equal(4, cursorRow);
+        Assert.Equal(7, cursorColumn);
+    }
+
+    [Fact]
     public void OverlayHostSelectsFromStreamAndSanitizesUntrustedLabels()
     {
         using var output = new StringWriter();

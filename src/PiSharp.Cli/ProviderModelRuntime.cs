@@ -50,6 +50,7 @@ public sealed class ProviderModelRuntime
     private readonly SemaphoreSlim _llamaRouterRefresh = new(1, 1);
     private readonly object _availableProviderGate = new();
     private readonly Dictionary<string, bool> _availableProviderSnapshot = new(StringComparer.Ordinal);
+    private ModelDescriptor[] _availableModelSnapshot = [];
     private ProviderProfile? _llamaRouterProfile;
     private IReadOnlyList<string> _scope;
     private VirtualModelRegistry? _virtualModels;
@@ -69,6 +70,14 @@ public sealed class ProviderModelRuntime
         _llamaRouterCache = new LlamaRouterCatalogStore(agentDirectory);
         _llamaRouterProfile = providers.GetValueOrDefault("llama.cpp");
         _scope = scope ?? [];
+        foreach (var provider in providers.Values.Where(provider => provider.ApiKeyEnvironment is { } keyName &&
+                     !string.IsNullOrWhiteSpace(environment(keyName)) && provider.Models.Any(model => model.Available)))
+        {
+            _availableProviderSnapshot[provider.Id] = true;
+            _availableModelSnapshot = _availableModelSnapshot.Concat(provider.Models.Where(model => model.Available)
+                    .Select(model => model with { Provider = provider.Id }))
+                .GroupBy(ModelKey, StringComparer.Ordinal).Select(group => group.Last()).ToArray();
+        }
     }
 
     public IReadOnlyList<string> Scope => _scope;
@@ -79,6 +88,11 @@ public sealed class ProviderModelRuntime
         {
             lock (_availableProviderGate) return _availableProviderSnapshot.Count(item => item.Value);
         }
+    }
+
+    internal IReadOnlyList<ModelDescriptor> GetAvailableModelSnapshot()
+    {
+        lock (_availableProviderGate) return _availableModelSnapshot.ToArray();
     }
 
     public IReadOnlyList<ProviderProfile> Providers
@@ -268,7 +282,6 @@ public sealed class ProviderModelRuntime
         {
             if (provider.Models.Count == 0 && provider.Classifiers?.Count > 0)
             {
-                RecordAvailableProvider(provider.Id, false);
                 continue;
             }
             var auth = await ResolveAuthAsync(provider.Id, useRuntimeOverride: providerId is not null || _runtimeApiKeyProvider == provider.Id, cancellationToken);
@@ -315,7 +328,7 @@ public sealed class ProviderModelRuntime
                 continue;
             }
             // These built-ins use pinned, provider-owned catalogues rather than generic /models discovery.
-            if (_offline || provider.Id is "xai" or "anthropic" or "mistral" or "azure-openai-responses" or "openai-codex" or "google" or "google-vertex" or "amazon-bedrock" or "radius")
+            if (_offline || provider.Id is "xai" or "anthropic" or "mistral" or "huggingface" or "azure-openai-responses" or "openai-codex" or "google" or "google-vertex" or "amazon-bedrock" or "radius")
             {
                 result.AddRange(providerModels.Select(model => model with { Provider = provider.Id }));
                 result.AddRange(VirtualModelsFor(provider.Id));
@@ -353,8 +366,11 @@ public sealed class ProviderModelRuntime
         // only after the shared catalog is refreshed or a model is selected for the session.
         if (providerId is null)
         {
-            foreach (var provider in providers)
-                RecordAvailableProvider(provider.Id, visible.Any(model => model.Provider == provider.Id && model.Available));
+            RecordAvailableModels(result);
+        }
+        else
+        {
+            RecordAvailableModels(providerId, result);
         }
         return visible;
     }
@@ -432,6 +448,7 @@ public sealed class ProviderModelRuntime
             UnavailableReason = auth.Authenticated ? model.UnavailableReason : auth.Source
         };
         RecordAvailableProvider(explicitProvider.Id, model.Available);
+        if (model.Available) RecordAvailableModel(model);
         Func<CancellationToken, Task<(string Access, string AccountId)>>? oauthCredentialResolver = null;
         if (auth.Source.StartsWith("stored OAuth", StringComparison.Ordinal) &&
             explicitProvider.Id is "openai-codex" or "radius")
@@ -454,6 +471,34 @@ public sealed class ProviderModelRuntime
     {
         lock (_availableProviderGate) _availableProviderSnapshot[providerId] = available;
     }
+
+    private void RecordAvailableModels(IEnumerable<ModelDescriptor> models)
+    {
+        lock (_availableProviderGate)
+            _availableModelSnapshot = models.Where(model => model.Available)
+                .GroupBy(ModelKey, StringComparer.Ordinal).Select(group => group.Last()).ToArray();
+    }
+
+    private void RecordAvailableModels(string providerId, IEnumerable<ModelDescriptor> models)
+    {
+        lock (_availableProviderGate)
+        {
+            var retained = _availableModelSnapshot.Where(model => !string.Equals(model.Provider, providerId,
+                StringComparison.Ordinal));
+            _availableModelSnapshot = retained.Concat(models.Where(model => model.Available))
+                .GroupBy(ModelKey, StringComparer.Ordinal).Select(group => group.Last()).ToArray();
+        }
+    }
+
+    private void RecordAvailableModel(ModelDescriptor model)
+    {
+        lock (_availableProviderGate)
+            _availableModelSnapshot = _availableModelSnapshot.Where(existing =>
+                    !string.Equals(ModelKey(existing), ModelKey(model), StringComparison.Ordinal))
+                .Append(model).ToArray();
+    }
+
+    private static string ModelKey(ModelDescriptor model) => $"{model.Provider}\0{model.Id}";
 
     private AnthropicWorkloadIdentityOptions? ResolveAnthropicWorkloadIdentity()
     {
@@ -513,6 +558,7 @@ public sealed class ProviderModelRuntime
                 Classifiers = catalog.Classifiers
             };
             Volatile.Write(ref _llamaRouterProfile, profile);
+            RecordAvailableModels("llama.cpp", catalog.Models);
             return catalog.Cache.Models;
         }
         finally { _llamaRouterRefresh.Release(); }

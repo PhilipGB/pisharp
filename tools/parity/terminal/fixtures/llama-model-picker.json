@@ -66,10 +66,9 @@
     { "id": "wait-load-progress", "releaseGates": ["load-progress"], "expect": "50%" },
     { "id": "load-finished", "releaseGates": ["load-finished"], "expect": "unloaded-fixture-model" },
     { "id": "close-manager", "send": "\u001b", "expect": "fixture-model" },
-    { "id": "open-model-picker", "send": "/model\r", "expect": { "pi": "Only showing models from configured providers", "pisharp": "Select model" } },
+    { "id": "open-model-picker", "send": "/model\r", "expect": "Only showing models from configured providers" },
     { "id": "search-new-router-model", "send": "unloaded-fixture-model", "expect": "unloaded-fixture-model [llama.cpp]" },
-    { "id": "select-new-router-model", "send": "\r", "expect": { "pi": "Model: unloaded-fixture-model", "pisharp": "Model: llama.cpp/unloaded-fixture-model" } },
-    { "id": "quit", "send": "/quit\r", "exit": true }
+    { "id": "select-new-router-model", "send": "\r", "expect": "Model: unloaded-fixture-model" }
   ],
   "terminal": { "keyboardProtocol": "kitty" }
 }

@@ -37,7 +37,8 @@ internal sealed class TerminalScreenCompositor
         IReadOnlyList<string>? editorPanel = null, int? panelCursorRow = null,
         int? panelCursorColumn = null, bool panelCursorVisible = false, int panelBottomMargin = 1,
         string? statusNotification = null,
-        TerminalStatusNotificationKind statusNotificationKind = TerminalStatusNotificationKind.Info)
+        TerminalStatusNotificationKind statusNotificationKind = TerminalStatusNotificationKind.Info,
+        bool statusNotificationIsExtension = false)
     {
         var activeTheme = theme ?? TerminalTheme.Default;
         var footerHeight = height >= 5 ? 2 : height > 2 ? 1 : 0;
@@ -107,8 +108,11 @@ internal sealed class TerminalScreenCompositor
                 TerminalStatusNotificationKind.Error => ("error", "Error: "),
                 _ => ("dim", "")
             };
-            rows[1] = activeTheme.Style(style,
-                TerminalTranscriptViewport.Clip(" " + prefix + statusNotification, columns));
+            var statusText = prefix + statusNotification;
+            rows[1] = statusNotificationIsExtension
+                ? " " + activeTheme.Style(style, TerminalTranscriptViewport.Clip(statusText, columns - 1)) +
+                  new string(' ', Math.Max(0, columns - 1 - TerminalTextLayout.Width(statusText)))
+                : activeTheme.Style(style, TerminalTranscriptViewport.Clip(" " + statusText, columns));
         }
         if (overlay is not null) TerminalOverlayLayout.Apply(rows, overlay, columns, activeTheme);
 

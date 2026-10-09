@@ -4,18 +4,21 @@ namespace PiSharp.Cli.Tui;
 
 internal sealed record TerminalSelectionOption<T>(string Key, T Value, string Label,
     string? Description = null, string? SearchText = null, bool IsCurrent = false,
-    Func<string, string>? SelectedLabelRenderer = null);
+    Func<string, string>? SelectedLabelRenderer = null, bool IsDefault = false);
 
-internal sealed record TerminalSelection<T>(TerminalSelectionOption<T> Option, bool IsScoped);
+internal sealed record TerminalSelection<T>(TerminalSelectionOption<T> Option, bool IsScoped,
+    bool SetAsDefault = false);
+internal sealed record TerminalSelectionRefresh<T>(IReadOnlyList<TerminalSelectionOption<T>> Options,
+    IReadOnlyList<TerminalSelectionOption<T>>? ScopedOptions, string Status, bool IsSuccess);
 
-internal enum TerminalSelectionAction { Continue, Accept, Cancel }
+internal enum TerminalSelectionAction { Continue, Accept, AcceptAsDefault, Cancel }
 
 /// <summary>Searchable, width-aware list state shared by application pickers.</summary>
 internal sealed class TerminalSelectionList<T>
 {
     private readonly string _title;
-    private readonly IReadOnlyList<TerminalSelectionOption<T>> _allOptions;
-    private readonly IReadOnlyList<TerminalSelectionOption<T>>? _scopedOptions;
+    private IReadOnlyList<TerminalSelectionOption<T>> _allOptions;
+    private IReadOnlyList<TerminalSelectionOption<T>>? _scopedOptions;
     private readonly string _emptyMessage;
     private readonly string? _allLabel;
     private readonly string? _scopedLabel;
@@ -58,6 +61,25 @@ internal sealed class TerminalSelectionList<T>
         }
     }
 
+    public void ReplaceOptions(IReadOnlyList<TerminalSelectionOption<T>> allOptions,
+        IReadOnlyList<TerminalSelectionOption<T>>? scopedOptions)
+    {
+        ArgumentNullException.ThrowIfNull(allOptions);
+        var selectedKey = Selected?.Option.Key;
+        _allOptions = Sanitize(allOptions);
+        _scopedOptions = scopedOptions is null ? null : Sanitize(scopedOptions);
+        _activeOptions = IsScoped && _scopedOptions is not null ? _scopedOptions : _allOptions;
+        if (_scopedOptions is null) IsScoped = false;
+        FilterOptions();
+        if (_query.Length == 0)
+        {
+            var selectedIndex = IndexOf(selectedKey, _filteredOptions);
+            _selectedIndex = selectedIndex >= 0
+                ? selectedIndex
+                : Math.Clamp(_selectedIndex, 0, Math.Max(0, _filteredOptions.Count - 1));
+        }
+    }
+
     public TerminalSelectionAction HandleInput(TerminalInputEvent input, int? mouseContentLine = null)
     {
         ArgumentNullException.ThrowIfNull(input);
@@ -93,6 +115,8 @@ internal sealed class TerminalSelectionList<T>
             if (key.Key == ConsoleKey.Escape || key.Key == ConsoleKey.C && key.Modifiers.HasFlag(ConsoleModifiers.Control))
                 return TerminalSelectionAction.Cancel;
             if (key.Key == ConsoleKey.Enter) return Selected is null ? TerminalSelectionAction.Continue : TerminalSelectionAction.Accept;
+            if (key.Key == ConsoleKey.S && key.Modifiers.HasFlag(ConsoleModifiers.Control))
+                return Selected is null ? TerminalSelectionAction.Continue : TerminalSelectionAction.AcceptAsDefault;
             if (key.Key == ConsoleKey.Tab && _scopedOptions is not null)
             {
                 ToggleScope();
@@ -165,6 +189,77 @@ internal sealed class TerminalSelectionList<T>
             : "↑↓ move · type to filter · Enter select · Esc close");
         var maximumContentLines = Math.Max(1, height - 2);
         return lines.Take(maximumContentLines).Select(line => TerminalTranscriptViewport.Clip(line, width)).ToArray();
+    }
+
+    public IReadOnlyList<string> RenderModelPicker(int width, TerminalTheme theme, string hint,
+        string refreshStatus, bool refreshSuccess, Func<T, string> modelName,
+        out int cursorRow, out int cursorColumn)
+    {
+        ArgumentNullException.ThrowIfNull(theme);
+        ArgumentNullException.ThrowIfNull(modelName);
+        width = Math.Max(20, width);
+        var lines = new List<string>
+        {
+            Border(),
+            "",
+            _scopedOptions is null
+                ? theme.Style("warning", hint)
+                : "Scope: " + (IsScoped ? theme.Style("muted", _allLabel ?? "all") :
+                    theme.Style("accent", _allLabel ?? "all")) + " | " +
+                  (IsScoped ? theme.Style("accent", _scopedLabel ?? "scoped") : theme.Style("muted", _scopedLabel ?? "scoped")) +
+                  theme.Style("muted", " · Tab to switch"),
+            "",
+            "> " + _query + "\u001b[7m \u001b[27m",
+            ""
+        };
+        cursorRow = lines.Count - 2;
+        cursorColumn = 3 + TerminalTextLayout.Width(_query);
+
+        const int maximumVisible = 10;
+        var start = Math.Max(0, Math.Min(_selectedIndex - maximumVisible / 2,
+            _filteredOptions.Count - maximumVisible));
+        var end = Math.Min(start + maximumVisible, _filteredOptions.Count);
+        if (_filteredOptions.Count == 0)
+        {
+            lines.Add(theme.Style("muted", "  No matching models"));
+        }
+        else
+        {
+            for (var index = start; index < end; index++)
+            {
+                var option = _filteredOptions[index];
+                var selected = index == _selectedIndex;
+                var marker = selected ? theme.Style("accent", "→ ") : "  ";
+                var current = option.IsCurrent ? theme.Style("accent", "✓ ") : "  ";
+                var name = selected ? theme.Style("accent", option.Label) : option.Label;
+                var provider = theme.Style("muted", "[" + (option.Description ?? "") + "]");
+                var defaultBadge = option.IsDefault ? theme.Style("muted", " · default") : "";
+                lines.Add(marker + current + name + " " + provider + defaultBadge);
+            }
+            if (start > 0 || end < _filteredOptions.Count)
+                lines.Add(theme.Style("muted", $"  ({_selectedIndex + 1}/{_filteredOptions.Count})"));
+        }
+
+        if (Selected is { } currentSelection)
+        {
+            lines.Add("");
+            lines.Add(theme.Style("muted", "  Model Name: " + modelName(currentSelection.Option.Value)));
+        }
+        if (!string.IsNullOrEmpty(refreshStatus))
+        {
+            lines.Add("");
+            lines.Add(theme.Style(refreshSuccess ? "success" : "muted", "  " + refreshStatus));
+        }
+        lines.Add("");
+        lines.Add(theme.Style("dim", _scopedOptions is null
+            ? "  Enter to select · Ctrl+S to set as default · Escape/Ctrl+C to cancel"
+            : "  ↑↓ move · type to filter · Tab scope · Enter select · Esc close"));
+        lines.Add(Border());
+        return lines.Select(line => line.Length == 0
+            ? "" : Pad(TerminalTranscriptViewport.Clip(line, width))).ToArray();
+
+        string Border() => theme.Fg("border") + new string('─', width) + "\u001b[0m";
+        string Pad(string value) => value + new string(' ', Math.Max(0, width - TerminalTextLayout.Width(value)));
     }
 
     private int? OptionIndexAt(int? contentLine)

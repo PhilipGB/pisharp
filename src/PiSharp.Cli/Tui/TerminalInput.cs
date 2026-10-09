@@ -12,6 +12,7 @@ public sealed class TerminalInput
     private readonly Stream? _input;
     private readonly bool _standardInput;
     private readonly Queue<byte> _retainedBytes = new();
+    private readonly Queue<TerminalInputEvent> _retainedEvents = new();
     private List<byte>? _replyBytes;
     private long? _protocolDeadline;
     private int _protocolBytesRemaining;
@@ -50,6 +51,13 @@ public sealed class TerminalInput
     public bool TryRead(int timeoutMilliseconds, out TerminalInputEvent value)
     {
         var timeout = timeoutMilliseconds;
+        while (_retainedEvents.Count > 0)
+        {
+            var retained = _retainedEvents.Dequeue();
+            if (retained.IsControl) continue;
+            value = retained;
+            return true;
+        }
         while (Available(timeout))
         {
             value = ReadNext();
@@ -62,10 +70,47 @@ public sealed class TerminalInput
 
     public TerminalInputEvent Read()
     {
+        if (_retainedEvents.TryDequeue(out var retained)) return retained;
         TerminalInputEvent value;
         do { value = ReadNext(); } while (value.IsControl);
         return value;
     }
+
+    internal string ReadAvailableText(TerminalInputEvent first, out TerminalInputEvent? following)
+    {
+        var text = new StringBuilder();
+        if (TryGetText(first, out var firstText)) text.Append(firstText);
+        following = null;
+        while (TryRead(0, out var next))
+        {
+            if (TryGetText(next, out var availableText)) text.Append(availableText);
+            else
+            {
+                following = next;
+                break;
+            }
+        }
+        return text.ToString();
+    }
+
+    internal static bool TryGetText(TerminalInputEvent value, out string text)
+    {
+        if (value.Text is { } availableText)
+        {
+            text = availableText;
+            return true;
+        }
+        if (value.Key is { } key && (key.Modifiers & (ConsoleModifiers.Control | ConsoleModifiers.Alt)) == 0 &&
+            key.KeyChar != '\0' && !char.IsControl(key.KeyChar))
+        {
+            text = key.KeyChar.ToString();
+            return true;
+        }
+        text = string.Empty;
+        return false;
+    }
+
+    internal void PushBack(TerminalInputEvent value) => _retainedEvents.Enqueue(value);
 
     internal void CompletePendingReplies(Func<bool> hasPendingReplies, int timeoutMilliseconds)
     {

@@ -1,0 +1,2494 @@
+[
+  {
+    "id": "deepseek-ai/DeepSeek-R1",
+    "owner": "huggingface",
+    "contextLength": 64000,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.7,
+      "output": 2.5,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "DeepSeek-R1",
+    "maxOutputTokens": 32768,
+    "input": [
+      "text"
+    ],
+    "api": "openai-completions",
+    "inputLimits": null,
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": null,
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "deepseek-ai/DeepSeek-R1-0528",
+    "owner": "huggingface",
+    "contextLength": 163840,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 3,
+      "output": 5,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "DeepSeek-R1-0528",
+    "maxOutputTokens": 163840,
+    "input": [
+      "text"
+    ],
+    "api": "openai-completions",
+    "inputLimits": null,
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": null,
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "deepseek-ai/DeepSeek-V3",
+    "owner": "huggingface",
+    "contextLength": 64000,
+    "status": "pinned catalogue",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.4,
+      "output": 1.3,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "DeepSeek-V3",
+    "maxOutputTokens": 8192,
+    "input": [
+      "text"
+    ],
+    "api": "openai-completions",
+    "inputLimits": null,
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": null,
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "deepseek-ai/DeepSeek-V3-0324",
+    "owner": "huggingface",
+    "contextLength": 163840,
+    "status": "pinned catalogue",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.27,
+      "output": 1.12,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "DeepSeek V3 0324",
+    "maxOutputTokens": 163840,
+    "input": [
+      "text"
+    ],
+    "api": "openai-completions",
+    "inputLimits": null,
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": null,
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "deepseek-ai/DeepSeek-V3.1",
+    "owner": "huggingface",
+    "contextLength": 131072,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.27,
+      "output": 1,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "DeepSeek-V3.1",
+    "maxOutputTokens": 8192,
+    "input": [
+      "text"
+    ],
+    "api": "openai-completions",
+    "inputLimits": null,
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": null,
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "deepseek-ai/DeepSeek-V3.2",
+    "owner": "huggingface",
+    "contextLength": 163840,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.28,
+      "output": 0.4,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "DeepSeek-V3.2",
+    "maxOutputTokens": 65536,
+    "input": [
+      "text"
+    ],
+    "api": "openai-completions",
+    "inputLimits": null,
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": null,
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "deepseek-ai/DeepSeek-V4-Flash",
+    "owner": "huggingface",
+    "contextLength": 1048576,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.14,
+      "output": 0.28,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "DeepSeek V4 Flash",
+    "maxOutputTokens": 384000,
+    "input": [
+      "text"
+    ],
+    "api": "openai-completions",
+    "inputLimits": null,
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": null,
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "deepseek-ai/DeepSeek-V4-Flash-0731",
+    "owner": "huggingface",
+    "contextLength": 1048576,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.14,
+      "output": 0.28,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "DeepSeek V4 Flash 0731",
+    "maxOutputTokens": 384000,
+    "input": [
+      "text"
+    ],
+    "api": "openai-completions",
+    "inputLimits": null,
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": {
+      "off": null,
+      "minimal": null,
+      "low": null,
+      "medium": null,
+      "high": "high",
+      "xhigh": null,
+      "max": "max"
+    },
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "deepseek-ai/DeepSeek-V4-Flash-Vision-Exp",
+    "owner": "huggingface",
+    "contextLength": 1048576,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.44,
+      "output": 1.32,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "DeepSeek V4 Flash Vision Exp",
+    "maxOutputTokens": 384000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "openai-completions",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": {
+      "off": null,
+      "minimal": null,
+      "low": "low",
+      "medium": null,
+      "high": "high",
+      "xhigh": null,
+      "max": "max"
+    },
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "deepseek-ai/DeepSeek-V4-Pro",
+    "owner": "huggingface",
+    "contextLength": 1048576,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.435,
+      "output": 0.87,
+      "cachedInput": 0.003625,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "DeepSeek V4 Pro",
+    "maxOutputTokens": 393216,
+    "input": [
+      "text"
+    ],
+    "api": "openai-completions",
+    "inputLimits": null,
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": {
+      "off": null,
+      "minimal": null,
+      "low": null,
+      "medium": null,
+      "high": "high",
+      "xhigh": null,
+      "max": null
+    },
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "deepseek-ai/DeepSeek-V4-Pro-0813",
+    "owner": "huggingface",
+    "contextLength": 1000000,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 1.32,
+      "output": 3.96,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "DeepSeek V4 Pro 0813",
+    "maxOutputTokens": 384000,
+    "input": [
+      "text"
+    ],
+    "api": "openai-completions",
+    "inputLimits": null,
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": {
+      "off": null,
+      "minimal": null,
+      "low": "low",
+      "medium": null,
+      "high": "high",
+      "xhigh": null,
+      "max": "max"
+    },
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "deepseek-ai/DeepSeek-V4.1-Flash",
+    "owner": "huggingface",
+    "contextLength": 1048576,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.3,
+      "output": 1.2,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "DeepSeek V4.1 Flash",
+    "maxOutputTokens": 384000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "openai-completions",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": {
+      "off": "none",
+      "minimal": null,
+      "low": "low",
+      "medium": null,
+      "high": "high",
+      "xhigh": "xhigh",
+      "max": "max"
+    },
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "google/gemma-3-12b-it",
+    "owner": "huggingface",
+    "contextLength": 131072,
+    "status": "pinned catalogue",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.05,
+      "output": 0.15,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "Gemma 3 12B IT",
+    "maxOutputTokens": 131072,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "openai-completions",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": null,
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "google/gemma-3-27b-it",
+    "owner": "huggingface",
+    "contextLength": 131072,
+    "status": "pinned catalogue",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.08,
+      "output": 0.16,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "Gemma 3 27B IT",
+    "maxOutputTokens": 131072,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "openai-completions",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": null,
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "google/gemma-3-4b-it",
+    "owner": "huggingface",
+    "contextLength": 131072,
+    "status": "pinned catalogue",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.05,
+      "output": 0.1,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "Gemma 3 4B IT",
+    "maxOutputTokens": 131072,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "openai-completions",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": null,
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "google/gemma-4-26B-A4B-it",
+    "owner": "huggingface",
+    "contextLength": 262144,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.13,
+      "output": 0.4,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "Gemma 4 26B A4B IT",
+    "maxOutputTokens": 32768,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "openai-completions",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": null,
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "google/gemma-4-31B-it",
+    "owner": "huggingface",
+    "contextLength": 262144,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.14,
+      "output": 0.4,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "Gemma 4 31B IT",
+    "maxOutputTokens": 32768,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "openai-completions",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": null,
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "meta-llama/Llama-3.1-8B-Instruct",
+    "owner": "huggingface",
+    "contextLength": 131072,
+    "status": "pinned catalogue",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.06,
+      "output": 0.06,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "Llama-3.1-8B-Instruct",
+    "maxOutputTokens": 4096,
+    "input": [
+      "text"
+    ],
+    "api": "openai-completions",
+    "inputLimits": null,
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": null,
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "meta-llama/Llama-3.3-70B-Instruct",
+    "owner": "huggingface",
+    "contextLength": 131072,
+    "status": "pinned catalogue",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.59,
+      "output": 0.79,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "Llama-3.3-70B-Instruct",
+    "maxOutputTokens": 4096,
+    "input": [
+      "text"
+    ],
+    "api": "openai-completions",
+    "inputLimits": null,
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": null,
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "MiniMaxAI/MiniMax-M2",
+    "owner": "huggingface",
+    "contextLength": 204800,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.3,
+      "output": 1.2,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "MiniMax-M2",
+    "maxOutputTokens": 131072,
+    "input": [
+      "text"
+    ],
+    "api": "openai-completions",
+    "inputLimits": null,
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": null,
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "MiniMaxAI/MiniMax-M2.1",
+    "owner": "huggingface",
+    "contextLength": 204800,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.3,
+      "output": 1.2,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "MiniMax-M2.1",
+    "maxOutputTokens": 131072,
+    "input": [
+      "text"
+    ],
+    "api": "openai-completions",
+    "inputLimits": null,
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": null,
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "MiniMaxAI/MiniMax-M2.5",
+    "owner": "huggingface",
+    "contextLength": 204800,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.3,
+      "output": 1.2,
+      "cachedInput": 0.03,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "MiniMax-M2.5",
+    "maxOutputTokens": 131072,
+    "input": [
+      "text"
+    ],
+    "api": "openai-completions",
+    "inputLimits": null,
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": null,
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "MiniMaxAI/MiniMax-M2.7",
+    "owner": "huggingface",
+    "contextLength": 204800,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.3,
+      "output": 1.2,
+      "cachedInput": 0.06,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "MiniMax-M2.7",
+    "maxOutputTokens": 131072,
+    "input": [
+      "text"
+    ],
+    "api": "openai-completions",
+    "inputLimits": null,
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": null,
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "MiniMaxAI/MiniMax-M3",
+    "owner": "huggingface",
+    "contextLength": 524288,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.3,
+      "output": 1.2,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "MiniMax-M3",
+    "maxOutputTokens": 512000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "openai-completions",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": null,
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "moonshotai/Kimi-K2-Instruct",
+    "owner": "huggingface",
+    "contextLength": 131072,
+    "status": "pinned catalogue",
+    "reasoning": false,
+    "pricing": {
+      "input": 1,
+      "output": 3,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "Kimi-K2-Instruct",
+    "maxOutputTokens": 16384,
+    "input": [
+      "text"
+    ],
+    "api": "openai-completions",
+    "inputLimits": null,
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": null,
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "moonshotai/Kimi-K2-Instruct-0905",
+    "owner": "huggingface",
+    "contextLength": 262144,
+    "status": "pinned catalogue",
+    "reasoning": false,
+    "pricing": {
+      "input": 1,
+      "output": 3,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "Kimi-K2-Instruct-0905",
+    "maxOutputTokens": 16384,
+    "input": [
+      "text"
+    ],
+    "api": "openai-completions",
+    "inputLimits": null,
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": null,
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "moonshotai/Kimi-K2-Thinking",
+    "owner": "huggingface",
+    "contextLength": 262144,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.6,
+      "output": 2.5,
+      "cachedInput": 0.15,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "Kimi-K2-Thinking",
+    "maxOutputTokens": 262144,
+    "input": [
+      "text"
+    ],
+    "api": "openai-completions",
+    "inputLimits": null,
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": null,
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "moonshotai/Kimi-K2.5",
+    "owner": "huggingface",
+    "contextLength": 262144,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.6,
+      "output": 3,
+      "cachedInput": 0.1,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "Kimi-K2.5",
+    "maxOutputTokens": 262144,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "openai-completions",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": null,
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "moonshotai/Kimi-K2.6",
+    "owner": "huggingface",
+    "contextLength": 262144,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.95,
+      "output": 4,
+      "cachedInput": 0.16,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "Kimi-K2.6",
+    "maxOutputTokens": 262144,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "openai-completions",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": null,
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "moonshotai/Kimi-K2.7-Code",
+    "owner": "huggingface",
+    "contextLength": 262144,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.95,
+      "output": 4,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "Kimi K2.7 Code",
+    "maxOutputTokens": 262144,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "openai-completions",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": null,
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "moonshotai/Kimi-K3",
+    "owner": "huggingface",
+    "contextLength": 1000000,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 3,
+      "output": 15,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "Kimi K3",
+    "maxOutputTokens": 131072,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "openai-completions",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": {
+      "off": null,
+      "minimal": null,
+      "low": "low",
+      "medium": null,
+      "high": "high",
+      "xhigh": null,
+      "max": "max"
+    },
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "openai/gpt-oss-120b",
+    "owner": "huggingface",
+    "contextLength": 131072,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.25,
+      "output": 0.69,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "GPT OSS 120B",
+    "maxOutputTokens": 32768,
+    "input": [
+      "text"
+    ],
+    "api": "openai-completions",
+    "inputLimits": null,
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": {
+      "off": null,
+      "minimal": null,
+      "low": "low",
+      "medium": "medium",
+      "high": "high",
+      "xhigh": null,
+      "max": null
+    },
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "openai/gpt-oss-20b",
+    "owner": "huggingface",
+    "contextLength": 131072,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.1,
+      "output": 0.5,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "GPT OSS 20B",
+    "maxOutputTokens": 32768,
+    "input": [
+      "text"
+    ],
+    "api": "openai-completions",
+    "inputLimits": null,
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": {
+      "off": null,
+      "minimal": null,
+      "low": "low",
+      "medium": "medium",
+      "high": "high",
+      "xhigh": null,
+      "max": null
+    },
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "Qwen/Qwen2.5-Coder-32B-Instruct",
+    "owner": "huggingface",
+    "contextLength": 131072,
+    "status": "pinned catalogue",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.06,
+      "output": 0.2,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "Qwen2.5-Coder-32B-Instruct",
+    "maxOutputTokens": 8192,
+    "input": [
+      "text"
+    ],
+    "api": "openai-completions",
+    "inputLimits": null,
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": null,
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "Qwen/Qwen3-235B-A22B",
+    "owner": "huggingface",
+    "contextLength": 40960,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.2,
+      "output": 0.8,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "Qwen3 235B-A22B",
+    "maxOutputTokens": 16384,
+    "input": [
+      "text"
+    ],
+    "api": "openai-completions",
+    "inputLimits": null,
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": null,
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "Qwen/Qwen3-235B-A22B-Instruct-2507",
+    "owner": "huggingface",
+    "contextLength": 262144,
+    "status": "pinned catalogue",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.855,
+      "output": 2.565,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "Qwen3 235B-A22B Instruct 2507",
+    "maxOutputTokens": 16384,
+    "input": [
+      "text"
+    ],
+    "api": "openai-completions",
+    "inputLimits": null,
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": null,
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "Qwen/Qwen3-235B-A22B-Thinking-2507",
+    "owner": "huggingface",
+    "contextLength": 262144,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.3,
+      "output": 3,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "Qwen3-235B-A22B-Thinking-2507",
+    "maxOutputTokens": 131072,
+    "input": [
+      "text"
+    ],
+    "api": "openai-completions",
+    "inputLimits": null,
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": null,
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "Qwen/Qwen3-30B-A3B",
+    "owner": "huggingface",
+    "contextLength": 40960,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.12,
+      "output": 0.5,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "Qwen3 30B A3B",
+    "maxOutputTokens": 16384,
+    "input": [
+      "text"
+    ],
+    "api": "openai-completions",
+    "inputLimits": null,
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": null,
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "Qwen/Qwen3-32B",
+    "owner": "huggingface",
+    "contextLength": 131072,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.29,
+      "output": 0.59,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "Qwen3 32B",
+    "maxOutputTokens": 16384,
+    "input": [
+      "text"
+    ],
+    "api": "openai-completions",
+    "inputLimits": null,
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": null,
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "Qwen/Qwen3-Coder-30B-A3B-Instruct",
+    "owner": "huggingface",
+    "contextLength": 262144,
+    "status": "pinned catalogue",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.07,
+      "output": 0.26,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "Qwen3-Coder 30B-A3B Instruct",
+    "maxOutputTokens": 65536,
+    "input": [
+      "text"
+    ],
+    "api": "openai-completions",
+    "inputLimits": null,
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": null,
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "Qwen/Qwen3-Coder-480B-A35B-Instruct",
+    "owner": "huggingface",
+    "contextLength": 262144,
+    "status": "pinned catalogue",
+    "reasoning": false,
+    "pricing": {
+      "input": 2,
+      "output": 2,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "Qwen3-Coder-480B-A35B-Instruct",
+    "maxOutputTokens": 66536,
+    "input": [
+      "text"
+    ],
+    "api": "openai-completions",
+    "inputLimits": null,
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": null,
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "Qwen/Qwen3-Coder-Next",
+    "owner": "huggingface",
+    "contextLength": 262144,
+    "status": "pinned catalogue",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.2,
+      "output": 1.5,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "Qwen3-Coder-Next",
+    "maxOutputTokens": 65536,
+    "input": [
+      "text"
+    ],
+    "api": "openai-completions",
+    "inputLimits": null,
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": null,
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "Qwen/Qwen3-Next-80B-A3B-Instruct",
+    "owner": "huggingface",
+    "contextLength": 262144,
+    "status": "pinned catalogue",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.25,
+      "output": 1,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "Qwen3-Next-80B-A3B-Instruct",
+    "maxOutputTokens": 66536,
+    "input": [
+      "text"
+    ],
+    "api": "openai-completions",
+    "inputLimits": null,
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": null,
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "Qwen/Qwen3-Next-80B-A3B-Thinking",
+    "owner": "huggingface",
+    "contextLength": 262144,
+    "status": "pinned catalogue",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.3,
+      "output": 2,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "Qwen3-Next-80B-A3B-Thinking",
+    "maxOutputTokens": 131072,
+    "input": [
+      "text"
+    ],
+    "api": "openai-completions",
+    "inputLimits": null,
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": null,
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "Qwen/Qwen3-VL-235B-A22B-Instruct",
+    "owner": "huggingface",
+    "contextLength": 131072,
+    "status": "pinned catalogue",
+    "reasoning": false,
+    "pricing": {
+      "input": 0.3,
+      "output": 1.5,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "Qwen3 VL 235B A22B Instruct",
+    "maxOutputTokens": 32768,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "openai-completions",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": null,
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "Qwen/Qwen3-VL-235B-A22B-Thinking",
+    "owner": "huggingface",
+    "contextLength": 131072,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.98,
+      "output": 3.95,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "Qwen3 VL 235B A22B Thinking",
+    "maxOutputTokens": 32768,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "openai-completions",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": {
+      "off": null,
+      "minimal": null,
+      "low": "low",
+      "medium": "medium",
+      "high": "high",
+      "xhigh": null,
+      "max": null
+    },
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "Qwen/Qwen3.5-122B-A10B",
+    "owner": "huggingface",
+    "contextLength": 262144,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.4,
+      "output": 3.2,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "Qwen3.5 122B-A10B",
+    "maxOutputTokens": 65536,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "openai-completions",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": null,
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "Qwen/Qwen3.5-27B",
+    "owner": "huggingface",
+    "contextLength": 262144,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.3,
+      "output": 2.4,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "Qwen3.5 27B",
+    "maxOutputTokens": 65536,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "openai-completions",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": null,
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "Qwen/Qwen3.5-35B-A3B",
+    "owner": "huggingface",
+    "contextLength": 262144,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.25,
+      "output": 2,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "Qwen3.5 35B-A3B",
+    "maxOutputTokens": 65536,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "openai-completions",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": null,
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "Qwen/Qwen3.5-397B-A17B",
+    "owner": "huggingface",
+    "contextLength": 262144,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.6,
+      "output": 3.6,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "Qwen3.5-397B-A17B",
+    "maxOutputTokens": 32768,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "openai-completions",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": {
+      "off": "none",
+      "minimal": null,
+      "low": "low",
+      "medium": "medium",
+      "high": "high",
+      "xhigh": null,
+      "max": null
+    },
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "Qwen/Qwen3.5-9B",
+    "owner": "huggingface",
+    "contextLength": 262144,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.17,
+      "output": 0.25,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "Qwen3.5 9B",
+    "maxOutputTokens": 65536,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "openai-completions",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": null,
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "Qwen/Qwen3.6-27B",
+    "owner": "huggingface",
+    "contextLength": 262144,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.47,
+      "output": 3.19,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "Qwen3.6 27B",
+    "maxOutputTokens": 65536,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "openai-completions",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": null,
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "Qwen/Qwen3.6-35B-A3B",
+    "owner": "huggingface",
+    "contextLength": 262144,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.15,
+      "output": 0.95,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "Qwen3.6 35B-A3B",
+    "maxOutputTokens": 65536,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "openai-completions",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": null,
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "Qwen/Qwen3.8-2.4T-A95B",
+    "owner": "huggingface",
+    "contextLength": 262144,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 2.5,
+      "output": 6.25,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "Qwen3.8 2.4T A95B",
+    "maxOutputTokens": 131072,
+    "input": [
+      "text"
+    ],
+    "api": "openai-completions",
+    "inputLimits": null,
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": {
+      "off": null,
+      "minimal": null,
+      "low": "low",
+      "medium": "medium",
+      "high": null,
+      "xhigh": "xhigh",
+      "max": null
+    },
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "Qwen/Qwen3.8-27B",
+    "owner": "huggingface",
+    "contextLength": 262144,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.4,
+      "output": 3,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "Qwen3.8 27B",
+    "maxOutputTokens": 32768,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "openai-completions",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": {
+      "off": null,
+      "minimal": null,
+      "low": "low",
+      "medium": "medium",
+      "high": null,
+      "xhigh": "xhigh",
+      "max": null
+    },
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "stepfun-ai/Step-3.5-Flash",
+    "owner": "huggingface",
+    "contextLength": 262144,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.1,
+      "output": 0.3,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "Step 3.5 Flash",
+    "maxOutputTokens": 256000,
+    "input": [
+      "text"
+    ],
+    "api": "openai-completions",
+    "inputLimits": null,
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": null,
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "stepfun-ai/Step-3.7-Flash",
+    "owner": "huggingface",
+    "contextLength": 262144,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.2,
+      "output": 1.15,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "Step 3.7 Flash",
+    "maxOutputTokens": 256000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "openai-completions",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": {
+      "off": null,
+      "minimal": null,
+      "low": "low",
+      "medium": "medium",
+      "high": "high",
+      "xhigh": null,
+      "max": null
+    },
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "tencent/Hy3",
+    "owner": "huggingface",
+    "contextLength": 262144,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.14,
+      "output": 0.58,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "Hy3",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text"
+    ],
+    "api": "openai-completions",
+    "inputLimits": null,
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": {
+      "off": "none",
+      "minimal": null,
+      "low": "low",
+      "medium": null,
+      "high": "high",
+      "xhigh": null,
+      "max": null
+    },
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "tencent/Hy4-preview",
+    "owner": "huggingface",
+    "contextLength": 1000000,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.834,
+      "output": 2.501,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "Hy4 preview",
+    "maxOutputTokens": 64000,
+    "input": [
+      "text"
+    ],
+    "api": "openai-completions",
+    "inputLimits": null,
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": {
+      "off": "none",
+      "minimal": null,
+      "low": null,
+      "medium": null,
+      "high": "high",
+      "xhigh": null,
+      "max": null
+    },
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "thinkingmachines/Inkling",
+    "owner": "huggingface",
+    "contextLength": 1048576,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 1,
+      "output": 4.05,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "Inkling",
+    "maxOutputTokens": 1048576,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "openai-completions",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": {
+      "off": null,
+      "minimal": null,
+      "low": "low",
+      "medium": "medium",
+      "high": "high",
+      "xhigh": null,
+      "max": null
+    },
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "thinkingmachines/Inkling-Small",
+    "owner": "huggingface",
+    "contextLength": 524288,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.5,
+      "output": 1.2,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "Inkling Small",
+    "maxOutputTokens": 1048576,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "openai-completions",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": null,
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "XiaomiMiMo/MiMo-V2-Flash",
+    "owner": "huggingface",
+    "contextLength": 262144,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.1,
+      "output": 0.3,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "MiMo-V2-Flash",
+    "maxOutputTokens": 4096,
+    "input": [
+      "text"
+    ],
+    "api": "openai-completions",
+    "inputLimits": null,
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": null,
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "XiaomiMiMo/MiMo-V2.5",
+    "owner": "huggingface",
+    "contextLength": 262144,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.4,
+      "output": 2,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "MiMo-V2.5",
+    "maxOutputTokens": 131072,
+    "input": [
+      "text"
+    ],
+    "api": "openai-completions",
+    "inputLimits": null,
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": {
+      "off": "none",
+      "minimal": null,
+      "low": "low",
+      "medium": "medium",
+      "high": "high",
+      "xhigh": "xhigh",
+      "max": null
+    },
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "XiaomiMiMo/MiMo-V2.5-Pro",
+    "owner": "huggingface",
+    "contextLength": 1048576,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 1,
+      "output": 3,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "MiMo-V2.5-Pro",
+    "maxOutputTokens": 131072,
+    "input": [
+      "text"
+    ],
+    "api": "openai-completions",
+    "inputLimits": null,
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": {
+      "off": "none",
+      "minimal": null,
+      "low": "low",
+      "medium": "medium",
+      "high": "high",
+      "xhigh": "xhigh",
+      "max": null
+    },
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "zai-org/GLM-4.5",
+    "owner": "huggingface",
+    "contextLength": 131072,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.6,
+      "output": 2.2,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "GLM-4.5",
+    "maxOutputTokens": 98304,
+    "input": [
+      "text"
+    ],
+    "api": "openai-completions",
+    "inputLimits": null,
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": null,
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "zai-org/GLM-4.5-Air",
+    "owner": "huggingface",
+    "contextLength": 131072,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.13,
+      "output": 0.85,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "GLM-4.5-Air",
+    "maxOutputTokens": 98304,
+    "input": [
+      "text"
+    ],
+    "api": "openai-completions",
+    "inputLimits": null,
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": null,
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "zai-org/GLM-4.5V",
+    "owner": "huggingface",
+    "contextLength": 65536,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.6,
+      "output": 1.8,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "GLM-4.5V",
+    "maxOutputTokens": 16384,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "openai-completions",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": null,
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "zai-org/GLM-4.6",
+    "owner": "huggingface",
+    "contextLength": 204800,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.55,
+      "output": 2.2,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "GLM-4.6",
+    "maxOutputTokens": 131072,
+    "input": [
+      "text"
+    ],
+    "api": "openai-completions",
+    "inputLimits": null,
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": null,
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "zai-org/GLM-4.6V-Flash",
+    "owner": "huggingface",
+    "contextLength": 131072,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.3,
+      "output": 0.9,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "GLM-4.6V-Flash",
+    "maxOutputTokens": 32768,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "openai-completions",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": null,
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "zai-org/GLM-4.7",
+    "owner": "huggingface",
+    "contextLength": 204800,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.6,
+      "output": 2.2,
+      "cachedInput": 0.11,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "GLM-4.7",
+    "maxOutputTokens": 131072,
+    "input": [
+      "text"
+    ],
+    "api": "openai-completions",
+    "inputLimits": null,
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": null,
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "zai-org/GLM-4.7-Flash",
+    "owner": "huggingface",
+    "contextLength": 200000,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 0,
+      "output": 0,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "GLM-4.7-Flash",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text"
+    ],
+    "api": "openai-completions",
+    "inputLimits": null,
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": null,
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "zai-org/GLM-5",
+    "owner": "huggingface",
+    "contextLength": 202752,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 1,
+      "output": 3.2,
+      "cachedInput": 0.2,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "GLM-5",
+    "maxOutputTokens": 131072,
+    "input": [
+      "text"
+    ],
+    "api": "openai-completions",
+    "inputLimits": null,
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": null,
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "zai-org/GLM-5.1",
+    "owner": "huggingface",
+    "contextLength": 202752,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 1,
+      "output": 3.2,
+      "cachedInput": 0.2,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "GLM-5.1",
+    "maxOutputTokens": 131072,
+    "input": [
+      "text"
+    ],
+    "api": "openai-completions",
+    "inputLimits": null,
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": null,
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "zai-org/GLM-5.2",
+    "owner": "huggingface",
+    "contextLength": 262144,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 1.4,
+      "output": 4.4,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "GLM-5.2",
+    "maxOutputTokens": 131072,
+    "input": [
+      "text"
+    ],
+    "api": "openai-completions",
+    "inputLimits": null,
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": null,
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "zai-org/GLM-5.3",
+    "owner": "huggingface",
+    "contextLength": 1048576,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 1.4,
+      "output": 4.4,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "GLM-5.3",
+    "maxOutputTokens": 131072,
+    "input": [
+      "text"
+    ],
+    "api": "openai-completions",
+    "inputLimits": null,
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": {
+      "off": null,
+      "minimal": null,
+      "low": "low",
+      "medium": null,
+      "high": "high",
+      "xhigh": null,
+      "max": "max"
+    },
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  },
+  {
+    "id": "zai-org/GLM-5.3-Flash",
+    "owner": "huggingface",
+    "contextLength": 1048576,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 0.15,
+      "output": 0.5,
+      "cachedInput": 0,
+      "cachedWrite": 0
+    },
+    "provider": "huggingface",
+    "name": "GLM-5.3-Flash",
+    "maxOutputTokens": 131072,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "openai-completions",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "baseUrl": "https://router.huggingface.co/v1",
+    "thinkingLevelMap": {
+      "off": null,
+      "minimal": null,
+      "low": "low",
+      "medium": null,
+      "high": "high",
+      "xhigh": null,
+      "max": "max"
+    },
+    "compatibility": {
+      "supportsStrictMode": true,
+      "supportsDeveloperRole": false
+    }
+  }
+]

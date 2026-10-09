@@ -121,6 +121,29 @@ public sealed class TerminalScreenTests
     }
 
     [Fact]
+    public void LlamaLoadingPanelReplacesPendingCommandEditorFrame()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        var clock = new ManualTimeProvider();
+        using var screen = new TerminalScreen(output, error, () => 100, () => 32,
+            new TerminalImageRenderer(), TerminalTheme.Default, queryTerminalColors: false,
+            minimumRenderInterval: TimeSpan.FromMilliseconds(16), timeProvider: clock);
+        output.GetStringBuilder().Clear();
+
+        screen.SetEditor("/llama", 6);
+        screen.SetEditor("", 0);
+        screen.SetEditorPanel(["llama.cpp models", "Loading…"], 1, 1,
+            flushPendingRenderOnOpen: false);
+
+        var outputText = output.ToString();
+        Assert.Equal(1, Count(outputText, "\u001b[?2026h"));
+        Assert.DoesNotContain("/llama", outputText);
+        Assert.Contains("llama.cpp models", outputText);
+        Assert.Contains("Loading…", outputText);
+    }
+
+    [Fact]
     public void LlamaCatalogLoadingUsesPiExtensionEditorSpacing()
     {
         using var output = new StringWriter();
@@ -130,7 +153,7 @@ public sealed class TerminalScreenTests
         editor.AttachScreen(screen);
         output.GetStringBuilder().Clear();
 
-        using var loading = editor.ShowLlamaCatalogLoading();
+        editor.ShowLlamaCatalogLoading();
 
         var frame = output.ToString();
         Assert.Contains("\u001b[25;1H\u001b[2K", frame);

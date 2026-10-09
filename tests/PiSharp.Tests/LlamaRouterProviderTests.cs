@@ -56,6 +56,8 @@ public sealed class LlamaRouterProviderTests
 
             Assert.Equal(1, runtime.AvailableModelProviderCount);
             Assert.Equal(["qwen", "sleeping", "autoload-preset"], models.Select(model => model.Id));
+            Assert.Equal(["qwen", "sleeping", "autoload-preset"], runtime.GetAvailableModelSnapshot()
+                .Where(model => model.Provider == "llama.cpp").Select(model => model.Id));
             var qwen = Assert.Single(models, model => model.Id == "qwen");
             Assert.Equal("llama.cpp", qwen.Provider);
             Assert.Equal("openai-completions", qwen.Api);
@@ -69,6 +71,8 @@ public sealed class LlamaRouterProviderTests
             var routerClient = await runtime.CreateLlamaRouterClientAsync(default);
             _ = await runtime.RefreshLlamaRouterCatalogAsync(routerClient, default);
             Assert.Equal(1, runtime.AvailableModelProviderCount);
+            Assert.Equal(["qwen", "sleeping", "autoload-preset"], runtime.GetAvailableModelSnapshot()
+                .Where(model => model.Provider == "llama.cpp").Select(model => model.Id));
 
             var selection = await runtime.ResolveAsync("llama.cpp", "qwen");
             Assert.Equal(2, runtime.AvailableModelProviderCount);
@@ -83,6 +87,35 @@ public sealed class LlamaRouterProviderTests
                 model.BaseUrl == new Uri("http://llama.test:8080/v1"));
             Assert.Contains(requests, request => request.Path == "/models" && request.Authorization == "Bearer router-secret");
             Assert.DoesNotContain(requests, request => request.Path == "/props?model=sleeping&autoload=false");
+        }
+        finally
+        {
+            Directory.Delete(root, true);
+        }
+    }
+
+    [Fact]
+    public async Task HuggingFaceEnvironmentTokenPublishesTheCurrentPiModelSnapshot()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-huggingface-provider-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            using var http = new HttpClient(new RouterHandler(_ => throw new InvalidOperationException(
+                "The pinned Hugging Face catalog must not issue a discovery request.")));
+            var runtime = await ProviderModelRuntime.CreateAsync(root, false,
+                name => name == "HF_TOKEN" ? "fixture-token" : null, http);
+
+            Assert.Equal(1, runtime.AvailableModelProviderCount);
+            var snapshot = runtime.GetAvailableModelSnapshot().Where(model => model.Provider == "huggingface").ToArray();
+            Assert.Equal(76, snapshot.Length);
+            Assert.Contains(snapshot, model => model.Id == "deepseek-ai/DeepSeek-R1" &&
+                model.Api == "openai-completions" && model.BaseUrl == "https://router.huggingface.co/v1");
+
+            var listed = await runtime.ListModelsAsync("huggingface");
+
+            Assert.Equal(76, listed.Count);
+            Assert.Equal("deepseek-ai/DeepSeek-R1", listed[0].Id);
         }
         finally
         {

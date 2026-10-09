@@ -66,6 +66,10 @@ internal static class UserSettingsWriter
             "httpProxy" when userScope => value is null || IsValidHttpProxy(value),
             "steeringMode" or "followUpMode" => value is null || PromptDeliveryModes.TryParseSettingValue(value, out _),
             "defaultProjectTrust" when userScope => value is null or "ask" or "always" or "never",
+            "defaultProvider" => value is null || value.Length is > 0 and <= 128 && value == value.Trim() &&
+                !value.Any(char.IsControl),
+            "defaultModel" => value is null || value.Length is > 0 and <= 256 && value == value.Trim() &&
+                !value.Any(char.IsControl),
             "defaultThinkingLevel" => value is null || ThinkingLevels.IsValid(value),
             "theme" => value is null || IsValidThemeSetting(value),
             "externalEditor" => value is null || value.Length is > 0 and <= 4096 && value == value.Trim() && !value.Any(char.IsControl),

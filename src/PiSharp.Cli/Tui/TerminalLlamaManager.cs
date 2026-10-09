@@ -12,7 +12,7 @@ internal sealed class TerminalLlamaManager(ProviderModelRuntime runtime, Termina
         try { client = await runtime.CreateLlamaRouterClientAsync(cancellationToken).ConfigureAwait(false); }
         catch (InvalidOperationException error) when (error.Message.Contains("LLAMA_BASE_URL", StringComparison.Ordinal))
         {
-            editor.SetStatusNotification("Configure llama.cpp with /login llama.cpp", TerminalStatusNotificationKind.Warning);
+            editor.AppendStatusMessage("Configure llama.cpp with /login llama.cpp", TerminalStatusNotificationKind.Warning);
             return;
         }
 
@@ -23,7 +23,8 @@ internal sealed class TerminalLlamaManager(ProviderModelRuntime runtime, Termina
         {
             var options = ModelOptions(catalog);
             var selected = editor.ShowInlineSelectionList("llama.cpp models", options,
-                [ServerLabel(client.ServerUrl), ""], "enter load/unload/download • escape/ctrl+c close");
+                [ServerLabel(client.ServerUrl), ""], "enter load/unload/download • escape/ctrl+c close",
+                preservePanelAfterSelection: true);
             if (selected is null) return;
             Exception? actionError = null;
             try
@@ -35,7 +36,7 @@ internal sealed class TerminalLlamaManager(ProviderModelRuntime runtime, Termina
                 else if (action.Model is { Status.Value: "unloaded" } target)
                     await LoadModelAsync(client, catalog, target, cancellationToken).ConfigureAwait(false);
                 else if (action.Model is { } inProgress)
-                    editor.SetStatusNotification($"{inProgress.Id} is {inProgress.Status.Value}",
+                    editor.AppendStatusMessage($"{inProgress.Id} is {inProgress.Status.Value}",
                         TerminalStatusNotificationKind.Warning);
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
@@ -44,7 +45,7 @@ internal sealed class TerminalLlamaManager(ProviderModelRuntime runtime, Termina
             catalog = await ReadCatalogAsync(client, cancellationToken, showLoading: false).ConfigureAwait(false);
             if (catalog is null) return;
             if (actionError is not null && !IsConnectionError(actionError))
-                editor.SetStatusNotification(SecretRedactor.Redact(actionError.Message, environment("LLAMA_API_KEY")),
+                editor.AppendStatusMessage(SecretRedactor.Redact(actionError.Message, environment("LLAMA_API_KEY")),
                     TerminalStatusNotificationKind.Error);
         }
     }
@@ -57,7 +58,7 @@ internal sealed class TerminalLlamaManager(ProviderModelRuntime runtime, Termina
         {
             try
             {
-                using var loading = showInitialLoading ? editor.ShowLlamaCatalogLoading() : null;
+                if (showInitialLoading) editor.ShowLlamaCatalogLoading();
                 return await ReadCatalogSnapshotAsync(client, cancellationToken).ConfigureAwait(false);
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
@@ -66,11 +67,13 @@ internal sealed class TerminalLlamaManager(ProviderModelRuntime runtime, Termina
                 showInitialLoading = false;
                 var message = error is HttpRequestException { StatusCode: null } or TaskCanceledException
                     ? "Could not connect to the server." : error.Message;
-                var choice = editor.ShowInlineSelectionList("llama.cpp unavailable", new[]
+                var choice = editor.ShowInlineSelectionList(
+                    $"llama.cpp unavailable\n{ServerLabel(client.ServerUrl)}\n\n{message}", new[]
                 {
                     new TerminalSelectionOption<string>("retry", "retry", "Retry"),
                     new TerminalSelectionOption<string>("close", "close", "Close")
-                }, [ServerLabel(client.ServerUrl), "", message, ""], "enter select • escape/ctrl+c cancel");
+                }, [""], "enter select • escape/ctrl+c cancel",
+                    preservePanelAfterSelection: true);
                 if (choice?.Option.Value != "retry") return null;
             }
         }
@@ -136,7 +139,7 @@ internal sealed class TerminalLlamaManager(ProviderModelRuntime runtime, Termina
                     new TerminalSelectionOption<string>("replace", "replace", "Unload all and load"),
                     new TerminalSelectionOption<string>("keep", "keep", "Keep loaded and load"),
                     new TerminalSelectionOption<string>("cancel", "cancel", "Cancel")
-                }, [""], "enter select • escape/ctrl+c cancel");
+                }, [""], "enter select • escape/ctrl+c cancel", preservePanelAfterSelection: true);
             if (selected is null || selected.Option.Value == "cancel") return;
             replace = selected.Option.Value == "replace";
         }
@@ -154,7 +157,7 @@ internal sealed class TerminalLlamaManager(ProviderModelRuntime runtime, Termina
             if (result.Cancelled) return;
             var loadedModel = (await ReadCatalogSnapshotAsync(client, cancellationToken).ConfigureAwait(false))
                 .FirstOrDefault(model => model.Id == target.Id);
-            editor.SetStatusNotification(loadedModel?.Status.Value == "loaded"
+            editor.AppendStatusMessage(loadedModel?.Status.Value == "loaded"
                 ? $"Loaded {target.Id}" : $"Load started for {target.Id}");
         }
         catch
@@ -171,7 +174,7 @@ internal sealed class TerminalLlamaManager(ProviderModelRuntime runtime, Termina
     private async Task RestoreLoadedAsync(LlamaRouterClient client, IReadOnlyList<LlamaRouterModelInfo> models,
         CancellationToken cancellationToken)
     {
-        editor.SetStatusNotification("Restoring previously loaded models");
+        editor.AppendStatusMessage("Restoring previously loaded models");
         foreach (var model in models)
             await client.LoadAndWaitAsync(model.Id, _ => { }, cancellationToken).ConfigureAwait(false);
         _ = await ReadCatalogSnapshotAsync(client, cancellationToken).ConfigureAwait(false);
@@ -184,10 +187,11 @@ internal sealed class TerminalLlamaManager(ProviderModelRuntime runtime, Termina
             {
                 new TerminalSelectionOption<bool>("yes", true, "Yes"),
                 new TerminalSelectionOption<bool>("no", false, "No")
-            }, [model.Id, ""], "enter select • escape/ctrl+c cancel")?.Option.Value != true) return;
+            }, [model.Id, ""], "enter select • escape/ctrl+c cancel",
+            preservePanelAfterSelection: true)?.Option.Value != true) return;
         await client.UnloadAndWaitAsync(model.Id, cancellationToken).ConfigureAwait(false);
         _ = await runtime.RefreshLlamaRouterCatalogAsync(client, cancellationToken).ConfigureAwait(false);
-        editor.SetStatusNotification($"Unloaded {model.Id}");
+        editor.AppendStatusMessage($"Unloaded {model.Id}");
     }
 
     private async Task DownloadModelAsync(LlamaRouterClient client,
@@ -206,14 +210,14 @@ internal sealed class TerminalLlamaManager(ProviderModelRuntime runtime, Termina
         if (details.Gated is { } gated)
         {
             var approval = gated == "manual" ? "Manual approval is required" : "Accept the access terms";
-            var choice = editor.ShowInlineSelectionList("Hugging Face access required",
+            var title = $"Hugging Face access required\n{details.Id}\n\n{approval} at:\nhttps://huggingface.co/{details.Id}\n\nThe llama.cpp server needs HF_TOKEN with access.";
+            var choice = editor.ShowInlineSelectionList(title,
                 new[]
                 {
                     new TerminalSelectionOption<bool>("continue", true, "Continue"),
                     new TerminalSelectionOption<bool>("back", false, "Back")
-                }, [details.Id, "", approval + " at:", $"https://huggingface.co/{details.Id}", "",
-                    "The llama.cpp server needs HF_TOKEN with access.", ""],
-                "enter select • escape/ctrl+c cancel");
+                }, [""],
+                "enter select • escape/ctrl+c cancel", preservePanelAfterSelection: true);
             if (choice?.Option.Value != true) return;
         }
 
@@ -228,8 +232,9 @@ internal sealed class TerminalLlamaManager(ProviderModelRuntime runtime, Termina
                 return new TerminalSelectionOption<HuggingFaceQuantization>(item.Name, item,
                     item.Name + (detail.Count == 0 ? "" : " · " + string.Join(" · ", detail)));
             }).ToArray();
-            quantization = editor.ShowInlineSelectionList("Select quantization", options,
-                [details.Id, ""], "enter select • escape/ctrl+c cancel")?.Option.Value.Name;
+            quantization = editor.ShowInlineSelectionList($"Select quantization\n{details.Id}", options,
+                [""], "enter select • escape/ctrl+c cancel",
+                preservePanelAfterSelection: true)?.Option.Value.Name;
             if (quantization is null) return;
         }
 
@@ -240,7 +245,7 @@ internal sealed class TerminalLlamaManager(ProviderModelRuntime runtime, Termina
             () => client.UnloadAsync(model, CancellationToken.None)).ConfigureAwait(false);
         if (result.Cancelled) return;
         _ = await runtime.RefreshLlamaRouterCatalogAsync(client, cancellationToken).ConfigureAwait(false);
-        editor.SetStatusNotification("Downloaded " + model);
+        editor.AppendStatusMessage("Downloaded " + model);
     }
 
     private static (string Repository, string? Quantization) ParseRepositoryInput(string value)

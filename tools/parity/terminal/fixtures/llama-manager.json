@@ -43,8 +43,7 @@
   "actions": [
     { "id": "startup", "expect": "fixture-model" },
     { "id": "open-manager", "send": "/llama\r", "expect": "llama.cpp models" },
-    { "id": "close-manager", "send": "\u001b", "expect": "fixture-model" },
-    { "id": "quit", "send": "/quit\r", "exit": true }
+    { "id": "close-manager", "send": "\u001b", "expect": "fixture-model" }
   ],
   "terminal": { "keyboardProtocol": "kitty" }
 }

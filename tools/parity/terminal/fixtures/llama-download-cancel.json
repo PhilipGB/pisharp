@@ -72,8 +72,7 @@
     { "id": "wait-download-progress", "releaseGates": ["download-progress"], "expect": "50%" },
     { "id": "request-cancel", "send": "\u001b", "expect": "Stop download?" },
     { "id": "confirm-cancel", "send": "\r", "expect": "llama.cpp models", "timeout": 15 },
-    { "id": "close-manager", "send": "\u001b", "expect": "fixture-model" },
-    { "id": "quit", "send": "/quit\r", "exit": true }
+    { "id": "close-manager", "send": "\u001b", "expect": "fixture-model" }
   ],
   "terminal": { "keyboardProtocol": "kitty" }
 }

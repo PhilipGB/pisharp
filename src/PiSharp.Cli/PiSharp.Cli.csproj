@@ -30,6 +30,7 @@
     <EmbeddedResource Include="Providers\Data\google-vertex-models.json" LogicalName="PiSharp.Cli.Providers.Data.google-vertex-models.json" />
     <EmbeddedResource Include="Providers\Data\amazon-bedrock-models.json" LogicalName="PiSharp.Cli.Providers.Data.amazon-bedrock-models.json" />
     <EmbeddedResource Include="Providers\Data\radius-models.json" LogicalName="PiSharp.Cli.Providers.Data.radius-models.json" />
+    <EmbeddedResource Include="Providers\Data\huggingface-models.json" LogicalName="PiSharp.Cli.Providers.Data.huggingface-models.json" />
   </ItemGroup>
 
   <ItemGroup>

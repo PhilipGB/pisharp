@@ -54,6 +54,12 @@ class FixtureServer:
                         outer.catalog_failures_remaining -= 1
                         self.send_json(dict(error=dict(message='fixture router unavailable')), status=503)
                         return
+                    success_request_gate = outer.behavior.get('catalogSuccessRequestGate')
+                    success_response_gate = outer.behavior.get('catalogSuccessResponseGate')
+                    if success_request_gate is not None:
+                        outer.signal_gate(success_request_gate)
+                    if success_response_gate is not None:
+                        outer.wait_for_gate(success_response_gate)
                     outer._wait_for_model_poll_gate()
                     now = time.monotonic()
                     for entry in outer.models:

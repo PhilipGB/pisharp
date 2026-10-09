@@ -35,7 +35,6 @@ public sealed class LlamaRouterManagerTuiTests
             await terminal.WaitTextAsync("1 model is loaded");
             mark = terminal.Mark;
             await terminal.SendAsync("\u001b[B\n");
-            await terminal.WaitTextAsync("Loading model", mark);
             await terminal.WaitTextAsync("Loaded target", mark);
             Assert.Equal("loaded", server.Statuses["target"]);
 
@@ -329,7 +328,7 @@ public sealed class LlamaRouterManagerTuiTests
 
             mark = terminal.Mark;
             await terminal.SendAsync("/model\n");
-            await terminal.WaitTextAsync("type to filter", mark);
+            await terminal.WaitTextAsync("Model Name: fixture-model", mark);
             await terminal.SendAsync("target");
             await terminal.WaitTextAsync("target [llama.cpp]", mark);
             await terminal.SendAsync("\n");

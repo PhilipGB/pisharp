@@ -42,6 +42,7 @@ public sealed class TerminalScreen : IDisposable
     private string _footer = "Enter steers · follow-up queues · Escape aborts";
     private string? _statusNotification;
     private TerminalStatusNotificationKind _statusNotificationKind;
+    private bool _statusNotificationIsExtension;
     private IReadOnlyList<string>? _overlay;
     private IReadOnlyList<string>? _editorPanel;
     private int? _panelCursorRow;
@@ -354,20 +355,21 @@ public sealed class TerminalScreen : IDisposable
     }
 
     internal void SetEditorPanel(IReadOnlyList<string>? lines, int? cursorRow = null,
-        int? cursorColumn = null, bool cursorVisible = false, int bottomMargin = 1)
+        int? cursorColumn = null, bool cursorVisible = false, int bottomMargin = 1,
+        bool flushPendingRenderOnOpen = true, bool renderImmediately = false)
     {
         lock (_gate)
         {
             if (!_active) return;
             var opening = lines is not null && _editorPanel is null;
-            if (opening && _renderPending)
+            if (opening && _renderPending && flushPendingRenderOnOpen)
                 FlushPendingRenderLocked();
             _editorPanel = lines?.Select(line => line.Replace('\n', ' ')).ToArray();
             _panelCursorRow = cursorRow;
             _panelCursorColumn = cursorColumn;
             _panelCursorVisible = cursorVisible;
             _panelBottomMargin = bottomMargin;
-            RenderLocked(immediate: opening);
+            RenderLocked(immediate: opening || renderImmediately);
         }
     }
 
@@ -388,6 +390,78 @@ public sealed class TerminalScreen : IDisposable
             _transcript.AppendCaptured(Environment.NewLine + " " + prefix + safe + Environment.NewLine, isError);
             _statusNotification = safe;
             _statusNotificationKind = kind;
+            _statusNotificationIsExtension = false;
+            RenderLocked();
+        }
+    }
+
+    internal void AppendStatusMessage(string message,
+        TerminalStatusNotificationKind kind = TerminalStatusNotificationKind.Info)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(message);
+        var safe = TerminalSafeText.Normalize(message);
+        var prefix = kind switch
+        {
+            TerminalStatusNotificationKind.Warning => "Warning: ",
+            TerminalStatusNotificationKind.Error => "Error: ",
+            _ => ""
+        };
+        lock (_gate)
+        {
+            if (!_active) return;
+            _transcript.AppendCaptured(Environment.NewLine + " " + prefix + safe + Environment.NewLine,
+                kind == TerminalStatusNotificationKind.Error);
+            _statusNotification = safe;
+            _statusNotificationKind = kind;
+            _statusNotificationIsExtension = true;
+            RenderLocked();
+        }
+    }
+
+    internal void ShowModelChangeStatus(string footer, string message)
+    {
+        ArgumentNullException.ThrowIfNull(footer);
+        ArgumentException.ThrowIfNullOrWhiteSpace(message);
+        var safe = TerminalSafeText.Normalize(message);
+        lock (_gate)
+        {
+            if (!_active) return;
+            _editorPanel = null;
+            _panelCursorRow = null;
+            _panelCursorColumn = null;
+            _panelCursorVisible = false;
+            _footer = TerminalSafeText.Normalize(footer);
+            _transcript.AppendCaptured(Environment.NewLine + " " + safe + Environment.NewLine, isError: false);
+            _statusNotification = safe;
+            _statusNotificationKind = TerminalStatusNotificationKind.Info;
+            _statusNotificationIsExtension = true;
+            RenderLocked();
+        }
+    }
+
+    internal void DismissEditorPanelAndAppendStatus(string message,
+        TerminalStatusNotificationKind kind = TerminalStatusNotificationKind.Info)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(message);
+        var safe = TerminalSafeText.Normalize(message);
+        var prefix = kind switch
+        {
+            TerminalStatusNotificationKind.Warning => "Warning: ",
+            TerminalStatusNotificationKind.Error => "Error: ",
+            _ => ""
+        };
+        lock (_gate)
+        {
+            if (!_active) return;
+            _editorPanel = null;
+            _panelCursorRow = null;
+            _panelCursorColumn = null;
+            _panelCursorVisible = false;
+            _transcript.AppendCaptured(Environment.NewLine + " " + prefix + safe + Environment.NewLine,
+                kind == TerminalStatusNotificationKind.Error);
+            _statusNotification = safe;
+            _statusNotificationKind = kind;
+            _statusNotificationIsExtension = true;
             RenderLocked();
         }
     }
@@ -826,7 +900,7 @@ public sealed class TerminalScreen : IDisposable
         var frame = _compositor.Compose(_editorText, _editorCursor, _editorSelectionStart, _editorSelectionEnd,
             transcript, _footer, _overlay, _scrollOffset, columns, rows, _search, _mouse, _theme,
             _editorPanel, _panelCursorRow, _panelCursorColumn, _panelCursorVisible, _panelBottomMargin,
-            _statusNotification, _statusNotificationKind);
+            _statusNotification, _statusNotificationKind, _statusNotificationIsExtension);
         _scrollOffset = frame.ScrollOffset;
         _lastColumns = frame.Columns;
         _lastRows = frame.Height;

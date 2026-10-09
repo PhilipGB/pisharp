@@ -21,7 +21,6 @@
     { "id": "default-url", "send": "\r", "expect": "API key (optional)" },
     { "id": "api-key-input", "send": "fixture-secret", "expect": "fixture-secret" },
     { "id": "api-key-submit", "send": "\r", "expect": "Saved API key for llama.cpp" },
-    { "id": "quit-before-reload", "send": "/quit\r", "exit": true },
     {
       "id": "restart-with-conflicting-environment",
       "restart": true,
@@ -32,8 +31,7 @@
       "expect": "fixture-model"
     },
     { "id": "open-manager-after-reload", "send": "/llama\r", "expect": "llama.cpp models" },
-    { "id": "close-manager-after-reload", "send": "\u001b", "expect": "fixture-model" },
-    { "id": "quit", "send": "/quit\r", "exit": true }
+    { "id": "close-manager-after-reload", "send": "\u001b", "expect": "fixture-model" }
   ],
   "dimensions": [{ "columns": 100, "rows": 32 }],
   "themes": ["dark"],

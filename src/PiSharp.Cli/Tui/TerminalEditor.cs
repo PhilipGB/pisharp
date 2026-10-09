@@ -6,6 +6,7 @@ internal readonly record struct TerminalProgressOutcome<T>(bool Cancelled, T? Va
 /// <summary>Normal-screen terminal editor. Leaves transcript in the terminal scrollback.</summary>
 public sealed class TerminalEditor
 {
+    private static readonly TimeSpan InitialProgressFrameDelay = TimeSpan.FromMilliseconds(16);
     private const string ActiveRunFooter = "Enter steers · follow-up queues · Escape aborts · Alt+Up restores queued input · Ctrl+O tools";
     private readonly EditorBuffer _buffer;
     private TerminalInput? _input;
@@ -88,6 +89,99 @@ public sealed class TerminalEditor
             allLabel, scopedLabel, emptyMessage);
     }
 
+    internal TerminalSelection<T>? ShowModelSelectionList<T>(
+        IReadOnlyList<TerminalSelectionOption<T>> options, string? selectedKey, string hint,
+        Func<T, string> modelName, IReadOnlyList<TerminalSelectionOption<T>>? scopedOptions = null,
+        Func<CancellationToken, Task<TerminalSelectionRefresh<T>>>? refreshModels = null,
+        CancellationToken cancellationToken = default)
+    {
+        if (_screen is not { IsActive: true } screen) return null;
+        var input = EnsureInput();
+        using var mode = TerminalMode.Enter(screen);
+        var list = new TerminalSelectionList<T>("Select model", options, selectedKey, scopedOptions,
+            allLabel: "all", scopedLabel: "scoped", emptyMessage: "No matching models");
+        var preservePanel = false;
+        using var refreshCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        refreshCancellation.CancelAfter(TimeSpan.FromSeconds(15));
+        var refreshStatus = refreshModels is null ? "Model catalogs refreshed." : "Refreshing model catalogs…";
+        var refreshSuccess = refreshModels is null;
+        var needsRender = true;
+        Task<TerminalSelectionRefresh<T>>? refreshTask = null;
+        try
+        {
+            var initialContent = list.RenderModelPicker(screen.TerminalWidth, screen.CurrentTheme, hint,
+                refreshStatus, refreshSuccess, modelName, out var initialCursorRow, out var initialCursorColumn);
+            screen.SetEditorPanel(initialContent, initialCursorRow, initialCursorColumn,
+                cursorVisible: false, bottomMargin: 2);
+            needsRender = false;
+            if (refreshModels is not null) refreshTask = refreshModels(refreshCancellation.Token);
+
+            while (screen.IsActive)
+            {
+                if (cancellationToken.IsCancellationRequested) return null;
+                screen.RefreshIfResized();
+                if (refreshTask is { IsCompleted: true })
+                {
+                    if (refreshTask.IsCompletedSuccessfully)
+                    {
+                        var refreshed = refreshTask.Result;
+                        list.ReplaceOptions(refreshed.Options, refreshed.ScopedOptions);
+                        refreshStatus = refreshed.Status;
+                        refreshSuccess = refreshed.IsSuccess;
+                    }
+                    else if (refreshTask.IsCanceled)
+                    {
+                        if (cancellationToken.IsCancellationRequested) return null;
+                        refreshStatus = "Model refresh timed out; showing cached models.";
+                        refreshSuccess = false;
+                    }
+                    else
+                    {
+                        refreshStatus = "Could not refresh model catalogs; showing cached models.";
+                        refreshSuccess = false;
+                    }
+                    refreshTask = null;
+                    needsRender = true;
+                }
+
+                if (needsRender)
+                {
+                    var content = list.RenderModelPicker(screen.TerminalWidth, screen.CurrentTheme, hint,
+                        refreshStatus, refreshSuccess, modelName, out var cursorRow, out var cursorColumn);
+                    screen.SetEditorPanel(content, cursorRow, cursorColumn, cursorVisible: false, bottomMargin: 2);
+                    needsRender = false;
+                }
+
+                if (!input.TryRead(40, out var next)) continue;
+                TerminalSelectionAction action;
+                if (TerminalInput.TryGetText(next, out _))
+                {
+                    var text = input.ReadAvailableText(next, out var following);
+                    action = list.HandleInput(new(null, text));
+                    if (following is not null) input.PushBack(following);
+                }
+                else action = list.HandleInput(next);
+                if (action is TerminalSelectionAction.Accept or TerminalSelectionAction.AcceptAsDefault)
+                {
+                    preservePanel = true;
+                    refreshCancellation.Cancel();
+                    return list.Selected is { } selected
+                        ? selected with { SetAsDefault = action == TerminalSelectionAction.AcceptAsDefault }
+                        : null;
+                }
+                if (action == TerminalSelectionAction.Cancel) return null;
+                if (next.IsEndOfStream) return null;
+                needsRender = true;
+            }
+            return null;
+        }
+        finally
+        {
+            refreshCancellation.Cancel();
+            if (!preservePanel) screen.SetEditorPanel(null);
+        }
+    }
+
     internal TerminalSelection<T>? ShowInlineSelectionList<T>(string title,
         IReadOnlyList<TerminalSelectionOption<T>> options, IReadOnlyList<string>? header = null,
         string footer = "↑↓ move • enter select • escape/ctrl+c close", string? selectedKey = null,
@@ -139,7 +233,7 @@ public sealed class TerminalEditor
     }
 
     internal async Task<IReadOnlyList<string>?> PromptSequenceAsync(string title,
-        IReadOnlyList<(string Message, string? Placeholder)> prompts)
+        IReadOnlyList<(string Message, string? Placeholder)> prompts, bool preservePanelAfterSubmit = false)
     {
         if (prompts.Count == 0) return [];
         if (_screen is not { IsActive: true } screen)
@@ -158,38 +252,83 @@ public sealed class TerminalEditor
 
         var values = new List<string>(prompts.Count);
         var input = EnsureInput();
+        var preservePanel = false;
         using var mode = TerminalMode.Enter(screen);
         try
         {
+            var titleTheme = screen.CurrentTheme;
+            var titleBorder = titleTheme.Fg("border") + new string('─', Math.Max(1, screen.TerminalWidth)) + "\u001b[0m";
+            var titlePanel = new[]
+            {
+                titleBorder,
+                PadPanelLine(" " + titleTheme.Style("accent", TerminalSafeText.Normalize(title), bold: true),
+                    screen.TerminalWidth),
+                titleBorder
+            };
+            screen.SetEditorPanel(titlePanel, cursorVisible: false, bottomMargin: 2);
             for (var promptIndex = 0; promptIndex < prompts.Count; promptIndex++)
             {
                 var promptBuffer = new EditorBuffer(_keymap);
+                var needsRender = true;
+                var renderedWidth = -1;
+                var renderedHeight = -1;
                 while (screen.IsActive)
                 {
                     screen.RefreshIfResized();
-                    var prompt = prompts[promptIndex];
-                    var panel = RenderPromptPanel(screen, title, prompts, values, promptIndex, promptBuffer.Text,
-                        promptBuffer.Cursor, out var cursorRow, out var cursorColumn);
-                    screen.SetEditorPanel(panel, cursorRow, cursorColumn, cursorVisible: false, bottomMargin: 2);
+                    if (renderedWidth != screen.TerminalWidth || renderedHeight != screen.TerminalHeight)
+                        needsRender = true;
+                    if (needsRender)
+                    {
+                        var panel = RenderPromptPanel(screen, title, prompts, values, promptIndex, promptBuffer.Text,
+                            promptBuffer.Cursor, out var cursorRow, out var cursorColumn);
+                        screen.SetEditorPanel(panel, cursorRow, cursorColumn, cursorVisible: false, bottomMargin: 2);
+                        renderedWidth = screen.TerminalWidth;
+                        renderedHeight = screen.TerminalHeight;
+                        needsRender = false;
+                    }
 
-                    var next = input.Read();
+                    if (!input.TryRead(40, out var next)) continue;
                     if (next.IsEndOfStream) return null;
                     if (next.Key is { } key && (key.Key == ConsoleKey.Escape ||
                         _keymap.Matches("app.interrupt", key) || _keymap.Matches("app.clear", key))) return null;
                     if (next.Key is { } submit && submit.Key == ConsoleKey.Enter)
                     {
                         values.Add(promptBuffer.Text);
+                        var submittedPanel = RenderPromptPanel(screen, title, prompts, values, promptIndex,
+                            promptBuffer.Text, promptBuffer.Cursor, out var submittedCursorRow,
+                            out var submittedCursorColumn, submittedPrompt: true);
+                        screen.SetEditorPanel(submittedPanel, submittedCursorRow, submittedCursorColumn,
+                            cursorVisible: false, bottomMargin: 2, renderImmediately: true);
                         break;
                     }
 
-                    if (next.Text is { Length: > 0 } text) _ = promptBuffer.InsertText(text);
+                    if (TerminalInput.TryGetText(next, out _))
+                    {
+                        var text = input.ReadAvailableText(next, out var following);
+                        _ = promptBuffer.InsertText(text);
+                        if (following is not null) input.PushBack(following);
+                    }
                     else if (next.Key is { } editKey) _ = promptBuffer.Handle(editKey);
+                    needsRender = true;
                 }
                 if (!screen.IsActive) return null;
             }
+            preservePanel = preservePanelAfterSubmit;
             return values;
         }
-        finally { screen.SetEditorPanel(null); }
+        finally
+        {
+            if (!preservePanel) screen.SetEditorPanel(null);
+        }
+    }
+
+    internal void DismissEditorPanel() => _screen?.SetEditorPanel(null);
+
+    internal void DismissEditorPanelAndAppendStatus(string message,
+        TerminalStatusNotificationKind kind = TerminalStatusNotificationKind.Info)
+    {
+        if (_screen is { IsActive: true } screen) screen.DismissEditorPanelAndAppendStatus(message, kind);
+        else Console.WriteLine(message);
     }
 
     internal string? ShowHuggingFaceSearch(HuggingFaceClient client,
@@ -215,9 +354,9 @@ public sealed class TerminalEditor
         screen.SetEditorPanel(lines, lines.Length - 2, width + 1, cursorVisible: false, bottomMargin: 2);
     }
 
-    internal IDisposable? ShowLlamaCatalogLoading()
+    internal void ShowLlamaCatalogLoading()
     {
-        if (_screen is not { IsActive: true } screen) return null;
+        if (_screen is not { IsActive: true } screen) return;
         var theme = screen.CurrentTheme;
         var width = screen.TerminalWidth;
         var lines = new[]
@@ -229,17 +368,19 @@ public sealed class TerminalEditor
             new string(' ', width),
             PanelBorder(theme, width)
         };
-        screen.SetEditorPanel(lines, lines.Length - 2, width + 1, cursorVisible: false, bottomMargin: 2);
-        return new InlinePanelLease(screen);
-    }
-
-    private sealed class InlinePanelLease(TerminalScreen screen) : IDisposable
-    {
-        public void Dispose() => screen.SetEditorPanel(null);
+        screen.SetEditorPanel(lines, lines.Length - 2, width + 1, cursorVisible: false, bottomMargin: 2,
+            flushPendingRenderOnOpen: false);
     }
 
     internal void SetStatusNotification(string message,
         TerminalStatusNotificationKind kind = TerminalStatusNotificationKind.Info) => _screen?.SetStatusNotification(message, kind);
+
+    internal void AppendStatusMessage(string message,
+        TerminalStatusNotificationKind kind = TerminalStatusNotificationKind.Info)
+    {
+        if (_screen is { IsActive: true } screen) screen.AppendStatusMessage(message, kind);
+        else Console.WriteLine(message);
+    }
 
     private static IReadOnlyList<string> RenderInlinePanel<T>(TerminalScreen screen, string title,
         IReadOnlyList<TerminalSelectionOption<T>> options, int selectedIndex, IReadOnlyList<string>? header,
@@ -252,9 +393,9 @@ public sealed class TerminalEditor
         for (var index = 0; index < titleRows.Length; index++)
         {
             var row = " " + theme.Style("accent", titleRows[index], bold: true);
-            if (titleRows.Length > 1 && index == 0) row += theme.Fg("accent");
+            if (titleRows.Length > 1 && index < titleRows.Length - 1) row += theme.Fg("accent");
             lines.Add(PadPanelLine(row, width) +
-                (titleRows.Length > 1 && index == 0 ? "\u001b[39m" : ""));
+                (titleRows.Length > 1 && index < titleRows.Length - 1 ? "\u001b[39m" : ""));
         }
         if (header is not null)
         {
@@ -305,11 +446,13 @@ public sealed class TerminalEditor
 
     private static IReadOnlyList<string> RenderPromptPanel(TerminalScreen screen, string title,
         IReadOnlyList<(string Message, string? Placeholder)> prompts, IReadOnlyList<string> completed,
-        int promptIndex, string value, int cursor, out int cursorRow, out int cursorColumn)
+        int promptIndex, string value, int cursor, out int cursorRow, out int cursorColumn,
+        bool submittedPrompt = false)
     {
         var width = screen.TerminalWidth;
         var theme = screen.CurrentTheme;
-        var lines = new List<string> { PanelBorder(theme, width),
+        var border = theme.Fg("border") + new string('─', Math.Max(1, width)) + "\u001b[0m";
+        var lines = new List<string> { border,
             PadPanelLine(" " + theme.Style("accent", TerminalSafeText.Normalize(title), bold: true), width) };
         var currentInputRow = 0;
         for (var index = 0; index <= promptIndex; index++)
@@ -317,14 +460,26 @@ public sealed class TerminalEditor
             lines.Add("");
             lines.Add(PadPanelLine(" " + theme.Style("text", TerminalSafeText.Normalize(prompts[index].Message)), width));
             if (!string.IsNullOrWhiteSpace(prompts[index].Placeholder))
-                lines.Add(PadPanelLine("  " + theme.Style("dim", "e.g., " + TerminalSafeText.Normalize(prompts[index].Placeholder!)), width));
+                lines.Add(PadPanelLine(" " + theme.Style("dim", "e.g., " + TerminalSafeText.Normalize(prompts[index].Placeholder!)), width));
             currentInputRow = lines.Count;
-            lines.Add(PadPanelLine("> " + TerminalSafeText.Normalize(index == promptIndex ? value : completed[index]), width));
-            lines.Add(PadPanelLine(theme.Style("dim", " (escape/ctrl+c to cancel, enter to submit)"), width));
+            var inputValue = TerminalSafeText.Normalize(index == promptIndex ? value : completed[index]);
+            var inputLine = "> " + inputValue;
+            if (index == promptIndex && !submittedPrompt)
+            {
+                var inputCursor = Math.Clamp(cursor, 0, inputValue.Length);
+                var cursorCharacter = inputCursor < inputValue.Length ? inputValue[inputCursor].ToString() : " ";
+                inputLine = "> " + inputValue[..inputCursor] + "\u001b[7m" + cursorCharacter + "\u001b[27m" +
+                    inputValue[(inputCursor + (inputCursor < inputValue.Length ? 1 : 0))..];
+            }
+            lines.Add(PadPanelLine(inputLine, width));
+            lines.Add(PadPanelLine(" (" + theme.Style("dim", "escape/ctrl+c") +
+                theme.Style("muted", " to cancel,") + " " + theme.Style("dim", "enter") +
+                theme.Style("muted", " to submit") + ")", width));
         }
-        lines.Add(PanelBorder(theme, width));
+        lines.Add(border);
         cursorRow = currentInputRow;
-        cursorColumn = Math.Min(width, 3 + TerminalTextLayout.Width(value[..Math.Clamp(cursor, 0, value.Length)]));
+        var normalizedValue = TerminalSafeText.Normalize(value);
+        cursorColumn = Math.Min(width, 3 + TerminalTextLayout.Width(normalizedValue[..Math.Clamp(cursor, 0, normalizedValue.Length)]));
         return lines;
     }
 
@@ -348,6 +503,8 @@ public sealed class TerminalEditor
         using var cancellation = new CancellationTokenSource();
         var input = EnsureInput();
         var state = new TerminalProgressState("Starting…");
+        var progressGate = new object();
+        var progressFrameStarted = false;
         var cancelOptions = new[]
         {
             new TerminalSelectionOption<bool>("yes", true, "Yes"),
@@ -355,9 +512,8 @@ public sealed class TerminalEditor
         };
         var confirmationTitle = $"{cancelTitle}\n{cancelMessage}";
         const string confirmationFooter = "enter select • escape/ctrl+c cancel";
-        void Update(TerminalProgressState progress)
+        void RenderProgress(TerminalProgressState progress)
         {
-            state = progress;
             var theme = screen.CurrentTheme;
             var width = screen.TerminalWidth;
             var lines = new List<string>
@@ -383,14 +539,30 @@ public sealed class TerminalEditor
             screen.SetEditorPanel(lines, lines.Count - 4, width + 1, cursorVisible: false, bottomMargin: 2);
         }
 
+        void Update(TerminalProgressState progress)
+        {
+            lock (progressGate)
+            {
+                state = progress;
+                if (progressFrameStarted) RenderProgress(state);
+            }
+        }
+
         async Task<(bool Succeeded, T? Value, Exception? Error)> SettleAsync()
         {
             try { return (true, await run(cancellation.Token, Update).ConfigureAwait(false), null); }
             catch (Exception error) { return (false, default, error); }
         }
 
-        Update(state);
         var settled = SettleAsync();
+        if (await Task.WhenAny(settled, Task.Delay(InitialProgressFrameDelay)).ConfigureAwait(false) != settled)
+        {
+            lock (progressGate)
+            {
+                progressFrameStarted = true;
+                if (!settled.IsCompleted) RenderProgress(state);
+            }
+        }
         try
         {
             while (!settled.IsCompleted)
@@ -407,7 +579,6 @@ public sealed class TerminalEditor
                     confirmationFooter, preservePanelAfterSelection: true);
                 if (confirmation?.Option.Value != true)
                 {
-                    screen.SetEditorPanel(null);
                     Update(state);
                     continue;
                 }
@@ -429,7 +600,6 @@ public sealed class TerminalEditor
         finally
         {
             cancellation.Cancel();
-            screen.SetEditorPanel(null);
         }
     }
 
@@ -751,7 +921,24 @@ public sealed class TerminalEditor
                 Render();
                 continue;
             }
-            var action = next.Text is not null ? _buffer.InsertText(next.Text) : _buffer.Handle(next.Key!.Value);
+            EditorAction action;
+            if (TerminalInput.TryGetText(next, out _))
+            {
+                var text = input.ReadAvailableText(next, out var following);
+                action = _buffer.InsertText(text);
+                if (following?.Key is { } bufferedSubmitKey && _keymap.Matches("tui.input.submit", bufferedSubmitKey))
+                {
+                    next = following;
+                    action = EditorAction.Submit;
+                }
+                else
+                {
+                    if (following is not null) input.PushBack(following);
+                    if (action == EditorAction.Render) Render();
+                    continue;
+                }
+            }
+            else action = _buffer.Handle(next.Key!.Value);
             switch (action)
             {
                 case EditorAction.Exit:

@@ -415,14 +415,15 @@ var terminalClipboard = new TerminalClipboard(writeTerminalControl: value =>
     if (terminalScreen is { IsActive: true }) terminalScreen.WriteControl(value);
     else Console.Write(value);
 });
-string IdleFooter() => TerminalModelStatus.FormatIdleFooter(selection.Model, thinking, conversation,
+string IdleFooter(int? providerCount = null) => TerminalModelStatus.FormatIdleFooter(selection.Model, thinking, conversation,
     conversationRun.ContextWindowTokens, userSettings.AutoCompactionEnabled(Environment.GetEnvironmentVariable),
-    terminalScreen?.TerminalWidth ?? 80, modelRuntime.AvailableModelProviderCount);
-terminalScreen?.SetFooter(IdleFooter());
+    terminalScreen?.TerminalWidth ?? 80, providerCount ?? modelRuntime.AvailableModelProviderCount);
+terminalScreen?.SetFooter(IdleFooter(providerCount: 1));
 if (editor is not null)
     new TerminalStartupPresentation(userSettings.QuietStartup, cli.Verbose)
         .Write(Console.Out, selection.Provider.Id, connection.Model, thinking, currentDirectory);
 terminalScreen?.RenderInitial();
+terminalScreen?.SetFooter(IdleFooter());
 CancellationTokenSource? activeRun = null;
 if (editor is null) Console.CancelKeyPress += (_, e) => { e.Cancel = true; activeRun?.Cancel(); };
 
@@ -614,7 +615,9 @@ var rpcUserSettings = new RpcUserSettingsController(agentDirectory, Environment.
     },
     () => conversationRun);
 
-var terminalModelPicker = editor is null ? null : new TerminalModelPicker(modelRuntime, editor);
+var terminalModelPicker = editor is null ? null : new TerminalModelPicker(modelRuntime, editor,
+    () => userSettings.DefaultProvider is { } provider && userSettings.DefaultModel is { } model
+        ? provider + "\0" + model : null);
 var terminalSessionPicker = editor is null ? null : new TerminalSessionPicker(store, editor);
 var terminalForkPicker = editor is null ? null : new TerminalForkPicker(editor);
 var terminalSettingsPicker = editor is null ? null : new TerminalSettingsPicker(editor, () => terminalThemeCatalog.GetAvailableNames());
@@ -625,14 +628,28 @@ var terminalProviderLogin = editor is null ? null : new TerminalProviderLogin(mo
     () => currentDirectory, () => selection.Provider.Id,
     async () => await ReplaceModelRuntime(await modelRuntime.ResolveAsync(selection.Provider.Id, selection.Model.Id), thinking, false),
     ReloadResources);
+void ShowModelChangeStatus(bool persistAsDefault = false)
+{
+    var label = persistAsDefault
+        ? $"Default model: {selection.Provider.Id}/{selection.Model.Id}"
+        : $"Model: {selection.Provider.Id}/{selection.Model.Id}";
+    if (terminalScreen is { IsActive: true } screen)
+        screen.ShowModelChangeStatus(IdleFooter(), label);
+    else Console.WriteLine($"Model: {selection.Provider.Id}/{selection.Model.Id} · thinking {thinking}");
+}
 async Task SelectModelAsync()
 {
     if (terminalModelPicker is null) return;
-    var nextSelection = await terminalModelPicker.ShowAsync(selection);
-    if (nextSelection is null) return;
-    var nextThinking = modelRuntimeController.ResolveThinkingLevelForModelSwitch(nextSelection, thinking);
-    await ApplyModelSelectionAsync(nextSelection, nextThinking);
-    Console.WriteLine($"Model: {selection.Provider.Id}/{selection.Model.Id} · thinking {thinking}");
+    var picked = await terminalModelPicker.ShowAsync(selection);
+    if (picked is null) return;
+    var nextThinking = modelRuntimeController.ResolveThinkingLevelForModelSwitch(picked.Selection, thinking);
+    await ApplyModelSelectionAsync(picked.Selection, nextThinking);
+    if (picked.PersistAsDefault)
+    {
+        await SaveSettingAsync(projectScope: false, "defaultProvider", selection.Provider.Id);
+        await SaveSettingAsync(projectScope: false, "defaultModel", selection.Model.Id);
+    }
+    ShowModelChangeStatus(picked.PersistAsDefault);
 }
 
 async Task ResumeSessionAsync(SessionListing listing)
@@ -841,7 +858,7 @@ async Task HandleEditorApplicationAction(string action)
                 var nextSelection = await modelRuntime.ResolveAsync(nextModel.Provider, nextModel.Id);
                 var compatibleThinking = modelRuntimeController.ResolveThinkingLevelForModelSwitch(nextSelection, thinking);
                 await ApplyModelSelectionAsync(nextSelection, compatibleThinking);
-                Console.WriteLine($"Model: {selection.Provider.Id}/{selection.Model.Id} · thinking {thinking}");
+                ShowModelChangeStatus();
                 break;
         }
     }
@@ -1280,7 +1297,7 @@ else
                         var nextSelection = await modelRuntime.ResolveAsync(null, argument, includeOutOfScope: true);
                         var compatibleThinking = modelRuntimeController.ResolveThinkingLevelForModelSwitch(nextSelection, thinking);
                         await ApplyModelSelectionAsync(nextSelection, compatibleThinking);
-                        Console.WriteLine($"Model: {selection.Provider.Id}/{selection.Model.Id} · thinking {thinking}");
+                        ShowModelChangeStatus();
                         break;
                     case "/fork":
                         if (argument.Length == 0)

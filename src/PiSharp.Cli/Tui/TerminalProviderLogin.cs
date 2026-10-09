@@ -90,13 +90,22 @@ internal sealed class TerminalProviderLogin(ProviderModelRuntime runtime, Termin
                 var defaultUrl = string.IsNullOrWhiteSpace(environmentUrl)
                     ? LlamaRouterClient.DefaultServerUrl : environmentUrl.Trim();
                 var prompts = await editor.PromptSequenceAsync("Login to llama.cpp",
-                    [("llama.cpp server URL", defaultUrl), ("API key (optional)", null)]).ConfigureAwait(false);
+                    [("llama.cpp server URL", defaultUrl), ("API key (optional)", null)],
+                    preservePanelAfterSubmit: true).ConfigureAwait(false);
                 if (prompts is null) return false;
                 var enteredUrl = prompts[0];
                 var serverUrl = string.IsNullOrWhiteSpace(enteredUrl) ? defaultUrl : enteredUrl.Trim();
                 var secret = prompts[1];
-                await runtime.LoginLlamaRouterAsync(string.IsNullOrWhiteSpace(secret) ? null : secret,
-                    serverUrl, cancellationToken);
+                try
+                {
+                    await runtime.LoginLlamaRouterAsync(string.IsNullOrWhiteSpace(secret) ? null : secret,
+                        serverUrl, cancellationToken);
+                }
+                catch
+                {
+                    editor.DismissEditorPanel();
+                    throw;
+                }
             }
             else if (type == "oauth")
             {
@@ -120,9 +129,11 @@ internal sealed class TerminalProviderLogin(ProviderModelRuntime runtime, Termin
             }
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested) { return false; }
-        Console.WriteLine(provider.Id == "llama.cpp"
+        var status = provider.Id == "llama.cpp"
             ? $"Saved API key for llama.cpp. Credentials saved to {Path.Combine(agentDirectory, "auth.json")}"
-            : $"Authenticated {provider.Id} with {type}; credential value was not displayed.");
+            : $"Authenticated {provider.Id} with {type}; credential value was not displayed.";
+        if (provider.Id == "llama.cpp") editor.DismissEditorPanelAndAppendStatus(status);
+        else Console.WriteLine(status);
         if (provider.Id.Equals(currentProvider(), StringComparison.OrdinalIgnoreCase))
             await synchronizeCurrentProvider();
         if (provider.Id == "radius" && type == "oauth")

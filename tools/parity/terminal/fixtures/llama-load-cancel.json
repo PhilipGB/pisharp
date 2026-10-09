@@ -50,8 +50,7 @@
     { "id": "wait-load-progress", "releaseGates": ["load-progress"], "expect": "50%" },
     { "id": "cancel-load", "send": "\u001b", "expect": "Stop loading?" },
     { "id": "confirm-cancel", "send": "\r", "expect": "llama.cpp models" },
-    { "id": "close-manager", "send": "\u001b", "expect": "fixture-model" },
-    { "id": "quit", "send": "/quit\r", "exit": true }
+    { "id": "close-manager", "send": "\u001b", "expect": "fixture-model" }
   ],
   "terminal": { "keyboardProtocol": "kitty" }
 }

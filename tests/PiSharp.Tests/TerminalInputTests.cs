@@ -16,6 +16,20 @@ public sealed class TerminalInputTests
         Assert.Equal('X', input.Read().Key?.KeyChar);
     }
 
+    [Fact]
+    public void ReadAvailableTextCoalescesQueuedCharactersAndReturnsTheFollowingKey()
+    {
+        var input = new TerminalInput(new MemoryStream("/llama\r"u8.ToArray()));
+
+        var text = input.ReadAvailableText(input.Read(), out var following);
+
+        Assert.Equal("/llama", text);
+        Assert.Equal(ConsoleKey.Enter, following?.Key?.Key);
+        input.PushBack(following!);
+        Assert.Equal(ConsoleKey.Enter, input.Read().Key?.Key);
+        Assert.True(input.Read().IsEndOfStream);
+    }
+
     [Theory]
     [InlineData("\u001b]11;#282a36\a")]
     [InlineData("\u001b[?62;22c")]

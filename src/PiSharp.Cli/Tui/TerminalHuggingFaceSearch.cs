@@ -5,7 +5,6 @@ namespace PiSharp.Cli.Tui;
 internal sealed class TerminalHuggingFaceSearch(TerminalScreen screen, TerminalInput input, EditorKeymap keymap,
     HuggingFaceClient client, IDictionary<string, IReadOnlyList<HuggingFaceModel>> cache)
 {
-    private const string Footer = "enter select • escape/ctrl+c back";
     private static readonly Regex s_repositoryInput = new("^[^/\\s]+/[^:\\s]+(?::[^\\s:]+)?$",
         RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
@@ -24,6 +23,7 @@ internal sealed class TerminalHuggingFaceSearch(TerminalScreen screen, TerminalI
         CancellationTokenSource? requestCancellation = null;
         Task<IReadOnlyList<HuggingFaceModel>>? request = null;
         var dirty = true;
+        var preservePanel = false;
 
         using var mode = TerminalMode.Enter(screen);
         try
@@ -93,15 +93,37 @@ internal sealed class TerminalHuggingFaceSearch(TerminalScreen screen, TerminalI
                     continue;
                 }
                 if (next.IsEndOfStream) return null;
+                if (TerminalInput.TryGetText(next, out _))
+                {
+                    var text = input.ReadAvailableText(next, out var following);
+                    if (following is not null) input.PushBack(following);
+                    var previous = buffer.Text;
+                    _ = buffer.InsertText(text.Replace("\r", "", StringComparison.Ordinal)
+                        .Replace("\n", "", StringComparison.Ordinal).Replace("\t", "    ", StringComparison.Ordinal));
+                    if (previous != buffer.Text) QueryChanged();
+                    continue;
+                }
                 if (next.Key is { } key)
                 {
                     if (key.Key == ConsoleKey.Escape || keymap.Matches("app.interrupt", key) ||
-                        keymap.Matches("app.clear", key)) return null;
+                        keymap.Matches("app.clear", key))
+                    {
+                        preservePanel = true;
+                        return null;
+                    }
                     if (key.Key == ConsoleKey.Enter)
                     {
                         var query = buffer.Text.Trim();
-                        if (s_repositoryInput.IsMatch(query)) return query;
-                        if (selectedIndex < filtered.Count) return filtered[selectedIndex].Id;
+                        if (s_repositoryInput.IsMatch(query))
+                        {
+                            preservePanel = true;
+                            return query;
+                        }
+                        if (selectedIndex < filtered.Count)
+                        {
+                            preservePanel = true;
+                            return filtered[selectedIndex].Id;
+                        }
                         continue;
                     }
                     if (key.Key == ConsoleKey.UpArrow && filtered.Count > 0)
@@ -124,13 +146,6 @@ internal sealed class TerminalHuggingFaceSearch(TerminalScreen screen, TerminalI
                     continue;
                 }
 
-                if (next.Text is { Length: > 0 } text)
-                {
-                    var previous = buffer.Text;
-                    _ = buffer.InsertText(text.Replace("\r", "", StringComparison.Ordinal)
-                        .Replace("\n", "", StringComparison.Ordinal).Replace("\t", "    ", StringComparison.Ordinal));
-                    if (previous != buffer.Text) QueryChanged();
-                }
             }
             return null;
         }
@@ -139,7 +154,7 @@ internal sealed class TerminalHuggingFaceSearch(TerminalScreen screen, TerminalI
             requestCancellation?.Cancel();
             if (request is not null) _ = ObserveAsync(request);
             requestCancellation?.Dispose();
-            screen.SetEditorPanel(null);
+            if (!preservePanel) screen.SetEditorPanel(null);
         }
 
         void QueryChanged()
@@ -190,9 +205,9 @@ internal sealed class TerminalHuggingFaceSearch(TerminalScreen screen, TerminalI
         var lines = new List<string>
         {
             Border(theme, width),
-            Pad(theme.Style("accent", " Download model", bold: true), width),
+            Pad(" " + theme.Style("accent", "Download model", bold: true), width),
             "",
-            Pad(theme.Style("dim", " Model name or owner/repository[:quant]"), width)
+            Pad(" " + theme.Style("dim", "Model name or owner/repository[:quant]"), width)
         };
         cursorRow = lines.Count;
         lines.Add(InputLine(value, cursor, width, out var inputCursorColumn));
@@ -216,7 +231,8 @@ internal sealed class TerminalHuggingFaceSearch(TerminalScreen screen, TerminalI
         if (results.Count == 0 || status == "Searching Hugging Face…")
             lines.Add(Pad(theme.Style("dim", "  " + status), width));
         lines.Add("");
-        lines.Add(Pad(theme.Style("dim", " " + Footer), width));
+        lines.Add(Pad(" " + theme.Style("dim", "enter") + theme.Style("muted", " select") + " • " +
+            theme.Style("dim", "escape/ctrl+c") + theme.Style("muted", " back"), width));
         lines.Add(Border(theme, width));
         return lines;
     }
@@ -307,7 +323,7 @@ internal sealed class TerminalHuggingFaceSearch(TerminalScreen screen, TerminalI
             : value.ToString(System.Globalization.CultureInfo.InvariantCulture);
 
     private static string Border(TerminalTheme theme, int width) =>
-        theme.Fg("border") + new string('─', Math.Max(1, width)) + "\u001b[0m";
+        theme.Fg("accent") + new string('─', Math.Max(1, width)) + "\u001b[0m";
 
     private static string Pad(string line, int width) =>
         line + new string(' ', Math.Max(0, width - TerminalTextLayout.Width(line)));
