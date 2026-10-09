@@ -245,6 +245,35 @@ public sealed class UserSettingsTests
     }
 
     [Fact]
+    public async Task LegacySkillsObjectMigratesProjectDirectoriesAndSettingPrecedence()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-legacy-skill-settings-" + Guid.NewGuid().ToString("N"));
+        var projectSettingsPath = Path.Combine(root, ".pi", "settings.json");
+        Directory.CreateDirectory(Path.GetDirectoryName(projectSettingsPath)!);
+        try
+        {
+            await File.WriteAllTextAsync(projectSettingsPath,
+                "{\"skills\":{\"enableSkillCommands\":false,\"customDirectories\":[\"./legacy-skills\"]}}");
+            var legacy = await UserSettings.LoadProjectAsync(root);
+            Assert.Equal(["./legacy-skills"], legacy.Skills);
+            Assert.False(legacy.SkillCommandsEnabled);
+
+            await File.WriteAllTextAsync(projectSettingsPath,
+                "{\"skills\":{\"enableSkillCommands\":false,\"customDirectories\":[\"./legacy-skills\"]},\"enableSkillCommands\":true}");
+            var explicitOverride = await UserSettings.LoadProjectAsync(root);
+            Assert.Equal(["./legacy-skills"], explicitOverride.Skills);
+            Assert.True(explicitOverride.SkillCommandsEnabled);
+
+            await File.WriteAllTextAsync(projectSettingsPath,
+                "{\"skills\":{\"enableSkillCommands\":false,\"customDirectories\":[]}}");
+            var noCustomDirectories = await UserSettings.LoadProjectAsync(root);
+            Assert.Null(noCustomDirectories.Skills);
+            Assert.False(noCustomDirectories.SkillCommandsEnabled);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [Fact]
     public async Task UserSettingsProvideValidatedDefaultsBelowCliAndEnvironmentOverrides()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-settings-" + Guid.NewGuid().ToString("N"));

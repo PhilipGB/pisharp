@@ -1,0 +1,71 @@
+{
+  "id": "legacy-project-skills-settings",
+  "workingDirectory": "legacy-project",
+  "settings": {
+    "quietStartup": true
+  },
+  "arguments": {
+    "pi": [
+      "--provider", "fixture", "--model", "fixture-model", "--models", "fixture-model",
+      "--no-session", "--offline", "--no-extensions", "--no-prompt-templates",
+      "--no-tools", "--no-context-files"
+    ],
+    "pisharp": [
+      "--provider", "fixture", "--model", "fixture-model", "--models", "fixture-model",
+      "--no-session", "--offline", "--no-extensions", "--no-prompt-templates",
+      "--no-tools", "--no-context-files"
+    ]
+  },
+  "projectFiles": {
+    "legacy-project/.pi/settings.json": "{\"skills\":{\"enableSkillCommands\":false,\"customDirectories\":[\"./legacy-skills\"]}}",
+    "legacy-project/.pi/legacy-skills/legacy-project-skill/SKILL.md": "---\nname: legacy-project-skill\ndescription: Skill loaded from legacy project settings\n---\nLegacy project skill body marker.\n"
+  },
+  "files": {
+    "pi": {
+      "trust.json": {
+        "/tmp/pisharp-terminal-fixture-workspace/legacy-project": true
+      }
+    },
+    "pisharp": {
+      "trust.json": {
+        "/tmp/pisharp-terminal-fixture-workspace/legacy-project": true
+      }
+    }
+  },
+  "actions": [
+    {
+      "id": "startup",
+      "expect": "fixture-model"
+    },
+    {
+      "id": "skill-completion-disabled",
+      "send": "/skill:",
+      "expect": "/skill:"
+    },
+    {
+      "id": "invoke-migrated-skill",
+      "send": "legacy-project-skill legacy-argument\r",
+      "expect": "fixture reply"
+    },
+    {
+      "id": "quit",
+      "send": "/quit\r",
+      "exit": true
+    }
+  ],
+  "dimensions": [
+    {
+      "columns": 120,
+      "rows": 40
+    }
+  ],
+  "themes": [
+    "dark"
+  ],
+  "modes": [
+    "fullscreen"
+  ],
+  "terminal": {
+    "keyboardProtocol": "kitty"
+  }
+}

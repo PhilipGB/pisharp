@@ -113,6 +113,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         using var document = JsonDocument.Parse(bytes, new JsonDocumentOptions { MaxDepth = 16 });
         if (document.RootElement.ValueKind != JsonValueKind.Object)
             throw new InvalidDataException("settings.json must contain a JSON object.");
+        var hasTopLevelSkillCommandSetting = document.RootElement.TryGetProperty("enableSkillCommands", out _);
         string? provider = null, model = null, thinking = null, sessionDirectory = null, defaultTrust = null, shellPath = null,
             externalEditor = null, theme = null;
         IReadOnlyList<string>? tools = null, enabledModels = null;
@@ -231,6 +232,21 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
             }
             if (property.Name is "extensions" or "skills" or "prompts" or "themes")
             {
+                if (property.Name == "skills" && property.Value.ValueKind == JsonValueKind.Object)
+                {
+                    if (!hasTopLevelSkillCommandSetting &&
+                        property.Value.TryGetProperty("enableSkillCommands", out var legacySkillCommands))
+                    {
+                        if (legacySkillCommands.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
+                            throw new InvalidDataException("settings.json skills.enableSkillCommands must be a boolean.");
+                        enableSkillCommands = legacySkillCommands.GetBoolean();
+                    }
+
+                    if (property.Value.TryGetProperty("customDirectories", out var customDirectories) &&
+                        customDirectories.ValueKind == JsonValueKind.Array && customDirectories.GetArrayLength() > 0)
+                        skills = ParseResourcePaths(customDirectories, property.Name);
+                    continue;
+                }
                 var parsed = ParseResourcePaths(property.Value, property.Name);
                 switch (property.Name)
                 {
