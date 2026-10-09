@@ -224,7 +224,9 @@ public sealed class TerminalEditor
         {
             PanelBorder(theme, width),
             PadPanelLine(" " + theme.Style("accent", "llama.cpp models", bold: true), width),
+            new string(' ', width),
             PadPanelLine(" " + theme.Style("muted", "Loading…"), width),
+            new string(' ', width),
             PanelBorder(theme, width)
         };
         screen.SetEditorPanel(lines, lines.Length - 2, width + 1, cursorVisible: false, bottomMargin: 2);

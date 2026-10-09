@@ -121,6 +121,28 @@ public sealed class TerminalScreenTests
     }
 
     [Fact]
+    public void LlamaCatalogLoadingUsesPiExtensionEditorSpacing()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        using var screen = new TerminalScreen(output, error, () => 100, () => 32);
+        var editor = new TerminalEditor();
+        editor.AttachScreen(screen);
+        output.GetStringBuilder().Clear();
+
+        using var loading = editor.ShowLlamaCatalogLoading();
+
+        var frame = output.ToString();
+        Assert.Contains("\u001b[25;1H\u001b[2K", frame);
+        Assert.Contains("\u001b[26;1H\u001b[2K", frame);
+        Assert.Contains("\u001b[27;1H\u001b[2K" + new string(' ', 100), frame);
+        Assert.Contains("\u001b[28;1H\u001b[2K", frame);
+        Assert.Contains("\u001b[29;1H\u001b[2K" + new string(' ', 100), frame);
+        Assert.Contains("llama.cpp models", frame);
+        Assert.Contains("Loading…", frame);
+    }
+
+    [Fact]
     public void DisposeRestoresTheLatestEditorStateWhenItsRenderIsCoalesced()
     {
         using var output = new StringWriter();
