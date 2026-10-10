@@ -217,6 +217,7 @@ public sealed class ProjectRuntimeContextTests
     [Fact]
     public async Task ExtensionResourcesDiscoverOnStartupAndAreReplacedOnReload()
     {
+        var priorResourceDiscovery = Environment.GetEnvironmentVariable("PISHARP_TEST_RESOURCE_DISCOVERY");
         var root = Path.Combine(Path.GetTempPath(), "pisharp extension resources " + Guid.NewGuid().ToString("N"));
         var project = Path.Combine(root, "project");
         var agent = Path.Combine(root, "agent");
@@ -228,6 +229,7 @@ public sealed class ProjectRuntimeContextTests
 
         try
         {
+            Environment.SetEnvironmentVariable("PISHARP_TEST_RESOURCE_DISCOVERY", "true");
             var arguments = CliArguments.Parse(["--no-extensions", "--no-skills", "--no-prompt-templates",
                 "--extension", extensionPath]);
             var trust = new ProjectTrust(agent);
@@ -258,7 +260,11 @@ public sealed class ProjectRuntimeContextTests
             Assert.Empty(reloaded.ExtensionResources.Errors);
             AssertTheme(reloaded.ExtensionResources, project, "reloaded-theme", "#654321");
         }
-        finally { Directory.Delete(root, recursive: true); }
+        finally
+        {
+            Environment.SetEnvironmentVariable("PISHARP_TEST_RESOURCE_DISCOVERY", priorResourceDiscovery);
+            Directory.Delete(root, recursive: true);
+        }
     }
 
     [Fact]

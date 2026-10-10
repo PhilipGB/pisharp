@@ -2,6 +2,11 @@
   "id": "extension-resource-discovery-reload",
   "workingDirectory": "extension-project",
   "pisharpExtension": true,
+  "environment": {
+    "pisharp": {
+      "PISHARP_TEST_RESOURCE_DISCOVERY": "true"
+    }
+  },
   "settings": {
     "quietStartup": true
   },

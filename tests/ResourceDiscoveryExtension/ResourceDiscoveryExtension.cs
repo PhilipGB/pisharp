@@ -51,15 +51,19 @@ public sealed class ResourceDiscoveryFixture : IPiSharpExtension
             return new(parsed, remember);
         });
 
-        registration.AddResourceDiscoveryHandler((context, _) =>
+        if (string.Equals(Environment.GetEnvironmentVariable("PISHARP_TEST_RESOURCE_DISCOVERY"), "true",
+                StringComparison.OrdinalIgnoreCase))
         {
-            var phase = context.Reason == ExtensionResourceDiscoveryReason.Reload ? "reloaded" : "startup";
-            var root = Path.Combine(context.WorkingDirectory, ".pi", "extension-resources", phase);
-            return Task.FromResult<ExtensionResourceDiscoveryResult?>(new(
-                [new Uri(Path.Combine(root, "skills")).AbsoluteUri],
-                [Path.Combine(root, "prompts")],
-                [Path.Combine(root, "themes")]));
-        });
+            registration.AddResourceDiscoveryHandler((context, _) =>
+            {
+                var phase = context.Reason == ExtensionResourceDiscoveryReason.Reload ? "reloaded" : "startup";
+                var root = Path.Combine(context.WorkingDirectory, ".pi", "extension-resources", phase);
+                return Task.FromResult<ExtensionResourceDiscoveryResult?>(new(
+                    [new Uri(Path.Combine(root, "skills")).AbsoluteUri],
+                    [Path.Combine(root, "prompts")],
+                    [Path.Combine(root, "themes")]));
+            });
+        }
     }
 
     private static void Trace(string value)
