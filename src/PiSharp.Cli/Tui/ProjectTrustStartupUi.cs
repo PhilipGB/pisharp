@@ -17,7 +17,9 @@ internal sealed class ProjectTrustStartupUi(bool hasUserInterface, string mode, 
         using var screen = CreateScreen(out var editor);
         var terminalOptions = options.Select((option, index) =>
             new TerminalSelectionOption<string>(index.ToString(), option, option)).ToArray();
-        var selected = editor.ShowInlineSelectionList(title, terminalOptions, cancellationToken: cancellationToken);
+        var selected = editor.ShowInlineSelectionList(title, terminalOptions,
+            footer: "↑↓ navigate  enter select  escape/ctrl+c cancel",
+            cancellationToken: cancellationToken, extensionDialog: true);
         return Task.FromResult(selected?.Option.Value);
     }
 
@@ -33,7 +35,8 @@ internal sealed class ProjectTrustStartupUi(bool hasUserInterface, string mode, 
             new TerminalSelectionOption<bool>("no", false, "No")
         };
         var selected = editor.ShowInlineSelectionList($"{title}\n{message}", options,
-            cancellationToken: cancellationToken);
+            footer: "↑↓ navigate  enter select  escape/ctrl+c cancel",
+            cancellationToken: cancellationToken, extensionDialog: true);
         return Task.FromResult(selected?.Option.Value ?? false);
     }
 
@@ -45,7 +48,7 @@ internal sealed class ProjectTrustStartupUi(bool hasUserInterface, string mode, 
 
         using var screen = CreateScreen(out var editor);
         var values = await editor.PromptSequenceAsync(title, [(title, placeholder)],
-            cancellationToken: cancellationToken).ConfigureAwait(false);
+            cancellationToken: cancellationToken, extensionDialog: true).ConfigureAwait(false);
         return values?.FirstOrDefault();
     }
 
@@ -67,7 +70,7 @@ internal sealed class ProjectTrustStartupUi(bool hasUserInterface, string mode, 
 
     private TerminalScreen CreateScreen(out TerminalEditor editor)
     {
-        var screen = new TerminalScreen(output, error);
+        var screen = new TerminalScreen(output, error, useAlternateScreen: false, deferInitialRender: true);
         screen.Activate();
         editor = new TerminalEditor();
         editor.AttachScreen(screen);

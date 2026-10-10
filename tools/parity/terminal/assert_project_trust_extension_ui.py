@@ -53,6 +53,23 @@ def difference_paths(left, right, path='$'):
     return [] if left == right else [path]
 
 
+def inspect_startup_dialog_frames(capture):
+    expected_ids = ['trust-select', 'trust-select-option', 'trust-confirm']
+    products = {name: capture[name]['frames'] for name in ('pi', 'pisharp')}
+    matches = []
+    for index, expected_id in enumerate(expected_ids):
+        frames = {name: product_frames[index] if len(product_frames) > index else None
+                  for name, product_frames in products.items()}
+        if any(frame is None or frame.get('id') != expected_id for frame in frames.values()):
+            raise AssertionError(f'Expected startup dialog frame {expected_id} at position {index}: {frames}')
+        if frames['pi']['state'] != frames['pisharp']['state']:
+            paths = difference_paths(frames['pi']['state'], frames['pisharp']['state'])
+            raise AssertionError(f'{expected_id} terminal snapshots differ at {paths[:20]}')
+        matches.append(dict(id=expected_id, stateMatched=True,
+                            activeScreen=frames['pi']['state']['activeScreen']))
+    return matches
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--report', type=Path, required=True)
@@ -64,6 +81,7 @@ def main():
     report = json.loads(args.report.read_text())
     with gzip.open(args.capture, 'rt', encoding='utf-8') as stream:
         capture = json.load(stream)
+    startup_dialog_frames = inspect_startup_dialog_frames(capture)
     pi = inspect_product(capture['pi'])
     pisharp = inspect_product(capture['pisharp'])
     pi_request = next(request for request in capture['pi']['http']
@@ -96,6 +114,7 @@ def main():
         paired=dict(pi=pi, pisharp=pisharp, terminalMatch=case['terminalMatch'],
                     httpMatch=case['httpMatch'], stateDifferences=case['differences'],
                     renderDifferences=case['renderDifferences'], rawByteMatch=case['rawMatch'],
+                    startupDialogFrames=startup_dialog_frames,
                     scenarioErrors=case['scenarioErrors'],
                     normalizedSystemPromptMatch=normalized_system_prompt_match,
                     providerRequestDifferenceCount=len(request_difference_paths),

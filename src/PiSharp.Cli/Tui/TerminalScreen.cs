@@ -19,6 +19,7 @@ public sealed class TerminalScreen : IDisposable
     private readonly TerminalTranscriptBuffer _transcript = new();
     private readonly TerminalImageRenderer _images;
     private readonly TerminalScreenCompositor _compositor;
+    private readonly bool _useAlternateScreen;
     private TerminalTheme _theme;
     private string _markdownCodeBlockIndent = "  ";
     private string _toolExpandKeyLabel = "Ctrl+O";
@@ -54,6 +55,7 @@ public sealed class TerminalScreen : IDisposable
     private int? _panelCursorColumn;
     private bool _panelCursorVisible;
     private int _panelBottomMargin = 1;
+    private bool _startupPanelActive;
     private bool _activated;
     private bool _suspended;
     private volatile bool _active = true;
@@ -67,6 +69,13 @@ public sealed class TerminalScreen : IDisposable
     public TerminalScreen(TextWriter originalOut, TextWriter originalError,
         Func<int>? getColumns = null, Func<int>? getRows = null)
         : this(originalOut, originalError, getColumns, getRows, new TerminalImageRenderer(), TerminalTheme.Default)
+    {
+    }
+
+    internal TerminalScreen(TextWriter originalOut, TextWriter originalError, bool useAlternateScreen,
+        bool deferInitialRender = false)
+        : this(originalOut, originalError, null, null, new TerminalImageRenderer(), TerminalTheme.Default,
+            queryTerminalColors: false, deferInitialRender: deferInitialRender, useAlternateScreen: useAlternateScreen)
     {
     }
 
@@ -85,7 +94,7 @@ public sealed class TerminalScreen : IDisposable
     internal TerminalScreen(TextWriter originalOut, TextWriter originalError,
         Func<int>? getColumns, Func<int>? getRows, TerminalImageRenderer imageRenderer, TerminalTheme theme,
         bool queryTerminalColors, bool followTerminalAppearance = false, bool deferInitialRender = false,
-        TimeSpan? minimumRenderInterval = null, TimeProvider? timeProvider = null)
+        TimeSpan? minimumRenderInterval = null, TimeProvider? timeProvider = null, bool useAlternateScreen = true)
     {
         ArgumentNullException.ThrowIfNull(originalOut);
         ArgumentNullException.ThrowIfNull(originalError);
@@ -94,6 +103,7 @@ public sealed class TerminalScreen : IDisposable
         _originalOut = originalOut;
         _originalError = originalError;
         _images = imageRenderer;
+        _useAlternateScreen = useAlternateScreen;
         _theme = theme;
         _deferInitialRender = deferInitialRender;
         _minimumRenderInterval = minimumRenderInterval ?? TimeSpan.Zero;
@@ -108,15 +118,18 @@ public sealed class TerminalScreen : IDisposable
         _error = new(this, isError: true);
         try
         {
-            _originalOut.Write(TerminalKeyboardMode.Enable +
-                "\u001b[?1049h\u001b[?7l\u001b[?25l" + TerminalMouseMode.Enable);
+            _originalOut.Write(TerminalKeyboardMode.Enable + (_useAlternateScreen
+                ? "\u001b[?1049h\u001b[?7l\u001b[?25l" + TerminalMouseMode.Enable
+                : "\u001b[?25l"));
             lock (_gate) RenderLocked(immediate: true);
             _terminalColorQuery = new(_originalOut, HandleTerminalColorStateChanged, initialColors: _terminalColors);
             _terminalColorQuery.Start(queryTerminalColors, followTerminalAppearance);
         }
         catch
         {
-            _originalOut.Write(TerminalMouseMode.Disable + "\u001b[?7h\u001b[?25h\u001b[?1049l" +
+            _originalOut.Write((_useAlternateScreen
+                    ? TerminalMouseMode.Disable + "\u001b[?7h"
+                    : "") + "\u001b[?25h" + (_useAlternateScreen ? "\u001b[?1049l" : "") +
                 TerminalKeyboardMode.Disable);
             _originalOut.Flush();
             _active = false;
@@ -166,8 +179,10 @@ public sealed class TerminalScreen : IDisposable
         {
             if (!_active || _suspended) return;
             CancelPendingRenderLocked();
-            _originalOut.Write(_images.HidePlacements() + TerminalMouseMode.Disable +
-                "\u001b[?7h\u001b[?25h\u001b[?1049l" + TerminalKeyboardMode.Disable);
+            _originalOut.Write(_images.HidePlacements() + (_useAlternateScreen
+                    ? TerminalMouseMode.Disable + "\u001b[?7h"
+                    : "") + "\u001b[?25h" + (_useAlternateScreen ? "\u001b[?1049l" : "") +
+                TerminalKeyboardMode.Disable);
             _originalOut.Flush();
             _suspended = true;
         }
@@ -178,8 +193,9 @@ public sealed class TerminalScreen : IDisposable
         lock (_gate)
         {
             if (!_active || !_suspended) return;
-            _originalOut.Write(TerminalKeyboardMode.Enable +
-                "\u001b[?1049h\u001b[?7l\u001b[?25l" + TerminalMouseMode.Enable);
+            _originalOut.Write(TerminalKeyboardMode.Enable + (_useAlternateScreen
+                ? "\u001b[?1049h\u001b[?7l\u001b[?25l" + TerminalMouseMode.Enable
+                : "\u001b[?25l"));
             _suspended = false;
             RenderLocked(immediate: true);
         }
@@ -399,6 +415,22 @@ public sealed class TerminalScreen : IDisposable
             _panelCursorVisible = cursorVisible;
             _panelBottomMargin = bottomMargin;
             RenderLocked(immediate: opening || renderImmediately);
+        }
+    }
+
+    internal void SetStartupPanel(IReadOnlyList<string> lines, int? cursorRow = null,
+        int? cursorColumn = null, bool cursorVisible = false, bool renderImmediately = false)
+    {
+        ArgumentNullException.ThrowIfNull(lines);
+        lock (_gate)
+        {
+            if (!_active) return;
+            _startupPanelActive = true;
+            _editorPanel = lines.Select(line => line.Replace('\n', ' ')).ToArray();
+            _panelCursorRow = cursorRow;
+            _panelCursorColumn = cursorColumn;
+            _panelCursorVisible = cursorVisible;
+            RenderLocked(immediate: renderImmediately || !_hasRendered);
         }
     }
 
@@ -860,9 +892,10 @@ public sealed class TerminalScreen : IDisposable
                 if (ReferenceEquals(Console.Out, _installedOut)) Console.SetOut(_originalOut);
                 if (ReferenceEquals(Console.Error, _installedError)) Console.SetError(_originalError);
             }
-            _originalOut.Write(_images.CleanupControlSequence() + TerminalMouseMode.Disable +
-                "\u001b[?7h\u001b[?25h" + TerminalKeyboardMode.Disable);
-            _compositor.LeaveAlternateScreen();
+            _originalOut.Write(_images.CleanupControlSequence() + (_useAlternateScreen
+                    ? TerminalMouseMode.Disable + "\u001b[?7h"
+                    : "") + "\u001b[?25h" + TerminalKeyboardMode.Disable);
+            if (_useAlternateScreen) _compositor.LeaveAlternateScreen();
             captured = _transcript.CaptureSnapshot();
             truncated = _transcript.CaptureTruncated;
         }
@@ -878,7 +911,7 @@ public sealed class TerminalScreen : IDisposable
             _originalError.WriteLine("Interactive transcript exceeded the scrollback restore limit; the active screen was still rendered in full.");
             _originalError.Flush();
         }
-        _compositor.RestoreLastFrameToNormalBuffer();
+        if (_useAlternateScreen) _compositor.RestoreLastFrameToNormalBuffer();
         _images.Clear();
     }
 
@@ -966,6 +999,19 @@ public sealed class TerminalScreen : IDisposable
     {
         var columns = Columns();
         var rows = Rows();
+        if (_startupPanelActive)
+        {
+            var panel = _editorPanel ?? [];
+            var frameRows = Enumerable.Repeat("", rows).ToArray();
+            for (var index = 0; index < Math.Min(panel.Count, frameRows.Length); index++)
+                frameRows[index] = TerminalTranscriptViewport.Clip(panel[index], columns);
+            var cursorRow = Math.Clamp(_panelCursorRow ?? 0, 0, Math.Max(0, rows - 1));
+            var cursorColumn = Math.Clamp(_panelCursorColumn ?? 1, 1, columns + 1);
+            _compositor.Render(new(frameRows, cursorRow, cursorColumn, 0, columns, rows, _panelCursorVisible));
+            _lastColumns = columns;
+            _lastRows = rows;
+            return;
+        }
         var footerHeight = rows >= 5 ? 2 : rows > 2 ? 1 : 0;
         var borderHeight = rows - footerHeight >= 4 ? 2 : 0;
         var maxEditorLines = Math.Max(1, Math.Min((int)(rows * 0.3), rows - footerHeight - borderHeight - 1));

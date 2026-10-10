@@ -195,7 +195,7 @@ public sealed class TerminalEditor
         string footer = "↑↓ move • enter select • escape/ctrl+c close", string? selectedKey = null,
         bool preservePanelAfterSelection = false, int optionIndent = 0, int bottomMargin = 2,
         int bottomSpacerLines = 0, bool showCurrentMarker = false,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default, bool extensionDialog = false)
     {
         if (_screen is not { IsActive: true } screen || options.Count == 0) return null;
         var input = EnsureInput();
@@ -214,35 +214,55 @@ public sealed class TerminalEditor
                 screen.RefreshIfResized();
                 if (needsRender || renderedWidth != screen.TerminalWidth || renderedHeight != screen.TerminalHeight)
                 {
-                    var panel = RenderInlinePanel(screen, title, options, selectedIndex, header, footer,
-                        optionIndent, bottomSpacerLines, showCurrentMarker);
-                    screen.SetEditorPanel(panel, panel.Count - 2, screen.TerminalWidth + 1, cursorVisible: false,
-                        bottomMargin);
+                    var panel = extensionDialog
+                        ? RenderExtensionSelectorPanel(screen, title, options, selectedIndex)
+                        : RenderInlinePanel(screen, title, options, selectedIndex, header, footer,
+                            optionIndent, bottomSpacerLines, showCurrentMarker);
+                    if (extensionDialog)
+                        screen.SetStartupPanel(panel, panel.Count - 1, screen.TerminalWidth + 1, cursorVisible: false);
+                    else
+                        screen.SetEditorPanel(panel, panel.Count - 2, screen.TerminalWidth + 1, cursorVisible: false,
+                            bottomMargin);
+                    if (extensionDialog) screen.RenderInitial();
                     renderedWidth = screen.TerminalWidth;
                     renderedHeight = screen.TerminalHeight;
                     needsRender = false;
                 }
                 if (!input.TryRead(40, out var next)) continue;
-                if (next.IsEndOfStream) return null;
-                if (next.Key is not { } key) continue;
-                if (key.Key == ConsoleKey.Escape || _keymap.Matches("app.interrupt", key) ||
-                    _keymap.Matches("app.clear", key)) return null;
-                if (key.Key == ConsoleKey.Enter)
+                while (true)
                 {
-                    preservePanel = preservePanelAfterSelection;
-                    return new(options[selectedIndex], IsScoped: false);
+                    if (next.IsEndOfStream) return null;
+                    if (next.Key is { } key)
+                    {
+                        if (key.Key == ConsoleKey.Escape || _keymap.Matches("app.interrupt", key) ||
+                            _keymap.Matches("app.clear", key)) return null;
+                        if (key.Key == ConsoleKey.Enter)
+                        {
+                            preservePanel = preservePanelAfterSelection;
+                            return new(options[selectedIndex], IsScoped: false);
+                        }
+                        if (key.Key == ConsoleKey.UpArrow) selectedIndex = (selectedIndex + options.Count - 1) % options.Count;
+                        else if (key.Key == ConsoleKey.DownArrow) selectedIndex = (selectedIndex + 1) % options.Count;
+                        else if (key.Key == ConsoleKey.Home) selectedIndex = 0;
+                        else if (key.Key == ConsoleKey.End) selectedIndex = options.Count - 1;
+                        else if (key.Key == ConsoleKey.PageUp) selectedIndex = Math.Max(0, selectedIndex - 10);
+                        else if (key.Key == ConsoleKey.PageDown) selectedIndex = Math.Min(options.Count - 1, selectedIndex + 10);
+                        needsRender = true;
+                    }
+
+                    if (!extensionDialog || !input.TryRead(0, out next)) break;
                 }
-                if (key.Key == ConsoleKey.UpArrow) selectedIndex = (selectedIndex + options.Count - 1) % options.Count;
-                else if (key.Key == ConsoleKey.DownArrow) selectedIndex = (selectedIndex + 1) % options.Count;
-                else if (key.Key == ConsoleKey.Home) selectedIndex = 0;
-                else if (key.Key == ConsoleKey.End) selectedIndex = options.Count - 1;
-                else if (key.Key == ConsoleKey.PageUp) selectedIndex = Math.Max(0, selectedIndex - 10);
-                else if (key.Key == ConsoleKey.PageDown) selectedIndex = Math.Min(options.Count - 1, selectedIndex + 10);
-                needsRender = true;
             }
             return null;
         }
-        finally { if (!preservePanel) screen.SetEditorPanel(null); }
+        finally
+        {
+            if (!preservePanel)
+            {
+                if (extensionDialog) screen.SetStartupPanel([]);
+                else screen.SetEditorPanel(null);
+            }
+        }
     }
 
     internal void ShowInlineSelectionPanel<T>(string title, IReadOnlyList<TerminalSelectionOption<T>> options,
@@ -256,7 +276,8 @@ public sealed class TerminalEditor
 
     internal async Task<IReadOnlyList<string>?> PromptSequenceAsync(string title,
         IReadOnlyList<(string Message, string? Placeholder)> prompts, bool preservePanelAfterSubmit = false,
-        bool preservePanelOnCancel = false, CancellationToken cancellationToken = default)
+        bool preservePanelOnCancel = false, CancellationToken cancellationToken = default,
+        bool extensionDialog = false)
     {
         if (prompts.Count == 0) return [];
         if (_screen is not { IsActive: true } screen)
@@ -288,7 +309,7 @@ public sealed class TerminalEditor
                     screen.TerminalWidth),
                 titleBorder
             };
-            screen.SetEditorPanel(titlePanel, cursorVisible: false, bottomMargin: 2);
+            if (!extensionDialog) screen.SetEditorPanel(titlePanel, cursorVisible: false, bottomMargin: 2);
             for (var promptIndex = 0; promptIndex < prompts.Count; promptIndex++)
             {
                 var promptBuffer = new EditorBuffer(_keymap);
@@ -303,15 +324,68 @@ public sealed class TerminalEditor
                         needsRender = true;
                     if (needsRender)
                     {
-                        var panel = RenderPromptPanel(screen, title, prompts, values, promptIndex, promptBuffer.Text,
-                            promptBuffer.Cursor, out var cursorRow, out var cursorColumn);
-                        screen.SetEditorPanel(panel, cursorRow, cursorColumn, cursorVisible: false, bottomMargin: 2);
+                        int cursorRow;
+                        int cursorColumn;
+                        var panel = extensionDialog
+                            ? RenderExtensionInputPanel(screen, title, promptBuffer.Text, promptBuffer.Cursor,
+                                out cursorRow, out cursorColumn)
+                            : RenderPromptPanel(screen, title, prompts, values, promptIndex, promptBuffer.Text,
+                                promptBuffer.Cursor, out cursorRow, out cursorColumn);
+                        if (extensionDialog)
+                            screen.SetStartupPanel(panel, cursorRow, cursorColumn, cursorVisible: false);
+                        else
+                            screen.SetEditorPanel(panel, cursorRow, cursorColumn, cursorVisible: false, bottomMargin: 2);
+                        if (extensionDialog) screen.RenderInitial();
                         renderedWidth = screen.TerminalWidth;
                         renderedHeight = screen.TerminalHeight;
                         needsRender = false;
                     }
 
                     if (!input.TryRead(40, out var next)) continue;
+                    if (extensionDialog)
+                    {
+                        var submitted = false;
+                        while (true)
+                        {
+                            if (next.IsEndOfStream)
+                            {
+                                preservePanel = preservePanelOnCancel;
+                                return null;
+                            }
+                            if (next.Key is { } extensionKey && (extensionKey.Key == ConsoleKey.Escape ||
+                                _keymap.Matches("app.interrupt", extensionKey) ||
+                                _keymap.Matches("app.clear", extensionKey)))
+                            {
+                                preservePanel = preservePanelOnCancel;
+                                return null;
+                            }
+                            if (next.Key is { Key: ConsoleKey.Enter })
+                            {
+                                values.Add(promptBuffer.Text);
+                                submitted = true;
+                                break;
+                            }
+                            if (TerminalInput.TryGetText(next, out _))
+                            {
+                                var text = input.ReadAvailableText(next, out var following);
+                                _ = promptBuffer.InsertText(text);
+                                if (following is { } pending)
+                                {
+                                    next = pending;
+                                    continue;
+                                }
+                            }
+                            else if (next.Key is { } editKey)
+                            {
+                                _ = promptBuffer.Handle(editKey);
+                            }
+
+                            if (!input.TryRead(0, out next)) break;
+                        }
+                        if (submitted) break;
+                        needsRender = true;
+                        continue;
+                    }
                     if (next.IsEndOfStream)
                     {
                         preservePanel = preservePanelOnCancel;
@@ -354,7 +428,11 @@ public sealed class TerminalEditor
         }
         finally
         {
-            if (!preservePanel) screen.SetEditorPanel(null);
+            if (!preservePanel)
+            {
+                if (extensionDialog) screen.SetStartupPanel([]);
+                else screen.SetEditorPanel(null);
+            }
         }
     }
 
@@ -469,6 +547,82 @@ public sealed class TerminalEditor
         lines.Add(PanelBorder(theme, width));
         return lines;
     }
+
+    private static IReadOnlyList<string> RenderExtensionSelectorPanel<T>(TerminalScreen screen, string title,
+        IReadOnlyList<TerminalSelectionOption<T>> options, int selectedIndex)
+    {
+        var width = screen.TerminalWidth;
+        var theme = screen.CurrentTheme;
+        var border = theme.Fg("border") + new string('─', Math.Max(1, width)) + "\u001b[0m";
+        var lines = new List<string> { border, "" };
+        var titleRows = TerminalSafeText.Normalize(title).Split('\n');
+        for (var index = 0; index < titleRows.Length; index++)
+        {
+            var row = " " + theme.Style("accent", titleRows[index], bold: true);
+            if (index == 0 && titleRows.Length > 1)
+            {
+                var padding = Math.Max(0, width - TerminalTextLayout.Width(row));
+                lines.Add(row + theme.Fg("accent") + new string(' ', padding) + "\u001b[39m");
+            }
+            else
+            {
+                lines.Add(PadPanelLine(row, width));
+            }
+        }
+        lines.Add("");
+        for (var index = 0; index < options.Count; index++)
+        {
+            var label = TerminalSafeText.Normalize(options[index].Label);
+            lines.Add(index == selectedIndex
+                ? PadPanelLine(" " + theme.Style("accent", "→ " + label), width)
+                : PadPanelLine("   " + theme.Style("text", label), width));
+        }
+        lines.Add("");
+        lines.Add(PadPanelLine(" " + RenderExtensionKeyHint(theme,
+            ("↑↓", "navigate"), ("enter", "select"), ("escape/ctrl+c", "cancel")), width));
+        lines.Add("");
+        lines.Add(border);
+        return lines;
+    }
+
+    private static IReadOnlyList<string> RenderExtensionInputPanel(TerminalScreen screen, string title,
+        string value, int cursor, out int cursorRow, out int cursorColumn)
+    {
+        var width = screen.TerminalWidth;
+        var theme = screen.CurrentTheme;
+        var border = theme.Fg("border") + new string('─', Math.Max(1, width)) + "\u001b[0m";
+        var normalizedValue = TerminalSafeText.Normalize(value);
+        var cursorOffset = Math.Clamp(cursor, 0, normalizedValue.Length);
+        var cursorElementLength = cursorOffset < normalizedValue.Length
+            ? System.Globalization.StringInfo.GetNextTextElement(normalizedValue, cursorOffset).Length
+            : 0;
+        var cursorText = cursorElementLength > 0
+            ? normalizedValue.Substring(cursorOffset, cursorElementLength)
+            : " ";
+        var inputLine = "> " + normalizedValue[..cursorOffset] + "\u001b[7m" + cursorText + "\u001b[27m" +
+            normalizedValue[(cursorOffset + cursorElementLength)..];
+        var lines = new List<string>
+        {
+            border,
+            "",
+            PadPanelLine(" " + theme.Style("accent", TerminalSafeText.Normalize(title)), width),
+            "",
+            PadPanelLine(inputLine, width),
+            "",
+            PadPanelLine(" " + RenderExtensionKeyHint(theme,
+                ("enter", "submit"), ("escape/ctrl+c", "cancel")), width),
+            "",
+            border
+        };
+        cursorRow = 4;
+        cursorColumn = Math.Min(width, 3 + TerminalTextLayout.Width(normalizedValue[..cursorOffset]));
+        return lines;
+    }
+
+    private static string RenderExtensionKeyHint(TerminalTheme theme,
+        params (string Key, string Description)[] hints) =>
+        string.Join("  ", hints.Select(hint =>
+            theme.Style("dim", hint.Key) + theme.Style("muted", " " + hint.Description)));
 
     private static string RenderKeyHint(TerminalTheme theme, string value)
     {
