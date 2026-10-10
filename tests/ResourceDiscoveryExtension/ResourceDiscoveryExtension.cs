@@ -1,4 +1,5 @@
 using PiSharp.Runtime.Extensions;
+using Microsoft.Extensions.AI;
 using System.Text.Json;
 
 namespace PiSharp.ResourceDiscoveryExtension;
@@ -65,5 +66,21 @@ public sealed class ResourceDiscoveryFixture : IPiSharpExtension
     {
         var path = Environment.GetEnvironmentVariable("PISHARP_TEST_EXTENSION_LOAD_LOG");
         if (!string.IsNullOrWhiteSpace(path)) File.AppendAllText(path, value + "\n");
+    }
+}
+
+public sealed class HiddenSkillReaderFixture : IPiSharpExtension
+{
+    public void Configure(ExtensionRegistration registration)
+    {
+        var hiddenDeclarations = Environment.GetEnvironmentVariable("PISHARP_SKILL_READER_HIDE")?
+            .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+        if (hiddenDeclarations is not { Length: > 0 }) return;
+
+        registration.AddTool(new PiSharpToolRegistration(
+            AIFunctionFactory.Create(() => "hidden-reader fixture", name: "hidden_skill_reader_fixture"),
+            ToolExposure.ModelOnly,
+            PrepareLoadout: _ => new ToolLoadoutChanges(HiddenDeclarations: hiddenDeclarations),
+            PromptSnippet: "Fixture tool for hidden skill-reader prompt tests."));
     }
 }

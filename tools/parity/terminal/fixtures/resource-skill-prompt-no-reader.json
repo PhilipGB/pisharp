@@ -1,0 +1,137 @@
+{
+  "id": "resource-skill-prompt-no-reader",
+  "workingDirectory": "resource-project",
+  "settings": {
+    "quietStartup": true,
+    "skills": [
+      "custom-skills"
+    ]
+  },
+  "environment": {
+    "pi": {
+      "HOME": "{agent}/isolated-home"
+    },
+    "pisharp": {
+      "HOME": "{agent}/isolated-home"
+    }
+  },
+  "arguments": {
+    "pi": [
+      "--provider",
+      "fixture",
+      "--model",
+      "fixture-model",
+      "--no-session",
+      "--offline",
+      "--no-extensions",
+      "--no-prompt-templates",
+      "--skill",
+      "temporary-skills",
+      "--approve",
+      "--tools",
+      "write,edit"
+    ],
+    "pisharp": [
+      "--provider",
+      "fixture",
+      "--model",
+      "fixture-model",
+      "--no-session",
+      "--offline",
+      "--no-extensions",
+      "--no-prompt-templates",
+      "--no-context-files",
+      "--skill",
+      "temporary-skills",
+      "--approve",
+      "--tools",
+      "write,edit"
+    ]
+  },
+  "projectFiles": {
+    "resource-project/.pi/settings.json": "{\"skills\":[\"custom-skills\"]}",
+    "resource-project/.pi/custom-skills/project-only/SKILL.md": "---\nname: project-only\ndescription: Project-only skill\n---\nPROJECT-ONLY-BODY",
+    "resource-project/.pi/custom-skills/shared/SKILL.md": "---\nname: shared\ndescription: project shared skill\n---\nPROJECT-SHARED-BODY",
+    "resource-project/temporary-skills/temp-only/SKILL.md": "---\nname: temp-only\ndescription: Temporary-only skill\n---\nTEMP-ONLY-BODY",
+    "resource-project/temporary-skills/shared/SKILL.md": "---\nname: shared\ndescription: temporary shared skill\n---\nTEMPORARY-SHARED-BODY",
+    "resource-project/temporary-skills/unsafe&skill/SKILL.md": "---\nname: unsafe&skill\ndescription: Unsafe <skill> & description\n---\nUNSAFE-BODY"
+  },
+  "files": {
+    "pi": {
+      "custom-skills/user-only/SKILL.md": "---\nname: user-only\ndescription: User-only skill\n---\nUSER-ONLY-BODY",
+      "custom-skills/shared/SKILL.md": "---\nname: shared\ndescription: user shared skill\n---\nUSER-SHARED-BODY",
+      "trust.json": {
+        "/tmp/pisharp-terminal-fixture-workspace/resource-project": true
+      }
+    },
+    "pisharp": {
+      "custom-skills/user-only/SKILL.md": "---\nname: user-only\ndescription: User-only skill\n---\nUSER-ONLY-BODY",
+      "custom-skills/shared/SKILL.md": "---\nname: shared\ndescription: user shared skill\n---\nUSER-SHARED-BODY",
+      "trust.json": {
+        "/tmp/pisharp-terminal-fixture-workspace/resource-project": true
+      }
+    }
+  },
+  "workspaceFiles": {},
+  "actions": [
+    {
+      "id": "startup",
+      "expect": "fixture-model"
+    },
+    {
+      "id": "loaded-resource-slash-commands",
+      "send": "/skill:",
+      "expect": "unsafe&skill"
+    },
+    {
+      "id": "clear-completion-draft",
+      "send": "\u0003",
+      "expect": "fixture-model"
+    },
+    {
+      "id": "invoke-shared",
+      "send": "/skill:shared   argument<&> marker   \r",
+      "expect": "fixture reply"
+    },
+    {
+      "id": "invoke-project-only",
+      "send": "/skill:project-only   argument<&> marker   \r",
+      "expect": "fixture reply"
+    },
+    {
+      "id": "invoke-user-only",
+      "send": "/skill:user-only   argument<&> marker   \r",
+      "expect": "fixture reply"
+    },
+    {
+      "id": "invoke-temp-only",
+      "send": "/skill:temp-only   argument<&> marker   \r",
+      "expect": "fixture reply"
+    },
+    {
+      "id": "invoke-unsafeandskill",
+      "send": "/skill:unsafe&skill   argument<&> marker   \r",
+      "expect": "fixture reply"
+    },
+    {
+      "id": "quit",
+      "send": "/quit\r",
+      "exit": true
+    }
+  ],
+  "dimensions": [
+    {
+      "columns": 120,
+      "rows": 40
+    }
+  ],
+  "themes": [
+    "dark"
+  ],
+  "modes": [
+    "fullscreen"
+  ],
+  "terminal": {
+    "keyboardProtocol": "kitty"
+  }
+}

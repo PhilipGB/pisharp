@@ -84,6 +84,10 @@ public sealed class ResourceCatalogTests
             Assert.Contains("<location>" + Path.Combine(userSkill, "SKILL.md") + "</location>",
                 untrusted.SystemInstructions());
             Assert.Contains("Use bash to load a skill's file", untrusted.SystemInstructions("bash"));
+            Assert.Contains("Load a skill's file when the task matches its description.",
+                untrusted.SystemInstructions("indirect"));
+            Assert.DoesNotContain("Use the read tool to load", untrusted.SystemInstructions("indirect"));
+            Assert.DoesNotContain("Use bash to load", untrusted.SystemInstructions("indirect"));
             Assert.Empty(untrusted.SystemInstructions(null));
             Assert.Empty(untrusted.SystemInstructions("write"));
             Assert.DoesNotContain("Use references", untrusted.SystemInstructions());

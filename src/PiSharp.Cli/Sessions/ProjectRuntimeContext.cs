@@ -235,13 +235,16 @@ internal sealed class ProjectRuntimeContext : IDisposable
     }
 
     internal static string? ResolveSkillFileReadTool(CliArguments arguments,
-        IReadOnlyList<string>? activeToolNames = null)
+        IReadOnlyList<string>? activeToolNames = null, IReadOnlyList<string>? declaredToolNames = null)
     {
         if (arguments.NoTools) return null;
-        var declaredTools = activeToolNames ?? arguments.Tools;
-        if (declaredTools is null) return "read";
-        if (declaredTools.Contains("read", StringComparer.Ordinal)) return "read";
-        if (declaredTools.Contains("bash", StringComparer.Ordinal)) return "bash";
+        var selectedTools = activeToolNames ?? arguments.Tools;
+        var declaredTools = declaredToolNames ?? selectedTools;
+        if (selectedTools is null && declaredTools is null) return "read";
+        if (declaredTools?.Contains("read", StringComparer.Ordinal) == true) return "read";
+        if (declaredTools?.Contains("bash", StringComparer.Ordinal) == true) return "bash";
+        if (selectedTools?.Contains("read", StringComparer.Ordinal) == true ||
+            selectedTools?.Contains("bash", StringComparer.Ordinal) == true) return "indirect";
         return null;
     }
 
@@ -264,8 +267,8 @@ internal sealed class ProjectRuntimeContext : IDisposable
             virtualModelRequestRouter: virtualModelRequestRouter,
             codemodeModels: codemodeModels,
             getAdditionalSystemInstructions: () => McpRuntime.RenderServerContext(EffectiveMcpServers, McpManager),
-            getSkillInstructions: activeToolNames => Resources.SystemInstructions(
-                ResolveSkillFileReadTool(arguments, activeToolNames)),
+            getSkillInstructions: (activeToolNames, declaredToolNames) => Resources.SystemInstructions(
+                ResolveSkillFileReadTool(arguments, activeToolNames, declaredToolNames)),
             // ProviderChatClientFactory applies retry.provider.maxRetries inside the SDK adapter.
             // Avoid adding PiAgent's independent fallback retry loop on top of that configured count.
             retryPolicy: ProviderRetryPolicy.None);

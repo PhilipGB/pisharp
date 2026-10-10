@@ -125,7 +125,7 @@ public sealed class PiAgent
     private readonly string? _customSystemPrompt;
     private readonly string? _appendSystemPrompt;
     private readonly string? _projectInstructions;
-    private readonly Func<IReadOnlyList<string>, string>? _getSkillInstructions;
+    private readonly Func<IReadOnlyList<string>, IReadOnlyList<string>, string>? _getSkillInstructions;
     private readonly PiSharpContextTransformPipeline _contextTransforms;
     private readonly SemaphoreSlim _runGate = new(1, 1);
     private ReasoningOptions? _reasoning;
@@ -182,7 +182,7 @@ public sealed class PiAgent
         VirtualModelRequestRouter? virtualModelRequestRouter = null, ICodemodeModels? codemodeModels = null,
         Func<string?>? getAdditionalSystemInstructions = null,
         IReadOnlyList<PiSharpContextTransform>? extensionContextTransforms = null,
-        Func<IReadOnlyList<string>, string>? getSkillInstructions = null)
+        Func<IReadOnlyList<string>, IReadOnlyList<string>, string>? getSkillInstructions = null)
     {
         _contextTransforms = new(extensionContextTransforms);
         _codemodeModels = codemodeModels;
@@ -325,7 +325,8 @@ public sealed class PiAgent
     private string BuildSystemInstructions(IReadOnlyList<PiSharpToolDeclaration> declarations,
         IReadOnlyList<string> activeToolNames) => PiSystemPromptBuilder.Build(_codingTools.WorkingDirectory,
         declarations, _customSystemPrompt, _appendSystemPrompt, _projectInstructions,
-        _getSkillInstructions?.Invoke(activeToolNames));
+        _getSkillInstructions?.Invoke(activeToolNames,
+            declarations.Select(declaration => declaration.Registration.Function.Name).ToArray()));
 
     private void RefreshExtensionTools(IReadOnlyCollection<PiSharpToolRegistration> definitions)
     {

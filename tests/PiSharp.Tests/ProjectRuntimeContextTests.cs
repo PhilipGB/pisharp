@@ -22,6 +22,21 @@ public sealed class ProjectRuntimeContextTests
     }
 
     [Fact]
+    public void SkillPromptReaderUsesVisibleDeclarationsAndRetainsHiddenReaderReachability()
+    {
+        var arguments = CliArguments.Parse([]);
+
+        Assert.Equal("bash", ProjectRuntimeContext.ResolveSkillFileReadTool(arguments,
+            ["read", "bash"], ["bash"]));
+        Assert.Equal("indirect", ProjectRuntimeContext.ResolveSkillFileReadTool(arguments,
+            ["read", "bash"], []));
+        Assert.Equal("read", ProjectRuntimeContext.ResolveSkillFileReadTool(arguments,
+            ["read", "bash"], ["read", "bash"]));
+        Assert.Null(ProjectRuntimeContext.ResolveSkillFileReadTool(arguments,
+            ["write", "edit"], ["write", "edit"]));
+    }
+
+    [Fact]
     public async Task ProjectTrustExtensionRunsBeforeSavedDefaultAndIsReusedAfterTrust()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp project trust extension " + Guid.NewGuid().ToString("N"));
