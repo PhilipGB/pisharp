@@ -43,15 +43,17 @@ public sealed class McpOAuthMetadataTests
     }
 
     [Theory]
-    [InlineData("https://idp.example", true)]
-    [InlineData("https://attacker.example", false)]
-    [InlineData(null, false)]
+    [InlineData("https://idp.example", true, true)]
+    [InlineData("https://attacker.example", false, true)]
+    [InlineData(null, false, true)]
+    [InlineData("https://attacker.example", false, false)]
     public async Task ConfiguredMetadataReplacesDiscoveryAndValidatesIssuerBeforeExchange(
-        string? callbackIssuer, bool shouldExchange)
+        string? callbackIssuer, bool shouldExchange, bool issParameterSupported)
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-mcp-oauth-metadata-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(root);
-        await using var server = new OAuthServer();
+        await using var server = new OAuthServer(
+            authorizationResponseIssParameterSupported: issParameterSupported);
         using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(15));
         try
         {
@@ -166,6 +168,7 @@ public sealed class McpOAuthMetadataTests
         private readonly CancellationTokenSource _shutdown = new(TimeSpan.FromSeconds(20));
         private readonly Task _serve;
         private readonly bool _invalidAuthorizationServerUrl;
+        private readonly bool _authorizationResponseIssParameterSupported;
         private int _configuredMetadataRequests;
         private int _normalDiscoveryRequests;
         private int _tokenRequests;
@@ -175,9 +178,11 @@ public sealed class McpOAuthMetadataTests
         public int NormalDiscoveryRequests => Volatile.Read(ref _normalDiscoveryRequests);
         public int TokenRequests => Volatile.Read(ref _tokenRequests);
 
-        public OAuthServer(bool invalidAuthorizationServerUrl = false)
+        public OAuthServer(bool invalidAuthorizationServerUrl = false,
+            bool authorizationResponseIssParameterSupported = true)
         {
             _invalidAuthorizationServerUrl = invalidAuthorizationServerUrl;
+            _authorizationResponseIssParameterSupported = authorizationResponseIssParameterSupported;
             using var reservation = new TcpListener(IPAddress.Loopback, 0);
             reservation.Start();
             var port = ((IPEndPoint)reservation.LocalEndpoint).Port;
@@ -293,7 +298,7 @@ public sealed class McpOAuthMetadataTests
                 response_types_supported = new[] { "code" },
                 token_endpoint_auth_methods_supported = new[] { "none" },
                 code_challenge_methods_supported = new[] { "S256" },
-                authorization_response_iss_parameter_supported = true
+                authorization_response_iss_parameter_supported = _authorizationResponseIssParameterSupported
             });
 
         public async ValueTask DisposeAsync()

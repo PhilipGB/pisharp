@@ -4333,8 +4333,8 @@
     "classifications": {
       "OUT_OF_SCOPE": 74,
       "NO_BEHAVIOR_CHANGE": 37,
-      "NEEDS_WORK": 88,
-      "MATCHED": 7
+      "NEEDS_WORK": 87,
+      "MATCHED": 8
     },
     "fixture": "docs/parity/fixtures/upstream-delta-audit-2026-10-10.md",
     "next": "continue-current-pi-resources-trust-and-prompt-differential",
@@ -4498,8 +4498,8 @@
         "classifications": {
           "OUT_OF_SCOPE": 6,
           "NO_BEHAVIOR_CHANGE": 1,
-          "NEEDS_WORK": 1,
-          "MATCHED": 0
+          "NEEDS_WORK": 0,
+          "MATCHED": 1
         },
         "fixture": "docs/parity/fixtures/upstream-delta-audit-2026-10-10.md"
       }
