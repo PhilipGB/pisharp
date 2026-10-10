@@ -96,14 +96,16 @@ public sealed class ProjectTrust(string agentDirectory)
 
     public async Task<bool> ResolveAsync(string cwd, bool? overrideDecision, bool interactive,
         TextReader input, TextWriter output, CancellationToken cancellationToken = default,
-        string defaultProjectTrust = "ask", ExtensionRegistration? trustExtensions = null)
+        string defaultProjectTrust = "ask", ExtensionRegistration? trustExtensions = null,
+        string mode = "interactive", IProjectTrustExtensionUi? extensionUi = null)
     {
         if (overrideDecision.HasValue) return overrideDecision.Value;
         if (!HasProtectedResources(cwd)) return true;
         if (trustExtensions is not null)
         {
             var extensionResolution = await trustExtensions.ResolveProjectTrustAsync(
-                new(CanonicalizePath(cwd), interactive), cancellationToken);
+                new(CanonicalizePath(cwd), mode == "interactive" ? "tui" : mode, interactive,
+                    extensionUi ?? UnavailableProjectTrustExtensionUi.Instance), cancellationToken);
             foreach (var error in extensionResolution.Errors)
                 await output.WriteLineAsync($"Extension \"{error.ExtensionPath}\" project_trust error: {error.Message}");
             if (extensionResolution.Result is { Decision: ProjectTrustExtensionDecision.Yes or ProjectTrustExtensionDecision.No } result)

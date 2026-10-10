@@ -105,6 +105,101 @@ public sealed class ProjectRuntimeContextTests
     }
 
     [Fact]
+    public async Task ProjectTrustExtensionUiMethodsReceivePiContextAndReturnInteractiveValues()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp project trust extension ui " + Guid.NewGuid().ToString("N"));
+        var project = Path.Combine(root, "project");
+        var agent = Path.Combine(root, "agent");
+        var piDirectory = Path.Combine(project, ".pi");
+        var extensionPath = typeof(ResourceDiscoveryFixture).Assembly.Location;
+        var loadLog = Path.Combine(root, "extension-loads.log");
+        var priorLoadLog = Environment.GetEnvironmentVariable("PISHARP_TEST_EXTENSION_LOAD_LOG");
+        Directory.CreateDirectory(piDirectory);
+        Directory.CreateDirectory(agent);
+        await File.WriteAllTextAsync(Path.Combine(piDirectory, "settings.json"), "{}");
+        await File.WriteAllTextAsync(Path.Combine(piDirectory, "project-trust-extension.json"),
+            "{\"exerciseUi\":true,\"decision\":\"yes\",\"remember\":true}");
+        await File.WriteAllTextAsync(Path.Combine(agent, "settings.json"), "{\"defaultProjectTrust\":\"never\"}");
+
+        try
+        {
+            Environment.SetEnvironmentVariable("PISHARP_TEST_EXTENSION_LOAD_LOG", loadLog);
+            var ui = new RecordingProjectTrustUi();
+            using var configuration = await ProjectRuntimeConfiguration.LoadAsync(project, agent,
+                CliArguments.Parse(["--extension", extensionPath]), new ProjectTrust(agent),
+                interactiveTrust: true, TextReader.Null, TextWriter.Null, extensionUi: ui);
+
+            Assert.True(configuration.Trusted);
+            Assert.Equal(["select:Trust option:Skip|Continue", "confirm:Continue?:Trust project resources?",
+                "input:Project label:approved", "notify:warning:Project trust extension notification"], ui.Calls);
+            Assert.Equal(["configured", "trust-undecided:true", "trust-decision:true",
+                "trust-ui:tui:true:Continue:true:approved"], await File.ReadAllLinesAsync(loadLog));
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("PISHARP_TEST_EXTENSION_LOAD_LOG", priorLoadLog);
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task ProjectTrustExtensionUiDefaultsMatchHeadlessPiBehavior()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp project trust extension headless ui " + Guid.NewGuid().ToString("N"));
+        var project = Path.Combine(root, "project");
+        var agent = Path.Combine(root, "agent");
+        var piDirectory = Path.Combine(project, ".pi");
+        var extensionPath = typeof(ResourceDiscoveryFixture).Assembly.Location;
+        var loadLog = Path.Combine(root, "extension-loads.log");
+        var priorLoadLog = Environment.GetEnvironmentVariable("PISHARP_TEST_EXTENSION_LOAD_LOG");
+        Directory.CreateDirectory(piDirectory);
+        Directory.CreateDirectory(agent);
+        await File.WriteAllTextAsync(Path.Combine(piDirectory, "settings.json"), "{}");
+        await File.WriteAllTextAsync(Path.Combine(piDirectory, "project-trust-extension.json"),
+            "{\"exerciseUi\":true,\"decision\":\"yes\"}");
+        await File.WriteAllTextAsync(Path.Combine(agent, "settings.json"), "{\"defaultProjectTrust\":\"never\"}");
+
+        try
+        {
+            Environment.SetEnvironmentVariable("PISHARP_TEST_EXTENSION_LOAD_LOG", loadLog);
+            using var output = new StringWriter();
+            using var configuration = await ProjectRuntimeConfiguration.LoadAsync(project, agent,
+                CliArguments.Parse(["--print", "--extension", extensionPath]), new ProjectTrust(agent),
+                interactiveTrust: false, TextReader.Null, output);
+
+            Assert.True(configuration.Trusted);
+            Assert.Equal(["configured", "trust-undecided:false", "trust-decision:false",
+                "trust-ui:print:false::false:"], await File.ReadAllLinesAsync(loadLog));
+            Assert.Equal(string.Empty, output.ToString());
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("PISHARP_TEST_EXTENSION_LOAD_LOG", priorLoadLog);
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task ProjectTrustStartupUiUsesPiHeadlessDefaultsAndNotificationMode()
+    {
+        using var output = new StringWriter();
+        using var printError = new StringWriter();
+        var printUi = new ProjectTrustStartupUi(hasUserInterface: false, mode: "print", output: output, error: printError);
+
+        Assert.Null(await printUi.SelectAsync("Choose", ["one", "two"]));
+        Assert.False(await printUi.ConfirmAsync("Confirm", "Continue?"));
+        Assert.Null(await printUi.InputAsync("Value", "placeholder"));
+        printUi.Notify("startup warning", "warning");
+        Assert.Contains("startup warning", printError.ToString());
+
+        using var interactiveError = new StringWriter();
+        var interactiveUi = new ProjectTrustStartupUi(hasUserInterface: false, mode: "interactive",
+            output: output, error: interactiveError);
+        interactiveUi.Notify("interactive notifications are silent");
+        Assert.Equal(string.Empty, interactiveError.ToString());
+    }
+
+    [Fact]
     public async Task ExtensionResourcesDiscoverOnStartupAndAreReplacedOnReload()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp extension resources " + Guid.NewGuid().ToString("N"));
@@ -253,6 +348,36 @@ public sealed class ProjectRuntimeContextTests
             Assert.DoesNotContain(reloaded.Resources.Skills, skill => skill.Name == "configured-first");
         }
         finally { Directory.Delete(root, recursive: true); }
+    }
+
+    private sealed class RecordingProjectTrustUi : IProjectTrustExtensionUi
+    {
+        public List<string> Calls { get; } = [];
+
+        public Task<string?> SelectAsync(string title, IReadOnlyList<string> options,
+            CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            Calls.Add($"select:{title}:{string.Join('|', options)}");
+            return Task.FromResult<string?>("Continue");
+        }
+
+        public Task<bool> ConfirmAsync(string title, string message, CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            Calls.Add($"confirm:{title}:{message}");
+            return Task.FromResult(true);
+        }
+
+        public Task<string?> InputAsync(string title, string? placeholder = null,
+            CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            Calls.Add($"input:{title}:{placeholder}");
+            return Task.FromResult<string?>("approved");
+        }
+
+        public void Notify(string message, string type = "info") => Calls.Add($"notify:{type}:{message}");
     }
 
     private static async Task WriteResourcesAsync(string project, string phase, string skillName,

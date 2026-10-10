@@ -1,0 +1,82 @@
+{
+  "id": "project-trust-extension-ui",
+  "workingDirectory": "trust-project",
+  "settings": {
+    "quietStartup": true,
+    "defaultProjectTrust": "never"
+  },
+  "pisharpExtension": true,
+  "environment": {
+    "pisharp": {
+      "PISHARP_TEST_EXTENSION_LOAD_LOG": "{agent}/project-trust-extension.log"
+    }
+  },
+  "arguments": {
+    "pi": [
+      "--provider", "fixture", "--model", "fixture-model", "--models", "fixture-model",
+      "--no-session", "--offline", "--no-prompt-templates", "--no-context-files"
+    ],
+    "pisharp": [
+      "--provider", "fixture", "--model", "fixture-model", "--models", "fixture-model",
+      "--no-session", "--offline", "--no-extensions", "--no-prompt-templates", "--no-context-files"
+    ]
+  },
+  "projectFiles": {
+    "trust-project/.pi/settings.json": {
+      "defaultTools": ["read"]
+    },
+    "trust-project/.pi/project-trust-extension.json": {
+      "exerciseUi": true,
+      "decision": "fromUi",
+      "remember": true
+    },
+    "trust-project/.pi/skills/trusted/SKILL.md": "---\nname: trusted-check\ndescription: Trust extension fixture skill\n---\nUse the trusted project instructions.\n"
+  },
+  "files": {
+    "pi": {
+      "extensions/01-project-trust-ui.ts": "export default function(pi) { pi.on('project_trust', async (_event, ctx) => { const selected = await ctx.ui.select('Trust option', ['Skip', 'Continue']); const confirmed = await ctx.ui.confirm('Continue?', 'Trust project resources?'); const input = await ctx.ui.input('Project label', 'approved'); ctx.ui.notify('Project trust extension notification', 'warning'); return { trusted: selected === 'Continue' && confirmed && input === 'approved' ? 'yes' : 'no', remember: true }; }); }\n"
+    }
+  },
+  "actions": [
+    {
+      "id": "trust-select",
+      "expect": "Trust option"
+    },
+    {
+      "id": "trust-select-option",
+      "send": "\u001b[B\r",
+      "expect": "Continue?"
+    },
+    {
+      "id": "trust-confirm",
+      "send": "\r",
+      "expect": "Project label"
+    },
+    {
+      "id": "trust-input",
+      "send": "approved\r",
+      "expect": "fixture-model"
+    },
+    {
+      "id": "send-prompt",
+      "send": "Inspect the trusted project instructions.\r",
+      "expect": "fixture reply"
+    },
+    {
+      "id": "quit",
+      "send": "/quit\r",
+      "exit": true
+    }
+  ],
+  "dimensions": [
+    {
+      "columns": 120,
+      "rows": 40
+    }
+  ],
+  "themes": ["dark"],
+  "modes": ["fullscreen"],
+  "terminal": {
+    "keyboardProtocol": "kitty"
+  }
+}

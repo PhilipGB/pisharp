@@ -194,7 +194,8 @@ public sealed class TerminalEditor
         IReadOnlyList<TerminalSelectionOption<T>> options, IReadOnlyList<string>? header = null,
         string footer = "↑↓ move • enter select • escape/ctrl+c close", string? selectedKey = null,
         bool preservePanelAfterSelection = false, int optionIndent = 0, int bottomMargin = 2,
-        int bottomSpacerLines = 0, bool showCurrentMarker = false)
+        int bottomSpacerLines = 0, bool showCurrentMarker = false,
+        CancellationToken cancellationToken = default)
     {
         if (_screen is not { IsActive: true } screen || options.Count == 0) return null;
         var input = EnsureInput();
@@ -202,16 +203,26 @@ public sealed class TerminalEditor
             Array.FindIndex(options.ToArray(), option => option.Key.Equals(selectedKey, StringComparison.OrdinalIgnoreCase)));
         using var mode = TerminalMode.Enter(screen);
         var preservePanel = false;
+        var needsRender = true;
+        var renderedWidth = -1;
+        var renderedHeight = -1;
         try
         {
             while (screen.IsActive)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 screen.RefreshIfResized();
-                var panel = RenderInlinePanel(screen, title, options, selectedIndex, header, footer,
-                    optionIndent, bottomSpacerLines, showCurrentMarker);
-                screen.SetEditorPanel(panel, panel.Count - 2, screen.TerminalWidth + 1, cursorVisible: false,
-                    bottomMargin);
-                var next = input.Read();
+                if (needsRender || renderedWidth != screen.TerminalWidth || renderedHeight != screen.TerminalHeight)
+                {
+                    var panel = RenderInlinePanel(screen, title, options, selectedIndex, header, footer,
+                        optionIndent, bottomSpacerLines, showCurrentMarker);
+                    screen.SetEditorPanel(panel, panel.Count - 2, screen.TerminalWidth + 1, cursorVisible: false,
+                        bottomMargin);
+                    renderedWidth = screen.TerminalWidth;
+                    renderedHeight = screen.TerminalHeight;
+                    needsRender = false;
+                }
+                if (!input.TryRead(40, out var next)) continue;
                 if (next.IsEndOfStream) return null;
                 if (next.Key is not { } key) continue;
                 if (key.Key == ConsoleKey.Escape || _keymap.Matches("app.interrupt", key) ||
@@ -227,6 +238,7 @@ public sealed class TerminalEditor
                 else if (key.Key == ConsoleKey.End) selectedIndex = options.Count - 1;
                 else if (key.Key == ConsoleKey.PageUp) selectedIndex = Math.Max(0, selectedIndex - 10);
                 else if (key.Key == ConsoleKey.PageDown) selectedIndex = Math.Min(options.Count - 1, selectedIndex + 10);
+                needsRender = true;
             }
             return null;
         }
@@ -244,7 +256,7 @@ public sealed class TerminalEditor
 
     internal async Task<IReadOnlyList<string>?> PromptSequenceAsync(string title,
         IReadOnlyList<(string Message, string? Placeholder)> prompts, bool preservePanelAfterSubmit = false,
-        bool preservePanelOnCancel = false)
+        bool preservePanelOnCancel = false, CancellationToken cancellationToken = default)
     {
         if (prompts.Count == 0) return [];
         if (_screen is not { IsActive: true } screen)
@@ -254,7 +266,7 @@ public sealed class TerminalEditor
             {
                 Console.Error.WriteLine(prompt.Message);
                 var value = await ReadLineAsync(_ => Task.CompletedTask, enableApplicationActions: false,
-                    allowEmptySubmit: true).ConfigureAwait(false);
+                    allowEmptySubmit: true, cancellationToken: cancellationToken).ConfigureAwait(false);
                 if (value is null) return null;
                 redirectedValues.Add(value);
             }
@@ -285,6 +297,7 @@ public sealed class TerminalEditor
                 var renderedHeight = -1;
                 while (screen.IsActive)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
                     screen.RefreshIfResized();
                     if (renderedWidth != screen.TerminalWidth || renderedHeight != screen.TerminalHeight)
                         needsRender = true;
@@ -873,7 +886,8 @@ public sealed class TerminalEditor
     }
 
     public async Task<string?> ReadLineAsync(Func<string, Task> dispatchApplicationAction,
-        bool enableApplicationActions = true, bool allowEmptySubmit = false)
+        bool enableApplicationActions = true, bool allowEmptySubmit = false,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(dispatchApplicationAction);
         using var mode = TerminalMode.Enter(_screen);
@@ -881,7 +895,8 @@ public sealed class TerminalEditor
         Render();
         while (true)
         {
-            var next = input.Read();
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!input.TryRead(40, out var next)) continue;
             if (next.Mouse is { } mouse)
             {
                 var result = _screen?.HandleMouse(mouse) ?? default;

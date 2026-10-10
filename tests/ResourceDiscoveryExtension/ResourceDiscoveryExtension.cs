@@ -17,14 +17,24 @@ public sealed class ResourceDiscoveryFixture : IPiSharpExtension
                 ProjectTrustExtensionDecision.Undecided, Remember: true));
         });
 
-        registration.AddProjectTrustHandler((context, cancellationToken) =>
+        registration.AddProjectTrustHandler(async (context, cancellationToken) =>
         {
             cancellationToken.ThrowIfCancellationRequested();
             Trace($"trust-decision:{context.HasUserInterface.ToString().ToLowerInvariant()}");
             var path = Path.Combine(context.WorkingDirectory, ".pi", "project-trust-extension.json");
-            if (!File.Exists(path)) return Task.FromResult<ProjectTrustExtensionResult?>(null);
+            if (!File.Exists(path)) return null;
             using var document = JsonDocument.Parse(File.ReadAllText(path));
             var root = document.RootElement;
+            var uiTrusted = false;
+            if (root.TryGetProperty("exerciseUi", out var exerciseUi) && exerciseUi.ValueKind == JsonValueKind.True)
+            {
+                var selected = await context.Ui.SelectAsync("Trust option", ["Skip", "Continue"], cancellationToken);
+                var confirmed = await context.Ui.ConfirmAsync("Continue?", "Trust project resources?", cancellationToken);
+                var input = await context.Ui.InputAsync("Project label", "approved", cancellationToken);
+                context.Ui.Notify("Project trust extension notification", "warning");
+                Trace($"trust-ui:{context.Mode}:{context.HasUserInterface.ToString().ToLowerInvariant()}:{selected}:{confirmed.ToString().ToLowerInvariant()}:{input}");
+                uiTrusted = selected == "Continue" && confirmed && input == "approved";
+            }
             var decision = root.TryGetProperty("decision", out var decisionValue)
                 ? decisionValue.GetString() : "undecided";
             if (decision == "throw") throw new InvalidOperationException("fixture trust hook failure");
@@ -32,11 +42,12 @@ public sealed class ResourceDiscoveryFixture : IPiSharpExtension
             {
                 "yes" => ProjectTrustExtensionDecision.Yes,
                 "no" => ProjectTrustExtensionDecision.No,
+                "fromUi" => uiTrusted ? ProjectTrustExtensionDecision.Yes : ProjectTrustExtensionDecision.No,
                 _ => ProjectTrustExtensionDecision.Undecided
             };
             var remember = root.TryGetProperty("remember", out var rememberValue) &&
                 rememberValue.ValueKind == JsonValueKind.True;
-            return Task.FromResult<ProjectTrustExtensionResult?>(new(parsed, remember));
+            return new(parsed, remember);
         });
 
         registration.AddResourceDiscoveryHandler((context, _) =>

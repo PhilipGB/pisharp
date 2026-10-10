@@ -40,7 +40,8 @@ internal sealed class ProjectRuntimeConfiguration : IDisposable
 
     public static async Task<ProjectRuntimeConfiguration> LoadAsync(string workingDirectory, string agentDirectory,
         CliArguments arguments, ProjectTrust trustStore, bool interactiveTrust, TextReader input, TextWriter output,
-        bool? trustedOverride = null, CancellationToken cancellationToken = default)
+        bool? trustedOverride = null, CancellationToken cancellationToken = default,
+        IProjectTrustExtensionUi? extensionUi = null)
     {
         var cwd = Path.GetFullPath(workingDirectory);
         var baseSettings = await UserSettings.LoadAsync(agentDirectory, Environment.GetEnvironmentVariable, cancellationToken);
@@ -64,7 +65,9 @@ internal sealed class ProjectRuntimeConfiguration : IDisposable
             var trusted = trustedOverride ?? await trustStore.ResolveAsync(cwd, arguments.ProjectTrustOverride,
                 interactiveTrust, input, output, cancellationToken,
                 defaultProjectTrust: baseSettings.DefaultProjectTrust ?? "ask",
-                trustExtensions: bootstrapExtensions?.Registration);
+                trustExtensions: bootstrapExtensions?.Registration,
+                mode: arguments.Print ? "print" : arguments.Mode,
+                extensionUi: extensionUi);
             var projectSettings = trusted ? await UserSettings.LoadProjectAsync(cwd, cancellationToken) : null;
             return new(cwd, trusted, baseSettings, projectSettings,
                 baseSettings.Overlay(projectSettings ?? new UserSettings()), bootstrapExtensions);

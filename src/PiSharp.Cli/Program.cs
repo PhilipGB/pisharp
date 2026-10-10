@@ -94,11 +94,14 @@ catch (Exception error) when (error is IOException or UnauthorizedAccessExceptio
 var currentDirectory = Environment.CurrentDirectory;
 var trustStore = new ProjectTrust(agentDirectory);
 ProjectRuntimeConfiguration projectConfiguration;
+var hasProjectTrustUi = cli.Mode == "interactive" && !cli.Print &&
+    !Console.IsInputRedirected && !Console.IsOutputRedirected;
+var projectTrustMode = cli.Print ? "print" : cli.Mode;
+var projectTrustUi = new ProjectTrustStartupUi(hasProjectTrustUi, projectTrustMode, Console.Out, Console.Error);
 try
 {
     projectConfiguration = await ProjectRuntimeConfiguration.LoadAsync(currentDirectory, agentDirectory, cli,
-        trustStore, cli.Mode == "interactive" && !cli.Print && !Console.IsInputRedirected && !Console.IsOutputRedirected,
-        standardInput, Console.Error);
+        trustStore, hasProjectTrustUi, standardInput, Console.Error, extensionUi: projectTrustUi);
 }
 catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidDataException or System.Text.Json.JsonException or ArgumentException)
 {
