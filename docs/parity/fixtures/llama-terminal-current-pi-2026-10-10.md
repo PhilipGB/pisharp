@@ -1,5 +1,7 @@
 # llama.cpp current-Pi verification — 2026-10-10
 
+## Initial exact-head checkpoint — PiSharp 46151bab
+
 Fresh `git fetch` and `git ls-remote` confirm Pi `origin/main` at `42a3497d03ad17e308a2299fa824727894f2c0ec`; PiSharp `origin/main` is `46151bab7eed2342156b1b3c219850040669bfcd`. The three Pi commits after the prior `f1b2e77f` audit remain outside the normal coding-agent product graph (maintainer tooling and the separate durable package); current Pi llama extension and classifier tests pass 15/15 each.
 
 PiSharp exact-head Linux CI [38006418247](https://github.com/PhilipGB/pisharp/actions/runs/38006418247) is green at `46151bab7eed2342156b1b3c219850040669bfcd`. It passes format verification, the warnings-as-errors build, 24/24 Node terminal tests, 24/24 Python terminal tests, and 1,236/1,236 .NET tests with zero skips. The local full format/build/test checks also pass at that SHA.
@@ -9,3 +11,13 @@ Twelve paired PTY flows match every normalized terminal checkpoint, all 155 sync
 Three current-head process comparisons also match: native llama.cpp classifier request/result behavior; router model and classifier projection including sleeping/autoload models; and live/configured/training/fallback context limits across refresh and offline cache reload. Their exact reports are in [`process`](llama-terminal-current-pi-2026-10-10/current-42a3497d-46151bab7e/process).
 
 The current-Pi llama.cpp family is verified at these exact heads. Resources / instructions and trust remains the active family; the full PiSharp parity goal remains open.
+
+## Rerun at current PiSharp main — 8f33b03fb2
+
+Pi `origin/main` remains `42a3497d03ad17e308a2299fa824727894f2c0ec`; PiSharp `origin/main` is now `8f33b03fb2d30622f20b9d469b5a69203283fb55`. Exact-head Linux CI [38013981386](https://github.com/PhilipGB/pisharp/actions/runs/38013981386) passes format, warnings-as-errors build, Node 24/24, Python 24/24 and .NET 1,240/1,240 with zero skips. The current Pi llama extension tests pass 15/15.
+
+Three process differentials match at these exact heads: native llama.cpp classifier outputs and authenticated HTTP requests (including image rejection without a request); router chat/decision classifier projection, model properties and loaded/sleeping/unloaded preset eligibility with autoload both disabled and enabled; and runtime/configured/training/fallback context windows through refresh and offline restart with no offline router calls. Full reports are in [`current-42a3497d-8f33b03fb2/process`](llama-terminal-current-pi-2026-10-10/current-42a3497d-8f33b03fb2/process).
+
+All twelve paired interactive flows match every normalized checkpoint, all 155 synchronized render frames, and HTTP traces, with zero scenario errors. They cover `/login llama.cpp`, default router URL, `LLAMA_BASE_URL` and `LLAMA_API_KEY` precedence/authentication and restart persistence; `/llama` discovery, load/unload, refresh/retry, cancellation and progress; `/model` selection; and Hugging Face search, gated access, quantization, token files, download progress and cancellation. Raw bytes remain captured and are not identical in any of the twelve flows; 6,078 control-boundary differences are retained as diagnostics. Same-Pi calibration remains 12/12 at the unchanged Pi 42a head and unchanged harness. Captures and the [current-head manifest](llama-terminal-current-pi-2026-10-10/current-42a3497d-8f33b03fb2/evidence.json) are under that evidence directory.
+
+The earlier `5deac527` exact-head CI failure was limited to `dotnet format` whitespace in `LlamaRouterCatalog.cs`; `8c23342368` fixed it. Current-main exact-head CI is green. The llama.cpp family is verified at these current heads, and the overall parity goal remains open.
