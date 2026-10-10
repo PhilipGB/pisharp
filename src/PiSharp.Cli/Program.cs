@@ -106,6 +106,7 @@ catch (Exception error) when (error is IOException or UnauthorizedAccessExceptio
     Environment.ExitCode = 2;
     return;
 }
+using var projectConfigurationOwner = projectConfiguration;
 var trusted = projectConfiguration.Trusted;
 var baseUserSettings = projectConfiguration.BaseUserSettings;
 var projectSettings = projectConfiguration.ProjectSettings;
@@ -774,12 +775,7 @@ async Task<(UserSettings User, UserSettings? Project)> SaveSettingAsync(bool pro
         baseUserSettings = await UserSettings.LoadAsync(agentDirectory, Environment.GetEnvironmentVariable);
     userSettings = baseUserSettings.Overlay(projectSettings ?? new UserSettings());
     if (setting == "theme") cliThemeOverride = null;
-    projectConfiguration = projectConfiguration with
-    {
-        BaseUserSettings = baseUserSettings,
-        ProjectSettings = projectSettings,
-        Settings = userSettings
-    };
+    projectConfiguration = projectConfiguration.WithSettings(baseUserSettings, projectSettings, userSettings);
     if (setting == "steeringMode")
         conversationRun.SetSteeringMode(userSettings.SteeringMode ?? PromptDeliveryMode.OneAtATime);
     else if (setting == "followUpMode")
@@ -925,7 +921,7 @@ async Task ReloadResources()
     var previousContextPolicy = contextPolicy;
     try
     {
-        var nextConfiguration = await ProjectRuntimeConfiguration.LoadAsync(currentDirectory, agentDirectory, cli,
+        using var nextConfiguration = await ProjectRuntimeConfiguration.LoadAsync(currentDirectory, agentDirectory, cli,
             trustStore, interactiveTrust: false, Console.In, Console.Error, trustedOverride: trusted);
         var reloadPlan = DefaultToolReloadPolicy.Resolve(cli, usesDefaultToolsSetting, userSettings,
             nextConfiguration.Settings, conversationRun.ActiveToolNames, Environment.GetEnvironmentVariable);

@@ -22,6 +22,89 @@ public sealed class ProjectRuntimeContextTests
     }
 
     [Fact]
+    public async Task ProjectTrustExtensionRunsBeforeSavedDefaultAndIsReusedAfterTrust()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp project trust extension " + Guid.NewGuid().ToString("N"));
+        var project = Path.Combine(root, "project");
+        var agent = Path.Combine(root, "agent");
+        var piDirectory = Path.Combine(project, ".pi");
+        var projectExtensionDirectory = Path.Combine(piDirectory, "extensions");
+        var extensionPath = typeof(ResourceDiscoveryFixture).Assembly.Location;
+        var loadLog = Path.Combine(root, "extension-loads.log");
+        var priorLoadLog = Environment.GetEnvironmentVariable("PISHARP_TEST_EXTENSION_LOAD_LOG");
+        Directory.CreateDirectory(piDirectory);
+        Directory.CreateDirectory(agent);
+        Directory.CreateDirectory(projectExtensionDirectory);
+        File.Copy(extensionPath, Path.Combine(projectExtensionDirectory, "project-extension.dll"));
+        await File.WriteAllTextAsync(Path.Combine(piDirectory, "settings.json"), "{\"defaultTools\":[\"read\"]}");
+        await File.WriteAllTextAsync(Path.Combine(piDirectory, "project-trust-extension.json"),
+            "{\"decision\":\"yes\",\"remember\":true}");
+        await File.WriteAllTextAsync(Path.Combine(agent, "settings.json"), "{\"defaultProjectTrust\":\"never\"}");
+
+        try
+        {
+            Environment.SetEnvironmentVariable("PISHARP_TEST_EXTENSION_LOAD_LOG", loadLog);
+            var arguments = CliArguments.Parse(["--extension", extensionPath]);
+            var trust = new ProjectTrust(agent);
+            await trust.SetAsync(project, false);
+
+            using var configuration = await ProjectRuntimeConfiguration.LoadAsync(project, agent, arguments,
+                trust, interactiveTrust: false, TextReader.Null, TextWriter.Null);
+
+            Assert.True(configuration.Trusted);
+            Assert.True(await trust.GetAsync(project));
+            Assert.Equal(["configured", "trust-undecided:false", "trust-decision:false"],
+                await File.ReadAllLinesAsync(loadLog));
+
+            using var runtime = await ProjectRuntimeContext.LoadAsync(configuration, agent, arguments, null);
+
+            var loadedExtensions = runtime.Extensions.LoadedExtensions;
+            Assert.Equal(2, loadedExtensions.Count);
+            Assert.Contains(loadedExtensions, extension => extension.Scope == "project");
+            Assert.Contains(loadedExtensions, extension => extension.Source == "cli");
+            Assert.Equal(["configured", "trust-undecided:false", "trust-decision:false", "configured"],
+                await File.ReadAllLinesAsync(loadLog));
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("PISHARP_TEST_EXTENSION_LOAD_LOG", priorLoadLog);
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task ProjectTrustExtensionErrorsAreReportedBeforeSavedDefaultFallback()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp project trust error " + Guid.NewGuid().ToString("N"));
+        var project = Path.Combine(root, "project");
+        var agent = Path.Combine(root, "agent");
+        var piDirectory = Path.Combine(project, ".pi");
+        var extensionPath = typeof(ResourceDiscoveryFixture).Assembly.Location;
+        Directory.CreateDirectory(piDirectory);
+        Directory.CreateDirectory(agent);
+        await File.WriteAllTextAsync(Path.Combine(piDirectory, "settings.json"), "{}");
+        await File.WriteAllTextAsync(Path.Combine(piDirectory, "project-trust-extension.json"),
+            "{\"decision\":\"throw\",\"remember\":true}");
+        await File.WriteAllTextAsync(Path.Combine(agent, "settings.json"), "{\"defaultProjectTrust\":\"never\"}");
+
+        try
+        {
+            var arguments = CliArguments.Parse(["--no-extensions", "--extension", extensionPath]);
+            var trust = new ProjectTrust(agent);
+            using var output = new StringWriter();
+
+            using var configuration = await ProjectRuntimeConfiguration.LoadAsync(project, agent, arguments,
+                trust, interactiveTrust: false, TextReader.Null, output);
+
+            Assert.False(configuration.Trusted);
+            Assert.Null(await trust.GetAsync(project));
+            Assert.Contains($"Extension \"{extensionPath}\" project_trust error: fixture trust hook failure",
+                output.ToString());
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
     public async Task ExtensionResourcesDiscoverOnStartupAndAreReplacedOnReload()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp extension resources " + Guid.NewGuid().ToString("N"));

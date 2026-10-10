@@ -9,9 +9,35 @@ using PiSharp.Runtime.Tools;
 
 namespace PiSharp.Cli.Sessions;
 
-internal sealed record ProjectRuntimeConfiguration(string WorkingDirectory, bool Trusted,
-    UserSettings BaseUserSettings, UserSettings? ProjectSettings, UserSettings Settings)
+internal sealed class ProjectRuntimeConfiguration : IDisposable
 {
+    private ExtensionCatalog? _bootstrapExtensions;
+
+    public string WorkingDirectory { get; }
+    public bool Trusted { get; }
+    public UserSettings BaseUserSettings { get; }
+    public UserSettings? ProjectSettings { get; }
+    public UserSettings Settings { get; }
+
+    private ProjectRuntimeConfiguration(string workingDirectory, bool trusted, UserSettings baseUserSettings,
+        UserSettings? projectSettings, UserSettings settings, ExtensionCatalog? bootstrapExtensions)
+    {
+        WorkingDirectory = workingDirectory;
+        Trusted = trusted;
+        BaseUserSettings = baseUserSettings;
+        ProjectSettings = projectSettings;
+        Settings = settings;
+        _bootstrapExtensions = bootstrapExtensions;
+    }
+
+    internal ExtensionCatalog? TakeBootstrapExtensions() => Interlocked.Exchange(ref _bootstrapExtensions, null);
+
+    public void Dispose() => Interlocked.Exchange(ref _bootstrapExtensions, null)?.Dispose();
+
+    public ProjectRuntimeConfiguration WithSettings(UserSettings baseUserSettings, UserSettings? projectSettings,
+        UserSettings settings) => new(WorkingDirectory, Trusted, baseUserSettings, projectSettings, settings,
+        bootstrapExtensions: null);
+
     public static async Task<ProjectRuntimeConfiguration> LoadAsync(string workingDirectory, string agentDirectory,
         CliArguments arguments, ProjectTrust trustStore, bool interactiveTrust, TextReader input, TextWriter output,
         bool? trustedOverride = null, CancellationToken cancellationToken = default)
@@ -19,12 +45,50 @@ internal sealed record ProjectRuntimeConfiguration(string WorkingDirectory, bool
         var cwd = Path.GetFullPath(workingDirectory);
         var baseSettings = await UserSettings.LoadAsync(agentDirectory, Environment.GetEnvironmentVariable, cancellationToken);
         baseSettings.ApplyHttpProxyEnvironment(Environment.GetEnvironmentVariable, Environment.SetEnvironmentVariable);
-        var trusted = trustedOverride ?? await trustStore.ResolveAsync(cwd, arguments.ProjectTrustOverride,
-            interactiveTrust, input, output, cancellationToken,
-            defaultProjectTrust: baseSettings.DefaultProjectTrust ?? "ask");
-        var projectSettings = trusted ? await UserSettings.LoadProjectAsync(cwd, cancellationToken) : null;
-        return new(cwd, trusted, baseSettings, projectSettings,
-            baseSettings.Overlay(projectSettings ?? new UserSettings()));
+        ExtensionCatalog? bootstrapExtensions = null;
+        try
+        {
+            if (trustedOverride is null && ProjectTrust.HasProtectedResources(cwd) &&
+                HasProjectTrustExtensionSources(agentDirectory, arguments, baseSettings))
+            {
+                var cliExtensions = (arguments.ExtensionPaths ?? []).Where(path =>
+                    !path.StartsWith("builtin:", StringComparison.Ordinal)).ToArray();
+                var userExtensions = arguments.NoExtensions ? null :
+                    baseSettings.Extensions?.Where(path => !path.TrimStart('!', '+', '-').StartsWith(
+                        "builtin:", StringComparison.Ordinal)).ToArray();
+                bootstrapExtensions = ExtensionCatalog.Load(agentDirectory, cwd, projectTrusted: false,
+                    discover: !arguments.NoExtensions, additionalPaths: cliExtensions,
+                    userPaths: userExtensions, builtins: []);
+            }
+
+            var trusted = trustedOverride ?? await trustStore.ResolveAsync(cwd, arguments.ProjectTrustOverride,
+                interactiveTrust, input, output, cancellationToken,
+                defaultProjectTrust: baseSettings.DefaultProjectTrust ?? "ask",
+                trustExtensions: bootstrapExtensions?.Registration);
+            var projectSettings = trusted ? await UserSettings.LoadProjectAsync(cwd, cancellationToken) : null;
+            return new(cwd, trusted, baseSettings, projectSettings,
+                baseSettings.Overlay(projectSettings ?? new UserSettings()), bootstrapExtensions);
+        }
+        catch
+        {
+            bootstrapExtensions?.Dispose();
+            throw;
+        }
+    }
+
+    private static bool HasProjectTrustExtensionSources(string agentDirectory, CliArguments arguments,
+        UserSettings baseSettings)
+    {
+        if ((arguments.ExtensionPaths ?? []).Any(path => !path.StartsWith("builtin:", StringComparison.Ordinal)))
+            return true;
+        if (arguments.NoExtensions) return false;
+        if (baseSettings.Extensions?.Any(path => !path.TrimStart('!', '+', '-').StartsWith(
+                "builtin:", StringComparison.Ordinal)) == true)
+            return true;
+        var extensionDirectory = Path.Combine(agentDirectory, "extensions");
+        return Directory.Exists(extensionDirectory) &&
+            (Directory.EnumerateFiles(extensionDirectory, "*.dll", SearchOption.TopDirectoryOnly).Any() ||
+             Directory.EnumerateDirectories(extensionDirectory).Any(directory => File.Exists(Path.Combine(directory, "index.dll"))));
     }
 }
 
@@ -106,7 +170,8 @@ internal sealed class ProjectRuntimeContext : IDisposable
                 additionalPaths: arguments.ExtensionPaths, userPaths: userExtensionPaths,
                 projectPaths: projectExtensionPaths,
                 builtins: [ToolSearchBuiltin.Definition, CodemodeBuiltin.Definition,
-                    McpBuiltin.CreateDefinition(mcpManager)]);
+                    McpBuiltin.CreateDefinition(mcpManager)],
+                preloaded: configuration.TakeBootstrapExtensions());
             var mcp = await McpConfiguration.LoadAsync(agentDirectory, cwd, configuration.Trusted, cancellationToken);
             var effectiveMcpServers = McpRuntime.SelectEffectiveServers(mcp.Servers,
                 extensions.Registration.McpServers);

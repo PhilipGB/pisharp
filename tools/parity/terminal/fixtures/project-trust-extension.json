@@ -1,0 +1,67 @@
+{
+  "id": "project-trust-extension",
+  "workingDirectory": "trust-project",
+  "settings": {
+    "quietStartup": true,
+    "defaultProjectTrust": "never"
+  },
+  "pisharpExtension": true,
+  "environment": {
+    "pisharp": {
+      "PISHARP_TEST_EXTENSION_LOAD_LOG": "{agent}/project-trust-extension.log"
+    }
+  },
+  "arguments": {
+    "pi": [
+      "--provider", "fixture", "--model", "fixture-model", "--models", "fixture-model",
+      "--no-session", "--offline", "--no-prompt-templates", "--no-context-files"
+    ],
+    "pisharp": [
+      "--provider", "fixture", "--model", "fixture-model", "--models", "fixture-model",
+      "--no-session", "--offline", "--no-extensions", "--no-prompt-templates", "--no-context-files"
+    ]
+  },
+  "projectFiles": {
+    "trust-project/.pi/settings.json": {
+      "defaultTools": ["read"]
+    },
+    "trust-project/.pi/project-trust-extension.json": {
+      "decision": "yes",
+      "remember": true
+    },
+    "trust-project/.pi/skills/trusted/SKILL.md": "---\nname: trusted-check\ndescription: Trust extension fixture skill\n---\nUse the trusted project instructions.\n"
+  },
+  "files": {
+    "pi": {
+      "extensions/01-undecided.ts": "export default function(pi) { pi.on('project_trust', () => ({ trusted: 'undecided', remember: true })); }\n",
+      "extensions/02-allow.ts": "export default function(pi) { pi.on('project_trust', () => ({ trusted: 'yes', remember: true })); }\n"
+    }
+  },
+  "actions": [
+    {
+      "id": "startup",
+      "expect": "fixture-model"
+    },
+    {
+      "id": "send-prompt",
+      "send": "Inspect the trusted project instructions.\r",
+      "expect": "fixture reply"
+    },
+    {
+      "id": "quit",
+      "send": "/quit\r",
+      "exit": true
+    }
+  ],
+  "dimensions": [
+    {
+      "columns": 120,
+      "rows": 40
+    }
+  ],
+  "themes": ["dark"],
+  "modes": ["fullscreen"],
+  "terminal": {
+    "keyboardProtocol": "kitty"
+  }
+}

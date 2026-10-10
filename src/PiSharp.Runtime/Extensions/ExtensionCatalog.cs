@@ -50,6 +50,7 @@ public sealed class ExtensionRegistration
     private readonly List<PiSharpToolResultHook> _toolResultHooks = [];
     private readonly List<PiSharpContextTransform> _contextTransforms = [];
     private readonly List<RegisteredResourceDiscoveryHandler> _resourceDiscoveryHandlers = [];
+    private readonly List<RegisteredProjectTrustHandler> _projectTrustHandlers = [];
     private readonly object _mcpGate = new();
     private readonly Dictionary<string, ExtensionMcpServerRegistration> _mcpServers = new(StringComparer.Ordinal);
     private readonly VirtualModelRegistry _virtualModels = new();
@@ -75,6 +76,7 @@ public sealed class ExtensionRegistration
     public IReadOnlyList<PiSharpContextTransform> ContextTransforms => _contextTransforms.ToArray();
     internal IReadOnlyList<RegisteredResourceDiscoveryHandler> ResourceDiscoveryHandlers =>
         _resourceDiscoveryHandlers.ToArray();
+    private IReadOnlyList<RegisteredProjectTrustHandler> ProjectTrustHandlers => _projectTrustHandlers.ToArray();
     public IReadOnlyCollection<ExtensionMcpServerRegistration> McpServers
     {
         get { lock (_mcpGate) return _mcpServers.Values.ToArray(); }
@@ -276,6 +278,39 @@ public sealed class ExtensionRegistration
         _resourceDiscoveryHandlers.Add(new(handler, source));
     }
 
+    /// <summary>Registers a decision hook used before PiSharp loads protected project resources.</summary>
+    public void AddProjectTrustHandler(ProjectTrustExtensionHandler handler)
+    {
+        ArgumentNullException.ThrowIfNull(handler);
+        var source = _currentSourceInfo ?? throw new InvalidOperationException(
+            "Project trust handlers can only be registered while an extension is being configured.");
+        _projectTrustHandlers.Add(new(handler, source));
+    }
+
+    internal async Task<ProjectTrustExtensionResolution> ResolveProjectTrustAsync(
+        ProjectTrustExtensionContext context, CancellationToken cancellationToken)
+    {
+        var errors = new List<ProjectTrustExtensionError>();
+        foreach (var registration in ProjectTrustHandlers)
+        {
+            try
+            {
+                var result = await registration.Handler(context, cancellationToken);
+                if (result is null || result.Decision == ProjectTrustExtensionDecision.Undecided) continue;
+                return new(result, errors);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception error)
+            {
+                errors.Add(new(registration.SourceInfo.Path, error.Message));
+            }
+        }
+        return new(null, errors);
+    }
+
     public void AddCommand(string name, Func<string, CancellationToken, Task<string>> handler) =>
         AddCommand(name, handler, null);
 
@@ -435,16 +470,18 @@ public sealed class ExtensionCatalog : IDisposable
 
     public static ExtensionCatalog Load(string agentDirectory, string cwd, bool projectTrusted, bool discover = true,
         IReadOnlyList<string>? additionalPaths = null, IReadOnlyList<string>? userPaths = null,
-        IReadOnlyList<string>? projectPaths = null, IReadOnlyList<BuiltinExtensionDefinition>? builtins = null)
+        IReadOnlyList<string>? projectPaths = null, IReadOnlyList<BuiltinExtensionDefinition>? builtins = null,
+        ExtensionCatalog? preloaded = null)
     {
-        var catalog = new ExtensionCatalog();
+        var catalog = preloaded ?? new ExtensionCatalog();
         try
         {
             var selectedPaths = new List<(string Path, ResourceSourceInfo SourceInfo)>();
             var selectedBuiltins = new List<BuiltinExtensionDefinition>();
             var builtinByName = (builtins ?? []).ToDictionary(builtin => builtin.Name, StringComparer.Ordinal);
             var seenBuiltins = new HashSet<string>(StringComparer.Ordinal);
-            var seenPaths = new HashSet<string>(OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
+            var seenPaths = new HashSet<string>(catalog._loadedExtensions.Select(extension => extension.Path),
+                OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
             foreach (var entry in additionalPaths ?? [])
             {
                 if (entry.StartsWith("builtin:", StringComparison.Ordinal))
