@@ -1,0 +1,203 @@
+{
+  "date": "2026-10-10",
+  "piSha": "42a3497d03ad17e308a2299fa824727894f2c0ec",
+  "piSharpSha": "386644ea06efab62ac017ea707a01ed24ece9c16",
+  "checkpoint": {
+    "currentPiOriginMain": true,
+    "currentPiSharpOriginMain": true,
+    "piSharpCi": {
+      "runId": 38021973542,
+      "url": "https://github.com/PhilipGB/pisharp/actions/runs/38021973542",
+      "conclusion": "success",
+      "terminalNodeTests": "24/24",
+      "terminalPythonTests": "24/24",
+      "dotnetTests": "1246/1246",
+      "skipped": 0
+    }
+  },
+  "oracleAudit": {
+    "previousAuditPiSha": "f1b2e77f5b13b2a199b1052cb79c235451afe7d7",
+    "currentPiMainSha": "42a3497d03ad17e308a2299fa824727894f2c0ec",
+    "currentPiLlamaExtensionTests": "15/15",
+    "newerLlamaBehavior": "Pi main was freshly fetched and confirmed current. The f6127a1 llama decision-model and native System One behavior is in this oracle; the three commits after the previous f1b2e77 audit touch maintainer tooling and the separate durable package, not llama sources or tests."
+  },
+  "process": {
+    "llama-classifier": {
+      "match": true,
+      "path": "process/llama-classifier.json"
+    },
+    "llama-router-classifier": {
+      "match": true,
+      "path": "process/llama-router-classifier.json"
+    },
+    "llama-router-context": {
+      "match": true,
+      "path": "process/llama-router-context.json"
+    }
+  },
+  "terminal": {
+    "pairedFlows": 12,
+    "allMatch": true,
+    "allTerminalMatch": true,
+    "allHttpMatch": true,
+    "renderFrames": 155,
+    "renderDifferences": 0,
+    "rawByteIdenticalFlows": 0,
+    "controlBoundaryDifferenceCount": 6070,
+    "scenarioErrorCount": 0,
+    "flows": [
+      {
+        "fixture": "llama-download-cancel",
+        "match": true,
+        "terminalMatch": true,
+        "rawMatch": false,
+        "renderFrames": 17,
+        "renderDifferences": 0,
+        "httpMatch": true,
+        "controlBoundaryDifferenceCount": 652,
+        "scenarioErrors": {},
+        "capture": "terminal/llama-download-cancel/100x32-dark-fullscreen.json.gz"
+      },
+      {
+        "fixture": "llama-huggingface",
+        "match": true,
+        "terminalMatch": true,
+        "rawMatch": false,
+        "renderFrames": 21,
+        "renderDifferences": 0,
+        "httpMatch": true,
+        "controlBoundaryDifferenceCount": 699,
+        "scenarioErrors": {},
+        "capture": "terminal/llama-huggingface/100x32-dark-fullscreen.json.gz"
+      },
+      {
+        "fixture": "llama-huggingface-home-token-file",
+        "match": true,
+        "terminalMatch": true,
+        "rawMatch": false,
+        "renderFrames": 20,
+        "renderDifferences": 0,
+        "httpMatch": true,
+        "controlBoundaryDifferenceCount": 694,
+        "scenarioErrors": {},
+        "capture": "terminal/llama-huggingface-home-token-file/100x32-dark-fullscreen.json.gz"
+      },
+      {
+        "fixture": "llama-huggingface-token-file",
+        "match": true,
+        "terminalMatch": true,
+        "rawMatch": false,
+        "renderFrames": 20,
+        "renderDifferences": 0,
+        "httpMatch": true,
+        "controlBoundaryDifferenceCount": 694,
+        "scenarioErrors": {},
+        "capture": "terminal/llama-huggingface-token-file/100x32-dark-fullscreen.json.gz"
+      },
+      {
+        "fixture": "llama-load-cancel",
+        "match": true,
+        "terminalMatch": true,
+        "rawMatch": false,
+        "renderFrames": 12,
+        "renderDifferences": 0,
+        "httpMatch": true,
+        "controlBoundaryDifferenceCount": 472,
+        "scenarioErrors": {},
+        "capture": "terminal/llama-load-cancel/100x32-dark-fullscreen.json.gz"
+      },
+      {
+        "fixture": "llama-load-replace-cancel",
+        "match": true,
+        "terminalMatch": true,
+        "rawMatch": false,
+        "renderFrames": 12,
+        "renderDifferences": 0,
+        "httpMatch": true,
+        "controlBoundaryDifferenceCount": 459,
+        "scenarioErrors": {},
+        "capture": "terminal/llama-load-replace-cancel/100x32-dark-fullscreen.json.gz"
+      },
+      {
+        "fixture": "llama-login",
+        "match": true,
+        "terminalMatch": true,
+        "rawMatch": false,
+        "renderFrames": 13,
+        "renderDifferences": 0,
+        "httpMatch": true,
+        "controlBoundaryDifferenceCount": 522,
+        "scenarioErrors": {},
+        "capture": "terminal/llama-login/100x32-dark-fullscreen.json.gz"
+      },
+      {
+        "fixture": "llama-login-default",
+        "match": true,
+        "terminalMatch": true,
+        "rawMatch": false,
+        "renderFrames": 4,
+        "renderDifferences": 0,
+        "httpMatch": true,
+        "controlBoundaryDifferenceCount": 224,
+        "scenarioErrors": {},
+        "capture": "terminal/llama-login-default/100x32-dark-fullscreen.json.gz"
+      },
+      {
+        "fixture": "llama-manager",
+        "match": true,
+        "terminalMatch": true,
+        "rawMatch": false,
+        "renderFrames": 4,
+        "renderDifferences": 0,
+        "httpMatch": true,
+        "controlBoundaryDifferenceCount": 237,
+        "scenarioErrors": {},
+        "capture": "terminal/llama-manager/100x32-dark-fullscreen.json.gz"
+      },
+      {
+        "fixture": "llama-model-picker",
+        "match": true,
+        "terminalMatch": true,
+        "rawMatch": false,
+        "renderFrames": 20,
+        "renderDifferences": 0,
+        "httpMatch": true,
+        "controlBoundaryDifferenceCount": 795,
+        "scenarioErrors": {},
+        "capture": "terminal/llama-model-picker/100x32-dark-fullscreen.json.gz"
+      },
+      {
+        "fixture": "llama-retry",
+        "match": true,
+        "terminalMatch": true,
+        "rawMatch": false,
+        "renderFrames": 5,
+        "renderDifferences": 0,
+        "httpMatch": true,
+        "controlBoundaryDifferenceCount": 292,
+        "scenarioErrors": {},
+        "capture": "terminal/llama-retry/100x32-dark-fullscreen.json.gz"
+      },
+      {
+        "fixture": "llama-unload",
+        "match": true,
+        "terminalMatch": true,
+        "rawMatch": false,
+        "renderFrames": 7,
+        "renderDifferences": 0,
+        "httpMatch": true,
+        "controlBoundaryDifferenceCount": 330,
+        "scenarioErrors": {},
+        "capture": "terminal/llama-unload/100x32-dark-fullscreen.json.gz"
+      }
+    ]
+  },
+  "samePiCalibration": {
+    "flows": 12,
+    "allMatch": true,
+    "reusedUnchangedCalibration": true,
+    "evidence": "docs/parity/fixtures/llama-terminal-current-pi-2026-10-10/current-42a3497d-46151bab7e/evidence.json",
+    "terminalHarnessUnchangedSinceCalibration": true,
+    "basis": "Pi remains at 42a3497d and tools/parity/terminal is unchanged since the captured 12-flow calibration."
+  }
+}
