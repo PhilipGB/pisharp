@@ -83,9 +83,7 @@ internal sealed class TerminalScreenCompositor
         var rows = Enumerable.Repeat("", height).ToArray();
         for (var index = 0; index < startupHeight; index++)
             rows[index] = TerminalTranscriptViewport.Clip(startupRows[index], columns);
-        var transcriptStart = startupHeight + (scrollOffset > 0 || startupHeight > 0 || startupContentRows > 0
-            ? 0
-            : transcriptHeight - transcriptRows.Count);
+        var transcriptStart = startupHeight;
         mouse.SetTranscript(transcriptRows, firstVisualRow, transcriptStart, transcriptHeight);
         var displayedTranscriptRows = mouse.HighlightTranscript();
         for (var index = 0; index < transcriptRows.Count; index++)

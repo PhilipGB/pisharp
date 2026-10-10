@@ -127,6 +127,19 @@ public sealed class TerminalScreenCompositorTests
     }
 
     [Fact]
+    public void UnderfilledTranscriptStartsAtTopOfItsViewport()
+    {
+        var compositor = new TerminalScreenCompositor(new StringWriter(), new TerminalImageRenderer());
+
+        var frame = compositor.Compose("", 0, null, null, "first message\nsecond message", "fixture-model",
+            overlay: null, scrollOffset: 0, columns: 80, height: 24,
+            new TranscriptSearchController(), new TerminalMouseRouter(), TerminalTheme.Default);
+
+        Assert.Contains("first message", frame.Rows[0]);
+        Assert.Contains("second message", frame.Rows[1]);
+    }
+
+    [Fact]
     public void StartupTrustNoticeUsesAnIndentedPiWidthContinuation()
     {
         var presentation = new TerminalStartupPresentation(null, verbose: false);
