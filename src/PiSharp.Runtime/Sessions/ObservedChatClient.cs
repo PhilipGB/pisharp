@@ -15,7 +15,8 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
     Func<IReadOnlyList<AITool>>? getToolsForRequest = null, RoutedChatClient? routedChatClient = null,
     Func<string?>? getAdditionalSystemInstructions = null,
     Func<IReadOnlyList<ChatMessage>, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? transformContext = null,
-    Func<IReadOnlyList<ChatMessage>, ChatOptions, System.Text.Json.JsonElement?>? projectToolTranscript = null)
+    Func<IReadOnlyList<ChatMessage>, ChatOptions, System.Text.Json.JsonElement?>? projectToolTranscript = null,
+    Func<string?>? getSystemInstructions = null)
     : DelegatingChatClient(inner)
 {
     public override async Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages,
@@ -518,9 +519,12 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
     private ChatOptions? ApplyCurrentToolLoadout(ChatOptions? options)
     {
         var additionalInstructions = getAdditionalSystemInstructions?.Invoke();
-        if (getToolsForRequest is null && string.IsNullOrWhiteSpace(additionalInstructions)) return options;
+        var systemInstructions = getSystemInstructions?.Invoke();
+        if (getToolsForRequest is null && string.IsNullOrWhiteSpace(additionalInstructions) &&
+            systemInstructions is null) return options;
         var requestOptions = options?.Clone() ?? new ChatOptions();
         if (getToolsForRequest is not null) requestOptions.Tools = getToolsForRequest().ToList();
+        if (systemInstructions is not null) requestOptions.Instructions = systemInstructions;
         if (!string.IsNullOrWhiteSpace(additionalInstructions))
             requestOptions.Instructions = string.IsNullOrWhiteSpace(requestOptions.Instructions)
                 ? additionalInstructions

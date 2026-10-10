@@ -224,9 +224,6 @@ internal sealed class ProjectRuntimeContext : IDisposable
                 userSkills: configuration.BaseUserSettings.Skills, projectSkills: configuration.ProjectSettings?.Skills,
                 userPrompts: configuration.BaseUserSettings.Prompts, projectPrompts: configuration.ProjectSettings?.Prompts,
                 extensionResources: extensionResources);
-            var skillFileReadTool = ResolveSkillFileReadTool(arguments, activeToolNames);
-            var skillInstructions = resources.SystemInstructions(skillFileReadTool);
-            if (skillInstructions.Length > 0) instructions += "\n" + skillInstructions;
             return new ProjectRuntimeContext(configuration, prompts, instructions, contextFiles,
                 resources, extensions, extensionResources, store, sessionImport, mcpManager, effectiveMcpServers);
         }
@@ -267,6 +264,8 @@ internal sealed class ProjectRuntimeContext : IDisposable
             virtualModelRequestRouter: virtualModelRequestRouter,
             codemodeModels: codemodeModels,
             getAdditionalSystemInstructions: () => McpRuntime.RenderServerContext(EffectiveMcpServers, McpManager),
+            getSkillInstructions: activeToolNames => Resources.SystemInstructions(
+                ResolveSkillFileReadTool(arguments, activeToolNames)),
             // ProviderChatClientFactory applies retry.provider.maxRetries inside the SDK adapter.
             // Avoid adding PiAgent's independent fallback retry loop on top of that configured count.
             retryPolicy: ProviderRetryPolicy.None);

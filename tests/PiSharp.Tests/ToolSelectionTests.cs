@@ -103,6 +103,30 @@ public sealed class ToolSelectionTests
     }
 
     [Fact]
+    public async Task PiAgentBuildsTheStructuredPromptFromItsActiveBuiltinTools()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-prompt-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        try
+        {
+            var provider = new ToolCaptureClient();
+            var agent = new PiAgent(provider, new CodingTools(cwd), ["read", "bash"]);
+            await foreach (var _ in agent.RunStreamingAsync("inspect", await agent.CreateSessionAsync())) { }
+
+            Assert.StartsWith("You are an expert coding assistant operating inside pi, a coding agent harness.",
+                provider.Instructions, StringComparison.Ordinal);
+            Assert.Contains("<tools>\n- read: Read file contents\n- bash: Execute bash commands (ls, grep, find, etc.)",
+                provider.Instructions, StringComparison.Ordinal);
+            Assert.Contains("<rules>\n- Use bash for file operations like ls, rg, find\n- Use read to examine files instead of cat or sed.",
+                provider.Instructions, StringComparison.Ordinal);
+            Assert.Contains("<docs>\nPi documentation (read only when the user asks about pi itself", provider.Instructions,
+                StringComparison.Ordinal);
+            Assert.Contains($"<cwd>\n{cwd.Replace('\\', '/')}\n</cwd>", provider.Instructions, StringComparison.Ordinal);
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Fact]
     public async Task ToolLoadoutChangesAffectTheNextRequestAndStayScopedToTheirSession()
     {
         var provider = new LoadoutScriptClient();
@@ -119,8 +143,8 @@ public sealed class ToolSelectionTests
                     Descriptions: new Dictionary<string, string>
                     {
                         ["switch_tools"] = $"Controls: {string.Join(", ", loadout.Callable.Select(tool => tool.Function.Name))}"
-                    })),
-                new(deferredTool, ToolExposure.Deferred)
+                    }), PromptSnippet: "Switch active tools."),
+                new(deferredTool, ToolExposure.Deferred, PromptSnippet: "Run a deferred operation.")
             ]);
         var firstSession = await agent.CreateSessionAsync();
         var secondSession = await agent.CreateSessionAsync();
@@ -134,6 +158,9 @@ public sealed class ToolSelectionTests
         Assert.Equal(["switch_tools"], provider.RequestToolNames[0]);
         Assert.Equal(["deferred"], provider.RequestToolNames[1]);
         Assert.Equal("Controls: deferred", provider.RequestToolDescriptions[0]["switch_tools"]);
+        Assert.Contains("- switch_tools: Switch active tools.", provider.RequestInstructions[0]);
+        Assert.Contains("- deferred: Run a deferred operation.", provider.RequestInstructions[1]);
+        Assert.DoesNotContain("- switch_tools:", provider.RequestInstructions[1]);
         Assert.Equal(["deferred"], firstLoadout.Snapshot.ActiveToolNames);
         Assert.Equal(["switch_tools"], secondLoadout.Snapshot.ActiveToolNames);
     }
@@ -280,12 +307,14 @@ public sealed class ToolSelectionTests
     private sealed class ToolCaptureClient : Microsoft.Extensions.AI.IChatClient
     {
         public IReadOnlyList<string> ToolNames { get; private set; } = [];
+        public string Instructions { get; private set; } = string.Empty;
         public Task<Microsoft.Extensions.AI.ChatResponse> GetResponseAsync(IEnumerable<Microsoft.Extensions.AI.ChatMessage> messages,
             Microsoft.Extensions.AI.ChatOptions? options = null, CancellationToken cancellationToken = default) => throw new NotSupportedException();
         public async IAsyncEnumerable<Microsoft.Extensions.AI.ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<Microsoft.Extensions.AI.ChatMessage> messages,
             Microsoft.Extensions.AI.ChatOptions? options = null, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             ToolNames = options?.Tools?.Select(t => t.Name).ToArray() ?? [];
+            Instructions = options?.Instructions ?? string.Empty;
             yield return new Microsoft.Extensions.AI.ChatResponseUpdate(Microsoft.Extensions.AI.ChatRole.Assistant, "done");
             await Task.CompletedTask;
         }
@@ -297,6 +326,7 @@ public sealed class ToolSelectionTests
     {
         public List<string[]> RequestToolNames { get; } = [];
         public List<Dictionary<string, string>> RequestToolDescriptions { get; } = [];
+        public List<string> RequestInstructions { get; } = [];
 
         public Task<Microsoft.Extensions.AI.ChatResponse> GetResponseAsync(IEnumerable<Microsoft.Extensions.AI.ChatMessage> messages,
             Microsoft.Extensions.AI.ChatOptions? options = null, CancellationToken cancellationToken = default) => throw new NotSupportedException();
@@ -306,6 +336,7 @@ public sealed class ToolSelectionTests
             [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             RequestToolNames.Add(options?.Tools?.Select(tool => tool.Name).ToArray() ?? []);
+            RequestInstructions.Add(options?.Instructions ?? string.Empty);
             RequestToolDescriptions.Add(options?.Tools?.ToDictionary(tool => tool.Name,
                 tool => tool.Description ?? string.Empty, StringComparer.Ordinal) ?? new Dictionary<string, string>());
             if (RequestToolNames.Count == 1)

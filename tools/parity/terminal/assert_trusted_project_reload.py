@@ -50,6 +50,27 @@ def skill_prompt_summary(request):
                 sha256=hashlib.sha256(prompt.encode('utf-8')).hexdigest())
 
 
+def system_prompt(request):
+    return next((message.get('content', '') for message in request['body'].get('messages', [])
+                 if message.get('role') == 'system'), '')
+
+
+def normalize_system_prompt(prompt):
+    # Pi and PiSharp install their documentation beside different package roots.
+    # Those absolute locations differ while the generated guidance should match.
+    return re.sub(r'(?m)^(- Main documentation: |- Additional docs: |- Examples: ).+$',
+                  lambda match: match.group(1) + '<documentation-path>', prompt)
+
+
+def system_prompt_summary(request):
+    prompt = system_prompt(request)
+    return dict(sectionOrder=re.findall(r'<(tools|rules|docs|addendum|project_context|skills|cwd)>', prompt),
+                readToolPrompt='- read: Read file contents' in prompt,
+                bashToolPrompt='- bash: Execute bash commands (ls, grep, find, etc.)' in prompt,
+                bashFileOperationsRule='Use bash for file operations like ls, rg, find' in prompt,
+                sha256=hashlib.sha256(normalize_system_prompt(prompt).encode('utf-8')).hexdigest())
+
+
 def inspect_product(run):
     if run['scenarioError'] is not None:
         raise AssertionError(f"Terminal scenario failed: {run['scenarioError']}")
@@ -67,6 +88,7 @@ def inspect_product(run):
         raise AssertionError('The newly discovered project skill was not expanded after reload')
     return dict(chatRequests=len(requests), toolNamesByRequest=names,
                 skillPromptByRequest=[skill_prompt_summary(request) for request in requests],
+                systemPromptByRequest=[system_prompt_summary(request) for request in requests],
                 initialSkillInvokedBeforeReload=True, reloadedSkillInvokedAfterReload=True,
                 scenarioError=None)
 
@@ -86,6 +108,21 @@ def main():
         raise AssertionError('Pi and PiSharp active tool names differ across reload')
     skill_prompt_match = (behavioral['pi']['skillPromptByRequest'] ==
                           behavioral['pisharp']['skillPromptByRequest'])
+    normalized_system_prompt_match = all(
+        normalize_system_prompt(system_prompt(pi_request)) == normalize_system_prompt(system_prompt(pisharp_request))
+        for pi_request, pisharp_request in zip(chat_requests(capture['pi']), chat_requests(capture['pisharp']))
+    )
+    for product in ('pi', 'pisharp'):
+        prompts = behavioral[product]['systemPromptByRequest']
+        if any(prompt['sectionOrder'] != ['tools', 'rules', 'docs', 'skills', 'cwd'] for prompt in prompts):
+            raise AssertionError(f'{product} system prompt is missing an expected generated section: {prompts}')
+        if prompts[0]['readToolPrompt'] is not True or prompts[0]['bashToolPrompt'] is not False:
+            raise AssertionError(f'{product} initial prompt does not reflect the read-only tool set: {prompts[0]}')
+        if prompts[1]['readToolPrompt'] is not True or prompts[1]['bashToolPrompt'] is not True or \
+                prompts[1]['bashFileOperationsRule'] is not True:
+            raise AssertionError(f'{product} reloaded prompt does not reflect the read/bash tool set: {prompts[1]}')
+    if not normalized_system_prompt_match:
+        raise AssertionError('Pi and PiSharp generated system prompts differ after documentation-path normalization')
     calibration = None
     if args.calibration_report:
         calibration_report = json.loads(args.calibration_report.read_text())
@@ -102,6 +139,7 @@ def main():
         behaviorMatch=True,
         behavior=behavioral,
         skillPromptMatch=skill_prompt_match,
+        normalizedSystemPromptMatch=normalized_system_prompt_match,
         fullTerminalMatch=case['terminalMatch'],
         fullHttpMatch=case['httpMatch'],
         rawMatch=case['rawMatch'],

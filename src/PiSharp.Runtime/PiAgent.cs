@@ -5,6 +5,7 @@ using Microsoft.Extensions.AI;
 using PiSharp.Runtime.Extensions;
 using PiSharp.Runtime.Codemode;
 using PiSharp.Runtime.Providers;
+using PiSharp.Runtime.Resources;
 using PiSharp.Runtime.Sessions;
 using PiSharp.Runtime.Tools;
 namespace PiSharp.Runtime;
@@ -121,6 +122,10 @@ public sealed class PiAgent
     private readonly IReadOnlyList<string>? _selectedExtensionTools;
     private readonly IReadOnlySet<string> _excludedExtensionTools;
     private readonly bool _noExtensionTools;
+    private readonly string? _customSystemPrompt;
+    private readonly string? _appendSystemPrompt;
+    private readonly string? _projectInstructions;
+    private readonly Func<IReadOnlyList<string>, string>? _getSkillInstructions;
     private readonly PiSharpContextTransformPipeline _contextTransforms;
     private readonly SemaphoreSlim _runGate = new(1, 1);
     private ReasoningOptions? _reasoning;
@@ -176,11 +181,16 @@ public sealed class PiAgent
         ExtensionRegistration? liveExtensionRegistration = null,
         VirtualModelRequestRouter? virtualModelRequestRouter = null, ICodemodeModels? codemodeModels = null,
         Func<string?>? getAdditionalSystemInstructions = null,
-        IReadOnlyList<PiSharpContextTransform>? extensionContextTransforms = null)
+        IReadOnlyList<PiSharpContextTransform>? extensionContextTransforms = null,
+        Func<IReadOnlyList<string>, string>? getSkillInstructions = null)
     {
         _contextTransforms = new(extensionContextTransforms);
         _codemodeModels = codemodeModels;
         _codingTools = tools;
+        _customSystemPrompt = systemPrompt;
+        _appendSystemPrompt = appendSystemPrompt;
+        _projectInstructions = contextInstructions;
+        _getSkillInstructions = getSkillInstructions;
         _selectedImageResizeOptions = tools.ImageResizeOptions;
         _toolHooks = new PiSharpToolHookPipeline(extensionToolCallHooks, extensionToolResultHooks);
         _chatClient = new MutableChatClient(client);
@@ -234,7 +244,9 @@ public sealed class PiAgent
         var defaultBuiltinNames = new HashSet<string>(["read", "bash", "edit", "write"], StringComparer.Ordinal);
         _builtinRegistrations = builtin.Select(function => new PiSharpToolRegistration(function,
                 DefaultActive: defaultBuiltinNames.Contains(function.Name),
-                OutputSchema: function.Name == "bash" ? BashToolOutput.Schema : null))
+                OutputSchema: function.Name == "bash" ? BashToolOutput.Schema : null,
+                PromptSnippet: PiSystemPromptBuilder.BuiltinSnippet(function.Name),
+                PromptGuidelines: PiSystemPromptBuilder.BuiltinGuidelines(function.Name)))
             .ToArray();
         var allRegistrations = _builtinRegistrations.Concat(external).ToArray();
         _toolRegistry = new PiSharpToolRegistry(allRegistrations);
@@ -258,14 +270,14 @@ public sealed class PiAgent
             };
             liveExtensionRegistration.ToolDefinitionsChanged += handler;
         }
-        SystemInstructions = (systemPrompt ?? "You are PiSharp, a coding agent. Inspect files before modifying them when tools are available. Use only the tools provided for this run.") +
-            "\n\n" + (appendSystemPrompt ?? "") + "\n\n" + (contextInstructions ?? "");
+        var initialLoadout = _toolRegistry.CreateLoadout(_initialActiveToolNames).Snapshot;
+        SystemInstructions = BuildSystemInstructions(initialLoadout.Declared, initialLoadout.ActiveToolNames);
         _agent = new ChatClientAgent(new ObservedChatClient(_routedChatClient, value => _events?.Invoke(value),
             retryPolicy ?? ProviderRetryPolicy.Default, TakeSteeringForRequest, blockImages, ProjectForRequestAsync,
             supportsImages, () => Volatile.Read(ref _reasoning), () => _routedChatClient.HasRouter || Volatile.Read(ref _supportsImages) != 0,
             _routedChatClient, GetToolsForRequest, _routedChatClient, getAdditionalSystemInstructions,
             _contextTransforms.ApplyAsync, (messages, options) =>
-                _currentToolTranscript?.Project(messages, options)), new ChatClientAgentOptions
+                _currentToolTranscript?.Project(messages, options), GetSystemInstructionsForCurrentLoadout), new ChatClientAgentOptions
                 {
                     Name = "PiSharp",
                     ChatHistoryProvider = _history,
@@ -302,6 +314,18 @@ public sealed class PiAgent
                 : new DescribedAIFunction(function, declaration.Description);
         }).ToArray());
     }
+
+    private string GetSystemInstructionsForCurrentLoadout()
+    {
+        var loadout = Volatile.Read(ref _currentToolLoadout)?.Snapshot ??
+            _toolRegistry.CreateLoadout(_initialActiveToolNames).Snapshot;
+        return BuildSystemInstructions(loadout.Declared, loadout.ActiveToolNames);
+    }
+
+    private string BuildSystemInstructions(IReadOnlyList<PiSharpToolDeclaration> declarations,
+        IReadOnlyList<string> activeToolNames) => PiSystemPromptBuilder.Build(_codingTools.WorkingDirectory,
+        declarations, _customSystemPrompt, _appendSystemPrompt, _projectInstructions,
+        _getSkillInstructions?.Invoke(activeToolNames));
 
     private void RefreshExtensionTools(IReadOnlyCollection<PiSharpToolRegistration> definitions)
     {

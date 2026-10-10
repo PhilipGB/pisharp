@@ -37,6 +37,7 @@ public sealed class CodingTools
     }
 
     internal ModelImageResizeOptions? ImageResizeOptions => Volatile.Read(ref _imageResizeOptions);
+    internal string WorkingDirectory => _cwd;
 
     public void SetImageResizeOptions(ModelImageResizeOptions? options) => Volatile.Write(ref _imageResizeOptions, options);
 
