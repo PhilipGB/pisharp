@@ -626,7 +626,7 @@ public sealed class TerminalScreen : IDisposable
             {
                 AppendSkillInvocationLocked(skillInvocation);
                 if (skillInvocation.UserMessage is { Length: > 0 } userMessage)
-                    AppendUserTextLocked(userMessage, activeText, capturedText, separate: true);
+                    AppendSkillUserMessageLocked(userMessage);
             }
             else AppendUserTextLocked(safe, activeText, capturedText);
             if (images is not null)
@@ -659,40 +659,30 @@ public sealed class TerminalScreen : IDisposable
 
     private void AppendSkillInvocationLocked(TerminalSkillInvocation skillInvocation)
     {
-        var name = TerminalSafeText.Normalize(skillInvocation.Name);
-        var content = TerminalSafeText.Normalize(skillInvocation.Content);
+        string Render(TerminalTheme theme, bool expanded) => TerminalSkillInvocationRenderer.RenderSkill(
+            skillInvocation, Columns(), theme, _toolExpandKeyLabel, _markdownCodeBlockIndent, expanded);
         var keyHint = string.IsNullOrWhiteSpace(_toolExpandKeyLabel)
             ? ""
             : $" ({_toolExpandKeyLabel.ToLowerInvariant()} to expand)";
-        string RenderExpanded(TerminalTheme theme)
-        {
-            var markdown = TerminalMarkdownRenderer.Render($"**{name}**\n\n{content}",
-                Math.Max(1, Columns() - 1), theme, _markdownCodeBlockIndent);
-            return Environment.NewLine + " " + theme.Style("customMessageLabel", "[skill]", bold: true) +
-                Environment.NewLine + markdown + Environment.NewLine;
-        }
-
-        string RenderCollapsed(TerminalTheme theme) => Environment.NewLine + " " +
-            theme.Style("customMessageLabel", "[skill]", bold: true) + " " +
-            theme.Style("customMessageText", name) +
-            (keyHint.Length == 0 ? "" : theme.Style("dim", keyHint)) +
-            Environment.NewLine;
-
-        var captured = Environment.NewLine + $" [skill] {name}{keyHint}" + Environment.NewLine;
-        _transcript.AppendThemed(RenderExpanded(_theme), isError: false, isToolResult: false,
-            RenderExpanded, captured, collapsedPreviewText: RenderCollapsed(_theme),
-            collapsedRenderer: RenderCollapsed, isCollapsible: true);
+        var captured = Environment.NewLine + $" [skill] {skillInvocation.Name}{keyHint}" + Environment.NewLine;
+        var expanded = Render(_theme, true);
+        var collapsed = Render(_theme, false);
+        _transcript.AppendThemed(expanded, isError: false, isToolResult: false,
+            theme => Render(theme, true), captured, collapsedPreviewText: collapsed,
+            collapsedRenderer: theme => Render(theme, false), isCollapsible: true);
     }
 
-    private static void AppendUserTextLocked(string text, StringBuilder activeText,
-        StringBuilder capturedText, bool separate = false)
+    private void AppendSkillUserMessageLocked(string text)
+    {
+        string Render(TerminalTheme theme) => TerminalSkillInvocationRenderer.RenderUserMessage(
+            text, Columns(), theme, _markdownCodeBlockIndent);
+        _transcript.AppendThemed(Render(_theme), isError: false, isToolResult: false, Render,
+            Environment.NewLine + Environment.NewLine + " " + text + Environment.NewLine);
+    }
+
+    private static void AppendUserTextLocked(string text, StringBuilder activeText, StringBuilder capturedText)
     {
         if (text.Length == 0) return;
-        if (separate)
-        {
-            activeText.Append(Environment.NewLine);
-            capturedText.Append(Environment.NewLine);
-        }
         foreach (var line in text.Split('\n'))
         {
             activeText.Append("› ").Append(line).Append(Environment.NewLine);

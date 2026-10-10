@@ -9,29 +9,30 @@ namespace PiSharp.Cli.Tui;
 internal static class TerminalMarkdownRenderer
 {
     public static string Render(string markdown, int availableWidth = 80, TerminalTheme? theme = null,
-        string? codeBlockIndent = null)
+        string? codeBlockIndent = null, string? baseForegroundToken = null)
     {
         ArgumentNullException.ThrowIfNull(markdown);
-        return Render(TerminalMarkdownParser.Parse(markdown), markdown, availableWidth, theme, codeBlockIndent);
+        return Render(TerminalMarkdownParser.Parse(markdown), markdown, availableWidth, theme, codeBlockIndent,
+            baseForegroundToken);
     }
 
     public static string Render(MarkdownDocument document, string source, int availableWidth = 80,
-        TerminalTheme? theme = null, string? codeBlockIndent = null)
+        TerminalTheme? theme = null, string? codeBlockIndent = null, string? baseForegroundToken = null)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(source);
         return RenderBlocks(document, source, Math.Clamp(availableWidth, 1, 400), "\n\n", theme ?? TerminalTheme.Default,
-            codeBlockIndent ?? "  ");
+            codeBlockIndent ?? "  ", baseForegroundToken);
     }
 
     private static string RenderBlocks(ContainerBlock container, string source, int width, string separator,
-        TerminalTheme theme, string codeBlockIndent)
+        TerminalTheme theme, string codeBlockIndent, string? baseForegroundToken)
     {
         var output = new StringBuilder();
         foreach (var block in container)
         {
             if (block is BlankLineBlock) continue;
-            var rendered = RenderBlock(block, source, width, theme, codeBlockIndent);
+            var rendered = RenderBlock(block, source, width, theme, codeBlockIndent, baseForegroundToken);
             if (rendered.Length == 0) continue;
             if (output.Length > 0) output.Append(separator);
             output.Append(rendered);
@@ -39,7 +40,8 @@ internal static class TerminalMarkdownRenderer
         return output.ToString();
     }
 
-    private static string RenderBlock(Block block, string source, int width, TerminalTheme theme, string codeBlockIndent)
+    private static string RenderBlock(Block block, string source, int width, TerminalTheme theme, string codeBlockIndent,
+        string? baseForegroundToken)
     {
         switch (block)
         {
@@ -53,29 +55,32 @@ internal static class TerminalMarkdownRenderer
                 return TerminalMarkdownInlineRenderer.Render(heading.Inline?.FirstChild, styled: true, theme: theme,
                     baseStyle: "\u001b[1m" + theme.Fg("mdHeading"));
             case ParagraphBlock paragraph:
-                return TerminalMarkdownInlineRenderer.Render(paragraph.Inline?.FirstChild, styled: true, theme);
+                return TerminalMarkdownInlineRenderer.Render(paragraph.Inline?.FirstChild, styled: true, theme,
+                    baseStyle: baseForegroundToken is null ? null : theme.Fg(baseForegroundToken));
             case Markdig.Extensions.Tables.Table table:
                 return TerminalMarkdownTableRenderer.Render(table, source, width, theme);
             case ListBlock list:
-                return RenderList(list, source, width, theme, codeBlockIndent);
+                return RenderList(list, source, width, theme, codeBlockIndent, baseForegroundToken);
             case QuoteBlock quote:
-                return RenderQuote(quote, source, width, theme, codeBlockIndent);
+                return RenderQuote(quote, source, width, theme, codeBlockIndent, baseForegroundToken);
             case ThematicBreakBlock:
                 return theme.Style("mdHr", "────────────────────────");
             case HtmlBlock html:
                 return PrefixLines(TerminalMarkdownInlineRenderer.Visible(html.Lines.ToString()), "  │ ");
             case ContainerBlock nested:
-                return RenderBlocks(nested, source, width, "\n\n", theme, codeBlockIndent);
+                return RenderBlocks(nested, source, width, "\n\n", theme, codeBlockIndent, baseForegroundToken);
             case LeafBlock leaf:
                 return leaf.Inline is not null
-                    ? TerminalMarkdownInlineRenderer.Render(leaf.Inline.FirstChild, styled: true, theme: theme)
+                    ? TerminalMarkdownInlineRenderer.Render(leaf.Inline.FirstChild, styled: true, theme: theme,
+                        baseStyle: baseForegroundToken is null ? null : theme.Fg(baseForegroundToken))
                     : TerminalMarkdownInlineRenderer.Visible(leaf.Lines.ToString());
             default:
                 return "";
         }
     }
 
-    private static string RenderList(ListBlock list, string source, int width, TerminalTheme theme, string codeBlockIndent)
+    private static string RenderList(ListBlock list, string source, int width, TerminalTheme theme, string codeBlockIndent,
+        string? baseForegroundToken)
     {
         var output = new List<string>();
         var fallbackOrder = int.TryParse(list.OrderedStart, NumberStyles.None, CultureInfo.InvariantCulture, out var start)
@@ -87,7 +92,7 @@ internal static class TerminalMarkdownRenderer
             fallbackOrder = order + 1;
             var marker = list.IsOrdered ? $"{order}{list.OrderedDelimiter}" : "•";
             var content = RenderBlocks(item, source, Math.Max(1, width - TerminalTextLayout.Width(marker) - 1), "\n",
-                theme, codeBlockIndent);
+                theme, codeBlockIndent, baseForegroundToken);
             if (content.Length == 0)
             {
                 output.Add(marker);
@@ -102,9 +107,11 @@ internal static class TerminalMarkdownRenderer
         return string.Join('\n', output);
     }
 
-    private static string RenderQuote(QuoteBlock quote, string source, int width, TerminalTheme theme, string codeBlockIndent)
+    private static string RenderQuote(QuoteBlock quote, string source, int width, TerminalTheme theme, string codeBlockIndent,
+        string? baseForegroundToken)
     {
-        var text = RenderBlocks(quote, source, Math.Max(1, width - 2), "\n\n", theme, codeBlockIndent);
+        var text = RenderBlocks(quote, source, Math.Max(1, width - 2), "\n\n", theme, codeBlockIndent,
+            baseForegroundToken);
         if (text.Length == 0) return theme.Style("mdQuoteBorder", "│");
         return string.Join('\n', text.Split('\n').Select(line =>
             theme.Style("mdQuoteBorder", "│") + " " + theme.Style("mdQuote", line)));

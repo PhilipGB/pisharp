@@ -44,4 +44,25 @@ public sealed class TerminalSkillInvocationTests
         Assert.Contains("expanded skill body", buffer.GetText(120));
         Assert.DoesNotContain("to expand", buffer.GetText(120));
     }
+
+    [Fact]
+    public void SkillAndSeparateArgumentsUsePiPanelSpacingAndBackgrounds()
+    {
+        var theme = TerminalThemeCatalog.LoadBuiltIn("dark", TerminalColorMode.TrueColor);
+        var skill = new TerminalSkillInvocation("review", "/review/SKILL.md", "Review the change.", "focus on errors");
+
+        var collapsed = TerminalSkillInvocationRenderer.RenderSkill(skill, 80, theme, "Ctrl+O", "  ", expanded: false);
+        var collapsedRows = TerminalTextLayout.Create(collapsed, 80).Rows;
+        Assert.Equal(80, TerminalTextLayout.Width(collapsedRows[0]));
+        Assert.Equal(80, TerminalTextLayout.Width(collapsedRows[1]));
+        Assert.Contains("[skill] review (ctrl+o to expand)", TerminalTextLayout.SliceCells(collapsedRows[1], 0, 80));
+        Assert.Contains(theme.Bg("customMessageBg"), collapsedRows[0]);
+
+        var userMessage = TerminalSkillInvocationRenderer.RenderUserMessage("focus on errors", 80, theme, "  ");
+        var userRows = TerminalTextLayout.Create(userMessage, 80).Rows;
+        Assert.Contains(" focus on errors", TerminalTextLayout.SliceCells(userRows[2], 0, 80));
+        Assert.DoesNotContain("›", TerminalTextLayout.SliceCells(userRows[2], 0, 80));
+        Assert.Contains(theme.Bg("userMessageBg"), userRows[1]);
+        Assert.Contains(theme.Bg("userMessageBg"), userRows[2]);
+    }
 }

@@ -192,6 +192,16 @@ internal static class TerminalTextLayout
             foreach (var atom in token.Atoms) AppendAtom(atom);
         }
 
+        void PreserveBackgroundPadding()
+        {
+            if (!pendingWhitespace.Any(token => token.Atoms.Any(atom =>
+                    HasBackgroundColor(atom.Prefix) || HasBackgroundColor(atom.Suffix))))
+                return;
+
+            foreach (var whitespace in pendingWhitespace) AppendToken(whitespace);
+            pendingWhitespace.Clear();
+        }
+
         void ProcessSkippedWhitespace()
         {
             foreach (var token in pendingWhitespace)
@@ -223,6 +233,7 @@ internal static class TerminalTextLayout
             if (token.Kind == WrapKind.Newline)
             {
                 var newline = token.Atoms[0];
+                PreserveBackgroundPadding();
                 FinishLine(newline.SourceEnd);
                 ProcessSkippedWhitespace();
                 ProcessState(newline.Prefix);
@@ -298,6 +309,7 @@ internal static class TerminalTextLayout
         }
 
         // Wrapping whitespace is deliberately omitted at the end, as it is before a soft wrap.
+        PreserveBackgroundPadding();
         if (line.Length > 0 || rows.Count == 0 || text[^1] is '\r' or '\n')
         {
             if (activeHyperlinkClose is not null) line.Append(activeHyperlinkClose);
@@ -597,6 +609,25 @@ internal static class TerminalTextLayout
     {
         foreach (var parameter in payload.Split(';'))
             if (parameter.Length == 0 || parameter == "0") return true;
+        return false;
+    }
+
+    private static bool HasBackgroundColor(string value)
+    {
+        for (var offset = 0; offset < value.Length;)
+        {
+            if (!TryReadEscape(value, offset, out var length, out var kind, out var payload))
+            {
+                offset++;
+                continue;
+            }
+
+            if (kind == EscapeKind.Sgr && payload.Split(';').Any(parameter =>
+                    int.TryParse(parameter, NumberStyles.None, CultureInfo.InvariantCulture, out var code) &&
+                    code is >= 40 and <= 47 or >= 100 and <= 107 or 48))
+                return true;
+            offset += length;
+        }
         return false;
     }
 

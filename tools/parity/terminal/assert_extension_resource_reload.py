@@ -43,6 +43,33 @@ def frame_text(run, frame_id):
                      for line in frame['state']['viewport'])
 
 
+def skill_presentation_rows(run, frame_id, start, stop):
+    frame = next(frame for frame in run['frames'] if frame['id'] == frame_id)
+    return [row['cells'] for row in frame['state']['viewport'][start:stop]]
+
+
+def first_difference(left, right, path='$'):
+    if type(left) is not type(right):
+        return path, left, right
+    if isinstance(left, dict):
+        for key in sorted(left.keys() | right.keys()):
+            if key not in left or key not in right:
+                return f'{path}.{key}', left.get(key), right.get(key)
+            difference = first_difference(left[key], right[key], f'{path}.{key}')
+            if difference:
+                return difference
+        return None
+    if isinstance(left, list):
+        for index, (left_item, right_item) in enumerate(zip(left, right)):
+            difference = first_difference(left_item, right_item, f'{path}[{index}]')
+            if difference:
+                return difference
+        if len(left) != len(right):
+            return f'{path}.length', len(left), len(right)
+        return None
+    return None if left == right else (path, left, right)
+
+
 def assert_skill_presentation(run, name, marker, argument, prefix):
     collapsed = frame_text(run, f'collapse-{prefix}-skill')
     expanded = frame_text(run, f'expand-{prefix}-skill')
@@ -107,13 +134,27 @@ def main():
     with gzip.open(args.capture, 'rt', encoding='utf-8') as stream:
         capture = json.load(stream)
     behavior = {product: inspect_product(capture[product]) for product in ('pi', 'pisharp')}
+    presentation_cases = {
+        'collapse-startup-skill': (4, 11),
+        'expand-startup-skill': (4, 17),
+    }
+    presentation_differences = {}
+    for frame_id, (start, stop) in presentation_cases.items():
+        pi_rows = skill_presentation_rows(capture['pi'], frame_id, start, stop)
+        pisharp_rows = skill_presentation_rows(capture['pisharp'], frame_id, start, stop)
+        difference = first_difference(pi_rows, pisharp_rows, f'$.viewport[{start}:{stop}]')
+        if difference:
+            path, pi_value, pisharp_value = difference
+            presentation_differences[frame_id] = dict(path=path, pi=pi_value, pisharp=pisharp_value)
     message_differences = [dict(request=index + 1, pi=pi_message, pisharp=pisharp_message)
                            for index, (pi_message, pisharp_message) in enumerate(zip(
                                behavior['pi']['latestUserMessages'], behavior['pisharp']['latestUserMessages']))
                            if pi_message != pisharp_message]
     behavior_match = not message_differences
     result = dict(piSha=report['piSha'], pisharpSha=report['pisharpSha'], fixture=report['fixture'],
-                  behaviorMatch=behavior_match, requestMessageDifferences=message_differences, behavior=behavior,
+                  behaviorMatch=behavior_match, requestMessageDifferences=message_differences,
+                  skillPresentationMatch=not presentation_differences,
+                  skillPresentationDifferences=presentation_differences, behavior=behavior,
                   fullTerminalMatch=report['cases'][0]['terminalMatch'],
                   fullHttpMatch=report['cases'][0]['httpMatch'], rawMatch=report['cases'][0]['rawMatch'],
                   terminalDifferences=report['cases'][0]['differences'],
@@ -123,7 +164,7 @@ def main():
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, indent=2) + '\n')
     print(json.dumps(result, indent=2))
-    if not behavior_match:
+    if not behavior_match or presentation_differences:
         raise SystemExit(1)
 
 
