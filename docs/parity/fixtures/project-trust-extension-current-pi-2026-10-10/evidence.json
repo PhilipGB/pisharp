@@ -1,0 +1,55 @@
+{
+  "piSha": "42a3497d03ad17e308a2299fa824727894f2c0ec",
+  "piSharpSha": "e0bb42c6249d870e83086865047a451039615c38",
+  "ciRun": "38013249666",
+  "ciUrl": "https://github.com/PhilipGB/pisharp/actions/runs/38013249666",
+  "localValidation": {
+    "focusedProjectTrustExtension": "2 passed, 0 skipped",
+    "format": "passed",
+    "warningsAsErrorsBuild": "passed with 0 warnings and 0 errors",
+    "dotnetTests": "1240 passed, 0 skipped",
+    "nodeTerminalTests": "24 passed",
+    "pythonHarnessTests": "24 passed"
+  },
+  "paired": {
+    "sameSkillTrustOutcome": true,
+    "scenarioErrors": {},
+    "stateDifferences": 28323,
+    "renderDifferences": 21881,
+    "httpMatch": false,
+    "fullTerminalMatch": false,
+    "rawByteMatch": false
+  },
+  "calibration": {
+    "samePiMatch": true,
+    "terminalMatch": true,
+    "httpMatch": true,
+    "renderDifferences": 0
+  },
+  "extensionTrace": [
+    "configured",
+    "trust-undecided:true",
+    "trust-decision:true"
+  ],
+  "currentPiChangesAfterPriorAuditPin": {
+    "5a10492690efa146791bb17f3b82cf9cc49f9e13": "OUT_OF_SCOPE",
+    "eba849739511223c51a62bbd7e3f1c00f99fb1d0": "OUT_OF_SCOPE",
+    "42a3497d03ad17e308a2299fa824727894f2c0ec": "OUT_OF_SCOPE"
+  },
+  "failFirst": {
+    "piSha": "42a3497d03ad17e308a2299fa824727894f2c0ec",
+    "piSharpSha": "76c83f88a015ead891289db3ab02a3537a449d98",
+    "piTrustedProjectSkillPresent": true,
+    "piSharpTrustedProjectSkillPresent": false,
+    "skillTrustDifference": true,
+    "scenarioErrors": {},
+    "stateDifferences": 28801,
+    "renderDifferences": 22272
+  },
+  "currentPiProjectTrustTest": {
+    "piSha": "42a3497d03ad17e308a2299fa824727894f2c0ec",
+    "command": "node_modules/.bin/vitest run packages/coding-agent/test/extensions-runner.test.ts packages/coding-agent/test/resource-loader.test.ts -t project_trust",
+    "passed": 1,
+    "filteredOut": 108
+  }
+}

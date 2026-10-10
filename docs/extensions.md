@@ -56,6 +56,26 @@ For HTTP MCP OAuth, `oauth.clientName` sets the name sent during dynamic client 
 
 The `pisharp mcp add` command also accepts `--oauth-client-name`. The name is sent only when a client is dynamically registered; sign out before registering again under a different name. In the interactive TUI, `/mcp login <server>` renders the authorization URL and a short linked Ctrl+click/Cmd+click hint; the standalone `pisharp mcp login <server>` command keeps the URL as plain text.
 
+## Project trust decisions
+
+An extension loaded from a user/global path or an explicit `--extension` path can register a callback before PiSharp loads protected project resources:
+
+```csharp
+registration.AddProjectTrustHandler((context, cancellationToken) =>
+{
+    cancellationToken.ThrowIfCancellationRequested();
+    if (!context.HasUserInterface)
+        return Task.FromResult<ProjectTrustExtensionResult?>(null);
+
+    return Task.FromResult<ProjectTrustExtensionResult?>(new(
+        ProjectTrustExtensionDecision.Yes, Remember: true));
+});
+```
+
+The first `Yes` or `No` result decides trust; `Undecided`, a null result, or a handler error continues to the next handler and then the saved decision/default/prompt flow. `Remember` persists a decisive result. PiSharp loads user/global and explicit CLI extensions for this bootstrap while the project is untrusted, then reuses those instances after the decision; project-local extensions load only after trust is granted. Callbacks run only when the project has protected resources and no explicit trust override short-circuits resolution.
+
+The .NET context exposes the canonical working directory and whether the host has an interactive UI. It does not yet expose Pi's project-trust `select`, `confirm`, `input`, or `notify` methods, so handlers cannot show their own startup dialogs. See the [current-Pi trust callback evidence](parity/fixtures/project-trust-extension-current-pi-2026-10-10.md) for the paired behavior and remaining UI gap.
+
 ## Tool call and result presentation
 
 An extension can attach optional terminal renderers to a tool:
