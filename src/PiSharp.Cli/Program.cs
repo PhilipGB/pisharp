@@ -931,7 +931,8 @@ async Task ReloadResources()
             nextConfiguration.Settings, conversationRun.ActiveToolNames, Environment.GetEnvironmentVariable);
         nextProject = await ProjectRuntimeContext.LoadAsync(nextConfiguration, agentDirectory, reloadPlan.Arguments,
             configuredSessionDirectory, providerTokenResolver: modelRuntime.GetApiKeyForProviderAsync,
-            resourceDiscoveryReason: ExtensionResourceDiscoveryReason.Reload);
+            resourceDiscoveryReason: ExtensionResourceDiscoveryReason.Reload,
+            activeToolNames: reloadPlan.ActiveToolNames);
         ConfigureMcpAuthorizationUrlPresenter(nextProject);
         modelRuntime.SetVirtualModelRegistry(nextProject.Extensions.Registration.VirtualModels);
         var nextController = new ModelRuntimeController(modelRuntime, () => nextConfiguration.Settings,

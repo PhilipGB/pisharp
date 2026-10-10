@@ -77,7 +77,8 @@ internal sealed class ProjectRuntimeContext : IDisposable
         string? sessionDirectoryOverride = null,
         CancellationToken cancellationToken = default,
         Func<string, CancellationToken, Task<string?>>? providerTokenResolver = null,
-        ExtensionResourceDiscoveryReason resourceDiscoveryReason = ExtensionResourceDiscoveryReason.Startup)
+        ExtensionResourceDiscoveryReason resourceDiscoveryReason = ExtensionResourceDiscoveryReason.Startup,
+        IReadOnlyList<string>? activeToolNames = null)
     {
         var cwd = configuration.WorkingDirectory;
         var contextFiles = new List<string>();
@@ -155,11 +156,7 @@ internal sealed class ProjectRuntimeContext : IDisposable
                 userSkills: configuration.BaseUserSettings.Skills, projectSkills: configuration.ProjectSettings?.Skills,
                 userPrompts: configuration.BaseUserSettings.Prompts, projectPrompts: configuration.ProjectSettings?.Prompts,
                 extensionResources: extensionResources);
-            var skillFileReadTool = arguments.NoTools ? null : arguments.Tools is null
-                ? "read"
-                : arguments.Tools.Contains("read", StringComparer.Ordinal) ? "read"
-                : arguments.Tools.Contains("bash", StringComparer.Ordinal) ? "bash"
-                : null;
+            var skillFileReadTool = ResolveSkillFileReadTool(arguments, activeToolNames);
             var skillInstructions = resources.SystemInstructions(skillFileReadTool);
             if (skillInstructions.Length > 0) instructions += "\n" + skillInstructions;
             return new ProjectRuntimeContext(configuration, prompts, instructions, contextFiles,
@@ -170,6 +167,17 @@ internal sealed class ProjectRuntimeContext : IDisposable
             extensions?.Dispose();
             throw;
         }
+    }
+
+    internal static string? ResolveSkillFileReadTool(CliArguments arguments,
+        IReadOnlyList<string>? activeToolNames = null)
+    {
+        if (arguments.NoTools) return null;
+        var declaredTools = activeToolNames ?? arguments.Tools;
+        if (declaredTools is null) return "read";
+        if (declaredTools.Contains("read", StringComparer.Ordinal)) return "read";
+        if (declaredTools.Contains("bash", StringComparer.Ordinal)) return "bash";
+        return null;
     }
 
     public PiAgent CreateAgent(IChatClient chat, ModelSelection selection, string thinking,

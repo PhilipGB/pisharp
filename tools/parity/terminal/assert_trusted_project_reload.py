@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Assert trusted project tools and skill behavior in paired terminal captures."""
 import argparse
+import hashlib
 import gzip
 import json
+import re
 from pathlib import Path
 
 
@@ -28,6 +30,26 @@ def user_text(request):
     return '\n'.join(sections)
 
 
+def skill_prompt(request):
+    system = next((message.get('content', '') for message in request['body'].get('messages', [])
+                   if message.get('role') == 'system'), '')
+    start = system.find('<skills>')
+    end = system.find('</skills>', start)
+    return system[start:end + len('</skills>')] if start >= 0 and end >= 0 else None
+
+
+def skill_prompt_summary(request):
+    prompt = skill_prompt(request)
+    if prompt is None:
+        return dict(present=False, reader=None, skillNames=[], sha256=None)
+    reader = ('read' if 'Use the read tool to load a skill' in prompt else
+              'bash' if 'Use bash to load a skill' in prompt else
+              'indirect' if 'Load a skill\'s file when' in prompt else None)
+    return dict(present=True, reader=reader,
+                skillNames=re.findall(r'<name>(.*?)</name>', prompt),
+                sha256=hashlib.sha256(prompt.encode('utf-8')).hexdigest())
+
+
 def inspect_product(run):
     if run['scenarioError'] is not None:
         raise AssertionError(f"Terminal scenario failed: {run['scenarioError']}")
@@ -44,6 +66,7 @@ def inspect_product(run):
     if 'Use the reloaded skill content.' not in after or 'second argument' not in after:
         raise AssertionError('The newly discovered project skill was not expanded after reload')
     return dict(chatRequests=len(requests), toolNamesByRequest=names,
+                skillPromptByRequest=[skill_prompt_summary(request) for request in requests],
                 initialSkillInvokedBeforeReload=True, reloadedSkillInvokedAfterReload=True,
                 scenarioError=None)
 
@@ -61,6 +84,8 @@ def main():
     behavioral = {product: inspect_product(capture[product]) for product in ('pi', 'pisharp')}
     if behavioral['pi']['toolNamesByRequest'] != behavioral['pisharp']['toolNamesByRequest']:
         raise AssertionError('Pi and PiSharp active tool names differ across reload')
+    skill_prompt_match = (behavioral['pi']['skillPromptByRequest'] ==
+                          behavioral['pisharp']['skillPromptByRequest'])
     calibration = None
     if args.calibration_report:
         calibration_report = json.loads(args.calibration_report.read_text())
@@ -76,6 +101,7 @@ def main():
         fixture=report['fixture'],
         behaviorMatch=True,
         behavior=behavioral,
+        skillPromptMatch=skill_prompt_match,
         fullTerminalMatch=case['terminalMatch'],
         fullHttpMatch=case['httpMatch'],
         rawMatch=case['rawMatch'],

@@ -11,6 +11,17 @@ namespace PiSharp.Tests;
 public sealed class ProjectRuntimeContextTests
 {
     [Fact]
+    public void SkillPromptReaderUsesEffectiveDeclaredToolSetAndPiPreference()
+    {
+        var arguments = CliArguments.Parse([]);
+        Assert.Equal("read", ProjectRuntimeContext.ResolveSkillFileReadTool(arguments, ["bash", "read"]));
+        Assert.Equal("bash", ProjectRuntimeContext.ResolveSkillFileReadTool(arguments, ["bash"]));
+        Assert.Null(ProjectRuntimeContext.ResolveSkillFileReadTool(arguments, ["write", "edit"]));
+        Assert.Null(ProjectRuntimeContext.ResolveSkillFileReadTool(CliArguments.Parse(["--no-tools"]), ["read"]));
+        Assert.Equal("bash", ProjectRuntimeContext.ResolveSkillFileReadTool(CliArguments.Parse(["--tools", "bash"])));
+    }
+
+    [Fact]
     public async Task ExtensionResourcesDiscoverOnStartupAndAreReplacedOnReload()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp extension resources " + Guid.NewGuid().ToString("N"));

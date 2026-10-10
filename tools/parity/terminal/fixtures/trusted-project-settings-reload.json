@@ -59,7 +59,7 @@
       "send": "/reload\r",
       "expect": {
         "pi": "Reloaded keybindings, extensions, skills, prompts, themes, and context files",
-        "pisharp": "Project resources and themes reloaded."
+        "pisharp": "Reloaded keybindings, extensions, skills, prompts, themes, and context files"
       }
     },
     {
