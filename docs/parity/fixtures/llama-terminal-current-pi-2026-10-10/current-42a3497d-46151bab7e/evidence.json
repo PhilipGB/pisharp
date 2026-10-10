@@ -1,0 +1,262 @@
+{
+  "date": "2026-10-10",
+  "piSha": "42a3497d03ad17e308a2299fa824727894f2c0ec",
+  "piSharpSha": "46151bab7eed2342156b1b3c219850040669bfcd",
+  "piSharpCi": {
+    "runId": 38006418247,
+    "url": "https://github.com/PhilipGB/pisharp/actions/runs/38006418247",
+    "conclusion": "success",
+    "format": "success",
+    "warningsAsErrorsBuild": "success",
+    "terminalNodeTests": "24/24",
+    "terminalPythonTests": "24/24",
+    "dotnetTests": "1236/1236",
+    "skipped": 0
+  },
+  "terminal": {
+    "pairedFlows": 12,
+    "allMatch": true,
+    "allHttpMatch": true,
+    "renderFrames": 155,
+    "renderDifferences": 0,
+    "rawByteIdenticalFlows": 0,
+    "flows": [
+      {
+        "fixture": "llama-download-cancel",
+        "match": true,
+        "terminalMatch": true,
+        "rawMatch": false,
+        "renderFrames": 17,
+        "renderDifferences": 0,
+        "httpMatch": true,
+        "scenarioErrors": {}
+      },
+      {
+        "fixture": "llama-huggingface",
+        "match": true,
+        "terminalMatch": true,
+        "rawMatch": false,
+        "renderFrames": 21,
+        "renderDifferences": 0,
+        "httpMatch": true,
+        "scenarioErrors": {}
+      },
+      {
+        "fixture": "llama-huggingface-home-token-file",
+        "match": true,
+        "terminalMatch": true,
+        "rawMatch": false,
+        "renderFrames": 20,
+        "renderDifferences": 0,
+        "httpMatch": true,
+        "scenarioErrors": {}
+      },
+      {
+        "fixture": "llama-huggingface-token-file",
+        "match": true,
+        "terminalMatch": true,
+        "rawMatch": false,
+        "renderFrames": 20,
+        "renderDifferences": 0,
+        "httpMatch": true,
+        "scenarioErrors": {}
+      },
+      {
+        "fixture": "llama-load-cancel",
+        "match": true,
+        "terminalMatch": true,
+        "rawMatch": false,
+        "renderFrames": 12,
+        "renderDifferences": 0,
+        "httpMatch": true,
+        "scenarioErrors": {}
+      },
+      {
+        "fixture": "llama-load-replace-cancel",
+        "match": true,
+        "terminalMatch": true,
+        "rawMatch": false,
+        "renderFrames": 12,
+        "renderDifferences": 0,
+        "httpMatch": true,
+        "scenarioErrors": {}
+      },
+      {
+        "fixture": "llama-login",
+        "match": true,
+        "terminalMatch": true,
+        "rawMatch": false,
+        "renderFrames": 13,
+        "renderDifferences": 0,
+        "httpMatch": true,
+        "scenarioErrors": {}
+      },
+      {
+        "fixture": "llama-login-default",
+        "match": true,
+        "terminalMatch": true,
+        "rawMatch": false,
+        "renderFrames": 4,
+        "renderDifferences": 0,
+        "httpMatch": true,
+        "scenarioErrors": {}
+      },
+      {
+        "fixture": "llama-manager",
+        "match": true,
+        "terminalMatch": true,
+        "rawMatch": false,
+        "renderFrames": 4,
+        "renderDifferences": 0,
+        "httpMatch": true,
+        "scenarioErrors": {}
+      },
+      {
+        "fixture": "llama-model-picker",
+        "match": true,
+        "terminalMatch": true,
+        "rawMatch": false,
+        "renderFrames": 20,
+        "renderDifferences": 0,
+        "httpMatch": true,
+        "scenarioErrors": {}
+      },
+      {
+        "fixture": "llama-retry",
+        "match": true,
+        "terminalMatch": true,
+        "rawMatch": false,
+        "renderFrames": 5,
+        "renderDifferences": 0,
+        "httpMatch": true,
+        "scenarioErrors": {}
+      },
+      {
+        "fixture": "llama-unload",
+        "match": true,
+        "terminalMatch": true,
+        "rawMatch": false,
+        "renderFrames": 7,
+        "renderDifferences": 0,
+        "httpMatch": true,
+        "scenarioErrors": {}
+      }
+    ]
+  },
+  "samePiCalibration": {
+    "flows": 12,
+    "allMatch": true,
+    "rawByteIdenticalFlows": 10,
+    "flowsDetail": [
+      {
+        "fixture": "llama-download-cancel",
+        "match": true,
+        "rawMatch": false,
+        "renderFrames": 17,
+        "httpMatch": true
+      },
+      {
+        "fixture": "llama-huggingface",
+        "match": true,
+        "rawMatch": true,
+        "renderFrames": 21,
+        "httpMatch": true
+      },
+      {
+        "fixture": "llama-huggingface-home-token-file",
+        "match": true,
+        "rawMatch": true,
+        "renderFrames": 20,
+        "httpMatch": true
+      },
+      {
+        "fixture": "llama-huggingface-token-file",
+        "match": true,
+        "rawMatch": true,
+        "renderFrames": 20,
+        "httpMatch": true
+      },
+      {
+        "fixture": "llama-load-cancel",
+        "match": true,
+        "rawMatch": true,
+        "renderFrames": 12,
+        "httpMatch": true
+      },
+      {
+        "fixture": "llama-load-replace-cancel",
+        "match": true,
+        "rawMatch": true,
+        "renderFrames": 12,
+        "httpMatch": true
+      },
+      {
+        "fixture": "llama-login",
+        "match": true,
+        "rawMatch": true,
+        "renderFrames": 13,
+        "httpMatch": true
+      },
+      {
+        "fixture": "llama-login-default",
+        "match": true,
+        "rawMatch": true,
+        "renderFrames": 4,
+        "httpMatch": true
+      },
+      {
+        "fixture": "llama-manager",
+        "match": true,
+        "rawMatch": false,
+        "renderFrames": 4,
+        "httpMatch": true
+      },
+      {
+        "fixture": "llama-model-picker",
+        "match": true,
+        "rawMatch": true,
+        "renderFrames": 20,
+        "httpMatch": true
+      },
+      {
+        "fixture": "llama-retry",
+        "match": true,
+        "rawMatch": true,
+        "renderFrames": 5,
+        "httpMatch": true
+      },
+      {
+        "fixture": "llama-unload",
+        "match": true,
+        "rawMatch": true,
+        "renderFrames": 7,
+        "httpMatch": true
+      }
+    ]
+  },
+  "process": [
+    {
+      "report": "process/llama-classifier.json",
+      "match": true,
+      "piSha": "42a3497d03ad17e308a2299fa824727894f2c0ec",
+      "piSharpSha": "46151bab7eed2342156b1b3c219850040669bfcd"
+    },
+    {
+      "report": "process/llama-router-classifier.json",
+      "match": true,
+      "piSha": "42a3497d03ad17e308a2299fa824727894f2c0ec",
+      "piSharpSha": "46151bab7eed2342156b1b3c219850040669bfcd"
+    },
+    {
+      "report": "process/llama-router-context.json",
+      "match": true,
+      "piSha": "42a3497d03ad17e308a2299fa824727894f2c0ec",
+      "piSharpSha": "46151bab7eed2342156b1b3c219850040669bfcd"
+    }
+  ],
+  "files": {
+    "terminal": "terminal/<fixture>/{report.json,100x32-dark-fullscreen.json.gz}",
+    "calibration": "calibration/<fixture>/{report.json,100x32-dark-fullscreen.json.gz}",
+    "process": "process/*.json"
+  }
+}
