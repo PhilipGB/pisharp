@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.Json;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using PiSharp.Core;
@@ -18,6 +19,7 @@ public sealed class CodingTools
     internal const string BashOutputContextKey = "PiSharp.Runtime.BashOutputUpdate";
     private const double MaxTimeoutSeconds = int.MaxValue / 1000d;
     private static readonly TimeSpan s_stdioIdleGrace = TimeSpan.FromMilliseconds(100);
+    private static readonly JsonElement s_readToolSchema = CreateReadToolSchema();
     private static readonly string[] s_piSessionEnvironmentNames =
         ["PI_SESSION_ID", "PI_SESSION_FILE", "PI_PROVIDER", "PI_MODEL", "PI_REASONING_LEVEL"];
     private readonly string _cwd;
@@ -62,7 +64,7 @@ public sealed class CodingTools
         var listing = new DirectoryListingTool(_cwd);
         return Array.AsReadOnly<AITool>(
         [
-            AIFunctionFactory.Create(ReadForTool, name: "read"),
+            new ReadToolFunction(AIFunctionFactory.Create(ReadForTool, name: "read")),
             AIFunctionFactory.Create(BashForTool, name: "bash"),
             AIFunctionFactory.Create(EditForTool, name: "edit"),
             AIFunctionFactory.Create(Write, name: "write"),
@@ -105,15 +107,45 @@ public sealed class CodingTools
         CancellationToken cancellationToken = default) =>
         (await ReadCoreAsync(path, offset, limit, cancellationToken)).Text;
 
-    [Description("Read text files and images (JPEG, PNG, GIF, WebP, BMP). Text output is limited to 2000 lines or 50KB. Use offset and limit to continue.")]
+    [Description("Read the contents of a file. Supports text files and images (jpg, png, gif, webp, bmp). Images are sent as attachments. For text files, output is truncated to 2000 lines or 50KB (whichever is hit first). Use offset/limit for large files. When you need the full file, continue with offset until complete.")]
     private async Task<object> ReadForTool(
-        [Description("Path relative to the working directory or absolute path.")] string path,
-        [Description("First line to read, starting at 1.")] int offset = 1,
-        [Description("Maximum number of lines to return.")] int? limit = null,
+        [Description("Path to the file to read (relative or absolute)")] string path,
+        [Description("Line number to start reading from (1-indexed)")] int offset = 1,
+        [Description("Maximum number of lines to read")] int? limit = null,
         CancellationToken cancellationToken = default)
     {
         var output = await ReadCoreAsync(path, offset, limit, cancellationToken);
         return output.ImageDataBase64 is null ? output.Text : output;
+    }
+
+    private static JsonElement CreateReadToolSchema()
+    {
+        using var document = JsonDocument.Parse("""
+            {
+              "type": "object",
+              "required": ["path"],
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "description": "Path to the file to read (relative or absolute)"
+                },
+                "offset": {
+                  "type": "number",
+                  "description": "Line number to start reading from (1-indexed)"
+                },
+                "limit": {
+                  "type": "number",
+                  "description": "Maximum number of lines to read"
+                }
+              }
+            }
+            """);
+        return document.RootElement.Clone();
+    }
+
+    private sealed class ReadToolFunction(AIFunction inner) : DelegatingAIFunction(inner)
+    {
+        public override JsonElement JsonSchema => s_readToolSchema;
     }
 
     private async Task<ReadToolOutput> ReadCoreAsync(string path, int offset, int? limit, CancellationToken cancellationToken)

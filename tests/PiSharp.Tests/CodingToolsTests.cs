@@ -1,4 +1,6 @@
 using System.Text;
+using System.Text.Json;
+using Microsoft.Extensions.AI;
 using PiSharp.Cli;
 using PiSharp.Runtime;
 using PiSharp.Runtime.Tools;
@@ -10,6 +12,29 @@ public sealed class CodingToolsTests : IDisposable
     private readonly string _dir = Path.Combine(Path.GetTempPath(), "pisharp-test-" + Guid.NewGuid());
     public CodingToolsTests() => Directory.CreateDirectory(_dir);
     public void Dispose() => Directory.Delete(_dir, recursive: true);
+
+    [Fact]
+    public void ReadToolDeclarationMatchesCurrentPiProviderContract()
+    {
+        var read = Assert.Single(new CodingTools(_dir).CreateAll().OfType<AIFunction>(), function => function.Name == "read");
+
+        Assert.Equal("Read the contents of a file. Supports text files and images (jpg, png, gif, webp, bmp). Images are sent as attachments. For text files, output is truncated to 2000 lines or 50KB (whichever is hit first). Use offset/limit for large files. When you need the full file, continue with offset until complete.", read.Description);
+
+        var schema = read.JsonSchema;
+        Assert.Equal("object", schema.GetProperty("type").GetString());
+        Assert.False(schema.TryGetProperty("additionalProperties", out _));
+        Assert.Equal("path", schema.GetProperty("required")[0].GetString());
+
+        var properties = schema.GetProperty("properties");
+        Assert.Equal("Path to the file to read (relative or absolute)", properties.GetProperty("path").GetProperty("description").GetString());
+        Assert.Equal("string", properties.GetProperty("path").GetProperty("type").GetString());
+        Assert.Equal("Line number to start reading from (1-indexed)", properties.GetProperty("offset").GetProperty("description").GetString());
+        Assert.Equal("number", properties.GetProperty("offset").GetProperty("type").GetString());
+        Assert.False(properties.GetProperty("offset").TryGetProperty("default", out _));
+        Assert.Equal("Maximum number of lines to read", properties.GetProperty("limit").GetProperty("description").GetString());
+        Assert.Equal("number", properties.GetProperty("limit").GetProperty("type").GetString());
+        Assert.False(properties.GetProperty("limit").TryGetProperty("default", out _));
+    }
 
     [Fact]
     public async Task WriteReadAndEditResolveAgainstWorkingDirectory()
