@@ -215,7 +215,7 @@ public sealed class RpcReadCommandsProcessTests
             var request = await listener.GetContextAsync().WaitAsync(timeout.Token);
             using var body = await JsonDocument.ParseAsync(request.Request.InputStream, cancellationToken: timeout.Token);
             Assert.Contains(body.RootElement.GetProperty("messages").EnumerateArray(), message =>
-                message.TryGetProperty("content", out var content) && content.GetString() == "current pending prompt");
+                message.TryGetProperty("content", out var content) && ReadMessageText(content) == "current pending prompt");
             requestReceived.TrySetResult();
             await WriteSseResponseAsync(request, "live-read-final", partialResponseSent, releaseResponse.Task, timeout.Token);
         }, timeout.Token);

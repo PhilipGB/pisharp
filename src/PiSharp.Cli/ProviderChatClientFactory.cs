@@ -153,6 +153,13 @@ public static class ProviderChatClientFactory
                     handler = new MistralChatCompatibilityHandler(mistralContext,
                         new ProviderWireActivityHandler(new HttpClientHandler()));
                 }
+                else
+                {
+                    handler = new OpenAiCompletionsRequestCompatibilityHandler(selection.Model,
+                        selection.Provider.Id, selection.Connection.Endpoint ?? selection.Provider.Endpoint,
+                        selection.Provider.Compatibility,
+                        new ProviderWireActivityHandler(new HttpClientHandler()));
+                }
                 toolCallCapture = new OpenAiToolCallDeltaCapture(handler);
                 options.Transport = toolCallCapture.Transport;
             }

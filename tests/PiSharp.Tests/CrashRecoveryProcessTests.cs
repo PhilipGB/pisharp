@@ -239,8 +239,8 @@ public sealed class CrashRecoveryProcessTests
                 Assert.Equal("call-crash-window", toolResult.GetProperty("tool_call_id").GetString());
                 Assert.Contains("No result provided", toolResult.GetProperty("content").GetString(), StringComparison.Ordinal);
                 Assert.Contains(messages, message => message.GetProperty("role").GetString() == "user" &&
-                    message.TryGetProperty("content", out var content) && content.GetString()?.Contains(
-                        "Outcome UNKNOWN for bash", StringComparison.Ordinal) == true);
+                    message.TryGetProperty("content", out var content) && ReadMessageText(content).Contains(
+                        "Outcome UNKNOWN for bash", StringComparison.Ordinal));
             }
             var idle = false;
             for (var attempt = 0; attempt < 100 && !idle; attempt++)
@@ -402,6 +402,15 @@ public sealed class CrashRecoveryProcessTests
             process?.Dispose();
             Directory.Delete(root, recursive: true);
         }
+    }
+
+    private static string ReadMessageText(JsonElement content)
+    {
+        if (content.ValueKind == JsonValueKind.String) return content.GetString() ?? "";
+        if (content.ValueKind != JsonValueKind.Array) return "";
+        return string.Concat(content.EnumerateArray()
+            .Where(part => part.TryGetProperty("type", out var type) && type.GetString() == "text")
+            .Select(part => part.TryGetProperty("text", out var text) ? text.GetString() : ""));
     }
 
     private static Process StartCli(string root, string agentDirectory, bool redirectStandardInput, params string[] arguments)

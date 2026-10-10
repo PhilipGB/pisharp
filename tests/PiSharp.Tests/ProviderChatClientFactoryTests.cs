@@ -1093,6 +1093,99 @@ public sealed class ProviderChatClientFactoryTests
     }
 
     [Fact]
+    public async Task OpenAiCompletionsProjectsCurrentPiDefaultRequestShape()
+    {
+        using var listener = StartLoopbackListener(out var port);
+        string? requestBody = null;
+        var server = Task.Run(async () =>
+        {
+            var request = await listener.GetContextAsync();
+            Assert.Equal("/v1/chat/completions", request.Request.Url?.AbsolutePath);
+            using var reader = new StreamReader(request.Request.InputStream);
+            requestBody = await reader.ReadToEndAsync();
+            request.Response.ContentType = "application/json";
+            await using var writer = new StreamWriter(request.Response.OutputStream);
+            await writer.WriteAsync("""
+                {"id":"chatcmpl_request_shape","object":"chat.completion","created":1,"model":"fixture-model","choices":[{"index":0,"message":{"role":"assistant","content":"ok"},"finish_reason":"stop"}],"usage":{"prompt_tokens":1,"completion_tokens":1,"total_tokens":2}}
+                """);
+            await writer.FlushAsync();
+            request.Response.Close();
+        });
+
+        var baseSelection = Selection("fixture", $"http://127.0.0.1:{port}/v1", "openai-completions");
+        var selection = baseSelection with
+        {
+            Model = baseSelection.Model with
+            {
+                MaxOutputTokens = 321
+            }
+        };
+        var tool = Microsoft.Extensions.AI.AIFunctionFactory.Create(() => "ok", name: "fixture_tool");
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var response = await ProviderChatClientFactory.Create(selection).GetResponseAsync(
+            [new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User, "hello")],
+            new Microsoft.Extensions.AI.ChatOptions { Tools = [tool] }, deadline.Token);
+        await server.WaitAsync(deadline.Token);
+
+        using var body = JsonDocument.Parse(requestBody!);
+        var root = body.RootElement;
+        Assert.Equal(321, root.GetProperty("max_completion_tokens").GetInt32());
+        Assert.False(root.TryGetProperty("max_tokens", out _));
+        Assert.False(root.GetProperty("store").GetBoolean());
+        Assert.False(root.TryGetProperty("tool_choice", out _));
+        Assert.NotEmpty(root.GetProperty("tools").EnumerateArray());
+        var userMessage = Assert.Single(root.GetProperty("messages").EnumerateArray());
+        Assert.Equal("user", userMessage.GetProperty("role").GetString());
+        var textPart = Assert.Single(userMessage.GetProperty("content").EnumerateArray());
+        Assert.Equal("text", textPart.GetProperty("type").GetString());
+        Assert.Equal("hello", textPart.GetProperty("text").GetString());
+        Assert.Equal("ok", response.Text);
+    }
+
+    [Fact]
+    public async Task OpenAiCompletionsHonorsConfiguredTokenFieldAndStoreSupport()
+    {
+        using var listener = StartLoopbackListener(out var port);
+        string? requestBody = null;
+        var server = Task.Run(async () =>
+        {
+            var request = await listener.GetContextAsync();
+            using var reader = new StreamReader(request.Request.InputStream);
+            requestBody = await reader.ReadToEndAsync();
+            request.Response.ContentType = "application/json";
+            await using var writer = new StreamWriter(request.Response.OutputStream);
+            await writer.WriteAsync("""
+                {"id":"chatcmpl_request_compat","object":"chat.completion","created":1,"model":"fixture-model","choices":[{"index":0,"message":{"role":"assistant","content":"ok"},"finish_reason":"stop"}],"usage":{"prompt_tokens":1,"completion_tokens":1,"total_tokens":2}}
+                """);
+            await writer.FlushAsync();
+            request.Response.Close();
+        });
+
+        using var compatibility = JsonDocument.Parse("""{"supportsStore":false,"maxTokensField":"max_tokens"}""");
+        var baseSelection = Selection("fixture", $"http://127.0.0.1:{port}/v1", "openai-completions");
+        var selection = baseSelection with
+        {
+            Model = baseSelection.Model with
+            {
+                MaxOutputTokens = 321,
+                Compatibility = compatibility.RootElement.Clone()
+            }
+        };
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var response = await ProviderChatClientFactory.Create(selection).GetResponseAsync(
+            [new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User, "hello")],
+            cancellationToken: deadline.Token);
+        await server.WaitAsync(deadline.Token);
+
+        using var body = JsonDocument.Parse(requestBody!);
+        var root = body.RootElement;
+        Assert.Equal(321, root.GetProperty("max_tokens").GetInt32());
+        Assert.False(root.TryGetProperty("max_completion_tokens", out _));
+        Assert.False(root.TryGetProperty("store", out _));
+        Assert.Equal("ok", response.Text);
+    }
+
+    [Fact]
     public async Task UnsupportedConfiguredApiFailsBeforeProviderRequestWithoutStackTrace()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-api-" + Guid.NewGuid().ToString("N"));
