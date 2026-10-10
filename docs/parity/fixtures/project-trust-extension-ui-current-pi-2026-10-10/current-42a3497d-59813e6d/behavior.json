@@ -1,0 +1,69 @@
+{
+  "fixture": "project-trust-extension-ui",
+  "piSha": "42a3497d03ad17e308a2299fa824727894f2c0ec",
+  "pisharpSha": "59813e6defcc3d5a07fe6b95dda3933d958ddfe1",
+  "paired": {
+    "pi": {
+      "chatRequests": 1,
+      "trustedProjectSkillPresent": true,
+      "systemPromptSectionOrder": [
+        "tools",
+        "rules",
+        "docs",
+        "skills",
+        "cwd"
+      ],
+      "normalizedSystemPromptSha256": "7f4100f7c700f2dcfde0929ae2fa634d7242ada53df572e8e6f782fc0da9dd6a",
+      "scenarioError": null
+    },
+    "pisharp": {
+      "chatRequests": 1,
+      "trustedProjectSkillPresent": true,
+      "systemPromptSectionOrder": [
+        "tools",
+        "rules",
+        "docs",
+        "skills",
+        "cwd"
+      ],
+      "normalizedSystemPromptSha256": "7f4100f7c700f2dcfde0929ae2fa634d7242ada53df572e8e6f782fc0da9dd6a",
+      "scenarioError": null
+    },
+    "terminalMatch": false,
+    "httpMatch": false,
+    "stateDifferences": 88231,
+    "renderDifferences": 50437,
+    "rawByteMatch": false,
+    "scenarioErrors": {},
+    "normalizedSystemPromptMatch": true,
+    "providerRequestDifferenceCount": 14,
+    "providerRequestDifferencePaths": [
+      "$.max_completion_tokens",
+      "$.messages[0].content",
+      "$.messages[1].content",
+      "$.store",
+      "$.tool_choice",
+      "$.tools[0].function.description",
+      "$.tools[0].function.parameters.additionalProperties",
+      "$.tools[0].function.parameters.properties.limit.default",
+      "$.tools[0].function.parameters.properties.limit.description",
+      "$.tools[0].function.parameters.properties.limit.type",
+      "$.tools[0].function.parameters.properties.offset.default",
+      "$.tools[0].function.parameters.properties.offset.description",
+      "$.tools[0].function.parameters.properties.offset.type",
+      "$.tools[0].function.parameters.properties.path.description"
+    ]
+  },
+  "calibration": {
+    "match": true,
+    "terminalMatch": true,
+    "httpMatch": true,
+    "renderDifferences": 0
+  },
+  "pisharpExtensionTrace": [
+    "configured",
+    "trust-undecided:true",
+    "trust-decision:true",
+    "trust-ui:tui:true:Continue:true:approved"
+  ]
+}
