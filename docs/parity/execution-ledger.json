@@ -4328,15 +4328,15 @@
   ],
   "upstream_delta_audit": {
     "source_pin": "955cc6665ee3986c6a033db52200779310d10dfd",
-    "source_head": "42a3497d03ad17e308a2299fa824727894f2c0ec",
-    "commit_count": 198,
+    "source_head": "ea448f454af474f3e2fe9733b331e17b0662f5d6",
+    "commit_count": 206,
     "classifications": {
-      "OUT_OF_SCOPE": 68,
-      "NO_BEHAVIOR_CHANGE": 36,
-      "NEEDS_WORK": 87,
+      "OUT_OF_SCOPE": 74,
+      "NO_BEHAVIOR_CHANGE": 37,
+      "NEEDS_WORK": 88,
       "MATCHED": 7
     },
-    "fixture": "docs/parity/fixtures/upstream-delta-audit-2026-10-09.md",
+    "fixture": "docs/parity/fixtures/upstream-delta-audit-2026-10-10.md",
     "next": "continue-current-pi-resources-trust-and-prompt-differential",
     "current_item": "structured-system-prompt-generation-and-trusted-reload-projection",
     "current_item_status": "pushed_ci_passed",
@@ -4399,7 +4399,7 @@
       "status": "not_started",
       "upstream_fixture": "packages/coding-agent/test/mcp-conformance/baseline.json"
     },
-    "working_source_pin": "42a3497d03ad17e308a2299fa824727894f2c0ec",
+    "working_source_pin": "ea448f454af474f3e2fe9733b331e17b0662f5d6",
     "active_llama_classifier_recheck": {
       "pi_source_head": "42a3497d03ad17e308a2299fa824727894f2c0ec",
       "pisharp_head": "8f33b03fb2d30622f20b9d469b5a69203283fb55",
@@ -4490,6 +4490,18 @@
           "MATCHED": 0
         },
         "fixture": "docs/parity/fixtures/upstream-delta-audit-2026-10-09.md"
+      },
+      {
+        "source_pin": "42a3497d03ad17e308a2299fa824727894f2c0ec",
+        "source_head": "ea448f454af474f3e2fe9733b331e17b0662f5d6",
+        "commit_count": 8,
+        "classifications": {
+          "OUT_OF_SCOPE": 6,
+          "NO_BEHAVIOR_CHANGE": 1,
+          "NEEDS_WORK": 1,
+          "MATCHED": 0
+        },
+        "fixture": "docs/parity/fixtures/upstream-delta-audit-2026-10-10.md"
       }
     ],
     "current_checkpoint": {
@@ -4750,6 +4762,33 @@
         "same_pi_calibration_match": true,
         "evidence": "docs/parity/fixtures/project-settings-reload-current-pi-2026-10-10/current-42a3497d-59813e6d/behavior.json"
       }
+    },
+    "active_llama_family_recheck": {
+      "pi_source_head": "ea448f454af474f3e2fe9733b331e17b0662f5d6",
+      "pisharp_origin_main_head": "dab73a74d4fb762c78365ec4e58296370303ebc0",
+      "current_pi_llama_extension_tests": "15/15",
+      "process_differentials": {
+        "llama-classifier": {
+          "match": true,
+          "evidence": "docs/parity/fixtures/llama-terminal-current-pi-2026-10-10/current-ea448f45-dab73a74/process/llama-classifier.json"
+        },
+        "llama-router-classifier": {
+          "match": true,
+          "evidence": "docs/parity/fixtures/llama-terminal-current-pi-2026-10-10/current-ea448f45-dab73a74/process/llama-router-classifier.json"
+        },
+        "llama-router-context": {
+          "match": true,
+          "evidence": "docs/parity/fixtures/llama-terminal-current-pi-2026-10-10/current-ea448f45-dab73a74/process/llama-router-context.json"
+        }
+      },
+      "paired_terminal_flows": 12,
+      "paired_render_frames": 155,
+      "paired_render_differences": 0,
+      "paired_http_matches": 12,
+      "paired_scenario_errors": 0,
+      "same_pi_calibration_flows": 12,
+      "same_pi_calibration_render_differences": 0,
+      "evidence": "docs/parity/fixtures/llama-terminal-current-pi-2026-10-10/current-ea448f45-dab73a74/evidence.json"
     }
   },
   "execution_policy": {

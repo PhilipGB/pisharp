@@ -1,0 +1,51 @@
+{
+  "piSha": "ea448f454af474f3e2fe9733b331e17b0662f5d6",
+  "pisharpSha": "dab73a74d4fb762c78365ec4e58296370303ebc0",
+  "fixture": "llama-load-cancel",
+  "calibration": true,
+  "concurrentHttpGroups": [
+    {
+      "occurrence": 1,
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/models/sse"
+        },
+        {
+          "method": "POST",
+          "path": "/models/load"
+        }
+      ]
+    }
+  ],
+  "normalization": "Named checkpoints and every synchronized render state are compared exactly, collapsing only adjacent identical states, hidden cursor coordinates, and transient braille loader frames in the bottom status area. Raw bytes remain captured and exact-match status is reported separately. HTTP identity/count/order remain exact except within declared concurrent batches, where arrival order is unspecified. Per-checkpoint control buckets are diagnostic.",
+  "cases": [
+    {
+      "id": "100x32-dark-fullscreen",
+      "match": true,
+      "differences": 0,
+      "firstDifferences": [],
+      "scenarioErrors": {},
+      "terminalMatch": true,
+      "rawMatch": false,
+      "rawDifference": {
+        "piBytes": 10951,
+        "pisharpBytes": 10922,
+        "firstDifferingByte": 2059
+      },
+      "comparedRenderFrameCount": 12,
+      "renderDifferences": 0,
+      "httpMatch": true,
+      "controlBoundaryDifferenceCount": 1,
+      "controlBoundaryFirstDifferences": [
+        {
+          "path": "$.controlBoundaries[0].length",
+          "pi": 193,
+          "pisharp": 189
+        }
+      ],
+      "evidence": "100x32-dark-fullscreen.json.gz"
+    }
+  ],
+  "match": true
+}
