@@ -1,0 +1,49 @@
+{
+  "piSha": "42a3497d03ad17e308a2299fa824727894f2c0ec",
+  "pisharpSha": "f305c18554db500823cae9482cd00a6fa89e83ba",
+  "fixture": "extension-resource-discovery-reload",
+  "behaviorMatch": true,
+  "requestMessageDifferences": [],
+  "behavior": {
+    "pi": {
+      "chatRequests": 4,
+      "startupSkillAndPromptExpanded": true,
+      "reloadedSkillAndPromptExpanded": true,
+      "latestUserMessages": [
+        "<skill name=\"extension-startup\" location=\"/tmp/pisharp-terminal-fixture-workspace/extension-project/.pi/extension-resources/startup/skills/SKILL.md\">\nReferences are relative to /tmp/pisharp-terminal-fixture-workspace/extension-project/.pi/extension-resources/startup/skills.\n\nUse the startup extension skill.\n</skill>\n\ninitial-argument",
+        "Review the startup extension template: initial-argument",
+        "<skill name=\"extension-reloaded\" location=\"/tmp/pisharp-terminal-fixture-workspace/extension-project/.pi/extension-resources/reloaded/skills/SKILL.md\">\nReferences are relative to /tmp/pisharp-terminal-fixture-workspace/extension-project/.pi/extension-resources/reloaded/skills.\n\nUse the reloaded extension skill.\n</skill>\n\nreload-argument",
+        "Review the reloaded extension template: reload-argument"
+      ],
+      "startupThemeDiagnosticVisible": true,
+      "reloadedThemeDiagnosticVisible": true,
+      "reloadStatusVisible": true,
+      "scenarioError": null
+    },
+    "pisharp": {
+      "chatRequests": 4,
+      "startupSkillAndPromptExpanded": true,
+      "reloadedSkillAndPromptExpanded": true,
+      "latestUserMessages": [
+        "<skill name=\"extension-startup\" location=\"/tmp/pisharp-terminal-fixture-workspace/extension-project/.pi/extension-resources/startup/skills/SKILL.md\">\nReferences are relative to /tmp/pisharp-terminal-fixture-workspace/extension-project/.pi/extension-resources/startup/skills.\n\nUse the startup extension skill.\n</skill>\n\ninitial-argument",
+        "Review the startup extension template: initial-argument",
+        "<skill name=\"extension-reloaded\" location=\"/tmp/pisharp-terminal-fixture-workspace/extension-project/.pi/extension-resources/reloaded/skills/SKILL.md\">\nReferences are relative to /tmp/pisharp-terminal-fixture-workspace/extension-project/.pi/extension-resources/reloaded/skills.\n\nUse the reloaded extension skill.\n</skill>\n\nreload-argument",
+        "Review the reloaded extension template: reload-argument"
+      ],
+      "startupThemeDiagnosticVisible": true,
+      "reloadedThemeDiagnosticVisible": true,
+      "reloadStatusVisible": true,
+      "scenarioError": null
+    }
+  },
+  "fullTerminalMatch": false,
+  "fullHttpMatch": false,
+  "rawMatch": false,
+  "terminalDifferences": 210569,
+  "renderDifferences": 127206,
+  "scenarioErrors": {},
+  "evidence": {
+    "report": "docs/parity/fixtures/resources-terminal-current-pi-2026-10-09/reloads-42a3497d-f305c185/extension-resource-discovery/paired/report.json",
+    "capture": "docs/parity/fixtures/resources-terminal-current-pi-2026-10-09/reloads-42a3497d-f305c185/extension-resource-discovery/paired/120x40-dark-fullscreen.json.gz"
+  }
+}

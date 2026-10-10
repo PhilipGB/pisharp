@@ -1,0 +1,28 @@
+{
+  "failFirst": true,
+  "piSha": "42a3497d03ad17e308a2299fa824727894f2c0ec",
+  "pisharpSha": "46151bab7eed2342156b1b3c219850040669bfcd",
+  "fixture": "trusted-project-settings-reload",
+  "activeToolsByRequest": [
+    [
+      "read"
+    ],
+    [
+      "read",
+      "bash"
+    ]
+  ],
+  "skillPromptMatch": false,
+  "piPostReloadSkillPrompt": "<skills>\nThe following skills provide specialized instructions for specific tasks.\nUse the read tool to load a skill's file when the task matches its description.\nWhen a skill file references a relative path, resolve it against the skill directory (parent of SKILL.md / dirname of the path) and use that absolute path in tool commands.\n\n<available_skills>\n  <skill>\n    <name>initial-check</name>\n    <description>Initial project skill</description>\n    <location>/tmp/pisharp-terminal-fixture-workspace/reload-project/.pi/skills/initial/SKILL.md</location>\n  </skill>\n  <skill>\n    <name>reloaded-check</name>\n    <description>Re-discovered project skill</description>\n    <location>/tmp/pisharp-terminal-fixture-workspace/reload-project/.pi/skills/reloaded/SKILL.md</location>\n  </skill>\n  <skill>\n    <name>microsoft-agent-framework</name>\n    <description>Microsoft Agent Framework for C#/.NET: build, host, secure, evaluate, and migrate AI agents, Agent Harness applications, iterative LoopAgent execution, and graph workflows with Microsoft.Agents.AI. Use for AIAgent, ChatClientAgent, LoopAgent/evaluators, AgentSession, AIContextProvider, Agent Skills, CodeAct, tools/MCP/approvals, middleware, memory/RAG, provider clients, workflow executors/edges/checkpoints/HITL/orchestrations, durable execution, AG-UI, A2A, OpenAI-compatible endpoints, Foundry hosting, or migrations from Semantic Kernel and AutoGen. Also use when reviewing C# that references these APIs even when the framework is not named.\n</description>\n    <location>/home/philip/.agents/skills/microsoft-agent-framework/SKILL.md</location>\n  </skill>\n</available_skills>\n</skills>",
+  "pisharpPostReloadSkillPrompt": "<skills>\nThe following skills provide specialized instructions for specific tasks.\nUse bash to load a skill's file when the task matches its description.\nWhen a skill file references a relative path, resolve it against the skill directory (parent of SKILL.md / dirname of the path) and use that absolute path in tool commands.\n\n<available_skills>\n  <skill>\n    <name>initial-check</name>\n    <description>Initial project skill</description>\n    <location>/tmp/pisharp-terminal-fixture-workspace/reload-project/.pi/skills/initial/SKILL.md</location>\n  </skill>\n  <skill>\n    <name>reloaded-check</name>\n    <description>Re-discovered project skill</description>\n    <location>/tmp/pisharp-terminal-fixture-workspace/reload-project/.pi/skills/reloaded/SKILL.md</location>\n  </skill>\n  <skill>\n    <name>microsoft-agent-framework</name>\n    <description>Microsoft Agent Framework for C#/.NET: build, host, secure, evaluate, and migrate AI agents, Agent Harness applications, iterative LoopAgent execution, and graph workflows with Microsoft.Agents.AI. Use for AIAgent, ChatClientAgent, LoopAgent/evaluators, AgentSession, AIContextProvider, Agent Skills, CodeAct, tools/MCP/approvals, middleware, memory/RAG, provider clients, workflow executors/edges/checkpoints/HITL/orchestrations, durable execution, AG-UI, A2A, OpenAI-compatible endpoints, Foundry hosting, or migrations from Semantic Kernel and AutoGen. Also use when reviewing C# that references these APIs even when the framework is not named.\n</description>\n    <location>/home/philip/.agents/skills/microsoft-agent-framework/SKILL.md</location>\n  </skill>\n</available_skills>\n</skills>",
+  "calibration": {
+    "match": true,
+    "terminalMatch": true,
+    "httpMatch": true,
+    "rawMatch": false,
+    "renderDifferences": 0,
+    "firstDifferences": []
+  },
+  "pairedReport": "fail-first-46151bab/report.json",
+  "pairedCapture": "fail-first-46151bab/120x40-dark-fullscreen.json.gz"
+}

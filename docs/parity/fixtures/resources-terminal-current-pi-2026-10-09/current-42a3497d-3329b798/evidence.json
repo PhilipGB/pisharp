@@ -1,0 +1,45 @@
+{
+  "fixture": "resource-skill-precedence",
+  "piSha": "42a3497d03ad17e308a2299fa824727894f2c0ec",
+  "pisharpSha": "3329b798afc665c3ba529182a4efd798e341882e",
+  "semanticMatch": true,
+  "samePiCalibration": true,
+  "outcomes": {
+    "pi": {
+      "skillCommands": [
+        "project-only",
+        "shared",
+        "user-only",
+        "temp-only",
+        "unsafe&skill"
+      ],
+      "projectScopeWins": true,
+      "invalidNameRemainsAvailable": true,
+      "collisionAndNameWarningsVisible": true
+    },
+    "pisharp": {
+      "skillCommands": [
+        "project-only",
+        "shared",
+        "user-only",
+        "temp-only",
+        "unsafe&skill"
+      ],
+      "projectScopeWins": true,
+      "invalidNameRemainsAvailable": true,
+      "collisionAndNameWarningsVisible": true
+    }
+  },
+  "expandedRequestMatch": true,
+  "requestCount": 1,
+  "requestRoutesMatch": true,
+  "fullHttpMatch": false,
+  "fullTerminalMatch": false,
+  "fullTerminalRenderDifferences": 61936,
+  "rawMatch": false,
+  "rawDifference": {
+    "piBytes": 13063,
+    "pisharpBytes": 7995,
+    "firstDifferingByte": 2
+  }
+}

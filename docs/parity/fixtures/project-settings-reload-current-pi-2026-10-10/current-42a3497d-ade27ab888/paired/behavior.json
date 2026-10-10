@@ -1,0 +1,101 @@
+{
+  "piSha": "42a3497d03ad17e308a2299fa824727894f2c0ec",
+  "pisharpSha": "ade27ab88842dcf25b7e06fbbed6557bc013477a",
+  "fixture": "trusted-project-settings-reload",
+  "behaviorMatch": true,
+  "behavior": {
+    "pi": {
+      "chatRequests": 2,
+      "toolNamesByRequest": [
+        [
+          "read"
+        ],
+        [
+          "read",
+          "bash"
+        ]
+      ],
+      "skillPromptByRequest": [
+        {
+          "present": true,
+          "reader": "read",
+          "skillNames": [
+            "initial-check",
+            "microsoft-agent-framework"
+          ],
+          "sha256": "376b13b4cd306b0895d96134cfd9a2e17c25d69d551028d6df2d9514e0bc6c2f"
+        },
+        {
+          "present": true,
+          "reader": "read",
+          "skillNames": [
+            "initial-check",
+            "reloaded-check",
+            "microsoft-agent-framework"
+          ],
+          "sha256": "347772d6f645e4240fcbf00418b47305250457351be8a5ed4cbef209af6470f4"
+        }
+      ],
+      "initialSkillInvokedBeforeReload": true,
+      "reloadedSkillInvokedAfterReload": true,
+      "scenarioError": null
+    },
+    "pisharp": {
+      "chatRequests": 2,
+      "toolNamesByRequest": [
+        [
+          "read"
+        ],
+        [
+          "read",
+          "bash"
+        ]
+      ],
+      "skillPromptByRequest": [
+        {
+          "present": true,
+          "reader": "read",
+          "skillNames": [
+            "initial-check",
+            "microsoft-agent-framework"
+          ],
+          "sha256": "376b13b4cd306b0895d96134cfd9a2e17c25d69d551028d6df2d9514e0bc6c2f"
+        },
+        {
+          "present": true,
+          "reader": "read",
+          "skillNames": [
+            "initial-check",
+            "reloaded-check",
+            "microsoft-agent-framework"
+          ],
+          "sha256": "347772d6f645e4240fcbf00418b47305250457351be8a5ed4cbef209af6470f4"
+        }
+      ],
+      "initialSkillInvokedBeforeReload": true,
+      "reloadedSkillInvokedAfterReload": true,
+      "scenarioError": null
+    }
+  },
+  "skillPromptMatch": true,
+  "fullTerminalMatch": false,
+  "fullHttpMatch": false,
+  "rawMatch": false,
+  "terminalDifferences": 106466,
+  "renderDifferences": 67243,
+  "controlBoundaryDifferences": 384,
+  "scenarioErrors": {},
+  "calibration": {
+    "match": true,
+    "terminalMatch": true,
+    "httpMatch": true,
+    "rawMatch": false,
+    "renderDifferences": 0,
+    "firstDifferences": []
+  },
+  "evidence": {
+    "report": "/tmp/transcript-top-pair-42a3497d-ade27ab888/report.json",
+    "capture": "/tmp/transcript-top-pair-42a3497d-ade27ab888/120x40-dark-fullscreen.json.gz",
+    "calibrationReport": "/tmp/transcript-top-calibration-42a3497d-ade27ab888/report.json"
+  }
+}

@@ -1,0 +1,127 @@
+{
+  "piSha": "42a3497d03ad17e308a2299fa824727894f2c0ec",
+  "pisharpSha": "f305c18554db500823cae9482cd00a6fa89e83ba",
+  "fixture": "extension-resource-discovery-reload",
+  "calibration": true,
+  "concurrentHttpGroups": [],
+  "normalization": "Named checkpoints and every synchronized render state are compared exactly, collapsing only adjacent identical states, hidden cursor coordinates, and transient braille loader frames in the bottom status area. Raw bytes remain captured and exact-match status is reported separately. HTTP identity/count/order remain exact except within declared concurrent batches, where arrival order is unspecified. Per-checkpoint control buckets are diagnostic.",
+  "cases": [
+    {
+      "id": "120x40-dark-fullscreen",
+      "match": true,
+      "differences": 0,
+      "firstDifferences": [],
+      "scenarioErrors": {},
+      "terminalMatch": true,
+      "rawMatch": false,
+      "rawDifference": {
+        "piBytes": 23675,
+        "pisharpBytes": 24161,
+        "firstDifferingByte": 4010
+      },
+      "comparedRenderFrameCount": 13,
+      "renderDifferences": 0,
+      "httpMatch": true,
+      "controlBoundaryDifferenceCount": 19,
+      "controlBoundaryFirstDifferences": [
+        {
+          "path": "$.controlBoundaries[1].length",
+          "pi": 96,
+          "pisharp": 112
+        },
+        {
+          "path": "$.controlBoundaries[1][75]",
+          "pi": "1b5b31333b3148",
+          "pisharp": "1b5b33363b3148"
+        },
+        {
+          "path": "$.controlBoundaries[1][77]",
+          "pi": "1b5b306d",
+          "pisharp": "1b5b33383b323b3130383b3131383b3132336d"
+        },
+        {
+          "path": "$.controlBoundaries[1][78]",
+          "pi": "1b5d383b3b07",
+          "pisharp": "1b5b33396d"
+        },
+        {
+          "path": "$.controlBoundaries[1][79]",
+          "pi": "1b5b33363b3148",
+          "pisharp": "1b5b33383b323b3130383b3131383b3132336d"
+        },
+        {
+          "path": "$.controlBoundaries[1][80]",
+          "pi": "1b5b324b",
+          "pisharp": "1b5b33396d"
+        },
+        {
+          "path": "$.controlBoundaries[1][83]",
+          "pi": "1b5b306d",
+          "pisharp": "1b5b33383b323b3130383b3131383b3132336d"
+        },
+        {
+          "path": "$.controlBoundaries[1][84]",
+          "pi": "1b5d383b3b07",
+          "pisharp": "1b5b33396d"
+        },
+        {
+          "path": "$.controlBoundaries[1][85]",
+          "pi": "1b5b34303b3148",
+          "pisharp": "1b5b306d"
+        },
+        {
+          "path": "$.controlBoundaries[1][86]",
+          "pi": "1b5b324b",
+          "pisharp": "1b5d383b3b07"
+        },
+        {
+          "path": "$.controlBoundaries[1][87]",
+          "pi": "1b5b33383b323b3132363b3133363b3134326d",
+          "pisharp": "1b5b33373b3148"
+        },
+        {
+          "path": "$.controlBoundaries[1][88]",
+          "pi": "1b5b33396d",
+          "pisharp": "1b5b3f32356c"
+        },
+        {
+          "path": "$.controlBoundaries[1][89]",
+          "pi": "1b5b33383b323b3132363b3133363b3134326d",
+          "pisharp": "1b5b3f323032366c"
+        },
+        {
+          "path": "$.controlBoundaries[1][90]",
+          "pi": "1b5b33396d",
+          "pisharp": "1b5b3f3230323668"
+        },
+        {
+          "path": "$.controlBoundaries[1][91]",
+          "pi": "1b5b306d",
+          "pisharp": "1b5b31333b3148"
+        },
+        {
+          "path": "$.controlBoundaries[1][92]",
+          "pi": "1b5d383b3b07",
+          "pisharp": "1b5b324b"
+        },
+        {
+          "path": "$.controlBoundaries[1][93]",
+          "pi": "1b5b33373b3148",
+          "pisharp": "1b5b306d"
+        },
+        {
+          "path": "$.controlBoundaries[1][94]",
+          "pi": "1b5b3f32356c",
+          "pisharp": "1b5d383b3b07"
+        },
+        {
+          "path": "$.controlBoundaries[1][95]",
+          "pi": "1b5b3f323032366c",
+          "pisharp": "1b5b33363b3148"
+        }
+      ],
+      "evidence": "120x40-dark-fullscreen.json.gz"
+    }
+  ],
+  "match": true
+}

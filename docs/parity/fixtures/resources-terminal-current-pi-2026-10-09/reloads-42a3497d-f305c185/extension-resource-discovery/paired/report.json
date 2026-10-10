@@ -1,0 +1,383 @@
+{
+  "piSha": "42a3497d03ad17e308a2299fa824727894f2c0ec",
+  "pisharpSha": "f305c18554db500823cae9482cd00a6fa89e83ba",
+  "fixture": "extension-resource-discovery-reload",
+  "calibration": false,
+  "concurrentHttpGroups": [],
+  "normalization": "Named checkpoints and every synchronized render state are compared exactly, collapsing only adjacent identical states, hidden cursor coordinates, and transient braille loader frames in the bottom status area. Raw bytes remain captured and exact-match status is reported separately. HTTP identity/count/order remain exact except within declared concurrent batches, where arrival order is unspecified. Per-checkpoint control buckets are diagnostic.",
+  "cases": [
+    {
+      "id": "120x40-dark-fullscreen",
+      "match": false,
+      "differences": 210569,
+      "firstDifferences": [
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[0].chars",
+          "pi": "[",
+          "pisharp": " "
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[0].foreground.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[0].foreground.value",
+          "pi": 13474338,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[1].chars",
+          "pi": "T",
+          "pisharp": "["
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[2].chars",
+          "pi": "h",
+          "pisharp": "T"
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[3].chars",
+          "pi": "e",
+          "pisharp": "h"
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[4].chars",
+          "pi": "m",
+          "pisharp": "e"
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[5].chars",
+          "pi": "e",
+          "pisharp": "m"
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[6].chars",
+          "pi": " ",
+          "pisharp": "e"
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[7].chars",
+          "pi": "c",
+          "pisharp": " "
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[8].chars",
+          "pi": "o",
+          "pisharp": "c"
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[9].chars",
+          "pi": "n",
+          "pisharp": "o"
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[10].chars",
+          "pi": "f",
+          "pisharp": "n"
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[11].chars",
+          "pi": "l",
+          "pisharp": "f"
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[12].chars",
+          "pi": "i",
+          "pisharp": "l"
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[13].chars",
+          "pi": "c",
+          "pisharp": "i"
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[14].chars",
+          "pi": "t",
+          "pisharp": "c"
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[15].chars",
+          "pi": "s",
+          "pisharp": "t"
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[16].chars",
+          "pi": "]",
+          "pisharp": "s"
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[17].chars",
+          "pi": " ",
+          "pisharp": "]"
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[17].foreground.mode",
+          "pi": "default",
+          "pisharp": "rgb"
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[17].foreground.value",
+          "pi": -1,
+          "pisharp": 13474338
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[18].chars",
+          "pi": " ",
+          "pisharp": ""
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[19].chars",
+          "pi": " ",
+          "pisharp": ""
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[20].chars",
+          "pi": " ",
+          "pisharp": ""
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[21].chars",
+          "pi": " ",
+          "pisharp": ""
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[22].chars",
+          "pi": " ",
+          "pisharp": ""
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[23].chars",
+          "pi": " ",
+          "pisharp": ""
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[24].chars",
+          "pi": " ",
+          "pisharp": ""
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[25].chars",
+          "pi": " ",
+          "pisharp": ""
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[26].chars",
+          "pi": " ",
+          "pisharp": ""
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[27].chars",
+          "pi": " ",
+          "pisharp": ""
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[28].chars",
+          "pi": " ",
+          "pisharp": ""
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[29].chars",
+          "pi": " ",
+          "pisharp": ""
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[30].chars",
+          "pi": " ",
+          "pisharp": ""
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[31].chars",
+          "pi": " ",
+          "pisharp": ""
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[32].chars",
+          "pi": " ",
+          "pisharp": ""
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[33].chars",
+          "pi": " ",
+          "pisharp": ""
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[34].chars",
+          "pi": " ",
+          "pisharp": ""
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[35].chars",
+          "pi": " ",
+          "pisharp": ""
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[36].chars",
+          "pi": " ",
+          "pisharp": ""
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[37].chars",
+          "pi": " ",
+          "pisharp": ""
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[38].chars",
+          "pi": " ",
+          "pisharp": ""
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[39].chars",
+          "pi": " ",
+          "pisharp": ""
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[40].chars",
+          "pi": " ",
+          "pisharp": ""
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[41].chars",
+          "pi": " ",
+          "pisharp": ""
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[42].chars",
+          "pi": " ",
+          "pisharp": ""
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[43].chars",
+          "pi": " ",
+          "pisharp": ""
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[44].chars",
+          "pi": " ",
+          "pisharp": ""
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines[0].cells[45].chars",
+          "pi": " ",
+          "pisharp": ""
+        }
+      ],
+      "scenarioErrors": {},
+      "terminalMatch": false,
+      "rawMatch": false,
+      "rawDifference": {
+        "piBytes": 24161,
+        "pisharpBytes": 9713,
+        "firstDifferingByte": 2
+      },
+      "comparedRenderFrameCount": 13,
+      "renderDifferences": 127206,
+      "httpMatch": false,
+      "controlBoundaryDifferenceCount": 571,
+      "controlBoundaryFirstDifferences": [
+        {
+          "path": "$.controlBoundaries[0].length",
+          "pi": 239,
+          "pisharp": 176
+        },
+        {
+          "path": "$.controlBoundaries[0][0]",
+          "pi": "1b5b3f3130343968",
+          "pisharp": "1b5b3e3775"
+        },
+        {
+          "path": "$.controlBoundaries[0][1]",
+          "pi": "1b5b3f376c",
+          "pisharp": "1b5b3f75"
+        },
+        {
+          "path": "$.controlBoundaries[0][2]",
+          "pi": "1b5b3f3130303068",
+          "pisharp": "1b5b3f3130343968"
+        },
+        {
+          "path": "$.controlBoundaries[0][3]",
+          "pi": "1b5b3f3130303268",
+          "pisharp": "1b5b3f376c"
+        },
+        {
+          "path": "$.controlBoundaries[0][4]",
+          "pi": "1b5b3f3130303368",
+          "pisharp": "1b5b3f32356c"
+        },
+        {
+          "path": "$.controlBoundaries[0][5]",
+          "pi": "1b5b3f3130303468",
+          "pisharp": "1b5b3f3130303068"
+        },
+        {
+          "path": "$.controlBoundaries[0][6]",
+          "pi": "1b5b3f3130303668",
+          "pisharp": "1b5b3f3130303268"
+        },
+        {
+          "path": "$.controlBoundaries[0][7]",
+          "pi": "1b5b324a",
+          "pisharp": "1b5b3f3130303368"
+        },
+        {
+          "path": "$.controlBoundaries[0][8]",
+          "pi": "1b5b48",
+          "pisharp": "1b5b3f3130303468"
+        },
+        {
+          "path": "$.controlBoundaries[0][9]",
+          "pi": "1b5b3f32356c",
+          "pisharp": "1b5b3f3130303668"
+        },
+        {
+          "path": "$.controlBoundaries[0][10]",
+          "pi": "1b5b3f3230303468",
+          "pisharp": "1b5d31303b3f07"
+        },
+        {
+          "path": "$.controlBoundaries[0][11]",
+          "pi": "1b5b3e3775",
+          "pisharp": "1b5d31313b3f07"
+        },
+        {
+          "path": "$.controlBoundaries[0][12]",
+          "pi": "1b5b3f75",
+          "pisharp": "1b5d343b303b3f07"
+        },
+        {
+          "path": "$.controlBoundaries[0][13]",
+          "pi": "1b5d373530313b3f1b5c",
+          "pisharp": "1b5d343b313b3f07"
+        },
+        {
+          "path": "$.controlBoundaries[0][14]",
+          "pi": "1b5b63",
+          "pisharp": "1b5d343b323b3f07"
+        },
+        {
+          "path": "$.controlBoundaries[0][15]",
+          "pi": "1b5b3f32356c",
+          "pisharp": "1b5d343b333b3f07"
+        },
+        {
+          "path": "$.controlBoundaries[0][16]",
+          "pi": "1b5d31303b3f07",
+          "pisharp": "1b5d343b343b3f07"
+        },
+        {
+          "path": "$.controlBoundaries[0][17]",
+          "pi": "1b5d31313b3f07",
+          "pisharp": "1b5d343b353b3f07"
+        },
+        {
+          "path": "$.controlBoundaries[0][18]",
+          "pi": "1b5d343b303b3f07",
+          "pisharp": "1b5d343b363b3f07"
+        }
+      ],
+      "evidence": "120x40-dark-fullscreen.json.gz"
+    }
+  ],
+  "match": false
+}

@@ -1,0 +1,84 @@
+{
+  "piSha": "42a3497d03ad17e308a2299fa824727894f2c0ec",
+  "pisharpSha": "f305c18554db500823cae9482cd00a6fa89e83ba",
+  "fixture": "legacy-project-skills-reload",
+  "behaviorMatch": true,
+  "behavior": {
+    "pi": {
+      "chatRequests": 2,
+      "disabledCompletionBeforeReload": true,
+      "reloadedCompletionEnabled": true,
+      "initialSkillExpanded": true,
+      "reloadedSkillExpanded": true,
+      "visibleSuggestionRows": [
+        "\u2192 skill:reloaded-legacy-skill     [p] Reloaded legacy skill",
+        "  skill:grill-me                  [u] A relentless interview to sharpen a plan or design.",
+        "  skill:grill-with-docs           [u] A relentless interview to sharpen a plan or design, which also creates docs (ADR",
+        "  skill:handoff                   [u] Compact the current conversation into a handoff document for another agent to pi",
+        "  skill:microsoft-agent-framewor  [u] Microsoft Agent Framework for C#/.NET: build, host, secure, evaluate, and migrat"
+      ],
+      "reloadStatusVisible": true,
+      "expandedUserMessages": [
+        [
+          "<skill name=\"initial-legacy-skill\" location=\"/tmp/pisharp-terminal-fixture-workspace/legacy-skills-reload-project/.pi/legacy-skills/initial-legacy-skill/SKILL.md\">\nReferences are relative to /tmp/pisharp-terminal-fixture-workspace/legacy-skills-reload-project/.pi/legacy-skills/initial-legacy-skill.\n\nInitial legacy skill body marker.\n</skill>\n\nfirst-argument"
+        ],
+        [
+          "<skill name=\"initial-legacy-skill\" location=\"/tmp/pisharp-terminal-fixture-workspace/legacy-skills-reload-project/.pi/legacy-skills/initial-legacy-skill/SKILL.md\">\nReferences are relative to /tmp/pisharp-terminal-fixture-workspace/legacy-skills-reload-project/.pi/legacy-skills/initial-legacy-skill.\n\nInitial legacy skill body marker.\n</skill>\n\nfirst-argument",
+          "<skill name=\"reloaded-legacy-skill\" location=\"/tmp/pisharp-terminal-fixture-workspace/legacy-skills-reload-project/.pi/reloaded-skills/reloaded-legacy-skill/SKILL.md\">\nReferences are relative to /tmp/pisharp-terminal-fixture-workspace/legacy-skills-reload-project/.pi/reloaded-skills/reloaded-legacy-skill.\n\nReloaded legacy skill body marker.\n</skill>\n\nsecond-argument"
+        ]
+      ],
+      "advertisedSkillsByRequest": [
+        [],
+        []
+      ],
+      "scenarioError": null
+    },
+    "pisharp": {
+      "chatRequests": 2,
+      "disabledCompletionBeforeReload": true,
+      "reloadedCompletionEnabled": true,
+      "initialSkillExpanded": true,
+      "reloadedSkillExpanded": true,
+      "visibleSuggestionRows": [
+        "\u2192 skill:reloaded-legacy-skill     [p] Reloaded legacy skill",
+        "  skill:grill-me                  [u] A relentless interview to sharpen a plan or design.",
+        "  skill:grill-with-docs           [u] A relentless interview to sharpen a plan or design, which also creates docs (ADR",
+        "  skill:handoff                   [u] Compact the current conversation into a handoff document for another agent to pi",
+        "  skill:microsoft-agent-framewor  [u] Microsoft Agent Framework for C#/.NET: build, host, secure, evaluate, and migrat"
+      ],
+      "reloadStatusVisible": true,
+      "expandedUserMessages": [
+        [
+          "<skill name=\"initial-legacy-skill\" location=\"/tmp/pisharp-terminal-fixture-workspace/legacy-skills-reload-project/.pi/legacy-skills/initial-legacy-skill/SKILL.md\">\nReferences are relative to /tmp/pisharp-terminal-fixture-workspace/legacy-skills-reload-project/.pi/legacy-skills/initial-legacy-skill.\n\nInitial legacy skill body marker.\n</skill>\n\nfirst-argument"
+        ],
+        [
+          "<skill name=\"initial-legacy-skill\" location=\"/tmp/pisharp-terminal-fixture-workspace/legacy-skills-reload-project/.pi/legacy-skills/initial-legacy-skill/SKILL.md\">\nReferences are relative to /tmp/pisharp-terminal-fixture-workspace/legacy-skills-reload-project/.pi/legacy-skills/initial-legacy-skill.\n\nInitial legacy skill body marker.\n</skill>\n\nfirst-argument",
+          "<skill name=\"reloaded-legacy-skill\" location=\"/tmp/pisharp-terminal-fixture-workspace/legacy-skills-reload-project/.pi/reloaded-skills/reloaded-legacy-skill/SKILL.md\">\nReferences are relative to /tmp/pisharp-terminal-fixture-workspace/legacy-skills-reload-project/.pi/reloaded-skills/reloaded-legacy-skill.\n\nReloaded legacy skill body marker.\n</skill>\n\nsecond-argument"
+        ]
+      ],
+      "advertisedSkillsByRequest": [
+        [],
+        []
+      ],
+      "scenarioError": null
+    }
+  },
+  "fullTerminalMatch": false,
+  "fullHttpMatch": false,
+  "rawMatch": false,
+  "terminalDifferences": 155875,
+  "renderDifferences": 103426,
+  "controlBoundaryDifferences": 544,
+  "scenarioErrors": {},
+  "calibration": {
+    "terminalMatch": true,
+    "httpMatch": true,
+    "renderDifferences": 0,
+    "scenarioErrors": {}
+  },
+  "evidence": {
+    "report": "docs/parity/fixtures/resources-terminal-current-pi-2026-10-09/reloads-42a3497d-f305c185/legacy-project-skills/paired/report.json",
+    "capture": "docs/parity/fixtures/resources-terminal-current-pi-2026-10-09/reloads-42a3497d-f305c185/legacy-project-skills/paired/120x40-dark-fullscreen.json.gz",
+    "calibrationReport": "docs/parity/fixtures/resources-terminal-current-pi-2026-10-09/reloads-42a3497d-f305c185/legacy-project-skills/calibration/report.json"
+  }
+}
