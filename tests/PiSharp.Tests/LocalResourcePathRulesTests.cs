@@ -24,4 +24,26 @@ public sealed class LocalResourcePathRulesTests
         Assert.Equal(expectedEnabled,
             LocalResourcePathRules.IsEnabledByOverrides(path, [exclude], baseDirectory));
     }
+
+    [Theory]
+    [InlineData("src/file.ts", "!src/@(file|test).ts", false)]
+    [InlineData("src/test.ts", "!src/+(file|test).ts", false)]
+    [InlineData("src/a.ts", "!src/?(a).ts", false)]
+    [InlineData("src/ab.ts", "!src/?(a).ts", true)]
+    [InlineData("src/aa.ts", "!src/*(a).ts", false)]
+    [InlineData("src/.config.json", "!src/@(.config|readme).json", false)]
+    [InlineData("src/foo.ts", "!src/@(f@(oo|oo)|bar).ts", false)]
+    [InlineData("src/b.ts", "!src/@(a|[b|c]).ts", false)]
+    [InlineData("src/foo.ts", "!src/!(bar).ts", false)]
+    [InlineData("src/bar.ts", "!src/!(bar).ts", true)]
+    [InlineData("src/foobar.ts", "!src/foo!(bar).ts", true)]
+    [InlineData("src/foobaz.ts", "!src/foo!(bar).ts", false)]
+    public void GlobOverridesFollowPiExtGlobRules(string relativePath, string exclude, bool expectedEnabled)
+    {
+        var baseDirectory = Path.Combine(Path.GetTempPath(), "pisharp-resource-extglob");
+        var path = Path.Combine(baseDirectory, relativePath.Replace('/', Path.DirectorySeparatorChar));
+
+        Assert.Equal(expectedEnabled,
+            LocalResourcePathRules.IsEnabledByOverrides(path, [exclude], baseDirectory));
+    }
 }

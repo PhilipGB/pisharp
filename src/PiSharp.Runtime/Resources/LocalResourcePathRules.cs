@@ -256,10 +256,63 @@ public static class LocalResourcePathRules
 
     private static bool SegmentMatch(string value, string pattern)
     {
-        var regex = new StringBuilder("^");
+        var regex = new StringBuilder("^").Append(CompileSegmentPattern(pattern));
+        regex.Append('$');
+        var options = RegexOptions.CultureInvariant | RegexOptions.Singleline;
+        if (OperatingSystem.IsWindows()) options |= RegexOptions.IgnoreCase;
+        try
+        {
+            return Regex.IsMatch(value, regex.ToString(), options, TimeSpan.FromMilliseconds(50));
+        }
+        catch (RegexMatchTimeoutException)
+        {
+            return false;
+        }
+    }
+
+    private static string CompileSegmentPattern(string pattern, int depth = 0)
+    {
+        const int maximumRegexLength = 16_384;
+        const int maximumExtGlobDepth = 64;
+        if (depth >= maximumExtGlobDepth) return Regex.Escape(pattern);
+
+        var regex = new StringBuilder();
         for (var index = 0; index < pattern.Length; index++)
         {
             var current = pattern[index];
+            if (IsExtGlobOperator(current) && index + 1 < pattern.Length && pattern[index + 1] == '(' &&
+                TryGetExtGlob(pattern, index, out var extGlobClose))
+            {
+                var alternatives = SplitExtGlobAlternatives(pattern[(index + 2)..extGlobClose]);
+                if (alternatives.Count > 256)
+                {
+                    regex.Append(Regex.Escape(pattern[index..(extGlobClose + 1)]));
+                    index = extGlobClose;
+                    continue;
+                }
+
+                var alternativesRegex = string.Join("|", alternatives.Select(alternative =>
+                    CompileSegmentPattern(alternative, depth + 1)));
+                if (alternativesRegex.Length > maximumRegexLength) return Regex.Escape(pattern);
+                switch (current)
+                {
+                    case '@': regex.Append("(?:").Append(alternativesRegex).Append(')'); break;
+                    case '?': regex.Append("(?:").Append(alternativesRegex).Append(")?"); break;
+                    case '*': regex.Append("(?:").Append(alternativesRegex).Append(")*"); break;
+                    case '+': regex.Append("(?:").Append(alternativesRegex).Append(")+"); break;
+                    case '!':
+                        var suffix = CompileSegmentPattern(pattern[(extGlobClose + 1)..], depth + 1);
+                        if (alternativesRegex.Length + suffix.Length * 2 > maximumRegexLength)
+                            return Regex.Escape(pattern);
+                        regex.Append("(?!(?:").Append(alternativesRegex).Append(")(?:")
+                            .Append(suffix).Append(")$).*").Append(suffix);
+                        return regex.ToString();
+                }
+                if (regex.Length > maximumRegexLength) return Regex.Escape(pattern);
+                index = extGlobClose;
+                continue;
+            }
+
             if (current == '*')
             {
                 regex.Append(".*");
@@ -288,10 +341,66 @@ public static class LocalResourcePathRules
             }
             else regex.Append(Regex.Escape(current.ToString()));
         }
-        regex.Append('$');
-        var options = RegexOptions.CultureInvariant | RegexOptions.Singleline;
-        if (OperatingSystem.IsWindows()) options |= RegexOptions.IgnoreCase;
-        return Regex.IsMatch(value, regex.ToString(), options, TimeSpan.FromMilliseconds(50));
+        return regex.Length > maximumRegexLength ? Regex.Escape(pattern) : regex.ToString();
+    }
+
+    private static bool IsExtGlobOperator(char character) => character is '@' or '+' or '?' or '*' or '!';
+
+    private static bool TryGetExtGlob(string pattern, int operatorIndex, out int close)
+    {
+        var depth = 0;
+        var inCharacterClass = false;
+        for (var index = operatorIndex + 2; index < pattern.Length; index++)
+        {
+            if (pattern[index] == '[') inCharacterClass = true;
+            else if (pattern[index] == ']' && inCharacterClass) inCharacterClass = false;
+            else if (!inCharacterClass && IsExtGlobOperator(pattern[index]) &&
+                index + 1 < pattern.Length && pattern[index + 1] == '(')
+            {
+                depth++;
+                index++;
+            }
+            else if (!inCharacterClass && pattern[index] == ')')
+            {
+                if (depth == 0)
+                {
+                    close = index;
+                    return true;
+                }
+                depth--;
+            }
+        }
+
+        close = -1;
+        return false;
+    }
+
+    private static IReadOnlyList<string> SplitExtGlobAlternatives(string pattern)
+    {
+        var alternatives = new List<string>();
+        var start = 0;
+        var depth = 0;
+        var inCharacterClass = false;
+        for (var index = 0; index < pattern.Length; index++)
+        {
+            if (pattern[index] == '[') inCharacterClass = true;
+            else if (pattern[index] == ']' && inCharacterClass) inCharacterClass = false;
+            else if (!inCharacterClass && IsExtGlobOperator(pattern[index]) &&
+                index + 1 < pattern.Length && pattern[index + 1] == '(')
+            {
+                depth++;
+                index++;
+            }
+            else if (!inCharacterClass && pattern[index] == ')') depth--;
+            else if (!inCharacterClass && depth == 0 && pattern[index] == '|')
+            {
+                alternatives.Add(pattern[start..index]);
+                start = index + 1;
+            }
+        }
+
+        alternatives.Add(pattern[start..]);
+        return alternatives;
     }
 
     private static bool IsHidden(string segment) => segment.Length > 0 && segment[0] == '.';
@@ -302,6 +411,12 @@ public static class LocalResourcePathRules
     private static bool PatternExplicitlyMatchesDot(string pattern)
     {
         if (pattern.Length > 0 && pattern[0] == '.') return true;
+        if (pattern.Length > 2 && IsExtGlobOperator(pattern[0]) && pattern[1] == '(' &&
+            TryGetExtGlob(pattern, 0, out var extGlobClose) && pattern[0] is ('@' or '+' or '?'))
+        {
+            return SplitExtGlobAlternatives(pattern[2..extGlobClose])
+                .Any(PatternExplicitlyMatchesDot);
+        }
         if (pattern.Length < 3 || pattern[0] != '[') return false;
         var close = pattern.IndexOf(']', 1);
         if (close < 0) return false;
