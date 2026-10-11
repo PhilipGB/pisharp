@@ -10,6 +10,52 @@ namespace PiSharp.Tests;
 public sealed class InteractiveTranscriptTests
 {
     [Fact]
+    public void LoadHistoryKeepsPiSpacerBetweenAssistantAndNextUserMessage()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        using var screen = new TerminalScreen(output, error, () => 80, () => 20);
+        var session = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        session.Append(new ChatMessage(ChatRole.User, "first user"));
+        session.Append(new ChatMessage(ChatRole.Assistant, "assistant reply"));
+        session.Append(new ChatMessage(ChatRole.User, "next user"));
+
+        new InteractiveTranscript(screen.Output, screen.Error, screen: screen).LoadHistory(session);
+
+        var frame = TerminalOutputFrameReader.Read(output.ToString(), rows: 20, columns: 80)[^1].Screen;
+        var rows = frame.Split(Environment.NewLine);
+        var assistantRow = Array.FindIndex(rows, row => row.Contains("assistant reply", StringComparison.Ordinal));
+        var nextUserRow = Array.FindIndex(rows, row => row.Contains("next user", StringComparison.Ordinal));
+
+        Assert.True(assistantRow >= 0);
+        Assert.True(nextUserRow > assistantRow);
+        Assert.Equal(3, nextUserRow - assistantRow);
+    }
+
+    [Fact]
+    public void LoadHistoryKeepsPiSpacerBeforeOutputAfterLastAssistantMessage()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        using var screen = new TerminalScreen(output, error, () => 80, () => 20);
+        var session = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        session.Append(new ChatMessage(ChatRole.User, "first user"));
+        session.Append(new ChatMessage(ChatRole.Assistant, "assistant reply"));
+
+        new InteractiveTranscript(screen.Output, screen.Error, screen: screen).LoadHistory(session);
+        screen.AppendUserMessage("next interactive user");
+
+        var frame = TerminalOutputFrameReader.Read(output.ToString(), rows: 20, columns: 80)[^1].Screen;
+        var rows = frame.Split(Environment.NewLine);
+        var assistantRow = Array.FindIndex(rows, row => row.Contains("assistant reply", StringComparison.Ordinal));
+        var nextUserRow = Array.FindIndex(rows, row => row.Contains("next interactive user", StringComparison.Ordinal));
+
+        Assert.True(assistantRow >= 0);
+        Assert.True(nextUserRow > assistantRow);
+        Assert.Equal(3, nextUserRow - assistantRow);
+    }
+
+    [Fact]
     public void InteractiveTranscriptStreamsAssistantTextAndFiltersTerminalControls()
     {
         using var output = new StringWriter();

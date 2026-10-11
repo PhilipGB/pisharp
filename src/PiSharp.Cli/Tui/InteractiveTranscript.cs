@@ -30,10 +30,13 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
         var messages = session.ActiveMessages();
         screen.ReplaceTranscript(target =>
         {
+            var assistantTextNeedsTurnSeparator = false;
             foreach (var message in messages)
             {
                 if (message.Role == ChatRole.User)
                 {
+                    if (assistantTextNeedsTurnSeparator) target.Output.WriteLine();
+                    assistantTextNeedsTurnSeparator = false;
                     target.AppendUserMessage(MessageText(message), message.Contents.OfType<DataContent>().ToArray());
                     continue;
                 }
@@ -42,9 +45,13 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
                     foreach (var content in message.Contents)
                     {
                         if (content is TextContent text && text.Text.Length > 0)
+                        {
                             target.CommitAssistantText(text.Text);
+                            assistantTextNeedsTurnSeparator = true;
+                        }
                         else if (content is FunctionCallContent call)
                         {
+                            assistantTextNeedsTurnSeparator = false;
                             toolNames[call.CallId] = call.Name;
                             var update = new AgentLifecycleEvent("tool_execution_started", Tool: call.Name,
                                 OperationId: call.CallId)
@@ -66,6 +73,7 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
                     continue;
                 }
                 if (message.Role != ChatRole.Tool) continue;
+                assistantTextNeedsTurnSeparator = false;
                 foreach (var result in message.Contents.OfType<FunctionResultContent>())
                 {
                     var images = result.Result is IReadOnlyList<AIContent> parts
@@ -81,6 +89,7 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
                         target.AppendToolResult(RenderNestedToolCalls(nested));
                 }
             }
+            if (assistantTextNeedsTurnSeparator) target.Output.WriteLine();
         });
     }
 

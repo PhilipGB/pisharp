@@ -26,9 +26,16 @@ for line in sys.stdin:
         if started_path:
             with open(started_path, "w", encoding="utf-8") as marker:
                 marker.write("started")
+        release_path = os.getenv("MCP_FIXTURE_INITIALIZE_RELEASE_PATH")
+        while release_path and not os.path.exists(release_path):
+            time.sleep(0.01)
         delay_ms = int(os.getenv("MCP_FIXTURE_INITIALIZE_DELAY_MS", "0"))
         if delay_ms > 0:
             time.sleep(delay_ms / 1000)
+        completed_path = os.getenv("MCP_FIXTURE_INITIALIZE_COMPLETED_PATH")
+        if completed_path:
+            with open(completed_path, "w", encoding="utf-8") as marker:
+                marker.write("completed")
         capabilities = {"resources": {}}
         if os.getenv("MCP_FIXTURE_RESOURCES_ONLY") != "1":
             capabilities["tools"] = {}
