@@ -2,7 +2,12 @@ namespace PiSharp.Cli.Tui;
 
 internal sealed record TerminalStartupDetail(string Name, IReadOnlyList<string> Items,
     IReadOnlyList<string>? ExpandedItems = null, bool ShowWhenQuiet = false,
-    bool ShowEachItemWhenQuiet = false);
+    bool ShowEachItemWhenQuiet = false,
+    IReadOnlyList<TerminalStartupDiagnosticLine>? DiagnosticLines = null,
+    string HeaderStyle = "mdHeading");
+
+internal sealed record TerminalStartupDiagnosticLine(string Text, int Indent, string Style,
+    string? Marker = null, string? MarkerStyle = null);
 
 internal sealed class TerminalStartupPresentation(QuietStartupMode? quietStartup, bool verbose,
     Func<string, string?>? getDisplayKeys = null)
@@ -53,8 +58,16 @@ internal sealed class TerminalStartupPresentation(QuietStartupMode? quietStartup
                 var sourceItems = expanded ? detail.ExpandedItems ?? detail.Items : detail.Items;
                 var items = sourceItems.Select(TerminalTextLayout.Sanitize)
                     .Select(item => item.Trim()).Where(item => item.Length > 0).ToArray();
-                if (items.Length == 0) continue;
-                rows.Add(" " + theme.Style("mdHeading", $"[{TerminalTextLayout.Sanitize(detail.Name)}]"));
+                if (items.Length == 0 && detail.DiagnosticLines is not { Count: > 0 }) continue;
+                if (detail.DiagnosticLines is { } diagnosticLines)
+                {
+                    rows.Add(theme.Style(detail.HeaderStyle, $"[{TerminalTextLayout.Sanitize(detail.Name)}]"));
+                    rows.AddRange(diagnosticLines.Select(line => RenderDiagnosticLine(theme, line)));
+                    rows.Add("");
+                    continue;
+                }
+
+                rows.Add(" " + theme.Style(detail.HeaderStyle, $"[{TerminalTextLayout.Sanitize(detail.Name)}]"));
                 rows.AddRange(expanded || detail.ShowEachItemWhenQuiet
                     ? items.Select(item => " " + theme.Style("dim", $"  {item}"))
                     : [" " + theme.Style("dim", $"  {string.Join(", ", items)}")]);
@@ -75,6 +88,15 @@ internal sealed class TerminalStartupPresentation(QuietStartupMode? quietStartup
             rows.Add("");
         }
         return string.Join('\n', rows);
+    }
+
+    private static string RenderDiagnosticLine(TerminalTheme theme, TerminalStartupDiagnosticLine line)
+    {
+        var indentation = new string(' ', Math.Max(0, line.Indent));
+        var text = TerminalTextLayout.Sanitize(line.Text);
+        if (line.Marker is null) return theme.Style(line.Style, indentation + text);
+        var marker = theme.Style(line.MarkerStyle ?? line.Style, TerminalTextLayout.Sanitize(line.Marker));
+        return theme.Style(line.Style, indentation) + marker + " " + text;
     }
 
     private IEnumerable<string> ExpandedHelp(TerminalTheme theme)

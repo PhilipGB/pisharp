@@ -1,10 +1,11 @@
 """Assert resource-scope behavior from a paired current-Pi terminal capture."""
 import argparse
-import gzip
 import json
 import re
 from pathlib import Path
-
+from assertion_evidence import load_assertion_evidence
+from thread_limits import apply_test_thread_limit
+apply_test_thread_limit()
 
 EXPECTED_SKILLS = ("project-only", "shared", "user-only", "temp-only", "unsafe&skill")
 PROJECT_SKILL = "/tmp/pisharp-terminal-fixture-workspace/resource-project/.pi/custom-skills/shared/SKILL.md"
@@ -46,7 +47,7 @@ def verify(paired_directory, calibration_directory):
     calibration_directory = Path(calibration_directory)
     paired_report = json.loads((paired_directory / "report.json").read_text())
     calibration_report = json.loads((calibration_directory / "report.json").read_text())
-    paired = json.loads(gzip.open(paired_directory / "120x40-dark-fullscreen.json.gz", "rt").read())
+    paired = load_assertion_evidence(paired_directory, paired_report["cases"][0])
     if not calibration_report.get("match") or not calibration_report["cases"][0].get("terminalMatch"):
         raise AssertionError("same-Pi calibration did not match after documented transient normalization")
 

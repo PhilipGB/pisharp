@@ -524,6 +524,29 @@ public readonly record struct TerminalMouseEvent(int Button, int Column, int Row
 /// <summary>Restores tty state after exceptions, EOF and normal exit. Only used with an attached terminal.</summary>
 internal sealed class TerminalMode : IDisposable
 {
+    private const string LinuxTermiosPrefix = "linux-termios:";
+    private const uint LinuxCanonical = 0x0002;
+    private const uint LinuxEcho = 0x0008;
+    private const uint LinuxSignal = 0x0001;
+    private const uint LinuxExtendedInput = 0x8000;
+    private const int LinuxVtimeIndex = 5;
+    private const int LinuxVminIndex = 6;
+    private const int LinuxTcsNow = 0;
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct LinuxTermios
+    {
+        public uint InputFlags;
+        public uint OutputFlags;
+        public uint ControlFlags;
+        public uint LocalFlags;
+        public byte LineDiscipline;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 32)]
+        public byte[] ControlCharacters;
+        public uint InputSpeed;
+        public uint OutputSpeed;
+    }
+
     private static readonly AsyncLocal<int> s_depth = new();
     private static readonly AsyncLocal<TerminalMode?> s_owner = new();
     private readonly string _original;
@@ -568,7 +591,12 @@ internal sealed class TerminalMode : IDisposable
             return;
         }
         if (_disposed) return;
-        try { WriteControl(_screen, "\u001b[?2004l"); }
+        var bracketedPasteDeferred = false;
+        try
+        {
+            bracketedPasteDeferred = !_suspended && _screen?.PrepareTerminalModeShutdown() == true;
+            if (!bracketedPasteDeferred) WriteControl(_screen, "\u001b[?2004l");
+        }
         finally
         {
             try { if (!_suspended) Stty(_original); }
@@ -641,6 +669,7 @@ internal sealed class TerminalMode : IDisposable
 
     private static string Stty(params string[] args)
     {
+        if (OperatingSystem.IsLinux()) return LinuxStty(args);
         using var process = new Process { StartInfo = new ProcessStartInfo("/bin/stty") { RedirectStandardOutput = true, RedirectStandardError = true } };
         foreach (var arg in args) process.StartInfo.ArgumentList.Add(arg);
         process.Start();
@@ -650,4 +679,66 @@ internal sealed class TerminalMode : IDisposable
         if (process.ExitCode != 0) throw new IOException($"stty: {error.Trim()}");
         return output;
     }
+
+    private static string LinuxStty(string[] args)
+    {
+        if (args.Length == 1 && args[0].StartsWith(LinuxTermiosPrefix, StringComparison.Ordinal))
+        {
+            var original = DeserializeLinuxTermios(args[0][LinuxTermiosPrefix.Length..]);
+            if (tcsetattr(0, LinuxTcsNow, ref original) != 0)
+                throw new IOException($"tcsetattr: {Marshal.GetLastPInvokeError()}");
+            return "";
+        }
+
+        if (tcgetattr(0, out var current) != 0)
+            throw new IOException($"tcgetattr: {Marshal.GetLastPInvokeError()}");
+        if (args.Length == 1 && args[0] == "-g") return LinuxTermiosPrefix + SerializeLinuxTermios(current);
+
+        current.LocalFlags &= ~(LinuxCanonical | LinuxEcho | LinuxSignal | LinuxExtendedInput);
+        current.ControlCharacters[LinuxVminIndex] = 1;
+        current.ControlCharacters[LinuxVtimeIndex] = 0;
+        if (tcsetattr(0, LinuxTcsNow, ref current) != 0)
+            throw new IOException($"tcsetattr: {Marshal.GetLastPInvokeError()}");
+        return "";
+    }
+
+    private static string SerializeLinuxTermios(LinuxTermios value)
+    {
+        using var stream = new MemoryStream();
+        using (var writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: true))
+        {
+            writer.Write(value.InputFlags);
+            writer.Write(value.OutputFlags);
+            writer.Write(value.ControlFlags);
+            writer.Write(value.LocalFlags);
+            writer.Write(value.LineDiscipline);
+            writer.Write(value.ControlCharacters);
+            writer.Write(value.InputSpeed);
+            writer.Write(value.OutputSpeed);
+        }
+        return Convert.ToBase64String(stream.ToArray());
+    }
+
+    private static LinuxTermios DeserializeLinuxTermios(string encoded)
+    {
+        using var stream = new MemoryStream(Convert.FromBase64String(encoded));
+        using var reader = new BinaryReader(stream, Encoding.UTF8, leaveOpen: true);
+        return new LinuxTermios
+        {
+            InputFlags = reader.ReadUInt32(),
+            OutputFlags = reader.ReadUInt32(),
+            ControlFlags = reader.ReadUInt32(),
+            LocalFlags = reader.ReadUInt32(),
+            LineDiscipline = reader.ReadByte(),
+            ControlCharacters = reader.ReadBytes(32),
+            InputSpeed = reader.ReadUInt32(),
+            OutputSpeed = reader.ReadUInt32()
+        };
+    }
+
+    [DllImport("libc", SetLastError = true)]
+    private static extern int tcgetattr(int fileDescriptor, out LinuxTermios termios);
+
+    [DllImport("libc", SetLastError = true)]
+    private static extern int tcsetattr(int fileDescriptor, int optionalActions, ref LinuxTermios termios);
 }

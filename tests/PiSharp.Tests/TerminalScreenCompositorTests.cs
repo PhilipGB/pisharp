@@ -94,6 +94,50 @@ public sealed class TerminalScreenCompositorTests
     }
 
     [Fact]
+    public void SlashCompletionDescriptionColumnFollowsTheLongestCommand()
+    {
+        var compositor = new TerminalScreenCompositor(new StringWriter(), new TerminalImageRenderer());
+        var theme = TerminalTheme.Default;
+        var suggestions = new[]
+        {
+            new EditorCompletionSuggestion("/skill:project-only", "[p] Project-only skill"),
+            new EditorCompletionSuggestion("/skill:unsafe&skill", "[t] Temporary-only skill")
+        };
+
+        var frame = compositor.Compose("/skill:", 7, null, null, "", "fixture-model",
+            overlay: null, scrollOffset: 0, columns: 100, height: 32,
+            new TranscriptSearchController(), new TerminalMouseRouter(), theme,
+            editorSuggestions: suggestions);
+
+        var selectedRow = Assert.Single(frame.Rows, row => row.StartsWith(
+            theme.Style("accent", "→ skill:project-only  [p] Project-only skill"), StringComparison.Ordinal));
+        var otherRow = Assert.Single(frame.Rows, row => row.StartsWith(
+            "  skill:unsafe&skill" + theme.Style("muted", "  [t] Temporary-only skill"), StringComparison.Ordinal));
+        Assert.Equal(100, TerminalTextLayout.Width(selectedRow));
+        Assert.Equal(100, TerminalTextLayout.Width(otherRow));
+    }
+
+    [Fact]
+    public void ClippedSlashCompletionResetsStyleBeforePaddingTheRow()
+    {
+        var compositor = new TerminalScreenCompositor(new StringWriter(), new TerminalImageRenderer());
+        var theme = TerminalTheme.Default;
+        var suggestions = new[]
+        {
+            new EditorCompletionSuggestion("/skill:long-description", new string('x', 200))
+        };
+
+        var frame = compositor.Compose("/skill:", 7, null, null, "", "fixture-model",
+            overlay: null, scrollOffset: 0, columns: 120, height: 40,
+            new TranscriptSearchController(), new TerminalMouseRouter(), theme,
+            editorSuggestions: suggestions);
+
+        var selectedRow = Assert.Single(frame.Rows, row => row.Contains("skill:long-description", StringComparison.Ordinal));
+        Assert.Equal(120, TerminalTextLayout.Width(selectedRow));
+        Assert.EndsWith("\u001b[0m  ", selectedRow);
+    }
+
+    [Fact]
     public void StartupHeaderStaysAboveTranscriptAndStatusNotifications()
     {
         var compositor = new TerminalScreenCompositor(new StringWriter(), new TerminalImageRenderer());
@@ -180,14 +224,23 @@ public sealed class TerminalScreenCompositorTests
         var details = new[]
         {
             new TerminalStartupDetail("Skills", ["shared", "project-only"]),
-            new TerminalStartupDetail("Skill conflicts", ["shared collision: project wins; user skipped"],
-                ShowWhenQuiet: true)
+            new TerminalStartupDetail("Skill conflicts", ["\"shared\" collision:", "project wins; user skipped"],
+                ShowWhenQuiet: true,
+                DiagnosticLines:
+                [
+                    new("\"shared\" collision:", 2, "warning"),
+                    new("project wins; user skipped", 4, "dim", "✓", "success")
+                ],
+                HeaderStyle: "warning")
         };
 
-        var content = presentation.BuildDetails(TerminalTheme.Default, 120, details, null, expanded: false);
+        var theme = TerminalTheme.Default;
+        var content = presentation.BuildDetails(theme, 120, details, null, expanded: false);
 
-        Assert.Contains("[Skill conflicts]", content);
-        Assert.Contains("shared collision: project wins; user skipped", content);
+        Assert.Contains(theme.Style("warning", "[Skill conflicts]"), content);
+        Assert.Contains(theme.Style("warning", "  \"shared\" collision:"), content);
+        Assert.Contains(theme.Style("dim", "    ") + theme.Style("success", "✓") +
+            " project wins; user skipped", content);
         Assert.DoesNotContain("[Skills]", content);
         Assert.DoesNotContain("project-only", content);
     }
@@ -209,30 +262,37 @@ public sealed class TerminalScreenCompositorTests
     }
 
     [Fact]
-    public void QuietStartupDiagnosticsRemainPinnedWhileTranscriptScrolls()
+    public void QuietStartupDiagnosticsScrollWithTheConversationDocument()
     {
         var compositor = new TerminalScreenCompositor(new StringWriter(), new TerminalImageRenderer());
         var presentation = new TerminalStartupPresentation(QuietStartupMode.Silent, verbose: false);
+        const string path = "/project/.pi/extension-themes";
         var detail = new TerminalStartupDetail("Theme conflicts",
-            ["/project/.pi/extension-themes", "theme path does not exist"],
-            ShowWhenQuiet: true, ShowEachItemWhenQuiet: true);
-        var pinned = presentation.BuildDetails(TerminalTheme.Default, 100, [detail], null,
-            expanded: false, persistentOnly: true);
-        var content = presentation.BuildDetails(TerminalTheme.Default, 100, [detail], null,
-            expanded: false, includePersistentDetails: false);
+            [path, "theme path does not exist"], ShowWhenQuiet: true, ShowEachItemWhenQuiet: true,
+            DiagnosticLines:
+            [
+                new(path, 2, "warning"),
+                new("theme path does not exist", 4, "warning")
+            ],
+            HeaderStyle: "warning");
+        var content = presentation.BuildDetails(TerminalTheme.Default, 100, [detail], null, expanded: false);
+        var messages = string.Join('\n', Enumerable.Range(1, 30).Select(index => $"message-{index}"));
 
-        var first = compositor.Compose("", 0, null, null, "first\nsecond\nthird", "fixture-model",
+        var recent = compositor.Compose("", 0, null, null, messages, "fixture-model",
             overlay: null, scrollOffset: 0, columns: 100, height: 16,
             new TranscriptSearchController(), new TerminalMouseRouter(), TerminalTheme.Default,
-            startupHeader: pinned, startupContent: content);
-        var scrolled = compositor.Compose("", 0, null, null, "first\nsecond\nthird", "fixture-model",
-            overlay: null, scrollOffset: 1, columns: 100, height: 16,
+            startupContent: content);
+        var history = compositor.Compose("", 0, null, null, messages, "fixture-model",
+            overlay: null, scrollOffset: 100, columns: 100, height: 16,
             new TranscriptSearchController(), new TerminalMouseRouter(), TerminalTheme.Default,
-            startupHeader: pinned, startupContent: content);
+            startupContent: content);
 
-        Assert.Equal(first.Rows[0], scrolled.Rows[0]);
-        Assert.Contains("[Theme conflicts]", scrolled.Rows[0]);
-        Assert.DoesNotContain("/project/.pi/extension-themes", content);
+        var recentText = string.Join('\n', recent.Rows);
+        var historyText = string.Join('\n', history.Rows);
+        Assert.Contains("message-30", recentText);
+        Assert.DoesNotContain("[Theme conflicts]", recentText);
+        Assert.Contains("[Theme conflicts]", historyText);
+        Assert.Contains(path, historyText);
     }
 
     [Fact]

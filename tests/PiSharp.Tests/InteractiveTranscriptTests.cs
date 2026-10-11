@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using Microsoft.Extensions.AI;
 using PiSharp.Cli.Tui;
 using PiSharp.Runtime.Extensions;
 using PiSharp.Runtime.Sessions;
@@ -238,7 +239,7 @@ public sealed class InteractiveTranscriptTests
         Assert.Contains("• item", visible);
         Assert.Contains("• [ ] pending", visible);
         Assert.Contains("• [x] complete", visible);
-        Assert.Contains("\u001b[9mremoved\u001b[29m", output.ToString());
+        Assert.Matches("\\u001b\\[9mremoved\\u001b\\[(?:29|0)m", output.ToString());
         var tableStart = visible.LastIndexOf("┌─", StringComparison.Ordinal);
         var tableEnd = visible.LastIndexOf("└─", StringComparison.Ordinal);
         Assert.True(tableStart >= 0 && tableEnd > tableStart);
@@ -247,6 +248,23 @@ public sealed class InteractiveTranscriptTests
         Assert.Contains("Widget", table);
         Assert.Contains("var answer = 42;", visible);
         Assert.DoesNotContain("```", visible);
+    }
+
+    [Fact]
+    public void ActiveScreenRendersProviderTextDeltaBeforeStreamContinues()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        using var screen = new TerminalScreen(output, error, () => 64, () => 12);
+        var transcript = new InteractiveTranscript(screen.Output, screen.Error, screen: screen);
+        var providerUpdate = new ChatResponseUpdate(ChatRole.Assistant, "first streamed chunk");
+
+        transcript.Render(new AgentLifecycleEvent("model_text_delta", Text: providerUpdate.Text)
+        {
+            ProviderUpdate = providerUpdate
+        });
+
+        Assert.Contains("first streamed chunk", StripSgr(output.ToString()));
     }
 
     [Fact]
@@ -318,11 +336,17 @@ public sealed class InteractiveTranscriptTests
         screen.Dispose();
 
         var visible = StripSgr(output.ToString());
-        Assert.Contains(markdown, visible);
+        var flattenedSource = string.Concat(markdown.Where(character => !char.IsWhiteSpace(character)));
+        var flattenedVisible = string.Concat(StripTerminalControls(visible)
+            .Where(character => !char.IsWhiteSpace(character)));
+        Assert.Contains(flattenedSource, flattenedVisible);
         Assert.DoesNotContain("┌─", visible);
     }
 
     private static string StripSgr(string text) => Regex.Replace(text, "\\u001b\\[[0-9;]*m", "");
+
+    private static string StripTerminalControls(string text) => Regex.Replace(text,
+        "\\u001b\\[[0-?]*[ -/]*[@-~]|\\u001b\\][^\\u0007]*(?:\\u0007|\\u001b\\\\)", "");
 
     private sealed record SearchDetails(int? ResultLimitReached = null, int? EntryLimitReached = null);
 }

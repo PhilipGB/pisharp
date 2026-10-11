@@ -50,6 +50,17 @@ public sealed class ConversationRun
     public bool AutoCompactionEnabled => Volatile.Read(ref _autoCompactionEnabled) != 0;
     public bool IsCompacting => _compactionCoordinator.IsCompacting;
     public int? ContextWindowTokens { get { lock (_runtimeStateGate) return _agent.HasVirtualModelRouter ? _successfulPhysicalContextWindow : _autoCompaction?.ContextWindowTokens; } }
+    public int? EstimatedContextTokens
+    {
+        get
+        {
+            var projection = Conversation.ProjectContextUsageForEstimate();
+            if (projection.HasCompaction && !projection.HasValidAssistantUsage) return null;
+            return projection.HasValidAssistantUsage && !projection.IsInvalidated
+                ? _agent.EstimateContextTokens(projection.UsageTokens, projection.TrailingMessages)
+                : _agent.EstimateContextTokens(Conversation.ContextMessages());
+        }
+    }
     public string CurrentModel { get { lock (_runtimeStateGate) return _currentModel; } }
     public string? CurrentProvider { get { lock (_runtimeStateGate) return _currentProvider; } }
     public UsageRecord CurrentProviderUsage(UsageDetails usage)

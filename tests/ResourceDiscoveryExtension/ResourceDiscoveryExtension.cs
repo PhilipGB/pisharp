@@ -82,9 +82,24 @@ public sealed class HiddenSkillReaderFixture : IPiSharpExtension
         if (hiddenDeclarations is not { Length: > 0 }) return;
 
         registration.AddTool(new PiSharpToolRegistration(
-            AIFunctionFactory.Create(() => "hidden-reader fixture", name: "hidden_skill_reader_fixture"),
+            new HiddenSkillReaderFunction(AIFunctionFactory.Create(() => "hidden-reader fixture",
+                name: "hidden_skill_reader_fixture", description: "Fixture tool for hidden skill-reader prompt tests.")),
             ToolExposure.ModelOnly,
-            PrepareLoadout: _ => new ToolLoadoutChanges(HiddenDeclarations: hiddenDeclarations),
-            PromptSnippet: "Fixture tool for hidden skill-reader prompt tests."));
+            PrepareLoadout: _ => new ToolLoadoutChanges(HiddenDeclarations: hiddenDeclarations)));
+    }
+
+    private sealed class HiddenSkillReaderFunction(AIFunction inner) : DelegatingAIFunction(inner)
+    {
+        private static readonly JsonElement s_schema = CreateSchema();
+
+        public override JsonElement JsonSchema => s_schema;
+
+        private static JsonElement CreateSchema()
+        {
+            using var document = JsonDocument.Parse("""
+                {"type":"object","properties":{},"additionalProperties":false}
+                """);
+            return document.RootElement.Clone();
+        }
     }
 }

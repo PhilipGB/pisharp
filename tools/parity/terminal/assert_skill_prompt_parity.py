@@ -1,10 +1,13 @@
 """Assert current-Pi skill prompt and expansion behavior from paired PTY captures."""
 import argparse
-import gzip
 import json
 import re
 from pathlib import Path
 
+from assertion_evidence import load_assertion_evidence
+from compare import HTTP_DOCUMENTATION_PATH_NORMALIZATION, normalize_documentation_install_paths
+from thread_limits import apply_test_thread_limit
+apply_test_thread_limit()
 
 HINTS = {
     "read": "Use the read tool to load a skill's file",
@@ -52,6 +55,39 @@ def user_skill_messages(request):
     return messages
 
 
+def normalized_request(request):
+    result = json.loads(json.dumps(request))
+    for message in result.get("body", {}).get("messages", []):
+        if message.get("role") == "system":
+            content = message.get("content")
+            if isinstance(content, str):
+                message["content"] = normalize_documentation_install_paths(content)
+            elif isinstance(content, list):
+                for part in content:
+                    if isinstance(part, dict) and isinstance(part.get("text"), str):
+                        part["text"] = normalize_documentation_install_paths(part["text"])
+    return result
+
+
+def difference_paths(left, right, path="$", output=None):
+    output = [] if output is None else output
+    if isinstance(left, dict) and isinstance(right, dict):
+        for key in sorted(left.keys() | right.keys()):
+            child = f"{path}.{key}"
+            if key not in left or key not in right:
+                output.append(child)
+            else:
+                difference_paths(left[key], right[key], child, output)
+    elif isinstance(left, list) and isinstance(right, list):
+        if len(left) != len(right):
+            output.append(f"{path}.length")
+        for index, (left_item, right_item) in enumerate(zip(left, right)):
+            difference_paths(left_item, right_item, f"{path}[{index}]", output)
+    elif left != right:
+        output.append(path)
+    return output
+
+
 def verify_mode(mode, paired_root, calibration_report_path):
     paired_root = Path(paired_root)
     report = json.loads((paired_root / "report.json").read_text())
@@ -61,18 +97,43 @@ def verify_mode(mode, paired_root, calibration_report_path):
     if not calibration.get("match") or not calibration_case.get("terminalMatch"):
         raise AssertionError("same-Pi calibration did not match")
 
-    with gzip.open(paired_root / case["evidence"], "rt", encoding="utf-8") as stream:
-        capture = json.load(stream)
+    capture = load_assertion_evidence(paired_root, case)
     products = {name: capture[name] for name in ("pi", "pisharp")}
     requests = {name: chat_requests(product) for name, product in products.items()}
     if any(product.get("scenarioError") for product in products.values()):
         raise AssertionError({name: product.get("scenarioError") for name, product in products.items()})
     if len(requests["pi"]) != len(requests["pisharp"]) or not requests["pi"]:
         raise AssertionError("Pi and PiSharp provider request counts differ or are empty")
+    normalized_requests = {
+        name: [normalized_request(request) for request in product_requests]
+        for name, product_requests in requests.items()
+    }
+    dialogue_traces = {
+        name: [request["body"].get("messages", []) for request in product_requests]
+        for name, product_requests in normalized_requests.items()
+    }
+    if dialogue_traces["pi"] != dialogue_traces["pisharp"]:
+        raise AssertionError("Pi and PiSharp provider messages differ beyond generated documentation install paths")
+    normalized_request_differences = sorted({
+        path
+        for pi_request, pisharp_request in zip(normalized_requests["pi"], normalized_requests["pisharp"], strict=True)
+        for path in difference_paths(pi_request, pisharp_request)
+    })
 
     if mode == "reload":
         if len(requests["pi"]) != 2:
             raise AssertionError(f"expected two reload requests, found {len(requests['pi'])}")
+        initial_pi = user_skill_messages(requests["pi"][0])
+        initial_pisharp = user_skill_messages(requests["pisharp"][0])
+        initial_path = "/tmp/pisharp-terminal-fixture-workspace/legacy-skills-reload-project/.pi/legacy-skills/initial-legacy-skill/SKILL.md"
+        initial_directory = "/tmp/pisharp-terminal-fixture-workspace/legacy-skills-reload-project/.pi/legacy-skills/initial-legacy-skill"
+        expected_initial = (
+            f'<skill name="initial-legacy-skill" location="{initial_path}">\n'
+            f"References are relative to {initial_directory}.\n\n"
+            "Initial legacy skill body marker.\n</skill>\n\nfirst-argument"
+        )
+        if initial_pi != [expected_initial] or initial_pisharp != initial_pi:
+            raise AssertionError("manual /skill:name invocation did not expand while skill autocomplete was disabled")
         prompt_pairs = list(zip(
             [request_system_prompt(request) for request in requests["pi"]],
             [request_system_prompt(request) for request in requests["pisharp"]],
@@ -97,7 +158,8 @@ def verify_mode(mode, paired_root, calibration_report_path):
             if marker not in message or not message.endswith("\n\n" +
                     ("first-argument" if name == "initial-legacy-skill" else "second-argument")):
                 raise AssertionError(f"{name} expansion body or trimmed argument differs")
-        behavior = dict(mode=mode, advertisementMatchedPerRequest=True,
+        behavior = dict(mode=mode, manualInvocationWorksWhileAutocompleteDisabled=True,
+                        advertisementMatchedPerRequest=True,
                         advertisementUpdatedAfterReload=True, expandedMessagesMatched=True,
                         chatRequestCount=2)
     else:
@@ -124,9 +186,17 @@ def verify_mode(mode, paired_root, calibration_report_path):
         expected_names = ["shared", "project-only", "user-only", "temp-only", "unsafe&skill"]
         if "hidden-" in report["fixture"]:
             expected_names = ["shared"]
-            argument = "argument-marker"
+            arguments = {"shared": "argument-marker"}
+        elif report["fixture"] == "resource-skill-prompt-read-bash":
+            arguments = {
+                "shared": "shared<&> marker",
+                "project-only": "project<&> marker",
+                "user-only": "user<&> marker",
+                "temp-only": "temp<&> marker",
+                "unsafe&skill": "unsafe<&> marker",
+            }
         else:
-            argument = "argument<&> marker"
+            arguments = {name: "argument<&> marker" for name in expected_names}
         actual_names = [re.search(r'^<skill name="([^"]+)"', text).group(1) for text in pi_expanded]
         if actual_names != expected_names:
             raise AssertionError(f"expanded skills are {actual_names}, expected {expected_names}")
@@ -151,7 +221,7 @@ def verify_mode(mode, paired_root, calibration_report_path):
             path, directory, body = expansion_metadata[name]
             expected = (f'<skill name="{name}" location="{path}">\n'
                         f"References are relative to {directory}.\n\n{body}\n</skill>\n\n"
-                        + argument)
+                        + arguments[name])
             if text != expected:
                 raise AssertionError(f"{name} expansion envelope, body whitespace, path or trimmed argument differs")
         if mode == "read":
@@ -167,6 +237,9 @@ def verify_mode(mode, paired_root, calibration_report_path):
 
     return dict(piSha=report["piSha"], pisharpSha=report["pisharpSha"], fixture=report["fixture"],
                 behavior=behavior, samePiCalibration=True,
+                dialogueTraceMatch=True,
+                normalizedRequestDifferences=normalized_request_differences,
+                httpNormalization=HTTP_DOCUMENTATION_PATH_NORMALIZATION,
                 fullTerminalMatch=case["terminalMatch"], fullHttpMatch=case["httpMatch"],
                 rawMatch=case["rawMatch"], renderDifferences=case["renderDifferences"],
                 controlBoundaryDifferenceCount=case["controlBoundaryDifferenceCount"],

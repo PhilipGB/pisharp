@@ -1,5 +1,6 @@
 {
   "id": "resource-skill-precedence",
+  "assertionFrames": ["startup", "loaded-resource-slash-commands"],
   "workingDirectory": "resource-project",
   "settings": {
     "quietStartup": true,

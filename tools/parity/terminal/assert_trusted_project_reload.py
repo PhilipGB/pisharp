@@ -2,11 +2,12 @@
 """Assert trusted project tools and skill behavior in paired terminal captures."""
 import argparse
 import hashlib
-import gzip
 import json
 import re
 from pathlib import Path
-
+from assertion_evidence import load_assertion_evidence
+from thread_limits import apply_test_thread_limit
+apply_test_thread_limit()
 
 def chat_requests(run):
     return [request for request in run['http']
@@ -101,8 +102,8 @@ def main():
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
     report = json.loads(args.report.read_text())
-    with gzip.open(args.capture, 'rt', encoding='utf-8') as stream:
-        capture = json.load(stream)
+    case = report['cases'][0]
+    capture = load_assertion_evidence(args.report.parent, case)
     behavioral = {product: inspect_product(capture[product]) for product in ('pi', 'pisharp')}
     if behavioral['pi']['toolNamesByRequest'] != behavioral['pisharp']['toolNamesByRequest']:
         raise AssertionError('Pi and PiSharp active tool names differ across reload')

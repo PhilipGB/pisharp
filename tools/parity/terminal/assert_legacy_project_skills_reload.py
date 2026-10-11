@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Assert that trusted-project legacy skills paths and command completion reload live."""
 import argparse
-import gzip
 import json
 from pathlib import Path
-
+from assertion_evidence import load_assertion_evidence
+from thread_limits import apply_test_thread_limit
+apply_test_thread_limit()
 
 def chat_requests(run):
     return [request for request in run['http']
@@ -114,8 +115,8 @@ def main():
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
     report = json.loads(args.report.read_text())
-    with gzip.open(args.capture, 'rt', encoding='utf-8') as stream:
-        capture = json.load(stream)
+    case = report['cases'][0]
+    capture = load_assertion_evidence(args.report.parent, case)
     behavior = {product: inspect_product(capture[product]) for product in ('pi', 'pisharp')}
     if behavior['pi'] != behavior['pisharp']:
         raise AssertionError('Pi and PiSharp legacy skill prompts or reload behavior differ')
@@ -124,7 +125,6 @@ def main():
         case = json.loads(args.calibration_report.read_text())['cases'][0]
         calibration = dict(terminalMatch=case['terminalMatch'], httpMatch=case['httpMatch'],
                            renderDifferences=case['renderDifferences'], scenarioErrors=case['scenarioErrors'])
-    case = report['cases'][0]
     result = dict(piSha=report['piSha'], pisharpSha=report['pisharpSha'],
                   fixture=report['fixture'], behaviorMatch=True, behavior=behavior,
                   fullTerminalMatch=case['terminalMatch'], fullHttpMatch=case['httpMatch'],

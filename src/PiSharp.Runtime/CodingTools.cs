@@ -20,6 +20,12 @@ public sealed class CodingTools
     private const double MaxTimeoutSeconds = int.MaxValue / 1000d;
     private static readonly TimeSpan s_stdioIdleGrace = TimeSpan.FromMilliseconds(100);
     private static readonly JsonElement s_readToolSchema = CreateReadToolSchema();
+    private static readonly JsonElement s_bashToolSchema = CreateBashToolSchema();
+    private static readonly JsonElement s_writeToolSchema = CreateWriteToolSchema();
+    private static readonly JsonElement s_editToolSchema = CreateEditToolSchema();
+    private const string BashToolDescription = "Execute a bash command in the current working directory. Returns stdout and stderr. Output is truncated to last 2000 lines or 50KB (whichever is hit first). If truncated, full output is saved to a temp file. Optionally provide a timeout in seconds.";
+    private const string WriteToolDescription = "Write content to a file. Creates the file if it doesn't exist, overwrites if it does. Automatically creates parent directories.";
+    private const string EditToolDescription = "Edit a single file using exact text replacement. Every edits[].oldText must match a unique, non-overlapping region of the original file. If two changes affect the same block or nearby lines, merge them into one edit instead of emitting overlapping edits. Do not include large unchanged regions just to connect distant changes.";
     private static readonly string[] s_piSessionEnvironmentNames =
         ["PI_SESSION_ID", "PI_SESSION_FILE", "PI_PROVIDER", "PI_MODEL", "PI_REASONING_LEVEL"];
     private readonly string _cwd;
@@ -65,9 +71,9 @@ public sealed class CodingTools
         return Array.AsReadOnly<AITool>(
         [
             new ReadToolFunction(AIFunctionFactory.Create(ReadForTool, name: "read")),
-            AIFunctionFactory.Create(BashForTool, name: "bash"),
-            AIFunctionFactory.Create(EditForTool, name: "edit"),
-            AIFunctionFactory.Create(Write, name: "write"),
+            new BashToolFunction(AIFunctionFactory.Create(BashForTool, name: "bash")),
+            new EditToolFunction(AIFunctionFactory.Create(EditForTool, name: "edit")),
+            new WriteToolFunction(AIFunctionFactory.Create(Write, name: "write")),
             AIFunctionFactory.Create(search.GrepForTool, name: "grep"),
             AIFunctionFactory.Create(search.FindForTool, name: "find"),
             AIFunctionFactory.Create(listing.ListForTool, name: "ls")
@@ -143,9 +149,104 @@ public sealed class CodingTools
         return document.RootElement.Clone();
     }
 
+    private static JsonElement CreateBashToolSchema()
+    {
+        using var document = JsonDocument.Parse("""
+            {
+              "type": "object",
+              "required": ["command"],
+              "properties": {
+                "command": {
+                  "type": "string",
+                  "description": "Shell command to execute"
+                },
+                "timeout": {
+                  "type": "number",
+                  "description": "Timeout in seconds (optional, no default timeout)"
+                }
+              }
+            }
+            """);
+        return document.RootElement.Clone();
+    }
+
+    private static JsonElement CreateWriteToolSchema()
+    {
+        using var document = JsonDocument.Parse("""
+            {
+              "type": "object",
+              "required": ["path", "content"],
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "description": "Path to the file to write (relative or absolute)"
+                },
+                "content": {
+                  "type": "string",
+                  "description": "Content to write to the file"
+                }
+              }
+            }
+            """);
+        return document.RootElement.Clone();
+    }
+
+    private static JsonElement CreateEditToolSchema()
+    {
+        using var document = JsonDocument.Parse("""
+            {
+              "type": "object",
+              "required": ["path", "edits"],
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "description": "Path to the file to edit (relative or absolute)"
+                },
+                "edits": {
+                  "type": "array",
+                  "description": "One or more targeted replacements. Each edit is matched against the original file, not incrementally. Do not include overlapping or nested edits. If two changes touch the same block or nearby lines, merge them into one edit instead.",
+                  "items": {
+                    "type": "object",
+                    "required": ["oldText", "newText"],
+                    "properties": {
+                      "oldText": {
+                        "type": "string",
+                        "description": "Exact text for one targeted replacement. It must be unique in the original file and must not overlap with any other edits[].oldText in the same call."
+                      },
+                      "newText": {
+                        "type": "string",
+                        "description": "Replacement text for this targeted edit."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+            """);
+        return document.RootElement.Clone();
+    }
+
     private sealed class ReadToolFunction(AIFunction inner) : DelegatingAIFunction(inner)
     {
         public override JsonElement JsonSchema => s_readToolSchema;
+    }
+
+    private sealed class BashToolFunction(AIFunction inner) : DelegatingAIFunction(inner)
+    {
+        public override string Description => BashToolDescription;
+        public override JsonElement JsonSchema => s_bashToolSchema;
+    }
+
+    private sealed class WriteToolFunction(AIFunction inner) : DelegatingAIFunction(inner)
+    {
+        public override string Description => WriteToolDescription;
+        public override JsonElement JsonSchema => s_writeToolSchema;
+    }
+
+    private sealed class EditToolFunction(AIFunction inner) : DelegatingAIFunction(inner)
+    {
+        public override string Description => EditToolDescription;
+        public override JsonElement JsonSchema => s_editToolSchema;
     }
 
     private async Task<ReadToolOutput> ReadCoreAsync(string path, int offset, int? limit, CancellationToken cancellationToken)
@@ -277,10 +378,10 @@ public sealed class CodingTools
         }
     }
 
-    [Description("Execute a bash command in the current working directory. Returns stdout and stderr. Output is truncated to the last 2000 lines or 50KB, whichever is hit first. If truncated, full output is saved to a temp file. The shell receives PI_SESSION_ID, PI_SESSION_FILE when saved, PI_PROVIDER, PI_MODEL and PI_REASONING_LEVEL for the current run.")]
+    [Description("Execute a bash command in the current working directory. Returns stdout and stderr. Output is truncated to last 2000 lines or 50KB (whichever is hit first). If truncated, full output is saved to a temp file. Optionally provide a timeout in seconds.")]
     private async Task<Extensions.PiSharpToolResult> BashForTool(
-        [Description("Shell command to execute.")] string command,
-        [Description("Optional timeout in seconds; no default timeout.")] double? timeout = null,
+        [Description("Shell command to execute")] string command,
+        [Description("Timeout in seconds (optional, no default timeout)")] double? timeout = null,
         AIFunctionArguments? arguments = null,
         CancellationToken cancellationToken = default)
     {

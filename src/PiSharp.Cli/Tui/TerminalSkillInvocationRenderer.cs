@@ -7,13 +7,14 @@ internal static class TerminalSkillInvocationRenderer
     private const string Reset = "\u001b[0m";
 
     public static string RenderSkill(TerminalSkillInvocation skill, int width, TerminalTheme theme,
-        string expandKeyLabel, string markdownCodeBlockIndent, bool expanded)
+        string expandKeyLabel, string markdownCodeBlockIndent, bool expanded, bool includeLeadingSpacer = false)
     {
         ArgumentNullException.ThrowIfNull(skill);
         ArgumentNullException.ThrowIfNull(theme);
         width = Math.Max(1, width);
 
         var output = new StringBuilder();
+        if (includeLeadingSpacer) output.Append('\n');
         AppendPaddedRow(output, "", width, theme, "customMessageBg");
         output.Append('\n');
 
@@ -49,16 +50,16 @@ internal static class TerminalSkillInvocationRenderer
     }
 
     public static string RenderUserMessage(string text, int width, TerminalTheme theme,
-        string markdownCodeBlockIndent)
+        string markdownCodeBlockIndent, bool includeLeadingSpacer = true)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(text);
+        ArgumentNullException.ThrowIfNull(text);
         ArgumentNullException.ThrowIfNull(theme);
         width = Math.Max(1, width);
 
         var markdown = TerminalMarkdownRenderer.Render(text, Math.Max(1, width - 2), theme,
             markdownCodeBlockIndent, "userMessageText");
         var output = new StringBuilder();
-        output.Append('\n');
+        if (includeLeadingSpacer) output.Append('\n');
         AppendPaddedRow(output, "", width, theme, "userMessageBg");
         output.Append('\n');
         foreach (var (line, continuation) in WrapLines(markdown, Math.Max(1, width - 2)))

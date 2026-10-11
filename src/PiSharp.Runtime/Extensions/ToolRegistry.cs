@@ -49,11 +49,13 @@ public sealed class ToolLoadoutSnapshot
     internal ToolLoadoutSnapshot(
         IReadOnlyList<PiSharpToolRegistration> registered,
         IReadOnlyList<PiSharpToolRegistration> callable,
+        IReadOnlyList<PiSharpToolDeclaration> transcriptDeclarations,
         IReadOnlyList<PiSharpToolDeclaration> declared,
         IReadOnlyList<string> activeToolNames)
     {
         Registered = Array.AsReadOnly(registered.ToArray());
         Callable = Array.AsReadOnly(callable.ToArray());
+        TranscriptDeclarations = Array.AsReadOnly(transcriptDeclarations.ToArray());
         Declared = Array.AsReadOnly(declared.ToArray());
         ActiveToolNames = Array.AsReadOnly(activeToolNames.ToArray());
         _byName = new System.Collections.ObjectModel.ReadOnlyDictionary<string, PiSharpToolRegistration>(
@@ -68,6 +70,9 @@ public sealed class ToolLoadoutSnapshot
 
     /// <summary>Declarations included in the current model request.</summary>
     public IReadOnlyList<PiSharpToolDeclaration> Declared { get; }
+
+    /// <summary>Declarations Pi accounts for in the session transcript before request-only hiding.</summary>
+    public IReadOnlyList<PiSharpToolDeclaration> TranscriptDeclarations { get; }
 
     /// <summary>The active tool set before declaration-only projections are applied.</summary>
     public IReadOnlyList<string> ActiveToolNames { get; }
@@ -173,8 +178,10 @@ public sealed class PiSharpToolRegistry
             ToolExposure.CodeMode or ToolExposure.Deferred => registration.AllowNestedInvocation,
             _ => false
         }).ToArray();
-        var initial = new ToolLoadoutSnapshot(state.Registrations.ToArray(), callable, declared.Select(registration =>
-            new PiSharpToolDeclaration(registration, registration.Function.Description ?? string.Empty)).ToArray(), activeNames);
+        var initialDeclarations = declared.Select(registration =>
+            new PiSharpToolDeclaration(registration, registration.Function.Description ?? string.Empty)).ToArray();
+        var initial = new ToolLoadoutSnapshot(state.Registrations.ToArray(), callable,
+            initialDeclarations, initialDeclarations, activeNames);
 
         var descriptions = new Dictionary<string, string>(StringComparer.Ordinal);
         var hiddenDeclarations = new HashSet<string>(StringComparer.Ordinal);
@@ -197,13 +204,15 @@ public sealed class PiSharpToolRegistry
                 }
         }
 
-        var projectedDeclarations = initial.Declared
-            .Where(declaration => !hiddenDeclarations.Contains(declaration.Registration.Function.Name))
+        var transcriptDeclarations = initial.Declared
             .Select(declaration => descriptions.TryGetValue(declaration.Registration.Function.Name, out var description)
                 ? declaration with { Description = description }
                 : declaration)
             .ToArray();
-        return new ToolLoadoutSnapshot(state.Registrations.ToArray(), callable, projectedDeclarations, activeNames);
+        var projectedDeclarations = transcriptDeclarations
+            .Where(declaration => !hiddenDeclarations.Contains(declaration.Registration.Function.Name)).ToArray();
+        return new ToolLoadoutSnapshot(state.Registrations.ToArray(), callable, transcriptDeclarations,
+            projectedDeclarations, activeNames);
     }
 
     internal static bool IsActiveByDefault(PiSharpToolRegistration registration) =>

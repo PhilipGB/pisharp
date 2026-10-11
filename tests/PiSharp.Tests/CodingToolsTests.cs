@@ -37,6 +37,66 @@ public sealed class CodingToolsTests : IDisposable
     }
 
     [Fact]
+    public void BashToolDeclarationMatchesCurrentPiProviderContract()
+    {
+        var bash = Assert.Single(new CodingTools(_dir).CreateAll().OfType<AIFunction>(), function => function.Name == "bash");
+
+        Assert.Equal("Execute a bash command in the current working directory. Returns stdout and stderr. Output is truncated to last 2000 lines or 50KB (whichever is hit first). If truncated, full output is saved to a temp file. Optionally provide a timeout in seconds.", bash.Description);
+
+        var schema = bash.JsonSchema;
+        Assert.Equal("object", schema.GetProperty("type").GetString());
+        Assert.False(schema.TryGetProperty("additionalProperties", out _));
+        Assert.Equal("command", schema.GetProperty("required")[0].GetString());
+        var properties = schema.GetProperty("properties");
+        Assert.Equal("Shell command to execute", properties.GetProperty("command").GetProperty("description").GetString());
+        Assert.Equal("string", properties.GetProperty("command").GetProperty("type").GetString());
+        Assert.Equal("Timeout in seconds (optional, no default timeout)", properties.GetProperty("timeout").GetProperty("description").GetString());
+        Assert.Equal("number", properties.GetProperty("timeout").GetProperty("type").GetString());
+        Assert.False(properties.GetProperty("timeout").TryGetProperty("default", out _));
+    }
+
+    [Fact]
+    public void WriteAndEditToolDeclarationsMatchCurrentPiProviderContract()
+    {
+        var functions = new CodingTools(_dir).CreateAll().OfType<AIFunction>().ToDictionary(function => function.Name);
+        var write = functions["write"];
+        Assert.Equal("Write content to a file. Creates the file if it doesn't exist, overwrites if it does. Automatically creates parent directories.",
+            write.Description);
+
+        var writeSchema = write.JsonSchema;
+        Assert.Equal("object", writeSchema.GetProperty("type").GetString());
+        Assert.False(writeSchema.TryGetProperty("additionalProperties", out _));
+        Assert.Equal(["path", "content"], writeSchema.GetProperty("required").EnumerateArray()
+            .Select(value => value.GetString()));
+        var writeProperties = writeSchema.GetProperty("properties");
+        Assert.Equal("Path to the file to write (relative or absolute)",
+            writeProperties.GetProperty("path").GetProperty("description").GetString());
+        Assert.Equal("Content to write to the file", writeProperties.GetProperty("content").GetProperty("description").GetString());
+
+        var edit = functions["edit"];
+        Assert.Equal("Edit a single file using exact text replacement. Every edits[].oldText must match a unique, non-overlapping region of the original file. If two changes affect the same block or nearby lines, merge them into one edit instead of emitting overlapping edits. Do not include large unchanged regions just to connect distant changes.",
+            edit.Description);
+
+        var editSchema = edit.JsonSchema;
+        Assert.Equal("object", editSchema.GetProperty("type").GetString());
+        Assert.False(editSchema.TryGetProperty("additionalProperties", out _));
+        Assert.Equal(["path", "edits"], editSchema.GetProperty("required").EnumerateArray()
+            .Select(value => value.GetString()));
+        var editProperties = editSchema.GetProperty("properties");
+        Assert.Equal("Path to the file to edit (relative or absolute)",
+            editProperties.GetProperty("path").GetProperty("description").GetString());
+        var edits = editProperties.GetProperty("edits");
+        Assert.Equal("One or more targeted replacements. Each edit is matched against the original file, not incrementally. Do not include overlapping or nested edits. If two changes touch the same block or nearby lines, merge them into one edit instead.",
+            edits.GetProperty("description").GetString());
+        var editItem = edits.GetProperty("items");
+        Assert.False(editItem.TryGetProperty("additionalProperties", out _));
+        Assert.Equal("Exact text for one targeted replacement. It must be unique in the original file and must not overlap with any other edits[].oldText in the same call.",
+            editItem.GetProperty("properties").GetProperty("oldText").GetProperty("description").GetString());
+        Assert.Equal("Replacement text for this targeted edit.",
+            editItem.GetProperty("properties").GetProperty("newText").GetProperty("description").GetString());
+    }
+
+    [Fact]
     public async Task WriteReadAndEditResolveAgainstWorkingDirectory()
     {
         var tools = new CodingTools(_dir);

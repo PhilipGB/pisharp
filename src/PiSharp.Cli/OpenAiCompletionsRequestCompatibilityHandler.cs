@@ -58,10 +58,11 @@ internal sealed class OpenAiCompletionsRequestCompatibilityHandler : DelegatingH
         {
             foreach (var message in messages)
             {
-                if (message is not JsonObject messageObject ||
-                    !HasStringValue(messageObject["role"], "user") ||
-                    messageObject["content"] is not JsonValue content ||
-                    !content.TryGetValue<string>(out var text))
+                if (message is not JsonObject messageObject) continue;
+                if (HasStringValue(messageObject["role"], "assistant") && messageObject.Remove("name"))
+                    changed = true;
+                if (!HasStringValue(messageObject["role"], "user") ||
+                    messageObject["content"] is not JsonValue content || !content.TryGetValue<string>(out var text))
                     continue;
 
                 messageObject["content"] = new JsonArray(new JsonObject

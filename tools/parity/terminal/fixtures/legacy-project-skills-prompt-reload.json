@@ -1,5 +1,6 @@
 {
   "id": "legacy-project-skills-prompt-reload",
+  "assertionFrames": ["completion-disabled-before-reload", "completion-enabled-after-reload", "reload"],
   "workingDirectory": "legacy-skills-reload-project",
   "settings": {
     "quietStartup": true
@@ -85,12 +86,21 @@
       "allowStaticFrame": true
     },
     {
-      "id": "reload",
+      "id": "reload-started",
       "send": "/reload\r",
+      "expect": {
+        "pi": "Reloading keybindings, extensions, skills, prompts, themes, and context files...",
+        "pisharp": "Reloading keybindings, extensions, skills, prompts, themes, and context files..."
+      },
+      "renderMatch": true
+    },
+    {
+      "id": "reload",
       "expect": {
         "pi": "Reloaded keybindings, extensions, skills, prompts, themes, and context files",
         "pisharp": "Reloaded keybindings, extensions, skills, prompts, themes, and context files"
-      }
+      },
+      "allowStaticFrame": true
     },
     {
       "id": "completion-enabled-after-reload",

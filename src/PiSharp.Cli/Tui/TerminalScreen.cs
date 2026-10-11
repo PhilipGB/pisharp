@@ -35,11 +35,13 @@ public sealed class TerminalScreen : IDisposable
     private string _editorText = "";
     private string _liveAssistant = "";
     private string _liveAssistantSource = "";
+    private bool _hasConversationContent;
     private readonly TranscriptSearchController _search = new();
     private int _editorCursor;
     private int? _editorSelectionStart;
     private int? _editorSelectionEnd;
     private IReadOnlyList<EditorCompletionSuggestion> _editorSuggestions = [];
+    private string? _workingStatus;
     private int _scrollOffset;
     private int _lastImagePruneRevision = -1;
     private string _footer = "Enter steers · follow-up queues · Escape aborts";
@@ -58,9 +60,11 @@ public sealed class TerminalScreen : IDisposable
     private bool _startupPanelActive;
     private bool _activated;
     private bool _suspended;
+    private bool _terminalModeShutdownPrepared;
     private volatile bool _active = true;
     private int _deferRender;
     private bool _deferInitialRender;
+    private bool _reloadProgressRenderDeferred;
     private ITimer? _renderTimer;
     private bool _renderPending;
     private bool _hasRendered;
@@ -201,8 +205,23 @@ public sealed class TerminalScreen : IDisposable
         }
     }
 
+    /// <summary>Matches Pi's shutdown order: release Kitty input before screen modes, then paste after leaving alt-screen.</summary>
+    internal bool PrepareTerminalModeShutdown()
+    {
+        lock (_gate)
+        {
+            if (!_active || !_useAlternateScreen || _suspended) return false;
+            if (_terminalModeShutdownPrepared) return true;
+            _originalOut.Write(TerminalKeyboardMode.Disable);
+            _originalOut.Flush();
+            _terminalModeShutdownPrepared = true;
+            RenderLocked(immediate: true);
+            return true;
+        }
+    }
+
     public void SetEditor(string text, int cursor, int? selectionStart = null, int? selectionEnd = null,
-        IReadOnlyList<EditorCompletionSuggestion>? suggestions = null)
+        IReadOnlyList<EditorCompletionSuggestion>? suggestions = null, bool immediate = false)
     {
         ArgumentNullException.ThrowIfNull(text);
         lock (_gate)
@@ -223,7 +242,7 @@ public sealed class TerminalScreen : IDisposable
                     _editorSelectionEnd = boundedEnd;
                 }
             }
-            RenderLocked();
+            RenderLocked(immediate);
         }
     }
 
@@ -244,6 +263,7 @@ public sealed class TerminalScreen : IDisposable
             _scrollOffset = 0;
             _liveAssistant = "";
             _liveAssistantSource = "";
+            _hasConversationContent = false;
             _overlay = null;
             _deferRender++;
             try { appendHistory(this); }
@@ -262,7 +282,7 @@ public sealed class TerminalScreen : IDisposable
         {
             if (!_active) return;
             _liveAssistantSource = TerminalSafeText.Normalize(markdown);
-            _liveAssistant = RenderMarkdown(_liveAssistantSource);
+            _liveAssistant = RenderMarkdown(_liveAssistantSource) + "\n";
             RenderLocked();
         }
     }
@@ -277,9 +297,86 @@ public sealed class TerminalScreen : IDisposable
             var rendered = RenderMarkdown(safe);
             _liveAssistant = "";
             _liveAssistantSource = "";
+            if (rendered.Length > 0) _hasConversationContent = true;
             _transcript.AppendMarkdown(safe, rendered, isError: false);
             RenderLocked();
         }
+    }
+
+    internal void AppendThemedStatusLine(string message)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(message);
+        var safe = TerminalSafeText.Normalize(message);
+        string Render(TerminalTheme theme) => Environment.NewLine + " " + theme.Style("dim", safe) + Environment.NewLine;
+        lock (_gate)
+        {
+            if (!_active) return;
+            _transcript.AppendThemedStatus(Render(_theme), Render,
+                Environment.NewLine + " " + safe + Environment.NewLine);
+            RenderLocked();
+        }
+    }
+
+    internal void ShowReloadProgressPanel(string message)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(message);
+        var safe = TerminalSafeText.Normalize(message);
+        lock (_gate)
+        {
+            if (!_active) return;
+            var width = Columns();
+            var border = _theme.Fg("border") + new string('─', width) + "\u001b[0m";
+            var messageLine = " " + _theme.Style("muted", safe);
+            messageLine += new string(' ', Math.Max(0, width - TerminalTextLayout.Width(messageLine)));
+            _editorPanel = [border, "", messageLine, "", border];
+            _panelCursorRow = null;
+            _panelCursorColumn = null;
+            _panelCursorVisible = false;
+            _panelBottomMargin = 1;
+            RenderLocked(immediate: true);
+            _reloadProgressRenderDeferred = true;
+            _deferRender++;
+        }
+    }
+
+    internal void DismissEditorPanelAndAppendThemedStatusLine(string message)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(message);
+        var safe = TerminalSafeText.Normalize(message);
+        string Render(TerminalTheme theme) => Environment.NewLine + " " + theme.Style("dim", safe) + Environment.NewLine;
+        lock (_gate)
+        {
+            if (!_active) return;
+            ReleaseReloadProgressRenderLocked();
+            _editorPanel = null;
+            _panelCursorRow = null;
+            _panelCursorColumn = null;
+            _panelCursorVisible = false;
+            _transcript.AppendThemedStatus(Render(_theme), Render,
+                Environment.NewLine + " " + safe + Environment.NewLine);
+            RenderLocked(immediate: true);
+        }
+    }
+
+    internal void DismissReloadProgressPanel()
+    {
+        lock (_gate)
+        {
+            if (!_active) return;
+            ReleaseReloadProgressRenderLocked();
+            _editorPanel = null;
+            _panelCursorRow = null;
+            _panelCursorColumn = null;
+            _panelCursorVisible = false;
+            RenderLocked(immediate: true);
+        }
+    }
+
+    private void ReleaseReloadProgressRenderLocked()
+    {
+        if (!_reloadProgressRenderDeferred) return;
+        _reloadProgressRenderDeferred = false;
+        _deferRender--;
     }
 
     internal void SetTheme(TerminalTheme theme)
@@ -352,14 +449,29 @@ public sealed class TerminalScreen : IDisposable
         }
     }
 
-    public void SetFooter(string text)
+    public void SetFooter(string text, bool render = true)
     {
         ArgumentNullException.ThrowIfNull(text);
         lock (_gate)
         {
             if (!_active) return;
             _footer = TerminalSafeText.Normalize(text);
-            RenderLocked();
+            if (render) RenderLocked();
+        }
+    }
+
+    internal string FooterText
+    {
+        get { lock (_gate) return _footer; }
+    }
+
+    internal void SetWorkingStatus(string? status, bool render = true)
+    {
+        lock (_gate)
+        {
+            if (!_active) return;
+            _workingStatus = string.IsNullOrWhiteSpace(status) ? null : TerminalSafeText.Normalize(status);
+            if (render) RenderLocked();
         }
     }
 
@@ -628,7 +740,7 @@ public sealed class TerminalScreen : IDisposable
                 if (skillInvocation.UserMessage is { Length: > 0 } userMessage)
                     AppendSkillUserMessageLocked(userMessage);
             }
-            else AppendUserTextLocked(safe, activeText, capturedText);
+            else if (safe.Length > 0) AppendUserTextLocked(safe);
             if (images is not null)
             {
                 foreach (var image in images)
@@ -638,9 +750,11 @@ public sealed class TerminalScreen : IDisposable
                     capturedText.Append(fallback).Append(Environment.NewLine);
                 }
             }
-            if (skillInvocation is null && activeText.Length == 0) return;
+            if (skillInvocation is null && safe.Length == 0 && activeText.Length == 0) return;
             if (activeText.Length > 0)
                 _transcript.Append(activeText.ToString(), isError: false, capturedText: capturedText.ToString());
+            if (skillInvocation is not null || safe.Length > 0 || images is { Count: > 0 })
+                _hasConversationContent = true;
             RenderLocked();
         }
     }
@@ -660,7 +774,8 @@ public sealed class TerminalScreen : IDisposable
     private void AppendSkillInvocationLocked(TerminalSkillInvocation skillInvocation)
     {
         string Render(TerminalTheme theme, bool expanded) => TerminalSkillInvocationRenderer.RenderSkill(
-            skillInvocation, Columns(), theme, _toolExpandKeyLabel, _markdownCodeBlockIndent, expanded);
+            skillInvocation, Columns(), theme, _toolExpandKeyLabel, _markdownCodeBlockIndent, expanded,
+            includeLeadingSpacer: _hasConversationContent);
         var keyHint = string.IsNullOrWhiteSpace(_toolExpandKeyLabel)
             ? ""
             : $" ({_toolExpandKeyLabel.ToLowerInvariant()} to expand)";
@@ -680,14 +795,13 @@ public sealed class TerminalScreen : IDisposable
             Environment.NewLine + Environment.NewLine + " " + text + Environment.NewLine);
     }
 
-    private static void AppendUserTextLocked(string text, StringBuilder activeText, StringBuilder capturedText)
+    private void AppendUserTextLocked(string text)
     {
-        if (text.Length == 0) return;
-        foreach (var line in text.Split('\n'))
-        {
-            activeText.Append("› ").Append(line).Append(Environment.NewLine);
-            capturedText.Append("› ").Append(line).Append(Environment.NewLine);
-        }
+        var includeLeadingSpacer = _hasConversationContent;
+        string Render(TerminalTheme theme) => TerminalSkillInvocationRenderer.RenderUserMessage(
+            text, Columns(), theme, _markdownCodeBlockIndent, includeLeadingSpacer);
+        _transcript.AppendThemed(Render(_theme), isError: false, isToolResult: false, Render,
+            Environment.NewLine + Environment.NewLine + " " + text + Environment.NewLine);
     }
 
     internal void AppendMcpAuthorizationNotification(string serverName, Uri authorizationUrl)
@@ -870,6 +984,8 @@ public sealed class TerminalScreen : IDisposable
         finally { _terminalColorQuery?.Dispose(); }
         IReadOnlyList<TerminalTranscriptBuffer.CapturedChunk> captured;
         bool truncated;
+        IReadOnlyList<string>? documentRows = null;
+        bool terminalModeShutdownPrepared;
         lock (_gate)
         {
             if (!_active) return;
@@ -877,31 +993,57 @@ public sealed class TerminalScreen : IDisposable
             _renderTimer?.Dispose();
             _renderTimer = null;
             _active = false;
+            terminalModeShutdownPrepared = _terminalModeShutdownPrepared;
             if (_activated)
             {
                 if (ReferenceEquals(Console.Out, _installedOut)) Console.SetOut(_originalOut);
                 if (ReferenceEquals(Console.Error, _installedError)) Console.SetError(_originalError);
             }
-            _originalOut.Write(_images.CleanupControlSequence() + (_useAlternateScreen
+            _originalOut.Write((_useAlternateScreen ? "\u001b[?2026h" : "") + _images.CleanupControlSequence() + (_useAlternateScreen
                     ? TerminalMouseMode.Disable + "\u001b[?7h"
-                    : "") + "\u001b[?25h" + TerminalKeyboardMode.Disable);
-            if (_useAlternateScreen) _compositor.LeaveAlternateScreen();
+                    : "") + (_useAlternateScreen ? "\u001b[?2026l" : ""));
+            _originalOut.Flush();
+            _originalOut.Write("\u001b[?25h" + (terminalModeShutdownPrepared ? "" : TerminalKeyboardMode.Disable));
+            _originalOut.Flush();
+            if (_useAlternateScreen && _hasConversationContent)
+            {
+                var columns = Columns();
+                var header = _startupHeader?.Invoke(_theme, columns, _startupExpanded) ?? "";
+                var startupContent = _startupContent?.Invoke(_theme, columns, _startupExpanded) ?? "";
+                var transcript = _images.LayoutTranscript(GetTranscriptTextLocked(columns) + _liveAssistant,
+                    columns, Math.Max(1, Rows() - 5));
+                var headerRows = string.IsNullOrEmpty(header)
+                    ? Array.Empty<string>()
+                    : TerminalTextLayout.Create(header, columns).Rows;
+                var contentText = (string.IsNullOrEmpty(startupContent) ? "" : startupContent + "\n") + transcript;
+                var contentRows = TerminalTextLayout.Create(contentText, columns).Rows;
+                documentRows = headerRows.Concat(contentRows).ToArray();
+            }
+            if (_useAlternateScreen)
+                _compositor.LeaveAlternateScreen(terminalModeShutdownPrepared ? "\u001b[?2004l" : "",
+                    restoreDocumentFollows: documentRows is not null);
+            else if (terminalModeShutdownPrepared)
+                _originalOut.Write("\u001b[?2004l");
             captured = _transcript.CaptureSnapshot();
             truncated = _transcript.CaptureTruncated;
         }
 
-        foreach (var chunk in captured)
+        if (documentRows is null)
         {
-            var writer = chunk.IsError ? _originalError : _originalOut;
-            writer.Write(chunk.Text);
-            writer.Flush();
+            foreach (var chunk in captured)
+            {
+                var writer = chunk.IsError ? _originalError : _originalOut;
+                writer.Write(chunk.Text);
+                writer.Flush();
+            }
         }
         if (truncated)
         {
             _originalError.WriteLine("Interactive transcript exceeded the scrollback restore limit; the active screen was still rendered in full.");
             _originalError.Flush();
         }
-        if (_useAlternateScreen) _compositor.RestoreLastFrameToNormalBuffer();
+        if (documentRows is not null) _compositor.RestoreDocumentToNormalBuffer(documentRows);
+        else if (_useAlternateScreen) _compositor.RestoreLastFrameToNormalBuffer();
         _images.Clear();
     }
 
@@ -920,8 +1062,20 @@ public sealed class TerminalScreen : IDisposable
 
     private string GetTranscriptTextLocked(int width) => _transcript.GetText(width);
 
-    private string RenderMarkdown(string markdown) =>
-        TerminalMarkdownRenderer.Render(markdown, Math.Max(1, Columns() - 1), _theme, _markdownCodeBlockIndent);
+    private string RenderMarkdown(string markdown)
+    {
+        var width = Math.Max(1, Columns() - 2);
+        var rendered = TerminalMarkdownRenderer.Render(markdown, width, _theme, _markdownCodeBlockIndent);
+        var output = new StringBuilder("\n");
+        var lines = rendered.Split('\n');
+        for (var index = 0; index < lines.Length; index++)
+        {
+            if (index > 0) output.Append('\n');
+            var padded = " " + lines[index] + " ";
+            output.Append(padded).Append(' ', Math.Max(0, Columns() - TerminalTextLayout.Width(padded)));
+        }
+        return output.ToString();
+    }
 
     private void RenderLocked(bool immediate = false)
     {
@@ -1018,7 +1172,7 @@ public sealed class TerminalScreen : IDisposable
             _images.PruneUnreferenced(_transcript.GetRetainedText());
             _lastImagePruneRevision = _transcript.Revision;
         }
-        var transcriptWidth = Math.Max(1, columns - 1);
+        var transcriptWidth = Math.Max(1, columns);
         var transcript = _images.LayoutTranscript(GetTranscriptTextLocked(transcriptWidth) + _liveAssistant,
             transcriptWidth, Math.Max(1, transcriptHeight - 2));
         var frame = _compositor.Compose(_editorText, _editorCursor, _editorSelectionStart, _editorSelectionEnd,
@@ -1026,7 +1180,7 @@ public sealed class TerminalScreen : IDisposable
             _editorPanel, _panelCursorRow, _panelCursorColumn, _panelCursorVisible, _panelBottomMargin,
             _statusNotification, _statusNotificationKind, _statusNotificationIsExtension,
             _startupHeader?.Invoke(_theme, columns, _startupExpanded),
-            _startupContent?.Invoke(_theme, columns, _startupExpanded), _editorSuggestions);
+            _startupContent?.Invoke(_theme, columns, _startupExpanded), _editorSuggestions, _workingStatus);
         _scrollOffset = frame.ScrollOffset;
         _lastColumns = frame.Columns;
         _lastRows = frame.Height;
@@ -1101,4 +1255,5 @@ public sealed class TerminalScreen : IDisposable
         public override void WriteLine(string? value) => screen.Append((value ?? "") + Environment.NewLine, isError);
         public override void Flush() { }
     }
+
 }

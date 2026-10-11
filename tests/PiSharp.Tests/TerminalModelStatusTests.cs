@@ -40,7 +40,7 @@ public sealed class TerminalModelStatusTests
             Reasoning: false, Api: "openai-completions");
 
         var footer = TerminalModelStatus.FormatIdleFooter(model, "off", session, 8192,
-            autoCompactionEnabled: true, width: 100);
+            autoCompactionEnabled: true, width: 100, estimatedContextTokens: 1000);
 
         const string left = "0.0%/8.2k (auto)";
         Assert.StartsWith(left, footer);
@@ -56,6 +56,22 @@ public sealed class TerminalModelStatusTests
         Assert.EndsWith("(fixture) fixture-model", multipleProviders);
         Assert.Equal(100, TerminalTextLayout.Width(multipleProviders));
 
+    }
+
+    [Fact]
+    public void IdleFooterUsesProjectedContextEstimateAfterAProviderResponse()
+    {
+        var session = new ConversationSession(Path.GetTempPath(), "fixture-model", null, "fixture");
+        session.Append(new ChatMessage(ChatRole.User, "request"));
+        session.AppendUsage(new UsageRecord("fixture-model", "model", 10, 3, 0, 0, 13, null));
+        session.Append(new ChatMessage(ChatRole.Assistant, "answer"));
+        var model = new ModelDescriptor("fixture-model", null, 8192, null,
+            Provider: "fixture", Reasoning: false, Api: "openai-completions");
+
+        var footer = TerminalModelStatus.FormatIdleFooter(model, "off", session, 8192,
+            autoCompactionEnabled: true, width: 100, estimatedContextTokens: 90);
+
+        Assert.StartsWith("↑10 ↓3 1.1%/8.2k (auto)", footer);
     }
 
     private static ChatMessage Response(string model, string thinking, string? stopReason = null) => new(ChatRole.Assistant, "answer")

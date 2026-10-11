@@ -27,9 +27,10 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
 
         var toolNames = new Dictionary<string, string>(StringComparer.Ordinal);
         var nestedCalls = session.ActiveNestedToolCallsByResultCallId();
+        var messages = session.ActiveMessages();
         screen.ReplaceTranscript(target =>
         {
-            foreach (var message in session.ActiveMessages())
+            foreach (var message in messages)
             {
                 if (message.Role == ChatRole.User)
                 {
@@ -86,7 +87,8 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
     public void Render(AgentLifecycleEvent update)
     {
         ArgumentNullException.ThrowIfNull(update);
-        if (update.Type is not ("model_text_delta" or "model_content_update")) CommitAssistantText();
+        if (update.Type is not ("model_text_delta" or "model_content_update") && !DeferAssistantCommit(update))
+            CommitAssistantText();
         switch (update.Type)
         {
             case "prompt_accepted" when interactive && screen is not null:
@@ -106,7 +108,7 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
                 status.Write(Safe(update.Text));
                 break;
             case "usage" when interactive && !string.IsNullOrEmpty(update.Text):
-                status.WriteLine($"\nUsage: {Safe(update.Text)}");
+                if (screen is null) status.WriteLine($"\nUsage: {Safe(update.Text)}");
                 break;
             case "context_compacted" when interactive && !string.IsNullOrEmpty(update.Text):
                 status.WriteLine(Safe(update.Text));
@@ -140,10 +142,24 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
 
     private void CommitAssistantText()
     {
-        if (screen is null || _assistantMarkdown.Length == 0) return;
-        screen.CommitAssistantText(_assistantMarkdown.ToString());
+        if (_assistantMarkdown.Length == 0) return;
+        if (screen is not null) screen.CommitAssistantText(_assistantMarkdown.ToString());
         _assistantMarkdown.Clear();
     }
+
+    private bool DeferAssistantCommit(AgentLifecycleEvent update)
+    {
+        if (screen is null || _assistantMarkdown.Length == 0) return false;
+        if (update.Type is "usage" or "reasoning_delta") return true;
+        if (update.Type == "model_request_completed")
+            return !HasToolCalls(update.ProviderResponse);
+        if (update.Type == "assistant_turn_completed")
+            return !HasToolCalls(update.TurnMessage);
+        return false;
+    }
+
+    private static bool HasToolCalls(ChatMessage? message) =>
+        message?.Contents.OfType<FunctionCallContent>().Any() == true;
 
     private static string MessageText(ChatMessage message) =>
         string.Concat(message.Contents.OfType<TextContent>().Select(content => content.Text));

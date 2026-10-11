@@ -1,5 +1,7 @@
 {
   "id": "extension-resource-discovery-reload",
+  "assertionFrames": ["startup", "reload", "collapse-startup-skill", "expand-startup-skill",
+    "collapse-reloaded-skill", "expand-reloaded-skill"],
   "workingDirectory": "extension-project",
   "pisharpExtension": true,
   "environment": {

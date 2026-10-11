@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Assert extension-contributed skills and prompts survive reload differentially."""
 import argparse
-import gzip
 import json
 from pathlib import Path
-
+from assertion_evidence import load_assertion_evidence
+from thread_limits import apply_test_thread_limit
+apply_test_thread_limit()
 
 def chat_requests(run):
     return [request for request in run['http']
@@ -115,10 +116,20 @@ def inspect_product(run):
                               'initial-argument', 'startup')
     assert_skill_presentation(run, 'extension-reloaded', 'Use the reloaded extension skill.',
                               'reload-argument', 'reloaded')
+    tool_output_statuses = {
+        'expand-startup-skill': 'Tool output: expanded',
+        'collapse-startup-skill': 'Tool output: collapsed',
+        'expand-reloaded-skill': 'Tool output: expanded',
+        'collapse-reloaded-skill': 'Tool output: collapsed',
+    }
+    for frame_id, expected in tool_output_statuses.items():
+        if expected not in frame_text(run, frame_id):
+            raise AssertionError(f'{frame_id} did not show Pi-compatible status {expected!r}')
     return dict(chatRequests=len(requests), startupSkillAndPromptExpanded=True,
                 reloadedSkillAndPromptExpanded=True,
                 collapsibleSkillMessages=True,
                 latestUserMessages=[latest_user_message(request) for request in requests],
+                toolOutputStatusByAction=tool_output_statuses,
                 startupThemeDiagnosticVisible=True, reloadedThemeDiagnosticVisible=True,
                 reloadStatusVisible=True,
                 scenarioError=None)
@@ -131,8 +142,8 @@ def main():
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
     report = json.loads(args.report.read_text())
-    with gzip.open(args.capture, 'rt', encoding='utf-8') as stream:
-        capture = json.load(stream)
+    case = report['cases'][0]
+    capture = load_assertion_evidence(args.report.parent, case)
     behavior = {product: inspect_product(capture[product]) for product in ('pi', 'pisharp')}
     presentation_cases = {
         'collapse-startup-skill': (4, 11),

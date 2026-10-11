@@ -68,6 +68,8 @@ public sealed class ToolLoadoutTests
 
         Assert.Equal(["orchestrate"], Names(snapshot.Declared.Select(tool => tool.Registration)));
         Assert.Equal("Can call: echo, helper", snapshot.Declared[0].Description);
+        Assert.Equal(["echo", "orchestrate"], Names(snapshot.TranscriptDeclarations.Select(tool => tool.Registration)));
+        Assert.Equal("Can call: echo, helper", snapshot.TranscriptDeclarations[1].Description);
         Assert.Equal(["echo", "orchestrate"], snapshot.ActiveToolNames);
         Assert.Equal(["echo", "helper"], Names(snapshot.Callable));
     }

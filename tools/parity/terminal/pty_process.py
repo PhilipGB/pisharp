@@ -8,6 +8,7 @@ from pathlib import Path
 import pty
 import select
 import signal
+import shutil
 import struct
 import subprocess
 import sys
@@ -16,6 +17,9 @@ import termios
 import time
 
 from compare import ControlTrace
+from thread_limits import apply_test_thread_limit
+
+apply_test_thread_limit()
 
 
 class RenderFrameStore:
@@ -57,6 +61,12 @@ class RenderFrameStore:
         self.finish()
         self._file.close()
 
+    def write_compressed_to(self, output):
+        """Copy the already-compressed JSONL member without expanding or re-encoding it."""
+        self.finish()
+        self._file.seek(0)
+        shutil.copyfileobj(self._file, output, length=1024 * 1024)
+
 
 class RenderFrameSequence:
     """Chain frame stores without joining their contents in memory."""
@@ -76,6 +86,11 @@ class RenderFrameSequence:
             close = getattr(store, 'close', None)
             if close is not None:
                 close()
+
+    def write_compressed_to(self, output):
+        """Write concatenated gzip members, preserving each store's compressed render stream."""
+        for store in self.stores:
+            store.write_compressed_to(output)
 
 
 class TerminalProcess:

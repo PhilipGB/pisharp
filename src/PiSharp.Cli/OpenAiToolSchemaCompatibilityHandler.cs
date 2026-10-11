@@ -3,7 +3,7 @@ using System.Text.Json.Nodes;
 
 namespace PiSharp.Cli;
 
-/// <summary>Removes a schema default inserted by the OpenAI adapter that current Pi omits.</summary>
+/// <summary>Removes adapter-generated schema defaults that current Pi omits from tool declarations.</summary>
 internal sealed class OpenAiToolSchemaCompatibilityHandler(HttpMessageHandler innerHandler) : DelegatingHandler(innerHandler)
 {
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
@@ -14,7 +14,7 @@ internal sealed class OpenAiToolSchemaCompatibilityHandler(HttpMessageHandler in
         {
             var content = request.Content;
             var bytes = await content.ReadAsByteArrayAsync(cancellationToken);
-            var projected = ProjectReadToolSchema(bytes);
+            var projected = ProjectToolSchemas(bytes);
             if (!ReferenceEquals(projected, bytes))
             {
                 var replacement = new ByteArrayContent(projected);
@@ -31,7 +31,7 @@ internal sealed class OpenAiToolSchemaCompatibilityHandler(HttpMessageHandler in
         return await base.SendAsync(request, cancellationToken);
     }
 
-    internal static byte[] ProjectReadToolSchema(byte[] requestBody)
+    internal static byte[] ProjectToolSchemas(byte[] requestBody)
     {
         var root = JsonNode.Parse(requestBody);
         if (root is not JsonObject request || request["tools"] is not JsonArray tools) return requestBody;
@@ -40,14 +40,22 @@ internal sealed class OpenAiToolSchemaCompatibilityHandler(HttpMessageHandler in
         foreach (var tool in tools)
         {
             if (tool is not JsonObject toolObject || toolObject["function"] is not JsonObject function ||
-                !string.Equals(function["name"]?.GetValue<string>(), "read", StringComparison.Ordinal) ||
-                function["parameters"] is not JsonObject parameters ||
-                parameters["additionalProperties"] is not JsonValue additionalProperties ||
-                !additionalProperties.TryGetValue<bool>(out var allowAdditionalProperties) || allowAdditionalProperties)
+                function["parameters"] is not JsonObject parameters)
                 continue;
 
-            parameters.Remove("additionalProperties");
-            changed = true;
+            if (parameters["required"] is JsonArray required && required.Count == 0)
+            {
+                parameters.Remove("required");
+                changed = true;
+            }
+
+            if (function["name"]?.GetValue<string>() is ("read" or "bash" or "write" or "edit") &&
+                parameters["additionalProperties"] is JsonValue additionalProperties &&
+                additionalProperties.TryGetValue<bool>(out var allowAdditionalProperties) && !allowAdditionalProperties)
+            {
+                parameters.Remove("additionalProperties");
+                changed = true;
+            }
         }
 
         return changed ? JsonSerializer.SerializeToUtf8Bytes(root) : requestBody;

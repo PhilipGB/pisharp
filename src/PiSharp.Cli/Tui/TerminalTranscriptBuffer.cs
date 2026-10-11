@@ -16,6 +16,7 @@ internal sealed class TerminalTranscriptBuffer
     private bool _captureTruncated;
 
     public bool IsExpanded { get; private set; }
+    public bool HasContent => _segments.Count > 0;
     public bool CaptureTruncated => _captureTruncated;
     public int Revision { get; private set; }
 
@@ -60,6 +61,31 @@ internal sealed class TerminalTranscriptBuffer
             collapsible ? collapsedPreviewText ?? rendered : null,
             themeRenderer: themeRenderer, collapsedRenderer: collapsedRenderer));
         _transcriptCharacters += rendered.Length;
+        TrimTranscript();
+        Revision++;
+    }
+
+    public void AppendThemedStatus(string rendered, Func<TerminalTheme, string> themeRenderer, string capturedText)
+    {
+        ArgumentNullException.ThrowIfNull(themeRenderer);
+        if (rendered.Length == 0) return;
+
+        if (_segments.Count > 0 && _segments[^1].IsStatusMessage)
+        {
+            var last = _segments[^1];
+            _transcriptCharacters += rendered.Length - last.Text.Length;
+            last.Text.Clear().Append(rendered);
+            last.ThemeRenderer = themeRenderer;
+            last.CapturedStatusChunk = ReplaceCapturedStatus(last.CapturedStatusChunk, capturedText);
+        }
+        else
+        {
+            var capturedStatus = CaptureStatus(capturedText);
+            _segments.Add(new(false, new StringBuilder(rendered), null,
+                themeRenderer: themeRenderer, isStatusMessage: true, capturedStatusChunk: capturedStatus));
+            _transcriptCharacters += rendered.Length;
+        }
+
         TrimTranscript();
         Revision++;
     }
@@ -189,11 +215,45 @@ internal sealed class TerminalTranscriptBuffer
             text = text[..remaining];
             _captureTruncated = true;
         }
-        if (_captured.Count > 0 && _captured[^1].IsError == isError)
+        if (_captured.Count > 0 && _captured[^1].IsError == isError && !_captured[^1].IsStatusMessage)
             _captured[^1].Text.Append(text);
         else
             _captured.Add(new(isError, new StringBuilder(text)));
         _capturedCharacters += text.Length;
+    }
+
+    private CapturedChunkBuilder? CaptureStatus(string text)
+    {
+        var remaining = MaximumCapturedCharacters - _capturedCharacters;
+        if (remaining <= 0)
+        {
+            _captureTruncated = true;
+            return null;
+        }
+        if (text.Length > remaining)
+        {
+            text = text[..remaining];
+            _captureTruncated = true;
+        }
+        var chunk = new CapturedChunkBuilder(false, new StringBuilder(text), isStatusMessage: true);
+        _captured.Add(chunk);
+        _capturedCharacters += text.Length;
+        return chunk;
+    }
+
+    private CapturedChunkBuilder? ReplaceCapturedStatus(CapturedChunkBuilder? chunk, string text)
+    {
+        if (chunk is null) return CaptureStatus(text);
+
+        var remaining = Math.Max(0, MaximumCapturedCharacters - (_capturedCharacters - chunk.Text.Length));
+        if (text.Length > remaining)
+        {
+            text = text[..remaining];
+            _captureTruncated = true;
+        }
+        _capturedCharacters += text.Length - chunk.Text.Length;
+        chunk.Text.Clear().Append(text);
+        return chunk;
     }
 
     private static string GetCollapsedPreview(TranscriptSegment segment, int width)
@@ -225,9 +285,11 @@ internal sealed class TerminalTranscriptBuffer
 
     private sealed class TranscriptSegment(bool isCollapsible, StringBuilder text, string? collapsedPreviewSource,
         string? markdownSource = null, Func<TerminalTheme, string>? themeRenderer = null,
-        Func<TerminalTheme, string>? collapsedRenderer = null)
+        Func<TerminalTheme, string>? collapsedRenderer = null, bool isStatusMessage = false,
+        CapturedChunkBuilder? capturedStatusChunk = null)
     {
         public bool IsCollapsible { get; } = isCollapsible;
+        public bool IsStatusMessage { get; } = isStatusMessage;
         public StringBuilder Text { get; } = text;
         public string? CollapsedPreviewSource { get; set; } = collapsedPreviewSource;
         public string? CollapsedPreview { get; set; }
@@ -235,6 +297,7 @@ internal sealed class TerminalTranscriptBuffer
         public string? MarkdownSource { get; set; } = markdownSource;
         public Func<TerminalTheme, string>? ThemeRenderer { get; set; } = themeRenderer;
         public Func<TerminalTheme, string>? CollapsedRenderer { get; set; } = collapsedRenderer;
+        public CapturedChunkBuilder? CapturedStatusChunk { get; set; } = capturedStatusChunk;
 
         public void InvalidateCollapsedPreview()
         {
@@ -243,9 +306,10 @@ internal sealed class TerminalTranscriptBuffer
         }
     }
 
-    private sealed class CapturedChunkBuilder(bool isError, StringBuilder text)
+    private sealed class CapturedChunkBuilder(bool isError, StringBuilder text, bool isStatusMessage = false)
     {
         public bool IsError { get; } = isError;
+        public bool IsStatusMessage { get; } = isStatusMessage;
         public StringBuilder Text { get; } = text;
     }
 

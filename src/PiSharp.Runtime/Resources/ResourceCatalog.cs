@@ -13,10 +13,19 @@ public sealed class ResourceCatalog
 {
     public IReadOnlyList<SkillResource> Skills { get; }
     public IReadOnlyList<PromptResource> Prompts { get; }
+    public IReadOnlyList<ResourceDiagnostic> SkillDiagnostics { get; }
+    public IReadOnlyList<ResourceDiagnostic> PromptDiagnostics { get; }
     public IReadOnlyList<ResourceDiagnostic> Diagnostics { get; }
 
     private ResourceCatalog(List<SkillResource> skills, List<PromptResource> prompts,
-        List<ResourceDiagnostic> diagnostics) => (Skills, Prompts, Diagnostics) = (skills, prompts, diagnostics);
+        List<ResourceDiagnostic> skillDiagnostics, List<ResourceDiagnostic> promptDiagnostics)
+    {
+        Skills = skills;
+        Prompts = prompts;
+        SkillDiagnostics = skillDiagnostics;
+        PromptDiagnostics = promptDiagnostics;
+        Diagnostics = skillDiagnostics.Concat(promptDiagnostics).ToArray();
+    }
 
     public static async Task<ResourceCatalog> LoadAsync(string cwd, string agentDirectory, bool trusted,
         CancellationToken cancellationToken = default, bool discoverSkills = true, bool discoverPrompts = true,
@@ -27,7 +36,8 @@ public sealed class ResourceCatalog
     {
         var skills = new List<SkillResource>();
         var prompts = new List<PromptResource>();
-        var diagnostics = new List<ResourceDiagnostic>();
+        var skillDiagnostics = new List<ResourceDiagnostic>();
+        var promptDiagnostics = new List<ResourceDiagnostic>();
         var skillFiles = new List<(string Path, ResourceSourceInfo Source)>();
         var promptFiles = new List<(string Path, ResourceSourceInfo Source)>();
         var seenSkills = new HashSet<string>(OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
@@ -81,24 +91,29 @@ public sealed class ResourceCatalog
             var description = metadata.GetValueOrDefault("description") ?? "";
             if (string.IsNullOrWhiteSpace(description))
             {
-                diagnostics.Add(new("warning", "description is required", path));
+                skillDiagnostics.Add(new("warning", "description is required", path, SourceInfo: source));
                 continue;
             }
             if (description.Length > 1024)
-                diagnostics.Add(new("warning", $"description exceeds 1024 characters ({description.Length})", path));
+                skillDiagnostics.Add(new("warning", $"description exceeds 1024 characters ({description.Length})", path,
+                    SourceInfo: source));
             if (name.Length > 64)
-                diagnostics.Add(new("warning", $"name exceeds 64 characters ({name.Length})", path));
+                skillDiagnostics.Add(new("warning", $"name exceeds 64 characters ({name.Length})", path,
+                    SourceInfo: source));
             if (!Regex.IsMatch(name, "^[a-z0-9-]+$", RegexOptions.CultureInvariant))
-                diagnostics.Add(new("warning", "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)", path));
+                skillDiagnostics.Add(new("warning", "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)",
+                    path, SourceInfo: source));
             if (name.StartsWith("-", StringComparison.Ordinal) || name.EndsWith("-", StringComparison.Ordinal))
-                diagnostics.Add(new("warning", "name must not start or end with a hyphen", path));
+                skillDiagnostics.Add(new("warning", "name must not start or end with a hyphen", path,
+                    SourceInfo: source));
             if (name.Contains("--", StringComparison.Ordinal))
-                diagnostics.Add(new("warning", "name must not contain consecutive hyphens", path));
+                skillDiagnostics.Add(new("warning", "name must not contain consecutive hyphens", path,
+                    SourceInfo: source));
             var existing = skills.FirstOrDefault(item => item.Name == name);
             if (existing is not null)
             {
-                diagnostics.Add(new("collision", $"name \"{name}\" collision", path,
-                    new("skill", name, existing.Path, path)));
+                skillDiagnostics.Add(new("collision", $"name \"{name}\" collision", path,
+                    new("skill", name, existing.Path, path, existing.SourceInfo, source), source));
                 continue;
             }
             skills.Add(new(name, description, path, metadata.GetValueOrDefault("disable-model-invocation") == "true", source));
@@ -112,8 +127,8 @@ public sealed class ResourceCatalog
             var existing = prompts.FirstOrDefault(item => item.Name == name);
             if (existing is not null)
             {
-                diagnostics.Add(new("collision", $"name \"{name}\" collision", path,
-                    new("prompt", name, existing.Path, path)));
+                promptDiagnostics.Add(new("collision", $"name \"{name}\" collision", path,
+                    new("prompt", name, existing.Path, path, existing.SourceInfo, source), source));
                 continue;
             }
             var (metadata, body) = Parse(await ReadBoundedAsync(path, cancellationToken));
@@ -122,7 +137,7 @@ public sealed class ResourceCatalog
             prompts.Add(new(name, description, body, path, source));
         }
 
-        return new(skills, prompts, diagnostics);
+        return new(skills, prompts, skillDiagnostics, promptDiagnostics);
 
         void AddCliPaths(IReadOnlyList<string>? roots, string description, string baseDirectory,
             List<(string Path, ResourceSourceInfo Source)> target, HashSet<string> seen)

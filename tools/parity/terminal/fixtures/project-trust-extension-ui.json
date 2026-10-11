@@ -1,5 +1,6 @@
 {
   "id": "project-trust-extension-ui",
+  "assertionFrames": ["trust-select", "trust-select-option", "trust-confirm", "complete-prompt", "quit"],
   "workingDirectory": "trust-project",
   "settings": {
     "quietStartup": true,
@@ -10,6 +11,10 @@
     "pisharp": {
       "PISHARP_TEST_EXTENSION_LOAD_LOG": "{agent}/project-trust-extension.log"
     }
+  },
+  "fixtureBehavior": {
+    "chatRequestGates": ["trust-chat-request"],
+    "chatResponseGates": ["trust-chat-response"]
   },
   "arguments": {
     "pi": [
@@ -60,7 +65,15 @@
     {
       "id": "send-prompt",
       "send": "Inspect the trusted project instructions.\r",
-      "expect": "fixture reply"
+      "waitGatesAfter": ["trust-chat-request"],
+      "expect": "Working",
+      "quietMs": 0
+    },
+    {
+      "id": "complete-prompt",
+      "releaseGates": ["trust-chat-response"],
+      "expect": "fixture reply",
+      "notExpect": "Working"
     },
     {
       "id": "quit",

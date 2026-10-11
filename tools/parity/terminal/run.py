@@ -15,7 +15,7 @@ import time
 
 from compare import compare_products
 from fixture_http import FixtureServer
-from pty_process import RenderFrameSequence, TerminalProcess
+from pty_process import RenderFrameSequence, RenderFrameStore, TerminalProcess
 from thread_limits import apply_test_thread_limit, thread_limit_environment
 
 apply_test_thread_limit()
@@ -88,6 +88,11 @@ def environment(agent):
     return result
 
 
+def start_terminal_process(command, cwd, child_environment, options):
+    """Start a runner-owned PTY with compressed render spooling enabled."""
+    return TerminalProcess(command, cwd, child_environment, options, spool_render_frames=True)
+
+
 def expand_environment(values, agent, router_url):
     return {name: value.replace('{router}', router_url).replace('{agent}', str(agent))
             if isinstance(value, str) else value
@@ -133,6 +138,52 @@ def write_json_stream(stream, value):
         stream.write(']')
 
 
+def working_indicator_summary(render_states):
+    count = 0
+    premature_usage = []
+    for state in render_states:
+        if state.get('activeScreen') != 'alternate':
+            continue
+        lines = state.get('buffers', {}).get('alternate', {}).get('lines', [])
+        status_row = state.get('rows', 0) - 5
+        footer_row = state.get('rows', 0) - 1
+        if status_row < 0 or footer_row < 0 or len(lines) <= max(status_row, footer_row):
+            continue
+        status = ''.join(cell.get('chars', '') if cell.get('width', 1) else ''
+                         for cell in lines[status_row].get('cells', [])).rstrip()
+        footer = ''.join(cell.get('chars', '') if cell.get('width', 1) else ''
+                         for cell in lines[footer_row].get('cells', [])).rstrip()
+        if 'Working' not in status:
+            continue
+        count += 1
+        if '↑10 ↓3' in footer and len(premature_usage) < 3:
+            premature_usage.append(footer)
+    return dict(workingRenderFrames=count, prematureUsage=premature_usage)
+
+
+def write_assertion_evidence(path, products, dimensions, theme, mode, frame_ids=(),
+                            include_working_indicator=False):
+    """Write named checkpoints and request traces without the large render/raw streams."""
+    requested_frames = set(frame_ids)
+    evidence = dict(dimensions=dimensions, theme=theme, mode=mode,
+                    assertionFrames=sorted(requested_frames))
+    for name, product in products.items():
+        frames = list(product.get('assertionFrames', []))
+        evidence[name] = dict(frames=frames, http=product['http'], scenarioError=product['scenarioError'])
+        if include_working_indicator:
+            evidence[name]['workingIndicator'] = working_indicator_summary(product['renders'])
+
+    with path.open('wb') as output:
+        compressed = gzip.GzipFile(fileobj=output, mode='wb', compresslevel=1, mtime=0)
+        writer = io.TextIOWrapper(compressed, encoding='utf-8')
+        try:
+            json.dump(evidence, writer, ensure_ascii=False, separators=(',', ':'))
+            writer.flush()
+        finally:
+            writer.detach()
+            compressed.close()
+
+
 def run_product(label, command, scenario, dimensions, theme, mode, server):
     agent = AGENT_DIRECTORY
     marker = agent / '.pisharp-terminal-harness'
@@ -171,9 +222,16 @@ def run_product(label, command, scenario, dimensions, theme, mode, server):
     child_environment.update(expand_environment(
         scenario.get('environment', {}).get(label, {}), agent, server.url))
     working_directory = prepare_workspace(scenario)
-    terminal = TerminalProcess(command, working_directory, child_environment, options,
-                               spool_render_frames=True)
-    frames = []
+    terminal = start_terminal_process(command, working_directory, child_environment, options)
+    frames = RenderFrameStore()
+    assertion_frames = RenderFrameStore()
+    assertion_frame_ids = set(scenario.get('assertionFrames', []))
+
+    def record_frame(frame):
+        frames.append(frame)
+        if frame.get('id') in assertion_frame_ids:
+            assertion_frames.append(frame)
+
     http_by_frame = []
     prior_raw = bytearray()
     prior_render_frames = []
@@ -203,12 +261,12 @@ def run_product(label, command, scenario, dimensions, theme, mode, server):
                 restart_environment.update(expand_environment(
                     action.get('restartEnvironment', {}), agent, server.url))
                 working_directory = prepare_workspace(scenario)
-                terminal = TerminalProcess(command, working_directory, restart_environment, options)
+                terminal = start_terminal_process(command, working_directory, restart_environment, options)
                 control_mark = len(terminal.trace.events)
                 frame = terminal.settle(action.get('expect'), timeout=action.get('timeout', 20),
                                         render_match=action.get('renderMatch', False))
-                frames.append(dict(id=action['id'], state=frame, controls=terminal.trace.events[control_mark:],
-                                   controlPending=terminal.trace.pending.hex()))
+                record_frame(dict(id=action['id'], state=frame, controls=terminal.trace.events[control_mark:],
+                                  controlPending=terminal.trace.pending.hex()))
                 http_by_frame.append(dict(id=action['id'], requests=server.requests[request_mark:]))
                 continue
             mark, control_mark = len(terminal.raw), len(terminal.trace.events)
@@ -254,17 +312,21 @@ def run_product(label, command, scenario, dimensions, theme, mode, server):
                 if actual_status != expected_model_status['value']:
                     raise RuntimeError(f"Fixture model {expected_model_status['id']} status was {actual_status!r}, "
                                        f"expected {expected_model_status['value']!r}.")
-            frames.append(dict(id=action['id'], state=frame, controls=terminal.trace.events[control_mark:], controlPending=terminal.trace.pending.hex()))
+            record_frame(dict(id=action['id'], state=frame, controls=terminal.trace.events[control_mark:],
+                              controlPending=terminal.trace.pending.hex()))
             http_by_frame.append(dict(id=action['id'], requests=server.requests[request_mark:]))
         prior_raw.extend(terminal.raw)
-        return dict(frames=frames, renders=RenderFrameSequence(*prior_render_frames, terminal.render_frames),
+        return dict(frames=frames, assertionFrames=assertion_frames,
+                    renders=RenderFrameSequence(*prior_render_frames, terminal.render_frames),
                     httpByFrame=http_by_frame, raw=base64.b64encode(prior_raw).decode(),
                     http=server.requests[request_start:], command=command, scenarioError=None)
     except (TimeoutError, RuntimeError) as error:
-        frames.append(dict(id=action['id'], state=terminal.snapshot(), controls=terminal.trace.events[control_mark:], controlPending=terminal.trace.pending.hex()))
+        record_frame(dict(id=action['id'], state=terminal.snapshot(), controls=terminal.trace.events[control_mark:],
+                          controlPending=terminal.trace.pending.hex()))
         http_by_frame.append(dict(id=action['id'], requests=server.requests[request_mark:]))
         combined_raw = prior_raw + terminal.raw
-        return dict(frames=frames, renders=RenderFrameSequence(*prior_render_frames, terminal.render_frames),
+        return dict(frames=frames, assertionFrames=assertion_frames,
+                    renders=RenderFrameSequence(*prior_render_frames, terminal.render_frames),
                     httpByFrame=http_by_frame, raw=base64.b64encode(combined_raw).decode(),
                     http=server.requests[request_start:], command=command, scenarioError=str(error))
     finally:
@@ -289,9 +351,11 @@ def main():
                   pisharpSha=subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
                   fixture=scenario['id'], calibration=args.calibrate,
                   concurrentHttpGroups=scenario.get('concurrentHttpGroups', []),
-                  normalization=('Named checkpoints and every synchronized render state are compared exactly, collapsing '
-                                 'only adjacent identical states, hidden cursor coordinates, and transient braille loader '
-                                 'frames in the bottom status area. Raw bytes remain captured and exact-match status is reported separately. '
+                  normalization=('Named checkpoints and stable synchronized render states are compared exactly, collapsing '
+                                 'adjacent identical states, hidden cursor coordinates, transient loader glyphs, and in-flight '
+                                 'Working-indicator frames. Same-Pi calibration shows fast scripted responses can finish before '
+                                 'that animated frame is captured, making its presence and partial usage footer PTY-scheduling dependent. '
+                                 'Raw bytes remain captured and exact-match status is reported separately. '
                                  'HTTP identity/count/order remain exact except within declared concurrent batches, '
                                  'where arrival order is unspecified. Only generated documentation package-root lines in '
                                  'system messages are canonicalized in HTTP comparisons. Per-checkpoint control buckets are diagnostic.'),
@@ -325,9 +389,33 @@ def main():
             if errors:
                 delta.insert(0, dict(path='$.scenarioError', **errors))
             difference_count = comparison['differenceCount'] + int(bool(errors))
-            evidence = dict(dimensions=dimensions, theme=theme, mode=mode, **products)
             artifact = case_id + '.json.gz'
+            assertion_artifact = case_id + '.assertions.json.gz'
             artifact_path = args.output / artifact
+            assertion_artifact_path = args.output / assertion_artifact
+            render_artifacts = {}
+            frame_artifacts = {}
+            evidence_products = {}
+            for name, product in products.items():
+                frame_artifact = case_id + f'.{name}.frames.jsonl.gz'
+                frame_path = args.output / frame_artifact
+                with frame_path.open('wb') as frame_output:
+                    product['frames'].write_compressed_to(frame_output)
+                frame_artifacts[name] = frame_artifact
+                render_artifact = case_id + f'.{name}.renders.jsonl.gz'
+                render_path = args.output / render_artifact
+                with render_path.open('wb') as render_output:
+                    product['renders'].write_compressed_to(render_output)
+                render_artifacts[name] = render_artifact
+                evidence_products[name] = {
+                    **{key: value for key, value in product.items()
+                       if key not in ('frames', 'assertionFrames', 'renders')},
+                    'frames': dict(format='gzip-jsonl', path=frame_artifact,
+                                   frameCount=len(product['frames'])),
+                    'renders': dict(format='gzip-jsonl', path=render_artifact,
+                                    frameCount=len(product['renders'])),
+                }
+            evidence = dict(dimensions=dimensions, theme=theme, mode=mode, **evidence_products)
             print(f'{case_id}: captured {comparison["comparedRenderFrameCount"]} canonical render frames; '
                   'streaming full evidence', flush=True)
             try:
@@ -338,8 +426,13 @@ def main():
                     writer.flush()
                     writer.detach()
                     compressed.close()
+                write_assertion_evidence(assertion_artifact_path, products, dimensions, theme, mode,
+                                         frame_ids=scenario.get('assertionFrames', []),
+                                         include_working_indicator=scenario['id'] == 'project-trust-extension-ui')
             finally:
                 for product in products.values():
+                    product['frames'].close()
+                    product['assertionFrames'].close()
                     product['renders'].close()
             report['cases'].append(dict(id=case_id, match=difference_count == 0, differences=difference_count,
                                         firstDifferences=delta[:50], scenarioErrors=errors,
@@ -354,7 +447,8 @@ def main():
                                         httpNormalization=comparison['httpNormalization'],
                                         controlBoundaryDifferenceCount=comparison['controlBoundaryDifferenceCount'],
                                         controlBoundaryFirstDifferences=comparison['controlBoundaryFirstDifferences'],
-                                        evidence=artifact))
+                                        evidence=artifact, assertionEvidence=assertion_artifact,
+                                        frameEvidence=frame_artifacts, renderEvidence=render_artifacts))
             print(f'{case_id}: {len(delta)} differences', flush=True)
     finally:
         server.close()

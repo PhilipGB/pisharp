@@ -5,6 +5,8 @@ namespace PiSharp.Runtime.Resources;
 /// <summary>Builds Pi's structured system prompt from the current active tool and resource state.</summary>
 internal static class PiSystemPromptBuilder
 {
+    internal readonly record struct Projection(string Text, int ContextEstimateCharacters);
+
     private const string DefaultPreamble =
         "You are an expert coding assistant operating inside pi, a coding agent harness. You help users by reading files, executing commands, editing code, and writing new files.";
 
@@ -36,6 +38,11 @@ internal static class PiSystemPromptBuilder
         s_builtinContributions.TryGetValue(name, out var contribution) ? contribution.Guidelines : [];
 
     internal static string Build(string workingDirectory, IReadOnlyList<PiSharpToolDeclaration> tools,
+        string? customPrompt, string? appendSystemPrompt, string? projectInstructions, string? skillInstructions)
+        => BuildProjection(workingDirectory, tools, customPrompt, appendSystemPrompt, projectInstructions,
+            skillInstructions).Text;
+
+    internal static Projection BuildProjection(string workingDirectory, IReadOnlyList<PiSharpToolDeclaration> tools,
         string? customPrompt, string? appendSystemPrompt, string? projectInstructions, string? skillInstructions)
     {
         var sections = new List<string>
@@ -69,7 +76,8 @@ internal static class PiSystemPromptBuilder
         }
 
         sections.Add($"<cwd>\n{workingDirectory.Replace('\\', '/')}\n</cwd>");
-        return string.Join("\n\n", sections);
+        var text = string.Join("\n\n", sections);
+        return new(text, sections.Sum(section => section.Length));
     }
 
     private static string BuildRules(IReadOnlyList<PiSharpToolDeclaration> tools)

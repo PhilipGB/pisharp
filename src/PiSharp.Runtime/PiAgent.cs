@@ -304,26 +304,42 @@ public sealed class PiAgent
 
     private IReadOnlyList<AITool> GetToolsForRequest()
     {
-        var declarations = Volatile.Read(ref _currentToolLoadout)?.GetDeclarationsForRequest();
-        if (declarations is null) return [];
-        return Array.AsReadOnly<AITool>(declarations.Select(declaration =>
+        var loadout = Volatile.Read(ref _currentToolLoadout) ??
+            _toolRegistry.CreateLoadout(_initialActiveToolNames);
+        var declarations = loadout.GetDeclarationsForRequest();
+        return FunctionsFor(declarations);
+    }
+
+    private IReadOnlyList<AITool> GetToolsForContextEstimate()
+    {
+        var loadout = Volatile.Read(ref _currentToolLoadout) ??
+            _toolRegistry.CreateLoadout(_initialActiveToolNames);
+        return FunctionsFor(loadout.Snapshot.TranscriptDeclarations);
+    }
+
+    private IReadOnlyList<AITool> FunctionsFor(IEnumerable<PiSharpToolDeclaration> declarations) =>
+        Array.AsReadOnly<AITool>(declarations.Select(declaration =>
         {
             var function = _runtimeToolFunctions[declaration.Registration.Function.Name];
             return string.Equals(declaration.Description, function.Description, StringComparison.Ordinal)
                 ? function
                 : new DescribedAIFunction(function, declaration.Description);
         }).ToArray());
-    }
 
-    private string GetSystemInstructionsForCurrentLoadout()
+    private string GetSystemInstructionsForCurrentLoadout() => GetSystemPromptForCurrentLoadout().Text;
+
+    private PiSystemPromptBuilder.Projection GetSystemPromptForCurrentLoadout()
     {
         var loadout = Volatile.Read(ref _currentToolLoadout)?.Snapshot ??
             _toolRegistry.CreateLoadout(_initialActiveToolNames).Snapshot;
-        return BuildSystemInstructions(loadout.Declared, loadout.ActiveToolNames);
+        return BuildSystemPrompt(loadout.Declared, loadout.ActiveToolNames);
     }
 
     private string BuildSystemInstructions(IReadOnlyList<PiSharpToolDeclaration> declarations,
-        IReadOnlyList<string> activeToolNames) => PiSystemPromptBuilder.Build(_codingTools.WorkingDirectory,
+        IReadOnlyList<string> activeToolNames) => BuildSystemPrompt(declarations, activeToolNames).Text;
+
+    private PiSystemPromptBuilder.Projection BuildSystemPrompt(IReadOnlyList<PiSharpToolDeclaration> declarations,
+        IReadOnlyList<string> activeToolNames) => PiSystemPromptBuilder.BuildProjection(_codingTools.WorkingDirectory,
         declarations, _customSystemPrompt, _appendSystemPrompt, _projectInstructions,
         _getSkillInstructions?.Invoke(activeToolNames,
             declarations.Select(declaration => declaration.Registration.Function.Name).ToArray()));
@@ -444,6 +460,16 @@ public sealed class PiAgent
 
     public IReadOnlyList<ChatMessage> GetHistory(AgentSession session) =>
         _history.GetMessages(session).Select(ChatMessageProperties.WithoutRequestAttribution).ToArray();
+
+    internal int EstimateContextTokens(IEnumerable<ChatMessage> history)
+    {
+        var systemPrompt = GetSystemPromptForCurrentLoadout();
+        var tools = GetToolsForContextEstimate();
+        return PiContextUsageEstimator.Estimate(systemPrompt.ContextEstimateCharacters, tools, history);
+    }
+
+    internal int EstimateContextTokens(long usageTokens, IEnumerable<ChatMessage> trailingMessages) =>
+        PiContextUsageEstimator.EstimateAfterUsage(usageTokens, trailingMessages);
 
     public void AppendToHistory(AgentSession session, ChatMessage message)
     {

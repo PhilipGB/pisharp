@@ -10,6 +10,29 @@ namespace PiSharp.Tests;
 public sealed class ProviderChatClientFactoryTests
 {
     [Fact]
+    public void OpenAiCompletionsProjectionOmitsAgentFrameworkNameFromAssistantHistory()
+    {
+        var model = Selection("fixture", "http://127.0.0.1:1234/v1", "openai-completions").Model;
+        var body = JsonSerializer.SerializeToUtf8Bytes(new
+        {
+            model = model.Id,
+            messages = new object[]
+            {
+                new { role = "assistant", name = "PiSharp", content = "answer" },
+                new { role = "user", content = "next" }
+            }
+        });
+
+        var projected = OpenAiCompletionsRequestCompatibilityHandler.ProjectRequest(
+            body, model, supportsStore: false, maxTokensField: "max_completion_tokens");
+        using var request = JsonDocument.Parse(projected);
+        var messages = request.RootElement.GetProperty("messages");
+
+        Assert.False(messages[0].TryGetProperty("name", out _));
+        Assert.True(messages[1].GetProperty("content").ValueKind == JsonValueKind.Array);
+    }
+
+    [Fact]
     public void ProtocolSelectionDoesNotTreatEveryProviderAsOpenAiCompletions()
     {
         var official = Selection("openai", "https://api.openai.com/v1");

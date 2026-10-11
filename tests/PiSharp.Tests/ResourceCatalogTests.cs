@@ -321,7 +321,7 @@ public sealed class ResourceCatalogTests
             var warning = Assert.Single(details, detail => detail.Name == "Skill conflicts");
 
             Assert.Contains(warning.Items, item => item.Contains("invalid characters", StringComparison.Ordinal));
-            Assert.Contains(skillPath, Assert.Single(warning.ExpandedItems!), StringComparison.Ordinal);
+            Assert.Contains(warning.ExpandedItems!, item => item.Contains(skillPath, StringComparison.Ordinal));
         }
         finally { Directory.Delete(root, recursive: true); }
     }

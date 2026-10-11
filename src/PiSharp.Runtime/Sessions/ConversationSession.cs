@@ -342,14 +342,119 @@ public sealed class ConversationSession
     /// <summary>Latest provider-reported context after the current compaction boundary.</summary>
     public long? LatestContextUsageTokens()
     {
-        var path = Tree.ActivePath();
-        var compactAt = path.ToList().FindLastIndex(node => node.Type == "compaction");
-        if (path.Skip(compactAt + 1).Any(node => node.Type == "context_projection")) return null;
-        return path.Skip(compactAt + 1).Where(node => node.Type == "usage")
-            .Select(node => node.Payload.Deserialize<UsageRecord>() ??
-                throw new InvalidDataException($"Invalid usage record at {node.Id}."))
-            .LastOrDefault(usage => usage.Source == "model")?.TotalTokens;
+        var projection = ProjectContextUsageForEstimate();
+        return projection.HasValidAssistantUsage && !projection.IsInvalidated ? projection.UsageTokens : null;
     }
+
+    internal ContextUsageProjection ProjectContextUsageForEstimate()
+    {
+        var path = Tree.ActivePath();
+        var compactIndex = path.ToList().FindLastIndex(node => node.Type == "compaction");
+        var hasCompaction = compactIndex >= 0;
+        if (path.Skip(compactIndex + 1).Any(node => node.Type == "context_projection"))
+            return new(hasCompaction, false, false, 0, []);
+
+        var usageByAssistantIndex = new Dictionary<int, long>();
+        for (var index = compactIndex + 1; index < path.Count; index++)
+        {
+            var node = path[index];
+            if (node.Type == "chat")
+            {
+                var message = Restore(node.Payload, node.Id);
+                if (IsUsableAssistantMessage(path, index, node, message) &&
+                    TryGetPiUsageTokens(node, out var piUsageTokens))
+                    usageByAssistantIndex[index] = piUsageTokens;
+            }
+
+            if (node.Type != "usage") continue;
+            var usage = node.Payload.Deserialize<UsageRecord>() ??
+                throw new InvalidDataException($"Invalid usage record at {node.Id}.");
+            if (usage.Source != "model" || ContextTokens(usage) is not > 0) continue;
+            var assistantIndex = FollowingAssistantIndex(path, index);
+            if (assistantIndex < 0) assistantIndex = PreviousAssistantIndex(path, index);
+            if (assistantIndex < 0 || !IsUsableAssistantMessage(path, assistantIndex, path[assistantIndex],
+                    ContextMessageForNode(path[assistantIndex])!)) continue;
+            usageByAssistantIndex[assistantIndex] = ContextTokens(usage);
+        }
+
+        if (usageByAssistantIndex.Count == 0)
+            return new(hasCompaction, false, false, 0, []);
+
+        var latest = usageByAssistantIndex.OrderBy(item => item.Key).Last();
+        var invalidatingIndex = path.ToList().FindLastIndex(node => node.Type is "context_edit" or "compaction");
+        var invalidated = invalidatingIndex > latest.Key;
+        var trailingMessages = invalidated ? [] : ProjectContextEntries(path.Skip(latest.Key + 1).ToArray())
+            .Select(entry => entry.Message).ToArray();
+        return new(hasCompaction, true, invalidated, latest.Value, trailingMessages);
+    }
+
+    private static int FollowingAssistantIndex(IReadOnlyList<ConversationNode> path, int sourceIndex)
+    {
+        for (var index = sourceIndex + 1; index < path.Count; index++)
+        {
+            if (path[index].Type is "interrupted" or "compaction") return -1;
+            var message = ContextMessageForNode(path[index]);
+            if (message?.Role == ChatRole.User) return -1;
+            if (message?.Role == ChatRole.Assistant) return path[index].Type == "chat" ? index : -1;
+        }
+        return -1;
+    }
+
+    private static int PreviousAssistantIndex(IReadOnlyList<ConversationNode> path, int sourceIndex)
+    {
+        for (var index = sourceIndex - 1; index >= 0; index--)
+        {
+            var node = path[index];
+            if (node.Type is "interrupted" or "compaction") return -1;
+            var message = ContextMessageForNode(node);
+            if (message?.Role == ChatRole.User) return -1;
+            if (message?.Role == ChatRole.Assistant) return node.Type == "chat" ? index : -1;
+        }
+        return -1;
+    }
+
+    private static bool IsUsableAssistantMessage(IReadOnlyList<ConversationNode> path, int index,
+        ConversationNode node, ChatMessage message)
+    {
+        if (node.Type != "chat" || message.Role != ChatRole.Assistant ||
+            ChatMessageProperties.String(message.AdditionalProperties, "pisharp.stopReason") is "aborted" or "error")
+            return false;
+        for (var next = index + 1; next < path.Count; next++)
+        {
+            if (path[next].Type == "interrupted") return false;
+            if (ContextMessageForNode(path[next]) is not null) break;
+        }
+        return true;
+    }
+
+    private static long ContextTokens(UsageRecord usage)
+    {
+        if (usage.TotalTokens > 0) return usage.TotalTokens;
+        return SaturatingAdd(SaturatingAdd(usage.InputTokens, usage.OutputTokens),
+            SaturatingAdd(usage.CachedInputTokens, usage.CachedWriteTokens));
+    }
+
+    private static bool TryGetPiUsageTokens(ConversationNode node, out long tokens)
+    {
+        tokens = 0;
+        if (PiJsonlSessionInterchange.OriginalEntry(node) is not { } entry ||
+            !entry.TryGetProperty("message", out var message) || message.ValueKind != JsonValueKind.Object ||
+            !message.TryGetProperty("usage", out var usage) || usage.ValueKind != JsonValueKind.Object)
+            return false;
+
+        var total = Number(usage, "totalTokens");
+        tokens = total > 0 ? total : SaturatingAdd(SaturatingAdd(Number(usage, "input"), Number(usage, "output")),
+            SaturatingAdd(Number(usage, "cacheRead"), Number(usage, "cacheWrite")));
+        return tokens > 0;
+    }
+
+    private static long Number(JsonElement value, string name) =>
+        value.TryGetProperty(name, out var property) && property.TryGetInt64(out var result) && result > 0 ? result : 0;
+
+    private static long SaturatingAdd(long left, long right) => left > long.MaxValue - right ? long.MaxValue : left + right;
+
+    internal sealed record ContextUsageProjection(bool HasCompaction, bool HasValidAssistantUsage,
+        bool IsInvalidated, long UsageTokens, IReadOnlyList<ChatMessage> TrailingMessages);
 
     /// <summary>Model input for the selected path; raw chat entries remain available to history and export.</summary>
     public List<ChatMessage> ContextMessages()

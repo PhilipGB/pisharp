@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Summarize current-Pi project_trust extension behavior from paired PTY evidence."""
 import argparse
-import gzip
 import json
 from pathlib import Path
-
+from assertion_evidence import load_assertion_evidence
+from thread_limits import apply_test_thread_limit
+apply_test_thread_limit()
 
 def chat_requests(run):
     return [request for request in run['http']
@@ -37,8 +38,8 @@ def main():
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
     report = json.loads(args.report.read_text())
-    with gzip.open(args.capture, 'rt', encoding='utf-8') as stream:
-        capture = json.load(stream)
+    case = report['cases'][0]
+    capture = load_assertion_evidence(args.report.parent, case)
     pi = inspect_product(capture['pi'])
     pisharp = inspect_product(capture['pisharp'])
     calibration = json.loads(args.calibration_report.read_text())['cases'][0]
@@ -48,7 +49,6 @@ def main():
     expected_trace = ['configured', 'trust-undecided:true', 'trust-decision:true']
     if extension_trace != expected_trace:
         raise AssertionError(f'Expected one pre-trust extension load and ordered handlers; received {extension_trace}')
-    case = report['cases'][0]
     result = dict(
         fixture=report['fixture'], piSha=report['piSha'], pisharpSha=report['pisharpSha'],
         paired=dict(pi=pi, pisharp=pisharp, skillTrustDifference=(pi['trustedProjectSkillPresent'] !=

@@ -96,7 +96,35 @@
     {
       "id": "invoke-winning-project-skill",
       "send": "/skill:shared argument-marker\r",
-      "expect": "fixture reply"
+      "waitGatesAfter": [
+        "hidden-skill-request"
+      ],
+      "expect": [
+        "[skill] shared",
+        "argument-marker",
+        "Working"
+      ],
+      "notExpect": "/skill:shared",
+      "quietMs": 0,
+      "renderMatch": true
+    },
+    {
+      "id": "invoke-skill-content",
+      "releaseGates": [
+        "hidden-skill-content"
+      ],
+      "expect": "fixture reply",
+      "quietMs": 0,
+      "renderMatch": true
+    },
+    {
+      "id": "invoke-skill-complete",
+      "releaseGates": [
+        "hidden-skill-finish"
+      ],
+      "expect": "fixture reply",
+      "notExpect": "Working",
+      "renderMatch": true
     },
     {
       "id": "quit",
@@ -119,5 +147,19 @@
   "terminal": {
     "keyboardProtocol": "kitty"
   },
-  "pisharpExtension": true
+  "pisharpExtension": true,
+  "fixtureBehavior": {
+    "chatRequestGates": [
+      "hidden-skill-request"
+    ],
+    "chatResponseContentGates": [
+      "hidden-skill-content"
+    ],
+    "chatResponseFinishGates": [
+      "hidden-skill-finish"
+    ],
+    "chatResponseContentByRequest": [
+      "fixture reply"
+    ]
+  }
 }

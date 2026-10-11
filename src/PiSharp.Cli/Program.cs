@@ -20,6 +20,17 @@ using var rawTerminalError = !OperatingSystem.IsWindows() && !Console.IsErrorRed
 using var rawTerminalInput = !OperatingSystem.IsWindows() && !Console.IsInputRedirected
     ? OpenRawTerminalReader(0)
     : null;
+if (OperatingSystem.IsLinux() && rawTerminalInput is not null && rawTerminalOutput is not null)
+{
+    var terminalType = Environment.GetEnvironmentVariable("TERM");
+    if (!string.IsNullOrWhiteSpace(terminalType) && !string.Equals(terminalType, "dumb", StringComparison.OrdinalIgnoreCase))
+    {
+        // System.Console re-enters terminfo keypad mode after signals; Pi leaves cursor and keypad modes off.
+        Environment.SetEnvironmentVariable("TERM", "dumb");
+        try { _ = Console.TreatControlCAsInput; }
+        finally { Environment.SetEnvironmentVariable("TERM", terminalType); }
+    }
+}
 if (rawTerminalOutput is not null) Console.SetOut(rawTerminalOutput);
 if (rawTerminalError is not null) Console.SetError(rawTerminalError);
 var standardInput = rawTerminalInput ?? Console.In;
@@ -430,6 +441,12 @@ void ConfigureMcpAuthorizationUrlPresenter(ProjectRuntimeContext context)
 ConfigureMcpAuthorizationUrlPresenter(projectRuntime);
 editor?.AttachScreen(terminalScreen);
 editor?.CompleteInitialTerminalColorQuery();
+string IdleFooter(int? providerCount = null) => TerminalModelStatus.FormatIdleFooter(selection.Model, thinking, conversation,
+    conversationRun.ContextWindowTokens, userSettings.AutoCompactionEnabled(Environment.GetEnvironmentVariable),
+    terminalScreen?.TerminalWidth ?? 80, providerCount ?? modelRuntime.AvailableModelProviderCount,
+    conversationRun.EstimatedContextTokens);
+terminalScreen?.SetFooter(IdleFooter(providerCount: 1), render: false);
+terminalScreen?.RenderInitial();
 void RefreshTerminalTheme()
 {
     if (terminalScreen is null) return;
@@ -456,11 +473,10 @@ if (editor is not null)
     IReadOnlyList<TerminalStartupDetail> CurrentStartupDetails() => TerminalStartupDetails.Build(
         projectRuntime.ContextFiles, resources, extensionLease.Current, currentDirectory, terminalThemeCatalog.Diagnostics);
     terminalScreen?.SetStartupHeader((theme, columns, expanded) =>
-        startupPresentation.BuildLogo(theme) + startupPresentation.BuildDetails(theme, columns,
-            CurrentStartupDetails(), null, expanded, persistentOnly: true));
+        startupPresentation.BuildLogo(theme));
     terminalScreen?.SetStartupContent((theme, columns, expanded) =>
         startupPresentation.Build(theme, expanded) + startupPresentation.BuildDetails(theme, columns,
-            CurrentStartupDetails(), startupTrustNotice, expanded, includePersistentDetails: false));
+            CurrentStartupDetails(), startupTrustNotice, expanded));
 }
 InteractiveTranscript CreateInteractiveTranscript(bool interactive = true) => new(Console.Out, Console.Error, interactive,
     hideThinking: userSettings.HideThinkingBlock == true, screen: terminalScreen,
@@ -471,11 +487,7 @@ var terminalClipboard = new TerminalClipboard(writeTerminalControl: value =>
     if (terminalScreen is { IsActive: true }) terminalScreen.WriteControl(value);
     else Console.Write(value);
 });
-string IdleFooter(int? providerCount = null) => TerminalModelStatus.FormatIdleFooter(selection.Model, thinking, conversation,
-    conversationRun.ContextWindowTokens, userSettings.AutoCompactionEnabled(Environment.GetEnvironmentVariable),
-    terminalScreen?.TerminalWidth ?? 80, providerCount ?? modelRuntime.AvailableModelProviderCount);
 terminalScreen?.SetFooter(IdleFooter(providerCount: 1));
-terminalScreen?.RenderInitial();
 terminalScreen?.SetFooter(IdleFooter());
 CancellationTokenSource? activeRun = null;
 if (editor is null) Console.CancelKeyPress += (_, e) => { e.Cancel = true; activeRun?.Cancel(); };
@@ -500,8 +512,13 @@ async Task Run(string input, IReadOnlyList<DataContent>? images = null)
         var expanded = await resources.ResolveInputAsync(input, runCancel.Token);
         var contents = new List<AIContent> { new TextContent(expanded) };
         if (images is not null) contents.AddRange(images);
-        await foreach (var update in conversationRun.RunEventsAsync(new ChatMessage(ChatRole.User, contents), expanded, runCancel.Token))
+        void ProcessRunUpdate(AgentLifecycleEvent update)
         {
+            if (update.Type is "prompt_accepted" or "agent_attempt_started")
+            {
+                terminalScreen?.SetFooter(IdleFooter(), render: false);
+                terminalScreen?.SetWorkingStatus("Working", render: false);
+            }
             if (update.Type == "prompt_accepted" && editor is not null && !monitorStarted)
             {
                 transcript.Render(update);
@@ -527,11 +544,23 @@ async Task Run(string input, IReadOnlyList<DataContent>? images = null)
                     }
                 }, () => conversationRun.ClearPendingPrompts().InDeliveryOrder, runCancel.Cancel, monitorStop.Token,
                     HandleEditorApplicationAction);
-                continue;
+                return;
+            }
+            if (update.Type == "assistant_turn_started")
+            {
+                terminalScreen?.SetFooter(IdleFooter(), render: false);
+            }
+            if (update.Type is "turn_completed" or "turn_interrupted" or "turn_failed" or "prompt_rejected")
+            {
+                terminalScreen?.SetWorkingStatus(null, render: false);
+                terminalScreen?.SetFooter(IdleFooter(), render: false);
             }
             transcript.Render(update);
             Environment.ExitCode = Math.Max(Environment.ExitCode, transcript.ExitCode);
         }
+        await foreach (var update in conversationRun.RunEventsAsync(
+            new ChatMessage(ChatRole.User, contents), expanded, runCancel.Token))
+            ProcessRunUpdate(update);
         transcript.FinishTurn();
     }
     catch (OperationCanceledException) { Console.Error.WriteLine("Interrupted."); }
@@ -546,6 +575,7 @@ async Task Run(string input, IReadOnlyList<DataContent>? images = null)
             try { await store.SaveAsync(conversation, sessionPath); }
             catch (Exception e) { Console.Error.WriteLine($"Could not save session: {e.Message}"); Environment.ExitCode = 1; }
         activeRun = null;
+        terminalScreen?.SetWorkingStatus(null, render: false);
         terminalScreen?.SetFooter(IdleFooter());
     }
 }
@@ -969,6 +999,7 @@ async Task ReloadResources()
         terminalScreen?.SetMarkdownCodeBlockIndent(userSettings.MarkdownCodeBlockIndent ?? UserSettings.DefaultMarkdownCodeBlockIndent);
         agent = nextAgent;
         conversationRun = nextRun;
+        LoadSessionTranscript();
     }
     catch
     {
@@ -1329,13 +1360,31 @@ else
                         trusted = decision ?? await trustStore.ResolveAsync(currentDirectory, null,
                             false, Console.In, Console.Error);
                         await ReloadResources();
-                        Console.WriteLine($"Project resources: {(trusted ? "trusted" : "not trusted")}");
+                        var trustStatus = $"Project resources: {(trusted ? "trusted" : "not trusted")}";
+                        if (terminalScreen is null) Console.WriteLine(trustStatus);
+                        else terminalScreen.AppendThemedStatusLine(trustStatus);
                         break;
                     case "/reload":
-                        await ReloadResources();
-                        editor.ReloadKeybindings();
-                        Console.WriteLine("Reloaded keybindings, extensions, skills, prompts, themes, and context files");
-                        break;
+                        {
+                            const string reloadProgress = "Reloading keybindings, extensions, skills, prompts, themes, and context files...";
+                            const string reloadStatus = "Reloaded keybindings, extensions, skills, prompts, themes, and context files";
+                            var reloadScreen = terminalScreen is { IsActive: true } activeScreen ? activeScreen : null;
+                            reloadScreen?.ShowReloadProgressPanel(reloadProgress);
+                            try
+                            {
+                                await ReloadResources();
+                                editor.ReloadKeybindings();
+                            }
+                            catch
+                            {
+                                reloadScreen?.DismissReloadProgressPanel();
+                                throw;
+                            }
+                            if (reloadScreen is not null)
+                                reloadScreen.DismissEditorPanelAndAppendThemedStatusLine(reloadStatus);
+                            else if (terminalScreen is null) Console.WriteLine(reloadStatus);
+                            break;
+                        }
                     case "/hotkeys":
                         Console.WriteLine(editor.Hotkeys);
                         break;

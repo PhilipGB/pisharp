@@ -7,14 +7,15 @@ internal readonly record struct TerminalProgressOutcome<T>(bool Cancelled, T? Va
 public sealed class TerminalEditor
 {
     private static readonly TimeSpan InitialProgressFrameDelay = TimeSpan.FromMilliseconds(16);
-    private const string ActiveRunFooter = "Enter steers · follow-up queues · Escape aborts · Alt+Up restores queued input · Ctrl+O tools";
     private readonly EditorBuffer _buffer;
     private TerminalInput? _input;
     private readonly EditorCompletion _completion;
     private readonly EditorKeymap _keymap;
     private TerminalScreen? _screen;
     private bool _searchingTranscript;
+    private string? _lastRenderedEditorText;
     private string _savedDraft = "";
+    private string _savedFooter = "";
     private int _savedCursor;
     private string _lastSearchQuery = "";
     private bool _toolResultsExpanded;
@@ -824,7 +825,6 @@ public sealed class TerminalEditor
         {
             using var mode = TerminalMode.Enter(_screen);
             var input = EnsureInput();
-            _screen?.SetFooter(ActiveRunFooter);
             Render();
             while (!cancellationToken.IsCancellationRequested)
             {
@@ -974,13 +974,14 @@ public sealed class TerminalEditor
     {
         if (_screen is not { IsActive: true } screen) return;
         _toolResultsExpanded = screen.ToggleToolResultsExpanded();
+        screen.AppendThemedStatusLine($"Tool output: {(_toolResultsExpanded ? "expanded" : "collapsed")}");
         if (_searchingTranscript) UpdateTranscriptSearch();
-        else screen.SetFooter($"{ActiveRunFooter} · Tool output {(_toolResultsExpanded ? "expanded" : "collapsed")}");
     }
 
     private void StartTranscriptSearch()
     {
         if (_screen is not { IsActive: true }) return;
+        _savedFooter = _screen.FooterText;
         _savedDraft = _buffer.Text;
         _savedCursor = _buffer.Cursor;
         _buffer.SetText(_lastSearchQuery);
@@ -1036,7 +1037,7 @@ public sealed class TerminalEditor
         _searchingTranscript = false;
         _buffer.SetText(_savedDraft, _savedCursor);
         _screen?.ClearTranscriptSearch();
-        _screen?.SetFooter(ActiveRunFooter);
+        if (_savedFooter.Length > 0) _screen?.SetFooter(_savedFooter);
     }
 
     public async Task<string?> ReadLineAsync(Func<string, Task> dispatchApplicationAction,
@@ -1099,7 +1100,7 @@ public sealed class TerminalEditor
             {
                 var submitted = _buffer.Text;
                 ClearLine();
-                Console.WriteLine($"{Prompt}{submitted}");
+                if (_screen is not { IsActive: true }) Console.WriteLine($"{Prompt}{submitted}");
                 _buffer.Clear();
                 return submitted;
             }
@@ -1147,7 +1148,7 @@ public sealed class TerminalEditor
                 case EditorAction.Submit:
                     var submitted = _buffer.Text;
                     ClearLine();
-                    if (!submitted.StartsWith("/", StringComparison.Ordinal))
+                    if (_screen is not { IsActive: true } && !submitted.StartsWith("/", StringComparison.Ordinal))
                         Console.WriteLine($"{Prompt}{new string(submitted.Replace('\n', '↵').Select(c => char.IsControl(c) ? ' ' : c).ToArray())}");
                     _buffer.Clear();
                     return submitted;
@@ -1204,6 +1205,7 @@ public sealed class TerminalEditor
         if (_screen is { IsActive: true })
         {
             _screen.SetEditor("", 0);
+            _lastRenderedEditorText = "";
             return;
         }
         if (_renderedRows == 0) { Console.Write("\r\u001b[2K"); return; }
@@ -1223,8 +1225,13 @@ public sealed class TerminalEditor
     {
         if (_screen is { IsActive: true })
         {
-            _screen.SetEditor(_buffer.Text, _buffer.Cursor, _buffer.SelectionStart, _buffer.SelectionEnd,
-                _completion.GetSlashCommandSuggestions(_buffer));
+            var text = _buffer.Text;
+            var suggestions = _completion.GetSlashCommandSuggestions(_buffer);
+            if (suggestions.Count > 0 && text.StartsWith("/", StringComparison.Ordinal) &&
+                !(_lastRenderedEditorText?.StartsWith("/", StringComparison.Ordinal) ?? false))
+                _screen.SetEditor(text, _buffer.Cursor, _buffer.SelectionStart, _buffer.SelectionEnd, [], immediate: true);
+            _screen.SetEditor(text, _buffer.Cursor, _buffer.SelectionStart, _buffer.SelectionEnd, suggestions);
+            _lastRenderedEditorText = text;
             return;
         }
         var width = TerminalScreen.ReadColumns();

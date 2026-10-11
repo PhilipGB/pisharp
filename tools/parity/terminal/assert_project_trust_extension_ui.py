@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """Assert pre-trust project extension dialogs and trust outcome in paired PTY captures."""
 import argparse
-import gzip
 import hashlib
 import json
 import re
 from pathlib import Path
-
+from assertion_evidence import load_assertion_evidence
+from thread_limits import apply_test_thread_limit
+apply_test_thread_limit()
 
 def inspect_product(run):
     if run['scenarioError'] is not None:
@@ -33,6 +34,21 @@ def normalize_system_prompt(prompt):
     # The generated guidance matches while these absolute paths remain product-specific.
     return re.sub(r'(?m)^(- Main documentation: |- Additional docs: |- Examples: ).+$',
                   lambda match: match.group(1) + '<documentation-path>', prompt)
+
+
+def normalize_provider_body(body):
+    result = json.loads(json.dumps(body))
+    for message in result.get('messages', []):
+        if message.get('role') != 'system':
+            continue
+        content = message.get('content')
+        if isinstance(content, str):
+            message['content'] = normalize_system_prompt(content)
+        elif isinstance(content, list):
+            for part in content:
+                if isinstance(part, dict) and isinstance(part.get('text'), str):
+                    part['text'] = normalize_system_prompt(part['text'])
+    return result
 
 
 def difference_paths(left, right, path='$'):
@@ -70,6 +86,36 @@ def inspect_startup_dialog_frames(capture):
     return matches
 
 
+def inspect_completed_and_exit_frames(capture):
+    products = {name: {frame['id']: frame for frame in capture[name]['frames']}
+                for name in ('pi', 'pisharp')}
+    matches = {}
+    for frame_id in ('complete-prompt', 'quit'):
+        frames = {name: product.get(frame_id) for name, product in products.items()}
+        if any(frame is None for frame in frames.values()):
+            raise AssertionError(f'Missing named terminal checkpoint {frame_id}: {frames}')
+        if frames['pi']['state'] != frames['pisharp']['state']:
+            paths = difference_paths(frames['pi']['state'], frames['pisharp']['state'])
+            raise AssertionError(f'{frame_id} terminal snapshots differ at {paths[:20]}')
+        matches[frame_id] = True
+    return matches
+
+
+def inspect_usage_during_work(capture):
+    result = {}
+    for name in ('pi', 'pisharp'):
+        summary = capture[name].get('workingIndicator')
+        if summary is None:
+            raise AssertionError(f'{name} compact evidence omitted the working-indicator summary')
+        if summary['workingRenderFrames'] == 0:
+            raise AssertionError(f'{name} capture did not contain a working render')
+        if summary['prematureUsage']:
+            raise AssertionError(f'{name} displayed completed-run usage while still working: {summary["prematureUsage"]}')
+        result[name] = dict(workingRenderFrames=summary['workingRenderFrames'],
+                            completedRunUsageShownWhileWorking=False)
+    return result
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--report', type=Path, required=True)
@@ -79,9 +125,11 @@ def main():
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
     report = json.loads(args.report.read_text())
-    with gzip.open(args.capture, 'rt', encoding='utf-8') as stream:
-        capture = json.load(stream)
+    case = report['cases'][0]
+    capture = load_assertion_evidence(args.report.parent, case)
     startup_dialog_frames = inspect_startup_dialog_frames(capture)
+    completed_and_exit_frames = inspect_completed_and_exit_frames(capture)
+    usage_during_work = inspect_usage_during_work(capture)
     pi = inspect_product(capture['pi'])
     pisharp = inspect_product(capture['pisharp'])
     pi_request = next(request for request in capture['pi']['http']
@@ -95,7 +143,12 @@ def main():
     normalized_system_prompt_match = normalize_system_prompt(pi_system) == normalize_system_prompt(pisharp_system)
     if not normalized_system_prompt_match:
         raise AssertionError('Pi and PiSharp trusted-project system prompts differ beyond documentation install paths')
-    request_difference_paths = difference_paths(pi_request['body'], pisharp_request['body'])
+    raw_request_difference_paths = difference_paths(pi_request['body'], pisharp_request['body'])
+    request_difference_paths = difference_paths(normalize_provider_body(pi_request['body']),
+                                                normalize_provider_body(pisharp_request['body']))
+    if request_difference_paths:
+        raise AssertionError(f'Pi and PiSharp provider request bodies differ beyond documentation install paths: '
+                             f'{request_difference_paths[:20]}')
     calibration = json.loads(args.calibration_report.read_text())['cases'][0]
     if not calibration['match'] or not calibration['terminalMatch'] or not calibration['httpMatch']:
         raise AssertionError('Same-Pi calibration did not match terminal state and HTTP')
@@ -108,17 +161,19 @@ def main():
     ]
     if extension_trace != expected_trace:
         raise AssertionError(f'Expected all four ordered startup UI operations; received {extension_trace}')
-    case = report['cases'][0]
     result = dict(
         fixture=report['fixture'], piSha=report['piSha'], pisharpSha=report['pisharpSha'],
         paired=dict(pi=pi, pisharp=pisharp, terminalMatch=case['terminalMatch'],
                     httpMatch=case['httpMatch'], stateDifferences=case['differences'],
                     renderDifferences=case['renderDifferences'], rawByteMatch=case['rawMatch'],
                     startupDialogFrames=startup_dialog_frames,
+                    completedAndExitFrames=completed_and_exit_frames,
+                    usageDuringWork=usage_during_work,
                     scenarioErrors=case['scenarioErrors'],
                     normalizedSystemPromptMatch=normalized_system_prompt_match,
                     providerRequestDifferenceCount=len(request_difference_paths),
-                    providerRequestDifferencePaths=request_difference_paths),
+                    providerRequestDifferencePaths=request_difference_paths,
+                    rawProviderRequestDifferencePaths=raw_request_difference_paths),
         calibration=dict(match=calibration['match'], terminalMatch=calibration['terminalMatch'],
                          httpMatch=calibration['httpMatch'], renderDifferences=calibration['renderDifferences']),
         pisharpExtensionTrace=extension_trace)

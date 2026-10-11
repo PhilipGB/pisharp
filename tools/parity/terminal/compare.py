@@ -106,22 +106,36 @@ def compare_products(left, right, concurrent_http_groups=()):
 
     PTY output can arrive on either side of a named checkpoint without changing
     the bytes sent or the rendered state. Keep those per-frame control buckets
-    for diagnosis and preserve the complete byte stream. Compare every state
-    transition at synchronized-output boundaries, collapsing adjacent duplicate
-    snapshots, hidden cursor coordinates, and the transient braille loader frame
-    in the bottom status area. Only source-proven concurrent request batches may
-    declare order independent.
+    for diagnosis and preserve the complete byte stream. Compare every settled
+    checkpoint and stable render transition at synchronized-output boundaries,
+    collapsing adjacent duplicates, hidden cursor coordinates, transient loader
+    glyphs, and in-flight Working-indicator frames. Same-Pi calibration shows
+    that a fast scripted response can finish before this animated frame is
+    captured, so its presence and partial usage footer depend on PTY scheduling.
+    Only source-proven concurrent request batches may declare order independent.
     """
     left_frames = left.get('frames', [])
     right_frames = right.get('frames', [])
-    state_differences = list(differences(
-        [{'id': frame.get('id'), 'state': normalize_terminal_state(frame.get('state'))} for frame in left_frames],
-        [{'id': frame.get('id'), 'state': normalize_terminal_state(frame.get('state'))} for frame in right_frames], '$.frames'))
+    state_differences = []
+    state_difference_count = 0
+    control_boundary_differences = []
+    control_boundary_difference_count = 0
+    if len(left_frames) != len(right_frames):
+        state_difference_count += 1
+        state_differences.append(dict(path='$.frames.length', pi=len(left_frames), pisharp=len(right_frames)))
+        control_boundary_difference_count += 1
+        control_boundary_differences.append(dict(path='$.controlBoundaries.length',
+                                                 pi=len(left_frames), pisharp=len(right_frames)))
+    for index, (left_frame, right_frame) in enumerate(zip(left_frames, right_frames)):
+        state_difference_count += append_difference_sample(
+            {'id': left_frame.get('id'), 'state': normalize_terminal_state(left_frame.get('state'))},
+            {'id': right_frame.get('id'), 'state': normalize_terminal_state(right_frame.get('state'))},
+            f'$.frames[{index}]', state_differences, MAX_RENDER_DIFFERENCES)
+        control_boundary_difference_count += append_difference_sample(
+            left_frame.get('controls', []), right_frame.get('controls', []),
+            f'$.controlBoundaries[{index}]', control_boundary_differences, 20)
     render_differences, render_difference_count, compared_render_frame_count = compare_render_sequences(
         left.get('renders', []), right.get('renders', []))
-    control_boundary_differences = list(differences(
-        [frame.get('controls', []) for frame in left_frames],
-        [frame.get('controls', []) for frame in right_frames], '$.controlBoundaries'))
     left_raw = base64.b64decode(left.get('raw', ''))
     right_raw = base64.b64decode(right.get('raw', ''))
     raw_match = left_raw == right_raw
@@ -140,9 +154,9 @@ def compare_products(left, right, concurrent_http_groups=()):
         raw_difference = dict(piBytes=len(left_raw), pisharpBytes=len(right_raw),
                               firstDifferingByte=first_difference)
     result_differences.extend(http_differences)
-    difference_count = len(state_differences) + render_difference_count + len(http_differences)
+    difference_count = state_difference_count + render_difference_count + len(http_differences)
     return dict(match=difference_count == 0,
-                terminalMatch=not state_differences and render_difference_count == 0,
+                terminalMatch=state_difference_count == 0 and render_difference_count == 0,
                 rawMatch=raw_match,
                 rawDifference=raw_difference,
                 httpMatch=not http_differences,
@@ -151,14 +165,24 @@ def compare_products(left, right, concurrent_http_groups=()):
                 rawHttpFirstDifferences=raw_http_differences[:20],
                 httpNormalization=HTTP_DOCUMENTATION_PATH_NORMALIZATION,
                 stateDifferences=state_differences,
+                stateDifferenceCount=state_difference_count,
                 renderDifferences=render_differences,
                 renderDifferenceCount=render_difference_count,
                 comparedRenderFrameCount=compared_render_frame_count,
                 httpDifferences=http_differences,
                 differenceCount=difference_count,
-                controlBoundaryDifferenceCount=len(control_boundary_differences),
-                controlBoundaryFirstDifferences=control_boundary_differences[:20],
+                controlBoundaryDifferenceCount=control_boundary_difference_count,
+                controlBoundaryFirstDifferences=control_boundary_differences,
                 differences=result_differences)
+
+
+def append_difference_sample(left, right, path, sample, limit):
+    count = 0
+    for difference in differences(left, right, path):
+        count += 1
+        if len(sample) < limit:
+            sample.append(difference)
+    return count
 
 
 def normalize_terminal_state(state):
@@ -214,11 +238,32 @@ def iter_canonical_render_frames(frames):
     previous = None
     first = True
     for frame in frames:
+        if has_in_flight_working_indicator(frame):
+            continue
         normalized = normalize_terminal_state(frame)
         if first or normalized != previous:
             yield normalized
         previous = normalized
         first = False
+
+
+def has_in_flight_working_indicator(state):
+    if not isinstance(state, dict):
+        return False
+    rows = state.get('rows')
+    if not isinstance(rows, int) or rows < 5:
+        return False
+    active = state.get('activeScreen')
+    buffer = state.get('buffers', {}).get(active, {})
+    lines = buffer.get('lines', []) if isinstance(buffer, dict) else []
+    for line in lines:
+        if not isinstance(line, dict):
+            continue
+        cells = line.get('cells', [])
+        text = ''.join(cell.get('chars', '') for cell in cells if isinstance(cell, dict))
+        if 'Working' in text and text.count('─') >= len(cells) // 2:
+            return True
+    return False
 
 
 def compare_render_sequences(left_frames, right_frames):

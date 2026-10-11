@@ -330,7 +330,8 @@ public sealed class TerminalPtyTests
 
                             const string activeFooter = "Enter steers · follow-up queues · Escape aborts";
                             if (frame.Contains("PTY_REPLY_OK", StringComparison.Ordinal) &&
-                                !frame.Contains(activeFooter, StringComparison.Ordinal))
+                                !frame.Contains(activeFooter, StringComparison.Ordinal) &&
+                                !frame.Contains("Working", StringComparison.Ordinal))
                                 idleAfterReply.TrySetResult();
                         }
                     }
@@ -368,7 +369,6 @@ public sealed class TerminalPtyTests
                 await idleAfterReply.Task.WaitAsync(timeout.Token);
                 await process.StandardInput.WriteAsync("/quit\n");
                 await process.StandardInput.FlushAsync();
-                process.StandardInput.Close();
                 await process.WaitForExitAsync(timeout.Token);
             }
             catch (OperationCanceledException error)
@@ -613,7 +613,8 @@ public sealed class TerminalPtyTests
             Assert.Contains("Import cancelled.", terminalOutput);
             Assert.Contains("Exported private Pi JSONL to", terminalOutput);
             Assert.Contains($"Imported Pi session {importedId}", terminalOutput);
-            Assert.Contains("› imported context from Pi", terminalOutput);
+            Assert.Contains("imported context from Pi", terminalOutput);
+            Assert.DoesNotContain("› imported context from Pi", terminalOutput);
             Assert.Contains(importedId, terminalOutput);
             Assert.Contains("imported context from Pi", imported.ActiveMessages().Select(message => message.Text));
             var exported = PiSharp.Runtime.Sessions.PiJsonlSessionInterchange.Import(await File.ReadAllTextAsync(exportPath));
@@ -645,7 +646,8 @@ public sealed class TerminalPtyTests
             Assert.Equal(sourceCwd, (await startupStore.LoadAsync(startupSession.Path)).WorkingDirectory);
             Assert.Equal(0, process.ExitCode);
             Assert.Contains(importedId, startupText);
-            Assert.Contains("› imported context from Pi", startupText);
+            Assert.Contains("imported context from Pi", startupText);
+            Assert.DoesNotContain("› imported context from Pi", startupText);
             Assert.DoesNotContain("Could not open session:", startupText);
             Assert.DoesNotContain("Agent error:", await startupError);
             Assert.Equal(importedId, (await startupStore.LoadAsync(startupSession.Path)).Id);

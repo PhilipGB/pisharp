@@ -1,5 +1,6 @@
 {
   "id": "legacy-project-skills-settings",
+  "assertionFrames": ["skill-completion-disabled"],
   "workingDirectory": "legacy-project",
   "settings": {
     "quietStartup": true

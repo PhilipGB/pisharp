@@ -1,23 +1,85 @@
 import copy
+import gzip
 import io
 import json
 import os
 from pathlib import Path
+import subprocess
 import sys
 import time
 from threading import Event, Thread
 import tempfile
 import urllib.request
 import unittest
+from unittest.mock import patch
 
 from compare import ControlTrace, canonical_render_frames, compare_products, differences
 from fixture_http import FixtureServer
 from pty_process import RenderFrameSequence, RenderFrameStore, TerminalProcess
 from run import commands, environment, expand_environment, prepare_workspace, write_json_stream, write_scenario_files
-from thread_limits import TEST_THREAD_LIMIT, thread_limit_environment
+from thread_limits import TEST_THREAD_LIMIT, apply_test_thread_limit, thread_limit_environment
+
+apply_test_thread_limit()
 
 
 class DriverTests(unittest.TestCase):
+    def test_assertion_evidence_omits_raw_and_render_streams(self):
+        from run import write_assertion_evidence
+
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / 'capture.assertions.json.gz'
+            products = {
+                name: {
+                    'frames': [{'id': 'ready', 'state': {'viewport': []}}],
+                    'assertionFrames': [{'id': 'ready', 'state': {'viewport': []}}],
+                    'http': [{'method': 'POST', 'path': '/v1/chat/completions'}],
+                    'scenarioError': None,
+                    'raw': 'large terminal byte stream',
+                    'renders': object(),
+                }
+                for name in ('pi', 'pisharp')
+            }
+
+            write_assertion_evidence(path, products, dict(columns=120, rows=40), 'dark', 'fullscreen',
+                                     frame_ids=['ready'])
+
+            with gzip.open(path, 'rt', encoding='utf-8') as stream:
+                evidence = json.load(stream)
+            self.assertEqual(['ready'], [frame['id'] for frame in evidence['pi']['frames']])
+            self.assertEqual('/v1/chat/completions', evidence['pisharp']['http'][0]['path'])
+            self.assertNotIn('raw', evidence['pi'])
+            self.assertNotIn('renders', evidence['pi'])
+
+    def test_assertion_evidence_summarizes_working_usage_without_retaining_frames(self):
+        from run import write_assertion_evidence
+
+        def state(status, footer):
+            lines = [dict(cells=[dict(chars=' ' * 120, width=1)]) for _ in range(40)]
+            lines[35]['cells'] = [dict(chars=status, width=1)]
+            lines[39]['cells'] = [dict(chars=footer, width=1)]
+            return dict(rows=40, activeScreen='alternate', buffers=dict(alternate=dict(lines=lines)))
+
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / 'capture.assertions.json.gz'
+            products = {
+                name: {
+                    'frames': [],
+                    'http': [],
+                    'scenarioError': None,
+                    'renders': [state('Working', '↑10 ↓3 0.2%/8.2k'), state('Idle', '↑13 ↓3')],
+                }
+                for name in ('pi', 'pisharp')
+            }
+
+            write_assertion_evidence(path, products, dict(columns=120, rows=40), 'dark', 'fullscreen',
+                                     include_working_indicator=True)
+
+            with gzip.open(path, 'rt', encoding='utf-8') as stream:
+                evidence = json.load(stream)
+            self.assertEqual(1, evidence['pi']['workingIndicator']['workingRenderFrames'])
+            self.assertEqual(['↑10 ↓3 0.2%/8.2k'], evidence['pisharp']['workingIndicator']['prematureUsage'])
+            self.assertNotIn('renders', evidence['pi'])
+
     def test_runner_and_child_environment_are_limited_to_two_threads(self):
         self.assertEqual(2, TEST_THREAD_LIMIT)
         expected = thread_limit_environment()
@@ -26,6 +88,15 @@ class DriverTests(unittest.TestCase):
         self.assertTrue(all(child_environment[name] == '2' for name in expected))
         if hasattr(os, 'sched_getaffinity'):
             self.assertLessEqual(len(os.sched_getaffinity(0)), TEST_THREAD_LIMIT)
+            child = subprocess.run(
+                [sys.executable, '-c',
+                 'import json, os; print(json.dumps({"affinity": len(os.sched_getaffinity(0)), '
+                 '"cpuCount": os.process_cpu_count() if hasattr(os, "process_cpu_count") else None}))'],
+                check=True, capture_output=True, text=True, env=child_environment)
+            child_limits = json.loads(child.stdout)
+            self.assertLessEqual(child_limits['affinity'], TEST_THREAD_LIMIT)
+            if child_limits['cpuCount'] is not None:
+                self.assertLessEqual(child_limits['cpuCount'], TEST_THREAD_LIMIT)
 
     @staticmethod
     def read_sse_event(stream):
@@ -70,6 +141,19 @@ class DriverTests(unittest.TestCase):
             self.assertNotIn(str(extension.resolve()), result['pi'])
             with self.assertRaises(ValueError):
                 commands(Path('/current-pi'), Path('/pisharp.dll'), scenario)
+
+    def test_runner_restarts_keep_render_frame_spooling_enabled(self):
+        from run import start_terminal_process
+
+        command = ['dotnet', 'PiSharp.Cli.dll']
+        cwd = Path('/tmp/pisharp-fixture')
+        child_environment = {'PATH': '/usr/bin'}
+        options = dict(columns=100, rows=32)
+        with patch('run.TerminalProcess') as terminal_process:
+            start_terminal_process(command, cwd, child_environment, options)
+
+        terminal_process.assert_called_once_with(command, cwd, child_environment, options,
+                                                 spool_render_frames=True)
 
     def test_fixture_file_updates_are_contained_to_the_owned_directory(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -320,6 +404,26 @@ class DriverTests(unittest.TestCase):
         self.assertEqual(3, result['comparedRenderFrameCount'])
         self.assertIn('$.renders[1].viewport[0].text', {item['path'] for item in result['renderDifferences']})
 
+    def test_working_indicator_render_is_calibrated_noise_but_settled_frames_stay_exact(self):
+        def state(status, footer):
+            lines = [dict(cells=[dict(chars=' ') for _ in range(120)]) for _ in range(40)]
+            border = '─' * 120 if status is None else '── ⠋ Working ' + '─' * 106
+            for line, text in ((35, border), (39, footer)):
+                for index, character in enumerate(text[:120]):
+                    lines[line]['cells'][index]['chars'] = character
+            return dict(rows=40, columns=120, activeScreen='alternate', viewport=copy.deepcopy(lines),
+                        buffers=dict(alternate=dict(lines=copy.deepcopy(lines))))
+
+        settled = state(None, '↑13 ↓3 0.3%/8.2k (auto)')
+        in_flight = state('Working', '↑10 ↓3 0.2%/8.2k (auto)')
+        pi = dict(frames=[dict(id='reply', state=settled)], renders=[in_flight, settled], raw='', http=[])
+        repeated_pi = dict(frames=[dict(id='reply', state=settled)], renders=[settled], raw='', http=[])
+
+        self.assertTrue(compare_products(pi, repeated_pi)['match'])
+        self.assertFalse(compare_products(
+            dict(frames=[dict(id='reply', state=in_flight)], renders=[], raw='', http=[]),
+            repeated_pi)['match'])
+
     def test_render_comparison_streams_all_frames_and_bounds_only_the_difference_sample(self):
         frame_count = 120
         left = dict(frames=[], renders=(dict(viewport=[dict(text=f'pi {index}')])
@@ -348,8 +452,31 @@ class DriverTests(unittest.TestCase):
             write_json_stream(stream, dict(renders=sequence))
             self.assertEqual({'renders': frames}, json.loads(stream.getvalue()))
             self.assertEqual(frames, list(sequence))
+            with tempfile.TemporaryDirectory() as temporary:
+                path = Path(temporary) / 'renders.jsonl.gz'
+                with path.open('wb') as output:
+                    sequence.write_compressed_to(output)
+                with gzip.open(path, 'rt', encoding='utf-8') as output:
+                    self.assertEqual(frames, [json.loads(line) for line in output])
         finally:
             sequence.close()
+
+    def test_product_comparison_streams_compressed_checkpoint_frames(self):
+        pi = RenderFrameStore()
+        pisharp = RenderFrameStore()
+        self.addCleanup(pi.close)
+        self.addCleanup(pisharp.close)
+        for index in range(4):
+            pi.append(dict(id=f'checkpoint-{index}', state=dict(viewport=[dict(text=f'row {index}')]), controls=[]))
+            text = 'changed row' if index == 2 else f'row {index}'
+            pisharp.append(dict(id=f'checkpoint-{index}', state=dict(viewport=[dict(text=text)]), controls=[]))
+
+        result = compare_products(dict(frames=pi, renders=[], raw='', http=[]),
+                                  dict(frames=pisharp, renders=[], raw='', http=[]))
+
+        self.assertFalse(result['terminalMatch'])
+        self.assertEqual(1, result['stateDifferenceCount'])
+        self.assertEqual('$.frames[2].state.viewport[0].text', result['stateDifferences'][0]['path'])
 
     def test_product_comparison_preserves_order_around_declared_parallel_requests(self):
         state = dict(viewport=[dict(text='ready')])
@@ -566,8 +693,10 @@ class DriverTests(unittest.TestCase):
             self.assertFalse(server.gate_released('load-started'))
 
             server.release_gate('load-response')
-            self.assertTrue(done.wait(2))
-            request_thread.join(timeout=2)
+            deadline = time.monotonic() + 2
+            self.assertTrue(done.wait(max(0, deadline - time.monotonic())))
+            self.assertTrue(server.wait_for_gate('load-started', timeout=max(0, deadline - time.monotonic())))
+            request_thread.join(timeout=max(0, deadline - time.monotonic()))
 
             self.assertEqual([], errors)
             self.assertEqual([dict(success=True)], result)

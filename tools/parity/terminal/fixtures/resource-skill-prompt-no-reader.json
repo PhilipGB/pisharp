@@ -89,29 +89,159 @@
       "expect": "fixture-model"
     },
     {
-      "id": "invoke-shared",
+      "id": "invoke-shared-pending",
       "send": "/skill:shared   argument<&> marker   \r",
-      "expect": "fixture reply"
+      "expect": [
+        "[skill] shared",
+        "argument<&> marker",
+        "Working"
+      ],
+      "notExpect": "/skill:shared",
+      "renderMatch": true,
+      "waitGatesAfter": [
+        "chat-request-1"
+      ]
     },
     {
-      "id": "invoke-project-only",
+      "id": "invoke-shared-content",
+      "expect": "fixture reply 1",
+      "renderMatch": true,
+      "releaseGates": [
+        "chat-content-1"
+      ]
+    },
+    {
+      "id": "invoke-shared-complete",
+      "expect": "fixture reply 1",
+      "notExpect": "Working",
+      "allowStaticFrame": true,
+      "releaseGates": [
+        "chat-finish-1"
+      ]
+    },
+    {
+      "id": "invoke-project-only-pending",
       "send": "/skill:project-only   argument<&> marker   \r",
-      "expect": "fixture reply"
+      "expect": [
+        "[skill] project-only",
+        "argument<&> marker",
+        "Working"
+      ],
+      "notExpect": "/skill:project-only",
+      "renderMatch": true,
+      "waitGatesAfter": [
+        "chat-request-2"
+      ]
     },
     {
-      "id": "invoke-user-only",
+      "id": "invoke-project-only-content",
+      "expect": "fixture reply 2",
+      "renderMatch": true,
+      "releaseGates": [
+        "chat-content-2"
+      ]
+    },
+    {
+      "id": "invoke-project-only-complete",
+      "expect": "fixture reply 2",
+      "notExpect": "Working",
+      "allowStaticFrame": true,
+      "releaseGates": [
+        "chat-finish-2"
+      ]
+    },
+    {
+      "id": "invoke-user-only-pending",
       "send": "/skill:user-only   argument<&> marker   \r",
-      "expect": "fixture reply"
+      "expect": [
+        "[skill] user-only",
+        "argument<&> marker",
+        "Working"
+      ],
+      "notExpect": "/skill:user-only",
+      "renderMatch": true,
+      "waitGatesAfter": [
+        "chat-request-3"
+      ]
     },
     {
-      "id": "invoke-temp-only",
+      "id": "invoke-user-only-content",
+      "expect": "fixture reply 3",
+      "renderMatch": true,
+      "releaseGates": [
+        "chat-content-3"
+      ]
+    },
+    {
+      "id": "invoke-user-only-complete",
+      "expect": "fixture reply 3",
+      "notExpect": "Working",
+      "allowStaticFrame": true,
+      "releaseGates": [
+        "chat-finish-3"
+      ]
+    },
+    {
+      "id": "invoke-temp-only-pending",
       "send": "/skill:temp-only   argument<&> marker   \r",
-      "expect": "fixture reply"
+      "expect": [
+        "[skill] temp-only",
+        "argument<&> marker",
+        "Working"
+      ],
+      "notExpect": "/skill:temp-only",
+      "renderMatch": true,
+      "waitGatesAfter": [
+        "chat-request-4"
+      ]
     },
     {
-      "id": "invoke-unsafeandskill",
+      "id": "invoke-temp-only-content",
+      "expect": "fixture reply 4",
+      "renderMatch": true,
+      "releaseGates": [
+        "chat-content-4"
+      ]
+    },
+    {
+      "id": "invoke-temp-only-complete",
+      "expect": "fixture reply 4",
+      "notExpect": "Working",
+      "allowStaticFrame": true,
+      "releaseGates": [
+        "chat-finish-4"
+      ]
+    },
+    {
+      "id": "invoke-unsafeandskill-pending",
       "send": "/skill:unsafe&skill   argument<&> marker   \r",
-      "expect": "fixture reply"
+      "expect": [
+        "[skill] unsafe&skill",
+        "argument<&> marker",
+        "Working"
+      ],
+      "notExpect": "/skill:unsafe&skill",
+      "renderMatch": true,
+      "waitGatesAfter": [
+        "chat-request-5"
+      ]
+    },
+    {
+      "id": "invoke-unsafeandskill-content",
+      "expect": "fixture reply 5",
+      "renderMatch": true,
+      "releaseGates": [
+        "chat-content-5"
+      ]
+    },
+    {
+      "id": "invoke-unsafeandskill-complete",
+      "expect": "fixture reply 5",
+      "notExpect": "Working",
+      "allowStaticFrame": true,
+      "releaseGates": [
+        "chat-finish-5"
+      ]
     },
     {
       "id": "quit",
@@ -133,5 +263,35 @@
   ],
   "terminal": {
     "keyboardProtocol": "kitty"
+  },
+  "fixtureBehavior": {
+    "chatRequestGates": [
+      "chat-request-1",
+      "chat-request-2",
+      "chat-request-3",
+      "chat-request-4",
+      "chat-request-5"
+    ],
+    "chatResponseContentGates": [
+      "chat-content-1",
+      "chat-content-2",
+      "chat-content-3",
+      "chat-content-4",
+      "chat-content-5"
+    ],
+    "chatResponseFinishGates": [
+      "chat-finish-1",
+      "chat-finish-2",
+      "chat-finish-3",
+      "chat-finish-4",
+      "chat-finish-5"
+    ],
+    "chatResponseContentByRequest": [
+      "fixture reply 1",
+      "fixture reply 2",
+      "fixture reply 3",
+      "fixture reply 4",
+      "fixture reply 5"
+    ]
   }
 }

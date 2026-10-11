@@ -32,6 +32,34 @@ public sealed class TerminalScreenTests
     }
 
     [Fact]
+    public void AlternateScreenShutdownReleasesModesInPiOrder()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        var screen = new TerminalScreen(output, error, useAlternateScreen: true);
+        output.GetStringBuilder().Clear();
+        output.Write("\u001b[?2004h");
+
+        Assert.True(screen.PrepareTerminalModeShutdown());
+        screen.Dispose();
+
+        var text = output.ToString();
+        var keyboardOff = text.IndexOf("\u001b[<u", StringComparison.Ordinal);
+        var beginRedraw = text.IndexOf("\u001b[?2026h", StringComparison.Ordinal);
+        var endRedraw = text.IndexOf("\u001b[?2026l", beginRedraw, StringComparison.Ordinal);
+        var beginCleanup = text.IndexOf("\u001b[?2026h", endRedraw, StringComparison.Ordinal);
+        var mouseOff = text.IndexOf("\u001b[?1006l", StringComparison.Ordinal);
+        var endCleanup = text.IndexOf("\u001b[?2026l", beginCleanup, StringComparison.Ordinal);
+        var beginLeave = text.IndexOf("\u001b[?2026h", endCleanup, StringComparison.Ordinal);
+        var pasteOff = text.IndexOf("\u001b[?2004l", StringComparison.Ordinal);
+        var alternateScreenOff = text.IndexOf("\u001b[?1049l", StringComparison.Ordinal);
+        Assert.True(keyboardOff >= 0 && keyboardOff < beginRedraw && beginRedraw < endRedraw && endRedraw < mouseOff);
+        Assert.True(beginCleanup < mouseOff && mouseOff < endCleanup && endCleanup < beginLeave);
+        Assert.True(beginLeave < pasteOff && pasteOff < alternateScreenOff);
+        Assert.Equal(1, Count(text, "\u001b[<u"));
+    }
+
+    [Fact]
     public void TranscriptAndDraftShareAUnicodeAwareScreenAndRestoreSeparateStreams()
     {
         using var output = new StringWriter();
@@ -141,6 +169,36 @@ public sealed class TerminalScreenTests
         Assert.DoesNotContain("/llama", outputText);
         Assert.Contains("llama.cpp models", outputText);
         Assert.Contains("Loading…", outputText);
+    }
+
+    [Fact]
+    public void ResourceReloadProgressPanelReplacesAndRestoresTheEditor()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        using var screen = new TerminalScreen(output, error, () => 100, () => 32,
+            new TerminalImageRenderer(), TerminalTheme.Default, queryTerminalColors: false);
+        screen.SetEditor("draft", 5);
+        output.GetStringBuilder().Clear();
+
+        screen.ShowReloadProgressPanel("Reloading resources...");
+
+        var progress = output.ToString();
+        Assert.Contains("\u001b[26;1H\u001b[2K", progress);
+        Assert.Contains("Reloading resources...", progress);
+        Assert.DoesNotContain("draft", progress);
+
+        output.GetStringBuilder().Clear();
+        screen.ReplaceTranscript(target => target.AppendUserMessage("reloaded transcript"));
+        Assert.Empty(output.ToString());
+
+        screen.DismissEditorPanelAndAppendThemedStatusLine("Reloaded resources.");
+
+        var restored = output.ToString();
+        Assert.Equal(1, Count(restored, "\u001b[?2026h"));
+        Assert.Contains("reloaded transcript", restored);
+        Assert.Contains("Reloaded resources.", restored);
+        Assert.DoesNotContain("Reloading resources...", restored);
     }
 
     [Fact]
@@ -494,6 +552,12 @@ public sealed class TerminalScreenTests
             new(new ConsoleKeyInfo('\0', ConsoleKey.O, shift: false, alt: false, control: true), null),
             (_, _, _) => Task.FromResult(true), () => [], () => { });
         var expandedFrame = output.ToString()[expandedFrameStart..];
+        var collapsedFrameStart = output.GetStringBuilder().Length;
+        await editor.HandleActiveInputAsync(
+            new(new ConsoleKeyInfo('\0', ConsoleKey.O, shift: false, alt: false, control: true), null),
+            (_, _, _) => Task.FromResult(true), () => [], () => { });
+        var recollapsedFrame = output.ToString()[collapsedFrameStart..];
+        var recollapsedScreen = TerminalOutputFrameReader.Read(output.ToString(), rows: 30, columns: 100)[^1].Screen;
         screen.Dispose();
 
         Assert.Contains("line 1", collapsedFrame);
@@ -502,6 +566,9 @@ public sealed class TerminalScreenTests
         Assert.DoesNotContain("line 11", collapsedFrame);
         Assert.Contains("line 11", expandedFrame);
         Assert.Contains("line 12", expandedFrame);
+        Assert.Contains("Tool output: expanded", expandedFrame);
+        Assert.Contains("Tool output: collapsed", recollapsedFrame);
+        Assert.DoesNotContain("Tool output: expanded", recollapsedScreen);
         Assert.Contains("line 12", error.ToString());
     }
 
@@ -614,7 +681,7 @@ public sealed class TerminalScreenTests
     {
         using var output = new StringWriter();
         using var error = new StringWriter();
-        var screen = new TerminalScreen(output, error, () => 80, () => 24,
+        var screen = new TerminalScreen(output, error, () => 80, () => 40,
             new TerminalImageRenderer(name => name == "KITTY_WINDOW_ID" ? "2" : null));
         var transcript = new InteractiveTranscript(screen.Output, screen.Error, screen: screen);
         var imageBytes = CreateImage(12, 7);
@@ -628,7 +695,9 @@ public sealed class TerminalScreenTests
         var serialized = JsonSerializer.Serialize(update);
         screen.Dispose();
 
-        Assert.Contains("› inspect this", rendered);
+        Assert.DoesNotContain("› inspect this", rendered);
+        Assert.Contains("inspect this", rendered);
+        Assert.Contains(screen.CurrentTheme.Bg("userMessageBg"), rendered);
         Assert.Contains("\u001b_Ga=T", rendered);
         Assert.DoesNotContain("psimg-", rendered);
         Assert.DoesNotContain("Images", serialized);
