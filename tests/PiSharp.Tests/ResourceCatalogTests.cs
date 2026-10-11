@@ -188,12 +188,13 @@ public sealed class ResourceCatalogTests
             Directory.CreateDirectory(Path.Combine(project, ".pi", "custom-prompts"));
             await File.WriteAllTextAsync(Path.Combine(agent, "custom-prompts", "user-review.md"), "User prompt");
             await File.WriteAllTextAsync(Path.Combine(agent, "prompts", "blocked.md"), "Hidden auto prompt");
+            await File.WriteAllTextAsync(Path.Combine(agent, "prompts", "another-blocked.md"), "Hidden auto prompt");
             await File.WriteAllTextAsync(Path.Combine(project, ".pi", "custom-prompts", "project-review.md"), "Project prompt");
 
             IReadOnlyList<string> userSkills = ["custom-skills", "+skills/blocked/keep/SKILL.md",
                 "!skills/blocked/**", "-custom-skills/disabled/SKILL.md"];
             IReadOnlyList<string> projectSkills = ["custom-skills", "!skills/blocked/**"];
-            IReadOnlyList<string> userPrompts = ["custom-prompts", "!prompts/blocked.md"];
+            IReadOnlyList<string> userPrompts = ["custom-prompts", "!prompts/{blocked,another-blocked}.md"];
             IReadOnlyList<string> projectPrompts = ["custom-prompts"];
 
             var untrusted = await ResourceCatalog.LoadAsync(project, agent, false,
@@ -202,7 +203,8 @@ public sealed class ResourceCatalogTests
             Assert.Contains(untrusted.Skills, skill => skill.Name == "user-auto-keep");
             Assert.DoesNotContain(untrusted.Skills, skill => skill.Name is "user-disabled" or "user-auto-skip" or "project-configured" or "project-auto-skip");
             Assert.Contains(untrusted.Prompts, prompt => prompt.Name == "user-review");
-            Assert.DoesNotContain(untrusted.Prompts, prompt => prompt.Name is "blocked" or "project-review");
+            Assert.DoesNotContain(untrusted.Prompts, prompt =>
+                prompt.Name is "blocked" or "another-blocked" or "project-review");
             var userSource = Assert.Single(untrusted.Skills, skill => skill.Name == "user-configured").SourceInfo;
             Assert.Equal("local", userSource.Source);
             Assert.Equal("user", userSource.Scope);

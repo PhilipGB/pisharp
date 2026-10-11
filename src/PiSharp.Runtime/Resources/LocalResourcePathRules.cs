@@ -91,25 +91,180 @@ public static class LocalResourcePathRules
 
     private static bool GlobMatch(string value, string pattern)
     {
+        if (pattern.Length == 0 || pattern.Length > 4096) return false;
+
+        return ExpandBracePatterns(pattern).Any(expanded => GlobMatchExpanded(value, expanded));
+    }
+
+    private static bool GlobMatchExpanded(string value, string pattern)
+    {
+        var valueSegments = Normalize(value).Split('/');
+        var patternSegments = Normalize(pattern).Split('/');
+        if (valueSegments.Length > 512 || patternSegments.Length > 512) return false;
+
+        var matched = new Dictionary<(int Value, int Pattern), bool>();
+        return MatchSegments(0, 0);
+
+        bool MatchSegments(int valueIndex, int patternIndex)
+        {
+            if (matched.TryGetValue((valueIndex, patternIndex), out var cached)) return cached;
+
+            bool result;
+            if (patternIndex == patternSegments.Length)
+            {
+                result = valueIndex == valueSegments.Length;
+            }
+            else if (patternSegments[patternIndex] == "**")
+            {
+                if (patternIndex == patternSegments.Length - 1 && patternIndex > 0)
+                {
+                    result = valueIndex < valueSegments.Length &&
+                        valueSegments.Skip(valueIndex).All(IsGlobStarMatchableSegment);
+                }
+                else
+                {
+                    result = MatchSegments(valueIndex, patternIndex + 1) ||
+                        valueIndex < valueSegments.Length &&
+                        IsGlobStarMatchableSegment(valueSegments[valueIndex]) &&
+                        MatchSegments(valueIndex + 1, patternIndex);
+                }
+            }
+            else if (valueIndex >= valueSegments.Length ||
+                     IsHidden(valueSegments[valueIndex]) && !PatternExplicitlyMatchesDot(patternSegments[patternIndex]))
+            {
+                result = false;
+            }
+            else
+            {
+                result = SegmentMatch(valueSegments[valueIndex], patternSegments[patternIndex]) &&
+                    MatchSegments(valueIndex + 1, patternIndex + 1);
+            }
+
+            matched[(valueIndex, patternIndex)] = result;
+            return result;
+        }
+    }
+
+    private static IReadOnlyList<string> ExpandBracePatterns(string pattern)
+    {
+        const int maximumExpansions = 256;
+        var pending = new Stack<string>();
+        var expandedPatterns = new HashSet<string>(StringComparer.Ordinal);
+        pending.Push(pattern);
+        while (pending.Count > 0)
+        {
+            if (pending.Count + expandedPatterns.Count > maximumExpansions) return [pattern];
+            var current = pending.Pop();
+            if (!TryExpandFirstBrace(current, out var alternatives))
+            {
+                expandedPatterns.Add(current);
+                continue;
+            }
+            foreach (var alternative in alternatives) pending.Push(alternative);
+        }
+        return expandedPatterns.ToArray();
+    }
+
+    private static bool TryExpandFirstBrace(string pattern, out IReadOnlyList<string> alternatives)
+    {
+        for (var open = 0; open < pattern.Length; open++)
+        {
+            if (pattern[open] != '{') continue;
+            var depth = 0;
+            for (var close = open + 1; close < pattern.Length; close++)
+            {
+                if (pattern[close] == '{') depth++;
+                else if (pattern[close] == '}')
+                {
+                    if (depth > 0)
+                    {
+                        depth--;
+                        continue;
+                    }
+
+                    var body = pattern[(open + 1)..close];
+                    var choices = SplitBraceAlternatives(body);
+                    if (choices.Count < 2) choices = ExpandBraceRange(body);
+                    if (choices.Count == 0) break;
+
+                    alternatives = choices.Select(choice => pattern[..open] + choice + pattern[(close + 1)..]).ToArray();
+                    return true;
+                }
+            }
+        }
+
+        alternatives = [];
+        return false;
+    }
+
+    private static IReadOnlyList<string> SplitBraceAlternatives(string body)
+    {
+        var choices = new List<string>();
+        var depth = 0;
+        var start = 0;
+        for (var index = 0; index < body.Length; index++)
+        {
+            if (body[index] == '{') depth++;
+            else if (body[index] == '}') depth--;
+            else if (body[index] == ',' && depth == 0)
+            {
+                choices.Add(body[start..index]);
+                start = index + 1;
+            }
+        }
+        if (choices.Count == 0) return [];
+        choices.Add(body[start..]);
+        return choices;
+    }
+
+    private static IReadOnlyList<string> ExpandBraceRange(string body)
+    {
+        var range = body.Split("..", StringSplitOptions.None);
+        if (range.Length is < 2 or > 3) return [];
+        var step = 1;
+        if (range.Length == 3 && (!int.TryParse(range[2], System.Globalization.NumberStyles.None,
+                System.Globalization.CultureInfo.InvariantCulture, out step) || step <= 0)) return [];
+
+        if (range[0].Length == 1 && range[1].Length == 1 && char.IsAsciiLetter(range[0][0]) &&
+            char.IsAsciiLetter(range[1][0]))
+        {
+            var first = range[0][0];
+            var last = range[1][0];
+            var direction = first <= last ? 1 : -1;
+            var count = Math.Abs(last - first) / step + 1;
+            if (count > 256) return [];
+            return Enumerable.Range(0, count).Select(index => ((char)(first + direction * step * index)).ToString())
+                .ToArray();
+        }
+
+        if (!int.TryParse(range[0], System.Globalization.NumberStyles.AllowLeadingSign,
+                System.Globalization.CultureInfo.InvariantCulture, out var start) ||
+            !int.TryParse(range[1], System.Globalization.NumberStyles.AllowLeadingSign,
+                System.Globalization.CultureInfo.InvariantCulture, out var end)) return [];
+        var numericDirection = start <= end ? 1 : -1;
+        var distance = Math.Abs((long)end - start);
+        var numericCount = distance / step + 1;
+        if (numericCount > 256) return [];
+        var padding = Math.Max(range[0].TrimStart('-').Length, range[1].TrimStart('-').Length);
+        var padded = range[0].TrimStart('-').Length > 1 && range[0].TrimStart('-').StartsWith('0') ||
+            range[1].TrimStart('-').Length > 1 && range[1].TrimStart('-').StartsWith('0');
+        return Enumerable.Range(0, (int)numericCount)
+            .Select(index => ((long)start + (long)numericDirection * step * index).ToString(
+                padded ? $"D{padding}" : "0", System.Globalization.CultureInfo.InvariantCulture))
+            .ToArray();
+    }
+
+    private static bool SegmentMatch(string value, string pattern)
+    {
         var regex = new StringBuilder("^");
         for (var index = 0; index < pattern.Length; index++)
         {
             var current = pattern[index];
             if (current == '*')
             {
-                if (index + 1 < pattern.Length && pattern[index + 1] == '*')
-                {
-                    index++;
-                    if (index + 1 < pattern.Length && pattern[index + 1] == '/')
-                    {
-                        index++;
-                        regex.Append("(?:.*/)?");
-                    }
-                    else regex.Append(".*");
-                }
-                else regex.Append("[^/]*");
+                regex.Append(".*");
             }
-            else if (current == '?') regex.Append("[^/]");
+            else if (current == '?') regex.Append('.');
             else if (current == '[' && pattern.IndexOf(']', index + 1) is var close && close > index + 1)
             {
                 var content = pattern[(index + 1)..close];
@@ -136,7 +291,30 @@ public static class LocalResourcePathRules
         regex.Append('$');
         var options = RegexOptions.CultureInvariant | RegexOptions.Singleline;
         if (OperatingSystem.IsWindows()) options |= RegexOptions.IgnoreCase;
-        return Regex.IsMatch(Normalize(value), regex.ToString(), options, TimeSpan.FromMilliseconds(50));
+        return Regex.IsMatch(value, regex.ToString(), options, TimeSpan.FromMilliseconds(50));
+    }
+
+    private static bool IsHidden(string segment) => segment.Length > 0 && segment[0] == '.';
+
+    private static bool IsGlobStarMatchableSegment(string segment) =>
+        segment is not ("." or "..") && !IsHidden(segment);
+
+    private static bool PatternExplicitlyMatchesDot(string pattern)
+    {
+        if (pattern.Length > 0 && pattern[0] == '.') return true;
+        if (pattern.Length < 3 || pattern[0] != '[') return false;
+        var close = pattern.IndexOf(']', 1);
+        if (close < 0) return false;
+
+        var content = pattern[1..close];
+        if (content.Length == 0 || content[0] == '!') return false;
+        for (var index = 0; index < content.Length; index++)
+        {
+            if (content[index] == '.') return true;
+            if (index + 2 < content.Length && content[index + 1] == '-' &&
+                content[index] <= '.' && '.' <= content[index + 2]) return true;
+        }
+        return false;
     }
 
     private static string ExpandHome(string path)
