@@ -10,6 +10,40 @@ namespace PiSharp.Tests;
 public sealed class InteractiveTranscriptTests
 {
     [Fact]
+    public void EarlierStatusRowsAdoptTheLatestMessageOnlyWhenRestoringScrollback()
+    {
+        var buffer = new TerminalTranscriptBuffer();
+        var first = "Reloaded resources.";
+        var firstRenderer = StatusRenderer(first);
+        buffer.AppendThemedStatus(firstRenderer(TerminalTheme.Default), firstRenderer,
+            Environment.NewLine + " " + first + Environment.NewLine);
+        buffer.Append("intervening user message" + Environment.NewLine, isError: false);
+
+        var latest = "Tool output: collapsed";
+        var latestRenderer = StatusRenderer(latest);
+        buffer.AppendThemedStatus(latestRenderer(TerminalTheme.Default), latestRenderer,
+            Environment.NewLine + " " + latest + Environment.NewLine);
+
+        var firstStatus = Environment.NewLine + " " + TerminalTheme.Default.Style("dim", first) + Environment.NewLine;
+        var latestStatus = Environment.NewLine + " " + TerminalTheme.Default.Style("dim", latest) + Environment.NewLine;
+        var firstCapturedStatus = Environment.NewLine + " " + first + Environment.NewLine;
+        var latestCapturedStatus = Environment.NewLine + " " + latest + Environment.NewLine;
+        var interveningMessage = "intervening user message" + Environment.NewLine;
+        Assert.Equal(firstStatus + interveningMessage + latestStatus, buffer.GetText(width: 80));
+        Assert.Equal(latestStatus + interveningMessage + latestStatus,
+            buffer.GetTextForScrollback(width: 80, TerminalTheme.Default));
+        Assert.Equal(
+            [firstCapturedStatus, interveningMessage, latestCapturedStatus],
+            buffer.CaptureSnapshot().Select(chunk => chunk.Text));
+        Assert.Equal(
+            [latestCapturedStatus, interveningMessage, latestCapturedStatus],
+            buffer.CaptureScrollbackSnapshot().Select(chunk => chunk.Text));
+    }
+
+    private static Func<TerminalTheme, string> StatusRenderer(string message) =>
+        theme => Environment.NewLine + " " + theme.Style("dim", message) + Environment.NewLine;
+
+    [Fact]
     public void LoadHistoryKeepsPiSpacerBetweenAssistantAndNextUserMessage()
     {
         using var output = new StringWriter();

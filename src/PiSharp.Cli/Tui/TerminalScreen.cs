@@ -1010,7 +1010,7 @@ public sealed class TerminalScreen : IDisposable
                 var columns = Columns();
                 var header = _startupHeader?.Invoke(_theme, columns, _startupExpanded) ?? "";
                 var startupContent = _startupContent?.Invoke(_theme, columns, _startupExpanded) ?? "";
-                var transcript = _images.LayoutTranscript(GetTranscriptTextLocked(columns) + _liveAssistant,
+                var transcript = _images.LayoutTranscript(_transcript.GetTextForScrollback(columns, _theme) + _liveAssistant,
                     columns, Math.Max(1, Rows() - 5));
                 var headerRows = string.IsNullOrEmpty(header)
                     ? Array.Empty<string>()
@@ -1024,7 +1024,7 @@ public sealed class TerminalScreen : IDisposable
                     restoreDocumentFollows: documentRows is not null);
             else if (terminalModeShutdownPrepared)
                 _originalOut.Write("\u001b[?2004l");
-            captured = _transcript.CaptureSnapshot();
+            captured = _transcript.CaptureScrollbackSnapshot();
             truncated = _transcript.CaptureTruncated;
         }
 

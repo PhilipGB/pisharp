@@ -14,6 +14,8 @@ internal sealed class TerminalTranscriptBuffer
     private int _capturedCharacters;
     private int _transcriptCharacters;
     private bool _captureTruncated;
+    private Func<TerminalTheme, string>? _latestStatusRenderer;
+    private string? _latestCapturedStatus;
 
     public bool IsExpanded { get; private set; }
     public bool HasContent => _segments.Count > 0;
@@ -70,6 +72,8 @@ internal sealed class TerminalTranscriptBuffer
         ArgumentNullException.ThrowIfNull(themeRenderer);
         if (rendered.Length == 0) return;
 
+        _latestStatusRenderer = themeRenderer;
+        _latestCapturedStatus = capturedText;
         if (_segments.Count > 0 && _segments[^1].IsStatusMessage)
         {
             var last = _segments[^1];
@@ -127,12 +131,28 @@ internal sealed class TerminalTranscriptBuffer
 
     public string GetText(int width)
     {
+        return GetText(width, latestStatus: null);
+    }
+
+    public string GetTextForScrollback(int width, TerminalTheme theme)
+    {
+        ArgumentNullException.ThrowIfNull(theme);
+        return GetText(width, _latestStatusRenderer is { } renderLatest ? () => renderLatest(theme) : null);
+    }
+
+    private string GetText(int width, Func<string>? latestStatus)
+    {
         ArgumentOutOfRangeException.ThrowIfLessThan(width, 1);
         var output = new StringBuilder(_transcriptCharacters);
         foreach (var segment in _segments)
-            output.Append(segment.IsCollapsible && !IsExpanded
-                ? GetCollapsedPreview(segment, width)
-                : segment.Text.ToString());
+        {
+            if (segment.IsStatusMessage && latestStatus is not null)
+                output.Append(latestStatus());
+            else
+                output.Append(segment.IsCollapsible && !IsExpanded
+                    ? GetCollapsedPreview(segment, width)
+                    : segment.Text.ToString());
+        }
         return output.ToString();
     }
 
@@ -158,11 +178,18 @@ internal sealed class TerminalTranscriptBuffer
         _capturedCharacters = 0;
         _transcriptCharacters = 0;
         _captureTruncated = false;
+        _latestStatusRenderer = null;
+        _latestCapturedStatus = null;
         Revision++;
     }
 
     public IReadOnlyList<CapturedChunk> CaptureSnapshot() => _captured
         .Select(chunk => new CapturedChunk(chunk.IsError, chunk.Text.ToString())).ToArray();
+
+    public IReadOnlyList<CapturedChunk> CaptureScrollbackSnapshot() => _captured
+        .Select(chunk => new CapturedChunk(chunk.IsError,
+            chunk.IsStatusMessage ? _latestCapturedStatus ?? chunk.Text.ToString() : chunk.Text.ToString()))
+        .ToArray();
 
     private void TrimTranscript()
     {
