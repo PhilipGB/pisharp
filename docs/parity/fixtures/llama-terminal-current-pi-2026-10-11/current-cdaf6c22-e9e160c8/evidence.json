@@ -1,0 +1,225 @@
+{
+  "date": "2026-10-11",
+  "piSha": "cdaf6c227d4718a72b59ccd02152c9614df44cfc",
+  "piSharpSha": "e9e160c8b69e5961f735a5f5022d72266ddd5109",
+  "checkpoint": {
+    "piOriginMain": true,
+    "piSharpOriginMain": true,
+    "piSharpCi": {
+      "runId": 38127899737,
+      "url": "https://github.com/PhilipGB/pisharp/actions/runs/38127899737",
+      "conclusion": "success",
+      "terminalNodeTests": "24/24",
+      "terminalPythonTests": "31/31",
+      "dotnetTests": "1251/1251",
+      "skipped": 0
+    }
+  },
+  "oracleAudit": {
+    "previousAuditPiSha": "ea448f454af474f3e2fe9733b331e17b0662f5d6",
+    "currentPiMainSha": "cdaf6c227d4718a72b59ccd02152c9614df44cfc",
+    "newCommits": 2,
+    "classifications": {
+      "OUT_OF_SCOPE": 2,
+      "NO_BEHAVIOR_CHANGE": 0,
+      "MATCHED": 0,
+      "NEEDS_WORK": 0
+    },
+    "changedSurface": "Both commits change only packages/durable and its tests/docs; normal coding-agent AI/provider/TUI files are unchanged.",
+    "currentPiLlamaExtensionTests": "15/15"
+  },
+  "process": {
+    "llama-classifier": {
+      "match": true,
+      "piSha": "cdaf6c227d4718a72b59ccd02152c9614df44cfc",
+      "piSharpSha": "e9e160c8b69e5961f735a5f5022d72266ddd5109",
+      "evidence": "process/llama-classifier.json"
+    },
+    "llama-router-classifier": {
+      "match": true,
+      "piSha": "cdaf6c227d4718a72b59ccd02152c9614df44cfc",
+      "piSharpSha": "e9e160c8b69e5961f735a5f5022d72266ddd5109",
+      "evidence": "process/llama-router-classifier.json"
+    },
+    "llama-router-context": {
+      "match": true,
+      "piSha": "cdaf6c227d4718a72b59ccd02152c9614df44cfc",
+      "piSharpSha": "e9e160c8b69e5961f735a5f5022d72266ddd5109",
+      "evidence": "process/llama-router-context.json"
+    }
+  },
+  "terminal": {
+    "pairedFlows": 12,
+    "allMatch": true,
+    "allTerminalMatch": true,
+    "allHttpMatch": true,
+    "renderFrames": 155,
+    "renderDifferences": 0,
+    "rawByteIdenticalFlows": 0,
+    "controlBoundaryDifferenceCount": 6054,
+    "scenarioErrorCount": 0,
+    "flows": [
+      {
+        "fixture": "100x32-dark-fullscreen",
+        "match": true,
+        "terminalMatch": true,
+        "rawMatch": false,
+        "renderFrames": 17,
+        "renderDifferences": 0,
+        "httpMatch": true,
+        "controlBoundaryDifferenceCount": 652,
+        "scenarioErrors": {},
+        "capture": "terminal/100x32-dark-fullscreen/100x32-dark-fullscreen.json.gz"
+      },
+      {
+        "fixture": "100x32-dark-fullscreen",
+        "match": true,
+        "terminalMatch": true,
+        "rawMatch": false,
+        "renderFrames": 21,
+        "renderDifferences": 0,
+        "httpMatch": true,
+        "controlBoundaryDifferenceCount": 699,
+        "scenarioErrors": {},
+        "capture": "terminal/100x32-dark-fullscreen/100x32-dark-fullscreen.json.gz"
+      },
+      {
+        "fixture": "100x32-dark-fullscreen",
+        "match": true,
+        "terminalMatch": true,
+        "rawMatch": false,
+        "renderFrames": 20,
+        "renderDifferences": 0,
+        "httpMatch": true,
+        "controlBoundaryDifferenceCount": 694,
+        "scenarioErrors": {},
+        "capture": "terminal/100x32-dark-fullscreen/100x32-dark-fullscreen.json.gz"
+      },
+      {
+        "fixture": "100x32-dark-fullscreen",
+        "match": true,
+        "terminalMatch": true,
+        "rawMatch": false,
+        "renderFrames": 20,
+        "renderDifferences": 0,
+        "httpMatch": true,
+        "controlBoundaryDifferenceCount": 694,
+        "scenarioErrors": {},
+        "capture": "terminal/100x32-dark-fullscreen/100x32-dark-fullscreen.json.gz"
+      },
+      {
+        "fixture": "100x32-dark-fullscreen",
+        "match": true,
+        "terminalMatch": true,
+        "rawMatch": false,
+        "renderFrames": 12,
+        "renderDifferences": 0,
+        "httpMatch": true,
+        "controlBoundaryDifferenceCount": 472,
+        "scenarioErrors": {},
+        "capture": "terminal/100x32-dark-fullscreen/100x32-dark-fullscreen.json.gz"
+      },
+      {
+        "fixture": "100x32-dark-fullscreen",
+        "match": true,
+        "terminalMatch": true,
+        "rawMatch": false,
+        "renderFrames": 12,
+        "renderDifferences": 0,
+        "httpMatch": true,
+        "controlBoundaryDifferenceCount": 459,
+        "scenarioErrors": {},
+        "capture": "terminal/100x32-dark-fullscreen/100x32-dark-fullscreen.json.gz"
+      },
+      {
+        "fixture": "100x32-dark-fullscreen",
+        "match": true,
+        "terminalMatch": true,
+        "rawMatch": false,
+        "renderFrames": 13,
+        "renderDifferences": 0,
+        "httpMatch": true,
+        "controlBoundaryDifferenceCount": 518,
+        "scenarioErrors": {},
+        "capture": "terminal/100x32-dark-fullscreen/100x32-dark-fullscreen.json.gz"
+      },
+      {
+        "fixture": "100x32-dark-fullscreen",
+        "match": true,
+        "terminalMatch": true,
+        "rawMatch": false,
+        "renderFrames": 4,
+        "renderDifferences": 0,
+        "httpMatch": true,
+        "controlBoundaryDifferenceCount": 224,
+        "scenarioErrors": {},
+        "capture": "terminal/100x32-dark-fullscreen/100x32-dark-fullscreen.json.gz"
+      },
+      {
+        "fixture": "100x32-dark-fullscreen",
+        "match": true,
+        "terminalMatch": true,
+        "rawMatch": false,
+        "renderFrames": 4,
+        "renderDifferences": 0,
+        "httpMatch": true,
+        "controlBoundaryDifferenceCount": 233,
+        "scenarioErrors": {},
+        "capture": "terminal/100x32-dark-fullscreen/100x32-dark-fullscreen.json.gz"
+      },
+      {
+        "fixture": "100x32-dark-fullscreen",
+        "match": true,
+        "terminalMatch": true,
+        "rawMatch": false,
+        "renderFrames": 20,
+        "renderDifferences": 0,
+        "httpMatch": true,
+        "controlBoundaryDifferenceCount": 791,
+        "scenarioErrors": {},
+        "capture": "terminal/100x32-dark-fullscreen/100x32-dark-fullscreen.json.gz"
+      },
+      {
+        "fixture": "100x32-dark-fullscreen",
+        "match": true,
+        "terminalMatch": true,
+        "rawMatch": false,
+        "renderFrames": 5,
+        "renderDifferences": 0,
+        "httpMatch": true,
+        "controlBoundaryDifferenceCount": 292,
+        "scenarioErrors": {},
+        "capture": "terminal/100x32-dark-fullscreen/100x32-dark-fullscreen.json.gz"
+      },
+      {
+        "fixture": "100x32-dark-fullscreen",
+        "match": true,
+        "terminalMatch": true,
+        "rawMatch": false,
+        "renderFrames": 7,
+        "renderDifferences": 0,
+        "httpMatch": true,
+        "controlBoundaryDifferenceCount": 326,
+        "scenarioErrors": {},
+        "capture": "terminal/100x32-dark-fullscreen/100x32-dark-fullscreen.json.gz"
+      }
+    ]
+  },
+  "samePiCalibration": {
+    "flows": 12,
+    "allMatch": true,
+    "terminalMatches": 12,
+    "httpMatches": 12,
+    "rawByteIdenticalFlows": 12,
+    "renderFrames": 155,
+    "piSourceHead": "ea448f454af474f3e2fe9733b331e17b0662f5d6",
+    "piSharpSourceHead": "e9e160c8b69e5961f735a5f5022d72266ddd5109",
+    "currentOracleSourceReview": "Pi changes from ea448 to cdaf are confined to the separate durable package; no coding-agent or AI/provider path used by these fixtures changed.",
+    "evidence": "calibration/"
+  },
+  "threadLimitedHarness": {
+    "pythonAndChildCpuAffinity": 2,
+    "commonThreadPoolEnvironmentCaps": 2,
+    "renderFrames": "spooled to compressed temporary files and streamed through comparison/evidence serialization"
+  }
+}

@@ -1,0 +1,13 @@
+# llama.cpp current-Pi verification — 2026-10-11
+
+Pi `origin/main` is `cdaf6c227d4718a72b59ccd02152c9614df44cfc`; PiSharp `origin/main` is `e9e160c8b69e5961f735a5f5022d72266ddd5109`. Pi's two commits since the prior `ea448f45` audit affect only the separate `packages/durable` package, so the current llama extension, provider, classifier and TUI sources were inspected at their latest Pi main revision. The current Pi llama extension suite passes 15/15.
+
+PiSharp exact-head Linux CI [38127899737](https://github.com/PhilipGB/pisharp/actions/runs/38127899737) passes at `e9e160c8b69e5961f735a5f5022d72266ddd5109`: format verification, warnings-as-errors build, Node 24/24, Python 31/31, and .NET 1,251/1,251 with zero skips.
+
+Three current-head process comparisons match: native llama.cpp token-probability classifier results, request bodies and image rejection; router model/classifier projection with loaded, sleeping and unloaded preset models, autoload on/off, thinking/model metadata and native System One decisions; and context precedence through live refresh and offline cache reload, with no router requests during offline reload. Reports are in [`process`](llama-terminal-current-pi-2026-10-11/current-cdaf6c22-e9e160c8/process).
+
+All twelve paired PTY flows match normalized terminal states, all 155 synchronized render frames, and HTTP traces with zero scenario errors. They cover `/login llama.cpp`, default and environment router URLs, `LLAMA_API_KEY`, stored/environment/default precedence across restart, router-root handling when the URL includes `/v1`, `/llama` discovery and model actions, `/model` selection, retry/reconnect, load/unload, cancellation and progress, and Hugging Face search, token lookup, gated access, quantization, download and cancellation. Raw byte captures are retained; raw terminal bytes match in 0/12 flows, with 6,054 control-boundary differences kept as diagnostics.
+
+The new runner's same-product calibration passes 12/12 flows and all 155 frames. The calibration ran at Pi `ea448f45`; source inspection confirms that Pi's two commits through `cdaf6c22` change only `packages/durable`, while the PiSharp runner and fixtures are unchanged. Thus the calibration covers the same coding-agent implementation path used by the current `cdaf6c22` paired comparison. Full process reports, terminal captures and calibration captures are recorded in the [machine evidence manifest](llama-terminal-current-pi-2026-10-11/current-cdaf6c22-e9e160c8/evidence.json).
+
+The Python harness and its child processes were constrained to two CPU cores and common thread pools were capped at two. PTY render frames were spooled and streamed through comparison and evidence writing; compressed captures preserve the complete raw product traces.
