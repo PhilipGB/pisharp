@@ -1,4 +1,5 @@
 import copy
+import io
 import json
 import os
 from pathlib import Path
@@ -11,11 +12,21 @@ import unittest
 
 from compare import ControlTrace, canonical_render_frames, compare_products, differences
 from fixture_http import FixtureServer
-from pty_process import TerminalProcess
-from run import commands, expand_environment, prepare_workspace, write_scenario_files
+from pty_process import RenderFrameSequence, RenderFrameStore, TerminalProcess
+from run import commands, environment, expand_environment, prepare_workspace, write_json_stream, write_scenario_files
+from thread_limits import TEST_THREAD_LIMIT, thread_limit_environment
 
 
 class DriverTests(unittest.TestCase):
+    def test_runner_and_child_environment_are_limited_to_two_threads(self):
+        self.assertEqual(2, TEST_THREAD_LIMIT)
+        expected = thread_limit_environment()
+        self.assertEqual(expected, {name: '2' for name in expected})
+        child_environment = environment(Path('/tmp/parity-agent'))
+        self.assertTrue(all(child_environment[name] == '2' for name in expected))
+        if hasattr(os, 'sched_getaffinity'):
+            self.assertLessEqual(len(os.sched_getaffinity(0)), TEST_THREAD_LIMIT)
+
     @staticmethod
     def read_sse_event(stream):
         while True:
@@ -98,6 +109,65 @@ class DriverTests(unittest.TestCase):
                 stream.close()
             server.close()
 
+    def test_fixture_server_gates_stream_content_and_finish_separately(self):
+        server = FixtureServer(behavior=dict(chatRequestGates=['chat-request'],
+                                             chatResponseContentGates=['chat-content'],
+                                             chatResponseFinishGates=['chat-finish'],
+                                             chatResponseContentByRequest=['unique fixture reply']))
+        stream = None
+        try:
+            request = urllib.request.Request(
+                server.url + '/v1/chat/completions', data=json.dumps(dict(stream=True)).encode(),
+                headers={'Content-Type': 'application/json'}, method='POST')
+            stream = urllib.request.urlopen(request, timeout=2)
+            self.assertTrue(server.wait_for_gate('chat-request', timeout=1))
+            server.release_gate('chat-content')
+            first = self.read_sse_event(stream)
+            self.assertEqual('unique fixture reply', first['choices'][0]['delta']['content'])
+            server.release_gate('chat-finish')
+            second = self.read_sse_event(stream)
+            separator = stream.readline().decode().strip()
+            done = stream.readline().decode().strip() if not separator else separator
+            self.assertEqual('stop', second['choices'][0]['finish_reason'])
+            self.assertEqual('data: [DONE]', done)
+        finally:
+            if stream is not None:
+                stream.close()
+            server.close()
+
+    def test_chat_completion_request_gate_holds_the_response_until_release(self):
+        server = FixtureServer(behavior=dict(chatRequestGates=['chat-request'],
+                                             chatResponseGates=['chat-response']))
+        completed = Event()
+        result = []
+
+        def request_chat_completion():
+            try:
+                request = urllib.request.Request(
+                    server.url + '/v1/chat/completions', data=json.dumps(dict(stream=False)).encode(),
+                    headers={'Content-Type': 'application/json'}, method='POST')
+                with urllib.request.urlopen(request, timeout=3) as response:
+                    result.append(json.loads(response.read()))
+            finally:
+                completed.set()
+
+        thread = Thread(target=request_chat_completion)
+        try:
+            thread.start()
+            self.assertTrue(server.wait_for_gate('chat-request', timeout=2))
+            self.assertFalse(completed.is_set())
+            self.assertEqual(1, server.chat_request_count)
+
+            server.release_gate('chat-response')
+            thread.join(timeout=3)
+
+            self.assertFalse(thread.is_alive())
+            self.assertEqual('fixture reply', result[0]['choices'][0]['message']['content'])
+        finally:
+            server.release_gate('chat-response')
+            thread.join(timeout=3)
+            server.close()
+
     def test_fixture_reset_waits_for_disconnected_sse_clients(self):
         server = FixtureServer(behavior=dict(downloadFinishGate='finish'))
         stream = None
@@ -155,6 +225,34 @@ class DriverTests(unittest.TestCase):
         self.assertEqual(dict(piBytes=3, pisharpBytes=3, firstDifferingByte=2), result['rawDifference'])
         self.assertNotIn('$.raw', {item['path'] for item in result['differences']})
         self.assertIn('$.http[0].path', {item['path'] for item in result['differences']})
+
+    def test_request_comparison_canonicalizes_only_generated_documentation_install_paths(self):
+        def product(package_root, user_text=None):
+            messages = [dict(role='system', content=(
+                f'- Main documentation: {package_root}/README.md\n'
+                f'- Additional docs: {package_root}/docs\n'
+                f'- Examples: {package_root}/examples'))]
+            if user_text is not None:
+                messages.append(dict(role='user', content=user_text))
+            return dict(http=[dict(method='POST', path='/v1/chat/completions', body=dict(messages=messages))])
+
+        equivalent = compare_products(product('/pi/package'), product('/pisharp/package'))
+
+        self.assertTrue(equivalent['httpMatch'])
+        self.assertFalse(equivalent['rawHttpMatch'])
+        self.assertEqual(1, equivalent['rawHttpDifferenceCount'])
+        self.assertEqual('$.http[0].body.messages[0].content',
+                         equivalent['rawHttpFirstDifferences'][0]['path'])
+        self.assertTrue(equivalent['match'])
+        self.assertIn('package-root', equivalent['httpNormalization'])
+
+        differing_user_path = compare_products(
+            product('/pi/package', '- Main documentation: /pi/user-content'),
+            product('/pisharp/package', '- Main documentation: /pisharp/user-content'))
+
+        self.assertFalse(differing_user_path['httpMatch'])
+        self.assertEqual(['$.http[0].body.messages[1].content'],
+                         [item['path'] for item in differing_user_path['httpDifferences']])
 
     def test_raw_redraw_scheduling_does_not_mask_exact_rendered_state_comparison(self):
         state = dict(activeScreen='alternate', viewport=[dict(text='same')],
@@ -221,6 +319,37 @@ class DriverTests(unittest.TestCase):
         self.assertFalse(result['terminalMatch'])
         self.assertEqual(3, result['comparedRenderFrameCount'])
         self.assertIn('$.renders[1].viewport[0].text', {item['path'] for item in result['renderDifferences']})
+
+    def test_render_comparison_streams_all_frames_and_bounds_only_the_difference_sample(self):
+        frame_count = 120
+        left = dict(frames=[], renders=(dict(viewport=[dict(text=f'pi {index}')])
+                                        for index in range(frame_count)), raw='', http=[])
+        right = dict(frames=[], renders=(dict(viewport=[dict(text=f'pisharp {index}')])
+                                         for index in range(frame_count)), raw='', http=[])
+
+        result = compare_products(left, right)
+
+        self.assertFalse(result['match'])
+        self.assertEqual(frame_count, result['renderDifferenceCount'])
+        self.assertEqual(frame_count, result['differenceCount'])
+        self.assertEqual(100, len(result['renderDifferences']))
+        self.assertEqual(frame_count, result['comparedRenderFrameCount'])
+
+    def test_compressed_render_frame_sequence_replays_and_streams_as_json(self):
+        first = RenderFrameStore()
+        second = RenderFrameStore()
+        frames = [dict(viewport=[dict(text='start')]), dict(viewport=[dict(text='finish')])]
+        first.append(frames[0])
+        second.append(frames[1])
+        sequence = RenderFrameSequence(first, second)
+        stream = io.StringIO()
+        try:
+            self.assertEqual(2, len(sequence))
+            write_json_stream(stream, dict(renders=sequence))
+            self.assertEqual({'renders': frames}, json.loads(stream.getvalue()))
+            self.assertEqual(frames, list(sequence))
+        finally:
+            sequence.close()
 
     def test_product_comparison_preserves_order_around_declared_parallel_requests(self):
         state = dict(viewport=[dict(text='ready')])
@@ -508,13 +637,41 @@ while True:
             self.assertEqual(24, frame['rows'])
             mark = len(terminal.raw)
             terminal.send('abc')
-            frame = terminal.settle('ABC', after=mark)
+            frame = terminal.settle(['ABC', 'READY:80x24'], after=mark, render_match=True)
             self.assertEqual(dict(x=5, y=1, visible=True, style='block', blink=False), frame['cursor'])
             terminal.resize(100, 30)
             frame = terminal.settle('READY:100x30')
             self.assertEqual((100, 30), (frame['columns'], frame['rows']))
         finally:
             terminal.close()
+
+    def test_render_settle_does_not_return_mid_synchronized_update(self):
+        terminal = object.__new__(TerminalProcess)
+        partial = dict(modes=dict(private={'2026': True}), viewport=[dict(cells=[dict(chars='READY')])])
+        complete = dict(modes=dict(private={'2026': False}), viewport=[dict(cells=[dict(chars='READY')])])
+        terminal.render_frames = []
+        terminal.raw = bytearray(b'new output')
+        terminal.last_output = time.monotonic() - 1
+        terminal.closed = False
+        terminal.process = None
+        calls = 0
+        snapshots = []
+
+        def pump(timeout=0.05):
+            nonlocal calls
+            calls += 1
+            terminal._new_render_frames = []
+            if calls == 2:
+                terminal.render_frames.append(complete)
+                terminal._new_render_frames = [complete]
+
+        terminal.pump = pump
+        terminal.snapshot = lambda: snapshots.append(partial) or partial
+
+        frame = terminal.settle('READY', quiet_ms=0, render_match=True)
+
+        self.assertIs(complete, frame)
+        self.assertEqual(1, len(snapshots))
 
     def test_settle_waits_until_a_transient_message_disappears(self):
         child = '''import os, time

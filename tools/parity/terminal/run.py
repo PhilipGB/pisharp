@@ -4,17 +4,21 @@ import argparse
 import base64
 import fcntl
 import gzip
+import io
 import itertools
 import json
 import os
 from pathlib import Path
-import subprocess
 import shutil
+import subprocess
 import time
 
 from compare import compare_products
 from fixture_http import FixtureServer
-from pty_process import TerminalProcess
+from pty_process import RenderFrameSequence, TerminalProcess
+from thread_limits import apply_test_thread_limit, thread_limit_environment
+
+apply_test_thread_limit()
 
 ROOT = Path(__file__).resolve().parents[3]
 WORKSPACE = Path('/tmp/pisharp-terminal-fixture-workspace')
@@ -80,6 +84,7 @@ def environment(agent):
     result.update(TERM='xterm-256color', COLORTERM='truecolor', PI_TRUE_COLOR='1', LANG='C.UTF-8', LC_ALL='C.UTF-8',
                   PI_OFFLINE='1', PI_CODING_AGENT_DIR=str(agent), PISHARP_AGENT_DIR=str(agent),
                   DOTNET_CLI_TELEMETRY_OPTOUT='1', DOTNET_NOLOGO='1')
+    result.update(thread_limit_environment())
     return result
 
 
@@ -87,6 +92,45 @@ def expand_environment(values, agent, router_url):
     return {name: value.replace('{router}', router_url).replace('{agent}', str(agent))
             if isinstance(value, str) else value
             for name, value in values.items()}
+
+
+def contains_render_frame_sequence(value):
+    if isinstance(value, RenderFrameSequence):
+        return True
+    if isinstance(value, dict):
+        return any(contains_render_frame_sequence(item) for item in value.values())
+    if isinstance(value, (list, tuple)):
+        return any(contains_render_frame_sequence(item) for item in value)
+    return False
+
+
+def write_json_stream(stream, value):
+    """Write JSON normally, streaming only the large render sequences from disk."""
+    if isinstance(value, RenderFrameSequence):
+        stream.write('[')
+        for index, frame in enumerate(value):
+            if index:
+                stream.write(',')
+            stream.write(json.dumps(frame, ensure_ascii=False, separators=(',', ':')))
+        stream.write(']')
+    elif not contains_render_frame_sequence(value):
+        json.dump(value, stream, ensure_ascii=False, separators=(',', ':'))
+    elif isinstance(value, dict):
+        stream.write('{')
+        for index, (key, item) in enumerate(value.items()):
+            if index:
+                stream.write(',')
+            json.dump(key, stream, ensure_ascii=False, separators=(',', ':'))
+            stream.write(':')
+            write_json_stream(stream, item)
+        stream.write('}')
+    else:
+        stream.write('[')
+        for index, item in enumerate(value):
+            if index:
+                stream.write(',')
+            write_json_stream(stream, item)
+        stream.write(']')
 
 
 def run_product(label, command, scenario, dimensions, theme, mode, server):
@@ -127,7 +171,8 @@ def run_product(label, command, scenario, dimensions, theme, mode, server):
     child_environment.update(expand_environment(
         scenario.get('environment', {}).get(label, {}), agent, server.url))
     working_directory = prepare_workspace(scenario)
-    terminal = TerminalProcess(command, working_directory, child_environment, options)
+    terminal = TerminalProcess(command, working_directory, child_environment, options,
+                               spool_render_frames=True)
     frames = []
     http_by_frame = []
     prior_raw = bytearray()
@@ -152,7 +197,7 @@ def run_product(label, command, scenario, dimensions, theme, mode, server):
                 write_scenario_files(action.get('writeFiles', {}).get(scope, {}), base)
             if action.get('restart'):
                 prior_raw.extend(terminal.raw)
-                prior_render_frames.extend(terminal.render_frames)
+                prior_render_frames.append(terminal.render_frames)
                 terminal.close()
                 restart_environment = dict(child_environment)
                 restart_environment.update(expand_environment(
@@ -160,7 +205,8 @@ def run_product(label, command, scenario, dimensions, theme, mode, server):
                 working_directory = prepare_workspace(scenario)
                 terminal = TerminalProcess(command, working_directory, restart_environment, options)
                 control_mark = len(terminal.trace.events)
-                frame = terminal.settle(action.get('expect'), timeout=action.get('timeout', 20))
+                frame = terminal.settle(action.get('expect'), timeout=action.get('timeout', 20),
+                                        render_match=action.get('renderMatch', False))
                 frames.append(dict(id=action['id'], state=frame, controls=terminal.trace.events[control_mark:],
                                    controlPending=terminal.trace.pending.hex()))
                 http_by_frame.append(dict(id=action['id'], requests=server.requests[request_mark:]))
@@ -198,7 +244,8 @@ def run_product(label, command, scenario, dimensions, theme, mode, server):
                 frame = terminal.settle(expect, timeout=action.get('timeout', 20),
                                         quiet_ms=action.get('quietMs', 200),
                                         absent=action.get('notExpect'),
-                                        after=0 if 'resize' in action or action.get('allowStaticFrame') else mark)
+                                        after=0 if 'resize' in action or action.get('allowStaticFrame') else mark,
+                                        render_match=action.get('renderMatch', False))
             expected_model_status = action.get('expectModelStatus')
             if expected_model_status:
                 model = next((value for value in server.models
@@ -210,14 +257,14 @@ def run_product(label, command, scenario, dimensions, theme, mode, server):
             frames.append(dict(id=action['id'], state=frame, controls=terminal.trace.events[control_mark:], controlPending=terminal.trace.pending.hex()))
             http_by_frame.append(dict(id=action['id'], requests=server.requests[request_mark:]))
         prior_raw.extend(terminal.raw)
-        return dict(frames=frames, renders=prior_render_frames + terminal.render_frames,
+        return dict(frames=frames, renders=RenderFrameSequence(*prior_render_frames, terminal.render_frames),
                     httpByFrame=http_by_frame, raw=base64.b64encode(prior_raw).decode(),
                     http=server.requests[request_start:], command=command, scenarioError=None)
     except (TimeoutError, RuntimeError) as error:
         frames.append(dict(id=action['id'], state=terminal.snapshot(), controls=terminal.trace.events[control_mark:], controlPending=terminal.trace.pending.hex()))
         http_by_frame.append(dict(id=action['id'], requests=server.requests[request_mark:]))
         combined_raw = prior_raw + terminal.raw
-        return dict(frames=frames, renders=prior_render_frames + terminal.render_frames,
+        return dict(frames=frames, renders=RenderFrameSequence(*prior_render_frames, terminal.render_frames),
                     httpByFrame=http_by_frame, raw=base64.b64encode(combined_raw).decode(),
                     http=server.requests[request_start:], command=command, scenarioError=str(error))
     finally:
@@ -246,7 +293,8 @@ def main():
                                  'only adjacent identical states, hidden cursor coordinates, and transient braille loader '
                                  'frames in the bottom status area. Raw bytes remain captured and exact-match status is reported separately. '
                                  'HTTP identity/count/order remain exact except within declared concurrent batches, '
-                                 'where arrival order is unspecified. Per-checkpoint control buckets are diagnostic.'),
+                                 'where arrival order is unspecified. Only generated documentation package-root lines in '
+                                 'system messages are canonicalized in HTTP comparisons. Per-checkpoint control buckets are diagnostic.'),
                   cases=[])
     cwd = WORKSPACE
     owner = cwd / '.pisharp-terminal-harness'
@@ -256,8 +304,10 @@ def main():
     owner.touch()
     lock = owner.open('r+')
     fcntl.flock(lock, fcntl.LOCK_EX)
+    fixture_behavior = dict(scenario.get('fixtureBehavior', {}))
+    fixture_behavior.update(scenario.get('llamaBehavior', {}))
     server = FixtureServer(scenario.get('llamaModels'), scenario.get('llamaProps'),
-                           scenario.get('llamaBehavior'), scenario.get('huggingFace'))
+                           fixture_behavior, scenario.get('huggingFace'))
     try:
         for dimensions, theme, mode in itertools.product(scenario['dimensions'], scenario['themes'], scenario['modes']):
             case_id = f"{dimensions['columns']}x{dimensions['rows']}-{theme}-{mode}"
@@ -274,16 +324,34 @@ def main():
             errors = {label: product['scenarioError'] for label, product in products.items() if product['scenarioError']}
             if errors:
                 delta.insert(0, dict(path='$.scenarioError', **errors))
+            difference_count = comparison['differenceCount'] + int(bool(errors))
             evidence = dict(dimensions=dimensions, theme=theme, mode=mode, **products)
             artifact = case_id + '.json.gz'
-            (args.output / artifact).write_bytes(gzip.compress(json.dumps(evidence, ensure_ascii=False).encode(), mtime=0))
-            report['cases'].append(dict(id=case_id, match=not delta, differences=len(delta),
+            artifact_path = args.output / artifact
+            print(f'{case_id}: captured {comparison["comparedRenderFrameCount"]} canonical render frames; '
+                  'streaming full evidence', flush=True)
+            try:
+                with artifact_path.open('wb') as output:
+                    compressed = gzip.GzipFile(fileobj=output, mode='wb', compresslevel=1, mtime=0)
+                    writer = io.TextIOWrapper(compressed, encoding='utf-8')
+                    write_json_stream(writer, evidence)
+                    writer.flush()
+                    writer.detach()
+                    compressed.close()
+            finally:
+                for product in products.values():
+                    product['renders'].close()
+            report['cases'].append(dict(id=case_id, match=difference_count == 0, differences=difference_count,
                                         firstDifferences=delta[:50], scenarioErrors=errors,
                                         terminalMatch=comparison['terminalMatch'], rawMatch=comparison['rawMatch'],
                                         rawDifference=comparison['rawDifference'],
                                         comparedRenderFrameCount=comparison['comparedRenderFrameCount'],
-                                        renderDifferences=len(comparison['renderDifferences']),
+                                        renderDifferences=comparison['renderDifferenceCount'],
                                         httpMatch=comparison['httpMatch'],
+                                        rawHttpMatch=comparison['rawHttpMatch'],
+                                        rawHttpDifferenceCount=comparison['rawHttpDifferenceCount'],
+                                        rawHttpFirstDifferences=comparison['rawHttpFirstDifferences'],
+                                        httpNormalization=comparison['httpNormalization'],
                                         controlBoundaryDifferenceCount=comparison['controlBoundaryDifferenceCount'],
                                         controlBoundaryFirstDifferences=comparison['controlBoundaryFirstDifferences'],
                                         evidence=artifact))

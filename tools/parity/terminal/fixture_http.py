@@ -16,6 +16,9 @@ class FixtureServer:
         self.huggingface = huggingface or {}
         gate_names = [name for key, name in self.behavior.items()
                       if key.endswith('Gate') and isinstance(name, str)]
+        gate_names.extend(name for key in ('chatRequestGates', 'chatResponseGates',
+                                           'chatResponseContentGates', 'chatResponseFinishGates')
+                          for name in self.behavior.get(key, []) if isinstance(name, str))
         gate_names.extend(name for key, models in self.behavior.items()
                           if key.endswith('GateByModel') and isinstance(models, dict)
                           for name in models.values() if isinstance(name, str))
@@ -258,6 +261,22 @@ class FixtureServer:
                     self.send_json(dict(success=True))
                     return
                 if path == '/chat/completions' or path.endswith('/chat/completions'):
+                    request_index = outer.chat_request_count
+                    outer.chat_request_count += 1
+                    request_gates = outer.behavior.get('chatRequestGates', [])
+                    response_gates = outer.behavior.get('chatResponseGates', [])
+                    content_gates = outer.behavior.get('chatResponseContentGates', [])
+                    finish_gates = outer.behavior.get('chatResponseFinishGates', [])
+                    request_gate = request_gates[request_index] if request_index < len(request_gates) else None
+                    response_gate = response_gates[request_index] if request_index < len(response_gates) else None
+                    content_gate = content_gates[request_index] if request_index < len(content_gates) else None
+                    finish_gate = finish_gates[request_index] if request_index < len(finish_gates) else None
+                    configured_replies = outer.behavior.get('chatResponseContentByRequest', [])
+                    reply = (configured_replies[request_index]
+                             if request_index < len(configured_replies) else 'fixture reply')
+                    outer.signal_gate(request_gate)
+                    if response_gate is not None:
+                        outer.wait_for_gate(response_gate)
                     model = body.get('model', 'fixture-model')
                     if body.get('stream'):
                         self.send_response(200)
@@ -267,7 +286,7 @@ class FixtureServer:
                         chunks = [
                             dict(id='fixture-response', object='chat.completion.chunk', created=1,
                                  model=model, choices=[dict(index=0,
-                                     delta=dict(role='assistant', content='fixture reply'), finish_reason=None)]),
+                                     delta=dict(role='assistant', content=reply), finish_reason=None)]),
                             dict(id='fixture-response', object='chat.completion.chunk', created=1,
                                  model=model, choices=[dict(index=0, delta={}, finish_reason='stop')]),
                         ]
@@ -276,7 +295,11 @@ class FixtureServer:
                                                model=model, choices=[],
                                                usage=dict(prompt_tokens=10, completion_tokens=3, total_tokens=13)))
                         try:
-                            for chunk in chunks:
+                            for chunk_index, chunk in enumerate(chunks):
+                                if chunk_index == 0 and content_gate is not None:
+                                    outer.wait_for_gate(content_gate)
+                                if chunk_index == 1 and finish_gate is not None:
+                                    outer.wait_for_gate(finish_gate)
                                 self.wfile.write(('data: ' + json.dumps(chunk) + '\n\n').encode())
                                 self.wfile.flush()
                             self.wfile.write(b'data: [DONE]\n\n')
@@ -286,7 +309,7 @@ class FixtureServer:
                         return
                     self.send_json(dict(id='fixture-response', object='chat.completion', created=1, model=model,
                                         choices=[dict(index=0,
-                                            message=dict(role='assistant', content='fixture reply'),
+                                            message=dict(role='assistant', content=reply),
                                             finish_reason='stop')],
                                         usage=dict(prompt_tokens=10, completion_tokens=3, total_tokens=13)))
                     return
@@ -315,6 +338,7 @@ class FixtureServer:
         self.model_poll_counts = {}
         self.model_poll_waiting = {}
         self.model_poll_waiting.clear()
+        self.chat_request_count = 0
         for gate in self.gates.values():
             gate.clear()
         self.catalog_failures_remaining = int(self.behavior.get('initialModelFailures', 0))

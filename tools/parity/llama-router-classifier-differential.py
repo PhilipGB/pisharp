@@ -10,6 +10,8 @@ import subprocess
 import tempfile
 import threading
 
+from terminal.thread_limits import apply_test_thread_limit
+apply_test_thread_limit()
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--pi", required=True, help="Current Pi checkout")

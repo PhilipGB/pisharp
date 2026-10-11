@@ -1,4 +1,8 @@
 import argparse,http.server,json,os,pathlib,queue,subprocess,tempfile,threading,time
+
+from terminal.thread_limits import apply_test_thread_limit
+apply_test_thread_limit()
+
 parser=argparse.ArgumentParser(description='Replay virtual routing against built current Pi and PiSharp CLI processes.')
 parser.add_argument('--pi',type=pathlib.Path,required=True,help='Pi checkout after npm ci and npm run build')
 parser.add_argument('--pisharp',type=pathlib.Path,default=pathlib.Path(__file__).resolve().parents[2],help='PiSharp checkout after dotnet build (including test fixture assembly)')
