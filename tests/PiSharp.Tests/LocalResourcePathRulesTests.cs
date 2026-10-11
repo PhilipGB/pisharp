@@ -46,4 +46,28 @@ public sealed class LocalResourcePathRulesTests
         Assert.Equal(expectedEnabled,
             LocalResourcePathRules.IsEnabledByOverrides(path, [exclude], baseDirectory));
     }
+
+    [Theory]
+    [InlineData("docs/a*.md", "!docs/a\\*.md", false)]
+    [InlineData("docs/other.md", "!docs/a\\*.md", true)]
+    [InlineData("docs/file?.md", "!docs/file\\?.md", false)]
+    [InlineData("docs/[draft].md", "!docs/\\[draft\\].md", false)]
+    [InlineData("docs/.private.md", "!docs/\\.private.md", false)]
+    [InlineData("docs/file{1,2}.md", "!docs/file\\{1,2\\}.md", false)]
+    [InlineData("docs/@(one|two).md", "!docs/\\@(one|two).md", false)]
+    [InlineData("docs/a\\name.md", "!docs/a\\\\name.md", false)]
+    [InlineData("docs/trailing\\", "!docs/trailing\\", false)]
+    [InlineData("docs/-.md", "!docs/[a\\-c].md", false)]
+    [InlineData("docs/].md", "!docs/[\\]].md", false)]
+    public void PosixGlobOverridesTreatBackslashesAsMinimatchEscapes(
+        string relativePath, string exclude, bool expectedEnabled)
+    {
+        if (OperatingSystem.IsWindows()) return;
+
+        var baseDirectory = Path.Combine(Path.GetTempPath(), "pisharp-resource-posix-escape");
+        var path = Path.Combine(baseDirectory, relativePath.Replace('/', Path.DirectorySeparatorChar));
+
+        Assert.Equal(expectedEnabled,
+            LocalResourcePathRules.IsEnabledByOverrides(path, [exclude], baseDirectory));
+    }
 }

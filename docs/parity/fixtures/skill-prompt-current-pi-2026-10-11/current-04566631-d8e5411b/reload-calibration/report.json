@@ -1,0 +1,135 @@
+{
+  "piSha": "04566631c2b51fb688486bc1f040f60d1518c126",
+  "pisharpSha": "d8e5411be475a0f4bc3bf3458bc46bdbc8fd40f9",
+  "fixture": "legacy-project-skills-prompt-reload",
+  "calibration": true,
+  "concurrentHttpGroups": [],
+  "normalization": "Named checkpoints and stable synchronized render states are compared exactly, collapsing adjacent identical states, hidden cursor coordinates, transient loader glyphs, and in-flight Working-indicator frames. Same-Pi calibration shows fast scripted responses can finish before that animated frame is captured, making its presence and partial usage footer PTY-scheduling dependent. Raw bytes remain captured and exact-match status is reported separately. HTTP identity/count/order remain exact except within declared concurrent batches, where arrival order is unspecified. Only generated documentation package-root lines in system messages are canonicalized in HTTP comparisons. Per-checkpoint control buckets are diagnostic.",
+  "cases": [
+    {
+      "id": "120x40-dark-fullscreen",
+      "match": true,
+      "differences": 0,
+      "firstDifferences": [],
+      "scenarioErrors": {},
+      "terminalMatch": true,
+      "rawMatch": false,
+      "rawDifference": {
+        "piBytes": 18944,
+        "pisharpBytes": 18458,
+        "firstDifferingByte": 2387
+      },
+      "comparedRenderFrameCount": 14,
+      "renderDifferences": 0,
+      "httpMatch": true,
+      "rawHttpMatch": true,
+      "rawHttpDifferenceCount": 0,
+      "rawHttpFirstDifferences": [],
+      "httpNormalization": "Only generated Main documentation, Additional docs, and Examples package-root lines in system messages are canonicalized; raw request bodies remain captured.",
+      "controlBoundaryDifferenceCount": 18,
+      "controlBoundaryFirstDifferences": [
+        {
+          "path": "$.controlBoundaries[0].length",
+          "pi": 221,
+          "pisharp": 225
+        },
+        {
+          "path": "$.controlBoundaries[2].length",
+          "pi": 122,
+          "pisharp": 102
+        },
+        {
+          "path": "$.controlBoundaries[2][81]",
+          "pi": "1b5b33373b3148",
+          "pisharp": "1b5b393b3148"
+        },
+        {
+          "path": "$.controlBoundaries[2][82]",
+          "pi": "1b5b3f32356c",
+          "pisharp": "1b5b324b"
+        },
+        {
+          "path": "$.controlBoundaries[2][83]",
+          "pi": "1b5b3f323032366c",
+          "pisharp": "1b5b306d"
+        },
+        {
+          "path": "$.controlBoundaries[2][84]",
+          "pi": "1b5b3f3230323668",
+          "pisharp": "1b5d383b3b07"
+        },
+        {
+          "path": "$.controlBoundaries[2][89]",
+          "pi": "1b5b33383b323b3130383b3131383b3132336d",
+          "pisharp": "1b5b306d"
+        },
+        {
+          "path": "$.controlBoundaries[2][90]",
+          "pi": "1b5b33396d",
+          "pisharp": "1b5d383b3b07"
+        },
+        {
+          "path": "$.controlBoundaries[2][91]",
+          "pi": "1b5b33383b323b3130383b3131383b3132336d",
+          "pisharp": "1b5b34303b3148"
+        },
+        {
+          "path": "$.controlBoundaries[2][92]",
+          "pi": "1b5b33396d",
+          "pisharp": "1b5b324b"
+        },
+        {
+          "path": "$.controlBoundaries[2][93]",
+          "pi": "1b5b33383b323b3130383b3131383b3132336d",
+          "pisharp": "1b5b33383b323b3132363b3133363b3134326d"
+        },
+        {
+          "path": "$.controlBoundaries[2][95]",
+          "pi": "1b5b306d",
+          "pisharp": "1b5b33383b323b3132363b3133363b3134326d"
+        },
+        {
+          "path": "$.controlBoundaries[2][96]",
+          "pi": "1b5d383b3b07",
+          "pisharp": "1b5b33396d"
+        },
+        {
+          "path": "$.controlBoundaries[2][97]",
+          "pi": "1b5b33373b3148",
+          "pisharp": "1b5b306d"
+        },
+        {
+          "path": "$.controlBoundaries[2][98]",
+          "pi": "1b5b3f32356c",
+          "pisharp": "1b5d383b3b07"
+        },
+        {
+          "path": "$.controlBoundaries[2][99]",
+          "pi": "1b5b3f323032366c",
+          "pisharp": "1b5b33373b3148"
+        },
+        {
+          "path": "$.controlBoundaries[2][100]",
+          "pi": "1b5b3f3230323668",
+          "pisharp": "1b5b3f32356c"
+        },
+        {
+          "path": "$.controlBoundaries[2][101]",
+          "pi": "1b5b393b3148",
+          "pisharp": "1b5b3f323032366c"
+        }
+      ],
+      "evidence": "120x40-dark-fullscreen.json.gz",
+      "assertionEvidence": "120x40-dark-fullscreen.assertions.json.gz",
+      "frameEvidence": {
+        "pi": "120x40-dark-fullscreen.pi.frames.jsonl.gz",
+        "pisharp": "120x40-dark-fullscreen.pisharp.frames.jsonl.gz"
+      },
+      "renderEvidence": {
+        "pi": "120x40-dark-fullscreen.pi.renders.jsonl.gz",
+        "pisharp": "120x40-dark-fullscreen.pisharp.renders.jsonl.gz"
+      }
+    }
+  ],
+  "match": true
+}

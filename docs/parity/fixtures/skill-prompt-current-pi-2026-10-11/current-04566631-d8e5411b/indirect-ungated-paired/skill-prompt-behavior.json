@@ -1,0 +1,25 @@
+{
+  "piSha": "04566631c2b51fb688486bc1f040f60d1518c126",
+  "pisharpSha": "d8e5411be475a0f4bc3bf3458bc46bdbc8fd40f9",
+  "fixture": "resource-skill-prompt-hidden-read-bash-ungated",
+  "behavior": {
+    "mode": "indirect",
+    "advertisementMatched": true,
+    "readerHint": "Load a skill's file when the task matches its description.",
+    "expandedMessagesMatched": true,
+    "expandedSkills": [
+      "shared"
+    ],
+    "chatRequestCount": 1
+  },
+  "samePiCalibration": true,
+  "dialogueTraceMatch": true,
+  "normalizedRequestDifferences": [],
+  "httpNormalization": "Only generated Main documentation, Additional docs, and Examples package-root lines in system messages are canonicalized; raw request bodies remain captured.",
+  "fullTerminalMatch": false,
+  "fullHttpMatch": true,
+  "rawMatch": false,
+  "renderDifferences": 0,
+  "controlBoundaryDifferenceCount": 517,
+  "scenarioErrors": {}
+}

@@ -57,7 +57,7 @@ public static class LocalResourcePathRules
     {
         if (pattern.Length == 0) return false;
         var fullBase = Path.GetFullPath(baseDirectory);
-        var fullPattern = ExpandHome(pattern).Replace('\\', '/');
+        var fullPattern = Normalize(ExpandHome(pattern));
         var relative = Normalize(Path.GetRelativePath(fullBase, path));
         var absolute = Normalize(path);
         var name = Path.GetFileName(path);
@@ -169,10 +169,20 @@ public static class LocalResourcePathRules
     {
         for (var open = 0; open < pattern.Length; open++)
         {
+            if (IsPatternEscape(pattern[open]))
+            {
+                open++;
+                continue;
+            }
             if (pattern[open] != '{') continue;
             var depth = 0;
             for (var close = open + 1; close < pattern.Length; close++)
             {
+                if (IsPatternEscape(pattern[close]))
+                {
+                    close++;
+                    continue;
+                }
                 if (pattern[close] == '{') depth++;
                 else if (pattern[close] == '}')
                 {
@@ -204,6 +214,11 @@ public static class LocalResourcePathRules
         var start = 0;
         for (var index = 0; index < body.Length; index++)
         {
+            if (IsPatternEscape(body[index]))
+            {
+                index++;
+                continue;
+            }
             if (body[index] == '{') depth++;
             else if (body[index] == '}') depth--;
             else if (body[index] == ',' && depth == 0)
@@ -280,6 +295,12 @@ public static class LocalResourcePathRules
         for (var index = 0; index < pattern.Length; index++)
         {
             var current = pattern[index];
+            if (IsPatternEscape(current))
+            {
+                if (index + 1 < pattern.Length) regex.Append(Regex.Escape(pattern[++index].ToString()));
+                else regex.Append(Regex.Escape(current.ToString()));
+                continue;
+            }
             if (IsExtGlobOperator(current) && index + 1 < pattern.Length && pattern[index + 1] == '(' &&
                 TryGetExtGlob(pattern, index, out var extGlobClose))
             {
@@ -318,7 +339,7 @@ public static class LocalResourcePathRules
                 regex.Append(".*");
             }
             else if (current == '?') regex.Append('.');
-            else if (current == '[' && pattern.IndexOf(']', index + 1) is var close && close > index + 1)
+            else if (current == '[' && FindCharacterClassClose(pattern, index) is var close && close > index + 1)
             {
                 var content = pattern[(index + 1)..close];
                 var negate = content[0] == '!';
@@ -331,10 +352,24 @@ public static class LocalResourcePathRules
                 }
                 regex.Append('[');
                 if (negate) regex.Append('^');
-                foreach (var character in content)
+                for (var contentIndex = 0; contentIndex < content.Length; contentIndex++)
                 {
-                    if (character is '\\' or ']' or '^') regex.Append('\\');
-                    regex.Append(character);
+                    var character = content[contentIndex];
+                    if (IsPatternEscape(character))
+                    {
+                        if (contentIndex + 1 < content.Length)
+                        {
+                            character = content[++contentIndex];
+                            if (character is '\\' or ']' or '^' or '-') regex.Append('\\');
+                            regex.Append(character);
+                        }
+                        else regex.Append("\\\\");
+                    }
+                    else
+                    {
+                        if (character is ']' or '^') regex.Append('\\');
+                        regex.Append(character);
+                    }
                 }
                 regex.Append(']');
                 index = close;
@@ -346,12 +381,31 @@ public static class LocalResourcePathRules
 
     private static bool IsExtGlobOperator(char character) => character is '@' or '+' or '?' or '*' or '!';
 
+    private static int FindCharacterClassClose(string pattern, int open)
+    {
+        for (var index = open + 1; index < pattern.Length; index++)
+        {
+            if (IsPatternEscape(pattern[index]))
+            {
+                index++;
+                continue;
+            }
+            if (pattern[index] == ']') return index;
+        }
+        return -1;
+    }
+
     private static bool TryGetExtGlob(string pattern, int operatorIndex, out int close)
     {
         var depth = 0;
         var inCharacterClass = false;
         for (var index = operatorIndex + 2; index < pattern.Length; index++)
         {
+            if (IsPatternEscape(pattern[index]))
+            {
+                index++;
+                continue;
+            }
             if (pattern[index] == '[') inCharacterClass = true;
             else if (pattern[index] == ']' && inCharacterClass) inCharacterClass = false;
             else if (!inCharacterClass && IsExtGlobOperator(pattern[index]) &&
@@ -383,6 +437,11 @@ public static class LocalResourcePathRules
         var inCharacterClass = false;
         for (var index = 0; index < pattern.Length; index++)
         {
+            if (IsPatternEscape(pattern[index]))
+            {
+                index++;
+                continue;
+            }
             if (pattern[index] == '[') inCharacterClass = true;
             else if (pattern[index] == ']' && inCharacterClass) inCharacterClass = false;
             else if (!inCharacterClass && IsExtGlobOperator(pattern[index]) &&
@@ -411,6 +470,7 @@ public static class LocalResourcePathRules
     private static bool PatternExplicitlyMatchesDot(string pattern)
     {
         if (pattern.Length > 0 && pattern[0] == '.') return true;
+        if (pattern.Length > 1 && IsPatternEscape(pattern[0]) && pattern[1] == '.') return true;
         if (pattern.Length > 2 && IsExtGlobOperator(pattern[0]) && pattern[1] == '(' &&
             TryGetExtGlob(pattern, 0, out var extGlobClose) && pattern[0] is ('@' or '+' or '?'))
         {
@@ -418,7 +478,7 @@ public static class LocalResourcePathRules
                 .Any(PatternExplicitlyMatchesDot);
         }
         if (pattern.Length < 3 || pattern[0] != '[') return false;
-        var close = pattern.IndexOf(']', 1);
+        var close = FindCharacterClassClose(pattern, 0);
         if (close < 0) return false;
 
         var content = pattern[1..close];
@@ -440,7 +500,9 @@ public static class LocalResourcePathRules
         return path;
     }
 
-    private static string Normalize(string path) => path.Replace('\\', '/');
+    private static bool IsPatternEscape(char character) => !OperatingSystem.IsWindows() && character == '\\';
+
+    private static string Normalize(string path) => OperatingSystem.IsWindows() ? path.Replace('\\', '/') : path;
 
     private static StringComparer PathComparer() => OperatingSystem.IsWindows()
         ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
