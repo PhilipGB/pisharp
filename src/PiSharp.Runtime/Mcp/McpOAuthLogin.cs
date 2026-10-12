@@ -12,7 +12,7 @@ public static class McpOAuthLogin
 {
     public static async Task SignInAsync(McpServerConfiguration server, string agentDirectory,
         TextWriter output, bool openBrowser, TimeSpan timeout, CancellationToken cancellationToken = default,
-        Action<string, Uri>? authorizationUrlPresenter = null)
+        Action<string, Uri>? authorizationUrlPresenter = null, string? requestedScope = null)
     {
         if (server.Url is null || server.Headers.Keys.Any(key =>
             key.Equals("Authorization", StringComparison.OrdinalIgnoreCase)))
@@ -35,6 +35,7 @@ public static class McpOAuthLogin
         deadline.CancelAfter(timeout);
         var authorizationStarted = false;
         var tokenCache = new McpTokenCache(agentDirectory).ForServerWithRefresh(server.Name, server.Url);
+        var existingTokens = await tokenCache.GetTokensAsync(deadline.Token);
         var options = settings.CreateOptions(server.Url, tokenCache, callback,
             async (context, token) =>
             {
@@ -78,6 +79,20 @@ public static class McpOAuthLogin
                     };
                 }
             });
+        if (options.ClientId is null && existingTokens?.ClientId is { } cachedClientId)
+        {
+            options.ClientId = cachedClientId;
+            options.ClientSecret = existingTokens.ClientSecret;
+        }
+        var signInTokenCache = new SignInTokenCache(tokenCache);
+        options.TokenCache = signInTokenCache;
+        if (!string.IsNullOrWhiteSpace(requestedScope))
+        {
+            var requiredScopes = requestedScope.Split((char[]?)null,
+                StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            options.ScopeSelector = scope => (scope ?? Array.Empty<string>())
+                .Concat(requiredScopes).Distinct(StringComparer.Ordinal);
+        }
         var transportOptions = new HttpClientTransportOptions
         {
             Name = server.Name,
@@ -100,11 +115,32 @@ public static class McpOAuthLogin
             await output.WriteLineAsync((authorizationStarted ? "Signed in to" : "Already connected to") +
                 " MCP server \"" + server.Name + "\".");
         }
+        catch (Exception error) when (signInTokenCache.HasStoredTokens &&
+            (error is HttpRequestException or ModelContextProtocol.McpException))
+        {
+            await output.WriteLineAsync("Signed in to MCP server \"" + server.Name + "\".");
+        }
         finally
         {
             await refreshHandler.WaitForSettledAsync();
             if (client is not null) await client.DisposeAsync();
             await transport.DisposeAsync();
+        }
+    }
+
+    private sealed class SignInTokenCache(ITokenCache inner) : ITokenCache
+    {
+        private int _hasStoredTokens;
+
+        public bool HasStoredTokens => Volatile.Read(ref _hasStoredTokens) != 0;
+
+        public ValueTask<TokenContainer?> GetTokensAsync(CancellationToken cancellationToken) =>
+            HasStoredTokens ? inner.GetTokensAsync(cancellationToken) : ValueTask.FromResult<TokenContainer?>(null);
+
+        public async ValueTask StoreTokensAsync(TokenContainer tokens, CancellationToken cancellationToken)
+        {
+            await inner.StoreTokensAsync(tokens, cancellationToken);
+            Volatile.Write(ref _hasStoredTokens, 1);
         }
     }
 }

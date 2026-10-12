@@ -8,4 +8,7 @@
     <Project Path="tests/PiSharp.Tests/PiSharp.Tests.csproj" />
     <Project Path="tests/ResourceDiscoveryExtension/ResourceDiscoveryExtension.csproj" />
   </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/McpConformance/PiSharp.McpConformance.csproj" />
+  </Folder>
 </Solution>

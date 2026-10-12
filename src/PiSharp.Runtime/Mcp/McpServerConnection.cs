@@ -86,6 +86,7 @@ internal sealed class McpServerConnection(string name, bool retryTransientConnec
     private readonly SemaphoreSlim _transition = new(1, 1);
     private readonly List<McpConnectedServer> _retired = [];
     private McpConnectedServer? _connected;
+    private string? _pendingAuthorizationScope;
     private int _disposed;
 
     public string Name => name;
@@ -94,6 +95,10 @@ internal sealed class McpServerConnection(string name, bool retryTransientConnec
     public IList<McpClientTool> Tools => Volatile.Read(ref _connected)?.Tools ?? [];
     public string? Instructions => Volatile.Read(ref _connected)?.Instructions;
     public bool HasResources => Volatile.Read(ref _connected)?.HasResources == true;
+    public string? PendingAuthorizationScope => Volatile.Read(ref _pendingAuthorizationScope);
+
+    public void SetPendingAuthorizationScope(string? scope) => Volatile.Write(ref _pendingAuthorizationScope, scope);
+    public void ClearPendingAuthorizationScope() => Interlocked.Exchange(ref _pendingAuthorizationScope, null);
 
     public bool IsCurrent(McpClient client) =>
         ReferenceEquals(Volatile.Read(ref _connected)?.Client, client);

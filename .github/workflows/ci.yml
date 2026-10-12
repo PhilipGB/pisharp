@@ -20,4 +20,16 @@ jobs:
       - run: dotnet format PiSharp.slnx --verify-no-changes --no-restore
       - run: dotnet build PiSharp.slnx --no-restore --warnaserror
       - run: dotnet test PiSharp.slnx --no-build --no-restore
-# Upstream differential suite is pending; do not represent this job as parity verification.
+  mcp-conformance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: dotnet restore PiSharp.slnx
+      - run: dotnet build tools/McpConformance/PiSharp.McpConformance.csproj --no-restore --warnaserror
+      - run: node tools/parity/mcp-conformance/run.mjs

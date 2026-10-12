@@ -11,6 +11,9 @@ namespace PiSharp.Runtime.Mcp;
 /// <summary>Connects configured MCP servers and registers their tools through the extension policy surface.</summary>
 public static class McpRuntime
 {
+    private const string s_protocolVersion = "2025-11-25";
+    private static readonly HashSet<string> s_protocolVersions = new(StringComparer.Ordinal)
+        { s_protocolVersion, "2025-06-18", "2025-03-26", "2024-11-05" };
     private static readonly TimeSpan s_startupWait = TimeSpan.FromSeconds(10);
 
     public static Task<IReadOnlyList<string>> RegisterAsync(McpConfiguration configuration,
@@ -115,6 +118,8 @@ public static class McpRuntime
                         McpServerConfiguration openingConfiguration;
                         lock (publishGate) openingConfiguration = currentServer;
                         return OpenServerAsync(openingConfiguration, configuration.AgentDirectory, workingDirectory,
+                            authorizationUri => created?.SetPendingAuthorizationScope(
+                                ReadAuthorizationScope(authorizationUri)),
                             providerTokenResolver,
                             (client, tools) =>
                             {
@@ -319,7 +324,7 @@ public static class McpRuntime
     }
 
     private static async Task<McpConnectedServer> OpenServerAsync(McpServerConfiguration server,
-        string agentDirectory, string workingDirectory,
+        string agentDirectory, string workingDirectory, Action<Uri>? authorizationRequired,
         Func<string, CancellationToken, Task<string?>>? providerTokenResolver,
         Func<McpClient, IList<McpClientTool>, Task> onToolsChanged, CancellationToken cancellationToken)
     {
@@ -333,23 +338,24 @@ public static class McpRuntime
         var resourcesRefreshGate = new SemaphoreSlim(1, 1);
         try
         {
-            if (server.Command is { } command)
+            IClientTransport CreateTransport()
             {
-                var environment = StdioClientTransportOptions.GetDefaultEnvironmentVariables();
-                foreach (var (key, value) in server.Environment) environment[key] = Expand(value);
-                transport = new StdioClientTransport(new StdioClientTransportOptions
+                if (server.Command is { } command)
                 {
-                    Name = server.Name,
-                    Command = Expand(command),
-                    Arguments = server.Arguments.Select(Expand).ToArray(),
-                    WorkingDirectory = server.WorkingDirectory is null ? workingDirectory :
-                        Path.GetFullPath(Expand(server.WorkingDirectory), workingDirectory),
-                    InheritEnvironmentVariables = false,
-                    EnvironmentVariables = environment
-                });
-            }
-            else
-            {
+                    var environment = StdioClientTransportOptions.GetDefaultEnvironmentVariables();
+                    foreach (var (key, value) in server.Environment) environment[key] = Expand(value);
+                    return new StdioClientTransport(new StdioClientTransportOptions
+                    {
+                        Name = server.Name,
+                        Command = Expand(command),
+                        Arguments = server.Arguments.Select(Expand).ToArray(),
+                        WorkingDirectory = server.WorkingDirectory is null ? workingDirectory :
+                            Path.GetFullPath(Expand(server.WorkingDirectory), workingDirectory),
+                        InheritEnvironmentVariables = false,
+                        EnvironmentVariables = environment
+                    });
+                }
+
                 var oauth = server.AuthProvider is not null || server.Headers.Keys.Any(key =>
                     key.Equals("Authorization", StringComparison.OrdinalIgnoreCase)) ? null :
                     (server.OAuth is { } configured ? McpOAuthSettings.Parse(configured) :
@@ -364,28 +370,31 @@ public static class McpRuntime
                     ConnectionTimeout = server.Timeout
                 };
                 if (server.AuthProvider is { } providerAuth)
-                    transport = new HttpClientTransport(options,
+                    return new HttpClientTransport(options,
                         new HttpClient(new McpProtocolCompatibilityHandler(server.Url!,
                             new McpProviderAuthHandler(server.Name, providerAuth, providerTokenResolver))),
                         ownsHttpClient: true);
                 else if (oauth is null)
-                    transport = new HttpClientTransport(options,
+                    return new HttpClientTransport(options,
                         new HttpClient(new McpProtocolCompatibilityHandler(server.Url!, new HttpClientHandler())),
                         ownsHttpClient: true);
-                else
-                {
-                    var tokenCache = new McpTokenCache(agentDirectory).ForServerWithRefresh(server.Name, server.Url!);
-                    options.OAuth = oauth.CreateOptions(server.Url!, tokenCache,
-                        oauth.CallbackUrl ?? new Uri("http://127.0.0.1:38119/callback"),
-                        (_, _) => throw new McpSignInRequiredException());
-                    refreshHandler = new McpOAuthRefreshHandler(tokenCache);
-                    HttpMessageHandler handler = refreshHandler;
-                    if (oauth.AuthServerMetadataUrl is { } metadataUrl)
-                        handler = new McpOAuthMetadataHandler(server.Url!, metadataUrl, handler);
-                    handler = new McpProtocolCompatibilityHandler(server.Url!, handler);
-                    transport = new HttpClientTransport(options, new HttpClient(handler), ownsHttpClient: true);
-                }
+                var tokenCache = new McpTokenCache(agentDirectory).ForServerWithRefresh(server.Name, server.Url!);
+                options.OAuth = oauth.CreateOptions(server.Url!, tokenCache,
+                    oauth.CallbackUrl ?? new Uri("http://127.0.0.1:38119/callback"),
+                    (context, _) =>
+                    {
+                        authorizationRequired?.Invoke(context.AuthorizationUri);
+                        throw new McpSignInRequiredException();
+                    });
+                refreshHandler = new McpOAuthRefreshHandler(tokenCache);
+                HttpMessageHandler handler = refreshHandler;
+                if (oauth.AuthServerMetadataUrl is { } metadataUrl)
+                    handler = new McpOAuthMetadataHandler(server.Url!, metadataUrl, handler);
+                handler = new McpProtocolCompatibilityHandler(server.Url!, handler);
+                return new HttpClientTransport(options, new HttpClient(handler), ownsHttpClient: true);
             }
+
+            transport = CreateTransport();
             async ValueTask RefreshToolsAsync(CancellationToken token)
             {
                 var current = connected;
@@ -457,19 +466,40 @@ public static class McpRuntime
                 return ValueTask.CompletedTask;
             }
 
-            client = await McpClient.CreateAsync(transport, new McpClientOptions
+            var attemptedProtocolVersions = new HashSet<string>(StringComparer.Ordinal);
+            var requestedProtocolVersion = s_protocolVersion;
+            while (client is null)
             {
-                DiscoverProbeTimeout = TimeSpan.FromMilliseconds(750),
-                Handlers = new McpClientHandlers
+                attemptedProtocolVersions.Add(requestedProtocolVersion);
+                try
                 {
-                    NotificationHandlers = new Dictionary<string,
-                        Func<JsonRpcNotification, CancellationToken, ValueTask>>(StringComparer.Ordinal)
+                    client = await McpClient.CreateAsync(transport, new McpClientOptions
                     {
-                        ["notifications/tools/list_changed"] = (_, token) => QueueToolsRefreshAsync(token),
-                        ["notifications/resources/list_changed"] = (_, token) => QueueResourcesRefreshAsync(token)
-                    }
+                        ProtocolVersion = requestedProtocolVersion,
+                        DiscoverProbeTimeout = TimeSpan.FromMilliseconds(750),
+                        Handlers = new McpClientHandlers
+                        {
+                            NotificationHandlers = new Dictionary<string,
+                                Func<JsonRpcNotification, CancellationToken, ValueTask>>(StringComparer.Ordinal)
+                            {
+                                ["notifications/tools/list_changed"] = (_, token) => QueueToolsRefreshAsync(token),
+                                ["notifications/resources/list_changed"] = (_, token) => QueueResourcesRefreshAsync(token)
+                            }
+                        }
+                    }, cancellationToken: cancellationToken);
                 }
-            }, cancellationToken: cancellationToken);
+                catch (ModelContextProtocol.McpException error)
+                {
+                    var serverProtocolVersion = GetMismatchedProtocolVersion(error.Message);
+                    if (serverProtocolVersion is null || !s_protocolVersions.Contains(serverProtocolVersion) ||
+                        !attemptedProtocolVersions.Add(serverProtocolVersion))
+                        throw;
+
+                    await ((IAsyncDisposable)transport).DisposeAsync();
+                    requestedProtocolVersion = serverProtocolVersion;
+                    transport = CreateTransport();
+                }
+            }
             var tools = client.ServerCapabilities.Tools is null
                 ? []
                 : await client.ListToolsAsync(cancellationToken: cancellationToken);
@@ -516,6 +546,29 @@ public static class McpRuntime
     private static string Expand(string value) => Regex.Replace(value, @"\$\{([A-Za-z_][A-Za-z0-9_]*)\}", match =>
         Environment.GetEnvironmentVariable(match.Groups[1].Value) ??
         throw new InvalidOperationException("Missing environment variable " + match.Groups[1].Value + "."));
+
+    private static string? GetMismatchedProtocolVersion(string message)
+    {
+        var match = Regex.Match(message, @"^Server protocol version mismatch\. Expected [^,]+, got (?<version>\S+)$",
+            RegexOptions.CultureInvariant);
+        return match.Success ? match.Groups["version"].Value : null;
+    }
+
+    private static string? ReadAuthorizationScope(Uri authorizationUri)
+    {
+        foreach (var field in authorizationUri.Query.TrimStart('?').Split('&', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var separator = field.IndexOf('=');
+            if (separator < 0 || !Uri.UnescapeDataString(field[..separator].Replace('+', ' '))
+                    .Equals("scope", StringComparison.Ordinal)) continue;
+            var value = Uri.UnescapeDataString(field[(separator + 1)..].Replace('+', ' '));
+            var scopes = value.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Distinct(StringComparer.Ordinal);
+            var result = string.Join(' ', scopes);
+            return result.Length == 0 ? null : result;
+        }
+        return null;
+    }
 
     private static ToolExposure MapExposure(McpToolExposure value) => value switch
     {

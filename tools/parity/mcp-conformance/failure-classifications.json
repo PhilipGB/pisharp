@@ -1,0 +1,37 @@
+{
+  "conformance": "@modelcontextprotocol/conformance@0.2.0-alpha.11",
+  "failures": {
+    "2025-11-25|elicitation-sep1034-client-defaults|client-elicitation-sep1034-general": {
+      "classification": "intentional-scope-difference",
+      "reason": "Current Pi and PiSharp do not advertise or implement MCP client elicitation; this check also fails in the verified current-Pi baseline."
+    },
+    "2025-11-25|elicitation-sep1034-client-defaults|client-elicitation-sep1034-string-default": {
+      "classification": "intentional-scope-difference",
+      "reason": "Current Pi and PiSharp do not advertise or implement MCP client elicitation; this check also fails in the verified current-Pi baseline."
+    },
+    "2025-11-25|elicitation-sep1034-client-defaults|client-elicitation-sep1034-integer-default": {
+      "classification": "intentional-scope-difference",
+      "reason": "Current Pi and PiSharp do not advertise or implement MCP client elicitation; this check also fails in the verified current-Pi baseline."
+    },
+    "2025-11-25|elicitation-sep1034-client-defaults|client-elicitation-sep1034-number-default": {
+      "classification": "intentional-scope-difference",
+      "reason": "Current Pi and PiSharp do not advertise or implement MCP client elicitation; this check also fails in the verified current-Pi baseline."
+    },
+    "2025-11-25|elicitation-sep1034-client-defaults|client-elicitation-sep1034-enum-default": {
+      "classification": "intentional-scope-difference",
+      "reason": "Current Pi and PiSharp do not advertise or implement MCP client elicitation; this check also fails in the verified current-Pi baseline."
+    },
+    "2025-11-25|elicitation-sep1034-client-defaults|client-elicitation-sep1034-boolean-default": {
+      "classification": "intentional-scope-difference",
+      "reason": "Current Pi and PiSharp do not advertise or implement MCP client elicitation; this check also fails in the verified current-Pi baseline."
+    },
+    "2025-11-25|auth/basic-cimd|cimd-client-id-used": {
+      "classification": "intentional-scope-difference",
+      "reason": "Current Pi and PiSharp use dynamic client registration rather than URL-based Client ID Metadata Documents; this check also fails in the verified current-Pi baseline."
+    },
+    "2025-11-25|auth/scope-retry-limit|pisharp-client": {
+      "classification": "intentional-scope-difference",
+      "reason": "The scenario deliberately never accepts the requested scope. Both clients stop after three sign-ins and report the expected failed client run; the suite's retry-limit assertion passes."
+    }
+  }
+}

@@ -164,10 +164,25 @@ public sealed class McpRuntimeManager(string? agentDirectory = null)
             {
                 await McpOAuthLogin.SignInAsync(entry.Configuration, agentDirectory, Console.Out,
                     openBrowser: !Console.IsInputRedirected, TimeSpan.FromMinutes(5), cancellationToken,
-                    Volatile.Read(ref _authorizationUrlPresenter));
-                await entry.Connection.ReconnectAsync(cancellationToken);
-                entry.Publish?.Invoke(entry.Configuration, entry.Connection);
-                return "Signed in to MCP server " + name + ".";
+                    Volatile.Read(ref _authorizationUrlPresenter), entry.Connection.PendingAuthorizationScope);
+                try
+                {
+                    await entry.Connection.ReconnectAsync(cancellationToken);
+                    entry.Connection.ClearPendingAuthorizationScope();
+                    entry.Publish?.Invoke(entry.Configuration, entry.Connection);
+                    return "Signed in to MCP server " + name + ".";
+                }
+                catch (McpSignInRequiredException)
+                {
+                    entry.Publish?.Invoke(entry.Configuration, entry.Connection);
+                    return "Signed in to MCP server " + name + "; the server still requests authorization.";
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
+                catch (Exception error)
+                {
+                    entry.Publish?.Invoke(entry.Configuration, entry.Connection);
+                    return "Signed in to MCP server " + name + "; reconnect failed (" + error.GetType().Name + ").";
+                }
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
             catch (Exception error)
