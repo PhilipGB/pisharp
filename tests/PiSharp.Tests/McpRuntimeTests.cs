@@ -11,6 +11,39 @@ namespace PiSharp.Tests;
 public sealed class McpRuntimeTests
 {
     [Fact]
+    public async Task FailedConnectionReportsItsTypeWithoutLeakingChildErrorDetails()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-mcp-error-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            const string sensitive = "fixture-sensitive-credential";
+            await File.WriteAllTextAsync(Path.Combine(root, "mcp.json"), JsonSerializer.Serialize(new
+            {
+                mcpServers = new Dictionary<string, object>
+                {
+                    ["broken"] = new
+                    {
+                        command = "python3",
+                        args = new[] { "-c", $"raise RuntimeError('{sensitive}')" },
+                        exposure = "direct"
+                    }
+                }
+            }));
+            var configuration = await McpConfiguration.LoadAsync(root, root, false);
+            using var catalog = ExtensionCatalog.Load(root, root, false, discover: false);
+
+            var error = Assert.Single(await McpRuntime.RegisterAsync(configuration, catalog, root));
+
+            Assert.StartsWith("MCP server broken could not connect (", error);
+            Assert.EndsWith(").", error);
+            Assert.DoesNotContain(sensitive, error);
+            Assert.DoesNotContain("RuntimeError", error);
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
     public async Task ResourceOnlyServerDoesNotNeedToolCapability()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-mcp-resources-" + Guid.NewGuid().ToString("N"));

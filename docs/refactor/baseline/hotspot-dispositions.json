@@ -58,7 +58,11 @@
     },
     {
       "id": "H10",
-      "disposition": "OPEN"
+      "disposition": "RESOLVED",
+      "resolution": "SDK connection/discovery/auth lifetime, tool schema/result publication and shared resource publication have concrete internal owners; runtime selects servers and coordinates startup/live publication.",
+      "evidence": "mcp-slice/broad-dotnet/preservation-comparison.json",
+      "conformanceEvidence": "mcp-slice/mcp-preservation-comparison.json",
+      "capabilityDocumentation": "../../capabilities/mcp.md"
     }
   ]
 }

@@ -1,0 +1,12 @@
+{
+  "id": "mcp",
+  "command": [
+    "node",
+    "tools/parity/mcp-conformance/run.mjs",
+    "--keep-results"
+  ],
+  "cwd": "/home/philip/Downloads/pisharp-bootstrap/pisharp",
+  "exitCode": 0,
+  "seconds": 37.55090141296387,
+  "logger": "stdout+stderr text"
+}

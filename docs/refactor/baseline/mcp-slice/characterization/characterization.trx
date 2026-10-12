@@ -1,0 +1,52 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="6ce068f8-4870-49cb-a88a-b903cd4ae557" name="@philip-Latitude-7320 2026-10-12 20:07:41" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2026-10-12T20:07:41.8878394+01:00" queuing="2026-10-12T20:07:41.8878394+01:00" start="2026-10-12T20:07:39.7131791+01:00" finish="2026-10-12T20:08:02.3822727+01:00" />
+  <TestSettings name="default" id="04bc9168-3f3c-4340-8eb9-a648972b6165">
+    <Deployment runDeploymentRoot="_philip-Latitude-7320_2026-10-12_20_07_41" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="9372f6f3-cdc8-427a-b4d5-cd4ed4369397" testId="8dcfeaf7-3ce6-baf9-cf5a-9f8c0d16e5fd" testName="PiSharp.Tests.McpRuntimeTests.ResourceOnlyServerDoesNotNeedToolCapability" computerName="philip-Latitude-7320" duration="00:00:05.0402736" startTime="2026-10-12T20:07:57.2693028+01:00" endTime="2026-10-12T20:08:02.3092315+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="9372f6f3-cdc8-427a-b4d5-cd4ed4369397" />
+    <UnitTestResult executionId="b9b879d6-982d-4df3-b341-a8148d2d53e5" testId="65695682-2183-0815-9cbe-d9a4c296d788" testName="PiSharp.Tests.McpRuntimeTests.StdioToolsKeepNamesSchemasStructuredResultsAndErrors" computerName="philip-Latitude-7320" duration="00:00:05.1731236" startTime="2026-10-12T20:07:52.0975206+01:00" endTime="2026-10-12T20:07:57.2682568+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="b9b879d6-982d-4df3-b341-a8148d2d53e5" />
+    <UnitTestResult executionId="2ca43f69-b517-4949-a78c-9300289ea007" testId="44a5a7c3-47e4-7ff8-3126-42f5ec1d482d" testName="PiSharp.Tests.McpRuntimeTests.CodemodeDescribesMcpNamespacesAndOnlyInvokesCallableTools" computerName="philip-Latitude-7320" duration="00:00:11.3623413" startTime="2026-10-12T20:07:40.7536992+01:00" endTime="2026-10-12T20:07:52.0951183+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="2ca43f69-b517-4949-a78c-9300289ea007" />
+    <UnitTestResult executionId="1106ff96-971a-4e5a-9900-ee429c934234" testId="257c7e22-eb2b-8219-b33b-b0f47e79e4d9" testName="PiSharp.Tests.McpRuntimeTests.FailedConnectionReportsItsTypeWithoutLeakingChildErrorDetails" computerName="philip-Latitude-7320" duration="00:00:00.2246375" startTime="2026-10-12T20:07:40.5034569+01:00" endTime="2026-10-12T20:07:40.7287666+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="1106ff96-971a-4e5a-9900-ee429c934234" />
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="PiSharp.Tests.McpRuntimeTests.FailedConnectionReportsItsTypeWithoutLeakingChildErrorDetails" storage="/home/philip/downloads/pisharp-bootstrap/pisharp/tests/pisharp.tests/bin/debug/net10.0/pisharp.tests.dll" id="257c7e22-eb2b-8219-b33b-b0f47e79e4d9">
+      <Execution id="1106ff96-971a-4e5a-9900-ee429c934234" />
+      <TestMethod codeBase="/home/philip/Downloads/pisharp-bootstrap/pisharp/tests/PiSharp.Tests/bin/Debug/net10.0/PiSharp.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="PiSharp.Tests.McpRuntimeTests" name="FailedConnectionReportsItsTypeWithoutLeakingChildErrorDetails" />
+    </UnitTest>
+    <UnitTest name="PiSharp.Tests.McpRuntimeTests.StdioToolsKeepNamesSchemasStructuredResultsAndErrors" storage="/home/philip/downloads/pisharp-bootstrap/pisharp/tests/pisharp.tests/bin/debug/net10.0/pisharp.tests.dll" id="65695682-2183-0815-9cbe-d9a4c296d788">
+      <Execution id="b9b879d6-982d-4df3-b341-a8148d2d53e5" />
+      <TestMethod codeBase="/home/philip/Downloads/pisharp-bootstrap/pisharp/tests/PiSharp.Tests/bin/Debug/net10.0/PiSharp.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="PiSharp.Tests.McpRuntimeTests" name="StdioToolsKeepNamesSchemasStructuredResultsAndErrors" />
+    </UnitTest>
+    <UnitTest name="PiSharp.Tests.McpRuntimeTests.CodemodeDescribesMcpNamespacesAndOnlyInvokesCallableTools" storage="/home/philip/downloads/pisharp-bootstrap/pisharp/tests/pisharp.tests/bin/debug/net10.0/pisharp.tests.dll" id="44a5a7c3-47e4-7ff8-3126-42f5ec1d482d">
+      <Execution id="2ca43f69-b517-4949-a78c-9300289ea007" />
+      <TestMethod codeBase="/home/philip/Downloads/pisharp-bootstrap/pisharp/tests/PiSharp.Tests/bin/Debug/net10.0/PiSharp.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="PiSharp.Tests.McpRuntimeTests" name="CodemodeDescribesMcpNamespacesAndOnlyInvokesCallableTools" />
+    </UnitTest>
+    <UnitTest name="PiSharp.Tests.McpRuntimeTests.ResourceOnlyServerDoesNotNeedToolCapability" storage="/home/philip/downloads/pisharp-bootstrap/pisharp/tests/pisharp.tests/bin/debug/net10.0/pisharp.tests.dll" id="8dcfeaf7-3ce6-baf9-cf5a-9f8c0d16e5fd">
+      <Execution id="9372f6f3-cdc8-427a-b4d5-cd4ed4369397" />
+      <TestMethod codeBase="/home/philip/Downloads/pisharp-bootstrap/pisharp/tests/PiSharp.Tests/bin/Debug/net10.0/PiSharp.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="PiSharp.Tests.McpRuntimeTests" name="ResourceOnlyServerDoesNotNeedToolCapability" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="8dcfeaf7-3ce6-baf9-cf5a-9f8c0d16e5fd" executionId="9372f6f3-cdc8-427a-b4d5-cd4ed4369397" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="65695682-2183-0815-9cbe-d9a4c296d788" executionId="b9b879d6-982d-4df3-b341-a8148d2d53e5" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="44a5a7c3-47e4-7ff8-3126-42f5ec1d482d" executionId="2ca43f69-b517-4949-a78c-9300289ea007" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="257c7e22-eb2b-8219-b33b-b0f47e79e4d9" executionId="1106ff96-971a-4e5a-9900-ee429c934234" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="Results Not in a List" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="All Loaded Results" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Completed">
+    <Counters total="4" executed="4" passed="4" failed="0" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      <StdOut>[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v3.1.4+50e68bbb8b (64-bit .NET 10.0.12)
+[xUnit.net 00:00:00.14]   Discovering: PiSharp.Tests
+[xUnit.net 00:00:00.34]   Discovered:  PiSharp.Tests
+[xUnit.net 00:00:00.37]   Starting:    PiSharp.Tests
+[xUnit.net 00:00:22.22]   Finished:    PiSharp.Tests
+</StdOut>
+    </Output>
+  </ResultSummary>
+</TestRun>
