@@ -63,7 +63,7 @@ public sealed class ConversationSession
             .ToArray();
         return new(id, parentId, "chat", JsonSerializer.SerializeToElement(new ChatRecord(
             JsonSerializer.SerializeToElement(message, AIJsonUtilities.DefaultOptions), errors, originalEntry.Clone(),
-            PiJsonlSessionInterchange.NestedToolCallsFromEntry(originalEntry))), timestamp);
+            PiJsonlEntryCodec.NestedToolCallsFromEntry(originalEntry))), timestamp);
     }
 
     internal static JsonElement? PiEntryFromChatPayload(JsonElement payload) =>
@@ -203,9 +203,9 @@ public sealed class ConversationSession
     private static JsonElement? ToolLoadoutPayload(ConversationNode node)
     {
         if (node.Type == "tool_loadout") return node.Payload;
-        if (PiJsonlSessionInterchange.OriginalEntry(node) is not { } entry ||
-            PiJsonlSessionInterchange.StringProperty(entry, "type") != "custom" ||
-            PiJsonlSessionInterchange.StringProperty(entry, "customType") != "pisharp.tool_loadout" ||
+        if (PiJsonlEntryCodec.OriginalEntry(node) is not { } entry ||
+            PiJsonlEntryCodec.StringProperty(entry, "type") != "custom" ||
+            PiJsonlEntryCodec.StringProperty(entry, "customType") != "pisharp.tool_loadout" ||
             !entry.TryGetProperty("data", out var payload) || payload.ValueKind != JsonValueKind.Object)
             return null;
         return payload.Clone();
@@ -247,8 +247,8 @@ public sealed class ConversationSession
         {
             var payload = VirtualModelStatePayload(node);
             if (payload is not { } value ||
-                PiJsonlSessionInterchange.StringProperty(value, "provider") != provider ||
-                PiJsonlSessionInterchange.StringProperty(value, "modelId") != modelId ||
+                PiJsonlEntryCodec.StringProperty(value, "provider") != provider ||
+                PiJsonlEntryCodec.StringProperty(value, "modelId") != modelId ||
                 !value.TryGetProperty("state", out var state)) continue;
             return state.Clone();
         }
@@ -271,9 +271,9 @@ public sealed class ConversationSession
     private static JsonElement? VirtualModelStatePayload(ConversationNode node)
     {
         if (node.Type == "virtual_model_state") return node.Payload;
-        if (PiJsonlSessionInterchange.OriginalEntry(node) is not { } entry ||
-            PiJsonlSessionInterchange.StringProperty(entry, "type") != "custom" ||
-            PiJsonlSessionInterchange.StringProperty(entry, "customType") != "pi.virtual-model-state" ||
+        if (PiJsonlEntryCodec.OriginalEntry(node) is not { } entry ||
+            PiJsonlEntryCodec.StringProperty(entry, "type") != "custom" ||
+            PiJsonlEntryCodec.StringProperty(entry, "customType") != "pi.virtual-model-state" ||
             !entry.TryGetProperty("data", out var payload) || payload.ValueKind != JsonValueKind.Object)
             return null;
         return payload.Clone();
@@ -282,9 +282,9 @@ public sealed class ConversationSession
     private static JsonElement? RuntimePayload(ConversationNode node, string kind)
     {
         if (node.Type == kind) return node.Payload;
-        if (PiJsonlSessionInterchange.OriginalEntry(node) is not { } entry ||
-            PiJsonlSessionInterchange.StringProperty(entry, "type") != "custom" ||
-            PiJsonlSessionInterchange.StringProperty(entry, "customType") != "pisharp." + kind ||
+        if (PiJsonlEntryCodec.OriginalEntry(node) is not { } entry ||
+            PiJsonlEntryCodec.StringProperty(entry, "type") != "custom" ||
+            PiJsonlEntryCodec.StringProperty(entry, "customType") != "pisharp." + kind ||
             !entry.TryGetProperty("data", out var payload) || payload.ValueKind != JsonValueKind.Object)
             return null;
         return payload.Clone();
@@ -437,7 +437,7 @@ public sealed class ConversationSession
     private static bool TryGetPiUsageTokens(ConversationNode node, out long tokens)
     {
         tokens = 0;
-        if (PiJsonlSessionInterchange.OriginalEntry(node) is not { } entry ||
+        if (PiJsonlEntryCodec.OriginalEntry(node) is not { } entry ||
             !entry.TryGetProperty("message", out var message) || message.ValueKind != JsonValueKind.Object ||
             !message.TryGetProperty("usage", out var usage) || usage.ValueKind != JsonValueKind.Object)
             return false;
@@ -469,7 +469,7 @@ public sealed class ConversationSession
             var compact = path[compactAt].Payload;
             var kept = compact.GetProperty("firstKeptEntryId").GetString();
             from = path.ToList().FindIndex(node => node.Id == kept);
-            var piBoundary = PiJsonlSessionInterchange.OriginalEntry(path[compactAt]) is not null;
+            var piBoundary = PiJsonlEntryCodec.OriginalEntry(path[compactAt]) is not null;
             if (from < 0 || from >= compactAt)
                 throw new InvalidDataException("Invalid compaction boundary.");
             if (!piBoundary)
@@ -478,7 +478,7 @@ public sealed class ConversationSession
                 if (role != ChatRole.User && role != ChatRole.Assistant)
                     throw new InvalidDataException("Invalid compaction boundary.");
             }
-            if (PiJsonlSessionInterchange.CompactionSystemMessage(path[compactAt]) is { } systemMessage)
+            if (PiJsonlEntryCodec.CompactionSystemMessage(path[compactAt]) is { } systemMessage)
                 context.Add(systemMessage);
             context.Add(CompactionSummaryMessage(compact.GetProperty("summary").GetString() ?? ""));
             projectedNodes = path.Skip(from).Where((node, offset) => from + offset >= compactAt ||
@@ -486,14 +486,14 @@ public sealed class ConversationSession
         }
         var edits = new Dictionary<string, JsonElement>(StringComparer.Ordinal);
         foreach (var node in projectedNodes)
-            if (PiJsonlSessionInterchange.TryGetContextEdit(node, out var targetId, out var replacement))
+            if (PiJsonlEntryCodec.TryGetContextEdit(node, out var targetId, out var replacement))
                 edits[targetId] = replacement;
         foreach (var entry in ProjectContextEntries(projectedNodes))
         {
             var node = entry.Node;
             var message = entry.Message;
             if (edits.TryGetValue(node.Id, out var replacement))
-                message = PiJsonlSessionInterchange.ApplyContextEdit(node, message, replacement);
+                message = PiJsonlEntryCodec.ApplyContextEdit(node, message, replacement);
             if (message is not null) context.Add(message);
         }
         return context;
@@ -527,7 +527,7 @@ public sealed class ConversationSession
         for (var index = retainedFrom; index < path.Count; index++)
         {
             if (index == compactionIndex) continue;
-            if (PiJsonlSessionInterchange.TryGetContextEdit(path[index], out var targetId, out var replacement))
+            if (PiJsonlEntryCodec.TryGetContextEdit(path[index], out var targetId, out var replacement))
                 edits[targetId] = replacement;
         }
 
@@ -548,7 +548,7 @@ public sealed class ConversationSession
             if (message is null) continue;
             if (compactionIndex >= 0 && index < compactionIndex && message.Role == ChatRole.System) continue;
             if (edits.TryGetValue(node.Id, out var replacement))
-                message = PiJsonlSessionInterchange.ApplyContextEdit(node, message, replacement);
+                message = PiJsonlEntryCodec.ApplyContextEdit(node, message, replacement);
             if (message is null) continue;
             if (node.Type == "interrupted" && message.Role == ChatRole.Assistant && message.Text.Length > 0 &&
                 lastAssistantText == message.Text)
@@ -580,7 +580,7 @@ public sealed class ConversationSession
 
         var edits = new Dictionary<string, JsonElement>(StringComparer.Ordinal);
         for (var index = retainedFrom; index < path.Count; index++)
-            if (index != compactIndex && PiJsonlSessionInterchange.TryGetContextEdit(path[index], out var targetId, out var replacement))
+            if (index != compactIndex && PiJsonlEntryCodec.TryGetContextEdit(path[index], out var targetId, out var replacement))
                 edits[targetId] = replacement;
 
         var suffix = path.Skip(sourceIndex + 1).ToArray();
@@ -588,7 +588,7 @@ public sealed class ConversationSession
         {
             var message = ContextMessageForNode(node);
             return message is not null && edits.TryGetValue(node.Id, out var replacement)
-                ? PiJsonlSessionInterchange.ApplyContextEdit(node, message, replacement)
+                ? PiJsonlEntryCodec.ApplyContextEdit(node, message, replacement)
                 : message;
         }
 
@@ -600,7 +600,7 @@ public sealed class ConversationSession
 
         var omittedIds = suffix.Where(IsOmitted).Select(node => node.Id).ToHashSet(StringComparer.Ordinal);
         var hasExternalReplacement = suffix.Any(node =>
-            PiJsonlSessionInterchange.TryGetContextEdit(node, out var targetId, out var replacement) &&
+            PiJsonlEntryCodec.TryGetContextEdit(node, out var targetId, out var replacement) &&
             replacement.ValueKind != JsonValueKind.Null && !omittedIds.Contains(targetId));
         var hasOmittedAssistant = suffix.Any(node => omittedIds.Contains(node.Id) &&
             ContextMessageForNode(node)?.Role == ChatRole.Assistant);
@@ -641,10 +641,10 @@ public sealed class ConversationSession
     {
         if (node.Type == "chat") return Restore(node.Payload, node.Id);
         if (node.Type == "interrupted" &&
-            PiJsonlSessionInterchange.StringProperty(node.Payload, "partialAssistantText") is { Length: > 0 } partialText)
+            PiJsonlEntryCodec.StringProperty(node.Payload, "partialAssistantText") is { Length: > 0 } partialText)
             return new ChatMessage(ChatRole.Assistant, partialText);
         if (node.Type is "custom_message" or "branch_summary")
-            return PiJsonlSessionInterchange.ImportedContextMessage(node);
+            return PiJsonlEntryCodec.ImportedContextMessage(node);
         if (node.Type != "bash_execution") return null;
         var execution = RestoreBashExecution(node.Payload, node.Id);
         return execution.ExcludeFromContext ? null : BashExecutionContextMessage(execution);
@@ -892,7 +892,7 @@ public sealed class ConversationSession
             var previous = path.ToList().FindLastIndex(entry => entry.Type == "compaction");
             var boundaryRole = boundary >= 0 ? ContextMessageForNode(path[boundary])?.Role : null;
             if (boundary <= previous || boundary >= path.Count ||
-                PiJsonlSessionInterchange.OriginalEntry(node) is null &&
+                PiJsonlEntryCodec.OriginalEntry(node) is null &&
                 boundaryRole != ChatRole.User && boundaryRole != ChatRole.Assistant)
                 throw new InvalidDataException($"Invalid compaction boundary at {node.Id}.");
         }

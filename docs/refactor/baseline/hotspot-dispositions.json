@@ -23,7 +23,11 @@
     },
     {
       "id": "H06",
-      "disposition": "OPEN"
+      "disposition": "RESOLVED",
+      "resolution": "Import/version migration, entry/content codec, ordered private writer and bounded run projection have distinct owners; internal forwarding facade calls removed while public compatibility APIs remain.",
+      "evidence": "interchange-slice/broad-dotnet/preservation-comparison.json",
+      "terminalEvidence": "interchange-slice/terminal-preservation-comparison.json",
+      "capabilityDocumentation": "../../capabilities/session-interchange.md"
     },
     {
       "id": "H07",

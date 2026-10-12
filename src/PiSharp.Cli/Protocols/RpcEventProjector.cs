@@ -150,7 +150,7 @@ internal sealed class RpcEventProjector
         {
             var callId = result.Contents.OfType<FunctionResultContent>().FirstOrDefault()?.CallId;
             var projectedResult = callId is null ? null : _assistantMessages.GetToolResult(callId);
-            toolResults.Add(projectedResult ?? PiJsonlSessionInterchange.ProjectRuntimeMessage(conversation, result,
+            toolResults.Add(projectedResult ?? PiJsonlEntryCodec.ProjectRuntimeMessage(conversation, result,
                 toolName: callId is not null && toolNames.TryGetValue(callId, out var name) ? name : "tool"));
         }
 
@@ -158,7 +158,7 @@ internal sealed class RpcEventProjector
         {
             ["type"] = "turn_end",
             ["message"] = _assistantMessages.LastCompletedAssistantMessage?.DeepClone() ??
-                PiJsonlSessionInterchange.ProjectRuntimeMessage(conversation, message, api),
+                PiJsonlEntryCodec.ProjectRuntimeMessage(conversation, message, api),
             ["toolResults"] = toolResults
         };
     }
@@ -223,7 +223,7 @@ internal sealed class RpcEventProjector
             ["details"] = JsonSerializer.SerializeToNode(item.Details) ?? new JsonObject()
         };
         if (item.StructuredContent is { } structured) result["structuredContent"] = JsonNode.Parse(structured.GetRawText());
-        if (item.ToolUsage is { } usage) result["usage"] = PiJsonlSessionInterchange.ProjectToolUsage(usage, item.Cost);
+        if (item.ToolUsage is { } usage) result["usage"] = PiJsonlEntryCodec.ProjectToolUsage(usage, item.Cost);
         if (item.Terminate == true) result["terminate"] = true;
         var projected = new JsonObject
         {
@@ -241,7 +241,7 @@ internal sealed class RpcEventProjector
         string? terminalType, string? errorMessage, string? turnEndHead,
         JsonObject? completedAssistantMessage, ChatMessage? turnMessage, IReadOnlyList<ChatMessage>? turnToolResults)
     {
-        var messages = PiJsonlSessionInterchange.ProjectRunMessages(conversation, turnStartHead, api,
+        var messages = PiSessionRunProjection.ProjectRunMessages(conversation, turnStartHead, api,
                 terminalType, errorMessage, turnEndHead)
             .OfType<JsonObject>().ToArray();
         var assistantIndex = Array.FindLastIndex(messages, message =>
@@ -257,7 +257,7 @@ internal sealed class RpcEventProjector
         {
             var callId = result.Contents.OfType<FunctionResultContent>().FirstOrDefault()?.CallId;
             var projected = callId is null ? null : _assistantMessages.GetToolResult(callId);
-            toolResults.Add(projected ?? PiJsonlSessionInterchange.ProjectRuntimeMessage(conversation, result,
+            toolResults.Add(projected ?? PiJsonlEntryCodec.ProjectRuntimeMessage(conversation, result,
                 toolName: callId is not null && toolNames.TryGetValue(callId, out var name) ? name : "tool"));
         }
         if (completedAssistantMessage is null && results.Count == 0)
@@ -276,7 +276,7 @@ internal sealed class RpcEventProjector
     private object ProjectAgentEnd(ConversationSession conversation, string? runStartHead, string? api,
         string? terminalType, string? errorMessage, string? runEndHead, bool willRetry)
     {
-        var canonicalMessages = PiJsonlSessionInterchange.ProjectRunMessages(conversation, runStartHead, api,
+        var canonicalMessages = PiSessionRunProjection.ProjectRunMessages(conversation, runStartHead, api,
             terminalType, errorMessage, runEndHead);
         return new JsonObject
         {

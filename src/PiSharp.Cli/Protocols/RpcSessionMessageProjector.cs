@@ -19,13 +19,13 @@ internal static class RpcSessionMessageProjector
             var compaction = path[compactionIndex];
             var keptId = compaction.Payload.GetProperty("firstKeptEntryId").GetString();
             var firstKeptIndex = path.ToList().FindIndex(node => node.Id == keptId);
-            var isPiBoundary = PiJsonlSessionInterchange.OriginalEntry(compaction) is not null;
+            var isPiBoundary = PiJsonlEntryCodec.OriginalEntry(compaction) is not null;
             if (firstKeptIndex < 0 || firstKeptIndex >= compactionIndex ||
                 !isPiBoundary && ConversationSession.RestoreEntry(path[firstKeptIndex]).Role != ChatRole.User)
                 throw new InvalidDataException("Invalid compaction boundary.");
 
-            if (PiJsonlSessionInterchange.CompactionSystemMessage(compaction) is { } systemMessage)
-                messages.Add(PiJsonlSessionInterchange.ProjectRuntimeMessage(conversation, systemMessage,
+            if (PiJsonlEntryCodec.CompactionSystemMessage(compaction) is { } systemMessage)
+                messages.Add(PiJsonlEntryCodec.ProjectRuntimeMessage(conversation, systemMessage,
                     api, timestamp: compaction.Timestamp));
             messages.Add(new JsonObject
             {
@@ -42,7 +42,7 @@ internal static class RpcSessionMessageProjector
 
         var edits = new Dictionary<string, JsonElement>(StringComparer.Ordinal);
         foreach (var node in projectedNodes)
-            if (PiJsonlSessionInterchange.TryGetContextEdit(node, out var targetId, out var replacement))
+            if (PiJsonlEntryCodec.TryGetContextEdit(node, out var targetId, out var replacement))
                 edits[targetId] = replacement;
 
         foreach (var node in projectedNodes)
@@ -74,16 +74,16 @@ internal static class RpcSessionMessageProjector
     {
         if (node.Type == "chat")
         {
-            if (PiJsonlSessionInterchange.OriginalEntry(node) is not null)
-                return PiJsonlSessionInterchange.ProjectEntry(conversation, node)["message"]?.DeepClone()?.AsObject();
-            return PiJsonlSessionInterchange.ProjectRuntimeMessage(conversation,
+            if (PiJsonlEntryCodec.OriginalEntry(node) is not null)
+                return PiJsonlEntryCodec.ProjectEntry(conversation, node)["message"]?.DeepClone()?.AsObject();
+            return PiJsonlEntryCodec.ProjectRuntimeMessage(conversation,
                 ConversationSession.RestoreEntry(node), api, timestamp: node.Timestamp);
         }
 
         if (node.Type == "interrupted")
-            return PiJsonlSessionInterchange.ProjectInterruptedMessage(conversation, node, api);
+            return PiJsonlEntryCodec.ProjectInterruptedMessage(conversation, node, api);
 
-        var entry = PiJsonlSessionInterchange.ProjectEntry(conversation, node, api);
+        var entry = PiJsonlEntryCodec.ProjectEntry(conversation, node, api);
         if (node.Type == "bash_execution")
         {
             var bash = node.Payload.Deserialize<BashExecutionRecord>(new JsonSerializerOptions(JsonSerializerDefaults.Web));

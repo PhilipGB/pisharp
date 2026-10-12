@@ -1004,7 +1004,7 @@ public sealed class ConversationRun
         var matchingAssistant = -1;
         if (interrupted is not null)
         {
-            var partialText = PiJsonlSessionInterchange.StringProperty(interrupted.Payload, "partialAssistantText");
+            var partialText = PiJsonlEntryCodec.StringProperty(interrupted.Payload, "partialAssistantText");
             if (!string.IsNullOrEmpty(partialText)) omittedIds.Add(interrupted.Id);
             matchingAssistant = string.IsNullOrEmpty(partialText) ? -1 : Array.FindLastIndex(attemptEntries,
                 node =>
@@ -1052,7 +1052,7 @@ public sealed class ConversationRun
             publish(new AgentLifecycleEvent("entry_appended")
             {
                 AppendedEntry = JsonSerializer.SerializeToElement(
-                    PiJsonlSessionInterchange.ProjectEntry(Conversation, entry))
+                    PiJsonlEntryCodec.ProjectEntry(Conversation, entry))
             });
     }
 

@@ -57,7 +57,7 @@ public sealed class PiJsonlSessionInterchangeTests
             new Dictionary<string, object?> { ["path"] = "file.txt" })]));
         session.Append(new ChatMessage(ChatRole.Tool, [new FunctionResultContent("call-1", "contents")]));
 
-        var messages = PiJsonlSessionInterchange.ProjectRunMessages(session, runStart, "openai-completions");
+        var messages = PiSessionRunProjection.ProjectRunMessages(session, runStart, "openai-completions");
 
         Assert.Equal(3, messages.Count);
         Assert.Equal("new prompt", messages[0]!["content"]!.GetValue<string>());
@@ -79,7 +79,7 @@ public sealed class PiJsonlSessionInterchangeTests
             partialAssistantText = "partial"
         }));
 
-        var projectedAssistant = Assert.Single(PiJsonlSessionInterchange.ProjectRunMessages(
+        var projectedAssistant = Assert.Single(PiSessionRunProjection.ProjectRunMessages(
             withAssistant, runStart, "openai-completions", "turn_interrupted").OfType<System.Text.Json.Nodes.JsonObject>(),
             message => message["role"]?.GetValue<string>() == "assistant");
         Assert.Equal("aborted", projectedAssistant["stopReason"]?.GetValue<string>());
@@ -93,7 +93,7 @@ public sealed class PiJsonlSessionInterchangeTests
             partialAssistantText = ""
         }));
 
-        var synthesizedAssistant = Assert.Single(PiJsonlSessionInterchange.ProjectRunMessages(
+        var synthesizedAssistant = Assert.Single(PiSessionRunProjection.ProjectRunMessages(
             withoutAssistant, emptyRunStart, "openai-completions", "turn_interrupted").OfType<System.Text.Json.Nodes.JsonObject>(),
             message => message["role"]?.GetValue<string>() == "assistant");
         Assert.Equal("aborted", synthesizedAssistant["stopReason"]?.GetValue<string>());
@@ -281,6 +281,32 @@ public sealed class PiJsonlSessionInterchangeTests
         Assert.Contains("\"mimeType\":\"image/png\"", serialized);
         Assert.Contains("\"toolCallId\":\"call-1\"", serialized);
         Assert.Contains("\"isError\":true", serialized);
+    }
+
+    [Fact]
+    public void InvalidImportedImageKeepsReadableContextAndOriginalContentForExport()
+    {
+        var cwd = Path.GetFullPath(Path.GetTempPath());
+        var jsonl = $$$"""
+            {"type":"session","version":3,"id":"invalid-image-session","cwd":"{{{cwd}}}"}
+            {"type":"message","id":"user","parentId":null,"timestamp":"2025-01-01T00:00:01Z","message":{"role":"user","content":[{"type":"text","text":"before"},{"type":"image","data":"not base64!","mimeType":"image/png","futureField":42},{"type":"text","text":"after"}]}}
+            """;
+
+        var session = PiJsonlSessionInterchange.Import(jsonl);
+        var message = Assert.Single(session.ContextMessages());
+        Assert.Equal(["before", "[invalid Pi image content omitted]", "after"],
+            message.Contents.OfType<TextContent>().Select(part => part.Text));
+        Assert.DoesNotContain(message.Contents, part => part is DataContent);
+
+        var exported = PiJsonlSessionInterchange.Export(session);
+        var entry = JsonDocument.Parse(exported.Split('\n', StringSplitOptions.RemoveEmptyEntries)[1]);
+        using (entry)
+        {
+            var image = entry.RootElement.GetProperty("message").GetProperty("content")[1];
+            Assert.Equal("not base64!", image.GetProperty("data").GetString());
+            Assert.Equal(42, image.GetProperty("futureField").GetInt32());
+        }
+        Assert.Equal(message.Text, Assert.Single(PiJsonlSessionInterchange.Import(exported).ContextMessages()).Text);
     }
 
     [Fact]

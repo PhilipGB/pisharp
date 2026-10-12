@@ -56,7 +56,7 @@ internal sealed class RpcAssistantMessageProjector
     {
         if (item.PromptMessage is not { } prompt) return [];
         var timestamp = item.MessageTimestamp ?? DateTimeOffset.UtcNow;
-        var message = PiJsonlSessionInterchange.ProjectRuntimeMessage(conversation, prompt, timestamp: timestamp);
+        var message = PiJsonlEntryCodec.ProjectRuntimeMessage(conversation, prompt, timestamp: timestamp);
         _runMessages.Add(message.DeepClone().AsObject());
         return [new JsonObject { ["type"] = "message_start", ["message"] = message.DeepClone() },
             new JsonObject { ["type"] = "message_end", ["message"] = message }];
@@ -117,7 +117,7 @@ internal sealed class RpcAssistantMessageProjector
             else ProjectToolCall(call, contentIndex++, records, conversation, api);
         }
 
-        var message = PiJsonlSessionInterchange.ProjectRuntimeMessage(conversation, response, api,
+        var message = PiJsonlEntryCodec.ProjectRuntimeMessage(conversation, response, api,
             timestamp: _timestamp);
         message["stopReason"] = ProjectStopReason(item.ProviderFinishReason, response);
         if (!string.IsNullOrWhiteSpace(item.ProviderModelId) && item.ProviderModelId != conversation.Model)
@@ -161,7 +161,7 @@ internal sealed class RpcAssistantMessageProjector
     {
         if (item.ToolResultMessage is not { } result) return [];
         var timestamp = DateTimeOffset.UtcNow;
-        var message = PiJsonlSessionInterchange.ProjectRuntimeMessage(conversation, result,
+        var message = PiJsonlEntryCodec.ProjectRuntimeMessage(conversation, result,
             toolName: item.Tool, timestamp: timestamp);
         _runMessages.Add(message.DeepClone().AsObject());
         var callId = result.Contents.OfType<FunctionResultContent>().FirstOrDefault()?.CallId;

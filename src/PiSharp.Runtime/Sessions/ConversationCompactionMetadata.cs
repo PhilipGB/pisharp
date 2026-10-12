@@ -36,7 +36,7 @@ internal static class ConversationCompactionMetadata
         var path = conversation.Tree.ActivePath();
         if (path.LastOrDefault(node => node.Type == "compaction") is { } previous)
         {
-            var original = PiJsonlSessionInterchange.OriginalEntry(previous);
+            var original = PiJsonlEntryCodec.OriginalEntry(previous);
             if (original is not { } originalEntry ||
                 !originalEntry.TryGetProperty("fromHook", out var fromHook) || fromHook.ValueKind != JsonValueKind.True)
             {
