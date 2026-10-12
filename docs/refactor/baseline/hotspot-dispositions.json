@@ -4,10 +4,11 @@
     {
       "id": "H01",
       "disposition": "OPEN",
-      "completedWork": "Early startup/terminal I/O, startup session/model selection, JSON prompt handling, settings persistence, clipboard and session commands, interactive prompt execution have concrete owners.",
-      "remainingWork": "Model/project runtime replacement and remaining command coordination still share top-level state.",
+      "completedWork": "Early startup/terminal I/O, startup session/model selection, JSON prompt handling, settings persistence, clipboard and session commands, interactive prompt execution have concrete owners. Canonical idle model replacement/checkpoint rollback, configuration/resource reload planning and model/thinking navigation have owners; transient policy/pricing root mutations and unused state bindings are removed.",
+      "remainingWork": "Remaining command coordination and project/UI runtime adoption still concentrate state in the composition root.",
       "evidence": "composition-slice/README.md",
-      "capabilityDocumentation": "../../capabilities/cli-composition.md"
+      "capabilityDocumentation": "../../capabilities/cli-composition.md",
+      "additionalEvidence": "composition-runtime/README.md"
     },
     {
       "id": "H02",

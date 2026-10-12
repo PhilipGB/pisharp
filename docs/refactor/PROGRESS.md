@@ -3,10 +3,10 @@
 - **Baseline PiSharp:** `064bcc7b90344cffde595f9aca1c5b850cefe567` (untouched main branch point).
 - **Frozen Pi:** `ee409a85f6ad92bf8c6ab8ed735c6cd24f2e749e`; authority: execution-ledger source note, corroborated by latest TODO/trust-startup evidence.
 - **Branch:** `refactor/architecture-maintainability`.
-- **Phase:** H01 composition work. Last verified remote H08: `d9e7c34808209cd4031e7d68d50c5cbafa5083bd`. Earlier checkpoint SHAs are recorded in slice metadata/history.
+- **Phase:** H01 replacement/reload/navigation work and permanent dependency enforcement. Last verified remote ownership checkpoint: `077cbf48a21034263888979d2b895d421279de63`. Earlier checkpoint SHAs are recorded in slice metadata/history.
 - **Pilot:** coding tools, frozen hotspot H09. See `baseline/pilot-decision.json`.
 - **Completed slices:** untouched behavioral baseline, architectural inventory, neutral Pi-reference infrastructure, coding-tools pilot, session interchange, native session/context, agent catalog/summarization, streamed-attempt, MCP connection/publication, provider credentials/snapshots/router ownership and initial CLI workflow ownership.
-- **Active slice:** H01 first ownership checkpoint verified: two full 1,366-row .NET passes/zero skips, Node 24, Python 47, every process/virtual variant and six calibrated terminal matrices. Final-source follow-up repeats .NET/Node/Python/process scopes and three paired matrices. Original identity comparisons pass (1,495/1,456 scoped identities, 19 additions); this is an intermediate checkpoint, not all 1,858 identities. H01 remains OPEN for model/project replacement and command coordination.
+- **Active slice:** Canonical idle model replacement, project configuration/resource reload and terminal model/thinking navigation have owners. Pre-change characterization passes nine checks; focused stage passes 72. Final scope passes format/build, 1,374 .NET rows/zero skips (including six architecture checks), Node 24, Python 47, all process variants and eight complete calibrated terminal matrices. All 1,488 original scoped identities remain; 27 added tests pass. H01 remains OPEN for remaining command coordination and project/UI adoption.
 - **Latest observed main:** `064bcc7b90344cffde595f9aca1c5b850cefe567`; no divergence or merge conflicts at the session-start/checkpoint queries.
 - **Blockers:** none. A required push failure is a durability blocker; stop before continuing another slice.
 
@@ -73,22 +73,27 @@ execution direct; retain Pi-specific semantics. No new dependency lockfiles.
 - `baseline/mcp-slice/`: startup-error protection, focused/full .NET, complete conformance and affected process evidence.
 - `baseline/provider-checkpoint/`: complete second structural checkpoint and pre-change/characterization/focused evidence.
 - `baseline/composition-slice/`: startup/help/error goldens, ownership stages, broad/final-source checks, declared preservation scopes, fast-output diagnostic and capture-recovery proof.
+- `baseline/composition-runtime/`: stale-save rollback/retry characterization, replacement/reload/navigation owners, permanent architecture checks and scoped original-identity comparison.
 - `baseline/hotspot-dispositions.json`: current dispositions without altering untouched metrics.
 - `tools/`: standalone capture/parser/comparison/metrics tooling; parser dependencies only in `/tmp`.
 
 ## Exact next action
 
-Commit/push verified H01 first ownership checkpoint and verify remote SHA. Then
-finish model/project replacement and remaining command
+Commit/push verified H01 replacement/reload/navigation and architecture-check stage
+and verify remote SHA. Then finish remaining command
 coordination with explicit state ownership. Keep an identifiable composition root
 and existing controllers; do not replace Program with another opaque god class or
 a dependency/options bag. Preserve CLI/RPC/TUI lifecycle/disposal and transactional
 model/project replacement. Full checkpoints after major boundaries.
 Then H02 screen rendering and H03 editor interaction; preserve all complete
 calibrated terminal matrices. Wire mechanical dependency and docs-path checks into
-standard CI. `/tmp/pisharp-tracked-doc-path-audit.json` identifies eight historical
+standard CI (dependency checks now run in ordinary .NET/CI tests). `/tmp/pisharp-tracked-doc-path-audit.json` identifies eight historical
 links to user-owned untracked evidence: repair docs/provenance without staging or
-altering those artifacts. Capture.py now reads starting-user-file inventory relative
+altering those artifacts. The current audit confirms 121 documents/363 local links
+and code references with the same eight gaps. `/tmp/validate_doc_paths.py` is the
+stdlib prototype; distinguish explicitly upstream Pi shorthand and synthetic input
+examples from local paths. Promote it with meaningful negative controls and CI wiring
+after repairing provenance; no user-owned evidence may be staged. Capture.py now reads starting-user-file inventory relative
 to its preserved script, so Phase F does not require temporary files in final HEAD.
 No test/project moves.
 All Section 23 review/preservation/cleanup/fresh-checkout phases remain; no

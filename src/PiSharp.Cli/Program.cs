@@ -134,8 +134,6 @@ catch (Exception error) when (error is NotSupportedException or InvalidOperation
     return;
 }
 var resources = projectRuntime.Resources;
-var instructions = projectRuntime.Instructions;
-var prompts = projectRuntime.Prompts;
 var store = projectRuntime.Store;
 using var extensionLease = new ExtensionLease(projectRuntime.TransferExtensions());
 PiAgent agent;
@@ -160,15 +158,15 @@ try
 catch (ArgumentException error) { Console.Error.WriteLine(error.Message); Environment.ExitCode = 2; return; }
 Task<ConversationRun> OpenRunAsync(PiAgent runningAgent, ConversationSession session, string? path,
     string? runProvider = null, string? reasoningLevel = null,
-    ProjectRuntimeContext? targetProject = null, ModelSelection? targetSelection = null,
-    IReadOnlyList<string>? activeToolNamesOverride = null)
+    ProjectRuntimeContext? targetProject = null,
+    IReadOnlyList<string>? activeToolNamesOverride = null, PreparedModelRuntime? targetRuntime = null)
 {
     var runProject = targetProject ?? projectRuntime;
-    var runModel = targetSelection ?? selection;
+    var runModel = targetRuntime?.Selection ?? selection;
     var runSettings = targetProject is null ? userSettings : targetProject.Settings;
-    var runCompaction = targetProject is null ? contextPolicy : runSettings.ResolveCompactionPolicy(runModel.Model.ContextLength,
+    var runCompaction = targetRuntime is not null ? targetRuntime.ContextPolicy : targetProject is null ? contextPolicy : runSettings.ResolveCompactionPolicy(runModel.Model.ContextLength,
         Environment.GetEnvironmentVariable, $"{runModel.Provider.Id}/{runModel.Model.Id}");
-    var runPricing = targetProject is null ? modelPricing :
+    var runPricing = targetRuntime is not null ? targetRuntime.Pricing : targetProject is null ? modelPricing :
         ModelPricing.FromEnvironment(Environment.GetEnvironmentVariable) ?? runModel.Model.Pricing;
     return ConversationRun.OpenAsync(runningAgent, session, save: path is null ? null :
         token => runProject.Store.SaveAsync(session, path, token), autoCompaction: runCompaction, pricing: runPricing,
@@ -223,6 +221,7 @@ var sessionController = new InteractiveSessionController(store, cli.NoSession,
     (branch, path) => OpenRunAsync(agent, branch, path));
 var projectSessionRuntimeFactory = new ProjectSessionRuntimeFactory(agentDirectory, cli,
     configuredSessionDirectory, trustStore, modelRuntime, codemodeModels);
+var projectResourceReload = new ProjectResourceReload(agentDirectory, configuredSessionDirectory, trustStore, modelRuntime);
 bool print = cli.Print || cli.Mode == "print" || Console.IsInputRedirected || Console.IsOutputRedirected;
 var prompt = cli.Prompt;
 // Pi combines trimmed piped input before @file content and the positional prompt.
@@ -430,47 +429,21 @@ async Task ExecuteInteractiveBashAsync(string command, bool excludeFromContext, 
 
 async Task AdoptPreparedModelRuntime(PreparedModelRuntime prepared, bool recordModelChange)
 {
-    var nextSelection = prepared.Selection;
-    var nextThinking = prepared.Thinking;
-    var nextConnection = prepared.Connection;
-    var nextChat = prepared.ChatClient;
-    var nextPolicy = prepared.ContextPolicy;
-    var nextPricing = prepared.Pricing;
-    var nextAgent = projectRuntime.CreateAgent(nextChat, nextSelection, nextThinking, cli, userSettings,
+    var nextAgent = projectRuntime.CreateAgent(prepared.ChatClient, prepared.Selection, prepared.Thinking, cli, userSettings,
         prepared.VirtualModelRouter, codemodeModels);
-    var previousHead = conversation.Tree.HeadId;
-    var previousSelection = selection;
-    var previousConnection = connection;
-    var previousPolicy = contextPolicy;
-    var previousPricing = modelPricing;
-    try
-    {
-        if (recordModelChange)
-            conversation.SelectModel(nextConnection.Model, nextConnection.Endpoint?.ToString(), nextSelection.Provider.Id);
-        if (!nextThinking.Equals(thinking, StringComparison.Ordinal))
-            conversation.AppendThinkingLevelChange(nextThinking);
-        contextPolicy = nextPolicy;
-        modelPricing = nextPricing;
-        var nextRun = await OpenRunAsync(nextAgent, conversation, sessionPath, nextSelection.Provider.Id, nextThinking,
-            targetSelection: nextSelection);
-        if (sessionPath is not null) await store.SaveAsync(conversation, sessionPath);
-        selection = nextSelection;
-        connection = nextConnection;
-        chat = nextChat;
-        agent = nextAgent;
-        conversationRun = nextRun;
-        thinking = nextThinking;
-    }
-    catch
-    {
-        contextPolicy = previousPolicy;
-        modelPricing = previousPricing;
-        if (recordModelChange)
-            conversation.RevertModel(previousConnection.Model, previousConnection.Endpoint?.ToString(), previousHead,
-                previousSelection.Provider.Id);
-        else conversation.Tree.Select(previousHead);
-        throw;
-    }
+    var nextRun = await ConversationModelReplacement.ReplaceAsync(conversation, selection, thinking, prepared,
+        recordModelChange,
+        () => OpenRunAsync(nextAgent, conversation, sessionPath, prepared.Selection.Provider.Id, prepared.Thinking,
+            targetRuntime: prepared),
+        sessionPath is null ? null : () => store.SaveAsync(conversation, sessionPath));
+    selection = prepared.Selection;
+    connection = prepared.Connection;
+    chat = prepared.ChatClient;
+    agent = nextAgent;
+    conversationRun = nextRun;
+    thinking = prepared.Thinking;
+    contextPolicy = prepared.ContextPolicy;
+    modelPricing = prepared.Pricing;
 }
 
 Task ReplaceModelRuntime(ModelSelection nextSelection, string nextThinking, bool recordModelChange,
@@ -539,6 +512,7 @@ var rpcUserSettings = new RpcUserSettingsController(agentDirectory, Environment.
     },
     () => conversationRun);
 
+var terminalModelNavigation = new TerminalModelNavigation(modelRuntime, () => Console.Out);
 var terminalModelPicker = editor is null ? null : new TerminalModelPicker(modelRuntime, editor,
     () => userSettings.DefaultProvider is { } provider && userSettings.DefaultModel is { } model
         ? provider + "\0" + model : null);
@@ -699,21 +673,8 @@ async Task HandleEditorApplicationAction(string action)
                 terminalScreen?.AppendThemedStatusLine($"Thinking blocks: {(hide ? "hidden" : "visible")}");
                 break;
             case "app.thinking.cycle":
-                if (selection.Model.Reasoning != true)
-                {
-                    Console.WriteLine("Current model does not support thinking.");
-                    return;
-                }
-                var availableThinkingLevels = ThinkingLevels.AvailableForModel(selection.Model.Reasoning,
-                    selection.Model.ThinkingLevelMap);
-                if (availableThinkingLevels.Count == 0)
-                {
-                    Console.WriteLine("Current model has no available thinking levels.");
-                    return;
-                }
-                var thinkingIndex = Array.FindIndex(availableThinkingLevels.ToArray(), level =>
-                    level.Equals(thinking, StringComparison.OrdinalIgnoreCase));
-                var nextThinking = availableThinkingLevels[(thinkingIndex + 1 + availableThinkingLevels.Count) % availableThinkingLevels.Count];
+                var nextThinking = terminalModelNavigation.NextThinkingLevel(selection, thinking);
+                if (nextThinking is null) return;
                 await ReplaceModelRuntime(selection, nextThinking, recordModelChange: false);
                 Console.WriteLine($"Thinking level: {thinking}");
                 break;
@@ -747,27 +708,9 @@ async Task HandleEditorApplicationAction(string action)
                 break;
             case "app.model.cycleForward":
             case "app.model.cycleBackward":
-                var models = (await GetModelsAsync()).Where(model => model.Available).ToArray();
-                if (models.Length == 0)
-                {
-                    Console.WriteLine("No available models in the current scope.");
-                    return;
-                }
-                if (models.Length == 1)
-                {
-                    Console.WriteLine(modelRuntime.Scope.Count > 0 ? "Only one model in scope." : "Only one model available.");
-                    return;
-                }
-                var currentIndex = Array.FindIndex(models, model =>
-                    model.Provider?.Equals(selection.Provider.Id, StringComparison.OrdinalIgnoreCase) == true &&
-                    model.Id.Equals(selection.Model.Id, StringComparison.OrdinalIgnoreCase));
-                if (currentIndex < 0) currentIndex = 0;
                 var direction = action == "app.model.cycleForward" ? 1 : -1;
-                var nextIndex = (currentIndex + direction + models.Length) % models.Length;
-                var nextModel = models[nextIndex];
-                if (string.IsNullOrWhiteSpace(nextModel.Provider))
-                    throw new InvalidOperationException("The model catalogue did not identify the selected provider.");
-                var nextSelection = await modelRuntime.ResolveAsync(nextModel.Provider, nextModel.Id);
+                var nextSelection = await terminalModelNavigation.NextModelAsync(() => selection, cli.Provider, direction);
+                if (nextSelection is null) return;
                 var compatibleThinking = modelRuntimeController.ResolveThinkingLevelForModelSwitch(nextSelection, thinking);
                 await ApplyModelSelectionAsync(nextSelection, compatibleThinking);
                 ShowModelChangeStatus();
@@ -787,14 +730,11 @@ async Task ReloadResources()
     var previousContextPolicy = contextPolicy;
     try
     {
-        using var nextConfiguration = await ProjectRuntimeConfiguration.LoadAsync(currentDirectory, agentDirectory, cli,
-            trustStore, interactiveTrust: false, Console.In, Console.Error, trustedOverride: trusted);
-        var reloadPlan = DefaultToolReloadPolicy.Resolve(cli, usesDefaultToolsSetting, userSettings,
-            nextConfiguration.Settings, conversationRun.ActiveToolNames, Environment.GetEnvironmentVariable);
-        nextProject = await ProjectRuntimeContext.LoadAsync(nextConfiguration, agentDirectory, reloadPlan.Arguments,
-            configuredSessionDirectory, providerTokenResolver: modelRuntime.GetApiKeyForProviderAsync,
-            resourceDiscoveryReason: ExtensionResourceDiscoveryReason.Reload,
-            activeToolNames: reloadPlan.ActiveToolNames);
+        var reload = await projectResourceReload.LoadAsync(currentDirectory, () => userSettings, () => cli, trusted,
+            usesDefaultToolsSetting, () => conversationRun.ActiveToolNames);
+        using var nextConfiguration = reload.Configuration;
+        var reloadPlan = reload.ToolPlan;
+        nextProject = reload.Project;
         ConfigureMcpAuthorizationUrlPresenter(nextProject);
         modelRuntime.SetVirtualModelRegistry(nextProject.Extensions.Registration.VirtualModels);
         var nextController = new ModelRuntimeController(modelRuntime, () => nextConfiguration.Settings,
@@ -818,8 +758,6 @@ async Task ReloadResources()
         userSettings = nextConfiguration.Settings;
         cli = reloadPlan.Arguments;
         resources = nextProject.Resources;
-        instructions = nextProject.Instructions;
-        prompts = nextProject.Prompts;
         store = nextProject.Store;
         contextPolicy = nextContextPolicy;
         modelPricing = nextModelPricing;
@@ -854,8 +792,6 @@ void AdoptProjectSession(ProjectSessionRuntime replacement)
     projectSettings = nextProject.ProjectSettings;
     userSettings = nextProject.Settings;
     resources = nextProject.Resources;
-    instructions = nextProject.Instructions;
-    prompts = nextProject.Prompts;
     store = nextProject.Store;
     conversation = replacement.Conversation;
     conversationRun = replacement.Run;

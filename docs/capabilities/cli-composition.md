@@ -37,6 +37,28 @@ Confirmation input and transcript reload are explicit UI callbacks. It receives 
 current conversation/run/path on each command, including after project switches.
 Existing session controllers retain resume/fork/new/clone behavior.
 
+[ConversationModelReplacement](../../src/PiSharp.Cli/Sessions/ConversationModelReplacement.cs)
+owns the idle model/thinking branch transaction: append metadata, open the next
+execution, checkpoint it, and restore the selected head/model metadata on failure.
+Open/checkpoint delegates are explicit execution/persistence boundaries. Program
+composes the next agent and passes its prepared policy/pricing to OpenRunAsync;
+root runtime fields are published only after the transaction succeeds. Failed
+attempt entries remain as inactive descendants, matching the original tree contract.
+
+[ProjectResourceReload](../../src/PiSharp.Cli/Sessions/ProjectResourceReload.cs)
+loads replacement configuration/resources and computes the existing default-tool
+reload plan. Failed loading disposes the replacement configuration. Program keeps
+registry publication, agent/run construction, extension transfer and UI adoption
+in their original order, including cleanup on failure. Explicit accessors read the
+current arguments/settings/tool state after asynchronous configuration loading,
+preserving the original lookup timing and settings updates before reload.
+
+[TerminalModelNavigation](../../src/PiSharp.Cli/Tui/TerminalModelNavigation.cs)
+owns available scoped-model cycling and supported-thinking-level navigation.
+It resolves current selection after asynchronous catalog discovery and writes
+status to the current console writer. Program applies the resulting selection
+through its existing active/idle runtime gates.
+
 [UserSettingsPersistence](../../src/PiSharp.Cli/UserSettingsPersistence.cs) validates
 project trust, writes the selected scope, reloads that scope and merges effective
 settings. Program applies the resulting runtime/terminal effects in their existing
@@ -45,14 +67,17 @@ owns selection/assistant copy, sign-in URL status and text/image insertion; nati
 clipboard process access remains in TerminalClipboard.
 
 These concrete owners stay inside CLI. There is no additional project, framework
-wrapper, service locator or generic command bus. Model/project replacement and
-remaining command coordination still concentrate state in Program and need further
+wrapper, service locator or generic command bus. Remaining command coordination
+and project/runtime UI adoption still concentrate state in Program and need further
 composition work.
 
 ## Verification
 
 [CliInformationalProcessTests](../../tests/PiSharp.Tests/CliInformationalProcessTests.cs)
 checks exact help output, argument errors and configuration-loading precedence.
+[RpcModelReplacementProcessTests](../../tests/PiSharp.Tests/RpcModelReplacementProcessTests.cs)
+characterizes stale-checkpoint model/thinking rollback, retained inactive entries,
+unchanged disk bytes and a successful retry before transaction extraction.
 [TerminalPtyTests](../../tests/PiSharp.Tests/TerminalPtyTests.cs) covers real terminal
 startup/disposal, settings, clipboard, session confirmation, branching and import.
 Startup session, JSON lifecycle, project settings, session export and RPC session
