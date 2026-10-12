@@ -5,11 +5,29 @@ using PiSharp.Cli.Sessions;
 using PiSharp.ResourceDiscoveryExtension;
 using PiSharp.Runtime.Extensions;
 using PiSharp.Runtime.Resources;
+using Microsoft.Extensions.AI;
 
 namespace PiSharp.Tests;
 
 public sealed class ProjectRuntimeContextTests
 {
+    [Fact]
+    public void OnlyToolReachDeclarationsAutoActivateCodemodeOrToolSearchNames()
+    {
+        var reaching = new ExtensionRegistration();
+        reaching.AddTool(new PiSharpToolRegistration(AIFunctionFactory.Create(() => "custom", name: "codemode"),
+            ToolExposure.ModelOnly, DefaultActive: false,
+            ReachesTools: _ => PiSharpToolReach.FromWords(["mcp__docs__search"])));
+        ProjectRuntimeContext.ActivateReachTool(reaching, "codemode");
+        Assert.True(Assert.Single(reaching.ToolDefinitions).DefaultActive);
+
+        var nonReaching = new ExtensionRegistration();
+        nonReaching.AddTool(new PiSharpToolRegistration(AIFunctionFactory.Create(() => "custom", name: "codemode"),
+            ToolExposure.ModelOnly, DefaultActive: false));
+        ProjectRuntimeContext.ActivateReachTool(nonReaching, "codemode");
+        Assert.False(Assert.Single(nonReaching.ToolDefinitions).DefaultActive);
+    }
+
     [Fact]
     public void SkillPromptReaderUsesEffectiveDeclaredToolSetAndPiPreference()
     {

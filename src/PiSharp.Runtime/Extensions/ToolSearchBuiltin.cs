@@ -20,7 +20,8 @@ public static class ToolSearchBuiltin
             description: "Search deferred tool metadata and load matching tools for the next model request.");
         registration.AddTool(new PiSharpToolRegistration(function, ToolExposure.ModelOnly,
             PrepareLoadout: PrepareLoadout,
-            AllowNestedInvocation: false, OutputSchema: s_outputSchema));
+            AllowNestedInvocation: false, OutputSchema: s_outputSchema,
+            ReachesTools: _ => PiSharpToolReach.All));
     }
 
     private static JsonElement CreateOutputSchema()

@@ -63,7 +63,8 @@ for line in sys.stdin:
         if params["name"] == "echo":
             value = params["arguments"]["value"]
             respond(request, {"content": [{"type": "text", "text": value}],
-                              "structuredContent": {"echo": value}, "isError": False})
+                              "structuredContent": {"echo": value}, "isError": False,
+                              "_meta": {"trace": "fixture"}})
         else:
             respond(request, {"content": [{"type": "text", "text": "fixture failure"}],
                               "isError": True})

@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.AI;
 using PiSharp.Runtime.Extensions;
 
@@ -10,6 +11,11 @@ namespace PiSharp.Runtime.Codemode;
 public static class CodemodeBuiltin
 {
     private const int MaximumInlineDescriptionCharacters = 12 * 1024;
+    private static readonly Regex s_discoveryGlobal = new(
+        @"(?<![A-Za-z0-9_])(searchTools|describeNamespace|describeTool|ALL_TOOLS)(?![A-Za-z0-9_])",
+        RegexOptions.CultureInvariant | RegexOptions.Compiled);
+    private static readonly Regex s_word = new(@"[A-Za-z0-9_]+",
+        RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
     public static BuiltinExtensionDefinition Definition { get; } = new("codemode", Configure);
 
@@ -19,7 +25,16 @@ public static class CodemodeBuiltin
         var function = AIFunctionFactory.Create(ExecuteAsync, name: "codemode",
             description: "Run JavaScript in an isolated QuickJS/WASM sandbox to orchestrate callable tools.");
         registration.AddTool(new PiSharpToolRegistration(function, ToolExposure.ModelOnly, DefaultActive: false,
-            PrepareLoadout: PrepareLoadout, AllowNestedInvocation: false));
+            PrepareLoadout: PrepareLoadout, AllowNestedInvocation: false, ReachesTools: GetScriptReach));
+    }
+
+    private static PiSharpToolReach GetScriptReach(IDictionary<string, object?> arguments)
+    {
+        if (!arguments.TryGetValue("code", out var value) || value is not string code)
+            return PiSharpToolReach.FromWords([]);
+        return s_discoveryGlobal.IsMatch(code)
+            ? PiSharpToolReach.All
+            : PiSharpToolReach.FromWords(s_word.Matches(code).Select(match => match.Value));
     }
 
     private static ToolLoadoutChanges PrepareLoadout(ToolLoadoutSnapshot snapshot)

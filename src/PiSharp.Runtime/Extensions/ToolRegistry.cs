@@ -13,7 +13,29 @@ public enum ToolExposure
 }
 
 /// <summary>A named group of related tools, with optional discovery metadata such as MCP instructions.</summary>
-public sealed record PiSharpToolNamespace(string Name, string? Description = null, string? Instructions = null);
+public sealed record PiSharpToolNamespace(string Name, string? Description = null, string? Instructions = null,
+    IReadOnlyList<string>? Aliases = null);
+
+/// <summary>Names a tool may reach through a nested execution. An all-tools reach is used for discovery.</summary>
+public sealed record PiSharpToolReach
+{
+    private PiSharpToolReach(bool isAll, IReadOnlyList<string> words)
+    {
+        IsAll = isAll;
+        Words = words;
+    }
+
+    public bool IsAll { get; }
+    public IReadOnlyList<string> Words { get; }
+
+    public static PiSharpToolReach All { get; } = new(true, Array.Empty<string>());
+
+    public static PiSharpToolReach FromWords(IEnumerable<string> words)
+    {
+        ArgumentNullException.ThrowIfNull(words);
+        return new(false, Array.AsReadOnly(words.Where(word => !string.IsNullOrEmpty(word)).ToArray()));
+    }
+}
 
 /// <summary>A function and the policy that governs its exposure in a session.</summary>
 public sealed record PiSharpToolRegistration(
@@ -25,7 +47,8 @@ public sealed record PiSharpToolRegistration(
     bool AllowNestedInvocation = true,
     System.Text.Json.JsonElement? OutputSchema = null,
     string? PromptSnippet = null,
-    IReadOnlyList<string>? PromptGuidelines = null);
+    IReadOnlyList<string>? PromptGuidelines = null,
+    Func<IDictionary<string, object?>, PiSharpToolReach?>? ReachesTools = null);
 
 /// <summary>Changes an active loadout's model-facing declaration projection.</summary>
 public sealed record ToolLoadoutChanges(

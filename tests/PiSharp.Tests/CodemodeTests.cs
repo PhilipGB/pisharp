@@ -12,6 +12,27 @@ namespace PiSharp.Tests;
 public sealed class CodemodeTests
 {
     [Fact]
+    public void CodemodeReachMatchesCurrentPiAsciiDiscoveryAndWordRules()
+    {
+        var registration = new ExtensionRegistration();
+        CodemodeBuiltin.Configure(registration);
+        var reachesTools = Assert.Single(registration.ToolDefinitions).ReachesTools!;
+        PiSharpToolReach Reach(string code) => reachesTools(new Dictionary<string, object?>
+        {
+            ["code"] = code
+        })!;
+
+        var named = Reach("const result = tools.mcp__docs__search({});");
+        Assert.False(named.IsAll);
+        Assert.Contains("mcp__docs__search", named.Words);
+        Assert.False(Reach("foo_searchToolsBar").IsAll);
+        Assert.True(Reach("搜索searchTools").IsAll);
+        Assert.True(Reach("await describeNamespace('docs')").IsAll);
+        Assert.True(Reach("await describeTool('mcp__docs__search')").IsAll);
+        Assert.True(Reach("ALL_TOOLS.map(tool => tool.name)").IsAll);
+    }
+
+    [Fact]
     public void CodemodeRegistersInactiveByDefault()
     {
         var registration = new ExtensionRegistration();

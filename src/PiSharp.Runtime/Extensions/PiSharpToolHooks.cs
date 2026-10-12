@@ -5,11 +5,15 @@ public sealed class PiSharpToolCallContext(
     string toolName,
     string toolCallId,
     string? parentToolCallId,
-    IDictionary<string, object?> arguments)
+    IDictionary<string, object?> arguments,
+    Func<IDictionary<string, object?>, PiSharpToolReach?>? reachesTools = null,
+    PiSharpToolNamespace? toolNamespace = null)
 {
     public string ToolName { get; } = toolName;
     public string ToolCallId { get; } = toolCallId;
     public string? ParentToolCallId { get; } = parentToolCallId;
+    public Func<IDictionary<string, object?>, PiSharpToolReach?>? ReachesTools { get; } = reachesTools;
+    public PiSharpToolNamespace? Namespace { get; } = toolNamespace;
 
     /// <summary>
     /// Mutable arguments passed to the tool. Hooks run in registration order; later hooks and the

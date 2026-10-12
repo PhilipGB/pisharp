@@ -208,7 +208,7 @@ internal static class CodemodeSandbox
                     }
                 }
                 var candidates = context.Snapshot.Callable.Where(tool => tool.Function.Name != "codemode")
-                    .Where(tool => toolNamespace is null || tool.Namespace?.Name == toolNamespace)
+                    .Where(tool => toolNamespace is null || MatchesNamespace(tool.Namespace, toolNamespace))
                     .Take(2000).ToArray();
                 ok = true;
                 payload = name == "searchTools"
@@ -273,12 +273,12 @@ internal static class CodemodeSandbox
 
     private static string? DescribeNamespace(string name, IReadOnlyList<PiSharpToolRegistration> candidates)
     {
-        var first = candidates.FirstOrDefault(tool => tool.Namespace?.Name == name);
+        var first = candidates.FirstOrDefault(tool => MatchesNamespace(tool.Namespace, name));
         if (first?.Namespace is not { } toolNamespace) return null;
         var result = new Dictionary<string, object?>(StringComparer.Ordinal)
         {
             ["name"] = toolNamespace.Name,
-            ["tools"] = candidates.Where(tool => tool.Namespace?.Name == name)
+            ["tools"] = candidates.Where(tool => MatchesNamespace(tool.Namespace, name))
                 .Select(tool => CodemodeToolCatalog.JavascriptIdentifier(tool.Function.Name)).ToArray()
         };
         if (!string.IsNullOrWhiteSpace(toolNamespace.Description))
@@ -286,6 +286,15 @@ internal static class CodemodeSandbox
         if (!string.IsNullOrWhiteSpace(toolNamespace.Instructions))
             result["instructions"] = BoundNamespaceMetadata(toolNamespace.Instructions);
         return JsonSerializer.Serialize(result, s_json);
+    }
+
+    private static bool MatchesNamespace(PiSharpToolNamespace? toolNamespace, string query)
+    {
+        if (toolNamespace is null) return false;
+        var queryIdentifier = CodemodeToolCatalog.JavascriptIdentifier(query);
+        return new[] { toolNamespace.Name }.Concat(toolNamespace.Aliases ?? [])
+            .Any(name => string.Equals(name, query, StringComparison.Ordinal) ||
+                string.Equals(CodemodeToolCatalog.JavascriptIdentifier(name), queryIdentifier, StringComparison.Ordinal));
     }
 
     private static string BoundNamespaceMetadata(string value) =>

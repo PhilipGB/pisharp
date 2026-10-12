@@ -199,8 +199,11 @@ internal sealed class ProjectRuntimeContext : IDisposable
                      server.ToolExposure.Values.Any(exposure => exposure == McpToolExposure.Deferred)));
             if (needsToolSearch &&
                 (!arguments.NoExtensions || explicitBuiltins.Contains("builtin:tool-search")))
+            {
                 extensions.EnableBuiltinIfAllowed(ToolSearchBuiltin.Definition,
                     userExtensionPaths, projectPaths);
+                ActivateReachTool(extensions.Registration, "tool_search");
+            }
             var needsCodemode = mcpRegistrations.Any(tool => tool.Exposure == ToolExposure.CodeMode) ||
                 effectiveMcpServers.Any(server => server.Enabled &&
                     (server.Exposure is McpToolExposure.Codemode or McpToolExposure.CodemodeDeferred ||
@@ -211,9 +214,7 @@ internal sealed class ProjectRuntimeContext : IDisposable
             {
                 extensions.EnableBuiltinIfAllowed(CodemodeBuiltin.Definition,
                     userExtensionPaths, projectPaths);
-                if (extensions.Registration.ToolSourceInfo.TryGetValue("codemode", out var codemodeSource) &&
-                    codemodeSource.Path == "builtin:codemode")
-                    extensions.Registration.SetToolDefaultActive("codemode", true);
+                ActivateReachTool(extensions.Registration, "codemode");
             }
             var extensionResources = await extensions.DiscoverResourcesAsync(cwd, resourceDiscoveryReason,
                 cancellationToken);
@@ -233,6 +234,16 @@ internal sealed class ProjectRuntimeContext : IDisposable
             extensions?.Dispose();
             throw;
         }
+    }
+
+    internal static void ActivateReachTool(ExtensionRegistration registration, string name)
+    {
+        ArgumentNullException.ThrowIfNull(registration);
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+        var tool = registration.ToolDefinitions.FirstOrDefault(definition =>
+            string.Equals(definition.Function.Name, name, StringComparison.Ordinal));
+        if (tool?.ReachesTools is not null && tool.DefaultActive != true)
+            registration.SetToolDefaultActive(name, true);
     }
 
     internal static string? ResolveSkillFileReadTool(CliArguments arguments,

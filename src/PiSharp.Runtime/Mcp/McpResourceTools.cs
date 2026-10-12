@@ -22,13 +22,13 @@ internal sealed class McpResourceTools(
         {
             new(AIFunctionFactory.Create(ListAsync,
                     name: "list_mcp_resources", description: "List resources from connected MCP servers."), exposure,
-                DefaultActive: exposure == ToolExposure.Direct),
+                DefaultActive: exposure == ToolExposure.Direct, ReachesTools: _ => PiSharpToolReach.All),
             new(AIFunctionFactory.Create(ListTemplatesAsync,
                     name: "list_mcp_resource_templates", description: "List resource templates from connected MCP servers."),
-                exposure, DefaultActive: exposure == ToolExposure.Direct),
+                exposure, DefaultActive: exposure == ToolExposure.Direct, ReachesTools: _ => PiSharpToolReach.All),
             new(AIFunctionFactory.Create(ReadAsync,
                     name: "read_mcp_resource", description: "Read a resource from a connected MCP server."), exposure,
-                DefaultActive: exposure == ToolExposure.Direct)
+                DefaultActive: exposure == ToolExposure.Direct, ReachesTools: _ => PiSharpToolReach.All)
         };
         var source = new ResourceSourceInfo("builtin:mcp", "builtin", "builtin", "top-level", null);
         registration.ReplaceOwnedTools("mcp:resources", definitions, source);

@@ -6,7 +6,7 @@ Built-in `tool-search` and `codemode` use the same extension catalog. They have 
 
 ## MCP namespaces in Codemode
 
-MCP servers use `<agent-dir>/mcp.json` or a trusted project's `.pi/mcp.json`. A server `description` appears in the bounded `mcp_servers` request section after the server connects; the Codemode function description stays server-agnostic. The server's initialize instructions and callable tool names are returned by `await describeNamespace("mcp__<name>")`; find a tool with `await searchTools(query, { namespace: "mcp__<name>" })`. This keeps individual MCP tool schemas out of provider instructions while preserving the normal callable-tool policy. The legacy `codemode-deferred` exposure value is accepted as an alias for `codemode`; `deferred` continues to use `tool-search`.
+MCP servers use `<agent-dir>/mcp.json` or a trusted project's `.pi/mcp.json`. A server `description` appears in the bounded `mcp_servers` request section after the server connects; the Codemode function description stays server-agnostic. The server's initialize instructions and callable tool names are returned by `await describeNamespace("mcp__<name>")`; the configured server name is also an alias, so `await describeNamespace("docs")` works for `mcp__docs`. Find a tool with `await searchTools(query, { namespace: "docs" })` or the full namespace. This keeps individual MCP tool schemas out of provider instructions while preserving the normal callable-tool policy. The legacy `codemode-deferred` exposure value is accepted as an alias for `codemode`; `deferred` continues to use `tool-search`.
 
 ```json
 {
@@ -21,6 +21,17 @@ MCP servers use `<agent-dir>/mcp.json` or a trusted project's `.pi/mcp.json`. A 
 ```
 
 An extension implements `IPiSharpExtension.Configure(ExtensionRegistration)`. It can register `AIFunction` tools, terminal slash commands, and direct RPC Bash handlers. Tools execute through the same Microsoft.Extensions.AI function loop and durable checkpoint path as built-in tools.
+
+Tools that invoke other tools can declare their reach with `ReachesTools`. The call hook receives that declaration on `PiSharpToolCallContext`, allowing a runtime such as MCP to wait for only the services the call may use. Use `PiSharpToolReach.All` when the tool searches or enumerates a changing tool set, or `FromWords` when its arguments identify the tools or namespaces it may call:
+
+```csharp
+registration.AddTool(new PiSharpToolRegistration(
+    AIFunctionFactory.Create(LoadAsync, name: "load_docs"),
+    ToolExposure.ModelOnly,
+    ReachesTools: _ => PiSharpToolReach.FromWords(["mcp__docs__search"])));
+```
+
+`PiSharpToolNamespace` accepts aliases for lookup from Codemode's `searchTools` and `describeNamespace`. MCP tool results retain the model-facing text and error state; nested Codemode calls receive the full `CallToolResult` (`content`, `structuredContent`, and `isError`, without protocol `_meta`) and its output schema. A returned MCP error therefore resolves to its result object so the script can inspect `isError` and the content, while the model-facing tool call remains marked as an error.
 
 ## Extension resources
 

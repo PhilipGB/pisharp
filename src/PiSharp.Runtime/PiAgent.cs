@@ -365,11 +365,14 @@ public sealed class PiAgent
         var name = registration.Function.Name;
         if (_runtimeToolRegistrations.TryGetValue(name, out var previous) &&
             ReferenceEquals(previous.Function, registration.Function) &&
-            previous.OutputSchema.Equals(registration.OutputSchema)) return;
+            previous.OutputSchema.Equals(registration.OutputSchema) &&
+            previous.ReachesTools == registration.ReachesTools &&
+            previous.Namespace == registration.Namespace) return;
         _runtimeToolRegistrations[name] = registration;
         _runtimeToolFunctions[name] = new DurableToolFunction(registration.Function, () => _active,
             value => _events?.Invoke(value), _toolBatchTermination, () => Volatile.Read(ref _currentToolLoadout),
-            () => _runtimeToolFunctions, _toolHooks, registration.OutputSchema, _codemodeModels);
+            () => _runtimeToolFunctions, _toolHooks, registration.OutputSchema, _codemodeModels,
+            registration.ReachesTools, registration.Namespace);
     }
 
     private IReadOnlyList<AITool> GetRuntimeFunctionsForRun() =>

@@ -69,6 +69,7 @@ public sealed class McpRuntimeTests
                 tool.Function.Name == "mcp__my_fixture__echo");
             Assert.Equal(ToolExposure.Direct, echo.Exposure);
             Assert.Equal("mcp__my_fixture", echo.Namespace?.Name);
+            Assert.Equal(["my-fixture"], echo.Namespace?.Aliases);
             var renderer = catalog.Registration.GetToolRenderer("mcp__my_fixture__echo");
             Assert.NotNull(renderer);
             var arguments = new Dictionary<string, object?> { ["value"] = "hello" };
@@ -88,14 +89,23 @@ public sealed class McpRuntimeTests
             Assert.Contains("line 6", TerminalToolPresentation.Render(expandedView!, null));
             Assert.True(echo.Function.JsonSchema.TryGetProperty("properties", out var properties));
             Assert.True(properties.TryGetProperty("value", out _));
-            Assert.Equal("echo", echo.OutputSchema?.GetProperty("required")[0].GetString());
+            Assert.Equal("content", echo.OutputSchema?.GetProperty("required")[0].GetString());
+            Assert.Equal("array", echo.OutputSchema?.GetProperty("properties").GetProperty("content")
+                .GetProperty("type").GetString());
+            Assert.Equal("echo", echo.OutputSchema?.GetProperty("properties").GetProperty("structuredContent")
+                .GetProperty("required")[0].GetString());
             var value = await echo.Function.InvokeAsync(new AIFunctionArguments(new Dictionary<string, object?>
             {
                 ["value"] = "hello"
             }));
             var result = Assert.IsType<PiSharpToolResult>(value);
             Assert.Equal("hello", result.Text);
-            Assert.Equal("hello", result.StructuredContent?.GetProperty("echo").GetString());
+            Assert.Equal("hello", result.StructuredContent?.GetProperty("structuredContent")
+                .GetProperty("echo").GetString());
+            Assert.Equal("hello", result.StructuredContent?.GetProperty("content")[0]
+                .GetProperty("text").GetString());
+            Assert.False(result.StructuredContent?.GetProperty("isError").GetBoolean());
+            Assert.False(result.StructuredContent!.Value.TryGetProperty("_meta", out _));
             Assert.False(result.IsError);
             new ToolResultSchemaValidator(echo.OutputSchema).Validate(result);
 
@@ -104,6 +114,9 @@ public sealed class McpRuntimeTests
             var failed = Assert.IsType<PiSharpToolResult>(await fail.Function.InvokeAsync(new AIFunctionArguments()));
             Assert.True(failed.IsError);
             Assert.Equal("fixture failure", failed.Text);
+            Assert.True(failed.StructuredContent?.GetProperty("isError").GetBoolean());
+            Assert.Equal("fixture failure", failed.StructuredContent?.GetProperty("content")[0]
+                .GetProperty("text").GetString());
 
             var list = catalog.Registration.ToolDefinitions.Single(tool =>
                 tool.Function.Name == "list_mcp_resources");
@@ -180,16 +193,23 @@ public sealed class McpRuntimeTests
             Assert.DoesNotContain("Use the docs server to find product behavior.", serverContext);
 
             var script = "const docs=await describeNamespace('mcp__docs'); " +
+                "const aliases=await Promise.all(['docs','mcp__docs'].map(name=>describeNamespace(name))); " +
                 "const tickets=await describeNamespace('mcp__tickets'); " +
-                "const searched=await searchTools('Echo input text.',{namespace:'mcp__docs'}); " +
+                "const searched=await searchTools('Echo input text.',{namespace:'docs'}); " +
                 "const docResult=await tools.mcp__docs__echo({value:'manual'}); " +
                 "const ticketResult=await tools.mcp__tickets__echo({value:'issue'}); " +
+                "const ticketFailure=await tools.mcp__tickets__fail({}); " +
                 "let hiddenState='blocked'; try { await tools.mcp__docs__fail({}); hiddenState='called'; } catch {} " +
-                "text(JSON.stringify({docs,tickets,docValue:docResult.echo,ticketValue:ticketResult.echo," +
+                "text(JSON.stringify({docs,aliasesSame:aliases.every(alias=>JSON.stringify(alias)===JSON.stringify(docs))," +
+                "tickets,docValue:docResult.structuredContent.echo,docText:docResult.content[0].text," +
+                "docIsError:docResult.isError,ticketValue:ticketResult.structuredContent.echo," +
+                "ticketFailureIsError:ticketFailure.isError," +
+                "ticketFailureText:ticketFailure.content[0].text," +
                 "searched:searched.map(tool=>tool.name),hiddenState}));";
             var waitHook = Assert.Single(catalog.Registration.ToolCallHooks);
+            var codemode = catalog.Registration.ToolDefinitions.Single(tool => tool.Function.Name == "codemode");
             await waitHook(new PiSharpToolCallContext("codemode", "codemode-call", null,
-                new Dictionary<string, object?> { ["code"] = script }), CancellationToken.None);
+                new Dictionary<string, object?> { ["code"] = script }, codemode.ReachesTools), CancellationToken.None);
 
             var registry = new PiSharpToolRegistry(catalog.Registration.ToolDefinitions);
             var loadout = registry.CreateLoadout(["codemode"]);
@@ -208,10 +228,11 @@ public sealed class McpRuntimeTests
                 "test", null, "codemode", new Dictionary<string, object?>());
             var result = await CodemodeSandbox.ExecuteAsync(script, context,
                 new Dictionary<string, JsonElement>(), CancellationToken.None);
-            Assert.True(result.Ok, result.Error);
+            Assert.True(result.Ok, result.Error + " | output=" + result.Text);
             using var output = JsonDocument.Parse(result.Text);
             var rootElement = output.RootElement;
             var docs = rootElement.GetProperty("docs");
+            Assert.True(rootElement.GetProperty("aliasesSame").GetBoolean());
             Assert.Equal("mcp__docs", docs.GetProperty("name").GetString());
             Assert.Equal("Search the product manuals.", docs.GetProperty("description").GetString());
             Assert.Equal("Use the docs server to find product behavior.",
@@ -223,7 +244,11 @@ public sealed class McpRuntimeTests
             Assert.Equal("Use the tickets server to inspect project work.",
                 tickets.GetProperty("instructions").GetString());
             Assert.Equal("manual", rootElement.GetProperty("docValue").GetString());
+            Assert.Equal("manual", rootElement.GetProperty("docText").GetString());
+            Assert.False(rootElement.GetProperty("docIsError").GetBoolean());
             Assert.Equal("issue", rootElement.GetProperty("ticketValue").GetString());
+            Assert.True(rootElement.GetProperty("ticketFailureIsError").GetBoolean());
+            Assert.Equal("fixture failure", rootElement.GetProperty("ticketFailureText").GetString());
             Assert.Equal(["mcp__docs__echo"], rootElement.GetProperty("searched").EnumerateArray()
                 .Select(item => item.GetString()!).ToArray());
             Assert.Equal("blocked", rootElement.GetProperty("hiddenState").GetString());

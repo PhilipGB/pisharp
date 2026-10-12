@@ -96,6 +96,11 @@ public sealed class McpRuntimeLifecycleTests
 
             var configuration = await McpConfiguration.LoadAsync(root, root, false);
             using var catalog = ExtensionCatalog.Load(root, root, false, discover: false);
+            var reachTool = new PiSharpToolRegistration(
+                Microsoft.Extensions.AI.AIFunctionFactory.Create(() => "ok", name: "extension_loader"),
+                ToolExposure.ModelOnly,
+                ReachesTools: _ => PiSharpToolReach.FromWords(["mcp__fast_server__echo"]));
+            catalog.Registration.AddTool(reachTool);
             var startup = Stopwatch.StartNew();
             Assert.Empty(await McpRuntime.RegisterAsync(configuration, catalog, root, CancellationToken.None,
                 manager: null, startupWait: TimeSpan.FromMilliseconds(75)));
@@ -107,19 +112,16 @@ public sealed class McpRuntimeLifecycleTests
             await ProcessTestHelpers.WaitForFileAsync(slowStarted, deadline.Token);
             var hook = Assert.Single(catalog.Registration.ToolCallHooks);
             var waitFast = Stopwatch.StartNew();
-            await hook(new PiSharpToolCallContext("codemode", "fast-call", null,
-                new Dictionary<string, object?>
-                {
-                    ["code"] = "return await tools.mcp__fast_server__echo({ value: 'ok' });"
-                }), deadline.Token);
+            await hook(new PiSharpToolCallContext("extension_loader", "fast-call", null,
+                new Dictionary<string, object?>(), reachTool.ReachesTools), deadline.Token);
 
             Assert.True(waitFast.Elapsed < TimeSpan.FromMilliseconds(900),
                 $"Codemode waited for an unrelated MCP server for {waitFast.ElapsedMilliseconds} ms.");
             Assert.Contains(catalog.Registration.ToolDefinitions, tool => tool.Function.Name == "mcp__fast_server__echo");
             Assert.DoesNotContain(catalog.Registration.ToolDefinitions, tool => tool.Function.Name == "mcp__slow__echo");
 
-            await hook(new PiSharpToolCallContext("tool_search", "search-call", null,
-                new Dictionary<string, object?>()), deadline.Token);
+            await hook(new PiSharpToolCallContext("indirect_loader", "search-call", null,
+                new Dictionary<string, object?>(), _ => PiSharpToolReach.All), deadline.Token);
             Assert.Contains(catalog.Registration.ToolDefinitions, tool => tool.Function.Name == "mcp__slow__echo");
         }
         finally { Directory.Delete(root, recursive: true); }
@@ -209,7 +211,8 @@ public sealed class McpRuntimeLifecycleTests
             var hook = Assert.Single(catalog.Registration.ToolCallHooks);
             using var callDeadline = new CancellationTokenSource(TimeSpan.FromMilliseconds(80));
             await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await hook(
-                new PiSharpToolCallContext("tool_search", "cancel-call", null, new Dictionary<string, object?>()),
+                new PiSharpToolCallContext("indirect_loader", "cancel-call", null,
+                    new Dictionary<string, object?>(), _ => PiSharpToolReach.All),
                 callDeadline.Token));
 
             var cleanup = Stopwatch.StartNew();

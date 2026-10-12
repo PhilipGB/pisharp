@@ -12,7 +12,9 @@ namespace PiSharp.Runtime.Sessions;
 internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecution?> current,
     Action<AgentLifecycleEvent> publish, ToolBatchTermination termination, Func<ToolLoadout?>? currentLoadout = null,
     Func<IReadOnlyDictionary<string, AIFunction>>? allToolFunctions = null,
-    PiSharpToolHookPipeline? toolHooks = null, JsonElement? outputSchema = null, ICodemodeModels? codemodeModels = null) : DelegatingAIFunction(inner)
+    PiSharpToolHookPipeline? toolHooks = null, JsonElement? outputSchema = null, ICodemodeModels? codemodeModels = null,
+    Func<IDictionary<string, object?>, PiSharpToolReach?>? reachesTools = null,
+    PiSharpToolNamespace? toolNamespace = null) : DelegatingAIFunction(inner)
 {
     private readonly ToolResultSchemaValidator _outputValidator = new(outputSchema);
 
@@ -94,7 +96,7 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
             if (!isCallable)
                 throw new InvalidOperationException($"Tool '{Name}' is not active or callable in this session.");
             await (toolHooks?.BeforeAsync(new PiSharpToolCallContext(Name, toolCallId, parentToolCallId,
-                invocationArguments), cancellationToken) ?? ValueTask.CompletedTask);
+                invocationArguments, reachesTools, toolNamespace), cancellationToken) ?? ValueTask.CompletedTask);
             displayArguments = invocationArguments.ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal);
             value = await base.InvokeCoreAsync(invocationArguments, cancellationToken);
         }

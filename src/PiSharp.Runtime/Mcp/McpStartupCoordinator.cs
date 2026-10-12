@@ -46,12 +46,13 @@ internal sealed class McpStartupCoordinator : IAsyncDisposable
         var waiting = Snapshot().Where(item => item.Configuration.Enabled && !item.Task.IsCompleted).ToArray();
         if (waiting.Length == 0) return;
 
-        IEnumerable<Startup> required = call.ToolName switch
-        {
-            "codemode" => waiting.Where(item => ScriptNeedsServer(ReadCode(call), item.Configuration.Name)),
-            "tool_search" or "list_mcp_resources" or "list_mcp_resource_templates" or "read_mcp_resource" => waiting,
-            _ => []
-        };
+        var reach = call.ReachesTools?.Invoke(call.Arguments);
+        IEnumerable<Startup> required = reach is not null
+            ? waiting.Where(item => ReachesServer(reach, item.Configuration.Name))
+            : call.Namespace is { } toolNamespace
+                ? waiting.Where(item => string.Equals(toolNamespace.Name,
+                    McpToolIdentifiers.Namespace(item.Configuration.Name), StringComparison.Ordinal))
+                : [];
         var tasks = required.Select(item => item.Task).ToArray();
         if (tasks.Length == 0) return;
         try { await Task.WhenAll(tasks).WaitAsync(cancellationToken).ConfigureAwait(false); }
@@ -73,17 +74,9 @@ internal sealed class McpStartupCoordinator : IAsyncDisposable
     private static bool HasDirectTools(McpServerConfiguration server) =>
         server.Exposure == McpToolExposure.Direct || server.ToolExposure.Values.Contains(McpToolExposure.Direct);
 
-    private static string ReadCode(PiSharpToolCallContext call) =>
-        call.Arguments.TryGetValue("code", out var value) && value is string code ? code : "";
-
-    private static bool ScriptNeedsServer(string code, string name)
-    {
-        if (code.Contains("searchTools", StringComparison.Ordinal) ||
-            code.Contains("describeNamespace", StringComparison.Ordinal) ||
-            code.Contains("describeTool", StringComparison.Ordinal) ||
-            code.Contains("ALL_TOOLS", StringComparison.Ordinal)) return true;
-        return code.Contains(McpToolIdentifiers.Namespace(name), StringComparison.Ordinal);
-    }
+    private static bool ReachesServer(PiSharpToolReach reach, string name) =>
+        reach.IsAll || reach.Words.Any(word =>
+            word.Contains(McpToolIdentifiers.Namespace(name), StringComparison.Ordinal));
 
     public async ValueTask DisposeAsync()
     {
