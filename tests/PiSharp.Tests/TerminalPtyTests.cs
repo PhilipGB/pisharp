@@ -111,7 +111,7 @@ public sealed class TerminalPtyTests
             Assert.Contains("This project is not trusted.", capturedOutput);
             Assert.Contains("restart PiSharp.", capturedOutput);
             Assert.Contains("PiSharp can explain its own features and look up its docs. Ask how to use or extend PiSharp.", capturedOutput);
-            Assert.Contains("Use /hotkeys for shortcut help and / for commands.", capturedOutput);
+            Assert.DoesNotContain("Use /hotkeys for shortcut help and / for commands.", capturedOutput);
             Assert.True(capturedOutput.IndexOf("PiSharp can explain its own features and look up its docs. Ask how to use or extend PiSharp.", StringComparison.Ordinal) <
                 capturedOutput.LastIndexOf("This project is not trusted.", StringComparison.Ordinal));
             Assert.DoesNotContain("Agent error:", capturedOutput);

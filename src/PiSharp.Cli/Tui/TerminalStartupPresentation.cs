@@ -35,10 +35,9 @@ internal sealed class TerminalStartupPresentation(QuietStartupMode? quietStartup
             else
             {
                 var expandKey = DisplayKey("app.tools.expand", "Ctrl+O");
-                rows.Add($" {theme.Style("accent", "█▀ █")} {theme.Style("dim", $"{DisplayKey("app.interrupt", "Esc")} interrupt · {DisplayKey("app.clear", "Ctrl+C")}/{DisplayKey("app.exit", "Ctrl+D")} clear/exit · / commands · ! Bash · {expandKey} more")}");
+                rows.Add($" {theme.Style("accent", "█▀ █")} {theme.Style("dim", $"{DisplayKey("app.interrupt", "Esc")} interrupt · {DisplayKey("app.clear", "Ctrl+C")}/{DisplayKey("app.exit", "Ctrl+D")} clear/exit · / commands · ! bash · {expandKey} more")}");
                 rows.Add(" " + theme.Style("dim",
                     $"Press {expandKey} to show full startup help{(ShowDetails ? " and loaded resources" : "")}."));
-                rows.Add(" " + theme.Style("dim", "Use /hotkeys for shortcut help and / for commands."));
             }
             rows.Add("");
             rows.Add(" " + theme.Style("dim", "PiSharp can explain its own features and look up its docs. Ask how to use or extend PiSharp."));
@@ -138,12 +137,19 @@ internal sealed class TerminalStartupPresentation(QuietStartupMode? quietStartup
         ];
         foreach (var hint in hints)
         {
-            var key = hint.Action is null ? hint.Key : getDisplayKeys?.Invoke(hint.Action);
+            var key = hint.Action is null ? FormatDisplayKey(hint.Key) :
+                getDisplayKeys?.Invoke(hint.Action) is { Length: > 0 } configuredKey
+                    ? FormatDisplayKey(configuredKey) : null;
             if (string.IsNullOrWhiteSpace(key)) continue;
             yield return " " + theme.Style("dim", $"{key} {hint.Description}");
         }
     }
 
     private string DisplayKey(string action, string fallback) =>
-        getDisplayKeys?.Invoke(action) is { Length: > 0 } key ? key : fallback;
+        FormatDisplayKey(getDisplayKeys?.Invoke(action) is { Length: > 0 } key ? key : fallback);
+
+    private static string FormatDisplayKey(string key) => string.Join("/", key.Split('/')
+        .Select(binding => string.Join("+", binding.Split('+').Select(part =>
+            part.Equals("esc", StringComparison.OrdinalIgnoreCase) ||
+            part.Equals("escape", StringComparison.OrdinalIgnoreCase) ? "escape" : part.ToLowerInvariant()))));
 }

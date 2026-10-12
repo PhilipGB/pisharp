@@ -210,11 +210,31 @@ public sealed class TerminalScreenCompositorTests
         var compactDetails = presentation.BuildDetails(TerminalTheme.Default, 120, details, null, expanded: false);
         var expandedDetails = presentation.BuildDetails(TerminalTheme.Default, 120, details, null, expanded: true);
 
-        Assert.Contains("Press Alt+O to show full startup help and loaded resources.", compactHeader);
-        Assert.Contains("Alt+O to expand tools", expandedHeader);
+        Assert.Contains("Press alt+o to show full startup help and loaded resources.", compactHeader);
+        Assert.Contains("alt+o to expand tools", expandedHeader);
         Assert.Contains("startup-skill", compactDetails);
         Assert.DoesNotContain("SKILL.md", compactDetails);
         Assert.Contains("/home/user/.agents/skills/startup-skill/SKILL.md", expandedDetails);
+    }
+
+    [Fact]
+    public void CompactStartupHelpUsesCurrentPiKeyNamesAndDoesNotAddAnExtraHintRow()
+    {
+        var displayKeys = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["app.interrupt"] = "Esc",
+            ["app.clear"] = "Ctrl+C",
+            ["app.exit"] = "Ctrl+D",
+            ["app.tools.expand"] = "Ctrl+O"
+        };
+        var presentation = new TerminalStartupPresentation(null, verbose: false,
+            action => displayKeys.GetValueOrDefault(action));
+        var compact = System.Text.RegularExpressions.Regex.Replace(presentation.Build(
+            TerminalTheme.Default, expanded: false), "\\u001b\\[[0-?]*[ -/]*[@-~]", "");
+
+        Assert.Contains("escape interrupt · ctrl+c/ctrl+d clear/exit · / commands · ! bash · ctrl+o more", compact);
+        Assert.Contains("Press ctrl+o to show full startup help and loaded resources.", compact);
+        Assert.DoesNotContain("Use /hotkeys for shortcut help and / for commands.", compact);
     }
 
     [Fact]
@@ -243,22 +263,22 @@ public sealed class TerminalScreenCompositorTests
 
         var expectedHints = new[]
         {
-            "Esc to interrupt",
-            "Ctrl+C to clear",
-            "Ctrl+C twice to exit",
-            "Ctrl+D to exit (empty)",
-            "Ctrl+K to delete to end",
-            "Ctrl+P/Ctrl+Shift+P to cycle models",
-            "Ctrl+L to select a model",
-            "Shift+Tab to cycle thinking level",
-            "Ctrl+O to expand tools",
-            "Ctrl+G for external editor",
+            "escape to interrupt",
+            "ctrl+c to clear",
+            "ctrl+c twice to exit",
+            "ctrl+d to exit (empty)",
+            "ctrl+k to delete to end",
+            "ctrl+p/ctrl+shift+p to cycle models",
+            "ctrl+l to select a model",
+            "shift+tab to cycle thinking level",
+            "ctrl+o to expand tools",
+            "ctrl+g for external editor",
             "/ for commands",
             "! to run bash",
             "!! to run bash (no context)",
-            "Alt+Enter to queue follow-up",
-            "Alt+Up to edit all queued messages",
-            "Ctrl+V to paste files on macOS, images, or text",
+            "alt+enter to queue follow-up",
+            "alt+up to edit all queued messages",
+            "ctrl+v to paste files on macOS, images, or text",
             "drop files to attach"
         };
 
