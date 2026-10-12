@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "/home/philip/Downloads/pisharp-bootstrap/pisharp/tools/parity/terminal/assert_project_trust_extension.py", line 68, in <module>
+    main()
+  File "/home/philip/Downloads/pisharp-bootstrap/pisharp/tools/parity/terminal/assert_project_trust_extension.py", line 51, in main
+    raise AssertionError(f'Expected one pre-trust extension load and ordered handlers; received {extension_trace}')
+AssertionError: Expected one pre-trust extension load and ordered handlers; received ['configured', 'trust-undecided:true', 'trust-decision:true', 'trust-ui:tui:true:Continue:true:approved']

@@ -1,0 +1,7 @@
+{
+  "pi": "/tmp/pisharp-frozen-pi1",
+  "reason": "Use the same checkout-path length as the baseline so generated documentation paths do not alter the estimated-context footer. No state/render normalization or fixture expectation changes.",
+  "baselinePiPathLength": 23,
+  "initialCandidatePiPathLength": 30,
+  "sourceSha": "ee409a85f6ad92bf8c6ab8ed735c6cd24f2e749e"
+}

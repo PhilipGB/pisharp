@@ -1,0 +1,15 @@
+{
+  "id": "llama-classifier-differential",
+  "command": [
+    "python3",
+    "/home/philip/Downloads/pisharp-bootstrap/pisharp/tools/parity/llama-classifier-differential.py",
+    "--pi",
+    "/tmp/pisharp-pin-neutrality-pi",
+    "--output",
+    "/tmp/pisharp-pin-neutrality-20261012/run-1/llama-classifier-differential.json"
+  ],
+  "cwd": "/home/philip/Downloads/pisharp-bootstrap/pisharp",
+  "exitCode": 0,
+  "seconds": 5.275,
+  "logger": "stdout+stderr text"
+}

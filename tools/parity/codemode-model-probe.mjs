@@ -1,3 +1,5 @@
+import { verifyPiCheckout } from './pi-reference.mjs';
+verifyPiCheckout(process.argv[2]);
 import {pathToFileURL} from 'node:url';
 import path from 'node:path';
 const {executeCodemode}=await import(pathToFileURL(path.join(process.argv[2],'packages/coding-agent/src/extensions/codemode/execute.ts')).href);

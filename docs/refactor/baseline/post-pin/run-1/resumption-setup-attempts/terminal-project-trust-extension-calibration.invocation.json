@@ -1,0 +1,20 @@
+{
+  "id": "terminal-project-trust-extension-calibration",
+  "command": [
+    "python3",
+    "tools/parity/terminal/run.py",
+    "--pi",
+    "/tmp/pisharp-pin-neutrality-pi",
+    "--fixture",
+    "/home/philip/Downloads/pisharp-bootstrap/pisharp/tools/parity/terminal/fixtures/project-trust-extension.json",
+    "--output",
+    "/tmp/pisharp-pin-neutrality-20261012/run-1/terminal-project-trust-extension-calibration",
+    "--pisharp-extension",
+    "/home/philip/Downloads/pisharp-bootstrap/pisharp/tests/ResourceDiscoveryExtension/bin/Debug/net10.0/dynamic-resources.dll",
+    "--calibrate"
+  ],
+  "cwd": "/home/philip/Downloads/pisharp-bootstrap/pisharp",
+  "exitCode": 0,
+  "seconds": 14.454,
+  "logger": "stdout+stderr text"
+}

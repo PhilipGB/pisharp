@@ -1,0 +1,11 @@
+
+ RUN  v4.1.11 /tmp/pisharp-pin-neutrality-pi/packages/ai
+
+··
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  16:29:37
+   Duration  1.78s (transform 1.06s, setup 0ms, import 1.46s, tests 139ms, environment 0ms)
+
+Matched 26 Anthropic transcript scenarios.

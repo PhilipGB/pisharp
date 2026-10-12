@@ -1,5 +1,7 @@
 import argparse,http.server,json,os,pathlib,queue,subprocess,tempfile,threading,time
 
+from pi_reference import verify_pi_checkout
+
 from terminal.thread_limits import apply_test_thread_limit
 apply_test_thread_limit()
 
@@ -12,6 +14,7 @@ parser.add_argument('--state-identity',action='store_true',help='Compare fresh e
 parser.add_argument('--thinking',choices=['minimal','max'],help='Compare exact logical thinking selection across provider requests')
 parser.add_argument('--output',type=pathlib.Path,required=True)
 args=parser.parse_args()
+verify_pi_checkout(args.pi)
 pi=args.pi.resolve()
 sharp=args.pisharp.resolve()
 outputs={}

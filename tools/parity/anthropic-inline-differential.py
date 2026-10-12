@@ -9,6 +9,8 @@ import shutil
 import subprocess
 import tempfile
 
+from pi_reference import verify_pi_checkout
+
 from terminal.thread_limits import apply_test_thread_limit
 apply_test_thread_limit()
 
@@ -16,6 +18,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--pi', required=True)
 parser.add_argument('--output', required=True)
 args = parser.parse_args()
+verify_pi_checkout(args.pi)
 pi = pathlib.Path(args.pi).resolve()
 repo = pathlib.Path(__file__).resolve().parents[2]
 probes = pathlib.Path(__file__).resolve().parent

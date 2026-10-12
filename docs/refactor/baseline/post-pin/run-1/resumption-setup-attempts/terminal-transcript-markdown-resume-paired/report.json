@@ -1,0 +1,2459 @@
+{
+  "piSha": "ee409a85f6ad92bf8c6ab8ed735c6cd24f2e749e",
+  "pisharpSha": "f77f720ae8bf2d1de698d336efa9665dbf4d23a1",
+  "fixture": "transcript-markdown-resume",
+  "calibration": false,
+  "concurrentHttpGroups": [],
+  "normalization": "Named checkpoints and stable synchronized render states are compared exactly, collapsing adjacent identical states, hidden cursor coordinates, transient loader glyphs, and in-flight Working-indicator frames. Same-Pi calibration shows fast scripted responses can finish before that animated frame is captured, making its presence and partial usage footer PTY-scheduling dependent. Raw bytes remain captured and exact-match status is reported separately. HTTP identity/count/order remain exact except within declared concurrent batches, where arrival order is unspecified. Only generated documentation package-root lines in system messages are canonicalized in HTTP comparisons. Per-checkpoint control buckets are diagnostic.",
+  "cases": [
+    {
+      "id": "80x24-dark-fullscreen",
+      "match": false,
+      "differences": 2412,
+      "firstDifferences": [
+        {
+          "path": "$.scenarioError",
+          "pisharp": "Terminal exited 2 before 'second'.\nCould not open session: Read-only file system : '/home/philip/.pisharp/sessions/\n76f4bf43cf9fd349/20261012T162150_11111111-1111-4111-8111-111111111111.session.js\non.lock'\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+        },
+        {
+          "path": "$.frames.length",
+          "pi": 3,
+          "pisharp": 1
+        },
+        {
+          "path": "$.frames[0].state.activeScreen",
+          "pi": "alternate",
+          "pisharp": "normal"
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.cursorX",
+          "pi": null,
+          "pisharp": 0
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.cursorY",
+          "pi": null,
+          "pisharp": 0
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines.length",
+          "pi": 24,
+          "pisharp": 0
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.cursorY",
+          "pi": 0,
+          "pisharp": 3
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[0].chars",
+          "pi": "",
+          "pisharp": "C"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[1].chars",
+          "pi": "",
+          "pisharp": "o"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[2].chars",
+          "pi": "",
+          "pisharp": "u"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[3].chars",
+          "pi": "",
+          "pisharp": "l"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[4].chars",
+          "pi": "",
+          "pisharp": "d"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[5].chars",
+          "pi": "",
+          "pisharp": " "
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[6].chars",
+          "pi": "",
+          "pisharp": "n"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[7].chars",
+          "pi": "",
+          "pisharp": "o"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[8].chars",
+          "pi": "",
+          "pisharp": "t"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[9].chars",
+          "pi": "",
+          "pisharp": " "
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[10].chars",
+          "pi": "",
+          "pisharp": "o"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[11].chars",
+          "pi": "",
+          "pisharp": "p"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[12].chars",
+          "pi": "",
+          "pisharp": "e"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[13].chars",
+          "pi": "",
+          "pisharp": "n"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[14].chars",
+          "pi": "",
+          "pisharp": " "
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[15].chars",
+          "pi": "",
+          "pisharp": "s"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[16].chars",
+          "pi": "",
+          "pisharp": "e"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[17].chars",
+          "pi": "",
+          "pisharp": "s"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[18].chars",
+          "pi": "",
+          "pisharp": "s"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[19].chars",
+          "pi": "",
+          "pisharp": "i"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[20].chars",
+          "pi": "",
+          "pisharp": "o"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[21].chars",
+          "pi": "",
+          "pisharp": "n"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[22].chars",
+          "pi": "",
+          "pisharp": ":"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[23].chars",
+          "pi": "",
+          "pisharp": " "
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[24].chars",
+          "pi": "",
+          "pisharp": "R"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[25].chars",
+          "pi": "",
+          "pisharp": "e"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[26].chars",
+          "pi": "",
+          "pisharp": "a"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[27].chars",
+          "pi": "",
+          "pisharp": "d"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[28].chars",
+          "pi": "",
+          "pisharp": "-"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[29].chars",
+          "pi": "",
+          "pisharp": "o"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[30].chars",
+          "pi": "",
+          "pisharp": "n"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[31].chars",
+          "pi": "",
+          "pisharp": "l"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[32].chars",
+          "pi": "",
+          "pisharp": "y"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[33].chars",
+          "pi": "",
+          "pisharp": " "
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[34].chars",
+          "pi": "",
+          "pisharp": "f"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[35].chars",
+          "pi": "",
+          "pisharp": "i"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[36].chars",
+          "pi": "",
+          "pisharp": "l"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[37].chars",
+          "pi": "",
+          "pisharp": "e"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[38].chars",
+          "pi": "",
+          "pisharp": " "
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[39].chars",
+          "pi": "",
+          "pisharp": "s"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[40].chars",
+          "pi": "",
+          "pisharp": "y"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[41].chars",
+          "pi": "",
+          "pisharp": "s"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[42].chars",
+          "pi": "",
+          "pisharp": "t"
+        }
+      ],
+      "scenarioErrors": {
+        "pisharp": "Terminal exited 2 before 'second'.\nCould not open session: Read-only file system : '/home/philip/.pisharp/sessions/\n76f4bf43cf9fd349/20261012T162150_11111111-1111-4111-8111-111111111111.session.js\non.lock'\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+      },
+      "terminalMatch": false,
+      "rawMatch": false,
+      "rawDifference": {
+        "piBytes": 6654,
+        "pisharpBytes": 170,
+        "firstDifferingByte": 0
+      },
+      "comparedRenderFrameCount": 7,
+      "renderDifferences": 1,
+      "httpMatch": true,
+      "rawHttpMatch": true,
+      "rawHttpDifferenceCount": 0,
+      "rawHttpFirstDifferences": [],
+      "httpNormalization": "Only generated Main documentation, Additional docs, and Examples package-root lines in system messages are canonicalized; raw request bodies remain captured.",
+      "controlBoundaryDifferenceCount": 4,
+      "controlBoundaryFirstDifferences": [
+        {
+          "path": "$.controlBoundaries.length",
+          "pi": 3,
+          "pisharp": 1
+        },
+        {
+          "path": "$.controlBoundaries[0].length",
+          "pi": 213,
+          "pisharp": 2
+        },
+        {
+          "path": "$.controlBoundaries[0][0]",
+          "pi": "1b5b3f3130343968",
+          "pisharp": "0d"
+        },
+        {
+          "path": "$.controlBoundaries[0][1]",
+          "pi": "1b5b3f376c",
+          "pisharp": "0a"
+        }
+      ],
+      "evidence": "80x24-dark-fullscreen.json.gz",
+      "assertionEvidence": "80x24-dark-fullscreen.assertions.json.gz",
+      "frameEvidence": {
+        "pi": "80x24-dark-fullscreen.pi.frames.jsonl.gz",
+        "pisharp": "80x24-dark-fullscreen.pisharp.frames.jsonl.gz"
+      },
+      "renderEvidence": {
+        "pi": "80x24-dark-fullscreen.pi.renders.jsonl.gz",
+        "pisharp": "80x24-dark-fullscreen.pisharp.renders.jsonl.gz"
+      }
+    },
+    {
+      "id": "80x24-dark-regular",
+      "match": false,
+      "differences": 4448,
+      "firstDifferences": [
+        {
+          "path": "$.scenarioError",
+          "pisharp": "Terminal exited 2 before 'second'.\nsettings.json contains unsupported property 'tuiMode'.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+        },
+        {
+          "path": "$.frames.length",
+          "pi": 3,
+          "pisharp": 1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.cursorX",
+          "pi": null,
+          "pisharp": 0
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.cursorY",
+          "pi": null,
+          "pisharp": 1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[0].background.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[0].background.value",
+          "pi": 2177865,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[0].chars",
+          "pi": " ",
+          "pisharp": "s"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[1].background.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[1].background.value",
+          "pi": 2177865,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[1].chars",
+          "pi": " ",
+          "pisharp": "e"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[2].background.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[2].background.value",
+          "pi": 2177865,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[2].chars",
+          "pi": " ",
+          "pisharp": "t"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[3].background.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[3].background.value",
+          "pi": 2177865,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[3].chars",
+          "pi": " ",
+          "pisharp": "t"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[4].background.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[4].background.value",
+          "pi": 2177865,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[4].chars",
+          "pi": " ",
+          "pisharp": "i"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[5].background.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[5].background.value",
+          "pi": 2177865,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[5].chars",
+          "pi": " ",
+          "pisharp": "n"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[6].background.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[6].background.value",
+          "pi": 2177865,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[6].chars",
+          "pi": " ",
+          "pisharp": "g"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[7].background.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[7].background.value",
+          "pi": 2177865,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[7].chars",
+          "pi": " ",
+          "pisharp": "s"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[8].background.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[8].background.value",
+          "pi": 2177865,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[8].chars",
+          "pi": " ",
+          "pisharp": "."
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[9].background.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[9].background.value",
+          "pi": 2177865,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[9].chars",
+          "pi": " ",
+          "pisharp": "j"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[10].background.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[10].background.value",
+          "pi": 2177865,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[10].chars",
+          "pi": " ",
+          "pisharp": "s"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[11].background.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[11].background.value",
+          "pi": 2177865,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[11].chars",
+          "pi": " ",
+          "pisharp": "o"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[12].background.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[12].background.value",
+          "pi": 2177865,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[12].chars",
+          "pi": " ",
+          "pisharp": "n"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[13].background.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[13].background.value",
+          "pi": 2177865,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[14].background.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[14].background.value",
+          "pi": 2177865,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[14].chars",
+          "pi": " ",
+          "pisharp": "c"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[15].background.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[15].background.value",
+          "pi": 2177865,
+          "pisharp": -1
+        }
+      ],
+      "scenarioErrors": {
+        "pisharp": "Terminal exited 2 before 'second'.\nsettings.json contains unsupported property 'tuiMode'.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+      },
+      "terminalMatch": false,
+      "rawMatch": false,
+      "rawDifference": {
+        "piBytes": 5151,
+        "pisharpBytes": 56,
+        "firstDifferingByte": 0
+      },
+      "comparedRenderFrameCount": 3,
+      "renderDifferences": 1,
+      "httpMatch": true,
+      "rawHttpMatch": true,
+      "rawHttpDifferenceCount": 0,
+      "rawHttpFirstDifferences": [],
+      "httpNormalization": "Only generated Main documentation, Additional docs, and Examples package-root lines in system messages are canonicalized; raw request bodies remain captured.",
+      "controlBoundaryDifferenceCount": 4,
+      "controlBoundaryFirstDifferences": [
+        {
+          "path": "$.controlBoundaries.length",
+          "pi": 3,
+          "pisharp": 1
+        },
+        {
+          "path": "$.controlBoundaries[0].length",
+          "pi": 210,
+          "pisharp": 2
+        },
+        {
+          "path": "$.controlBoundaries[0][0]",
+          "pi": "1b5b3f3230303468",
+          "pisharp": "0d"
+        },
+        {
+          "path": "$.controlBoundaries[0][1]",
+          "pi": "1b5b3e3775",
+          "pisharp": "0a"
+        }
+      ],
+      "evidence": "80x24-dark-regular.json.gz",
+      "assertionEvidence": "80x24-dark-regular.assertions.json.gz",
+      "frameEvidence": {
+        "pi": "80x24-dark-regular.pi.frames.jsonl.gz",
+        "pisharp": "80x24-dark-regular.pisharp.frames.jsonl.gz"
+      },
+      "renderEvidence": {
+        "pi": "80x24-dark-regular.pi.renders.jsonl.gz",
+        "pisharp": "80x24-dark-regular.pisharp.renders.jsonl.gz"
+      }
+    },
+    {
+      "id": "80x24-light-fullscreen",
+      "match": false,
+      "differences": 2412,
+      "firstDifferences": [
+        {
+          "path": "$.scenarioError",
+          "pisharp": "Terminal exited 2 before 'second'.\nCould not open session: Read-only file system : '/home/philip/.pisharp/sessions/\n76f4bf43cf9fd349/20261012T162156_11111111-1111-4111-8111-111111111111.session.js\non.lock'\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+        },
+        {
+          "path": "$.frames.length",
+          "pi": 3,
+          "pisharp": 1
+        },
+        {
+          "path": "$.frames[0].state.activeScreen",
+          "pi": "alternate",
+          "pisharp": "normal"
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.cursorX",
+          "pi": null,
+          "pisharp": 0
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.cursorY",
+          "pi": null,
+          "pisharp": 0
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines.length",
+          "pi": 24,
+          "pisharp": 0
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.cursorY",
+          "pi": 0,
+          "pisharp": 3
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[0].chars",
+          "pi": "",
+          "pisharp": "C"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[1].chars",
+          "pi": "",
+          "pisharp": "o"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[2].chars",
+          "pi": "",
+          "pisharp": "u"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[3].chars",
+          "pi": "",
+          "pisharp": "l"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[4].chars",
+          "pi": "",
+          "pisharp": "d"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[5].chars",
+          "pi": "",
+          "pisharp": " "
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[6].chars",
+          "pi": "",
+          "pisharp": "n"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[7].chars",
+          "pi": "",
+          "pisharp": "o"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[8].chars",
+          "pi": "",
+          "pisharp": "t"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[9].chars",
+          "pi": "",
+          "pisharp": " "
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[10].chars",
+          "pi": "",
+          "pisharp": "o"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[11].chars",
+          "pi": "",
+          "pisharp": "p"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[12].chars",
+          "pi": "",
+          "pisharp": "e"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[13].chars",
+          "pi": "",
+          "pisharp": "n"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[14].chars",
+          "pi": "",
+          "pisharp": " "
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[15].chars",
+          "pi": "",
+          "pisharp": "s"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[16].chars",
+          "pi": "",
+          "pisharp": "e"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[17].chars",
+          "pi": "",
+          "pisharp": "s"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[18].chars",
+          "pi": "",
+          "pisharp": "s"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[19].chars",
+          "pi": "",
+          "pisharp": "i"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[20].chars",
+          "pi": "",
+          "pisharp": "o"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[21].chars",
+          "pi": "",
+          "pisharp": "n"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[22].chars",
+          "pi": "",
+          "pisharp": ":"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[23].chars",
+          "pi": "",
+          "pisharp": " "
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[24].chars",
+          "pi": "",
+          "pisharp": "R"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[25].chars",
+          "pi": "",
+          "pisharp": "e"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[26].chars",
+          "pi": "",
+          "pisharp": "a"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[27].chars",
+          "pi": "",
+          "pisharp": "d"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[28].chars",
+          "pi": "",
+          "pisharp": "-"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[29].chars",
+          "pi": "",
+          "pisharp": "o"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[30].chars",
+          "pi": "",
+          "pisharp": "n"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[31].chars",
+          "pi": "",
+          "pisharp": "l"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[32].chars",
+          "pi": "",
+          "pisharp": "y"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[33].chars",
+          "pi": "",
+          "pisharp": " "
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[34].chars",
+          "pi": "",
+          "pisharp": "f"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[35].chars",
+          "pi": "",
+          "pisharp": "i"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[36].chars",
+          "pi": "",
+          "pisharp": "l"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[37].chars",
+          "pi": "",
+          "pisharp": "e"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[38].chars",
+          "pi": "",
+          "pisharp": " "
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[39].chars",
+          "pi": "",
+          "pisharp": "s"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[40].chars",
+          "pi": "",
+          "pisharp": "y"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[41].chars",
+          "pi": "",
+          "pisharp": "s"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[42].chars",
+          "pi": "",
+          "pisharp": "t"
+        }
+      ],
+      "scenarioErrors": {
+        "pisharp": "Terminal exited 2 before 'second'.\nCould not open session: Read-only file system : '/home/philip/.pisharp/sessions/\n76f4bf43cf9fd349/20261012T162156_11111111-1111-4111-8111-111111111111.session.js\non.lock'\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+      },
+      "terminalMatch": false,
+      "rawMatch": false,
+      "rawDifference": {
+        "piBytes": 6660,
+        "pisharpBytes": 170,
+        "firstDifferingByte": 0
+      },
+      "comparedRenderFrameCount": 7,
+      "renderDifferences": 1,
+      "httpMatch": true,
+      "rawHttpMatch": true,
+      "rawHttpDifferenceCount": 0,
+      "rawHttpFirstDifferences": [],
+      "httpNormalization": "Only generated Main documentation, Additional docs, and Examples package-root lines in system messages are canonicalized; raw request bodies remain captured.",
+      "controlBoundaryDifferenceCount": 4,
+      "controlBoundaryFirstDifferences": [
+        {
+          "path": "$.controlBoundaries.length",
+          "pi": 3,
+          "pisharp": 1
+        },
+        {
+          "path": "$.controlBoundaries[0].length",
+          "pi": 213,
+          "pisharp": 2
+        },
+        {
+          "path": "$.controlBoundaries[0][0]",
+          "pi": "1b5b3f3130343968",
+          "pisharp": "0d"
+        },
+        {
+          "path": "$.controlBoundaries[0][1]",
+          "pi": "1b5b3f376c",
+          "pisharp": "0a"
+        }
+      ],
+      "evidence": "80x24-light-fullscreen.json.gz",
+      "assertionEvidence": "80x24-light-fullscreen.assertions.json.gz",
+      "frameEvidence": {
+        "pi": "80x24-light-fullscreen.pi.frames.jsonl.gz",
+        "pisharp": "80x24-light-fullscreen.pisharp.frames.jsonl.gz"
+      },
+      "renderEvidence": {
+        "pi": "80x24-light-fullscreen.pi.renders.jsonl.gz",
+        "pisharp": "80x24-light-fullscreen.pisharp.renders.jsonl.gz"
+      }
+    },
+    {
+      "id": "80x24-light-regular",
+      "match": false,
+      "differences": 4448,
+      "firstDifferences": [
+        {
+          "path": "$.scenarioError",
+          "pisharp": "Terminal exited 2 before 'second'.\nsettings.json contains unsupported property 'tuiMode'.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+        },
+        {
+          "path": "$.frames.length",
+          "pi": 3,
+          "pisharp": 1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.cursorX",
+          "pi": null,
+          "pisharp": 0
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.cursorY",
+          "pi": null,
+          "pisharp": 1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[0].background.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[0].background.value",
+          "pi": 14673900,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[0].chars",
+          "pi": " ",
+          "pisharp": "s"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[1].background.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[1].background.value",
+          "pi": 14673900,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[1].chars",
+          "pi": " ",
+          "pisharp": "e"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[2].background.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[2].background.value",
+          "pi": 14673900,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[2].chars",
+          "pi": " ",
+          "pisharp": "t"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[3].background.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[3].background.value",
+          "pi": 14673900,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[3].chars",
+          "pi": " ",
+          "pisharp": "t"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[4].background.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[4].background.value",
+          "pi": 14673900,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[4].chars",
+          "pi": " ",
+          "pisharp": "i"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[5].background.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[5].background.value",
+          "pi": 14673900,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[5].chars",
+          "pi": " ",
+          "pisharp": "n"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[6].background.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[6].background.value",
+          "pi": 14673900,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[6].chars",
+          "pi": " ",
+          "pisharp": "g"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[7].background.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[7].background.value",
+          "pi": 14673900,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[7].chars",
+          "pi": " ",
+          "pisharp": "s"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[8].background.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[8].background.value",
+          "pi": 14673900,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[8].chars",
+          "pi": " ",
+          "pisharp": "."
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[9].background.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[9].background.value",
+          "pi": 14673900,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[9].chars",
+          "pi": " ",
+          "pisharp": "j"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[10].background.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[10].background.value",
+          "pi": 14673900,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[10].chars",
+          "pi": " ",
+          "pisharp": "s"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[11].background.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[11].background.value",
+          "pi": 14673900,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[11].chars",
+          "pi": " ",
+          "pisharp": "o"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[12].background.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[12].background.value",
+          "pi": 14673900,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[12].chars",
+          "pi": " ",
+          "pisharp": "n"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[13].background.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[13].background.value",
+          "pi": 14673900,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[14].background.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[14].background.value",
+          "pi": 14673900,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[14].chars",
+          "pi": " ",
+          "pisharp": "c"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[15].background.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[15].background.value",
+          "pi": 14673900,
+          "pisharp": -1
+        }
+      ],
+      "scenarioErrors": {
+        "pisharp": "Terminal exited 2 before 'second'.\nsettings.json contains unsupported property 'tuiMode'.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+      },
+      "terminalMatch": false,
+      "rawMatch": false,
+      "rawDifference": {
+        "piBytes": 5155,
+        "pisharpBytes": 56,
+        "firstDifferingByte": 0
+      },
+      "comparedRenderFrameCount": 3,
+      "renderDifferences": 1,
+      "httpMatch": true,
+      "rawHttpMatch": true,
+      "rawHttpDifferenceCount": 0,
+      "rawHttpFirstDifferences": [],
+      "httpNormalization": "Only generated Main documentation, Additional docs, and Examples package-root lines in system messages are canonicalized; raw request bodies remain captured.",
+      "controlBoundaryDifferenceCount": 4,
+      "controlBoundaryFirstDifferences": [
+        {
+          "path": "$.controlBoundaries.length",
+          "pi": 3,
+          "pisharp": 1
+        },
+        {
+          "path": "$.controlBoundaries[0].length",
+          "pi": 210,
+          "pisharp": 2
+        },
+        {
+          "path": "$.controlBoundaries[0][0]",
+          "pi": "1b5b3f3230303468",
+          "pisharp": "0d"
+        },
+        {
+          "path": "$.controlBoundaries[0][1]",
+          "pi": "1b5b3e3775",
+          "pisharp": "0a"
+        }
+      ],
+      "evidence": "80x24-light-regular.json.gz",
+      "assertionEvidence": "80x24-light-regular.assertions.json.gz",
+      "frameEvidence": {
+        "pi": "80x24-light-regular.pi.frames.jsonl.gz",
+        "pisharp": "80x24-light-regular.pisharp.frames.jsonl.gz"
+      },
+      "renderEvidence": {
+        "pi": "80x24-light-regular.pi.renders.jsonl.gz",
+        "pisharp": "80x24-light-regular.pisharp.renders.jsonl.gz"
+      }
+    },
+    {
+      "id": "120x40-dark-fullscreen",
+      "match": false,
+      "differences": 3410,
+      "firstDifferences": [
+        {
+          "path": "$.scenarioError",
+          "pisharp": "Terminal exited 2 before 'second'.\nCould not open session: Read-only file system : '/home/philip/.pisharp/sessions/76f4bf43cf9fd349/20261012T162203_1111111\n1-1111-4111-8111-111111111111.session.json.lock'\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+        },
+        {
+          "path": "$.frames.length",
+          "pi": 3,
+          "pisharp": 1
+        },
+        {
+          "path": "$.frames[0].state.activeScreen",
+          "pi": "alternate",
+          "pisharp": "normal"
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.cursorX",
+          "pi": null,
+          "pisharp": 0
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.cursorY",
+          "pi": null,
+          "pisharp": 0
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines.length",
+          "pi": 40,
+          "pisharp": 0
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.cursorY",
+          "pi": 0,
+          "pisharp": 2
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[0].chars",
+          "pi": "",
+          "pisharp": "C"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[1].chars",
+          "pi": "",
+          "pisharp": "o"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[2].chars",
+          "pi": "",
+          "pisharp": "u"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[3].chars",
+          "pi": "",
+          "pisharp": "l"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[4].chars",
+          "pi": "",
+          "pisharp": "d"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[5].chars",
+          "pi": "",
+          "pisharp": " "
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[6].chars",
+          "pi": "",
+          "pisharp": "n"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[7].chars",
+          "pi": "",
+          "pisharp": "o"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[8].chars",
+          "pi": "",
+          "pisharp": "t"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[9].chars",
+          "pi": "",
+          "pisharp": " "
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[10].chars",
+          "pi": "",
+          "pisharp": "o"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[11].chars",
+          "pi": "",
+          "pisharp": "p"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[12].chars",
+          "pi": "",
+          "pisharp": "e"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[13].chars",
+          "pi": "",
+          "pisharp": "n"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[14].chars",
+          "pi": "",
+          "pisharp": " "
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[15].chars",
+          "pi": "",
+          "pisharp": "s"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[16].chars",
+          "pi": "",
+          "pisharp": "e"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[17].chars",
+          "pi": "",
+          "pisharp": "s"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[18].chars",
+          "pi": "",
+          "pisharp": "s"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[19].chars",
+          "pi": "",
+          "pisharp": "i"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[20].chars",
+          "pi": "",
+          "pisharp": "o"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[21].chars",
+          "pi": "",
+          "pisharp": "n"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[22].chars",
+          "pi": "",
+          "pisharp": ":"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[23].chars",
+          "pi": "",
+          "pisharp": " "
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[24].chars",
+          "pi": "",
+          "pisharp": "R"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[25].chars",
+          "pi": "",
+          "pisharp": "e"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[26].chars",
+          "pi": "",
+          "pisharp": "a"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[27].chars",
+          "pi": "",
+          "pisharp": "d"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[28].chars",
+          "pi": "",
+          "pisharp": "-"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[29].chars",
+          "pi": "",
+          "pisharp": "o"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[30].chars",
+          "pi": "",
+          "pisharp": "n"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[31].chars",
+          "pi": "",
+          "pisharp": "l"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[32].chars",
+          "pi": "",
+          "pisharp": "y"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[33].chars",
+          "pi": "",
+          "pisharp": " "
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[34].chars",
+          "pi": "",
+          "pisharp": "f"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[35].chars",
+          "pi": "",
+          "pisharp": "i"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[36].chars",
+          "pi": "",
+          "pisharp": "l"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[37].chars",
+          "pi": "",
+          "pisharp": "e"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[38].chars",
+          "pi": "",
+          "pisharp": " "
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[39].chars",
+          "pi": "",
+          "pisharp": "s"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[40].chars",
+          "pi": "",
+          "pisharp": "y"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[41].chars",
+          "pi": "",
+          "pisharp": "s"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[42].chars",
+          "pi": "",
+          "pisharp": "t"
+        }
+      ],
+      "scenarioErrors": {
+        "pisharp": "Terminal exited 2 before 'second'.\nCould not open session: Read-only file system : '/home/philip/.pisharp/sessions/76f4bf43cf9fd349/20261012T162203_1111111\n1-1111-4111-8111-111111111111.session.json.lock'\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+      },
+      "terminalMatch": false,
+      "rawMatch": false,
+      "rawDifference": {
+        "piBytes": 7699,
+        "pisharpBytes": 170,
+        "firstDifferingByte": 0
+      },
+      "comparedRenderFrameCount": 7,
+      "renderDifferences": 1,
+      "httpMatch": true,
+      "rawHttpMatch": true,
+      "rawHttpDifferenceCount": 0,
+      "rawHttpFirstDifferences": [],
+      "httpNormalization": "Only generated Main documentation, Additional docs, and Examples package-root lines in system messages are canonicalized; raw request bodies remain captured.",
+      "controlBoundaryDifferenceCount": 4,
+      "controlBoundaryFirstDifferences": [
+        {
+          "path": "$.controlBoundaries.length",
+          "pi": 3,
+          "pisharp": 1
+        },
+        {
+          "path": "$.controlBoundaries[0].length",
+          "pi": 281,
+          "pisharp": 2
+        },
+        {
+          "path": "$.controlBoundaries[0][0]",
+          "pi": "1b5b3f3130343968",
+          "pisharp": "0d"
+        },
+        {
+          "path": "$.controlBoundaries[0][1]",
+          "pi": "1b5b3f376c",
+          "pisharp": "0a"
+        }
+      ],
+      "evidence": "120x40-dark-fullscreen.json.gz",
+      "assertionEvidence": "120x40-dark-fullscreen.assertions.json.gz",
+      "frameEvidence": {
+        "pi": "120x40-dark-fullscreen.pi.frames.jsonl.gz",
+        "pisharp": "120x40-dark-fullscreen.pisharp.frames.jsonl.gz"
+      },
+      "renderEvidence": {
+        "pi": "120x40-dark-fullscreen.pi.renders.jsonl.gz",
+        "pisharp": "120x40-dark-fullscreen.pisharp.renders.jsonl.gz"
+      }
+    },
+    {
+      "id": "120x40-dark-regular",
+      "match": false,
+      "differences": 6448,
+      "firstDifferences": [
+        {
+          "path": "$.scenarioError",
+          "pisharp": "Terminal exited 2 before 'second'.\nsettings.json contains unsupported property 'tuiMode'.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+        },
+        {
+          "path": "$.frames.length",
+          "pi": 3,
+          "pisharp": 1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.cursorX",
+          "pi": null,
+          "pisharp": 0
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.cursorY",
+          "pi": null,
+          "pisharp": 1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[0].background.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[0].background.value",
+          "pi": 2177865,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[0].chars",
+          "pi": " ",
+          "pisharp": "s"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[1].background.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[1].background.value",
+          "pi": 2177865,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[1].chars",
+          "pi": " ",
+          "pisharp": "e"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[2].background.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[2].background.value",
+          "pi": 2177865,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[2].chars",
+          "pi": " ",
+          "pisharp": "t"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[3].background.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[3].background.value",
+          "pi": 2177865,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[3].chars",
+          "pi": " ",
+          "pisharp": "t"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[4].background.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[4].background.value",
+          "pi": 2177865,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[4].chars",
+          "pi": " ",
+          "pisharp": "i"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[5].background.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[5].background.value",
+          "pi": 2177865,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[5].chars",
+          "pi": " ",
+          "pisharp": "n"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[6].background.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[6].background.value",
+          "pi": 2177865,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[6].chars",
+          "pi": " ",
+          "pisharp": "g"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[7].background.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[7].background.value",
+          "pi": 2177865,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[7].chars",
+          "pi": " ",
+          "pisharp": "s"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[8].background.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[8].background.value",
+          "pi": 2177865,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[8].chars",
+          "pi": " ",
+          "pisharp": "."
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[9].background.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[9].background.value",
+          "pi": 2177865,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[9].chars",
+          "pi": " ",
+          "pisharp": "j"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[10].background.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[10].background.value",
+          "pi": 2177865,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[10].chars",
+          "pi": " ",
+          "pisharp": "s"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[11].background.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[11].background.value",
+          "pi": 2177865,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[11].chars",
+          "pi": " ",
+          "pisharp": "o"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[12].background.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[12].background.value",
+          "pi": 2177865,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[12].chars",
+          "pi": " ",
+          "pisharp": "n"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[13].background.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[13].background.value",
+          "pi": 2177865,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[14].background.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[14].background.value",
+          "pi": 2177865,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[14].chars",
+          "pi": " ",
+          "pisharp": "c"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[15].background.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[15].background.value",
+          "pi": 2177865,
+          "pisharp": -1
+        }
+      ],
+      "scenarioErrors": {
+        "pisharp": "Terminal exited 2 before 'second'.\nsettings.json contains unsupported property 'tuiMode'.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+      },
+      "terminalMatch": false,
+      "rawMatch": false,
+      "rawDifference": {
+        "piBytes": 6151,
+        "pisharpBytes": 56,
+        "firstDifferingByte": 0
+      },
+      "comparedRenderFrameCount": 3,
+      "renderDifferences": 1,
+      "httpMatch": true,
+      "rawHttpMatch": true,
+      "rawHttpDifferenceCount": 0,
+      "rawHttpFirstDifferences": [],
+      "httpNormalization": "Only generated Main documentation, Additional docs, and Examples package-root lines in system messages are canonicalized; raw request bodies remain captured.",
+      "controlBoundaryDifferenceCount": 4,
+      "controlBoundaryFirstDifferences": [
+        {
+          "path": "$.controlBoundaries.length",
+          "pi": 3,
+          "pisharp": 1
+        },
+        {
+          "path": "$.controlBoundaries[0].length",
+          "pi": 210,
+          "pisharp": 2
+        },
+        {
+          "path": "$.controlBoundaries[0][0]",
+          "pi": "1b5b3f3230303468",
+          "pisharp": "0d"
+        },
+        {
+          "path": "$.controlBoundaries[0][1]",
+          "pi": "1b5b3e3775",
+          "pisharp": "0a"
+        }
+      ],
+      "evidence": "120x40-dark-regular.json.gz",
+      "assertionEvidence": "120x40-dark-regular.assertions.json.gz",
+      "frameEvidence": {
+        "pi": "120x40-dark-regular.pi.frames.jsonl.gz",
+        "pisharp": "120x40-dark-regular.pisharp.frames.jsonl.gz"
+      },
+      "renderEvidence": {
+        "pi": "120x40-dark-regular.pi.renders.jsonl.gz",
+        "pisharp": "120x40-dark-regular.pisharp.renders.jsonl.gz"
+      }
+    },
+    {
+      "id": "120x40-light-fullscreen",
+      "match": false,
+      "differences": 3410,
+      "firstDifferences": [
+        {
+          "path": "$.scenarioError",
+          "pisharp": "Terminal exited 2 before 'second'.\nCould not open session: Read-only file system : '/home/philip/.pisharp/sessions/76f4bf43cf9fd349/20261012T162211_1111111\n1-1111-4111-8111-111111111111.session.json.lock'\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+        },
+        {
+          "path": "$.frames.length",
+          "pi": 3,
+          "pisharp": 1
+        },
+        {
+          "path": "$.frames[0].state.activeScreen",
+          "pi": "alternate",
+          "pisharp": "normal"
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.cursorX",
+          "pi": null,
+          "pisharp": 0
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.cursorY",
+          "pi": null,
+          "pisharp": 0
+        },
+        {
+          "path": "$.frames[0].state.buffers.alternate.lines.length",
+          "pi": 40,
+          "pisharp": 0
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.cursorY",
+          "pi": 0,
+          "pisharp": 2
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[0].chars",
+          "pi": "",
+          "pisharp": "C"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[1].chars",
+          "pi": "",
+          "pisharp": "o"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[2].chars",
+          "pi": "",
+          "pisharp": "u"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[3].chars",
+          "pi": "",
+          "pisharp": "l"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[4].chars",
+          "pi": "",
+          "pisharp": "d"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[5].chars",
+          "pi": "",
+          "pisharp": " "
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[6].chars",
+          "pi": "",
+          "pisharp": "n"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[7].chars",
+          "pi": "",
+          "pisharp": "o"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[8].chars",
+          "pi": "",
+          "pisharp": "t"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[9].chars",
+          "pi": "",
+          "pisharp": " "
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[10].chars",
+          "pi": "",
+          "pisharp": "o"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[11].chars",
+          "pi": "",
+          "pisharp": "p"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[12].chars",
+          "pi": "",
+          "pisharp": "e"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[13].chars",
+          "pi": "",
+          "pisharp": "n"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[14].chars",
+          "pi": "",
+          "pisharp": " "
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[15].chars",
+          "pi": "",
+          "pisharp": "s"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[16].chars",
+          "pi": "",
+          "pisharp": "e"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[17].chars",
+          "pi": "",
+          "pisharp": "s"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[18].chars",
+          "pi": "",
+          "pisharp": "s"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[19].chars",
+          "pi": "",
+          "pisharp": "i"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[20].chars",
+          "pi": "",
+          "pisharp": "o"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[21].chars",
+          "pi": "",
+          "pisharp": "n"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[22].chars",
+          "pi": "",
+          "pisharp": ":"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[23].chars",
+          "pi": "",
+          "pisharp": " "
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[24].chars",
+          "pi": "",
+          "pisharp": "R"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[25].chars",
+          "pi": "",
+          "pisharp": "e"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[26].chars",
+          "pi": "",
+          "pisharp": "a"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[27].chars",
+          "pi": "",
+          "pisharp": "d"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[28].chars",
+          "pi": "",
+          "pisharp": "-"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[29].chars",
+          "pi": "",
+          "pisharp": "o"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[30].chars",
+          "pi": "",
+          "pisharp": "n"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[31].chars",
+          "pi": "",
+          "pisharp": "l"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[32].chars",
+          "pi": "",
+          "pisharp": "y"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[33].chars",
+          "pi": "",
+          "pisharp": " "
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[34].chars",
+          "pi": "",
+          "pisharp": "f"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[35].chars",
+          "pi": "",
+          "pisharp": "i"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[36].chars",
+          "pi": "",
+          "pisharp": "l"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[37].chars",
+          "pi": "",
+          "pisharp": "e"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[38].chars",
+          "pi": "",
+          "pisharp": " "
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[39].chars",
+          "pi": "",
+          "pisharp": "s"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[40].chars",
+          "pi": "",
+          "pisharp": "y"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[41].chars",
+          "pi": "",
+          "pisharp": "s"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[42].chars",
+          "pi": "",
+          "pisharp": "t"
+        }
+      ],
+      "scenarioErrors": {
+        "pisharp": "Terminal exited 2 before 'second'.\nCould not open session: Read-only file system : '/home/philip/.pisharp/sessions/76f4bf43cf9fd349/20261012T162211_1111111\n1-1111-4111-8111-111111111111.session.json.lock'\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+      },
+      "terminalMatch": false,
+      "rawMatch": false,
+      "rawDifference": {
+        "piBytes": 7705,
+        "pisharpBytes": 170,
+        "firstDifferingByte": 0
+      },
+      "comparedRenderFrameCount": 7,
+      "renderDifferences": 1,
+      "httpMatch": true,
+      "rawHttpMatch": true,
+      "rawHttpDifferenceCount": 0,
+      "rawHttpFirstDifferences": [],
+      "httpNormalization": "Only generated Main documentation, Additional docs, and Examples package-root lines in system messages are canonicalized; raw request bodies remain captured.",
+      "controlBoundaryDifferenceCount": 4,
+      "controlBoundaryFirstDifferences": [
+        {
+          "path": "$.controlBoundaries.length",
+          "pi": 3,
+          "pisharp": 1
+        },
+        {
+          "path": "$.controlBoundaries[0].length",
+          "pi": 281,
+          "pisharp": 2
+        },
+        {
+          "path": "$.controlBoundaries[0][0]",
+          "pi": "1b5b3f3130343968",
+          "pisharp": "0d"
+        },
+        {
+          "path": "$.controlBoundaries[0][1]",
+          "pi": "1b5b3f376c",
+          "pisharp": "0a"
+        }
+      ],
+      "evidence": "120x40-light-fullscreen.json.gz",
+      "assertionEvidence": "120x40-light-fullscreen.assertions.json.gz",
+      "frameEvidence": {
+        "pi": "120x40-light-fullscreen.pi.frames.jsonl.gz",
+        "pisharp": "120x40-light-fullscreen.pisharp.frames.jsonl.gz"
+      },
+      "renderEvidence": {
+        "pi": "120x40-light-fullscreen.pi.renders.jsonl.gz",
+        "pisharp": "120x40-light-fullscreen.pisharp.renders.jsonl.gz"
+      }
+    },
+    {
+      "id": "120x40-light-regular",
+      "match": false,
+      "differences": 6448,
+      "firstDifferences": [
+        {
+          "path": "$.scenarioError",
+          "pisharp": "Terminal exited 2 before 'second'.\nsettings.json contains unsupported property 'tuiMode'.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+        },
+        {
+          "path": "$.frames.length",
+          "pi": 3,
+          "pisharp": 1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.cursorX",
+          "pi": null,
+          "pisharp": 0
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.cursorY",
+          "pi": null,
+          "pisharp": 1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[0].background.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[0].background.value",
+          "pi": 14673900,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[0].chars",
+          "pi": " ",
+          "pisharp": "s"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[1].background.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[1].background.value",
+          "pi": 14673900,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[1].chars",
+          "pi": " ",
+          "pisharp": "e"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[2].background.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[2].background.value",
+          "pi": 14673900,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[2].chars",
+          "pi": " ",
+          "pisharp": "t"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[3].background.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[3].background.value",
+          "pi": 14673900,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[3].chars",
+          "pi": " ",
+          "pisharp": "t"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[4].background.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[4].background.value",
+          "pi": 14673900,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[4].chars",
+          "pi": " ",
+          "pisharp": "i"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[5].background.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[5].background.value",
+          "pi": 14673900,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[5].chars",
+          "pi": " ",
+          "pisharp": "n"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[6].background.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[6].background.value",
+          "pi": 14673900,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[6].chars",
+          "pi": " ",
+          "pisharp": "g"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[7].background.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[7].background.value",
+          "pi": 14673900,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[7].chars",
+          "pi": " ",
+          "pisharp": "s"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[8].background.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[8].background.value",
+          "pi": 14673900,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[8].chars",
+          "pi": " ",
+          "pisharp": "."
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[9].background.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[9].background.value",
+          "pi": 14673900,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[9].chars",
+          "pi": " ",
+          "pisharp": "j"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[10].background.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[10].background.value",
+          "pi": 14673900,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[10].chars",
+          "pi": " ",
+          "pisharp": "s"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[11].background.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[11].background.value",
+          "pi": 14673900,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[11].chars",
+          "pi": " ",
+          "pisharp": "o"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[12].background.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[12].background.value",
+          "pi": 14673900,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[12].chars",
+          "pi": " ",
+          "pisharp": "n"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[13].background.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[13].background.value",
+          "pi": 14673900,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[14].background.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[14].background.value",
+          "pi": 14673900,
+          "pisharp": -1
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[14].chars",
+          "pi": " ",
+          "pisharp": "c"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[15].background.mode",
+          "pi": "rgb",
+          "pisharp": "default"
+        },
+        {
+          "path": "$.frames[0].state.buffers.normal.lines[0].cells[15].background.value",
+          "pi": 14673900,
+          "pisharp": -1
+        }
+      ],
+      "scenarioErrors": {
+        "pisharp": "Terminal exited 2 before 'second'.\nsettings.json contains unsupported property 'tuiMode'.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+      },
+      "terminalMatch": false,
+      "rawMatch": false,
+      "rawDifference": {
+        "piBytes": 6155,
+        "pisharpBytes": 56,
+        "firstDifferingByte": 0
+      },
+      "comparedRenderFrameCount": 3,
+      "renderDifferences": 1,
+      "httpMatch": true,
+      "rawHttpMatch": true,
+      "rawHttpDifferenceCount": 0,
+      "rawHttpFirstDifferences": [],
+      "httpNormalization": "Only generated Main documentation, Additional docs, and Examples package-root lines in system messages are canonicalized; raw request bodies remain captured.",
+      "controlBoundaryDifferenceCount": 4,
+      "controlBoundaryFirstDifferences": [
+        {
+          "path": "$.controlBoundaries.length",
+          "pi": 3,
+          "pisharp": 1
+        },
+        {
+          "path": "$.controlBoundaries[0].length",
+          "pi": 210,
+          "pisharp": 2
+        },
+        {
+          "path": "$.controlBoundaries[0][0]",
+          "pi": "1b5b3f3230303468",
+          "pisharp": "0d"
+        },
+        {
+          "path": "$.controlBoundaries[0][1]",
+          "pi": "1b5b3e3775",
+          "pisharp": "0a"
+        }
+      ],
+      "evidence": "120x40-light-regular.json.gz",
+      "assertionEvidence": "120x40-light-regular.assertions.json.gz",
+      "frameEvidence": {
+        "pi": "120x40-light-regular.pi.frames.jsonl.gz",
+        "pisharp": "120x40-light-regular.pisharp.frames.jsonl.gz"
+      },
+      "renderEvidence": {
+        "pi": "120x40-light-regular.pi.renders.jsonl.gz",
+        "pisharp": "120x40-light-regular.pisharp.renders.jsonl.gz"
+      }
+    }
+  ],
+  "match": false
+}

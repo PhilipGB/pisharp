@@ -31,7 +31,7 @@ def assertions(repo, folder, fixture, run):
             # Preserve the synthetic extension trace before the next fixture resets it.
             log=Path('/tmp/pisharp-terminal-fixture-agent/project-trust-extension.log')
             saved=paired/'extension-trace.log'
-            if log.exists():
+            if not saved.exists() and log.exists():
                 shutil.copyfile(log,saved)
             command+=['--extension-log',str(saved)]
         run(f'assert-{stem}',command,folder)

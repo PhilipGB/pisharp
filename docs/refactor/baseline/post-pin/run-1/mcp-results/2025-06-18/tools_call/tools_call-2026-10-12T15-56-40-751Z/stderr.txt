@@ -1,0 +1,2 @@
+[pisharp-conformance] connected, scenario: tools_call
+[pisharp-conformance] add_numbers completed

@@ -1,0 +1,4 @@
+[pisharp-conformance] sign-in 1
+[pisharp-conformance] authorization URL: http://localhost:36593/authorize
+[pisharp-conformance] connected, scenario: auth/pre-registration
+[pisharp-conformance] test-tool completed

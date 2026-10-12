@@ -1,0 +1,19 @@
+{
+  "id": "assert-trusted-project-settings-reload",
+  "command": [
+    "python3",
+    "tools/parity/terminal/assert_trusted_project_reload.py",
+    "--report",
+    "/tmp/pisharp-pin-neutrality-20261012/run-1/terminal-trusted-project-settings-reload-paired/report.json",
+    "--capture",
+    "/tmp/pisharp-pin-neutrality-20261012/run-1/terminal-trusted-project-settings-reload-paired/120x40-dark-fullscreen.json.gz",
+    "--output",
+    "/tmp/pisharp-pin-neutrality-20261012/run-1/assert-trusted-project-settings-reload.json",
+    "--calibration-report",
+    "/tmp/pisharp-pin-neutrality-20261012/run-1/terminal-trusted-project-settings-reload-calibration/report.json"
+  ],
+  "cwd": "/home/philip/Downloads/pisharp-bootstrap/pisharp",
+  "exitCode": 0,
+  "seconds": 0.06424713134765625,
+  "logger": "stdout+stderr text"
+}

@@ -1,0 +1,12 @@
+{
+  "id": "pi-hydrate",
+  "command": [
+    "npm",
+    "run",
+    "hydrate:model-data"
+  ],
+  "cwd": "/tmp/pisharp-pin-neutrality-pi",
+  "exitCode": 0,
+  "seconds": 1.668,
+  "logger": "stdout+stderr text"
+}

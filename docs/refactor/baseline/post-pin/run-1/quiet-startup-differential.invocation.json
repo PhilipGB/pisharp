@@ -1,0 +1,15 @@
+{
+  "id": "quiet-startup-differential",
+  "command": [
+    "python3",
+    "/home/philip/Downloads/pisharp-bootstrap/pisharp/tools/parity/quiet-startup-differential.py",
+    "--pi",
+    "/tmp/pisharp-pin-neutrality-pi",
+    "--output",
+    "/tmp/pisharp-pin-neutrality-20261012/run-1/quiet-startup-differential.json"
+  ],
+  "cwd": "/home/philip/Downloads/pisharp-bootstrap/pisharp",
+  "exitCode": 0,
+  "seconds": 12.949,
+  "logger": "stdout+stderr text"
+}

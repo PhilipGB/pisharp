@@ -28,7 +28,18 @@ selection = json.loads((output / 'source-selection.json').read_text())
 actual_head = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=repo, text=True).strip()
 assert args.candidate or actual_head == selection['pisharp']
 assert subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=pi, text=True).strip() == selection['pi']
-assert subprocess.run(['git', 'diff', '--quiet'], cwd=repo).returncode == 0
+assert args.candidate or subprocess.run(['git', 'diff', '--quiet'], cwd=repo).returncode == 0
+
+def working_source():
+    changed = subprocess.check_output(['git', 'diff', '--name-only', 'HEAD'], cwd=repo, text=True).splitlines()
+    untracked = subprocess.check_output(['git', 'ls-files', '--others', '--exclude-standard'], cwd=repo, text=True).splitlines()
+    user_files = set(json.loads((repo / 'docs/refactor/baseline/starting-user-files.json').read_text()))
+    return {path: hashlib.sha256((repo/path).read_bytes()).hexdigest() if (repo/path).is_file() else None
+            for path in sorted(set(changed) | (set(untracked)-user_files))}
+
+source_before = working_source()
+if args.candidate:
+    (output / 'candidate-working-tree.patch').write_bytes(subprocess.check_output(['git', 'diff', '--binary', 'HEAD'], cwd=repo))
 env = dict(os.environ)
 env.update(TERM='xterm-256color', DOTNET_PROCESSOR_COUNT='2', UV_THREADPOOL_SIZE='2',
            OPENBLAS_NUM_THREADS='2', OMP_NUM_THREADS='2', MKL_NUM_THREADS='2',
@@ -39,7 +50,7 @@ metadata = dict(versions={name: subprocess.check_output(command, text=True).stri
                 environment={key: env[key] for key in ['TERM', 'DOTNET_PROCESSOR_COUNT',
                              'UV_THREADPOOL_SIZE', 'OPENBLAS_NUM_THREADS', 'OMP_NUM_THREADS',
                              'MKL_NUM_THREADS', 'NUGET_HTTP_CACHE_PATH']},
-                cwd=str(repo), pi=str(pi), pisharpHead=actual_head, reference=selection)
+                cwd=str(repo), pi=str(pi), pisharpHead=actual_head, workingSource=source_before, reference=selection)
 (output / 'capture-metadata.json').write_text(json.dumps(metadata, indent=2) + '\n')
 
 def run(key, command, folder, cwd=repo, timeout=1800):
@@ -63,6 +74,8 @@ setup = output / 'setup'
 assert run('restore', ['dotnet', 'restore', 'PiSharp.slnx'], setup) == 0, 'Dependency setup failed'
 assert run('terminal-install', ['npm', 'ci', '--prefix', 'tools/parity/terminal', '--ignore-scripts', '--no-audit', '--no-fund'], setup) == 0, 'Dependency setup failed'
 assert run('pi-install', ['npm', 'ci', '--ignore-scripts', '--no-audit', '--no-fund'], setup, cwd=pi) == 0, 'Pi dependency setup failed'
+if not (pi / 'packages/ai/src/providers/data/.manifest.json').exists():
+    assert run('pi-hydrate', ['npm', 'run', 'hydrate:model-data'], setup, cwd=pi) == 0, 'Pi model-data hydration failed'
 assert run('pi-build', ['npm', 'run', 'build:offline'], setup, cwd=pi) == 0, 'Pi build failed'
 assert subprocess.run(['git', 'diff', '--quiet'], cwd=pi).returncode == 0, 'Pi build changed tracked source'
 
@@ -111,5 +124,5 @@ for number in range(1, args.runs+1):
                         artifact.unlink()
                 (target / 'omitted-raw-streams.json').write_text(json.dumps(omitted, indent=2)+'\n')
         assertions(repo, folder, fixture, run)
-    assert subprocess.run(['git', 'diff', '--quiet'], cwd=repo).returncode == 0
+    assert working_source() == source_before, 'Candidate source changed while verification was running'
     print(f'COMPLETE run-{number}', flush=True)

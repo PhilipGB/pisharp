@@ -1,0 +1,11 @@
+
+ RUN  v4.1.11 /tmp/pisharp-pin-neutrality-pi/packages/coding-agent
+
+·
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  16:32:06
+   Duration  1.10s (transform 647ms, setup 0ms, import 822ms, tests 110ms, environment 0ms)
+
+Matched 18 system-theme palettes.

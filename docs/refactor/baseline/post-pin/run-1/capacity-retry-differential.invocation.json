@@ -1,0 +1,15 @@
+{
+  "id": "capacity-retry-differential",
+  "command": [
+    "python3",
+    "/home/philip/Downloads/pisharp-bootstrap/pisharp/tools/parity/capacity-retry-differential.py",
+    "--pi",
+    "/tmp/pisharp-pin-neutrality-pi",
+    "--output",
+    "/tmp/pisharp-pin-neutrality-20261012/run-1/capacity-retry-differential.json"
+  ],
+  "cwd": "/home/philip/Downloads/pisharp-bootstrap/pisharp",
+  "exitCode": 0,
+  "seconds": 10.997,
+  "logger": "stdout+stderr text"
+}

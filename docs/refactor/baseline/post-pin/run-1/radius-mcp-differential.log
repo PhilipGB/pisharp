@@ -1,0 +1,11 @@
+
+ RUN  v4.1.11 /tmp/pisharp-pin-neutrality-pi/packages/coding-agent
+
+·
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  16:31:40
+   Duration  5.26s (transform 3.55s, setup 0ms, import 5.06s, tests 27ms, environment 0ms)
+
+Matched 10 radius-mcp MCP setup scenarios.

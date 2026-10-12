@@ -3,12 +3,12 @@
 - **Baseline PiSharp:** `064bcc7b90344cffde595f9aca1c5b850cefe567` (untouched main branch point).
 - **Frozen Pi:** `ee409a85f6ad92bf8c6ab8ed735c6cd24f2e749e`; authority: execution-ledger source note, corroborated by latest TODO/trust-startup evidence.
 - **Branch:** `refactor/architecture-maintainability`.
-- **Phase:** Stage 1 complete; this is Commit 0. Stage 2 starts only after this checkpoint is confirmed pushed.
+- **Phase:** Stage 2 verified; push the pin checkpoint before the pilot. Commit 0 `f77f720ae8bf2d1de698d336efa9665dbf4d23a1` is remotely verified.
 - **Pilot:** coding tools, frozen hotspot H09. See `baseline/pilot-decision.json`.
-- **Completed slices:** untouched behavioral baseline and architectural inventory only; no product/test source changed.
-- **Active slice:** permanent Pi-reference mechanism and its neutrality comparison.
+- **Completed slices:** untouched behavioral baseline, architectural inventory and neutral Pi-reference infrastructure; no product source changed.
+- **Active slice:** permanent Pi-reference mechanism verified against all 1,858 frozen identities. Nine added Python tests pass; Commit 1 must be pushed before H09 characterization.
 - **Latest observed main:** `064bcc7b90344cffde595f9aca1c5b850cefe567`; no divergence or merge conflicts at the session-start/checkpoint queries.
-- **Blockers:** none. Push failure is a durability blocker; stop before Stage 2 if this commit is not remote.
+- **Blockers:** none. A required push failure is a durability blocker; stop before the pilot if the pin checkpoint is not remote.
 
 ## Verification and baseline state
 
@@ -20,7 +20,7 @@ has invalid boolean criteria and is classified baseline-unrunnable. All 33
 terminal fixtures cover 68 declared matrix cases per pass, both calibration and
 paired. All 13 applicable semantic assertion invocations pass. The stable index
 has 1,858 identities (1,353 .NET display groups preserve all 1,356 data rows).
-Four terminal cases are baseline-flaky; exact outcome sets are retained. Known
+Four terminal cases are baseline-flaky; exact outcome sets are retained. Post-pin verification preserves all 1,858 identities, with nine additional passing Python tests (47 total), all 66 terminal reports/136 cases and all 13 semantic assertions. See `baseline/post-pin/README.md` for interrupted/setup attempts and exact comparison. Known
 regular-mode/presentation gaps and the malformed Markdown fixture remain.
 
 Optional full coverage collection caused Coverlet tracker shutdown errors in
@@ -69,14 +69,14 @@ execution direct; retain Pi-specific semantics. No new dependency lockfiles.
 
 ## Exact next action
 
-Confirm Commit 0 exists on `origin/refactor/architecture-maintainability`, then
-implement one permanent Pi SHA configuration and checkout-verification/acquisition
-entry point. Wire every live Pi differential/terminal/probe entry point to reject
-mismatched (or tracked-dirty) checkouts; preserve historical evidence pins.
-Document intentional bump procedure under `docs/parity/`. Re-run the same logical
-baseline scope, compare against `baseline/semantic-baseline.json` using the
-preserved parser, and save pin-neutrality results. Commit/push this as Commit 1
-only after neutrality is demonstrated. Then characterize and refactor H09 pilot.
+Commit and push the verified Pi-reference infrastructure and `baseline/post-pin/`
+evidence as Commit 1; verify its remote SHA before changing product code. Then add
+H09 characterization for pre-start direct-shell cancellation (no side effect,
+null exit code, cancelled result, reusable runner) and cancelled file-mutation
+waiters. Run focused tests before splitting file reads, mutations and shell
+execution into real owners inside Runtime; retain the public CodingTools facade
+and exact MAF tool metadata. Complete the full pilot checkpoint and evaluate its
+pattern before continuing the remaining frozen hotspots.
 
 ## Exact temporary AGENTS pointer
 
