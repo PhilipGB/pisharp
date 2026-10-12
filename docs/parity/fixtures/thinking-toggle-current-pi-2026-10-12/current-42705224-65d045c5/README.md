@@ -1,0 +1,7 @@
+# Thinking block visibility against current Pi
+
+Pi `4270522473e677ddba7b093caa0064a3df51d459` and PiSharp `65d045c5ff99e8c289b2cddb75cf6309a5879fdd` were compared with the [`thinking-toggle` PTY fixture](../../../../../tools/parity/terminal/fixtures/thinking-toggle.json). Exact-head Linux CI [38203758189](https://github.com/PhilipGB/pisharp/actions/runs/38203758189) passed on the PiSharp source commit: Node 24/24, Python 38/38, format verification, warnings-as-errors build, and .NET 1,343/1,343 with zero skips.
+
+The fixture streams existing reasoning, hides it with `Ctrl+T`, reveals the retained block, hides it again, restarts PiSharp, verifies the saved hidden preference on a new response, and reveals that response's reasoning. All named checkpoint text matches Pi, including the hidden `Thinking...` placeholder and the reloaded setting. There were no scenario errors.
+
+Same-Pi calibration is exact across all 12 synchronized render frames and the HTTP trace. The paired Pi/PiSharp run also compares 12 frames, but whole-terminal equality remains open: it reports 6,404 state differences, 3,520 rendered-cell differences, and 546 control-boundary diagnostics. The four HTTP differences are the generated documentation root and the `developer` versus `system` role in the two requests; they do not change the toggle behavior. Full normalized and raw captures are in [`paired/`](paired/), with calibration in [`calibration/`](calibration/).
