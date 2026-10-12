@@ -196,7 +196,7 @@ public sealed class TerminalEditor
         string footer = "↑↓ move • enter select • escape/ctrl+c close", string? selectedKey = null,
         bool preservePanelAfterSelection = false, int optionIndent = 0, int bottomMargin = 2,
         int bottomSpacerLines = 0, bool showCurrentMarker = false,
-        CancellationToken cancellationToken = default, bool extensionDialog = false)
+        CancellationToken cancellationToken = default, bool extensionDialog = false, string headerStyle = "dim")
     {
         if (_screen is not { IsActive: true } screen || options.Count == 0) return null;
         var input = EnsureInput();
@@ -217,8 +217,8 @@ public sealed class TerminalEditor
                 {
                     var panel = extensionDialog
                         ? RenderExtensionSelectorPanel(screen, title, options, selectedIndex)
-                        : RenderInlinePanel(screen, title, options, selectedIndex, header, footer,
-                            optionIndent, bottomSpacerLines, showCurrentMarker);
+                        : RenderInlinePanel(screen.CurrentTheme, screen.TerminalWidth, title, options, selectedIndex, header, footer,
+                            optionIndent, bottomSpacerLines, showCurrentMarker, headerStyle);
                     if (extensionDialog)
                         screen.SetStartupPanel(panel, panel.Count - 1, screen.TerminalWidth + 1, cursorVisible: false);
                     else
@@ -271,7 +271,8 @@ public sealed class TerminalEditor
         int selectedIndex = 0)
     {
         if (_screen is not { IsActive: true } screen || options.Count == 0) return;
-        var panel = RenderInlinePanel(screen, title, options, Math.Clamp(selectedIndex, 0, options.Count - 1), header, footer);
+        var panel = RenderInlinePanel(screen.CurrentTheme, screen.TerminalWidth, title, options,
+            Math.Clamp(selectedIndex, 0, options.Count - 1), header, footer);
         screen.SetEditorPanel(panel, panel.Count - 2, screen.TerminalWidth + 1, cursorVisible: false, bottomMargin: 2);
     }
 
@@ -497,12 +498,11 @@ public sealed class TerminalEditor
         else Console.WriteLine(message);
     }
 
-    private static IReadOnlyList<string> RenderInlinePanel<T>(TerminalScreen screen, string title,
+    internal static IReadOnlyList<string> RenderInlinePanel<T>(TerminalTheme theme, int width, string title,
         IReadOnlyList<TerminalSelectionOption<T>> options, int selectedIndex, IReadOnlyList<string>? header,
-        string footer, int optionIndent = 0, int bottomSpacerLines = 0, bool showCurrentMarker = false)
+        string footer, int optionIndent = 0, int bottomSpacerLines = 0, bool showCurrentMarker = false,
+        string headerStyle = "dim")
     {
-        var width = screen.TerminalWidth;
-        var theme = screen.CurrentTheme;
         var lines = new List<string> { PanelBorder(theme, width) };
         var titleRows = TerminalSafeText.Normalize(title).Split('\n');
         for (var index = 0; index < titleRows.Length; index++)
@@ -515,7 +515,7 @@ public sealed class TerminalEditor
         if (header is not null)
         {
             foreach (var row in header)
-                lines.Add(row.Length == 0 ? "" : PadPanelLine(" " + theme.Style("dim", TerminalSafeText.Normalize(row)), width));
+                lines.Add(row.Length == 0 ? "" : PadPanelLine(" " + theme.Style(headerStyle, TerminalSafeText.Normalize(row)), width));
         }
         if (options.Count == 0)
             lines.Add(PadPanelLine(" " + theme.Style("warning", "No router models are available"), width));
@@ -533,7 +533,17 @@ public sealed class TerminalEditor
                 var description = string.IsNullOrWhiteSpace(option.Description)
                     ? "" : TerminalSafeText.Normalize(option.Description);
                 var primary = new string(' ', Math.Max(0, optionIndent)) + marker + current + label;
-                if (description.Length == 0)
+                if (showCurrentMarker)
+                {
+                    var styledMarker = selected ? theme.Style("accent", marker) : marker;
+                    var styledLabel = theme.Style(selected ? "accent" : "text", label);
+                    var styledPrimary = new string(' ', Math.Max(0, optionIndent)) + styledMarker + current + styledLabel;
+                    if (description.Length > 0)
+                        styledPrimary += theme.Style("muted",
+                            new string(' ', Math.Max(2, labelWidth - TerminalTextLayout.Width(label) + 2)) + description);
+                    lines.Add(PadPanelLine(styledPrimary, width));
+                }
+                else if (description.Length == 0)
                     lines.Add(selected ? theme.Style("accent", primary) : primary);
                 else if (selected)
                     lines.Add(theme.Style("accent", marker + label.PadRight(labelWidth) + "  " + description));

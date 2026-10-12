@@ -11,6 +11,39 @@ namespace PiSharp.Tests;
 public sealed class TerminalScreenTests
 {
     [Fact]
+    public void TrustSelectorUsesMutedDetailsAndSeparatelyStyledCurrentAndSelectedRows()
+    {
+        var theme = TerminalThemeCatalog.LoadBuiltIn("dark", TerminalColorMode.TrueColor);
+        const string cwd = "/workspace/project";
+        const string parent = "/workspace";
+        var options = new[]
+        {
+            new TerminalSelectionOption<string>("trust", "trust", "Trust"),
+            new TerminalSelectionOption<string>("parent", "parent", $"Trust parent folder ({parent})"),
+            new TerminalSelectionOption<string>("deny", "deny", "Do not trust", IsCurrent: true)
+        };
+        var header = new[] { cwd, "", "Saved decision: untrusted", "Current session: untrusted", "" };
+
+        var currentSelection = TerminalEditor.RenderInlinePanel(theme, 100, "\nProject trust", options,
+            selectedIndex: 2, header, "↑↓ navigate  enter save  escape/ctrl+c cancel", optionIndent: 1,
+            bottomSpacerLines: 1, showCurrentMarker: true, headerStyle: "muted");
+        var currentText = string.Join('\n', currentSelection);
+
+        Assert.Contains(" " + theme.Style("muted", cwd), currentText);
+        Assert.Contains(" " + theme.Style("muted", "Saved decision: untrusted"), currentText);
+        Assert.Contains(" " + theme.Style("muted", "Current session: untrusted"), currentText);
+        Assert.Contains(theme.Style("accent", "→ ") + theme.Style("accent", "✓ ") +
+            theme.Style("accent", "Do not trust"), currentText);
+        Assert.Contains("     " + theme.Style("text", "Trust"), currentText);
+
+        var parentSelection = TerminalEditor.RenderInlinePanel(theme, 100, "\nProject trust", options,
+            selectedIndex: 1, header, "↑↓ navigate  enter save  escape/ctrl+c cancel", optionIndent: 1,
+            bottomSpacerLines: 1, showCurrentMarker: true, headerStyle: "muted");
+        Assert.Contains(" " + theme.Style("accent", "→ ") + "  " +
+            theme.Style("accent", $"Trust parent folder ({parent})"), string.Join('\n', parentSelection));
+    }
+
+    [Fact]
     public void DeferredInitialRenderIncludesStartupOutputAndConfiguredFooter()
     {
         using var output = new StringWriter();

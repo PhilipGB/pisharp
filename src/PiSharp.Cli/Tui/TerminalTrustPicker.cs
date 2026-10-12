@@ -28,7 +28,8 @@ internal sealed class TerminalTrustPicker(TerminalEditor editor)
             optionIndent: 1,
             bottomMargin: 2,
             bottomSpacerLines: 1,
-            showCurrentMarker: true);
+            showCurrentMarker: true,
+            headerStyle: "muted");
         if (selected is null) return null;
 
         await trustStore.SetManyAsync(selected.Option.Value.Updates, cancellationToken);
