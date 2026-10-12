@@ -60,7 +60,7 @@ def capture(folder):
         key = record['id']
         if '.invalid-attempt.' in invocation.name or '.before-pi-build.' in invocation.name:
             continue
-        if key in ['build', 'format', 'mcp'] or key.startswith('assert-') or key.endswith('differential') or 'differential-' in key:
+        if key in ['build', 'format', 'mcp', 'docs-paths'] or key.startswith('assert-') or key.endswith('differential') or 'differential-' in key:
             add(out, 'suite/'+key, dict(outcome='pass' if record['exitCode']==0 else 'fail', skipped=False, skipReason=None))
         if key.startswith('terminal-'):
             report = folder/key/'report.json'

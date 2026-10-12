@@ -35,3 +35,9 @@ no separate architecture runner or test package is required. Core may reference 
 production project; Runtime may reference Core; CLI may reference Runtime/Core.
 Generic MAF, MEAI and MCP execution/protocol dependencies belong in Runtime, while
 provider-specific SDKs belong in CLI.
+
+[Repository verification](development/verification.md) includes tracked-path
+documentation validation in normal Linux CI. DocumentationPathTests exercises
+real Git/Python fixtures, including a local-but-untracked target that must fail.
+Historical receipts distinguish committed summaries from unavailable local raw
+evidence; the configured Pi reference remains the current verification mechanism.

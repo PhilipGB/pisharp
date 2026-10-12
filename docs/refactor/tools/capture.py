@@ -88,6 +88,8 @@ for number in range(1, args.runs+1):
     run('node', ['node', '--test', '--test-reporter=tap', 'terminal-state.test.mjs'], folder,
         cwd=repo / 'tools/parity/terminal')
     run('python', ['python3', '-m', 'unittest', 'discover', '-s', 'tools/parity/terminal', '-p', 'test_*.py', '-v'], folder)
+    if args.candidate:
+        run('docs-paths', ['python3', 'tools/validate_doc_paths.py'], folder)
     run('mcp', ['node', 'tools/parity/mcp-conformance/run.mjs', '--keep-results'], folder)
     # The conformance launcher preserves its raw per-scenario JSON under /tmp.
     # Copy the result tree into the capture directory without mutating its baseline.

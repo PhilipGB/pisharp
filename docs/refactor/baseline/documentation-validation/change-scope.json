@@ -1,0 +1,8 @@
+{
+  "productionChanged": false,
+  "testMoves": [],
+  "invocationMappings": [],
+  "captureChange": "Additional candidate docs-paths suite; original baseline invocations remain",
+  "parserChange": "Only recognize new suite identity; old parser values verified unchanged",
+  "verification": "Ten focused architecture/documentation rows, format, warnings-as-errors build, direct tracked-path validator"
+}
