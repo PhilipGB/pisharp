@@ -1,5 +1,6 @@
 {
   "id": "legacy-project-skills-reload",
+  "assertionFrames": ["completion-disabled-before-reload", "reload", "completion-enabled-after-reload"],
   "workingDirectory": "legacy-skills-reload-project",
   "settings": {
     "quietStartup": true
