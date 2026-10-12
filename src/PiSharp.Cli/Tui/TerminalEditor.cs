@@ -2,6 +2,7 @@ namespace PiSharp.Cli.Tui;
 
 internal sealed record TerminalProgressState(string Message, double? Ratio = null, string? Detail = null);
 internal readonly record struct TerminalProgressOutcome<T>(bool Cancelled, T? Value);
+internal enum TerminalLoginInputAction { CopyAuthorizationUrl, Cancel }
 
 /// <summary>Normal-screen terminal editor. Leaves transcript in the terminal scrollback.</summary>
 public sealed class TerminalEditor
@@ -39,8 +40,29 @@ public sealed class TerminalEditor
     public string Hotkeys => _keymap.FormatHotkeys();
     internal string? GetDisplayKeys(string action) => _keymap.GetDisplayKeys(action);
     internal TerminalTheme CurrentTheme => _screen?.CurrentTheme ?? TerminalTheme.Default;
-    internal bool TryReadLoginAbort() => EnsureInput().TryRead(50, out var input) &&
-        input.Key is { } key && _keymap.Matches("app.interrupt", key);
+    internal string? ActiveAuthorizationUrl => _screen?.ActiveAuthorizationUrl;
+    internal bool IsScreenActive => _screen is { IsActive: true };
+    internal bool PresentProviderAuthorizationUrl(string providerId, string providerName,
+        string message, Uri authorizationUrl) => _screen?.AppendProviderAuthorizationNotification(
+            providerId, providerName, message, authorizationUrl,
+            _keymap.GetDisplayKeys("app.message.copy"), _keymap.GetDisplayKeys("app.interrupt")) == true;
+    internal void ClearAuthorizationUrl(string owner) => _screen?.ClearAuthorizationUrl(owner);
+
+    internal TerminalLoginInputAction? TryReadLoginAction()
+    {
+        if (!EnsureInput().TryRead(50, out var input)) return null;
+        if (input.Mouse is { } mouse)
+        {
+            var result = _screen?.HandleMouse(mouse) ?? default;
+            return result.Copy ? TerminalLoginInputAction.CopyAuthorizationUrl : null;
+        }
+        if (input.Key is not { } key) return null;
+        if (_keymap.Matches("tui.select.cancel", key) || _keymap.Matches("app.interrupt", key) ||
+            _keymap.Matches("app.clear", key))
+            return TerminalLoginInputAction.Cancel;
+        if (_keymap.Matches("app.message.copy", key)) return TerminalLoginInputAction.CopyAuthorizationUrl;
+        return null;
+    }
 
     public void ReloadKeybindings()
     {
@@ -280,7 +302,7 @@ public sealed class TerminalEditor
     internal async Task<IReadOnlyList<string>?> PromptSequenceAsync(string title,
         IReadOnlyList<(string Message, string? Placeholder)> prompts, bool preservePanelAfterSubmit = false,
         bool preservePanelOnCancel = false, CancellationToken cancellationToken = default,
-        bool extensionDialog = false)
+        bool extensionDialog = false, Func<string, Task>? dispatchApplicationAction = null)
     {
         if (prompts.Count == 0) return [];
         if (_screen is not { IsActive: true } screen)
@@ -389,6 +411,15 @@ public sealed class TerminalEditor
                         needsRender = true;
                         continue;
                     }
+                    if (next.Mouse is { } mouse)
+                    {
+                        var mouseResult = _screen?.HandleMouse(mouse) ?? default;
+                        if (mouseResult.Copy && _screen?.ActiveAuthorizationUrl is not null &&
+                            dispatchApplicationAction is not null)
+                            await dispatchApplicationAction("app.message.copy");
+                        needsRender = true;
+                        continue;
+                    }
                     if (next.IsEndOfStream)
                     {
                         preservePanel = preservePanelOnCancel;
@@ -399,6 +430,14 @@ public sealed class TerminalEditor
                     {
                         preservePanel = preservePanelOnCancel;
                         return null;
+                    }
+                    if (dispatchApplicationAction is not null && next.Key is { } copyKey &&
+                        _keymap.Matches("app.message.copy", copyKey) &&
+                        _screen?.ActiveAuthorizationUrl is not null)
+                    {
+                        await dispatchApplicationAction("app.message.copy");
+                        needsRender = true;
+                        continue;
                     }
                     if (next.Key is { } submit && submit.Key == ConsoleKey.Enter)
                     {
@@ -1208,20 +1247,24 @@ public sealed class TerminalEditor
             if (next.Mouse is { } mouse)
             {
                 var result = _screen?.HandleMouse(mouse) ?? default;
-                if (result.Copy && _screen?.ActiveMcpAuthorizationUrl is not null)
+                if (result.Copy && _screen?.ActiveAuthorizationUrl is not null)
                     await dispatchApplicationAction("app.message.copy");
                 continue;
             }
-            if (next.Key is not { } key || _keymap.MatchesEditorAction(key)) continue;
-            if (_keymap.Matches("app.message.copy", key))
-            {
-                if (_screen?.ActiveMcpAuthorizationUrl is not null)
-                    await dispatchApplicationAction("app.message.copy");
-                continue;
-            }
+            if (next.Key is not { } key) continue;
             if (_keymap.Matches("tui.select.cancel", key) || _keymap.Matches("app.interrupt", key) ||
                 _keymap.Matches("app.clear", key))
+            {
                 cancel();
+                continue;
+            }
+            if (_keymap.Matches("app.message.copy", key))
+            {
+                if (_screen?.ActiveAuthorizationUrl is not null)
+                    await dispatchApplicationAction("app.message.copy");
+                continue;
+            }
+            if (_keymap.MatchesEditorAction(key)) continue;
         }
     }
 

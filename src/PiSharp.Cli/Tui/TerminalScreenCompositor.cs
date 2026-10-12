@@ -41,7 +41,9 @@ internal sealed class TerminalScreenCompositor
         bool statusNotificationIsExtension = false,
         string? startupHeader = null, string? startupContent = null,
         IReadOnlyList<EditorCompletionSuggestion>? editorSuggestions = null,
-        string? workingStatus = null)
+        string? workingStatus = null,
+        string? authorizationUrlCopyStatus = null,
+        TerminalStatusNotificationKind authorizationUrlCopyStatusKind = TerminalStatusNotificationKind.Info)
     {
         var activeTheme = theme ?? TerminalTheme.Default;
         var footerHeight = height >= 5 ? 2 : height > 2 ? 1 : 0;
@@ -190,6 +192,17 @@ internal sealed class TerminalScreenCompositor
             if (height > 2 && panelBottomMargin > 1)
                 rows[^2] = activeTheme.Style("dim",
                     TerminalTranscriptViewport.Clip(Environment.CurrentDirectory, columns - 1));
+            if (authorizationUrlCopyStatus is not null && panelStart > 0)
+            {
+                var (style, prefix) = authorizationUrlCopyStatusKind switch
+                {
+                    TerminalStatusNotificationKind.Warning => ("warning", "Warning: "),
+                    TerminalStatusNotificationKind.Error => ("error", "Error: "),
+                    _ => ("dim", "")
+                };
+                rows[panelStart - 1] = activeTheme.Style(style,
+                    TerminalTranscriptViewport.Clip(" " + prefix + authorizationUrlCopyStatus, columns));
+            }
 
             var cursorRow = panelCursorRow is { } requestedRow
                 ? panelStart + requestedRow - sourceStart

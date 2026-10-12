@@ -51,8 +51,10 @@ public sealed class TerminalScreen : IDisposable
     private string? _statusNotification;
     private TerminalStatusNotificationKind _statusNotificationKind;
     private bool _statusNotificationIsExtension;
-    private string? _mcpAuthorizationServerName;
-    private string? _mcpAuthorizationUrl;
+    private string? _authorizationUrlOwner;
+    private string? _authorizationUrl;
+    private string? _authorizationUrlCopyStatus;
+    private TerminalStatusNotificationKind _authorizationUrlCopyStatusKind;
     private Func<TerminalTheme, int, bool, string>? _startupHeader;
     private Func<TerminalTheme, int, bool, string>? _startupContent;
     private bool _startupExpanded;
@@ -879,18 +881,37 @@ public sealed class TerminalScreen : IDisposable
             Environment.NewLine + Environment.NewLine + " " + text + Environment.NewLine);
     }
 
-    internal string? ActiveMcpAuthorizationUrl
+    internal string? ActiveAuthorizationUrl
     {
-        get { lock (_gate) return _mcpAuthorizationUrl; }
+        get { lock (_gate) return _authorizationUrl; }
     }
 
     internal void ClearMcpAuthorizationNotification(string serverName)
     {
+        ClearAuthorizationUrl("mcp:" + serverName);
+    }
+
+    internal void ClearAuthorizationUrl(string owner)
+    {
         lock (_gate)
         {
-            if (!string.Equals(_mcpAuthorizationServerName, serverName, StringComparison.Ordinal)) return;
-            _mcpAuthorizationServerName = null;
-            _mcpAuthorizationUrl = null;
+            if (!string.Equals(_authorizationUrlOwner, owner, StringComparison.Ordinal)) return;
+            _authorizationUrlOwner = null;
+            _authorizationUrl = null;
+            _authorizationUrlCopyStatus = null;
+        }
+    }
+
+    internal bool SetAuthorizationUrlCopyStatus(string message, TerminalStatusNotificationKind kind)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(message);
+        lock (_gate)
+        {
+            if (!_active || _authorizationUrl is null || _editorPanel is null) return false;
+            _authorizationUrlCopyStatus = TerminalSafeText.Normalize(message);
+            _authorizationUrlCopyStatusKind = kind;
+            RenderLocked();
+            return true;
         }
     }
 
@@ -898,15 +919,35 @@ public sealed class TerminalScreen : IDisposable
         string? copyKeyLabel = null, string? cancelKeyLabel = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(serverName);
+        var safeName = TerminalSafeText.Normalize(serverName);
+        AppendAuthorizationUrlNotification("mcp:" + serverName,
+            "Sign in to MCP server \"" + safeName + "\" in your browser:", null, authorizationUrl,
+            copyKeyLabel, cancelKeyLabel);
+    }
+
+    internal bool AppendProviderAuthorizationNotification(string providerId, string providerName,
+        string message, Uri authorizationUrl, string? copyKeyLabel, string? cancelKeyLabel)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(providerId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(providerName);
+        ArgumentException.ThrowIfNullOrWhiteSpace(message);
+        return AppendAuthorizationUrlNotification("provider:" + providerId,
+            "Login to " + TerminalSafeText.Normalize(providerName) + ":",
+            TerminalSafeText.Normalize(message), authorizationUrl, copyKeyLabel, cancelKeyLabel);
+    }
+
+    private bool AppendAuthorizationUrlNotification(string owner, string heading, string? message,
+        Uri authorizationUrl, string? copyKeyLabel, string? cancelKeyLabel)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(owner);
         ArgumentNullException.ThrowIfNull(authorizationUrl);
         if (!authorizationUrl.IsAbsoluteUri ||
             !(authorizationUrl.Scheme.Equals(Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase) ||
               authorizationUrl.Scheme.Equals(Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase)) ||
             string.IsNullOrEmpty(authorizationUrl.Host))
-            throw new ArgumentException("MCP authorization URL must use HTTP or HTTPS.", nameof(authorizationUrl));
+            throw new ArgumentException("Authorization URL must use HTTP or HTTPS.", nameof(authorizationUrl));
 
         var target = authorizationUrl.AbsoluteUri;
-        var safeName = TerminalSafeText.Normalize(serverName);
         var safeTarget = TerminalSafeText.Normalize(target);
         var clickHint = OperatingSystem.IsMacOS() ? "Cmd+click to open" : "Ctrl+click to open";
         var open = "\u001b]8;;" + safeTarget + "\u001b\\";
@@ -916,17 +957,20 @@ public sealed class TerminalScreen : IDisposable
             keyHints.Add(_theme.Style("dim", TerminalSafeText.Normalize(cancelKeyLabel) + " to cancel"));
         if (!string.IsNullOrWhiteSpace(copyKeyLabel))
             keyHints.Add(_theme.Style("dim", TerminalSafeText.Normalize(copyKeyLabel) + " to copy"));
-        var notification = "Sign in to MCP server \"" + safeName + "\" in your browser:\n" +
+        var notification = TerminalSafeText.Normalize(heading) + "\n" +
+            (message is null ? "" : message + "\n") +
             _theme.Style("accent", open + safeTarget + close) + "\n" +
             _theme.Style("dim", open + clickHint + close) +
             (keyHints.Count == 0 ? "" : "\n" + string.Join(" • ", keyHints)) + "\n";
         lock (_gate)
         {
-            if (!_active) return;
-            _mcpAuthorizationServerName = serverName;
-            _mcpAuthorizationUrl = target;
+            if (!_active) return false;
+            _authorizationUrlOwner = owner;
+            _authorizationUrl = target;
+            _authorizationUrlCopyStatus = null;
             _transcript.Append(notification, isError: false);
             RenderLocked();
+            return true;
         }
     }
 
@@ -1285,7 +1329,8 @@ public sealed class TerminalScreen : IDisposable
             _editorPanel, _panelCursorRow, _panelCursorColumn, _panelCursorVisible, _panelBottomMargin,
             _statusNotification, _statusNotificationKind, _statusNotificationIsExtension,
             _startupHeader?.Invoke(_theme, columns, _startupExpanded),
-            _startupContent?.Invoke(_theme, columns, _startupExpanded), _editorSuggestions, _workingStatus);
+            _startupContent?.Invoke(_theme, columns, _startupExpanded), _editorSuggestions, _workingStatus,
+            _authorizationUrlCopyStatus, _authorizationUrlCopyStatusKind);
         _scrollOffset = frame.ScrollOffset;
         _lastColumns = frame.Columns;
         _lastRows = frame.Height;

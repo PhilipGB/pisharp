@@ -4,7 +4,7 @@ namespace PiSharp.Cli.Tui;
 
 internal sealed class TerminalProviderLogin(ProviderModelRuntime runtime, TerminalEditor editor,
     string agentDirectory, Func<string, string?> environment, Func<string> workingDirectory, Func<string> currentProvider,
-    Func<Task> synchronizeCurrentProvider, Func<Task> reload)
+    Func<Task> synchronizeCurrentProvider, Func<Task> reload, Func<Task> copyAuthorizationUrl)
 {
     public async Task ShowAsync(string arguments, CancellationToken cancellationToken = default)
     {
@@ -116,14 +116,19 @@ internal sealed class TerminalProviderLogin(ProviderModelRuntime runtime, Termin
             else if (type == "oauth")
             {
                 using var cancel = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-                var interaction = new TerminalProviderOAuthInteraction(editor, provider.Id);
-                var login = runtime.LoginOAuthAsync(provider.Id, interaction, cancel.Token);
-                while (!login.IsCompleted)
+                try
                 {
-                    if (interaction.TryReadAbort()) cancel.Cancel();
-                    await Task.WhenAny(login, Task.Delay(50, cancellationToken));
+                    var interaction = new TerminalProviderOAuthInteraction(editor, provider.Id, provider.Name,
+                        copyAuthorizationUrl);
+                    var login = runtime.LoginOAuthAsync(provider.Id, interaction, cancel.Token);
+                    while (!login.IsCompleted)
+                    {
+                        if (await interaction.TryReadAbortAsync()) cancel.Cancel();
+                        await Task.WhenAny(login, Task.Delay(50, cancellationToken));
+                    }
+                    await login;
                 }
-                await login;
+                finally { editor.ClearAuthorizationUrl("provider:" + provider.Id); }
             }
             else
             {
@@ -134,7 +139,11 @@ internal sealed class TerminalProviderLogin(ProviderModelRuntime runtime, Termin
                 await runtime.LoginApiKeyAsync(provider.Id, secret);
             }
         }
-        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested) { return false; }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            editor.AppendStatusMessage("Login cancelled.", TerminalStatusNotificationKind.Warning);
+            return false;
+        }
         var status = provider.Id == "llama.cpp"
             ? $"Saved API key for llama.cpp. Credentials saved to {Path.Combine(agentDirectory, "auth.json")}"
             : $"Authenticated {provider.Id} with {type}; credential value was not displayed.";

@@ -719,7 +719,7 @@ var terminalProviderLogin = editor is null ? null : new TerminalProviderLogin(mo
     Environment.GetEnvironmentVariable,
     () => currentDirectory, () => selection.Provider.Id,
     async () => await ReplaceModelRuntime(await modelRuntime.ResolveAsync(selection.Provider.Id, selection.Model.Id), thinking, false),
-    ReloadResources);
+    ReloadResources, () => HandleEditorApplicationAction("app.message.copy"));
 void ShowModelChangeStatus(bool persistAsDefault = false)
 {
     var label = persistAsDefault
@@ -866,17 +866,20 @@ async Task CopyLastAssistantAsync()
     Console.WriteLine(selected is null ? "Copied last agent message to clipboard" : "Copied selected text to clipboard");
 }
 
-async Task CopyMcpAuthorizationUrlAsync(string authorizationUrl)
+async Task CopyAuthorizationUrlAsync(string authorizationUrl)
 {
     try
     {
         await terminalClipboard.CopyTextAsync(authorizationUrl);
-        terminalScreen?.AppendThemedStatusLine("Copied URL to clipboard");
+        if (terminalScreen?.SetAuthorizationUrlCopyStatus("Copied URL to clipboard",
+                TerminalStatusNotificationKind.Info) != true)
+            terminalScreen?.AppendThemedStatusLine("Copied URL to clipboard");
     }
     catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidOperationException)
     {
-        terminalScreen?.AppendStatusMessage("Could not copy sign-in URL to clipboard: " + error.Message,
-            TerminalStatusNotificationKind.Error);
+        var status = "Could not copy sign-in URL to clipboard: " + error.Message;
+        if (terminalScreen?.SetAuthorizationUrlCopyStatus(status, TerminalStatusNotificationKind.Error) != true)
+            terminalScreen?.AppendStatusMessage(status, TerminalStatusNotificationKind.Error);
     }
 }
 
@@ -945,8 +948,8 @@ async Task HandleEditorApplicationAction(string action)
                 else Console.Error.WriteLine($"External editor exited with status {result.ExitCode}; the draft was preserved.");
                 break;
             case "app.message.copy":
-                if (terminalScreen?.ActiveMcpAuthorizationUrl is { } authorizationUrl)
-                    await CopyMcpAuthorizationUrlAsync(authorizationUrl);
+                if (terminalScreen?.ActiveAuthorizationUrl is { } authorizationUrl)
+                    await CopyAuthorizationUrlAsync(authorizationUrl);
                 else
                     await CopyLastAssistantAsync();
                 break;
