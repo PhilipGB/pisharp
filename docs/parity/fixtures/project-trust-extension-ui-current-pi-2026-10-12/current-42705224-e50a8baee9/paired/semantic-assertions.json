@@ -1,0 +1,102 @@
+{
+  "fixture": "project-trust-extension-ui",
+  "piSha": "4270522473e677ddba7b093caa0064a3df51d459",
+  "pisharpSha": "e50a8baee9bc97d2e887077ce65cf85d605980df",
+  "paired": {
+    "pi": {
+      "chatRequests": 1,
+      "trustedProjectSkillPresent": true,
+      "systemPromptSectionOrder": [
+        "tools",
+        "rules",
+        "docs",
+        "skills",
+        "cwd"
+      ],
+      "normalizedSystemPromptSha256": "7f4100f7c700f2dcfde0929ae2fa634d7242ada53df572e8e6f782fc0da9dd6a",
+      "scenarioError": null
+    },
+    "pisharp": {
+      "chatRequests": 1,
+      "trustedProjectSkillPresent": true,
+      "systemPromptSectionOrder": [
+        "tools",
+        "rules",
+        "docs",
+        "skills",
+        "cwd"
+      ],
+      "normalizedSystemPromptSha256": "7f4100f7c700f2dcfde0929ae2fa634d7242ada53df572e8e6f782fc0da9dd6a",
+      "scenarioError": null
+    },
+    "terminalMatch": true,
+    "httpMatch": true,
+    "stateDifferences": 0,
+    "renderDifferences": 0,
+    "rawByteMatch": false,
+    "startupDialogFrames": [
+      {
+        "id": "trust-select",
+        "stateMatched": true,
+        "activeScreen": "normal"
+      },
+      {
+        "id": "trust-select-option",
+        "stateMatched": true,
+        "activeScreen": "normal"
+      },
+      {
+        "id": "trust-confirm",
+        "stateMatched": true,
+        "activeScreen": "normal"
+      }
+    ],
+    "completedAndExitFrames": {
+      "complete-prompt": true,
+      "quit": true
+    },
+    "usageDuringWork": {
+      "pi": {
+        "workingRenderFrames": 14,
+        "completedRunUsageShownWhileWorking": false
+      },
+      "pisharp": {
+        "workingRenderFrames": 3,
+        "completedRunUsageShownWhileWorking": false
+      }
+    },
+    "promptSubmission": {
+      "pi": {
+        "editorEchoMatched": true,
+        "submittedTerminalEchoMatched": true,
+        "providerUserMessage": "Inspect the trusted project instructions.",
+        "providerUserMessageMatched": true
+      },
+      "pisharp": {
+        "editorEchoMatched": true,
+        "submittedTerminalEchoMatched": true,
+        "providerUserMessage": "Inspect the trusted project instructions.",
+        "providerUserMessageMatched": true
+      }
+    },
+    "scenarioErrors": {},
+    "normalizedSystemPromptMatch": true,
+    "providerRequestDifferenceCount": 0,
+    "providerRequestDifferencePaths": [],
+    "rawProviderRequestDifferencePaths": [
+      "$.messages[0].content"
+    ]
+  },
+  "calibration": {
+    "match": true,
+    "terminalMatch": true,
+    "httpMatch": true,
+    "renderDifferences": 0
+  },
+  "pisharpExtensionTrace": [
+    "configured",
+    "trust-undecided:true",
+    "trust-decision:true",
+    "trust-ui:tui:true:Continue:true:approved"
+  ]
+}

@@ -1,6 +1,6 @@
 {
   "id": "project-trust-extension-ui",
-  "assertionFrames": ["trust-select", "trust-select-option", "trust-confirm", "complete-prompt", "quit"],
+  "assertionFrames": ["trust-select", "trust-select-option", "trust-confirm", "trust-input", "editor-echo", "send-prompt", "complete-prompt", "quit"],
   "workingDirectory": "trust-project",
   "settings": {
     "quietStartup": true,
@@ -63,8 +63,13 @@
       "expect": "fixture-model"
     },
     {
+      "id": "editor-echo",
+      "send": "Inspect the trusted project instructions.",
+      "expect": "Inspect the trusted project instructions."
+    },
+    {
       "id": "send-prompt",
-      "send": "Inspect the trusted project instructions.\r",
+      "send": "\r",
       "waitGatesAfter": ["trust-chat-request"],
       "expect": "Working",
       "quietMs": 0

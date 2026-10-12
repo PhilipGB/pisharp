@@ -116,6 +116,47 @@ def inspect_usage_during_work(capture):
     return result
 
 
+def frame_text(frame):
+    state = frame['state']
+    return '\n'.join(''.join(cell.get('chars', '') for cell in row.get('cells', []))
+                     for row in state.get('viewport', []))
+
+
+def user_message_text(message):
+    content = message.get('content', '')
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        return ''.join(part.get('text', '') for part in content if isinstance(part, dict))
+    return ''
+
+
+def inspect_prompt_submission(capture):
+    prompt = 'Inspect the trusted project instructions.'
+    result = {}
+    for name in ('pi', 'pisharp'):
+        frames = {frame['id']: frame for frame in capture[name]['frames']}
+        editor = frames.get('editor-echo')
+        submitted = frames.get('send-prompt')
+        if editor is None or submitted is None:
+            raise AssertionError(f'{name} capture omitted the editor and submitted-prompt checkpoints')
+        editor_echo = prompt in frame_text(editor)
+        submitted_echo = prompt in frame_text(submitted)
+        if not editor_echo or not submitted_echo:
+            raise AssertionError(f'{name} did not echo the prompt in both editor checkpoints')
+        request = next((request for request in capture[name]['http']
+                        if request['method'] == 'POST' and request['path'].endswith('/chat/completions')), None)
+        if request is None:
+            raise AssertionError(f'{name} did not submit a chat request')
+        user_messages = [user_message_text(message) for message in request['body'].get('messages', [])
+                         if message.get('role') == 'user']
+        if user_messages != [prompt]:
+            raise AssertionError(f'{name} provider request contained unexpected user messages: {user_messages}')
+        result[name] = dict(editorEchoMatched=True, submittedTerminalEchoMatched=True,
+                            providerUserMessage=prompt, providerUserMessageMatched=True)
+    return result
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--report', type=Path, required=True)
@@ -130,6 +171,7 @@ def main():
     startup_dialog_frames = inspect_startup_dialog_frames(capture)
     completed_and_exit_frames = inspect_completed_and_exit_frames(capture)
     usage_during_work = inspect_usage_during_work(capture)
+    prompt_submission = inspect_prompt_submission(capture)
     pi = inspect_product(capture['pi'])
     pisharp = inspect_product(capture['pisharp'])
     pi_request = next(request for request in capture['pi']['http']
@@ -169,6 +211,7 @@ def main():
                     startupDialogFrames=startup_dialog_frames,
                     completedAndExitFrames=completed_and_exit_frames,
                     usageDuringWork=usage_during_work,
+                    promptSubmission=prompt_submission,
                     scenarioErrors=case['scenarioErrors'],
                     normalizedSystemPromptMatch=normalized_system_prompt_match,
                     providerRequestDifferenceCount=len(request_difference_paths),
