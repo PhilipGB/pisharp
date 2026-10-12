@@ -8,6 +8,24 @@ public static class LocalResourcePathRules
 {
     private static readonly StringComparison s_pathComparison = OperatingSystem.IsWindows()
         ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+    private static readonly IReadOnlyDictionary<string, (string Pattern, bool Negated)> s_posixClasses =
+        new Dictionary<string, (string, bool)>(StringComparer.Ordinal)
+        {
+            ["[:alnum:]"] = ("\\p{L}\\p{Nl}\\p{Nd}", false),
+            ["[:alpha:]"] = ("\\p{L}\\p{Nl}", false),
+            ["[:ascii:]"] = ("\\x00-\\x7f", false),
+            ["[:blank:]"] = ("\\p{Zs}\\t", false),
+            ["[:cntrl:]"] = ("\\p{Cc}", false),
+            ["[:digit:]"] = ("\\p{Nd}", false),
+            ["[:graph:]"] = ("\\p{Z}\\p{C}", true),
+            ["[:lower:]"] = ("\\p{Ll}", false),
+            ["[:print:]"] = ("\\p{C}", false),
+            ["[:punct:]"] = ("\\p{P}", false),
+            ["[:space:]"] = ("\\p{Z}\\t\\r\\n\\v\\f", false),
+            ["[:upper:]"] = ("\\p{Lu}", false),
+            ["[:word:]"] = ("\\p{L}\\p{Nl}\\p{Nd}\\p{Pc}", false),
+            ["[:xdigit:]"] = ("A-Fa-f0-9", false),
+        };
 
     public static bool IsPattern(string entry) => entry.Length > 0 && entry[0] is '!' or '+' or '-';
 
@@ -93,7 +111,21 @@ public static class LocalResourcePathRules
     {
         if (pattern.Length == 0 || pattern.Length > 4096) return false;
 
-        return ExpandBracePatterns(pattern).Any(expanded => GlobMatchExpanded(value, expanded));
+        // Match minimatch's leading comment and negation handling. Resource settings already use
+        // one leading `!` as the exclusion marker, so a second one reaches this matcher as a
+        // negated minimatch pattern.
+        if (pattern[0] == '#') return false;
+        var negated = false;
+        var patternStart = 0;
+        while (patternStart < pattern.Length && pattern[patternStart] == '!')
+        {
+            negated = !negated;
+            patternStart++;
+        }
+        if (patternStart > 0) pattern = pattern[patternStart..];
+
+        var matches = ExpandBracePatterns(pattern).Any(expanded => GlobMatchExpanded(value, expanded));
+        return negated != matches;
     }
 
     private static bool GlobMatchExpanded(string value, string pattern)
@@ -236,9 +268,15 @@ public static class LocalResourcePathRules
     {
         var range = body.Split("..", StringSplitOptions.None);
         if (range.Length is < 2 or > 3) return [];
-        var step = 1;
-        if (range.Length == 3 && (!int.TryParse(range[2], System.Globalization.NumberStyles.None,
-                System.Globalization.CultureInfo.InvariantCulture, out step) || step <= 0)) return [];
+        var step = 1L;
+        if (range.Length == 3)
+        {
+            if (!long.TryParse(range[2], System.Globalization.NumberStyles.AllowLeadingSign,
+                    System.Globalization.CultureInfo.InvariantCulture, out var parsedStep)) return [];
+            if (parsedStep == long.MinValue) step = long.MaxValue;
+            else step = Math.Abs(parsedStep);
+            if (step == 0) step = 1;
+        }
 
         if (range[0].Length == 1 && range[1].Length == 1 && char.IsAsciiLetter(range[0][0]) &&
             char.IsAsciiLetter(range[1][0]))
@@ -248,7 +286,7 @@ public static class LocalResourcePathRules
             var direction = first <= last ? 1 : -1;
             var count = Math.Abs(last - first) / step + 1;
             if (count > 256) return [];
-            return Enumerable.Range(0, count).Select(index => ((char)(first + direction * step * index)).ToString())
+            return Enumerable.Range(0, (int)count).Select(index => ((char)(first + direction * step * index)).ToString())
                 .ToArray();
         }
 
@@ -280,6 +318,10 @@ public static class LocalResourcePathRules
             return Regex.IsMatch(value, regex.ToString(), options, TimeSpan.FromMilliseconds(50));
         }
         catch (RegexMatchTimeoutException)
+        {
+            return false;
+        }
+        catch (ArgumentException)
         {
             return false;
         }
@@ -341,37 +383,7 @@ public static class LocalResourcePathRules
             else if (current == '?') regex.Append('.');
             else if (current == '[' && FindCharacterClassClose(pattern, index) is var close && close > index + 1)
             {
-                var content = pattern[(index + 1)..close];
-                var negate = content[0] == '!';
-                if (negate) content = content[1..];
-                if (content.Length == 0)
-                {
-                    regex.Append(Regex.Escape(pattern[index..(close + 1)]));
-                    index = close;
-                    continue;
-                }
-                regex.Append('[');
-                if (negate) regex.Append('^');
-                for (var contentIndex = 0; contentIndex < content.Length; contentIndex++)
-                {
-                    var character = content[contentIndex];
-                    if (IsPatternEscape(character))
-                    {
-                        if (contentIndex + 1 < content.Length)
-                        {
-                            character = content[++contentIndex];
-                            if (character is '\\' or ']' or '^' or '-') regex.Append('\\');
-                            regex.Append(character);
-                        }
-                        else regex.Append("\\\\");
-                    }
-                    else
-                    {
-                        if (character is ']' or '^') regex.Append('\\');
-                        regex.Append(character);
-                    }
-                }
-                regex.Append(']');
+                regex.Append(CompileCharacterClass(pattern[(index + 1)..close]));
                 index = close;
             }
             else regex.Append(Regex.Escape(current.ToString()));
@@ -390,9 +402,68 @@ public static class LocalResourcePathRules
                 index++;
                 continue;
             }
+            if (pattern[index] == '[' && TryGetPosixClass(pattern, index, out _, out var consumed))
+            {
+                index += consumed - 1;
+                continue;
+            }
             if (pattern[index] == ']') return index;
         }
         return -1;
+    }
+
+    private static string CompileCharacterClass(string content)
+    {
+        var negate = content.Length > 0 && content[0] is '!' or '^';
+        if (negate) content = content[1..];
+
+        var ranges = new StringBuilder();
+        var negatedRanges = new StringBuilder();
+        for (var index = 0; index < content.Length; index++)
+        {
+            if (content[index] == '[' && TryGetPosixClass(content, index, out var posixClass, out var consumed))
+            {
+                (posixClass.Negated ? negatedRanges : ranges).Append(posixClass.Pattern);
+                index += consumed - 1;
+                continue;
+            }
+
+            var character = content[index];
+            if (IsPatternEscape(character))
+            {
+                if (index + 1 < content.Length)
+                {
+                    character = content[++index];
+                    if (character is '\\' or ']' or '^' or '-') ranges.Append('\\');
+                    ranges.Append(character);
+                }
+                else ranges.Append("\\\\");
+            }
+            else
+            {
+                if (character is ']' or '^') ranges.Append('\\');
+                ranges.Append(character);
+            }
+        }
+
+        if (ranges.Length == 0 && negatedRanges.Length == 0) return "(?!)";
+        if (negatedRanges.Length == 0)
+            return "[" + (negate ? "^" : "") + ranges + "]";
+        if (ranges.Length == 0)
+            return "[" + (negate ? "" : "^") + negatedRanges + "]";
+        return "(?:[" + (negate ? "^" : "") + ranges + "]|[" + (negate ? "" : "^") + negatedRanges + "])";
+    }
+
+    private static bool TryGetPosixClass(string value, int start,
+        out (string Pattern, bool Negated) posixClass, out int consumed)
+    {
+        posixClass = default;
+        consumed = 0;
+        if (start + 1 >= value.Length || value[start] != '[' || value[start + 1] != ':') return false;
+        var close = value.IndexOf(":]", start + 2, StringComparison.Ordinal);
+        if (close < 0 || !s_posixClasses.TryGetValue(value[start..(close + 2)], out posixClass)) return false;
+        consumed = close + 2 - start;
+        return true;
     }
 
     private static bool TryGetExtGlob(string pattern, int operatorIndex, out int close)
@@ -482,14 +553,7 @@ public static class LocalResourcePathRules
         if (close < 0) return false;
 
         var content = pattern[1..close];
-        if (content.Length == 0 || content[0] == '!') return false;
-        for (var index = 0; index < content.Length; index++)
-        {
-            if (content[index] == '.') return true;
-            if (index + 2 < content.Length && content[index + 1] == '-' &&
-                content[index] <= '.' && '.' <= content[index + 2]) return true;
-        }
-        return false;
+        return content == "." || content.Length == 2 && IsPatternEscape(content[0]) && content[1] == '.';
     }
 
     private static string ExpandHome(string path)

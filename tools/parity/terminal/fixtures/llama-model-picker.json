@@ -23,6 +23,13 @@
     {
       "occurrence": 1,
       "requests": [
+        { "method": "GET", "path": "/models/sse" },
+        { "method": "POST", "path": "/models/load" }
+      ]
+    },
+    {
+      "occurrence": 1,
+      "requests": [
         { "method": "GET", "path": "/props?model=loaded-fixture-model&autoload=false" },
         { "method": "GET", "path": "/props?model=unloaded-fixture-model&autoload=false" }
       ]

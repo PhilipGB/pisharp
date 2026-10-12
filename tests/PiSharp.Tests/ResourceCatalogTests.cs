@@ -181,6 +181,7 @@ public sealed class ResourceCatalogTests
             await WriteSkill(Path.Combine(agent, "custom-skills", "disabled"), "user-disabled");
             await WriteSkill(Path.Combine(agent, "skills", "blocked", "skip"), "user-auto-skip");
             await WriteSkill(Path.Combine(agent, "skills", "blocked", "keep"), "user-auto-keep");
+            await WriteSkill(Path.Combine(agent, "skills", "blocked", "9keep"), "user-auto-numeric");
             await WriteSkill(Path.Combine(project, ".pi", "custom-skills", "project"), "project-configured");
             await WriteSkill(Path.Combine(project, ".pi", "skills", "blocked", "skip"), "project-auto-skip");
             Directory.CreateDirectory(Path.Combine(agent, "custom-prompts"));
@@ -192,7 +193,7 @@ public sealed class ResourceCatalogTests
             await File.WriteAllTextAsync(Path.Combine(project, ".pi", "custom-prompts", "project-review.md"), "Project prompt");
 
             IReadOnlyList<string> userSkills = ["custom-skills", "+skills/blocked/keep/SKILL.md",
-                "!skills/blocked/**", "-custom-skills/disabled/SKILL.md"];
+                "!skills/blocked/[[:alpha:]]*/SKILL.md", "-custom-skills/disabled/SKILL.md"];
             IReadOnlyList<string> projectSkills = ["custom-skills", "!skills/blocked/**"];
             IReadOnlyList<string> userPrompts = ["custom-prompts", "!prompts/{blocked,another-blocked}.md"];
             IReadOnlyList<string> projectPrompts = ["custom-prompts"];
@@ -201,6 +202,7 @@ public sealed class ResourceCatalogTests
                 userSkills: userSkills, projectSkills: projectSkills, userPrompts: userPrompts, projectPrompts: projectPrompts);
             Assert.Contains(untrusted.Skills, skill => skill.Name == "user-configured");
             Assert.Contains(untrusted.Skills, skill => skill.Name == "user-auto-keep");
+            Assert.Contains(untrusted.Skills, skill => skill.Name == "user-auto-numeric");
             Assert.DoesNotContain(untrusted.Skills, skill => skill.Name is "user-disabled" or "user-auto-skip" or "project-configured" or "project-auto-skip");
             Assert.Contains(untrusted.Prompts, prompt => prompt.Name == "user-review");
             Assert.DoesNotContain(untrusted.Prompts, prompt =>

@@ -9,6 +9,9 @@ public sealed class LocalResourcePathRulesTests
     [InlineData("docs/.hidden.md", "!docs/*.md", true)]
     [InlineData("docs/.hidden.md", "!docs/.*", false)]
     [InlineData("docs/.hidden.md", "!docs/[.]hidden.md", false)]
+    [InlineData("docs/.foo", "!docs/[a.]*", true)]
+    [InlineData("docs/.foo", "!docs/[.a]*", true)]
+    [InlineData("docs/.foo", "!docs/[[:punct:]]*", true)]
     [InlineData("docs/.hidden/file.md", "!docs/**", true)]
     [InlineData("docs/.hidden/file.md", "!**/.hidden/file.md", false)]
     [InlineData("docs/readme.md", "!docs/*.md", false)]
@@ -16,6 +19,9 @@ public sealed class LocalResourcePathRulesTests
     [InlineData("docs/review.json", "!docs/*.{md,json}", false)]
     [InlineData("docs/review.txt", "!docs/*.{md,json}", true)]
     [InlineData("tasks/issue-2.md", "!tasks/issue-{1..3}.md", false)]
+    [InlineData("tasks/issue-3.md", "!tasks/issue-{5..1..-2}.md", false)]
+    [InlineData("tasks/issue-4.md", "!tasks/issue-{1..5..0}.md", false)]
+    [InlineData("tasks/issue-4.md", "!tasks/issue-{1..5..2}.md", true)]
     public void GlobOverridesFollowPiMinimatchRules(string relativePath, string exclude, bool expectedEnabled)
     {
         var baseDirectory = Path.Combine(Path.GetTempPath(), "pisharp-resource-glob");
@@ -65,6 +71,44 @@ public sealed class LocalResourcePathRulesTests
         if (OperatingSystem.IsWindows()) return;
 
         var baseDirectory = Path.Combine(Path.GetTempPath(), "pisharp-resource-posix-escape");
+        var path = Path.Combine(baseDirectory, relativePath.Replace('/', Path.DirectorySeparatorChar));
+
+        Assert.Equal(expectedEnabled,
+            LocalResourcePathRules.IsEnabledByOverrides(path, [exclude], baseDirectory));
+    }
+
+    [Theory]
+    [InlineData("docs/secret.md", "!!**/secret.md", true)]
+    [InlineData("docs/other.md", "!!**/secret.md", false)]
+    [InlineData("#docs/file.md", "!#docs/*", true)]
+    [InlineData("#docs/file.md", "!\\#docs/*", false)]
+    [InlineData("docs/9item", "!docs/[[:alnum:]]*", false)]
+    [InlineData("docs/item", "!docs/[[:alpha:]]*", false)]
+    [InlineData("docs/a", "!docs/[[:ascii:]]", false)]
+    [InlineData("docs/ñ", "!docs/[[:ascii:]]", true)]
+    [InlineData("docs/ ", "!docs/[[:blank:]]", false)]
+    [InlineData("docs/\u0001", "!docs/[[:cntrl:]]", false)]
+    [InlineData("docs/abc.md", "!docs/[[:alpha:]]*.md", false)]
+    [InlineData("docs/123.md", "!docs/[[:digit:]]*.md", false)]
+    [InlineData("docs/z", "!docs/[[:graph:]]", false)]
+    [InlineData("docs/ ", "!docs/[[:graph:]]", true)]
+    [InlineData("docs/a", "!docs/[[:lower:]]", false)]
+    [InlineData("docs/\u0001", "!docs/[[:print:]]", false)]
+    [InlineData("docs/A", "!docs/[[:print:]]", true)]
+    [InlineData("docs/!", "!docs/[[:punct:]]", false)]
+    [InlineData("docs/\t", "!docs/[[:space:]]", false)]
+    [InlineData("docs/A", "!docs/[[:upper:]]", false)]
+    [InlineData("docs/_", "!docs/[[:word:]]", false)]
+    [InlineData("docs/F", "!docs/[[:xdigit:]]", false)]
+    [InlineData("docs/g", "!docs/[[:xdigit:]]", true)]
+    [InlineData("docs/a.md", "!docs/[^b].md", false)]
+    [InlineData("docs/b.md", "!docs/[^b].md", true)]
+    public void GlobOverridesFollowPiMinimatchNegationCommentsAndCharacterClasses(
+        string relativePath, string exclude, bool expectedEnabled)
+    {
+        if (OperatingSystem.IsWindows()) return;
+
+        var baseDirectory = Path.Combine(Path.GetTempPath(), "pisharp-resource-minimatch-prefix");
         var path = Path.Combine(baseDirectory, relativePath.Replace('/', Path.DirectorySeparatorChar));
 
         Assert.Equal(expectedEnabled,

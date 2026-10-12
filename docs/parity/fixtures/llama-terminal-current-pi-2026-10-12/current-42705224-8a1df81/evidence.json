@@ -1,0 +1,317 @@
+{
+  "date": "2026-10-12",
+  "piSha": "4270522473e677ddba7b093caa0064a3df51d459",
+  "piOriginMainSha": "4270522473e677ddba7b093caa0064a3df51d459",
+  "piSharpSha": "8a1df81b8f33134800957d82a1978fe43bf9685a",
+  "piSharpOriginMainSha": "8a1df81b8f33134800957d82a1978fe43bf9685a",
+  "piSharpExactHeadCi": {
+    "runId": 38185988364,
+    "url": "https://github.com/PhilipGB/pisharp/actions/runs/38185988364",
+    "conclusion": "success",
+    "headSha": "8a1df81b8f33134800957d82a1978fe43bf9685a"
+  },
+  "oracleAudit": {
+    "fromPiSha": "04566631c2b51fb688486bc1f040f60d1518c126",
+    "toPiSha": "4270522473e677ddba7b093caa0064a3df51d459",
+    "interveningCommits": [
+      "8bb180be feat(durable): code mode listing, tool search, output, models.*, grammar; tool error rule",
+      "42705224 fix(coding-agent): code mode description says schema tools resolve with their value on failure"
+    ],
+    "changedPaths": [
+      "packages/coding-agent/CHANGELOG.md",
+      "packages/coding-agent/src/extensions/codemode/tool.ts",
+      "packages/durable/CHANGELOG.md",
+      "packages/durable/README.md",
+      "packages/durable/docs/spec.md",
+      "packages/durable/src/codemode/codemode.ts",
+      "packages/durable/src/codemode/describe.ts",
+      "packages/durable/src/codemode/index.ts",
+      "packages/durable/src/codemode/models.ts",
+      "packages/durable/src/codemode/output.ts",
+      "packages/durable/src/codemode/search.ts",
+      "packages/durable/src/harness/tool.ts",
+      "packages/durable/src/harness/types.ts",
+      "packages/durable/test/codemode-describe.test.ts",
+      "packages/durable/test/codemode-models.test.ts",
+      "packages/durable/test/codemode.test.ts",
+      "packages/durable/test/harness-structured-output.test.ts"
+    ],
+    "llamaExtensionOrTestPathsChanged": false,
+    "interactiveTuiPathsChanged": false
+  },
+  "currentPiLlamaTests": {
+    "files": 2,
+    "tests": "16/16"
+  },
+  "piSharpFocusedTests": {
+    "llamaRouterAndClassifier": "36/36",
+    "huggingFaceClient": "3/3"
+  },
+  "process": {
+    "llama-classifier": {
+      "match": true,
+      "evidence": "process/llama-classifier.json"
+    },
+    "llama-router-classifier": {
+      "match": true,
+      "evidence": "process/llama-router-classifier.json"
+    },
+    "llama-router-context": {
+      "match": true,
+      "evidence": "process/llama-router-context.json"
+    }
+  },
+  "terminal": {
+    "pairedFlows": 12,
+    "flows": {
+      "llama-download-cancel": {
+        "match": true,
+        "terminalMatch": true,
+        "httpMatch": true,
+        "rawHttpMatch": true,
+        "rawMatch": false,
+        "rawDifference": {
+          "piBytes": 15778,
+          "pisharpBytes": 16548,
+          "firstDifferingByte": 2
+        },
+        "comparedRenderFrameCount": 17,
+        "renderDifferences": 0,
+        "controlBoundaryDifferenceCount": 648,
+        "scenarioErrors": {},
+        "report": "terminal/reports/llama-download-cancel.json"
+      },
+      "llama-huggingface": {
+        "match": true,
+        "terminalMatch": true,
+        "httpMatch": true,
+        "rawHttpMatch": true,
+        "rawMatch": false,
+        "rawDifference": {
+          "piBytes": 17541,
+          "pisharpBytes": 19041,
+          "firstDifferingByte": 2
+        },
+        "comparedRenderFrameCount": 21,
+        "renderDifferences": 0,
+        "controlBoundaryDifferenceCount": 699,
+        "scenarioErrors": {},
+        "report": "terminal/reports/llama-huggingface.json"
+      },
+      "llama-huggingface-home-token-file": {
+        "match": true,
+        "terminalMatch": true,
+        "httpMatch": true,
+        "rawHttpMatch": true,
+        "rawMatch": false,
+        "rawDifference": {
+          "piBytes": 17372,
+          "pisharpBytes": 18352,
+          "firstDifferingByte": 2
+        },
+        "comparedRenderFrameCount": 20,
+        "renderDifferences": 0,
+        "controlBoundaryDifferenceCount": 690,
+        "scenarioErrors": {},
+        "report": "terminal/reports/llama-huggingface-home-token-file.json"
+      },
+      "llama-huggingface-token-file": {
+        "match": true,
+        "terminalMatch": true,
+        "httpMatch": true,
+        "rawHttpMatch": true,
+        "rawMatch": false,
+        "rawDifference": {
+          "piBytes": 17372,
+          "pisharpBytes": 18381,
+          "firstDifferingByte": 2
+        },
+        "comparedRenderFrameCount": 20,
+        "renderDifferences": 0,
+        "controlBoundaryDifferenceCount": 694,
+        "scenarioErrors": {},
+        "report": "terminal/reports/llama-huggingface-token-file.json"
+      },
+      "llama-load-cancel": {
+        "match": false,
+        "terminalMatch": false,
+        "httpMatch": true,
+        "rawHttpMatch": true,
+        "rawMatch": false,
+        "rawDifference": {
+          "piBytes": 10922,
+          "pisharpBytes": 11975,
+          "firstDifferingByte": 2
+        },
+        "comparedRenderFrameCount": 12,
+        "renderDifferences": 14119,
+        "controlBoundaryDifferenceCount": 461,
+        "scenarioErrors": {},
+        "report": "terminal/reports/llama-load-cancel.json"
+      },
+      "llama-load-replace-cancel": {
+        "match": true,
+        "terminalMatch": true,
+        "httpMatch": true,
+        "rawHttpMatch": true,
+        "rawMatch": false,
+        "rawDifference": {
+          "piBytes": 10977,
+          "pisharpBytes": 11851,
+          "firstDifferingByte": 2
+        },
+        "comparedRenderFrameCount": 12,
+        "renderDifferences": 0,
+        "controlBoundaryDifferenceCount": 459,
+        "scenarioErrors": {},
+        "report": "terminal/reports/llama-load-replace-cancel.json"
+      },
+      "llama-login": {
+        "match": true,
+        "terminalMatch": true,
+        "httpMatch": true,
+        "rawHttpMatch": true,
+        "rawMatch": false,
+        "rawDifference": {
+          "piBytes": 12577,
+          "pisharpBytes": 11881,
+          "firstDifferingByte": 2
+        },
+        "comparedRenderFrameCount": 13,
+        "renderDifferences": 0,
+        "controlBoundaryDifferenceCount": 514,
+        "scenarioErrors": {},
+        "report": "terminal/reports/llama-login.json"
+      },
+      "llama-login-default": {
+        "match": true,
+        "terminalMatch": true,
+        "httpMatch": true,
+        "rawHttpMatch": true,
+        "rawMatch": false,
+        "rawDifference": {
+          "piBytes": 5153,
+          "pisharpBytes": 4744,
+          "firstDifferingByte": 2
+        },
+        "comparedRenderFrameCount": 4,
+        "renderDifferences": 0,
+        "controlBoundaryDifferenceCount": 224,
+        "scenarioErrors": {},
+        "report": "terminal/reports/llama-login-default.json"
+      },
+      "llama-manager": {
+        "match": true,
+        "terminalMatch": true,
+        "httpMatch": true,
+        "rawHttpMatch": true,
+        "rawMatch": false,
+        "rawDifference": {
+          "piBytes": 5503,
+          "pisharpBytes": 5320,
+          "firstDifferingByte": 2
+        },
+        "comparedRenderFrameCount": 4,
+        "renderDifferences": 0,
+        "controlBoundaryDifferenceCount": 237,
+        "scenarioErrors": {},
+        "report": "terminal/reports/llama-manager.json"
+      },
+      "llama-model-picker": {
+        "match": false,
+        "terminalMatch": false,
+        "httpMatch": true,
+        "rawHttpMatch": true,
+        "rawMatch": false,
+        "rawDifference": {
+          "piBytes": 20250,
+          "pisharpBytes": 20418,
+          "firstDifferingByte": 2
+        },
+        "comparedRenderFrameCount": 20,
+        "renderDifferences": 37205,
+        "controlBoundaryDifferenceCount": 785,
+        "scenarioErrors": {},
+        "report": "terminal/reports/llama-model-picker.json"
+      },
+      "llama-retry": {
+        "match": true,
+        "terminalMatch": true,
+        "httpMatch": true,
+        "rawHttpMatch": true,
+        "rawMatch": false,
+        "rawDifference": {
+          "piBytes": 6732,
+          "pisharpBytes": 6683,
+          "firstDifferingByte": 2
+        },
+        "comparedRenderFrameCount": 5,
+        "renderDifferences": 0,
+        "controlBoundaryDifferenceCount": 288,
+        "scenarioErrors": {},
+        "report": "terminal/reports/llama-retry.json"
+      },
+      "llama-unload": {
+        "match": true,
+        "terminalMatch": true,
+        "httpMatch": true,
+        "rawHttpMatch": true,
+        "rawMatch": false,
+        "rawDifference": {
+          "piBytes": 7068,
+          "pisharpBytes": 7868,
+          "firstDifferingByte": 2
+        },
+        "comparedRenderFrameCount": 7,
+        "renderDifferences": 0,
+        "controlBoundaryDifferenceCount": 330,
+        "scenarioErrors": {},
+        "report": "terminal/reports/llama-unload.json"
+      }
+    },
+    "exactTerminalAndHttpFlows": 10,
+    "httpMatches": 12,
+    "scenarioErrorCount": 0,
+    "piCanonicalRenderFrames": 155,
+    "piSharpCanonicalRenderFrames": 153,
+    "currentSamePiCalibrations": {
+      "llama-load-cancel": true,
+      "llama-model-picker": true
+    },
+    "transientRenderDifference": {
+      "flows": [
+        "llama-load-cancel",
+        "llama-model-picker"
+      ],
+      "piOnlyCanonicalFrames": 1,
+      "namedCheckpointsMatch": true,
+      "httpTracesMatch": true,
+      "description": "One Pi render shows the existing llama model list with the target row selected after the keep-loaded confirmation closes and before the loading progress overlay appears. PiSharp moves directly to the progress overlay. No checkpoint, request, model mutation, or progress value differs; this is retained as a single transient overlay-handoff presentation difference rather than normalized out of the raw render comparison.",
+      "classification": "unresolved visible transient presentation difference; raw capture retained"
+    },
+    "reportDirectory": "terminal/reports",
+    "captures": {
+      "paired": [
+        "terminal/paired/llama-load-cancel",
+        "terminal/paired/llama-model-picker"
+      ],
+      "samePiCalibration": [
+        "terminal/calibration/llama-load-cancel",
+        "terminal/calibration/llama-model-picker"
+      ]
+    }
+  },
+  "pisharpWorkingTree": {
+    "changedPathsAtRun": [
+      "docs/parity/fixtures/llama-terminal-current-pi-2026-10-09.md",
+      "docs/parity/fixtures/llama-terminal-current-pi-2026-10-11.md",
+      "src/PiSharp.Runtime/Resources/LocalResourcePathRules.cs",
+      "tests/PiSharp.Tests/LocalResourcePathRulesTests.cs",
+      "tests/PiSharp.Tests/ResourceCatalogTests.cs",
+      "tools/parity/terminal/fixtures/llama-model-picker.json",
+      "tools/parity/terminal/fixtures/resource-skill-precedence.json"
+    ],
+    "llamaSourcePathsChanged": true,
+    "note": "The 8a1df81 worktree had in-progress resource matcher changes; no llama source/test paths were modified."
+  }
+}

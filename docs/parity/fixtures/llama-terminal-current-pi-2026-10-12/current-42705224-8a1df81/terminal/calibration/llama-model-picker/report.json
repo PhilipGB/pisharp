@@ -1,0 +1,80 @@
+{
+  "piSha": "4270522473e677ddba7b093caa0064a3df51d459",
+  "pisharpSha": "8a1df81b8f33134800957d82a1978fe43bf9685a",
+  "fixture": "llama-model-picker",
+  "calibration": true,
+  "concurrentHttpGroups": [
+    {
+      "occurrence": 1,
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/models/sse"
+        },
+        {
+          "method": "POST",
+          "path": "/models/load"
+        }
+      ]
+    },
+    {
+      "occurrence": 1,
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/props?model=loaded-fixture-model&autoload=false"
+        },
+        {
+          "method": "GET",
+          "path": "/props?model=unloaded-fixture-model&autoload=false"
+        }
+      ]
+    },
+    {
+      "occurrence": 2,
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/props?model=loaded-fixture-model&autoload=false"
+        },
+        {
+          "method": "GET",
+          "path": "/props?model=unloaded-fixture-model&autoload=false"
+        }
+      ]
+    }
+  ],
+  "normalization": "Named checkpoints and stable synchronized render states are compared exactly, collapsing adjacent identical states, hidden cursor coordinates, transient loader glyphs, and in-flight Working-indicator frames. Same-Pi calibration shows fast scripted responses can finish before that animated frame is captured, making its presence and partial usage footer PTY-scheduling dependent. Raw bytes remain captured and exact-match status is reported separately. HTTP identity/count/order remain exact except within declared concurrent batches, where arrival order is unspecified. Only generated documentation package-root lines in system messages are canonicalized in HTTP comparisons. Per-checkpoint control buckets are diagnostic.",
+  "cases": [
+    {
+      "id": "100x32-dark-fullscreen",
+      "match": true,
+      "differences": 0,
+      "firstDifferences": [],
+      "scenarioErrors": {},
+      "terminalMatch": true,
+      "rawMatch": true,
+      "rawDifference": null,
+      "comparedRenderFrameCount": 20,
+      "renderDifferences": 0,
+      "httpMatch": true,
+      "rawHttpMatch": true,
+      "rawHttpDifferenceCount": 0,
+      "rawHttpFirstDifferences": [],
+      "httpNormalization": "Only generated Main documentation, Additional docs, and Examples package-root lines in system messages are canonicalized; raw request bodies remain captured.",
+      "controlBoundaryDifferenceCount": 0,
+      "controlBoundaryFirstDifferences": [],
+      "evidence": "100x32-dark-fullscreen.json.gz",
+      "assertionEvidence": "100x32-dark-fullscreen.assertions.json.gz",
+      "frameEvidence": {
+        "pi": "100x32-dark-fullscreen.pi.frames.jsonl.gz",
+        "pisharp": "100x32-dark-fullscreen.pisharp.frames.jsonl.gz"
+      },
+      "renderEvidence": {
+        "pi": "100x32-dark-fullscreen.pi.renders.jsonl.gz",
+        "pisharp": "100x32-dark-fullscreen.pisharp.renders.jsonl.gz"
+      }
+    }
+  ],
+  "match": true
+}

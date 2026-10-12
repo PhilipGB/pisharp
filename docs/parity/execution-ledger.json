@@ -888,7 +888,8 @@
         "Current Pi 42a3497d03ad17e308a2299fa824727894f2c0ec / PiSharp 9e622bcb498b00cb5e6c4990779816a0a334ffcc extension resource reload comparison: startup/reloaded skill expansion, arguments, request messages and collapsed/expanded skill panel cells match; same-Pi calibration is exact. Full terminal remains 234,939 state and 147,492 render differences. See docs/parity/fixtures/resources-skill-trust-current-pi-2026-10-10.md and current-42a3497d-9e622bcb49/paired/behavior.json.",
         "Exact current Pi 42a3497d / PiSharp dab73a74 resource reload replay: four expanded skill/template messages, arguments, collapsible skill messages and targeted collapsed/expanded rows match with no scenario errors; same-Pi calibration is exact. Broad terminal remains 234,929 state / 147,500 render differences and HTTP/raw traces differ. Current report and capture are in docs/parity/fixtures/skill-invocation-current-pi-2026-10-10/current-42a3497d-dab73a74d4/paired/.",
         "At current Pi 97195ec3 / PiSharp d8e5411, Pi package-manager resource filtering delegates glob matching to minimatch. Twelve direct current-Pi minimatch vectors verify PiSharp hidden-path, brace/range, and extglob matching. The extglob cases include @, +, ?, *, !, nested alternatives, character classes, dot-prefixed alternatives, and negation with suffixes. Local matcher/catalog filter passes 33/33; format verification and warnings-as-errors build pass; full .NET suite passes 1,289/1,289 (0 skipped), Node passes 24/24, and Python passes 37/37. Exact-head Linux CI run 38160159991 passes at d8e5411be475a0f4bc3bf3458bc46bdbc8fd40f9. POSIX escaped metacharacters and complete minimatch parity remain open; see docs/parity/fixtures/resource-path-minimatch-current-pi-2026-10-11.md.",
-        "Current Pi origin/main 04566631 / PiSharp origin/main d8e5411: live read, Bash, indirect-reader, no-reader and /reload skill-prompt assertions all pass; the five same-Pi calibrations are exact, normalized provider requests have zero differences, and scenario errors are empty. Read/Bash/indirect paired full-terminal comparisons still differ; no-reader and reload full terminal captures match. See docs/parity/fixtures/skill-prompt-current-pi-2026-10-11/current-04566631-d8e5411b/README.md. Current minimatch 10.2.6 oracle confirms POSIX escapes for literal glob metacharacters, braces, extglob delimiters, hidden dots, literal backslashes and character classes; 34 LocalResourcePathRulesTests pass. Full local validation is format/build clean, Node 24/24, Python 37/37 and .NET 1300/1300; CI for the changed matcher source is pending push. See docs/parity/fixtures/resource-path-minimatch-current-pi-2026-10-11.md."
+        "Current Pi origin/main 04566631 / PiSharp origin/main d8e5411: live read, Bash, indirect-reader, no-reader and /reload skill-prompt assertions all pass; the five same-Pi calibrations are exact, normalized provider requests have zero differences, and scenario errors are empty. Read/Bash/indirect paired full-terminal comparisons still differ; no-reader and reload full terminal captures match. See docs/parity/fixtures/skill-prompt-current-pi-2026-10-11/current-04566631-d8e5411b/README.md. Current minimatch 10.2.6 oracle confirms POSIX escapes for literal glob metacharacters, braces, extglob delimiters, hidden dots, literal backslashes and character classes; 34 LocalResourcePathRulesTests pass. Full local validation is format/build clean, Node 24/24, Python 37/37 and .NET 1300/1300; CI for the changed matcher source is pending push. See docs/parity/fixtures/resource-path-minimatch-current-pi-2026-10-11.md.",
+        "Current Pi 42705224 / PiSharp 8a1df81 matcher slice: direct matcher and ResourceCatalog tests pass 75/75 for minimatch comments/negation, POSIX classes, class negation, hidden-dot class rules, and signed/zero brace steps. The `resource-skill-precedence` PTY filter uses `[[:alpha:]]`; alphabetic-parent skill is absent, the numeric control remains, prompt expansion and provider request match, and the full normalized terminal/HTTP report plus same-Pi calibration pass with zero scenario errors. Current Pi package version is minimatch 10.2.6. Evidence and captures: docs/parity/fixtures/resource-path-minimatch-current-pi-2026-10-12.md and docs/parity/fixtures/resources-terminal-current-pi-2026-10-12/current-42705224-8a1df81/resource-skill-precedence/. The slice passes format verification, a warnings-as-errors build, Node 24/24, Python 37/37 and .NET 1,332/1,332 with zero skips. Commit/push and exact-head CI remain pending."
       ],
       "dependencies": []
     },
@@ -4861,42 +4862,50 @@
       "python_test_thread_limit": "All direct tools/parity Python scripts apply the shared two-thread/native-pool and CPU-affinity cap; children inherit the capped environment. tools/parity/terminal/test_thread_limits.py verifies CPU visibility."
     },
     "active_llama_family_recheck": {
-      "pi_source_head": "cdaf6c227d4718a72b59ccd02152c9614df44cfc",
-      "pisharp_origin_main_head": "e9e160c8b69e5961f735a5f5022d72266ddd5109",
-      "current_pi_llama_extension_tests": "15/15",
+      "pi_source_head": "4270522473e677ddba7b093caa0064a3df51d459",
+      "pisharp_origin_main_head": "8a1df81b8f33134800957d82a1978fe43bf9685a",
+      "pisharp_exact_head_ci": "38185988364 success",
+      "oracle_source_delta": "Two commits since 04566631; no llama extension, llama test, or interactive TUI paths changed.",
+      "current_pi_llama_related_tests": "16/16 across llama-extension.test.ts and model-runtime-classifiers.test.ts",
+      "pisharp_focused_tests": {
+        "router_and_classifier": "36/36",
+        "huggingface_client": "3/3"
+      },
       "process_differentials": {
         "llama-classifier": {
           "match": true,
-          "evidence": "docs/parity/fixtures/llama-terminal-current-pi-2026-10-11/current-cdaf6c22-e9e160c8/process/llama-classifier.json"
+          "evidence": "docs/parity/fixtures/llama-terminal-current-pi-2026-10-12/current-42705224-8a1df81/process/llama-classifier.json"
         },
         "llama-router-classifier": {
           "match": true,
-          "evidence": "docs/parity/fixtures/llama-terminal-current-pi-2026-10-11/current-cdaf6c22-e9e160c8/process/llama-router-classifier.json"
+          "evidence": "docs/parity/fixtures/llama-terminal-current-pi-2026-10-12/current-42705224-8a1df81/process/llama-router-classifier.json"
         },
         "llama-router-context": {
           "match": true,
-          "evidence": "docs/parity/fixtures/llama-terminal-current-pi-2026-10-11/current-cdaf6c22-e9e160c8/process/llama-router-context.json"
+          "evidence": "docs/parity/fixtures/llama-terminal-current-pi-2026-10-12/current-42705224-8a1df81/process/llama-router-context.json"
         }
       },
       "paired_terminal_flows": 12,
-      "paired_render_frames": 155,
-      "paired_render_differences": 0,
+      "paired_pi_render_frames": 155,
+      "paired_pisharp_render_frames": 153,
+      "exact_terminal_render_flows": 10,
+      "transient_overlay_handoff_differences": [
+        "llama-load-cancel",
+        "llama-model-picker"
+      ],
       "paired_http_matches": 12,
       "paired_scenario_errors": 0,
       "paired_raw_byte_identical_flows": 0,
-      "paired_control_boundary_differences": 6054,
-      "same_pi_calibration_flows": 12,
-      "same_pi_calibration_render_frames": 155,
-      "same_pi_calibration_render_differences": 0,
-      "same_pi_calibration_pi_head": "ea448f454af474f3e2fe9733b331e17b0662f5d6",
-      "same_pi_calibration_basis": "The Pi delta through cdaf6c22 changes only packages/durable, outside the normal coding-agent paths exercised by the fixtures.",
-      "evidence": "docs/parity/fixtures/llama-terminal-current-pi-2026-10-11/current-cdaf6c22-e9e160c8/evidence.json"
+      "current_pi_same_head_calibration_flows": 2,
+      "current_pi_same_head_calibration_matches": 2,
+      "terminal_difference_classification": "Two flows retain one visible Pi-only manager-list render between the keep-loaded confirmation and the progress overlay. Named checkpoints, progress values, HTTP requests, and model mutations match. Same-head calibration confirms the frame is deterministic Pi behavior; this remains an unresolved terminal-presentation discrepancy, with full captures retained.",
+      "evidence": "docs/parity/fixtures/llama-terminal-current-pi-2026-10-12/current-42705224-8a1df81/evidence.json"
     }
   },
   "execution_policy": {
-    "updated": "2026-10-10",
+    "updated": "2026-10-12",
     "priority": [
-      "Continue Resources / instructions and trust at Pi 42a3497d03ad17e308a2299fa824727894f2c0ec and PiSharp dab73a74d4fb762c78365ec4e58296370303ebc0: current trust callback, protected-skill, normalized-prompt and dialog-frame behavior matches; four request projection differences are closed. Fix the full-screen editor echo, user-message presentation and standalone usage-line mismatch, then continue trusted-project settings, resource/reload lifecycle, precedence and startup presentation.",
+      "Publish the verified minimatch compatibility slice against Pi 4270522473e677ddba7b093caa0064a3df51d459 / PiSharp 8a1df81b8f33134800957d82a1978fe43bf9685a. Focused matcher/catalog tests pass 75/75, resource-precedence PTY/calibration is exact, format and warnings-as-errors build pass, Node is 24/24, Python is 37/37, and .NET is 1,332/1,332 with zero skips. Verify post-push exact-head CI, then continue the trust UI and remaining resource/reload/startup differentials.",
       "Continue the highest-leverage unresolved ledger families, including official MCP conformance and broad interactive/terminal parity.",
       "Refresh both repositories at family boundaries and complete a fresh final source audit, required evidence and architecture-risk reconciliation before declaring parity."
     ],

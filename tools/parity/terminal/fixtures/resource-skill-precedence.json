@@ -48,8 +48,9 @@
     ]
   },
   "projectFiles": {
-    "resource-project/.pi/settings.json": "{\"skills\":[\"custom-skills\"]}",
+    "resource-project/.pi/settings.json": "{\"skills\":[\"custom-skills\",\"!custom-skills/[[:alpha:]]*/alpha-only/SKILL.md\"]}",
     "resource-project/.pi/custom-skills/project-only/SKILL.md": "---\nname: project-only\ndescription: Project-only skill\n---\nPROJECT-ONLY-BODY",
+    "resource-project/.pi/custom-skills/group/alpha-only/SKILL.md": "---\nname: alpha-only\ndescription: Filtered by the POSIX alpha class\n---\nFILTERED-BODY",
     "resource-project/.pi/custom-skills/shared/SKILL.md": "---\nname: shared\ndescription: project shared skill\n---\nPROJECT-SHARED-BODY",
     "resource-project/temporary-skills/temp-only/SKILL.md": "---\nname: temp-only\ndescription: Temporary-only skill\n---\nTEMP-ONLY-BODY",
     "resource-project/temporary-skills/shared/SKILL.md": "---\nname: shared\ndescription: temporary shared skill\n---\nTEMPORARY-SHARED-BODY",
@@ -80,7 +81,8 @@
     {
       "id": "loaded-resource-slash-commands",
       "send": "/skill:",
-      "expect": "unsafe&skill"
+      "expect": "unsafe&skill",
+      "notExpect": "alpha-only"
     },
     {
       "id": "clear-completion-draft",
