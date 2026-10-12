@@ -1,0 +1,11 @@
+
+ RUN  v4.1.11 /tmp/pisharp-current-pi/packages/coding-agent
+
+·
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  14:46:09
+   Duration  708ms (transform 410ms, setup 0ms, import 517ms, tests 78ms, environment 0ms)
+
+Matched 18 system-theme palettes.

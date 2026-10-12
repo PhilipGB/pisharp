@@ -1,0 +1,11 @@
+
+ RUN  v4.1.11 /tmp/pisharp-current-pi/packages/coding-agent
+
+·
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  14:46:02
+   Duration  1.01s (transform 569ms, setup 0ms, import 865ms, tests 37ms, environment 0ms)
+
+Matched 26 radius-shimmer selected shimmer frames.

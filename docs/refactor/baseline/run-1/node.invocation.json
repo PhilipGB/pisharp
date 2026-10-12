@@ -1,0 +1,13 @@
+{
+  "id": "node",
+  "command": [
+    "node",
+    "--test",
+    "--test-reporter=tap",
+    "terminal-state.test.mjs"
+  ],
+  "cwd": "/home/philip/Downloads/pisharp-bootstrap/pisharp/tools/parity/terminal",
+  "exitCode": 0,
+  "seconds": 0.266,
+  "logger": "stdout+stderr text"
+}

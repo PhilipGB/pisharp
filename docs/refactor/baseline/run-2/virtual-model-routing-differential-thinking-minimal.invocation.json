@@ -1,0 +1,16 @@
+{
+  "id": "virtual-model-routing-differential-thinking-minimal",
+  "command": [
+    "python3",
+    "/home/philip/Downloads/pisharp-bootstrap/pisharp/tools/parity/virtual-model-routing-differential.py",
+    "--pi",
+    "/tmp/pisharp-current-pi",
+    "--thinking=minimal",
+    "--output",
+    "/tmp/pisharp-refactor-20261012/baseline/run-2/virtual-model-routing-differential-thinking-minimal.json"
+  ],
+  "cwd": "/home/philip/Downloads/pisharp-bootstrap/pisharp",
+  "exitCode": 0,
+  "seconds": 2.971,
+  "logger": "stdout+stderr text"
+}

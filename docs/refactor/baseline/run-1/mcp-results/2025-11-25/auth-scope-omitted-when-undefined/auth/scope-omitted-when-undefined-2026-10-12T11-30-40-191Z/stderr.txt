@@ -1,0 +1,4 @@
+[pisharp-conformance] sign-in 1
+[pisharp-conformance] authorization URL: http://localhost:41557/authorize
+[pisharp-conformance] connected, scenario: auth/scope-omitted-when-undefined
+[pisharp-conformance] test-tool completed

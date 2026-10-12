@@ -1,0 +1,1013 @@
+{
+  "semanticFailures": {
+    "mcp/2025-11-25/auth-basic-cimd/cimd-client-id-used": {
+      "classification": "deterministic-known-failure",
+      "reason": "Matches the committed official MCP baseline and failure-classifications.json: elicitation, CIMD/DCR, or exhausted scope retry fixture.",
+      "evidence": "tools/parity/mcp-conformance/failure-classifications.json"
+    },
+    "mcp/2025-11-25/auth-scope-retry-limit/pisharp-client": {
+      "classification": "deterministic-known-failure",
+      "reason": "Matches the committed official MCP baseline and failure-classifications.json: elicitation, CIMD/DCR, or exhausted scope retry fixture.",
+      "evidence": "tools/parity/mcp-conformance/failure-classifications.json"
+    },
+    "mcp/2025-11-25/elicitation-sep1034-client-defaults/client-elicitation-sep1034-boolean-default": {
+      "classification": "deterministic-known-failure",
+      "reason": "Matches the committed official MCP baseline and failure-classifications.json: elicitation, CIMD/DCR, or exhausted scope retry fixture.",
+      "evidence": "tools/parity/mcp-conformance/failure-classifications.json"
+    },
+    "mcp/2025-11-25/elicitation-sep1034-client-defaults/client-elicitation-sep1034-enum-default": {
+      "classification": "deterministic-known-failure",
+      "reason": "Matches the committed official MCP baseline and failure-classifications.json: elicitation, CIMD/DCR, or exhausted scope retry fixture.",
+      "evidence": "tools/parity/mcp-conformance/failure-classifications.json"
+    },
+    "mcp/2025-11-25/elicitation-sep1034-client-defaults/client-elicitation-sep1034-general": {
+      "classification": "deterministic-known-failure",
+      "reason": "Matches the committed official MCP baseline and failure-classifications.json: elicitation, CIMD/DCR, or exhausted scope retry fixture.",
+      "evidence": "tools/parity/mcp-conformance/failure-classifications.json"
+    },
+    "mcp/2025-11-25/elicitation-sep1034-client-defaults/client-elicitation-sep1034-integer-default": {
+      "classification": "deterministic-known-failure",
+      "reason": "Matches the committed official MCP baseline and failure-classifications.json: elicitation, CIMD/DCR, or exhausted scope retry fixture.",
+      "evidence": "tools/parity/mcp-conformance/failure-classifications.json"
+    },
+    "mcp/2025-11-25/elicitation-sep1034-client-defaults/client-elicitation-sep1034-number-default": {
+      "classification": "deterministic-known-failure",
+      "reason": "Matches the committed official MCP baseline and failure-classifications.json: elicitation, CIMD/DCR, or exhausted scope retry fixture.",
+      "evidence": "tools/parity/mcp-conformance/failure-classifications.json"
+    },
+    "mcp/2025-11-25/elicitation-sep1034-client-defaults/client-elicitation-sep1034-string-default": {
+      "classification": "deterministic-known-failure",
+      "reason": "Matches the committed official MCP baseline and failure-classifications.json: elicitation, CIMD/DCR, or exhausted scope retry fixture.",
+      "evidence": "tools/parity/mcp-conformance/failure-classifications.json"
+    },
+    "suite/codemode-classifier-differential": {
+      "classification": "deterministic-known-harness-failure",
+      "reason": "Old probe passes empty boolean criteria. Frozen Pi rejects them before invoking the model; the probe then reads absent usage and throws. Scratch diagnostics with valid criteria succeed. The paid success/error differential is baseline-unrunnable at this pin until its input fixture is independently updated; no expectations/source changed.",
+      "evidence": [
+        "codemode-invalid-context-diagnostic.json",
+        "codemode-valid-context-diagnostic.json"
+      ]
+    },
+    "terminal/terminal-llama-load-cancel-paired/100x32-dark-fullscreen": {
+      "classification": "baseline-flaky",
+      "reason": "Unchanged source produced these different semantic state/render/HTTP match results in the two full baseline passes. Complete observed outcome set is preserved.",
+      "observedOutcomes": [
+        {
+          "httpMatch": true,
+          "outcome": "difference",
+          "renderMatch": false,
+          "scenarioErrors": {},
+          "skipReason": null,
+          "skipped": false,
+          "terminalMatch": false
+        },
+        {
+          "httpMatch": true,
+          "outcome": "match",
+          "renderMatch": true,
+          "scenarioErrors": {},
+          "skipReason": null,
+          "skipped": false,
+          "terminalMatch": true
+        }
+      ]
+    },
+    "terminal/terminal-llama-model-picker-paired/100x32-dark-fullscreen": {
+      "classification": "baseline-flaky",
+      "reason": "Unchanged source produced these different semantic state/render/HTTP match results in the two full baseline passes. Complete observed outcome set is preserved.",
+      "observedOutcomes": [
+        {
+          "httpMatch": false,
+          "outcome": "difference",
+          "renderMatch": false,
+          "scenarioErrors": {},
+          "skipReason": null,
+          "skipped": false,
+          "terminalMatch": false
+        },
+        {
+          "httpMatch": true,
+          "outcome": "difference",
+          "renderMatch": false,
+          "scenarioErrors": {},
+          "skipReason": null,
+          "skipped": false,
+          "terminalMatch": false
+        }
+      ]
+    },
+    "terminal/terminal-quiet-startup-resources-paired/120x40-dark-fullscreen": {
+      "classification": "deterministic-known-failure",
+      "reason": "Baseline terminal presentation differences in startup/resources/selectors/resumed transcript. Raw comparison reports preserve exact first state/render differences; no product scenario error or expectations were changed.",
+      "observedOutcomes": [
+        {
+          "httpMatch": true,
+          "outcome": "difference",
+          "renderMatch": false,
+          "scenarioErrors": {},
+          "skipReason": null,
+          "skipped": false,
+          "terminalMatch": false
+        }
+      ]
+    },
+    "terminal/terminal-resource-skill-prompt-no-reader-paired/120x40-dark-fullscreen": {
+      "classification": "baseline-flaky",
+      "reason": "Unchanged source produced these different semantic state/render/HTTP match results in the two full baseline passes. Complete observed outcome set is preserved.",
+      "observedOutcomes": [
+        {
+          "httpMatch": true,
+          "outcome": "difference",
+          "renderMatch": false,
+          "scenarioErrors": {},
+          "skipReason": null,
+          "skipped": false,
+          "terminalMatch": false
+        },
+        {
+          "httpMatch": true,
+          "outcome": "match",
+          "renderMatch": true,
+          "scenarioErrors": {},
+          "skipReason": null,
+          "skipped": false,
+          "terminalMatch": true
+        }
+      ]
+    },
+    "terminal/terminal-resource-skill-prompt-read-bash-paired/120x40-dark-fullscreen": {
+      "classification": "baseline-flaky",
+      "reason": "Unchanged source produced these different semantic state/render/HTTP match results in the two full baseline passes. Complete observed outcome set is preserved.",
+      "observedOutcomes": [
+        {
+          "httpMatch": true,
+          "outcome": "difference",
+          "renderMatch": false,
+          "scenarioErrors": {},
+          "skipReason": null,
+          "skipped": false,
+          "terminalMatch": false
+        },
+        {
+          "httpMatch": true,
+          "outcome": "match",
+          "renderMatch": true,
+          "scenarioErrors": {},
+          "skipReason": null,
+          "skipped": false,
+          "terminalMatch": true
+        }
+      ]
+    },
+    "terminal/terminal-selectors-settings-paired/120x40-dark-fullscreen": {
+      "classification": "deterministic-known-failure",
+      "reason": "Baseline terminal presentation differences in startup/resources/selectors/resumed transcript. Raw comparison reports preserve exact first state/render differences; no product scenario error or expectations were changed.",
+      "observedOutcomes": [
+        {
+          "httpMatch": true,
+          "outcome": "difference",
+          "renderMatch": false,
+          "scenarioErrors": {},
+          "skipReason": null,
+          "skipped": false,
+          "terminalMatch": false
+        }
+      ]
+    },
+    "terminal/terminal-selectors-settings-paired/120x40-dark-regular": {
+      "classification": "deterministic-known-failure",
+      "reason": "PiSharp already rejects tuiMode regular (documented in terminal/README.md); reports retain exit 2 plus state/render gaps.",
+      "observedOutcomes": [
+        {
+          "httpMatch": true,
+          "outcome": "difference",
+          "renderMatch": false,
+          "scenarioErrors": {
+            "pisharp": "Terminal exited 2 before 'fixture-model'."
+          },
+          "skipReason": null,
+          "skipped": false,
+          "terminalMatch": false
+        }
+      ]
+    },
+    "terminal/terminal-selectors-settings-paired/120x40-light-fullscreen": {
+      "classification": "deterministic-known-failure",
+      "reason": "Baseline terminal presentation differences in startup/resources/selectors/resumed transcript. Raw comparison reports preserve exact first state/render differences; no product scenario error or expectations were changed.",
+      "observedOutcomes": [
+        {
+          "httpMatch": true,
+          "outcome": "difference",
+          "renderMatch": false,
+          "scenarioErrors": {},
+          "skipReason": null,
+          "skipped": false,
+          "terminalMatch": false
+        }
+      ]
+    },
+    "terminal/terminal-selectors-settings-paired/120x40-light-regular": {
+      "classification": "deterministic-known-failure",
+      "reason": "PiSharp already rejects tuiMode regular (documented in terminal/README.md); reports retain exit 2 plus state/render gaps.",
+      "observedOutcomes": [
+        {
+          "httpMatch": true,
+          "outcome": "difference",
+          "renderMatch": false,
+          "scenarioErrors": {
+            "pisharp": "Terminal exited 2 before 'fixture-model'."
+          },
+          "skipReason": null,
+          "skipped": false,
+          "terminalMatch": false
+        }
+      ]
+    },
+    "terminal/terminal-selectors-settings-paired/80x24-dark-fullscreen": {
+      "classification": "deterministic-known-failure",
+      "reason": "Baseline terminal presentation differences in startup/resources/selectors/resumed transcript. Raw comparison reports preserve exact first state/render differences; no product scenario error or expectations were changed.",
+      "observedOutcomes": [
+        {
+          "httpMatch": true,
+          "outcome": "difference",
+          "renderMatch": false,
+          "scenarioErrors": {},
+          "skipReason": null,
+          "skipped": false,
+          "terminalMatch": false
+        }
+      ]
+    },
+    "terminal/terminal-selectors-settings-paired/80x24-dark-regular": {
+      "classification": "deterministic-known-failure",
+      "reason": "PiSharp already rejects tuiMode regular (documented in terminal/README.md); reports retain exit 2 plus state/render gaps.",
+      "observedOutcomes": [
+        {
+          "httpMatch": true,
+          "outcome": "difference",
+          "renderMatch": false,
+          "scenarioErrors": {
+            "pisharp": "Terminal exited 2 before 'fixture-model'."
+          },
+          "skipReason": null,
+          "skipped": false,
+          "terminalMatch": false
+        }
+      ]
+    },
+    "terminal/terminal-selectors-settings-paired/80x24-light-fullscreen": {
+      "classification": "deterministic-known-failure",
+      "reason": "Baseline terminal presentation differences in startup/resources/selectors/resumed transcript. Raw comparison reports preserve exact first state/render differences; no product scenario error or expectations were changed.",
+      "observedOutcomes": [
+        {
+          "httpMatch": true,
+          "outcome": "difference",
+          "renderMatch": false,
+          "scenarioErrors": {},
+          "skipReason": null,
+          "skipped": false,
+          "terminalMatch": false
+        }
+      ]
+    },
+    "terminal/terminal-selectors-settings-paired/80x24-light-regular": {
+      "classification": "deterministic-known-failure",
+      "reason": "PiSharp already rejects tuiMode regular (documented in terminal/README.md); reports retain exit 2 plus state/render gaps.",
+      "observedOutcomes": [
+        {
+          "httpMatch": true,
+          "outcome": "difference",
+          "renderMatch": false,
+          "scenarioErrors": {
+            "pisharp": "Terminal exited 2 before 'fixture-model'."
+          },
+          "skipReason": null,
+          "skipped": false,
+          "terminalMatch": false
+        }
+      ]
+    },
+    "terminal/terminal-startup-editor-paired/120x40-dark-fullscreen": {
+      "classification": "deterministic-known-failure",
+      "reason": "Baseline terminal presentation differences in startup/resources/selectors/resumed transcript. Raw comparison reports preserve exact first state/render differences; no product scenario error or expectations were changed.",
+      "observedOutcomes": [
+        {
+          "httpMatch": true,
+          "outcome": "difference",
+          "renderMatch": false,
+          "scenarioErrors": {},
+          "skipReason": null,
+          "skipped": false,
+          "terminalMatch": false
+        }
+      ]
+    },
+    "terminal/terminal-startup-editor-paired/120x40-dark-regular": {
+      "classification": "deterministic-known-failure",
+      "reason": "PiSharp already rejects tuiMode regular (documented in terminal/README.md); reports retain exit 2 plus state/render gaps.",
+      "observedOutcomes": [
+        {
+          "httpMatch": true,
+          "outcome": "difference",
+          "renderMatch": false,
+          "scenarioErrors": {
+            "pisharp": "Terminal exited 2 before 'fixture-model'."
+          },
+          "skipReason": null,
+          "skipped": false,
+          "terminalMatch": false
+        }
+      ]
+    },
+    "terminal/terminal-startup-editor-paired/120x40-light-fullscreen": {
+      "classification": "deterministic-known-failure",
+      "reason": "Baseline terminal presentation differences in startup/resources/selectors/resumed transcript. Raw comparison reports preserve exact first state/render differences; no product scenario error or expectations were changed.",
+      "observedOutcomes": [
+        {
+          "httpMatch": true,
+          "outcome": "difference",
+          "renderMatch": false,
+          "scenarioErrors": {},
+          "skipReason": null,
+          "skipped": false,
+          "terminalMatch": false
+        }
+      ]
+    },
+    "terminal/terminal-startup-editor-paired/120x40-light-regular": {
+      "classification": "deterministic-known-failure",
+      "reason": "PiSharp already rejects tuiMode regular (documented in terminal/README.md); reports retain exit 2 plus state/render gaps.",
+      "observedOutcomes": [
+        {
+          "httpMatch": true,
+          "outcome": "difference",
+          "renderMatch": false,
+          "scenarioErrors": {
+            "pisharp": "Terminal exited 2 before 'fixture-model'."
+          },
+          "skipReason": null,
+          "skipped": false,
+          "terminalMatch": false
+        }
+      ]
+    },
+    "terminal/terminal-startup-editor-paired/80x24-dark-fullscreen": {
+      "classification": "deterministic-known-failure",
+      "reason": "Baseline terminal presentation differences in startup/resources/selectors/resumed transcript. Raw comparison reports preserve exact first state/render differences; no product scenario error or expectations were changed.",
+      "observedOutcomes": [
+        {
+          "httpMatch": true,
+          "outcome": "difference",
+          "renderMatch": false,
+          "scenarioErrors": {},
+          "skipReason": null,
+          "skipped": false,
+          "terminalMatch": false
+        }
+      ]
+    },
+    "terminal/terminal-startup-editor-paired/80x24-dark-regular": {
+      "classification": "deterministic-known-failure",
+      "reason": "PiSharp already rejects tuiMode regular (documented in terminal/README.md); reports retain exit 2 plus state/render gaps.",
+      "observedOutcomes": [
+        {
+          "httpMatch": true,
+          "outcome": "difference",
+          "renderMatch": false,
+          "scenarioErrors": {
+            "pisharp": "Terminal exited 2 before 'fixture-model'."
+          },
+          "skipReason": null,
+          "skipped": false,
+          "terminalMatch": false
+        }
+      ]
+    },
+    "terminal/terminal-startup-editor-paired/80x24-light-fullscreen": {
+      "classification": "deterministic-known-failure",
+      "reason": "Baseline terminal presentation differences in startup/resources/selectors/resumed transcript. Raw comparison reports preserve exact first state/render differences; no product scenario error or expectations were changed.",
+      "observedOutcomes": [
+        {
+          "httpMatch": true,
+          "outcome": "difference",
+          "renderMatch": false,
+          "scenarioErrors": {},
+          "skipReason": null,
+          "skipped": false,
+          "terminalMatch": false
+        }
+      ]
+    },
+    "terminal/terminal-startup-editor-paired/80x24-light-regular": {
+      "classification": "deterministic-known-failure",
+      "reason": "PiSharp already rejects tuiMode regular (documented in terminal/README.md); reports retain exit 2 plus state/render gaps.",
+      "observedOutcomes": [
+        {
+          "httpMatch": true,
+          "outcome": "difference",
+          "renderMatch": false,
+          "scenarioErrors": {
+            "pisharp": "Terminal exited 2 before 'fixture-model'."
+          },
+          "skipReason": null,
+          "skipped": false,
+          "terminalMatch": false
+        }
+      ]
+    },
+    "terminal/terminal-startup-verbose-paired/120x40-dark-fullscreen": {
+      "classification": "deterministic-known-failure",
+      "reason": "Baseline terminal presentation differences in startup/resources/selectors/resumed transcript. Raw comparison reports preserve exact first state/render differences; no product scenario error or expectations were changed.",
+      "observedOutcomes": [
+        {
+          "httpMatch": true,
+          "outcome": "difference",
+          "renderMatch": false,
+          "scenarioErrors": {},
+          "skipReason": null,
+          "skipped": false,
+          "terminalMatch": false
+        }
+      ]
+    },
+    "terminal/terminal-startup-verbose-paired/120x40-dark-regular": {
+      "classification": "deterministic-known-failure",
+      "reason": "PiSharp already rejects tuiMode regular (documented in terminal/README.md); reports retain exit 2 plus state/render gaps.",
+      "observedOutcomes": [
+        {
+          "httpMatch": true,
+          "outcome": "difference",
+          "renderMatch": false,
+          "scenarioErrors": {
+            "pisharp": "Terminal exited 2 before 'fixture-model'."
+          },
+          "skipReason": null,
+          "skipped": false,
+          "terminalMatch": false
+        }
+      ]
+    },
+    "terminal/terminal-startup-verbose-paired/120x40-light-fullscreen": {
+      "classification": "deterministic-known-failure",
+      "reason": "Baseline terminal presentation differences in startup/resources/selectors/resumed transcript. Raw comparison reports preserve exact first state/render differences; no product scenario error or expectations were changed.",
+      "observedOutcomes": [
+        {
+          "httpMatch": true,
+          "outcome": "difference",
+          "renderMatch": false,
+          "scenarioErrors": {},
+          "skipReason": null,
+          "skipped": false,
+          "terminalMatch": false
+        }
+      ]
+    },
+    "terminal/terminal-startup-verbose-paired/120x40-light-regular": {
+      "classification": "deterministic-known-failure",
+      "reason": "PiSharp already rejects tuiMode regular (documented in terminal/README.md); reports retain exit 2 plus state/render gaps.",
+      "observedOutcomes": [
+        {
+          "httpMatch": true,
+          "outcome": "difference",
+          "renderMatch": false,
+          "scenarioErrors": {
+            "pisharp": "Terminal exited 2 before 'fixture-model'."
+          },
+          "skipReason": null,
+          "skipped": false,
+          "terminalMatch": false
+        }
+      ]
+    },
+    "terminal/terminal-startup-verbose-paired/80x24-dark-fullscreen": {
+      "classification": "deterministic-known-failure",
+      "reason": "Baseline terminal presentation differences in startup/resources/selectors/resumed transcript. Raw comparison reports preserve exact first state/render differences; no product scenario error or expectations were changed.",
+      "observedOutcomes": [
+        {
+          "httpMatch": true,
+          "outcome": "difference",
+          "renderMatch": false,
+          "scenarioErrors": {},
+          "skipReason": null,
+          "skipped": false,
+          "terminalMatch": false
+        }
+      ]
+    },
+    "terminal/terminal-startup-verbose-paired/80x24-dark-regular": {
+      "classification": "deterministic-known-failure",
+      "reason": "PiSharp already rejects tuiMode regular (documented in terminal/README.md); reports retain exit 2 plus state/render gaps.",
+      "observedOutcomes": [
+        {
+          "httpMatch": true,
+          "outcome": "difference",
+          "renderMatch": false,
+          "scenarioErrors": {
+            "pisharp": "Terminal exited 2 before 'fixture-model'."
+          },
+          "skipReason": null,
+          "skipped": false,
+          "terminalMatch": false
+        }
+      ]
+    },
+    "terminal/terminal-startup-verbose-paired/80x24-light-fullscreen": {
+      "classification": "deterministic-known-failure",
+      "reason": "Baseline terminal presentation differences in startup/resources/selectors/resumed transcript. Raw comparison reports preserve exact first state/render differences; no product scenario error or expectations were changed.",
+      "observedOutcomes": [
+        {
+          "httpMatch": true,
+          "outcome": "difference",
+          "renderMatch": false,
+          "scenarioErrors": {},
+          "skipReason": null,
+          "skipped": false,
+          "terminalMatch": false
+        }
+      ]
+    },
+    "terminal/terminal-startup-verbose-paired/80x24-light-regular": {
+      "classification": "deterministic-known-failure",
+      "reason": "PiSharp already rejects tuiMode regular (documented in terminal/README.md); reports retain exit 2 plus state/render gaps.",
+      "observedOutcomes": [
+        {
+          "httpMatch": true,
+          "outcome": "difference",
+          "renderMatch": false,
+          "scenarioErrors": {
+            "pisharp": "Terminal exited 2 before 'fixture-model'."
+          },
+          "skipReason": null,
+          "skipped": false,
+          "terminalMatch": false
+        }
+      ]
+    },
+    "terminal/terminal-thinking-toggle-paired/80x24-dark-fullscreen": {
+      "classification": "deterministic-known-failure",
+      "reason": "Baseline no-tools fixture requests differ in system/developer role defaults; captured render/state differences remain. This generic provider/TUI gap is deferred; bounded thinking-toggle tests remain protected.",
+      "observedOutcomes": [
+        {
+          "httpMatch": false,
+          "outcome": "difference",
+          "renderMatch": false,
+          "scenarioErrors": {},
+          "skipReason": null,
+          "skipped": false,
+          "terminalMatch": false
+        }
+      ]
+    },
+    "terminal/terminal-transcript-markdown-calibration/120x40-dark-fullscreen": {
+      "classification": "deterministic-known-harness-failure",
+      "reason": "Committed Markdown scenario expects second; default fixture server returns fixture reply. Same-Pi calibration fails at the same readiness condition; this fixture cannot establish a product comparison.",
+      "observedOutcomes": [
+        {
+          "httpMatch": true,
+          "outcome": "difference",
+          "renderMatch": true,
+          "scenarioErrors": {
+            "pi": "Terminal did not settle at 'second' (expected=False, absent=True, output=True, renderMatch=False).",
+            "pisharp": "Terminal did not settle at 'second' (expected=False, absent=True, output=True, renderMatch=False)."
+          },
+          "skipReason": null,
+          "skipped": false,
+          "terminalMatch": true
+        }
+      ]
+    },
+    "terminal/terminal-transcript-markdown-calibration/120x40-dark-regular": {
+      "classification": "deterministic-known-harness-failure",
+      "reason": "Committed Markdown scenario expects second; default fixture server returns fixture reply. Same-Pi calibration fails at the same readiness condition; this fixture cannot establish a product comparison.",
+      "observedOutcomes": [
+        {
+          "httpMatch": true,
+          "outcome": "difference",
+          "renderMatch": true,
+          "scenarioErrors": {
+            "pi": "Terminal did not settle at 'second' (expected=False, absent=True, output=True, renderMatch=False).",
+            "pisharp": "Terminal did not settle at 'second' (expected=False, absent=True, output=True, renderMatch=False)."
+          },
+          "skipReason": null,
+          "skipped": false,
+          "terminalMatch": true
+        }
+      ]
+    },
+    "terminal/terminal-transcript-markdown-calibration/120x40-light-fullscreen": {
+      "classification": "deterministic-known-harness-failure",
+      "reason": "Committed Markdown scenario expects second; default fixture server returns fixture reply. Same-Pi calibration fails at the same readiness condition; this fixture cannot establish a product comparison.",
+      "observedOutcomes": [
+        {
+          "httpMatch": true,
+          "outcome": "difference",
+          "renderMatch": true,
+          "scenarioErrors": {
+            "pi": "Terminal did not settle at 'second' (expected=False, absent=True, output=True, renderMatch=False).",
+            "pisharp": "Terminal did not settle at 'second' (expected=False, absent=True, output=True, renderMatch=False)."
+          },
+          "skipReason": null,
+          "skipped": false,
+          "terminalMatch": true
+        }
+      ]
+    },
+    "terminal/terminal-transcript-markdown-calibration/120x40-light-regular": {
+      "classification": "deterministic-known-harness-failure",
+      "reason": "Committed Markdown scenario expects second; default fixture server returns fixture reply. Same-Pi calibration fails at the same readiness condition; this fixture cannot establish a product comparison.",
+      "observedOutcomes": [
+        {
+          "httpMatch": true,
+          "outcome": "difference",
+          "renderMatch": true,
+          "scenarioErrors": {
+            "pi": "Terminal did not settle at 'second' (expected=False, absent=True, output=True, renderMatch=False).",
+            "pisharp": "Terminal did not settle at 'second' (expected=False, absent=True, output=True, renderMatch=False)."
+          },
+          "skipReason": null,
+          "skipped": false,
+          "terminalMatch": true
+        }
+      ]
+    },
+    "terminal/terminal-transcript-markdown-calibration/80x24-dark-fullscreen": {
+      "classification": "deterministic-known-harness-failure",
+      "reason": "Committed Markdown scenario expects second; default fixture server returns fixture reply. Same-Pi calibration fails at the same readiness condition; this fixture cannot establish a product comparison.",
+      "observedOutcomes": [
+        {
+          "httpMatch": true,
+          "outcome": "difference",
+          "renderMatch": true,
+          "scenarioErrors": {
+            "pi": "Terminal did not settle at 'second' (expected=False, absent=True, output=True, renderMatch=False).",
+            "pisharp": "Terminal did not settle at 'second' (expected=False, absent=True, output=True, renderMatch=False)."
+          },
+          "skipReason": null,
+          "skipped": false,
+          "terminalMatch": true
+        }
+      ]
+    },
+    "terminal/terminal-transcript-markdown-calibration/80x24-dark-regular": {
+      "classification": "deterministic-known-harness-failure",
+      "reason": "Committed Markdown scenario expects second; default fixture server returns fixture reply. Same-Pi calibration fails at the same readiness condition; this fixture cannot establish a product comparison.",
+      "observedOutcomes": [
+        {
+          "httpMatch": true,
+          "outcome": "difference",
+          "renderMatch": true,
+          "scenarioErrors": {
+            "pi": "Terminal did not settle at 'second' (expected=False, absent=True, output=True, renderMatch=False).",
+            "pisharp": "Terminal did not settle at 'second' (expected=False, absent=True, output=True, renderMatch=False)."
+          },
+          "skipReason": null,
+          "skipped": false,
+          "terminalMatch": true
+        }
+      ]
+    },
+    "terminal/terminal-transcript-markdown-calibration/80x24-light-fullscreen": {
+      "classification": "deterministic-known-harness-failure",
+      "reason": "Committed Markdown scenario expects second; default fixture server returns fixture reply. Same-Pi calibration fails at the same readiness condition; this fixture cannot establish a product comparison.",
+      "observedOutcomes": [
+        {
+          "httpMatch": true,
+          "outcome": "difference",
+          "renderMatch": true,
+          "scenarioErrors": {
+            "pi": "Terminal did not settle at 'second' (expected=False, absent=True, output=True, renderMatch=False).",
+            "pisharp": "Terminal did not settle at 'second' (expected=False, absent=True, output=True, renderMatch=False)."
+          },
+          "skipReason": null,
+          "skipped": false,
+          "terminalMatch": true
+        }
+      ]
+    },
+    "terminal/terminal-transcript-markdown-calibration/80x24-light-regular": {
+      "classification": "deterministic-known-harness-failure",
+      "reason": "Committed Markdown scenario expects second; default fixture server returns fixture reply. Same-Pi calibration fails at the same readiness condition; this fixture cannot establish a product comparison.",
+      "observedOutcomes": [
+        {
+          "httpMatch": true,
+          "outcome": "difference",
+          "renderMatch": true,
+          "scenarioErrors": {
+            "pi": "Terminal did not settle at 'second' (expected=False, absent=True, output=True, renderMatch=False).",
+            "pisharp": "Terminal did not settle at 'second' (expected=False, absent=True, output=True, renderMatch=False)."
+          },
+          "skipReason": null,
+          "skipped": false,
+          "terminalMatch": true
+        }
+      ]
+    },
+    "terminal/terminal-transcript-markdown-paired/120x40-dark-fullscreen": {
+      "classification": "deterministic-known-harness-failure",
+      "reason": "Committed Markdown scenario expects second; default fixture server returns fixture reply. Same-Pi calibration fails at the same readiness condition; this fixture cannot establish a product comparison.",
+      "observedOutcomes": [
+        {
+          "httpMatch": true,
+          "outcome": "difference",
+          "renderMatch": true,
+          "scenarioErrors": {
+            "pi": "Terminal did not settle at 'second' (expected=False, absent=True, output=True, renderMatch=False).",
+            "pisharp": "Terminal did not settle at 'second' (expected=False, absent=True, output=True, renderMatch=False)."
+          },
+          "skipReason": null,
+          "skipped": false,
+          "terminalMatch": true
+        }
+      ]
+    },
+    "terminal/terminal-transcript-markdown-paired/120x40-dark-regular": {
+      "classification": "deterministic-known-harness-failure",
+      "reason": "Committed Markdown scenario expects second; default fixture server returns fixture reply. Same-Pi calibration fails at the same readiness condition; this fixture cannot establish a product comparison.",
+      "observedOutcomes": [
+        {
+          "httpMatch": false,
+          "outcome": "difference",
+          "renderMatch": false,
+          "scenarioErrors": {
+            "pi": "Terminal did not settle at 'second' (expected=False, absent=True, output=True, renderMatch=False).",
+            "pisharp": "Terminal exited 2 before 'fixture-model'."
+          },
+          "skipReason": null,
+          "skipped": false,
+          "terminalMatch": false
+        }
+      ]
+    },
+    "terminal/terminal-transcript-markdown-paired/120x40-light-fullscreen": {
+      "classification": "deterministic-known-harness-failure",
+      "reason": "Committed Markdown scenario expects second; default fixture server returns fixture reply. Same-Pi calibration fails at the same readiness condition; this fixture cannot establish a product comparison.",
+      "observedOutcomes": [
+        {
+          "httpMatch": true,
+          "outcome": "difference",
+          "renderMatch": true,
+          "scenarioErrors": {
+            "pi": "Terminal did not settle at 'second' (expected=False, absent=True, output=True, renderMatch=False).",
+            "pisharp": "Terminal did not settle at 'second' (expected=False, absent=True, output=True, renderMatch=False)."
+          },
+          "skipReason": null,
+          "skipped": false,
+          "terminalMatch": true
+        }
+      ]
+    },
+    "terminal/terminal-transcript-markdown-paired/120x40-light-regular": {
+      "classification": "deterministic-known-harness-failure",
+      "reason": "Committed Markdown scenario expects second; default fixture server returns fixture reply. Same-Pi calibration fails at the same readiness condition; this fixture cannot establish a product comparison.",
+      "observedOutcomes": [
+        {
+          "httpMatch": false,
+          "outcome": "difference",
+          "renderMatch": false,
+          "scenarioErrors": {
+            "pi": "Terminal did not settle at 'second' (expected=False, absent=True, output=True, renderMatch=False).",
+            "pisharp": "Terminal exited 2 before 'fixture-model'."
+          },
+          "skipReason": null,
+          "skipped": false,
+          "terminalMatch": false
+        }
+      ]
+    },
+    "terminal/terminal-transcript-markdown-paired/80x24-dark-fullscreen": {
+      "classification": "deterministic-known-harness-failure",
+      "reason": "Committed Markdown scenario expects second; default fixture server returns fixture reply. Same-Pi calibration fails at the same readiness condition; this fixture cannot establish a product comparison.",
+      "observedOutcomes": [
+        {
+          "httpMatch": true,
+          "outcome": "difference",
+          "renderMatch": true,
+          "scenarioErrors": {
+            "pi": "Terminal did not settle at 'second' (expected=False, absent=True, output=True, renderMatch=False).",
+            "pisharp": "Terminal did not settle at 'second' (expected=False, absent=True, output=True, renderMatch=False)."
+          },
+          "skipReason": null,
+          "skipped": false,
+          "terminalMatch": true
+        }
+      ]
+    },
+    "terminal/terminal-transcript-markdown-paired/80x24-dark-regular": {
+      "classification": "deterministic-known-harness-failure",
+      "reason": "Committed Markdown scenario expects second; default fixture server returns fixture reply. Same-Pi calibration fails at the same readiness condition; this fixture cannot establish a product comparison.",
+      "observedOutcomes": [
+        {
+          "httpMatch": false,
+          "outcome": "difference",
+          "renderMatch": false,
+          "scenarioErrors": {
+            "pi": "Terminal did not settle at 'second' (expected=False, absent=True, output=True, renderMatch=False).",
+            "pisharp": "Terminal exited 2 before 'fixture-model'."
+          },
+          "skipReason": null,
+          "skipped": false,
+          "terminalMatch": false
+        }
+      ]
+    },
+    "terminal/terminal-transcript-markdown-paired/80x24-light-fullscreen": {
+      "classification": "deterministic-known-harness-failure",
+      "reason": "Committed Markdown scenario expects second; default fixture server returns fixture reply. Same-Pi calibration fails at the same readiness condition; this fixture cannot establish a product comparison.",
+      "observedOutcomes": [
+        {
+          "httpMatch": true,
+          "outcome": "difference",
+          "renderMatch": true,
+          "scenarioErrors": {
+            "pi": "Terminal did not settle at 'second' (expected=False, absent=True, output=True, renderMatch=False).",
+            "pisharp": "Terminal did not settle at 'second' (expected=False, absent=True, output=True, renderMatch=False)."
+          },
+          "skipReason": null,
+          "skipped": false,
+          "terminalMatch": true
+        }
+      ]
+    },
+    "terminal/terminal-transcript-markdown-paired/80x24-light-regular": {
+      "classification": "deterministic-known-harness-failure",
+      "reason": "Committed Markdown scenario expects second; default fixture server returns fixture reply. Same-Pi calibration fails at the same readiness condition; this fixture cannot establish a product comparison.",
+      "observedOutcomes": [
+        {
+          "httpMatch": false,
+          "outcome": "difference",
+          "renderMatch": false,
+          "scenarioErrors": {
+            "pi": "Terminal did not settle at 'second' (expected=False, absent=True, output=True, renderMatch=False).",
+            "pisharp": "Terminal exited 2 before 'fixture-model'."
+          },
+          "skipReason": null,
+          "skipped": false,
+          "terminalMatch": false
+        }
+      ]
+    },
+    "terminal/terminal-transcript-markdown-resume-paired/120x40-dark-fullscreen": {
+      "classification": "deterministic-known-harness-failure",
+      "reason": "Committed Markdown scenario expects second; default fixture server returns fixture reply. Same-Pi calibration fails at the same readiness condition; this fixture cannot establish a product comparison.",
+      "observedOutcomes": [
+        {
+          "httpMatch": true,
+          "outcome": "difference",
+          "renderMatch": false,
+          "scenarioErrors": {},
+          "skipReason": null,
+          "skipped": false,
+          "terminalMatch": false
+        }
+      ]
+    },
+    "terminal/terminal-transcript-markdown-resume-paired/120x40-dark-regular": {
+      "classification": "deterministic-known-harness-failure",
+      "reason": "Committed Markdown scenario expects second; default fixture server returns fixture reply. Same-Pi calibration fails at the same readiness condition; this fixture cannot establish a product comparison.",
+      "observedOutcomes": [
+        {
+          "httpMatch": true,
+          "outcome": "difference",
+          "renderMatch": false,
+          "scenarioErrors": {
+            "pisharp": "Terminal exited 2 before 'second'."
+          },
+          "skipReason": null,
+          "skipped": false,
+          "terminalMatch": false
+        }
+      ]
+    },
+    "terminal/terminal-transcript-markdown-resume-paired/120x40-light-fullscreen": {
+      "classification": "deterministic-known-harness-failure",
+      "reason": "Committed Markdown scenario expects second; default fixture server returns fixture reply. Same-Pi calibration fails at the same readiness condition; this fixture cannot establish a product comparison.",
+      "observedOutcomes": [
+        {
+          "httpMatch": true,
+          "outcome": "difference",
+          "renderMatch": false,
+          "scenarioErrors": {},
+          "skipReason": null,
+          "skipped": false,
+          "terminalMatch": false
+        }
+      ]
+    },
+    "terminal/terminal-transcript-markdown-resume-paired/120x40-light-regular": {
+      "classification": "deterministic-known-harness-failure",
+      "reason": "Committed Markdown scenario expects second; default fixture server returns fixture reply. Same-Pi calibration fails at the same readiness condition; this fixture cannot establish a product comparison.",
+      "observedOutcomes": [
+        {
+          "httpMatch": true,
+          "outcome": "difference",
+          "renderMatch": false,
+          "scenarioErrors": {
+            "pisharp": "Terminal exited 2 before 'second'."
+          },
+          "skipReason": null,
+          "skipped": false,
+          "terminalMatch": false
+        }
+      ]
+    },
+    "terminal/terminal-transcript-markdown-resume-paired/80x24-dark-fullscreen": {
+      "classification": "deterministic-known-harness-failure",
+      "reason": "Committed Markdown scenario expects second; default fixture server returns fixture reply. Same-Pi calibration fails at the same readiness condition; this fixture cannot establish a product comparison.",
+      "observedOutcomes": [
+        {
+          "httpMatch": true,
+          "outcome": "difference",
+          "renderMatch": false,
+          "scenarioErrors": {},
+          "skipReason": null,
+          "skipped": false,
+          "terminalMatch": false
+        }
+      ]
+    },
+    "terminal/terminal-transcript-markdown-resume-paired/80x24-dark-regular": {
+      "classification": "deterministic-known-harness-failure",
+      "reason": "Committed Markdown scenario expects second; default fixture server returns fixture reply. Same-Pi calibration fails at the same readiness condition; this fixture cannot establish a product comparison.",
+      "observedOutcomes": [
+        {
+          "httpMatch": true,
+          "outcome": "difference",
+          "renderMatch": false,
+          "scenarioErrors": {
+            "pisharp": "Terminal exited 2 before 'second'."
+          },
+          "skipReason": null,
+          "skipped": false,
+          "terminalMatch": false
+        }
+      ]
+    },
+    "terminal/terminal-transcript-markdown-resume-paired/80x24-light-fullscreen": {
+      "classification": "deterministic-known-harness-failure",
+      "reason": "Committed Markdown scenario expects second; default fixture server returns fixture reply. Same-Pi calibration fails at the same readiness condition; this fixture cannot establish a product comparison.",
+      "observedOutcomes": [
+        {
+          "httpMatch": true,
+          "outcome": "difference",
+          "renderMatch": false,
+          "scenarioErrors": {},
+          "skipReason": null,
+          "skipped": false,
+          "terminalMatch": false
+        }
+      ]
+    },
+    "terminal/terminal-transcript-markdown-resume-paired/80x24-light-regular": {
+      "classification": "deterministic-known-harness-failure",
+      "reason": "Committed Markdown scenario expects second; default fixture server returns fixture reply. Same-Pi calibration fails at the same readiness condition; this fixture cannot establish a product comparison.",
+      "observedOutcomes": [
+        {
+          "httpMatch": true,
+          "outcome": "difference",
+          "renderMatch": false,
+          "scenarioErrors": {
+            "pisharp": "Terminal exited 2 before 'second'."
+          },
+          "skipReason": null,
+          "skipped": false,
+          "terminalMatch": false
+        }
+      ]
+    },
+    "terminal/terminal-trust-selector-paired/120x40-dark-fullscreen": {
+      "classification": "deterministic-known-failure",
+      "reason": "Baseline terminal presentation differences in startup/resources/selectors/resumed transcript. Raw comparison reports preserve exact first state/render differences; no product scenario error or expectations were changed.",
+      "observedOutcomes": [
+        {
+          "httpMatch": true,
+          "outcome": "difference",
+          "renderMatch": false,
+          "scenarioErrors": {},
+          "skipReason": null,
+          "skipped": false,
+          "terminalMatch": false
+        }
+      ]
+    }
+  },
+  "collectionEnvironment": {
+    "classification": "environmental",
+    "reason": "Optional Coverlet collection aborts some child processes in Tracker.UnloadModule due to abandoned mutex/file sharing. Both ordinary full .NET runs pass 1356/1356 with no skips.",
+    "evidence": [
+      "run-1/dotnet.log",
+      "run-2/dotnet.log.gz",
+      "run-1/dotnet-standard.log",
+      "run-2/dotnet-standard.log"
+    ]
+  },
+  "captureInvocationCorrections": [
+    "Use actual extension assembly dynamic-resources.dll; retain wrong-path attempts as diagnostics.",
+    "Use Bash hint mode for hidden-read, which only hides read; hiding read,bash uses indirect mode. Both corrected assertions pass.",
+    "Reinstall/rebuild frozen Pi packages and repeat every process probe to rule out stale dist output."
+  ],
+  "unavailableChecks": {
+    "liveLlama": "Four LiveLlamaOverflowTests return without live assertions unless PISHARP_TEST_LLAMA_ENDPOINT is explicitly configured; no live endpoint supplied. xUnit reports pass rather than skip; treat these four tests as live-unrunnable evidence, not actual provider validation. Deterministic llama tests/differentials remain runnable.",
+    "otherPlatforms": "Results are Linux evidence only. Source guards that return on unsupported platforms can appear as xUnit passes; baseline test count and zero runner skips do not establish native Windows/macOS behavior. Platform guard locations are listed in platform-guards.txt."
+  },
+  "unexplainedFailures": []
+}

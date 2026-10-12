@@ -1,0 +1,5 @@
+{
+  "heading": "## Active architecture refactor",
+  "exactAppendBlock": "\n## Active architecture refactor\n\nRead `docs/refactor/GOAL.md` and `docs/refactor/PROGRESS.md` before refactor work.\nContinue the recorded next action on the dedicated branch; preserve the frozen baselines.\n",
+  "originalSha256": "cd0a500473283b16ae87464a35b76c8f8c69ee2dce58d3d9cac152bb05933c67"
+}

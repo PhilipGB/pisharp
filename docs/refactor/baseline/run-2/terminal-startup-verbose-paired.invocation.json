@@ -1,0 +1,19 @@
+{
+  "id": "terminal-startup-verbose-paired",
+  "command": [
+    "python3",
+    "tools/parity/terminal/run.py",
+    "--pi",
+    "/tmp/pisharp-current-pi",
+    "--fixture",
+    "/home/philip/Downloads/pisharp-bootstrap/pisharp/tools/parity/terminal/fixtures/startup-verbose.json",
+    "--output",
+    "/tmp/pisharp-refactor-20261012/baseline/run-2/terminal-startup-verbose-paired",
+    "--pisharp-extension",
+    "/home/philip/Downloads/pisharp-bootstrap/pisharp/tests/ResourceDiscoveryExtension/bin/Debug/net10.0/ResourceDiscoveryExtension.dll"
+  ],
+  "cwd": "/home/philip/Downloads/pisharp-bootstrap/pisharp",
+  "exitCode": 1,
+  "seconds": 39.167,
+  "logger": "stdout+stderr text"
+}

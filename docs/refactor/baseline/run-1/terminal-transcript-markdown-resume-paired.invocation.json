@@ -1,0 +1,19 @@
+{
+  "id": "terminal-transcript-markdown-resume-paired",
+  "command": [
+    "python3",
+    "tools/parity/terminal/run.py",
+    "--pi",
+    "/tmp/pisharp-current-pi",
+    "--fixture",
+    "/home/philip/Downloads/pisharp-bootstrap/pisharp/tools/parity/terminal/fixtures/transcript-markdown-resume.json",
+    "--output",
+    "/tmp/pisharp-refactor-20261012/baseline/run-1/terminal-transcript-markdown-resume-paired",
+    "--pisharp-extension",
+    "/home/philip/Downloads/pisharp-bootstrap/pisharp/tests/ResourceDiscoveryExtension/bin/Debug/net10.0/ResourceDiscoveryExtension.dll"
+  ],
+  "cwd": "/home/philip/Downloads/pisharp-bootstrap/pisharp",
+  "exitCode": 1,
+  "seconds": 38.599,
+  "logger": "stdout+stderr text"
+}

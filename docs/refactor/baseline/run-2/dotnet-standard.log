@@ -1,0 +1,8 @@
+Test run for /home/philip/Downloads/pisharp-bootstrap/pisharp/tests/PiSharp.Tests/bin/Debug/net10.0/PiSharp.Tests.dll (.NETCoreApp,Version=v10.0)
+VSTest version 18.0.2 (x64)
+
+Starting test execution, please wait...
+A total of 1 test files matched the specified pattern.
+Results File: /tmp/pisharp-refactor-20261012/baseline/run-2/dotnet-standard/tests.trx
+
+Passed!  - Failed:     0, Passed:  1356, Skipped:     0, Total:  1356, Duration: 2 m 41 s - PiSharp.Tests.dll (net10.0)

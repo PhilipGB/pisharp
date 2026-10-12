@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "/home/philip/Downloads/pisharp-bootstrap/pisharp/tools/parity/terminal/run.py", line 465, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/home/philip/Downloads/pisharp-bootstrap/pisharp/tools/parity/terminal/run.py", line 350, in main
+    product_commands = commands(args.pi.resolve(), args.pisharp.resolve(), scenario, args.pisharp_extension)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/philip/Downloads/pisharp-bootstrap/pisharp/tools/parity/terminal/run.py", line 76, in commands
+    raise ValueError('This fixture requires an existing --pisharp-extension assembly')
+ValueError: This fixture requires an existing --pisharp-extension assembly

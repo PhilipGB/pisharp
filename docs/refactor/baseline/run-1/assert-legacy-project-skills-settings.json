@@ -1,0 +1,40 @@
+{
+  "piSha": "ee409a85f6ad92bf8c6ab8ed735c6cd24f2e749e",
+  "pisharpSha": "064bcc7b90344cffde595f9aca1c5b850cefe567",
+  "fixture": "legacy-project-skills-settings",
+  "behaviorMatch": true,
+  "behavior": {
+    "pi": {
+      "chatRequests": 1,
+      "legacySkillExpanded": true,
+      "legacyArgumentPreserved": true,
+      "skillCompletionDisabled": true,
+      "scenarioError": null
+    },
+    "pisharp": {
+      "chatRequests": 1,
+      "legacySkillExpanded": true,
+      "legacyArgumentPreserved": true,
+      "skillCompletionDisabled": true,
+      "scenarioError": null
+    }
+  },
+  "fullTerminalMatch": true,
+  "fullHttpMatch": true,
+  "rawMatch": false,
+  "terminalDifferences": 0,
+  "renderDifferences": 0,
+  "controlBoundaryDifferences": 379,
+  "scenarioErrors": {},
+  "calibration": {
+    "terminalMatch": true,
+    "httpMatch": true,
+    "renderDifferences": 0,
+    "scenarioErrors": {}
+  },
+  "evidence": {
+    "report": "/tmp/pisharp-refactor-20261012/baseline/run-1/terminal-legacy-project-skills-settings-paired/report.json",
+    "capture": "/tmp/pisharp-refactor-20261012/baseline/run-1/terminal-legacy-project-skills-settings-paired/120x40-dark-fullscreen.json.gz",
+    "calibrationReport": "/tmp/pisharp-refactor-20261012/baseline/run-1/terminal-legacy-project-skills-settings-calibration/report.json"
+  }
+}

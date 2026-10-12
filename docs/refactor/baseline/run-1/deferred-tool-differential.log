@@ -1,0 +1,11 @@
+
+ RUN  v4.1.11 /tmp/pisharp-current-pi/packages/coding-agent
+
+·
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  14:31:30
+   Duration  4.31s (transform 2.91s, setup 0ms, import 3.91s, tests 261ms, environment 0ms)
+
+Matched 8 deferred-tool scenarios.

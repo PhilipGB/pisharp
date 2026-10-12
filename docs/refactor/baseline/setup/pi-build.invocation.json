@@ -1,0 +1,12 @@
+{
+  "id": "pi-build",
+  "command": [
+    "npm",
+    "run",
+    "build:offline"
+  ],
+  "cwd": "/tmp/pisharp-current-pi",
+  "exitCode": 0,
+  "seconds": 11.597,
+  "logger": "stdout+stderr text"
+}

@@ -1,0 +1,20 @@
+{
+  "id": "terminal-legacy-project-skills-settings-calibration",
+  "command": [
+    "python3",
+    "tools/parity/terminal/run.py",
+    "--pi",
+    "/tmp/pisharp-current-pi",
+    "--fixture",
+    "/home/philip/Downloads/pisharp-bootstrap/pisharp/tools/parity/terminal/fixtures/legacy-project-skills-settings.json",
+    "--output",
+    "/tmp/pisharp-refactor-20261012/baseline/run-2/terminal-legacy-project-skills-settings-calibration",
+    "--pisharp-extension",
+    "/home/philip/Downloads/pisharp-bootstrap/pisharp/tests/ResourceDiscoveryExtension/bin/Debug/net10.0/ResourceDiscoveryExtension.dll",
+    "--calibrate"
+  ],
+  "cwd": "/home/philip/Downloads/pisharp-bootstrap/pisharp",
+  "exitCode": 0,
+  "seconds": 29.659,
+  "logger": "stdout+stderr text"
+}

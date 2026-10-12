@@ -1,0 +1,15 @@
+{
+  "id": "capacity-retry-differential",
+  "command": [
+    "python3",
+    "/home/philip/Downloads/pisharp-bootstrap/pisharp/tools/parity/capacity-retry-differential.py",
+    "--pi",
+    "/tmp/pisharp-current-pi",
+    "--output",
+    "/tmp/pisharp-refactor-20261012/baseline/run-2/capacity-retry-differential.json"
+  ],
+  "cwd": "/home/philip/Downloads/pisharp-bootstrap/pisharp",
+  "exitCode": 0,
+  "seconds": 10.692,
+  "logger": "stdout+stderr text"
+}

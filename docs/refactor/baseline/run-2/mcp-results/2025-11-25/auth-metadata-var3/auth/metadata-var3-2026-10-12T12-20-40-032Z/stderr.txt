@@ -1,0 +1,4 @@
+[pisharp-conformance] sign-in 1
+[pisharp-conformance] authorization URL: http://localhost:39991/tenant1/authorize
+[pisharp-conformance] connected, scenario: auth/metadata-var3
+[pisharp-conformance] test-tool completed

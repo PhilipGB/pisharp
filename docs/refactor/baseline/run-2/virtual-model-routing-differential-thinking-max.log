@@ -1,0 +1,98 @@
+{
+  "pi": {
+    "selected": {
+      "provider": "test-router",
+      "model": "auto"
+    },
+    "wireModels": [
+      "small",
+      "large",
+      "small"
+    ],
+    "assistants": [
+      {
+        "provider": "physical",
+        "model": "small",
+        "api": "openai-completions"
+      },
+      {
+        "provider": "physical",
+        "model": "large",
+        "api": "openai-completions"
+      },
+      {
+        "provider": "physical",
+        "model": "small",
+        "api": "openai-completions"
+      }
+    ],
+    "routes": [
+      {
+        "reason": "user",
+        "state": 0,
+        "previous": null,
+        "thinking": "max"
+      },
+      {
+        "reason": "continuation",
+        "state": 1,
+        "previous": "small",
+        "thinking": "max"
+      },
+      {
+        "reason": "user",
+        "state": 2,
+        "previous": "large",
+        "thinking": "max"
+      }
+    ]
+  },
+  "pisharp": {
+    "selected": {
+      "provider": "test-router",
+      "model": "auto"
+    },
+    "wireModels": [
+      "small",
+      "large",
+      "small"
+    ],
+    "assistants": [
+      {
+        "provider": "physical",
+        "model": "small",
+        "api": "openai-completions"
+      },
+      {
+        "provider": "physical",
+        "model": "large",
+        "api": "openai-completions"
+      },
+      {
+        "provider": "physical",
+        "model": "small",
+        "api": "openai-completions"
+      }
+    ],
+    "routes": [
+      {
+        "reason": "user",
+        "state": 0,
+        "previous": null,
+        "thinking": "max"
+      },
+      {
+        "reason": "continuation",
+        "state": 1,
+        "previous": "small",
+        "thinking": "max"
+      },
+      {
+        "reason": "user",
+        "state": 2,
+        "previous": "large",
+        "thinking": "max"
+      }
+    ]
+  }
+}

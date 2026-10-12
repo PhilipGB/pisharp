@@ -1,0 +1,19 @@
+{
+  "id": "assert-resource-skill-prompt-hidden-read",
+  "command": [
+    "python3",
+    "tools/parity/terminal/assert_skill_prompt_parity.py",
+    "--mode",
+    "indirect",
+    "--paired",
+    "/tmp/pisharp-refactor-20261012/baseline/run-1/terminal-resource-skill-prompt-hidden-read-paired",
+    "--calibration-report",
+    "/tmp/pisharp-refactor-20261012/baseline/run-1/terminal-resource-skill-prompt-hidden-read-calibration/report.json",
+    "--output",
+    "/tmp/pisharp-refactor-20261012/baseline/run-1/assert-resource-skill-prompt-hidden-read.json"
+  ],
+  "cwd": "/home/philip/Downloads/pisharp-bootstrap/pisharp",
+  "exitCode": 1,
+  "seconds": 0.165,
+  "logger": "stdout+stderr text"
+}

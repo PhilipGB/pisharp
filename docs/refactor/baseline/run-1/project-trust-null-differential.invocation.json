@@ -1,0 +1,15 @@
+{
+  "id": "project-trust-null-differential",
+  "command": [
+    "python3",
+    "/home/philip/Downloads/pisharp-bootstrap/pisharp/tools/parity/project-trust-null-differential.py",
+    "--pi",
+    "/tmp/pisharp-current-pi",
+    "--output",
+    "/tmp/pisharp-refactor-20261012/baseline/run-1/project-trust-null-differential.json"
+  ],
+  "cwd": "/home/philip/Downloads/pisharp-bootstrap/pisharp",
+  "exitCode": 0,
+  "seconds": 6.729,
+  "logger": "stdout+stderr text"
+}

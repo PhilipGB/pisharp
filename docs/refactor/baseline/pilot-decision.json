@@ -1,0 +1,17 @@
+{
+  "capability": "coding tools",
+  "hotspot": "H09",
+  "entryPoint": "src/PiSharp.Runtime/CodingTools.cs",
+  "currentStructure": "Public CodingTools facade owns declaration/selection, text/image reads, coordinated write/edit and tracked shell process execution. Pure planning/diff algorithms already belong to Core; search and listing already have separate Runtime owners.",
+  "protection": [
+    "Exact read/bash/write/edit descriptions and schemas in CodingToolsTests",
+    "UTF-8/BOM/newline/error/truncation cases in ReadTextConformanceTests and EditConformanceTests",
+    "Real image provider-loop/persistence/replay tests in ReadImageToolTests",
+    "Shell cancellation/environment/output process tests and CodemodeBashOutputTests",
+    "Current-Pi Codemode Bash process differential"
+  ],
+  "weakPaths": "Inspect uncovered shell shutdown/drain branches and static file-mutation coordination across independent facade instances before restructuring. Coverage collection has known child-process tracker limitations; use deterministic characterizations rather than a percentage target.",
+  "direction": "Separate file read/image, file mutation, and shell execution ownership inside Runtime. Keep the public facade and exact MAF AIFunction metadata/behavior. Keep existing Core pure planners. Characterize any weak high-risk paths first.",
+  "projectBoundary": "No new project is justified for this pilot; the Runtime project already owns shared agent I/O, and these capabilities share its tool execution semantics.",
+  "patternDecision": "Evaluate readability, control-flow visibility, dependency direction, test setup and navigation after the pilot before applying its pattern elsewhere."
+}

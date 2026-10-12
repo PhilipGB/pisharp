@@ -1,0 +1,14 @@
+[
+  {
+    "original": "run-2/dotnet.log",
+    "compressed": "run-2/dotnet.log.gz",
+    "sha256": "db8ed919bde2be823edd7e18b92cf872a4f4205f9e4dd92d8819e1d5f15f7bd9",
+    "bytes": 7396
+  },
+  {
+    "original": "run-2/dotnet/tests.trx",
+    "compressed": "run-2/dotnet/tests.trx.gz",
+    "sha256": "5c2bdfe6f70fe0712c83585300e71647283f86bdd2a6b3e3c1a79f0bad3e2153",
+    "bytes": 1944356
+  }
+]

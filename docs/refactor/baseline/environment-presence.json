@@ -1,0 +1,8 @@
+{
+  "PISHARP_TEST_LLAMA_ENDPOINT": false,
+  "PISHARP_TEST_LLAMA_MODEL": false,
+  "PISHARP_SETTINGS_PATH": false,
+  "PISHARP_AGENT_DIR": false,
+  "PISHARP_SESSION_DIR": false,
+  "NODE_OPTIONS": false
+}
