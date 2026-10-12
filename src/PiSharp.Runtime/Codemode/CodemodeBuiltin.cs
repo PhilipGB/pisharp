@@ -32,6 +32,9 @@ public static class CodemodeBuiltin
             "models.getModelOfType(type, provider, id) inspect catalogs; models.classify(model, context) invokes classifiers. " +
             "Only provider/id select authority. Check stopReason/errorMessage for provider failures. " +
             "store(key, value) and load(key) keep branch-local JSON state. The script can return a value. " +
+            "await tools.<name>(args) resolves to a string or its declared structured value and rejects with an Error on failure. " +
+            "A tool whose declaration returns an object resolves on failure too when it returned that object; check its fields. " +
+            "Calls still running when the script ends are cancelled. " +
             "ALL_TOOLS lists every callable tool, including those omitted below. Use searchTools with a namespace " +
             "or describeNamespace(name) to find MCP server tools and instructions; their schemas stay out of this description. " +
             "There are no host globals, " +

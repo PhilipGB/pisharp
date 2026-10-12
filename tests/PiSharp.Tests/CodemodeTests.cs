@@ -26,6 +26,9 @@ public sealed class CodemodeTests
         var description = Assert.Single(registry.CreateLoadout(["codemode"]).Snapshot.Declared).Description;
         Assert.Contains("declare const tools", description);
         Assert.Contains("echo(args:", description);
+        Assert.Contains("await tools.<name>(args) resolves to a string or its declared structured value and rejects with an Error on failure.", description);
+        Assert.Contains("A tool whose declaration returns an object resolves on failure too when it returned that object; check its fields.", description);
+        Assert.Contains("Calls still running when the script ends are cancelled.", description);
     }
 
     [Fact]
@@ -239,6 +242,47 @@ public sealed class CodemodeTests
             new Dictionary<string, System.Text.Json.JsonElement>(), CancellationToken.None);
         Assert.True(result.Ok, result.Error);
         Assert.Equal("7", result.Text);
+    }
+
+    [Fact]
+    public async Task SchemaDeclaredStructuredResultResolvesEvenWhenNestedToolFails()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-codemode-schema-error-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        try
+        {
+            var structured = JsonSerializer.SerializeToElement(new { error = "not found", retryable = true });
+            var function = AIFunctionFactory.Create(() => new PiSharpToolResult("lookup failed",
+                StructuredContent: structured, IsError: true, Error: "lookup failed"), name: "lookup");
+            var outputSchema = JsonSerializer.SerializeToElement(new
+            {
+                type = "object",
+                properties = new
+                {
+                    error = new { type = "string" },
+                    retryable = new { type = "boolean" }
+                },
+                required = new[] { "error", "retryable" }
+            });
+            var registration = new ExtensionRegistration();
+            registration.AddTool(new PiSharpToolRegistration(function, ToolExposure.CodeMode,
+                OutputSchema: outputSchema));
+            CodemodeBuiltin.Configure(registration);
+            var client = new ScriptClient(
+                "const result=await tools.lookup({}); text(result.error); text(result.retryable)");
+            var conversation = new ConversationSession(cwd, "fixture", null);
+            var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(cwd),
+                selectedTools: ["codemode"], noBuiltinTools: true,
+                extensionToolRegistrations: registration.ToolDefinitions), conversation);
+            var events = new List<AgentLifecycleEvent>();
+
+            await foreach (var item in run.RunEventsAsync("inspect schema result")) events.Add(item);
+
+            Assert.Equal("not found\ntrue", client.Result);
+            Assert.Contains(events, item => item.Type == "tool_execution_finished" && item.Tool == "lookup" &&
+                item.IsError == true && item.ParentToolCallId == "script-call");
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
     }
 
     [Fact]
