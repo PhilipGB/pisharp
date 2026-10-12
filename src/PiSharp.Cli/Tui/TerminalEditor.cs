@@ -19,6 +19,7 @@ public sealed class TerminalEditor
     private int _savedCursor;
     private string _lastSearchQuery = "";
     private bool _toolResultsExpanded;
+    private long? _lastClearAtMilliseconds;
     public TerminalEditor(Func<IReadOnlyList<string>>? commands = null, string? agentDirectory = null,
         Func<string>? getWorkingDirectory = null, bool initiallyExpanded = false,
         Func<string, string?>? describeCommand = null)
@@ -1079,6 +1080,17 @@ public sealed class TerminalEditor
                 ClearLine();
                 Console.WriteLine();
                 return null;
+            }
+            if (enableApplicationActions && next.Key is { } clearKey && _keymap.Matches("app.clear", clearKey))
+            {
+                var now = Environment.TickCount64;
+                if (_lastClearAtMilliseconds is { } previous && now - previous < 500)
+                {
+                    ClearLine();
+                    Console.WriteLine();
+                    return null;
+                }
+                _lastClearAtMilliseconds = now;
             }
             if (enableApplicationActions && next.Key is { } externalEditorKey &&
                 !_keymap.MatchesEditorAction(externalEditorKey) &&

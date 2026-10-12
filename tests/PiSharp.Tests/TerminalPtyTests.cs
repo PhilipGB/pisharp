@@ -129,6 +129,65 @@ public sealed class TerminalPtyTests
     }
 
     [Fact]
+    public async Task DoubleCtrlCExitsInteractiveProcess()
+    {
+        if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-double-ctrl-c-pty-" + Guid.NewGuid().ToString("N"));
+        var agent = Path.Combine(root, "agent");
+        Directory.CreateDirectory(agent);
+        Process? process = null;
+        try
+        {
+            var start = new ProcessStartInfo("/usr/bin/script")
+            {
+                WorkingDirectory = root,
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+            start.ArgumentList.Add("-q");
+            start.ArgumentList.Add("-e");
+            start.ArgumentList.Add("-c");
+            start.ArgumentList.Add($"stty rows 24 cols 80; exec dotnet {ShellQuote(typeof(CliArguments).Assembly.Location)} --local --offline --no-session --no-tools");
+            start.ArgumentList.Add("/dev/null");
+            start.Environment["PISHARP_AGENT_DIR"] = agent;
+            process = Process.Start(start);
+            Assert.NotNull(process);
+
+            var inputReady = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var output = new StringBuilder();
+            var stdout = Task.Run(async () =>
+            {
+                var buffer = new char[1024];
+                while (true)
+                {
+                    var count = await process.StandardOutput.ReadAsync(buffer);
+                    if (count == 0) break;
+                    output.Append(buffer, 0, count);
+                    if (output.ToString().Contains("\u001b[?2004h", StringComparison.Ordinal))
+                        inputReady.TrySetResult();
+                }
+            });
+            var stderr = process.StandardError.ReadToEndAsync();
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            await inputReady.Task.WaitAsync(timeout.Token);
+            await process.StandardInput.WriteAsync("\u0003\u0003");
+            await process.StandardInput.FlushAsync();
+            await process.WaitForExitAsync(timeout.Token);
+            await stdout;
+
+            Assert.Equal(0, process.ExitCode);
+            Assert.DoesNotContain("Exception:", await stderr);
+        }
+        finally
+        {
+            if (process is { HasExited: false }) process.Kill(entireProcessTree: true);
+            process?.Dispose();
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task BangCommandsUseTheConfiguredPrefixAndDoubleBangExcludesContext()
     {
         if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;

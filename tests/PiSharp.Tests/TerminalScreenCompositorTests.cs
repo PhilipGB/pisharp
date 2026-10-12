@@ -211,10 +211,64 @@ public sealed class TerminalScreenCompositorTests
         var expandedDetails = presentation.BuildDetails(TerminalTheme.Default, 120, details, null, expanded: true);
 
         Assert.Contains("Press Alt+O to show full startup help and loaded resources.", compactHeader);
-        Assert.Contains("Alt+O to expand or collapse details and tool output", expandedHeader);
+        Assert.Contains("Alt+O to expand tools", expandedHeader);
         Assert.Contains("startup-skill", compactDetails);
         Assert.DoesNotContain("SKILL.md", compactDetails);
         Assert.Contains("/home/user/.agents/skills/startup-skill/SKILL.md", expandedDetails);
+    }
+
+    [Fact]
+    public void ExpandedStartupHelpIncludesSupportedPiEditorAndBashActions()
+    {
+        var displayKeys = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["app.interrupt"] = "Esc",
+            ["app.clear"] = "Ctrl+C",
+            ["app.exit"] = "Ctrl+D",
+            ["tui.editor.deleteToLineEnd"] = "Ctrl+K",
+            ["app.model.cycleForward"] = "Ctrl+P",
+            ["app.model.cycleBackward"] = "Ctrl+Shift+P",
+            ["app.model.select"] = "Ctrl+L",
+            ["app.thinking.cycle"] = "Shift+Tab",
+            ["app.tools.expand"] = "Ctrl+O",
+            ["app.editor.external"] = "Ctrl+G",
+            ["app.message.followUp"] = "Alt+Enter",
+            ["app.message.dequeue"] = "Alt+Up",
+            ["app.clipboard.pasteImage"] = "Ctrl+V"
+        };
+        var presentation = new TerminalStartupPresentation(null, verbose: false,
+            action => displayKeys.GetValueOrDefault(action));
+        var expanded = System.Text.RegularExpressions.Regex.Replace(presentation.Build(TerminalTheme.Default,
+            expanded: true), "\\u001b\\[[0-?]*[ -/]*[@-~]", "");
+
+        var expectedHints = new[]
+        {
+            "Esc to interrupt",
+            "Ctrl+C to clear",
+            "Ctrl+C twice to exit",
+            "Ctrl+D to exit (empty)",
+            "Ctrl+K to delete to end",
+            "Ctrl+P/Ctrl+Shift+P to cycle models",
+            "Ctrl+L to select a model",
+            "Shift+Tab to cycle thinking level",
+            "Ctrl+O to expand tools",
+            "Ctrl+G for external editor",
+            "/ for commands",
+            "! to run bash",
+            "!! to run bash (no context)",
+            "Alt+Enter to queue follow-up",
+            "Alt+Up to edit all queued messages",
+            "Ctrl+V to paste files on macOS, images, or text",
+            "drop files to attach"
+        };
+
+        var previousIndex = -1;
+        foreach (var hint in expectedHints)
+        {
+            var currentIndex = expanded.IndexOf(hint, StringComparison.Ordinal);
+            Assert.True(currentIndex > previousIndex, $"Expected startup hint in order: {hint}");
+            previousIndex = currentIndex;
+        }
     }
 
     [Fact]

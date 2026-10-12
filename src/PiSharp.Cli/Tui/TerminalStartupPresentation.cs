@@ -113,22 +113,27 @@ internal sealed class TerminalStartupPresentation(QuietStartupMode? quietStartup
 
     private IEnumerable<string> ExpandedHelp(TerminalTheme theme)
     {
+        var clearKey = DisplayKey("app.clear", "Ctrl+C");
         (string? Action, string Key, string Description)[] hints =
         [
             ("app.interrupt", "Esc", "to interrupt"),
             ("app.clear", "Ctrl+C", "to clear"),
-            ("app.exit", "Ctrl+D", "to exit when empty"),
-            ("app.model.cycleForward", "Ctrl+P", "to cycle models forward"),
-            ("app.model.cycleBackward", "Alt+P", "to cycle models backward"),
+            (null, $"{clearKey} twice", "to exit"),
+            ("app.exit", "Ctrl+D", "to exit (empty)"),
+            ("tui.editor.deleteToLineEnd", "Ctrl+K", "to delete to end"),
+            (null,
+                $"{DisplayKey("app.model.cycleForward", "Ctrl+P")}/{DisplayKey("app.model.cycleBackward", "Alt+P")}",
+                "to cycle models"),
             ("app.model.select", "Ctrl+L", "to select a model"),
             ("app.thinking.cycle", "Shift+Tab", "to cycle thinking level"),
-            ("app.tools.expand", "Ctrl+O", "to expand or collapse details and tool output"),
-            ("app.editor.external", "Ctrl+G", "to open the external editor"),
+            ("app.tools.expand", "Ctrl+O", "to expand tools"),
+            ("app.editor.external", "Ctrl+G", "for external editor"),
             (null, "/", "for commands"),
             (null, "!", "to run bash"),
-            ("app.message.followUp", "Alt+Enter", "to queue a follow-up"),
-            ("app.message.dequeue", "Alt+Up", "to restore queued messages"),
-            ("app.clipboard.pasteImage", "Ctrl+V", "to paste clipboard content"),
+            (null, "!!", "to run bash (no context)"),
+            ("app.message.followUp", "Alt+Enter", "to queue follow-up"),
+            ("app.message.dequeue", "Alt+Up", "to edit all queued messages"),
+            ("app.clipboard.pasteImage", "Ctrl+V", "to paste files on macOS, images, or text"),
             (null, "drop files", "to attach")
         ];
         foreach (var hint in hints)
