@@ -64,9 +64,9 @@ internal sealed class TerminalScreenCompositor
             editorHeight = editor.Rows.Count;
         }
         var transcriptWidth = Math.Max(1, columns);
-        var startupRows = string.IsNullOrEmpty(startupHeader)
+        IReadOnlyList<string> startupRows = string.IsNullOrEmpty(startupHeader)
             ? Array.Empty<string>()
-            : TerminalTextLayout.Create(startupHeader, transcriptWidth).Rows;
+            : TerminalTextLayout.Create(startupHeader, transcriptWidth).Rows.Prepend(string.Empty).ToArray();
         var startupHeight = Math.Min(startupRows.Count,
             Math.Max(0, height - editorHeight - footerHeight - suggestionHeight - 1));
         var transcriptHeight = Math.Max(1,

@@ -481,8 +481,7 @@ if (editor is not null)
     terminalScreen?.SetStartupHeader((theme, columns, expanded) =>
         startupPresentation.BuildLogo(theme));
     terminalScreen?.SetStartupContent((theme, columns, expanded) =>
-        startupPresentation.Build(theme, expanded) + startupPresentation.BuildDetails(theme, columns,
-            CurrentStartupDetails(), startupTrustNotice, expanded));
+        startupPresentation.BuildContent(theme, columns, CurrentStartupDetails(), startupTrustNotice, expanded));
 }
 InteractiveTranscript CreateInteractiveTranscript(bool interactive = true) => new(Console.Out, Console.Error, interactive,
     hideThinking: hideThinkingBlock, screen: terminalScreen,

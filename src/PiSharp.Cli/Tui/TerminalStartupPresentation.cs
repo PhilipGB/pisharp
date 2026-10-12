@@ -46,6 +46,16 @@ internal sealed class TerminalStartupPresentation(QuietStartupMode? quietStartup
         return string.Join('\n', rows);
     }
 
+    public string BuildContent(TerminalTheme theme, int columns,
+        IReadOnlyList<TerminalStartupDetail>? startupDetails, string? projectTrustNotice, bool expanded,
+        bool includePersistentDetails = true, bool persistentOnly = false)
+    {
+        var header = Build(theme, expanded);
+        var details = BuildDetails(theme, columns, startupDetails, projectTrustNotice, expanded,
+            includePersistentDetails, persistentOnly);
+        return header.Length > 0 && details.Length > 0 ? header + "\n" + details : header + details;
+    }
+
     public string BuildDetails(TerminalTheme theme, int columns,
         IReadOnlyList<TerminalStartupDetail>? startupDetails, string? projectTrustNotice, bool expanded,
         bool includePersistentDetails = true, bool persistentOnly = false)
