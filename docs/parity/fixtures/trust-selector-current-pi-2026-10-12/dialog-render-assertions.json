@@ -1,0 +1,86 @@
+{
+  "fixture": "trust-selector",
+  "piSha": "4270522473e677ddba7b093caa0064a3df51d459",
+  "pisharpSha": "cf5f427f4990d7404f80f8a378a64d6731a7a5fd",
+  "paired": {
+    "terminalDifferences": 73022,
+    "stateDifferences": 27456,
+    "renderDifferences": 45566,
+    "httpMatch": true,
+    "rawByteMatch": false,
+    "scenarioErrors": {}
+  },
+  "calibration": {
+    "match": true,
+    "terminalStateAndRenderDifferences": 0,
+    "renderDifferences": 0,
+    "httpMatch": true
+  },
+  "trustDialogRows": {
+    "open-trust-selector": [
+      {
+        "row": 25,
+        "text": " Project trust",
+        "exactPiSharpCellMatch": true
+      },
+      {
+        "row": 26,
+        "text": " /tmp/pisharp-terminal-fixture-workspace/trust-project",
+        "exactPiSharpCellMatch": true
+      },
+      {
+        "row": 28,
+        "text": " Saved decision: untrusted (/tmp/pisharp-terminal-fixture-workspace/trust-project)",
+        "exactPiSharpCellMatch": true
+      },
+      {
+        "row": 29,
+        "text": " Current session: untrusted",
+        "exactPiSharpCellMatch": true
+      },
+      {
+        "row": 32,
+        "text": "     Trust parent folder (/tmp/pisharp-terminal-fixture-workspace)",
+        "exactPiSharpCellMatch": true
+      },
+      {
+        "row": 33,
+        "text": " \u2192 \u2713 Do not trust",
+        "exactPiSharpCellMatch": true
+      }
+    ],
+    "verify-session-stays-untrusted": [
+      {
+        "row": 25,
+        "text": " Project trust",
+        "exactPiSharpCellMatch": true
+      },
+      {
+        "row": 26,
+        "text": " /tmp/pisharp-terminal-fixture-workspace/trust-project",
+        "exactPiSharpCellMatch": true
+      },
+      {
+        "row": 28,
+        "text": " Saved decision: trusted (inherited from /tmp/pisharp-terminal-fixture-workspace)",
+        "exactPiSharpCellMatch": true
+      },
+      {
+        "row": 29,
+        "text": " Current session: untrusted",
+        "exactPiSharpCellMatch": true
+      },
+      {
+        "row": 32,
+        "text": " \u2192 \u2713 Trust parent folder (/tmp/pisharp-terminal-fixture-workspace)",
+        "exactPiSharpCellMatch": true
+      },
+      {
+        "row": 33,
+        "text": "     Do not trust",
+        "exactPiSharpCellMatch": true
+      }
+    ]
+  },
+  "residual": "The selected/current markers, labels, title, path, and decision/session header rows match exactly. The whole terminal remains different across broader startup, notification, and control-screen output."
+}

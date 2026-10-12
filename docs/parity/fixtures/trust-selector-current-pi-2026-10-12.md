@@ -1,0 +1,7 @@
+# Bare `/trust` selector rendering — current Pi, 2026-10-12
+
+Oracle: Pi `4270522473e677ddba7b093caa0064a3df51d459`. Product: PiSharp `cf5f427f4990d7404f80f8a378a64d6731a7a5fd`.
+
+The selector's title, path, saved-decision and current-session rows, option text, current check, and selected arrow/label now match the Pi terminal cells exactly in both `open-trust-selector` and `verify-session-stays-untrusted`. Pi styles selector details with `muted`, selected text and markers with `accent`, and unselected labels with `text`. A deterministic renderer regression covers those roles, and the Linux PTY test still verifies saving a parent decision leaves current-session trust unchanged.
+
+Same-Pi calibration has zero state/render differences across ten frames and matching HTTP traces. The paired flow has matching HTTP traces and no scenario errors, but the complete terminal still differs: 73,022 total state/render fields, including 45,566 render fields. The remaining full-screen difference includes surrounding startup, notification, and control-screen output; the selector rows listed above are exact. Raw PTY bytes also differ. The full paired and calibration captures and machine-readable row assertions are in [paired](trust-selector-current-pi-2026-10-12/paired/), [calibration](trust-selector-current-pi-2026-10-12/calibration/), and [dialog render assertions](trust-selector-current-pi-2026-10-12/dialog-render-assertions.json).
