@@ -1,0 +1,70 @@
+2025-03-26 auth/2025-03-26-oauth-metadata-backcompat
+2025-03-26 auth/2025-03-26-oauth-endpoint-fallback
+2025-06-18 initialize
+2025-06-18 tools_call
+2025-06-18 auth/token-endpoint-auth-basic
+2025-06-18 auth/token-endpoint-auth-post
+2025-06-18 auth/token-endpoint-auth-none
+2025-11-25 initialize
+2025-11-25 tools_call
+2025-11-25 elicitation-sep1034-client-defaults
+2025-11-25 sse-retry
+2025-11-25 auth/metadata-default
+2025-11-25 auth/metadata-var1
+2025-11-25 auth/metadata-var2
+2025-11-25 auth/metadata-var3
+2025-11-25 auth/basic-cimd
+2025-11-25 auth/scope-from-www-authenticate
+2025-11-25 auth/scope-from-scopes-supported
+2025-11-25 auth/scope-omitted-when-undefined
+2025-11-25 auth/scope-step-up
+2025-11-25 auth/scope-retry-limit
+2025-11-25 auth/token-endpoint-auth-basic
+2025-11-25 auth/token-endpoint-auth-post
+2025-11-25 auth/token-endpoint-auth-none
+2025-11-25 auth/pre-registration
+2025-11-25 json-schema-2020-12-preservation
+
+2025-03-26
+  pass auth/2025-03-26-oauth-metadata-backcompat (10 passed, 0 failed)
+  pass auth/2025-03-26-oauth-endpoint-fallback (5 passed, 0 failed)
+
+2025-06-18
+  pass initialize (2 passed, 0 failed)
+  pass tools_call (3 passed, 0 failed)
+  pass auth/token-endpoint-auth-basic (16 passed, 0 failed)
+  pass auth/token-endpoint-auth-post (16 passed, 0 failed)
+  pass auth/token-endpoint-auth-none (16 passed, 0 failed)
+
+2025-11-25
+  pass initialize (2 passed, 0 failed)
+  pass tools_call (3 passed, 0 failed)
+  FAIL elicitation-sep1034-client-defaults (1 passed, 6 failed)
+         client-elicitation-sep1034-general: Elicitation failed: MCP error -32601: Method 'elicitation/create' is not available.
+         client-elicitation-sep1034-string-default: Server applies default default for elicitation
+         client-elicitation-sep1034-integer-default: Server applies default default for elicitation
+         client-elicitation-sep1034-number-default: Server applies default default for elicitation
+         client-elicitation-sep1034-enum-default: Server applies default default for elicitation
+         client-elicitation-sep1034-boolean-default: Server applies default default for elicitation
+  pass sse-retry (4 passed, 0 failed)
+  pass auth/metadata-default (11 passed, 0 failed)
+  pass auth/metadata-var1 (11 passed, 0 failed)
+  pass auth/metadata-var2 (11 passed, 0 failed)
+  pass auth/metadata-var3 (11 passed, 0 failed)
+  FAIL auth/basic-cimd (11 passed, 1 failed)
+         cimd-client-id-used: Client SHOULD use URL-based client ID when server advertises client_id_metadata_document_supported=true
+  pass auth/scope-from-www-authenticate (12 passed, 0 failed)
+  pass auth/scope-from-scopes-supported (12 passed, 0 failed)
+  pass auth/scope-omitted-when-undefined (12 passed, 0 failed)
+  pass auth/scope-step-up (13 passed, 0 failed)
+  FAIL auth/scope-retry-limit (10 passed, 1 failed)
+         pisharp-client: Still requires sign-in after 3 sign-ins
+  pass auth/token-endpoint-auth-basic (16 passed, 0 failed)
+  pass auth/token-endpoint-auth-post (16 passed, 0 failed)
+  pass auth/token-endpoint-auth-none (16 passed, 0 failed)
+  pass auth/pre-registration (11 passed, 0 failed)
+  pass json-schema-2020-12-preservation (10 passed, 0 failed)
+
+No regressions against the baseline; all known failures are classified.
+
+Results kept in /tmp/pisharp-mcp-conformance-jsQcwi

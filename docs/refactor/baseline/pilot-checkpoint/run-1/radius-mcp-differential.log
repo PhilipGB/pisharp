@@ -1,0 +1,11 @@
+
+ RUN  v4.1.11 /tmp/pisharp-frozen-pi1/packages/coding-agent
+
+·
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  17:50:20
+   Duration  2.88s (transform 1.98s, setup 0ms, import 2.74s, tests 22ms, environment 0ms)
+
+Matched 10 radius-mcp MCP setup scenarios.

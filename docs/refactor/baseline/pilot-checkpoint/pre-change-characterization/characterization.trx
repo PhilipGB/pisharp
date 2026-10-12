@@ -1,0 +1,178 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="87c0131a-61c9-421b-a14a-a8f32bcf5102" name="@philip-Latitude-7320 2026-10-12 17:39:23" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2026-10-12T17:39:23.3359197+01:00" queuing="2026-10-12T17:39:23.3359198+01:00" start="2026-10-12T17:39:21.1725217+01:00" finish="2026-10-12T17:39:25.3313947+01:00" />
+  <TestSettings name="default" id="5f5af820-f096-420d-b3b1-2aa5a33a08c6">
+    <Deployment runDeploymentRoot="_philip-Latitude-7320_2026-10-12_17_39_23" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="c24177ea-8aeb-464e-875d-9354c30735f0" testId="6fc4f09d-bf6b-13f2-12e2-b8e9e624f7b8" testName="PiSharp.Tests.CodingToolsTests.DirectBashCancelledBeforeStartHasNoSideEffectsAndLeavesRunnerUsable" computerName="philip-Latitude-7320" duration="00:00:00.0037777" startTime="2026-10-12T17:39:24.6833740+01:00" endTime="2026-10-12T17:39:24.6871605+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="c24177ea-8aeb-464e-875d-9354c30735f0" />
+    <UnitTestResult executionId="195deaa6-3f80-433d-a676-59abbc3f6ec1" testId="17295b77-a0fe-2056-bfdf-5bad465d7330" testName="PiSharp.Tests.CodingToolsTests.BashCancellationAndTimeoutKillTheProcessGroup" computerName="philip-Latitude-7320" duration="00:00:00.5116468" startTime="2026-10-12T17:39:24.7317788+01:00" endTime="2026-10-12T17:39:25.2434738+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="195deaa6-3f80-433d-a676-59abbc3f6ec1" />
+    <UnitTestResult executionId="e1cf1fdd-357c-4d2e-b67c-db561026617b" testId="c8c5c2b8-88f6-4db7-2480-a70cf16b29fc" testName="PiSharp.Tests.CodingToolsTests.ShellCommandPrefixRunsOnceForToolAndDirectBashExecution" computerName="philip-Latitude-7320" duration="00:00:00.0071936" startTime="2026-10-12T17:39:24.6873480+01:00" endTime="2026-10-12T17:39:24.6946142+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="e1cf1fdd-357c-4d2e-b67c-db561026617b" />
+    <UnitTestResult executionId="888918dc-2605-409e-8ceb-62a43e56d747" testId="fb0e8d8d-df8c-4825-1bf9-2f05e77434f3" testName="PiSharp.Tests.CodingToolsTests.BashTruncatesAnOversizedLineAndRetainsItsCompleteLog" computerName="philip-Latitude-7320" duration="00:00:00.0075417" startTime="2026-10-12T17:39:24.7239041+01:00" endTime="2026-10-12T17:39:24.7315758+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="888918dc-2605-409e-8ceb-62a43e56d747" />
+    <UnitTestResult executionId="ac7c30f8-f74e-4873-94e4-60be6fa415b1" testId="c6f92a5b-b132-e143-c515-d554b49ecc37" testName="PiSharp.Tests.CodingToolsTests.ShellOutputBufferStreamsUtf8AndFlushesAnIncompleteFinalSequence" computerName="philip-Latitude-7320" duration="00:00:00.0007753" startTime="2026-10-12T17:39:24.7230437+01:00" endTime="2026-10-12T17:39:24.7237542+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="ac7c30f8-f74e-4873-94e4-60be6fa415b1" />
+    <UnitTestResult executionId="34234bd0-3721-43fc-b88a-9c9178b4c61e" testId="163cb877-ea0f-20f8-7517-4c52c0d8a309" testName="PiSharp.Tests.CodingToolsTests.FileMutationQueueSerializesExistingTargetsThroughDirectorySymlinks" computerName="philip-Latitude-7320" duration="00:00:00.0067813" startTime="2026-10-12T17:39:25.2442929+01:00" endTime="2026-10-12T17:39:25.2505981+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="34234bd0-3721-43fc-b88a-9c9178b4c61e" />
+    <UnitTestResult executionId="2017fd14-cdea-4140-8f20-e645b9bbc3d5" testId="e8b1877a-b1a6-e812-5a4b-1b8a879ac358" testName="PiSharp.Tests.CodingToolsTests.DirectBashUpdatesArePublishedImmediatelyWithoutCoalescing" computerName="philip-Latitude-7320" duration="00:00:00.0007762" startTime="2026-10-12T17:39:24.7153504+01:00" endTime="2026-10-12T17:39:24.7159906+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="2017fd14-cdea-4140-8f20-e645b9bbc3d5" />
+    <UnitTestResult executionId="5ba0e9ff-b06f-4272-971e-c72ab676501b" testId="4fabf193-c202-211e-85e9-bc6173df1f14" testName="PiSharp.Tests.CodingToolsTests.WriteUnderFileParentsUsesNodeEexistAndEnotdirErrors" computerName="philip-Latitude-7320" duration="00:00:00.0023828" startTime="2026-10-12T17:39:24.6948054+01:00" endTime="2026-10-12T17:39:24.6971717+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="5ba0e9ff-b06f-4272-971e-c72ab676501b" />
+    <UnitTestResult executionId="b24313c0-9ea3-4c90-8593-ed0f8dcd45de" testId="5d91094a-8f12-4633-777b-8ff23657bfca" testName="PiSharp.Tests.CodingToolsTests.DirectBashOutputNormalizesAnsiBinaryControlsAndCarriageReturnsAcrossChunks" computerName="philip-Latitude-7320" duration="00:00:00.0077791" startTime="2026-10-12T17:39:24.6751036+01:00" endTime="2026-10-12T17:39:24.6831361+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="b24313c0-9ea3-4c90-8593-ed0f8dcd45de" />
+    <UnitTestResult executionId="a146623a-b92e-48b9-acb0-76e0d5a795e3" testId="3fc02cd0-daa4-1e5e-c096-400de1475377" testName="PiSharp.Tests.CodingToolsTests.BashBoundsOutputAndRetainsPrivateCompleteLog" computerName="philip-Latitude-7320" duration="00:00:00.0076607" startTime="2026-10-12T17:39:24.7048894+01:00" endTime="2026-10-12T17:39:24.7110074+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="a146623a-b92e-48b9-acb0-76e0d5a795e3" />
+    <UnitTestResult executionId="cc3af710-db17-452a-a1da-ecc4b3aeed4a" testId="8859caf8-31ea-283c-5ae8-9702b754a7bb" testName="PiSharp.Tests.CodingToolsTests.AbortBashCancelsToolAndDirectExecutionsOnTheSharedRunner" computerName="philip-Latitude-7320" duration="00:00:00.0083167" startTime="2026-10-12T17:39:23.6476328+01:00" endTime="2026-10-12T17:39:23.6556945+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="cc3af710-db17-452a-a1da-ecc4b3aeed4a" />
+    <UnitTestResult executionId="1840fd90-d384-4780-87ff-641977c5334a" testId="bf794cf7-c1f6-d454-3e5f-feb07baf3393" testName="PiSharp.Tests.CodingToolsTests.BashToolDeclarationMatchesCurrentPiProviderContract" computerName="philip-Latitude-7320" duration="00:00:00.0018709" startTime="2026-10-12T17:39:24.7211514+01:00" endTime="2026-10-12T17:39:24.7228926+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="1840fd90-d384-4780-87ff-641977c5334a" />
+    <UnitTestResult executionId="51c156cd-a2ff-4ceb-850c-e7bee7c5e693" testId="5da6e5cd-6d6a-4300-f2f2-1254275764bf" testName="PiSharp.Tests.CodingToolsTests.WritePermissionDeniedUsesNodeEaccesError" computerName="philip-Latitude-7320" duration="00:00:00.0010829" startTime="2026-10-12T17:39:24.6973385+01:00" endTime="2026-10-12T17:39:24.6983232+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="51c156cd-a2ff-4ceb-850c-e7bee7c5e693" />
+    <UnitTestResult executionId="ae76f4a9-e8aa-4ce0-8b04-e96bbd3f079e" testId="8e79ee00-5fcd-160d-a0e5-c7cedbf17ea1" testName="PiSharp.Tests.CodingToolsTests.CancelledMutationWaiterDoesNotRunOrReleaseTheActiveMutation" computerName="philip-Latitude-7320" duration="00:00:00.0028526" startTime="2026-10-12T17:39:25.2514818+01:00" endTime="2026-10-12T17:39:25.2537024+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="ae76f4a9-e8aa-4ce0-8b04-e96bbd3f079e" />
+    <UnitTestResult executionId="1645573e-ca3e-4539-bb1b-10d301e403d4" testId="9a49c44a-8135-1ff3-6418-d6508c716111" testName="PiSharp.Tests.CodingToolsTests.WriteReadAndEditResolveAgainstWorkingDirectory" computerName="philip-Latitude-7320" duration="00:00:00.0091244" startTime="2026-10-12T17:39:25.2539059+01:00" endTime="2026-10-12T17:39:25.2630753+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="1645573e-ca3e-4539-bb1b-10d301e403d4" />
+    <UnitTestResult executionId="e139ca6d-4834-4b2b-9264-aecf8694c7cb" testId="b92c4b1a-87d6-49ae-7046-4360ea9a5a44" testName="PiSharp.Tests.CodingToolsTests.AtomicWritePreservesTargetOnCancellationAndFollowsSymlinks" computerName="philip-Latitude-7320" duration="00:00:00.0045027" startTime="2026-10-12T17:39:24.6984554+01:00" endTime="2026-10-12T17:39:24.7030643+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="e139ca6d-4834-4b2b-9264-aecf8694c7cb" />
+    <UnitTestResult executionId="36e7bd50-db7b-486a-8913-7844f96dda28" testId="9987de1c-95dc-d05e-7253-19b37dfcb5bc" testName="PiSharp.Tests.CodingToolsTests.BashTimeoutRetainsFullTruncatedOutputAndReportsItsPath" computerName="philip-Latitude-7320" duration="00:00:01.5235885" startTime="2026-10-12T17:39:22.1233378+01:00" endTime="2026-10-12T17:39:23.6472461+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="36e7bd50-db7b-486a-8913-7844f96dda28" />
+    <UnitTestResult executionId="9ec9b639-f82d-4806-8d5a-e02e33b90302" testId="756bce18-79a1-74d8-a02d-73b099871276" testName="PiSharp.Tests.CodingToolsTests.BashHonorsShellPathAndRejectsInvalidTimeoutsAndWorkingDirectories" computerName="philip-Latitude-7320" duration="00:00:00.0038709" startTime="2026-10-12T17:39:24.7113012+01:00" endTime="2026-10-12T17:39:24.7151637+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="9ec9b639-f82d-4806-8d5a-e02e33b90302" />
+    <UnitTestResult executionId="86a062a9-8d60-475d-a271-eb11766b5814" testId="dc8b8a59-e2f4-6f84-93ad-7fa9d5fd1180" testName="PiSharp.Tests.CodingToolsTests.ReadToolDeclarationMatchesCurrentPiProviderContract" computerName="philip-Latitude-7320" duration="00:00:00.0007330" startTime="2026-10-12T17:39:25.2632051+01:00" endTime="2026-10-12T17:39:25.2639016+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="86a062a9-8d60-475d-a271-eb11766b5814" />
+    <UnitTestResult executionId="50e0b3f7-7361-4fb0-be94-0875412f37b4" testId="f9a41171-8b5c-2f77-2fd9-93e585b01114" testName="PiSharp.Tests.CodingToolsTests.WriteToDirectoryUsesNodeEisdirError" computerName="philip-Latitude-7320" duration="00:00:00.0009299" startTime="2026-10-12T17:39:22.1223931+01:00" endTime="2026-10-12T17:39:22.1232359+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="50e0b3f7-7361-4fb0-be94-0875412f37b4" />
+    <UnitTestResult executionId="92e36572-e84f-47ff-90f3-f85fa13961df" testId="f5090366-4e46-8e0c-2ea2-d7da717f4e55" testName="PiSharp.Tests.CodingToolsTests.BashSignalTerminationUsesShellExitCodesAndPreservesPartialOutput" computerName="philip-Latitude-7320" duration="00:00:00.0047340" startTime="2026-10-12T17:39:24.7161358+01:00" endTime="2026-10-12T17:39:24.7209571+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="92e36572-e84f-47ff-90f3-f85fa13961df" />
+    <UnitTestResult executionId="ca6977be-88d6-43be-ab8e-cf8c81200b31" testId="f8d82b6e-5b63-df6c-9c9a-a992b7f11a2a" testName="PiSharp.Tests.CodingToolsTests.BashCapturesOutputFromAChildThatWritesAfterTheShellExits" computerName="philip-Latitude-7320" duration="00:00:00.0192962" startTime="2026-10-12T17:39:22.1027001+01:00" endTime="2026-10-12T17:39:22.1222153+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="ca6977be-88d6-43be-ab8e-cf8c81200b31" />
+    <UnitTestResult executionId="cf652c82-3ea4-476b-b412-9236421b30d4" testId="e5a558ae-efc0-60b5-b8b0-09af42aea10f" testName="PiSharp.Tests.CodingToolsTests.EditFailsWithoutMutatingWhenAmbiguousOrAbsent" computerName="philip-Latitude-7320" duration="00:00:00.0358925" startTime="2026-10-12T17:39:22.0742353+01:00" endTime="2026-10-12T17:39:22.1014679+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="cf652c82-3ea4-476b-b412-9236421b30d4" />
+    <UnitTestResult executionId="a0aa1b2c-9cb5-4284-942c-9311d2c7e3c0" testId="abd5acaf-b171-fcec-6e93-144765151db4" testName="PiSharp.Tests.CodingToolsTests.WriteAndEditToolDeclarationsMatchCurrentPiProviderContract" computerName="philip-Latitude-7320" duration="00:00:00.0907868" startTime="2026-10-12T17:39:21.9585542+01:00" endTime="2026-10-12T17:39:22.0630376+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="a0aa1b2c-9cb5-4284-942c-9311d2c7e3c0" />
+    <UnitTestResult executionId="13f33ac0-7f87-4b83-befd-a3ffe879cecf" testId="8d3d0313-c385-587f-3265-360fd4552bae" testName="PiSharp.Tests.CodingToolsTests.BashReportsExitAndCanTimeOut" computerName="philip-Latitude-7320" duration="00:00:01.0184148" startTime="2026-10-12T17:39:23.6559237+01:00" endTime="2026-10-12T17:39:24.6747781+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="13f33ac0-7f87-4b83-befd-a3ffe879cecf" />
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="PiSharp.Tests.CodingToolsTests.ReadToolDeclarationMatchesCurrentPiProviderContract" storage="/home/philip/downloads/pisharp-bootstrap/pisharp/tests/pisharp.tests/bin/debug/net10.0/pisharp.tests.dll" id="dc8b8a59-e2f4-6f84-93ad-7fa9d5fd1180">
+      <Execution id="86a062a9-8d60-475d-a271-eb11766b5814" />
+      <TestMethod codeBase="/home/philip/Downloads/pisharp-bootstrap/pisharp/tests/PiSharp.Tests/bin/Debug/net10.0/PiSharp.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="PiSharp.Tests.CodingToolsTests" name="ReadToolDeclarationMatchesCurrentPiProviderContract" />
+    </UnitTest>
+    <UnitTest name="PiSharp.Tests.CodingToolsTests.BashBoundsOutputAndRetainsPrivateCompleteLog" storage="/home/philip/downloads/pisharp-bootstrap/pisharp/tests/pisharp.tests/bin/debug/net10.0/pisharp.tests.dll" id="3fc02cd0-daa4-1e5e-c096-400de1475377">
+      <Execution id="a146623a-b92e-48b9-acb0-76e0d5a795e3" />
+      <TestMethod codeBase="/home/philip/Downloads/pisharp-bootstrap/pisharp/tests/PiSharp.Tests/bin/Debug/net10.0/PiSharp.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="PiSharp.Tests.CodingToolsTests" name="BashBoundsOutputAndRetainsPrivateCompleteLog" />
+    </UnitTest>
+    <UnitTest name="PiSharp.Tests.CodingToolsTests.AtomicWritePreservesTargetOnCancellationAndFollowsSymlinks" storage="/home/philip/downloads/pisharp-bootstrap/pisharp/tests/pisharp.tests/bin/debug/net10.0/pisharp.tests.dll" id="b92c4b1a-87d6-49ae-7046-4360ea9a5a44">
+      <Execution id="e139ca6d-4834-4b2b-9264-aecf8694c7cb" />
+      <TestMethod codeBase="/home/philip/Downloads/pisharp-bootstrap/pisharp/tests/PiSharp.Tests/bin/Debug/net10.0/PiSharp.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="PiSharp.Tests.CodingToolsTests" name="AtomicWritePreservesTargetOnCancellationAndFollowsSymlinks" />
+    </UnitTest>
+    <UnitTest name="PiSharp.Tests.CodingToolsTests.WriteUnderFileParentsUsesNodeEexistAndEnotdirErrors" storage="/home/philip/downloads/pisharp-bootstrap/pisharp/tests/pisharp.tests/bin/debug/net10.0/pisharp.tests.dll" id="4fabf193-c202-211e-85e9-bc6173df1f14">
+      <Execution id="5ba0e9ff-b06f-4272-971e-c72ab676501b" />
+      <TestMethod codeBase="/home/philip/Downloads/pisharp-bootstrap/pisharp/tests/PiSharp.Tests/bin/Debug/net10.0/PiSharp.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="PiSharp.Tests.CodingToolsTests" name="WriteUnderFileParentsUsesNodeEexistAndEnotdirErrors" />
+    </UnitTest>
+    <UnitTest name="PiSharp.Tests.CodingToolsTests.BashReportsExitAndCanTimeOut" storage="/home/philip/downloads/pisharp-bootstrap/pisharp/tests/pisharp.tests/bin/debug/net10.0/pisharp.tests.dll" id="8d3d0313-c385-587f-3265-360fd4552bae">
+      <Execution id="13f33ac0-7f87-4b83-befd-a3ffe879cecf" />
+      <TestMethod codeBase="/home/philip/Downloads/pisharp-bootstrap/pisharp/tests/PiSharp.Tests/bin/Debug/net10.0/PiSharp.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="PiSharp.Tests.CodingToolsTests" name="BashReportsExitAndCanTimeOut" />
+    </UnitTest>
+    <UnitTest name="PiSharp.Tests.CodingToolsTests.ShellCommandPrefixRunsOnceForToolAndDirectBashExecution" storage="/home/philip/downloads/pisharp-bootstrap/pisharp/tests/pisharp.tests/bin/debug/net10.0/pisharp.tests.dll" id="c8c5c2b8-88f6-4db7-2480-a70cf16b29fc">
+      <Execution id="e1cf1fdd-357c-4d2e-b67c-db561026617b" />
+      <TestMethod codeBase="/home/philip/Downloads/pisharp-bootstrap/pisharp/tests/PiSharp.Tests/bin/Debug/net10.0/PiSharp.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="PiSharp.Tests.CodingToolsTests" name="ShellCommandPrefixRunsOnceForToolAndDirectBashExecution" />
+    </UnitTest>
+    <UnitTest name="PiSharp.Tests.CodingToolsTests.EditFailsWithoutMutatingWhenAmbiguousOrAbsent" storage="/home/philip/downloads/pisharp-bootstrap/pisharp/tests/pisharp.tests/bin/debug/net10.0/pisharp.tests.dll" id="e5a558ae-efc0-60b5-b8b0-09af42aea10f">
+      <Execution id="cf652c82-3ea4-476b-b412-9236421b30d4" />
+      <TestMethod codeBase="/home/philip/Downloads/pisharp-bootstrap/pisharp/tests/PiSharp.Tests/bin/Debug/net10.0/PiSharp.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="PiSharp.Tests.CodingToolsTests" name="EditFailsWithoutMutatingWhenAmbiguousOrAbsent" />
+    </UnitTest>
+    <UnitTest name="PiSharp.Tests.CodingToolsTests.BashTruncatesAnOversizedLineAndRetainsItsCompleteLog" storage="/home/philip/downloads/pisharp-bootstrap/pisharp/tests/pisharp.tests/bin/debug/net10.0/pisharp.tests.dll" id="fb0e8d8d-df8c-4825-1bf9-2f05e77434f3">
+      <Execution id="888918dc-2605-409e-8ceb-62a43e56d747" />
+      <TestMethod codeBase="/home/philip/Downloads/pisharp-bootstrap/pisharp/tests/PiSharp.Tests/bin/Debug/net10.0/PiSharp.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="PiSharp.Tests.CodingToolsTests" name="BashTruncatesAnOversizedLineAndRetainsItsCompleteLog" />
+    </UnitTest>
+    <UnitTest name="PiSharp.Tests.CodingToolsTests.CancelledMutationWaiterDoesNotRunOrReleaseTheActiveMutation" storage="/home/philip/downloads/pisharp-bootstrap/pisharp/tests/pisharp.tests/bin/debug/net10.0/pisharp.tests.dll" id="8e79ee00-5fcd-160d-a0e5-c7cedbf17ea1">
+      <Execution id="ae76f4a9-e8aa-4ce0-8b04-e96bbd3f079e" />
+      <TestMethod codeBase="/home/philip/Downloads/pisharp-bootstrap/pisharp/tests/PiSharp.Tests/bin/Debug/net10.0/PiSharp.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="PiSharp.Tests.CodingToolsTests" name="CancelledMutationWaiterDoesNotRunOrReleaseTheActiveMutation" />
+    </UnitTest>
+    <UnitTest name="PiSharp.Tests.CodingToolsTests.WriteToDirectoryUsesNodeEisdirError" storage="/home/philip/downloads/pisharp-bootstrap/pisharp/tests/pisharp.tests/bin/debug/net10.0/pisharp.tests.dll" id="f9a41171-8b5c-2f77-2fd9-93e585b01114">
+      <Execution id="50e0b3f7-7361-4fb0-be94-0875412f37b4" />
+      <TestMethod codeBase="/home/philip/Downloads/pisharp-bootstrap/pisharp/tests/PiSharp.Tests/bin/Debug/net10.0/PiSharp.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="PiSharp.Tests.CodingToolsTests" name="WriteToDirectoryUsesNodeEisdirError" />
+    </UnitTest>
+    <UnitTest name="PiSharp.Tests.CodingToolsTests.WriteAndEditToolDeclarationsMatchCurrentPiProviderContract" storage="/home/philip/downloads/pisharp-bootstrap/pisharp/tests/pisharp.tests/bin/debug/net10.0/pisharp.tests.dll" id="abd5acaf-b171-fcec-6e93-144765151db4">
+      <Execution id="a0aa1b2c-9cb5-4284-942c-9311d2c7e3c0" />
+      <TestMethod codeBase="/home/philip/Downloads/pisharp-bootstrap/pisharp/tests/PiSharp.Tests/bin/Debug/net10.0/PiSharp.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="PiSharp.Tests.CodingToolsTests" name="WriteAndEditToolDeclarationsMatchCurrentPiProviderContract" />
+    </UnitTest>
+    <UnitTest name="PiSharp.Tests.CodingToolsTests.WritePermissionDeniedUsesNodeEaccesError" storage="/home/philip/downloads/pisharp-bootstrap/pisharp/tests/pisharp.tests/bin/debug/net10.0/pisharp.tests.dll" id="5da6e5cd-6d6a-4300-f2f2-1254275764bf">
+      <Execution id="51c156cd-a2ff-4ceb-850c-e7bee7c5e693" />
+      <TestMethod codeBase="/home/philip/Downloads/pisharp-bootstrap/pisharp/tests/PiSharp.Tests/bin/Debug/net10.0/PiSharp.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="PiSharp.Tests.CodingToolsTests" name="WritePermissionDeniedUsesNodeEaccesError" />
+    </UnitTest>
+    <UnitTest name="PiSharp.Tests.CodingToolsTests.BashCancellationAndTimeoutKillTheProcessGroup" storage="/home/philip/downloads/pisharp-bootstrap/pisharp/tests/pisharp.tests/bin/debug/net10.0/pisharp.tests.dll" id="17295b77-a0fe-2056-bfdf-5bad465d7330">
+      <Execution id="195deaa6-3f80-433d-a676-59abbc3f6ec1" />
+      <TestMethod codeBase="/home/philip/Downloads/pisharp-bootstrap/pisharp/tests/PiSharp.Tests/bin/Debug/net10.0/PiSharp.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="PiSharp.Tests.CodingToolsTests" name="BashCancellationAndTimeoutKillTheProcessGroup" />
+    </UnitTest>
+    <UnitTest name="PiSharp.Tests.CodingToolsTests.ShellOutputBufferStreamsUtf8AndFlushesAnIncompleteFinalSequence" storage="/home/philip/downloads/pisharp-bootstrap/pisharp/tests/pisharp.tests/bin/debug/net10.0/pisharp.tests.dll" id="c6f92a5b-b132-e143-c515-d554b49ecc37">
+      <Execution id="ac7c30f8-f74e-4873-94e4-60be6fa415b1" />
+      <TestMethod codeBase="/home/philip/Downloads/pisharp-bootstrap/pisharp/tests/PiSharp.Tests/bin/Debug/net10.0/PiSharp.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="PiSharp.Tests.CodingToolsTests" name="ShellOutputBufferStreamsUtf8AndFlushesAnIncompleteFinalSequence" />
+    </UnitTest>
+    <UnitTest name="PiSharp.Tests.CodingToolsTests.BashTimeoutRetainsFullTruncatedOutputAndReportsItsPath" storage="/home/philip/downloads/pisharp-bootstrap/pisharp/tests/pisharp.tests/bin/debug/net10.0/pisharp.tests.dll" id="9987de1c-95dc-d05e-7253-19b37dfcb5bc">
+      <Execution id="36e7bd50-db7b-486a-8913-7844f96dda28" />
+      <TestMethod codeBase="/home/philip/Downloads/pisharp-bootstrap/pisharp/tests/PiSharp.Tests/bin/Debug/net10.0/PiSharp.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="PiSharp.Tests.CodingToolsTests" name="BashTimeoutRetainsFullTruncatedOutputAndReportsItsPath" />
+    </UnitTest>
+    <UnitTest name="PiSharp.Tests.CodingToolsTests.BashCapturesOutputFromAChildThatWritesAfterTheShellExits" storage="/home/philip/downloads/pisharp-bootstrap/pisharp/tests/pisharp.tests/bin/debug/net10.0/pisharp.tests.dll" id="f8d82b6e-5b63-df6c-9c9a-a992b7f11a2a">
+      <Execution id="ca6977be-88d6-43be-ab8e-cf8c81200b31" />
+      <TestMethod codeBase="/home/philip/Downloads/pisharp-bootstrap/pisharp/tests/PiSharp.Tests/bin/Debug/net10.0/PiSharp.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="PiSharp.Tests.CodingToolsTests" name="BashCapturesOutputFromAChildThatWritesAfterTheShellExits" />
+    </UnitTest>
+    <UnitTest name="PiSharp.Tests.CodingToolsTests.DirectBashCancelledBeforeStartHasNoSideEffectsAndLeavesRunnerUsable" storage="/home/philip/downloads/pisharp-bootstrap/pisharp/tests/pisharp.tests/bin/debug/net10.0/pisharp.tests.dll" id="6fc4f09d-bf6b-13f2-12e2-b8e9e624f7b8">
+      <Execution id="c24177ea-8aeb-464e-875d-9354c30735f0" />
+      <TestMethod codeBase="/home/philip/Downloads/pisharp-bootstrap/pisharp/tests/PiSharp.Tests/bin/Debug/net10.0/PiSharp.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="PiSharp.Tests.CodingToolsTests" name="DirectBashCancelledBeforeStartHasNoSideEffectsAndLeavesRunnerUsable" />
+    </UnitTest>
+    <UnitTest name="PiSharp.Tests.CodingToolsTests.AbortBashCancelsToolAndDirectExecutionsOnTheSharedRunner" storage="/home/philip/downloads/pisharp-bootstrap/pisharp/tests/pisharp.tests/bin/debug/net10.0/pisharp.tests.dll" id="8859caf8-31ea-283c-5ae8-9702b754a7bb">
+      <Execution id="cc3af710-db17-452a-a1da-ecc4b3aeed4a" />
+      <TestMethod codeBase="/home/philip/Downloads/pisharp-bootstrap/pisharp/tests/PiSharp.Tests/bin/Debug/net10.0/PiSharp.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="PiSharp.Tests.CodingToolsTests" name="AbortBashCancelsToolAndDirectExecutionsOnTheSharedRunner" />
+    </UnitTest>
+    <UnitTest name="PiSharp.Tests.CodingToolsTests.WriteReadAndEditResolveAgainstWorkingDirectory" storage="/home/philip/downloads/pisharp-bootstrap/pisharp/tests/pisharp.tests/bin/debug/net10.0/pisharp.tests.dll" id="9a49c44a-8135-1ff3-6418-d6508c716111">
+      <Execution id="1645573e-ca3e-4539-bb1b-10d301e403d4" />
+      <TestMethod codeBase="/home/philip/Downloads/pisharp-bootstrap/pisharp/tests/PiSharp.Tests/bin/Debug/net10.0/PiSharp.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="PiSharp.Tests.CodingToolsTests" name="WriteReadAndEditResolveAgainstWorkingDirectory" />
+    </UnitTest>
+    <UnitTest name="PiSharp.Tests.CodingToolsTests.BashToolDeclarationMatchesCurrentPiProviderContract" storage="/home/philip/downloads/pisharp-bootstrap/pisharp/tests/pisharp.tests/bin/debug/net10.0/pisharp.tests.dll" id="bf794cf7-c1f6-d454-3e5f-feb07baf3393">
+      <Execution id="1840fd90-d384-4780-87ff-641977c5334a" />
+      <TestMethod codeBase="/home/philip/Downloads/pisharp-bootstrap/pisharp/tests/PiSharp.Tests/bin/Debug/net10.0/PiSharp.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="PiSharp.Tests.CodingToolsTests" name="BashToolDeclarationMatchesCurrentPiProviderContract" />
+    </UnitTest>
+    <UnitTest name="PiSharp.Tests.CodingToolsTests.BashSignalTerminationUsesShellExitCodesAndPreservesPartialOutput" storage="/home/philip/downloads/pisharp-bootstrap/pisharp/tests/pisharp.tests/bin/debug/net10.0/pisharp.tests.dll" id="f5090366-4e46-8e0c-2ea2-d7da717f4e55">
+      <Execution id="92e36572-e84f-47ff-90f3-f85fa13961df" />
+      <TestMethod codeBase="/home/philip/Downloads/pisharp-bootstrap/pisharp/tests/PiSharp.Tests/bin/Debug/net10.0/PiSharp.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="PiSharp.Tests.CodingToolsTests" name="BashSignalTerminationUsesShellExitCodesAndPreservesPartialOutput" />
+    </UnitTest>
+    <UnitTest name="PiSharp.Tests.CodingToolsTests.FileMutationQueueSerializesExistingTargetsThroughDirectorySymlinks" storage="/home/philip/downloads/pisharp-bootstrap/pisharp/tests/pisharp.tests/bin/debug/net10.0/pisharp.tests.dll" id="163cb877-ea0f-20f8-7517-4c52c0d8a309">
+      <Execution id="34234bd0-3721-43fc-b88a-9c9178b4c61e" />
+      <TestMethod codeBase="/home/philip/Downloads/pisharp-bootstrap/pisharp/tests/PiSharp.Tests/bin/Debug/net10.0/PiSharp.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="PiSharp.Tests.CodingToolsTests" name="FileMutationQueueSerializesExistingTargetsThroughDirectorySymlinks" />
+    </UnitTest>
+    <UnitTest name="PiSharp.Tests.CodingToolsTests.DirectBashOutputNormalizesAnsiBinaryControlsAndCarriageReturnsAcrossChunks" storage="/home/philip/downloads/pisharp-bootstrap/pisharp/tests/pisharp.tests/bin/debug/net10.0/pisharp.tests.dll" id="5d91094a-8f12-4633-777b-8ff23657bfca">
+      <Execution id="b24313c0-9ea3-4c90-8593-ed0f8dcd45de" />
+      <TestMethod codeBase="/home/philip/Downloads/pisharp-bootstrap/pisharp/tests/PiSharp.Tests/bin/Debug/net10.0/PiSharp.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="PiSharp.Tests.CodingToolsTests" name="DirectBashOutputNormalizesAnsiBinaryControlsAndCarriageReturnsAcrossChunks" />
+    </UnitTest>
+    <UnitTest name="PiSharp.Tests.CodingToolsTests.DirectBashUpdatesArePublishedImmediatelyWithoutCoalescing" storage="/home/philip/downloads/pisharp-bootstrap/pisharp/tests/pisharp.tests/bin/debug/net10.0/pisharp.tests.dll" id="e8b1877a-b1a6-e812-5a4b-1b8a879ac358">
+      <Execution id="2017fd14-cdea-4140-8f20-e645b9bbc3d5" />
+      <TestMethod codeBase="/home/philip/Downloads/pisharp-bootstrap/pisharp/tests/PiSharp.Tests/bin/Debug/net10.0/PiSharp.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="PiSharp.Tests.CodingToolsTests" name="DirectBashUpdatesArePublishedImmediatelyWithoutCoalescing" />
+    </UnitTest>
+    <UnitTest name="PiSharp.Tests.CodingToolsTests.BashHonorsShellPathAndRejectsInvalidTimeoutsAndWorkingDirectories" storage="/home/philip/downloads/pisharp-bootstrap/pisharp/tests/pisharp.tests/bin/debug/net10.0/pisharp.tests.dll" id="756bce18-79a1-74d8-a02d-73b099871276">
+      <Execution id="9ec9b639-f82d-4806-8d5a-e02e33b90302" />
+      <TestMethod codeBase="/home/philip/Downloads/pisharp-bootstrap/pisharp/tests/PiSharp.Tests/bin/Debug/net10.0/PiSharp.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="PiSharp.Tests.CodingToolsTests" name="BashHonorsShellPathAndRejectsInvalidTimeoutsAndWorkingDirectories" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="6fc4f09d-bf6b-13f2-12e2-b8e9e624f7b8" executionId="c24177ea-8aeb-464e-875d-9354c30735f0" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="17295b77-a0fe-2056-bfdf-5bad465d7330" executionId="195deaa6-3f80-433d-a676-59abbc3f6ec1" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="c8c5c2b8-88f6-4db7-2480-a70cf16b29fc" executionId="e1cf1fdd-357c-4d2e-b67c-db561026617b" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="fb0e8d8d-df8c-4825-1bf9-2f05e77434f3" executionId="888918dc-2605-409e-8ceb-62a43e56d747" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="c6f92a5b-b132-e143-c515-d554b49ecc37" executionId="ac7c30f8-f74e-4873-94e4-60be6fa415b1" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="163cb877-ea0f-20f8-7517-4c52c0d8a309" executionId="34234bd0-3721-43fc-b88a-9c9178b4c61e" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="e8b1877a-b1a6-e812-5a4b-1b8a879ac358" executionId="2017fd14-cdea-4140-8f20-e645b9bbc3d5" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="4fabf193-c202-211e-85e9-bc6173df1f14" executionId="5ba0e9ff-b06f-4272-971e-c72ab676501b" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="5d91094a-8f12-4633-777b-8ff23657bfca" executionId="b24313c0-9ea3-4c90-8593-ed0f8dcd45de" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="3fc02cd0-daa4-1e5e-c096-400de1475377" executionId="a146623a-b92e-48b9-acb0-76e0d5a795e3" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="8859caf8-31ea-283c-5ae8-9702b754a7bb" executionId="cc3af710-db17-452a-a1da-ecc4b3aeed4a" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="bf794cf7-c1f6-d454-3e5f-feb07baf3393" executionId="1840fd90-d384-4780-87ff-641977c5334a" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="5da6e5cd-6d6a-4300-f2f2-1254275764bf" executionId="51c156cd-a2ff-4ceb-850c-e7bee7c5e693" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="8e79ee00-5fcd-160d-a0e5-c7cedbf17ea1" executionId="ae76f4a9-e8aa-4ce0-8b04-e96bbd3f079e" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="9a49c44a-8135-1ff3-6418-d6508c716111" executionId="1645573e-ca3e-4539-bb1b-10d301e403d4" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="b92c4b1a-87d6-49ae-7046-4360ea9a5a44" executionId="e139ca6d-4834-4b2b-9264-aecf8694c7cb" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="9987de1c-95dc-d05e-7253-19b37dfcb5bc" executionId="36e7bd50-db7b-486a-8913-7844f96dda28" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="756bce18-79a1-74d8-a02d-73b099871276" executionId="9ec9b639-f82d-4806-8d5a-e02e33b90302" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="dc8b8a59-e2f4-6f84-93ad-7fa9d5fd1180" executionId="86a062a9-8d60-475d-a271-eb11766b5814" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="f9a41171-8b5c-2f77-2fd9-93e585b01114" executionId="50e0b3f7-7361-4fb0-be94-0875412f37b4" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="f5090366-4e46-8e0c-2ea2-d7da717f4e55" executionId="92e36572-e84f-47ff-90f3-f85fa13961df" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="f8d82b6e-5b63-df6c-9c9a-a992b7f11a2a" executionId="ca6977be-88d6-43be-ab8e-cf8c81200b31" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="e5a558ae-efc0-60b5-b8b0-09af42aea10f" executionId="cf652c82-3ea4-476b-b412-9236421b30d4" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="abd5acaf-b171-fcec-6e93-144765151db4" executionId="a0aa1b2c-9cb5-4284-942c-9311d2c7e3c0" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="8d3d0313-c385-587f-3265-360fd4552bae" executionId="13f33ac0-7f87-4b83-befd-a3ffe879cecf" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="Results Not in a List" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="All Loaded Results" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Completed">
+    <Counters total="25" executed="25" passed="25" failed="0" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      <StdOut>[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v3.1.4+50e68bbb8b (64-bit .NET 10.0.12)
+[xUnit.net 00:00:00.15]   Discovering: PiSharp.Tests
+[xUnit.net 00:00:00.32]   Discovered:  PiSharp.Tests
+[xUnit.net 00:00:00.35]   Starting:    PiSharp.Tests
+[xUnit.net 00:00:03.71]   Finished:    PiSharp.Tests
+</StdOut>
+    </Output>
+  </ResultSummary>
+</TestRun>

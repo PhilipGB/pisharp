@@ -343,6 +343,75 @@ public sealed class CodingToolsTests : IDisposable
     }
 
     [Fact]
+    public async Task DirectBashCancelledBeforeStartHasNoSideEffectsAndLeavesRunnerUsable()
+    {
+        var tools = new CodingTools(_dir);
+        var marker = Path.Combine(_dir, "must-not-start");
+        using var cancelled = new CancellationTokenSource();
+        cancelled.Cancel();
+        var updates = new List<string>();
+
+        var result = await tools.ExecuteBashAsync($"touch {ProcessTestHelpers.ShellQuote(marker)}",
+            updates.Add, cancelled.Token);
+
+        Assert.True(result.Cancelled);
+        Assert.Null(result.ExitCode);
+        Assert.Equal("(no output)", result.DisplayOutput);
+        Assert.Empty(updates);
+        Assert.False(File.Exists(marker));
+        var next = await tools.ExecuteBashAsync("printf 'after cancellation'");
+        Assert.False(next.Cancelled);
+        Assert.Equal(0, next.ExitCode);
+        Assert.Equal("after cancellation", next.DisplayOutput);
+    }
+
+    [Fact]
+    public async Task CancelledMutationWaiterDoesNotRunOrReleaseTheActiveMutation()
+    {
+        var queue = new FileMutationQueue();
+        var path = Path.Combine(_dir, "shared.txt");
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var active = queue.RunAsync(path, async () =>
+        {
+            started.SetResult();
+            await release.Task;
+            return "active";
+        }, CancellationToken.None);
+        try
+        {
+            await started.Task.WaitAsync(TimeSpan.FromSeconds(2));
+            using var cancelled = new CancellationTokenSource();
+            var cancelledRan = false;
+            var waiter = queue.RunAsync(path, () =>
+            {
+                cancelledRan = true;
+                return Task.FromResult("cancelled");
+            }, cancelled.Token);
+            cancelled.Cancel();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => waiter);
+            Assert.False(cancelledRan);
+            var followingRan = false;
+            var following = queue.RunAsync(path, () =>
+            {
+                followingRan = true;
+                return Task.FromResult("following");
+            }, CancellationToken.None);
+            Assert.False(following.IsCompleted);
+            Assert.False(followingRan);
+            release.SetResult();
+            Assert.Equal("active", await active.WaitAsync(TimeSpan.FromSeconds(2)));
+            Assert.Equal("following", await following.WaitAsync(TimeSpan.FromSeconds(2)));
+            Assert.True(followingRan);
+        }
+        finally
+        {
+            release.TrySetResult();
+            await active.WaitAsync(TimeSpan.FromSeconds(2));
+        }
+    }
+
+    [Fact]
     public async Task AbortBashCancelsToolAndDirectExecutionsOnTheSharedRunner()
     {
         if (!OperatingSystem.IsLinux()) return;

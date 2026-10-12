@@ -38,6 +38,12 @@ Retained diagnostic attempts explain the following corrections:
   directory. The entire resume matrix was rerun; the remaining fixtures disable
   session persistence. A new Python test protects this isolation.
 
+The later pilot control found that a global session-directory override affects
+one strict no-session render sequence. The runner now confines that override to
+commands permitting persistence; see `../pilot-checkpoint/README.md` for the
+baseline control and unchanged-source A/B evidence. This checkpoint's original
+raw results and frozen comparison remain intact.
+
 `interrupted-or-environment-attempts/`, `mcp-first-attempt/` and
 `resumption-setup-attempts/` preserve superseded attempts without replacing the
 frozen baseline. No product C# source changed. All 1,748 user files other than

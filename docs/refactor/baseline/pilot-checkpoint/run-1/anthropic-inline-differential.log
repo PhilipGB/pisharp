@@ -1,0 +1,11 @@
+
+ RUN  v4.1.11 /tmp/pisharp-frozen-pi1/packages/ai
+
+··
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  17:48:39
+   Duration  1.70s (transform 1.18s, setup 0ms, import 1.45s, tests 132ms, environment 0ms)
+
+Matched 26 Anthropic transcript scenarios.

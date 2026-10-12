@@ -82,13 +82,14 @@ def commands(pi, pisharp, scenario, pisharp_extension=None):
     return result
 
 
-def environment(agent):
+def environment(agent, *, persist_sessions=False):
     names = ['PATH', 'HOME', 'DOTNET_ROOT', 'LD_LIBRARY_PATH']
     result = {name: os.environ[name] for name in names if name in os.environ}
     result.update(TERM='xterm-256color', COLORTERM='truecolor', PI_TRUE_COLOR='1', LANG='C.UTF-8', LC_ALL='C.UTF-8',
                   PI_OFFLINE='1', PI_CODING_AGENT_DIR=str(agent), PISHARP_AGENT_DIR=str(agent),
-                  PISHARP_SESSION_DIR=str(agent / 'sessions'),
                   DOTNET_CLI_TELEMETRY_OPTOUT='1', DOTNET_NOLOGO='1')
+    if persist_sessions:
+        result['PISHARP_SESSION_DIR'] = str(agent / 'sessions')
     result.update(thread_limit_environment())
     return result
 
@@ -223,7 +224,7 @@ def run_product(label, command, scenario, dimensions, theme, mode, server):
                    background='#111111' if theme == 'dark' else '#ffffff')
     options.update(scenario.get('terminal', {}))
     command = [argument.replace('{agent}', str(agent)) for argument in command]
-    child_environment = environment(agent)
+    child_environment = environment(agent, persist_sessions='--no-session' not in command)
     child_environment['PATH'] = str(bin_directory) + os.pathsep + child_environment.get('PATH', '')
     child_environment.update(expand_environment(
         scenario.get('environment', {}).get(label, {}), agent, server.url))

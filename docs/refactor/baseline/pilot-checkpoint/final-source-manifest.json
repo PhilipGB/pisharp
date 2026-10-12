@@ -1,0 +1,10 @@
+{
+  "src/PiSharp.Runtime/CodingTools.cs": "e8dd22b21d24f7446f06805cd1520afd6eb23b373b5512e3d0795fd5e8c9bd3b",
+  "src/PiSharp.Runtime/Tools/CodingToolDeclarations.cs": "9573c85a571b9680716829e68cab02a41653879b1bc936624252ac73d37271a5",
+  "src/PiSharp.Runtime/Tools/FileMutations.cs": "a5dfba286426159f9d1b5f43fb9650d4c9e0cb41207044922510d7f211835cac",
+  "src/PiSharp.Runtime/Tools/FileReader.cs": "ff1aeadf94266052eac3b2ce1960735a52b64e4e31918df1a905b00ea5dc8d52",
+  "src/PiSharp.Runtime/Tools/ShellExecution.cs": "49c87225b5e9d7c26ca473ddb3bd4c44a1452f940388e342014cc1e32ca7b281",
+  "tests/PiSharp.Tests/CodingToolsTests.cs": "9418d87774801b4fc25d45d652420fe088fc7a9b816692d3d68d559873eb3d26",
+  "tools/parity/terminal/run.py": "b861c3f942ebf0f3db63163b682efe06620310b7d4a79f913907aa9c57b635ec",
+  "tools/parity/terminal/test_driver.py": "5a0a59c6e8a5268f6d95e80db20b35931333b283fb5f5f528069a56f5b903862"
+}

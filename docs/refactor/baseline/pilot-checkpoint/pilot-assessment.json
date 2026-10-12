@@ -1,0 +1,27 @@
+{
+  "hotspot": "H09",
+  "baselineLines": 714,
+  "finalLines": {
+    "src/PiSharp.Runtime/CodingTools.cs": 143,
+    "src/PiSharp.Runtime/Tools/CodingToolDeclarations.cs": 147,
+    "src/PiSharp.Runtime/Tools/FileReader.cs": 50,
+    "src/PiSharp.Runtime/Tools/FileMutations.cs": 115,
+    "src/PiSharp.Runtime/Tools/ShellExecution.cs": 310
+  },
+  "improved": [
+    "Filesystem reads/image limits have one owner; mutations own shared alias coordination and atomic replacement.",
+    "Shell lifetime/output/cancellation are isolated from tool declarations and ambient MAF run adaptation.",
+    "Public facade, schemas, descriptions, default selection and framework binding stay intact."
+  ],
+  "tradeoffs": [
+    "Five source files replace one; aggregate lines increase modestly for explicit ownership and constructors.",
+    "Public compatibility facade retains direct forwarding entry points; execution remains one call into its real owner."
+  ],
+  "dependencyChanges": "No package, assembly or project reference changes; no new interfaces. Shell execution consumes explicit session environment data and does not query MAF.",
+  "projectCountChanges": 0,
+  "testMovement": "None: existing capability-specific tests and stable identities remain, with two added characterizations.",
+  "focusedTests": 57,
+  "fullDotnetRows": 1358,
+  "verification": "Complete scope passes preserved comparison: 1,858 baseline identities, 1,869 candidate identities; 66 reports/136 cases; 13 semantic assertions. Known classified failures unchanged.",
+  "patternDecision": "Continue capability ownership inside existing projects where actual responsibilities separate; require a concrete compilation/dependency reason for any new project. Do not apply file-size-only splits."
+}

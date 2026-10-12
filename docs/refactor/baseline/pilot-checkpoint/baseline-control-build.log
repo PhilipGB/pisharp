@@ -1,0 +1,12 @@
+  PiSharp.Core -> /tmp/pisharp-baseline-control-064bcc7b/src/PiSharp.Core/bin/Debug/net10.0/PiSharp.Core.dll
+  PiSharp.Runtime -> /tmp/pisharp-baseline-control-064bcc7b/src/PiSharp.Runtime/bin/Debug/net10.0/PiSharp.Runtime.dll
+  PiSharp.Cli -> /tmp/pisharp-baseline-control-064bcc7b/src/PiSharp.Cli/bin/Debug/net10.0/PiSharp.Cli.dll
+  ResourceDiscoveryExtension -> /tmp/pisharp-baseline-control-064bcc7b/tests/ResourceDiscoveryExtension/bin/Debug/net10.0/dynamic-resources.dll
+  PiSharp.Tests -> /tmp/pisharp-baseline-control-064bcc7b/tests/PiSharp.Tests/bin/Debug/net10.0/PiSharp.Tests.dll
+  PiSharp.McpConformance -> /tmp/pisharp-baseline-control-064bcc7b/tools/McpConformance/bin/Debug/net10.0/PiSharp.McpConformance.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:01.42

@@ -1,0 +1,48 @@
+{
+  "frozenSelection": "frozen-hotspots.json",
+  "hotspots": [
+    {
+      "id": "H01",
+      "disposition": "OPEN"
+    },
+    {
+      "id": "H02",
+      "disposition": "OPEN"
+    },
+    {
+      "id": "H03",
+      "disposition": "OPEN"
+    },
+    {
+      "id": "H04",
+      "disposition": "OPEN"
+    },
+    {
+      "id": "H05",
+      "disposition": "OPEN"
+    },
+    {
+      "id": "H06",
+      "disposition": "OPEN"
+    },
+    {
+      "id": "H07",
+      "disposition": "OPEN"
+    },
+    {
+      "id": "H08",
+      "disposition": "OPEN"
+    },
+    {
+      "id": "H09",
+      "disposition": "RESOLVED",
+      "resolution": "Distinct file-reading, file-mutation, shell-execution and Pi declaration owners; public compatibility facade remains direct.",
+      "evidence": "pilot-checkpoint/pilot-preservation-comparison.json",
+      "capabilityDocumentation": "../../capabilities/coding-tools.md"
+    },
+    {
+      "id": "H10",
+      "disposition": "OPEN"
+    }
+  ]
+}
