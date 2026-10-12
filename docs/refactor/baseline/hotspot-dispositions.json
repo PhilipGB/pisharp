@@ -19,7 +19,11 @@
     },
     {
       "id": "H05",
-      "disposition": "OPEN"
+      "disposition": "RESOLVED",
+      "resolution": "Native message/document conversion and canonical context/usage/compaction projection have distinct owners; session retains tree/metadata mutation and branch state. Internal codec forwarding removed; public APIs and format unchanged.",
+      "evidence": "session-slice/broad-dotnet/preservation-comparison.json",
+      "parityEvidence": "session-slice/parity-preservation-comparison.json",
+      "capabilityDocumentation": "../../capabilities/sessions.md"
     },
     {
       "id": "H06",

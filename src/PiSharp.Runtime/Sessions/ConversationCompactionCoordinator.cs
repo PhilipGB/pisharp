@@ -160,7 +160,7 @@ internal sealed class ConversationCompactionCoordinator(
         return (int)Math.Min(int.MaxValue, (long)messages + (tools + 3L) / 4);
     }
 
-    private static int EstimateEntryTokens(ConversationSession.CompactionContextEntry entry)
+    private static int EstimateEntryTokens(ConversationContextProjection.CompactionContextEntry entry)
     {
         var estimated = 0L;
         foreach (var message in entry.Messages)
@@ -169,13 +169,13 @@ internal sealed class ConversationCompactionCoordinator(
     }
 
     private static List<ChatMessage> SummarizableMessages(
-        IReadOnlyList<ConversationSession.CompactionContextEntry> entries, int start, int end) => entries
+        IReadOnlyList<ConversationContextProjection.CompactionContextEntry> entries, int start, int end) => entries
         .Skip(start).Take(Math.Max(0, end - start))
         .SelectMany(entry => entry.Messages)
         .Where(message => message.Role != ChatRole.System)
         .ToList();
 
-    private static int FindTurnStart(IReadOnlyList<ConversationSession.CompactionContextEntry> entries,
+    private static int FindTurnStart(IReadOnlyList<ConversationContextProjection.CompactionContextEntry> entries,
         int from, int start)
     {
         for (var index = from; index >= start; index--)

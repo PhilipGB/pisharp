@@ -103,7 +103,7 @@ public sealed class RpcReadCommandsProcessTests
         var plan = Assert.IsType<ConversationSession.CompactionPlan>(session.PrepareCompaction());
         session.AppendCompaction(plan, "summary of old turn", tokensBefore: 1234);
         var assistantEntry = session.Tree.ActivePath()
-            .Last(node => node.Type == "chat" && ConversationSession.RestoreEntry(node).Role == ChatRole.Assistant);
+            .Last(node => node.Type == "chat" && ConversationMessageCodec.RestoreEntry(node).Role == ChatRole.Assistant);
         session.Tree.Append("context_edit", JsonSerializer.SerializeToElement(new
         {
             targetId = assistantEntry.Id,

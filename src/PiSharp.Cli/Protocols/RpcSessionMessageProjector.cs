@@ -21,7 +21,7 @@ internal static class RpcSessionMessageProjector
             var firstKeptIndex = path.ToList().FindIndex(node => node.Id == keptId);
             var isPiBoundary = PiJsonlEntryCodec.OriginalEntry(compaction) is not null;
             if (firstKeptIndex < 0 || firstKeptIndex >= compactionIndex ||
-                !isPiBoundary && ConversationSession.RestoreEntry(path[firstKeptIndex]).Role != ChatRole.User)
+                !isPiBoundary && ConversationMessageCodec.RestoreEntry(path[firstKeptIndex]).Role != ChatRole.User)
                 throw new InvalidDataException("Invalid compaction boundary.");
 
             if (PiJsonlEntryCodec.CompactionSystemMessage(compaction) is { } systemMessage)
@@ -77,7 +77,7 @@ internal static class RpcSessionMessageProjector
             if (PiJsonlEntryCodec.OriginalEntry(node) is not null)
                 return PiJsonlEntryCodec.ProjectEntry(conversation, node)["message"]?.DeepClone()?.AsObject();
             return PiJsonlEntryCodec.ProjectRuntimeMessage(conversation,
-                ConversationSession.RestoreEntry(node), api, timestamp: node.Timestamp);
+                ConversationMessageCodec.RestoreEntry(node), api, timestamp: node.Timestamp);
         }
 
         if (node.Type == "interrupted")
@@ -136,5 +136,5 @@ internal static class RpcSessionMessageProjector
     }
 
     private static bool IsSystemMessage(ConversationNode node) =>
-        node.Type == "chat" && ConversationSession.RestoreEntry(node).Role == ChatRole.System;
+        node.Type == "chat" && ConversationMessageCodec.RestoreEntry(node).Role == ChatRole.System;
 }

@@ -441,7 +441,7 @@ public sealed class ConversationRun
     {
         Conversation.AppendBashExecution(execution);
         if (execution.ExcludeFromContext) return;
-        var message = ConversationSession.BashExecutionContextMessage(execution);
+        var message = ConversationContextProjection.BashExecutionContextMessage(execution);
         _agent.AppendToHistory(_execution, message);
         _historyCount++;
     }
@@ -1010,7 +1010,7 @@ public sealed class ConversationRun
                 node =>
                 {
                     if (node.Type != "chat") return false;
-                    var message = ConversationSession.RestoreEntry(node);
+                    var message = ConversationMessageCodec.RestoreEntry(node);
                     return message.Role == ChatRole.Assistant &&
                         string.Equals(message.Text, partialText, StringComparison.Ordinal);
                 });
@@ -1024,7 +1024,7 @@ public sealed class ConversationRun
                     omittedIds.Add(entry.Id);
                 else
                 {
-                    if (entry.Type != "chat" || ConversationSession.RestoreEntry(entry).Role != ChatRole.Tool) break;
+                    if (entry.Type != "chat" || ConversationMessageCodec.RestoreEntry(entry).Role != ChatRole.Tool) break;
                     omittedIds.Add(entry.Id);
                 }
             }
@@ -1033,13 +1033,13 @@ public sealed class ConversationRun
         {
             var chatEntries = attemptEntries.Where(node => node.Type == "chat").ToArray();
             var failedAssistant = Array.FindLastIndex(chatEntries,
-                node => ConversationSession.RestoreEntry(node).Role == ChatRole.Assistant);
+                node => ConversationMessageCodec.RestoreEntry(node).Role == ChatRole.Assistant);
             if (failedAssistant >= 0)
             {
                 omittedIds.Add(chatEntries[failedAssistant].Id);
                 for (var index = failedAssistant + 1; index < chatEntries.Length; index++)
                 {
-                    var message = ConversationSession.RestoreEntry(chatEntries[index]);
+                    var message = ConversationMessageCodec.RestoreEntry(chatEntries[index]);
                     if (message.Role != ChatRole.Tool) break;
                     omittedIds.Add(chatEntries[index].Id);
                 }

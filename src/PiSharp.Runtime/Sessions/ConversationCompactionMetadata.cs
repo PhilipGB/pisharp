@@ -80,8 +80,8 @@ internal static class ConversationCompactionMetadata
             var firstKeptIndex = activePath.ToList().FindIndex(node => node.Id == plan.FirstKeptEntryId);
             foreach (var node in activePath.Take(firstKeptIndex < 0 ? 0 : firstKeptIndex))
             {
-                if (ConversationSession.NestedToolCallsFor(node) is not { } nestedCalls) continue;
-                var parentCallId = ConversationSession.RestoreEntry(node).Contents
+                if (ConversationMessageCodec.NestedToolCallsFor(node) is not { } nestedCalls) continue;
+                var parentCallId = ConversationMessageCodec.RestoreEntry(node).Contents
                     .OfType<FunctionResultContent>().FirstOrDefault()?.CallId;
                 if (parentCallId is null || !summarizedCallIds.Contains(parentCallId)) continue;
                 foreach (var call in nestedCalls.Calls)

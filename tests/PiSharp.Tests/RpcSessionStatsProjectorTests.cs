@@ -50,8 +50,8 @@ public sealed class RpcSessionStatsProjectorTests
             """;
         var session = PiJsonlSessionInterchange.Import(json);
         var toolEntry = session.Tree.Entries.Single(entry => entry.Id == "tool-result");
-        Assert.NotNull(ConversationSession.PiEntryFromChatPayload(toolEntry.Payload));
-        var restoredTool = ConversationSession.RestoreEntry(toolEntry);
+        Assert.NotNull(ConversationMessageCodec.PiEntryFromChatPayload(toolEntry.Payload));
+        var restoredTool = ConversationMessageCodec.RestoreEntry(toolEntry);
         Assert.Equal(ChatRole.Tool, restoredTool.Role);
         Assert.Contains(restoredTool.Contents, content => content is FunctionResultContent);
 

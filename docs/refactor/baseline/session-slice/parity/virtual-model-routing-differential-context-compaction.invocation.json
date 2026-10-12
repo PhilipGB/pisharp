@@ -1,0 +1,16 @@
+{
+  "id": "virtual-model-routing-differential-context-compaction",
+  "command": [
+    "python3",
+    "tools/parity/virtual-model-routing-differential.py",
+    "--pi",
+    "/tmp/pisharp-frozen-pi1",
+    "--context-compaction",
+    "--output",
+    "/tmp/pisharp-session-parity/virtual-model-routing-differential-context-compaction.json"
+  ],
+  "cwd": "/home/philip/Downloads/pisharp-bootstrap/pisharp",
+  "exitCode": 0,
+  "seconds": 3.1701979637145996,
+  "logger": "stdout+stderr text"
+}

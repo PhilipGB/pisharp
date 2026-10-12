@@ -1691,7 +1691,7 @@ public sealed class RpcModeTests
                 var targetId = entry.GetProperty("targetId").GetString();
                 var target = Assert.Single(run.Conversation.Tree.Entries, node => node.Id == targetId);
                 Assert.Equal("chat", target.Type);
-                Assert.Contains(ConversationSession.RestoreEntry(target).Role, new[] { ChatRole.Assistant, ChatRole.Tool });
+                Assert.Contains(ConversationMessageCodec.RestoreEntry(target).Role, new[] { ChatRole.Assistant, ChatRole.Tool });
             }
             var retryStartIndex = Array.FindIndex(lines, line =>
                 line.Contains("\"type\":\"auto_retry_start\"", StringComparison.Ordinal));

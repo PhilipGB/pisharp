@@ -63,7 +63,7 @@ internal sealed class InFlightContextBudget(
         }
         var projected = new List<ChatMessage>(messages.Count - older.Length + 1);
         projected.AddRange(messages.Take(users[0])); // Preserve all system/developer instructions.
-        projected.Add(ConversationSession.CompactionSummaryMessage(summaryText));
+        projected.Add(ConversationContextProjection.CompactionSummaryMessage(summaryText));
         projected.AddRange(messages.Skip(boundary));
         if (AutoCompactionPolicy.Estimate(projected, "") > policy.TriggerTokens)
             throw new InvalidOperationException("Tool-loop context still exceeds the configured budget after summarization; shorten tool output or increase the model context window.");

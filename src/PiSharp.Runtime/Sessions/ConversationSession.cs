@@ -6,13 +6,15 @@ using PiSharp.Core;
 using PiSharp.Runtime.Extensions;
 using PiSharp.Runtime.Tools;
 
+using static PiSharp.Runtime.Sessions.ConversationMessageCodec;
+using static PiSharp.Runtime.Sessions.ConversationContextProjection;
+
 namespace PiSharp.Runtime.Sessions;
 
 /// <summary>Application-owned conversation. MAF sessions are rebuilt from the selected branch.</summary>
 public sealed class ConversationSession
 {
     public const int FormatVersion = 2;
-    private static readonly JsonSerializerOptions BashExecutionJsonOptions = new(JsonSerializerDefaults.Web);
     private readonly object _metadataGate = new();
     private string _model;
     private string? _provider;
@@ -52,27 +54,6 @@ public sealed class ConversationSession
         new(id, cwd, model, null, provider, name, tree, header,
             header.TryGetProperty("parentSession", out var parent) && parent.ValueKind == JsonValueKind.String
                 ? parent.GetString() : null);
-
-    internal static ConversationNode ImportedPiMessage(string id, string? parentId, DateTimeOffset timestamp,
-        ChatMessage message, JsonElement originalEntry)
-    {
-        var errors = message.Contents.Select((content, index) => new { content, index })
-            .Where(item => item.content is FunctionResultContent { Exception: not null } or FunctionCallContent { Exception: not null })
-            .Select(item => new ToolError(item.index, item.content is FunctionResultContent ? "result" : "call",
-                item.content is FunctionResultContent result ? result.Exception!.Message : ((FunctionCallContent)item.content).Exception!.Message))
-            .ToArray();
-        return new(id, parentId, "chat", JsonSerializer.SerializeToElement(new ChatRecord(
-            JsonSerializer.SerializeToElement(message, AIJsonUtilities.DefaultOptions), errors, originalEntry.Clone(),
-            PiJsonlEntryCodec.NestedToolCallsFromEntry(originalEntry))), timestamp);
-    }
-
-    internal static JsonElement? PiEntryFromChatPayload(JsonElement payload) =>
-        payload.ValueKind == JsonValueKind.Object && payload.TryGetProperty("PiEntry", out var entry) &&
-        entry.ValueKind == JsonValueKind.Object ? entry.Clone() : null;
-
-    internal static JsonElement? PiEntryFromBashPayload(JsonElement payload) =>
-        payload.ValueKind == JsonValueKind.Object && payload.TryGetProperty("piOriginalEntry", out var entry) &&
-        entry.ValueKind == JsonValueKind.Object ? entry.Clone() : null;
 
     public void Rename(string? name) => Name = name;
 
@@ -177,17 +158,8 @@ public sealed class ConversationSession
     public void Append(ChatMessage message)
         => Append(message, null);
 
-    internal void Append(ChatMessage message, PiSharpNestedToolCalls? nestedToolCalls)
-    {
-        var errors = message.Contents.Select((content, index) => new { content, index })
-            .Where(item => item.content is FunctionResultContent { Exception: not null } or FunctionCallContent { Exception: not null })
-            .Select(item => new ToolError(item.index, item.content is FunctionResultContent ? "result" : "call",
-                item.content is FunctionResultContent result ? result.Exception!.Message : ((FunctionCallContent)item.content).Exception!.Message))
-            .ToArray();
-        Tree.Append("chat", JsonSerializer.SerializeToElement(new ChatRecord(
-            JsonSerializer.SerializeToElement(message, AIJsonUtilities.DefaultOptions), errors,
-            NestedToolCalls: nestedToolCalls)));
-    }
+    internal void Append(ChatMessage message, PiSharpNestedToolCalls? nestedToolCalls) =>
+        Tree.Append("chat", ConversationMessageCodec.EncodeMessage(message, nestedToolCalls));
 
     /// <summary>Returns the active branch's last persisted declaration set, if one exists.</summary>
     internal IReadOnlyList<string>? ActiveToolLoadout()
@@ -290,19 +262,8 @@ public sealed class ConversationSession
         return payload.Clone();
     }
 
-    internal static PiSharpNestedToolCalls? NestedToolCallsFor(ConversationNode node)
-    {
-        if (node.Type != "chat" || node.Payload.ValueKind != JsonValueKind.Object) return null;
-        return node.Payload.Deserialize<ChatRecord>()?.NestedToolCalls;
-    }
-
-    public void AppendBashExecution(BashExecutionRecord execution)
-    {
-        ArgumentNullException.ThrowIfNull(execution);
-        if (execution.Command is null || execution.Output is null)
-            throw new InvalidDataException("A Bash execution requires a command and output.");
-        Tree.Append("bash_execution", JsonSerializer.SerializeToElement(execution, BashExecutionJsonOptions));
-    }
+    public void AppendBashExecution(BashExecutionRecord execution) =>
+        Tree.Append("bash_execution", ConversationMessageCodec.EncodeBashExecution(execution));
 
     public List<ChatMessage> ActiveMessages() => Tree.ActivePath()
         .Select(ContextMessageForNode)
@@ -326,7 +287,7 @@ public sealed class ConversationSession
     /// <summary>Persist provider billing metadata without adding it to model context.</summary>
     public void AppendUsage(UsageRecord usage)
     {
-        ValidateUsage(usage, Tree.HeadId ?? "new entry");
+        NativeSessionDocumentCodec.ValidateUsage(usage, Tree.HeadId ?? "new entry");
         Tree.Append("usage", JsonSerializer.SerializeToElement(usage));
     }
 
@@ -346,271 +307,9 @@ public sealed class ConversationSession
         return projection.HasValidAssistantUsage && !projection.IsInvalidated ? projection.UsageTokens : null;
     }
 
-    internal ContextUsageProjection ProjectContextUsageForEstimate()
-    {
-        var path = Tree.ActivePath();
-        var compactIndex = path.ToList().FindLastIndex(node => node.Type == "compaction");
-        var hasCompaction = compactIndex >= 0;
-        if (path.Skip(compactIndex + 1).Any(node => node.Type == "context_projection"))
-            return new(hasCompaction, false, false, 0, []);
-
-        var usageByAssistantIndex = new Dictionary<int, long>();
-        for (var index = compactIndex + 1; index < path.Count; index++)
-        {
-            var node = path[index];
-            if (node.Type == "chat")
-            {
-                var message = Restore(node.Payload, node.Id);
-                if (IsUsableAssistantMessage(path, index, node, message) &&
-                    TryGetPiUsageTokens(node, out var piUsageTokens))
-                    usageByAssistantIndex[index] = piUsageTokens;
-            }
-
-            if (node.Type != "usage") continue;
-            var usage = node.Payload.Deserialize<UsageRecord>() ??
-                throw new InvalidDataException($"Invalid usage record at {node.Id}.");
-            if (usage.Source != "model" || ContextTokens(usage) is not > 0) continue;
-            var assistantIndex = FollowingAssistantIndex(path, index);
-            if (assistantIndex < 0) assistantIndex = PreviousAssistantIndex(path, index);
-            if (assistantIndex < 0 || !IsUsableAssistantMessage(path, assistantIndex, path[assistantIndex],
-                    ContextMessageForNode(path[assistantIndex])!)) continue;
-            usageByAssistantIndex[assistantIndex] = ContextTokens(usage);
-        }
-
-        if (usageByAssistantIndex.Count == 0)
-            return new(hasCompaction, false, false, 0, []);
-
-        var latest = usageByAssistantIndex.OrderBy(item => item.Key).Last();
-        var invalidatingIndex = path.ToList().FindLastIndex(node => node.Type is "context_edit" or "compaction");
-        var invalidated = invalidatingIndex > latest.Key;
-        var trailingMessages = invalidated ? [] : ProjectContextEntries(path.Skip(latest.Key + 1).ToArray())
-            .Select(entry => entry.Message).ToArray();
-        return new(hasCompaction, true, invalidated, latest.Value, trailingMessages);
-    }
-
-    private static int FollowingAssistantIndex(IReadOnlyList<ConversationNode> path, int sourceIndex)
-    {
-        for (var index = sourceIndex + 1; index < path.Count; index++)
-        {
-            if (path[index].Type is "interrupted" or "compaction") return -1;
-            var message = ContextMessageForNode(path[index]);
-            if (message?.Role == ChatRole.User) return -1;
-            if (message?.Role == ChatRole.Assistant) return path[index].Type == "chat" ? index : -1;
-        }
-        return -1;
-    }
-
-    private static int PreviousAssistantIndex(IReadOnlyList<ConversationNode> path, int sourceIndex)
-    {
-        for (var index = sourceIndex - 1; index >= 0; index--)
-        {
-            var node = path[index];
-            if (node.Type is "interrupted" or "compaction") return -1;
-            var message = ContextMessageForNode(node);
-            if (message?.Role == ChatRole.User) return -1;
-            if (message?.Role == ChatRole.Assistant) return node.Type == "chat" ? index : -1;
-        }
-        return -1;
-    }
-
-    private static bool IsUsableAssistantMessage(IReadOnlyList<ConversationNode> path, int index,
-        ConversationNode node, ChatMessage message)
-    {
-        if (node.Type != "chat" || message.Role != ChatRole.Assistant ||
-            ChatMessageProperties.String(message.AdditionalProperties, "pisharp.stopReason") is "aborted" or "error")
-            return false;
-        for (var next = index + 1; next < path.Count; next++)
-        {
-            if (path[next].Type == "interrupted") return false;
-            if (ContextMessageForNode(path[next]) is not null) break;
-        }
-        return true;
-    }
-
-    private static long ContextTokens(UsageRecord usage)
-    {
-        if (usage.TotalTokens > 0) return usage.TotalTokens;
-        return SaturatingAdd(SaturatingAdd(usage.InputTokens, usage.OutputTokens),
-            SaturatingAdd(usage.CachedInputTokens, usage.CachedWriteTokens));
-    }
-
-    private static bool TryGetPiUsageTokens(ConversationNode node, out long tokens)
-    {
-        tokens = 0;
-        if (PiJsonlEntryCodec.OriginalEntry(node) is not { } entry ||
-            !entry.TryGetProperty("message", out var message) || message.ValueKind != JsonValueKind.Object ||
-            !message.TryGetProperty("usage", out var usage) || usage.ValueKind != JsonValueKind.Object)
-            return false;
-
-        var total = Number(usage, "totalTokens");
-        tokens = total > 0 ? total : SaturatingAdd(SaturatingAdd(Number(usage, "input"), Number(usage, "output")),
-            SaturatingAdd(Number(usage, "cacheRead"), Number(usage, "cacheWrite")));
-        return tokens > 0;
-    }
-
-    private static long Number(JsonElement value, string name) =>
-        value.TryGetProperty(name, out var property) && property.TryGetInt64(out var result) && result > 0 ? result : 0;
-
-    private static long SaturatingAdd(long left, long right) => left > long.MaxValue - right ? long.MaxValue : left + right;
-
-    internal sealed record ContextUsageProjection(bool HasCompaction, bool HasValidAssistantUsage,
-        bool IsInvalidated, long UsageTokens, IReadOnlyList<ChatMessage> TrailingMessages);
-
-    /// <summary>Model input for the selected path; raw chat entries remain available to history and export.</summary>
-    public List<ChatMessage> ContextMessages()
-    {
-        var path = Tree.ActivePath();
-        var compactAt = path.ToList().FindLastIndex(node => node.Type == "compaction");
-        var from = 0;
-        var projectedNodes = path;
-        var context = new List<ChatMessage>();
-        if (compactAt >= 0)
-        {
-            var compact = path[compactAt].Payload;
-            var kept = compact.GetProperty("firstKeptEntryId").GetString();
-            from = path.ToList().FindIndex(node => node.Id == kept);
-            var piBoundary = PiJsonlEntryCodec.OriginalEntry(path[compactAt]) is not null;
-            if (from < 0 || from >= compactAt)
-                throw new InvalidDataException("Invalid compaction boundary.");
-            if (!piBoundary)
-            {
-                var role = ContextMessageForNode(path[from])?.Role;
-                if (role != ChatRole.User && role != ChatRole.Assistant)
-                    throw new InvalidDataException("Invalid compaction boundary.");
-            }
-            if (PiJsonlEntryCodec.CompactionSystemMessage(path[compactAt]) is { } systemMessage)
-                context.Add(systemMessage);
-            context.Add(CompactionSummaryMessage(compact.GetProperty("summary").GetString() ?? ""));
-            projectedNodes = path.Skip(from).Where((node, offset) => from + offset >= compactAt ||
-                ContextMessageForNode(node)?.Role != ChatRole.System).ToList();
-        }
-        var edits = new Dictionary<string, JsonElement>(StringComparer.Ordinal);
-        foreach (var node in projectedNodes)
-            if (PiJsonlEntryCodec.TryGetContextEdit(node, out var targetId, out var replacement))
-                edits[targetId] = replacement;
-        foreach (var entry in ProjectContextEntries(projectedNodes))
-        {
-            var node = entry.Node;
-            var message = entry.Message;
-            if (edits.TryGetValue(node.Id, out var replacement))
-                message = PiJsonlEntryCodec.ApplyContextEdit(node, message, replacement);
-            if (message is not null) context.Add(message);
-        }
-        return context;
-    }
-
-    internal static ChatMessage CompactionSummaryMessage(string summary) => new(ChatRole.User,
-        "The conversation history before this point was compacted into the following summary:\n\n<summary>\n" +
-        summary + "\n</summary>");
-
     /// <summary>Plan against context-visible entry boundaries while retaining the canonical tree as source.</summary>
     public CompactionPlan? PrepareCompaction(int? keepRecentTokens = null) =>
         ConversationCompactionCoordinator.PreparePlan(this, keepRecentTokens);
-
-    internal IReadOnlyList<CompactionContextEntry> CompactionContextEntries(out string? previousSummary)
-    {
-        var path = Tree.ActivePath();
-        var compactionIndex = path.ToList().FindLastIndex(node => node.Type == "compaction");
-        previousSummary = compactionIndex < 0
-            ? null
-            : path[compactionIndex].Payload.GetProperty("summary").GetString() ?? "";
-        var retainedFrom = 0;
-        if (compactionIndex >= 0)
-        {
-            var firstKeptId = path[compactionIndex].Payload.GetProperty("firstKeptEntryId").GetString();
-            retainedFrom = path.ToList().FindIndex(node => node.Id == firstKeptId);
-            if (retainedFrom < 0 || retainedFrom >= compactionIndex)
-                throw new InvalidDataException("Invalid compaction boundary.");
-        }
-
-        var edits = new Dictionary<string, JsonElement>(StringComparer.Ordinal);
-        for (var index = retainedFrom; index < path.Count; index++)
-        {
-            if (index == compactionIndex) continue;
-            if (PiJsonlEntryCodec.TryGetContextEdit(path[index], out var targetId, out var replacement))
-                edits[targetId] = replacement;
-        }
-
-        var projected = new List<CompactionContextEntry>();
-        string? lastAssistantText = null;
-        if (compactionIndex >= 0)
-        {
-            var summary = previousSummary ?? "";
-            projected.Add(new CompactionContextEntry(path[compactionIndex].Id, compactionIndex,
-                [new ChatMessage(ChatRole.User, summary)], IsPreviousSummary: true));
-        }
-
-        for (var index = retainedFrom; index < path.Count; index++)
-        {
-            if (index == compactionIndex) continue;
-            var node = path[index];
-            var message = ContextMessageForNode(node);
-            if (message is null) continue;
-            if (compactionIndex >= 0 && index < compactionIndex && message.Role == ChatRole.System) continue;
-            if (edits.TryGetValue(node.Id, out var replacement))
-                message = PiJsonlEntryCodec.ApplyContextEdit(node, message, replacement);
-            if (message is null) continue;
-            if (node.Type == "interrupted" && message.Role == ChatRole.Assistant && message.Text.Length > 0 &&
-                lastAssistantText == message.Text)
-                continue;
-            if (message.Role == ChatRole.Assistant) lastAssistantText = message.Text;
-            projected.Add(new CompactionContextEntry(node.Id, index, [message]));
-        }
-        return projected;
-    }
-
-    /// <summary>
-    /// Return the first omitted assistant attempt when every context-visible entry after a
-    /// candidate boundary is closed by recovery omission edits. This keeps compaction from
-    /// stopping immediately before an invisible failed-attempt suffix.
-    /// </summary>
-    internal string? RecoveryOmittedAssistantAfter(int sourceIndex)
-    {
-        var path = Tree.ActivePath();
-        if (sourceIndex < 0 || sourceIndex >= path.Count - 1) return null;
-
-        var compactIndex = path.ToList().FindLastIndex(node => node.Type == "compaction");
-        var retainedFrom = 0;
-        if (compactIndex >= 0)
-        {
-            var firstKeptId = path[compactIndex].Payload.GetProperty("firstKeptEntryId").GetString();
-            retainedFrom = path.ToList().FindIndex(node => node.Id == firstKeptId);
-            if (retainedFrom < 0 || retainedFrom >= compactIndex || sourceIndex < retainedFrom) return null;
-        }
-
-        var edits = new Dictionary<string, JsonElement>(StringComparer.Ordinal);
-        for (var index = retainedFrom; index < path.Count; index++)
-            if (index != compactIndex && PiJsonlEntryCodec.TryGetContextEdit(path[index], out var targetId, out var replacement))
-                edits[targetId] = replacement;
-
-        var suffix = path.Skip(sourceIndex + 1).ToArray();
-        ChatMessage? Project(ConversationNode node)
-        {
-            var message = ContextMessageForNode(node);
-            return message is not null && edits.TryGetValue(node.Id, out var replacement)
-                ? PiJsonlEntryCodec.ApplyContextEdit(node, message, replacement)
-                : message;
-        }
-
-        bool IsIntrinsicallyVisible(ConversationNode node) =>
-            node.Type != "context_edit" && ContextMessageForNode(node) is not null;
-
-        bool IsOmitted(ConversationNode node) =>
-            IsIntrinsicallyVisible(node) && Project(node) is null;
-
-        var omittedIds = suffix.Where(IsOmitted).Select(node => node.Id).ToHashSet(StringComparer.Ordinal);
-        var hasExternalReplacement = suffix.Any(node =>
-            PiJsonlEntryCodec.TryGetContextEdit(node, out var targetId, out var replacement) &&
-            replacement.ValueKind != JsonValueKind.Null && !omittedIds.Contains(targetId));
-        var hasOmittedAssistant = suffix.Any(node => omittedIds.Contains(node.Id) &&
-            ContextMessageForNode(node)?.Role == ChatRole.Assistant);
-        if (!hasOmittedAssistant || hasExternalReplacement || suffix.Any(node =>
-                node.Type == "compaction" || IsIntrinsicallyVisible(node) && !omittedIds.Contains(node.Id)))
-            return null;
-
-        return suffix.First(node => omittedIds.Contains(node.Id) &&
-            ContextMessageForNode(node)?.Role == ChatRole.Assistant).Id;
-    }
 
     public void AppendCompaction(CompactionPlan plan, string summary, int? keepRecentTokens = null,
         int tokensBefore = 0, ConversationCompactionDetails? details = null)
@@ -621,90 +320,6 @@ public sealed class ConversationSession
             throw new InvalidOperationException("Conversation changed during compaction.");
         Tree.Append("compaction", JsonSerializer.SerializeToElement(new CompactionRecord(summary,
             plan.FirstKeptEntryId, tokensBefore, details)));
-    }
-
-    internal static ChatMessage RestoreEntry(ConversationNode entry) => entry.Type == "chat"
-        ? Restore(entry.Payload, entry.Id) : throw new ArgumentException("Not a chat entry.", nameof(entry));
-
-    internal static ChatMessage BashExecutionContextMessage(BashExecutionRecord execution)
-    {
-        var text = $"Ran `{execution.Command}`\n" +
-            (execution.Output.Length == 0 ? "(no output)" : $"```\n{execution.Output}\n```");
-        if (execution.Cancelled) text += "\n\n(command cancelled)";
-        else if (execution.ExitCode is { } exitCode && exitCode != 0) text += $"\n\nCommand exited with code {exitCode}";
-        if (execution.Truncated && execution.FullOutputPath is { } fullOutputPath)
-            text += $"\n\n[Output truncated. Full output: {fullOutputPath}]";
-        return new ChatMessage(ChatRole.User, text);
-    }
-
-    private static ChatMessage? ContextMessageForNode(ConversationNode node)
-    {
-        if (node.Type == "chat") return Restore(node.Payload, node.Id);
-        if (node.Type == "interrupted" &&
-            PiJsonlEntryCodec.StringProperty(node.Payload, "partialAssistantText") is { Length: > 0 } partialText)
-            return new ChatMessage(ChatRole.Assistant, partialText);
-        if (node.Type is "custom_message" or "branch_summary")
-            return PiJsonlEntryCodec.ImportedContextMessage(node);
-        if (node.Type != "bash_execution") return null;
-        var execution = RestoreBashExecution(node.Payload, node.Id);
-        return execution.ExcludeFromContext ? null : BashExecutionContextMessage(execution);
-    }
-
-    private static List<ProjectedContextEntry> ProjectContextEntries(IReadOnlyList<ConversationNode> nodes)
-    {
-        var entries = new List<ProjectedContextEntry>();
-        foreach (var (node, index) in nodes.Select((node, index) => (node, index)))
-        {
-            var message = ContextMessageForNode(node);
-            if (message is null) continue;
-            if (node.Type == "interrupted" && message.Text.Length > 0 &&
-                entries.LastOrDefault(entry => entry.Message.Role == ChatRole.Assistant)?.Message.Text == message.Text)
-                continue;
-            entries.Add(new ProjectedContextEntry(node, index, message));
-        }
-        return entries;
-    }
-
-    private sealed record ProjectedContextEntry(ConversationNode Node, int Index, ChatMessage Message);
-
-    private static BashExecutionRecord RestoreBashExecution(JsonElement payload, string id)
-    {
-        if (!payload.TryGetProperty("command", out var command) || command.ValueKind != JsonValueKind.String ||
-            command.GetString() is null ||
-            !payload.TryGetProperty("output", out var output) || output.ValueKind != JsonValueKind.String ||
-            !payload.TryGetProperty("exitCode", out var exitCode) ||
-            (exitCode.ValueKind is not (JsonValueKind.Null or JsonValueKind.Number) ||
-                exitCode.ValueKind == JsonValueKind.Number && !exitCode.TryGetInt32(out _)) ||
-            !payload.TryGetProperty("cancelled", out var cancelled) || cancelled.ValueKind is not (JsonValueKind.True or JsonValueKind.False) ||
-            !payload.TryGetProperty("truncated", out var truncated) || truncated.ValueKind is not (JsonValueKind.True or JsonValueKind.False) ||
-            !payload.TryGetProperty("fullOutputPath", out var fullOutputPath) ||
-                (fullOutputPath.ValueKind is not (JsonValueKind.Null or JsonValueKind.String)) ||
-            !payload.TryGetProperty("excludeFromContext", out var excludeFromContext) ||
-                excludeFromContext.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
-            throw new InvalidDataException($"Invalid Bash execution at {id}.");
-        var execution = payload.Deserialize<BashExecutionRecord>(BashExecutionJsonOptions);
-        if (execution is null)
-            throw new InvalidDataException($"Invalid Bash execution at {id}.");
-        return execution;
-    }
-
-    private static ChatMessage Restore(JsonElement payload, string id)
-    {
-        var record = payload.Deserialize<ChatRecord>() ?? throw new InvalidDataException($"Missing message at {id}.");
-        if (record.Message.ValueKind != JsonValueKind.Object || record.Errors is null)
-            throw new InvalidDataException($"Incomplete chat record at {id}.");
-        var message = record.Message.Deserialize<ChatMessage>(AIJsonUtilities.DefaultOptions)
-            ?? throw new InvalidDataException($"Missing message at {id}.");
-        StoredToolResultReplay.Restore(message);
-        foreach (var error in record.Errors)
-        {
-            if (error.Index < 0 || error.Index >= message.Contents.Count) throw new InvalidDataException($"Invalid tool failure at {id}.");
-            var exception = new ToolFailureException(error.Message);
-            if (error.Type == "result" && message.Contents[error.Index] is FunctionResultContent result) result.Exception = exception;
-            else if (error.Type == "call" && message.Contents[error.Index] is FunctionCallContent call) call.Exception = exception;
-            else throw new InvalidDataException($"Invalid tool failure kind at {id}.");
-        }
-        return message;
     }
 
     /// <summary>Close a crash-interrupted run without guessing which side effects happened.
@@ -845,7 +460,7 @@ public sealed class ConversationSession
     {
         lock (_metadataGate)
         {
-            var document = new Document(FormatVersion, Id, WorkingDirectory, _model, _endpoint, Name, Tree.HeadId,
+            var document = new NativeSessionDocumentCodec.Document(FormatVersion, Id, WorkingDirectory, _model, _endpoint, Name, Tree.HeadId,
                 Tree.Entries.ToArray(), _provider, PiJsonlHeader, ParentSessionPath);
             return JsonSerializer.Serialize(document);
         }
@@ -853,86 +468,13 @@ public sealed class ConversationSession
 
     public static ConversationSession Parse(string json)
     {
-        var document = JsonSerializer.Deserialize<Document>(json) ?? throw new InvalidDataException("Empty session.");
-        if (document.Version is not (1 or FormatVersion) || string.IsNullOrWhiteSpace(document.Id) ||
-            string.IsNullOrWhiteSpace(document.WorkingDirectory) || string.IsNullOrWhiteSpace(document.Model) || document.Entries is null)
-            throw new InvalidDataException("Unsupported or incomplete session document.");
-        if (document.Entries.Any(entry => entry.Type == "chat" && entry.Payload.ValueKind != JsonValueKind.Object))
-            throw new InvalidDataException("Session contains an invalid chat entry.");
-        if (document.Entries.Any(entry => entry.Type == "bash_execution" && entry.Payload.ValueKind != JsonValueKind.Object))
-            throw new InvalidDataException("Session contains an invalid Bash execution entry.");
-        if (document.Version == 1 && document.Entries.Any(entry => entry.Type == "chat" &&
-            (entry.Payload.Deserialize<ChatMessage>(AIJsonUtilities.DefaultOptions)?.Contents.Any(content =>
-                content is FunctionCallContent or FunctionResultContent) ?? false)))
-            throw new InvalidDataException("v1 tool turns did not persist failure state; refusing an unsafe import.");
-        var entries = document.Version == 1
-            ? document.Entries.Select(entry => entry.Type == "chat"
-                ? entry with { Payload = JsonSerializer.SerializeToElement(new ChatRecord(entry.Payload, [])) }
-                : entry).ToArray()
-            : document.Entries;
-        foreach (var entry in entries) ValidateCheckpoint(entry);
-        // Validate every branch, not merely the currently selected path.
-        foreach (var entry in entries.Where(entry => entry.Type == "chat")) _ = Restore(entry.Payload, entry.Id);
-        foreach (var entry in entries.Where(entry => entry.Type == "bash_execution"))
-            _ = RestoreBashExecution(entry.Payload, entry.Id);
-        foreach (var entry in entries.Where(entry => entry.Type == "usage"))
-            ValidateUsage(entry.Payload.Deserialize<UsageRecord>() ??
-                throw new InvalidDataException($"Invalid usage record at {entry.Id}."), entry.Id);
-        var tree = ConversationTree.FromEntries(entries);
-        foreach (var node in entries.Where(entry => entry.Type == "compaction"))
-        {
-            if (node.Payload.ValueKind != JsonValueKind.Object ||
-                !node.Payload.TryGetProperty("summary", out var summary) || summary.ValueKind != JsonValueKind.String ||
-                string.IsNullOrWhiteSpace(summary.GetString()) || summary.GetString()!.Length > 64 * 1024 ||
-                !node.Payload.TryGetProperty("firstKeptEntryId", out var kept) || kept.ValueKind != JsonValueKind.String)
-                throw new InvalidDataException($"Invalid compaction at {node.Id}.");
-            tree.Select(node.ParentId);
-            var path = tree.ActivePath();
-            var boundary = path.ToList().FindIndex(entry => entry.Id == kept.GetString());
-            var previous = path.ToList().FindLastIndex(entry => entry.Type == "compaction");
-            var boundaryRole = boundary >= 0 ? ContextMessageForNode(path[boundary])?.Role : null;
-            if (boundary <= previous || boundary >= path.Count ||
-                PiJsonlEntryCodec.OriginalEntry(node) is null &&
-                boundaryRole != ChatRole.User && boundaryRole != ChatRole.Assistant)
-                throw new InvalidDataException($"Invalid compaction boundary at {node.Id}.");
-        }
-        tree.Select(document.HeadId); // An explicit null selection is distinct from the last appended entry.
+        var (document, tree) = NativeSessionDocumentCodec.Parse(json);
         return new ConversationSession(document.Id, document.WorkingDirectory, document.Model, document.Endpoint,
             document.Provider, document.Name, tree, document.PiHeader, document.ParentSessionPath);
     }
 
-    private static void ValidateUsage(UsageRecord usage, string id)
-    {
-        if (string.IsNullOrWhiteSpace(usage.Model) || string.IsNullOrWhiteSpace(usage.Source) ||
-            usage.InputTokens < 0 || usage.OutputTokens < 0 || usage.CachedInputTokens < 0 ||
-            usage.ReasoningTokens < 0 || usage.TotalTokens < 0 || usage.Cost < 0)
-            throw new InvalidDataException($"Invalid usage record at {id}.");
-    }
-
-    private static void ValidateCheckpoint(ConversationNode node)
-    {
-        if (node.Type is not ("run_started" or "run_finished" or "run_recovered" or "tool_intent" or "tool_outcome" or "tool_skipped" or "assistant_progress")) return;
-        var value = node.Payload;
-        static bool HasString(JsonElement element, string key) => element.TryGetProperty(key, out var field) &&
-            field.ValueKind == JsonValueKind.String && !string.IsNullOrEmpty(field.GetString());
-        if (value.ValueKind != JsonValueKind.Object || !HasString(value, "runId") ||
-            ((node.Type is "tool_intent" or "tool_outcome" or "tool_skipped") && !HasString(value, "operationId")) ||
-            (node.Type == "run_started" && !HasString(value, "prompt")) ||
-            (node.Type == "tool_intent" && (!HasString(value, "name") ||
-                !value.TryGetProperty("arguments", out var arguments) || arguments.ValueKind != JsonValueKind.Object)) ||
-            (node.Type == "assistant_progress" && !HasString(value, "text")) ||
-            (node.Type == "run_finished" && (!value.TryGetProperty("completed", out var completed) ||
-                completed.ValueKind is not (JsonValueKind.True or JsonValueKind.False))) ||
-            (node.Type == "run_recovered" && (!value.TryGetProperty("unknownOperations", out var unknown) ||
-                unknown.ValueKind != JsonValueKind.Array)))
-            throw new InvalidDataException($"Invalid checkpoint {node.Type} at {node.Id}.");
-    }
-
     public sealed record CompactionPlan(string FirstKeptEntryId, IReadOnlyList<ChatMessage> MessagesToSummarize,
         IReadOnlyList<ChatMessage>? TurnPrefixMessages = null, bool IsSplitTurn = false, string? PreviousSummary = null);
-
-    internal sealed record CompactionContextEntry(string? SourceEntryId, int SourceIndex,
-        IReadOnlyList<ChatMessage> Messages, bool IsPreviousSummary = false);
 
     private sealed record CompactionRecord(
         [property: JsonPropertyName("summary")] string Summary,
@@ -941,11 +483,15 @@ public sealed class ConversationSession
         [property: JsonPropertyName("details"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         ConversationCompactionDetails? Details);
 
-    private sealed record ChatRecord(JsonElement Message, ToolError[]? Errors, JsonElement? PiEntry = null,
-        [property: JsonPropertyName("nestedCalls"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        PiSharpNestedToolCalls? NestedToolCalls = null);
-    private sealed record ToolError(int Index, string Type, string Message);
-    private sealed record Document(int Version, string Id, string WorkingDirectory, string Model, string? Endpoint,
-        string? Name, string? HeadId, ConversationNode[] Entries, string? Provider = null, JsonElement? PiHeader = null,
-        string? ParentSessionPath = null);
+    internal ConversationContextProjection.ContextUsageProjection ProjectContextUsageForEstimate() =>
+        ConversationContextProjection.ProjectContextUsageForEstimate(Tree.ActivePath());
+
+    public List<ChatMessage> ContextMessages() => ConversationContextProjection.ContextMessages(Tree.ActivePath());
+
+    internal IReadOnlyList<ConversationContextProjection.CompactionContextEntry> CompactionContextEntries(out string? previousSummary) =>
+        ConversationContextProjection.CompactionContextEntries(Tree.ActivePath(), out previousSummary);
+
+    internal string? RecoveryOmittedAssistantAfter(int sourceIndex) =>
+        ConversationContextProjection.RecoveryOmittedAssistantAfter(Tree.ActivePath(), sourceIndex);
+
 }

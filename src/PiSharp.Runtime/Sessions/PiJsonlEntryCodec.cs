@@ -94,8 +94,8 @@ internal static class PiJsonlEntryCodec
 
     internal static JsonElement? OriginalEntry(ConversationNode node)
     {
-        if (node.Type == "chat") return ConversationSession.PiEntryFromChatPayload(node.Payload);
-        if (node.Type == "bash_execution") return ConversationSession.PiEntryFromBashPayload(node.Payload);
+        if (node.Type == "chat") return ConversationMessageCodec.PiEntryFromChatPayload(node.Payload);
+        if (node.Type == "bash_execution") return ConversationMessageCodec.PiEntryFromBashPayload(node.Payload);
         return TryProperty(node.Payload, "piOriginalEntry", out var entry) && entry.ValueKind == JsonValueKind.Object
             ? entry.Clone() : null;
     }
@@ -142,7 +142,8 @@ internal static class PiJsonlEntryCodec
     internal static ConversationNode ToNode(JsonElement entry, string id, string? parentId, string type, DateTimeOffset timestamp)
     {
         if (type == "message" && TryProperty(entry, "message", out var message) && StringProperty(message, "role") != "bashExecution")
-            return ConversationSession.ImportedPiMessage(id, parentId, timestamp, ToChatMessage(message), entry);
+            return new(id, parentId, "chat", ConversationMessageCodec.EncodeMessage(ToChatMessage(message),
+                NestedToolCallsFromEntry(entry), entry), timestamp);
         if (type == "message" && TryProperty(entry, "message", out message) && StringProperty(message, "role") == "bashExecution")
         {
             var record = new BashExecutionRecord(StringProperty(message, "command") ?? "",
@@ -449,7 +450,7 @@ internal static class PiJsonlEntryCodec
             if (contract?.Usage is { } toolUsage) messageObject["usage"] = ProjectToolUsage(toolUsage, contract.Cost);
             if (contract?.Terminate == true) messageObject["terminate"] = true;
         }
-        if (ConversationSession.NestedToolCallsFor(node) is { } nestedToolCalls)
+        if (ConversationMessageCodec.NestedToolCallsFor(node) is { } nestedToolCalls)
             messageObject["nestedCalls"] = JsonSerializer.SerializeToNode(nestedToolCalls);
         return exported;
     }

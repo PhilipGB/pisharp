@@ -1,0 +1,20 @@
+{
+  "src/PiSharp.Cli/Protocols/RpcSessionMessageProjector.cs": "91e21107ba9759676016f7055fbce196b0e8382b9cf530711ab1ef67d0833088",
+  "src/PiSharp.Cli/Protocols/RpcSessionStatsProjector.cs": "4c240123b19cc3e6a2bb01f62338676ad3bd1307a61da86fb03c1976f95833ef",
+  "src/PiSharp.Runtime/Sessions/ConversationCompactionCoordinator.cs": "9816aa54911ea23e717654400c82611ca606830aac686b314d66f060b841dd1e",
+  "src/PiSharp.Runtime/Sessions/ConversationCompactionMetadata.cs": "d791e7bfcf10490d00ab399de5371364e151b50c17616ec44f4d57bcd742d28d",
+  "src/PiSharp.Runtime/Sessions/ConversationContextProjection.cs": "f13e65566e46e443e9524620757b4026007fe4917fa611f903a653b04815783a",
+  "src/PiSharp.Runtime/Sessions/ConversationMessageCodec.cs": "7153481c285ac8847c30871e525c78b8d12491dd4eae91bb75b431526027007b",
+  "src/PiSharp.Runtime/Sessions/ConversationRun.cs": "0925b0615628cea6b922e6d7a9660c8223c21a94a01eb4c19e3415a0994e6867",
+  "src/PiSharp.Runtime/Sessions/ConversationSession.cs": "993051c310918378cc48876366e88f2eee3fe705ef63a678df0629bcef2cf9f5",
+  "src/PiSharp.Runtime/Sessions/InFlightContextBudget.cs": "1ff9faef90295219edf368d52695463f12eda3798c73e6e853238aea2b6049f1",
+  "src/PiSharp.Runtime/Sessions/NativeSessionDocumentCodec.cs": "666c471a36840282c434dff9ae0e3706c00093c1db8ad2e5287324a5f542f0ef",
+  "src/PiSharp.Runtime/Sessions/PiJsonlEntryCodec.cs": "ca501f6b55cdc4b87430a25bbed4937f72f18cc3d3aba76907cc54cdc8959989",
+  "src/PiSharp.Runtime/Sessions/SessionExport.cs": "d79c406979afa830578579461aecea2c742612c1797d50c46c5c91ceb48cce35",
+  "tests/PiSharp.Tests/ConversationSessionTests.cs": "06e449a1b048f7fef303eb975bef8eaa1e1f6a4b7d2dfbdf245a9728d371aa3f",
+  "tests/PiSharp.Tests/DurableExecutionTests.cs": "acc487899df96d8b3ef0a0889068fb534489d8c2e43f64d1762c440658f7fee6",
+  "tests/PiSharp.Tests/RpcModeTests.cs": "e9673d4711c185758e6c437a49384601f86bf4323141deeb870c9d3bb42a30b6",
+  "tests/PiSharp.Tests/RpcReadCommandsProcessTests.cs": "3aefac6e47c578b1b2b6fdc7cbea433e2072519aa16fe21a5424beaa3923b473",
+  "tests/PiSharp.Tests/RpcSessionMessageProjectorTests.cs": "adbbf7d0905d065c5dc1963b7b965b7529e969431b9605060c36a36ed321acb8",
+  "tests/PiSharp.Tests/RpcSessionStatsProjectorTests.cs": "75b0434b5e195a6ef244df02999198b90aa041cfd698b2b35b75bea7cddac3a1"
+}

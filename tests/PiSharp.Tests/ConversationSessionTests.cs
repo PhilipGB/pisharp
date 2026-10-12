@@ -8,6 +8,37 @@ namespace PiSharp.Tests;
 public sealed class ConversationSessionTests
 {
     [Fact]
+    public void ExplicitNullHeadSurvivesNativeRoundTripWithoutSelectingLastEntry()
+    {
+        var session = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        session.Append(new ChatMessage(ChatRole.User, "retained branch"));
+        session.Append(new ChatMessage(ChatRole.Assistant, "retained reply"));
+        session.Tree.Select(null);
+
+        var restored = ConversationSession.Parse(session.ToJson());
+
+        Assert.Null(restored.Tree.HeadId);
+        Assert.Equal(2, restored.Tree.Entries.Count);
+        Assert.Empty(restored.ActiveMessages());
+        Assert.Empty(restored.ContextMessages());
+    }
+
+    [Fact]
+    public void InvalidUsageOnInactiveBranchFailsClosed()
+    {
+        var session = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        session.Append(new ChatMessage(ChatRole.User, "root"));
+        var root = session.Tree.HeadId;
+        session.AppendUsage(new UsageRecord("fixture", "model", 10, 2, 0, 0, 12, null));
+        session.Tree.Select(root);
+        var document = System.Text.Json.Nodes.JsonNode.Parse(session.ToJson())!;
+        document["Entries"]![1]!["Payload"]!["Cost"] = -1;
+
+        Assert.Contains("Invalid usage record", Assert.Throws<InvalidDataException>(() =>
+            ConversationSession.Parse(document.ToJsonString())).Message);
+    }
+
+    [Fact]
     public void CorruptUnselectedBranchCannotBeSilentlyLoaded()
     {
         var session = new ConversationSession(Path.GetTempPath(), "fixture", null);

@@ -79,7 +79,7 @@ internal static class RpcSessionStatsProjector
         JsonElement original;
         if (node.Type == "chat")
         {
-            if (ConversationSession.PiEntryFromChatPayload(node.Payload) is not { } piEntry ||
+            if (ConversationMessageCodec.PiEntryFromChatPayload(node.Payload) is not { } piEntry ||
                 !piEntry.TryGetProperty("message", out var message) ||
                 (StringProperty(message, "role") is not ("assistant" or "toolResult"))) yield break;
             original = message;
@@ -99,8 +99,8 @@ internal static class RpcSessionStatsProjector
 
     private static MessageStats ProjectMessageStats(ConversationNode node)
     {
-        var message = ConversationSession.RestoreEntry(node);
-        if (ConversationSession.PiEntryFromChatPayload(node.Payload) is { } piEntry &&
+        var message = ConversationMessageCodec.RestoreEntry(node);
+        if (ConversationMessageCodec.PiEntryFromChatPayload(node.Payload) is { } piEntry &&
             piEntry.TryGetProperty("message", out var original))
         {
             var role = StringProperty(original, "role");
