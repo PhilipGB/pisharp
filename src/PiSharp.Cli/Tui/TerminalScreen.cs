@@ -51,6 +51,8 @@ public sealed class TerminalScreen : IDisposable
     private string? _statusNotification;
     private TerminalStatusNotificationKind _statusNotificationKind;
     private bool _statusNotificationIsExtension;
+    private string? _mcpAuthorizationServerName;
+    private string? _mcpAuthorizationUrl;
     private Func<TerminalTheme, int, bool, string>? _startupHeader;
     private Func<TerminalTheme, int, bool, string>? _startupContent;
     private bool _startupExpanded;
@@ -877,7 +879,23 @@ public sealed class TerminalScreen : IDisposable
             Environment.NewLine + Environment.NewLine + " " + text + Environment.NewLine);
     }
 
-    internal void AppendMcpAuthorizationNotification(string serverName, Uri authorizationUrl)
+    internal string? ActiveMcpAuthorizationUrl
+    {
+        get { lock (_gate) return _mcpAuthorizationUrl; }
+    }
+
+    internal void ClearMcpAuthorizationNotification(string serverName)
+    {
+        lock (_gate)
+        {
+            if (!string.Equals(_mcpAuthorizationServerName, serverName, StringComparison.Ordinal)) return;
+            _mcpAuthorizationServerName = null;
+            _mcpAuthorizationUrl = null;
+        }
+    }
+
+    internal void AppendMcpAuthorizationNotification(string serverName, Uri authorizationUrl,
+        string? copyKeyLabel = null, string? cancelKeyLabel = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(serverName);
         ArgumentNullException.ThrowIfNull(authorizationUrl);
@@ -889,14 +907,24 @@ public sealed class TerminalScreen : IDisposable
 
         var target = authorizationUrl.AbsoluteUri;
         var safeName = TerminalSafeText.Normalize(serverName);
+        var safeTarget = TerminalSafeText.Normalize(target);
         var clickHint = OperatingSystem.IsMacOS() ? "Cmd+click to open" : "Ctrl+click to open";
-        var open = "\u001b]8;;" + target + "\u001b\\";
+        var open = "\u001b]8;;" + safeTarget + "\u001b\\";
         const string close = "\u001b]8;;\u001b\\";
+        var keyHints = new List<string>();
+        if (!string.IsNullOrWhiteSpace(cancelKeyLabel))
+            keyHints.Add(_theme.Style("dim", TerminalSafeText.Normalize(cancelKeyLabel) + " to cancel"));
+        if (!string.IsNullOrWhiteSpace(copyKeyLabel))
+            keyHints.Add(_theme.Style("dim", TerminalSafeText.Normalize(copyKeyLabel) + " to copy"));
         var notification = "Sign in to MCP server \"" + safeName + "\" in your browser:\n" +
-            open + target + close + "\n" + open + clickHint + close + "\n";
+            _theme.Style("accent", open + safeTarget + close) + "\n" +
+            _theme.Style("dim", open + clickHint + close) +
+            (keyHints.Count == 0 ? "" : "\n" + string.Join(" • ", keyHints)) + "\n";
         lock (_gate)
         {
             if (!_active) return;
+            _mcpAuthorizationServerName = serverName;
+            _mcpAuthorizationUrl = target;
             _transcript.Append(notification, isError: false);
             RenderLocked();
         }

@@ -9,13 +9,22 @@ namespace PiSharp.Tests;
 
 public sealed class McpOAuthTuiTests
 {
-    [Fact]
-    public async Task McpLoginUrlKeepsItsHyperlinkAndShortHintWhenWrappedInTheTui()
+    [Theory]
+    [InlineData(false, false, false)]
+    [InlineData(false, true, false)]
+    [InlineData(true, false, false)]
+    [InlineData(true, true, false)]
+    [InlineData(false, false, true)]
+    [InlineData(false, true, true)]
+    public async Task McpLoginUrlKeepsItsHyperlinkAndSupportsConfiguredCopyActionWhenWrappedInTheTui(
+        bool clipboardUnavailable, bool customCopyKey, bool cancelLogin)
     {
         if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
         var root = Path.Combine(Path.GetTempPath(), "pisharp-mcp-oauth-tui-" + Guid.NewGuid().ToString("N"));
         var agent = Path.Combine(root, "agent");
         Directory.CreateDirectory(agent);
+        var bin = Path.Combine(root, "bin");
+        Directory.CreateDirectory(bin);
         await using var server = new McpOAuthServer();
         using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(35));
         Process? process = null;
@@ -32,6 +41,9 @@ public sealed class McpOAuthTuiTests
                     }
                 }
             }));
+            if (customCopyKey)
+                await File.WriteAllTextAsync(Path.Combine(agent, "keybindings.json"),
+                    "{ \"app.message.copy\": \"ctrl+shift+c\" }");
 
             var start = new ProcessStartInfo("/usr/bin/script")
             {
@@ -46,6 +58,21 @@ public sealed class McpOAuthTuiTests
             start.ArgumentList.Add($"stty rows 24 cols 48; exec dotnet {ShellQuote(typeof(CliArguments).Assembly.Location)} --local --offline --no-session");
             start.ArgumentList.Add("/dev/null");
             start.Environment["PISHARP_AGENT_DIR"] = agent;
+            foreach (var name in new[] { "DISPLAY", "WAYLAND_DISPLAY", "TERMUX_VERSION", "SSH_CONNECTION", "SSH_CLIENT", "MOSH_CONNECTION" })
+                start.Environment.Remove(name);
+            if (clipboardUnavailable)
+            {
+                var waylandCopy = Path.Combine(bin, "wl-copy");
+                await File.WriteAllTextAsync(waylandCopy, "#!/bin/sh\ncat >/dev/null\nexit 1\n");
+                File.SetUnixFileMode(waylandCopy,
+                    UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+                start.Environment["WAYLAND_DISPLAY"] = "wayland-test";
+            }
+            var openBrowser = Path.Combine(bin, "xdg-open");
+            await File.WriteAllTextAsync(openBrowser, "#!/bin/sh\nexit 0\n");
+            File.SetUnixFileMode(openBrowser,
+                UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+            start.Environment["PATH"] = bin + Path.PathSeparator + Environment.GetEnvironmentVariable("PATH");
             foreach (var name in new[] { "OPENAI_API_KEY", "PISHARP_API_KEY", "PISHARP_BASE_URL", "PISHARP_MODEL", "PISHARP_SETTINGS_PATH" })
                 start.Environment.Remove(name);
             process = Process.Start(start);
@@ -56,7 +83,9 @@ public sealed class McpOAuthTuiTests
             var ready = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var authorizationUrlVisible = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var notificationFrameVisible = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var copyOutcomeVisible = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var signedIn = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var cancelled = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var stdout = Task.Run(async () =>
             {
                 var buffer = new char[4096];
@@ -73,11 +102,20 @@ public sealed class McpOAuthTuiTests
                         {
                             authorizationUrlVisible.TrySetResult();
                             var target = FindAuthorizationUrl(current, server.Origin);
-                            if (target is not null && FindFrame(current, target, "Ctrl+click to open") is not null)
+                            if (target is not null && FindFrame(current, target, "Ctrl+click to open") is not null &&
+                                current.Contains(customCopyKey ? "Ctrl+Shift+C to copy" : "Ctrl+X to copy",
+                                    StringComparison.Ordinal) &&
+                                current.Contains("Esc to cancel", StringComparison.Ordinal))
                                 notificationFrameVisible.TrySetResult();
                         }
+                        if (current.Contains(clipboardUnavailable
+                                ? "Could not copy sign-in URL to clipboard"
+                                : "Copied URL to clipboard", StringComparison.Ordinal))
+                            copyOutcomeVisible.TrySetResult();
                         if (current.Contains("Signed in to MCP server oauth.", StringComparison.Ordinal))
                             signedIn.TrySetResult();
+                        if (current.Contains("MCP sign-in cancelled.", StringComparison.Ordinal))
+                            cancelled.TrySetResult();
                     }
                 }
                 lock (outputGate) return output.ToString();
@@ -96,7 +134,14 @@ public sealed class McpOAuthTuiTests
             await process.StandardInput.WriteAsync("/mcp login oauth\n");
             await process.StandardInput.FlushAsync();
             await authorizationUrlVisible.Task.WaitAsync(deadline.Token);
-            await notificationFrameVisible.Task.WaitAsync(deadline.Token);
+            try { await notificationFrameVisible.Task.WaitAsync(TimeSpan.FromSeconds(8), deadline.Token); }
+            catch (TimeoutException error)
+            {
+                string partial;
+                lock (outputGate) partial = output.ToString();
+                throw new TimeoutException("The sign-in frame did not show the configured cancel/copy hints.\n" +
+                    partial[^Math.Min(partial.Length, 5000)..], error);
+            }
 
             string captured;
             lock (outputGate) captured = output.ToString();
@@ -109,15 +154,45 @@ public sealed class McpOAuthTuiTests
             Assert.True(CountOccurrences(frame!, Osc8Open(authorizationUrl!)) >= 2,
                 "The wrapped authorization URL must reopen its OSC 8 target on each visible row.");
             Assert.Contains(Osc8Open(authorizationUrl!) + "Ctrl+click to open" + Osc8Close, frame!);
+            Assert.Contains("Esc to cancel", captured, StringComparison.Ordinal);
+            Assert.Contains(customCopyKey ? "Ctrl+Shift+C to copy" : "Ctrl+X to copy", captured,
+                StringComparison.Ordinal);
 
-            var query = System.Web.HttpUtility.ParseQueryString(url.Query);
-            var callbackUri = new UriBuilder(new Uri(query["redirect_uri"]!))
+            if (cancelLogin)
             {
-                Query = "code=fixture-code&state=" + Uri.EscapeDataString(query["state"]!)
-            }.Uri;
-            using var browser = new HttpClient();
-            Assert.Equal(HttpStatusCode.OK, (await browser.GetAsync(callbackUri, deadline.Token)).StatusCode);
-            await signedIn.Task.WaitAsync(deadline.Token);
+                await process.StandardInput.WriteAsync("\u001b");
+                await process.StandardInput.FlushAsync();
+                await cancelled.Task.WaitAsync(deadline.Token);
+                Assert.False(signedIn.Task.IsCompleted);
+            }
+            else
+            {
+                await process.StandardInput.WriteAsync(customCopyKey ? "\u001b[99;6u" : "\u0018");
+                await process.StandardInput.FlushAsync();
+                await copyOutcomeVisible.Task.WaitAsync(deadline.Token);
+                lock (outputGate) captured = output.ToString();
+                var osc52 = "\u001b]52;c;" + Convert.ToBase64String(Encoding.UTF8.GetBytes(authorizationUrl!)) + "\u0007";
+                if (clipboardUnavailable)
+                {
+                    Assert.Contains("Could not copy sign-in URL to clipboard", captured,
+                        StringComparison.Ordinal);
+                    Assert.DoesNotContain(osc52, captured, StringComparison.Ordinal);
+                }
+                else
+                {
+                    Assert.Contains("Copied URL to clipboard", captured, StringComparison.Ordinal);
+                    Assert.Contains(osc52, captured, StringComparison.Ordinal);
+                }
+
+                var query = System.Web.HttpUtility.ParseQueryString(url.Query);
+                var callbackUri = new UriBuilder(new Uri(query["redirect_uri"]!))
+                {
+                    Query = "code=fixture-code&state=" + Uri.EscapeDataString(query["state"]!)
+                }.Uri;
+                using var browser = new HttpClient();
+                Assert.Equal(HttpStatusCode.OK, (await browser.GetAsync(callbackUri, deadline.Token)).StatusCode);
+                await signedIn.Task.WaitAsync(deadline.Token);
+            }
 
             await process.StandardInput.WriteAsync("/quit\n");
             await process.StandardInput.FlushAsync();

@@ -17,9 +17,14 @@ public sealed class McpRuntimeManager(string? agentDirectory = null)
     private readonly object _gate = new();
     private readonly Dictionary<string, ServerEntry> _servers = new(StringComparer.Ordinal);
     private Action<string, Uri>? _authorizationUrlPresenter;
+    private Action<string>? _authorizationUrlClearer;
 
-    internal void SetAuthorizationUrlPresenter(Action<string, Uri>? presenter) =>
+    internal void SetAuthorizationUrlPresenter(Action<string, Uri>? presenter,
+        Action<string>? authorizationCompleted = null)
+    {
         Volatile.Write(ref _authorizationUrlPresenter, presenter);
+        Volatile.Write(ref _authorizationUrlClearer, authorizationCompleted);
+    }
 
     internal void Register(McpServerConfiguration configuration, McpServerConnection? connection,
         Func<McpServerConfiguration, McpServerConnection>? createConnection = null,
@@ -190,7 +195,11 @@ public sealed class McpRuntimeManager(string? agentDirectory = null)
                 return "MCP sign-in failed (" + error.GetType().Name + ").";
             }
         }
-        finally { entry.Gate.Release(); }
+        finally
+        {
+            try { Volatile.Read(ref _authorizationUrlClearer)?.Invoke(name); }
+            finally { entry.Gate.Release(); }
+        }
     }
 
     private async Task<string> SignOutAsync(string name, CancellationToken cancellationToken)

@@ -1185,6 +1185,46 @@ public sealed class TerminalEditor
         }
     }
 
+    internal async Task MonitorMcpAuthorizationAsync(Task operation,
+        Func<string, Task> dispatchApplicationAction, Action cancel)
+    {
+        ArgumentNullException.ThrowIfNull(operation);
+        ArgumentNullException.ThrowIfNull(dispatchApplicationAction);
+        ArgumentNullException.ThrowIfNull(cancel);
+        var input = EnsureInput();
+        using var mode = TerminalMode.Enter(_screen);
+        while (!operation.IsCompleted)
+        {
+            if (!input.TryRead(40, out var next))
+            {
+                _screen?.RefreshIfResized();
+                continue;
+            }
+            if (next.IsEndOfStream)
+            {
+                cancel();
+                return;
+            }
+            if (next.Mouse is { } mouse)
+            {
+                var result = _screen?.HandleMouse(mouse) ?? default;
+                if (result.Copy && _screen?.ActiveMcpAuthorizationUrl is not null)
+                    await dispatchApplicationAction("app.message.copy");
+                continue;
+            }
+            if (next.Key is not { } key || _keymap.MatchesEditorAction(key)) continue;
+            if (_keymap.Matches("app.message.copy", key))
+            {
+                if (_screen?.ActiveMcpAuthorizationUrl is not null)
+                    await dispatchApplicationAction("app.message.copy");
+                continue;
+            }
+            if (_keymap.Matches("tui.select.cancel", key) || _keymap.Matches("app.interrupt", key) ||
+                _keymap.Matches("app.clear", key))
+                cancel();
+        }
+    }
+
     public async Task<bool> HandleApplicationShortcutAsync(ConsoleKeyInfo key, Func<string, Task> dispatch,
         Action? beforeDispatch = null)
     {

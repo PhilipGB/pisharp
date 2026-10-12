@@ -438,8 +438,11 @@ terminalScreen?.Activate();
 using var terminalMode = editor is null ? null : TerminalMode.Enter(terminalScreen);
 void ConfigureMcpAuthorizationUrlPresenter(ProjectRuntimeContext context)
 {
-    Action<string, Uri>? presenter = terminalScreen is null ? null : terminalScreen.AppendMcpAuthorizationNotification;
-    context.SetMcpAuthorizationUrlPresenter(presenter);
+    Action<string, Uri>? presenter = terminalScreen is null ? null : (serverName, url) =>
+        terminalScreen.AppendMcpAuthorizationNotification(serverName, url,
+            editor?.GetDisplayKeys("app.message.copy"), editor?.GetDisplayKeys("app.interrupt"));
+    Action<string>? completed = terminalScreen is null ? null : terminalScreen.ClearMcpAuthorizationNotification;
+    context.SetMcpAuthorizationUrlPresenter(presenter, completed);
 }
 ConfigureMcpAuthorizationUrlPresenter(projectRuntime);
 editor?.AttachScreen(terminalScreen);
@@ -863,6 +866,20 @@ async Task CopyLastAssistantAsync()
     Console.WriteLine(selected is null ? "Copied last agent message to clipboard" : "Copied selected text to clipboard");
 }
 
+async Task CopyMcpAuthorizationUrlAsync(string authorizationUrl)
+{
+    try
+    {
+        await terminalClipboard.CopyTextAsync(authorizationUrl);
+        terminalScreen?.AppendThemedStatusLine("Copied URL to clipboard");
+    }
+    catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidOperationException)
+    {
+        terminalScreen?.AppendStatusMessage("Could not copy sign-in URL to clipboard: " + error.Message,
+            TerminalStatusNotificationKind.Error);
+    }
+}
+
 async Task PasteClipboardTextAsync()
 {
     var text = await terminalClipboard.ReadTextAsync();
@@ -928,7 +945,10 @@ async Task HandleEditorApplicationAction(string action)
                 else Console.Error.WriteLine($"External editor exited with status {result.ExitCode}; the draft was preserved.");
                 break;
             case "app.message.copy":
-                await CopyLastAssistantAsync();
+                if (terminalScreen?.ActiveMcpAuthorizationUrl is { } authorizationUrl)
+                    await CopyMcpAuthorizationUrlAsync(authorizationUrl);
+                else
+                    await CopyLastAssistantAsync();
                 break;
             case "app.clipboard.pasteImage":
                 await PasteClipboardImageAsync();
@@ -1457,7 +1477,25 @@ else
                         else if (resources.Prompts.Any(item => "/" + item.Name == command))
                             await Run(line);
                         else if (extensionLease.Current.Registration.Commands.TryGetValue(command[1..], out var handler))
-                            Console.WriteLine(await handler(argument, CancellationToken.None));
+                        {
+                            var commandArguments = argument.Split((char[]?)null,
+                                StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                            if (command.Equals("/mcp", StringComparison.Ordinal) &&
+                                commandArguments.Length > 0 && commandArguments[0].Equals("login", StringComparison.Ordinal) &&
+                                editor is not null && terminalScreen is { IsActive: true })
+                            {
+                                using var signInCancellation = new CancellationTokenSource();
+                                var signIn = handler(argument, signInCancellation.Token);
+                                await editor.MonitorMcpAuthorizationAsync(signIn, HandleEditorApplicationAction,
+                                    signInCancellation.Cancel);
+                                try { Console.WriteLine(await signIn); }
+                                catch (OperationCanceledException) when (signInCancellation.IsCancellationRequested)
+                                {
+                                    Console.WriteLine("MCP sign-in cancelled.");
+                                }
+                            }
+                            else Console.WriteLine(await handler(argument, CancellationToken.None));
+                        }
                         else Console.Error.WriteLine($"Unknown command: {command}");
                         break;
                 }
