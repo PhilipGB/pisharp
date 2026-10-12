@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "plan_received": true,
-  "source_note": "Current Pi c10bfb0d79dbbc998539a0a3e6c6a736a4e6db06: all 58 commits after 955cc666 classified with visible interactions in scope (26 NEEDS_WORK classifications). Exact-head Linux CI 37019190204 passes PiSharp source c0b012ba7192afed65138dae7d10b5d15da77b67, including all 1132 tests with zero skips. Radius menu/MCP/animation has scoped evidence; full authentication/visual gaps remain. Anthropic inline tools is locally implemented and verified; fresh MCP CIMD and Cloudflare gateway work are explicitly tracked. All 189 capabilities remain required; full feature/interaction/visual parity is incomplete. Active llama.cpp oracle refreshed to 943a10e744b87d9a593f3dca7406d4671910f490; the two commits since 503c6055 do not touch llama sources/tests. The full upstream audit beyond c10bfb0d and all 189 capability gates remain open. Active llama.cpp oracle refreshed again to a2eef9eb60fb44bf399532151b43dab83c0a9c88; the two commits since 943a10e7 contain no llama source/test changes. The full upstream audit beyond c10bfb0d and all 189 capability gates remain open. Active Pi oracle refreshed to 70759f48bed0c0b30b089b9094f4080cbc3148c5; the single commit after a2eef9eb changes package manifests and the lockfile only, with no llama source/test changes. Current-Pi classifier, context and autoload process differentials match PiSharp c2d5a8d8. Replacement-load cancellation restoration is recorded at Pi a2eef9eb/PiSharp c2d5a8d882388b0ec7c8f2cebe358a17c096a4e7; exact-head Linux CI 37687324433 passes all 1,173 tests with zero skips. The cancellation mutation sequence matches; Pi adds one /models poll and exact terminal parity remains open. Current Pi 70759f48 / PiSharp 406263fa classifier and context/autoload process differentials match. Exact-head Linux CI 37690484389 passes format, zero-warning build and 1,173 tests. Replacement-load restoration makes the same 24 authenticated requests and four mutations with ordering differences among load POSTs, SSE watches and catalog polls; the four selection/progress viewport rows match, while 10,079 whole-terminal fields still differ. Current Pi was fetched again at 75a99721d102d1948dcdd08ba200fb7caef81c1d; four commits after 70759f48 are release/tagging and test-timing changes with no llama-related paths. The current Pi 15/10/1 focused suites pass. PiSharp dfcf543 exact-head CI 37693630106 passes format, warnings-as-errors build, and 1,173/1,173 tests. Current-Pi classifier/context process reports match, while ten exact terminal comparisons retain 7,059-27,677 unnormalized differences; load-cancel cases also have differing catalog-poll count/order. Full llama terminal parity remains open. Current Pi origin/main is 7f9e1198f2f7a8cf5ea18d5010ba081d4d60c333; the two commits after 1cedd327 update schema publication and an OAuth regression test without llama-specific paths. Current Pi llama/runtime-classifier tests pass 16/16 and the TUI suite passes. Router/classifier autoload, context refresh/offline reload, and native classifier process differentials match. Ten exact 100x32 terminal runs complete without scenario errors; full unnormalized differences are 2,653-19,590. Eight request multisets and all mutation sequences match; standard HF search has one extra PiSharp GET /models, replacement-load cancellation one extra Pi GET /models and five order differences. The replacement manager panel matches but Pi alone displays the restore notification on row 1. Exact captures are in docs/parity/fixtures/llama-terminal-current-pi-2026-10-07.json. PiSharp f615889c exact-head Linux CI 37748361405 passes format, warnings-as-errors build and 1,177/1,177 tests. All 189 capability gates, full post-c10bfb0d source audit, official MCP conformance and final exact terminal parity remain open. Current refresh (2026-10-09): Pi f1b2e77 adds one in-scope linked-worktree AGENTS.md shadowing delta, implemented by PiSharp 78bc0ffc9523cc28aa1f8bc05777ff4812b3f1e4; the audit now covers 195 commits (65 OUT_OF_SCOPE, 36 NO_BEHAVIOR_CHANGE, 87 NEEDS_WORK, 7 MATCHED). Exact-head Linux CI 37902383991 passes all 1201 tests with zero skips. The llama.cpp slice is verified with ten matching normalized terminal flows, exact HTTP traces, and three matching process differentials; raw byte streams remain captured with byte differences recorded separately. Current priority is the broader Resources / instructions and trust family; final parity and official MCP conformance remain open. Current trust-path refresh (2026-10-09): PiSharp 6ec1f514943f4c8841d3df69f2fc7cad99bc9f0b canonicalizes project trust paths; exact-head Linux CI 37904094102 passes 1202 tests with zero skips. The real-directory/symlink alias differential matches current Pi f1b2e77. Bare /trust selector and broader trust/resource flows remain open. Current checkpoint 2026-10-09: Pi f1b2e77f5b13b2a199b1052cb79c235451afe7d7; PiSharp 5b32bd97170ef8963a3726bb466693dc65aa511e; exact-head Linux CI 37907627495 passes restore, terminal harness, format verification, warnings-as-errors build and 1204/1204 tests with zero skips. Bare /trust now has a PTY regression and current-Pi paired evidence; selector actions and HTTP traces match, but full screen/theme differences remain. The historical 5deac527 CI run 37652404512 failed only formatting in LlamaRouterCatalog; 8c233423 fixed it and exact-head CI 37654198120 passed. Current startup/trust checkpoint 2026-10-09: Pi origin/main remains f1b2e77f5b13b2a199b1052cb79c235451afe7d7; PiSharp origin/main is 08eff8952dd8818878d947a3bac39533125def19. Exact-head CI 37933157930 passes the terminal harness, format, warnings-as-errors build and 1212/1212 tests with zero skips. The current-Pi trust selector has exact HTTP, no scenario errors and 52658 paired screen differences; its same-Pi calibration has zero state/render differences. Startup model-scope and loaded-resource detail parity remains open. The llama terminal evidence is pinned before this global startup change and must be rerun. A fresh Pi fetch after CI still resolves to f1b2e77. Current exact-head checkpoint 2026-10-09: Pi f1b2e77f / PiSharp 359f1499, Linux CI 37949329319 green (1,216 tests, zero skips). All ten current-Pi llama PTY flows and three process differentials match; startup resource and trust-selector flows are freshly captured, while their full-screen state/render differences and broader resource/trust workflows remain open. Current exact-head checkpoint: Pi f1b2e77f5b13b2a199b1052cb79c235451afe7d7; PiSharp 83fad4d62a62e354cbb8d2d3d7d68a386242e037; Linux CI 37953004947 passes 1,217 tests with zero skips. The null-valued trust-store regression and three-case current-Pi process differential match. Resources/instructions and trust remains active; defaultProjectTrust precedence, trusted-project settings, reload/discovery, full terminal parity, MCP conformance and final audit remain open. Current checkpoint 2026-10-09: Pi f1b2e77f5b13b2a199b1052cb79c235451afe7d7 / PiSharp 8d6205a4d5b8d4bdf111a76a5785f86ffa860666; exact-head Linux CI 37955148011 passes 1,218 tests with zero skips. The nine-case defaultProjectTrust process differential matches malformed settings, global/project precedence, saved decisions and CLI overrides. Trusted-project reload/resource discovery and exact startup/selector terminal parity remain open. Paired Pi f1b2e77f5b13b2a199b1052cb79c235451afe7d7 / PiSharp 8d6205a4d5b8d4bdf111a76a5785f86ffa860666 PTY /reload assertions match active-tool updates and project-skill discovery/invocation; full terminal and HTTP traces remain different. Current exact source checkpoint (2026-10-09): Pi eba849739511223c51a62bbd7e3f1c00f99fb1d0; PiSharp bab03219708b1fe4a1959c4883f3a260ccd6f78f; exact-head Linux CI 37970089081 succeeds with 1221 tests, zero skips. The two Pi commits after f1b2e77 are OUT_OF_SCOPE and touch no normal llama or resource behavior paths. The llama family now has three matching process reports and eleven exact terminal state/render/HTTP flows; Resources / instructions and trust remains active. The incremental audit covers 197 commits (67 OUT_OF_SCOPE, 36 NO_BEHAVIOR_CHANGE, 87 NEEDS_WORK, 7 MATCHED). Current exact source checkpoint is Pi 42a3497d03ad17e308a2299fa824727894f2c0ec / PiSharp f305c18554db500823cae9482cd00a6fa89e83ba; exact-head CI 38001322218 passed all 1,233 tests with zero skips. Extension resource reload and legacy skill settings reload match semantically; full terminal and system-prompt differences remain open. Current llama.cpp family rechecked at Pi 42a3497d / PiSharp 8f33b03f: current Pi extension tests 15/15, three matching process differentials, twelve matching terminal flows and exact-head CI 38013981386 (1,240/1,240, zero skips). Latest captures are in docs/parity/fixtures/llama-terminal-current-pi-2026-10-10/current-42a3497d-8f33b03fb2/evidence.json. Current exact-head refresh (2026-10-10): Pi 42a3497d03ad17e308a2299fa824727894f2c0ec / PiSharp 59813e6defcc3d5a07fe6b95dda3933d958ddfe1; CI 38019237607 passes 1,244/1,244 tests with zero skips. Structured default system prompts now match current Pi after documentation install-path normalization in both trusted reload requests; ordered startup trust UI callbacks and the protected project skill match. Full trust UI terminal output and provider request/tool schema remain open. Llama.cpp is reverified with three matching process reports and twelve exact terminal/render/HTTP flows; the full parity goal remains open. Fresh current-head checkpoint (2026-10-10): Pi origin/main 42a3497d03ad17e308a2299fa824727894f2c0ec; PiSharp origin/main 9e622bcb498b00cb5e6c4990779816a0a334ffcc; exact-head Linux CI 38042972193 passes format, warnings-as-errors build, Node 24/24, Python 24/24 and .NET 1248/1248 with zero skips. Current Pi extension-resource startup/reload differential matches skill expansion, argument handling and targeted collapsed/expanded presentation; same-Pi calibration is exact, while broad terminal/HTTP parity remains open. Current Pi trust-UI differential matches callback order, protected skill, normalized system prompt and three named normal-screen dialog frames; same-Pi calibration is exact, while five request paths and broad terminal output remain open. Evidence: docs/parity/fixtures/resources-skill-trust-current-pi-2026-10-10.md. Active next action: reconcile trust UI provider request projection and remaining terminal states, then continue resource/settings/reload gaps. The latest complete llama differential predates generic terminal rendering changes and needs current-head revalidation. All 194 required capabilities, official MCP conformance, final source audit and architecture review remain open. Current exact checkpoint 2026-10-10: Pi origin/main 42a3497d03ad17e308a2299fa824727894f2c0ec; PiSharp origin/main dab73a74d4fb762c78365ec4e58296370303ebc0; exact-head Linux CI 38046221805 passes format, zero-warning build, Node 24/24, Python 24/24, and .NET 1,250/1,250 with zero skips. Current trust behavior matches through the ordered startup dialogs and normalized system prompt; request projection has only the package-install documentation path difference. The unresolved terminal residual is the submitted editor echo, duplicate/prefixed user message and standalone usage line. Extension resource reload messages and targeted skill rows match, while full terminal captures remain unequal. Evidence and next action are in docs/parity/fixtures/resources-skill-trust-current-pi-2026-10-10.md. All 194 required capabilities, official MCP conformance, latest-head llama revalidation and final audit remain open. Current Pi origin/main was refreshed to 04566631c2b51fb688486bc1f040f60d1518c126; the audit now covers 229 commits (85 OUT_OF_SCOPE, 44 NO_BEHAVIOR_CHANGE, 92 NEEDS_WORK, 8 MATCHED). PiSharp origin/main remains d8e5411be475a0f4bc3bf3458bc46bdbc8fd40f9 with exact-head CI 38160159991 green at 1289 tests; the local POSIX matcher slice passes all 1300 tests and awaits pushed exact-head CI. Current skill prompt semantic/request evidence is refreshed at these Pi/PiSharp heads, with three terminal and raw PTY residuals preserved. The parity Python scripts retain the two-thread cap. The full 194-capability completion gate remains false. Current 2026-10-12 checkpoint: Pi 4270522473e677ddba7b093caa0064a3df51d459 / PiSharp cf5f427f4990d7404f80f8a378a64d6731a7a5fd; exact-head CI 38193066793 passes Node 24/24, Python 37/37, format, warnings-as-errors build and .NET 1,333/1,333 with zero skips. The Python test/parity runners cap affinity and common native worker pools at two; the child-process inheritance test passes. Current trust-extension UI terminal/render/HTTP evidence matches across 12 frames, and the bare trust selector rows match while full-screen residuals remain. The 194-capability completion gate remains false. Current Pi was fetched again after PiSharp ff180dac and remains at 4270522473e677ddba7b093caa0064a3df51d459. PiSharp ff180dac8f35731a8765b317ab37c16745d6ad39 aligns compact startup action hints with current Pi. Its same-Pi calibration is exact; paired HTTP is exact with no scenario errors, while seven full-screen frames retain 64,818 normalized state/render differences, 40,086 rendered-cell differences and 440 control-boundary diagnostics. Exact-head Linux CI 38201576310 passes Node 24/24, Python 37/37, format verification, warnings-as-errors build and 1,339/1,339 .NET tests with zero skips. The parity Python runner caps affinity and common native worker pools at two. All 194 required capability gates remain open/in scope; the current next TUI gap is Pi Ctrl+T thinking-block visibility. Current Pi 4270522473e677ddba7b093caa0064a3df51d459 / PiSharp 65d045c5ff99e8c289b2cddb75cf6309a5879fdd: Ctrl+T reasoning visibility now covers retained and streamed blocks and persists across restart; same-Pi calibration is exact for 12 frames and HTTP, while the paired full terminal comparison retains documented state/render/control and request-role/docs-root differences. Exact-head CI 38203758189 passes Node 24/24, Python 38/38, format verification, warnings-as-errors build and .NET 1,343/1,343 with zero skips. Python parity runners and child processes remain capped at two worker threads/CPU affinity; all 194 required capability gates and the final parity goal remain open. Current Pi 4270522473e677ddba7b093caa0064a3df51d459 / PiSharp source tree 65d045c5ff99e8c289b2cddb75cf6309a5879fdd, evidence commit 0461f41de66b8c022f2d1eb7dbcaf548e2dc7ac9: current read, Bash and indirect skill-prompt PTY pairs pass same-Pi calibration and normalized terminal, render and provider-message comparisons with no scenario errors; raw PTY and control-boundary differences remain recorded. Exact-head CI 38204612669 passes Node 24/24, Python 38/38, format, warnings-as-errors build and .NET 1,343/1,343 with zero skips. All 194 required capabilities remain in scope. Current Pi 4270522473e677ddba7b093caa0064a3df51d459 / PiSharp code 65d045c5ff99e8c289b2cddb75cf6309a5879fdd, evidence HEAD 3043c4b185e594b989aab73ff7eff915f7beed8d: project skill precedence, extension resource discovery/reload, and legacy-skill settings reload all pass same-Pi calibration and paired normalized state/render/provider checks. The legacy fixture now names its required assertion frames after a fail-first StopIteration. Raw PTY differences remain recorded; full parity is still open.",
+  "source_note": "Current Pi origin/main is ee409a85f6ad92bf8c6ab8ed735c6cd24f2e749e; PiSharp product source is e92d592b818cb5655046b98abafbd288a5e375d5. The cumulative audit since 955cc666 covers 237 commits: 88 OUT_OF_SCOPE, 44 NO_BEHAVIOR_CHANGE, 95 NEEDS_WORK, and 10 MATCHED. The newest in-scope OpenRouter personalized catalog change is NEEDS_WORK. The active priority remains Resources / Instructions / Trust; latest trusted-project extension UI replay matches at these pins. All 194 required capabilities, the five named upstream deltas, MCP completion, fresh final audit, and architecture review remain open.",
   "baseline": "earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035",
   "required_ids": [
     "feature-agent-multi-turn-and-streaming",
@@ -357,7 +357,8 @@
         "src/PiSharp.Cli/{MistralModelCatalog,BuiltinProviderProfiles,ProviderModelRuntime}.cs embeds the current Pi snapshot of all 33 Mistral chat models and lists it statically without a generic /models probe; reasoning maps, image modalities, input limits, costs and the Mistral API identifier are retained. Unknown PISHARP_MISTRAL_MODEL values remain selectable alongside the built-in catalog.",
         "src/PiSharp.Cli/{AzureOpenAiRequestHandler,AzureOpenAiChatOptionsClient,AzureOpenAiModelCatalog,ProviderChatClientFactory}.cs: Azure Responses API-key boundary, configurable API-version/deployment mapping, per-session prompt_cache_key and embedded 43-model snapshot. Exact-head CI is green; provider-wide image/tool/usage/error differential evidence remains incomplete.",
         "src/PiSharp.Cli/AnthropicThinkingSignatureClient.cs: replays unsigned Anthropic-compatible assistant reasoning as text unless model compat.allowEmptySignature is true; preserves signed thinking and applies a request-only MAF projection.",
-        "Anthropic now exposes OAuth through `AnthropicOAuthAdapter`: browser PKCE and headless copy-code login, validated callback/input state, token refresh, private AuthStorage persistence, and the existing Anthropic OAuth request-token projection. Console code input is masked; API-key and environment-token precedence remains intact."
+        "Anthropic now exposes OAuth through `AnthropicOAuthAdapter`: browser PKCE and headless copy-code login, validated callback/input state, token refresh, private AuthStorage persistence, and the existing Anthropic OAuth request-token projection. Console code input is masked; API-key and environment-token precedence remains intact.",
+        "Audit of Pi ee409a85: the key-personalized OpenRouter catalog is not implemented. PiSharp performs generic /models discovery and does not fetch authenticated /models/user data or persist the personalized catalog; this remains queued behind Resources / Instructions / Trust and the named upstream deltas."
       ],
       "evidence": [
         "tests/PiSharp.Tests/ProviderModelRuntimeTests.cs: deterministic custom endpoint key isolation, configured metadata and fuzzy lookup, no /models request for exact IDs, private credential restart/symlink/permission checks, and CLI missing-auth rejection.",
@@ -383,7 +384,8 @@
         "At current Pi da19b63c7, the build-time Radius API returned 28 models; PiSharp src/PiSharp.Cli/Providers/Data/radius-models.json contains 25 fallback entries pinned to fd889a274. RadiusModelCatalog.LoadAsync still refreshes /v1/config at runtime, leaving offline bundled-catalog freshness as a category 4 residual.",
         "Anthropic workload identity coverage in ProviderModelRuntimeTests and ProviderChatClientFactoryTests verifies required/optional federation fields, explicit token/key precedence, partial-config fail-closed behavior, other-provider isolation, SDK bearer exchange, cached reuse, 401 refresh and rereading a rotated identity-token file. The focused Anthropic suite passes 18/18; final exact-head source 3b4d0da48f0d9ed83c6948a7d5cd2123ebba0ad8 passed Linux CI 36789619687 with 1,036/1,036 tests and zero skips.",
         "AnthropicOAuthTests passes 8/8 with loopback token fixtures for browser callback, copy-code and redirect-URL input, PKCE/state validation, cancellation, malformed responses, private persistence and refresh-token rotation. The full local suite passes 1,047/1,047 with zero skips; format and warnings-as-errors build pass. Exact-head CI for this OAuth slice is pending; see docs/parity/fixtures/upstream-delta-audit-2026-10-01.md.",
-        "The llama.cpp subset of model selection/catalogs/credentials is verified at Pi 42a3497d / PiSharp 386644ea: login/env/stored/default precedence, router discovery and model properties, load/unload and sleeping/preset eligibility, /model integration, Hugging Face access/download flows, and cached context reload match current Pi in process and PTY evidence. The broader models capability remains in progress for other providers, auth, selection and catalog gaps. See docs/parity/fixtures/llama-terminal-current-pi-2026-10-10/current-42a3497d-386644ea06/evidence.json."
+        "The llama.cpp subset of model selection/catalogs/credentials is verified at Pi 42a3497d / PiSharp 386644ea: login/env/stored/default precedence, router discovery and model properties, load/unload and sleeping/preset eligibility, /model integration, Hugging Face access/download flows, and cached context reload match current Pi in process and PTY evidence. The broader models capability remains in progress for other providers, auth, selection and catalog gaps. See docs/parity/fixtures/llama-terminal-current-pi-2026-10-10/current-42a3497d-386644ea06/evidence.json.",
+        "Current Pi ee409a85 OpenRouter catalog differential: authenticated GET /models/user filters chat models to those accessible to the key and supplies key-specific context length, max output, and prices while preserving image/classifier models and caching the combined catalog. PiSharp current source uses generic ModelCatalog.ListAsync /models for OpenRouter and has no personalized catalog path. Current Pi packages/ai and coding-agent targeted suites pass 56/56. See docs/parity/fixtures/upstream-delta-audit-2026-10-12.md."
       ],
       "dependencies": []
     },
@@ -863,7 +865,8 @@
         "Current Pi 4270522473e677ddba7b093caa0064a3df51d459 / PiSharp cf5f427f4990d7404f80f8a378a64d6731a7a5fd trust-extension UI replay: all 12 paired terminal frames/renders and HTTP traces match; same-Pi calibration is exact. Ordered callbacks, protected project skill, one provider request, normalized system-prompt hash/section order and all three startup dialog frames match, with no scenario errors or premature usage display. Raw PTY protocols differ and the working-animation frame count is scheduling-dependent. Semantic assertion and captures: docs/parity/fixtures/project-trust-extension-ui-current-pi-2026-10-12/current-42705224-cf5f427f/.",
         "Current Pi 4270522473e677ddba7b093caa0064a3df51d459 / PiSharp product tree 65d045c5ff99e8c289b2cddb75cf6309a5879fdd (capture HEAD 0461f41de66b8c022f2d1eb7dbcaf548e2dc7ac9): read, Bash and indirect skill-prompt PTY flows pass same-Pi calibration and paired comparison. All provider messages and normalized HTTP traces match; the 14/14/10 named render frames and normalized terminal states match with no scenario errors. Raw PTY bytes differ and control-boundary segmentation remains diagnostic (2,063 / 2,091 / 534 boundaries). Read and Bash each issue five requests across shared/project/user/temporary/unsafe skills; indirect invocation hides both direct readers and expands the shared skill in one request. Exact evidence: docs/parity/fixtures/skill-prompt-current-pi-2026-10-12/current-42705224-0461f41de6/README.md. Exact-head Linux CI 38204612669 passes Node 24/24, Python 38/38, format verification, warnings-as-errors build, and .NET 1,343/1,343 with zero skips.",
         "Current Pi 4270522473e677ddba7b093caa0064a3df51d459 / PiSharp product code 65d045c5ff99e8c289b2cddb75cf6309a5879fdd, capture HEAD 3043c4b185e594b989aab73ff7eff915f7beed8d: same-Pi-calibrated pairs for resource-skill-precedence, extension-resource-discovery-reload and legacy-project-skills-reload match normalized terminal state, renders and HTTP/provider requests with no scenario errors. The precedence flow confirms project scope, POSIX-alpha filtering, invalid-name availability, collision warnings and expanded request; extension discovery/reload confirms startup and reloaded skills/prompts, collapsible tool output, theme diagnostics and reload status across four requests; legacy settings reload confirms disabled then enabled completion, the reloaded skill suggestion and both expanded prompt bodies across two requests. Calibration frames: 10/16/14; paired render differences: 0/0/0. Raw PTY streams differ. The legacy reload fixture now declares the three named assertion frames required by its behavior checker after a fail-first StopIteration exposed the missing fixture metadata. Evidence and captures: docs/parity/fixtures/resources-terminal-current-pi-2026-10-12/current-42705224-3043c4b185/README.md",
-        "Fresh current Pi 4270522473e677ddba7b093caa0064a3df51d459 / PiSharp evidence HEAD 10ce13a3ca3e28040bf037737b722b7c82c83d2d: the trusted project-extension UI same-Pi calibration matches all 14 canonical render checkpoints and HTTP requests. The paired run matches all 14 checkpoints, normalized terminal state, rendered cells and HTTP traces with zero differences and no scenario errors. The ordered extension callbacks, editor echo, submitted user message, trusted skill, normalized provider request, startup dialogs, completion and exit all match. The assertion now checks editor echo before submission and exact provider user content. Raw PTY/control-boundary differences remain recorded (721 paired boundaries); working-animation frame counts are scheduling-dependent. Exact captures and semantic assertions: docs/parity/fixtures/project-trust-extension-ui-current-pi-2026-10-12/current-42705224-e50a8baee9/README.md"
+        "Fresh current Pi 4270522473e677ddba7b093caa0064a3df51d459 / PiSharp evidence HEAD 10ce13a3ca3e28040bf037737b722b7c82c83d2d: the trusted project-extension UI same-Pi calibration matches all 14 canonical render checkpoints and HTTP requests. The paired run matches all 14 checkpoints, normalized terminal state, rendered cells and HTTP traces with zero differences and no scenario errors. The ordered extension callbacks, editor echo, submitted user message, trusted skill, normalized provider request, startup dialogs, completion and exit all match. The assertion now checks editor echo before submission and exact provider user content. Raw PTY/control-boundary differences remain recorded (721 paired boundaries); working-animation frame counts are scheduling-dependent. Exact captures and semantic assertions: docs/parity/fixtures/project-trust-extension-ui-current-pi-2026-10-12/current-42705224-e50a8baee9/README.md",
+        "Current Pi ee409a85f6ad92bf8c6ab8ed735c6cd24f2e749e / PiSharp e92d592b818cb5655046b98abafbd288a5e375d5: refreshed trusted-project extension UI replay and same-Pi calibration both pass at 120x40 dark fullscreen. All 14 normalized render frames, terminal state, HTTP traces, provider request semantics, trust dialog checkpoints, submitted prompt, and protected project skill match. The normalized system prompt SHA-256 matches; raw PTY protocol bytes and generated documentation package paths remain recorded separately. Paired/calibration evidence: docs/parity/fixtures/project-trust-extension-ui-current-pi-2026-10-12/current-ee409a85-e92d592/README.md."
       ],
       "dependencies": []
     },
@@ -1072,7 +1075,8 @@
         "Paired Pi f1b2e77f5b13b2a199b1052cb79c235451afe7d7 / PiSharp 8d6205a4d5b8d4bdf111a76a5785f86ffa860666 PTY flow changes trusted project defaultTools from read to bash, adds a project SKILL.md, runs /reload, and invokes the new skill. Both sides send two chat requests with tools [read], then [read,bash], and expand the initial and reloaded skill content with zero scenario errors. Full terminal comparison remains open: 111,927 field differences, 71,800 render differences, 423 control-boundary differences, and non-matching raw/HTTP traces. Same-Pi calibration has two spinner-phase render differences. See docs/parity/fixtures/project-settings-reload-current-pi-2026-10-09.md and its exact captures.",
         "Pi 42a/PiSharp f305 `/reload` PTY checks display the exact Pi status text and keep startup/reloaded missing-theme diagnostics visible in quiet mode; the paired full-screen residual is recorded in docs/parity/fixtures/resources-terminal-current-pi-2026-10-09.md.",
         "Pi 42a3497d / PiSharp dab73a74 exact trust PTY confirms pre-trust extension callbacks and three normal-screen dialog frames match; after prompt submission the full-screen editor echo, user message and usage presentation remain different. See docs/parity/fixtures/project-trust-extension-ui-current-pi-2026-10-10/current-42a3497d-dab73a74d4/paired/report.json.",
-        "Current Pi 4270522473e677ddba7b093caa0064a3df51d459 / PiSharp cf5f427f4990d7404f80f8a378a64d6731a7a5fd trust-extension UI replay: all 12 paired terminal frames/renders and HTTP traces match; same-Pi calibration is exact. Ordered callbacks, protected project skill, one provider request, normalized system-prompt hash/section order and all three startup dialog frames match, with no scenario errors or premature usage display. Raw PTY protocols differ and the working-animation frame count is scheduling-dependent. Semantic assertion and captures: docs/parity/fixtures/project-trust-extension-ui-current-pi-2026-10-12/current-42705224-cf5f427f/."
+        "Current Pi 4270522473e677ddba7b093caa0064a3df51d459 / PiSharp cf5f427f4990d7404f80f8a378a64d6731a7a5fd trust-extension UI replay: all 12 paired terminal frames/renders and HTTP traces match; same-Pi calibration is exact. Ordered callbacks, protected project skill, one provider request, normalized system-prompt hash/section order and all three startup dialog frames match, with no scenario errors or premature usage display. Raw PTY protocols differ and the working-animation frame count is scheduling-dependent. Semantic assertion and captures: docs/parity/fixtures/project-trust-extension-ui-current-pi-2026-10-12/current-42705224-cf5f427f/.",
+        "Current Pi ee409a85f6ad92bf8c6ab8ed735c6cd24f2e749e / PiSharp e92d592b818cb5655046b98abafbd288a5e375d5: refreshed trusted-project extension UI replay and same-Pi calibration both pass at 120x40 dark fullscreen. All 14 normalized render frames, terminal state, HTTP traces, provider request semantics, trust dialog checkpoints, submitted prompt, and protected project skill match. The normalized system prompt SHA-256 matches; raw PTY protocol bytes and generated documentation package paths remain recorded separately. Paired/calibration evidence: docs/parity/fixtures/project-trust-extension-ui-current-pi-2026-10-12/current-ee409a85-e92d592/README.md."
       ],
       "dependencies": []
     },
@@ -3610,12 +3614,14 @@
       ],
       "implementation": [
         "ToolSearchBuiltin registers tool_search through ExtensionRegistration, ranks bounded callable deferred/codemode tools by name, description, parameter schema and namespace, and omits already-declared or unreachable tools.",
-        "Search matches call PiSharpToolExecutionContext.ActivateTools, which appends to the atomic session loadout and emits the normal tool_loadout_changed event for branch/JSONL persistence. Search returns a schema-validated PiSharpToolResult with loaded names."
+        "Search matches call PiSharpToolExecutionContext.ActivateTools, which appends to the atomic session loadout and emits the normal tool_loadout_changed event for branch/JSONL persistence. Search returns a schema-validated PiSharpToolResult with loaded names.",
+        "tool_search declares all-tools reach so the MCP coordinator waits for each enabled server before searching; activation requires a registered tool_search function that declares reach."
       ],
       "evidence": [
         "Current Pi BM25 search is packages/coding-agent/src/extensions/tool-search/tool.ts; builtin:<tool-search> is now loaded as an extension resource at 4259686d9290c0d73ae7192b796aee3e530a9779. Search and declaration changes share the loadout contract.",
         "ToolSearchTests uses a fake provider loop to prove search changes the next request's declarations, executes the loaded tool, excludes an unrelated CodeMode tool, and preserves the active loadout through branch navigation, Pi JSONL and resume. Ranking tests cover name, parameter and namespace metadata. Focused built-in/search/project-runtime tests pass 4/4; exact-head Linux CI run 36559856822 passed 827/827, 0 skipped.",
-        "Current-Pi process differential, model-context sizing, high-volume cancellation/error behavior and broader search semantics remain open."
+        "Current-Pi process differential, model-context sizing, high-volume cancellation/error behavior and broader search semantics remain open.",
+        "Current-Pi namespace alias search is exercised by the two-server stdio/QuickJS integration in docs/parity/fixtures/mcp-codemode-reach-result-current-pi-2026-10-12.md. Broader tool-search provider-process and model-context sizing checks remain open."
       ],
       "dependencies": [
         "tool-exposure-loadout"
@@ -3631,7 +3637,8 @@
         "Provide tool declarations, search/discovery, bounded result handling, per-session store and optional model/classifier access",
         "Use an intentional sandbox boundary with no host globals, resource limits, timeout, cancellation and recursion prevention",
         "Normalize whitespace, validate image data against supported PNG/JPEG/GIF/WebP signatures, derive emitted MIME from image bytes, and discover MCP namespaces without exposing all server tools in the main description.",
-        "Bound host-side accumulated script output so print loops cannot exhaust memory; preserve execution after package updates/removal, save image() artifacts, and keep output items separately structured."
+        "Bound host-side accumulated script output so print loops cannot exhaust memory; preserve execution after package updates/removal, save image() artifacts, and keep output items separately structured.",
+        "Expose declared tool reach and preserve MCP CallToolResult content, structuredContent, and error state to scripts."
       ],
       "implementation": [
         "Builtin codemode registers inactive through ExtensionCatalog as builtin:codemode and can be selected through --tools or the session loadout. The model script runs in a separate Node process inside a fresh QuickJS/WASM VM with no Node globals, a 32 MiB guest heap, 30-second deadline, bounded text/images/store/calls, and process kill on cancellation or completion.",
@@ -3639,7 +3646,8 @@
         "Successful scripts publish a bounded branch-local store snapshot, restored after tree navigation, native/Pi JSONL import/export and resume. Node.js 22.19+ is a runtime dependency; CI pins Node 24.",
         "ICodemodeModels supplies identity-only model catalog/classifier callbacks through the existing process bridge. Shared nested-call ordering, bounded classifier concurrency and usage ledger retain paid classifier/tool usage on later script failure, aggregate Codemode result cost and persist separate usage records.",
         "Typed image catalogs now include all 57 pinned OpenRouter image models separately from chat/classifier entries, with validated configured models and credential-gated metadata reads; image generation remains a separate capability.",
-        "Current Pi deltas d2931ad3 (Codemode image validation) and 1c7e7df (MCP namespace discovery) are implemented and exact-head verified: source f61455a21c359ec1af704c8b093f1d209db3cb51 / Linux CI 36753858082 passes restore, format, warnings-as-errors build and 1004/1004 tests, zero skips. MCP server summaries now appear in the bounded mcp_servers request section after connection; the Codemode function description stays server-agnostic. Bounded describeNamespace returns instructions and callable names. MCP OAuth client naming is also closed at 336be831 / CI 36756672893, malformed Retry-After fallback at a3a1512 / CI 36758603590, and indirect MCP startup at f1dc7e2e562a4e367de59dd62aa49796359db537 / CI 36766119204. See the 2026-09-30 upstream delta fixture."
+        "Current Pi deltas d2931ad3 (Codemode image validation) and 1c7e7df (MCP namespace discovery) are implemented and exact-head verified: source f61455a21c359ec1af704c8b093f1d209db3cb51 / Linux CI 36753858082 passes restore, format, warnings-as-errors build and 1004/1004 tests, zero skips. MCP server summaries now appear in the bounded mcp_servers request section after connection; the Codemode function description stays server-agnostic. Bounded describeNamespace returns instructions and callable names. MCP OAuth client naming is also closed at 336be831 / CI 36756672893, malformed Retry-After fallback at a3a1512 / CI 36758603590, and indirect MCP startup at f1dc7e2e562a4e367de59dd62aa49796359db537 / CI 36766119204. See the 2026-09-30 upstream delta fixture.",
+        "Codemode reach follows current Pi: ASCII source words for named calls and all-tools reach for search/description/discovery globals. Schema-bearing MCP calls return the full structured CallToolResult even when isError is true."
       ],
       "evidence": [
         "Current Pi Codemode uses an isolated QuickJS/WASM worker and is now resolved as builtin:codemode at 4259686d9290c0d73ae7192b796aee3e530a9779. The previous pin da19b63 package tests passed 57/57; the current refresh did not rerun the full Codemode suite.",
@@ -3649,7 +3657,9 @@
         "Tool-batch e827b64 / CI 36693692336 verified 982/982; Bash structured-output follow-up implements declared-schema results with 1 MiB programmatic cap, separate bounded display and nonzero returned errors. Two fail-first real VM cases, UTF-8/exact cap and persistence/error recovery checks, three paired current-Pi process projections and 63 focused checks pass; local format/build/full 986/986 pass, publication pending. See fixtures/codemode-bash-structured-2026-09-30.md.",
         "Bash source 18a85c4 / CI 36697970500 verified 986/986. Source-options/output-budget follow-up has eight fail-first cases and 44 focused checks, private head/tail spill and requested shorter deadline cancellation; format/build/full 999/999 pass locally, publication pending. Existing 30s/32MiB/64KiB sandbox ceilings remain explicit differences requiring final audit, not silently claimed full parity.",
         "Codemode image-validation source ee71fc63905044abbeaa2dd0e134a54fbd797f20 exact-head CI 36749258733 passes restore, format, zero-warning/error build and 1003/1003 tests with zero skips; fail-first provider-loop evidence and 10/10 focused CodemodeTests recorded in docs/parity/fixtures/upstream-delta-audit-2026-09-30.md.",
-        "Fail-first two-server MCP stdio fixture verified provider-safe namespace summaries, bounded instructions and callable tool metadata, namespace-filtered search, nested calls and hidden-tool exclusion; a separate configuration assertion verifies codemode-deferred alias canonicalization. Focused Codemode/MCP/config tests pass 16/16; full local suite passes 1004/1004 with zero skips. Exact-head Linux CI on f61455a21c359ec1af704c8b093f1d209db3cb51 / run 36753858082 passes restore, format, warnings-as-errors build and 1004/1004 tests with zero skips."
+        "Fail-first two-server MCP stdio fixture verified provider-safe namespace summaries, bounded instructions and callable tool metadata, namespace-filtered search, nested calls and hidden-tool exclusion; a separate configuration assertion verifies codemode-deferred alias canonicalization. Focused Codemode/MCP/config tests pass 16/16; full local suite passes 1004/1004 with zero skips. Exact-head Linux CI on f61455a21c359ec1af704c8b093f1d209db3cb51 / run 36753858082 passes restore, format, warnings-as-errors build and 1004/1004 tests with zero skips.",
+        "Current Pi refactor 24382bed at c661bc574f9e9713cc2af567fc1ac00621377a0c declares tool reaches and namespace aliases and wraps MCP structured output in a CallToolResult schema. Pi tests pass 85/85 across coding-agent MCP/auth suites and 170/170 across Codemode package suites. PiSharp still filters Codemode search by exact namespace name, and CodemodeSandbox returns only StructuredContent for schema-bearing tools, dropping MCP content and isError from the nested value.",
+        "Current Pi 77332f7a output test formats 100,000 empty text items within its 5-second bound. PiSharp currently limits a script to 256 output calls and joins all text with unconditional newlines; this remains an explicit current-Pi gap to resolve next. MCP nested success/error values, alias discovery, and schemas match in real stdio/QuickJS tests; see docs/parity/fixtures/mcp-codemode-reach-result-current-pi-2026-10-12.md."
       ],
       "dependencies": [
         "tool-exposure-loadout",
@@ -3687,13 +3697,15 @@
         "Support per-server OAuth clientName metadata and avoid holding the first prompt for indirect MCP servers.",
         "Pass an official MCP client-conformance baseline across every protocol mode supported by current Pi; classify all known failing checks.",
         "Isolate OAuth tokens and refresh coordination per normalized server name plus canonical URL, with deterministic migration from URL-only cache entries.",
-        "Allow trusted project mcp.json to override enabled/exposure for global servers; retain tool metadata before connect; cancel in-flight connects/OAuth on shutdown; send application_type during dynamic registration."
+        "Allow trusted project mcp.json to override enabled/exposure for global servers; retain tool metadata before connect; cancel in-flight connects/OAuth on shutdown; send application_type during dynamic registration.",
+        "Let registered tools declare the MCP servers they may reach, and resolve namespace aliases during Codemode discovery."
       ],
       "implementation": [
         "McpConfiguration loads global and trusted-project mcp.json with project precedence, enabled flags, exposure overrides, transport settings and bounded timeouts. McpRuntime uses the official C# SDK for stdio and Streamable HTTP, expands environment references without logging credential values, and registers tools and resource operations in the existing extension catalog. Clients are disposed with the extension lease. HTTP servers without an Authorization header use SDK OAuth with a noninteractive startup callback; explicit CLI login uses a loopback authorization-code callback, and logout deletes server-name/resource-bound tokens. A private atomic mcp-auth.json cache persists SDK token and client registration fields. Local CLI add/list/remove uses an atomic config editor with same-process and interprocess locking; CLI status probes servers without selecting a chat model.",
         "Current Pi deltas 1c7e7df (MCP namespace discovery) and 7c9fe664 (OAuth client naming) are implemented and exact-head verified: OAuth source 336be83135a0b18393bfaa41f7f826a34314f6eb / CI 36756672893. The loopback registration fixture verifies custom and default pi client names; configuration/CLI validation and secret-safe diagnostics are covered. Direct tools retain a bounded initial wait; the first prompt no longer waits for indirect servers, and named Codemode/tool-search/resource work waits for only the pending servers it requires. A delayed stdio fixture plus a real provider loop verifies the first turn proceeds before connection and later request instructions include the connected-server summary. CLI status still has a separate bounded all-server wait. Focused startup/provider-loop/Codemode tests pass; full solution tests pass 1014/1014 with zero skips, format and warnings-as-errors build pass; source f1dc7e2e562a4e367de59dd62aa49796359db537 passed exact-head CI 36766119204. See the 2026-09-30 upstream delta fixture.",
         "McpTokenCache keys credentials and refresh coordination by mcp__<normalized-name>|<absolute-resource-url>. SDK loads atomically claim URL-only legacy credentials; token observation does not migrate; logout prefers the named key and leaves other accounts intact. Cache persistence is extracted from OAuth settings into its own feature component.",
-        "Restored unknown tool names remain pending until registration, explicit deactivation or the next prompt. Reload carries the previous selection into the new registry. Pure additions retain pending names. Shared MAF requests preserve transcript declaration order, and prompt expiry persists the current loadout so recovery/resume cannot rearm missing tools."
+        "Restored unknown tool names remain pending until registration, explicit deactivation or the next prompt. Reload carries the previous selection into the new registry. Pure additions retain pending names. Shared MAF requests preserve transcript declaration order, and prompt expiry persists the current loadout so recovery/resume cannot rearm missing tools.",
+        "PiSharpToolReach is passed through the durable invocation context to MCP startup coordination. Calls wait for only the servers matched by named reach words, direct tools wait for their owning namespace, and MCP resource tools/tool_search declare all-server reach. MCP namespaces expose the configured server name as an alias; nested result values retain content, structuredContent, and isError without _meta, and each MCP output schema wraps the CallToolResult and relocates local references."
       ],
       "evidence": [
         "Current Pi MCP tools share exposure, nested execution, hooks and extension registration; builtin:mcp is resolved after trust at 4259686d9290c0d73ae7192b796aee3e530a9779. A refreshed source/test audit at 02eed88fd8912e54a804ddebd409e2e4c08ac5ef confirms Pi MCP lifecycle semantics and the /mcp manager; the upstream MCP extension/command/OAuth tests pass 28/28 at this source pin.",
@@ -3708,7 +3720,9 @@
         "Fail-first delayed stdio/provider-loop fixture proves an indirect MCP server no longer holds the first provider call; later provider requests include its first-line summary. Named Codemode waits, tool-search/resource waits, bounded direct startup, cancellation cleanup and separate pisharp mcp list status wait are covered. Full solution suite passes 1014/1014 with zero skips; source f1dc7e2e562a4e367de59dd62aa49796359db537 passed exact-head Linux CI 36766119204.",
         "Historical URL-only credential gap (5806068c) is now implemented and locally verified by current-Pi differential evidence. The required official client-conformance suite is pinned by current Pi at @modelcontextprotocol/conformance@0.2.0-alpha.11 for 2025-03-26, 2025-06-18 and 2025-11-25; PiSharp execution/baseline is not started.",
         "McpCredentialIsolationTests initially failed four cases: account overwrite, logout removing another account, shared legacy state, and twelve legacy winners. After the fix, 34/34 focused account/OAuth checks pass. Six operation sequences match current Pi 28eaccb8 exactly for token pairs, return values and persisted keys in fixtures/mcp-credential-isolation-2026-10-02.json. Current Pi store/refresh tests pass 8/8. Format verification, warnings-as-errors build (zero warnings/errors) and all 1076 PiSharp tests pass with zero skips; exact-head Linux CI 36986049950 passes at 930bc2d020cac38d6875e1a040b1c057525734d2 with 1076/1076 tests and zero skips.",
-        "DeferredToolRestoreTests includes resume, registry/reload gaps, additive/replacing selections, exclusions/allowed/no-tools, cancellation and transcript declaration order. Eight paired current-Pi/PiSharp scenarios match ordered selections, provider declarations and persisted loadout names at Pi 0495646a. See docs/parity/fixtures/deferred-tool-restore-2026-10-02.md. Broader parity remains in progress. Format verification and zero-warning build pass; full local tests pass 1087/1087 with zero skips. Exact-head Linux CI 36989476624 passes on source 25212004711fa7a321b198084b4e24290d031985, including 1087/1087 tests, zero skipped."
+        "DeferredToolRestoreTests includes resume, registry/reload gaps, additive/replacing selections, exclusions/allowed/no-tools, cancellation and transcript declaration order. Eight paired current-Pi/PiSharp scenarios match ordered selections, provider declarations and persisted loadout names at Pi 0495646a. See docs/parity/fixtures/deferred-tool-restore-2026-10-02.md. Broader parity remains in progress. Format verification and zero-warning build pass; full local tests pass 1087/1087 with zero skips. Exact-head Linux CI 36989476624 passes on source 25212004711fa7a321b198084b4e24290d031985, including 1087/1087 tests, zero skipped.",
+        "Current Pi refactor 24382bed at c661bc574f9e9713cc2af567fc1ac00621377a0c adds reachesTools-based startup waits and namespace aliases and declares MCP CallToolResult output schemas with local JSON Schema references relocated under structuredContent. Pi MCP/auth tests pass 85/85 and Codemode package tests 170/170. PiSharp McpStartupCoordinator still hard-codes codemode/tool_search/resource names, the tool namespace has no aliases, and MCP registrations expose only the server structured-output schema.",
+        "Current Pi 24382bed reach, alias, and CallToolResult behavior matches at PiSharp e92d592b. Two real Python stdio MCP children, the QuickJS Codemode sandbox, schema-reference tests, error-result assertions, 36 focused tests, full 1,355/1,355 suite, official conformance, and exact-head CI 38222962860 pass. See docs/parity/fixtures/mcp-codemode-reach-result-current-pi-2026-10-12.md."
       ],
       "dependencies": [
         "tool-exposure-loadout",
@@ -3760,7 +3774,8 @@
       "implementation": [
         "PiSharp ExtensionRegistration exposes native tools, commands, safe terminal renderers and direct RPC Bash handlers. PiSharpToolRegistration now also supplies exposure, namespace, default activation, loadout projection and nested invocation controls.",
         "PiSharpToolExecutionContext and the durable wrapper provide shared nested execution, lifecycle/persistence and call/result hooks with allow/block decisions. ExtensionCatalog now loads built-ins through ExtensionRegistration with builtin: source identity, trust-gated configured paths, explicit loading, disable rules and reload construction. ExtensionRegistration now exposes ordered asynchronous provider-context transforms, wired through PiAgent and ObservedChatClient after context projection and before provider-only repair and image preparation. Transforms receive copied messages and known mutable text/tool content, run on initial, tool-loop and context-overflow retry requests, and do not persist changes into conversation history. Registrations are captured when an agent is created. Native extensions now register ordered asynchronous startup/reload discovery callbacks for skills, prompts, and themes; resource behavior has paired current-Pi semantic evidence but full screen/request parity remains open. Extension state, late/dynamic registration, provider/model, MCP server, keybinding and interactive UI registration remain open.",
-        "ExtensionRegistration.AddProjectTrustHandler exposes a native pre-trust decision hook and reuses user/global and CLI bootstrap instances after resolution. ProjectTrustExtensionContext currently exposes the working directory and HasUserInterface only; current Pi's project-trust select/confirm/input/notify UI methods remain open."
+        "ExtensionRegistration.AddProjectTrustHandler exposes a native pre-trust decision hook and reuses user/global and CLI bootstrap instances after resolution. ProjectTrustExtensionContext currently exposes the working directory and HasUserInterface only; current Pi's project-trust select/confirm/input/notify UI methods remain open.",
+        "PiSharpToolRegistration now optionally declares ReachesTools; PiSharpToolCallContext carries reach and namespace metadata to hooks. MCP only auto-activates codemode/tool_search definitions that declare reach."
       ],
       "evidence": [
         "Current Pi ExtensionAPI, AgentSession tool hooks, virtual-model registration, MCP server registration and builtin extension-resource loading were inspected at 4259686d9290c0d73ae7192b796aee3e530a9779. The current upstream targeted resource/OAuth tests pass 7/7.",
@@ -3768,7 +3783,8 @@
         "ExtensionContextTransformTests passes locally 1/1: ordered transforms run for both provider requests in a tool loop, transformed prompt/tool-call arguments reach the provider, and canonical ConversationSession history retains the original prompt and tool arguments.",
         "dotnet format PiSharp.slnx --verify-no-changes --no-restore and dotnet build PiSharp.slnx --no-restore -warnaserror pass (0 warnings/errors). Full local suite: 1,067/1,068 passed, zero skipped; CliThemeProcessTests.ExplicitThemePathAndUseThemeApplyThroughLinuxPtyWithNoThemes timed out and reproduced in isolation.",
         "At Pi f1b2e77f5b13b2a199b1052cb79c235451afe7d7 / PiSharp 7b1fb8a319a39d25f9ec683c2ca3048eacd07e2f, a paired PTY fixture returns skill, prompt, and theme paths at startup and reload, including a file-URL skill path. Both sides expand startup and reloaded skill/prompt content with four provider requests and zero scenario errors. Full pair differs by 212,720 terminal-state fields, 126,434 render fields, and HTTP/system-prompt traces; same-Pi calibration matches normalized terminal state and HTTP. Exact-head CI 37961269172 passes 1,220 tests with zero skips. See docs/parity/fixtures/extension-resource-discovery-current-pi-2026-10-09.md.",
-        "At Pi 42a3497d03ad17e308a2299fa824727894f2c0ec / PiSharp e0bb42c6249d870e83086865047a451039615c38, the paired project-trust fixture now advertises the protected skill in both provider requests, records one ordered bootstrap load, and completes with no scenario errors. Same-Pi calibration matches terminal state, renders and HTTP; the full pair still has 28,323 state and 21,881 render differences plus HTTP/raw mismatches. Focused trust tests pass 2/2; format, warnings-as-errors build, Node 24/24, Python 24/24, and .NET 1,240/1,240 pass. Current Pi `extensions-runner.test.ts` project-trust test passes 1/1 with 108 unrelated cases filtered out. Exact-head CI 38013249666 is green. Pi startup trust UI methods and broader resource/startup parity remain open; see docs/parity/fixtures/project-trust-extension-current-pi-2026-10-10.md."
+        "At Pi 42a3497d03ad17e308a2299fa824727894f2c0ec / PiSharp e0bb42c6249d870e83086865047a451039615c38, the paired project-trust fixture now advertises the protected skill in both provider requests, records one ordered bootstrap load, and completes with no scenario errors. Same-Pi calibration matches terminal state, renders and HTTP; the full pair still has 28,323 state and 21,881 render differences plus HTTP/raw mismatches. Focused trust tests pass 2/2; format, warnings-as-errors build, Node 24/24, Python 24/24, and .NET 1,240/1,240 pass. Current Pi `extensions-runner.test.ts` project-trust test passes 1/1 with 108 unrelated cases filtered out. Exact-head CI 38013249666 is green. Pi startup trust UI methods and broader resource/startup parity remain open; see docs/parity/fixtures/project-trust-extension-current-pi-2026-10-10.md.",
+        "Current Pi a447ba11 adds before_agent_start for idle custom triggerTurn runs, including prompt-stability, queued-message, and abort-during-setup behavior. PiSharp still lacks an equivalent extension-facing custom-message run trigger and pre-agent-start contract; see the current source audit."
       ],
       "dependencies": [
         "tool-exposure-loadout",
@@ -3914,7 +3930,8 @@
         "Current Pi pins @modelcontextprotocol/conformance@0.2.0-alpha.11 and runs modes 2025-03-26, 2025-06-18 and 2025-11-25. Its runner compares each check against a committed baseline. PiSharp has no equivalent harness or baseline yet.",
         "At current Pi 4270522473e677ddba7b093caa0064a3df51d459, reran packages/coding-agent/test/mcp-conformance/run.ts against @modelcontextprotocol/conformance@0.2.0-alpha.11. All 26 scenarios across protocol versions 2025-03-26, 2025-06-18 and 2025-11-25 match Pi\u2019s committed baseline: 261 checks pass and the same eight checks fail in the three documented cases (six elicitation defaults, CIMD client-id use, and the deliberate three-sign-in limit). PiSharp\u2019s equivalent runner and baseline remain to be implemented and classified.",
         "PiSharp candidate based on 10ce13a3: the executable official-suite harness drives production McpRuntime, real registered tools and the OAuth loopback callback. Full run against @modelcontextprotocol/conformance@0.2.0-alpha.11 matches current Pi 4270522473e677ddba7b093caa0064a3df51d459 across all 26 scenarios and three protocol modes: 261 checks pass and the same eight known checks fail, each classified. The run verifies selected protocol fallback, SSE reconnect/resume, OAuth scope step-up, tool calls and JSON Schema 2020-12 preservation. Focused MCP tests pass 76/76; terminal tests 24/24; Python tests 38/38; dotnet format passes; warnings-as-errors build has zero warnings/errors; full .NET suite passes 1,343/1,343 with zero skips. See tools/parity/mcp-conformance/README.md.",
-        "Exact-head Linux CI run 38212383263 passes on PiSharp 0cfdf05e448192b15b4090406f602027bdfbc95d: standard job passes terminal 24/24, Python 38/38, format, warnings-as-errors build and .NET 1,343/1,343 with zero skips; the dedicated official MCP conformance job builds and passes the full three-mode suite. Current Pi remained at 4270522473e677ddba7b093caa0064a3df51d459 after a fresh fetch. The MCP conformance capability is verified; the overall parity gate remains open."
+        "Exact-head Linux CI run 38212383263 passes on PiSharp 0cfdf05e448192b15b4090406f602027bdfbc95d: standard job passes terminal 24/24, Python 38/38, format, warnings-as-errors build and .NET 1,343/1,343 with zero skips; the dedicated official MCP conformance job builds and passes the full three-mode suite. Current Pi remained at 4270522473e677ddba7b093caa0064a3df51d459 after a fresh fetch. The MCP conformance capability is verified; the overall parity gate remains open.",
+        "Exact-head Linux CI 38222962860 on PiSharp e92d592b818cb5655046b98abafbd288a5e375d5 passes the official 26-scenario conformance suite across all three protocol modes with 261 passing checks, the same eight documented failures, and no baseline regressions."
       ],
       "dependencies": [
         "mcp-runtime"
@@ -3970,7 +3987,8 @@
         "Focused PiSharp tests pass 6/6; Python parity harness passes 38/38. Exact-head Linux CI 38215138068 passes on PiSharp 770871d1df398196f81d770ae6a405c682483fea: terminal 24/24, Python 38/38, format, zero-warning build, .NET 1,348/1,348 with zero skips, and the MCP conformance job.",
         "PiSharp ProviderLoginTuiTests passes 5/5; its four-case provider OAuth PTY matrix covers default/custom app.message.copy keys, clipboard success/failure, OSC 52 fallback emission, URL hyperlink and copy/cancel hints, and Esc cancellation from manual code entry. Current Pi 4270522473e677ddba7b093caa0064a3df51d459 auth-url-copy and MCP manager-view tests pass 5/5.",
         "Exact-head Linux CI run 38217945513 passes on PiSharp b1cc9013fc6ac66a5947fd67347726449cc57778: terminal 24/24, Python 38/38, format verification, zero-warning build, .NET 1,352/1,352 with zero skips, and the MCP conformance job.",
-        "Provider URL handling is implemented, but a current-Pi paired terminal/clipboard replay, URL-less provider state regression, SSH-specific OSC 52 path, and callback success/failure presentation remain open."
+        "Provider URL handling is implemented, but a current-Pi paired terminal/clipboard replay, URL-less provider state regression, SSH-specific OSC 52 path, and callback success/failure presentation remain open.",
+        "Current Pi advanced to c661bc574f9e9713cc2af567fc1ac00621377a0c; its auth-url-copy/MCP manager-view tests remain part of the 85/85 focused MCP/auth suite. Paired auth URL terminal/clipboard, URL-less provider state, SSH OSC 52, and callback outcomes remain open."
       ],
       "dependencies": []
     },
@@ -4386,20 +4404,20 @@
   ],
   "upstream_delta_audit": {
     "source_pin": "955cc6665ee3986c6a033db52200779310d10dfd",
-    "source_head": "4270522473e677ddba7b093caa0064a3df51d459",
-    "commit_count": 231,
+    "source_head": "ee409a85f6ad92bf8c6ab8ed735c6cd24f2e749e",
+    "commit_count": 237,
     "classifications": {
-      "OUT_OF_SCOPE": 86,
+      "OUT_OF_SCOPE": 88,
       "NO_BEHAVIOR_CHANGE": 44,
-      "NEEDS_WORK": 92,
-      "MATCHED": 9
+      "NEEDS_WORK": 95,
+      "MATCHED": 10
     },
     "fixture": "docs/parity/fixtures/upstream-delta-audit-2026-10-12.md",
-    "next": "Continue interactive auth parity against current Pi 4270522473e677ddba7b093caa0064a3df51d459: capture paired terminal/clipboard evidence for the MCP URL flow and cover provider login screens, URL-less states, SSH OSC 52 and callback success/failure. Then advance to the next unresolved ledger capability.",
-    "current_item": "provider-auth-url-copy-tui-differential",
-    "current_item_status": "Official MCP client conformance is verified at PiSharp 0cfdf05e448192b15b4090406f602027bdfbc95d by exact-head CI 38212383263; the full run matches current Pi 4270522473e677ddba7b093caa0064a3df51d459 across 26 scenarios and three protocol modes, with all eight Pi-known failures classified. MCP OAuth URL presentation/copy/cancel is implemented at 770871d1df398196f81d770ae6a405c682483fea. Provider OAuth URL presentation and configured-key copy/cancel are implemented at b1cc9013fc and pass exact-head CI 38217945513. Current Pi focused sign-in URL tests pass 5/5. Paired terminal/clipboard replay, URL-less provider state, SSH-specific OSC 52 behavior, and provider callback success/failure remain open.",
-    "current_item_local_evidence": "ProviderLoginTuiTests passes 5/5; the new four-case Linux PTY matrix reaches Anthropic's copy-code screen and verifies URL hyperlink, default/custom copy bindings, clipboard success/failure with OSC 52 fallback, copy feedback, and Esc cancellation. Current Pi 4270522473e677ddba7b093caa0064a3df51d459 auth-url-copy and MCP manager-view tests pass 5/5. Exact-head CI 38217945513 succeeds on b1cc9013fc6ac66a5947fd67347726449cc57778 with 1,352 .NET tests and zero skips. Current-head project-trust extension UI replay also matches Pi terminal state, 14 normalized render frames, HTTP and normalized provider request at this product SHA; see docs/parity/fixtures/project-trust-extension-ui-current-pi-2026-10-12/current-42705224-b1cc9013/README.md.",
-    "next_after_ci": "capture-paired-auth-url-terminal-clipboard-and-provider-url-less-callback-outcomes",
+    "next": "Finish the active Resources / Instructions / Trust family, including remaining current startup, trust-selector, precedence, reload, and presentation differences. Then resolve the five named current-Pi behavioral deltas; the ee409a85 key-specific OpenRouter catalog is separately NEEDS_WORK and remains queued.",
+    "current_item": "resources-instructions-trust-current-head-differentials",
+    "current_item_status": "The trusted-project extension UI replay now matches at Pi ee409a85 / PiSharp e92d592b: 14 normalized terminal render frames, terminal state, HTTP traces, and provider semantics match, and same-Pi calibration passes. Resources / Instructions / Trust remains in progress because other startup, selector, reload, precedence, and presentation evidence still has open material differences. Pi ee409a85 also adds an in-scope key-personalized OpenRouter catalog; that provider gap is tracked after the active family.",
+    "current_item_local_evidence": "docs/parity/fixtures/project-trust-extension-ui-current-pi-2026-10-12/current-ee409a85-e92d592/README.md records the exact Pi ee409a85f6ad92bf8c6ab8ed735c6cd24f2e749e / PiSharp e92d592b818cb5655046b98abafbd288a5e375d5 paired and calibrated UI runs. Current Pi OpenRouter-related tests pass 56/56 at ee409a85. PiSharp source e92d592b exact-head CI 38222962860 passes the recorded full gate; this update adds differential evidence and audit bookkeeping without changing product source.",
+    "next_after_ci": "continue-resources-instructions-trust-open-differentials",
     "completed": [
       "65117e31f242daa8e0a17dbd2810f7bb92bf4087",
       "7a11fe1c723b942fa093edb8b00f051ddb9b6627",
@@ -4437,10 +4455,16 @@
       "2a33bbeecaa8612c6e7fe0961480ebbc9b4e6413",
       "0f4b1465a55ec92df2170617153625ec4f8f5f1d",
       "97195ec3c4a40665a9008c3658e67b0782f33b18",
-      "4270522473e677ddba7b093caa0064a3df51d459"
+      "4270522473e677ddba7b093caa0064a3df51d459",
+      "24382bedd03c61c0994628907a017b4491f8fa76",
+      "c661bc574f9e9713cc2af567fc1ac00621377a0c",
+      "a447ba11f3e7760fcff91e924bda8c20033953ea",
+      "f11e50f72ef8cdbdc828ad4196956cdc4cbf891e",
+      "77332f7a34f957f495e23a1b02c70f95db85ad22",
+      "ee409a85f6ad92bf8c6ab8ed735c6cd24f2e749e"
     ],
-    "ci_run": "38215138068",
-    "latest_published_source_head": "770871d1df398196f81d770ae6a405c682483fea",
+    "ci_run": "38222962860",
+    "latest_published_source_head": "e92d592b818cb5655046b98abafbd288a5e375d5",
     "latest_published_ci_runs": [
       "37907627495",
       "37953004947",
@@ -4466,7 +4490,10 @@
       "38204612669",
       "38205629517",
       "38212383263",
-      "38215138068"
+      "38215138068",
+      "38217945513",
+      "38218651688",
+      "38222962860"
     ],
     "official_mcp_conformance": {
       "package": "@modelcontextprotocol/conformance@0.2.0-alpha.11",
@@ -4478,18 +4505,19 @@
       "status": "verified",
       "upstream_fixture": "packages/coding-agent/test/mcp-conformance/baseline.json",
       "verified_pi_head": "4270522473e677ddba7b093caa0064a3df51d459",
-      "verified_pisharp_head": "0cfdf05e448192b15b4090406f602027bdfbc95d",
+      "verified_pisharp_head": "e92d592b818cb5655046b98abafbd288a5e375d5",
       "current_pi_full_run": "26 scenarios; 261 passing checks; eight known failures; no baseline regressions",
       "next": "Continue with MCP sign-in URL presentation and copy behavior in the interactive TUI",
       "candidate_source_base": "10ce13a3ca3e28040bf037737b722b7c82c83d2d",
       "pisharp_full_run": "26 scenarios across all three protocol modes; 261 passing checks; same eight current-Pi failures, all classified; no regressions",
       "focused_mcp_tests": "76/76 passed",
-      "full_dotnet_tests": "1,343/1,343 passed; zero skipped",
+      "full_dotnet_tests": "1,355/1,355 passed; zero skipped",
       "format_build": "format passed; warnings-as-errors build passed with zero warnings/errors",
-      "exact_head_ci_run": "38212383263",
-      "exact_head_ci": "success"
+      "exact_head_ci_run": "38222962860",
+      "exact_head_ci": "success",
+      "latest_tested_pi_head": "77332f7a34f957f495e23a1b02c70f95db85ad22"
     },
-    "working_source_pin": "770871d1df398196f81d770ae6a405c682483fea",
+    "working_source_pin": "e92d592b818cb5655046b98abafbd288a5e375d5",
     "active_llama_classifier_recheck": {
       "pi_source_head": "42a3497d03ad17e308a2299fa824727894f2c0ec",
       "pisharp_head": "8f33b03fb2d30622f20b9d469b5a69203283fb55",
@@ -4640,15 +4668,51 @@
           "MATCHED": 1
         },
         "fixture": "docs/parity/fixtures/upstream-delta-audit-2026-10-12.md"
+      },
+      {
+        "source_pin": "4270522473e677ddba7b093caa0064a3df51d459",
+        "source_head": "c661bc574f9e9713cc2af567fc1ac00621377a0c",
+        "commit_count": 2,
+        "classifications": {
+          "OUT_OF_SCOPE": 1,
+          "NO_BEHAVIOR_CHANGE": 0,
+          "NEEDS_WORK": 0,
+          "MATCHED": 1
+        },
+        "fixture": "docs/parity/fixtures/upstream-delta-audit-2026-10-12.md"
+      },
+      {
+        "source_pin": "c661bc574f9e9713cc2af567fc1ac00621377a0c",
+        "source_head": "77332f7a34f957f495e23a1b02c70f95db85ad22",
+        "commit_count": 3,
+        "classifications": {
+          "OUT_OF_SCOPE": 1,
+          "NO_BEHAVIOR_CHANGE": 0,
+          "NEEDS_WORK": 2,
+          "MATCHED": 0
+        },
+        "fixture": "docs/parity/fixtures/upstream-delta-audit-2026-10-12.md"
+      },
+      {
+        "source_pin": "77332f7a34f957f495e23a1b02c70f95db85ad22",
+        "source_head": "ee409a85f6ad92bf8c6ab8ed735c6cd24f2e749e",
+        "commit_count": 1,
+        "classifications": {
+          "OUT_OF_SCOPE": 0,
+          "NO_BEHAVIOR_CHANGE": 0,
+          "NEEDS_WORK": 1,
+          "MATCHED": 0
+        },
+        "fixture": "docs/parity/fixtures/upstream-delta-audit-2026-10-12.md"
       }
     ],
     "current_checkpoint": {
-      "validated_pi_head": "4270522473e677ddba7b093caa0064a3df51d459",
-      "validated_pisharp_source_head": "770871d1df398196f81d770ae6a405c682483fea",
-      "exact_head_ci_run": "38215138068",
-      "exact_head_ci": "success on exact SHA 770871d1df398196f81d770ae6a405c682483fea",
-      "tests": "Exact-head Linux CI 38215138068 on 770871d1df398196f81d770ae6a405c682483fea: terminal 24/24, Python 38/38, format verification, warnings-as-errors build, and .NET 1,348/1,348; zero skips. Dedicated official MCP conformance job also passes all 26 scenarios across three protocol modes with no baseline regressions.",
-      "active_family": "Interactive TUI: MCP sign-in URL presentation and copy",
+      "validated_pi_head": "77332f7a34f957f495e23a1b02c70f95db85ad22",
+      "validated_pisharp_source_head": "e92d592b818cb5655046b98abafbd288a5e375d5",
+      "exact_head_ci_run": "38222962860",
+      "exact_head_ci": "success on exact source SHA e92d592b818cb5655046b98abafbd288a5e375d5",
+      "tests": "Exact-head Linux CI 38222962860 passes on PiSharp e92d592b818cb5655046b98abafbd288a5e375d5: terminal 24/24, Python 38/38, format verification, warnings-as-errors build, .NET 1,355/1,355 with zero skips, and official MCP conformance with no baseline regressions. At current Pi 77332f7a34f957f495e23a1b02c70f95db85ad22, focused MCP/Codemode/prompt suites pass 129/129 and Codemode declarations pass 17/17.",
+      "active_family": "Codemode output item formatting and custom-trigger before_agent_start lifecycle",
       "terminal_calibration": {
         "pi_source_head": "ea448f454af474f3e2fe9733b331e17b0662f5d6",
         "product_pair": "current Pi vs current Pi",
@@ -4684,7 +4748,7 @@
         "Pi 4270522473e677ddba7b093caa0064a3df51d459 / PiSharp 35c18f9ad156661031a12d57578e9b4ecae9fb10 Codemode schema-error differential now matches: generated help documents object results on failure; a real ConversationRun/QuickJS worker regression reads the object while preserving nested IsError=true. Current Pi Codemode suite 24/24 and PiSharp exact-head CI 38199183091 pass. See docs/parity/fixtures/codemode-schema-error-current-pi-2026-10-12.md.",
         "Official MCP client conformance is verified on 0cfdf05e448192b15b4090406f602027bdfbc95d by exact-head CI 38212383263; current Pi 4270522473e677ddba7b093caa0064a3df51d459 was freshly fetched at the family boundary and is unchanged. All 194 required capabilities and the final source audit remain open."
       ],
-      "next_action": "Continue the active auth URL capability: build paired current-Pi/PiSharp authorization PTY fixtures for URL display, key precedence, clipboard success/failure and terminal state; then cover provider login and callback success/failure flows before selecting the next unresolved capability.",
+      "next_action": "Implement Pi f11e50f7 output item formatting/bounds with linear accumulation, then Pi a447ba11 custom-message trigger setup; continue remaining ledger items without stopping at the family boundary.",
       "terminal_comparison": {
         "cases": 12,
         "exact_terminal_state_matches": 12,
@@ -4857,39 +4921,27 @@
         "evidence": "docs/parity/fixtures/project-trust-extension-current-pi-2026-10-10.md"
       },
       "project_trust_extension_ui_comparison": {
-        "pi_source_head": "42a3497d03ad17e308a2299fa824727894f2c0ec",
-        "pisharp_source_head": "59813e6defcc3d5a07fe6b95dda3933d958ddfe1",
-        "callbacks": [
-          "select",
-          "confirm",
-          "input",
-          "notify"
-        ],
-        "callback_trace": [
-          "configured",
-          "trust-undecided:true",
-          "trust-decision:true",
-          "trust-ui:tui:true:Continue:true:approved"
-        ],
-        "protected_skill_match": true,
-        "normalized_system_prompt_match": true,
-        "normalized_system_prompt_sha256": "7f4100f7c700f2dcfde0929ae2fa634d7242ada53df572e8e6f782fc0da9dd6a",
-        "full_terminal_match": false,
-        "state_differences": 88231,
-        "render_differences": 50437,
-        "http_match": false,
-        "provider_request_difference_count": 14,
-        "request_difference_examples": [
-          "$.store",
-          "$.max_completion_tokens",
-          "$.tool_choice",
-          "$.messages[1].content",
-          "$.tools[0].function.description",
-          "$.tools[0].function.parameters.properties.limit.type"
-        ],
-        "same_pi_calibration_match": true,
-        "scenario_errors": {},
-        "evidence": "docs/parity/fixtures/project-trust-extension-ui-current-pi-2026-10-10/current-42a3497d-59813e6d/behavior.json"
+        "pi_source_head": "c661bc574f9e9713cc2af567fc1ac00621377a0c",
+        "pisharp_source_head": "bddd5005dc65aa9f7de2f15750b66c1fdb2f2ada",
+        "paired": {
+          "normalized_render_frames": 14,
+          "render_differences": 0,
+          "terminal_state_match": true,
+          "http_match": true,
+          "normalized_provider_request_match": true,
+          "scenario_errors": 0,
+          "raw_pty_byte_identical": false,
+          "working_indicator_frames": {
+            "pi": 14,
+            "pisharp": 3
+          }
+        },
+        "same_pi_calibration": {
+          "render_frames": 14,
+          "render_differences": 0,
+          "http_match": true
+        },
+        "evidence": "docs/parity/fixtures/project-trust-extension-ui-current-pi-2026-10-12/current-c661bc57-b1cc9013/README.md"
       },
       "trusted_project_reload_prompt_comparison": {
         "pi_source_head": "42a3497d03ad17e308a2299fa824727894f2c0ec",
@@ -5056,6 +5108,25 @@
           "control_boundary_differences": 721
         },
         "evidence": "docs/parity/fixtures/project-trust-extension-ui-current-pi-2026-10-12/current-42705224-e50a8baee9/README.md"
+      },
+      "mcp_reach_result_schema_comparison": {
+        "mcp_behavior_commit": "24382bedd03c61c0994628907a017b4491f8fa76",
+        "pi_source_head": "77332f7a34f957f495e23a1b02c70f95db85ad22",
+        "pisharp_product_head": "e92d592b818cb5655046b98abafbd288a5e375d5",
+        "status": "matched",
+        "current_pi_tests": {
+          "coding_agent_mcp_codemode_prompt": "129/129",
+          "codemode_declarations": "17/17"
+        },
+        "pisharp_tests": {
+          "focused_mcp_codemode": "36/36",
+          "full_dotnet": "1,355/1,355",
+          "mcp_conformance": "26 scenarios; 261 passing checks; same eight classified failures; no baseline regressions",
+          "exact_head_ci": "38222962860 passed"
+        },
+        "open_contracts": [],
+        "pisharp_gaps": [],
+        "evidence": "docs/parity/fixtures/mcp-codemode-reach-result-current-pi-2026-10-12.md"
       }
     },
     "active_llama_family_recheck": {
@@ -5098,29 +5169,34 @@
       "terminal_difference_classification": "Two flows retain one visible Pi-only manager-list render between the keep-loaded confirmation and the progress overlay. Named checkpoints, progress values, HTTP requests, and model mutations match. Same-head calibration confirms the frame is deterministic Pi behavior; this remains an unresolved terminal-presentation discrepancy, with full captures retained.",
       "evidence": "docs/parity/fixtures/llama-terminal-current-pi-2026-10-12/current-42705224-8a1df81/evidence.json"
     },
-    "latest_published_evidence_head": "770871d1df398196f81d770ae6a405c682483fea",
+    "latest_published_evidence_head": "e92d592b818cb5655046b98abafbd288a5e375d5",
     "working_tree_validation": {
-      "validated_git_head": "770871d1df398196f81d770ae6a405c682483fea",
-      "product_source_head": "770871d1df398196f81d770ae6a405c682483fea",
-      "fixture_change": "MCP OAuth TUI authorization URL presentation, configured copy key, clipboard errors and cancellation",
+      "validated_git_head": "e92d592b818cb5655046b98abafbd288a5e375d5",
+      "product_source_head": "e92d592b818cb5655046b98abafbd288a5e375d5",
+      "fixture_change": "MCP tool reach, namespace aliases, full CallToolResult result/schema projection",
       "focused_resource_differentials": "3 passed; 3/3 calibrations exact; paired render differences 0/0/0",
       "format": "passed",
       "warnings_as_errors_build": "passed, 0 warnings, 0 errors",
-      "terminal_tests": "24 passed, 0 failed, 0 skipped",
+      "terminal_tests": "24 passed",
       "python_tests": "38 passed",
-      "dotnet_tests": "1,348 passed, 0 failed, 0 skipped",
+      "dotnet_tests": "1,355 passed, 0 failed, 0 skipped",
       "prior_exact_head_ci": "38215138068 passed on exact head 770871d1df398196f81d770ae6a405c682483fea",
       "focused_trust_extension_ui": "same-Pi calibration exact across 14 canonical render checkpoints; paired terminal/render/HTTP match, 0 scenario errors, ordered extension trace and prompt submission assertions pass",
       "focused_mcp": "76 passed, 0 failed",
-      "mcp_conformance": "26 scenarios across three modes; 261 passing checks; same eight current-Pi failures, all classified"
-    }
+      "mcp_conformance": "26 scenarios across three modes; 261 passing checks; same eight classified failures; no regressions",
+      "focused_mcp_codemode": "36 passed",
+      "exact_head_ci": "38222962860 passed on exact head e92d592b818cb5655046b98abafbd288a5e375d5",
+      "current_pi_tests": "Pi 77332f7a34f957f495e23a1b02c70f95db85ad22: coding-agent MCP/Codemode/prompt suites 129/129; Codemode declarations 17/17"
+    },
+    "latest_tested_pi_head": "ee409a85f6ad92bf8c6ab8ed735c6cd24f2e749e"
   },
   "execution_policy": {
     "updated": "2026-10-12",
     "priority": [
-      "Continue auth TUI parity at current Pi 4270522473e677ddba7b093caa0064a3df51d459: add paired terminal/clipboard evidence around MCP URL copy/cancel and cover provider login, URL-less state and callback success/failure, then fix the earliest confirmed mismatch.",
-      "Continue the highest-leverage unresolved ledger families, including current-Pi terminal behavior and the remaining provider, RPC, session, settings and CLI capabilities.",
-      "Refresh both repositories at family boundaries and complete a fresh final source audit, required evidence and architecture-risk reconciliation before declaring parity."
+      "Finish Resources / Instructions / Trust, including remaining current startup, trust-selector, precedence, reload, and presentation differences; the trusted-project extension UI replay is refreshed at Pi ee409a85 / PiSharp e92d592b.",
+      "Resolve delayed terminal-reply buffering, compaction-status coloring, herdr Kitty image detection, Codemode schema constraints, and compaction-summary thinking against current Pi source and observable differentials.",
+      "Continue every remaining NEEDS_WORK ledger item. The Pi ee409a85 key-specific OpenRouter catalog is audited NEEDS_WORK and queued after the active family and named upstream deltas.",
+      "Run a fresh final Pi source audit, close applicable MCP conformance gaps, review and fix material architecture bottlenecks, then complete exact-head verification."
     ],
     "bookkeeping": "After each coherent implementation slice, run focused verification, format verification, warnings-as-errors build and the full test suite; commit and push; verify exact-head CI; update parity evidence; refresh current Pi when the active family requires it; then continue until every ledger capability and the complete final gate are satisfied. Preserve unrelated user-owned worktree files."
   }
