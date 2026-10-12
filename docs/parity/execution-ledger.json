@@ -3966,7 +3966,8 @@
       "evidence": [
         "Current Pi 4270522473e677ddba7b093caa0064a3df51d459 sign-in URL tests: auth-url-copy.test.ts and mcp-manager-view.test.ts pass 5/5.",
         "PiSharp focused MCP OAuth PTY test passes 6/6 on Linux: wrapped OSC 8 link and copy/cancel hints, default and customized copy key, clipboard success/failure, and Esc cancellation; authorization callback sign-in completes in the copy cases.",
-        "Focused PiSharp tests pass 6/6; Python parity harness passes 38/38. MCP provider-login UI, full current-Pi paired terminal/clipboard differential, and remaining authentication-selector cases remain open."
+        "Focused PiSharp tests pass 6/6; Python parity harness passes 38/38. Exact-head Linux CI 38215138068 passes on PiSharp 770871d1df398196f81d770ae6a405c682483fea: terminal 24/24, Python 38/38, format, zero-warning build, .NET 1,348/1,348 with zero skips, and the MCP conformance job.",
+        "MCP provider-login UI, full current-Pi paired terminal/clipboard differential, and remaining authentication-selector cases remain open."
       ],
       "dependencies": []
     },
@@ -4393,8 +4394,8 @@
     "fixture": "docs/parity/fixtures/upstream-delta-audit-2026-10-12.md",
     "next": "Continue interactive auth parity against current Pi 4270522473e677ddba7b093caa0064a3df51d459: capture paired terminal/clipboard evidence for the MCP URL flow and cover provider login screens, URL-less states, SSH OSC 52 and callback success/failure. Then advance to the next unresolved ledger capability.",
     "current_item": "mcp-auth-url-copy-tui-differential",
-    "current_item_status": "Official MCP client conformance is verified at PiSharp 0cfdf05e448192b15b4090406f602027bdfbc95d by exact-head CI 38212383263; the full run matches current Pi 4270522473e677ddba7b093caa0064a3df51d459 across 26 scenarios and three protocol modes, with all eight Pi-known failures classified. MCP OAuth URL presentation/copy/cancel is locally implemented and covered by a six-case PTY test; current Pi's focused sign-in URL tests pass 5/5. Provider-login screens and the full paired terminal/clipboard differential remain open.",
-    "current_item_local_evidence": "PiSharp's active MCP authorization URL uses the configured app.message.copy key through the existing terminal clipboard path, displays configurable cancel/copy hints, supports Esc cancellation, and clears its URL on sign-in completion. The six-case Linux PTY regression passes. Current Pi origin/main remains 4270522473e677ddba7b093caa0064a3df51d459; its auth-url-copy and MCP manager-view tests pass 5/5.",
+    "current_item_status": "Official MCP client conformance is verified at PiSharp 0cfdf05e448192b15b4090406f602027bdfbc95d by exact-head CI 38212383263; the full run matches current Pi 4270522473e677ddba7b093caa0064a3df51d459 across 26 scenarios and three protocol modes, with all eight Pi-known failures classified. MCP OAuth URL presentation/copy/cancel is implemented at 770871d1df398196f81d770ae6a405c682483fea and passes exact-head CI 38215138068; current Pi's focused sign-in URL tests pass 5/5. Provider-login screens and the full paired terminal/clipboard differential remain open.",
+    "current_item_local_evidence": "PiSharp's active MCP authorization URL uses the configured app.message.copy key through the existing terminal clipboard path, displays configurable cancel/copy hints, supports Esc cancellation, and clears its URL on sign-in completion. The six-case Linux PTY regression passes and exact-head CI is green. Current Pi origin/main remains 4270522473e677ddba7b093caa0064a3df51d459; its auth-url-copy and MCP manager-view tests pass 5/5.",
     "next_after_ci": "continue-tui-auth-url-copy-provider-and-paired-differential",
     "completed": [
       "65117e31f242daa8e0a17dbd2810f7bb92bf4087",
@@ -4435,8 +4436,8 @@
       "97195ec3c4a40665a9008c3658e67b0782f33b18",
       "4270522473e677ddba7b093caa0064a3df51d459"
     ],
-    "ci_run": "38212383263",
-    "latest_published_source_head": "0cfdf05e448192b15b4090406f602027bdfbc95d",
+    "ci_run": "38215138068",
+    "latest_published_source_head": "770871d1df398196f81d770ae6a405c682483fea",
     "latest_published_ci_runs": [
       "37907627495",
       "37953004947",
@@ -4461,7 +4462,8 @@
       "38203758189",
       "38204612669",
       "38205629517",
-      "38212383263"
+      "38212383263",
+      "38215138068"
     ],
     "official_mcp_conformance": {
       "package": "@modelcontextprotocol/conformance@0.2.0-alpha.11",
@@ -4484,7 +4486,7 @@
       "exact_head_ci_run": "38212383263",
       "exact_head_ci": "success"
     },
-    "working_source_pin": "0cfdf05e448192b15b4090406f602027bdfbc95d",
+    "working_source_pin": "770871d1df398196f81d770ae6a405c682483fea",
     "active_llama_classifier_recheck": {
       "pi_source_head": "42a3497d03ad17e308a2299fa824727894f2c0ec",
       "pisharp_head": "8f33b03fb2d30622f20b9d469b5a69203283fb55",
@@ -4639,10 +4641,10 @@
     ],
     "current_checkpoint": {
       "validated_pi_head": "4270522473e677ddba7b093caa0064a3df51d459",
-      "validated_pisharp_source_head": "0cfdf05e448192b15b4090406f602027bdfbc95d",
-      "exact_head_ci_run": "38212383263",
-      "exact_head_ci": "success on exact SHA 0cfdf05e448192b15b4090406f602027bdfbc95d",
-      "tests": "Exact-head Linux CI 38212383263 on 0cfdf05e448192b15b4090406f602027bdfbc95d: terminal 24/24, Python 38/38, format verification, warnings-as-errors build, and .NET 1,343/1,343; zero skips. Dedicated official MCP conformance job also passes all 26 scenarios across three protocol modes with no baseline regressions.",
+      "validated_pisharp_source_head": "770871d1df398196f81d770ae6a405c682483fea",
+      "exact_head_ci_run": "38215138068",
+      "exact_head_ci": "success on exact SHA 770871d1df398196f81d770ae6a405c682483fea",
+      "tests": "Exact-head Linux CI 38215138068 on 770871d1df398196f81d770ae6a405c682483fea: terminal 24/24, Python 38/38, format verification, warnings-as-errors build, and .NET 1,348/1,348; zero skips. Dedicated official MCP conformance job also passes all 26 scenarios across three protocol modes with no baseline regressions.",
       "active_family": "Interactive TUI: MCP sign-in URL presentation and copy",
       "terminal_calibration": {
         "pi_source_head": "ea448f454af474f3e2fe9733b331e17b0662f5d6",
@@ -4913,16 +4915,16 @@
         "evidence": "docs/parity/fixtures/project-settings-reload-current-pi-2026-10-10/current-42a3497d-59813e6d/behavior.json"
       },
       "working_tree_validation": {
-        "validated_git_head": "0cfdf05e448192b15b4090406f602027bdfbc95d",
-        "product_source_head": "0cfdf05e448192b15b4090406f602027bdfbc95d",
-        "fixture_change": "official MCP conformance harness, reviewed baseline/classifications, server-selected protocol fallback and OAuth scope step-up",
+        "validated_git_head": "770871d1df398196f81d770ae6a405c682483fea",
+        "product_source_head": "770871d1df398196f81d770ae6a405c682483fea",
+        "fixture_change": "MCP OAuth TUI authorization URL presentation, configured copy key, clipboard errors and cancellation",
         "focused_resource_differentials": "3 passed; 3/3 calibrations exact; paired render differences 0/0/0",
         "format": "passed",
         "warnings_as_errors_build": "passed, 0 warnings, 0 errors",
         "terminal_tests": "24 passed, 0 failed, 0 skipped",
         "python_tests": "38 passed",
-        "dotnet_tests": "1,343 passed, 0 failed, 0 skipped",
-        "prior_exact_head_ci": "38212383263 passed on exact head 0cfdf05e448192b15b4090406f602027bdfbc95d",
+        "dotnet_tests": "1,348 passed, 0 failed, 0 skipped",
+        "prior_exact_head_ci": "38215138068 passed on exact head 770871d1df398196f81d770ae6a405c682483fea",
         "focused_trust_extension_ui": "same-Pi calibration exact across 14 canonical render checkpoints; paired terminal/render/HTTP match, 0 scenario errors, ordered extension trace and prompt submission assertions pass",
         "focused_mcp": "76 passed, 0 failed",
         "mcp_conformance": "26 scenarios across three modes; 261 passing checks; same eight current-Pi failures, all classified"
@@ -5093,18 +5095,18 @@
       "terminal_difference_classification": "Two flows retain one visible Pi-only manager-list render between the keep-loaded confirmation and the progress overlay. Named checkpoints, progress values, HTTP requests, and model mutations match. Same-head calibration confirms the frame is deterministic Pi behavior; this remains an unresolved terminal-presentation discrepancy, with full captures retained.",
       "evidence": "docs/parity/fixtures/llama-terminal-current-pi-2026-10-12/current-42705224-8a1df81/evidence.json"
     },
-    "latest_published_evidence_head": "0cfdf05e448192b15b4090406f602027bdfbc95d",
+    "latest_published_evidence_head": "770871d1df398196f81d770ae6a405c682483fea",
     "working_tree_validation": {
-      "validated_git_head": "0cfdf05e448192b15b4090406f602027bdfbc95d",
-      "product_source_head": "0cfdf05e448192b15b4090406f602027bdfbc95d",
-      "fixture_change": "official MCP conformance harness, reviewed baseline/classifications, server-selected protocol fallback and OAuth scope step-up",
+      "validated_git_head": "770871d1df398196f81d770ae6a405c682483fea",
+      "product_source_head": "770871d1df398196f81d770ae6a405c682483fea",
+      "fixture_change": "MCP OAuth TUI authorization URL presentation, configured copy key, clipboard errors and cancellation",
       "focused_resource_differentials": "3 passed; 3/3 calibrations exact; paired render differences 0/0/0",
       "format": "passed",
       "warnings_as_errors_build": "passed, 0 warnings, 0 errors",
       "terminal_tests": "24 passed, 0 failed, 0 skipped",
       "python_tests": "38 passed",
-      "dotnet_tests": "1,343 passed, 0 failed, 0 skipped",
-      "prior_exact_head_ci": "38212383263 passed on exact head 0cfdf05e448192b15b4090406f602027bdfbc95d",
+      "dotnet_tests": "1,348 passed, 0 failed, 0 skipped",
+      "prior_exact_head_ci": "38215138068 passed on exact head 770871d1df398196f81d770ae6a405c682483fea",
       "focused_trust_extension_ui": "same-Pi calibration exact across 14 canonical render checkpoints; paired terminal/render/HTTP match, 0 scenario errors, ordered extension trace and prompt submission assertions pass",
       "focused_mcp": "76 passed, 0 failed",
       "mcp_conformance": "26 scenarios across three modes; 261 passing checks; same eight current-Pi failures, all classified"
