@@ -4350,20 +4350,20 @@
   ],
   "upstream_delta_audit": {
     "source_pin": "955cc6665ee3986c6a033db52200779310d10dfd",
-    "source_head": "04566631c2b51fb688486bc1f040f60d1518c126",
-    "commit_count": 229,
+    "source_head": "4270522473e677ddba7b093caa0064a3df51d459",
+    "commit_count": 231,
     "classifications": {
-      "OUT_OF_SCOPE": 85,
+      "OUT_OF_SCOPE": 86,
       "NO_BEHAVIOR_CHANGE": 44,
       "NEEDS_WORK": 92,
-      "MATCHED": 8
+      "MATCHED": 9
     },
-    "fixture": "docs/parity/fixtures/upstream-delta-audit-2026-10-11.md",
-    "next": "rerun-current-pi-skill-prompt-read-bash-indirect-with-calibration-and-classify-terminal-residuals",
-    "current_item": "trust-selector-and-current-head-resource-terminal-differentials",
-    "current_item_status": "The Pi 427/PiSharp cf5 trust-extension UI and all three named startup dialogs match terminal state/render and HTTP; the bare /trust selector rows now match exactly while full-screen startup/notification/control output remains different. Current read/Bash/indirect skill-prompt terminal residuals are next to reproduce and classify.",
-    "current_item_local_evidence": "Current Pi 4270522473e677ddba7b093caa0064a3df51d459 / PiSharp cf5f427f4990d7404f80f8a378a64d6731a7a5fd: the bare /trust selector title, path, saved-decision/session headers, selected/current markers and option labels match Pi cell-for-cell in open-trust-selector and verify-session-stays-untrusted. The renderer applies muted, accent and text roles to separate segments. Same-Pi calibration has zero state/render differences and HTTP matches; the whole paired terminal remains different (73,022 total state/render fields, 45,566 render fields), so startup/notification/control-screen parity remains open. Focused renderer and PTY tests pass. Exact report, captures and row assertions: docs/parity/fixtures/trust-selector-current-pi-2026-10-12.md. Current Pi 4270522473e677ddba7b093caa0064a3df51d459 / PiSharp cf5f427f4990d7404f80f8a378a64d6731a7a5fd trust-extension UI replay: all 12 paired terminal frames/renders and HTTP traces match; same-Pi calibration is exact. Ordered callbacks, protected project skill, one provider request, normalized system-prompt hash/section order and all three startup dialog frames match, with no scenario errors or premature usage display. Raw PTY protocols differ and the working-animation frame count is scheduling-dependent. Semantic assertion and captures: docs/parity/fixtures/project-trust-extension-ui-current-pi-2026-10-12/current-42705224-cf5f427f/.",
-    "next_after_ci": "fetch-current-Pi-then-run-skill-prompt-read-bash-indirect-paired-and-calibrated",
+    "fixture": "docs/parity/fixtures/upstream-delta-audit-2026-10-12.md",
+    "next": "rerun-current-head-skill-prompt-read-bash-indirect-terminal-differentials",
+    "current_item": "current-head-skill-prompt-read-bash-indirect-terminal-differentials",
+    "current_item_status": "The Pi 42705224 coding-agent Codemode schema-failure description delta is now matched. The next open resource/TUI differential is the read, Bash, and indirect skill-prompt PTY flows at current Pi and PiSharp heads.",
+    "current_item_local_evidence": "Current Pi 4270522473e677ddba7b093caa0064a3df51d459 / PiSharp 35c18f9ad156661031a12d57578e9b4ecae9fb10: live createCodemodeDescription output matches the schema-declared object-on-failure guidance. PiSharp runs an object-schema nested failure through ConversationRun and the real QuickJS worker: script output is not found/true while the nested lifecycle event remains IsError=true. Current Pi Codemode suite 24/24, PiSharp focused Codemode tests 11/11, full suite 1,338/1,338, and exact-head CI are green. Evidence: docs/parity/fixtures/codemode-schema-error-current-pi-2026-10-12.md.",
+    "next_after_ci": "fetch-current-Pi-then-rerun-skill-prompt-read-bash-indirect-with-same-Pi-calibration",
     "completed": [
       "65117e31f242daa8e0a17dbd2810f7bb92bf4087",
       "7a11fe1c723b942fa093edb8b00f051ddb9b6627",
@@ -4400,10 +4400,11 @@
       "74613de6d3c82b67875e44a4ce807f1e31f7df20",
       "2a33bbeecaa8612c6e7fe0961480ebbc9b4e6413",
       "0f4b1465a55ec92df2170617153625ec4f8f5f1d",
-      "97195ec3c4a40665a9008c3658e67b0782f33b18"
+      "97195ec3c4a40665a9008c3658e67b0782f33b18",
+      "4270522473e677ddba7b093caa0064a3df51d459"
     ],
-    "ci_run": "38193066793",
-    "latest_published_source_head": "cf5f427f4990d7404f80f8a378a64d6731a7a5fd",
+    "ci_run": "38199183091",
+    "latest_published_source_head": "35c18f9ad156661031a12d57578e9b4ecae9fb10",
     "latest_published_ci_runs": [
       "37907627495",
       "37953004947",
@@ -4422,7 +4423,8 @@
       "38159290483",
       "38160159991",
       "38191628410",
-      "38193066793"
+      "38193066793",
+      "38199183091"
     ],
     "official_mcp_conformance": {
       "package": "@modelcontextprotocol/conformance@0.2.0-alpha.11",
@@ -4573,14 +4575,26 @@
           "MATCHED": 0
         },
         "fixture": "docs/parity/fixtures/upstream-delta-audit-2026-10-11.md"
+      },
+      {
+        "source_pin": "04566631c2b51fb688486bc1f040f60d1518c126",
+        "source_head": "4270522473e677ddba7b093caa0064a3df51d459",
+        "commit_count": 2,
+        "classifications": {
+          "OUT_OF_SCOPE": 1,
+          "NO_BEHAVIOR_CHANGE": 0,
+          "NEEDS_WORK": 0,
+          "MATCHED": 1
+        },
+        "fixture": "docs/parity/fixtures/upstream-delta-audit-2026-10-12.md"
       }
     ],
     "current_checkpoint": {
       "validated_pi_head": "4270522473e677ddba7b093caa0064a3df51d459",
-      "validated_pisharp_source_head": "cf5f427f4990d7404f80f8a378a64d6731a7a5fd",
-      "exact_head_ci_run": "38193066793",
+      "validated_pisharp_source_head": "35c18f9ad156661031a12d57578e9b4ecae9fb10",
+      "exact_head_ci_run": "38199183091",
       "exact_head_ci": "success",
-      "tests": "Exact-head Linux CI: Node 24/24, Python 37/37, format verification, warnings-as-errors build, and .NET 1,333/1,333; zero skips.",
+      "tests": "Exact-head Linux CI 38199183091: Node 24/24, Python 37/37, format verification, warnings-as-errors build, and .NET 1,338/1,338; zero skips.",
       "active_family": "Resources / instructions and trust",
       "terminal_calibration": {
         "pi_source_head": "ea448f454af474f3e2fe9733b331e17b0662f5d6",
@@ -4613,9 +4627,10 @@
         "Current llama.cpp verification at Pi cdaf6c227d4718a72b59ccd02152c9614df44cfc / PiSharp e9e160c8b69e5961f735a5f5022d72266ddd5109: current Pi llama extension tests pass 15/15; three process differentials and twelve paired terminal flows match all 155 render frames and HTTP traces, with zero scenario errors. Same-Pi calibration passes 12/12 at Pi ea448f45 because the two commits through cdaf6c22 change only the separate durable package. Exact-head CI 38127899737 passes 1,251/1,251 tests, zero skips. Evidence: docs/parity/fixtures/llama-terminal-current-pi-2026-10-11.md.",
         "Current Pi 04566631 adds four new in-scope NEEDS_WORK deltas: delayed terminal-reply buffering (edb2eb96), embedded compaction status coloring (dbc7ff87), herdr Kitty image detection (78a3c10b), and Codemode schema-constraint declarations (8a9c051f). The resource family remains active.",
         "Current Pi 4270522473e677ddba7b093caa0064a3df51d459 / PiSharp cf5f427f4990d7404f80f8a378a64d6731a7a5fd: the bare /trust selector title, path, saved-decision/session headers, selected/current markers and option labels match Pi cell-for-cell in open-trust-selector and verify-session-stays-untrusted. The renderer applies muted, accent and text roles to separate segments. Same-Pi calibration has zero state/render differences and HTTP matches; the whole paired terminal remains different (73,022 total state/render fields, 45,566 render fields), so startup/notification/control-screen parity remains open. Focused renderer and PTY tests pass. Exact report, captures and row assertions: docs/parity/fixtures/trust-selector-current-pi-2026-10-12.md.",
-        "Current Pi 4270522473e677ddba7b093caa0064a3df51d459 / PiSharp cf5f427f4990d7404f80f8a378a64d6731a7a5fd trust-extension UI replay: all 12 paired terminal frames/renders and HTTP traces match; same-Pi calibration is exact. Ordered callbacks, protected project skill, one provider request, normalized system-prompt hash/section order and all three startup dialog frames match, with no scenario errors or premature usage display. Raw PTY protocols differ and the working-animation frame count is scheduling-dependent. Semantic assertion and captures: docs/parity/fixtures/project-trust-extension-ui-current-pi-2026-10-12/current-42705224-cf5f427f/."
+        "Current Pi 4270522473e677ddba7b093caa0064a3df51d459 / PiSharp cf5f427f4990d7404f80f8a378a64d6731a7a5fd trust-extension UI replay: all 12 paired terminal frames/renders and HTTP traces match; same-Pi calibration is exact. Ordered callbacks, protected project skill, one provider request, normalized system-prompt hash/section order and all three startup dialog frames match, with no scenario errors or premature usage display. Raw PTY protocols differ and the working-animation frame count is scheduling-dependent. Semantic assertion and captures: docs/parity/fixtures/project-trust-extension-ui-current-pi-2026-10-12/current-42705224-cf5f427f/.",
+        "Pi 4270522473e677ddba7b093caa0064a3df51d459 / PiSharp 35c18f9ad156661031a12d57578e9b4ecae9fb10 Codemode schema-error differential now matches: generated help documents object results on failure; a real ConversationRun/QuickJS worker regression reads the object while preserving nested IsError=true. Current Pi Codemode suite 24/24 and PiSharp exact-head CI 38199183091 pass. See docs/parity/fixtures/codemode-schema-error-current-pi-2026-10-12.md."
       ],
-      "next_action": "Run current-Pi same-product calibration and paired terminal/request differentials for skill prompt expansion, invocation, and reload at Pi cdaf6c22 / PiSharp e9e160c8; verify reader-tool selection, no-reader suppression, invocation arguments and scopes, XML escaping, whitespace, manual command behavior and provider traces, then fix the first reproduced mismatch.",
+      "next_action": "Fetch current Pi 4270522473e677ddba7b093caa0064a3df51d459 and rerun the read, Bash, and indirect skill-prompt PTY flows against PiSharp 35c18f9ad156661031a12d57578e9b4ecae9fb10, with same-Pi calibration. Compare rendered prompt expansion, tool choice, provider requests, terminal frames and control boundaries; fix the first confirmed mismatch.",
       "terminal_comparison": {
         "cases": 12,
         "exact_terminal_state_matches": 12,
@@ -4688,6 +4703,12 @@
           "passed": 41,
           "total": 41,
           "pi_head": "f1b2e77f5b13b2a199b1052cb79c235451afe7d7"
+        },
+        "codemode": {
+          "passed": 24,
+          "total": 24,
+          "pi_head": "4270522473e677ddba7b093caa0064a3df51d459",
+          "file": "packages/coding-agent/test/suite/agent-session-codemode.test.ts"
         }
       },
       "current_pi_family_tests": {
@@ -4706,6 +4727,12 @@
           "total": 15,
           "pi_head": "cdaf6c227d4718a72b59ccd02152c9614df44cfc",
           "file": "packages/coding-agent/test/llama-extension.test.ts"
+        },
+        "codemode": {
+          "passed": 24,
+          "total": 24,
+          "pi_head": "4270522473e677ddba7b093caa0064a3df51d459",
+          "file": "packages/coding-agent/test/suite/agent-session-codemode.test.ts"
         }
       },
       "resource_skill_precedence_comparison": {
@@ -4837,14 +4864,14 @@
         "evidence": "docs/parity/fixtures/project-settings-reload-current-pi-2026-10-10/current-42a3497d-59813e6d/behavior.json"
       },
       "working_tree_validation": {
-        "base_source_head": "d8e5411be475a0f4bc3bf3458bc46bdbc8fd40f9",
-        "focused_matcher_tests": "34 passed",
+        "base_source_head": "35c18f9ad156661031a12d57578e9b4ecae9fb10",
+        "focused_codemode_tests": "11 passed",
         "format": "passed",
         "warnings_as_errors_build": "passed, 0 warnings, 0 errors",
-        "dotnet_tests": "1300 passed, 0 failed, 0 skipped",
+        "dotnet_tests": "1,338 passed, 0 failed, 0 skipped",
         "terminal_tests": "24 passed, 0 failed, 0 skipped",
         "python_tests": "37 passed",
-        "exact_head_ci": "pending push"
+        "exact_head_ci": "38199183091 passed"
       },
       "skill_prompt_differential": {
         "pi_head": "04566631c2b51fb688486bc1f040f60d1518c126",
@@ -4868,7 +4895,18 @@
         ],
         "evidence": "docs/parity/fixtures/skill-prompt-current-pi-2026-10-11/current-04566631-d8e5411b/README.md"
       },
-      "python_test_thread_limit": "All direct tools/parity Python scripts apply the shared two-thread/native-pool and CPU-affinity cap; children inherit the capped environment. tools/parity/terminal/test_thread_limits.py verifies CPU visibility."
+      "python_test_thread_limit": "All direct tools/parity Python scripts apply the shared two-thread/native-pool and CPU-affinity cap; children inherit the capped environment. tools/parity/terminal/test_thread_limits.py verifies CPU visibility.",
+      "codemode_schema_error_comparison": {
+        "pi_source_head": "4270522473e677ddba7b093caa0064a3df51d459",
+        "pisharp_source_head": "35c18f9ad156661031a12d57578e9b4ecae9fb10",
+        "description_match": true,
+        "structured_object_available_on_nested_failure": true,
+        "nested_failure_status_preserved": true,
+        "current_pi_suite": "24/24",
+        "pisharp_focused_suite": "11/11",
+        "exact_head_ci_run": "38199183091",
+        "evidence": "docs/parity/fixtures/codemode-schema-error-current-pi-2026-10-12.md"
+      }
     },
     "active_llama_family_recheck": {
       "pi_source_head": "4270522473e677ddba7b093caa0064a3df51d459",
