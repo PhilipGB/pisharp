@@ -33,7 +33,7 @@ assert args.candidate or subprocess.run(['git', 'diff', '--quiet'], cwd=repo).re
 def working_source():
     changed = subprocess.check_output(['git', 'diff', '--name-only', 'HEAD'], cwd=repo, text=True).splitlines()
     untracked = subprocess.check_output(['git', 'ls-files', '--others', '--exclude-standard'], cwd=repo, text=True).splitlines()
-    user_files = set(json.loads((repo / 'docs/refactor/baseline/starting-user-files.json').read_text()))
+    user_files = set(json.loads((Path(__file__).resolve().parent.parent / 'baseline/starting-user-files.json').read_text()))
     return {path: hashlib.sha256((repo/path).read_bytes()).hexdigest() if (repo/path).is_file() else None
             for path in sorted(set(changed) | (set(untracked)-user_files))}
 

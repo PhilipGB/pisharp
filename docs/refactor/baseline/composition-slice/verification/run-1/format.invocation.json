@@ -1,0 +1,14 @@
+{
+  "id": "format",
+  "command": [
+    "dotnet",
+    "format",
+    "PiSharp.slnx",
+    "--verify-no-changes",
+    "--no-restore"
+  ],
+  "cwd": "/home/philip/Downloads/pisharp-bootstrap/pisharp",
+  "exitCode": 0,
+  "seconds": 35.05575180053711,
+  "logger": "stdout+stderr text"
+}

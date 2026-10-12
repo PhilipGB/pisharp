@@ -1,0 +1,17 @@
+[
+  {
+    "path": "src/PiSharp.Cli/Program.cs",
+    "sha256": "117712f762ad4ebc61d790a506bb3ba01a92c97c9f69d58b42c56ac4ea9ce4a2",
+    "artifact": "stage-1-source/src/PiSharp.Cli/Program.cs.gz"
+  },
+  {
+    "path": "src/PiSharp.Cli/Tui/InteractivePromptExecution.cs",
+    "sha256": "0aaca48b303baf2db785342f8ec9b824a0e0bfa0c7da908230359379bdb57bc7",
+    "artifact": "stage-1-source/src/PiSharp.Cli/Tui/InteractivePromptExecution.cs.gz"
+  },
+  {
+    "path": "src/PiSharp.Cli/Protocols/JsonPromptMode.cs",
+    "sha256": "e64238dfcb48f09b5e5b5241332cfa0d277d512f6b47a819e1dc1171d58eb673",
+    "artifact": "stage-1-source/src/PiSharp.Cli/Protocols/JsonPromptMode.cs.gz"
+  }
+]

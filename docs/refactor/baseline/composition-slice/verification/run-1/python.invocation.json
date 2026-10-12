@@ -1,0 +1,18 @@
+{
+  "id": "python",
+  "command": [
+    "python3",
+    "-m",
+    "unittest",
+    "discover",
+    "-s",
+    "tools/parity/terminal",
+    "-p",
+    "test_*.py",
+    "-v"
+  ],
+  "cwd": "/home/philip/Downloads/pisharp-bootstrap/pisharp",
+  "exitCode": 0,
+  "seconds": 7.432522296905518,
+  "logger": "stdout+stderr text"
+}

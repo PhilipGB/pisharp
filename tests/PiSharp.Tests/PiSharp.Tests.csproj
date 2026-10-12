@@ -16,6 +16,7 @@
 
   <ItemGroup>
     <Using Include="Xunit" />
+    <EmbeddedResource Include="Fixtures/cli-help.txt" LogicalName="PiSharp.Tests.Fixtures.cli-help.txt" />
   </ItemGroup>
 
   <ItemGroup>

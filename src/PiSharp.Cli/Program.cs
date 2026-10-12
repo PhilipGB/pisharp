@@ -1,5 +1,4 @@
 using System.Text.Json;
-using Microsoft.Win32.SafeHandles;
 using Microsoft.Extensions.AI;
 using PiSharp.Cli;
 using PiSharp.Runtime;
@@ -10,80 +9,15 @@ using PiSharp.Runtime.Resources;
 using PiSharp.Cli.Tui;
 using PiSharp.Cli.Protocols;
 using PiSharp.Cli.Sessions;
+using PiSharp.Cli.Startup;
 
-using var rawTerminalOutput = !OperatingSystem.IsWindows() && !Console.IsOutputRedirected
-    ? OpenRawTerminalWriter(1)
-    : null;
-using var rawTerminalError = !OperatingSystem.IsWindows() && !Console.IsErrorRedirected
-    ? OpenRawTerminalWriter(2)
-    : null;
-using var rawTerminalInput = !OperatingSystem.IsWindows() && !Console.IsInputRedirected
-    ? OpenRawTerminalReader(0)
-    : null;
-if (OperatingSystem.IsLinux() && rawTerminalInput is not null && rawTerminalOutput is not null)
-{
-    var terminalType = Environment.GetEnvironmentVariable("TERM");
-    if (!string.IsNullOrWhiteSpace(terminalType) && !string.Equals(terminalType, "dumb", StringComparison.OrdinalIgnoreCase))
-    {
-        // System.Console re-enters terminfo keypad mode after signals; Pi leaves cursor and keypad modes off.
-        Environment.SetEnvironmentVariable("TERM", "dumb");
-        try { _ = Console.TreatControlCAsInput; }
-        finally { Environment.SetEnvironmentVariable("TERM", terminalType); }
-    }
-}
-if (rawTerminalOutput is not null) Console.SetOut(rawTerminalOutput);
-if (rawTerminalError is not null) Console.SetError(rawTerminalError);
-var standardInput = rawTerminalInput ?? Console.In;
-static StreamWriter OpenRawTerminalWriter(int fileDescriptor) => new(
-    new FileStream(new SafeFileHandle(new IntPtr(fileDescriptor), ownsHandle: false), FileAccess.Write, 4096),
-    new System.Text.UTF8Encoding(false), 4096);
-static StreamReader OpenRawTerminalReader(int fileDescriptor) => new(
-    new FileStream(new SafeFileHandle(new IntPtr(fileDescriptor), ownsHandle: false), FileAccess.Read, 4096),
-    new System.Text.UTF8Encoding(false), detectEncodingFromByteOrderMarks: true, bufferSize: 4096);
+using var terminalIO = new CliTerminalIO();
+var standardInput = terminalIO.Input;
 
 var agentDirectory = Path.GetFullPath(Environment.GetEnvironmentVariable("PISHARP_AGENT_DIR") ??
     Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".pisharp", "agent"));
-if (args.Length > 0 && args[0] == "auth")
-{
-    Environment.ExitCode = await AuthStatusCommand.RunAsync(args[1..], agentDirectory,
-        Environment.GetEnvironmentVariable, Console.Out, Console.Error);
-    return;
-}
-if (args.Length > 0 && args[0] == "mcp")
-{
-    Environment.ExitCode = await McpCommand.RunAsync(args[1..], agentDirectory, Environment.CurrentDirectory,
-        Console.Out, Console.Error);
-    return;
-}
-if (args.Length > 0 && args[0] == "--export")
-{
-    Environment.ExitCode = await SessionExportCommand.RunAsync(args[1..], Console.Out, Console.Error);
-    return;
-}
-CliArguments cli;
-try { cli = CliArguments.Parse(args); }
-catch (ArgumentException e)
-{
-    Console.Error.WriteLine(e.Message);
-    Environment.ExitCode = 2;
-    return;
-}
-if (cli.Version)
-{
-    Console.WriteLine(typeof(CliArguments).Assembly.GetName().Version?.ToString(3) ?? "unknown");
-    return;
-}
-if (cli.Help)
-{
-    Console.WriteLine("PiSharp (incomplete implementation)\nUsage: pisharp [--local] [--provider <id> --model <id>] [--model <id>] [--models <globs>] [--thinking <level>] [--api-key <key>] [--list-models [pattern]] [--system-prompt <text|file>] [--append-system-prompt <text|file>] [--no-context-files] [--no-extensions] [-e|--extension <path>] [--no-skills] [--skill <path>] [--no-prompt-templates] [--prompt-template <path>] [--theme <path>] [--use-theme <name[/name]>] [--no-themes] [--offline] [--verbose] [-a|--approve|-na|--no-approve] [--mode text|interactive|print|json|rpc] [-p|--print] [-h|--help] [-v|--version] [-c|--continue | --session <path|project-id> | --fork <path|project-id> | --no-session] [--session-dir <dir>] [--name <label>] [prompt] [@files...]\n--provider <id> filters explicit model selection and requires --model <id>.\n--tools <read,bash,edit,write,grep,find,ls> selects tools (grep/find/ls are opt-in); --exclude-tools <names> removes tools; --no-tools disables defaults (including extension tools); --no-builtin-tools disables only default built-ins.\nProviders and static model metadata may be configured in $PISHARP_AGENT_DIR/models.json. Credentials are read from environment or private auth.json; --api-key is runtime-only.\nOffline credential status: pisharp auth check --provider <id> [--model <configured-exact-id>] [--local]; explicit pisharp auth print-api-key --provider <id> prints an API key to stdout.\nMCP configuration/status: pisharp mcp list [--json], pisharp mcp add, pisharp mcp remove, pisharp mcp login, pisharp mcp logout.\nStandalone private HTML: pisharp --export <PiSharp-session-file> [output.html]; never overwrites.\n--local uses http://192.168.0.97:8000/v1 and Qwen3.8-27B-GGUF (no API key required).\nInteractive: /model, /models, /llama, /settings, /thinking, /scoped-models, /login, /logout, /tree, /branch, /fork, /clone, /new, /sessions, /resume, /delete-session, /compact, /copy, /export, /export-jsonl, /import, /name, /session, /trust, /reload, /hotkeys, /quit.");
-    return;
-}
-if (cli.Provider is not null && cli.ModelOverride is null && !cli.ListModels)
-{
-    Console.Error.WriteLine($"--provider requires --model (for example: --provider {cli.Provider} --model <pattern>).");
-    Environment.ExitCode = 2;
-    return;
-}
+var cli = await CliStartupCommands.ParseOrRunAsync(args, agentDirectory, Console.Out, Console.Error);
+if (cli is null) return;
 var invocationDirectory = Environment.CurrentDirectory;
 string? configuredSessionDirectory;
 try
@@ -249,60 +183,20 @@ Task<ConversationRun> OpenRunAsync(PiAgent runningAgent, ConversationSession ses
         providerApi: ProviderChatClientFactory.ResolveProtocol(runModel),
         activeToolNamesOverride: activeToolNamesOverride);
 }
-var sessionPath = cli.NoSession || cli.ForkSource is not null ? null : cli.SessionPath is not null &&
-    (cli.SessionPath.Contains(Path.DirectorySeparatorChar) || cli.SessionPath.EndsWith(".session.json", StringComparison.Ordinal) ||
-        cli.SessionPath.EndsWith(".jsonl", StringComparison.OrdinalIgnoreCase))
-    ? Path.GetFullPath(cli.SessionPath) : cli.Continue ? store.MostRecentPath() : null;
+var sessionPath = SessionStartupController.ResolvePath(cli, store);
 ConversationSession conversation;
 ConversationRun conversationRun;
 try
 {
-    if (cli.SessionPath is not null && sessionPath is null)
-        sessionPath = SessionCatalog.Resolve(await SessionCatalog.ListAsync(store), cli.SessionPath).Path;
-    if (cli.ForkSource is not null)
+    var startupConversation = await SessionStartupController.LoadAsync(cli, projectRuntime, selection, currentDirectory, sessionPath);
+    conversation = startupConversation.Conversation;
+    sessionPath = startupConversation.Path;
+    var startupModel = await SessionStartupController.ResolveModelAsync(conversation, selection, thinking,
+        cli, explicitThinking, userSettings, modelRuntime);
+    selection = startupModel.Selection;
+    thinking = startupModel.Thinking;
+    if (startupModel.RebuildRuntime)
     {
-        var sourcePath = cli.ForkSource.Contains(Path.DirectorySeparatorChar) || cli.ForkSource.EndsWith(".session.json", StringComparison.Ordinal) ||
-            cli.ForkSource.EndsWith(".jsonl", StringComparison.OrdinalIgnoreCase)
-            ? Path.GetFullPath(cli.ForkSource)
-            : SessionCatalog.Resolve(await SessionCatalog.ListAsync(store), cli.ForkSource).Path;
-        conversation = await SessionForkFactory.CreateAsync(sourcePath, currentDirectory);
-    }
-    else if (sessionPath is not null && sessionPath.EndsWith(".jsonl", StringComparison.OrdinalIgnoreCase))
-    {
-        conversation = projectRuntime.SessionImport.ImportFile(sessionPath);
-        sessionPath = store.NewPath(conversation);
-        await store.SaveAsync(conversation, sessionPath);
-    }
-    else
-        conversation = sessionPath is not null && File.Exists(sessionPath)
-            ? await store.LoadAsync(sessionPath)
-            : new ConversationSession(currentDirectory, connection.Model, connection.Endpoint?.ToString(), selection.Provider.Id);
-    PiJsonlSessionInterchange.RestoreRegisteredVirtualModelSelection(conversation,
-        projectRuntime.Extensions.Registration.VirtualModels);
-    if (conversation.Model == "unknown")
-    {
-        conversation.SelectModel(connection.Model, connection.Endpoint?.ToString(), selection.Provider.Id);
-        if (sessionPath is not null) await store.SaveAsync(conversation, sessionPath);
-    }
-    var explicitConnection = cli.Local || cli.Provider is not null || cli.ModelOverride is not null ||
-        Environment.GetEnvironmentVariable("PISHARP_MODEL") is not null || Environment.GetEnvironmentVariable("PISHARP_BASE_URL") is not null;
-    var savedThinking = !explicitConnection && cli.Thinking is null
-        ? PiJsonlSessionInterchange.GetThinkingLevel(conversation) : null;
-    if (savedThinking is not null) thinking = savedThinking;
-    var savedProvider = conversation.Provider ?? modelRuntime.Providers.FirstOrDefault(item =>
-        string.Equals(item.Endpoint.ToString().TrimEnd('/'), conversation.Endpoint?.TrimEnd('/'), StringComparison.OrdinalIgnoreCase))?.Id ??
-        (conversation.Endpoint is null ? "openai" : null);
-    if (savedProvider is null)
-        throw new InvalidDataException("Session provider cannot be resolved from models.json or the saved endpoint.");
-    if (explicitConnection && (conversation.Model != connection.Model || conversation.Endpoint != connection.Endpoint?.ToString() ||
-        conversation.Provider is not null && !conversation.Provider.Equals(selection.Provider.Id, StringComparison.OrdinalIgnoreCase)))
-        throw new InvalidDataException("Requested provider/model conflicts with the saved session model or endpoint. Open it without explicit model flags and use /model after opening.");
-    if (!explicitConnection && (conversation.Model != connection.Model || conversation.Endpoint != connection.Endpoint?.ToString() ||
-        !savedProvider.Equals(selection.Provider.Id, StringComparison.OrdinalIgnoreCase) || savedThinking is not null))
-    {
-        selection = await modelRuntime.ResolveAsync(savedProvider, conversation.Model);
-        if (savedThinking is null && explicitThinking is null)
-            thinking = userSettings.GetModelThinkingLevel(selection) ?? cli.Thinking ?? thinking;
         connection = selection.Connection;
         thinking = ThinkingLevels.ValidateForModel(thinking, selection.Model.Reasoning, selection.Model.ThinkingLevelMap);
         chat = ProviderChatClientFactory.Create(selection, userSettings.Retry?.Provider, userSettings.HttpIdleTimeoutMs);
@@ -423,8 +317,8 @@ if (editor is not null && startupPresentation.ShowDetails && modelRuntime.Scope.
     Console.WriteLine(initialTerminalTheme.Style("dim",
         $"Model scope: {string.Join(", ", modelRuntime.Scope)}{cycleHint}"));
 }
-using var terminalScreen = editor is null ? null : new TerminalScreen(rawTerminalOutput ?? Console.Out,
-    rawTerminalError ?? Console.Error,
+using var terminalScreen = editor is null ? null : new TerminalScreen(terminalIO.Output,
+    terminalIO.Error,
     getColumns: null, getRows: null, imageRenderer: new TerminalImageRenderer(), theme: initialTerminalTheme,
     queryTerminalColors: !Console.IsInputRedirected && !Console.IsOutputRedirected,
     followTerminalAppearance: ThemeFollowsTerminalAppearance(ActiveThemeSetting()), deferInitialRender: true,
@@ -501,81 +395,21 @@ async Task Run(string input, IReadOnlyList<DataContent>? images = null)
 {
     using var runCancel = new CancellationTokenSource();
     activeRun = runCancel;
-    using var monitorStop = new CancellationTokenSource();
+    using var execution = new InteractivePromptExecution(editor, terminalScreen, () => Console.Error,
+        () => resources, () => conversationRun, () => IdleFooter(), ExecuteInteractiveBashAsync, HandleEditorApplicationAction);
     terminalScreen?.Activate();
     editor?.AttachScreen(terminalScreen);
-    var monitor = Task.CompletedTask;
-    var monitorStarted = false;
     var transcript = CreateInteractiveTranscript(interactive: !print);
     activeTranscript = transcript;
     try
     {
-        if (!selection.Authenticated)
-            throw new InvalidOperationException($"Provider '{selection.Provider.Id}' is not authenticated. Use /login {selection.Provider.Id} before sending a prompt.");
-        if (images is { Count: > 0 } && userSettings.BlockImages != true && selection.Model.Input is { } modalities &&
-            !modalities.Contains("image", StringComparer.Ordinal))
-            throw new InvalidOperationException($"Model '{selection.Model.Id}' is not declared image-capable; refusing to send image attachments.");
-        var expanded = await resources.ResolveInputAsync(input, runCancel.Token);
-        var contents = new List<AIContent> { new TextContent(expanded) };
-        if (images is not null) contents.AddRange(images);
-        void ProcessRunUpdate(AgentLifecycleEvent update)
-        {
-            if (update.Type is "prompt_accepted" or "agent_attempt_started")
-            {
-                terminalScreen?.SetFooter(IdleFooter(), render: false);
-                terminalScreen?.SetWorkingStatus("Working", render: false);
-            }
-            if (update.Type == "prompt_accepted" && editor is not null && !monitorStarted)
-            {
-                transcript.Render(update);
-                monitorStarted = true;
-                monitor = editor.MonitorRunAsync(async (text, followUp, token) =>
-                {
-                    try
-                    {
-                        if (InteractiveBashExecutor.TryParse(text, out var command, out var excludeFromContext))
-                        {
-                            await ExecuteInteractiveBashAsync(command, excludeFromContext, token);
-                            return true;
-                        }
-                        var queued = await resources.ResolveInputAsync(text, token);
-                        var accepted = followUp ? conversationRun.TryFollowUp(queued) : conversationRun.TrySteer(queued);
-                        if (accepted) Console.Error.WriteLine(followUp ? "Queued follow-up." : "Queued steering message.");
-                        return accepted;
-                    }
-                    catch (Exception error) when (error is ArgumentException or IOException)
-                    {
-                        Console.Error.WriteLine($"Could not queue input: {error.Message}");
-                        return false;
-                    }
-                }, () => conversationRun.ClearPendingPrompts().InDeliveryOrder, runCancel.Cancel, monitorStop.Token,
-                    HandleEditorApplicationAction);
-                return;
-            }
-            if (update.Type == "assistant_turn_started")
-            {
-                terminalScreen?.SetFooter(IdleFooter(), render: false);
-            }
-            if (update.Type is "turn_completed" or "turn_interrupted" or "turn_failed" or "prompt_rejected")
-            {
-                terminalScreen?.SetWorkingStatus(null, render: false);
-                terminalScreen?.SetFooter(IdleFooter(), render: false);
-            }
-            transcript.Render(update);
-            Environment.ExitCode = Math.Max(Environment.ExitCode, transcript.ExitCode);
-        }
-        await foreach (var update in conversationRun.RunEventsAsync(
-            new ChatMessage(ChatRole.User, contents), expanded, runCancel.Token))
-            ProcessRunUpdate(update);
-        transcript.FinishTurn();
+        await execution.ExecuteAsync(input, images, selection, userSettings, transcript, runCancel);
     }
     catch (OperationCanceledException) { Console.Error.WriteLine("Interrupted."); }
     catch (Exception ex) { Console.Error.WriteLine($"Agent error: {ex.Message}"); Environment.ExitCode = 1; }
     finally
     {
-        monitorStop.Cancel();
-        try { await monitor; }
-        catch (OperationCanceledException) { }
+        await execution.StopMonitoringAsync();
         // Store the selected branch and any completed/aborted messages even when a turn fails.
         if (sessionPath is not null)
             try { await store.SaveAsync(conversation, sessionPath); }
@@ -807,17 +641,11 @@ async Task<(UserSettings User, UserSettings? Project)> SaveSettingAsync(bool pro
 async Task<(UserSettings User, UserSettings? Project)> SaveSettingCoreAsync(bool projectScope, string setting,
     string? value, bool announce)
 {
-    if (projectScope && !trusted)
-        throw new InvalidOperationException("Trust this project before editing its settings.");
-    var settingsPath = projectScope
-        ? Path.Combine(currentDirectory, ".pi", "settings.json")
-        : UserSettings.GetSettingsPath(agentDirectory, Environment.GetEnvironmentVariable);
-    await UserSettingsWriter.SetAsync(settingsPath, setting, value, userScope: !projectScope);
-    if (projectScope)
-        projectSettings = await UserSettings.LoadProjectAsync(currentDirectory);
-    else
-        baseUserSettings = await UserSettings.LoadAsync(agentDirectory, Environment.GetEnvironmentVariable);
-    userSettings = baseUserSettings.Overlay(projectSettings ?? new UserSettings());
+    var savedSettings = await UserSettingsPersistence.SaveAsync(agentDirectory, currentDirectory,
+        projectScope, trusted, setting, value, baseUserSettings, projectSettings, Environment.GetEnvironmentVariable);
+    baseUserSettings = savedSettings.User;
+    projectSettings = savedSettings.Project;
+    userSettings = savedSettings.Effective;
     if (setting == "hideThinkingBlock")
     {
         hideThinkingBlock = userSettings.HideThinkingBlock == true;
@@ -853,50 +681,6 @@ async Task SelectSettingsAsync()
     await terminalSettingsPicker.ShowAsync(baseUserSettings, projectSettings, SaveSettingAsync,
         activeThemeSetting: ActiveThemeSetting);
     Console.WriteLine("Settings closed.");
-}
-
-async Task CopyLastAssistantAsync()
-{
-    var selected = terminalScreen?.SelectedText;
-    var text = selected ?? conversation.ActiveMessages()
-        .LastOrDefault(message => message.Role == ChatRole.Assistant)?.Text?.Trim();
-    if (string.IsNullOrEmpty(text)) throw new InvalidOperationException("No selected text or agent messages to copy yet.");
-    await terminalClipboard.CopyTextAsync(text);
-    Console.WriteLine(selected is null ? "Copied last agent message to clipboard" : "Copied selected text to clipboard");
-}
-
-async Task CopyAuthorizationUrlAsync(string authorizationUrl)
-{
-    try
-    {
-        await terminalClipboard.CopyTextAsync(authorizationUrl);
-        if (terminalScreen?.SetAuthorizationUrlCopyStatus("Copied URL to clipboard",
-                TerminalStatusNotificationKind.Info) != true)
-            terminalScreen?.AppendThemedStatusLine("Copied URL to clipboard");
-    }
-    catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidOperationException)
-    {
-        var status = "Could not copy sign-in URL to clipboard: " + error.Message;
-        if (terminalScreen?.SetAuthorizationUrlCopyStatus(status, TerminalStatusNotificationKind.Error) != true)
-            terminalScreen?.AppendStatusMessage(status, TerminalStatusNotificationKind.Error);
-    }
-}
-
-async Task PasteClipboardTextAsync()
-{
-    var text = await terminalClipboard.ReadTextAsync();
-    if (!string.IsNullOrEmpty(text)) editor?.InsertTextAtCursor(text);
-}
-
-async Task PasteClipboardImageAsync()
-{
-    var image = await terminalClipboard.ReadImageAsync();
-    if (image is not null)
-    {
-        editor?.InsertTextAtCursor(await ClipboardImageStore.SaveAsync(image));
-        return;
-    }
-    await PasteClipboardTextAsync();
 }
 
 async Task HandleEditorApplicationAction(string action)
@@ -948,12 +732,12 @@ async Task HandleEditorApplicationAction(string action)
                 break;
             case "app.message.copy":
                 if (terminalScreen?.ActiveAuthorizationUrl is { } authorizationUrl)
-                    await CopyAuthorizationUrlAsync(authorizationUrl);
+                    await TerminalClipboardActions.CopyAuthorizationUrlAsync(terminalClipboard, terminalScreen, authorizationUrl);
                 else
-                    await CopyLastAssistantAsync();
+                    await TerminalClipboardActions.CopyLastAssistantAsync(terminalClipboard, conversation, terminalScreen, Console.Out);
                 break;
             case "app.clipboard.pasteImage":
-                await PasteClipboardImageAsync();
+                await TerminalClipboardActions.PasteImageAsync(terminalClipboard, editor);
                 break;
             case "app.session.resume":
                 await SelectSessionAsync();
@@ -1177,38 +961,8 @@ if (cli.Mode == "rpc")
 }
 if (cli.Mode == "json")
 {
-    var protocol = new JsonEventMode(Console.Out);
-    await protocol.HeaderAsync(conversation);
-    if (string.IsNullOrWhiteSpace(stdinContent + prompt) && (cli.FileArguments?.Count ?? 0) == 0) { Console.Error.WriteLine("A prompt is required in JSON mode."); Environment.ExitCode = 2; }
-    else
-    {
-        CliFileArguments.PromptFiles? expanded = null;
-        try
-        {
-            var resolved = await resources.ResolveInputAsync(prompt);
-            expanded = await CliFileArguments.ProcessFilesAsync(resolved, cli.FileArguments, currentDirectory);
-            expanded = expanded with { Text = stdinContent + expanded.Text };
-        }
-        catch (Exception e) when (e is ArgumentException or IOException)
-        {
-            await protocol.RejectAsync(e.Message);
-            Environment.ExitCode = 1;
-        }
-        if (expanded is not null && string.IsNullOrWhiteSpace(expanded.Text) && expanded.Images.Count == 0)
-        {
-            await protocol.RejectAsync("A nonempty prompt is required.");
-            Environment.ExitCode = 2;
-        }
-        else if (expanded is not null)
-        {
-            var contents = new List<AIContent> { new TextContent(expanded.Text) };
-            contents.AddRange(expanded.Images);
-            if (!await protocol.RunAsync(conversationRun, new ChatMessage(ChatRole.User, contents), expanded.Text)) Environment.ExitCode = 1;
-        }
-        if (sessionPath is not null)
-            try { await store.SaveAsync(conversation, sessionPath); }
-            catch (Exception e) { Console.Error.WriteLine($"Could not save session: {e.Message}"); Environment.ExitCode = 1; }
-    }
+    await JsonPromptMode.RunAsync(conversation, conversationRun, store, sessionPath,
+        resources, prompt, stdinContent, cli, currentDirectory, Console.Out, Console.Error);
     return;
 }
 if (print)
@@ -1250,256 +1004,202 @@ else
                 var split = line.IndexOf(' ');
                 var command = split < 0 ? line : line[..split];
                 var argument = split < 0 ? "" : line[(split + 1)..].Trim();
-                switch (command)
+                var sessionCommands = new InteractiveSessionCommands(store, currentDirectory, cli.NoSession,
+                    Console.Out, () => editor.ReadLineAsync(HandleEditorApplicationAction, enableApplicationActions: false),
+                    LoadSessionTranscript);
+                if (!await sessionCommands.TryExecuteAsync(command, argument, conversation, conversationRun, sessionPath))
                 {
-                    case "/export":
-                        var exportPath = argument.Length == 0 ? Path.Combine(currentDirectory,
-                            $"pisharp-{conversation.Id[..12]}.html") : Path.GetFullPath(argument, currentDirectory);
-                        await SessionExport.ExportHtmlAsync(conversation, exportPath);
-                        Console.WriteLine($"Exported private HTML to {exportPath}. Review before sharing.");
-                        break;
-                    case "/export-jsonl":
-                        var jsonlPath = argument.Length == 0
-                            ? Path.Combine(currentDirectory, $"pisharp-{conversation.Id[..12]}.jsonl")
-                            : Path.GetFullPath(SessionPathArgument.Parse(argument), currentDirectory);
-                        await PiJsonlSessionInterchange.ExportToFileAsync(conversation, jsonlPath);
-                        Console.WriteLine($"Exported private Pi JSONL to {jsonlPath}.");
-                        break;
-                    case "/import":
-                        {
-                            if (argument.Length == 0) throw new ArgumentException("Usage: /import <path.jsonl>");
-                            var inputPath = Path.GetFullPath(SessionPathArgument.Parse(argument), currentDirectory);
-                            if (!inputPath.EndsWith(".jsonl", StringComparison.OrdinalIgnoreCase))
-                                throw new ArgumentException("Import requires a Pi .jsonl session file.");
-                            Console.WriteLine($"Replace the active session with {TerminalSafeText.Normalize(inputPath)}? Type import to confirm:");
-                            var importConfirmation = await editor.ReadLineAsync(HandleEditorApplicationAction, enableApplicationActions: false);
-                            if (importConfirmation?.Trim() != "import")
+                    switch (command)
+                    {
+                        case "/import":
                             {
-                                Console.WriteLine("Import cancelled.");
+                                if (argument.Length == 0) throw new ArgumentException("Usage: /import <path.jsonl>");
+                                var inputPath = Path.GetFullPath(SessionPathArgument.Parse(argument), currentDirectory);
+                                if (!inputPath.EndsWith(".jsonl", StringComparison.OrdinalIgnoreCase))
+                                    throw new ArgumentException("Import requires a Pi .jsonl session file.");
+                                Console.WriteLine($"Replace the active session with {TerminalSafeText.Normalize(inputPath)}? Type import to confirm:");
+                                var importConfirmation = await editor.ReadLineAsync(HandleEditorApplicationAction, enableApplicationActions: false);
+                                if (importConfirmation?.Trim() != "import")
+                                {
+                                    Console.WriteLine("Import cancelled.");
+                                    break;
+                                }
+                                if (sessionPath is not null) await store.SaveAsync(conversation, sessionPath);
+                                using var importedRuntime = await projectSessionRuntimeFactory.OpenAsync(inputPath,
+                                    currentDirectory, selection, thinking);
+                                AdoptProjectSession(importedRuntime);
+                                Console.WriteLine($"Imported Pi session {conversation.Id} · {conversation.ActiveMessages().Count} active messages · {sessionPath ?? "(ephemeral)"}");
                                 break;
                             }
-                            if (sessionPath is not null) await store.SaveAsync(conversation, sessionPath);
-                            using var importedRuntime = await projectSessionRuntimeFactory.OpenAsync(inputPath,
-                                currentDirectory, selection, thinking);
-                            AdoptProjectSession(importedRuntime);
-                            Console.WriteLine($"Imported Pi session {conversation.Id} · {conversation.ActiveMessages().Count} active messages · {sessionPath ?? "(ephemeral)"}");
+                        case "/resume":
+                            if (cli.NoSession) throw new InvalidOperationException("Cannot resume in --no-session mode.");
+                            if (argument.Length == 0) await SelectSessionAsync();
+                            else await ResumeSessionAsync(SessionCatalog.Resolve(await SessionCatalog.ListAsync(store), argument));
                             break;
-                        }
-                    case "/sessions":
-                        var listings = SessionCatalog.Search(await SessionCatalog.ListAsync(store), argument);
-                        foreach (var item in listings)
-                            Console.WriteLine($"{item.Id[..12]} · {item.Name ?? "(unnamed)"} · {item.Model} · {item.MessageCount} messages · {item.ModifiedAt:yyyy-MM-dd HH:mm}");
-                        if (listings.Count == 0) Console.WriteLine("No saved sessions in this project.");
-                        break;
-                    case "/delete-session":
-                        if (cli.NoSession) throw new InvalidOperationException("There are no saved sessions in --no-session mode.");
-                        var victim = SessionCatalog.Resolve(await SessionCatalog.ListAsync(store), argument);
-                        if (victim.Path == sessionPath) throw new InvalidOperationException("Switch sessions before deleting the active session.");
-                        Console.WriteLine($"Delete {victim.Id[..12]} · {victim.Name ?? "(unnamed)"}? Type delete {victim.Id[..12]} to confirm:");
-                        var confirmation = await editor.ReadLineAsync(HandleEditorApplicationAction, enableApplicationActions: false);
-                        if (confirmation?.Trim() != "delete " + victim.Id[..12])
-                        {
-                            Console.WriteLine("Deletion cancelled.");
+                        case "/models":
+                            foreach (var model in (await GetModelsAsync()).Where(item => string.IsNullOrEmpty(argument) ||
+                                item.Id.Contains(argument, StringComparison.OrdinalIgnoreCase) ||
+                                (item.Provider?.Contains(argument, StringComparison.OrdinalIgnoreCase) ?? false)))
+                                Console.WriteLine($"{model.Provider}/{model.Id} · {(model.Available ? model.Status ?? "available" : model.UnavailableReason ?? "unavailable")}" +
+                                    $"{(model.Reasoning == true ? " · reasoning" : "")}{(model.ContextLength is null ? "" : " · " + model.ContextLength + " tokens")}");
                             break;
-                        }
-                        await store.DeleteAsync(victim);
-                        Console.WriteLine($"Deleted {victim.Id[..12]} permanently.");
-                        break;
-                    case "/resume":
-                        if (cli.NoSession) throw new InvalidOperationException("Cannot resume in --no-session mode.");
-                        if (argument.Length == 0) await SelectSessionAsync();
-                        else await ResumeSessionAsync(SessionCatalog.Resolve(await SessionCatalog.ListAsync(store), argument));
-                        break;
-                    case "/models":
-                        foreach (var model in (await GetModelsAsync()).Where(item => string.IsNullOrEmpty(argument) ||
-                            item.Id.Contains(argument, StringComparison.OrdinalIgnoreCase) ||
-                            (item.Provider?.Contains(argument, StringComparison.OrdinalIgnoreCase) ?? false)))
-                            Console.WriteLine($"{model.Provider}/{model.Id} · {(model.Available ? model.Status ?? "available" : model.UnavailableReason ?? "unavailable")}" +
-                                $"{(model.Reasoning == true ? " · reasoning" : "")}{(model.ContextLength is null ? "" : " · " + model.ContextLength + " tokens")}");
-                        break;
-                    case "/scoped-models":
-                        if (argument.Length > 0)
-                            modelRuntime.SetScope(argument.Split([',', ' '], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
-                        Console.WriteLine(modelRuntime.Scope.Count == 0 ? "Scoped models: all" :
-                            "Scoped models: " + string.Join(", ", modelRuntime.Scope));
-                        foreach (var scoped in await GetModelsAsync())
-                            Console.WriteLine($"  {scoped.Provider}/{scoped.Id}{(scoped.Available ? "" : " · unavailable")}");
-                        break;
-                    case "/thinking":
-                        if (argument.Length == 0)
-                        {
-                            var available = ThinkingLevels.AvailableForModel(selection.Model.Reasoning,
-                                selection.Model.ThinkingLevelMap);
-                            Console.WriteLine($"Thinking: {thinking}; available: " +
-                                (available.Count == 0 ? "none" : string.Join(", ", available)));
+                        case "/scoped-models":
+                            if (argument.Length > 0)
+                                modelRuntime.SetScope(argument.Split([',', ' '], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+                            Console.WriteLine(modelRuntime.Scope.Count == 0 ? "Scoped models: all" :
+                                "Scoped models: " + string.Join(", ", modelRuntime.Scope));
+                            foreach (var scoped in await GetModelsAsync())
+                                Console.WriteLine($"  {scoped.Provider}/{scoped.Id}{(scoped.Available ? "" : " · unavailable")}");
                             break;
-                        }
-                        await ReplaceModelRuntime(selection, argument, recordModelChange: false);
-                        Console.WriteLine($"Thinking: {thinking}");
-                        break;
-                    case "/login":
-                        await terminalProviderLogin!.ShowAsync(argument);
-                        terminalScreen?.SetFooter(IdleFooter());
-                        break;
-                    case "/llama":
-                        await terminalLlamaManager!.ShowAsync(argument);
-                        terminalScreen?.SetFooter(IdleFooter());
-                        break;
-                    case "/logout":
-                        var logoutProvider = argument.Length == 0 ? selection.Provider.Id : argument;
-                        var removed = await modelRuntime.LogoutAsync(logoutProvider);
-                        Console.WriteLine(removed ? $"Logged out {logoutProvider}." : $"No stored credential for {logoutProvider}.");
-                        if (logoutProvider.Equals(selection.Provider.Id, StringComparison.OrdinalIgnoreCase))
-                            await ReplaceModelRuntime(await modelRuntime.ResolveAsync(selection.Provider.Id, selection.Model.Id),
-                                thinking, false, requireAuthenticated: false);
-                        break;
-                    case "/compact":
-                        Console.WriteLine(await conversationRun.CompactAsync(argument) ? "Context compacted; full history retained." :
-                            "Nothing to compact (at least two completed user turns are required).");
-                        break;
-                    case "/copy":
-                        if (argument.Length != 0) throw new ArgumentException("/copy does not accept arguments.");
-                        await CopyLastAssistantAsync();
-                        break;
-                    case "/tree":
-                        foreach (var node in conversation.Tree.Entries)
-                            Console.WriteLine($"{(node.Id == conversation.Tree.HeadId ? '>' : ' ')} {node.Id[..12]} ← {node.ParentId?[..12] ?? "root"} {node.Type} {node.Timestamp:HH:mm:ss}");
-                        break;
-                    case "/branch":
-                        var matches = conversation.Tree.Entries.Where(node => node.Id.StartsWith(argument, StringComparison.Ordinal)).ToArray();
-                        if (argument.Length == 0 || matches.Length != 1) throw new ArgumentException("Specify a unique entry id prefix from /tree.");
-                        await conversationRun.SelectAsync(matches[0].Id);
-                        if (sessionPath is not null) await store.SaveAsync(conversation, sessionPath);
-                        LoadSessionTranscript();
-                        Console.WriteLine($"Selected {matches[0].Id[..12]}");
-                        break;
-                    case "/name":
-                        using (var nameChange = conversation.BeginSessionNameChange(argument))
-                        {
-                            if (sessionPath is not null) await store.SaveAsync(conversation, sessionPath);
-                            nameChange.Commit();
-                        }
-                        Console.WriteLine($"Name: {conversation.Name ?? "(none)"}");
-                        break;
-                    case "/session":
-                        var stats = SessionStatistics.Calculate(conversation);
-                        Console.WriteLine($"{sessionPath ?? "(ephemeral)"} · {stats.Id} · {stats.Name ?? "(unnamed)"} · {stats.Model} · head {conversation.Tree.HeadId ?? "(empty)"}");
-                        var billing = stats.BilledTokens is null ? "provider usage unavailable" :
-                            $"{stats.BilledTokens} billed tokens" + (stats.Cost is null ? " · cost unavailable" : $" · ${stats.Cost:0.######}");
-                        Console.WriteLine($"{stats.ActiveMessages} active messages · {stats.UserTurns} turns · {stats.ToolCalls} calls/{stats.ToolResults} results · {stats.Entries} entries/{stats.Leaves} leaves · ~{stats.EstimatedContextTokens} context tokens (estimate) · {billing}");
-                        break;
-                    case "/trust":
-                        if (argument.Length == 0)
-                        {
-                            var savedTrustDecision = terminalTrustPicker is null
-                                ? null
-                                : await terminalTrustPicker.ShowAsync(trustStore, currentDirectory, trusted);
-                            if (savedTrustDecision.HasValue)
-                                Console.WriteLine($" Saved trust decision: {(savedTrustDecision.Value ? "trusted" : "untrusted")}. Restart PiSharp for this to take effect.");
-                            break;
-                        }
-                        bool? decision = argument switch
-                        {
-                            "yes" or "allow" => true,
-                            "no" or "deny" => false,
-                            "forget" => null,
-                            _ => throw new ArgumentException("Use /trust yes, /trust no, or /trust forget.")
-                        };
-                        await trustStore.SetAsync(currentDirectory, decision);
-                        trusted = decision ?? await trustStore.ResolveAsync(currentDirectory, null,
-                            false, Console.In, Console.Error);
-                        await ReloadResources();
-                        var trustStatus = $"Project resources: {(trusted ? "trusted" : "not trusted")}";
-                        if (terminalScreen is null) Console.WriteLine(trustStatus);
-                        else terminalScreen.AppendThemedStatusLine(trustStatus);
-                        break;
-                    case "/reload":
-                        {
-                            const string reloadProgress = "Reloading keybindings, extensions, skills, prompts, themes, and context files...";
-                            const string reloadStatus = "Reloaded keybindings, extensions, skills, prompts, themes, and context files";
-                            var reloadScreen = terminalScreen is { IsActive: true } activeScreen ? activeScreen : null;
-                            reloadScreen?.ShowReloadProgressPanel(reloadProgress);
-                            try
+                        case "/thinking":
+                            if (argument.Length == 0)
                             {
-                                await ReloadResources();
-                                editor.ReloadKeybindings();
+                                var available = ThinkingLevels.AvailableForModel(selection.Model.Reasoning,
+                                    selection.Model.ThinkingLevelMap);
+                                Console.WriteLine($"Thinking: {thinking}; available: " +
+                                    (available.Count == 0 ? "none" : string.Join(", ", available)));
+                                break;
                             }
-                            catch
+                            await ReplaceModelRuntime(selection, argument, recordModelChange: false);
+                            Console.WriteLine($"Thinking: {thinking}");
+                            break;
+                        case "/login":
+                            await terminalProviderLogin!.ShowAsync(argument);
+                            terminalScreen?.SetFooter(IdleFooter());
+                            break;
+                        case "/llama":
+                            await terminalLlamaManager!.ShowAsync(argument);
+                            terminalScreen?.SetFooter(IdleFooter());
+                            break;
+                        case "/logout":
+                            var logoutProvider = argument.Length == 0 ? selection.Provider.Id : argument;
+                            var removed = await modelRuntime.LogoutAsync(logoutProvider);
+                            Console.WriteLine(removed ? $"Logged out {logoutProvider}." : $"No stored credential for {logoutProvider}.");
+                            if (logoutProvider.Equals(selection.Provider.Id, StringComparison.OrdinalIgnoreCase))
+                                await ReplaceModelRuntime(await modelRuntime.ResolveAsync(selection.Provider.Id, selection.Model.Id),
+                                    thinking, false, requireAuthenticated: false);
+                            break;
+                        case "/compact":
+                            Console.WriteLine(await conversationRun.CompactAsync(argument) ? "Context compacted; full history retained." :
+                                "Nothing to compact (at least two completed user turns are required).");
+                            break;
+                        case "/copy":
+                            if (argument.Length != 0) throw new ArgumentException("/copy does not accept arguments.");
+                            await TerminalClipboardActions.CopyLastAssistantAsync(terminalClipboard, conversation, terminalScreen, Console.Out);
+                            break;
+                        case "/trust":
+                            if (argument.Length == 0)
                             {
-                                reloadScreen?.DismissReloadProgressPanel();
-                                throw;
+                                var savedTrustDecision = terminalTrustPicker is null
+                                    ? null
+                                    : await terminalTrustPicker.ShowAsync(trustStore, currentDirectory, trusted);
+                                if (savedTrustDecision.HasValue)
+                                    Console.WriteLine($" Saved trust decision: {(savedTrustDecision.Value ? "trusted" : "untrusted")}. Restart PiSharp for this to take effect.");
+                                break;
                             }
-                            if (reloadScreen is not null)
-                                reloadScreen.DismissEditorPanelAndAppendThemedStatusLine(reloadStatus);
-                            else if (terminalScreen is null) Console.WriteLine(reloadStatus);
-                            break;
-                        }
-                    case "/hotkeys":
-                        Console.WriteLine(editor.Hotkeys);
-                        break;
-                    case "/settings":
-                        if (argument.Length != 0) throw new ArgumentException("/settings does not accept arguments.");
-                        await SelectSettingsAsync();
-                        break;
-                    case "/model":
-                        if (string.IsNullOrWhiteSpace(argument))
-                        {
-                            await SelectModelAsync();
-                            break;
-                        }
-                        var nextSelection = await modelRuntime.ResolveAsync(null, argument, includeOutOfScope: true);
-                        var compatibleThinking = modelRuntimeController.ResolveThinkingLevelForModelSwitch(nextSelection, thinking);
-                        await ApplyModelSelectionAsync(nextSelection, compatibleThinking);
-                        ShowModelChangeStatus();
-                        break;
-                    case "/fork":
-                        if (argument.Length == 0)
-                        {
-                            await SelectForkAsync();
-                            break;
-                        }
-                        await ForkFromUserAsync(argument);
-                        break;
-                    case "/new":
-                    case "/clone":
-                        SessionBranchResult branch;
-                        if (command == "/clone")
-                            branch = await sessionController.CloneAsync(conversation, sessionPath);
-                        else
-                            branch = await sessionController.NewAsync(conversation, sessionPath, sessionPath);
-                        conversation = branch.Conversation;
-                        sessionPath = branch.Path;
-                        conversationRun = branch.Run;
-                        LoadSessionTranscript();
-                        Console.WriteLine($"{command[1..]}: {sessionPath ?? "(ephemeral)"}");
-                        break;
-                    default:
-                        if (command.StartsWith("/skill:", StringComparison.Ordinal))
-                            await Run(line);
-                        else if (resources.Prompts.Any(item => "/" + item.Name == command))
-                            await Run(line);
-                        else if (extensionLease.Current.Registration.Commands.TryGetValue(command[1..], out var handler))
-                        {
-                            var commandArguments = argument.Split((char[]?)null,
-                                StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-                            if (command.Equals("/mcp", StringComparison.Ordinal) &&
-                                commandArguments.Length > 0 && commandArguments[0].Equals("login", StringComparison.Ordinal) &&
-                                editor is not null && terminalScreen is { IsActive: true })
+                            bool? decision = argument switch
                             {
-                                using var signInCancellation = new CancellationTokenSource();
-                                var signIn = handler(argument, signInCancellation.Token);
-                                await editor.MonitorMcpAuthorizationAsync(signIn, HandleEditorApplicationAction,
-                                    signInCancellation.Cancel);
-                                try { Console.WriteLine(await signIn); }
-                                catch (OperationCanceledException) when (signInCancellation.IsCancellationRequested)
+                                "yes" or "allow" => true,
+                                "no" or "deny" => false,
+                                "forget" => null,
+                                _ => throw new ArgumentException("Use /trust yes, /trust no, or /trust forget.")
+                            };
+                            await trustStore.SetAsync(currentDirectory, decision);
+                            trusted = decision ?? await trustStore.ResolveAsync(currentDirectory, null,
+                                false, Console.In, Console.Error);
+                            await ReloadResources();
+                            var trustStatus = $"Project resources: {(trusted ? "trusted" : "not trusted")}";
+                            if (terminalScreen is null) Console.WriteLine(trustStatus);
+                            else terminalScreen.AppendThemedStatusLine(trustStatus);
+                            break;
+                        case "/reload":
+                            {
+                                const string reloadProgress = "Reloading keybindings, extensions, skills, prompts, themes, and context files...";
+                                const string reloadStatus = "Reloaded keybindings, extensions, skills, prompts, themes, and context files";
+                                var reloadScreen = terminalScreen is { IsActive: true } activeScreen ? activeScreen : null;
+                                reloadScreen?.ShowReloadProgressPanel(reloadProgress);
+                                try
                                 {
-                                    Console.WriteLine("MCP sign-in cancelled.");
+                                    await ReloadResources();
+                                    editor.ReloadKeybindings();
                                 }
+                                catch
+                                {
+                                    reloadScreen?.DismissReloadProgressPanel();
+                                    throw;
+                                }
+                                if (reloadScreen is not null)
+                                    reloadScreen.DismissEditorPanelAndAppendThemedStatusLine(reloadStatus);
+                                else if (terminalScreen is null) Console.WriteLine(reloadStatus);
+                                break;
                             }
-                            else Console.WriteLine(await handler(argument, CancellationToken.None));
-                        }
-                        else Console.Error.WriteLine($"Unknown command: {command}");
-                        break;
+                        case "/hotkeys":
+                            Console.WriteLine(editor.Hotkeys);
+                            break;
+                        case "/settings":
+                            if (argument.Length != 0) throw new ArgumentException("/settings does not accept arguments.");
+                            await SelectSettingsAsync();
+                            break;
+                        case "/model":
+                            if (string.IsNullOrWhiteSpace(argument))
+                            {
+                                await SelectModelAsync();
+                                break;
+                            }
+                            var nextSelection = await modelRuntime.ResolveAsync(null, argument, includeOutOfScope: true);
+                            var compatibleThinking = modelRuntimeController.ResolveThinkingLevelForModelSwitch(nextSelection, thinking);
+                            await ApplyModelSelectionAsync(nextSelection, compatibleThinking);
+                            ShowModelChangeStatus();
+                            break;
+                        case "/fork":
+                            if (argument.Length == 0)
+                            {
+                                await SelectForkAsync();
+                                break;
+                            }
+                            await ForkFromUserAsync(argument);
+                            break;
+                        case "/new":
+                        case "/clone":
+                            SessionBranchResult branch;
+                            if (command == "/clone")
+                                branch = await sessionController.CloneAsync(conversation, sessionPath);
+                            else
+                                branch = await sessionController.NewAsync(conversation, sessionPath, sessionPath);
+                            conversation = branch.Conversation;
+                            sessionPath = branch.Path;
+                            conversationRun = branch.Run;
+                            LoadSessionTranscript();
+                            Console.WriteLine($"{command[1..]}: {sessionPath ?? "(ephemeral)"}");
+                            break;
+                        default:
+                            if (command.StartsWith("/skill:", StringComparison.Ordinal))
+                                await Run(line);
+                            else if (resources.Prompts.Any(item => "/" + item.Name == command))
+                                await Run(line);
+                            else if (extensionLease.Current.Registration.Commands.TryGetValue(command[1..], out var handler))
+                            {
+                                var commandArguments = argument.Split((char[]?)null,
+                                    StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                                if (command.Equals("/mcp", StringComparison.Ordinal) &&
+                                    commandArguments.Length > 0 && commandArguments[0].Equals("login", StringComparison.Ordinal) &&
+                                    editor is not null && terminalScreen is { IsActive: true })
+                                {
+                                    using var signInCancellation = new CancellationTokenSource();
+                                    var signIn = handler(argument, signInCancellation.Token);
+                                    await editor.MonitorMcpAuthorizationAsync(signIn, HandleEditorApplicationAction,
+                                        signInCancellation.Cancel);
+                                    try { Console.WriteLine(await signIn); }
+                                    catch (OperationCanceledException) when (signInCancellation.IsCancellationRequested)
+                                    {
+                                        Console.WriteLine("MCP sign-in cancelled.");
+                                    }
+                                }
+                                else Console.WriteLine(await handler(argument, CancellationToken.None));
+                            }
+                            else Console.Error.WriteLine($"Unknown command: {command}");
+                            break;
+                    }
                 }
             }
             catch (Exception e) { Console.Error.WriteLine($"Session error: {e.Message}"); Environment.ExitCode = 1; }

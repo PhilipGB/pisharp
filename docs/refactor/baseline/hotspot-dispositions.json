@@ -3,7 +3,11 @@
   "hotspots": [
     {
       "id": "H01",
-      "disposition": "OPEN"
+      "disposition": "OPEN",
+      "completedWork": "Early startup/terminal I/O, startup session/model selection, JSON prompt handling, settings persistence, clipboard and session commands, interactive prompt execution have concrete owners.",
+      "remainingWork": "Model/project runtime replacement and remaining command coordination still share top-level state.",
+      "evidence": "composition-slice/README.md",
+      "capabilityDocumentation": "../../capabilities/cli-composition.md"
     },
     {
       "id": "H02",

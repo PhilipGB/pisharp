@@ -1,0 +1,12 @@
+{
+  "changes": [
+    "Keep final footer update outside session-command error catch",
+    "Resolve Console.Error at write time during terminal suspend/resume",
+    "Preserve original Environment.ExitCode writes and timing in JSON mode"
+  ],
+  "files": [
+    "src/PiSharp.Cli/Program.cs",
+    "src/PiSharp.Cli/Tui/InteractivePromptExecution.cs",
+    "src/PiSharp.Cli/Protocols/JsonPromptMode.cs"
+  ]
+}
