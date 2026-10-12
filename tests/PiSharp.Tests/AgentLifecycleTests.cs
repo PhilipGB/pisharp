@@ -10,6 +10,32 @@ namespace PiSharp.Tests;
 public sealed class AgentLifecycleTests
 {
     [Fact]
+    public async Task FailedInitialCheckpointDoesNotAcceptPromptAndLeavesRunReusable()
+    {
+        var session = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        var failCheckpoint = true;
+        var run = await ConversationRun.OpenAsync(new PiAgent(new ReasoningUsageClient(),
+            new CodingTools(Path.GetTempPath())), session,
+            save: _ => failCheckpoint ? Task.FromException(new IOException("checkpoint unavailable")) : Task.CompletedTask);
+        var first = new List<AgentLifecycleEvent>();
+        await foreach (var item in run.RunEventsAsync("must not reach provider")) first.Add(item);
+
+        Assert.DoesNotContain(first, item => item.Type is "prompt_accepted" or "model_request_started");
+        Assert.Contains(first, item => item.Type == "prompt_rejected" && item.Error == "checkpoint unavailable");
+        Assert.Equal("agent_settled", first[^1].Type);
+        Assert.DoesNotContain(session.ActiveMessages(), message => message.Text == "must not reach provider");
+
+        failCheckpoint = false;
+        var second = new List<AgentLifecycleEvent>();
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        await foreach (var item in run.RunEventsAsync("next prompt", deadline.Token)) second.Add(item);
+        Assert.Contains(second, item => item.Type == "prompt_accepted" && item.Text == "next prompt");
+        Assert.Contains(second, item => item.Type == "turn_completed");
+        Assert.Equal("agent_settled", second[^1].Type);
+        Assert.Equal("answer", session.ActiveMessages().Last().Text);
+    }
+
+    [Fact]
     public async Task ReasoningAndProviderUsageStreamAndPersistWithCalculatedCost()
     {
         var session = new ConversationSession(Path.GetTempPath(), "priced-model", null);

@@ -1,0 +1,7 @@
+{
+  "src/PiSharp.Runtime/Sessions/ConversationRun.cs": "a380fe857ffa06ad7be46d57b771e1d72ca083a96bf5c635561d25308fe8d40b",
+  "src/PiSharp.Runtime/Sessions/ProviderTurnJournal.cs": "3ae7593602eec240e448e94f0f0cdb252d17627690570d153fcb795769e67507",
+  "src/PiSharp.Runtime/Sessions/ProviderRequestAttribution.cs": "b3c70b7c87cd13dec4333da95bdb9fecf814db2e010658803c333ee47391cf9c",
+  "src/PiSharp.Runtime/Sessions/ConversationAttemptStream.cs": "d79bef6de5edd120f69127c96dfbdcaebea534692c8eb19dae8a2602f88184cf",
+  "tests/PiSharp.Tests/AgentLifecycleTests.cs": "688967e50169abb4a2a797eb13242719adcd157649d422e3e6650bef8cbbaf34"
+}

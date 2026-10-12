@@ -1,0 +1,11 @@
+
+ RUN  v4.1.11 /tmp/pisharp-frozen-pi1/packages/coding-agent
+
+·
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  19:59:44
+   Duration  188ms (transform 67ms, setup 0ms, import 87ms, tests 11ms, environment 0ms)
+
+Matched 3 null-valued trust-store scenarios.

@@ -3,10 +3,10 @@
 - **Baseline PiSharp:** `064bcc7b90344cffde595f9aca1c5b850cefe567` (untouched main branch point).
 - **Frozen Pi:** `ee409a85f6ad92bf8c6ab8ed735c6cd24f2e749e`; authority: execution-ledger source note, corroborated by latest TODO/trust-startup evidence.
 - **Branch:** `refactor/architecture-maintainability`.
-- **Phase:** H07 verified; push this checkpoint before continuing. H05 `2df6c74c444143038799f8334a2833282d0bf871` is remotely verified. H06 `2285e06c73befafb4c5bc798fcc307ead828acf8` is remotely verified. Pilot `6d3289de8df696bdea19132006402dad0ebd1f3c` is remotely verified. Commit 0 `f77f720ae8bf2d1de698d336efa9665dbf4d23a1` and pin Commit 1 `1bc8c6018fc572f2e8bc2256b6eafe4f34bf1c0b` are remotely verified.
+- **Phase:** H04 verified; push before H10. Last verified remote H07: `49e8e7fcbcd8ff594cfc6b3b0cb8234ed17093f6`. Earlier checkpoint SHAs are recorded in their slice metadata/history.
 - **Pilot:** coding tools, frozen hotspot H09. See `baseline/pilot-decision.json`.
-- **Completed slices:** untouched behavioral baseline, architectural inventory, neutral Pi-reference infrastructure coding-tools pilot, session interchange native session/context and agent catalog/summarization ownership.
-- **Active slice:** H07 complete: 83 pre-change, 258 focused and 1,362 full .NET tests pass; all original .NET identities and 28 affected parity identities preserved, including two semantic assertions. Strict build/format pass; push before H04.
+- **Completed slices:** untouched behavioral baseline, architectural inventory, neutral Pi-reference infrastructure, coding-tools pilot, session interchange, native session/context, agent catalog/summarization and streamed-attempt ownership.
+- **Active slice:** H04 complete: 36 pre-change, 233 focused and 1,363 full .NET rows pass; original .NET and 28 affected parity identities preserved. Strict build/format pass. Push before starting H10.
 - **Latest observed main:** `064bcc7b90344cffde595f9aca1c5b850cefe567`; no divergence or merge conflicts at the session-start/checkpoint queries.
 - **Blockers:** none. A required push failure is a durability blocker; stop before continuing another slice.
 
@@ -36,14 +36,14 @@ only the explicitly required AGENTS pointer is now appended.
 
 ## Frozen hotspots
 
-The selection is immutable. H05, H06, H07 and H09 are RESOLVED; the other six remain OPEN. Current dispositions are recorded separately in `baseline/hotspot-dispositions.json`; untouched selection/metrics stay in `baseline/frozen-hotspots.json`.
+The selection is immutable. H04–H07 and H09 are RESOLVED; H01–H03/H08/H10 remain OPEN. Current dispositions are recorded separately in `baseline/hotspot-dispositions.json`; untouched selection/metrics stay in `baseline/frozen-hotspots.json`.
 
 | ID | File/type | Capability |
 |---|---|---|
 | H01 | Program.cs | Composition/startup |
 | H02 | TerminalScreen | Terminal rendering |
 | H03 | TerminalEditor | Terminal interaction |
-| H04 | ConversationRun | Agent execution |
+| H04 | ConversationRun (RESOLVED) | Agent execution |
 | H05 | ConversationSession (RESOLVED) | Sessions |
 | H06 | PiJsonlSessionInterchange (RESOLVED) | Session interchange |
 | H07 | PiAgent (RESOLVED) | Agent execution |
@@ -69,23 +69,25 @@ execution direct; retain Pi-specific semantics. No new dependency lockfiles.
 - `baseline/interchange-slice/`: characterization, focused/full .NET, affected terminal evidence and preserved comparisons.
 - `baseline/session-slice/`: native session characterizations, focused/full .NET and affected parity evidence.
 - `baseline/agent-slice/`: summary/catalog characterization, focused/full .NET and affected process/terminal evidence.
+- `baseline/run-slice/`: checkpoint-failure protection, journal/attribution/stream focused stages, full .NET and affected parity.
 - `baseline/hotspot-dispositions.json`: current dispositions without altering untouched metrics.
 - `tools/`: standalone capture/parser/comparison/metrics tooling; parser dependencies only in `/tmp`.
 
 ## Exact next action
 
-Commit/push verified H07 and verify its remote SHA. Continue H04,
-ConversationRun: characterize under-protected streamed attempt settlement/retry
-and provider/tool event ordering, then separate per-attempt provider turn history,
-usage attribution and lifecycle projection from prompt/retry/compaction orchestration.
-Existing ProviderTurnHistoryReconciler and compaction/prompt controllers are
-meaningful Pi-specific owners; preserve their semantics and shared runtime locks.
-Keep the main streaming path readable, avoid passing all run fields into an opaque
-context bag, and do not create forwarding chains. Run focused lifecycle/retry/
-persistence/RPC tests, affected differentials, strict verification and preserved
-identities before commit/push. No test/project moves so far. Remaining hotspots
-H01–H04/H08/H10, architecture/docs-path enforcement, permanent docs and every
-Section 23 phase remain required. No preservation ref or cleanup exists yet.
+Commit/push verified H04 and verify the remote SHA. Continue H10 MCP:
+review existing real stdio/HTTP lifecycle, list-change, protocol-version and
+provider-auth tests plus frozen weak coverage. Separate SDK transport/connection/
+discovery lifetime from configuration registration/exposure/publication and
+MCP tool-result projection; preserve existing SDK use, authentication, startup
+waiting and no replay of uncertain tool side effects. Use concrete internal
+owners inside Runtime; a new project/interface requires an actual dependency
+reason. Characterize weak high-risk paths before edits. Run focused MCP tests,
+official conformance, affected MCP process differentials, strict checks and
+preserved identities; commit/push. No tests/projects moved so far.
+Remaining H01–H03/H08/H10, architecture/docs-path enforcement, permanent docs and
+all Section 23 review/preservation/cleanup/fresh-checkout phases remain required.
+No preservation ref or cleanup exists yet.
 
 ## Exact temporary AGENTS pointer
 

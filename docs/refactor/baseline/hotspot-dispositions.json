@@ -15,7 +15,11 @@
     },
     {
       "id": "H04",
-      "disposition": "OPEN"
+      "disposition": "RESOLVED",
+      "resolution": "Per-attempt provider turn journal, physical request usage attribution and stream progress/disposal have distinct owners; run retains explicit prompt/retry/compaction orchestration and canonical settlement ordering under existing locks.",
+      "evidence": "run-slice/broad-dotnet/preservation-comparison.json",
+      "parityEvidence": "run-slice/parity-preservation-comparison.json",
+      "capabilityDocumentation": "../../capabilities/agent-execution.md"
     },
     {
       "id": "H05",

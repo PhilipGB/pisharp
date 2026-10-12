@@ -1,0 +1,19 @@
+{
+  "id": "assert-resource-skill-prompt-read-bash",
+  "command": [
+    "python3",
+    "tools/parity/terminal/assert_skill_prompt_parity.py",
+    "--mode",
+    "read",
+    "--paired",
+    "/tmp/pisharp-run-parity/terminal-resource-skill-prompt-read-bash-paired",
+    "--calibration-report",
+    "/tmp/pisharp-run-parity/terminal-resource-skill-prompt-read-bash-calibration/report.json",
+    "--output",
+    "/tmp/pisharp-run-parity/assert-resource-skill-prompt-read-bash.json"
+  ],
+  "cwd": "/home/philip/Downloads/pisharp-bootstrap/pisharp",
+  "exitCode": 0,
+  "seconds": 0.06427192687988281,
+  "logger": "stdout+stderr text"
+}

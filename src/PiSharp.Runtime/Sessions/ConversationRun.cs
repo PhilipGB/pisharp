@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Threading.Channels;
@@ -562,82 +561,21 @@ public sealed class ConversationRun
     {
         await _gate.WaitAsync(cancellationToken);
         var completed = false;
-        var partialText = new System.Text.StringBuilder();
-        var lastProgress = 0;
-        var lastProgressAt = DateTimeOffset.UtcNow;
-        var events = new List<string>();
-        var partialAssistantText = new System.Text.StringBuilder();
-        var providerTurnHistory = new ProviderTurnHistoryReconciler();
-        var nestedCallsByCallId = new ConcurrentDictionary<string, PiSharpNestedToolCalls>(StringComparer.Ordinal);
+        var attemptStream = new ConversationAttemptStream();
         DurableExecution? durable = _save is null ? null : new DurableExecution(Conversation, _save);
         var started = false;
         var accepted = false;
-        ChatMessage? providerResponse = null;
-        var turnToolResults = new List<ChatMessage>();
-        var providerRequestModel = Conversation.Model;
-        var providerRequestProvider = Conversation.Provider;
-        var providerRequestApi = _providerApi;
-        var providerRequestPricing = _pricing;
-        var providerRequestThinking = _reasoningLevel;
+        var attribution = new ProviderRequestAttribution(Conversation.Model, Conversation.Provider,
+            _providerApi, _pricing, _reasoningLevel);
         _agent.SetVirtualModelSession(Conversation, _reasoningLevel ?? "off", _save);
-        var interruptionType = "turn_interrupted";
-        string? interruptionError = null;
-        PiSharpNestedToolCalls? NestedCallsFor(ChatMessage message)
-        {
-            var callId = message.Contents.OfType<FunctionResultContent>().FirstOrDefault()?.CallId;
-            return callId is not null && nestedCallsByCallId.TryGetValue(callId, out var nested) ? nested : null;
-        }
-
         VirtualModelContextCoordinator? virtualContext = null;
         IReadOnlyList<JsonElement>? expectedProviderPrefix = null;
-        void AppendAvailableProviderHistory()
-        {
-            var providerHistory = ObservedChatClient.NormalizeReadImagesForHistory(_agent.GetHistory(_execution));
-            var canonicalHistory = virtualContext?.HasCompacted == true
-                ? Conversation.ActiveMessages() : Conversation.ContextMessages();
-            var knownToolCallIds = canonicalHistory.SelectMany(message => message.Contents.OfType<FunctionResultContent>())
-                .Select(result => result.CallId).ToHashSet(StringComparer.Ordinal);
-            var canonicalIndex = 0;
-            foreach (var providerMessage in virtualContext?.HasCompacted == true ? providerHistory.Skip(_historyCount) : providerHistory)
-            {
-                var matchEnd = providerTurnHistory.FindEquivalentRangeEnd(canonicalHistory, canonicalIndex, providerMessage);
-                if (matchEnd >= 0)
-                {
-                    canonicalIndex = matchEnd;
-                    continue;
-                }
-                var message = ProviderTurnHistoryReconciler.RetainUncheckpointedToolResults(providerMessage, knownToolCallIds);
-                if (message is null) continue;
-                matchEnd = providerTurnHistory.FindEquivalentRangeEnd(canonicalHistory, canonicalIndex, message);
-                if (matchEnd >= 0) canonicalIndex = matchEnd;
-                else
-                {
-                    Conversation.Append(message, NestedCallsFor(message));
-                    canonicalHistory.Add(message);
-                    canonicalIndex = canonicalHistory.Count;
-                }
-            }
-        }
+        var providerTurns = new ProviderTurnJournal(Conversation, () => _agent.GetHistory(_execution),
+            () => virtualContext?.HasCompacted == true, () => _historyCount, onEvent);
 
         void CompleteProviderTurnUnsafe()
         {
-            if (providerResponse is not null)
-            {
-                var completedResponse = providerResponse;
-                var toolResults = turnToolResults.ToArray();
-                providerTurnHistory.RecordCompletedTurn(completedResponse, toolResults);
-                onEvent?.Invoke(new AgentLifecycleEvent("assistant_turn_completed")
-                {
-                    TurnMessage = completedResponse,
-                    TurnToolResults = toolResults
-                });
-                providerResponse = null;
-                turnToolResults.Clear();
-            }
-            AppendAvailableProviderHistory();
-            foreach (var result in providerTurnHistory.MissingToolResults(Conversation.ContextMessages()))
-                foreach (var normalized in ObservedChatClient.NormalizeReadImagesForHistory([result]))
-                    Conversation.Append(normalized, NestedCallsFor(normalized));
+            providerTurns.CompleteTurn();
             PersistPendingRuntimeChangesUnsafe();
         }
 
@@ -652,35 +590,28 @@ public sealed class ConversationRun
                 lock (_runtimeStateGate) _toolState.Observe(item);
             if (item.Type is "turn_failed" or "turn_interrupted")
             {
-                interruptionType = item.Type;
-                interruptionError = item.Error;
+                attemptStream.InterruptionType = item.Type;
+                attemptStream.InterruptionError = item.Error;
             }
             if (item.Type == "model_request_started")
             {
                 lock (_runtimeStateGate)
                 {
                     CompleteProviderTurnUnsafe();
-                    providerRequestModel = _currentModel;
-                    providerRequestProvider = _currentProvider;
-                    providerRequestApi = _providerApi;
-                    providerRequestPricing = _pricing;
-                    _providerRequestModel = providerRequestModel;
-                    _providerRequestPricing = providerRequestPricing;
+                    attribution.Begin(_currentModel, _currentProvider, _providerApi, _pricing);
+                    _providerRequestModel = attribution.Model;
+                    _providerRequestPricing = attribution.Pricing;
                 }
-                partialAssistantText.Clear();
+                providerTurns.PartialAssistantText.Clear();
                 onEvent?.Invoke(new("assistant_turn_started"));
             }
             else if (item.Type == "model_request_routed")
             {
                 lock (_runtimeStateGate)
                 {
-                    providerRequestModel = item.ProviderModelId ?? providerRequestModel;
-                    providerRequestProvider = item.ProviderProviderId ?? providerRequestProvider;
-                    providerRequestPricing = item.ProviderPricing;
-                    providerRequestThinking = item.ProviderThinkingLevel;
-                    providerRequestApi = item.ProviderApi ?? providerRequestApi;
-                    _providerRequestModel = providerRequestModel;
-                    _providerRequestPricing = providerRequestPricing;
+                    attribution.Route(item);
+                    _providerRequestModel = attribution.Model;
+                    _providerRequestPricing = attribution.Pricing;
                     _autoCompaction = item.ProviderContextPolicy;
                 }
             }
@@ -688,38 +619,26 @@ public sealed class ConversationRun
             {
                 lock (_runtimeStateGate)
                 {
-                    providerResponse = item.ProviderResponse;
+                    providerTurns.Response = attribution.AttributeResponse(item, _reasoningLevel);
                     if (item.ProviderProviderId is not null) _successfulPhysicalContextWindow = _autoCompaction?.ContextWindowTokens;
-                    if (providerResponse is not null && item.ProviderProviderId is null && providerRequestApi is not null)
-                        providerResponse = ChatMessageProperties.WithProviderIdentity(providerResponse,
-                            providerRequestProvider, providerRequestModel, providerRequestApi, _reasoningLevel);
-                    if (providerResponse is not null && (providerRequestApi is not null || item.ProviderProviderId is not null ||
-                        providerResponse.Contents.OfType<FunctionCallContent>().Any()))
-                        Conversation.Append(providerResponse);
+                    if (providerTurns.Response is not null && (attribution.Api is not null || item.ProviderProviderId is not null ||
+                        providerTurns.Response.Contents.OfType<FunctionCallContent>().Any()))
+                        Conversation.Append(providerTurns.Response);
                 }
-                item = item with
-                {
-                    ProviderResponse = providerResponse,
-                    ProviderThinkingLevel = providerRequestThinking,
-                    UsageSnapshot = item.ProviderUsage is { } usage
-                        ? UsageRecord.Create(providerRequestModel, "model", usage, providerRequestPricing)
-                        : null
-                };
+                item = attribution.Complete(item, providerTurns.Response);
             }
             else if (item.ProviderUpdate?.Contents?.OfType<UsageContent>().LastOrDefault() is { } updateUsage)
-                item = item with { UsageSnapshot = UsageRecord.Create(providerRequestModel, "model", updateUsage.Details, providerRequestPricing) };
+                item = item with { UsageSnapshot = attribution.Usage(updateUsage.Details) };
             else if (item.Type == "tool_execution_finished" && item.ToolResultMessage is { } result)
             {
                 // MAF can finish parallel tools on different continuations; serialize the turn
                 // snapshot with CompleteProviderTurnUnsafe so no result is lost during closure.
                 lock (_runtimeStateGate)
                 {
-                    turnToolResults.Add(result);
-                    if (item.NestedToolCalls is { } nested && result.Contents.OfType<FunctionResultContent>().FirstOrDefault() is { } resultContent)
-                        nestedCallsByCallId[resultContent.CallId] = nested;
+                    providerTurns.RecordToolResult(result, item.NestedToolCalls);
                 }
             }
-            else if (item.Type == "model_text_delta" && item.Text is not null) partialAssistantText.Append(item.Text);
+            else if (item.Type == "model_text_delta" && item.Text is not null) providerTurns.PartialAssistantText.Append(item.Text);
             onEvent?.Invoke(item);
         }
         try
@@ -827,64 +746,9 @@ public sealed class ConversationRun
                 : _agent.RunStreamingDurableAsync(promptMessage, _execution, cancellationToken, durable,
                     Observe, TakeSteeringForProvider, inFlightBudget is null ? null : inFlightBudget.ProjectAsync,
                     CreateBashSessionEnvironment());
-            var updateEnumerator = updates.GetAsyncEnumerator(cancellationToken);
-            Exception? streamError = null;
-            try
-            {
-                while (true)
-                {
-                    AgentResponseUpdate update;
-                    try
-                    {
-                        if (!await updateEnumerator.MoveNextAsync()) break;
-                        update = updateEnumerator.Current;
-                    }
-                    catch (OperationCanceledException error)
-                    {
-                        streamError = error;
-                        interruptionType = "turn_interrupted";
-                        interruptionError = "Request was aborted";
-                        throw;
-                    }
-                    catch (Exception error) when (cancellationToken.IsCancellationRequested)
-                    {
-                        streamError = error;
-                        interruptionType = "turn_interrupted";
-                        interruptionError = "Request was aborted";
-                        throw new OperationCanceledException("Request was aborted", error, cancellationToken);
-                    }
-                    catch (Exception error)
-                    {
-                        streamError = error;
-                        interruptionType = "turn_failed";
-                        interruptionError = error.Message;
-                        throw;
-                    }
-                    if (!string.IsNullOrEmpty(update.Text))
-                    {
-                        partialText.Append(update.Text);
-                        if (durable is not null && (partialText.Length - lastProgress >= 512 ||
-                            DateTimeOffset.UtcNow - lastProgressAt >= TimeSpan.FromSeconds(2)))
-                        {
-                            await durable.ProgressAsync(partialText.ToString());
-                            lastProgress = partialText.Length;
-                            lastProgressAt = DateTimeOffset.UtcNow;
-                        }
-                    }
-                    if (update.Contents is not null)
-                        foreach (var content in update.Contents)
-                            if (content is FunctionCallContent call) events.Add($"call:{call.Name}:{call.CallId}");
-                            else if (content is FunctionResultContent result) events.Add($"result:{result.CallId}:{(result.Exception is null ? "ok" : "error")}");
-                            else if (content is UsageContent usage)
-                                Conversation.AppendUsage(UsageRecord.Create(providerRequestModel, "model", usage.Details, providerRequestPricing));
-                    yield return update;
-                }
-            }
-            finally
-            {
-                try { await updateEnumerator.DisposeAsync(); }
-                catch when (streamError is not null) { }
-            }
+            await foreach (var update in attemptStream.PumpAsync(updates, durable,
+                usage => Conversation.AppendUsage(attribution.Usage(usage)), cancellationToken))
+                yield return update;
             lock (_runtimeStateGate) CompleteProviderTurnUnsafe();
             completed = true;
         }
@@ -911,33 +775,12 @@ public sealed class ConversationRun
                 var historyStartIndex = _historyCount + (promptInHistory ? 1 : 0);
                 var appendedHistory = history.Skip(historyStartIndex).ToList();
                 if (!completed)
-                    providerTurnHistory.RestoreMissingMessages(appendedHistory);
+                    providerTurns.RestoreMissingMessages(appendedHistory);
                 lock (_runtimeStateGate)
                 {
                     PersistPendingRuntimeChangesUnsafe();
-                    var knownToolCallIds = existing.SelectMany(message => message.Contents.OfType<FunctionResultContent>())
-                        .Select(result => result.CallId).ToHashSet(StringComparer.Ordinal);
                     var canonicalTail = (virtualContext?.HasCompacted == true ? Conversation.ActiveMessages() : existing.Skip(historyStartIndex)).ToList();
-                    var canonicalIndex = 0;
-                    foreach (var providerMessage in appendedHistory)
-                    {
-                        var matchEnd = providerTurnHistory.FindEquivalentRangeEnd(canonicalTail, canonicalIndex, providerMessage);
-                        if (matchEnd >= 0)
-                        {
-                            canonicalIndex = matchEnd;
-                            continue;
-                        }
-                        var message = ProviderTurnHistoryReconciler.RetainUncheckpointedToolResults(providerMessage, knownToolCallIds);
-                        if (message is null) continue;
-                        matchEnd = providerTurnHistory.FindEquivalentRangeEnd(canonicalTail, canonicalIndex, message);
-                        if (matchEnd >= 0) canonicalIndex = matchEnd;
-                        else
-                        {
-                            Conversation.Append(message, NestedCallsFor(message));
-                            canonicalTail.Add(message);
-                            canonicalIndex = canonicalTail.Count;
-                        }
-                    }
+                    providerTurns.AppendMissingMessages(appendedHistory, canonicalTail, existing);
                 }
                 var canonicalHistory = Conversation.ContextMessages();
                 if (canonicalHistory.Count != history.Count || canonicalHistory.Where((message, index) => !JsonElement.DeepEquals(
@@ -951,14 +794,14 @@ public sealed class ConversationRun
                         new
                         {
                             prompt,
-                            partialText = partialText.ToString(),
-                            partialAssistantText = partialAssistantText.ToString(),
-                            events,
-                            terminalType = interruptionType,
-                            stopReason = interruptionType == "turn_interrupted" ? "aborted" : "error",
-                            errorMessage = interruptionError,
-                            provider = providerRequestProvider,
-                            model = providerRequestModel,
+                            partialText = attemptStream.PartialText.ToString(),
+                            partialAssistantText = providerTurns.PartialAssistantText.ToString(),
+                            events = attemptStream.Events,
+                            terminalType = attemptStream.InterruptionType,
+                            stopReason = attemptStream.InterruptionType == "turn_interrupted" ? "aborted" : "error",
+                            errorMessage = attemptStream.InterruptionError,
+                            provider = attribution.Provider,
+                            model = attribution.Model,
                             timestamp = DateTimeOffset.UtcNow
                         }));
                     var interruptedHistory = Conversation.ContextMessages();
@@ -969,14 +812,14 @@ public sealed class ConversationRun
             }
             catch (OperationCanceledException)
             {
-                interruptionType = "turn_interrupted";
-                interruptionError = "Request was aborted";
+                attemptStream.InterruptionType = "turn_interrupted";
+                attemptStream.InterruptionError = "Request was aborted";
                 throw;
             }
             catch (Exception error)
             {
-                interruptionType = "turn_failed";
-                interruptionError = error.Message;
+                attemptStream.InterruptionType = "turn_failed";
+                attemptStream.InterruptionError = error.Message;
                 throw;
             }
             finally { _gate.Release(); }

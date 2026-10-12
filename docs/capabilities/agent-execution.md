@@ -33,6 +33,35 @@ loadout/transcript and callbacks, then streams directly from MAF. Settlement
 persists injected steering and normalized image history before clearing run
 callbacks/loadout and releasing the gate, including failure/cancellation paths.
 
+## Conversation attempts
+
+[ConversationRun](../../src/PiSharp.Runtime/Sessions/ConversationRun.cs) owns prompt
+acceptance, steering/follow-up delivery, retry/compaction policy, canonical history
+settlement and execution restoration. Its streamed attempt coordinates three
+bounded owners:
+
+- [ProviderTurnJournal](../../src/PiSharp.Runtime/Sessions/ProviderTurnJournal.cs)
+  retains completed assistant/tool turns, nested-call associations and partial
+  assistant text, then reconciles available/missing provider history without
+  duplicating checkpointed results.
+- [ProviderRequestAttribution](../../src/PiSharp.Runtime/Sessions/ProviderRequestAttribution.cs)
+  tracks the selected physical provider/model/API/pricing/thinking identity and
+  projects usage/completion metadata across virtual routing events.
+- [ConversationAttemptStream](../../src/PiSharp.Runtime/Sessions/ConversationAttemptStream.cs)
+  consumes MAF updates directly, checkpoints assistant progress at the existing
+  size/time boundaries and preserves cancellation/error/disposal behavior.
+
+Parallel tool completion and turn closure continue to share ConversationRun's
+runtime-state lock. Final settlement validates the existing MAF history prefix,
+reconciles newly appended history, restores execution when canonical context
+changed, records interruptions and closes durable checkpoints before releasing
+the attempt gate. These decisions stay visible in orchestration because their
+ordering is part of the persistence/recovery contract.
+
+An initial checkpoint failure rejects the prompt before a provider request and
+still settles the run. A later request can reuse the same run. Characterization
+protects this distinction between prompt rejection and an accepted turn failure.
+
 ## Constraints and decisions
 
 No generic agent interface or wrapper hides MAF/MEAI. The catalog and summarizer
