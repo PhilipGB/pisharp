@@ -207,7 +207,8 @@ def run_product(label, command, scenario, dimensions, theme, mode, server):
     if label == 'pi' or mode != 'fullscreen':
         settings['tuiMode'] = mode
     (agent / 'settings.json').write_text(json.dumps(settings))
-    model = dict(id='fixture-model', name='Fixture Model', api='openai-completions', reasoning=False,
+    model = dict(id='fixture-model', name='Fixture Model', api='openai-completions',
+                 reasoning=bool(scenario.get('modelReasoning', False)),
                  input=['text'], contextWindow=8192, maxTokens=1024,
                  cost=dict(input=0, output=0, cacheRead=0, cacheWrite=0))
     (agent / 'models.json').write_text(json.dumps(dict(providers=dict(fixture=dict(baseUrl=server.url + '/v1',

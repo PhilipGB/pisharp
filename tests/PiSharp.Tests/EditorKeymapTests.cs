@@ -19,6 +19,25 @@ public sealed class EditorKeymapTests
     }
 
     [Fact]
+    public async Task ThinkingVisibilityShortcutUsesPiCtrlTAndPreservesTheEditorDraft()
+    {
+        var editor = new TerminalEditor();
+        editor.Prefill("keep this draft");
+        var actions = new List<string>();
+        var key = Key(ConsoleKey.T, ConsoleModifiers.Control);
+
+        Assert.Equal("app.thinking.toggle", new EditorKeymap().MatchIdleApplicationAction(key));
+        Assert.True(await editor.HandleApplicationShortcutAsync(key, action =>
+        {
+            actions.Add(action);
+            return Task.CompletedTask;
+        }));
+
+        Assert.Equal(["app.thinking.toggle"], actions);
+        Assert.Equal("keep this draft", editor.Draft);
+    }
+
+    [Fact]
     public void UserBindingsReplaceDefaultsAndAnEmptyListDisablesAnAction()
     {
         var directory = Path.Combine(Path.GetTempPath(), "pisharp-keymap-" + Guid.NewGuid().ToString("N"));

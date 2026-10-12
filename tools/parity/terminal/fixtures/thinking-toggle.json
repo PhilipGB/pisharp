@@ -1,0 +1,79 @@
+{
+  "id": "thinking-toggle",
+  "modelReasoning": true,
+  "fixtureBehavior": {
+    "chatResponseReasoningByRequest": ["private fixture reasoning", "reloaded fixture reasoning"],
+    "chatResponseContentByRequest": ["fixture answer", "reloaded fixture answer"]
+  },
+  "settings": {
+    "quietStartup": true,
+    "hideThinkingBlock": false
+  },
+  "assertionFrames": [
+    "reasoning-and-answer",
+    "hide-thinking",
+    "show-existing-thinking",
+    "hide-before-reload",
+    "reload-hidden-reasoning",
+    "show-reloaded-thinking"
+  ],
+  "dimensions": [
+    {
+      "columns": 80,
+      "rows": 24
+    }
+  ],
+  "themes": ["dark"],
+  "modes": ["fullscreen"],
+  "actions": [
+    {
+      "id": "startup",
+      "expect": "fixture-model"
+    },
+    {
+      "id": "reasoning-and-answer",
+      "send": "Show a deterministic fixture response\r",
+      "expect": "fixture answer"
+    },
+    {
+      "id": "hide-thinking",
+      "send": "\u0014",
+      "expect": "Thinking blocks: hidden",
+      "notExpect": "private fixture reasoning"
+    },
+    {
+      "id": "show-existing-thinking",
+      "send": "\u0014",
+      "expect": "private fixture reasoning"
+    },
+    {
+      "id": "hide-before-reload",
+      "send": "\u0014",
+      "expect": "Thinking blocks: hidden",
+      "notExpect": "private fixture reasoning"
+    },
+    {
+      "id": "restart-with-hidden-preference",
+      "restart": true,
+      "expect": "fixture-model"
+    },
+    {
+      "id": "reload-hidden-reasoning",
+      "send": "Check that thinking visibility persisted\r",
+      "expect": "Thinking..."
+    },
+    {
+      "id": "show-reloaded-thinking",
+      "send": "\u0014",
+      "expect": "reloaded fixture reasoning"
+    },
+    {
+      "id": "quit",
+      "send": "/quit\r",
+      "exit": true
+    }
+  ],
+  "terminal": {
+    "keyboardProtocol": "kitty"
+  }
+}

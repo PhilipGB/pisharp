@@ -90,6 +90,28 @@ public sealed class InteractiveTranscriptTests
     }
 
     [Fact]
+    public void LoadHistoryHidesAndRestoresRetainedReasoningBlocks()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        using var screen = new TerminalScreen(output, error, () => 80, () => 20);
+        screen.SetThinkingBlocksHidden(true);
+        var session = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        session.Append(new ChatMessage(ChatRole.Assistant,
+            [new TextReasoningContent("retained reasoning"), new TextContent("assistant answer")]));
+
+        new InteractiveTranscript(screen.Output, screen.Error, screen: screen).LoadHistory(session);
+
+        var hiddenFrame = TerminalOutputFrameReader.Read(output.ToString(), rows: 20, columns: 80)[^1].Screen;
+        Assert.Contains("Thinking...", hiddenFrame);
+        Assert.DoesNotContain("retained reasoning", hiddenFrame);
+        screen.SetThinkingBlocksHidden(false);
+        var visibleFrame = TerminalOutputFrameReader.Read(output.ToString(), rows: 20, columns: 80)[^1].Screen;
+        Assert.Contains("retained reasoning", visibleFrame);
+        Assert.Contains("assistant answer", visibleFrame);
+    }
+
+    [Fact]
     public void InteractiveTranscriptStreamsAssistantTextAndFiltersTerminalControls()
     {
         using var output = new StringWriter();

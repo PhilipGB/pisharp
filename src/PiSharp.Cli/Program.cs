@@ -431,6 +431,9 @@ using var terminalScreen = editor is null ? null : new TerminalScreen(rawTermina
     minimumRenderInterval: TimeSpan.FromMilliseconds(16));
 terminalScreen?.SetThemeResolver(colors => ResolveConfiguredTheme(ActiveThemeSetting(), colors));
 terminalScreen?.SetMarkdownCodeBlockIndent(userSettings.MarkdownCodeBlockIndent ?? UserSettings.DefaultMarkdownCodeBlockIndent);
+var hideThinkingBlock = userSettings.HideThinkingBlock == true;
+InteractiveTranscript? activeTranscript = null;
+terminalScreen?.SetThinkingBlocksHidden(hideThinkingBlock);
 terminalScreen?.Activate();
 using var terminalMode = editor is null ? null : TerminalMode.Enter(terminalScreen);
 void ConfigureMcpAuthorizationUrlPresenter(ProjectRuntimeContext context)
@@ -459,7 +462,7 @@ void LoadSessionTranscript()
 {
     if (terminalScreen is null) return;
     var history = new InteractiveTranscript(Console.Out, Console.Error, interactive: true,
-        hideThinking: userSettings.HideThinkingBlock == true, screen: terminalScreen,
+        hideThinking: hideThinkingBlock, screen: terminalScreen,
         toolRenderer: name => extensionLease.Current.Registration.GetToolRenderer(name),
         workingDirectory: conversation.WorkingDirectory);
     history.LoadHistory(conversation);
@@ -479,7 +482,7 @@ if (editor is not null)
             CurrentStartupDetails(), startupTrustNotice, expanded));
 }
 InteractiveTranscript CreateInteractiveTranscript(bool interactive = true) => new(Console.Out, Console.Error, interactive,
-    hideThinking: userSettings.HideThinkingBlock == true, screen: terminalScreen,
+    hideThinking: hideThinkingBlock, screen: terminalScreen,
     toolRenderer: name => extensionLease.Current.Registration.GetToolRenderer(name),
     workingDirectory: currentDirectory);
 var terminalClipboard = new TerminalClipboard(writeTerminalControl: value =>
@@ -502,6 +505,7 @@ async Task Run(string input, IReadOnlyList<DataContent>? images = null)
     var monitor = Task.CompletedTask;
     var monitorStarted = false;
     var transcript = CreateInteractiveTranscript(interactive: !print);
+    activeTranscript = transcript;
     try
     {
         if (!selection.Authenticated)
@@ -575,6 +579,7 @@ async Task Run(string input, IReadOnlyList<DataContent>? images = null)
             try { await store.SaveAsync(conversation, sessionPath); }
             catch (Exception e) { Console.Error.WriteLine($"Could not save session: {e.Message}"); Environment.ExitCode = 1; }
         activeRun = null;
+        if (ReferenceEquals(activeTranscript, transcript)) activeTranscript = null;
         terminalScreen?.SetWorkingStatus(null, render: false);
         terminalScreen?.SetFooter(IdleFooter());
     }
@@ -794,7 +799,11 @@ async Task SelectForkAsync()
     if (selected is { } message) await ForkFromUserAsync(message.Id);
 }
 
-async Task<(UserSettings User, UserSettings? Project)> SaveSettingAsync(bool projectScope, string setting, string? value)
+async Task<(UserSettings User, UserSettings? Project)> SaveSettingAsync(bool projectScope, string setting,
+    string? value) => await SaveSettingCoreAsync(projectScope, setting, value, announce: true);
+
+async Task<(UserSettings User, UserSettings? Project)> SaveSettingCoreAsync(bool projectScope, string setting,
+    string? value, bool announce)
 {
     if (projectScope && !trusted)
         throw new InvalidOperationException("Trust this project before editing its settings.");
@@ -807,6 +816,12 @@ async Task<(UserSettings User, UserSettings? Project)> SaveSettingAsync(bool pro
     else
         baseUserSettings = await UserSettings.LoadAsync(agentDirectory, Environment.GetEnvironmentVariable);
     userSettings = baseUserSettings.Overlay(projectSettings ?? new UserSettings());
+    if (setting == "hideThinkingBlock")
+    {
+        hideThinkingBlock = userSettings.HideThinkingBlock == true;
+        terminalScreen?.SetThinkingBlocksHidden(hideThinkingBlock);
+        activeTranscript?.SetHideThinkingBlock(hideThinkingBlock);
+    }
     if (setting == "theme") cliThemeOverride = null;
     projectConfiguration = projectConfiguration.WithSettings(baseUserSettings, projectSettings, userSettings);
     if (setting == "steeringMode")
@@ -822,8 +837,11 @@ async Task<(UserSettings User, UserSettings? Project)> SaveSettingAsync(bool pro
     }
     else if (setting == "markdown.codeBlockIndent")
         terminalScreen?.SetMarkdownCodeBlockIndent(userSettings.MarkdownCodeBlockIndent ?? UserSettings.DefaultMarkdownCodeBlockIndent);
-    var displayValue = setting == "httpProxy" ? value is null ? "(default)" : "(configured)" : value ?? "(default)";
-    Console.WriteLine($"Saved {(projectScope ? "project" : "user")} setting {setting} = {displayValue}.");
+    if (announce)
+    {
+        var displayValue = setting == "httpProxy" ? value is null ? "(default)" : "(configured)" : value ?? "(default)";
+        Console.WriteLine($"Saved {(projectScope ? "project" : "user")} setting {setting} = {displayValue}.");
+    }
     return (baseUserSettings, projectSettings);
 }
 
@@ -868,6 +886,15 @@ async Task HandleEditorApplicationAction(string action)
     {
         switch (action)
         {
+            case "app.thinking.toggle":
+                var hide = !hideThinkingBlock;
+                await SaveSettingCoreAsync(projectScope: false, "hideThinkingBlock", hide ? "true" : "false",
+                    announce: false);
+                hideThinkingBlock = hide;
+                terminalScreen?.SetThinkingBlocksHidden(hide);
+                activeTranscript?.SetHideThinkingBlock(hide);
+                terminalScreen?.AppendThemedStatusLine($"Thinking blocks: {(hide ? "hidden" : "visible")}");
+                break;
             case "app.thinking.cycle":
                 if (selection.Model.Reasoning != true)
                 {

@@ -920,6 +920,12 @@ public sealed class TerminalEditor
                 StartTranscriptSearch();
                 return true;
             }
+            if (dispatchApplicationAction is not null && !_keymap.MatchesEditorAction(screenKey) &&
+                _keymap.Matches("app.thinking.toggle", screenKey))
+            {
+                await dispatchApplicationAction("app.thinking.toggle");
+                return true;
+            }
             if (_keymap.Matches("app.tools.expand", screenKey))
             {
                 ToggleToolResults();

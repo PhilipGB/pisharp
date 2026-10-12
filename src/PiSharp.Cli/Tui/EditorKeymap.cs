@@ -7,7 +7,7 @@ public sealed class EditorKeymap
     private sealed record Definition(string Description, string[] DefaultKeys);
     private readonly record struct KeyStroke(ConsoleKey Key, ConsoleModifiers Modifiers);
     private sealed record BoundKey(KeyStroke Stroke, string Name);
-    private static readonly string[] IdleApplicationActions = ["app.thinking.cycle", "app.model.cycleForward", "app.model.cycleBackward", "app.model.select", "app.tools.expand", "app.editor.external", "app.message.copy", "app.clipboard.pasteImage", "app.settings.open", "app.session.fork", "app.session.resume"];
+    private static readonly string[] IdleApplicationActions = ["app.thinking.cycle", "app.thinking.toggle", "app.model.cycleForward", "app.model.cycleBackward", "app.model.select", "app.tools.expand", "app.editor.external", "app.message.copy", "app.clipboard.pasteImage", "app.settings.open", "app.session.fork", "app.session.resume"];
 
     private static readonly IReadOnlyDictionary<string, Definition> s_definitions = new Dictionary<string, Definition>(StringComparer.Ordinal)
     {
@@ -55,6 +55,7 @@ public sealed class EditorKeymap
         ["app.session.resume"] = new("Open session selector", []),
         ["app.session.fork"] = new("Open fork selector", []),
         ["app.thinking.cycle"] = new("Cycle thinking level", ["shift+tab"]),
+        ["app.thinking.toggle"] = new("Toggle thinking block visibility", ["ctrl+t"]),
         ["app.tools.expand"] = new("Expand or collapse tool output", ["ctrl+o"]),
         ["app.message.followUp"] = new("Queue a follow-up message", IsWindowsBindings() ? ["ctrl+q"] : ["alt+enter"]),
         ["app.message.dequeue"] = new("Restore queued messages", IsWindowsBindings() ? ["alt+q"] : ["alt+up"]),

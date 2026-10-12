@@ -14,11 +14,15 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
 {
     private readonly Dictionary<string, ShellOutputNormalizer> _liveBash = new(StringComparer.Ordinal);
     private readonly StringBuilder _assistantMarkdown = new();
+    private readonly StringBuilder _assistantThinking = new();
     private readonly TerminalToolPresentation _toolPresentation = new(toolRenderer,
         workingDirectory ?? Environment.CurrentDirectory, () => screen?.ToolResultsExpanded ?? false);
+    private bool _hideThinkingBlock = hideThinking;
 
     public bool HasAssistantOutput { get; private set; }
     public int ExitCode { get; private set; }
+
+    public void SetHideThinkingBlock(bool hidden) => _hideThinkingBlock = hidden;
 
     public void LoadHistory(ConversationSession session)
     {
@@ -42,15 +46,30 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
                 }
                 if (message.Role == ChatRole.Assistant)
                 {
+                    var thinking = new StringBuilder();
+                    void FlushThinking()
+                    {
+                        if (thinking.Length == 0) return;
+                        target.AppendAssistantThinkingBlock(thinking.ToString());
+                        thinking.Clear();
+                        assistantTextNeedsTurnSeparator = true;
+                    }
+
                     foreach (var content in message.Contents)
                     {
-                        if (content is TextContent text && text.Text.Length > 0)
+                        if (content is TextReasoningContent reasoning && reasoning.Text.Length > 0)
                         {
+                            thinking.Append(TerminalSafeText.Normalize(reasoning.Text));
+                        }
+                        else if (content is TextContent text && text.Text.Length > 0)
+                        {
+                            FlushThinking();
                             target.CommitAssistantText(text.Text);
                             assistantTextNeedsTurnSeparator = true;
                         }
                         else if (content is FunctionCallContent call)
                         {
+                            FlushThinking();
                             assistantTextNeedsTurnSeparator = false;
                             toolNames[call.CallId] = call.Name;
                             var update = new AgentLifecycleEvent("tool_execution_started", Tool: call.Name,
@@ -70,6 +89,7 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
                             }
                         }
                     }
+                    FlushThinking();
                     continue;
                 }
                 if (message.Role != ChatRole.Tool) continue;
@@ -97,13 +117,17 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
     {
         ArgumentNullException.ThrowIfNull(update);
         if (update.Type is not ("model_text_delta" or "model_content_update") && !DeferAssistantCommit(update))
+        {
+            CommitAssistantThinkingText();
             CommitAssistantText();
+        }
         switch (update.Type)
         {
             case "prompt_accepted" when interactive && screen is not null:
                 screen.AppendUserMessage(Safe(update.Text ?? ""), update.Images);
                 break;
             case "model_text_delta" when !string.IsNullOrEmpty(update.Text):
+                CommitAssistantThinkingText();
                 var assistantText = Safe(update.Text);
                 if (screen is null) output.Write(assistantText);
                 else
@@ -113,8 +137,19 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
                 }
                 HasAssistantOutput = true;
                 break;
-            case "reasoning_delta" when interactive && !hideThinking && !string.IsNullOrEmpty(update.Text):
-                status.Write(Safe(update.Text));
+            case "reasoning_delta" when interactive && !string.IsNullOrEmpty(update.Text):
+                CommitAssistantText();
+                var reasoning = Safe(update.Text);
+                if (screen is null)
+                {
+                    if (!_hideThinkingBlock) status.Write(reasoning);
+                }
+                else
+                {
+                    _assistantThinking.Append(reasoning);
+                    screen.SetAssistantThinkingText(_assistantThinking.ToString());
+                }
+                HasAssistantOutput = true;
                 break;
             case "usage" when interactive && !string.IsNullOrEmpty(update.Text):
                 if (screen is null) status.WriteLine($"\nUsage: {Safe(update.Text)}");
@@ -143,6 +178,7 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
 
     public void FinishTurn()
     {
+        CommitAssistantThinkingText();
         CommitAssistantText();
         if (!HasAssistantOutput) return;
         output.WriteLine();
@@ -154,6 +190,13 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
         if (_assistantMarkdown.Length == 0) return;
         if (screen is not null) screen.CommitAssistantText(_assistantMarkdown.ToString());
         _assistantMarkdown.Clear();
+    }
+
+    private void CommitAssistantThinkingText()
+    {
+        if (_assistantThinking.Length == 0) return;
+        if (screen is not null) screen.CommitAssistantThinkingText(_assistantThinking.ToString());
+        _assistantThinking.Clear();
     }
 
     private bool DeferAssistantCommit(AgentLifecycleEvent update)

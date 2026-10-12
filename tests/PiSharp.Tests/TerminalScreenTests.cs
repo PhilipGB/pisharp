@@ -759,6 +759,37 @@ public sealed class TerminalScreenTests
     }
 
     [Fact]
+    public void ThinkingVisibilityToggleRendersRetainedReasoningAsPiDoes()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        using var screen = new TerminalScreen(output, error, () => 80, () => 24);
+        var transcript = new InteractiveTranscript(screen.Output, screen.Error, screen: screen);
+
+        transcript.Render(new AgentLifecycleEvent("reasoning_delta", Text: "private reasoning"));
+        transcript.Render(new AgentLifecycleEvent("model_text_delta", Text: "answer"));
+        transcript.FinishTurn();
+
+        var visibleFrame = VisibleFrame(output.ToString());
+        Assert.Contains("private reasoning", visibleFrame);
+        screen.SetThinkingBlocksHidden(true);
+        var hiddenFrame = VisibleFrame(output.ToString());
+        Assert.Contains("Thinking...", hiddenFrame);
+        Assert.DoesNotContain("private reasoning", hiddenFrame);
+
+        screen.SetThinkingBlocksHidden(false);
+        var shownFrame = VisibleFrame(output.ToString());
+        Assert.Contains("private reasoning", shownFrame);
+        Assert.Contains("answer", shownFrame);
+    }
+
+    private static string VisibleFrame(string output)
+    {
+        var frames = TerminalOutputFrameReader.Read(output, rows: 24, columns: 80);
+        return frames.Count == 0 ? output : frames[^1].Screen;
+    }
+
+    [Fact]
     public void CodeBlockIndentChangeRendersPreviouslyCommittedMarkdownAgain()
     {
         using var output = new StringWriter();

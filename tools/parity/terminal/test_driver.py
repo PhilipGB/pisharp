@@ -193,6 +193,29 @@ class DriverTests(unittest.TestCase):
                 stream.close()
             server.close()
 
+    def test_fixture_server_streams_reasoning_before_chat_content(self):
+        server = FixtureServer(behavior=dict(chatResponseReasoningByRequest=['private reasoning'],
+                                             chatResponseContentByRequest=['fixture answer']))
+        stream = None
+        try:
+            request = urllib.request.Request(
+                server.url + '/v1/chat/completions', data=json.dumps(dict(stream=True)).encode(),
+                headers={'Content-Type': 'application/json'}, method='POST')
+            stream = urllib.request.urlopen(request, timeout=2)
+            reasoning = self.read_sse_event(stream)
+            answer = self.read_sse_event(stream)
+            finished = self.read_sse_event(stream)
+            separator = stream.readline().decode().strip()
+            done = stream.readline().decode().strip() if not separator else separator
+            self.assertEqual('private reasoning', reasoning['choices'][0]['delta']['reasoning_content'])
+            self.assertEqual('fixture answer', answer['choices'][0]['delta']['content'])
+            self.assertEqual('stop', finished['choices'][0]['finish_reason'])
+            self.assertEqual('data: [DONE]', done)
+        finally:
+            if stream is not None:
+                stream.close()
+            server.close()
+
     def test_fixture_server_gates_stream_content_and_finish_separately(self):
         server = FixtureServer(behavior=dict(chatRequestGates=['chat-request'],
                                              chatResponseContentGates=['chat-content'],

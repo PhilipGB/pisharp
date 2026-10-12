@@ -35,6 +35,9 @@ public sealed class TerminalScreen : IDisposable
     private string _editorText = "";
     private string _liveAssistant = "";
     private string _liveAssistantSource = "";
+    private string _liveThinking = "";
+    private string _liveThinkingSource = "";
+    private bool _thinkingBlocksHidden;
     private bool _hasConversationContent;
     private readonly TranscriptSearchController _search = new();
     private int _editorCursor;
@@ -263,6 +266,8 @@ public sealed class TerminalScreen : IDisposable
             _scrollOffset = 0;
             _liveAssistant = "";
             _liveAssistantSource = "";
+            _liveThinking = "";
+            _liveThinkingSource = "";
             _hasConversationContent = false;
             _overlay = null;
             _deferRender++;
@@ -285,6 +290,70 @@ public sealed class TerminalScreen : IDisposable
             _liveAssistant = RenderMarkdown(_liveAssistantSource) + "\n";
             RenderLocked();
         }
+    }
+
+    internal void SetAssistantThinkingText(string text)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        lock (_gate)
+        {
+            if (!_active) return;
+            _liveThinkingSource = TerminalSafeText.Normalize(text);
+            _liveThinking = RenderThinking(_theme, _liveThinkingSource, _thinkingBlocksHidden);
+            RenderLocked();
+        }
+    }
+
+    internal void CommitAssistantThinkingText(string text)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        var safe = TerminalSafeText.Normalize(text);
+        if (safe.Length == 0) return;
+        lock (_gate)
+        {
+            if (!_active) return;
+            _liveThinking = "";
+            _liveThinkingSource = "";
+            AppendThinkingBlockLocked(safe);
+            RenderLocked();
+        }
+    }
+
+    internal void AppendAssistantThinkingBlock(string text)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        var safe = TerminalSafeText.Normalize(text);
+        if (safe.Length == 0) return;
+        lock (_gate)
+        {
+            if (!_active) return;
+            AppendThinkingBlockLocked(safe);
+            RenderLocked();
+        }
+    }
+
+    internal void SetThinkingBlocksHidden(bool hidden)
+    {
+        lock (_gate)
+        {
+            if (!_active || _thinkingBlocksHidden == hidden) return;
+            _thinkingBlocksHidden = hidden;
+            _transcript.SetThinkingBlocksHidden(hidden, _theme);
+            _liveThinking = _liveThinkingSource.Length == 0 ? "" :
+                RenderThinking(_theme, _liveThinkingSource, _thinkingBlocksHidden);
+            RenderLocked();
+        }
+    }
+
+    internal bool ThinkingBlocksHidden { get { lock (_gate) return _thinkingBlocksHidden; } }
+
+    private void AppendThinkingBlockLocked(string text)
+    {
+        string RenderVisible(TerminalTheme theme) => RenderThinking(theme, text, hidden: false);
+        string RenderHidden(TerminalTheme theme) => RenderThinking(theme, text, hidden: true);
+        _transcript.AppendThinkingBlock(text, "Thinking...", RenderVisible, RenderHidden, _theme,
+            _thinkingBlocksHidden);
+        _hasConversationContent = true;
     }
 
     internal void CommitAssistantText(string markdown)
@@ -389,6 +458,8 @@ public sealed class TerminalScreen : IDisposable
             _transcript.ReRenderMarkdown(RenderMarkdown);
             _transcript.ReRenderThemedSegments(_theme);
             _liveAssistant = _liveAssistantSource.Length == 0 ? "" : RenderMarkdown(_liveAssistantSource);
+            _liveThinking = _liveThinkingSource.Length == 0 ? "" :
+                RenderThinking(_theme, _liveThinkingSource, _thinkingBlocksHidden);
             RenderLocked();
         }
     }
@@ -445,6 +516,8 @@ public sealed class TerminalScreen : IDisposable
             _transcript.ReRenderMarkdown(RenderMarkdown);
             _transcript.ReRenderThemedSegments(_theme);
             _liveAssistant = _liveAssistantSource.Length == 0 ? "" : RenderMarkdown(_liveAssistantSource);
+            _liveThinking = _liveThinkingSource.Length == 0 ? "" :
+                RenderThinking(_theme, _liveThinkingSource, _thinkingBlocksHidden);
             RenderLocked();
         }
     }
@@ -1010,7 +1083,7 @@ public sealed class TerminalScreen : IDisposable
                 var columns = Columns();
                 var header = _startupHeader?.Invoke(_theme, columns, _startupExpanded) ?? "";
                 var startupContent = _startupContent?.Invoke(_theme, columns, _startupExpanded) ?? "";
-                var transcript = _images.LayoutTranscript(_transcript.GetTextForScrollback(columns, _theme) + _liveAssistant,
+                var transcript = _images.LayoutTranscript(_transcript.GetTextForScrollback(columns, _theme) + _liveThinking + _liveAssistant,
                     columns, Math.Max(1, Rows() - 5));
                 var headerRows = string.IsNullOrEmpty(header)
                     ? Array.Empty<string>()
@@ -1060,7 +1133,7 @@ public sealed class TerminalScreen : IDisposable
         }
     }
 
-    private string GetTranscriptTextLocked(int width) => _transcript.GetText(width);
+    private string GetTranscriptTextLocked(int width) => _transcript.GetText(width) + _liveThinking + _liveAssistant;
 
     private string RenderMarkdown(string markdown)
     {
@@ -1076,6 +1149,10 @@ public sealed class TerminalScreen : IDisposable
         }
         return output.ToString();
     }
+
+    private static string RenderThinking(TerminalTheme theme, string text, bool hidden) =>
+        Environment.NewLine + " " + theme.Style("thinkingText", hidden ? "Thinking..." : text, italic: true) +
+        Environment.NewLine;
 
     private void RenderLocked(bool immediate = false)
     {
@@ -1173,7 +1250,7 @@ public sealed class TerminalScreen : IDisposable
             _lastImagePruneRevision = _transcript.Revision;
         }
         var transcriptWidth = Math.Max(1, columns);
-        var transcript = _images.LayoutTranscript(GetTranscriptTextLocked(transcriptWidth) + _liveAssistant,
+        var transcript = _images.LayoutTranscript(GetTranscriptTextLocked(transcriptWidth),
             transcriptWidth, Math.Max(1, transcriptHeight - 2));
         var frame = _compositor.Compose(_editorText, _editorCursor, _editorSelectionStart, _editorSelectionEnd,
             transcript, _footer, _overlay, _scrollOffset, columns, rows, _search, _mouse, _theme,

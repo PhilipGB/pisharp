@@ -343,6 +343,33 @@ public sealed class TerminalInputTests
     }
 
     [Fact]
+    public async Task ActiveThinkingToggleDispatchPreservesTheFollowUpDraft()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        using var screen = new TerminalScreen(output, error, () => 80, () => 24);
+        var editor = new TerminalEditor();
+        editor.AttachScreen(screen);
+        editor.Prefill("keep this follow-up draft");
+        var actions = new List<string>();
+        Task<bool> Queue(string text, bool followUp, CancellationToken token) =>
+            throw new InvalidOperationException("Thinking toggle must not queue input.");
+        static TerminalInputEvent Key(ConsoleKey key, ConsoleModifiers modifiers = 0) => new(
+            new ConsoleKeyInfo('\0', key, modifiers.HasFlag(ConsoleModifiers.Shift),
+                modifiers.HasFlag(ConsoleModifiers.Alt), modifiers.HasFlag(ConsoleModifiers.Control)), null);
+
+        Assert.True(await editor.HandleActiveInputAsync(Key(ConsoleKey.T, ConsoleModifiers.Control), Queue,
+            () => [], () => { }, dispatchApplicationAction: action =>
+            {
+                actions.Add(action);
+                return Task.CompletedTask;
+            }));
+
+        Assert.Equal(["app.thinking.toggle"], actions);
+        Assert.Equal("keep this follow-up draft", editor.Draft);
+    }
+
+    [Fact]
     public void PastedMultilineTextRemainsOneAtomicEditorInsertion()
     {
         var reader = new TerminalInput(new MemoryStream(Encoding.UTF8.GetBytes(

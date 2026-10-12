@@ -274,6 +274,9 @@ class FixtureServer:
                     configured_replies = outer.behavior.get('chatResponseContentByRequest', [])
                     reply = (configured_replies[request_index]
                              if request_index < len(configured_replies) else 'fixture reply')
+                    configured_reasoning = outer.behavior.get('chatResponseReasoningByRequest', [])
+                    reasoning = (configured_reasoning[request_index]
+                                 if request_index < len(configured_reasoning) else None)
                     outer.signal_gate(request_gate)
                     if response_gate is not None:
                         outer.wait_for_gate(response_gate)
@@ -283,22 +286,33 @@ class FixtureServer:
                         self.send_header('Content-Type', 'text/event-stream')
                         self.send_header('Cache-Control', 'no-cache')
                         self.end_headers()
-                        chunks = [
+                        chunks = []
+                        if reasoning:
+                            chunks.append(dict(id='fixture-response', object='chat.completion.chunk', created=1,
+                                               model=model, choices=[dict(index=0,
+                                                   delta=dict(role='assistant', reasoning_content=reasoning),
+                                                   finish_reason=None)]))
+                        chunks.extend([
                             dict(id='fixture-response', object='chat.completion.chunk', created=1,
                                  model=model, choices=[dict(index=0,
                                      delta=dict(role='assistant', content=reply), finish_reason=None)]),
                             dict(id='fixture-response', object='chat.completion.chunk', created=1,
                                  model=model, choices=[dict(index=0, delta={}, finish_reason='stop')]),
-                        ]
+                        ])
                         if body.get('stream_options', {}).get('include_usage'):
                             chunks.append(dict(id='fixture-response', object='chat.completion.chunk', created=1,
                                                model=model, choices=[],
                                                usage=dict(prompt_tokens=10, completion_tokens=3, total_tokens=13)))
                         try:
-                            for chunk_index, chunk in enumerate(chunks):
-                                if chunk_index == 0 and content_gate is not None:
+                            for chunk in chunks:
+                                choices = chunk.get('choices', [])
+                                has_content = any(choice.get('delta', {}).get('content')
+                                                  for choice in choices)
+                                has_finish = any(choice.get('finish_reason') is not None
+                                                 for choice in choices)
+                                if has_content and content_gate is not None:
                                     outer.wait_for_gate(content_gate)
-                                if chunk_index == 1 and finish_gate is not None:
+                                if has_finish and finish_gate is not None:
                                     outer.wait_for_gate(finish_gate)
                                 self.wfile.write(('data: ' + json.dumps(chunk) + '\n\n').encode())
                                 self.wfile.flush()

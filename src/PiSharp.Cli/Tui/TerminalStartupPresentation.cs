@@ -126,6 +126,7 @@ internal sealed class TerminalStartupPresentation(QuietStartupMode? quietStartup
             ("app.model.select", "Ctrl+L", "to select a model"),
             ("app.thinking.cycle", "Shift+Tab", "to cycle thinking level"),
             ("app.tools.expand", "Ctrl+O", "to expand tools"),
+            ("app.thinking.toggle", "Ctrl+T", "to expand thinking"),
             ("app.editor.external", "Ctrl+G", "for external editor"),
             (null, "/", "for commands"),
             (null, "!", "to run bash"),
