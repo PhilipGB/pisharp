@@ -1,0 +1,29 @@
+{
+  "piSha": "4270522473e677ddba7b093caa0064a3df51d459",
+  "pisharpSha": "0461f41de66b8c022f2d1eb7dbcaf548e2dc7ac9",
+  "fixture": "resource-skill-prompt-bash",
+  "behavior": {
+    "mode": "bash",
+    "advertisementMatched": true,
+    "readerHint": "Use bash to load a skill's file",
+    "expandedMessagesMatched": true,
+    "expandedSkills": [
+      "shared",
+      "project-only",
+      "user-only",
+      "temp-only",
+      "unsafe&skill"
+    ],
+    "chatRequestCount": 5
+  },
+  "samePiCalibration": true,
+  "dialogueTraceMatch": true,
+  "normalizedRequestDifferences": [],
+  "httpNormalization": "Only generated Main documentation, Additional docs, and Examples package-root lines in system messages are canonicalized; raw request bodies remain captured.",
+  "fullTerminalMatch": true,
+  "fullHttpMatch": true,
+  "rawMatch": false,
+  "renderDifferences": 0,
+  "controlBoundaryDifferenceCount": 2091,
+  "scenarioErrors": {}
+}
