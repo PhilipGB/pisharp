@@ -9,4 +9,4 @@ Current Pi `origin/main` is `4270522473e677ddba7b093caa0064a3df51d459`. This inc
 
 The cumulative incremental audit covers 231 commits after baseline `955cc6665ee3986c6a033db52200779310d10dfd`: 86 `OUT_OF_SCOPE`, 44 `NO_BEHAVIOR_CHANGE`, 92 `NEEDS_WORK`, and 9 `MATCHED`. The durable-only changes remain outside the normal CLI path; the current coding-agent schema-tool failure description is matched.
 
-All 194 required ledger capabilities remain in scope. Current-head read/Bash/indirect skill-prompt terminal differentials, official MCP conformance, other open `NEEDS_WORK` deltas, a fresh final source audit, and architecture review remain outstanding; this refresh does not satisfy the parity completion gate.
+All 194 required ledger capabilities remain in scope. Current-head read/Bash/indirect skill-prompt terminal differentials and official MCP client conformance are verified. Interactive auth URL terminal/clipboard differentials, other open `NEEDS_WORK` deltas, a fresh final source audit, and architecture review remain outstanding; this refresh does not satisfy the parity completion gate.

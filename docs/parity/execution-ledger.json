@@ -3961,13 +3961,16 @@
       ],
       "implementation": [
         "src/PiSharp.Cli/Tui/TerminalScreen.cs and TerminalEditor.cs: active MCP authorization URL, OSC 8 link, configured copy/cancel hints, live app.message.copy handling, and Esc cancellation while /mcp login awaits the browser callback.",
-        "src/PiSharp.Cli/Program.cs, src/PiSharp.Cli/Sessions/ProjectRuntimeContext.cs, and src/PiSharp.Runtime/Mcp/McpRuntimeManager.cs: route MCP sign-in URL presentation, clipboard feedback, cancellation, and URL cleanup through the active TUI."
+        "src/PiSharp.Cli/Program.cs, src/PiSharp.Cli/Sessions/ProjectRuntimeContext.cs, and src/PiSharp.Runtime/Mcp/McpRuntimeManager.cs: route MCP sign-in URL presentation, clipboard feedback, cancellation, and URL cleanup through the active TUI.",
+        "PiSharp source b1cc9013fc: route provider auth_url notices through the active terminal screen; expose the configured copy action during browser wait and manual code entry; show clipboard feedback within the login panel; prioritize cancellation and clear the active URL after login."
       ],
       "evidence": [
         "Current Pi 4270522473e677ddba7b093caa0064a3df51d459 sign-in URL tests: auth-url-copy.test.ts and mcp-manager-view.test.ts pass 5/5.",
         "PiSharp focused MCP OAuth PTY test passes 6/6 on Linux: wrapped OSC 8 link and copy/cancel hints, default and customized copy key, clipboard success/failure, and Esc cancellation; authorization callback sign-in completes in the copy cases.",
         "Focused PiSharp tests pass 6/6; Python parity harness passes 38/38. Exact-head Linux CI 38215138068 passes on PiSharp 770871d1df398196f81d770ae6a405c682483fea: terminal 24/24, Python 38/38, format, zero-warning build, .NET 1,348/1,348 with zero skips, and the MCP conformance job.",
-        "MCP provider-login UI, full current-Pi paired terminal/clipboard differential, and remaining authentication-selector cases remain open."
+        "PiSharp ProviderLoginTuiTests passes 5/5; its four-case provider OAuth PTY matrix covers default/custom app.message.copy keys, clipboard success/failure, OSC 52 fallback emission, URL hyperlink and copy/cancel hints, and Esc cancellation from manual code entry. Current Pi 4270522473e677ddba7b093caa0064a3df51d459 auth-url-copy and MCP manager-view tests pass 5/5.",
+        "Exact-head Linux CI run 38217945513 passes on PiSharp b1cc9013fc6ac66a5947fd67347726449cc57778: terminal 24/24, Python 38/38, format verification, zero-warning build, .NET 1,352/1,352 with zero skips, and the MCP conformance job.",
+        "Provider URL handling is implemented, but a current-Pi paired terminal/clipboard replay, URL-less provider state regression, SSH-specific OSC 52 path, and callback success/failure presentation remain open."
       ],
       "dependencies": []
     },
@@ -4393,10 +4396,10 @@
     },
     "fixture": "docs/parity/fixtures/upstream-delta-audit-2026-10-12.md",
     "next": "Continue interactive auth parity against current Pi 4270522473e677ddba7b093caa0064a3df51d459: capture paired terminal/clipboard evidence for the MCP URL flow and cover provider login screens, URL-less states, SSH OSC 52 and callback success/failure. Then advance to the next unresolved ledger capability.",
-    "current_item": "mcp-auth-url-copy-tui-differential",
-    "current_item_status": "Official MCP client conformance is verified at PiSharp 0cfdf05e448192b15b4090406f602027bdfbc95d by exact-head CI 38212383263; the full run matches current Pi 4270522473e677ddba7b093caa0064a3df51d459 across 26 scenarios and three protocol modes, with all eight Pi-known failures classified. MCP OAuth URL presentation/copy/cancel is implemented at 770871d1df398196f81d770ae6a405c682483fea and passes exact-head CI 38215138068; current Pi's focused sign-in URL tests pass 5/5. Provider-login screens and the full paired terminal/clipboard differential remain open.",
-    "current_item_local_evidence": "PiSharp's active MCP authorization URL uses the configured app.message.copy key through the existing terminal clipboard path, displays configurable cancel/copy hints, supports Esc cancellation, and clears its URL on sign-in completion. The six-case Linux PTY regression passes and exact-head CI is green. Current Pi origin/main remains 4270522473e677ddba7b093caa0064a3df51d459; its auth-url-copy and MCP manager-view tests pass 5/5.",
-    "next_after_ci": "continue-tui-auth-url-copy-provider-and-paired-differential",
+    "current_item": "provider-auth-url-copy-tui-differential",
+    "current_item_status": "Official MCP client conformance is verified at PiSharp 0cfdf05e448192b15b4090406f602027bdfbc95d by exact-head CI 38212383263; the full run matches current Pi 4270522473e677ddba7b093caa0064a3df51d459 across 26 scenarios and three protocol modes, with all eight Pi-known failures classified. MCP OAuth URL presentation/copy/cancel is implemented at 770871d1df398196f81d770ae6a405c682483fea. Provider OAuth URL presentation and configured-key copy/cancel are implemented at b1cc9013fc and pass exact-head CI 38217945513. Current Pi focused sign-in URL tests pass 5/5. Paired terminal/clipboard replay, URL-less provider state, SSH-specific OSC 52 behavior, and provider callback success/failure remain open.",
+    "current_item_local_evidence": "ProviderLoginTuiTests passes 5/5; the new four-case Linux PTY matrix reaches Anthropic's copy-code screen and verifies URL hyperlink, default/custom copy bindings, clipboard success/failure with OSC 52 fallback, copy feedback, and Esc cancellation. Current Pi 4270522473e677ddba7b093caa0064a3df51d459 auth-url-copy and MCP manager-view tests pass 5/5. Exact-head CI 38217945513 succeeds on b1cc9013fc6ac66a5947fd67347726449cc57778 with 1,352 .NET tests and zero skips. Current-head project-trust extension UI replay also matches Pi terminal state, 14 normalized render frames, HTTP and normalized provider request at this product SHA; see docs/parity/fixtures/project-trust-extension-ui-current-pi-2026-10-12/current-42705224-b1cc9013/README.md.",
+    "next_after_ci": "capture-paired-auth-url-terminal-clipboard-and-provider-url-less-callback-outcomes",
     "completed": [
       "65117e31f242daa8e0a17dbd2810f7bb92bf4087",
       "7a11fe1c723b942fa093edb8b00f051ddb9b6627",
