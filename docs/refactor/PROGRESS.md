@@ -3,10 +3,10 @@
 - **Baseline PiSharp:** `064bcc7b90344cffde595f9aca1c5b850cefe567` (untouched main branch point).
 - **Frozen Pi:** `ee409a85f6ad92bf8c6ab8ed735c6cd24f2e749e`; authority: execution-ledger source note, corroborated by latest TODO/trust-startup evidence.
 - **Branch:** `refactor/architecture-maintainability`.
-- **Phase:** Permanent documentation validation verified; resume remaining structural work. Last verified remote ownership/enforcement checkpoint: `902ff127a9ac50286757d250bf1be0c793b07420`. Earlier checkpoint SHAs are recorded in slice metadata/history.
+- **Phase:** Permanent documentation validation verified; resume remaining structural work. Last verified remote documentation checkpoint: `87091cf3b0972e308715e03daa9e5e6d7bd5665c`. Earlier checkpoint SHAs are recorded in slice metadata/history.
 - **Pilot:** coding tools, frozen hotspot H09. See `baseline/pilot-decision.json`.
 - **Completed slices:** untouched behavioral baseline, architectural inventory, neutral Pi-reference infrastructure, coding-tools pilot, session interchange, native session/context, agent catalog/summarization, streamed-attempt, MCP connection/publication, provider credentials/snapshots/router ownership and initial CLI workflow ownership.
-- **Active slice:** Documentation validator passes 123 tracked documents/363 local references; all ten architecture/documentation checks pass, format/build clean. Four new real Git/Python controls reject local untracked and missing paths, accept tracked links/directories and exclude temporary refactor docs. Eight historical broken links now have tracked receipts or explicit untracked provenance; user evidence untouched. Capture invokes the new CI gate, and parser extension preserves all 1,515 previous scoped identities unchanged. H01 remains OPEN for remaining command coordination and project/UI adoption.
+- **Active slice:** Documentation validator passes 123 tracked documents/364 local references; all ten architecture/documentation checks pass, format/build clean. Four new real Git/Python controls reject local untracked and missing paths, accept tracked links/directories and exclude temporary refactor docs. Eight historical broken links now have tracked receipts or explicit untracked provenance; user evidence untouched. Capture invokes the new CI gate, and parser extension preserves all 1,515 previous scoped identities unchanged. H01 remains OPEN for remaining command coordination and project/UI adoption.
 - **Latest observed main:** `064bcc7b90344cffde595f9aca1c5b850cefe567`; no divergence or merge conflicts at the session-start/checkpoint queries.
 - **Blockers:** none. A required push failure is a durability blocker; stop before continuing another slice.
 
@@ -80,8 +80,7 @@ execution direct; retain Pi-specific semantics. No new dependency lockfiles.
 
 ## Exact next action
 
-Commit/push verified documentation-validation checkpoint and verify remote SHA.
-Then finish remaining command
+Finish remaining H01 command
 coordination with explicit state ownership. Keep an identifiable composition root
 and existing controllers; do not replace Program with another opaque god class or
 a dependency/options bag. Preserve CLI/RPC/TUI lifecycle/disposal and transactional

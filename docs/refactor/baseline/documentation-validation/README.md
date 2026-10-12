@@ -10,7 +10,7 @@ A tracked quiet-startup receipt retains historical source/results and limitation
 Llama summaries retain their provenance while explicitly identifying unavailable
 raw directories/manifests. Inventory links point to available historical summaries.
 
-Direct validation passes 123 documents and 363 local references. Four new xUnit
+Direct validation passes 123 documents and 364 local references. Four new xUnit
 controls use real Git/Python fixtures: tracked links/directories/definitions pass,
 existing untracked targets fail, missing owned inline paths fail while foreign/
 synthetic shorthand remains separate, and temporary refactor documents are excluded.
