@@ -47,7 +47,10 @@
     },
     {
       "id": "H08",
-      "disposition": "OPEN"
+      "disposition": "RESOLVED",
+      "resolution": "Provider credential precedence/binding, synchronized available snapshots and serialized router cache/profile discovery have distinct concrete owners; runtime coordinates catalog/scope/model selection in CLI.",
+      "evidence": "provider-checkpoint/provider-preservation-comparison.json",
+      "capabilityDocumentation": "../../capabilities/provider-selection.md"
     },
     {
       "id": "H09",

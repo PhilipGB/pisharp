@@ -1,0 +1,19 @@
+file:///home/philip/Downloads/pisharp-bootstrap/pisharp/tools/parity/codemode-model-probe.mjs:11
+console.log(JSON.stringify({output:result.content.filter(x=>x.type==='text').map(x=>x.text).filter(x=>x==='undefined'||x==='0.8'||x.startsWith('[100,')).join('\n'),isError:!!result.isError,input:result.usage.input,outputTokens:result.usage.output,totalTokens:result.usage.totalTokens,cost:result.usage.cost.total,calls:result.details.calls.map(c=>({name:c.name,status:c.status,cost:c.cost}))}));
+                                                                                                                                                                                                                ^
+
+TypeError: Cannot read properties of undefined (reading 'input')
+    at file:///home/philip/Downloads/pisharp-bootstrap/pisharp/tools/parity/codemode-model-probe.mjs:11:209
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+
+Node.js v24.21.0
+Traceback (most recent call last):
+  File "/home/philip/Downloads/pisharp-bootstrap/pisharp/tools/parity/codemode-classifier-differential.py", line 35, in <module>
+    pi = json.loads(subprocess.check_output(['node', str(probes / 'codemode-model-probe.mjs'), args.pi, fail], timeout=25))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/subprocess.py", line 466, in check_output
+    return run(*popenargs, stdout=PIPE, timeout=timeout, check=True,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['node', '/home/philip/Downloads/pisharp-bootstrap/pisharp/tools/parity/codemode-model-probe.mjs', '/tmp/pisharp-frozen-pi1', 'false']' returned non-zero exit status 1.

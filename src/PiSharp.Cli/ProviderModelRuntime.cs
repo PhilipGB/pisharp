@@ -41,17 +41,12 @@ public sealed class ProviderModelRuntime
     private readonly Dictionary<string, ProviderProfile> _providers;
     private readonly AuthStorage _auth;
     private readonly ProviderOAuthCoordinator _oauth;
-    private readonly Func<string, string?> _environment;
     private readonly HttpClient _http;
     private readonly string? _runtimeApiKey;
-    private string? _runtimeApiKeyProvider;
+    private readonly ProviderCredentialResolver _credentials;
     private readonly bool _offline;
-    private readonly LlamaRouterCatalogStore _llamaRouterCache;
-    private readonly SemaphoreSlim _llamaRouterRefresh = new(1, 1);
-    private readonly object _availableProviderGate = new();
-    private readonly Dictionary<string, bool> _availableProviderSnapshot = new(StringComparer.Ordinal);
-    private ModelDescriptor[] _availableModelSnapshot = [];
-    private ProviderProfile? _llamaRouterProfile;
+    private readonly LlamaRouterDiscovery _llamaDiscovery;
+    private readonly AvailableModelSnapshot _available;
     private IReadOnlyList<string> _scope;
     private VirtualModelRegistry? _virtualModels;
 
@@ -63,44 +58,27 @@ public sealed class ProviderModelRuntime
         _providers = providers;
         _auth = auth;
         _oauth = oauth;
-        _environment = environment;
+        _credentials = new ProviderCredentialResolver(auth, oauth, environment, runtimeApiKey);
         _http = http;
         _runtimeApiKey = runtimeApiKey;
         _offline = offline;
-        _llamaRouterCache = new LlamaRouterCatalogStore(agentDirectory);
-        _llamaRouterProfile = providers.GetValueOrDefault("llama.cpp");
         _scope = scope ?? [];
-        foreach (var provider in providers.Values.Where(provider => provider.ApiKeyEnvironment is { } keyName &&
-                     !string.IsNullOrWhiteSpace(environment(keyName)) && provider.Models.Any(model => model.Available)))
-        {
-            _availableProviderSnapshot[provider.Id] = true;
-            _availableModelSnapshot = _availableModelSnapshot.Concat(provider.Models.Where(model => model.Available)
-                    .Select(model => model with { Provider = provider.Id }))
-                .GroupBy(ModelKey, StringComparer.Ordinal).Select(group => group.Last()).ToArray();
-        }
+        _available = new AvailableModelSnapshot(providers.Values.Where(provider => provider.ApiKeyEnvironment is { } keyName &&
+            !string.IsNullOrWhiteSpace(environment(keyName)) && provider.Models.Any(model => model.Available)));
+        _llamaDiscovery = new LlamaRouterDiscovery(agentDirectory, http, providers["llama.cpp"], _available);
     }
 
     public IReadOnlyList<string> Scope => _scope;
     public VirtualModelRegistry? VirtualModels => _virtualModels;
-    public int AvailableModelProviderCount
-    {
-        get
-        {
-            lock (_availableProviderGate) return _availableProviderSnapshot.Count(item => item.Value);
-        }
-    }
-
-    internal IReadOnlyList<ModelDescriptor> GetAvailableModelSnapshot()
-    {
-        lock (_availableProviderGate) return _availableModelSnapshot.ToArray();
-    }
+    public int AvailableModelProviderCount => _available.ProviderCount;
+    internal IReadOnlyList<ModelDescriptor> GetAvailableModelSnapshot() => _available.Models;
 
     public IReadOnlyList<ProviderProfile> Providers
     {
         get
         {
             var providers = new Dictionary<string, ProviderProfile>(_providers, StringComparer.Ordinal);
-            if (Volatile.Read(ref _llamaRouterProfile) is { } llamaRouter)
+            if (_llamaDiscovery.Profile is { } llamaRouter)
                 providers[llamaRouter.Id] = llamaRouter;
             foreach (var providerId in _virtualModels?.Models.Select(item => item.Model.Provider)
                          .Where(providerId => providerId is not null).Select(providerId => providerId!)
@@ -157,7 +135,7 @@ public sealed class ProviderModelRuntime
         return runtime;
     }
 
-    public ProviderProfile GetProvider(string id) => id == "llama.cpp" && Volatile.Read(ref _llamaRouterProfile) is { } llamaRouter
+    public ProviderProfile GetProvider(string id) => id == "llama.cpp" && _llamaDiscovery.Profile is { } llamaRouter
         ? llamaRouter : _providers.TryGetValue(id, out var provider) ? provider :
         _virtualModels?.Models.Any(item => item.Model.Provider == id) == true ? VirtualProvider(id) :
         throw new ArgumentException($"Unknown provider '{id}'. Available providers: {string.Join(", ", Providers.Select(item => item.Id).Order())}.");
@@ -168,22 +146,14 @@ public sealed class ProviderModelRuntime
         _scope = values;
     }
 
-    public async Task<(string Key, bool Authenticated, string Source)> ResolveAuthAsync(string providerId,
+    public Task<(string Key, bool Authenticated, string Source)> ResolveAuthAsync(string providerId,
         bool useRuntimeOverride = false, CancellationToken cancellationToken = default,
-        bool allowOAuthRefresh = true)
-    {
-        var provider = GetProvider(providerId);
-        if (provider.Id == "llama.cpp")
-        {
-            var llamaStored = await _auth.ReadAsync(provider.Id, cancellationToken);
-            return await ResolveAuthCoreAsync(provider, llamaStored, useRuntimeOverride, allowOAuthRefresh, cancellationToken);
-        }
-        if (useRuntimeOverride && !string.IsNullOrWhiteSpace(_runtimeApiKey) &&
-            (_runtimeApiKeyProvider is null || _runtimeApiKeyProvider == provider.Id))
-            return (_runtimeApiKey, true, "command line");
-        var stored = await _auth.ReadAsync(provider.Id, cancellationToken);
-        return await ResolveAuthCoreAsync(provider, stored, useRuntimeOverride, allowOAuthRefresh, cancellationToken);
-    }
+        bool allowOAuthRefresh = true) =>
+        _credentials.ResolveAsync(GetProvider(providerId), useRuntimeOverride, cancellationToken, allowOAuthRefresh);
+
+    internal Task<(string Key, bool Authenticated, string Source, IReadOnlyDictionary<string, string> Environment)> ResolveClassifierAccessAsync(
+        string providerId, CancellationToken cancellationToken) =>
+        _credentials.ResolveClassifierAsync(GetProvider(providerId), cancellationToken);
 
     /// <summary>Resolves the current provider credential for an explicitly configured MCP bearer token.</summary>
     public async Task<string?> GetApiKeyForProviderAsync(string providerId,
@@ -200,79 +170,6 @@ public sealed class ProviderModelRuntime
         return auth.Key;
     }
 
-    internal async Task<(string Key, bool Authenticated, string Source, IReadOnlyDictionary<string, string> Environment)> ResolveClassifierAccessAsync(
-        string providerId, CancellationToken cancellationToken)
-    {
-        var provider = GetProvider(providerId);
-        var stored = await _auth.ReadAsync(provider.Id, cancellationToken);
-        var auth = await ResolveAuthCoreAsync(provider, stored, _runtimeApiKeyProvider == provider.Id, true, cancellationToken);
-        var environment = new Dictionary<string, string>();
-        if (provider.Id == "cloudflare-workers-ai")
-        {
-            var name = "CLOUDFLARE_ACCOUNT_ID";
-            var account = stored?.Type == "api_key" && stored.Env?.TryGetValue(name, out var value) == true
-                ? value : _environment(name);
-            if (account is not null) environment[name] = account;
-        }
-        return (auth.Key, auth.Authenticated, auth.Source, environment);
-    }
-
-    private async Task<(string Key, bool Authenticated, string Source)> ResolveAuthCoreAsync(ProviderProfile provider,
-        StoredCredential? stored, bool useRuntimeOverride, bool allowOAuthRefresh, CancellationToken cancellationToken)
-    {
-        if (provider.Id == "llama.cpp")
-        {
-            if (stored is not null && stored.Type != "api_key")
-                return ("not-configured", false, "unsupported stored credential type");
-            if (ResolveLlamaRouterUrl(stored) is null)
-                return ("not-configured", false, "LLAMA_BASE_URL is not configured");
-            if (useRuntimeOverride && !string.IsNullOrWhiteSpace(_runtimeApiKey) &&
-                (_runtimeApiKeyProvider is null || _runtimeApiKeyProvider == provider.Id))
-                return (_runtimeApiKey, true, "command line");
-            if (stored?.Key is not null) return (stored.Key, true, "stored API key");
-            if (_environment("LLAMA_API_KEY") is { } environmentKey)
-                return (environmentKey, true, "LLAMA_API_KEY");
-            return ("local", true, "local llama.cpp router");
-        }
-        if (useRuntimeOverride && !string.IsNullOrWhiteSpace(_runtimeApiKey) &&
-            (_runtimeApiKeyProvider is null || _runtimeApiKeyProvider == provider.Id))
-            return (_runtimeApiKey, true, "command line");
-        if (stored is not null)
-        {
-            // A stored credential owns the provider: never fall back to ambient credentials.
-            if (stored.Type == "oauth")
-            {
-                if (!provider.OAuthSupported)
-                    return ("not-configured", false, "OAuth unsupported for provider");
-                if (!_oauth.Supports(provider.Id))
-                    return ("not-configured", false, "OAuth adapter unavailable");
-                return await _oauth.ResolveAsync(provider.Id, stored, allowOAuthRefresh, cancellationToken)
-                    .ConfigureAwait(false);
-            }
-            if (!provider.ApiKeySupported)
-                return ("not-configured", false, "API key authentication unsupported for provider");
-            return (stored.Key!, true, "stored API key");
-        }
-        if (!string.IsNullOrWhiteSpace(provider.ConfiguredApiKey)) return (provider.ConfiguredApiKey, true, "models.json");
-        if (provider.Id == "anthropic")
-        {
-            var authToken = _environment("ANTHROPIC_AUTH_TOKEN");
-            if (!string.IsNullOrWhiteSpace(authToken)) return (authToken, true, "ANTHROPIC_AUTH_TOKEN");
-            var oauthToken = _environment("ANTHROPIC_OAUTH_TOKEN");
-            if (!string.IsNullOrWhiteSpace(oauthToken)) return (oauthToken, true, "ANTHROPIC_OAUTH_TOKEN");
-        }
-        if (provider.ApiKeyEnvironment is not null && !string.IsNullOrWhiteSpace(_environment(provider.ApiKeyEnvironment)))
-            return (_environment(provider.ApiKeyEnvironment)!, true, provider.ApiKeyEnvironment);
-        if (provider.Id == "anthropic" && ResolveAnthropicWorkloadIdentity() is not null)
-            return (string.Empty, true, "workload identity federation");
-        if (provider.GoogleVertex?.HasConfiguredApplicationDefaultCredentials == true)
-            return (GoogleVertexProviderOptions.AdcCredentialMarker, true, GoogleVertexProviderOptions.AdcAuthSource);
-        if (provider.Bedrock?.AmbientAuthSource is { } bedrockAuthSource)
-            return (string.Empty, true, bedrockAuthSource);
-        return provider.AuthRequired ? ("not-configured", false, "authentication required") :
-            ("not-needed", true, "not required");
-    }
-
     public async Task<IReadOnlyList<ModelDescriptor>> ListModelsAsync(string? providerId = null,
         CancellationToken cancellationToken = default, bool includeOutOfScope = false)
     {
@@ -284,7 +181,7 @@ public sealed class ProviderModelRuntime
             {
                 continue;
             }
-            var auth = await ResolveAuthAsync(provider.Id, useRuntimeOverride: providerId is not null || _runtimeApiKeyProvider == provider.Id, cancellationToken);
+            var auth = await ResolveAuthAsync(provider.Id, useRuntimeOverride: providerId is not null || _credentials.BoundProvider == provider.Id, cancellationToken);
             var providerModels = provider.Models;
             if (provider.Id == "llama.cpp")
             {
@@ -366,11 +263,11 @@ public sealed class ProviderModelRuntime
         // only after the shared catalog is refreshed or a model is selected for the session.
         if (providerId is null)
         {
-            RecordAvailableModels(result);
+            _available.RecordModels(result);
         }
         else
         {
-            RecordAvailableModels(providerId, result);
+            _available.RecordModels(providerId, result);
         }
         return visible;
     }
@@ -387,8 +284,7 @@ public sealed class ProviderModelRuntime
         CancellationToken cancellationToken = default, bool includeOutOfScope = false)
     {
         var selected = await ResolveSelectionAsync(providerId, modelReference, cancellationToken, includeOutOfScope);
-        if (!string.IsNullOrWhiteSpace(_runtimeApiKey))
-            Interlocked.CompareExchange(ref _runtimeApiKeyProvider, selected.Provider.Id, null);
+        _credentials.BindRuntimeCredential(selected.Provider.Id);
         return selected;
     }
 
@@ -422,7 +318,7 @@ public sealed class ProviderModelRuntime
                 Available = virtualAuth.Authenticated,
                 UnavailableReason = virtualAuth.Authenticated ? null : virtualAuth.Source
             };
-            RecordAvailableProvider(explicitProvider.Id, virtualDescriptor.Available);
+            _available.RecordProvider(explicitProvider.Id, virtualDescriptor.Available);
             return new ModelSelection(explicitProvider, virtualDescriptor, virtualAuth.Key, virtualAuth.Authenticated, virtualAuth.Source);
         }
         // An explicitly configured exact ID is usable without /models: many compatible servers
@@ -447,8 +343,8 @@ public sealed class ProviderModelRuntime
             Available = auth.Authenticated && model.Available,
             UnavailableReason = auth.Authenticated ? model.UnavailableReason : auth.Source
         };
-        RecordAvailableProvider(explicitProvider.Id, model.Available);
-        if (model.Available) RecordAvailableModel(model);
+        _available.RecordProvider(explicitProvider.Id, model.Available);
+        if (model.Available) _available.RecordModel(model);
         Func<CancellationToken, Task<(string Access, string AccountId)>>? oauthCredentialResolver = null;
         if (auth.Source.StartsWith("stored OAuth", StringComparison.Ordinal) &&
             explicitProvider.Id is "openai-codex" or "radius")
@@ -463,56 +359,9 @@ public sealed class ProviderModelRuntime
             AnthropicIsOAuthToken = explicitProvider.Id == "anthropic" &&
                 (auth.Source == "ANTHROPIC_OAUTH_TOKEN" || auth.Key.Contains("sk-ant-oat", StringComparison.Ordinal)),
             AnthropicWorkloadIdentity = auth.Source == "workload identity federation"
-                ? ResolveAnthropicWorkloadIdentity() : null
+                ? _credentials.ResolveAnthropicWorkloadIdentity() : null
         };
     }
-
-    private void RecordAvailableProvider(string providerId, bool available)
-    {
-        lock (_availableProviderGate) _availableProviderSnapshot[providerId] = available;
-    }
-
-    private void RecordAvailableModels(IEnumerable<ModelDescriptor> models)
-    {
-        lock (_availableProviderGate)
-            _availableModelSnapshot = models.Where(model => model.Available)
-                .GroupBy(ModelKey, StringComparer.Ordinal).Select(group => group.Last()).ToArray();
-    }
-
-    private void RecordAvailableModels(string providerId, IEnumerable<ModelDescriptor> models)
-    {
-        lock (_availableProviderGate)
-        {
-            var retained = _availableModelSnapshot.Where(model => !string.Equals(model.Provider, providerId,
-                StringComparison.Ordinal));
-            _availableModelSnapshot = retained.Concat(models.Where(model => model.Available))
-                .GroupBy(ModelKey, StringComparer.Ordinal).Select(group => group.Last()).ToArray();
-        }
-    }
-
-    private void RecordAvailableModel(ModelDescriptor model)
-    {
-        lock (_availableProviderGate)
-            _availableModelSnapshot = _availableModelSnapshot.Where(existing =>
-                    !string.Equals(ModelKey(existing), ModelKey(model), StringComparison.Ordinal))
-                .Append(model).ToArray();
-    }
-
-    private static string ModelKey(ModelDescriptor model) => $"{model.Provider}\0{model.Id}";
-
-    private AnthropicWorkloadIdentityOptions? ResolveAnthropicWorkloadIdentity()
-    {
-        var ruleId = _environment("ANTHROPIC_FEDERATION_RULE_ID");
-        var organizationId = _environment("ANTHROPIC_ORGANIZATION_ID");
-        var tokenFile = _environment("ANTHROPIC_IDENTITY_TOKEN_FILE");
-        if (string.IsNullOrWhiteSpace(ruleId) || string.IsNullOrWhiteSpace(organizationId) ||
-            string.IsNullOrWhiteSpace(tokenFile)) return null;
-        return new AnthropicWorkloadIdentityOptions(ruleId, organizationId, tokenFile,
-            NullIfWhiteSpace(_environment("ANTHROPIC_SERVICE_ACCOUNT_ID")),
-            NullIfWhiteSpace(_environment("ANTHROPIC_WORKSPACE_ID")));
-    }
-
-    private static string? NullIfWhiteSpace(string? value) => string.IsNullOrWhiteSpace(value) ? null : value;
 
     public Task LoginApiKeyAsync(string provider, string secret, CancellationToken cancellationToken = default)
     {
@@ -536,33 +385,14 @@ public sealed class ProviderModelRuntime
             .ConfigureAwait(false);
         if (!auth.Authenticated) throw new InvalidOperationException(auth.Source);
         var stored = await _auth.ReadAsync("llama.cpp", cancellationToken).ConfigureAwait(false);
-        var serverUrl = ResolveLlamaRouterUrl(stored);
+        var serverUrl = _credentials.ResolveRouterUrl(stored);
         if (serverUrl is null) throw new InvalidOperationException("LLAMA_BASE_URL is not configured");
         return new LlamaRouterClient(_http, serverUrl, auth.Key);
     }
 
-    internal async Task<IReadOnlyList<LlamaRouterModelInfo>> RefreshLlamaRouterCatalogAsync(
-        LlamaRouterClient client, CancellationToken cancellationToken)
-    {
-        await _llamaRouterRefresh.WaitAsync(cancellationToken).ConfigureAwait(false);
-        try
-        {
-            var previous = await _llamaRouterCache.ReadAsync(cancellationToken).ConfigureAwait(false);
-            var catalog = await LlamaRouterCatalog.RefreshAsync(client, previous, cancellationToken)
-                .ConfigureAwait(false);
-            await _llamaRouterCache.WriteAsync(catalog.Cache, cancellationToken).ConfigureAwait(false);
-            var profile = (_llamaRouterProfile ?? _providers["llama.cpp"]) with
-            {
-                Endpoint = new Uri(client.ServerUrl.AbsoluteUri.TrimEnd('/') + "/v1"),
-                Models = catalog.Models,
-                Classifiers = catalog.Classifiers
-            };
-            Volatile.Write(ref _llamaRouterProfile, profile);
-            RecordAvailableModels("llama.cpp", catalog.Models);
-            return catalog.Cache.Models;
-        }
-        finally { _llamaRouterRefresh.Release(); }
-    }
+    internal Task<IReadOnlyList<LlamaRouterModelInfo>> RefreshLlamaRouterCatalogAsync(
+        LlamaRouterClient client, CancellationToken cancellationToken) =>
+        _llamaDiscovery.RefreshAsync(client, cancellationToken);
 
     public Task LoginOAuthAsync(string provider, IProviderOAuthInteraction interaction,
         CancellationToken cancellationToken = default)
@@ -604,67 +434,14 @@ public sealed class ProviderModelRuntime
     private IReadOnlyList<ModelDescriptor> VirtualModelsFor(string provider) =>
         _virtualModels?.List(provider) ?? [];
 
-    private Uri? ResolveLlamaRouterUrl(StoredCredential? stored)
-    {
-        var value = stored?.Env?.TryGetValue("LLAMA_BASE_URL", out var storedUrl) == true &&
-                    !string.IsNullOrWhiteSpace(storedUrl)
-            ? storedUrl : _environment("LLAMA_BASE_URL");
-        return string.IsNullOrWhiteSpace(value) ? null : LlamaRouterClient.NormalizeServerUrl(value);
-    }
-
     private async Task AddLlamaRouterModelsAsync(List<ModelDescriptor> result,
         (string Key, bool Authenticated, string Source) auth, CancellationToken cancellationToken)
     {
         var stored = await _auth.ReadAsync("llama.cpp", cancellationToken).ConfigureAwait(false);
-        var serverUrl = ResolveLlamaRouterUrl(stored);
+        var serverUrl = _credentials.ResolveRouterUrl(stored);
         if (serverUrl is null || !auth.Authenticated) return;
 
-        await _llamaRouterRefresh.WaitAsync(cancellationToken).ConfigureAwait(false);
-        try
-        {
-            var previous = await _llamaRouterCache.ReadAsync(cancellationToken).ConfigureAwait(false);
-            LlamaRouterCatalogResult catalog;
-            if (_offline)
-            {
-                catalog = LlamaRouterCatalog.Restore(previous, serverUrl);
-            }
-            else
-            {
-                try
-                {
-                    var client = new LlamaRouterClient(_http, serverUrl, auth.Key);
-                    catalog = await LlamaRouterCatalog.RefreshAsync(client, previous, cancellationToken).ConfigureAwait(false);
-                    await _llamaRouterCache.WriteAsync(catalog.Cache, cancellationToken).ConfigureAwait(false);
-                }
-                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
-                catch (Exception error) when (error is HttpRequestException or TaskCanceledException or InvalidDataException or JsonException or ArgumentException)
-                {
-                    catalog = LlamaRouterCatalog.Restore(previous, serverUrl);
-                    if (catalog.Models.Count == 0)
-                    {
-                        var safe = SecretRedactor.Redact(error.Message, auth.Key, _runtimeApiKey);
-                        result.AddRange(_llamaRouterProfile?.Models.Select(model => model with
-                        {
-                            Available = false,
-                            UnavailableReason = "catalog unavailable: " + safe,
-                            Status = "catalog unavailable"
-                        }) ?? []);
-                        return;
-                    }
-                }
-            }
-
-            var inferenceUrl = new Uri(serverUrl.AbsoluteUri.TrimEnd('/') + "/v1");
-            var profile = (_llamaRouterProfile ?? _providers["llama.cpp"]) with
-            {
-                Endpoint = inferenceUrl,
-                Models = catalog.Models,
-                Classifiers = catalog.Classifiers
-            };
-            Volatile.Write(ref _llamaRouterProfile, profile);
-            result.AddRange(catalog.Models);
-        }
-        finally { _llamaRouterRefresh.Release(); }
+        await _llamaDiscovery.AddModelsAsync(result, serverUrl, auth, _offline, _runtimeApiKey, cancellationToken);
     }
 
     private static ProviderProfile VirtualProvider(string provider) => new(provider, provider,

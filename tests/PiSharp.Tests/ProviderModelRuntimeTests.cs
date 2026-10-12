@@ -151,6 +151,33 @@ public sealed class ProviderModelRuntimeTests
     }
 
     [Fact]
+    public async Task CommandLineCredentialBindsToFirstSelectedProviderAndClassifierAccess()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-provider-binding-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            using var http = new HttpClient(new ModelHandler());
+            var runtime = await ProviderModelRuntime.CreateAsync(root, false, _ => null, http,
+                runtimeApiKey: "fixture-command-line-key", offline: true);
+            var selected = await runtime.ResolveAsync("openai", "gpt-4o-mini");
+            Assert.Equal("fixture-command-line-key", selected.ApiKey);
+            Assert.True(selected.Authenticated);
+
+            var matching = await runtime.ResolveClassifierAccessAsync("openai", CancellationToken.None);
+            Assert.Equal("fixture-command-line-key", matching.Key);
+            Assert.True(matching.Authenticated);
+            var other = await runtime.ResolveAuthAsync("anthropic", useRuntimeOverride: true);
+            Assert.False(other.Authenticated);
+            Assert.NotEqual("fixture-command-line-key", other.Key);
+            var otherClassifier = await runtime.ResolveClassifierAccessAsync("anthropic", CancellationToken.None);
+            Assert.False(otherClassifier.Authenticated);
+            Assert.NotEqual("fixture-command-line-key", otherClassifier.Key);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [Fact]
     public async Task ProviderCredentialResolverUsesStoredLoginAndExcludesCommandLineOverride()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-provider-token-" + Guid.NewGuid().ToString("N"));

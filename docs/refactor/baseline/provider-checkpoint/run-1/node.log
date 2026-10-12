@@ -1,0 +1,154 @@
+TAP version 13
+# Subtest: keeps characters, padding and wide continuation cells
+ok 1 - keeps characters, padding and wide continuation cells
+  ---
+  duration_ms: 13.894392
+  type: 'test'
+  ...
+# Subtest: records foreground, background and every text attribute
+ok 2 - records foreground, background and every text attribute
+  ---
+  duration_ms: 2.682631
+  type: 'test'
+  ...
+# Subtest: preserves cursor visibility, position, style and blink
+ok 3 - preserves cursor visibility, position, style and blink
+  ---
+  duration_ms: 1.808427
+  type: 'test'
+  ...
+# Subtest: keeps normal and alternate screen contents through mode transitions
+ok 4 - keeps normal and alternate screen contents through mode transitions
+  ---
+  duration_ms: 4.559531
+  type: 'test'
+  ...
+# Subtest: records input, focus, mouse, wrap and synchronized output modes
+ok 5 - records input, focus, mouse, wrap and synchronized output modes
+  ---
+  duration_ms: 3.436709
+  type: 'test'
+  ...
+# Subtest: answers cursor and terminal color queries with controlled values
+ok 6 - answers cursor and terminal color queries with controlled values
+  ---
+  duration_ms: 3.918803
+  type: 'test'
+  ...
+# Subtest: captures deterministic intermediate frames and resize
+ok 7 - captures deterministic intermediate frames and resize
+  ---
+  duration_ms: 4.778451
+  type: 'test'
+  ...
+# Subtest: captures every completed synchronized render in stream order
+ok 8 - captures every completed synchronized render in stream order
+  ---
+  duration_ms: 2.85156
+  type: 'test'
+  ...
+# Subtest: retains wrapping, truncation, erasure and scrollback
+ok 9 - retains wrapping, truncation, erasure and scrollback
+  ---
+  duration_ms: 3.495759
+  type: 'test'
+  ...
+# Subtest: preserves extended underline styles and colors
+ok 10 - preserves extended underline styles and colors
+  ---
+  duration_ms: 3.007584
+  type: 'test'
+  ...
+# Subtest: retains hyperlinks without depending on allocated IDs
+ok 11 - retains hyperlinks without depending on allocated IDs
+  ---
+  duration_ms: 2.459025
+  type: 'test'
+  ...
+# Subtest: a UTF-8 character split across PTY reads remains one character
+ok 12 - a UTF-8 character split across PTY reads remains one character
+  ---
+  duration_ms: 3.303698
+  type: 'test'
+  ...
+# Subtest: does not normalize space
+ok 13 - does not normalize space
+  ---
+  duration_ms: 2.830809
+  type: 'test'
+  ...
+# Subtest: does not normalize border
+ok 14 - does not normalize border
+  ---
+  duration_ms: 3.173519
+  type: 'test'
+  ...
+# Subtest: does not normalize wrapping
+ok 15 - does not normalize wrapping
+  ---
+  duration_ms: 2.415316
+  type: 'test'
+  ...
+# Subtest: does not normalize foreground
+ok 16 - does not normalize foreground
+  ---
+  duration_ms: 3.039272
+  type: 'test'
+  ...
+# Subtest: does not normalize background
+ok 17 - does not normalize background
+  ---
+  duration_ms: 4.245416
+  type: 'test'
+  ...
+# Subtest: does not normalize bold
+ok 18 - does not normalize bold
+  ---
+  duration_ms: 2.83639
+  type: 'test'
+  ...
+# Subtest: does not normalize cursor
+ok 19 - does not normalize cursor
+  ---
+  duration_ms: 6.758907
+  type: 'test'
+  ...
+# Subtest: does not normalize visibility
+ok 20 - does not normalize visibility
+  ---
+  duration_ms: 6.107848
+  type: 'test'
+  ...
+# Subtest: does not normalize mode
+ok 21 - does not normalize mode
+  ---
+  duration_ms: 4.577768
+  type: 'test'
+  ...
+# Subtest: does not normalize screen
+ok 22 - does not normalize screen
+  ---
+  duration_ms: 3.903693
+  type: 'test'
+  ...
+# Subtest: records Kitty keyboard push, modification, query and restoration
+ok 23 - records Kitty keyboard push, modification, query and restoration
+  ---
+  duration_ms: 3.672289
+  type: 'test'
+  ...
+# Subtest: answers palette queries and records changed default and palette colors
+ok 24 - answers palette queries and records changed default and palette colors
+  ---
+  duration_ms: 1.187521
+  type: 'test'
+  ...
+1..24
+# tests 24
+# suites 0
+# pass 24
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 158.096291

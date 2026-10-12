@@ -1,0 +1,43 @@
+{
+  "versions": {
+    "dotnet": "10.0.112",
+    "node": "v24.21.0",
+    "python": "Python 3.12.3"
+  },
+  "environment": {
+    "TERM": "xterm-256color",
+    "DOTNET_PROCESSOR_COUNT": "2",
+    "UV_THREADPOOL_SIZE": "2",
+    "OPENBLAS_NUM_THREADS": "2",
+    "OMP_NUM_THREADS": "2",
+    "MKL_NUM_THREADS": "2",
+    "NUGET_HTTP_CACHE_PATH": "/tmp/pisharp-nuget-http"
+  },
+  "cwd": "/home/philip/Downloads/pisharp-bootstrap/pisharp",
+  "pi": "/tmp/pisharp-frozen-pi1",
+  "pisharpHead": "41db1551b32b5cd878227a5b81453f7d41f373d8",
+  "workingSource": {
+    "docs/capabilities/provider-selection.md": "48c7a609a742a8b7e91fb518fb5b20d4c31a9a90dd71221a589f2aebfba405f7",
+    "docs/refactor/PROGRESS.md": "a6dd82afef2621194ee13e27eac7e2219d7de4f7b7d8c24a03099816ffa159e0",
+    "src/PiSharp.Cli/ProviderModelRuntime.cs": "940295cdf68940e4b5b664884ae8772feeb6dc9429ab128c2ab714d371df7f39",
+    "src/PiSharp.Cli/Providers/AvailableModelSnapshot.cs": "1f2a0661be892a22937bfa368e70e6cae8563af6e00576728fa47938d099bc60",
+    "src/PiSharp.Cli/Providers/LlamaRouterDiscovery.cs": "0b742342491fa6d87cfa4c2b42a1f51e992146020fb3ff586570400f970b7462",
+    "src/PiSharp.Cli/Providers/ProviderCredentialResolver.cs": "1dc3030e95133edbdec709903c22fffa0c5fea27183bba6c44e9f56358a05678",
+    "tests/PiSharp.Tests/ProviderModelRuntimeTests.cs": "849266bdf22f1de6d7d0af746c2bf7388041201039ae6b2b75ba503a9893d923"
+  },
+  "reference": {
+    "pisharp": "064bcc7b90344cffde595f9aca1c5b850cefe567",
+    "pi": "ee409a85f6ad92bf8c6ab8ed735c6cd24f2e749e",
+    "authority": "docs/parity/execution-ledger.json: source_note",
+    "supporting": [
+      "TODO.md:5",
+      "docs/parity/fixtures/project-trust-extension-ui-current-pi-2026-10-12/current-ee409a85-387ae5b3/README.md"
+    ],
+    "historicalPins": "Historical baseline and older capability-specific pins describe their original evidence, not a contradictory current source reference.",
+    "branch": "refactor/architecture-maintainability",
+    "latestMain": "064bcc7b90344cffde595f9aca1c5b850cefe567",
+    "mainDivergence": "none",
+    "testPdfSha256": "2ffe89f6c60efbb5b47bc0dc541ef0f27a1911591e7b92a42dcadb713a7dfb1b",
+    "piPreparation": "Existing /tmp/pisharp-current-pi source checkout initially verified at the frozen SHA. Terminal uses Pi source-resolver.ts, which explicitly prevents fallback to stale workspace dist. Supplemental capture installs dependencies from the committed Pi npm lockfile and rebuilds all Pi packages offline at this SHA, then reruns every process differential twice before freezing its results. Tracked Pi source changes are rejected."
+  }
+}
