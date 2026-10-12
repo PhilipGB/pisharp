@@ -4,10 +4,13 @@ internal sealed record TerminalStartupDetail(string Name, IReadOnlyList<string> 
     IReadOnlyList<string>? ExpandedItems = null, bool ShowWhenQuiet = false,
     bool ShowEachItemWhenQuiet = false,
     IReadOnlyList<TerminalStartupDiagnosticLine>? DiagnosticLines = null,
-    string HeaderStyle = "mdHeading");
+    string HeaderStyle = "mdHeading",
+    IReadOnlyList<TerminalStartupPresentationLine>? ExpandedLines = null);
 
 internal sealed record TerminalStartupDiagnosticLine(string Text, int Indent, string Style,
     string? Marker = null, string? MarkerStyle = null);
+
+internal sealed record TerminalStartupPresentationLine(string Text, int Indent, string Style);
 
 internal sealed class TerminalStartupPresentation(QuietStartupMode? quietStartup, bool verbose,
     Func<string, string?>? getDisplayKeys = null)
@@ -58,7 +61,8 @@ internal sealed class TerminalStartupPresentation(QuietStartupMode? quietStartup
                 var sourceItems = expanded ? detail.ExpandedItems ?? detail.Items : detail.Items;
                 var items = sourceItems.Select(TerminalTextLayout.Sanitize)
                     .Select(item => item.Trim()).Where(item => item.Length > 0).ToArray();
-                if (items.Length == 0 && detail.DiagnosticLines is not { Count: > 0 }) continue;
+                if (items.Length == 0 && detail.DiagnosticLines is not { Count: > 0 } &&
+                    !(expanded && detail.ExpandedLines is { Count: > 0 })) continue;
                 if (detail.DiagnosticLines is { } diagnosticLines)
                 {
                     rows.Add(theme.Style(detail.HeaderStyle, $"[{TerminalTextLayout.Sanitize(detail.Name)}]"));
@@ -67,10 +71,14 @@ internal sealed class TerminalStartupPresentation(QuietStartupMode? quietStartup
                     continue;
                 }
 
-                rows.Add(" " + theme.Style(detail.HeaderStyle, $"[{TerminalTextLayout.Sanitize(detail.Name)}]"));
-                rows.AddRange(expanded || detail.ShowEachItemWhenQuiet
-                    ? items.Select(item => " " + theme.Style("dim", $"  {item}"))
-                    : [" " + theme.Style("dim", $"  {string.Join(", ", items)}")]);
+                rows.Add(theme.Style(detail.HeaderStyle, $"[{TerminalTextLayout.Sanitize(detail.Name)}]"));
+                if (expanded && detail.ExpandedLines is { } expandedLines)
+                {
+                    rows.AddRange(expandedLines.Select(line => RenderPresentationLine(theme, line)));
+                }
+                else rows.AddRange(expanded || detail.ShowEachItemWhenQuiet
+                    ? items.Select(item => theme.Style("dim", $"  {item}"))
+                    : [theme.Style("dim", $"  {string.Join(", ", items)}")]);
                 rows.Add("");
             }
         }
@@ -98,6 +106,10 @@ internal sealed class TerminalStartupPresentation(QuietStartupMode? quietStartup
         var marker = theme.Style(line.MarkerStyle ?? line.Style, TerminalTextLayout.Sanitize(line.Marker));
         return theme.Style(line.Style, indentation) + marker + " " + text;
     }
+
+    private static string RenderPresentationLine(TerminalTheme theme, TerminalStartupPresentationLine line) =>
+        " " + theme.Style(line.Style,
+            new string(' ', Math.Max(0, line.Indent)) + TerminalTextLayout.Sanitize(line.Text));
 
     private IEnumerable<string> ExpandedHelp(TerminalTheme theme)
     {

@@ -331,6 +331,80 @@ public sealed class ResourceCatalogTests
     }
 
     [Fact]
+    public async Task ExpandedStartupResourceListsGroupPathsByTheirPiScope()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-startup-scopes-" + Guid.NewGuid().ToString("N"));
+        var project = Path.Combine(root, "project");
+        var agent = Path.Combine(root, "agent");
+        var projectSkill = Path.Combine(project, ".pi", "skills", "project-skill", "SKILL.md");
+        var userSkill = Path.Combine(agent, "skills", "user-skill", "SKILL.md");
+        var projectPrompt = Path.Combine(project, ".pi", "prompts", "project-prompt.md");
+        var userPrompt = Path.Combine(agent, "prompts", "user-prompt.md");
+        try
+        {
+            async Task WriteAsync(string path, string content)
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+                await File.WriteAllTextAsync(path, content);
+            }
+
+            await WriteAsync(projectSkill,
+                "---\nname: project-skill\ndescription: project\n---\nProject skill.");
+            await WriteAsync(userSkill,
+                "---\nname: user-skill\ndescription: user\n---\nUser skill.");
+            await WriteAsync(projectPrompt, "Project prompt.");
+            await WriteAsync(userPrompt, "User prompt.");
+
+            var resources = await ResourceCatalog.LoadAsync(project, agent, trusted: true,
+                discoverSkills: false, discoverPrompts: false,
+                userSkills: [Path.Combine(agent, "skills")],
+                projectSkills: [Path.Combine(project, ".pi", "skills")],
+                userPrompts: [Path.Combine(agent, "prompts")],
+                projectPrompts: [Path.Combine(project, ".pi", "prompts")]);
+            using var extensions = ExtensionCatalog.Load(project, agent, projectTrusted: true,
+                discover: false, builtins: []);
+            var details = TerminalStartupDetails.Build([], resources, extensions, project);
+            var presentation = new TerminalStartupPresentation(null, verbose: false);
+            var rendered = presentation.BuildDetails(TerminalTheme.Default, 120, details,
+                projectTrustNotice: null, expanded: true);
+            var lines = rendered.Split('\n').Select(StripAnsi).ToArray();
+
+            Assert.Contains("[Skills]", lines);
+            Assert.Contains("[Prompts]", lines);
+            Assert.Contains("  project", lines);
+            Assert.Contains("  user", lines);
+            Assert.Contains("    " + projectSkill, lines);
+            Assert.Contains("    " + userSkill, lines);
+            Assert.Contains("    /project-prompt", lines);
+            Assert.Contains("    /user-prompt", lines);
+
+            var compact = presentation.BuildDetails(TerminalTheme.Default, 120, details,
+                projectTrustNotice: null, expanded: false).Split('\n').Select(StripAnsi).ToArray();
+            Assert.Contains("[Skills]", compact);
+            Assert.Contains("  project-skill, user-skill", compact);
+            Assert.Contains("  /project-prompt, /user-prompt", compact);
+        }
+        finally
+        {
+            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void StartupPathsKeepTheSeparatorAfterHomeAbbreviation()
+    {
+        var home = Path.Combine(Path.GetTempPath(), "pisharp-home");
+        var path = Path.Combine(home, ".agents", "skills", "startup-skill", "SKILL.md");
+
+        Assert.Equal("~" + Path.DirectorySeparatorChar + ".agents" + Path.DirectorySeparatorChar +
+            "skills" + Path.DirectorySeparatorChar + "startup-skill" + Path.DirectorySeparatorChar + "SKILL.md",
+            TerminalStartupDetails.AbbreviateHome(path, home));
+    }
+
+    private static string StripAnsi(string value) =>
+        System.Text.RegularExpressions.Regex.Replace(value, "\\u001b\\[[0-?]*[ -/]*[@-~]", "");
+
+    [Fact]
     public async Task SkillPromptPreservesPiProjectUserAndTemporaryPrecedence()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-skill-order-" + Guid.NewGuid().ToString("N"));
