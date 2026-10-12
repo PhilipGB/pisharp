@@ -1,0 +1,15 @@
+{
+  "id": "radius-mcp-differential",
+  "command": [
+    "python3",
+    "/home/philip/Downloads/pisharp-bootstrap/pisharp/tools/parity/radius-mcp-differential.py",
+    "--pi",
+    "/tmp/pisharp-frozen-pi1",
+    "--output",
+    "/tmp/pisharp-agent-parity/radius-mcp-differential.json"
+  ],
+  "cwd": "/home/philip/Downloads/pisharp-bootstrap/pisharp",
+  "exitCode": 0,
+  "seconds": 8.284218549728394,
+  "logger": "stdout+stderr text"
+}

@@ -35,7 +35,11 @@
     },
     {
       "id": "H07",
-      "disposition": "OPEN"
+      "disposition": "RESOLVED",
+      "resolution": "Compaction summarizer request lifecycle and configured tool catalog/session loadouts have concrete owners; PiAgent owns direct MAF execution, active run state and durable executable binding. Public option-rich constructor preserved for compatibility; no options bag or new interfaces.",
+      "evidence": "agent-slice/broad-dotnet/preservation-comparison.json",
+      "parityEvidence": "agent-slice/parity-preservation-comparison.json",
+      "capabilityDocumentation": "../../capabilities/agent-execution.md"
     },
     {
       "id": "H08",

@@ -1,0 +1,15 @@
+{
+  "id": "codemode-classifier-differential",
+  "command": [
+    "python3",
+    "/home/philip/Downloads/pisharp-bootstrap/pisharp/tools/parity/codemode-classifier-differential.py",
+    "--pi",
+    "/tmp/pisharp-frozen-pi1",
+    "--output",
+    "/tmp/pisharp-agent-parity/codemode-classifier-differential.json"
+  ],
+  "cwd": "/home/philip/Downloads/pisharp-bootstrap/pisharp",
+  "exitCode": 1,
+  "seconds": 4.7748377323150635,
+  "logger": "stdout+stderr text"
+}

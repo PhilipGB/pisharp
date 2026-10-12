@@ -408,6 +408,21 @@ public sealed class CompactionTests
     }
 
     [Fact]
+    public async Task SummaryRejectsOversizedFocusBeforeProviderAndEmptyProviderOutput()
+    {
+        var client = new SummaryClient { SummaryResponses = [" "] };
+        var agent = new PiAgent(client, new CodingTools(Path.GetTempPath()));
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            agent.SummarizeAsync([new ChatMessage(ChatRole.User, "context")], new string('F', 4097)));
+        Assert.Empty(client.SummaryRequests);
+
+        var failure = await Assert.ThrowsAsync<InvalidDataException>(() =>
+            agent.SummarizeAsync([new ChatMessage(ChatRole.User, "context")], null));
+        Assert.Equal("Summarizer returned an empty response.", failure.Message);
+        Assert.Single(client.SummaryRequests);
+    }
+
+    [Fact]
     public async Task LongSummaryTranscriptRetainsLatestMessageWithinBound()
     {
         var client = new ToolLoopBudgetClient();
