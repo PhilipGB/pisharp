@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "plan_received": true,
-  "source_note": "Post-refactor main 22eeb2a53dbaa94e41f78a40a997e3b3156bb3ed; audited configured Pi 3daa20280f6a7c7cbe0935680c9a38fdc3863005. All 50 commits classified: {'OUT_OF_SCOPE': 19, 'MATCHED': 13, 'NO_BEHAVIOR_CHANGE': 13, 'NEEDS_WORK': 5}. Dedicated parity/current-pi-completion branch; all 194 required capabilities retained. Resolve current_pi_refresh before resuming Resources / Instructions / Trust. Architecture refactor is merged; bounded final regression review and full source audit remain open.",
+  "source_note": "Post-refactor main 22eeb2a53dbaa94e41f78a40a997e3b3156bb3ed; audited configured Pi 3daa20280f6a7c7cbe0935680c9a38fdc3863005. All 50 commits classified: {'OUT_OF_SCOPE': 19, 'MATCHED': 14, 'NO_BEHAVIOR_CHANGE': 13, 'NEEDS_WORK': 4}. Dedicated parity/current-pi-completion branch; all 194 required capabilities retained. Resolve current_pi_refresh before resuming Resources / Instructions / Trust. Architecture refactor is merged; bounded final regression review and full source audit remain open.",
   "baseline": "earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035",
   "required_ids": [
     "feature-agent-multi-turn-and-streaming",
@@ -3685,7 +3685,8 @@
         "Current Pi refactor 24382bed at c661bc574f9e9713cc2af567fc1ac00621377a0c declares tool reaches and namespace aliases and wraps MCP structured output in a CallToolResult schema. Pi tests pass 85/85 across coding-agent MCP/auth suites and 170/170 across Codemode package suites. PiSharp still filters Codemode search by exact namespace name, and CodemodeSandbox returns only StructuredContent for schema-bearing tools, dropping MCP content and isError from the nested value.",
         "Current Pi 77332f7a output test formats 100,000 empty text items within its 5-second bound. PiSharp currently limits a script to 256 output calls and joins all text with unconditional newlines; this remains an explicit current-Pi gap to resolve next. MCP nested success/error values, alias discovery, and schemas match in real stdio/QuickJS tests; see docs/parity/fixtures/mcp-codemode-reach-result-current-pi-2026-10-12.md.",
         "Current-Pi refresh 2026-10-13 source audit maps unresolved new deltas 014873d7, b6d505cd, 3daa2028 to this existing requirement; see docs/parity/fixtures/current-pi-refresh-2026-10-13/upstream-audit.json. This adds no verified status or behavior claim.",
-        "Misplaced // @options: lines now fail before worker launch with the exact line-number error, including blank/indented/CRLF/repeated directives. The source parser preserves valid optionsx/string/standalone-CR controls. Eight real current-Pi source comparisons match; 20 focused source tests pass (four fail-first cases plus controls). See docs/parity/fixtures/current-pi-refresh-2026-10-13/codemode-source.json, tools/parity/codemode-source-differential.py, tests/PiSharp.Tests/Runtime/Codemode/CodemodeSourceTests.cs. This closes the named current-source delta, not the broader capability."
+        "Misplaced // @options: lines now fail before worker launch with the exact line-number error, including blank/indented/CRLF/repeated directives. The source parser preserves valid optionsx/string/standalone-CR controls. Eight real current-Pi source comparisons match; 20 focused source tests pass (four fail-first cases plus controls). See docs/parity/fixtures/current-pi-refresh-2026-10-13/codemode-source.json, tools/parity/codemode-source-differential.py, tests/PiSharp.Tests/Runtime/Codemode/CodemodeSourceTests.cs. This closes the named current-source delta, not the broader capability.",
+        "Codemode abort/timeout and session cancellation settle without waiting for host cleanup or process exit, preserve partial text/images and discard failed store writes. Two shared process slots remain occupied until actual exit and failed starts return their reservation. Public AIFunction marshaling preserves the canceled error contract. Original host-hang checks failed at about 2.02 seconds with lost output; a further builtin test exposed canceled-token serialization. Ten new tests, including a six-call concurrent burst and non-interruptible guest work, pass. Six real Pi/Node and native PiSharp process comparisons match lifecycle/admission predicates; upstream lifetime/admission tests pass 16 with three explicit unavailable Bun cases. Full suite 1494/1494, zero skips and zero-warning build. Broader output formatting, options/memory ceilings and nested-call details remain open. See docs/parity/fixtures/current-pi-refresh-2026-10-13/codemode-lifetime.json, tools/parity/codemode-lifetime-differential.py, tests/PiSharp.Tests/Runtime/Codemode/CodemodeWorkerLifecycleTests.cs. This closes the named current-source delta, not the broader capability."
       ],
       "dependencies": [
         "tool-exposure-loadout",
@@ -5349,9 +5350,9 @@
     "commit_count": 50,
     "classifications": {
       "OUT_OF_SCOPE": 19,
-      "MATCHED": 13,
+      "MATCHED": 14,
       "NO_BEHAVIOR_CHANGE": 13,
-      "NEEDS_WORK": 5
+      "NEEDS_WORK": 4
     },
     "audit_complete": true,
     "pin_advanced": true,

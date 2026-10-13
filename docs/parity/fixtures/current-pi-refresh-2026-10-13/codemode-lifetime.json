@@ -1,0 +1,123 @@
+{
+  "piSha": "3daa20280f6a7c7cbe0935680c9a38fdc3863005",
+  "pi": [
+    {
+      "id": "abort",
+      "failed": true,
+      "partial": true,
+      "settledPromptly": true,
+      "hostCanceled": true,
+      "storeCommitted": false
+    },
+    {
+      "id": "timeout",
+      "failed": true,
+      "partial": true,
+      "settledPromptly": true,
+      "hostCanceled": true,
+      "storeCommitted": false
+    },
+    {
+      "id": "busy-abort",
+      "failed": true,
+      "settledPromptly": true,
+      "exitedPromptly": true
+    },
+    {
+      "id": "busy-timeout",
+      "failed": true,
+      "settledPromptly": true,
+      "exitedPromptly": true
+    },
+    {
+      "id": "shared-admission",
+      "denied": true,
+      "cancellationWins": true,
+      "workers": 2
+    },
+    {
+      "id": "exit-accounting",
+      "heldUntilExit": true,
+      "replacement": true
+    }
+  ],
+  "pisharp": [
+    {
+      "id": "abort",
+      "failed": true,
+      "partial": true,
+      "settledPromptly": true,
+      "hostCanceled": true,
+      "storeCommitted": false
+    },
+    {
+      "id": "timeout",
+      "failed": true,
+      "partial": true,
+      "settledPromptly": true,
+      "hostCanceled": true,
+      "storeCommitted": false
+    },
+    {
+      "id": "busy-abort",
+      "failed": true,
+      "settledPromptly": true,
+      "exitedPromptly": true
+    },
+    {
+      "id": "busy-timeout",
+      "failed": true,
+      "settledPromptly": true,
+      "exitedPromptly": true
+    },
+    {
+      "id": "shared-admission",
+      "denied": true,
+      "cancellationWins": true,
+      "workers": 2
+    },
+    {
+      "id": "exit-accounting",
+      "heldUntilExit": true,
+      "replacement": true
+    }
+  ],
+  "match": true,
+  "comparison": "Semantic match: real abort/timeout results settle within 1 second after host entry, preserve text, cancel the host token and discard writes; non-interruptible string searches settle within 1 second of abort/the 2-second deadline and exit within 1 second of settlement; two concurrent sessions share capacity, already-aborted admission wins, and held actual-exit signals release replacement capacity.",
+  "limitations": "This probe compares lifecycle predicates, not output envelopes or exact elapsed times. Pi Worker.terminate and the C# exit lease use held exit signals only in the exit-accounting case; abort/timeout and shared-admission use real workers/processes. The .NET execution is one-shot; session/run close cancels its invocation token. Bun process behavior is unavailable. Existing Codemode output formatting, other options/deadlines, memory ceilings, nested-call details and model globals remain separately ledgered.",
+  "sourceVerification": {
+    "command": "npx vitest run packages/codemode/test/worker-lifetime.test.ts packages/coding-agent/test/codemode-worker-admission.test.ts --reporter=json --outputFile=/tmp/pisharp-current-codemode-lifetime-source-tests.json",
+    "passed": 16,
+    "failed": 0,
+    "skipped": 3,
+    "skipReason": "Bun is not installed; the three explicit Bun process cases are unavailable. All real Node process and held-exit source cases pass."
+  },
+  "characterization": [
+    {
+      "log": "artifacts/parity/current-pi-deltas-2026-10-13/codemode-cancellation-fail-first.log",
+      "sha256": "df987e811d2df339af53a0de8c109d7aa53f83e5d403d28842de0bf437b637eb",
+      "finding": "Original sandbox failed both checks: cancellation waited about 2.02 seconds for an uncooperative host and returned empty text instead of partial output."
+    },
+    {
+      "log": "artifacts/parity/current-pi-deltas-2026-10-13/codemode-builtin-cancellation-characterization.log",
+      "sha256": "ed1ac55325544b7e9013583b87af0ac3613a3e194e19166b7b11bdaa6e62b44f",
+      "finding": "After prompt sandbox settlement was fixed, the public builtin still threw on the canceled token; an admission test also needed to wait for the previous process exit during fixture setup."
+    },
+    {
+      "log": "artifacts/parity/current-pi-deltas-2026-10-13/codemode-lifecycle-verified-tests.log",
+      "sha256": "b95fc2686b4eb5d2dd4511db83398c024d22385bbe6fc3f391c607157eb9c8cd",
+      "finding": "Removing the builtin throw exposed a second real framework boundary: default AIFunction result marshaling serialized with the canceled token and threw instead of returning the preserved error contract."
+    }
+  ],
+  "fixtureCorrections": "Busy-guest timeout uses 2000 ms so cold worker startup does not consume its deadline before the ready checkpoint; settlement must occur by deadline plus 1000 ms and exit by settlement plus 1000 ms. Native retiring workers are unreferenced, so the oracle keeps a bounded timer alive to observe actual exit. An accidental oracle timeout change to 2000 ms in the separate 500-ms host-hang case was corrected after its false settlement predicate failed comparison.",
+  "verification": {
+    "dotnetPassed": 1494,
+    "dotnetFailed": 0,
+    "dotnetSkipped": 0,
+    "focusedNewCases": 10,
+    "buildWarnings": 0,
+    "buildErrors": 0,
+    "format": "pass",
+    "differentialCommand": "python3 tools/parity/codemode-lifetime-differential.py --pi /tmp/pisharp-parity-audit-pi --output artifacts/parity/current-pi-deltas-2026-10-13/codemode-lifetime.json"
+  }
+}

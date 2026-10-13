@@ -8,6 +8,7 @@ using PiSharp.Cli.Tui;
 
 namespace PiSharp.Tests;
 
+[Collection("Codemode workers")]
 public sealed class McpRuntimeTests
 {
     [Theory]

@@ -22,8 +22,13 @@ public static class CodemodeBuiltin
     public static void Configure(ExtensionRegistration registration)
     {
         ArgumentNullException.ThrowIfNull(registration);
-        var function = AIFunctionFactory.Create(ExecuteAsync, name: "codemode",
-            description: "Run JavaScript in an isolated QuickJS/WASM sandbox to orchestrate callable tools.");
+        var function = AIFunctionFactory.Create(ExecuteAsync, new AIFunctionFactoryOptions
+        {
+            Name = "codemode",
+            Description = "Run JavaScript in an isolated QuickJS/WASM sandbox to orchestrate callable tools.",
+            // Preserve the completed error contract when its caller has already canceled.
+            MarshalResult = static (result, _, _) => ValueTask.FromResult(result)
+        });
         registration.AddTool(new PiSharpToolRegistration(function, ToolExposure.ModelOnly, DefaultActive: false,
             PrepareLoadout: PrepareLoadout, AllowNestedInvocation: false, ReachesTools: GetScriptReach));
     }
@@ -76,14 +81,16 @@ public static class CodemodeBuiltin
         var context = PiSharpToolExecutionContext.Get(arguments) ??
             throw new InvalidOperationException("Codemode requires an active tool session.");
         var result = await CodemodeSandbox.ExecuteAsync(code, context, context.CodemodeStore, cancellationToken);
-        cancellationToken.ThrowIfCancellationRequested();
+        if (cancellationToken.IsCancellationRequested && result.Ok)
+            result = result with { Ok = false, Error = "Codemode was cancelled.", Store = null };
         if (result.Ok && result.Store is not null) context.SetCodemodeStore(result.Store);
         var usage = CodemodeUsageAccounting.Aggregate(context.NestedUsage);
         var text = result.Ok ? result.Text : result.Text.Length > 0 ? result.Text + "\n" + result.Error : result.Error ?? "Codemode failed.";
         long budget = 10000;
         try { budget = CodemodeSource.Parse(code).MaxOutputTokens; }
         catch (Exception error) when (error is ArgumentException or JsonException or InvalidOperationException) { }
-        var rendered = await CodemodeOutputBudget.ApplyAsync(text, budget, cancellationToken);
+        var rendered = await CodemodeOutputBudget.ApplyAsync(text, budget,
+            cancellationToken.IsCancellationRequested && !result.Ok ? CancellationToken.None : cancellationToken);
         return new PiSharpToolResult(rendered.Text, new { sandbox = "quickjs-wasm", fullOutputPath = rendered.FullOutputPath },
             IsError: !result.Ok, Error: result.Error, Images: result.Images, Usage: usage.Usage, Cost: usage.Cost);
     }

@@ -7,9 +7,9 @@
   "commit_count": 50,
   "classifications": {
     "OUT_OF_SCOPE": 19,
-    "MATCHED": 13,
+    "MATCHED": 14,
     "NO_BEHAVIOR_CHANGE": 13,
-    "NEEDS_WORK": 5
+    "NEEDS_WORK": 4
   },
   "commits": [
     {
@@ -1164,7 +1164,7 @@
         "packages/coding-agent/src/extensions/codemode/execute.ts",
         "packages/coding-agent/test/codemode-worker-admission.test.ts"
       ],
-      "classification": "NEEDS_WORK",
+      "classification": "MATCHED",
       "finding": "Abort/timeout/close settle promptly without waiting on worker exit, retain partial output and account two shared worker slots until actual exit. PiSharp kills a separate Node process then awaits exit without a bound, has no global admission limit and discards cancelled output.",
       "capability_ids": [
         "codemode-runtime"
@@ -1174,7 +1174,13 @@
       ],
       "implementation_plan": "Use process-native shutdown with bounded settlement, shared admission released on actual exit, retained partial output and first-terminal-result ordering.",
       "differential_plan": "Real spinning/non-interruptible worker tests, delayed exit, cancellation/timeout, capacity burst, replacement and process exit.",
-      "resolved": false
+      "resolved": true,
+      "resolution": "Codemode abort/timeout and session cancellation settle without waiting for host cleanup or process exit, preserve partial text/images and discard failed store writes. Two shared process slots remain occupied until actual exit and failed starts return their reservation. Public AIFunction marshaling preserves the canceled error contract. Original host-hang checks failed at about 2.02 seconds with lost output; a further builtin test exposed canceled-token serialization. Ten new tests, including a six-call concurrent burst and non-interruptible guest work, pass. Six real Pi/Node and native PiSharp process comparisons match lifecycle/admission predicates; upstream lifetime/admission tests pass 16 with three explicit unavailable Bun cases. Full suite 1494/1494, zero skips and zero-warning build. Broader output formatting, options/memory ceilings and nested-call details remain open.",
+      "evidence": [
+        "docs/parity/fixtures/current-pi-refresh-2026-10-13/codemode-lifetime.json",
+        "tools/parity/codemode-lifetime-differential.py",
+        "tests/PiSharp.Tests/Runtime/Codemode/CodemodeWorkerLifecycleTests.cs"
+      ]
     }
   ],
   "limitations": "NEEDS_WORK includes existing code whose full new contract lacks current-source verification. No current-Pi parity or pin advancement claimed by this audit alone."

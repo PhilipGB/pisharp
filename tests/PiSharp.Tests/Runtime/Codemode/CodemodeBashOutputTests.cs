@@ -7,6 +7,7 @@ using PiSharp.Runtime.Sessions;
 
 namespace PiSharp.Tests;
 
+[Collection("Codemode workers")]
 public sealed class CodemodeBashOutputTests
 {
     [Theory]

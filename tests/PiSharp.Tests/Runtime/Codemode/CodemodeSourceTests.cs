@@ -4,6 +4,7 @@ using PiSharp.Runtime.Extensions;
 
 namespace PiSharp.Tests;
 
+[Collection("Codemode workers")]
 public sealed class CodemodeSourceTests
 {
     [Theory]
