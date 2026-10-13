@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "plan_received": true,
-  "source_note": "Post-refactor main 22eeb2a53dbaa94e41f78a40a997e3b3156bb3ed; audited configured Pi 3daa20280f6a7c7cbe0935680c9a38fdc3863005. All 50 commits classified: {'OUT_OF_SCOPE': 19, 'MATCHED': 16, 'NO_BEHAVIOR_CHANGE': 13, 'NEEDS_WORK': 2}. Dedicated parity/current-pi-completion branch; all 194 required capabilities retained. Resolve current_pi_refresh before resuming Resources / Instructions / Trust. Architecture refactor is merged; bounded final regression review and full source audit remain open.",
+  "source_note": "Post-refactor main 22eeb2a53dbaa94e41f78a40a997e3b3156bb3ed; audited configured Pi 3daa20280f6a7c7cbe0935680c9a38fdc3863005. All 50 commits classified: {'OUT_OF_SCOPE': 19, 'MATCHED': 17, 'NO_BEHAVIOR_CHANGE': 13, 'NEEDS_WORK': 1}. Dedicated parity/current-pi-completion branch; all 194 required capabilities retained. Resolve current_pi_refresh before resuming Resources / Instructions / Trust. Architecture refactor is merged; bounded final regression review and full source audit remain open.",
   "baseline": "earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035",
   "required_ids": [
     "feature-agent-multi-turn-and-streaming",
@@ -963,7 +963,8 @@
       ],
       "implementation": [],
       "evidence": [
-        "Current-Pi refresh 2026-10-13 source audit maps unresolved new deltas e6fb2581 to this existing requirement; see docs/parity/fixtures/current-pi-refresh-2026-10-13/upstream-audit.json. This adds no verified status or behavior claim."
+        "Current-Pi refresh 2026-10-13 source audit maps unresolved new deltas e6fb2581 to this existing requirement; see docs/parity/fixtures/current-pi-refresh-2026-10-13/upstream-audit.json. This adds no verified status or behavior claim.",
+        "Current Pi e6fb2581 auth-lock retry contract matches ten exact Windows/native acquisition policy vectors plus separate-process holder/writer semantics; sixteen new native controls and thirty upstream auth-storage tests pass. Full working tree 1581/1581, zero skips; native Windows delete-pending execution remains platform-unavailable. Mutation-only leases preserve read-only startup and absent-agent lookups. See docs/parity/fixtures/current-pi-refresh-2026-10-13/auth-lock.json. Wider authentication remains in progress; no capability status changes."
       ],
       "dependencies": []
     },
@@ -5358,9 +5359,9 @@
     "commit_count": 50,
     "classifications": {
       "OUT_OF_SCOPE": 19,
-      "MATCHED": 16,
+      "MATCHED": 17,
       "NO_BEHAVIOR_CHANGE": 13,
-      "NEEDS_WORK": 2
+      "NEEDS_WORK": 1
     },
     "audit_complete": true,
     "pin_advanced": true,

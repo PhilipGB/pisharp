@@ -7,9 +7,9 @@
   "commit_count": 50,
   "classifications": {
     "OUT_OF_SCOPE": 19,
-    "MATCHED": 16,
+    "MATCHED": 17,
     "NO_BEHAVIOR_CHANGE": 13,
-    "NEEDS_WORK": 2
+    "NEEDS_WORK": 1
   },
   "commits": [
     {
@@ -599,18 +599,25 @@
         "packages/coding-agent/src/core/auth-storage.ts",
         "packages/coding-agent/test/auth-storage.test.ts"
       ],
-      "classification": "NEEDS_WORK",
+      "classification": "MATCHED",
       "finding": "Windows delete-pending EPERM during auth-lock acquisition is retried briefly; persistent permission errors remain bounded. PiSharp uses different file/refresh locks and has no equivalent Windows evidence.",
       "capability_ids": [
         "feature-security-settings-and-authentication"
       ],
       "pisharp_sources": [
+        "src/PiSharp.Cli/Authentication/AuthFileLock.cs",
         "src/PiSharp.Cli/Authentication/AuthStorage.cs",
-        "src/PiSharp.Runtime/Mcp/McpFileLock.cs"
+        "src/PiSharp.Cli/Authentication/ProviderOAuth.cs"
       ],
       "implementation_plan": "Inspect native credential write/lock semantics and add bounded transient Windows retries only at the equivalent acquisition boundary.",
       "differential_plan": "Injected native-error regression vectors, cancellation and persistent permission failures; native Windows execution remains platform-unavailable on Linux.",
-      "resolved": false
+      "resolved": true,
+      "resolution": "Native async auth acquisition now retries Windows access-denied/UnauthorizedAccess at most five times with bounded jittered backoff, separately from normal contention. Path-shared process gates and native private leases protect read-modify-write credential mutations; OAuth refresh uses the same acquisition policy with its existing two-minute contention budget. Read-only lookups preserve atomic snapshots without creating agent directories or locks. Two initial fail-first checks exposed lost concurrent writes and ignored file leases; sixteen controls pass. Ten exact injected async policy vectors and real separate-process holder/writer predicates match pinned Pi, whose auth tests pass 30/30. Full working tree passes 1581 tests, zero skips and warnings. Real Windows delete-pending filesystem execution remains unavailable; broader auth coverage stays open.",
+      "evidence": [
+        "docs/parity/fixtures/current-pi-refresh-2026-10-13/auth-lock.json",
+        "tools/parity/auth-lock-differential.py",
+        "tests/PiSharp.Tests/Cli/Authentication/AuthStorageLockTests.cs"
+      ]
     },
     {
       "sha": "19cb534c3b6e3871458a8fa59e98f0312c50e995",

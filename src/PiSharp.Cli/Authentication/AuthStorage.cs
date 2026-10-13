@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Collections.Concurrent;
 
 namespace PiSharp.Cli;
 
@@ -14,8 +15,10 @@ public sealed class AuthStorage(string path)
 {
     private static readonly Regex ProviderId = new("^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$", RegexOptions.CultureInvariant);
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+    private static readonly ConcurrentDictionary<string, SemaphoreSlim> s_gates = new(
+        OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
     private readonly string _path = System.IO.Path.GetFullPath(path);
-    private readonly SemaphoreSlim _gate = new(1, 1);
+    private readonly SemaphoreSlim _gate = s_gates.GetOrAdd(System.IO.Path.GetFullPath(path), static _ => new(1, 1));
 
     public string Path => _path;
 
@@ -74,6 +77,7 @@ public sealed class AuthStorage(string path)
         await _gate.WaitAsync(cancellationToken);
         try
         {
+            await using var lease = await AuthFileLock.AcquireAsync(_path + ".pisharp.lock", cancellationToken);
             var all = await ReadAllCoreAsync(cancellationToken);
             if (all.Remove(provider)) await WriteAllCoreAsync(all, cancellationToken);
         }
@@ -86,6 +90,7 @@ public sealed class AuthStorage(string path)
         await _gate.WaitAsync(cancellationToken);
         try
         {
+            await using var lease = await AuthFileLock.AcquireAsync(_path + ".pisharp.lock", cancellationToken);
             var all = await ReadAllCoreAsync(cancellationToken);
             all[provider] = credential;
             await WriteAllCoreAsync(all, cancellationToken);
@@ -105,7 +110,8 @@ public sealed class AuthStorage(string path)
             throw new InvalidDataException("auth.json is not private; remove group/other permissions before loading.");
         try
         {
-            await using var stream = new FileStream(_path, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, FileOptions.Asynchronous);
+            await using var stream = new FileStream(_path, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete,
+                4096, FileOptions.Asynchronous);
             var data = await JsonSerializer.DeserializeAsync<Dictionary<string, StoredCredential>>(stream, JsonOptions,
                 cancellationToken) ?? [];
             foreach (var (provider, credential) in data)
