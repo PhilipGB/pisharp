@@ -27,7 +27,7 @@ scenarios = [
     dict(id='malformed-global-type-falls-back-to-ask', user='defaultProjectTrust': True),
     dict(id='project-always-does-not-override-global-never', user='defaultProjectTrust': 'never',
          project='defaultProjectTrust': 'always', 'theme': 'light'),
-    dict(id='project-never-does-not-override-global-always', user={'defaultProjectTrust': 'always'},
+    dict(id='project-never-does-not-override-global-always', user='defaultProjectTrust': 'always',
          project={'defaultProjectTrust': 'never', 'theme': 'light'}),
     dict(id='malformed-project-setting-does-not-fail-trusted-project', user={'defaultProjectTrust': 'always'},
          project={'defaultProjectTrust': True, 'theme': 'light'}),

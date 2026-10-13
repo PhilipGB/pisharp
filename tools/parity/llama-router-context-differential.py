@@ -73,7 +73,7 @@ Console.WriteLine(JsonSerializer.Serialize(output, new JsonSerializerOptions(Jso
     "const [url,cachePath,phase]=process.argv.slice(2);\n"
     "const stored=fs.existsSync(cachePath)?JSON.parse(fs.readFileSync(cachePath,'utf8')):undefined;\n"
     "const controller=createLlamaProvider();\n"
-    "await controller.provider.refreshModels?.(credential:{type:'api_key',key:'local',env:{LLAMA_BASE_URL:url},"
+    "await controller.provider.refreshModels?.(credential:type:'api_key',key:'local',env:{LLAMA_BASE_URL:url,"
     "stored,publish:async publication=>{if(publication.persist!==undefined)fs.writeFileSync(cachePath,"
     "JSON.stringify(publication.persist));publication.update?.();return true;},allowNetwork:phase!=='offline',"
     "signal:new AbortController().signal});\n"

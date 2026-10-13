@@ -17,9 +17,9 @@ conversation state; CLI owns configuration, provider adapters and presentation.
   resolves startup session paths, loads/forks/imports documents, restores registered
   virtual models and validates saved provider/model/thinking choices. It returns
   the selected document/model; Program constructs and adopts the runtime.
-- [JsonPromptMode](../../src/PiSharp.Cli/Protocols/JsonPromptMode.cs) owns JSON
+- [JsonPromptMode](../../src/PiSharp.Cli/Protocols/Json/JsonPromptMode.cs) owns JSON
   prompt expansion, attachment processing, rejection and final save ordering.
-  [JsonEventMode](../../src/PiSharp.Cli/Protocols/JsonEventMode.cs) retains the
+  [JsonEventMode](../../src/PiSharp.Cli/Protocols/Json/JsonEventMode.cs) retains the
   shared LF-framed lifecycle contract. RPC retains its existing command owners.
 
 ## Terminal workflows

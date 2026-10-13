@@ -221,7 +221,7 @@
         "src/PiSharp.Runtime/Sessions/ObservedChatClient.cs and ProviderRetryPolicy.cs: default bounded transient retry before any streamed content; retry/partial/interruption lifecycle events; no replay after partial text, reasoning, or tool-call content.",
         "src/PiSharp.Runtime/Sessions/ProviderRetryPolicy.cs classifies transient statuses for the MAF fallback path. The CLI provider boundary now separately handles OpenAI and Anthropic SDK errors, x-should-retry and Retry-After headers, and cancellable backoff; see docs/parity/fixtures/settings-provider-retry-delay-baseline.md.",
         "src/PiSharp.Runtime/Sessions/ConversationRun.cs: bounded lifecycle stream runs queued text prompts as later MAF turns, emits per-turn completion and one run completion/settlement, and preserves canonical session history.",
-        "src/PiSharp.Cli/Protocols/RpcMode.cs: an RPC prompt received during streaming queues into the active application run rather than claiming completion or starting a competing run.",
+        "src/PiSharp.Cli/Protocols/Rpc/RpcMode.cs: an RPC prompt received during streaming queues into the active application run rather than claiming completion or starting a competing run.",
         "tests/PiSharp.Tests/AgentIntegrationTests.cs, AgentLifecycleTests.cs, RpcModeTests.cs: deterministic fake-provider coverage for streamed text/tools/results, tool continuation, retry, partial failure, interruption, queued multi-turn session history, and RPC workflow.",
         "Current Pi delta 3dd803d7 (Z.AI CN overflow) is exact-head verified at CI 36746011211. Delta 2bbfcca4 (malformed Retry-After fallback) now represents invalid/non-finite server delays as absent; fail-first loopback tests verify the exponential retry, cancellation and preservation of server-delay caps. Focused tests pass 6/6; PiSharp source a3a1512abecf201364c8b4324b24a2837f8f5a25 passes exact-head Linux CI 36758603590 with format, warnings-as-errors build and 1009/1009 tests, zero skips. See docs/parity/fixtures/upstream-delta-audit-2026-09-30.md.",
         "AgentRunRetryPolicy classifies model is at capacity as a transient assistant/provider error, retaining enabled/budget/backoff/cancellation and billing/quota precedence through the existing shared MAF/ConversationRun path."
@@ -259,10 +259,10 @@
         "src/PiSharp.Runtime/Sessions/ConversationRun.cs and PendingPrompts.cs: separate ordered steering/follow-up queues, lifecycle snapshots, atomic clear/return, steering dequeue at provider boundaries, and pending preservation after interruption.",
         "src/PiSharp.Runtime/Agents/PiAgent.cs and Sessions/ObservedChatClient.cs: MAF ChatClientAgent concurrent function invocation is enabled; steering is inserted before a continuation provider request and then reconciled into AgentSession history after the preceding tool result.",
         "src/PiSharp.Cli/Tui/TerminalEditor,TerminalInput,EditorBuffer.cs and Program.cs: input stays active while a run streams; Enter steers, Alt+Enter follows up, Alt+Up dequeues, Escape/Ctrl+C abort, and unsent queue plus draft return to the editor.",
-        "src/PiSharp.Cli/Protocols/RpcMode.cs: distinct steer, follow_up, clear_queue commands and queue state/events share the application runtime.",
+        "src/PiSharp.Cli/Protocols/Rpc/RpcMode.cs: distinct steer, follow_up, clear_queue commands and queue state/events share the application runtime.",
         "tests/PiSharp.Tests/AgentLifecycleTests,RpcModeTests,TerminalInputTests.cs: deterministic queue-boundary, abort restoration, key routing, RPC, transcript ordering, and concurrent-tool overlap fixtures.",
         "src/PiSharp.Runtime/Sessions/PromptDeliveryQueue.cs and ConversationRun.cs: independently configure steering/follow-up delivery as one-at-a-time or all; all-mode drains distinct messages in queue order at provider boundaries and after turns.",
-        "src/PiSharp.Cli/Protocols/RpcQueueModeCommandHandler.cs and RpcUserSettingsController.cs: validated mode setters persist global settings and update the active canonical run; get_state exposes both modes and pending count."
+        "src/PiSharp.Cli/Protocols/Rpc/RpcQueueModeCommandHandler.cs and RpcUserSettingsController.cs: validated mode setters persist global settings and update the active canonical run; get_state exposes both modes and pending count."
       ],
       "evidence": [
         "Pinned upstream 002fc8385268300ca91a5fc95f935c2afbbdac02 inspected at packages/coding-agent/docs/usage.md, packages/agent/src/agent-loop.ts, packages/coding-agent/src/core/agent-session.ts, interactive-mode.ts, and modes/rpc: Enter steering is delivered after the current response/tool batch, follow-up waits for natural stop, abort returns pending input, and multiple tool calls default to parallel unless constrained.",
@@ -353,7 +353,7 @@
         "src/PiSharp.Cli/BuiltinProviderProfiles,ProviderChatClientFactory,ProviderModelRuntime.cs: Anthropic native Messages via Anthropic 12.50.0 MEAI adapter; three pinned Sonnet/Opus/Haiku entries, model-specific budget and adaptive/extended thinking dispatch, and reserved endpoint/key environment. OAuth sign-in and full model catalog remain absent.",
         "src/PiSharp.Cli/Providers/ProviderModelRuntime.cs and ProviderChatClientFactory.cs: Anthropic AUTH_TOKEN, OAUTH_TOKEN and API_KEY resolution precedes Anthropic-only workload identity federation; file-backed SDK credentials own token exchange/refresh while ambient SDK resolution is disabled. OAuth sign-in remains a separate open gap.",
         "src/PiSharp.Cli/Tui/TerminalModelPicker.cs and ProviderModelRuntime.cs: Ctrl+L or /model opens searchable all/scoped catalog views and can resolve an out-of-scope choice without changing the configured cycling scope.",
-        "src/PiSharp.Cli/Protocols/RpcModelProjector.cs emits the Pi model fields consistently for get_available_models, set_model, cycle_model and get_state; ModelMetadataJson and ModelInputLimits preserve Pi-shaped catalog/config data, and provider/model compatibility uses Pi-compatible nested merges.",
+        "src/PiSharp.Cli/Protocols/Rpc/RpcModelProjector.cs emits the Pi model fields consistently for get_available_models, set_model, cycle_model and get_state; ModelMetadataJson and ModelInputLimits preserve Pi-shaped catalog/config data, and provider/model compatibility uses Pi-compatible nested merges.",
         "src/PiSharp.Cli/MistralModelCatalog,BuiltinProviderProfiles,ProviderModelRuntime.cs embeds the current Pi snapshot of all 33 Mistral chat models and lists it statically without a generic /models probe; reasoning maps, image modalities, input limits, costs and the Mistral API identifier are retained. Unknown PISHARP_MISTRAL_MODEL values remain selectable alongside the built-in catalog.",
         "src/PiSharp.Cli/AzureOpenAiRequestHandler,AzureOpenAiChatOptionsClient,AzureOpenAiModelCatalog,ProviderChatClientFactory.cs: Azure Responses API-key boundary, configurable API-version/deployment mapping, per-session prompt_cache_key and embedded 43-model snapshot. Exact-head CI is green; provider-wide image/tool/usage/error differential evidence remains incomplete.",
         "src/PiSharp.Cli/Providers/Anthropic/AnthropicThinkingSignatureClient.cs: replays unsigned Anthropic-compatible assistant reasoning as text unless model compat.allowEmptySignature is true; preserves signed thinking and applies a request-only MAF projection.",
@@ -1098,8 +1098,8 @@
       "implementation": [
         "src/PiSharp.Runtime/Resources/ResourceCatalog.cs: discovers/expands prompt templates and skills while retaining Pi-shaped source metadata; project resource roots precede user roots.",
         "src/PiSharp.Runtime/Extensions/ExtensionCatalog.cs: retains optional extension command descriptions and source metadata for explicit and auto-discovered assemblies.",
-        "src/PiSharp.Cli/Protocols/RpcCommandDiscoveryHandler.cs: projects resources and native extension commands through RPC get_commands.",
-        "src/PiSharp.Cli/Protocols/RpcPromptCommandHandler.cs: invokes registered extension commands before ordinary RPC prompt processing."
+        "src/PiSharp.Cli/Protocols/Rpc/RpcCommandDiscoveryHandler.cs: projects resources and native extension commands through RPC get_commands.",
+        "src/PiSharp.Cli/Protocols/Rpc/RpcPromptCommandHandler.cs: invokes registered extension commands before ordinary RPC prompt processing."
       ],
       "evidence": [
         "tests/PiSharp.Tests/ResourceCatalogTests.cs: resource discovery, explicit paths, expansion and precedence",
@@ -1244,10 +1244,10 @@
         "Remaining: Pi-compatible event/payload shape, extension-handled dispositions, broader error/cancellation semantics and pinned process differential."
       ],
       "implementation": [
-        "src/PiSharp.Cli/Protocols/RpcMode.cs: prompt success is sent once after prompt_accepted with disposition started; preflight failures are correlated to the command id; prompts during streaming require Pi streamingBehavior steer/followUp and return queued disposition.",
-        "src/PiSharp.Cli/Protocols/JsonEventMode.cs: observes lifecycle events before serializing them so the prompt response precedes prompt_accepted or prompt_rejected.",
+        "src/PiSharp.Cli/Protocols/Rpc/RpcMode.cs: prompt success is sent once after prompt_accepted with disposition started; preflight failures are correlated to the command id; prompts during streaming require Pi streamingBehavior steer/followUp and return queued disposition.",
+        "src/PiSharp.Cli/Protocols/Json/JsonEventMode.cs: observes lifecycle events before serializing them so the prompt response precedes prompt_accepted or prompt_rejected.",
         "src/PiSharp.Cli/Program.cs: lets RPC start without credentials so missing-auth failures are returned to the requesting command instead of terminating the process.",
-        "src/PiSharp.Cli/Protocols/JsonLineWriter.cs: emits literal LF record terminators independently of TextWriter.NewLine."
+        "src/PiSharp.Cli/Protocols/Json/JsonLineWriter.cs: emits literal LF record terminators independently of TextWriter.NewLine."
       ],
       "evidence": [
         "RpcModeTests.PromptPreflightFailureReturnsOneCorrelatedResponse and RuntimePreflightFailureReturnsCorrelatedErrorBeforeRejectedEvent cover command and runtime-preflight failures; PromptReceivedDuringStreamingQueuesAnotherTurnBeforeSettlement checks started/queued dispositions and rejection without streamingBehavior.",
@@ -1267,7 +1267,7 @@
         "Remaining: active-run failure/cancellation edges and broader Pi wire compatibility differentials."
       ],
       "implementation": [
-        "src/PiSharp.Cli/Protocols/RpcMode.cs and PromptDeliveryController: steer queues through the shared prompt delivery owner and returns Pi-shaped success data with disposition queued; failed/settling queues return a correlated error. Idle steering is included in the first provider request snapshot."
+        "src/PiSharp.Cli/Protocols/Rpc/RpcMode.cs and PromptDeliveryController: steer queues through the shared prompt delivery owner and returns Pi-shaped success data with disposition queued; failed/settling queues return a correlated error. Idle steering is included in the first provider request snapshot."
       ],
       "evidence": [
         "RpcModeTests.RpcSteeringFollowUpAndClearQueueExposeDistinctPendingInput verifies separate steering/follow-up queue contents and that both successful responses contain data.disposition=queued; existing lifecycle tests verify delivery order and persistence.",
@@ -1287,7 +1287,7 @@
         "Remaining: active-run failure/cancellation edges and broader Pi wire compatibility differentials."
       ],
       "implementation": [
-        "src/PiSharp.Cli/Protocols/RpcMode.cs and PromptDeliveryController: follow_up queues through the shared prompt delivery owner and returns Pi-shaped success data with disposition queued; failed/settling queues return a correlated error."
+        "src/PiSharp.Cli/Protocols/Rpc/RpcMode.cs and PromptDeliveryController: follow_up queues through the shared prompt delivery owner and returns Pi-shaped success data with disposition queued; failed/settling queues return a correlated error."
       ],
       "evidence": [
         "RpcModeTests.RpcSteeringFollowUpAndClearQueueExposeDistinctPendingInput verifies separate steering/follow-up queue contents and that both successful responses contain data.disposition=queued; existing lifecycle tests verify delivery order and persistence.",
@@ -1307,7 +1307,7 @@
         "Remaining: queued prompts, tool cancellation, and failure cases beyond the pinned partial-stream abort process fixture."
       ],
       "implementation": [
-        "src/PiSharp.Cli/Protocols/RpcMode.cs: partial abort operation (PiSharp wire format)",
+        "src/PiSharp.Cli/Protocols/Rpc/RpcMode.cs: partial abort operation (PiSharp wire format)",
         "RpcMode emits the correlated success response without optional error/data fields; the response writer includes error only for failures."
       ],
       "evidence": [
@@ -1327,7 +1327,7 @@
         "Remaining: active-run lifecycle/error semantics and broader pinned process differential."
       ],
       "implementation": [
-        "src/PiSharp.Cli/Protocols/RpcMode.cs and PromptDeliveryController: clear_queue returns separate steering/followUp arrays and publishes the resulting queue snapshot before its correlated response."
+        "src/PiSharp.Cli/Protocols/Rpc/RpcMode.cs and PromptDeliveryController: clear_queue returns separate steering/followUp arrays and publishes the resulting queue snapshot before its correlated response."
       ],
       "evidence": [
         "RpcIdleQueueProcessTests.IdleSteerAndFollowUpAreQueuedReportedAndClearedInRpcProcess verifies empty queue_update before response, separate queue arrays, and zero pending count. Its fixture matched current Pi 2b0a123de98318c2ff8069661721ce0c3794c34e.",
@@ -1367,8 +1367,8 @@
         "Remaining: broader current-Pi differential of the full live-state field set during active runs, compaction and session replacement."
       ],
       "implementation": [
-        "src/PiSharp.Cli/Protocols/RpcMode.cs: partial get_state operation (PiSharp wire format)",
-        "src/PiSharp.Cli/Protocols/RpcMode.cs: get_state now includes the active thinkingLevel.",
+        "src/PiSharp.Cli/Protocols/Rpc/RpcMode.cs: partial get_state operation (PiSharp wire format)",
+        "src/PiSharp.Cli/Protocols/Rpc/RpcMode.cs: get_state now includes the active thinkingLevel.",
         "ConversationRun exposes the active session file, automatic-compaction setting and in-flight compaction state for the state query.",
         "RpcModelProjector projects the selected model with the same complete Pi-shaped metadata as the model command responses; RpcModelProcessTests covers the state model in a real CLI process.",
         "RpcStateCommandHandler returns the current Pi RpcSessionState fields and obtains model from RpcModelProjector; the real CLI process test checks state shape and projected selected-model metadata."
@@ -1517,7 +1517,7 @@
         "Test protocol through RPC process, including failures and cancellation"
       ],
       "implementation": [
-        "src/PiSharp.Cli/Protocols/RpcModelCommandHandler.cs: accepts set_thinking_level while idle or active and emits thinking_level_changed before the correlated response.",
+        "src/PiSharp.Cli/Protocols/Rpc/RpcModelCommandHandler.cs: accepts set_thinking_level while idle or active and emits thinking_level_changed before the correlated response.",
         "src/PiSharp.Cli/Program.cs and src/PiSharp.Runtime/Sessions/ConversationRun.cs: normalize and clamp against the selected model thinkingLevelMap, translate canonical map strings into Microsoft.Extensions.AI ReasoningEffort values, update PiAgent for the next provider request, and append the branch entry after the current MAF history write. Arbitrary provider-specific strings remain open.",
         "src/PiSharp.Runtime/Sessions/ConversationSession.cs and PiJsonlSessionInterchange.cs: persist thinking changes and export them as Pi JSONL records."
       ],
@@ -1541,7 +1541,7 @@
         "Test protocol through RPC process, including failures and cancellation"
       ],
       "implementation": [
-        "src/PiSharp.Cli/Protocols/RpcModelCommandHandler.cs: cycles only levels supported by the current model thinkingLevelMap while idle or active, returns level, and returns null when no level is available."
+        "src/PiSharp.Cli/Protocols/Rpc/RpcModelCommandHandler.cs: cycles only levels supported by the current model thinkingLevelMap while idle or active, returns level, and returns null when no level is available."
       ],
       "evidence": [
         "RpcModelProcessTests.RpcModelAndThinkingCommandsSelectAndCycleTheRunningRuntime verifies the unsupported-model null result and wrap from max to off for a reasoning-capable model.",
@@ -1562,7 +1562,7 @@
       ],
       "implementation": [
         "src/PiSharp.Cli/Providers/ThinkingLevels.cs and Program.cs: expose off-only for models without reasoning; apply current Pi null and explicit xhigh/max map rules; translate canonical map values to M.E.AI ReasoningEffort where representable.",
-        "src/PiSharp.Cli/Protocols/RpcMode.cs: returns levels for get_available_thinking_levels."
+        "src/PiSharp.Cli/Protocols/Rpc/RpcMode.cs: returns levels for get_available_thinking_levels."
       ],
       "evidence": [
         "RpcModelProcessTests.RpcModelAndThinkingCommandsSelectAndCycleTheRunningRuntime verifies the exact seven-level response for a reasoning model.",
@@ -1969,7 +1969,7 @@
         "Remaining: provider-specific contributors, full command-list differential and broader get_commands error/lifecycle behavior."
       ],
       "implementation": [
-        "src/PiSharp.Cli/Protocols/RpcCommandDiscoveryHandler.cs: owns get_commands response projection outside RpcMode.",
+        "src/PiSharp.Cli/Protocols/Rpc/RpcCommandDiscoveryHandler.cs: owns get_commands response projection outside RpcMode.",
         "src/PiSharp.Runtime/Resources/ResourceCatalog.cs and Extensions/ExtensionCatalog.cs: retain source, scope, origin, path, baseDir and optional description metadata for discovered commands."
       ],
       "evidence": [
@@ -1993,8 +1993,8 @@
         "Verify active-run behavior and output/event order in a deterministic real CLI process fixture."
       ],
       "implementation": [
-        "src/PiSharp.Cli/Protocols/RpcPromptCommandHandler.cs: owns extension command parsing, asynchronous execution, result/error projection and shutdown cancellation outside RpcMode.",
-        "src/PiSharp.Cli/Protocols/RpcMode.cs: dispatches extension commands before ordinary prompt image/resource/queue processing."
+        "src/PiSharp.Cli/Protocols/Rpc/RpcPromptCommandHandler.cs: owns extension command parsing, asynchronous execution, result/error projection and shutdown cancellation outside RpcMode.",
+        "src/PiSharp.Cli/Protocols/Rpc/RpcMode.cs: dispatches extension commands before ordinary prompt image/resource/queue processing."
       ],
       "evidence": [
         "tests/PiSharp.Tests/RpcExtensionCommandProcessTests.cs: barrier-controlled local provider and real CLI process verify active-run execution, handled success/failure, output and error ordering, no queue/extra agent run, and command dispatch before image rejection.",
@@ -2098,8 +2098,8 @@
         "Test protocol through RPC process, including failures and cancellation"
       ],
       "implementation": [
-        "src/PiSharp.Cli/Protocols/RpcEventWriter.cs: projects queue snapshots as top-level type, steering, followUp and omits the PiSharp-only prompt_queued notice.",
-        "src/PiSharp.Cli/Protocols/RpcMode.cs: routes RPC lifecycle output through the dedicated event writer while sharing the atomic JSONL writer with command responses."
+        "src/PiSharp.Cli/Protocols/Rpc/RpcEventWriter.cs: projects queue snapshots as top-level type, steering, followUp and omits the PiSharp-only prompt_queued notice.",
+        "src/PiSharp.Cli/Protocols/Rpc/RpcMode.cs: routes RPC lifecycle output through the dedicated event writer while sharing the atomic JSONL writer with command responses."
       ],
       "evidence": [
         "Compared current Pi main d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 packages/coding-agent/src/core/agent-session.ts _emitQueueUpdate and modes/rpc/rpc-mode.ts subscription: queue updates are direct top-level snapshots with steering and followUp arrays.",
@@ -2162,7 +2162,7 @@
         "Test protocol through RPC process, including failures and cancellation"
       ],
       "implementation": [
-        "src/PiSharp.Cli/Protocols/RpcMode.cs: emits top-level type, level before successful set/cycle responses only when the effective level changes."
+        "src/PiSharp.Cli/Protocols/Rpc/RpcMode.cs: emits top-level type, level before successful set/cycle responses only when the effective level changes."
       ],
       "evidence": [
         "Compared current Pi main d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 packages/coding-agent/src/modes/rpc/rpc-mode.ts and core/agent-session.ts: session level changes synchronously emit thinking_level_changed before the RPC success response.",
