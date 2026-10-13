@@ -47,14 +47,26 @@ Terminal fixtures keep PiSharp session locks and imports under the owned fixture
 agent directory, including fixtures that explicitly resume a session.
 
 The official MCP expectation file retains its historical `42705224` oracle
-provenance. Its MCP source is unchanged through the current configured Pi commit.
-The conformance runner compares PiSharp with that reviewed expectation file and
-classifies every known failure; it does not acquire a floating Pi checkout.
+provenance. MCP source has since changed; conformance at the new configured
+`3daa2028` reference was freshly rerun and retains the same 261 passing checks
+and eight failures. The conformance runner compares PiSharp with that reviewed
+expectation file and classifies every known failure; it does not acquire a floating
+Pi checkout. This bounded conformance result does not close the new MCP behavioral
+deltas or the final scope review of retained failures.
 
 ## Intentional reference updates
 
-Keep the reference fixed during the architecture refactor. Future parity work
-must select a new commit from an explicit source audit, not merely upstream HEAD
+The architecture refactor and composition review were merged in PiSharp
+`22eeb2a53dbaa94e41f78a40a997e3b3156bb3ed` on 2026-10-13. The frozen reference
+`ee409a85f6ad92bf8c6ab8ed735c6cd24f2e749e` supplied the completed post-merge baseline.
+The [current refresh audit](fixtures/current-pi-refresh-2026-10-13/README.md)
+classifies every one of the 50 intervening commits before intentionally advancing
+the configured reference to `3daa20280f6a7c7cbe0935680c9a38fdc3863005`.
+The new source checkout is clean and rebuilt; one delta is matched and 17 need
+implementation or stronger current-source proof. Advancing the pin selects the
+behavioral target; it does not claim that those open requirements are satisfied.
+
+Parity work must select a new commit from an explicit source audit, not merely upstream HEAD
 or a convenient green run. Update `pi-reference.txt` in a reviewed parity change,
 obtain/rebuild a fresh checkout, and verify its actual SHA. Run standard .NET,
 Node/Python tests, affected process and calibrated terminal differentials, and

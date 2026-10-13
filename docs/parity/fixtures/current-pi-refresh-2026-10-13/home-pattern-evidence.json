@@ -1,0 +1,25 @@
+{
+  "piSha": "3daa20280f6a7c7cbe0935680c9a38fdc3863005",
+  "pisharpProductionSha": "22eeb2a53dbaa94e41f78a40a997e3b3156bb3ed",
+  "productChanges": false,
+  "scenarios": [
+    "extension glob/exact overrides",
+    "prompt glob/exact overrides",
+    "theme glob/exact overrides",
+    "skill parent glob/exact overrides"
+  ],
+  "piCommand": "node node_modules/vitest/vitest.mjs run packages/coding-agent/test/package-manager.test.ts",
+  "piResults": {
+    "passed": 128,
+    "failed": 0,
+    "skipped": 0
+  },
+  "pisharpCommand": "dotnet test PiSharp.slnx --no-restore --filter FullyQualifiedName~LocalResourcePathRulesTests",
+  "pisharpResults": {
+    "passed": 69,
+    "failed": 0,
+    "skipped": 0,
+    "newHomePatternRows": 4
+  },
+  "comparison": "Source-level matcher-contract equivalence with the real upstream tilde regression and direct PiSharp resource-type vectors. Does not establish end-to-end catalog, trust or terminal parity; no native Windows run. Synthetic paths are compared without opening or creating files under the real home directory."
+}

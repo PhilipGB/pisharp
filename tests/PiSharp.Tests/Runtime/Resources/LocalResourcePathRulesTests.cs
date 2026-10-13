@@ -5,6 +5,27 @@ namespace PiSharp.Tests;
 public sealed class LocalResourcePathRulesTests
 {
     [Theory]
+    [InlineData("extensions/plugin.dll", "extensions/*.dll", false)]
+    [InlineData("prompts/review.md", "prompts/*.md", false)]
+    [InlineData("themes/custom.json", "themes/*.json", false)]
+    [InlineData("skills/pdf/SKILL.md", "skills/pdf*", true)]
+    public void GlobAndExactOverridesExpandHomeForEachResource(string relativePath, string glob, bool skillPath)
+    {
+        var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        var root = Path.Combine(home, "pisharp-resource-home-fixture");
+        var path = Path.Combine(root, relativePath.Replace('/', Path.DirectorySeparatorChar));
+        var exact = skillPath ? "skills/pdf" : relativePath;
+        var exclusion = "!~/pisharp-resource-home-fixture/" + glob;
+        var include = "+~/pisharp-resource-home-fixture/" + exact;
+        var exclude = "-~/pisharp-resource-home-fixture/" + exact;
+        var baseDirectory = Path.Combine(Path.GetTempPath(), "pisharp-resource-home-base");
+
+        Assert.False(LocalResourcePathRules.IsEnabledByOverrides(path, [exclusion], baseDirectory, skillPath));
+        Assert.True(LocalResourcePathRules.IsEnabledByOverrides(path, [exclusion, include], baseDirectory, skillPath));
+        Assert.False(LocalResourcePathRules.IsEnabledByOverrides(path, [include, exclude], baseDirectory, skillPath));
+    }
+
+    [Theory]
     [InlineData("docs/.hidden.md", "!docs/**", true)]
     [InlineData("docs/.hidden.md", "!docs/*.md", true)]
     [InlineData("docs/.hidden.md", "!docs/.*", false)]

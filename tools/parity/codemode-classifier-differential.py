@@ -33,7 +33,12 @@ with tempfile.TemporaryDirectory(prefix='pisharp-codemode-parity-') as directory
     evidence = {'cases': []}
     for name, fail in [('success', 'false'), ('failure', 'true')]:
         pi = json.loads(subprocess.check_output(['node', str(probes / 'codemode-model-probe.mjs'), args.pi, fail], timeout=25))
+        output_items = pi.pop('outputItems')
         pisharp = json.loads(subprocess.check_output(['dotnet', str(work / 'bin/Debug/net10.0/probe.dll'), fail], timeout=25))
         assert pi == pisharp, (name, pi, pisharp)
-        evidence['cases'].append({'case': name, 'match': True, 'pi': pi, 'pisharp': pisharp})
+        evidence['cases'].append({'case': name, 'match': True, 'pi': pi, 'pisharp': pisharp,
+                                  'piOutputItems': output_items})
+    evidence['scope'] = ('Classifier authority, ordered script values and billing, including billing after failure. '
+                         'Pi output item markers are retained separately; output joining and formatting remain '
+                         'an open codemode-runtime requirement and are not verified by this probe.')
     pathlib.Path(args.output).write_text(json.dumps(evidence, indent=2) + '\n')

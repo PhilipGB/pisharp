@@ -1,0 +1,28 @@
+{
+  "pisharpProductionSha": "22eeb2a53dbaa94e41f78a40a997e3b3156bb3ed",
+  "piAuditCutoff": "3daa20280f6a7c7cbe0935680c9a38fdc3863005",
+  "productChanges": false,
+  "testChanges": "New characterization tests remain separate from the baseline/pin commit until their production fixes land. Original 1390-row baseline passed before adding them.",
+  "records": [
+    {
+      "log": "artifacts/parity/current-pi-baseline-2026-10-13/new-delta-fail-first.log",
+      "sha256": "dd6eb60a97199e9cf6d7ba67c52c1fd6e703a439346967dfe83b4d59bac9604e",
+      "total": 22,
+      "failed": 8,
+      "passed": 14,
+      "skipped": 0,
+      "finding": "Four misplaced Codemode directive cases, three forced clipboard cases, one new retry wording case fail; 14 existing/negative cases pass."
+    },
+    {
+      "log": "artifacts/parity/current-pi-baseline-2026-10-13/mcp-delta-fail-first.log",
+      "sha256": "22eb3ad570fe6dde7bc090ae06489c7e88271503e23fef104af9c870976b822d",
+      "total": 8,
+      "failed": 8,
+      "passed": 0,
+      "skipped": 0,
+      "finding": "Seven real stdio arbitrary/explicit-null structured-only result vectors and one on-demand resource-list vector fail."
+    }
+  ],
+  "mcpSdk": "ModelContextProtocol.Core 2.2.0 accepts scalar/array JsonElement values but typed nullable deserialization loses explicit JSON null; the native request/response boundary is needed to retain field presence.",
+  "limitations": "Fail-first evidence of specific mismatches; does not prove any fix or complete capability."
+}

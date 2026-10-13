@@ -23,6 +23,22 @@ apply_test_thread_limit()
 
 
 class DriverTests(unittest.TestCase):
+    def test_emulator_shutdown_drains_a_snapshot_larger_than_the_pipe(self):
+        terminal = TerminalProcess([sys.executable, '-c', 'import time; time.sleep(30)'],
+                                   Path('/tmp'), dict(os.environ), dict(columns=120, rows=40),
+                                   spool_render_frames=True)
+        try:
+            terminal.emulator.stdin.write(json.dumps(dict(op='snapshot')) + '\n')
+            terminal.emulator.stdin.flush()
+            terminal.close()
+            self.assertEqual(0, terminal.emulator.returncode)
+            self.assertTrue(terminal.emulator.stdout.closed)
+        finally:
+            if terminal.emulator.poll() is None:
+                terminal.emulator.kill()
+                terminal.emulator.wait(timeout=5)
+            terminal.render_frames.close()
+
     def test_session_imports_use_the_owned_agent_directory(self):
         child_environment = environment(Path('/tmp/parity-agent'), persist_sessions=True)
         self.assertEqual('/tmp/parity-agent/sessions', child_environment['PISHARP_SESSION_DIR'])

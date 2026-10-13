@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "plan_received": true,
-  "source_note": "Current Pi origin/main is ee409a85f6ad92bf8c6ab8ed735c6cd24f2e749e; PiSharp product source is e92d592b818cb5655046b98abafbd288a5e375d5. The cumulative audit since 955cc666 covers 237 commits: 88 OUT_OF_SCOPE, 44 NO_BEHAVIOR_CHANGE, 95 NEEDS_WORK, and 10 MATCHED. The newest in-scope OpenRouter personalized catalog change is NEEDS_WORK. The active priority remains Resources / Instructions / Trust; latest trusted-project extension UI replay matches at these pins. All 194 required capabilities, the five named upstream deltas, MCP completion, fresh final audit, and architecture review remain open.",
+  "source_note": "Post-refactor main is 22eeb2a53dbaa94e41f78a40a997e3b3156bb3ed (merged PR #1; exact-head CI 38427397999 green). Dedicated branch parity/current-pi-completion. Baseline captures used ee409a85; the complete audited pin is deliberately advanced to 3daa2028 after the 33-fixture baseline. Every new commit through audit cutoff 3daa2028 is classified in current-pi-refresh-2026-10-13/upstream-audit.json: 19 OUT_OF_SCOPE, 13 NO_BEHAVIOR_CHANGE, 17 NEEDS_WORK (including missing current-source proof), one MATCHED tilde-pattern contract. Product behavior and all 194 capability statuses are unchanged. Architecture refactor/review is complete; final bounded regression review and full source audit remain open.",
   "baseline": "earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035",
   "required_ids": [
     "feature-agent-multi-turn-and-streaming",
@@ -241,7 +241,8 @@
         "Current Pi 3dd803d7 Z.AI CN error: a new CompactionTests theory vector failed before the classifier update (one request rather than two), then passed after the narrow message match; focused 8/8, full suite 1000/1000 with TERM=xterm-256color, zero skips. Exact-head CI for the fix is pending.",
         "Exact-head Linux CI run 36746011211 for source 2550531a7f4813e9f10abce4241cbffc28f2ea7c passed restore, format, warnings-as-errors build and 1000/1000 tests, zero skips.",
         "Fail-first OpenAI Responses loopback cases measured immediate second requests after Retry-After not-a-date/Infinity (7-119 ms). After invalid dates return no server delay, both cases wait for exponential fallback; a cancellation case verifies an in-progress malformed-header fallback is cancelled without a retry. Existing server-delay maximum coverage still rejects the second request. Focused filter passes 6/6; format and warnings-as-errors build pass; PiSharp source a3a1512abecf201364c8b4324b24a2837f8f5a25 passes exact-head CI 36758603590 with 1009/1009 tests and zero skips.",
-        "Current Pi 3874b3e98 adds capacity retry wording. Three cases failed first; focused retry tests pass 17/17, Pi retry tests pass 25/25. Six paired scenarios compare request contexts/counts, ordered retry event payloads, recovery/exhaustion, enabled/zero budgets, billing exclusion, backoff cancellation and cleared state. See docs/parity/fixtures/provider-capacity-retry-2026-10-02.md. Format verification, zero-warning build and all 1098 tests pass with zero skips; Exact-head Linux CI 36994405262 passes on source 095c893a15f5fcdbea356d6c1cfbc57c8c4c5329, including all 1098 tests with zero skips; broader classifier/lifecycle parity remains open."
+        "Current Pi 3874b3e98 adds capacity retry wording. Three cases failed first; focused retry tests pass 17/17, Pi retry tests pass 25/25. Six paired scenarios compare request contexts/counts, ordered retry event payloads, recovery/exhaustion, enabled/zero budgets, billing exclusion, backoff cancellation and cleared state. See docs/parity/fixtures/provider-capacity-retry-2026-10-02.md. Format verification, zero-warning build and all 1098 tests pass with zero skips; Exact-head Linux CI 36994405262 passes on source 095c893a15f5fcdbea356d6c1cfbc57c8c4c5329, including all 1098 tests with zero skips; broader classifier/lifecycle parity remains open.",
+        "Current-Pi refresh 2026-10-13 source audit maps unresolved new deltas 7bd01fb9, 4b994d5e to this existing requirement; see docs/parity/fixtures/current-pi-refresh-2026-10-13/upstream-audit.json. This adds no verified status or behavior claim."
       ],
       "dependencies": []
     },
@@ -331,7 +332,8 @@
         "Current upstream main `earendil-works/pi@6f7551516b84278eb9da1c340c8e7bc66be1a6ba` defaults to reserveTokens 16384 and keepRecentTokens 20000. The #9740 cut-point test returns firstKeptEntryIndex=3, turnStartIndex=2, isSplitTurn=true before an oversized trailing tool result. The projected cut-point tests also constrain recovery-omission advancement to a closed invisible suffix. Current upstream `compaction.test.ts` plus `suite/agent-session-compaction.test.ts` passed 55 tests with 2 skipped; `settings-manager-compaction.test.ts` passed 56/56.",
         "A current-main Pi RPC process at `6f7551516b84278eb9da1c340c8e7bc66be1a6ba` compacted an earlier exchange plus current user/tool cycle and aborted assistant using a loopback SSE endpoint. It made two summary requests, applied custom focus only to the history request, retained the aborted assistant boundary, and returned the split summary, file detail, and 30/7/37 usage. Observed estimates were 25/41; exact PiSharp estimate parity on identical session state remains open. See docs/parity/compaction-cut-points.md and docs/parity/fixtures/rpc-compact-baseline.md.",
         "RpcActiveModelSelectionProcessTests.RpcModelSelectionAndCycleDuringBlockedToolTurnChangeTheNextProviderRequest now also changes active models during a blocked Bash turn, then manually compacts and verifies the selected model's one-token retention override drives the persisted summary boundary. This closes the active model-override propagation check for this slice; it does not establish settings editing while busy.",
-        "PiSharp local validation after the current-main compaction/default changes: `dotnet format PiSharp.slnx --verify-no-changes --no-restore` passed; `dotnet build PiSharp.slnx --artifacts-path /tmp/pisharp-ci-characterization --no-restore --warnaserror` succeeded with 0 warnings/errors; focused compaction/settings/runtime/process tests passed 91/91; full `dotnet test` passed 692/692 with 0 skips. Source commit `56f0659d9061c448a1837529804493c2e83d1e3e` passed exact-head Linux CI run `36394452133`: restore, format, warnings-as-errors build, and 692/692 tests (0 skipped). In-flight multi-cycle/overflow projection, provider-usage projection, and exact token-estimate parity remain open, so this feature stays in progress."
+        "PiSharp local validation after the current-main compaction/default changes: `dotnet format PiSharp.slnx --verify-no-changes --no-restore` passed; `dotnet build PiSharp.slnx --artifacts-path /tmp/pisharp-ci-characterization --no-restore --warnaserror` succeeded with 0 warnings/errors; focused compaction/settings/runtime/process tests passed 91/91; full `dotnet test` passed 692/692 with 0 skips. Source commit `56f0659d9061c448a1837529804493c2e83d1e3e` passed exact-head Linux CI run `36394452133`: restore, format, warnings-as-errors build, and 692/692 tests (0 skipped). In-flight multi-cycle/overflow projection, provider-usage projection, and exact token-estimate parity remain open, so this feature stays in progress.",
+        "Fresh unchanged-product baseline at Pi ee409a85 / PiSharp 22eeb2a53d: all 33 terminal fixtures were run at one explicit case each, retaining startup/editor/settings/trust/Markdown/overlay differences and the thinking-toggle HTTP mismatch. Two setup defects were repaired with separate repetitions. See docs/parity/fixtures/current-pi-refresh-2026-10-13/baseline.json. Full matrices and capability completion remain open."
       ],
       "dependencies": []
     },
@@ -400,7 +402,9 @@
         "Verify through application workflow and compare docs/cli.md; packages/coding-agent/src/core/tools/index.ts; registry with per-run availability and tests"
       ],
       "implementation": [],
-      "evidence": [],
+      "evidence": [
+        "Current-Pi refresh 2026-10-13 source audit maps unresolved new deltas 6f2f164a to this existing requirement; see docs/parity/fixtures/current-pi-refresh-2026-10-13/upstream-audit.json. This adds no verified status or behavior claim."
+      ],
       "dependencies": []
     },
     {
@@ -622,7 +626,9 @@
         "Pinned current-Pi comparison at e1787702d32e0a7fd7387840c918faa4d1286187 directly executed wrapTextWithAnsi under Node 24.21.0. Paired vectors cover prose, repeated spaces, SGR, OSC 8, long words, CJK and emoji. Fail-first tests cover wrapped whitespace, nested style state, shared row/search mapping, OSC 8 search offsets, viewport windows and current-Pi CJK/emoji rows; width-1 CJK substitution remains a deliberate difference. See docs/parity/fixtures/tui-wrap-layout-baseline.md. Local full suite passed 719/719; the final CJK/emoji vector test was then added and the complete focused rendering suite passed 51/51. `dotnet format PiSharp.slnx --verify-no-changes --no-restore` passes and the warnings-as-errors solution build reports 0 warnings/errors. Exact-head Linux CI for this pushed source remains to be checked.",
         "Current Pi e1787702d32e0a7fd7387840c918faa4d1286187 theme-controller, system-theme, theme-detection, terminal-color source/tests were inspected. TerminalThemeTests cover pinned light/dark/background-only/readability vectors and OKHSL; TerminalPtyTests.TerminalColorQueriesWorkThroughLinuxPty covers the terminal query protocol. CLI theme path behavior is recorded separately. Exact-head Linux CI run 36417080999 for 90c08f7 passed format, warnings-as-errors build, and 720/720 tests (0 skipped). Broader Pi process/cross-terminal TUI differential and custom HTML-export theme CSS remain open.",
         "At current Pi 0495646a, nine palette inputs in truecolor and 256color match all 56 role ANSI prefixes (1008 comparisons). Four fail-first cases are fixed; focused theme tests pass 19/19 and Pi system-theme tests pass 8/8. See docs/parity/fixtures/system-theme-pastel-2026-10-02.md. Full TUI cell/layout/interaction and terminal-family parity remain open; format verification, warnings-as-errors build (zero warnings/errors) and the full 1091-test suite pass with zero skips; exact-head Linux CI 36991960991 passes on source 099c63cea62067b83eb0acb10d30797d77e36e98, including all 1091 tests with zero skips.",
-        "Current Pi 4270522473e677ddba7b093caa0064a3df51d459 / PiSharp ff180dac8f35731a8765b317ab37c16745d6ad39 startup PTY pair: same-Pi calibration is exact and paired HTTP is exact with no scenario errors. The compact configured-key action line now matches, but full-screen state/render still differs by 64,818 fields and 40,086 rendered cells over seven frames, with 440 control-boundary diagnostics. Exact captures: docs/parity/fixtures/resources-terminal-current-pi-2026-10-12/current-42705224-ff180dac/quiet-startup-resources/."
+        "Current Pi 4270522473e677ddba7b093caa0064a3df51d459 / PiSharp ff180dac8f35731a8765b317ab37c16745d6ad39 startup PTY pair: same-Pi calibration is exact and paired HTTP is exact with no scenario errors. The compact configured-key action line now matches, but full-screen state/render still differs by 64,818 fields and 40,086 rendered cells over seven frames, with 440 control-boundary diagnostics. Exact captures: docs/parity/fixtures/resources-terminal-current-pi-2026-10-12/current-42705224-ff180dac/quiet-startup-resources/.",
+        "Current-Pi refresh 2026-10-13 source audit maps unresolved new deltas 11f99114 to this existing requirement; see docs/parity/fixtures/current-pi-refresh-2026-10-13/upstream-audit.json. This adds no verified status or behavior claim.",
+        "Fresh unchanged-product baseline at Pi ee409a85 / PiSharp 22eeb2a53d: all 33 terminal fixtures were run at one explicit case each, retaining startup/editor/settings/trust/Markdown/overlay differences and the thinking-toggle HTTP mismatch. Two setup defects were repaired with separate repetitions. See docs/parity/fixtures/current-pi-refresh-2026-10-13/baseline.json. Full matrices and capability completion remain open."
       ],
       "dependencies": []
     },
@@ -683,7 +689,8 @@
         "EditorKeymapTests.ClipboardCopyAndPasteUseContextualPiApplicationActions and EditorBindingTakesPrecedenceOverApplicationShortcutInTheEditorContext cover names/defaults and a configured Ctrl+X submit collision; TerminalPtyTests covers the full clipboard keyboard and /copy flow.",
         "Commit d331d7d714a5548add83b19c40d0f84da4efba7c passed local format, warnings-as-errors build and 447/447 tests, but Linux CI run 36149550761 failed one existing BashCancellationAndTimeoutKillTheProcessGroup test because /proc/<pid>/stat disappeared between File.Exists and ReadAllText. The process-tree assertion remains intact; ProcessTestHelpers now treats procfs disappearance during the read as process exit, and the working tree passes format, build and all 447 tests. Follow-up exact-head CI is pending. Follow-up commit b27a4b7bb8b3e9333a398e770b9e1801c675da46 updates ProcessTestHelpers to treat procfs disappearance after File.Exists as process exit while preserving the process-tree assertion; exact-head Linux CI run 36150182304 passed format verification, warnings-as-errors build and all 447 tests.",
         "Current Pi 4270522473e677ddba7b093caa0064a3df51d459 registers app.thinking.toggle on Ctrl+T and changes visibility for retained AssistantMessageComponents while persisting hideThinkingBlock. PiSharp now implements the application action and retained/live transcript updates at 65d045c5ff99e8c289b2cddb75cf6309a5879fdd; paired PTY and same-Pi calibration are recorded in docs/parity/fixtures/thinking-toggle-current-pi-2026-10-12/current-42705224-65d045c5/README.md.",
-        "Fixture tools/parity/terminal/fixtures/thinking-toggle.json verifies retained reasoning hide/show, future streamed reasoning, the Thinking... placeholder, restart persistence, and re-showing the reloaded reasoning. Same-Pi calibration matches all 12 render frames and HTTP. Paired named checkpoint text matches with no scenario errors; the full pair retains 6,404 state differences, 3,520 rendered-cell differences, 546 control-boundary diagnostics, and four HTTP differences from docs roots and the system/developer role. Exact-head Linux CI 38203758189 passes Node 24/24, Python 38/38, format, warnings-as-errors build, and .NET 1,343/1,343 with zero skips."
+        "Fixture tools/parity/terminal/fixtures/thinking-toggle.json verifies retained reasoning hide/show, future streamed reasoning, the Thinking... placeholder, restart persistence, and re-showing the reloaded reasoning. Same-Pi calibration matches all 12 render frames and HTTP. Paired named checkpoint text matches with no scenario errors; the full pair retains 6,404 state differences, 3,520 rendered-cell differences, 546 control-boundary diagnostics, and four HTTP differences from docs roots and the system/developer role. Exact-head Linux CI 38203758189 passes Node 24/24, Python 38/38, format, warnings-as-errors build, and .NET 1,343/1,343 with zero skips.",
+        "Fresh unchanged-product baseline at Pi ee409a85 / PiSharp 22eeb2a53d: all 33 terminal fixtures were run at one explicit case each, retaining startup/editor/settings/trust/Markdown/overlay differences and the thinking-toggle HTTP mismatch. Two setup defects were repaired with separate repetitions. See docs/parity/fixtures/current-pi-refresh-2026-10-13/baseline.json. Full matrices and capability completion remain open."
       ],
       "dependencies": []
     },
@@ -870,7 +877,8 @@
         "Current Pi ee409a85f6ad92bf8c6ab8ed735c6cd24f2e749e / PiSharp e92d592b818cb5655046b98abafbd288a5e375d5: refreshed trusted-project extension UI replay and same-Pi calibration both pass at 120x40 dark fullscreen. All 14 normalized render frames, terminal state, HTTP traces, provider request semantics, trust dialog checkpoints, submitted prompt, and protected project skill match. The normalized system prompt SHA-256 matches; raw PTY protocol bytes and generated documentation package paths remain recorded separately. Paired/calibration evidence: docs/parity/fixtures/project-trust-extension-ui-current-pi-2026-10-12/current-ee409a85-e92d592/README.md.",
         "At current Pi ee409a85 / PiSharp 387ae5b3, the trust-selector PTY pair and exact same-Pi calibration use the 120x40 dark fullscreen case. Calibration matches all 10 frames and HTTP. Paired HTTP matches with no scenario errors; startup row positions align (blank row 0, logo row 1, help rows 2-3, onboarding row 5, blank row 6, trust notice rows 7-8). Full terminal remains different by 48,590 state/render fields, including 33,458 render fields; raw PTY bytes differ. See docs/parity/fixtures/trust-selector-current-pi-2026-10-12.md and startup-spacing-387ae5b3/paired plus calibration captures.",
         "Fresh current Pi ee409a85 / PiSharp 387ae5b3 trusted-project extension UI pair and same-Pi calibration both match all 14 normalized render frames, terminal state, HTTP traces, and normalized provider requests. Ordered callbacks, project skill, editor/submitted prompt, provider user message and completion/exit assertions pass; raw PTY protocols differ and working-indicator frame count is scheduling-dependent. Evidence: docs/parity/fixtures/project-trust-extension-ui-current-pi-2026-10-12/current-ee409a85-387ae5b3/README.md.",
-        "Startup spacer source commit 387ae5b300f187eec28c5b50b51ab77489732f31 passes focused compositor tests 19/19, format verification, Release warnings-as-errors build (0 warnings/errors), full .NET suite 1,356/1,356 (0 skipped), terminal Node 24/24, Python 38/38 under the two-CPU/common-thread cap, and official MCP conformance with no baseline regressions. One initial local full-suite attempt hit an ephemeral loopback port collision in the unrelated Radius cancellation theory; the isolated theory passed 2/2 and the serial full rerun passed. Exact-head Linux CI 38228305151 passes both jobs."
+        "Startup spacer source commit 387ae5b300f187eec28c5b50b51ab77489732f31 passes focused compositor tests 19/19, format verification, Release warnings-as-errors build (0 warnings/errors), full .NET suite 1,356/1,356 (0 skipped), terminal Node 24/24, Python 38/38 under the two-CPU/common-thread cap, and official MCP conformance with no baseline regressions. One initial local full-suite attempt hit an ephemeral loopback port collision in the unrelated Radius cancellation theory; the isolated theory passed 2/2 and the serial full rerun passed. Exact-head Linux CI 38228305151 passes both jobs.",
+        "Fresh unchanged-product baseline at Pi ee409a85 / PiSharp 22eeb2a53d: all 33 terminal fixtures were run at one explicit case each, retaining startup/editor/settings/trust/Markdown/overlay differences and the thinking-toggle HTTP mismatch. Two setup defects were repaired with separate repetitions. See docs/parity/fixtures/current-pi-refresh-2026-10-13/baseline.json. Full matrices and capability completion remain open."
       ],
       "dependencies": []
     },
@@ -910,7 +918,9 @@
         "Current Pi 42705224 / PiSharp 8a1df81 matcher slice: direct matcher and ResourceCatalog tests pass 75/75 for minimatch comments/negation, POSIX classes, class negation, hidden-dot class rules, and signed/zero brace steps. The `resource-skill-precedence` PTY filter uses `[[:alpha:]]`; alphabetic-parent skill is absent, the numeric control remains, prompt expansion and provider request match, and the full normalized terminal/HTTP report plus same-Pi calibration pass with zero scenario errors. Current Pi package version is minimatch 10.2.6. Evidence and captures: docs/parity/fixtures/resource-path-minimatch-current-pi-2026-10-12.md and docs/parity/fixtures/resources-terminal-current-pi-2026-10-12/current-42705224-8a1df81/resource-skill-precedence/. The slice passes format verification, a warnings-as-errors build, Node 24/24, Python 37/37 and .NET 1,332/1,332 with zero skips. Committed and pushed as 1dc548d99dcca538fcfcd8ea4d58d25f361c1d6a; exact-head Linux CI 38191628410 passes all gates with zero skips.",
         "The current Pi 427 / PiSharp cf5 trust-extension replay exercises trusted project skill discovery and invocation after the native trust decision. All 12 paired terminal frames/renders and HTTP traces match; same-Pi calibration is exact and normalized provider requests and generated system prompt match. See docs/parity/fixtures/project-trust-extension-ui-current-pi-2026-10-12/current-42705224-cf5f427f/.",
         "Current Pi 4270522473e677ddba7b093caa0064a3df51d459 / PiSharp product tree 65d045c5ff99e8c289b2cddb75cf6309a5879fdd (capture HEAD 0461f41de66b8c022f2d1eb7dbcaf548e2dc7ac9): read, Bash and indirect skill-prompt PTY flows pass same-Pi calibration and paired comparison. All provider messages and normalized HTTP traces match; the 14/14/10 named render frames and normalized terminal states match with no scenario errors. Raw PTY bytes differ and control-boundary segmentation remains diagnostic (2,063 / 2,091 / 534 boundaries). Read and Bash each issue five requests across shared/project/user/temporary/unsafe skills; indirect invocation hides both direct readers and expands the shared skill in one request. Exact evidence: docs/parity/fixtures/skill-prompt-current-pi-2026-10-12/current-42705224-0461f41de6/README.md. Exact-head Linux CI 38204612669 passes Node 24/24, Python 38/38, format verification, warnings-as-errors build, and .NET 1,343/1,343 with zero skips.",
-        "Current Pi 4270522473e677ddba7b093caa0064a3df51d459 / PiSharp product code 65d045c5ff99e8c289b2cddb75cf6309a5879fdd, capture HEAD 3043c4b185e594b989aab73ff7eff915f7beed8d: same-Pi-calibrated pairs for resource-skill-precedence, extension-resource-discovery-reload and legacy-project-skills-reload match normalized terminal state, renders and HTTP/provider requests with no scenario errors. The precedence flow confirms project scope, POSIX-alpha filtering, invalid-name availability, collision warnings and expanded request; extension discovery/reload confirms startup and reloaded skills/prompts, collapsible tool output, theme diagnostics and reload status across four requests; legacy settings reload confirms disabled then enabled completion, the reloaded skill suggestion and both expanded prompt bodies across two requests. Calibration frames: 10/16/14; paired render differences: 0/0/0. Raw PTY streams differ. The legacy reload fixture now declares the three named assertion frames required by its behavior checker after a fail-first StopIteration exposed the missing fixture metadata. Evidence and captures: docs/parity/fixtures/resources-terminal-current-pi-2026-10-12/current-42705224-3043c4b185/README.md"
+        "Current Pi 4270522473e677ddba7b093caa0064a3df51d459 / PiSharp product code 65d045c5ff99e8c289b2cddb75cf6309a5879fdd, capture HEAD 3043c4b185e594b989aab73ff7eff915f7beed8d: same-Pi-calibrated pairs for resource-skill-precedence, extension-resource-discovery-reload and legacy-project-skills-reload match normalized terminal state, renders and HTTP/provider requests with no scenario errors. The precedence flow confirms project scope, POSIX-alpha filtering, invalid-name availability, collision warnings and expanded request; extension discovery/reload confirms startup and reloaded skills/prompts, collapsible tool output, theme diagnostics and reload status across four requests; legacy settings reload confirms disabled then enabled completion, the reloaded skill suggestion and both expanded prompt bodies across two requests. Calibration frames: 10/16/14; paired render differences: 0/0/0. Raw PTY streams differ. The legacy reload fixture now declares the three named assertion frames required by its behavior checker after a fail-first StopIteration exposed the missing fixture metadata. Evidence and captures: docs/parity/fixtures/resources-terminal-current-pi-2026-10-12/current-42705224-3043c4b185/README.md",
+        "Current-Pi refresh 2026-10-13 source audit maps unresolved new deltas 6a51a39d to this existing requirement; see docs/parity/fixtures/current-pi-refresh-2026-10-13/upstream-audit.json. This adds no verified status or behavior claim.",
+        "Current Pi 6a51a39d tilde-pattern delta matches existing production behavior: 69 focused matcher tests including four new home-pattern rows and current Pi package-manager 128/128. See docs/parity/fixtures/current-pi-refresh-2026-10-13/home-pattern-evidence.json. End-to-end resource/trust/terminal parity remains open."
       ],
       "dependencies": []
     },
@@ -946,7 +956,9 @@
         "Verify through application workflow and compare docs/settings.md, docs/environment-variables.md, docs/security.md; packages/coding-agent/src/core/settings-manager.ts; config/trust/security tests"
       ],
       "implementation": [],
-      "evidence": [],
+      "evidence": [
+        "Current-Pi refresh 2026-10-13 source audit maps unresolved new deltas e6fb2581 to this existing requirement; see docs/parity/fixtures/current-pi-refresh-2026-10-13/upstream-audit.json. This adds no verified status or behavior claim."
+      ],
       "dependencies": []
     },
     {
@@ -1055,7 +1067,8 @@
         "tests/PiSharp.Tests/Runtime/Sessions/SessionExportTests.cs: escaping, branch, failure and no-overwrite fixtures; tests/PiSharp.Tests/Cli/Tui/TerminalPtyTests.cs: export fixture",
         "TerminalPtyTests.ClipboardShortcutsPasteTextAndCopyLastAssistantThroughLinuxPty seeds assistant text, pastes clipboard text, exercises Ctrl+X and /copy, and verifies the copied bytes with a fake Wayland clipboard helper.",
         "Commit d331d7d714a5548add83b19c40d0f84da4efba7c passed local format, warnings-as-errors build and 447/447 tests, but Linux CI run 36149550761 failed one existing BashCancellationAndTimeoutKillTheProcessGroup test because /proc/<pid>/stat disappeared between File.Exists and ReadAllText. The process-tree assertion remains intact; ProcessTestHelpers now treats procfs disappearance during the read as process exit, and the working tree passes format, build and all 447 tests. Follow-up exact-head CI is pending. Follow-up commit b27a4b7bb8b3e9333a398e770b9e1801c675da46 updates ProcessTestHelpers to treat procfs disappearance after File.Exists as process exit while preserving the process-tree assertion; exact-head Linux CI run 36150182304 passed format verification, warnings-as-errors build and all 447 tests.",
-        "PiJsonlSessionInterchangeTests cover all-branch v3 export, active-head restoration, exclusive file creation and cancellation cleanup; TerminalPtyTests covers /export-jsonl. Exact implementation commit 2a10535814e102d17ba4aaefc8bf3512a0a87432 passed Linux CI run 36188382176 with all 526 tests."
+        "PiJsonlSessionInterchangeTests cover all-branch v3 export, active-head restoration, exclusive file creation and cancellation cleanup; TerminalPtyTests covers /export-jsonl. Exact implementation commit 2a10535814e102d17ba4aaefc8bf3512a0a87432 passed Linux CI run 36188382176 with all 526 tests.",
+        "Current-Pi refresh 2026-10-13 source audit maps unresolved new deltas 3e477eab, cea25743 to this existing requirement; see docs/parity/fixtures/current-pi-refresh-2026-10-13/upstream-audit.json. This adds no verified status or behavior claim."
       ],
       "dependencies": []
     },
@@ -1127,7 +1140,8 @@
       ],
       "evidence": [
         "tests/PiSharp.Tests/Cli/Sessions/SessionExportCommandTests.cs invokes separate CLI processes to check inferred and explicit destinations, escaped prompt, private file permissions, no overwrite, corrupt/symlink input rejection, and no agent directory/provider requirement. Other prompt and protocol modes have separate narrow tests; no whole CLI parity claim.",
-        "dotnet format --verify-no-changes and warning-as-error build passed; 129/129 deterministic tests passed including the standalone export process fixture."
+        "dotnet format --verify-no-changes and warning-as-error build passed; 129/129 deterministic tests passed including the standalone export process fixture.",
+        "Current-Pi refresh 2026-10-13 source audit maps unresolved new deltas 441f5767 to this existing requirement; see docs/parity/fixtures/current-pi-refresh-2026-10-13/upstream-audit.json. This adds no verified status or behavior claim."
       ],
       "dependencies": []
     },
@@ -3663,7 +3677,8 @@
         "Codemode image-validation source ee71fc63905044abbeaa2dd0e134a54fbd797f20 exact-head CI 36749258733 passes restore, format, zero-warning/error build and 1003/1003 tests with zero skips; fail-first provider-loop evidence and 10/10 focused CodemodeTests recorded in docs/parity/fixtures/upstream-delta-audit-2026-09-30.md.",
         "Fail-first two-server MCP stdio fixture verified provider-safe namespace summaries, bounded instructions and callable tool metadata, namespace-filtered search, nested calls and hidden-tool exclusion; a separate configuration assertion verifies codemode-deferred alias canonicalization. Focused Codemode/MCP/config tests pass 16/16; full local suite passes 1004/1004 with zero skips. Exact-head Linux CI on f61455a21c359ec1af704c8b093f1d209db3cb51 / run 36753858082 passes restore, format, warnings-as-errors build and 1004/1004 tests with zero skips.",
         "Current Pi refactor 24382bed at c661bc574f9e9713cc2af567fc1ac00621377a0c declares tool reaches and namespace aliases and wraps MCP structured output in a CallToolResult schema. Pi tests pass 85/85 across coding-agent MCP/auth suites and 170/170 across Codemode package suites. PiSharp still filters Codemode search by exact namespace name, and CodemodeSandbox returns only StructuredContent for schema-bearing tools, dropping MCP content and isError from the nested value.",
-        "Current Pi 77332f7a output test formats 100,000 empty text items within its 5-second bound. PiSharp currently limits a script to 256 output calls and joins all text with unconditional newlines; this remains an explicit current-Pi gap to resolve next. MCP nested success/error values, alias discovery, and schemas match in real stdio/QuickJS tests; see docs/parity/fixtures/mcp-codemode-reach-result-current-pi-2026-10-12.md."
+        "Current Pi 77332f7a output test formats 100,000 empty text items within its 5-second bound. PiSharp currently limits a script to 256 output calls and joins all text with unconditional newlines; this remains an explicit current-Pi gap to resolve next. MCP nested success/error values, alias discovery, and schemas match in real stdio/QuickJS tests; see docs/parity/fixtures/mcp-codemode-reach-result-current-pi-2026-10-12.md.",
+        "Current-Pi refresh 2026-10-13 source audit maps unresolved new deltas 014873d7, b6d505cd, 3daa2028 to this existing requirement; see docs/parity/fixtures/current-pi-refresh-2026-10-13/upstream-audit.json. This adds no verified status or behavior claim."
       ],
       "dependencies": [
         "tool-exposure-loadout",
@@ -3726,7 +3741,8 @@
         "McpCredentialIsolationTests initially failed four cases: account overwrite, logout removing another account, shared legacy state, and twelve legacy winners. After the fix, 34/34 focused account/OAuth checks pass. Six operation sequences match current Pi 28eaccb8 exactly for token pairs, return values and persisted keys in fixtures/mcp-credential-isolation-2026-10-02.json. Current Pi store/refresh tests pass 8/8. Format verification, warnings-as-errors build (zero warnings/errors) and all 1076 PiSharp tests pass with zero skips; exact-head Linux CI 36986049950 passes at 930bc2d020cac38d6875e1a040b1c057525734d2 with 1076/1076 tests and zero skips.",
         "DeferredToolRestoreTests includes resume, registry/reload gaps, additive/replacing selections, exclusions/allowed/no-tools, cancellation and transcript declaration order. Eight paired current-Pi/PiSharp scenarios match ordered selections, provider declarations and persisted loadout names at Pi 0495646a. See docs/parity/fixtures/deferred-tool-restore-2026-10-02.md. Broader parity remains in progress. Format verification and zero-warning build pass; full local tests pass 1087/1087 with zero skips. Exact-head Linux CI 36989476624 passes on source 25212004711fa7a321b198084b4e24290d031985, including 1087/1087 tests, zero skipped.",
         "Current Pi refactor 24382bed at c661bc574f9e9713cc2af567fc1ac00621377a0c adds reachesTools-based startup waits and namespace aliases and declares MCP CallToolResult output schemas with local JSON Schema references relocated under structuredContent. Pi MCP/auth tests pass 85/85 and Codemode package tests 170/170. PiSharp McpStartupCoordinator still hard-codes codemode/tool_search/resource names, the tool namespace has no aliases, and MCP registrations expose only the server structured-output schema.",
-        "Current Pi 24382bed reach, alias, and CallToolResult behavior matches at PiSharp e92d592b. Two real Python stdio MCP children, the QuickJS Codemode sandbox, schema-reference tests, error-result assertions, 36 focused tests, full 1,355/1,355 suite, official conformance, and exact-head CI 38222962860 pass. See docs/parity/fixtures/mcp-codemode-reach-result-current-pi-2026-10-12.md."
+        "Current Pi 24382bed reach, alias, and CallToolResult behavior matches at PiSharp e92d592b. Two real Python stdio MCP children, the QuickJS Codemode sandbox, schema-reference tests, error-result assertions, 36 focused tests, full 1,355/1,355 suite, official conformance, and exact-head CI 38222962860 pass. See docs/parity/fixtures/mcp-codemode-reach-result-current-pi-2026-10-12.md.",
+        "Current-Pi refresh 2026-10-13 source audit maps unresolved new deltas 148622bc, f4cca2dc, 67996ab7, da0eadf0 to this existing requirement; see docs/parity/fixtures/current-pi-refresh-2026-10-13/upstream-audit.json. This adds no verified status or behavior claim."
       ],
       "dependencies": [
         "tool-exposure-loadout",
@@ -3932,7 +3948,7 @@
       ],
       "evidence": [
         "Current Pi pins @modelcontextprotocol/conformance@0.2.0-alpha.11 and runs modes 2025-03-26, 2025-06-18 and 2025-11-25. Its runner compares each check against a committed baseline. PiSharp has no equivalent harness or baseline yet.",
-        "At current Pi 4270522473e677ddba7b093caa0064a3df51d459, reran packages/coding-agent/test/mcp-conformance/run.ts against @modelcontextprotocol/conformance@0.2.0-alpha.11. All 26 scenarios across protocol versions 2025-03-26, 2025-06-18 and 2025-11-25 match Pi\u2019s committed baseline: 261 checks pass and the same eight checks fail in the three documented cases (six elicitation defaults, CIMD client-id use, and the deliberate three-sign-in limit). PiSharp\u2019s equivalent runner and baseline remain to be implemented and classified.",
+        "At current Pi 4270522473e677ddba7b093caa0064a3df51d459, reran packages/coding-agent/test/mcp-conformance/run.ts against @modelcontextprotocol/conformance@0.2.0-alpha.11. All 26 scenarios across protocol versions 2025-03-26, 2025-06-18 and 2025-11-25 match Pi’s committed baseline: 261 checks pass and the same eight checks fail in the three documented cases (six elicitation defaults, CIMD client-id use, and the deliberate three-sign-in limit). PiSharp’s equivalent runner and baseline remain to be implemented and classified.",
         "PiSharp candidate based on 10ce13a3: the executable official-suite harness drives production McpRuntime, real registered tools and the OAuth loopback callback. Full run against @modelcontextprotocol/conformance@0.2.0-alpha.11 matches current Pi 4270522473e677ddba7b093caa0064a3df51d459 across all 26 scenarios and three protocol modes: 261 checks pass and the same eight known checks fail, each classified. The run verifies selected protocol fallback, SSE reconnect/resume, OAuth scope step-up, tool calls and JSON Schema 2020-12 preservation. Focused MCP tests pass 76/76; terminal tests 24/24; Python tests 38/38; dotnet format passes; warnings-as-errors build has zero warnings/errors; full .NET suite passes 1,343/1,343 with zero skips. See tools/parity/mcp-conformance/README.md.",
         "Exact-head Linux CI run 38212383263 passes on PiSharp 0cfdf05e448192b15b4090406f602027bdfbc95d: standard job passes terminal 24/24, Python 38/38, format, warnings-as-errors build and .NET 1,343/1,343 with zero skips; the dedicated official MCP conformance job builds and passes the full three-mode suite. Current Pi remained at 4270522473e677ddba7b093caa0064a3df51d459 after a fresh fetch. The MCP conformance capability is verified; the overall parity gate remains open.",
         "Exact-head Linux CI 38222962860 on PiSharp e92d592b818cb5655046b98abafbd288a5e375d5 passes the official 26-scenario conformance suite across all three protocol modes with 261 passing checks, the same eight documented failures, and no baseline regressions."
@@ -4028,7 +4044,8 @@
       ],
       "evidence": [
         "docs/parity/fixtures/anthropic-inline-tools-2026-10-02.md",
-        "Anthropic inline tool history matches 26 current-Pi real-SDK request scenarios plus restored tool-result token estimates and both compaction boundaries. Focused checks pass 154/154; format verification and warnings-as-errors build pass with zero warnings/errors; full suite passes 1145/1145 with zero skips. Exact-head CI remains pending until publication. The reusable terminal differential harness is next, then the first-class llama.cpp router family."
+        "Anthropic inline tool history matches 26 current-Pi real-SDK request scenarios plus restored tool-result token estimates and both compaction boundaries. Focused checks pass 154/154; format verification and warnings-as-errors build pass with zero warnings/errors; full suite passes 1145/1145 with zero skips. Exact-head CI remains pending until publication. The reusable terminal differential harness is next, then the first-class llama.cpp router family.",
+        "Current-Pi refresh 2026-10-13 source audit maps unresolved new deltas d4d53612, 34a8bb38 to this existing requirement; see docs/parity/fixtures/current-pi-refresh-2026-10-13/upstream-audit.json. This adds no verified status or behavior claim."
       ],
       "dependencies": [
         "feature-tools-default-set-dynamic-availability",
@@ -4260,7 +4277,7 @@
       "status": "verified",
       "source": "earendil-works/pi@eba849739511223c51a62bbd7e3f1c00f99fb1d0: packages/coding-agent/src/extensions/llama/{index,provider,client,ui,huggingface}.ts; test/llama-extension.test.ts",
       "acceptance": [
-        "Audit and match Download model\u2026, repository search, quantization selection and exact owner/repository[:quant] input.",
+        "Audit and match Download model…, repository search, quantization selection and exact owner/repository[:quant] input.",
         "Match HF_TOKEN and token-file lookup precedence, gated-model warnings/access links, cancellation and unload/retain prompts.",
         "The router downloads the model; deterministic local HTTP/process and full terminal differential evidence is required."
       ],
@@ -5195,12 +5212,12 @@
     "latest_tested_pi_head": "ee409a85f6ad92bf8c6ab8ed735c6cd24f2e749e"
   },
   "execution_policy": {
-    "updated": "2026-10-12",
+    "updated": "2026-10-13",
     "priority": [
-      "Finish Resources / Instructions / Trust, including remaining current startup, trust-selector, precedence, reload, and presentation differences; the trusted-project extension UI replay is refreshed at Pi ee409a85 / PiSharp e92d592b.",
-      "Resolve delayed terminal-reply buffering, compaction-status coloring, herdr Kitty image detection, Codemode schema constraints, and compaction-summary thinking against current Pi source and observable differentials.",
-      "Continue every remaining NEEDS_WORK ledger item. The Pi ee409a85 key-specific OpenRouter catalog is audited NEEDS_WORK and queued after the active family and named upstream deltas.",
-      "Run a fresh final Pi source audit, close applicable MCP conformance gaps, review and fix material architecture bottlenecks, then complete exact-head verification."
+      "Resolve every open entry in current_pi_refresh at configured Pi 3daa2028, then resume older ledger work.",
+      "Resolve every in-scope entry in current_pi_refresh before returning to older capability work.",
+      "Resume Resources / Instructions / Trust and finish all 194 required capabilities.",
+      "Perform final bounded upstream refresh, fresh source audit, architecture regression review and clean-checkout full verification."
     ],
     "bookkeeping": "After each coherent implementation slice, run focused verification, format verification, warnings-as-errors build and the full test suite; commit and push; verify exact-head CI; update parity evidence; refresh current Pi when the active family requires it; then continue until every ledger capability and the complete final gate are satisfied. Preserve unrelated user-owned worktree files."
   },
@@ -5287,5 +5304,47 @@
     "documentation": "docs/parity/fixtures/artifact-archive-2026-10-13/README.md",
     "feature_status_changes": false,
     "limitations": "No historical run, CI result or raw capture was re-executed or independently authenticated. The hashes prove this archive preserves the local backlog, not the accuracy of historical parity claims. Archives are local and are absent from clean checkouts; keep a backup for long-term retention."
+  },
+  "post_merge_baseline": {
+    "date": "2026-10-13",
+    "starting_main": "22eeb2a53dbaa94e41f78a40a997e3b3156bb3ed",
+    "main_ci": 38427397999,
+    "branch": "parity/current-pi-completion",
+    "architecture_review_complete": true,
+    "final_architecture_regression_review_complete": false,
+    "configured_pi": "ee409a85f6ad92bf8c6ab8ed735c6cd24f2e749e",
+    "dotnet_tests": {
+      "passed": 1390,
+      "failed": 0,
+      "skipped": 0
+    },
+    "node_tests": 24,
+    "python_tests": 47,
+    "documentation": {
+      "documents": 131,
+      "references": 457
+    },
+    "mcp": "No regression; eight classified checks remain",
+    "process_differentials": "17 drivers executed; classifier fixture repaired and rerun; formatting remains outside its billing/authority claim",
+    "terminal_baseline": "All 33 fixtures at one explicit matrix case each: initial calibrations 30/33 and pairs 24/33. Seven repeats/corrections preserved; unresolved presentation and thinking-toggle HTTP differences remain. See baseline.json.",
+    "evidence": "docs/parity/fixtures/current-pi-refresh-2026-10-13/README.md",
+    "python_tests_after_harness_repair": 48,
+    "baseline_manifest": "docs/parity/fixtures/current-pi-refresh-2026-10-13/baseline.json"
+  },
+  "current_pi_refresh": {
+    "old_reference": "ee409a85f6ad92bf8c6ab8ed735c6cd24f2e749e",
+    "audit_cutoff": "3daa20280f6a7c7cbe0935680c9a38fdc3863005",
+    "commit_count": 50,
+    "classifications": {
+      "OUT_OF_SCOPE": 19,
+      "NEEDS_WORK": 17,
+      "NO_BEHAVIOR_CHANGE": 13,
+      "MATCHED": 1
+    },
+    "audit_complete": true,
+    "pin_advanced": true,
+    "delta_resolved": false,
+    "fixture": "docs/parity/fixtures/current-pi-refresh-2026-10-13/upstream-audit.json",
+    "baseline_complete": true
   }
 }

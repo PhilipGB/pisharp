@@ -1,4 +1,14 @@
-## Current checkpoint — 2026-10-12
+## Current post-merge checkpoint — 2026-10-13
+
+PiSharp merged `main` is `22eeb2a53dbaa94e41f78a40a997e3b3156bb3ed`; exact-head Linux CI [38427397999](https://github.com/PhilipGB/pisharp/actions/runs/38427397999) passes. Work continues on `parity/current-pi-completion`. The major architecture refactor and composition review are complete; only the bounded final architecture regression review remains. Production dependencies remain CLI → Runtime → Core, with MAF 1.21.0 and Microsoft.Extensions.AI 10.10.0.
+
+Fresh local baseline: restore/format/warnings-as-errors build pass; .NET 1,390/1,390 with zero skips, Node 24/24, Python 47/47, documentation 131 documents / 457 references, MCP with no regressions against eight classified failures. All 17 existing process differential drivers ran; the classifier probe required valid boolean criteria and updated item extraction, then its billing/authority comparisons passed. This probe retains Pi output items and does not verify the open Codemode formatting contract. All 33 terminal fixtures ran at one explicitly selected case each: initial calibration 30/33 and pairs 24/33; seven repeats/corrections retain all failures. The harness teardown and Markdown input defects are fixed; Python terminal tests now pass 48/48. Product presentation and one thinking-toggle HTTP mismatch remain open.
+
+The baseline comparisons used `ee409a85f6ad92bf8c6ab8ed735c6cd24f2e749e`. The deliberately advanced configured Pi reference is `3daa20280f6a7c7cbe0935680c9a38fdc3863005`: all 50 new commits are classified (19 out of scope, 13 no behavior change, 17 needing work or current-source proof, one matched tilde-pattern contract). Resolve the new delta, then resume Resources / Instructions / Trust and every remaining ledger requirement. All 194 capability statuses remain unchanged. Full parity and the fresh final source audit remain incomplete. Keep `test.pdf` and unrelated user files untouched.
+
+See [the current refresh](fixtures/current-pi-refresh-2026-10-13/README.md) for source findings, plans and evidence scope.
+
+## Historical checkpoint — 2026-10-12
 
 Pi `origin/main` is `4270522473e677ddba7b093caa0064a3df51d459`; PiSharp product code is `65d045c5ff99e8c289b2cddb75cf6309a5879fdd`, with current evidence at `3043c4b185e594b989aab73ff7eff915f7beed8d`. Exact-head Linux CI [38205629517](https://github.com/PhilipGB/pisharp/actions/runs/38205629517) passes Node 24/24, Python 38/38, format verification, warnings-as-errors build and .NET 1,343/1,343 with zero skips. Python test/parity runners cap CPU affinity and common native worker pools at two; the child-process inheritance test passes.
 

@@ -14,6 +14,7 @@ import subprocess
 import sys
 import tempfile
 import termios
+from threading import Thread
 import time
 
 from compare import ControlTrace
@@ -206,13 +207,30 @@ class TerminalProcess:
                 os.killpg(self.process.pid, signal.SIGKILL)
                 self.process.wait(timeout=3)
         os.close(self.master)
-        self.emulator.stdin.close()
-        self.emulator.wait(timeout=5)
-        self.emulator.stdout.close()
-        self._new_render_frames = []
-        finish_render_frames = getattr(self.render_frames, 'finish', None)
-        if finish_render_frames is not None:
-            finish_render_frames()
+
+        def drain_emulator():
+            while self.emulator.stdout.read(64 * 1024):
+                pass
+
+        # A pending snapshot can fill stdout and prevent exit after stdin closes.
+        # Captures have already consumed their responses; drain teardown output in bounded chunks.
+        drain = Thread(target=drain_emulator, daemon=True)
+        drain.start()
+        try:
+            self.emulator.stdin.close()
+            self.emulator.wait(timeout=5)
+        except (subprocess.TimeoutExpired, BrokenPipeError):
+            if self.emulator.poll() is None:
+                self.emulator.kill()
+                self.emulator.wait(timeout=3)
+            raise
+        finally:
+            drain.join(timeout=3)
+            self.emulator.stdout.close()
+            self._new_render_frames = []
+            finish_render_frames = getattr(self.render_frames, 'finish', None)
+            if finish_render_frames is not None:
+                finish_render_frames()
 
 
 if __name__ == '__main__' and sys.argv[1] == '--exec-pty':
