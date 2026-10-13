@@ -1,7 +1,0 @@
-{
-  "pass_": true,
-  "expected": 16,
-  "candidate": 16,
-  "failures": [],
-  "scope": "Complete transcript-markdown-resume fixture, both calibration and paired, original dimensions/themes/modes"
-}

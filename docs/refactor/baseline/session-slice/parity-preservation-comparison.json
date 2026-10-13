@@ -1,7 +1,0 @@
-{
-  "pass_": true,
-  "expected": 19,
-  "candidate": 19,
-  "failures": [],
-  "scope": "Three affected virtual-model differentials plus complete transcript-resume calibration/pair"
-}

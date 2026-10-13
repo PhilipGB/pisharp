@@ -1,2 +1,0 @@
-[pisharp-conformance] connected, scenario: sse-retry
-[pisharp-conformance] test_reconnection completed

@@ -1,4 +1,0 @@
-[pisharp-conformance] sign-in 1
-[pisharp-conformance] authorization URL: http://localhost:35953/authorize
-[pisharp-conformance] connected, scenario: auth/token-endpoint-auth-post
-[pisharp-conformance] test-tool completed

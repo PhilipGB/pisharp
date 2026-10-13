@@ -1,7 +1,0 @@
-  Determining projects to restore...
-  Restored /home/philip/Downloads/pisharp-bootstrap/pisharp/tests/ResourceDiscoveryExtension/ResourceDiscoveryExtension.csproj (in 938 ms).
-  Restored /home/philip/Downloads/pisharp-bootstrap/pisharp/tools/McpConformance/PiSharp.McpConformance.csproj (in 938 ms).
-  Restored /home/philip/Downloads/pisharp-bootstrap/pisharp/src/PiSharp.Runtime/PiSharp.Runtime.csproj (in 13 ms).
-  Restored /home/philip/Downloads/pisharp-bootstrap/pisharp/src/PiSharp.Core/PiSharp.Core.csproj (in 2 ms).
-  Restored /home/philip/Downloads/pisharp-bootstrap/pisharp/src/PiSharp.Cli/PiSharp.Cli.csproj (in 15 ms).
-  Restored /home/philip/Downloads/pisharp-bootstrap/pisharp/tests/PiSharp.Tests/PiSharp.Tests.csproj (in 49 ms).

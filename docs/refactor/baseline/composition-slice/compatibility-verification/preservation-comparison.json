@@ -1,7 +1,0 @@
-{
-  "pass_": true,
-  "failures": [],
-  "baselineFlaky": [],
-  "expected": 1456,
-  "candidate": 1475
-}

@@ -1,4 +1,0 @@
-[pisharp-conformance] sign-in 1
-[pisharp-conformance] authorization URL: http://localhost:39481/authorize
-[pisharp-conformance] connected, scenario: auth/basic-cimd
-[pisharp-conformance] test-tool completed

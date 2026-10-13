@@ -1,7 +1,0 @@
-[pisharp-conformance] sign-in 1
-[pisharp-conformance] authorization URL: http://localhost:38015/authorize
-[pisharp-conformance] sign-in 2
-[pisharp-conformance] authorization URL: http://localhost:38015/authorize
-[pisharp-conformance] sign-in 3
-[pisharp-conformance] authorization URL: http://localhost:38015/authorize
-[pisharp-conformance] error: Still requires sign-in after 3 sign-ins

@@ -1,8 +1,0 @@
-{
-  "src/PiSharp.Runtime/Mcp/McpRuntime.cs": "525babd42670158a26c789aad9a614336fd8c4ce649cacd39cc564a389d3dbce",
-  "src/PiSharp.Runtime/Mcp/McpClientConnection.cs": "fa91a564276352f01b30bd8dad122a4ab0df8f50621684f8a7c4637f929aa7b1",
-  "src/PiSharp.Runtime/Mcp/McpToolPublication.cs": "72f8b2f4e759c4e8c192f364b1185f299e286a3297bdcca351419a5613d2cc0e",
-  "src/PiSharp.Runtime/Mcp/McpToolFunction.cs": "3306c4527c71a64bdaed375061769a3ffa513419d5af86504cc9305aab71b012",
-  "src/PiSharp.Runtime/Mcp/McpResourcePublication.cs": "b7e2ba8c374e91fd2ccafd17a34b1127d9cdd432b00eff89b12ad8671c28ff14",
-  "tests/PiSharp.Tests/McpRuntimeTests.cs": "3a29cc4226c1c54f7b00d6d41b04dc89dea08321b4536c9799eb6be4135f38d6"
-}

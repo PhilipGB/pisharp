@@ -1,2 +1,0 @@
-#!/bin/sh
-exec dotnet '/home/philip/Downloads/pisharp-bootstrap/pisharp/tools/McpConformance/bin/Debug/net10.0/PiSharp.McpConformance.dll' "$@"

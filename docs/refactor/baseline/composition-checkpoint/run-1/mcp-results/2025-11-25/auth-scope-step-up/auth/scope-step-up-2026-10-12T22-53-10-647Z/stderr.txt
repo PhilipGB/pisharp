@@ -1,6 +1,0 @@
-[pisharp-conformance] sign-in 1
-[pisharp-conformance] authorization URL: http://localhost:37311/authorize
-[pisharp-conformance] connected, scenario: auth/scope-step-up
-[pisharp-conformance] sign-in 2
-[pisharp-conformance] authorization URL: http://localhost:37311/authorize
-[pisharp-conformance] test-tool completed

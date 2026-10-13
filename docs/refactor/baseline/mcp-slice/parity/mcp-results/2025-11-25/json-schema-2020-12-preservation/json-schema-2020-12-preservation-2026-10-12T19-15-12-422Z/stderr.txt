@@ -1,2 +1,0 @@
-[pisharp-conformance] connected, scenario: json-schema-2020-12-preservation
-[pisharp-conformance] json_schema_echo completed

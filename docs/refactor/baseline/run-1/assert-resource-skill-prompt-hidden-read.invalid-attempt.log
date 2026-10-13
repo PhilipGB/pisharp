@@ -1,9 +1,0 @@
-Traceback (most recent call last):
-  File "/home/philip/Downloads/pisharp-bootstrap/pisharp/tools/parity/terminal/assert_skill_prompt_parity.py", line 265, in <module>
-    main()
-  File "/home/philip/Downloads/pisharp-bootstrap/pisharp/tools/parity/terminal/assert_skill_prompt_parity.py", line 256, in main
-    result = verify_mode(args.mode, args.paired, args.calibration_report)
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/philip/Downloads/pisharp-bootstrap/pisharp/tools/parity/terminal/assert_skill_prompt_parity.py", line 180, in verify_mode
-    raise AssertionError(f"the skill reader hint does not match mode {mode}")
-AssertionError: the skill reader hint does not match mode indirect

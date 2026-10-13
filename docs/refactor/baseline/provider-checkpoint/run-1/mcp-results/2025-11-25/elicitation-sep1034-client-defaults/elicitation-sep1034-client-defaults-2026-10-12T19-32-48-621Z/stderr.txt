@@ -1,2 +1,0 @@
-[pisharp-conformance] connected, scenario: elicitation-sep1034-client-defaults
-[pisharp-conformance] test_client_elicitation_defaults completed

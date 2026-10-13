@@ -40,8 +40,3 @@ Before parity work, review `TODO.md`, `docs/continuation.md`, and `docs/parity/f
 ## Security & Configuration
 
 Keep credentials out of commits and fixtures. Prefer provider environment variables over `--api-key`. Use `PISHARP_AGENT_DIR` and `PISHARP_SESSION_DIR` to isolate local configuration and sessions.
-
-## Active architecture refactor
-
-Read `docs/refactor/GOAL.md` and `docs/refactor/PROGRESS.md` before refactor work.
-Continue the recorded next action on the dedicated branch; preserve the frozen baselines.

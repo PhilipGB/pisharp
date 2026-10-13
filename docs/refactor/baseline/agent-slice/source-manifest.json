@@ -1,6 +1,0 @@
-{
-  "src/PiSharp.Runtime/PiAgent.cs": "bb5065380b0959cf56c5ca80d7455106713e1a7515bde9fa51609adac308d7ab",
-  "src/PiSharp.Runtime/PiCompactionSummarizer.cs": "db6c209887e6181684418bb9a56dea12def597ffb6f566db739bd1bcf9ebbc45",
-  "src/PiSharp.Runtime/AgentToolCatalog.cs": "275aa311306b9f5d021762574db9b38203157e50e0d4264d212f69aab26ec3c6",
-  "tests/PiSharp.Tests/CompactionTests.cs": "a3fb1ed16431a7dfe0c9572a6e05309899858cde6513f6d3808e8a551d0f2ae5"
-}

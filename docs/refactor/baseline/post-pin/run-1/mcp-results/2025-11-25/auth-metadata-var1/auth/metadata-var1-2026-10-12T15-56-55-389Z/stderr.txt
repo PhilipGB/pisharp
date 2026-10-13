@@ -1,4 +1,0 @@
-[pisharp-conformance] sign-in 1
-[pisharp-conformance] authorization URL: http://localhost:33893/authorize
-[pisharp-conformance] connected, scenario: auth/metadata-var1
-[pisharp-conformance] test-tool completed
