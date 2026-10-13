@@ -1,6 +1,6 @@
 # Provider and model selection
 
-[ProviderModelRuntime](../../src/PiSharp.Cli/ProviderModelRuntime.cs) composes
+[ProviderModelRuntime](../../src/PiSharp.Cli/Providers/ProviderModelRuntime.cs) composes
 provider profiles, catalogs, scopes and physical/virtual model selection for CLI,
 terminal and RPC modes. Provider-specific adapters/configuration stay in CLI;
 Runtime owns shared model metadata, routing and agent execution.
@@ -17,7 +17,7 @@ Runtime owns shared model metadata, routing and agent execution.
   Full/provider-specific refreshes replace their existing scopes and deduplicate
   provider/model identities. Selection records availability separately from catalog
   discovery, preserving Pi's footer count behavior.
-- [LlamaRouterDiscovery](../../src/PiSharp.Cli/Providers/LlamaRouterDiscovery.cs)
+- [LlamaRouterDiscovery](../../src/PiSharp.Cli/Providers/Llama/LlamaRouterDiscovery.cs)
   serializes router refresh/cache writes and owns the current discovered profile.
   It preserves offline restore and safe cached fallback; explicit refresh also
   updates the shared model snapshot. Router credentials/URL are resolved before

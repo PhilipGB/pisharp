@@ -99,7 +99,7 @@ Console.WriteLine(JsonSerializer.Serialize(output, new JsonSerializerOptions(Jso
     "import  createLlamaProvider  from 'pi/packages/coding-agent/src/extensions/llama/provider.ts';\n"
     "const url=process.argv[2];\n"
     "const controller=createLlamaProvider();\n"
-    "await controller.provider.refreshModels?.({credential:{type:'api_key',key:'local',env:{LLAMA_BASE_URL:url}},"
+    "await controller.provider.refreshModels?.(credential:{type:'api_key',key:'local',env:{LLAMA_BASE_URL:url},"
     "stored:undefined,publish:async publication=>{publication.update?.();return true;},allowNetwork:true,"
     "signal:new AbortController().signal});\n"
     "const context={state:{message:'fixture'},questions:{safe:{type:'bool',instructions:'Is the state safe?',"

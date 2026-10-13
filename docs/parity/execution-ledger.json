@@ -349,14 +349,14 @@
       "implementation": [
         "Partial: src/PiSharp.Cli/ProviderModelRuntime,AuthStorage,ThinkingLevels,CliArguments,Program.cs selects configured OpenAI-compatible endpoints, adds model flags and interactive commands, and stores private credentials.",
         "Partial: src/PiSharp.Runtime/Providers/ModelCatalog,Sessions/ConversationSession,Agents/PiAgent.cs records provider/model metadata, persists the provider ID, and passes reasoning options to MAF.",
-        "src/PiSharp.Cli/ProviderProfileLoader.cs: bounded models.json parsing and provider endpoint/key-environment identity checks; src/PiSharp.Cli/BuiltinProviderProfiles.cs: pinned xAI Grok 4.3/4.5/4.6/4.7 Responses metadata; ProviderModelRuntime.ListModelsAsync uses static xAI catalogue without /models. xAI OAuth is not supported.",
+        "src/PiSharp.Cli/Providers/ProviderProfileLoader.cs: bounded models.json parsing and provider endpoint/key-environment identity checks; src/PiSharp.Cli/Providers/BuiltinProviderProfiles.cs: pinned xAI Grok 4.3/4.5/4.6/4.7 Responses metadata; ProviderModelRuntime.ListModelsAsync uses static xAI catalogue without /models. xAI OAuth is not supported.",
         "src/PiSharp.Cli/BuiltinProviderProfiles,ProviderChatClientFactory,ProviderModelRuntime.cs: Anthropic native Messages via Anthropic 12.50.0 MEAI adapter; three pinned Sonnet/Opus/Haiku entries, model-specific budget and adaptive/extended thinking dispatch, and reserved endpoint/key environment. OAuth sign-in and full model catalog remain absent.",
-        "src/PiSharp.Cli/ProviderModelRuntime.cs and ProviderChatClientFactory.cs: Anthropic AUTH_TOKEN, OAUTH_TOKEN and API_KEY resolution precedes Anthropic-only workload identity federation; file-backed SDK credentials own token exchange/refresh while ambient SDK resolution is disabled. OAuth sign-in remains a separate open gap.",
+        "src/PiSharp.Cli/Providers/ProviderModelRuntime.cs and ProviderChatClientFactory.cs: Anthropic AUTH_TOKEN, OAUTH_TOKEN and API_KEY resolution precedes Anthropic-only workload identity federation; file-backed SDK credentials own token exchange/refresh while ambient SDK resolution is disabled. OAuth sign-in remains a separate open gap.",
         "src/PiSharp.Cli/Tui/TerminalModelPicker.cs and ProviderModelRuntime.cs: Ctrl+L or /model opens searchable all/scoped catalog views and can resolve an out-of-scope choice without changing the configured cycling scope.",
         "src/PiSharp.Cli/Protocols/RpcModelProjector.cs emits the Pi model fields consistently for get_available_models, set_model, cycle_model and get_state; ModelMetadataJson and ModelInputLimits preserve Pi-shaped catalog/config data, and provider/model compatibility uses Pi-compatible nested merges.",
         "src/PiSharp.Cli/MistralModelCatalog,BuiltinProviderProfiles,ProviderModelRuntime.cs embeds the current Pi snapshot of all 33 Mistral chat models and lists it statically without a generic /models probe; reasoning maps, image modalities, input limits, costs and the Mistral API identifier are retained. Unknown PISHARP_MISTRAL_MODEL values remain selectable alongside the built-in catalog.",
         "src/PiSharp.Cli/AzureOpenAiRequestHandler,AzureOpenAiChatOptionsClient,AzureOpenAiModelCatalog,ProviderChatClientFactory.cs: Azure Responses API-key boundary, configurable API-version/deployment mapping, per-session prompt_cache_key and embedded 43-model snapshot. Exact-head CI is green; provider-wide image/tool/usage/error differential evidence remains incomplete.",
-        "src/PiSharp.Cli/AnthropicThinkingSignatureClient.cs: replays unsigned Anthropic-compatible assistant reasoning as text unless model compat.allowEmptySignature is true; preserves signed thinking and applies a request-only MAF projection.",
+        "src/PiSharp.Cli/Providers/Anthropic/AnthropicThinkingSignatureClient.cs: replays unsigned Anthropic-compatible assistant reasoning as text unless model compat.allowEmptySignature is true; preserves signed thinking and applies a request-only MAF projection.",
         "Anthropic now exposes OAuth through `AnthropicOAuthAdapter`: browser PKCE and headless copy-code login, validated callback/input state, token refresh, private AuthStorage persistence, and the existing Anthropic OAuth request-token projection. Console code input is masked; API-key and environment-token precedence remains intact.",
         "Audit of Pi ee409a85: the key-personalized OpenRouter catalog is not implemented. PiSharp performs generic /models discovery and does not fetch authenticated /models/user data or persist the personalized catalog; this remains queued behind Resources / Instructions / Trust and the named upstream deltas."
       ],
@@ -976,7 +976,7 @@
         "Remaining: /settings, /llama, OAuth, complete provider-specific model selector and upstream differential."
       ],
       "implementation": [
-        "src/PiSharp.Cli/Program.cs: /model, /models, /thinking, /scoped-models, /login, /logout; src/PiSharp.Cli/ProviderModelRuntime.cs: compatible model selection",
+        "src/PiSharp.Cli/Program.cs: /model, /models, /thinking, /scoped-models, /login, /logout; src/PiSharp.Cli/Providers/ProviderModelRuntime.cs: compatible model selection",
         "UserSettings parses per-model thinking values and merges trusted project entries over user settings; model selection resolves the target model value before the global default.",
         "TerminalProviderLogin and TerminalProviderOAuthInteraction compose existing OAuth/storage adapters with the terminal authentication menu. RadiusMcpSetup proposes only global MCP provider authentication, preserving server fields and replacing OAuth; accepting calls the existing resource reload path. Selected Radius labels use the current Pi shimmer, preserving fractional channels for 256-color quantization."
       ],
@@ -1561,7 +1561,7 @@
         "Test protocol through RPC process, including failures and cancellation"
       ],
       "implementation": [
-        "src/PiSharp.Cli/ThinkingLevels.cs and Program.cs: expose off-only for models without reasoning; apply current Pi null and explicit xhigh/max map rules; translate canonical map values to M.E.AI ReasoningEffort where representable.",
+        "src/PiSharp.Cli/Providers/ThinkingLevels.cs and Program.cs: expose off-only for models without reasoning; apply current Pi null and explicit xhigh/max map rules; translate canonical map values to M.E.AI ReasoningEffort where representable.",
         "src/PiSharp.Cli/Protocols/RpcMode.cs: returns levels for get_available_thinking_levels."
       ],
       "evidence": [
@@ -3168,9 +3168,9 @@
         "Test malformed settings, trust boundaries, reload and startup behaviour"
       ],
       "implementation": [
-        "src/PiSharp.Cli/RetrySettings.cs: extracted retry parsing and field-level user/trusted-project merge; validates finite nonnegative provider delay limits, applies the 60000 ms default, and migrates legacy retry.maxDelayMs unless the nested value is set.",
-        "src/PiSharp.Cli/ProviderRetryChatClient.cs and ProviderWireActivity.cs: provider-boundary retry policy for OpenAI Responses/Completions and Anthropic Messages, with SDK retries disabled, retry-header capture, cancellable delay, and no replay after streamed output.",
-        "src/PiSharp.Cli/ProviderChatClientFactory.cs, UserSettingsWriter.cs, Tui/TerminalSettingsPicker.cs, Program.cs: wiring, persistence, /settings editing, and active-runtime refresh."
+        "src/PiSharp.Cli/Providers/RetrySettings.cs: extracted retry parsing and field-level user/trusted-project merge; validates finite nonnegative provider delay limits, applies the 60000 ms default, and migrates legacy retry.maxDelayMs unless the nested value is set.",
+        "src/PiSharp.Cli/Providers/ProviderRetryChatClient.cs and ProviderWireActivity.cs: provider-boundary retry policy for OpenAI Responses/Completions and Anthropic Messages, with SDK retries disabled, retry-header capture, cancellable delay, and no replay after streamed output.",
+        "src/PiSharp.Cli/Providers/ProviderChatClientFactory.cs, UserSettingsWriter.cs, Tui/TerminalSettingsPicker.cs, Program.cs: wiring, persistence, /settings editing, and active-runtime refresh."
       ],
       "evidence": [
         "docs/parity/fixtures/settings-provider-retry-delay-baseline.md records current Pi 04efdfc38078f952a0436a3363e50744226ec824 source behavior and upstream test results (provider retry tests 8/8; settings merge regression 1/1).",
@@ -3844,8 +3844,8 @@
         "Keep chat and classifier model context windows consistent across reload and verify the precedence with deterministic tests."
       ],
       "implementation": [
-        "src/PiSharp.Cli/LlamaRouterCatalog.cs",
-        "src/PiSharp.Cli/ProviderModelRuntime.cs",
+        "src/PiSharp.Cli/Providers/Llama/LlamaRouterCatalog.cs",
+        "src/PiSharp.Cli/Providers/ProviderModelRuntime.cs",
         "tests/PiSharp.Tests/LlamaRouterProviderTests.cs",
         "tools/parity/llama-router-context-differential.py",
         "docs/parity/fixtures/llama-router-context-2026-10-07.json"
@@ -4023,7 +4023,7 @@
       ],
       "implementation": [
         "src/PiSharp.Runtime/Sessions/SystemMessageTranscript.cs and ToolDeclarationTranscript.cs: tool definition history projected per MAF request and persisted by ConversationToolState; native/Pi JSONL resume and compaction boundaries retain appropriate prefixes.",
-        "src/PiSharp.Cli/AnthropicTranscriptChatClient.cs and AnthropicSystemMessageHandler.cs: official Anthropic beta IChatClient plus request-only inline tool placement, initial tools/placeholder/cache controls, current-tools fallback, OAuth identity/name conversion.",
+        "src/PiSharp.Cli/Providers/Anthropic/AnthropicTranscriptChatClient.cs and AnthropicSystemMessageHandler.cs: official Anthropic beta IChatClient plus request-only inline tool placement, initial tools/placeholder/cache controls, current-tools fallback, OAuth identity/name conversion.",
         "src/PiSharp.Runtime/Sessions/StoredToolResultReplay.cs: persisted tool-result strings/content restored before provider conversion; pending calls remain open across system updates."
       ],
       "evidence": [
@@ -4133,9 +4133,9 @@
         "Keep generic models.json custom providers working; compare local-router HTTP/process and full terminal screens."
       ],
       "implementation": [
-        "src/PiSharp.Cli/ProviderModelRuntime.cs",
+        "src/PiSharp.Cli/Providers/ProviderModelRuntime.cs",
         "src/PiSharp.Cli/Authentication/TerminalProviderLogin.cs",
-        "src/PiSharp.Cli/LlamaRouterClient.cs"
+        "src/PiSharp.Cli/Providers/Llama/LlamaRouterClient.cs"
       ],
       "evidence": [
         "Explicit user steering on 2026-10-02. This capability remains required; existing targeted visual probes or custom OpenAI-compatible endpoints/native classifier tests do not establish this family.",
@@ -4172,8 +4172,8 @@
       ],
       "implementation": [
         "src/PiSharp.Cli/Tui/TerminalLlamaManager.cs",
-        "src/PiSharp.Cli/LlamaRouterClient.cs",
-        "src/PiSharp.Cli/LlamaRouterCatalog.cs",
+        "src/PiSharp.Cli/Providers/Llama/LlamaRouterClient.cs",
+        "src/PiSharp.Cli/Providers/Llama/LlamaRouterCatalog.cs",
         "tests/PiSharp.Tests/LlamaRouterManagerTuiTests.cs"
       ],
       "evidence": [
@@ -4212,8 +4212,8 @@
         "Use the shared MAF execution path; differential visibility, selection, refresh/context-cache and provider requests."
       ],
       "implementation": [
-        "src/PiSharp.Cli/LlamaRouterCatalog.cs",
-        "src/PiSharp.Cli/ProviderModelRuntime.cs",
+        "src/PiSharp.Cli/Providers/Llama/LlamaRouterCatalog.cs",
+        "src/PiSharp.Cli/Providers/ProviderModelRuntime.cs",
         "src/PiSharp.Cli/Tui/TerminalModelPicker.cs",
         "src/PiSharp.Cli/Program.cs",
         "src/PiSharp.Cli/Tui/TerminalLlamaManager.cs",
@@ -4221,7 +4221,7 @@
         "tests/PiSharp.Tests/LlamaRouterProviderTests.cs",
         "src/PiSharp.Runtime/Classifiers/LlamaClassifierClient.cs",
         "src/PiSharp.Runtime/Classifiers/SystemOneClassifierClient.cs",
-        "src/PiSharp.Cli/ProviderClassifierRuntime.cs",
+        "src/PiSharp.Cli/Providers/ProviderClassifierRuntime.cs",
         "tools/parity/terminal/fixtures/llama-model-picker.json",
         "tools/parity/llama-classifier-differential.py",
         "tools/parity/llama-router-classifier-differential.py",
@@ -4265,9 +4265,9 @@
         "The router downloads the model; deterministic local HTTP/process and full terminal differential evidence is required."
       ],
       "implementation": [
-        "src/PiSharp.Cli/HuggingFaceClient.cs",
+        "src/PiSharp.Cli/Providers/HuggingFace/HuggingFaceClient.cs",
         "src/PiSharp.Cli/Tui/TerminalLlamaManager.cs",
-        "src/PiSharp.Cli/LlamaRouterClient.cs",
+        "src/PiSharp.Cli/Providers/Llama/LlamaRouterClient.cs",
         "tools/parity/terminal/fixtures/llama-huggingface-token-file.json",
         "tools/parity/terminal/fixtures/llama-huggingface-home-token-file.json",
         "tests/PiSharp.Tests/HuggingFaceClientTests.cs"
@@ -4327,8 +4327,8 @@
         "Use deterministic local HTTP/process differentials for normal selection and deployment-specific URLs; keep this separate from Azure OpenAI Responses behavior."
       ],
       "implementation": [
-        "src/PiSharp.Cli/AzureOpenAiEndpoint.cs",
-        "src/PiSharp.Cli/ProviderChatClientFactory.cs",
+        "src/PiSharp.Cli/Providers/AzureOpenAI/AzureOpenAiEndpoint.cs",
+        "src/PiSharp.Cli/Providers/ProviderChatClientFactory.cs",
         "src/PiSharp.Cli/ModelCatalog.cs"
       ],
       "evidence": [
@@ -4350,7 +4350,7 @@
       ],
       "implementation": [
         "src/PiSharp.Cli/ProviderRetryPolicy.cs",
-        "src/PiSharp.Cli/ProviderChatClientFactory.cs",
+        "src/PiSharp.Cli/Providers/ProviderChatClientFactory.cs",
         "tests/PiSharp.Tests/MistralProviderCompatibilityTests.cs"
       ],
       "evidence": [
@@ -4371,9 +4371,9 @@
         "Verify configured metadata, thinking-level fallback/clamping, request overrides, absent values, and exact provider bodies across applicable APIs."
       ],
       "implementation": [
-        "src/PiSharp.Cli/ProviderModelRuntime.cs",
-        "src/PiSharp.Cli/ProviderProfileLoader.cs",
-        "src/PiSharp.Cli/ProviderChatClientFactory.cs"
+        "src/PiSharp.Cli/Providers/ProviderModelRuntime.cs",
+        "src/PiSharp.Cli/Providers/ProviderProfileLoader.cs",
+        "src/PiSharp.Cli/Providers/ProviderChatClientFactory.cs"
       ],
       "evidence": [
         "Added by the 2026-10-08 source audit: PiSharp currently preserves sampling metadata in catalog/RPC projection, but has no verified per-thinking-level outbound resolution."

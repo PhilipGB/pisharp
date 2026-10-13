@@ -53,7 +53,7 @@ Console.WriteLine(JsonSerializer.Serialize(new { baseline, image }, new JsonSeri
 )
 (work / "pi.mjs").write_text(
     "import  classify  from 'pi/packages/ai/src/api/llama-cpp-classify.ts';\n"
-    "const context={state:{text:'fixture'},questions:{safe:{type:'bool',instructions:'safe?',criteria:{true:'safe',false:'unsafe'}},"
+    "const context=state:{text:'fixture',questions:{safe:{type:'bool',instructions:'safe?',criteria:{true:'safe',false:'unsafe'}},"
     "choice:{type:'choice',instructions:'choose',criteria:{a:'first',b:'second'}},"
     "score:{type:'score',instructions:'score',criteria:['low','high']}}};\n"
     "const imageContext={...context,images:[{type:'image',data:'AQID',mimeType:'image/png'}]};\n"
