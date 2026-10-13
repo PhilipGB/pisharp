@@ -4,6 +4,30 @@ namespace PiSharp.Tests;
 
 public sealed class DefaultToolReloadPolicyTests
 {
+    [Theory]
+    [InlineData("read,+write", "tool names cannot be mixed")]
+    [InlineData("+mcp__*", "take exact tool names")]
+    public void RejectsAmbiguousOrPatternToolModifiers(string tools, string message)
+    {
+        var error = Assert.Throws<ArgumentException>(() => CliArguments.Parse(["--tools", tools]));
+        Assert.Contains(message, error.Message);
+    }
+
+    [Fact]
+    public void OrderedModifiersSurviveStartupAndSettingsReload()
+    {
+        var arguments = DefaultToolReloadPolicy.ApplyStartupDefaults(
+            CliArguments.Parse(["--tools", "-grep,+write,-write,+write"]),
+            new UserSettings(DefaultTools: ["read", "grep"]), _ => null, false);
+        Assert.True(DefaultToolReloadPolicy.UsesSettingsDefaults(arguments));
+        Assert.Equal(["read", "write"], arguments.Tools);
+        var reload = DefaultToolReloadPolicy.Resolve(arguments, true,
+            new UserSettings(DefaultTools: ["read"]), new UserSettings(DefaultTools: ["read", "grep", "ls"]),
+            ["read", "write"], _ => null);
+        Assert.Equal(["read", "write", "ls"], reload.ActiveToolNames);
+        Assert.Equal(["read", "ls", "write"], reload.Arguments.Tools);
+    }
+
     [Fact]
     public void ReloadAddsNewDefaultsWithoutRemovingActiveToolsOrReenablingDisabledOnes()
     {

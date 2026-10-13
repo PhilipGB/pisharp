@@ -93,7 +93,9 @@ internal sealed class ProjectSessionRuntimeFactory(
                 followUpMode: project.Settings.FollowUpMode ?? PromptDeliveryMode.OneAtATime,
                 autoCompactionEnabled: project.Settings.AutoCompactionEnabled(Environment.GetEnvironmentVariable),
                 physicalContextResolver: controller.ResolvePhysicalContextAsync,
-                providerApi: ProviderChatClientFactory.ResolveProtocol(selection));
+                providerApi: ProviderChatClientFactory.ResolveProtocol(selection),
+                activeToolNamesOverride: DefaultToolReloadPolicy.ResolveResumeTools(arguments,
+                    conversation.ActiveToolLoadout(), agent.ToolDeclarations.Select(tool => tool.Name)));
             return new ProjectSessionRuntime(project, conversation, run, destinationPath, selection, chat, agent,
                 thinking, compaction, pricing);
         }

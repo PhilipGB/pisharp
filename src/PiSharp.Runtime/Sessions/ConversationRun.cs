@@ -123,7 +123,7 @@ public sealed class ConversationRun
         var run = new ConversationRun(agent, conversation, execution, save, autoCompaction, pricing, sessionFile, provider,
             reasoningLevel, retryPolicy ?? AgentRunRetryPolicy.Default, steeringMode, followUpMode,
             autoCompactionEnabled, keepRecentTokens, retryDelay, physicalContextResolver, providerApi);
-        run._toolState.Restore(execution, restoredToolNames);
+        run._toolState.Restore(execution, restoredToolNames, openingSession: true);
         await run.RestorePhysicalContextPolicyAsync(cancellationToken);
         if (restoredToolNames is not null)
         {

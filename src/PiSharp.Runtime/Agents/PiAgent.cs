@@ -51,6 +51,7 @@ public sealed class PiAgent
 
     public string SystemInstructions { get; }
     public IReadOnlyList<AIFunctionDeclaration> ToolDeclarations => _toolCatalog.ToolDeclarations;
+    internal bool RestoresRecordedToolLoadout => _toolCatalog.RestoresRecordedToolLoadout;
     /// <summary>Gets the independent tool loadout associated with one agent session.</summary>
     public ToolLoadout GetToolLoadout(AgentSession session) => _toolCatalog.GetToolLoadout(session);
 
@@ -74,7 +75,8 @@ public sealed class PiAgent
         VirtualModelRequestRouter? virtualModelRequestRouter = null, ICodemodeModels? codemodeModels = null,
         Func<string?>? getAdditionalSystemInstructions = null,
         IReadOnlyList<PiSharpContextTransform>? extensionContextTransforms = null,
-        Func<IReadOnlyList<string>, IReadOnlyList<string>, string>? getSkillInstructions = null)
+        Func<IReadOnlyList<string>, IReadOnlyList<string>, string>? getSkillInstructions = null,
+        IReadOnlyList<string>? initialActiveToolNames = null)
     {
         _contextTransforms = new(extensionContextTransforms);
         _codemodeModels = codemodeModels;
@@ -92,7 +94,7 @@ public sealed class PiAgent
         _reasoning = reasoning;
         _summarizer = new PiCompactionSummarizer(_routedChatClient);
         _toolCatalog = new AgentToolCatalog(tools, selectedTools, excludedTools, noTools, noBuiltinTools,
-            extensionTools, extensionToolRegistrations);
+            extensionTools, extensionToolRegistrations, initialActiveToolNames);
         lock (_runtimeToolGate)
         {
             foreach (var registration in _toolCatalog.Registrations)

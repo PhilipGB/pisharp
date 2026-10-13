@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "plan_received": true,
-  "source_note": "Post-refactor main 22eeb2a53dbaa94e41f78a40a997e3b3156bb3ed; audited configured Pi 3daa20280f6a7c7cbe0935680c9a38fdc3863005. All 50 commits classified: {'OUT_OF_SCOPE': 19, 'MATCHED': 9, 'NO_BEHAVIOR_CHANGE': 13, 'NEEDS_WORK': 9}. Dedicated parity/current-pi-completion branch; all 194 required capabilities retained. Resolve current_pi_refresh before resuming Resources / Instructions / Trust. Architecture refactor is merged; bounded final regression review and full source audit remain open.",
+  "source_note": "Post-refactor main 22eeb2a53dbaa94e41f78a40a997e3b3156bb3ed; audited configured Pi 3daa20280f6a7c7cbe0935680c9a38fdc3863005. All 50 commits classified: {'OUT_OF_SCOPE': 19, 'MATCHED': 10, 'NO_BEHAVIOR_CHANGE': 13, 'NEEDS_WORK': 8}. Dedicated parity/current-pi-completion branch; all 194 required capabilities retained. Resolve current_pi_refresh before resuming Resources / Instructions / Trust. Architecture refactor is merged; bounded final regression review and full source audit remain open.",
   "baseline": "earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035",
   "required_ids": [
     "feature-agent-multi-turn-and-streaming",
@@ -404,7 +404,8 @@
       ],
       "implementation": [],
       "evidence": [
-        "Current-Pi refresh 2026-10-13 source audit maps unresolved new deltas 6f2f164a to this existing requirement; see docs/parity/fixtures/current-pi-refresh-2026-10-13/upstream-audit.json. This adds no verified status or behavior claim."
+        "Current-Pi refresh 2026-10-13 source audit maps unresolved new deltas 6f2f164a to this existing requirement; see docs/parity/fixtures/current-pi-refresh-2026-10-13/upstream-audit.json. This adds no verified status or behavior claim.",
+        "Default selections keep all built-ins available and restore recorded loadouts from native records or Pi system declarations, including empty and updated sets. CLI +/- modifiers apply in order to restored names; explicit selections and disabled-tool modes take precedence, and exclusions remain enforced. Selection provenance survives settings application/reload; native runtime explicit selections also override saved tools. Five behavioral cases failed first. All ten real Pi SDK/PiSharp composition scenarios match exact active sets, including fresh-session extension defaults; delayed-registration differential remains matched. The full suite passes 1448/1448 with zero skips and a zero-warning build. Broader allowlist patterns, provider-wire order and SDK surface parity remain open. See docs/parity/fixtures/current-pi-refresh-2026-10-13/tool-resume.json, tools/parity/tool-resume-differential.py, tests/PiSharp.Tests/Cli/Sessions/ConversationCompositionTests.cs, tests/PiSharp.Tests/Cli/Sessions/DefaultToolReloadPolicyTests.cs, tests/PiSharp.Tests/Runtime/Extensions/DeferredToolRestoreTests.cs. This closes the named current-source delta, not the broader capability."
       ],
       "dependencies": []
     },
@@ -5345,9 +5346,9 @@
     "commit_count": 50,
     "classifications": {
       "OUT_OF_SCOPE": 19,
-      "MATCHED": 9,
+      "MATCHED": 10,
       "NO_BEHAVIOR_CHANGE": 13,
-      "NEEDS_WORK": 9
+      "NEEDS_WORK": 8
     },
     "audit_complete": true,
     "pin_advanced": true,

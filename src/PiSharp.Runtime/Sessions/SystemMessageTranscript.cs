@@ -33,6 +33,10 @@ internal static class SystemMessageTranscript
         Metadata(message) is { } metadata && metadata.TryGetProperty("toolsAdded", out var tools) &&
         tools.ValueKind == JsonValueKind.Array ? tools.EnumerateArray().Select(tool => tool.Clone()).ToArray() : [];
 
+    internal static bool HasToolDeclarations(ChatMessage message) =>
+        message.Role == ChatRole.System && Metadata(message) is { } metadata &&
+        (metadata.TryGetProperty("toolsAdded", out _) || metadata.TryGetProperty("toolsRemoved", out _));
+
     internal static string[] RemovedTools(ChatMessage message) =>
         Metadata(message) is { } metadata && metadata.TryGetProperty("toolsRemoved", out var tools) &&
         tools.ValueKind == JsonValueKind.Array ? tools.EnumerateArray()

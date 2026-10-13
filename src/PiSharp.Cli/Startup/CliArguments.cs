@@ -5,9 +5,14 @@ public sealed record CliArguments(bool Help, bool Local, bool Print, bool Contin
     string? Provider = null, IReadOnlyList<string>? ScopedModels = null, string? Thinking = null, string? ApiKey = null, IReadOnlyList<string>? FileArguments = null, string? SystemPrompt = null, IReadOnlyList<string>? AppendSystemPrompts = null, bool NoContextFiles = false, bool NoBuiltinTools = false, bool NoExtensions = false, bool NoSkills = false, bool NoPromptTemplates = false, bool Version = false, bool Offline = false, IReadOnlyList<string>? SkillPaths = null, IReadOnlyList<string>? PromptTemplatePaths = null, IReadOnlyList<string>? ExtensionPaths = null, string? ListModelsFilter = null, bool Verbose = false,
     IReadOnlyList<string>? ThemePaths = null, string? UseTheme = null, bool NoThemes = false)
 {
+    internal bool? UsesDefaultToolSelection { get; init; }
+    internal IReadOnlyList<string>? DefaultToolModifiers { get; init; }
+
     private static IReadOnlyList<string> ParseToolNames(string[] arguments, ref int index, string flag)
     {
-        if (++index >= arguments.Length || arguments[index].StartsWith('-')) throw new ArgumentException($"{flag} requires a comma-separated list.");
+        if (++index >= arguments.Length || arguments[index].StartsWith("--", StringComparison.Ordinal) ||
+            (arguments[index].StartsWith('-') && flag is not ("--tools" or "-t")))
+            throw new ArgumentException($"{flag} requires a comma-separated list.");
         return arguments[index].Split(',').Select(s => s.Trim()).Where(s => s.Length > 0).ToArray();
     }
 
@@ -84,6 +89,7 @@ public sealed record CliArguments(bool Help, bool Local, bool Print, bool Contin
                 case "--tools":
                 case "-t":
                     tools = ParseToolNames(arguments, ref i, arg);
+                    DefaultToolReloadPolicy.ValidateToolSelection(tools);
                     break;
                 case "--exclude-tools":
                 case "-xt":

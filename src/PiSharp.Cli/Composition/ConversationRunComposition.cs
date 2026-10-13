@@ -30,6 +30,7 @@ internal sealed class ConversationRunComposition(ActiveProjectRuntime projectBin
                 $"{runModel.Provider.Id}/{runModel.Model.Id}"),
             physicalContextResolver: modelRuntimeController.ResolvePhysicalContextAsync,
             providerApi: ProviderChatClientFactory.ResolveProtocol(runModel),
-            activeToolNamesOverride: activeToolNamesOverride);
+            activeToolNamesOverride: activeToolNamesOverride ?? DefaultToolReloadPolicy.ResolveResumeTools(
+                projectBinding.Arguments, session.ActiveToolLoadout(), runningAgent.ToolDeclarations.Select(tool => tool.Name)));
     }
 }

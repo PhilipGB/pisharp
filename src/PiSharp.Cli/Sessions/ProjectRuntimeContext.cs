@@ -265,8 +265,14 @@ internal sealed class ProjectRuntimeContext : IDisposable
         VirtualModelRequestRouter? virtualModelRequestRouter = null, ICodemodeModels? codemodeModels = null)
     {
         var effectiveSettings = settings ?? Settings;
+        var usesDefaults = DefaultToolReloadPolicy.UsesSettingsDefaults(arguments);
+        var initialNames = usesDefaults && arguments.Tools is not null
+            ? arguments.Tools.Concat(Extensions.Registration.ToolDefinitions
+                .Where(tool => tool.DefaultActive != false && tool.Exposure is ToolExposure.Direct or ToolExposure.ModelOnly)
+                .Select(tool => tool.Function.Name)).Distinct(StringComparer.Ordinal).ToArray()
+            : null;
         return new PiAgent(chat, new CodingTools(WorkingDirectory, effectiveSettings.ShellPath,
-                selection.Model.InputLimits?.Images?.Resize, effectiveSettings.ShellCommandPrefix), arguments.Tools, arguments.ExcludeTools,
+                selection.Model.InputLimits?.Images?.Resize, effectiveSettings.ShellCommandPrefix), usesDefaults ? null : arguments.Tools, arguments.ExcludeTools,
             arguments.NoTools, Instructions, Prompts.System, Prompts.Append,
             reasoning: ThinkingLevels.ToOptions(thinking, selection.Model.ThinkingLevelMap), blockImages: effectiveSettings.BlockImages == true,
             extensionToolRegistrations: Extensions.Registration.ToolDefinitions,
@@ -278,6 +284,7 @@ internal sealed class ProjectRuntimeContext : IDisposable
             extensionContextTransforms: Extensions.Registration.ContextTransforms,
             virtualModelRequestRouter: virtualModelRequestRouter,
             codemodeModels: codemodeModels,
+            initialActiveToolNames: initialNames,
             getAdditionalSystemInstructions: () => McpRuntime.RenderServerContext(EffectiveMcpServers, McpManager),
             getSkillInstructions: (activeToolNames, declaredToolNames) => Resources.SystemInstructions(
                 ResolveSkillFileReadTool(arguments, activeToolNames, declaredToolNames)),
