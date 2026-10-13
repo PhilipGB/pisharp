@@ -3,7 +3,7 @@
 Starting merged main: `22eeb2a53dbaa94e41f78a40a997e3b3156bb3ed`.
 Branch: `parity/current-pi-completion`. PR #1 is merged; exact-main [Linux CI 38427397999](https://github.com/PhilipGB/pisharp/actions/runs/38427397999) passes both jobs. The architecture refactor and Program composition review are complete. Final parity work still requires a bounded architecture regression review.
 
-The starting reference was `ee409a85f6ad92bf8c6ab8ed735c6cd24f2e749e`; all baseline comparisons below used that SHA. The completely audited new configured reference is `3daa20280f6a7c7cbe0935680c9a38fdc3863005`. [The source audit](upstream-audit.json) classifies every one of the 50 commits between them: 19 `OUT_OF_SCOPE`, 13 `NO_BEHAVIOR_CHANGE`, 12 `NEEDS_WORK`, 6 `MATCHED`. Each in-scope entry records its observable change, exact changed upstream paths, affected existing ledger ID, current PiSharp source, implementation plan and differential plan. `NEEDS_WORK` includes missing proof where existing code may already match; it does not presume all remaining items need product edits.
+The starting reference was `ee409a85f6ad92bf8c6ab8ed735c6cd24f2e749e`; all baseline comparisons below used that SHA. The completely audited new configured reference is `3daa20280f6a7c7cbe0935680c9a38fdc3863005`. [The source audit](upstream-audit.json) classifies every one of the 50 commits between them: 19 `OUT_OF_SCOPE`, 13 `NO_BEHAVIOR_CHANGE`, 11 `NEEDS_WORK`, 7 `MATCHED`. Each in-scope entry records its observable change, exact changed upstream paths, affected existing ledger ID, current PiSharp source, implementation plan and differential plan. `NEEDS_WORK` includes missing proof where existing code may already match; it does not presume all remaining items need product edits.
 
 ## Baseline evidence
 
@@ -26,7 +26,7 @@ Generated logs/captures live under `artifacts/parity/current-pi-baseline-2026-10
 | Commit | Classification | Finding |
 | --- | --- | --- |
 | `eb2fce43` | `OUT_OF_SCOPE` | Changes only independent durable runtime/source/tests and associated metadata. No normal coding-agent source, imported behavior or .NET equivalent surface changes. |
-| `148622bc` | `NEEDS_WORK` | MCP login help describes a whole-sign-in timeout; PiSharp help lists the flag without its scope or default. |
+| `148622bc` | `MATCHED` | The standalone MCP help now matches Pi's timeout description and 300-second default exactly in real isolated CLI processes. Existing login code already creates a linked deadline before token-cache lookup and passes it to SDK initialization, OAuth metadata/grants and callback handling; this upstream commit changes its description only. A focused help assertion passes; all 26 print/help/transcript checks pass. |
 | `2ee5c1e5` | `OUT_OF_SCOPE` | Changes only independent durable runtime/source/tests and associated metadata. No normal coding-agent source, imported behavior or .NET equivalent surface changes. |
 | `7472cda0` | `OUT_OF_SCOPE` | Removes the separately excluded experimental server/client/protocol/plugin stack. Reviewed distribution changes remove those exports/dependencies; normal src/cli.ts and RPC entry remain. No equivalent C# capability is being removed. |
 | `0104fef1` | `OUT_OF_SCOPE` | Replaces the independent Chord host/facet/service runtime and its tests. Root browser/entry-graph tooling follows that package; normal coding-agent runtime remains separate. |

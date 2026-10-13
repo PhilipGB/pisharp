@@ -7,9 +7,9 @@
   "commit_count": 50,
   "classifications": {
     "OUT_OF_SCOPE": 19,
-    "NEEDS_WORK": 12,
+    "MATCHED": 7,
     "NO_BEHAVIOR_CHANGE": 13,
-    "MATCHED": 6
+    "NEEDS_WORK": 11
   },
   "commits": [
     {
@@ -33,7 +33,7 @@
         "packages/coding-agent/docs/cli.md",
         "packages/coding-agent/src/extensions/mcp/cli.ts"
       ],
-      "classification": "NEEDS_WORK",
+      "classification": "MATCHED",
       "finding": "MCP login help describes a whole-sign-in timeout; PiSharp help lists the flag without its scope or default.",
       "capability_ids": [
         "mcp-runtime"
@@ -43,7 +43,13 @@
       ],
       "implementation_plan": "Add the timeout scope/default to help and verify the existing deadline covers discovery, registration, grants and browser wait.",
       "differential_plan": "Compare help and delayed loopback authorization phases with the same timeout.",
-      "resolved": false
+      "resolved": true,
+      "resolution": "The standalone MCP help now matches Pi's timeout description and 300-second default exactly in real isolated CLI processes. Existing login code already creates a linked deadline before token-cache lookup and passes it to SDK initialization, OAuth metadata/grants and callback handling; this upstream commit changes its description only. A focused help assertion passes; all 26 print/help/transcript checks pass.",
+      "evidence": [
+        "docs/parity/fixtures/current-pi-refresh-2026-10-13/mcp-timeout-help.json",
+        "src/PiSharp.Runtime/Mcp/McpOAuthLogin.cs",
+        "tests/PiSharp.Tests/Cli/Mcp/McpCommandTests.cs"
+      ]
     },
     {
       "sha": "2ee5c1e56d51694d113c3f1f1c9c2d7386cbfacd",

@@ -8,6 +8,18 @@ namespace PiSharp.Tests;
 public sealed class McpCommandTests
 {
     [Fact]
+    public async Task HelpDescribesTheWholeSignInTimeoutAndDefault()
+    {
+        using var output = new StringWriter();
+        using var errors = new StringWriter();
+
+        Assert.Equal(0, await McpCommand.RunAsync(["--help"], Path.GetTempPath(), Path.GetTempPath(), output, errors));
+
+        Assert.Contains("--timeout <seconds>     Time limit for the whole sign-in (default: 300)", output.ToString());
+        Assert.Equal("", errors.ToString());
+    }
+
+    [Fact]
     public async Task AddListRemoveAndProjectScopeWorkWithoutAChatModel()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-mcp-command-" + Guid.NewGuid().ToString("N"));

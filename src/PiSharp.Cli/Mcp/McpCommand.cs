@@ -19,6 +19,7 @@ public static class McpCommand
         {
             await output.WriteLineAsync("Usage: pisharp mcp list [--json] | add <server> [--local] [options] (--url <url> | -- <command> [args...]) | remove <server> [--local] | login <server> [--timeout <seconds>] | logout <server>");
             await output.WriteLineAsync("Add options: --env KEY=VALUE, --cwd DIR, --header KEY=VALUE, --bearer-token-env-var NAME, --exposure MODE, --oauth-client-id ID, --oauth-client-secret VALUE, --oauth-callback-url URL, --oauth-scope SCOPE, --oauth-client-name NAME.");
+            await output.WriteLineAsync("  --timeout <seconds>     Time limit for the whole sign-in (default: 300)");
             return 0;
         }
         try
