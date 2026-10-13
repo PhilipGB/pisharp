@@ -45,7 +45,11 @@ internal static class ToolResultMessageProjection
                             else
                                 resultText += "\n[Image content is unavailable.]";
                         }
-                        contents.Add(new FunctionResultContent(result.CallId, resultText) { Exception = result.Exception });
+                        contents.Add(new FunctionResultContent(result.CallId, resultText)
+                        {
+                            Exception = result.Exception,
+                            AdditionalProperties = result.AdditionalProperties?.Clone()
+                        });
                         continue;
                     }
 

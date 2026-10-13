@@ -15,6 +15,7 @@ public sealed class TerminalScreen : IDisposable
     private readonly Func<int> _getColumns;
     private readonly Func<int> _getRows;
     private readonly TerminalRenderScheduler _render;
+    private readonly TerminalToolTimers _toolTimers;
     private readonly TerminalTranscriptBuffer _transcript = new();
     private readonly TerminalConversationPresentation _conversationPresentation;
     private readonly TerminalImageRenderer _images;
@@ -109,6 +110,7 @@ public sealed class TerminalScreen : IDisposable
         _getRows = getRows ?? ReadRows;
         _compositor = new(_originalOut, _images);
         _conversationPresentation = new(_transcript, _images, Columns, () => _theme);
+        _toolTimers = new(timeProvider ?? TimeProvider.System, RefreshToolTimers);
         _notifications = new(_transcript, () => _theme);
         _out = new(this, isError: false);
         _error = new(this, isError: true);
@@ -129,6 +131,7 @@ public sealed class TerminalScreen : IDisposable
                 TerminalKeyboardMode.Disable);
             _originalOut.Flush();
             _active = false;
+            _toolTimers.Dispose();
             throw;
         }
     }
@@ -249,6 +252,7 @@ public sealed class TerminalScreen : IDisposable
             var cleanup = _images.CleanupControlSequence();
             if (cleanup.Length > 0) _originalOut.Write(cleanup);
             _transcript.Clear();
+            _toolTimers.Dispose();
             _images.Clear();
             _lastImagePruneRevision = -1;
             _search.Clear();
@@ -847,6 +851,70 @@ public sealed class TerminalScreen : IDisposable
     internal void AppendToolResult(PiSharpToolRenderView view, IReadOnlyList<DataContent>? images = null) =>
         AppendToolResult(view, view, images);
 
+    internal void StartToolTimer(string id)
+    {
+        lock (_gate) if (_active) _toolTimers.Start(id);
+    }
+
+    internal void UpdateToolTimer(string id, bool isError)
+    {
+        lock (_gate)
+        {
+            if (!_active || _toolTimers.Progress(id, isError) is not { } text) return;
+            SetElapsedRow(id, text);
+            _render.Request();
+        }
+    }
+
+    internal double? CompleteToolTimer(string id, double? durationMs)
+    {
+        lock (_gate) return _toolTimers.Complete(id, durationMs);
+    }
+
+    internal void CompleteToolRow(string id, PiSharpToolRenderView collapsed, PiSharpToolRenderView expanded,
+        bool isError, IReadOnlyList<DataContent>? images)
+    {
+        lock (_gate)
+        {
+            if (!_active) return;
+            _conversationPresentation.SetToolResult(id, collapsed, expanded, isError, finished: true, images);
+            _render.Request();
+        }
+    }
+
+    internal void ClearToolTimers()
+    {
+        lock (_gate)
+        {
+            var rows = _toolTimers.Cancel();
+            if (!_active || rows.Count == 0) return;
+            foreach (var (id, duration) in rows)
+            {
+                var view = PiSharpToolRenderView.FromText("Took " + ToolDurationText.Format(duration), PiSharpToolTextStyle.Muted);
+                _conversationPresentation.SetToolResult(id, view, view, isError: true, finished: true);
+            }
+            _render.Request();
+        }
+    }
+
+    private void RefreshToolTimers()
+    {
+        lock (_gate)
+        {
+            if (!_active) return;
+            var rows = _toolTimers.Rows();
+            if (rows.Count == 0) return;
+            foreach (var (id, text) in rows) SetElapsedRow(id, text);
+            _render.Request();
+        }
+    }
+
+    private void SetElapsedRow(string id, string text)
+    {
+        var view = PiSharpToolRenderView.FromText(text, PiSharpToolTextStyle.Muted);
+        _conversationPresentation.SetToolResult(id, view, view, isError: false, finished: false);
+    }
+
     internal void AppendToolResult(PiSharpToolRenderView collapsed, PiSharpToolRenderView expanded,
         IReadOnlyList<DataContent>? images = null)
     {
@@ -924,6 +992,7 @@ public sealed class TerminalScreen : IDisposable
             if (!_active) return;
             _render.Flush();
             _render.Dispose();
+            _toolTimers.Dispose();
             _active = false;
             terminalModeShutdownPrepared = _terminalModeShutdownPrepared;
             if (_activated)

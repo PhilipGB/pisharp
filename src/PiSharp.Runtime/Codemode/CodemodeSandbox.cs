@@ -34,6 +34,7 @@ internal static class CodemodeSandbox
             return new(false, "", error.Message);
         }
         code = source.Code;
+        context.ReportProgress("");
         var worker = Path.Combine(AppContext.BaseDirectory, "Codemode", "Engine", "worker.mjs");
         if (!File.Exists(worker)) return new(false, "", "Codemode worker assets are unavailable.");
         var tools = context.Snapshot.Callable.Where(tool => tool.Function.Name != "codemode")

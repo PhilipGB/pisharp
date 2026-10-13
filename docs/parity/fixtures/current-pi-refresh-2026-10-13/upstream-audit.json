@@ -7,9 +7,9 @@
   "commit_count": 50,
   "classifications": {
     "OUT_OF_SCOPE": 19,
-    "MATCHED": 15,
+    "MATCHED": 16,
     "NO_BEHAVIOR_CHANGE": 13,
-    "NEEDS_WORK": 3
+    "NEEDS_WORK": 2
   },
   "commits": [
     {
@@ -493,7 +493,7 @@
         "packages/coding-agent/src/extensions/codemode/renderer.ts",
         "packages/coding-agent/test/codemode-renderer.test.ts"
       ],
-      "classification": "NEEDS_WORK",
+      "classification": "MATCHED",
       "finding": "Codemode emits an initial progress update and shows Elapsed while running and recorded Took on completion/reload. PiSharp lacks the timer contract.",
       "capability_ids": [
         "codemode-runtime"
@@ -504,7 +504,14 @@
       ],
       "implementation_plan": "Use shared tool timing state with initial progress, final monotonic duration and redraw disposal.",
       "differential_plan": "Deterministic renderer clock vectors plus PTY nested-call, no-call, failure, cancellation and restored-result checkpoints.",
-      "resolved": false
+      "resolved": true,
+      "resolution": "Codemode publishes initial progress before nested calls. Screen-owned row timers show Elapsed with one-second redraws and Took with the recorded monotonic execution duration, retained through native/Pi persistence and reload. Completion/error/interruption/replacement/disposal stop timers, concurrent calls retain independent clocks, and collapsed output keeps the timing footer. Two initial rendering tests and four cleanup/preview controls failed first. Thirteen new timer/runtime cases pass; 143 exact duration vectors and live/final/reload checkpoints match Pi, as do seven real-worker predicates using a native Pi runtime/renderer and a PiSharp MAF run under a PTY. Pi renderer tests pass 5/5. Full suite 1553/1553, zero skips and zero-warning build. Broader layout, preview counts and nested-call/cost presentation remain open.",
+      "evidence": [
+        "docs/parity/fixtures/current-pi-refresh-2026-10-13/codemode-timer.json",
+        "tools/parity/codemode-timer-differential.py",
+        "tests/PiSharp.Tests/Cli/Tui/Rendering/CodemodeTimerTests.cs",
+        "tests/PiSharp.Tests/Runtime/Codemode/CodemodeDurationTests.cs"
+      ]
     },
     {
       "sha": "da0eadf0433d29516287c7e3d7b3db325a446281",

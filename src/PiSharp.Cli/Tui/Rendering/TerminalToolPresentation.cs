@@ -112,6 +112,8 @@ internal sealed class TerminalToolPresentation(Func<string, PiSharpToolRenderer?
             spans.Add(new("\n  ", PiSharpToolTextStyle.Muted));
             spans.Add(new(TerminalSafeText.Normalize(summary), PiSharpToolTextStyle.Muted));
         }
+        if (tool == "codemode" && update.DurationMs is { } duration)
+            spans.Add(new("\nTook " + ToolDurationText.Format(duration), PiSharpToolTextStyle.Muted));
         return new(spans);
     }
 
@@ -153,7 +155,7 @@ internal sealed class TerminalToolPresentation(Func<string, PiSharpToolRenderer?
         IReadOnlyDictionary<string, object?> arguments, bool executionStarted, bool argumentsComplete,
         bool isPartial, bool isError, bool? expanded = null) => new(update.Tool ?? "tool", update.OperationId,
         workingDirectory, arguments, executionStarted, argumentsComplete, isPartial,
-        expanded ?? isExpanded?.Invoke() ?? false, isError);
+        expanded ?? isExpanded?.Invoke() ?? false, isError, update.DurationMs);
 
     private void RememberArguments(string operationId, IReadOnlyDictionary<string, object?> arguments)
     {

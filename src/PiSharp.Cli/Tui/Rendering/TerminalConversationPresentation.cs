@@ -194,6 +194,23 @@ internal sealed class TerminalConversationPresentation(TerminalTranscriptBuffer 
         return true;
     }
 
+    internal void SetToolResult(string id, PiSharpToolRenderView collapsed, PiSharpToolRenderView expanded,
+        bool isError, bool finished, IReadOnlyList<DataContent>? images = null)
+    {
+        var activeImages = new StringBuilder();
+        var capturedImages = new StringBuilder();
+        foreach (var image in images ?? [])
+        {
+            var marker = imageRenderer.Register(image, out var fallback);
+            activeImages.Append(Environment.NewLine).Append(marker ?? fallback);
+            capturedImages.Append(Environment.NewLine).Append(fallback);
+        }
+        string Expanded(TerminalTheme theme) => EnsureTrailingNewline(TerminalToolPresentation.Render(expanded, theme) + activeImages);
+        string Collapsed(TerminalTheme theme) => EnsureTrailingNewline(TerminalToolPresentation.Render(collapsed, theme) + capturedImages);
+        transcript.SetToolResult(id, Expanded(getTheme()), Collapsed(getTheme()), Expanded, Collapsed,
+            EnsureTrailingNewline(TerminalToolPresentation.Render(expanded, null) + capturedImages), isError, finished);
+    }
+
     public void AppendThinkingBlock(string text)
     {
         string RenderVisible(TerminalTheme theme) => RenderThinking(theme, text, hidden: false);

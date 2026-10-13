@@ -207,12 +207,17 @@ internal static class PiJsonlEntryCodec
             var callId = StringProperty(message, "toolCallId") ?? "unknown-call";
             if (TryProperty(message, "piSharpToolResult", out var preserved) &&
                 PiSharp.Runtime.Tools.ToolResultOutput.TryReadContract(preserved, out var contract))
-                return new ChatMessage(ChatRole.Tool, [new FunctionResultContent(callId, contract)]);
+            {
+                var preservedResult = new FunctionResultContent(callId, contract);
+                ImportDuration(preservedResult, message);
+                return new ChatMessage(ChatRole.Tool, [preservedResult]);
+            }
             var toolContent = contentOverride ?? (TryProperty(message, "content", out var toolValue) ? toolValue : default);
             var toolParts = ReadContent(toolContent);
             var toolResult = new FunctionResultContent(callId, toolParts.All(part => part is TextContent)
                 ? string.Join('\n', toolParts.OfType<TextContent>().Select(part => part.Text)) : toolParts);
             if (BoolProperty(message, "isError")) toolResult.Exception = new ToolFailureException("Pi session records a failed tool result.");
+            ImportDuration(toolResult, message);
             return new ChatMessage(ChatRole.Tool, [toolResult]);
         }
 
@@ -449,10 +454,18 @@ internal static class PiJsonlEntryCodec
             if (contract is not null) messageObject["piSharpToolResult"] = JsonSerializer.SerializeToNode(contract);
             if (contract?.Usage is { } toolUsage) messageObject["usage"] = ProjectToolUsage(toolUsage, contract.Cost);
             if (contract?.Terminate == true) messageObject["terminate"] = true;
+            if (result is not null && ToolExecutionDuration.Get(result) is { } durationMs)
+                messageObject["durationMs"] = durationMs;
         }
         if (ConversationMessageCodec.NestedToolCallsFor(node) is { } nestedToolCalls)
             messageObject["nestedCalls"] = JsonSerializer.SerializeToNode(nestedToolCalls);
         return exported;
+    }
+
+    private static void ImportDuration(FunctionResultContent result, JsonElement message)
+    {
+        if (TryProperty(message, "durationMs", out var duration) && duration.ValueKind == JsonValueKind.Number &&
+            duration.TryGetDouble(out var milliseconds)) ToolExecutionDuration.Set(result, milliseconds);
     }
 
     private static string? MessageProperty(ChatMessage message, string name) =>

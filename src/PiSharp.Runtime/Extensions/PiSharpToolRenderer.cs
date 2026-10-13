@@ -36,7 +36,8 @@ public sealed record PiSharpToolRenderContext(
     bool ArgumentsComplete,
     bool IsPartial,
     bool IsExpanded,
-    bool IsError);
+    bool IsError,
+    double? DurationMs = null);
 
 /// <summary>Result data supplied to a tool result renderer.</summary>
 public sealed record PiSharpToolRenderResult(string? Text, object? Details,
