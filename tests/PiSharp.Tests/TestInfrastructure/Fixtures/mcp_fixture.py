@@ -53,7 +53,7 @@ for line in sys.stdin:
             result["instructions"] = instructions
         respond(request, result)
     elif method == "tools/list":
-        respond(request, {"tools": [
+        tools = [
             {"name": "echo", "description": "Echo input text.",
              "inputSchema": {"type": "object", "properties": {"value": {"type": "string"}},
                              "required": ["value"]},
@@ -61,10 +61,19 @@ for line in sys.stdin:
                               "required": ["echo"]}},
             {"name": "fail", "description": "Return a tool error.",
              "inputSchema": {"type": "object", "properties": {}}},
-        ]})
+        ]
+        if "MCP_FIXTURE_STRUCTURED_JSON" in os.environ:
+            tools[0].pop("outputSchema", None)
+        respond(request, {"tools": tools})
     elif method == "tools/call":
         params = request["params"]
         if params["name"] == "echo":
+            if "MCP_FIXTURE_STRUCTURED_JSON" in os.environ:
+                result = {"structuredContent": json.loads(os.environ["MCP_FIXTURE_STRUCTURED_JSON"])}
+                if os.getenv("MCP_FIXTURE_OMIT_CONTENT") != "1":
+                    result["content"] = []
+                respond(request, result)
+                continue
             value = params["arguments"]["value"]
             respond(request, {"content": [{"type": "text", "text": value}],
                               "structuredContent": {"echo": value}, "isError": False,

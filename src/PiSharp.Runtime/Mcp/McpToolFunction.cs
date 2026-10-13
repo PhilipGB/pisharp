@@ -11,7 +11,7 @@ namespace PiSharp.Runtime.Mcp;
 internal sealed class McpToolFunction(McpClientTool tool, McpServerConnection connection, string name,
     TimeSpan timeout) : DelegatingAIFunction(tool)
 {
-    private static readonly JsonSerializerOptions s_json = new(JsonSerializerDefaults.Web);
+    private static readonly JsonSerializerOptions s_json = new(JsonSerializerDefaults.Web) { WriteIndented = true };
 
     public override string Name => name;
 
@@ -21,7 +21,13 @@ internal sealed class McpToolFunction(McpClientTool tool, McpServerConnection co
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         deadline.CancelAfter(timeout);
         var values = arguments.ToDictionary(item => item.Key, item => item.Value, StringComparer.Ordinal);
-        var result = await connection.CallToolAsync(tool.Name, values, deadline.Token);
+        var wireResult = await connection.CallToolAsync(tool.Name, values, deadline.Token);
+        var resultNode = JsonNode.Parse(wireResult.GetRawText())?.AsObject() ??
+            throw new JsonException("Invalid MCP tools/call result.");
+        if (!resultNode.ContainsKey("content")) resultNode["content"] = new JsonArray();
+        var result = resultNode.Deserialize<CallToolResult>(McpJsonUtilities.DefaultOptions) ??
+            throw new JsonException("Invalid MCP tools/call result.");
+        if (result.Content is null) throw new JsonException("Invalid MCP tools/call content.");
         var lines = new List<string>();
         var images = new List<PiSharpToolImage>();
         foreach (var content in result.Content)
@@ -38,10 +44,10 @@ internal sealed class McpToolFunction(McpClientTool tool, McpServerConnection co
                     break;
             }
         var output = string.Join("\n", lines);
-        var resultNode = JsonNode.Parse(JsonSerializer.SerializeToUtf8Bytes(result, McpJsonUtilities.DefaultOptions))
-            ?.AsObject();
-        resultNode?.Remove("_meta");
-        JsonElement? scriptResult = resultNode is null ? null : JsonSerializer.SerializeToElement(resultNode, s_json);
+        if (result.Content.Count == 0 && wireResult.TryGetProperty("structuredContent", out var structured))
+            output = JsonSerializer.Serialize(structured, s_json);
+        resultNode.Remove("_meta");
+        var scriptResult = JsonSerializer.SerializeToElement(resultNode, s_json);
         return new PiSharpToolResult(output, StructuredContent: scriptResult,
             IsError: result.IsError == true, Error: result.IsError == true ? output : null, Images: images);
     }

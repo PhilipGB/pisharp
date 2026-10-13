@@ -7,9 +7,9 @@
   "commit_count": 50,
   "classifications": {
     "OUT_OF_SCOPE": 19,
-    "NEEDS_WORK": 13,
+    "NEEDS_WORK": 12,
     "NO_BEHAVIOR_CHANGE": 13,
-    "MATCHED": 5
+    "MATCHED": 6
   },
   "commits": [
     {
@@ -430,7 +430,7 @@
         "packages/mcp/test/client.test.ts",
         "packages/mcp/test/content.test.ts"
       ],
-      "classification": "NEEDS_WORK",
+      "classification": "MATCHED",
       "finding": "structuredContent accepts arrays, null, strings, numbers and booleans; absent-schema Codemode type is unknown. PiSharp schema requires object and does not render structured-only results as model text.",
       "capability_ids": [
         "mcp-runtime"
@@ -441,7 +441,13 @@
       ],
       "implementation_plan": "Verify SDK deserialization of arbitrary JSON, broaden the wrapper schema, preserve explicit null, and add the JSON fallback for empty model content.",
       "differential_plan": "Replay the five upstream scalar/array/null vectors through real HTTP or stdio and nested Codemode.",
-      "resolved": false
+      "resolved": true,
+      "resolution": "MCP script results preserve arrays, explicit null, strings, numbers and booleans, including missing content normalized to an empty array. Empty model content falls back to pretty JSON and undeclared structuredContent accepts any JSON value. Native SDK session responses retain field presence before typed block conversion, avoiding nullable-deserialization loss. Seven real-stdio Pi comparisons match complete script JSON, model text and error state; nested null/array Codemode paths and schema validation pass. The full working-tree suite passes 1418/1418, zero skips; official MCP retains 261 passing checks and eight classified failures with no regressions.",
+      "evidence": [
+        "docs/parity/fixtures/current-pi-refresh-2026-10-13/mcp-results-and-demand.json",
+        "tools/parity/mcp-result-differential.py",
+        "tests/PiSharp.Tests/Runtime/Mcp/McpRuntimeTests.cs"
+      ]
     },
     {
       "sha": "11f99114506ad2cc759cb389663edaf7546cbe8c",

@@ -1,4 +1,6 @@
 using System.Net.Http;
+using System.Text.Json;
+using ModelContextProtocol;
 using ModelContextProtocol.Client;
 using ModelContextProtocol.Protocol;
 
@@ -104,7 +106,7 @@ internal sealed class McpServerConnection(string name, bool retryTransientConnec
         _ = await GetConnectedAsync(cancellationToken);
     }
 
-    public async Task<CallToolResult> CallToolAsync(string name, IReadOnlyDictionary<string, object?> arguments,
+    public async Task<JsonElement> CallToolAsync(string name, IReadOnlyDictionary<string, object?> arguments,
         CancellationToken cancellationToken)
     {
         for (var attempt = 0; ; attempt++)
@@ -112,9 +114,17 @@ internal sealed class McpServerConnection(string name, bool retryTransientConnec
             var connected = await GetConnectedAsync(cancellationToken);
             try
             {
-                var tool = connected.Tools.FirstOrDefault(item => item.Name == name) ??
+                _ = connected.Tools.FirstOrDefault(item => item.Name == name) ??
                     throw new InvalidOperationException("MCP server no longer advertises tool " + name + ".");
-                return await tool.CallAsync(arguments, cancellationToken: cancellationToken);
+                // The SDK's nullable StructuredContent property loses an explicit JSON null.
+                // Keep the native response until model/script projection while using the SDK session transport.
+                return await connected.Client.SendRequestAsync<CallToolRequestParams, JsonElement>("tools/call",
+                    new CallToolRequestParams
+                    {
+                        Name = name,
+                        Arguments = arguments.ToDictionary(item => item.Key,
+                            item => JsonSerializer.SerializeToElement(item.Value, McpJsonUtilities.DefaultOptions))
+                    }, McpJsonUtilities.DefaultOptions, cancellationToken: cancellationToken);
             }
             catch (Exception error) when (attempt == 0 && IsSessionExpired(error))
             {

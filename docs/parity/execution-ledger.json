@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "plan_received": true,
-  "source_note": "Post-refactor main 22eeb2a53dbaa94e41f78a40a997e3b3156bb3ed; audited configured Pi 3daa20280f6a7c7cbe0935680c9a38fdc3863005. All 50 commits classified: {'OUT_OF_SCOPE': 19, 'NEEDS_WORK': 13, 'NO_BEHAVIOR_CHANGE': 13, 'MATCHED': 5}. Dedicated parity/current-pi-completion branch; all 194 required capabilities retained. Resolve current_pi_refresh before resuming Resources / Instructions / Trust. Architecture refactor is merged; bounded final regression review and full source audit remain open.",
+  "source_note": "Post-refactor main 22eeb2a53dbaa94e41f78a40a997e3b3156bb3ed; audited configured Pi 3daa20280f6a7c7cbe0935680c9a38fdc3863005. All 50 commits classified: {'OUT_OF_SCOPE': 19, 'NEEDS_WORK': 12, 'NO_BEHAVIOR_CHANGE': 13, 'MATCHED': 6}. Dedicated parity/current-pi-completion branch; all 194 required capabilities retained. Resolve current_pi_refresh before resuming Resources / Instructions / Trust. Architecture refactor is merged; bounded final regression review and full source audit remain open.",
   "baseline": "earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035",
   "required_ids": [
     "feature-agent-multi-turn-and-streaming",
@@ -3746,7 +3746,8 @@
         "Current Pi refactor 24382bed at c661bc574f9e9713cc2af567fc1ac00621377a0c adds reachesTools-based startup waits and namespace aliases and declares MCP CallToolResult output schemas with local JSON Schema references relocated under structuredContent. Pi MCP/auth tests pass 85/85 and Codemode package tests 170/170. PiSharp McpStartupCoordinator still hard-codes codemode/tool_search/resource names, the tool namespace has no aliases, and MCP registrations expose only the server structured-output schema.",
         "Current Pi 24382bed reach, alias, and CallToolResult behavior matches at PiSharp e92d592b. Two real Python stdio MCP children, the QuickJS Codemode sandbox, schema-reference tests, error-result assertions, 36 focused tests, full 1,355/1,355 suite, official conformance, and exact-head CI 38222962860 pass. See docs/parity/fixtures/mcp-codemode-reach-result-current-pi-2026-10-12.md.",
         "Current-Pi refresh 2026-10-13 source audit maps unresolved new deltas 148622bc, f4cca2dc, 67996ab7, da0eadf0 to this existing requirement; see docs/parity/fixtures/current-pi-refresh-2026-10-13/upstream-audit.json. This adds no verified status or behavior claim.",
-        "MCP connections and resource-change notifications no longer enumerate resources/templates. Capability status reports resources without counts; shared resource tools list only on demand. The fail-first startup log now shows no listings until requested, and the notification scenario retains tool refresh plus fresh resource/template results. Seven current-Pi real-stdio scenarios match connection/on-demand request counts; CLI status capability checks pass. See docs/parity/fixtures/current-pi-refresh-2026-10-13/mcp-results-and-demand.json, tests/PiSharp.Tests/Runtime/Mcp/McpRuntimeLifecycleTests.cs, tests/PiSharp.Tests/Runtime/Mcp/McpRuntimeTests.cs, tests/PiSharp.Tests/Cli/Mcp/McpCommandTests.cs. This closes the named current-source delta, not the broader capability."
+        "MCP connections and resource-change notifications no longer enumerate resources/templates. Capability status reports resources without counts; shared resource tools list only on demand. The fail-first startup log now shows no listings until requested, and the notification scenario retains tool refresh plus fresh resource/template results. Seven current-Pi real-stdio scenarios match connection/on-demand request counts; CLI status capability checks pass. See docs/parity/fixtures/current-pi-refresh-2026-10-13/mcp-results-and-demand.json, tests/PiSharp.Tests/Runtime/Mcp/McpRuntimeLifecycleTests.cs, tests/PiSharp.Tests/Runtime/Mcp/McpRuntimeTests.cs, tests/PiSharp.Tests/Cli/Mcp/McpCommandTests.cs. This closes the named current-source delta, not the broader capability.",
+        "MCP script results preserve arrays, explicit null, strings, numbers and booleans, including missing content normalized to an empty array. Empty model content falls back to pretty JSON and undeclared structuredContent accepts any JSON value. Native SDK session responses retain field presence before typed block conversion, avoiding nullable-deserialization loss. Seven real-stdio Pi comparisons match complete script JSON, model text and error state; nested null/array Codemode paths and schema validation pass. The full working-tree suite passes 1418/1418, zero skips; official MCP retains 261 passing checks and eight classified failures with no regressions. See docs/parity/fixtures/current-pi-refresh-2026-10-13/mcp-results-and-demand.json, tools/parity/mcp-result-differential.py, tests/PiSharp.Tests/Runtime/Mcp/McpRuntimeTests.cs. This closes the named current-source delta, not the broader capability."
       ],
       "dependencies": [
         "tool-exposure-loadout",
@@ -5341,9 +5342,9 @@
     "commit_count": 50,
     "classifications": {
       "OUT_OF_SCOPE": 19,
-      "NEEDS_WORK": 13,
+      "NEEDS_WORK": 12,
       "NO_BEHAVIOR_CHANGE": 13,
-      "MATCHED": 5
+      "MATCHED": 6
     },
     "audit_complete": true,
     "pin_advanced": true,

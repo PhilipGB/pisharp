@@ -10,6 +10,75 @@ namespace PiSharp.Tests;
 
 public sealed class McpRuntimeTests
 {
+    [Theory]
+    [InlineData("[1,2]", false)]
+    [InlineData("null", false)]
+    [InlineData("\"text\"", false)]
+    [InlineData("3", false)]
+    [InlineData("false", false)]
+    [InlineData("[1,2]", true)]
+    [InlineData("null", true)]
+    public async Task StructuredOnlyResultsPreserveJsonValuesForScriptsAndTheModel(string json, bool omitContent)
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-mcp-json-value-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            var fixture = Path.Combine(AppContext.BaseDirectory, "TestInfrastructure", "Fixtures", "mcp_fixture.py");
+            await File.WriteAllTextAsync(Path.Combine(root, "mcp.json"), JsonSerializer.Serialize(new
+            {
+                mcpServers = new Dictionary<string, object>
+                {
+                    ["json"] = new
+                    {
+                        command = "python3",
+                        args = new[] { fixture },
+                        exposure = "direct",
+                        toolExposure = new { echo = "codemode" },
+                        env = new Dictionary<string, string>
+                        {
+                            ["MCP_FIXTURE_STRUCTURED_JSON"] = json,
+                            ["MCP_FIXTURE_OMIT_CONTENT"] = omitContent ? "1" : "0"
+                        }
+                    }
+                }
+            }));
+            using var catalog = ExtensionCatalog.Load(root, root, false, discover: false);
+            var configuration = await McpConfiguration.LoadAsync(root, root, false);
+            Assert.Empty(await McpRuntime.RegisterAsync(configuration, catalog, root));
+            var tool = catalog.Registration.ToolDefinitions.Single(tool => tool.Function.Name == "mcp__json__echo");
+
+            var result = Assert.IsType<PiSharpToolResult>(await tool.Function.InvokeAsync(
+                new AIFunctionArguments(new Dictionary<string, object?> { ["value"] = "unused" })));
+
+            using var expected = JsonDocument.Parse(json);
+            Assert.True(JsonElement.DeepEquals(expected.RootElement,
+                result.StructuredContent!.Value.GetProperty("structuredContent")));
+            Assert.Empty(result.StructuredContent.Value.GetProperty("content").EnumerateArray());
+            Assert.Equal(JsonSerializer.Serialize(expected.RootElement,
+                new JsonSerializerOptions { WriteIndented = true }), result.Text);
+            Assert.False(result.IsError);
+            new ToolResultSchemaValidator(tool.OutputSchema).Validate(result);
+            Assert.Empty(tool.OutputSchema!.Value.GetProperty("properties")
+                .GetProperty("structuredContent").EnumerateObject());
+            if (json is "null" or "[1,2]" && !omitContent)
+            {
+                var registry = new PiSharpToolRegistry(catalog.Registration.ToolDefinitions);
+                var functions = catalog.Registration.ToolDefinitions.ToDictionary(
+                    item => item.Function.Name, item => item.Function);
+                var context = PiSharpToolExecutionContext.CreateRoot(registry.CreateLoadout([tool.Function.Name]),
+                    () => functions, _ => { }, "test", null, "codemode", new Dictionary<string, object?>());
+                var nested = await CodemodeSandbox.ExecuteAsync(
+                    "const r=await tools.mcp__json__echo({value:'unused'});text(JSON.stringify(r));", context,
+                    new Dictionary<string, JsonElement>(), CancellationToken.None);
+                Assert.True(nested.Ok, nested.Error);
+                using var scriptResult = JsonDocument.Parse(nested.Text);
+                Assert.True(JsonElement.DeepEquals(result.StructuredContent.Value, scriptResult.RootElement));
+            }
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
     [Fact]
     public async Task ConnectionPublishesToolsWithoutListingResourcesUntilRequested()
     {
