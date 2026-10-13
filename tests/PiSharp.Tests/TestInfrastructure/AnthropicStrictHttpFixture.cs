@@ -13,8 +13,11 @@ internal sealed class AnthropicStrictHttpFixture : IDisposable
     private readonly CancellationTokenSource _deadline = new(TimeSpan.FromSeconds(10));
     private readonly Task _server;
     private readonly Uri _endpoint;
+    private int _closed;
+    private bool _disposed;
     internal List<JsonElement> Payloads { get; } = [];
     internal CancellationToken Token => _deadline.Token;
+    internal Uri Endpoint => _endpoint;
 
     internal AnthropicStrictHttpFixture(Func<JsonElement, int, (int Status, string Body)> respond, bool ignoreDisconnect = false)
     {
@@ -88,14 +91,21 @@ internal sealed class AnthropicStrictHttpFixture : IDisposable
     internal async Task StopAsync()
     {
         _deadline.Cancel();
-        _listener.Stop();
+        CloseListener();
         await _server;
     }
 
     public void Dispose()
     {
+        if (_disposed) return;
+        _disposed = true;
         _deadline.Cancel();
-        _listener.Close();
+        CloseListener();
         _deadline.Dispose();
+    }
+
+    private void CloseListener()
+    {
+        if (Interlocked.Exchange(ref _closed, 1) == 0) _listener.Close();
     }
 }

@@ -554,5 +554,14 @@
     "buildWarnings": 0,
     "buildErrors": 0,
     "format": "pass"
+  },
+  "fixtureCleanupCorrection": {
+    "finding": "A subsequent parallel full-suite run exposed HttpListener teardown re-registering a stopped prefix during a second close, racing with port reuse. StopAsync and Dispose now share one idempotent close; no failure is suppressed and both SDK/protocol assertions remain unchanged. The original run was stopped after this diagnosed failure; a corrected full run is required before committing the fixture fix.",
+    "log": "artifacts/parity/current-pi-deltas-2026-10-13/codemode-timer-full-tests.log",
+    "logSha256": "24a99e16800f2e4888886ce510ad9dbbcc7a77101db9d0e02323da8c6c9b9001",
+    "focusedRecoveryLog": "artifacts/parity/current-pi-deltas-2026-10-13/codemode-timer-fixture-recovery-tests.log",
+    "fullRecoveryLog": "artifacts/parity/current-pi-deltas-2026-10-13/codemode-timer-corrected-full-tests.log",
+    "portReuseGuard": "tests/PiSharp.Tests/Cli/Providers/Anthropic/AnthropicStrictHttpFixtureTests.cs",
+    "differentialRecovery": "artifacts/parity/current-pi-deltas-2026-10-13/anthropic-strict-fixture-recovery.json"
   }
 }
