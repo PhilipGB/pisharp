@@ -1,0 +1,97 @@
+{
+  "pass_": false,
+  "failures": [
+    {
+      "identity": "terminal/terminal-llama-load-replace-cancel-paired/100x32-dark-fullscreen",
+      "candidate": "terminal/terminal-llama-load-replace-cancel-paired/100x32-dark-fullscreen",
+      "reason": "new semantic outcome",
+      "acceptable": [
+        {
+          "httpMatch": true,
+          "outcome": "match",
+          "renderMatch": true,
+          "scenarioErrors": {},
+          "skipReason": null,
+          "skipped": false,
+          "terminalMatch": true
+        }
+      ],
+      "actual": {
+        "outcome": "difference",
+        "terminalMatch": false,
+        "renderMatch": false,
+        "httpMatch": true,
+        "scenarioErrors": {},
+        "skipped": false,
+        "skipReason": null
+      }
+    },
+    {
+      "identity": "terminal/terminal-llama-model-picker-paired/100x32-dark-fullscreen",
+      "candidate": "terminal/terminal-llama-model-picker-paired/100x32-dark-fullscreen",
+      "reason": "new semantic outcome",
+      "acceptable": [
+        {
+          "httpMatch": false,
+          "outcome": "difference",
+          "renderMatch": false,
+          "scenarioErrors": {},
+          "skipReason": null,
+          "skipped": false,
+          "terminalMatch": false
+        },
+        {
+          "httpMatch": true,
+          "outcome": "difference",
+          "renderMatch": false,
+          "scenarioErrors": {},
+          "skipReason": null,
+          "skipped": false,
+          "terminalMatch": false
+        }
+      ],
+      "actual": {
+        "outcome": "match",
+        "terminalMatch": true,
+        "renderMatch": true,
+        "httpMatch": true,
+        "scenarioErrors": {},
+        "skipped": false,
+        "skipReason": null
+      }
+    },
+    {
+      "identity": "terminal/terminal-resource-skill-prompt-bash-paired/120x40-dark-fullscreen",
+      "candidate": "terminal/terminal-resource-skill-prompt-bash-paired/120x40-dark-fullscreen",
+      "reason": "new semantic outcome",
+      "acceptable": [
+        {
+          "httpMatch": true,
+          "outcome": "match",
+          "renderMatch": true,
+          "scenarioErrors": {},
+          "skipReason": null,
+          "skipped": false,
+          "terminalMatch": true
+        }
+      ],
+      "actual": {
+        "outcome": "difference",
+        "terminalMatch": false,
+        "renderMatch": false,
+        "httpMatch": true,
+        "scenarioErrors": {},
+        "skipped": false,
+        "skipReason": null
+      }
+    }
+  ],
+  "baselineFlaky": [
+    "terminal/terminal-llama-load-cancel-paired/100x32-dark-fullscreen",
+    "terminal/terminal-llama-model-picker-paired/100x32-dark-fullscreen",
+    "terminal/terminal-resource-skill-prompt-no-reader-paired/120x40-dark-fullscreen",
+    "terminal/terminal-resource-skill-prompt-read-bash-paired/120x40-dark-fullscreen"
+  ],
+  "expected": 1858,
+  "candidate": 1894
+}

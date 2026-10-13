@@ -1,0 +1,30 @@
+{
+  "scope": "Only completed identities; full capture is still running.",
+  "failures": [
+    {
+      "identity": "terminal/terminal-llama-load-replace-cancel-paired/100x32-dark-fullscreen",
+      "candidate": "terminal/terminal-llama-load-replace-cancel-paired/100x32-dark-fullscreen",
+      "reason": "new semantic outcome",
+      "acceptable": [
+        {
+          "httpMatch": true,
+          "outcome": "match",
+          "renderMatch": true,
+          "scenarioErrors": {},
+          "skipReason": null,
+          "skipped": false,
+          "terminalMatch": true
+        }
+      ],
+      "actual": {
+        "outcome": "difference",
+        "terminalMatch": false,
+        "renderMatch": false,
+        "httpMatch": true,
+        "scenarioErrors": {},
+        "skipped": false,
+        "skipReason": null
+      }
+    }
+  ]
+}

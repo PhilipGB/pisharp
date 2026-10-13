@@ -1,0 +1,15 @@
+{
+  "command": [
+    "dotnet",
+    "build",
+    "PiSharp.slnx",
+    "--no-restore",
+    "--warnaserror",
+    "-t:Rebuild",
+    "-m:1",
+    "-p:UseSharedCompilation=false"
+  ],
+  "cwd": "/tmp/pisharp-baseline-control-064bcc7b",
+  "exitCode": 0,
+  "seconds": 33.893532514572144
+}

@@ -1,0 +1,24 @@
+{
+  "sourceSha": "b460e368d9ce6b279821918a293ac2c5e7f91cbf",
+  "productionAndTestsUnchangedSinceH03": true,
+  "frozenSetsUnchanged": true,
+  "fixturesUnchanged": true,
+  "firstAttemptFailures": 3,
+  "firstRepeat": {
+    "environment": "Inherited environment plus DOTNET_PROCESSOR_COUNT=2; retained as diagnostic. Subsequent repeats restore every captured environment key.",
+    "remaining": 2
+  },
+  "secondRepeat": {
+    "environment": "Exact captured environment",
+    "remaining": 1
+  },
+  "thirdRepeat": {
+    "environment": "Exact captured environment",
+    "remaining": 0
+  },
+  "loadReplaceCancel": "Original and first repeat omit one intermediate render (12 Pi/11 PiSharp); untouched baseline control matches 12 frames; unchanged candidate with exact captured environment matches 12 frames. Final strict result equals frozen set.",
+  "bashPrompt": "Original has an extra intermediate render (14 Pi/15 PiSharp); unchanged candidate repeat matches 14 frames and semantic assertion passes. Untouched baseline control has 14 matching renders/HTTP but footer context estimate 13.0% versus 12.9% at its distinct CLI root, so it does not reproduce the extra render. Exact raw control retained without treating it as proof of the same frame difference.",
+  "modelPicker": "Original and first/second repeats match all 20 frames, outside original red-only flaky set. Third unchanged repeat has accepted 37205 render differences/HTTP match (Pi20/PiSharp19). Existing H03 actual untouched-baseline exact-match control independently proves 20-frame match occurs before refactor.",
+  "conclusion": "All original attempts/repeats/control data retained. Strict preserved parser passes 1858/1894 after unchanged complete-fixture reruns; no expected outcomes, fixtures, pin, tests, parser or frozen sets were changed. No source defect/fix was identified.",
+  "fullCaptureSourceUnchanged": true
+}

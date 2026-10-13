@@ -1,0 +1,912 @@
+[
+  {
+    "original": "baseline-variance-controls/build.log",
+    "compressed": "baseline-variance-controls/build.log.gz",
+    "bytes": 800,
+    "sha256": "862f7edf23ffe057e13c55686edfdd6c51b63e089a3a7d8bb5a770903370580b",
+    "compressedSha256": "506e2cc064e3c587052625512280f0f3a0a0bf40cd79f3f01e044061772897ea"
+  },
+  {
+    "original": "baseline-variance-controls/llama-load-replace-cancel.log",
+    "compressed": "baseline-variance-controls/llama-load-replace-cancel.log.gz",
+    "bytes": 123,
+    "sha256": "d79503709e59098c78e4f82abdc8a3ed5dae639b006cee25618fc68dd87b40e4",
+    "compressedSha256": "269a913fcdd15b47afac441797321fd1c7231f0577633aa932dc5a934a4729b8"
+  },
+  {
+    "original": "baseline-variance-controls/pin-verify.log",
+    "compressed": "baseline-variance-controls/pin-verify.log.gz",
+    "bytes": 41,
+    "sha256": "db6476a044c995da5be7200609a88998b161e10f4a38991b33fcb61ce8d99fb6",
+    "compressedSha256": "5101421f9addeeb146180c3069af4cda45574074b96c04f8c683510319dc3952"
+  },
+  {
+    "original": "baseline-variance-controls/resource-skill-prompt-bash.log",
+    "compressed": "baseline-variance-controls/resource-skill-prompt-bash.log.gz",
+    "bytes": 123,
+    "sha256": "742c9b69636c40365f718de494a1f333fc8bbfe62e37956f926114c99dfb24f9",
+    "compressedSha256": "20d3d468a82fd799c12b8d4c531793f49ade75e8bbfb39f0a8017fb185aef529"
+  },
+  {
+    "original": "candidate-working-tree.patch",
+    "compressed": "candidate-working-tree.patch.gz",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "compressedSha256": "f61f27bd17de546264aa58f40f3aafaac7021e0ef69c17f6b1b4cd7664a037ec"
+  },
+  {
+    "original": "driver.log",
+    "compressed": "driver.log.gz",
+    "bytes": 11713,
+    "sha256": "331dc39b21435e4390d0310cce2548de219e17db20e1e3eb79b175942fd0c139",
+    "compressedSha256": "d33cbfaac5db9f7429612675300538c26065a1d9c880f3926a214ac96a576826"
+  },
+  {
+    "original": "investigation-driver.log",
+    "compressed": "investigation-driver.log.gz",
+    "bytes": 3000,
+    "sha256": "810fdfb27b72cff251139ddce6d954eeda0dbc8fab856d7b8439f2dc787afb30",
+    "compressedSha256": "84723c85a6c454660061633ace330ead34c0b20b57a0e449ee78db98b09ade5e"
+  },
+  {
+    "original": "repeat-2-driver.log",
+    "compressed": "repeat-2-driver.log.gz",
+    "bytes": 1498,
+    "sha256": "4ebefeb37b84a469741d0b313518baaa0f2ce961064ebb882752c1f653e3a94a",
+    "compressedSha256": "dedbb71c1fede900bec84a88517e5aba2dbb22477743dc6f3024c37c05efbdb0"
+  },
+  {
+    "original": "repeat-3-driver.log",
+    "compressed": "repeat-3-driver.log.gz",
+    "bytes": 536,
+    "sha256": "acf34f768857f244b289bf33975e78a910bd6935436eea4c952ce5c290b72d31",
+    "compressedSha256": "3b82d63b8051c5508f86b929bdd12ac236c0c327bad5246f56e8947e99983eb2"
+  },
+  {
+    "original": "run-1/anthropic-inline-differential.log",
+    "compressed": "run-1/anthropic-inline-differential.log.gz",
+    "bytes": 268,
+    "sha256": "4c2e70aadb02400f63d2ebda92950815bb41282f916d83d6031a245302684fa8",
+    "compressedSha256": "6b6e6195456ff60fda2158fdd3d527237bfddc975dfeba623d8fcb3b94d1cfed"
+  },
+  {
+    "original": "run-1/assert-extension-resource-discovery-reload.log",
+    "compressed": "run-1/assert-extension-resource-discovery-reload.log.gz",
+    "bytes": 3754,
+    "sha256": "3844bb50dbdb41967daf50701267adc3ebbe06c583414eef0fc09fee1a6f4a04",
+    "compressedSha256": "735b72dbd3a1ccaabba13690fe274182767037402dfe8e5f9c83db5fd24d2218"
+  },
+  {
+    "original": "run-1/assert-legacy-project-skills-prompt-reload.log",
+    "compressed": "run-1/assert-legacy-project-skills-prompt-reload.log.gz",
+    "bytes": 872,
+    "sha256": "9abf0dee982b332b52b8c2fe44610dd232b211ba1cc62b99d8606df1a2e29113",
+    "compressedSha256": "dc4fd849f103867558d6f4d510e86f8b7694a641c10c718ba1ec22b88d50fcef"
+  },
+  {
+    "original": "run-1/assert-legacy-project-skills-reload.log",
+    "compressed": "run-1/assert-legacy-project-skills-reload.log.gz",
+    "bytes": 5285,
+    "sha256": "75a0629b7e6a6403feb8ba8f4e83fb8b1f4eeb0277d35d82a6a71a26e0b4b407",
+    "compressedSha256": "e7f7678d4ec0784ee541be788e5b92cb7991af0f26f4ebdfcfedd45bf786cedd"
+  },
+  {
+    "original": "run-1/assert-legacy-project-skills-settings.log",
+    "compressed": "run-1/assert-legacy-project-skills-settings.log.gz",
+    "bytes": 1300,
+    "sha256": "a9de18b8432224d67e421df7078e8dff719e113e391ff7ac0c604712630ac6cf",
+    "compressedSha256": "cc8ac3a8b65fc9b3e06db5d2b112f58dcc2de8491d834fb799c9941a2ce362c2"
+  },
+  {
+    "original": "run-1/assert-project-trust-extension-ui.log",
+    "compressed": "run-1/assert-project-trust-extension-ui.log.gz",
+    "bytes": 2713,
+    "sha256": "d5af896c7927c636c6d27b7ec614f14d21e112dc5ea4b0cb287a2e7dffacdc75",
+    "compressedSha256": "2b6bc112fc5ef9c5d2fb2b86c7489a6ce3e2a7eee6a7ac4340c1209d0ec0eab7"
+  },
+  {
+    "original": "run-1/assert-project-trust-extension.log",
+    "compressed": "run-1/assert-project-trust-extension.log.gz",
+    "bytes": 836,
+    "sha256": "19817c77dd535d2ba432c5cbe24a2135b0ba3ec9fb0937821596406c8706424e",
+    "compressedSha256": "ff51fef502ff0039ac62b29cf9932497cc330e88e0d5029bcf56ec88b0841851"
+  },
+  {
+    "original": "run-1/assert-resource-skill-precedence.log",
+    "compressed": "run-1/assert-resource-skill-precedence.log.gz",
+    "bytes": 1100,
+    "sha256": "a4a06dc9e593348ae6de6a82b3dac2d6b713a28363682c69daac650adb2743a2",
+    "compressedSha256": "a66ef99197b91596841444dbd01957bea49dadad77337f9caf5d34fb24a0d858"
+  },
+  {
+    "original": "run-1/assert-resource-skill-prompt-bash.log",
+    "compressed": "run-1/assert-resource-skill-prompt-bash.log.gz",
+    "bytes": 928,
+    "sha256": "52c23c163c26f250ea9880f8c9e47e7b06987163eb11ac9820c865a25417e709",
+    "compressedSha256": "72a8ff4334c75d085a10563c3172aeeff7abd80edc8d3732a8ecd5d207de047c"
+  },
+  {
+    "original": "run-1/assert-resource-skill-prompt-hidden-read-bash.log",
+    "compressed": "run-1/assert-resource-skill-prompt-hidden-read-bash.log.gz",
+    "bytes": 888,
+    "sha256": "c6eac8556e25ff044647b483cd5512e91af94971455cc6754d3df320ead9cd38",
+    "compressedSha256": "d780e1199a221343cdd1c64ac4fb66afbccfbf558c7a20174da4fd4dc03f3e34"
+  },
+  {
+    "original": "run-1/assert-resource-skill-prompt-hidden-read.log",
+    "compressed": "run-1/assert-resource-skill-prompt-hidden-read.log.gz",
+    "bytes": 852,
+    "sha256": "54b74b1355bd6c105d26b5a86bd5c55064a6781752c00f98a977bec50b34258c",
+    "compressedSha256": "25b29023081fe4b009715443eb25e305e16668591d27af3f3b77c25278441555"
+  },
+  {
+    "original": "run-1/assert-resource-skill-prompt-no-reader.log",
+    "compressed": "run-1/assert-resource-skill-prompt-no-reader.log.gz",
+    "bytes": 904,
+    "sha256": "402fede2f0e16b271193b5c2aa30e967157c3357ea15419df236043e42996304",
+    "compressedSha256": "0d24bfcae66db9c856f2666b770664aa496ca3a93d69d2519e63057606b1cf60"
+  },
+  {
+    "original": "run-1/assert-resource-skill-prompt-read-bash.log",
+    "compressed": "run-1/assert-resource-skill-prompt-read-bash.log.gz",
+    "bytes": 942,
+    "sha256": "89754761b6f44cdfa200c5f9cef36aa834c72f587908dac99bd79dc971431319",
+    "compressedSha256": "fd7ec9f98f8e569e5eced91196aa4d72b46171fce4948974a921859ff9b169d7"
+  },
+  {
+    "original": "run-1/assert-trusted-project-settings-reload.log",
+    "compressed": "run-1/assert-trusted-project-settings-reload.log.gz",
+    "bytes": 4395,
+    "sha256": "7dfc67035781387cac4758d84599b979d960d9a7affe67b6afc382a8bb6f6559",
+    "compressedSha256": "c2c6c07750fd16a4d9a7f3797fac937c6256a661861c9729811699aaad189f84"
+  },
+  {
+    "original": "run-1/build.log",
+    "compressed": "run-1/build.log.gz",
+    "bytes": 860,
+    "sha256": "a89c910b480bc8b1e59fe1db7d1c85f938f467c274a1e6bc4e1b9d2675aa9dbf",
+    "compressedSha256": "720069cdeaab73163048c9154c9d50856155c9073523f54829eb5152b3d963ff"
+  },
+  {
+    "original": "run-1/capacity-retry-differential.log",
+    "compressed": "run-1/capacity-retry-differential.log.gz",
+    "bytes": 268,
+    "sha256": "5e06a71e81cc5315c666025e6de974fe821b6f5a213d9c4a8dc7752b7b172368",
+    "compressedSha256": "cae694ff2877c074e2eb6932f5e9660aaffb40fd453d6b43304c1a1368887729"
+  },
+  {
+    "original": "run-1/codemode-bash-differential.log",
+    "compressed": "run-1/codemode-bash-differential.log.gz",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "compressedSha256": "f61f27bd17de546264aa58f40f3aafaac7021e0ef69c17f6b1b4cd7664a037ec"
+  },
+  {
+    "original": "run-1/codemode-classifier-differential.log",
+    "compressed": "run-1/codemode-classifier-differential.log.gz",
+    "bytes": 1919,
+    "sha256": "6e4576d8314ab0a6f1623ce164ff1ca5aa97eca65835de0b54f8edd7f1e090dc",
+    "compressedSha256": "bcac77318e2b728d58019d541c90bf232ae621e0bf1d2fcbf73d9822a84aa0ab"
+  },
+  {
+    "original": "run-1/default-project-trust-process-differential.log",
+    "compressed": "run-1/default-project-trust-process-differential.log.gz",
+    "bytes": 961,
+    "sha256": "689fbaaba2124e183e6df195cab853aac1193a46dde06aee5e0cfbea68394361",
+    "compressedSha256": "778a5f6c6b6b5d323a51b8e434caac54ab618a2f07439123268d8eb1035379c6"
+  },
+  {
+    "original": "run-1/deferred-tool-differential.log",
+    "compressed": "run-1/deferred-tool-differential.log.gz",
+    "bytes": 268,
+    "sha256": "8b0ffcf335475e2fefcb57cd105e3fa5a25998759f415f944f42d717f41d4e7d",
+    "compressedSha256": "307656b5fbd4904b3fb28437a01a7af007d95fc7580fe0ac0f55d90db63badc2"
+  },
+  {
+    "original": "run-1/docs-paths.log",
+    "compressed": "run-1/docs-paths.log.gz",
+    "bytes": 60,
+    "sha256": "bf2584fd46fbf42e540f4ce1fc132252ca0a18f7bbdeb9371085d4c59dfe4961",
+    "compressedSha256": "6516d60afe1594f1aa024adf0d1e4a7c6457ed7940a3c4dfe3ab9da8c9c30bf5"
+  },
+  {
+    "original": "run-1/dotnet/tests.trx",
+    "compressed": "run-1/dotnet/tests.trx.gz",
+    "bytes": 1966098,
+    "sha256": "87a164e0bcc8717da3f4d83b20d044ac8d31003cb93998d70c59a5e8e7771d0e",
+    "compressedSha256": "6e7f615fb40d5def7cdc224cf3ac142ac0624a06fe01c78e2dcbf8fbf44b9acb"
+  },
+  {
+    "original": "run-1/dotnet.log",
+    "compressed": "run-1/dotnet.log.gz",
+    "bytes": 460,
+    "sha256": "07189c9f5fb73a48e8450e7033717432e988b4b5fc77fb06f7d9777efcaf97d9",
+    "compressedSha256": "e78601dba202e3fa230c0093f5f801f8728431b7aa62a7e637faea94f7295f50"
+  },
+  {
+    "original": "run-1/format.log",
+    "compressed": "run-1/format.log.gz",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "compressedSha256": "f61f27bd17de546264aa58f40f3aafaac7021e0ef69c17f6b1b4cd7664a037ec"
+  },
+  {
+    "original": "run-1/llama-classifier-differential.log",
+    "compressed": "run-1/llama-classifier-differential.log.gz",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "compressedSha256": "f61f27bd17de546264aa58f40f3aafaac7021e0ef69c17f6b1b4cd7664a037ec"
+  },
+  {
+    "original": "run-1/llama-router-classifier-differential.log",
+    "compressed": "run-1/llama-router-classifier-differential.log.gz",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "compressedSha256": "f61f27bd17de546264aa58f40f3aafaac7021e0ef69c17f6b1b4cd7664a037ec"
+  },
+  {
+    "original": "run-1/llama-router-context-differential.log",
+    "compressed": "run-1/llama-router-context-differential.log.gz",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "compressedSha256": "f61f27bd17de546264aa58f40f3aafaac7021e0ef69c17f6b1b4cd7664a037ec"
+  },
+  {
+    "original": "run-1/mcp-credential-differential.log",
+    "compressed": "run-1/mcp-credential-differential.log.gz",
+    "bytes": 263,
+    "sha256": "b485f2fd15d78417204983a57e8282e0d0deb357d45abd73e521c0a619546b0a",
+    "compressedSha256": "6d291c7d28da6e598a17068d001edf10681ad69078398bd62540093816aa2eb8"
+  },
+  {
+    "original": "run-1/mcp.log",
+    "compressed": "run-1/mcp.log.gz",
+    "bytes": 3310,
+    "sha256": "b813dc07da1ff12d1fa8f9565a945a6f6f79e78f05ffdb4d48d116a6a6535feb",
+    "compressedSha256": "443086992866a96e8a1951cc8fdd56be3d5a1ffd7edb520b9ce26fb8846f25bb"
+  },
+  {
+    "original": "run-1/node.log",
+    "compressed": "run-1/node.log.gz",
+    "bytes": 3989,
+    "sha256": "b93c9c2d4b9385f7b9549c4d754bc240ce0c4ca855b5c4d67157e2103d9beda1",
+    "compressedSha256": "600df4b8ec9f2d49b18627685e68471dba45599c16dadd28ae97e1ed4523e5d7"
+  },
+  {
+    "original": "run-1/outside-baseline-first-attempts/terminal-llama-load-replace-cancel-paired.log",
+    "compressed": "run-1/outside-baseline-first-attempts/terminal-llama-load-replace-cancel-paired.log.gz",
+    "bytes": 125,
+    "sha256": "0e6e6d1ad293ddb34ea95a8784791a7dd43d1f370e40099c9059c0e97bd326a6",
+    "compressedSha256": "adaf74dc2a6f3ab37243c89a1396f57be6e100099cb9cf81b0af0f08eb65e563"
+  },
+  {
+    "original": "run-1/outside-baseline-first-attempts/terminal-llama-model-picker-paired.log",
+    "compressed": "run-1/outside-baseline-first-attempts/terminal-llama-model-picker-paired.log.gz",
+    "bytes": 123,
+    "sha256": "6e3ac2799b1cdb9b8616b4f807653c8b81b635e68720f083b857f8f122a7c322",
+    "compressedSha256": "ff02355307981ed15c2ba8c570f63f347db1d092cb2b55f7568a38743981f2a6"
+  },
+  {
+    "original": "run-1/outside-baseline-first-attempts/terminal-resource-skill-prompt-bash-paired.log",
+    "compressed": "run-1/outside-baseline-first-attempts/terminal-resource-skill-prompt-bash-paired.log.gz",
+    "bytes": 125,
+    "sha256": "2217f3dbece79684403f72952fd5232544668583296c9bc7106bbce8c6454096",
+    "compressedSha256": "4ef8d2d7667b805d322afb47dfcf97e688565d2445dc16016f3664369f377873"
+  },
+  {
+    "original": "run-1/outside-baseline-repeat-1/terminal-llama-load-replace-cancel-paired.log",
+    "compressed": "run-1/outside-baseline-repeat-1/terminal-llama-load-replace-cancel-paired.log.gz",
+    "bytes": 125,
+    "sha256": "0e6e6d1ad293ddb34ea95a8784791a7dd43d1f370e40099c9059c0e97bd326a6",
+    "compressedSha256": "adaf74dc2a6f3ab37243c89a1396f57be6e100099cb9cf81b0af0f08eb65e563"
+  },
+  {
+    "original": "run-1/outside-baseline-repeat-1/terminal-llama-model-picker-paired.log",
+    "compressed": "run-1/outside-baseline-repeat-1/terminal-llama-model-picker-paired.log.gz",
+    "bytes": 123,
+    "sha256": "6e3ac2799b1cdb9b8616b4f807653c8b81b635e68720f083b857f8f122a7c322",
+    "compressedSha256": "ff02355307981ed15c2ba8c570f63f347db1d092cb2b55f7568a38743981f2a6"
+  },
+  {
+    "original": "run-1/outside-baseline-repeat-2/terminal-llama-model-picker-paired.log",
+    "compressed": "run-1/outside-baseline-repeat-2/terminal-llama-model-picker-paired.log.gz",
+    "bytes": 123,
+    "sha256": "6e3ac2799b1cdb9b8616b4f807653c8b81b635e68720f083b857f8f122a7c322",
+    "compressedSha256": "ff02355307981ed15c2ba8c570f63f347db1d092cb2b55f7568a38743981f2a6"
+  },
+  {
+    "original": "run-1/project-trust-null-differential.log",
+    "compressed": "run-1/project-trust-null-differential.log.gz",
+    "bytes": 276,
+    "sha256": "75e15d1d3d9b3194bf40c5fea98bce9083e372935242fdab3a1a0a377127495d",
+    "compressedSha256": "9a1fdc9bfefe77edffdcc2fbe692e3c8f5f2fa2f8a93753ca20e8f01d3485ee3"
+  },
+  {
+    "original": "run-1/python.log",
+    "compressed": "run-1/python.log.gz",
+    "bytes": 7590,
+    "sha256": "2dc2e3320de7aaca7a3fdeaaa73c3708cd97be616956768557f0b73aebf01bee",
+    "compressedSha256": "9c38b0210cf8804438f8b308b8e5fe00a98594dd0944253387362ea81acd09f2"
+  },
+  {
+    "original": "run-1/quiet-startup-differential.log",
+    "compressed": "run-1/quiet-startup-differential.log.gz",
+    "bytes": 310,
+    "sha256": "ffb572732d3e0381a7e7d38dfeb9eceae9e43a0b3c79d5041c971b5b015e2242",
+    "compressedSha256": "b51a0182abdc83b8aa15731852c3af13185fe3044bf9cfd6da5ac9d5aa20482b"
+  },
+  {
+    "original": "run-1/radius-mcp-differential.log",
+    "compressed": "run-1/radius-mcp-differential.log.gz",
+    "bytes": 275,
+    "sha256": "600dcb279ac9f2de053d166744937a287ee190f10b3ebe3347bee142f2eb54b4",
+    "compressedSha256": "c3afd7acbf30196108ac07371b5975c4da7ebc0e872475a6fa42d843a6871493"
+  },
+  {
+    "original": "run-1/radius-shimmer-differential.log",
+    "compressed": "run-1/radius-shimmer-differential.log.gz",
+    "bytes": 283,
+    "sha256": "7cbd71b83d9416c0f161d60f143b9461d80029fcc6a17c0cf7dce81e917d1604",
+    "compressedSha256": "13a6fa6bbfd8c586f5c192f9a45455e2edb5f480084540c4c9ca2ee0f0dc086e"
+  },
+  {
+    "original": "run-1/system-theme-differential.log",
+    "compressed": "run-1/system-theme-differential.log.gz",
+    "bytes": 266,
+    "sha256": "79759c13a9743c58f8e23326e89163965c4a759f55bb669328f553133be8782c",
+    "compressedSha256": "c00678b4fa60d2b8949bf74728e5a1b0cf2c7ee1a85eb0c0fbbcc1c059185f0a"
+  },
+  {
+    "original": "run-1/terminal-extension-resource-discovery-reload-calibration.log",
+    "compressed": "run-1/terminal-extension-resource-discovery-reload-calibration.log.gz",
+    "bytes": 123,
+    "sha256": "36d5151111d48f2879cee3998f6f3434bf3c715ff1f108bae619e90e5d2abf1d",
+    "compressedSha256": "100f90bb6648e169628d27345bd123466d1b234d1fcdf6391c69b68eec4f8f08"
+  },
+  {
+    "original": "run-1/terminal-extension-resource-discovery-reload-paired.log",
+    "compressed": "run-1/terminal-extension-resource-discovery-reload-paired.log.gz",
+    "bytes": 123,
+    "sha256": "36d5151111d48f2879cee3998f6f3434bf3c715ff1f108bae619e90e5d2abf1d",
+    "compressedSha256": "100f90bb6648e169628d27345bd123466d1b234d1fcdf6391c69b68eec4f8f08"
+  },
+  {
+    "original": "run-1/terminal-legacy-project-skills-prompt-reload-calibration.log",
+    "compressed": "run-1/terminal-legacy-project-skills-prompt-reload-calibration.log.gz",
+    "bytes": 123,
+    "sha256": "e2556af80e2ee1fb4ed6ccf825385750321a2f0870dfa29053e42dbd10ccda39",
+    "compressedSha256": "af5e3bd8d92078d674f52ed9adbb45539ed9efae606f9cbc9689060fe0774013"
+  },
+  {
+    "original": "run-1/terminal-legacy-project-skills-prompt-reload-paired.log",
+    "compressed": "run-1/terminal-legacy-project-skills-prompt-reload-paired.log.gz",
+    "bytes": 123,
+    "sha256": "e2556af80e2ee1fb4ed6ccf825385750321a2f0870dfa29053e42dbd10ccda39",
+    "compressedSha256": "af5e3bd8d92078d674f52ed9adbb45539ed9efae606f9cbc9689060fe0774013"
+  },
+  {
+    "original": "run-1/terminal-legacy-project-skills-reload-calibration.log",
+    "compressed": "run-1/terminal-legacy-project-skills-reload-calibration.log.gz",
+    "bytes": 123,
+    "sha256": "e2556af80e2ee1fb4ed6ccf825385750321a2f0870dfa29053e42dbd10ccda39",
+    "compressedSha256": "af5e3bd8d92078d674f52ed9adbb45539ed9efae606f9cbc9689060fe0774013"
+  },
+  {
+    "original": "run-1/terminal-legacy-project-skills-reload-paired.log",
+    "compressed": "run-1/terminal-legacy-project-skills-reload-paired.log.gz",
+    "bytes": 123,
+    "sha256": "e2556af80e2ee1fb4ed6ccf825385750321a2f0870dfa29053e42dbd10ccda39",
+    "compressedSha256": "af5e3bd8d92078d674f52ed9adbb45539ed9efae606f9cbc9689060fe0774013"
+  },
+  {
+    "original": "run-1/terminal-legacy-project-skills-settings-calibration.log",
+    "compressed": "run-1/terminal-legacy-project-skills-settings-calibration.log.gz",
+    "bytes": 122,
+    "sha256": "54db6a964dbc272bbe7df1d9ffa8f4e72b8f2f466831a6b0d67a7d4829aa796d",
+    "compressedSha256": "e9c19e00724e8db5feb8ab68a2b6cbb2fa7f03fe09b4d191bd7a6da192d24d09"
+  },
+  {
+    "original": "run-1/terminal-legacy-project-skills-settings-paired.log",
+    "compressed": "run-1/terminal-legacy-project-skills-settings-paired.log.gz",
+    "bytes": 122,
+    "sha256": "54db6a964dbc272bbe7df1d9ffa8f4e72b8f2f466831a6b0d67a7d4829aa796d",
+    "compressedSha256": "e9c19e00724e8db5feb8ab68a2b6cbb2fa7f03fe09b4d191bd7a6da192d24d09"
+  },
+  {
+    "original": "run-1/terminal-llama-download-cancel-calibration.log",
+    "compressed": "run-1/terminal-llama-download-cancel-calibration.log.gz",
+    "bytes": 123,
+    "sha256": "a882f1a466b261340a359fdd0622ae19ad056601482b732a5ce6e551f0177162",
+    "compressedSha256": "7084cd25e43a91af4b8948c3befd614c7ce4b2b3966b6ce21233309945a5f804"
+  },
+  {
+    "original": "run-1/terminal-llama-download-cancel-paired.log",
+    "compressed": "run-1/terminal-llama-download-cancel-paired.log.gz",
+    "bytes": 123,
+    "sha256": "a882f1a466b261340a359fdd0622ae19ad056601482b732a5ce6e551f0177162",
+    "compressedSha256": "7084cd25e43a91af4b8948c3befd614c7ce4b2b3966b6ce21233309945a5f804"
+  },
+  {
+    "original": "run-1/terminal-llama-huggingface-calibration.log",
+    "compressed": "run-1/terminal-llama-huggingface-calibration.log.gz",
+    "bytes": 123,
+    "sha256": "c15209889ccaf75b00791781bd6a49bddcaefa6421697b91a8fd59cd32f29752",
+    "compressedSha256": "296ce706e825aecc30f1988d3b38dd7c09370aef09dd943bd39387b4f095f8be"
+  },
+  {
+    "original": "run-1/terminal-llama-huggingface-home-token-file-calibration.log",
+    "compressed": "run-1/terminal-llama-huggingface-home-token-file-calibration.log.gz",
+    "bytes": 123,
+    "sha256": "6e3ac2799b1cdb9b8616b4f807653c8b81b635e68720f083b857f8f122a7c322",
+    "compressedSha256": "ff02355307981ed15c2ba8c570f63f347db1d092cb2b55f7568a38743981f2a6"
+  },
+  {
+    "original": "run-1/terminal-llama-huggingface-home-token-file-paired.log",
+    "compressed": "run-1/terminal-llama-huggingface-home-token-file-paired.log.gz",
+    "bytes": 123,
+    "sha256": "6e3ac2799b1cdb9b8616b4f807653c8b81b635e68720f083b857f8f122a7c322",
+    "compressedSha256": "ff02355307981ed15c2ba8c570f63f347db1d092cb2b55f7568a38743981f2a6"
+  },
+  {
+    "original": "run-1/terminal-llama-huggingface-paired.log",
+    "compressed": "run-1/terminal-llama-huggingface-paired.log.gz",
+    "bytes": 123,
+    "sha256": "c15209889ccaf75b00791781bd6a49bddcaefa6421697b91a8fd59cd32f29752",
+    "compressedSha256": "296ce706e825aecc30f1988d3b38dd7c09370aef09dd943bd39387b4f095f8be"
+  },
+  {
+    "original": "run-1/terminal-llama-huggingface-token-file-calibration.log",
+    "compressed": "run-1/terminal-llama-huggingface-token-file-calibration.log.gz",
+    "bytes": 123,
+    "sha256": "6e3ac2799b1cdb9b8616b4f807653c8b81b635e68720f083b857f8f122a7c322",
+    "compressedSha256": "ff02355307981ed15c2ba8c570f63f347db1d092cb2b55f7568a38743981f2a6"
+  },
+  {
+    "original": "run-1/terminal-llama-huggingface-token-file-paired.log",
+    "compressed": "run-1/terminal-llama-huggingface-token-file-paired.log.gz",
+    "bytes": 123,
+    "sha256": "6e3ac2799b1cdb9b8616b4f807653c8b81b635e68720f083b857f8f122a7c322",
+    "compressedSha256": "ff02355307981ed15c2ba8c570f63f347db1d092cb2b55f7568a38743981f2a6"
+  },
+  {
+    "original": "run-1/terminal-llama-load-cancel-calibration.log",
+    "compressed": "run-1/terminal-llama-load-cancel-calibration.log.gz",
+    "bytes": 123,
+    "sha256": "d79503709e59098c78e4f82abdc8a3ed5dae639b006cee25618fc68dd87b40e4",
+    "compressedSha256": "269a913fcdd15b47afac441797321fd1c7231f0577633aa932dc5a934a4729b8"
+  },
+  {
+    "original": "run-1/terminal-llama-load-cancel-paired.log",
+    "compressed": "run-1/terminal-llama-load-cancel-paired.log.gz",
+    "bytes": 123,
+    "sha256": "d79503709e59098c78e4f82abdc8a3ed5dae639b006cee25618fc68dd87b40e4",
+    "compressedSha256": "269a913fcdd15b47afac441797321fd1c7231f0577633aa932dc5a934a4729b8"
+  },
+  {
+    "original": "run-1/terminal-llama-load-replace-cancel-calibration.log",
+    "compressed": "run-1/terminal-llama-load-replace-cancel-calibration.log.gz",
+    "bytes": 123,
+    "sha256": "d79503709e59098c78e4f82abdc8a3ed5dae639b006cee25618fc68dd87b40e4",
+    "compressedSha256": "269a913fcdd15b47afac441797321fd1c7231f0577633aa932dc5a934a4729b8"
+  },
+  {
+    "original": "run-1/terminal-llama-load-replace-cancel-paired.log",
+    "compressed": "run-1/terminal-llama-load-replace-cancel-paired.log.gz",
+    "bytes": 123,
+    "sha256": "d79503709e59098c78e4f82abdc8a3ed5dae639b006cee25618fc68dd87b40e4",
+    "compressedSha256": "269a913fcdd15b47afac441797321fd1c7231f0577633aa932dc5a934a4729b8"
+  },
+  {
+    "original": "run-1/terminal-llama-login-calibration.log",
+    "compressed": "run-1/terminal-llama-login-calibration.log.gz",
+    "bytes": 123,
+    "sha256": "02e1a7dd0fdb8fd5f191576e05dde72e27bd762c43d2f6dda7ac9b147f85e4e9",
+    "compressedSha256": "bacd344d12a65e5cdd7377d1bf0dc040d2306ee6c80a1f37c706000b77eeb716"
+  },
+  {
+    "original": "run-1/terminal-llama-login-default-calibration.log",
+    "compressed": "run-1/terminal-llama-login-default-calibration.log.gz",
+    "bytes": 122,
+    "sha256": "979657d5714571b312cf6455057b3fa5aaec59d5531a20b1b30977a528566db2",
+    "compressedSha256": "737c976fd4d11f6a585979a7e5c716bf6bee9d7f719134b4028fe5fe31ef6d71"
+  },
+  {
+    "original": "run-1/terminal-llama-login-default-paired.log",
+    "compressed": "run-1/terminal-llama-login-default-paired.log.gz",
+    "bytes": 122,
+    "sha256": "979657d5714571b312cf6455057b3fa5aaec59d5531a20b1b30977a528566db2",
+    "compressedSha256": "737c976fd4d11f6a585979a7e5c716bf6bee9d7f719134b4028fe5fe31ef6d71"
+  },
+  {
+    "original": "run-1/terminal-llama-login-paired.log",
+    "compressed": "run-1/terminal-llama-login-paired.log.gz",
+    "bytes": 123,
+    "sha256": "02e1a7dd0fdb8fd5f191576e05dde72e27bd762c43d2f6dda7ac9b147f85e4e9",
+    "compressedSha256": "bacd344d12a65e5cdd7377d1bf0dc040d2306ee6c80a1f37c706000b77eeb716"
+  },
+  {
+    "original": "run-1/terminal-llama-manager-calibration.log",
+    "compressed": "run-1/terminal-llama-manager-calibration.log.gz",
+    "bytes": 122,
+    "sha256": "979657d5714571b312cf6455057b3fa5aaec59d5531a20b1b30977a528566db2",
+    "compressedSha256": "737c976fd4d11f6a585979a7e5c716bf6bee9d7f719134b4028fe5fe31ef6d71"
+  },
+  {
+    "original": "run-1/terminal-llama-manager-paired.log",
+    "compressed": "run-1/terminal-llama-manager-paired.log.gz",
+    "bytes": 122,
+    "sha256": "979657d5714571b312cf6455057b3fa5aaec59d5531a20b1b30977a528566db2",
+    "compressedSha256": "737c976fd4d11f6a585979a7e5c716bf6bee9d7f719134b4028fe5fe31ef6d71"
+  },
+  {
+    "original": "run-1/terminal-llama-model-picker-calibration.log",
+    "compressed": "run-1/terminal-llama-model-picker-calibration.log.gz",
+    "bytes": 123,
+    "sha256": "6e3ac2799b1cdb9b8616b4f807653c8b81b635e68720f083b857f8f122a7c322",
+    "compressedSha256": "ff02355307981ed15c2ba8c570f63f347db1d092cb2b55f7568a38743981f2a6"
+  },
+  {
+    "original": "run-1/terminal-llama-model-picker-paired.log",
+    "compressed": "run-1/terminal-llama-model-picker-paired.log.gz",
+    "bytes": 125,
+    "sha256": "ec9e2ef4dbb12c7bd3aa8020edb358c4f8a3203d789e761da64a5e94d47d2fc3",
+    "compressedSha256": "e2459efb585c8b97031bd2e7b9f00cdfac396d8f4d053f15443a94795dd0f4fb"
+  },
+  {
+    "original": "run-1/terminal-llama-retry-calibration.log",
+    "compressed": "run-1/terminal-llama-retry-calibration.log.gz",
+    "bytes": 122,
+    "sha256": "e19c7d6d84ea11ee43520ba92ef247b8e728c15bd6a7f1eac1aed81a7dc153cf",
+    "compressedSha256": "52fa2dba317d8ca01a655bf491396b65e0624533af2bc4c1e7f73c0960cae2bd"
+  },
+  {
+    "original": "run-1/terminal-llama-retry-paired.log",
+    "compressed": "run-1/terminal-llama-retry-paired.log.gz",
+    "bytes": 122,
+    "sha256": "e19c7d6d84ea11ee43520ba92ef247b8e728c15bd6a7f1eac1aed81a7dc153cf",
+    "compressedSha256": "52fa2dba317d8ca01a655bf491396b65e0624533af2bc4c1e7f73c0960cae2bd"
+  },
+  {
+    "original": "run-1/terminal-llama-unload-calibration.log",
+    "compressed": "run-1/terminal-llama-unload-calibration.log.gz",
+    "bytes": 122,
+    "sha256": "e8ea63876de1aa9364f08729b2a98f90953bf55fb667c936f70f09677c21e625",
+    "compressedSha256": "73ff34efe324ab10542ccedc42d1c81d5b5a91b34c2ee45038242b8567c949d5"
+  },
+  {
+    "original": "run-1/terminal-llama-unload-paired.log",
+    "compressed": "run-1/terminal-llama-unload-paired.log.gz",
+    "bytes": 122,
+    "sha256": "e8ea63876de1aa9364f08729b2a98f90953bf55fb667c936f70f09677c21e625",
+    "compressedSha256": "73ff34efe324ab10542ccedc42d1c81d5b5a91b34c2ee45038242b8567c949d5"
+  },
+  {
+    "original": "run-1/terminal-project-trust-extension-calibration.log",
+    "compressed": "run-1/terminal-project-trust-extension-calibration.log.gz",
+    "bytes": 122,
+    "sha256": "6417a2f51001dbac8bba6f9e02af21afa19598ca92d71dc966a88edfa21c6254",
+    "compressedSha256": "4d2f7aed0daacfc56131f7367734382356a3ccfe8e38c7014da33719056b903e"
+  },
+  {
+    "original": "run-1/terminal-project-trust-extension-paired/extension-trace.log",
+    "compressed": "run-1/terminal-project-trust-extension-paired/extension-trace.log.gz",
+    "bytes": 52,
+    "sha256": "009a9b48784711c79d083a18b1a0978fb1cbe4c36b4378727ab222421980c759",
+    "compressedSha256": "1ebcf16c57e824e452d0e462c2abf37c94ba4d977c2c370acf72aa826ddd5d59"
+  },
+  {
+    "original": "run-1/terminal-project-trust-extension-paired.log",
+    "compressed": "run-1/terminal-project-trust-extension-paired.log.gz",
+    "bytes": 122,
+    "sha256": "6417a2f51001dbac8bba6f9e02af21afa19598ca92d71dc966a88edfa21c6254",
+    "compressedSha256": "4d2f7aed0daacfc56131f7367734382356a3ccfe8e38c7014da33719056b903e"
+  },
+  {
+    "original": "run-1/terminal-project-trust-extension-ui-calibration.log",
+    "compressed": "run-1/terminal-project-trust-extension-ui-calibration.log.gz",
+    "bytes": 123,
+    "sha256": "e2556af80e2ee1fb4ed6ccf825385750321a2f0870dfa29053e42dbd10ccda39",
+    "compressedSha256": "af5e3bd8d92078d674f52ed9adbb45539ed9efae606f9cbc9689060fe0774013"
+  },
+  {
+    "original": "run-1/terminal-project-trust-extension-ui-paired/extension-trace.log",
+    "compressed": "run-1/terminal-project-trust-extension-ui-paired/extension-trace.log.gz",
+    "bytes": 93,
+    "sha256": "6e4c092ae155aa5f405bef48217ef3a1dbab7a2dbf1a2204d23249b910135cab",
+    "compressedSha256": "4957f64cb157ec8bb80841f8621f6528112c9c2c91e7dc3b9a9a53abf7d8fb1d"
+  },
+  {
+    "original": "run-1/terminal-project-trust-extension-ui-paired.log",
+    "compressed": "run-1/terminal-project-trust-extension-ui-paired.log.gz",
+    "bytes": 123,
+    "sha256": "e2556af80e2ee1fb4ed6ccf825385750321a2f0870dfa29053e42dbd10ccda39",
+    "compressedSha256": "af5e3bd8d92078d674f52ed9adbb45539ed9efae606f9cbc9689060fe0774013"
+  },
+  {
+    "original": "run-1/terminal-quiet-startup-resources-calibration.log",
+    "compressed": "run-1/terminal-quiet-startup-resources-calibration.log.gz",
+    "bytes": 122,
+    "sha256": "ba670b42d437d12815f97dd7597c1fcc36a4e0ad162a821ecbbe73e50fd2ccb2",
+    "compressedSha256": "5ab49f207fd078ab50dec6ebce697a147ff1528011c4fef720bbf7ae28484378"
+  },
+  {
+    "original": "run-1/terminal-quiet-startup-resources-paired.log",
+    "compressed": "run-1/terminal-quiet-startup-resources-paired.log.gz",
+    "bytes": 124,
+    "sha256": "441f251836eb4b43ed2ffd694a6d412ffeddf648e09dc1e3b05b4399f98856ce",
+    "compressedSha256": "c5a5883603df6be0709a24f3d4504a7bebe6bde021c3e77794ed29380be82eb3"
+  },
+  {
+    "original": "run-1/terminal-resource-skill-precedence-calibration.log",
+    "compressed": "run-1/terminal-resource-skill-precedence-calibration.log.gz",
+    "bytes": 123,
+    "sha256": "c2db8372b9afa4f553aafb46af0d406113bce9633428bd5c11cfffbe288f2ed8",
+    "compressedSha256": "37e026cd109052991eafcc2e1723243aaf07a4a39e6446577dff2633ddce84ef"
+  },
+  {
+    "original": "run-1/terminal-resource-skill-precedence-paired.log",
+    "compressed": "run-1/terminal-resource-skill-precedence-paired.log.gz",
+    "bytes": 123,
+    "sha256": "c2db8372b9afa4f553aafb46af0d406113bce9633428bd5c11cfffbe288f2ed8",
+    "compressedSha256": "37e026cd109052991eafcc2e1723243aaf07a4a39e6446577dff2633ddce84ef"
+  },
+  {
+    "original": "run-1/terminal-resource-skill-prompt-bash-calibration.log",
+    "compressed": "run-1/terminal-resource-skill-prompt-bash-calibration.log.gz",
+    "bytes": 123,
+    "sha256": "e2556af80e2ee1fb4ed6ccf825385750321a2f0870dfa29053e42dbd10ccda39",
+    "compressedSha256": "af5e3bd8d92078d674f52ed9adbb45539ed9efae606f9cbc9689060fe0774013"
+  },
+  {
+    "original": "run-1/terminal-resource-skill-prompt-bash-paired.log",
+    "compressed": "run-1/terminal-resource-skill-prompt-bash-paired.log.gz",
+    "bytes": 123,
+    "sha256": "e2556af80e2ee1fb4ed6ccf825385750321a2f0870dfa29053e42dbd10ccda39",
+    "compressedSha256": "af5e3bd8d92078d674f52ed9adbb45539ed9efae606f9cbc9689060fe0774013"
+  },
+  {
+    "original": "run-1/terminal-resource-skill-prompt-hidden-read-bash-calibration.log",
+    "compressed": "run-1/terminal-resource-skill-prompt-hidden-read-bash-calibration.log.gz",
+    "bytes": 123,
+    "sha256": "c2db8372b9afa4f553aafb46af0d406113bce9633428bd5c11cfffbe288f2ed8",
+    "compressedSha256": "37e026cd109052991eafcc2e1723243aaf07a4a39e6446577dff2633ddce84ef"
+  },
+  {
+    "original": "run-1/terminal-resource-skill-prompt-hidden-read-bash-paired.log",
+    "compressed": "run-1/terminal-resource-skill-prompt-hidden-read-bash-paired.log.gz",
+    "bytes": 123,
+    "sha256": "c2db8372b9afa4f553aafb46af0d406113bce9633428bd5c11cfffbe288f2ed8",
+    "compressedSha256": "37e026cd109052991eafcc2e1723243aaf07a4a39e6446577dff2633ddce84ef"
+  },
+  {
+    "original": "run-1/terminal-resource-skill-prompt-hidden-read-calibration.log",
+    "compressed": "run-1/terminal-resource-skill-prompt-hidden-read-calibration.log.gz",
+    "bytes": 123,
+    "sha256": "c2db8372b9afa4f553aafb46af0d406113bce9633428bd5c11cfffbe288f2ed8",
+    "compressedSha256": "37e026cd109052991eafcc2e1723243aaf07a4a39e6446577dff2633ddce84ef"
+  },
+  {
+    "original": "run-1/terminal-resource-skill-prompt-hidden-read-paired.log",
+    "compressed": "run-1/terminal-resource-skill-prompt-hidden-read-paired.log.gz",
+    "bytes": 123,
+    "sha256": "c2db8372b9afa4f553aafb46af0d406113bce9633428bd5c11cfffbe288f2ed8",
+    "compressedSha256": "37e026cd109052991eafcc2e1723243aaf07a4a39e6446577dff2633ddce84ef"
+  },
+  {
+    "original": "run-1/terminal-resource-skill-prompt-no-reader-calibration.log",
+    "compressed": "run-1/terminal-resource-skill-prompt-no-reader-calibration.log.gz",
+    "bytes": 123,
+    "sha256": "e2556af80e2ee1fb4ed6ccf825385750321a2f0870dfa29053e42dbd10ccda39",
+    "compressedSha256": "af5e3bd8d92078d674f52ed9adbb45539ed9efae606f9cbc9689060fe0774013"
+  },
+  {
+    "original": "run-1/terminal-resource-skill-prompt-no-reader-paired.log",
+    "compressed": "run-1/terminal-resource-skill-prompt-no-reader-paired.log.gz",
+    "bytes": 123,
+    "sha256": "e2556af80e2ee1fb4ed6ccf825385750321a2f0870dfa29053e42dbd10ccda39",
+    "compressedSha256": "af5e3bd8d92078d674f52ed9adbb45539ed9efae606f9cbc9689060fe0774013"
+  },
+  {
+    "original": "run-1/terminal-resource-skill-prompt-read-bash-calibration.log",
+    "compressed": "run-1/terminal-resource-skill-prompt-read-bash-calibration.log.gz",
+    "bytes": 123,
+    "sha256": "e2556af80e2ee1fb4ed6ccf825385750321a2f0870dfa29053e42dbd10ccda39",
+    "compressedSha256": "af5e3bd8d92078d674f52ed9adbb45539ed9efae606f9cbc9689060fe0774013"
+  },
+  {
+    "original": "run-1/terminal-resource-skill-prompt-read-bash-paired.log",
+    "compressed": "run-1/terminal-resource-skill-prompt-read-bash-paired.log.gz",
+    "bytes": 123,
+    "sha256": "e2556af80e2ee1fb4ed6ccf825385750321a2f0870dfa29053e42dbd10ccda39",
+    "compressedSha256": "af5e3bd8d92078d674f52ed9adbb45539ed9efae606f9cbc9689060fe0774013"
+  },
+  {
+    "original": "run-1/terminal-selectors-settings-calibration.log",
+    "compressed": "run-1/terminal-selectors-settings-calibration.log.gz",
+    "bytes": 956,
+    "sha256": "7fe00207955b1c7e708ab6ebaf8cdda8edd94b4b5296a0780ee32b8841a681d8",
+    "compressedSha256": "d4aad44be7d12346b28e7c2a4cfc854ddef47a993d941f23847512cfdf5aae77"
+  },
+  {
+    "original": "run-1/terminal-selectors-settings-paired.log",
+    "compressed": "run-1/terminal-selectors-settings-paired.log.gz",
+    "bytes": 972,
+    "sha256": "dbc3a8c4f0b2a2e9d62a3c68dd6a361923070d081d29d12f79dc755458235284",
+    "compressedSha256": "e1dd191a10dc0c280f3e89d9aca6c56231257c23d0efffca3bbe2235316a0998"
+  },
+  {
+    "original": "run-1/terminal-startup-editor-calibration.log",
+    "compressed": "run-1/terminal-startup-editor-calibration.log.gz",
+    "bytes": 956,
+    "sha256": "7fe00207955b1c7e708ab6ebaf8cdda8edd94b4b5296a0780ee32b8841a681d8",
+    "compressedSha256": "d4aad44be7d12346b28e7c2a4cfc854ddef47a993d941f23847512cfdf5aae77"
+  },
+  {
+    "original": "run-1/terminal-startup-editor-paired.log",
+    "compressed": "run-1/terminal-startup-editor-paired.log.gz",
+    "bytes": 972,
+    "sha256": "dbc3a8c4f0b2a2e9d62a3c68dd6a361923070d081d29d12f79dc755458235284",
+    "compressedSha256": "e1dd191a10dc0c280f3e89d9aca6c56231257c23d0efffca3bbe2235316a0998"
+  },
+  {
+    "original": "run-1/terminal-startup-verbose-calibration.log",
+    "compressed": "run-1/terminal-startup-verbose-calibration.log.gz",
+    "bytes": 952,
+    "sha256": "41926976852f5322f3a38776746e403f8ab90dc925396d4260790d26f0727a52",
+    "compressedSha256": "87ba6ddb53a6576a983e1080533ba9a3499dddb7de9916ea8deaa25cb9e2be8b"
+  },
+  {
+    "original": "run-1/terminal-startup-verbose-paired.log",
+    "compressed": "run-1/terminal-startup-verbose-paired.log.gz",
+    "bytes": 968,
+    "sha256": "ee03be1dae5e5496274adeb46899d7f3beeb0acdfad87ab74e10148ec3f6da21",
+    "compressedSha256": "79b497a13c2d40fdefff0ce4be8426e507945a845ee1fe226400d2b78366048e"
+  },
+  {
+    "original": "run-1/terminal-thinking-toggle-calibration.log",
+    "compressed": "run-1/terminal-thinking-toggle-calibration.log.gz",
+    "bytes": 121,
+    "sha256": "5b9afe1e965cb1a33dfb4f3cb59885419a569df5afd46751d54325f3f2976d7c",
+    "compressedSha256": "5675857ab2164eb9df0d85003a1cf814007494a4097b1215c82b3d82bc459702"
+  },
+  {
+    "original": "run-1/terminal-thinking-toggle-paired.log",
+    "compressed": "run-1/terminal-thinking-toggle-paired.log.gz",
+    "bytes": 123,
+    "sha256": "2b96fd22c9ee93506590f52feacc426cf601844d8c7224f598755f2828a6b943",
+    "compressedSha256": "7fb38fa090ac1e1aa00395b17a9902d40b5251f6c908e72ebaa7ca4d91d568db"
+  },
+  {
+    "original": "run-1/terminal-transcript-markdown-calibration.log",
+    "compressed": "run-1/terminal-transcript-markdown-calibration.log.gz",
+    "bytes": 952,
+    "sha256": "5c65c01491dcc0d344a7933044edc032d9ff29d54c50992aa43347c3ba2e9b2e",
+    "compressedSha256": "ba69b6c192c15581986bbf84d837fcbf4a949fb4ee42555bedbac9ccd8155181"
+  },
+  {
+    "original": "run-1/terminal-transcript-markdown-paired.log",
+    "compressed": "run-1/terminal-transcript-markdown-paired.log.gz",
+    "bytes": 960,
+    "sha256": "457b19720788b07dbfdc2e0532c02c19cd9dd8ecbfc3677a6acf7c34470c05bc",
+    "compressedSha256": "52923590659bfc1684bcaa846d8374341597cc072747c4a399d4a23325029f50"
+  },
+  {
+    "original": "run-1/terminal-transcript-markdown-resume-calibration.log",
+    "compressed": "run-1/terminal-transcript-markdown-resume-calibration.log.gz",
+    "bytes": 952,
+    "sha256": "c4aac778c440317e29fe780f9dd8a80f5ecc81af91c447804880b589fba0ee89",
+    "compressedSha256": "d7a2cb9c2fce0062d5fa40eb35affaf6d0ddd19f26f08e48ad9bd589da2f0b8b"
+  },
+  {
+    "original": "run-1/terminal-transcript-markdown-resume-paired.log",
+    "compressed": "run-1/terminal-transcript-markdown-resume-paired.log.gz",
+    "bytes": 968,
+    "sha256": "9d882eaa6c5470402f99866156ccee01aeb89b016989a1a969d188e2a1465e68",
+    "compressedSha256": "a417857e144a34eb6113d37f90a4eb05a26b4ad24c3938e7212137a823b656aa"
+  },
+  {
+    "original": "run-1/terminal-trust-selector-calibration.log",
+    "compressed": "run-1/terminal-trust-selector-calibration.log.gz",
+    "bytes": 123,
+    "sha256": "c2db8372b9afa4f553aafb46af0d406113bce9633428bd5c11cfffbe288f2ed8",
+    "compressedSha256": "37e026cd109052991eafcc2e1723243aaf07a4a39e6446577dff2633ddce84ef"
+  },
+  {
+    "original": "run-1/terminal-trust-selector-paired.log",
+    "compressed": "run-1/terminal-trust-selector-paired.log.gz",
+    "bytes": 125,
+    "sha256": "771c0c7b55bf9aaeacb62f2ba4cf147e338af932dfe8c56dc32eda78a905653c",
+    "compressedSha256": "291906fe1474b94c34e56166da679bf08d400760b2ec059f722970de8aaf5c88"
+  },
+  {
+    "original": "run-1/terminal-trusted-project-settings-reload-calibration.log",
+    "compressed": "run-1/terminal-trusted-project-settings-reload-calibration.log.gz",
+    "bytes": 122,
+    "sha256": "d59d3205307fe09c104ecbfba901615c970a1fdfdeddbf22d54c673358283a2b",
+    "compressedSha256": "b09b8af18430965ceb81a61db2bc58314cba627212ae0a45bd45940bca9b47c0"
+  },
+  {
+    "original": "run-1/terminal-trusted-project-settings-reload-paired.log",
+    "compressed": "run-1/terminal-trusted-project-settings-reload-paired.log.gz",
+    "bytes": 122,
+    "sha256": "d59d3205307fe09c104ecbfba901615c970a1fdfdeddbf22d54c673358283a2b",
+    "compressedSha256": "b09b8af18430965ceb81a61db2bc58314cba627212ae0a45bd45940bca9b47c0"
+  },
+  {
+    "original": "run-1/tool-batch-differential.log",
+    "compressed": "run-1/tool-batch-differential.log.gz",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "compressedSha256": "f61f27bd17de546264aa58f40f3aafaac7021e0ef69c17f6b1b4cd7664a037ec"
+  },
+  {
+    "original": "run-1/virtual-model-routing-differential-context-compaction.log",
+    "compressed": "run-1/virtual-model-routing-differential-context-compaction.log.gz",
+    "bytes": 1244,
+    "sha256": "e459fa7476e0fba483b520ac07117f1528d9d2b5335f0dd2516edee9fe067a71",
+    "compressedSha256": "444884090c1f8e96cc1fbc16b257d426281430c966c560fbe95b04517a414aa6"
+  },
+  {
+    "original": "run-1/virtual-model-routing-differential-session-transitions.log",
+    "compressed": "run-1/virtual-model-routing-differential-session-transitions.log.gz",
+    "bytes": 3844,
+    "sha256": "da918bfba376aab1c9fac318f84f036b7e1fa63f39439abdaec21536d2c9e404",
+    "compressedSha256": "8d8ac0a750863d12208abf079aa4cc3ca46abadcd7f921b29ecf5c4f0035383c"
+  },
+  {
+    "original": "run-1/virtual-model-routing-differential-state-identity.log",
+    "compressed": "run-1/virtual-model-routing-differential-state-identity.log.gz",
+    "bytes": 1702,
+    "sha256": "c20a2cf98a1551335a9f884173fd835147495f91e3b4714c85a47953e39a2c47",
+    "compressedSha256": "f4c29361a2cf199a9506b9c4fb7c5bd82649d753bcd17064aa074f6e84ac646a"
+  },
+  {
+    "original": "run-1/virtual-model-routing-differential-thinking-max.log",
+    "compressed": "run-1/virtual-model-routing-differential-thinking-max.log.gz",
+    "bytes": 1818,
+    "sha256": "90ffc48d06f53f331f08e09f13cd36243db7eed41cc98ff2600de94da16238fc",
+    "compressedSha256": "1c209b3fb1c471aa53dbc0f370d3e893f38dd332de962efdd3a96167adc9a9b4"
+  },
+  {
+    "original": "run-1/virtual-model-routing-differential-thinking-minimal.log",
+    "compressed": "run-1/virtual-model-routing-differential-thinking-minimal.log.gz",
+    "bytes": 1842,
+    "sha256": "160503f14ca00ea294ca1d19adb65dd5974d5f8aeebb8c50dc6045dc48852d3f",
+    "compressedSha256": "b6bf3df280777b10c43c5d3ea824d0d38d4c24b1009752a10f78bb3561b025ea"
+  },
+  {
+    "original": "run-1/virtual-model-routing-differential.log",
+    "compressed": "run-1/virtual-model-routing-differential.log.gz",
+    "bytes": 1656,
+    "sha256": "e35c878a13e719a2c24077cc4a14ce02927cc0f08af6ef2ca53dc281fe5315bb",
+    "compressedSha256": "70df76658629d075a467db8d0a2806c4640b55c023a06193523ac30e294ef215"
+  },
+  {
+    "original": "setup/pi-build.log",
+    "compressed": "setup/pi-build.log.gz",
+    "bytes": 2451,
+    "sha256": "b001110b1c33ebb7e358029de37c3d55df701555348eb598cfab0b727c99dbc0",
+    "compressedSha256": "8be62af6ec23839370ab94e485d895c5e6ca8629118363f1bbfebbfd7d75a3d9"
+  },
+  {
+    "original": "setup/pi-install.log",
+    "compressed": "setup/pi-install.log.gz",
+    "bytes": 1167,
+    "sha256": "64c1583e617af7573c408539e79febac5bf6a8dea453aba950586a3da342cc2e",
+    "compressedSha256": "885734642ec1b6fcd8e0495bf67f47071a0952341c557e61171d7465d8b25cd2"
+  },
+  {
+    "original": "setup/restore.log",
+    "compressed": "setup/restore.log.gz",
+    "bytes": 309,
+    "sha256": "538b1b70f93650886aa4294c4f974a5e44b71f74d334e45ca500529d8a9bf48d",
+    "compressedSha256": "9067a7806babe21315a9c35c219cbb089c056043beed1d98fd99e3c0bdf08cae"
+  },
+  {
+    "original": "setup/terminal-install.log",
+    "compressed": "setup/terminal-install.log.gz",
+    "bytes": 26,
+    "sha256": "d6c96217f3e690703d45ecf1adb7a8880d7e20b479ec3bdc3edd195b0debdb1a",
+    "compressedSha256": "21f18cf12acc6f992f5ff78599105dda67b4a9d37e31dacb7814b000d092d886"
+  }
+]

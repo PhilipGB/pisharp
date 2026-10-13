@@ -1,0 +1,12 @@
+{
+  "id": "restore",
+  "command": [
+    "dotnet",
+    "restore",
+    "PiSharp.slnx"
+  ],
+  "cwd": "/home/philip/Downloads/pisharp-bootstrap/pisharp",
+  "exitCode": 0,
+  "seconds": 2.118,
+  "logger": "stdout+stderr text"
+}

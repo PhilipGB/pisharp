@@ -3,7 +3,7 @@
 - **Baseline PiSharp:** `064bcc7b90344cffde595f9aca1c5b850cefe567`, untouched main branch point.
 - **Frozen Pi:** `ee409a85f6ad92bf8c6ab8ed735c6cd24f2e749e`; selected from execution-ledger source note and latest TODO/trust-startup evidence.
 - **Branch:** `refactor/architecture-maintainability`.
-- **Phase:** Phase B Round 1 passed with no material findings; Phase C full verification next. Latest verified remote `fe1eb66e9fbebf3a61fe03f8eb2c564528d5e2a1`; review record/TEMP diagnostic-label correction pending publication. Earlier SHAs remain in history/slice metadata.
+- **Phase:** Phase C full verification and strict comparison passed at published `b460e368d9ce6b279821918a293ac2c5e7f91cbf`; complete pre-cleanup preservation state ready. Phase B Round 1 passed with no material findings; no Round 2 required.
 - **Pilot:** H09 coding tools; `baseline/pilot-decision.json` records the in-project ownership pattern and unchanged dependency/project graph.
 - **Active slice:** H03 concrete dialog panels/input, progress settlement, transcript search and authorization input; editor retains editing/completion/history, queue/abort and app dispatch. Pre-change characterization 89, focused 276; complete capture preserves 1,858 original identities (1,894 candidate), .NET 1,382/zero skips, Node 24/Python 47, MCP/process/66 terminal reports/136 cases/13 assertions. Three outside-set picker attempts and actual baseline exact-match control are retained; final unchanged repeat reproduces accepted 19-frame difference. Sets/fixtures/pin unchanged.
 - **Latest observed main:** `064bcc7b90344cffde595f9aca1c5b850cefe567`; no divergence/integration conflicts. No merge/rebase performed.
@@ -82,14 +82,35 @@ resolved dispositions supported by source. `baseline/independent-review/` record
 scope/reconstruction and one nonmaterial TEMP diagnostic-label correction. Raw data,
 metrics, production/tests and frozen sets remain unchanged. No Round 2 is needed.
 
-Exact next action: commit/push the review record and label correction, then Phase C:
-rerun complete capture and strict preservation comparison, update final temporary
-metrics, define complete cleanup allowlist and finish every permanent change. Only
-then set exact next action to `Phase E — cleanup, but only after remote preservation-ref verification`,
-commit/push preservation state, create immutable preservation ref once, remotely verify
-exact SHA/required contents. Follow D/E direct-child allowlisted cleanup and fresh F/G.
-No preservation ref or cleanup exists yet. No test/project moves. Never declare goal
-complete before requirement-by-requirement final audit.
+Phase C is complete except publication/remote preservation verification. `baseline/phase-c/`
+retains full unchanged-source capture, final metrics equal Phase A, three original
+outside-set outcomes and every unchanged repeat/control. Final strict comparison
+passes 1,858/1,894 identities with zero unexpected skips and unchanged four flaky
+sets; .NET 1,382, Node 24, Python 47, MCP 269, all 66 terminal reports/136 cases and
+13 semantic assertions. Load/replace/cancel and Bash prompt final outcomes match;
+picker final outcome returns to the accepted 19-frame difference with HTTP match.
+Control Bash footer-estimate difference is recorded separately from extra-frame
+variance. First diagnostic repeats inherited environment; later repeats restore
+all recorded environment keys. No source/test/fixture/parser/set/pin changes.
+
+`cleanup-allowlist.json` enumerates every temporary tracked path, generated local
+Python cache, and exact AGENTS append block. No temporary dependency changes exist;
+permanent Pi pin/guards, architecture/docs tests, CI and permanent docs stay intact.
+Every permanent repository change is complete. Current main remains the original
+branch point with clean merge-tree forecast; no merge/rebase/WIP branches.
+
+Exact next action: **Phase E — cleanup, but only after remote preservation-ref verification**
+
+Commit/push this complete Phase C state as `<preservation-commit>`, create the single
+immutable remote tag `refactor-baseline-data` once (fallback branch only if tag push
+is impossible), query both names and verify exact SHA plus goal/progress/baseline/
+comparison/allowlist contents. Phase C is incomplete until that remote check passes.
+Then prepare external summary only (Phase D), reverify remote preconditions and
+perform exact allowlisted cleanup as the preservation commit's direct child; push.
+Resume fresh Phase F/G through a separate preservation worktree, never recreating
+TEMP on final HEAD. No preservation ref or cleanup exists yet. No test/project
+moves or supplemental mappings. Never declare completion before every Section 24/26
+requirement is audited at fresh final HEAD.
 
 ## Exact temporary AGENTS pointer
 
