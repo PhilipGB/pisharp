@@ -80,9 +80,10 @@ internal sealed class AgentToolCatalog
     public IReadOnlyList<AIFunctionDeclaration> ToolDeclarations => Array.AsReadOnly(
         _toolRegistry.CreateLoadout(_initialActiveToolNames).Snapshot.Declared.Select(declaration =>
             (AIFunctionDeclaration)(string.Equals(declaration.Description, declaration.Registration.Function.Description,
-                StringComparison.Ordinal)
+                StringComparison.Ordinal) && declaration.Registration.ConstrainedSampling is null
                 ? declaration.Registration.Function
-                : new DescribedAIFunction(declaration.Registration.Function, declaration.Description))).ToArray());
+                : new DeclaredAIFunction(declaration.Registration.Function, declaration.Description,
+                    declaration.Registration.ConstrainedSampling))).ToArray());
     public ToolLoadout GetToolLoadout(AgentSession session)
     {
         ArgumentNullException.ThrowIfNull(session);

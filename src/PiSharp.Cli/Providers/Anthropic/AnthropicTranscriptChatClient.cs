@@ -1,6 +1,8 @@
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Anthropic.Exceptions;
 using Anthropic.Core;
 using Anthropic.Models.Beta;
 using Anthropic.Models.Beta.Messages;
@@ -15,6 +17,12 @@ internal sealed record AnthropicSystemUpdate(int BeforeAssistant, JsonObject Mes
 internal sealed class AnthropicTranscriptRequest
 {
     internal readonly AsyncLocal<IReadOnlyList<AnthropicSystemUpdate>?> Updates = new();
+    internal readonly AsyncLocal<AnthropicRequestAttempt?> Attempt = new();
+}
+
+internal sealed class AnthropicRequestAttempt
+{
+    internal System.Net.HttpStatusCode? StatusCode { get; set; }
 }
 
 internal sealed class AnthropicTranscriptChatClient(IChatClient inner, ModelDescriptor model,
@@ -23,40 +31,102 @@ internal sealed class AnthropicTranscriptChatClient(IChatClient inner, ModelDesc
     public override async Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages,
         ChatOptions? options = null, CancellationToken cancellationToken = default)
     {
-        var projection = Project(messages, options);
+        var source = messages.ToArray();
+        var projection = Project(source, options);
         var previous = request.Updates.Value;
+        var previousAttempt = request.Attempt.Value;
         request.Updates.Value = projection.Updates;
+        request.Attempt.Value = new();
         try
         {
-            var response = await base.GetResponseAsync(projection.Messages, projection.Options, cancellationToken);
+            ChatResponse response;
+            try { response = await base.GetResponseAsync(projection.Messages, projection.Options, cancellationToken); }
+            catch (AnthropicApiException error) when (CanFallback(error, projection, cancellationToken))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                projection = Project(source, options, disablePreferredStrict: true);
+                request.Updates.Value = projection.Updates;
+                request.Attempt.Value = new();
+                var diagnostic = FallbackDiagnostic(error);
+                try { response = await base.GetResponseAsync(projection.Messages, projection.Options, cancellationToken); }
+                catch (Exception rejected) { rejected.Data["diagnostics"] = diagnostic; throw; }
+                response.AdditionalProperties ??= new();
+                response.AdditionalProperties["diagnostics"] = diagnostic;
+                foreach (var message in response.Messages.Where(message => message.Role == ChatRole.Assistant))
+                {
+                    message.AdditionalProperties ??= new();
+                    message.AdditionalProperties["diagnostics"] = diagnostic;
+                }
+            }
             if (isOAuth)
                 foreach (var message in response.Messages)
                     message.Contents = AnthropicToolNames.MapCalls(message.Contents, name => projection.ToolNames.GetValueOrDefault(name, name));
             return response;
         }
-        finally { request.Updates.Value = previous; }
+        finally { request.Updates.Value = previous; request.Attempt.Value = previousAttempt; }
     }
 
     public override async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(
         IEnumerable<ChatMessage> messages, ChatOptions? options = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        var projection = Project(messages, options);
+        var source = messages.ToArray();
+        var projection = Project(source, options);
         var previous = request.Updates.Value;
+        var previousAttempt = request.Attempt.Value;
         request.Updates.Value = projection.Updates;
         try
         {
-            await foreach (var update in base.GetStreamingResponseAsync(projection.Messages, projection.Options, cancellationToken))
+            JsonElement? diagnostic = null;
+            for (var attempt = 0; ; attempt++)
             {
-                if (isOAuth)
-                    update.Contents = AnthropicToolNames.MapCalls(update.Contents, name => projection.ToolNames.GetValueOrDefault(name, name));
-                yield return update;
+                request.Attempt.Value = new();
+                await using var stream = base.GetStreamingResponseAsync(projection.Messages, projection.Options, cancellationToken)
+                    .GetAsyncEnumerator(cancellationToken);
+                var started = false;
+                var annotated = false;
+                var retry = false;
+                while (true)
+                {
+                    var next = false;
+                    Exception? failure = null;
+                    try { next = await stream.MoveNextAsync(); }
+                    catch (Exception error) { failure = error; }
+                    if (failure is not null)
+                    {
+                        if (attempt == 0 && !started && failure is AnthropicApiException apiError &&
+                            CanFallback(apiError, projection, cancellationToken))
+                        {
+                            diagnostic = FallbackDiagnostic(apiError);
+                            retry = true;
+                            break;
+                        }
+                        if (diagnostic is { } rejectedDiagnostic) failure.Data["diagnostics"] = rejectedDiagnostic;
+                        ExceptionDispatchInfo.Capture(failure).Throw();
+                    }
+                    if (!next) break;
+                    started = true;
+                    var update = stream.Current;
+                    if (!annotated && diagnostic is { } fallback)
+                    {
+                        update.AdditionalProperties ??= new();
+                        update.AdditionalProperties["diagnostics"] = fallback;
+                        annotated = true;
+                    }
+                    if (isOAuth)
+                        update.Contents = AnthropicToolNames.MapCalls(update.Contents, name => projection.ToolNames.GetValueOrDefault(name, name));
+                    yield return update;
+                }
+                if (!retry) break;
+                cancellationToken.ThrowIfCancellationRequested();
+                projection = Project(source, options, disablePreferredStrict: true);
+                request.Updates.Value = projection.Updates;
             }
         }
-        finally { request.Updates.Value = previous; }
+        finally { request.Updates.Value = previous; request.Attempt.Value = previousAttempt; }
     }
 
-    private Projection Project(IEnumerable<ChatMessage> source, ChatOptions? options)
+    private Projection Project(IEnumerable<ChatMessage> source, ChatOptions? options, bool disablePreferredStrict = false)
     {
         var messages = AnthropicToolResultProjection.Project(source).ToList();
         var projectedTranscript = options?.AdditionalProperties?.TryGetValue("pisharp.toolTranscript", out var transcript) == true &&
@@ -77,12 +147,7 @@ internal sealed class AnthropicTranscriptChatClient(IChatClient inner, ModelDesc
         if (!projectedTranscript && !string.IsNullOrEmpty(options?.Instructions))
         {
             initial = new ChatMessage(ChatRole.System, options.Instructions);
-            var definitions = (options.Tools ?? []).OfType<AIFunctionDeclaration>().Select(tool => new
-            {
-                name = tool.Name,
-                description = tool.Description,
-                parameters = tool.JsonSchema
-            });
+            var definitions = (options.Tools ?? []).OfType<AIFunctionDeclaration>().Select(ToolDeclarationJson.Create);
             SystemMessageTranscript.ImportMetadata(initial, JsonSerializer.SerializeToElement(new { toolsAdded = definitions }));
             messages.Insert(0, initial);
         }
@@ -91,10 +156,11 @@ internal sealed class AnthropicTranscriptChatClient(IChatClient inner, ModelDesc
         var native = systemSupport && Compatibility("supportsMidConvoToolChanges", false) && initialTools.Length > 0;
         var declaredTools = native ? initialTools : SystemMessageTranscript.CurrentTools(messages);
         if (declaredTools.Count == 0 && !messages.Any(message => message.Role == ChatRole.System))
-            declaredTools = (options?.Tools ?? []).OfType<AIFunctionDeclaration>().Select(tool =>
-                JsonSerializer.SerializeToElement(new { name = tool.Name, description = tool.Description, parameters = tool.JsonSchema })).ToArray();
+            declaredTools = (options?.Tools ?? []).OfType<AIFunctionDeclaration>().Select(ToolDeclarationJson.Create).ToArray();
+        var toolDefinitions = new AnthropicToolDefinitionProjection(Compatibility("supportsStrictTools", false),
+            Compatibility("supportsEagerToolInputStreaming", true), WireName, disablePreferredStrict);
         var tools = declaredTools.Select((tool, index) => (BetaToolUnion)JsonSerializer.Deserialize<BetaTool>(
-            ToolDefinition(tool, cache: index == declaredTools.Count - 1 && Compatibility("supportsCacheControlOnTools", true)).ToJsonString())!).ToList();
+            toolDefinitions.Create(tool, cache: index == declaredTools.Count - 1 && Compatibility("supportsCacheControlOnTools", true)).ToJsonString())!).ToList();
         if (native) tools.Add(JsonSerializer.Deserialize<BetaTool>("""
             {"name":"__pi_deferred_placeholder__","description":"Reserved placeholder. Never available. Never call this.","input_schema":{"type":"object","properties":{},"required":[]},"defer_loading":true}
             """)!);
@@ -116,7 +182,7 @@ internal sealed class AnthropicTranscriptChatClient(IChatClient inner, ModelDesc
                 foreach (var name in SystemMessageTranscript.RemovedTools(message).Where(name => !redefined.Contains(name)))
                     blocks.Add(new JsonObject { ["type"] = "tool_removal", ["tool"] = new JsonObject { ["type"] = "tool_reference", ["name"] = WireName(name) } });
                 foreach (var tool in added)
-                    blocks.Add(new JsonObject { ["type"] = "tool_addition", ["tool"] = new JsonObject { ["type"] = "tool_definition", ["definition"] = ToolDefinition(tool) } });
+                    blocks.Add(new JsonObject { ["type"] = "tool_addition", ["tool"] = new JsonObject { ["type"] = "tool_definition", ["definition"] = toolDefinitions.Create(tool) } });
             }
             if (blocks.Count > 0) updates.Add(new(assistantCount, new JsonObject { ["role"] = "system", ["content"] = blocks }));
         }
@@ -158,7 +224,7 @@ internal sealed class AnthropicTranscriptChatClient(IChatClient inner, ModelDesc
         }).ToArray();
         var names = SystemMessageTranscript.CurrentTools(messages).ToDictionary(tool => WireName(tool.GetProperty("name").GetString()!),
             tool => tool.GetProperty("name").GetString()!, StringComparer.OrdinalIgnoreCase);
-        return new(conversation, requestOptions, updates, names);
+        return new(conversation, requestOptions, updates, names, toolDefinitions.HasPreferredStrictTools);
     }
 
     private string WireName(string name) => isOAuth ? AnthropicToolNames.WireName(name) : name;
@@ -167,25 +233,29 @@ internal sealed class AnthropicTranscriptChatClient(IChatClient inner, ModelDesc
         model.Compatibility is { ValueKind: JsonValueKind.Object } compatibility && compatibility.TryGetProperty(name, out var value)
             ? value.ValueKind == JsonValueKind.True : fallback;
 
-    private JsonObject ToolDefinition(JsonElement tool, bool cache = false)
+    private bool CanFallback(AnthropicApiException error, Projection projection, CancellationToken token)
     {
-        var parameters = tool.GetProperty("parameters");
-        var definition = new JsonObject
+        if (token.IsCancellationRequested || !projection.HasPreferredStrictTools || error.StatusCode != System.Net.HttpStatusCode.BadRequest ||
+            request.Attempt.Value?.StatusCode != error.StatusCode)
+            return false;
+        try
         {
-            ["name"] = WireName(tool.GetProperty("name").GetString()!),
-            ["description"] = tool.GetProperty("description").GetString(),
-            ["input_schema"] = new JsonObject
-            {
-                ["type"] = "object",
-                ["properties"] = parameters.TryGetProperty("properties", out var properties) ? JsonNode.Parse(properties.GetRawText()) : new JsonObject(),
-                ["required"] = parameters.TryGetProperty("required", out var required) ? JsonNode.Parse(required.GetRawText()) : new JsonArray()
-            }
-        };
-        if (Compatibility("supportsEagerToolInputStreaming", true)) definition["eager_input_streaming"] = true;
-        if (cache) definition["cache_control"] = new JsonObject { ["type"] = "ephemeral" };
-        return definition;
+            using var body = JsonDocument.Parse(error.ResponseBody);
+            return body.RootElement.TryGetProperty("error", out var detail) && detail.ValueKind == JsonValueKind.Object &&
+                detail.TryGetProperty("type", out var type) && type.ValueKind == JsonValueKind.String && type.GetString() == "invalid_request_error" &&
+                detail.TryGetProperty("message", out var message) && message.ValueKind == JsonValueKind.String &&
+                new[] { "The compiled grammar is too large", "Too many strict tools (", "Schemas contains too many parameters with union types (" }
+                    .Any(prefix => message.GetString()!.Contains(prefix, StringComparison.Ordinal));
+        }
+        catch (JsonException) { return false; }
     }
 
+    private static JsonElement FallbackDiagnostic(AnthropicApiException error) => JsonSerializer.SerializeToElement(new[]
+    {
+        new { type = "anthropic_strict_tools_fallback", timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+            error = new { message = error.Message }, details = new { reason = "strict_tool_limits_exceeded" } }
+    });
+
     private sealed record Projection(IReadOnlyList<ChatMessage> Messages, ChatOptions Options,
-        IReadOnlyList<AnthropicSystemUpdate> Updates, IReadOnlyDictionary<string, string> ToolNames);
+        IReadOnlyList<AnthropicSystemUpdate> Updates, IReadOnlyDictionary<string, string> ToolNames, bool HasPreferredStrictTools);
 }

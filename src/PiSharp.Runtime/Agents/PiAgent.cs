@@ -162,9 +162,10 @@ public sealed class PiAgent
         Array.AsReadOnly<AITool>(declarations.Select(declaration =>
         {
             var function = _runtimeToolFunctions[declaration.Registration.Function.Name];
-            return string.Equals(declaration.Description, function.Description, StringComparison.Ordinal)
+            return string.Equals(declaration.Description, function.Description, StringComparison.Ordinal) &&
+                declaration.Registration.ConstrainedSampling is null
                 ? function
-                : new DescribedAIFunction(function, declaration.Description);
+                : new DeclaredAIFunction(function, declaration.Description, declaration.Registration.ConstrainedSampling);
         }).ToArray());
 
     private string GetSystemInstructionsForCurrentLoadout() => GetSystemPromptForCurrentLoadout().Text;

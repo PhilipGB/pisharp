@@ -33,6 +33,8 @@ registration.AddTool(new PiSharpToolRegistration(
 
 `PiSharpToolNamespace` accepts aliases for lookup from Codemode's `searchTools` and `describeNamespace`. MCP tool results retain the model-facing text and error state; nested Codemode calls receive the full `CallToolResult` (`content`, `structuredContent`, and `isError`, without protocol `_meta`) and its output schema. A returned MCP error therefore resolves to its result object so the script can inspect `isError` and the content, while the model-facing tool call remains marked as an error.
 
+Set `PiSharpToolRegistration.ConstrainedSampling` to `JsonSerializer.SerializeToElement(new { type = "json_schema", strict = "prefer" })` to request strict JSON-schema sampling. Anthropic uses this when the selected model's `supportsStrictTools` compatibility flag is true. Unsupported preferred schemas use their original non-strict definitions; known strict-tool capacity rejections retry once with those original definitions. Use `strict = "require"` to reject unsupported schemas or models and retain the constraint during capacity fallback. Policies survive tool transcript revisions and native/Pi session persistence, and Pi Messages forwards them to its gateway. Strict sampling on other provider APIs remains in progress.
+
 ## Extension resources
 
 An extension can make skills, prompt templates, and terminal themes available on startup and after `/reload`:

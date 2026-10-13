@@ -7,9 +7,9 @@
   "commit_count": 50,
   "classifications": {
     "OUT_OF_SCOPE": 19,
-    "MATCHED": 14,
+    "MATCHED": 15,
     "NO_BEHAVIOR_CHANGE": 13,
-    "NEEDS_WORK": 4
+    "NEEDS_WORK": 3
   },
   "commits": [
     {
@@ -623,7 +623,7 @@
         "packages/ai/src/api/anthropic-messages.ts",
         "packages/ai/test/anthropic-strict-tool-fallback.test.ts"
       ],
-      "classification": "NEEDS_WORK",
+      "classification": "MATCHED",
       "finding": "Known strict grammar capacity HTTP 400 rejections downgrade only prefer constraints once, retain require and original schemas/hooks, and never replay a started stream. PiSharp does not yet encode constrainedSampling strict policies.",
       "capability_ids": [
         "provider-anthropic-inline-tools"
@@ -633,7 +633,14 @@
       ],
       "implementation_plan": "Carry prefer/require tool metadata through projection, implement strict schema mapping and one guarded pre-stream fallback.",
       "differential_plan": "Real Anthropic SDK loopbacks for the three capacity messages, required/ordinary sets, hooks, cancellation and SSE failure; compare request traces.",
-      "resolved": false
+      "resolved": true,
+      "resolution": "Anthropic strict sampling now projects optional fields to nullable required fields without mutating source schemas. Known invalid_request_error HTTP 400 capacity rejections retry once with only preferred definitions restored to their original non-strict schemas; required and inline same-name definitions retain individual policy. Real-response attribution excludes hook exceptions and accepted SSE responses. Hook changes and diagnostics survive fallback; later requests still use strict sampling. Live extension constraints persist through transcript revisions/native/Pi sessions and Pi Messages forwards original policy/schema. Six real SDK cases failed first. Fifty-seven pinned Pi/native SDK request/schema cases match, current Pi source tests pass 16/16, and 45 new .NET controls pass within the full 1539/1539 zero-skip suite and zero-warning build. Other provider strict APIs, exact error envelopes and wider protocol diagnostics remain open.",
+      "evidence": [
+        "docs/parity/fixtures/current-pi-refresh-2026-10-13/anthropic-strict.json",
+        "tools/parity/anthropic-strict-differential.py",
+        "tests/PiSharp.Tests/Cli/Providers/Anthropic/AnthropicStrictToolFallbackTests.cs",
+        "tests/PiSharp.Tests/Core/StrictToolJsonSchemaTests.cs"
+      ]
     },
     {
       "sha": "abfe62928b39414ea2be4d6feb65ae608c67674f",

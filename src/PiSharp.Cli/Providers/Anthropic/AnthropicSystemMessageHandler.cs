@@ -54,6 +54,8 @@ internal sealed class AnthropicSystemMessageHandler(AnthropicTranscriptRequest c
             request.Content = replacement;
             content.Dispose();
         }
-        return await base.SendAsync(request, cancellationToken);
+        var response = await base.SendAsync(request, cancellationToken);
+        if (context.Attempt.Value is { } attempt) attempt.StatusCode = response.StatusCode;
+        return response;
     }
 }

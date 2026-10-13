@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "plan_received": true,
-  "source_note": "Post-refactor main 22eeb2a53dbaa94e41f78a40a997e3b3156bb3ed; audited configured Pi 3daa20280f6a7c7cbe0935680c9a38fdc3863005. All 50 commits classified: {'OUT_OF_SCOPE': 19, 'MATCHED': 14, 'NO_BEHAVIOR_CHANGE': 13, 'NEEDS_WORK': 4}. Dedicated parity/current-pi-completion branch; all 194 required capabilities retained. Resolve current_pi_refresh before resuming Resources / Instructions / Trust. Architecture refactor is merged; bounded final regression review and full source audit remain open.",
+  "source_note": "Post-refactor main 22eeb2a53dbaa94e41f78a40a997e3b3156bb3ed; audited configured Pi 3daa20280f6a7c7cbe0935680c9a38fdc3863005. All 50 commits classified: {'OUT_OF_SCOPE': 19, 'MATCHED': 15, 'NO_BEHAVIOR_CHANGE': 13, 'NEEDS_WORK': 3}. Dedicated parity/current-pi-completion branch; all 194 required capabilities retained. Resolve current_pi_refresh before resuming Resources / Instructions / Trust. Architecture refactor is merged; bounded final regression review and full source audit remain open.",
   "baseline": "earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035",
   "required_ids": [
     "feature-agent-multi-turn-and-streaming",
@@ -4058,7 +4058,8 @@
         "docs/parity/fixtures/anthropic-inline-tools-2026-10-02.md",
         "Anthropic inline tool history matches 26 current-Pi real-SDK request scenarios plus restored tool-result token estimates and both compaction boundaries. Focused checks pass 154/154; format verification and warnings-as-errors build pass with zero warnings/errors; full suite passes 1145/1145 with zero skips. Exact-head CI remains pending until publication. The reusable terminal differential harness is next, then the first-class llama.cpp router family.",
         "Current-Pi refresh 2026-10-13 source audit maps unresolved new deltas d4d53612, 34a8bb38 to this existing requirement; see docs/parity/fixtures/current-pi-refresh-2026-10-13/upstream-audit.json. This adds no verified status or behavior claim.",
-        "Anthropic error tool results replace every image with Pi's exact omission note and collapse text-only blocks to the same newline string; successful tool images remain intact. Live MAF results carry request-only attribution so only failed tool attachments are removed, unrelated user images remain, and the persisted contract is unchanged. Imported streaming/non-streaming and live execution cases failed first and now pass. The real SDK/Pi provider comparison matches ordered result blocks, image sources, error flags and unchanged input; the full suite passes 1432/1432 with zero skips and a zero-warning build. Paid provider and broader conversation-wire equivalence remain outside this bounded evidence. See docs/parity/fixtures/current-pi-refresh-2026-10-13/anthropic-error-images.json, tools/parity/anthropic-error-image-differential.py, tests/PiSharp.Tests/Cli/Providers/Anthropic/AnthropicInlineToolTests.cs. This closes the named current-source delta, not the broader capability."
+        "Anthropic error tool results replace every image with Pi's exact omission note and collapse text-only blocks to the same newline string; successful tool images remain intact. Live MAF results carry request-only attribution so only failed tool attachments are removed, unrelated user images remain, and the persisted contract is unchanged. Imported streaming/non-streaming and live execution cases failed first and now pass. The real SDK/Pi provider comparison matches ordered result blocks, image sources, error flags and unchanged input; the full suite passes 1432/1432 with zero skips and a zero-warning build. Paid provider and broader conversation-wire equivalence remain outside this bounded evidence. See docs/parity/fixtures/current-pi-refresh-2026-10-13/anthropic-error-images.json, tools/parity/anthropic-error-image-differential.py, tests/PiSharp.Tests/Cli/Providers/Anthropic/AnthropicInlineToolTests.cs. This closes the named current-source delta, not the broader capability.",
+        "Anthropic strict sampling now projects optional fields to nullable required fields without mutating source schemas. Known invalid_request_error HTTP 400 capacity rejections retry once with only preferred definitions restored to their original non-strict schemas; required and inline same-name definitions retain individual policy. Real-response attribution excludes hook exceptions and accepted SSE responses. Hook changes and diagnostics survive fallback; later requests still use strict sampling. Live extension constraints persist through transcript revisions/native/Pi sessions and Pi Messages forwards original policy/schema. Six real SDK cases failed first. Fifty-seven pinned Pi/native SDK request/schema cases match, current Pi source tests pass 16/16, and 45 new .NET controls pass within the full 1539/1539 zero-skip suite and zero-warning build. Other provider strict APIs, exact error envelopes and wider protocol diagnostics remain open. See docs/parity/fixtures/current-pi-refresh-2026-10-13/anthropic-strict.json, tools/parity/anthropic-strict-differential.py, tests/PiSharp.Tests/Cli/Providers/Anthropic/AnthropicStrictToolFallbackTests.cs, tests/PiSharp.Tests/Core/StrictToolJsonSchemaTests.cs. This closes the named current-source delta, not the broader capability."
       ],
       "dependencies": [
         "feature-tools-default-set-dynamic-availability",
@@ -5350,9 +5351,9 @@
     "commit_count": 50,
     "classifications": {
       "OUT_OF_SCOPE": 19,
-      "MATCHED": 14,
+      "MATCHED": 15,
       "NO_BEHAVIOR_CHANGE": 13,
-      "NEEDS_WORK": 4
+      "NEEDS_WORK": 3
     },
     "audit_complete": true,
     "pin_advanced": true,
